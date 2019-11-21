@@ -1,0 +1,75 @@
+
+Test files.
+
+Every file in this directory (and recursively in its subdirectories)
+with a name that ends in "_test.tla" defines one test of the test
+suite.
+
+The file must be a syntactically valid TLA+ module.  After the last
+line of ==== are the commands for the test harness:
+
+- command: <com>
+  Executes the command.  Several of these may be specified, in
+  which case, they are all executed, but only the last one is checked
+  with the "results" clause.  The standard outputs and standard error
+  outputs of the commands are all concatenated in execution order.
+  If this clause is omitted, the default command is executed:
+    ${TLAPM} --toolbox 0 0 --nofp ${FILE}
+
+- result: <n>
+  Checks that the result code of the command is <n>.  If there is
+  no "results" clause, the defaut "result: 0" is checked.
+
+- stdout: <regexp>
+  Checks the presence of <regexp> in the standard output of the
+  command(s).  Several of these may be specified.  In this case, they
+  check that the strings are all present in the same order, in
+  different lines of the output.
+
+- nostdout: <regexp>
+  Check the absence of <regexp> anywhere in the standard output.
+  Several of these may be specified, they must all be absent.
+  Note: if an obligation is submitted to several provers, only the
+  record corresponding to the latest one is checked for nostdout strings.
+  This means that "nostdout: failed" will actually check for an obligation
+  that was not proved by any prover.
+
+- stderr: <regexp>
+  Same as "stdout", but for standard error output.  Note that the
+  toolbox messages of the PM are on stderr.
+
+- nostderr: <regexp>
+  Same as "nostdout", but for standard error output.
+
+- nostd*: <regexp>
+  Does the same checks as two clauses, one "nostdout" and one
+  "nostderr", each with the <regexp> as argument.
+
+- check: <command>
+  Run an arbitrary command and check that its return status is 0.
+  This command can read the files ${FILE}.stdout and ${FILE}.stderr
+  to get the standard output and standard error output of the
+  command(s) launched by the test harness.
+
+- \*<anything>
+  A line beginning with \* (possibly preceded by spaces) is ignored.
+
+NOTE: the space after the colon is mandatory.  Your commands will
+not be recognized if it is missing.
+
+
+Default checks:
+
+- If there is no "result" clause, the following clause is evaluated:
+    result: 0
+
+- If none of the stdout, nostdout, stderr, nostderr, nostd*, and check
+  clauses are present, the following clauses are evaluated:
+    nostd*: ending abnormally
+    nostd*: status:failed
+
+
+The shell variable ${TLAPM} is defined to be ".../tlapm -I .../src",
+which launches the local PM with access to the local TLAPS.tla.  Use
+this variable in your "command" clauses instead of invoking the
+installed version of the PM.

@@ -1,0 +1,386 @@
+\section{Introductory example: Euclid's algorithm}
+
+
+\begin{frame}
+  \frametitle{Euclid's Algorithm}
+
+  \begin{itemize}
+  \item \tc{dkblue}{Euclid's algorithm in pseudo-code}
+
+    \bigskip
+
+    \hspace*{4em}
+    \begin{minipage}{.5\linewidth}\small
+    \begin{tabbing}
+      \quad\=\quad\=\kill
+      \textbf{variables} x = M, y = N\\
+      \textbf{begin}\\
+      \> \textbf{while} x $\neq$ y \textbf{do}\\
+      \>\> \textbf{if} x$<$y\\
+      \>\> \textbf{then} y := y-x\\
+      \>\> \textbf{else} x := x-y\\
+      \>\> \textbf{end if}\\
+      \> \textbf{end while};\\
+      \> \textbf{assert} $GCD$(M,N) = x\\
+      \textbf{end}
+    \end{tabbing}
+    \end{minipage}
+
+  \oo \tc{dkblue}{This is a legal PlusCal algorithm}
+
+    \begin{itemize}
+    \o embedded in a \tlaplus\ module defining $GCD$
+    \o can be checked for fixed values of M and N
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Euclid's Algorithm in \tlaplus\ (1/2)}
+
+  \begin{itemize}
+  \item \tc{dkblue}{We start by defining divisibility and $GCD$}
+
+    \medskip
+
+    \begin{tlablock}
+      \begin{minipage}{.96\linewidth}
+      \begin{nomodule}
+        \topbar{Euclid}
+        \EXTENDS\ Naturals\\[1mm]
+        \(\begin{noj}
+          d | q\ \deq\ \E k \in 1..q : q = k * d
+          \quad\quad\quad\comment{definition of divisibility}\\
+          Divisors(q)\ \deq\ \{d \in 1..q : d | q\}
+          \quad\ \ \comment{set of divisors}\\
+          Maximum(S)\ \deq\ \CHOOSE x \in S : \A y \in S : x \geq y\\
+          GCD(p,q)\ \deq\ Maximum(Divisors(p) \cap Divisors(q))\\
+          PosInteger\ \deq\ Nat \setminus \{0\}
+        \end{noj}\)\\
+        \midbar
+      \end{nomodule}
+      \end{minipage}
+    \end{tlablock}
+
+  \oo \tc{dkblue}{Standard mathematical definitions}
+
+    \begin{itemize}
+    \o \tlaplus\ module $Naturals$ defines basic operations on integers
+    \o \tlaplus\ is based on untyped set theory
+    \o module contains declarations, assertions, and definitions
+    \end{itemize}
+
+  \oo \tc{dkblue}{These definitions could go to a library module}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Euclid's Algorithm in \tlaplus\ (2/2)}
+
+  \begin{itemize}
+  \item \tc{dkblue}{Now encode the algorithm and assert its correctness}
+
+    \medskip
+
+    \begin{tlablock}
+      \begin{minipage}{.96\linewidth}
+      \begin{nomodule}
+        \CONSTANTS\ \ M, N\\
+        \ASSUME\ \ $Positive\ \deq\ M \in PosInteger \land N \in PosInteger$\\
+        \VARIABLES\ \ x, y\\[1mm]
+        \(\begin{array}{@{}l@{\ \ }c@{\ \ }l}
+          Init & \deq & x=M \land y=N\\
+          Next & \deq &
+          \begin{disj}
+            \begin{conj}
+              x<y\\
+              y' = y-x \land x' = x
+            \end{conj}\\
+            \begin{conj}
+              y<x\\
+              x' = x-y \land y' = y
+            \end{conj}
+          \end{disj}\\
+          Spec & \deq & Init \land \alw[Next]_{\seq{x,y}}
+        \end{array}\)\\
+        \midbar
+        $Correctness\ \deq\ x=y \implies x = GCD(M,N)$\\[1mm]
+        \THEOREM\ \ $Spec \implies \alw Correctness$\\
+        \bottombar
+      \end{nomodule}
+      \end{minipage}
+    \end{tlablock}
+
+
+  \oo \tc{dkblue}{Algorithm represented by initial condition and next-state relation}
+
+  \oo \tc{dkblue}{Correctness expressed as TLA formula}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{\tlaplus\ Modules}
+
+  \begin{itemize}
+  \item \tc{dkblue}{Specifications of \tlaplus\ are structured in modules}
+
+    \begin{itemize}
+    \o structured specifications: import existing modules via \EXTENDS
+    \o \INSTANCE\ allows import with renaming, but we don't need it here
+    \end{itemize}
+
+  \oo \tc{dkblue}{Modules contain declarations, assertions, and definitions}
+
+    \begin{itemize}
+    \o declarations of \CONSTANTS\ and \VARIABLES
+    \o assertions of facts via \ASSUME\ and \THEOREM\ (more later)
+    \o main body of module: \alert{operator definitions}
+    \end{itemize}
+
+  \oo \tc{dkblue}{Levels of formulas and operators}
+
+    \medskip
+
+    \renewcommand{\arraystretch}{1.2}
+    \quad{\small\begin{tabular}{l@{\qquad}l@{\qquad}l}
+        \alert{constant} & only \CONSTANT\ symbols & \tc{dkgreen}{$Positive$}\\
+        \alert{state} & allow \VARIABLE{}s & \tc{dkgreen}{$Init,\ Correctness$}\\
+        \alert{action} & allow primed \VARIABLE{}s & \tc{dkgreen}{$Next$}\\
+        \alert{temporal} & use temporal operators & \tc{dkgreen}{$Spec$}
+    \end{tabular}}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Verification of Euclid's Algorithm}
+
+  \begin{itemize}
+  \item \tc{dkblue}{Verification by model checking: \tlc}
+
+    \begin{itemize}
+    \o construct model by fixing concrete values for $M$ and $N$
+    \o \tlc\ verifies that the $Correctness$ property is always true
+    \o variation: verify correctness for all initial values in fixed interval
+    \end{itemize}
+
+\pause
+
+  \oo \tc{dkblue}{Verification by theorem proving: \tlaps}
+
+    \begin{itemize}
+    \o need to strengthen correctness property to an \alert{inductive invariant}
+
+       \medskip
+       \begin{tlablock}[.7]
+         InductiveInvariant\ \deq\ 
+         \begin{conj}
+           x \in PosInteger\\
+           y \in PosInteger\\
+           GCD(x,y) = GCD(M,N)
+         \end{conj}
+       \end{tlablock}
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Underlying Data Properties}
+
+  \begin{itemize}
+  \item \tc{dkblue}{The proof relies on the following properties of $GCD$}
+
+     \bigskip
+
+     \begin{tlablock}
+       \begin{array}{@{}l@{\ \ }c@{\ \ }l}
+         \THEOREM\ \ GCDSelf & \deq &
+         \begin{array}[t]{@{}l@{\ \ }l}
+           \ASSUME & \NEW\ p \in PosInteger\\
+           \PROVE  & GCD(p,p) = p
+         \end{array}\vspace{2mm}\\ 
+         \THEOREM\ \ GCDSymm & \deq &
+         \begin{array}[t]{@{}l@{\ \ }l}
+           \ASSUME & \NEW\ p \in PosInteger,\\
+                   & \NEW\ q \in PosInteger\\
+           \PROVE  & GCD(p,q) = GCD(q,p)
+         \end{array}\vspace{2mm}\\
+         \THEOREM\ \ GCDDiff & \deq &
+         \begin{array}[t]{@{}l@{\ \ }l}
+           \ASSUME & \NEW\ p \in PosInteger,\\
+                   & \NEW\ q \in PosInteger,\\
+                   & p<q\\
+           \PROVE  & GCD(p,q) = GCD(p, q-p)
+         \end{array}
+       \end{array}
+     \end{tlablock}
+
+  \oo \tc{dkblue}{\tc{dkgreen}{$\ASSUME$ \ldots\ $\PROVE$} assertions are sequents in \tlaplus}
+
+    \begin{itemize}
+    \o could use formulas instead, but sequents are often easier to read
+    \end{itemize}
+
+  \oo \tc{dkblue}{We don't bother proving these properties here}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Invariant Reasoning in \tlaplus}
+
+  \begin{itemize}
+  \item \tc{dkblue}{Establish an invariant in \tlaplus}
+
+    \medskip
+
+\begin{center}
+    \qquad\(\color{red!75!black}\begin{array}{c}
+      Init \implies Inv \quad Inv \land [Next]_v \implies Inv' \quad Inv \implies Cor\\
+      \hline
+      Init \land \alw[Next]_v \implies \alw Cor
+    \end{array}\)
+\end{center}
+
+    \begin{itemize}
+%    \o $J$ is an inductive invariant that implies $Inv$
+    \o $Inv$ must imply $Cor$, be true initially, and preserved by every step
+    \end{itemize}
+
+\pause
+
+  \o \tc{dkblue}{This rule can be stated as the following sequent}
+
+     \medskip
+
+     \qquad\begin{tlablock}[.7]
+       \THEOREM\ \ Inv1\ \deq\ 
+       \begin{array}[t]{@{}l@{\ \ }l}
+         \ASSUME & Init \implies Inv,\\
+                 & Inv \land [Next]_v \implies Inv',\\
+                 & Inv \implies Cor\\
+         \PROVE  & Init \land \alw[Next]_v \implies \alw Cor
+       \end{array}
+     \end{tlablock}
+
+     \begin{itemize}
+     \o \tlaps\ doesn't handle temporal logic yet
+     \o but it can be used to establish the non-temporal hypotheses
+     \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Simple Proofs}
+
+  \begin{itemize}
+  \item \tc{dkblue}{Prove that \tc{dkgreen}{$InductiveInvariant$} implies \tc{dkgreen}{$Correctness$}}
+
+    \medskip
+
+    \qquad\begin{tlablock}
+      \LEMMA\ \ InductiveInvariant \implies Correctness\\
+      \only<1>{\alert{\PROOF\ \OBVIOUS}}
+      \only<2->{\BY\ GCDSelf\ \DEFS\ InductiveInvariant, Correctness}
+    \end{tlablock}
+
+\pause
+
+
+
+    \begin{itemize}
+    \o definitions and facts must be cited explicitly for \tlaps\ to use them
+    \o this helps keeping the size of proof obligations manageable
+    \end{itemize}
+
+\pause
+  \oo \tc{dkblue}{Prove that \tc{dkgreen}{$Init$} implies \tc{dkgreen}{$InductiveInvariant$}}
+
+    \medskip
+
+    \qquad\begin{tlablock}
+      \LEMMA\ \ Init \implies InductiveInvariant\\
+      \BY\ Positive\ \DEFS\ Init, InductiveInvariant
+    \end{tlablock}
+
+  \oo \tc{dkblue}{These simple proofs are called \alert{leaf proofs}}
+  \end{itemize}
+  
+\end{frame}
+
+\begin{frame}
+  \frametitle{Hierarchical Proofs}
+
+  \begin{itemize}
+  \item \tc{dkblue}{A non-leaf proof consists of a sequence of claims, ending with \QED}
+
+  \oo \tc{dkblue}{Prove that \tc{dkgreen}{$Next$} preserves \tc{dkgreen}{$InductiveInvariant$}}
+
+    \medskip
+
+    \qquad\begin{tlablock}
+      \LEMMA\ \ InductiveInvariant \land [Next]_{\seq{x,y}} \implies InductiveInvariant'\\
+      \ps{1}{}\ \USE\ \DEFS\ InductiveInvariant, Next\\
+\onslide<2->{
+      \ps{1}{}\ \SUFFICES\ 
+        \begin{array}[t]{@{}l@{\ \ }l}
+          \ASSUME & InductiveInvariant, Next\\
+          \PROVE  & InductiveInvariant'
+        \end{array}\\
+        \quad \PROOF\ \OBVIOUS
+  }\\
+\onslide<3->{
+      \ps{1}{a.}\ \CASE\ x<y\\
+      \ps{1}{b.}\ \CASE\ x>y}\\
+\onslide<4->{
+      \ps{1}{q.}\ \QED\\
+      \quad  \quad \BY\ \ps{1}{a}, \ps{1}{b}}
+    \end{tlablock}
+
+    \begin{itemize}
+    \o \only<1>{\USE\ \DEFS\ causes \tlaps\ to silently apply given definitions.}
+       \only<2>{\SUFFICES\ restates the current claim -- trivial case $\UNCHANGED \seq{x,y}$}
+       \only<3>{The two subcases will be proved subsequently.}
+       \only<4>{The assertion follows from the cases and the definition of $Next$.}
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+
+
+\begin{frame}[t]
+  \frametitle{Hierarchical Proofs}
+
+  \begin{itemize}
+  \item \tc{dkblue}{Sublevels}
+
+\medskip
+
+    \qquad\begin{tlablock}
+      {\color{gray}(...)} \\
+      \ps{1}{a.}\ \CASE\ x<y\\
+      \quad \ps{2}{1.} \ (y - x \in PosInteger)  \land \lnot(y < x)\\
+      	\only<3->{\quad\quad \BY\ \ps{1}{a},\ SimpleArithmetic\ \DEF\ PosInteger}\\
+  	\quad \ps{2}{2.} \  \QED\\
+    	\only<2->{\quad\quad \BY\ \ps{1}{a}, \ps{2}{1},\ GCDDiff}\\
+      \ps{1}{b.}\ \CASE\ x>y\\
+ {\color{gray}(...)} 
+    \end{tlablock}
+    
+    \medskip
+
+\uncover<3->{
+    \item $SimpleArithmetic$
+    \begin{itemize}
+    \o theorem from the standard module TLAPS.tla
+    \o calls another back-end
+    \o Cooper's algorithm for Presburger's arithmetic 
+    \end{itemize}
+}
+  \end{itemize}
+\end{frame}
+
+
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "tutorial"
+%%% End: 

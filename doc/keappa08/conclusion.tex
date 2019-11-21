@@ -1,0 +1,110 @@
+%%% -*- mode: LaTeX; TeX-master: "main.tex"; -*-
+
+\ifx\master\undefined
+\documentclass[a4paper]{easychair}
+\usepackage{submission}
+\begin{document}
+{\let\master\relax\input{frontmatter}}
+\fi
+%%%% PLEASE DO NOT EDIT ABOVE THIS LINE
+
+\section{Conclusions and Future Work}
+\label{sec:conclusions}
+
+We have presented a hierarchically structured proof language for
+\tlaplus.  It has several important features that help in managing the
+complexity of proofs.  The hierarchical structure means that changes
+made at any level of a proof are contained inside that level, which
+helps construct and maintain proofs.  Leaf proofs can be omitted and
+the resulting incomplete proof can be checked.  This allows different parts
+of the proof to be written separately, in a non-linear fashion.  
+%%
+%%  LL: I deleted 
+% 
+%    All other proof systems that we know of enforce a linear proof
+%    style in which steps that have not yet been proved can be used
+%    only if explicitly added as hypotheses.
+% 
+% Because the \emph{cheat} operator of Isar makes it false.
+% 
+The more traditional linear proof style, in which steps that have not
+yet been proved can be used only if explicitly added as hypotheses,
+encourages proofs that use many separate lemmas.  Such proofs lack the
+coherent structure of a single hierarchical proof.
+
+The proof language lets the user freely and repeatedly make facts and
+definitions usable or hidden.  Explicitly stating what is being used
+to prove each step makes the proof easier for a human to understand.
+It also aids a back-end prover by limiting its search for a proof
+to ones that use only necessary facts.
+
+% \llnote{I added a citation to the Mizar web page.  Would someone please
+% try to find out if there's a better reference?\\[.4em]
+% SM: Reference added (it's pretty old, but I couldn't find a better one).}
+
+There are other declarative proof languages that to some extent are
+similar to \tlatwo.  Mizar~\cite{rudnicki:mizar} and Isar~\cite{isar} encourage
+a traditional natural deduction style in which what has been proved
+comes at the end rather than being stated as the goal of a lower-level
+proof.  The Focal Proof Language~\cite{focal} is essentially a subset
+of the \tlatwo\ proof language.  Our experience with hierarchical
+proofs in Focal provides additional confidence in the attractiveness
+of our approach.  We know of no declarative proof language that has as
+flexible a method of using and hiding facts and definitions as
+\tlatwo.
+
+The \PM\ transforms a proof into a collection of proof obligations to
+be verified by a back-end prover.  Its current version handles proofs
+of theorems in the non-temporal fragment of \tlaplus\ that do not
+involve module instantiation (importing of modules with substitution).
+Even with this limitation, the system can be useful for many
+engineering applications.  We are therefore concentrating on making
+the \PM\ and its back-end provers handle this fragment of \tlaplus\
+effectively before extending them to the complete language.  The major
+work that remains to be done on this is to complete the Zenon and
+Isabelle inference rules for reasoning about the built-in constant
+operators of \tlaplus.  There are also a few non-temporal aspects of
+the \tlatwo\ language that the \PM\ does not yet handle, such as
+subexpression naming.  We also expect to extend the \PM\ to support
+additional back-end provers, including decision procedures for
+arithmetic and for propositional temporal logic.
+
+%% I commented that paragraph because it is almost entirely redundant
+%% with what has been said at several points in the paper and is not
+%% really "concluding" anything. A reader who hasn't read the rest of
+%% the paper will get little out ot it. Plus it lets the neighbouring
+%% paragraphs flow into each other much better. -- KC
+%%
+%% LL: I sympathize with the sentiment, often omitting concluding 
+%%     sections myself.  However, as was pointed out by someone (you?),
+%%     one purpose of a conclusion is to summarize what we've said, which
+%%     we need to do because at many (most?) reviewers will not read more 
+%%     than the intro and the conclusion.  The first sentence repeats what
+%%     has been said.  The second states two facts that appeared in
+%%     different places.  I believe every other sentence says something
+%%     not stated earlier.
+
+
+% \llnote{Is the last sentence accurate?  In particular, if the decision
+%   procedure will be called through Isabelle, does it constitute an
+%   additional prover?  Do we need to clarify this?}
+% 
+% \ednote{DD}{I think it does count as an additional prover. Whether it
+%   is called through Isabelle is an implementation detail, so we can
+%   leave this sentence as it is.}
+% 
+% \ednote{SM}{I agree.}
+
+We are satisfied with the proof language and do not anticipate that
+any major changes will be needed.  We do expect some minor tuning as
+we get more experience using it.  (For example, we are not sure
+whether local definitions should be usable by default.)  A graphical
+user interface is being planned for the \tlaplus\ tools, including the
+\PM. It will support the non-linear development of proofs that the
+language and the proof system allow.
+
+%%%% PLEASE DO NOT EDIT BELOW THIS LINE
+\ifx\master\undefined
+{\let\master\relax\input{rearmatter}}
+\end{document}
+\fi

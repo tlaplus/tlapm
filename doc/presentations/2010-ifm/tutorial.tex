@@ -1,0 +1,89 @@
+\documentclass[fleqn]{beamer}
+%\documentclass[fleqn,handout]{beamer}
+
+%% TLAPS tutorial, IFM 2010 Nancy
+
+\mode<presentation>
+{
+  \usetheme{Boadilla}
+  \usecolortheme{seahorse}
+  \usefonttheme{serif}
+  % or ...
+
+%  \setbeamercovered{transparent}
+  % or whatever (possibly just delete it)
+}
+
+
+\usepackage[utf8]{inputenc}
+%\usepackage{alltt}
+\usepackage{palatino,mathpazo}
+\usepackage{tutorial}
+
+
+\title{The \tlaplus\ Proof System}
+
+%%\subtitle{Presentation Subtitle} % (optional)
+
+\author[D. Cousineau, S. Merz]{Denis Cousineau and Stephan~Merz}
+\institute[MSR-INRIA]{%
+  Microsoft Research - INRIA Joint Centre Saclay\\[3mm]
+  \includegraphics[height=12mm]{Logo-INRIA-MSR}\\[3mm]
+  \url{http://www.msr-inria.inria.fr/Projects/tools-for-formal-specs}
+}
+
+\date[IFM 2010]{%
+  Tutorial Integrated Formal Methods 2010\\
+  October 11, 2010
+}
+
+% \pgfdeclareimage[height=0.5cm]{msr-logo}{Logo-INRIA-MSR}
+% \logo{\pgfuseimage{msr-logo}}
+
+
+\AtBeginSubsection[]{%
+  \begin{frame}<beamer>
+    \frametitle{Overview}
+    \small
+    \tableofcontents[sectionstyle=show/shaded,subsectionstyle=show/shaded/hide]
+  \end{frame}
+}
+\AtBeginSection[]{%
+  \begin{frame}%<beamer>
+    \frametitle{Overview}
+    \tableofcontents[sectionstyle=show/shaded,subsectionstyle=show/hide/hide]
+  \end{frame}
+}
+
+% \AtBeginSection[]{%
+%   \begin{frame}<beamer>
+%     \vfill
+%     \centerline{\thesection. \rightmark}
+%     \vfill
+%   \end{frame}
+% }
+
+% If you wish to uncover everything in a step-wise fashion, uncomment
+% the following command: 
+
+%\beamerdefaultoverlayspecification{<+->}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\include{intro}
+\include{tla}
+\include{language}
+\include{hints}
+
+\section{Case Study: Peterson's Algorithm}
+
+\end{document}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: t
+%%% End: 

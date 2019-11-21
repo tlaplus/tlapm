@@ -1,0 +1,18 @@
+%%% -*- mode: LaTeX; TeX-master: "main.tex"; -*-
+
+\ifx\master\undefined
+\documentclass[a4paper]{easychair}
+\usepackage{submission}
+\begin{document}
+{\let\master\relax\input{frontmatter}}
+\fi
+%%%% PLEASE DO NOT EDIT ABOVE THIS LINE
+
+\section{Section title}
+\label{sec:section-key}
+
+%%%% PLEASE DO NOT EDIT BELOW THIS LINE
+\ifx\master\undefined
+{\let\master\relax\input{rearmatter}}
+\end{document}
+\fi

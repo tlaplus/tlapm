@@ -1,0 +1,20 @@
+S src
+S src/frontend
+S src/util
+S src/expr
+S src/smt
+S src/typesystem
+S src/pars
+S src/module
+S src/backend
+S src/proof
+
+B src
+B src/frontend
+B src/util
+B src/expr
+B src/smt
+B src/typesystem
+B src/pars
+B src/module
+B src/backend

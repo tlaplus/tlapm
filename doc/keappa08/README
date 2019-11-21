@@ -1,0 +1,38 @@
+The TLA+ Proof Manager [Working Title]
+======================================
+
+ Kaustuv Chaudhuri, INRIA
+ Damien Doligez, INRIA
+ Leslie Lamport, Microsoft
+ Stephan Merz, INRIA & Loria
+
+ Submitted to KEAPPA'08
+ http://www.cs.ualberta.ca/~piotr/KEAPPA08/
+
+-----
+
+This submission can be compiled whole or section-by-section. Each
+section will automagically have the front and rearmatter.
+
+Compiling the whole thing (main.tex is the master file):
+
+  > make main.pdf
+
+Compiling individual sections:
+
+  > make introduction.pdf
+
+To start a new section, please clone section-template.tex and edit
+accordingly.
+
+Don't forget to add a corresponding \input{} in main.tex.
+
+-----
+
+All e-mail correspondence is summarised in the outline.tex file.
+
+  > make outline.pdf
+
+-----
+
+Please add all new macro definitions to the submission.sty file.

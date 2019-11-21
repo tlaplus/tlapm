@@ -1,0 +1,21 @@
+The menu structure is given at the beginning of file assets/header.js
+It must be reflected in the directory structure of content/
+
+It cannot be more than 3 levels deep (content/, its subdirectories, and
+its subsubdirectories).
+
+The directory names are the same as the corresponding menu names,
+where every character is replaced by _, except for letters,
+digits, plus (+) and dash (-).
+
+There may be extra files and directories, they will be reachable by
+their direct URL, but not linked in the menus.  The menus will not
+work correctly in such files.
+
+All the HTML files must use the boilerplate given in
+content/template.html.  Except of course files that don't want
+to display the menus.  Currently, only some redirection files
+(for example content/Community/TLA+_net.html) are not using the menu.
+
+The actual contents of the files is just HTML.  It may use the site's
+CSS elements (the <div> stuff), but that is not mandatory.

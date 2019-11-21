@@ -1,0 +1,7 @@
+https://tla.msr-inria.inria.fr/tlatoolbox/doc/gettingstarted/gettingstarted.html
+bottom line "emergence use"
+
+https://tla.msr-inria.inria.fr/tlatoolbox/doc/gettingstarted/views.html
+top paragraph "Toobox" 
+
+

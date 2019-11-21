@@ -1,0 +1,18 @@
+Sys.chdir "@abs_top_srcdir@" ;;
+#use "topfind" ;;
+#thread ;;
+#require "str" ;;
+#require "unix" ;;
+#require "num" ;;
+#directory "libs/sysconf" ;;
+#load "sysconf.cma" ;;
+#directory "libs/ounit-1.0.3" ;;
+#load "oUnit.cma" ;;
+#directory "_build/src" ;;
+#directory "_build/src/expr" ;;
+#directory "_build/src/proof" ;;
+#directory "_build/src/module" ;;
+#directory "_build/src/backedn" ;;
+#directory "_build/src/util" ;;
+#directory "_build/src/util/pars" ;;
+#load "_build/src/tlapm.cma" ;;

@@ -1,0 +1,698 @@
+%%% -*- mode: LaTeX; TeX-master: "main.tex"; -*-
+
+\ifx\master\undefined
+\documentclass[a4paper]{easychair}
+\usepackage{submission}
+\begin{document}
+{\let\master\relax\input{frontmatter}}
+\fi
+%%%% PLEASE DO NOT EDIT ABOVE THIS LINE
+
+\clearpage
+\appendix
+
+\section{Context Management}
+\label{sec:appendix.context}
+
+\llnote{The syntax of the informal proofs should mirror the syntax
+of \tlatwo.  Writing something like ``Cases of'' is both confusing and 
+automatically raises the question of why we designed a proof language
+and then didn't use it.}
+
+In this section we shall provide the details of all context management
+operations performed by the \PM. As mentioned in
+section~\ref{sec:backend.pm}, hidden facts and definitions must be
+filtered out of obligations, replacing definitions with declarations.
+% 
+% LL: We've already said that contexts are closed obligations, so
+% we don't have to mention contexts here.
+% 
+For any obligation "\obl{\G ||- e}" we define
+the \emph{filtered} obligation "\filter{\G ||- e}" to be the one defined
+in the obvious way by eliminating hidden facts and replacing definitions
+with declarations.
+
+% LL: I removed the following definition because I think it's too trivial
+% to be worth formalizing.
+
+% \begin{defn} \label{defn:filter}
+%   %
+%   The \emph{filtration} operation "\filter{-}" on obligations and
+%   contexts is as follows.
+%   % 
+%   \begin{gather*}
+%     "\filter{\G ||- e}" = "\obl{\filter{\G} ||- e}"
+%     \SP
+%     \begin{aligned}[t]
+%       \filter{"\G, \NEW x"} &= \filter{\G}, "\NEW x" \\
+%       \filter{\G, o \DEF \hat e} &= \filter{\G}, o \DEF \filter{\hat e} \\
+%       \filter{\G, \phi} &= \filter{\G}, \filter{\phi}
+%     \end{aligned} \SP
+%     \begin{aligned}[t]
+%       \filter{\G, \hide{o \DEF \hat e}} &= \filter{\G}, "\NEW\ o" \\
+%       (\G, "hide{\phi}")_f &= (\G)_f \\
+%       \filter{\cdot} &= \cdot
+%     \end{aligned}
+%   \end{gather*}
+%   %
+%   An obligation is said to be \emph{filtered} if it contains no hidden
+%   facts or definitions.
+% \end{defn}
+
+We begin with three obvious facts about obligations.  
+%
+% LL: I eliminated the proof sketches of the following three lemmas by
+% adding the following sentence
+%
+They all follow easily by induction on the structure of a correct
+proof.
+
+\begin{lem}[Operator Substitution] \label{thm:op-subst}
+  %
+  If "\obl{\G, \NEW o, \D ||- e}" is true and the free identifiers of
+  "\hat e" are all bound in "\G", then the following are true:
+  \begin{ecom}
+  \item "\obl{\G, \D[o := \hat e] ||- e[o := \hat e]}"; and
+  \item "\obl{\G, o \DEF \hat e, \D ||- e}".
+  \end{ecom}
+\end{lem}
+
+% \begin{proof}[Proof Sketch] 
+%   By induction on the structure of a correct proof of "\obl{\G, \NEW
+%     o, \D ||- e}" whose leaf obligations are instances of \tlatwo
+%   axioms..
+% \end{proof}
+
+\begin{lem}[Strengthening] \label{thm:delete}
+  %
+  If "\obl{\G, o \DEF \hat e, \D ||- f}" or "\obl{\G, \hide{o \DEF
+      \hat e}, \D ||- f}" or "\obl{\G, \NEW o, \D ||- f}" is true and
+  "o" is not free in "\obl{\D ||- e}", then "\obl{\G, \D ||- e}" is
+  true.
+\end{lem}
+
+% \begin{proof}[Proof Sketch] 
+%   By induction on the structure of a correct proof of "\obl{\G, o \DEF
+%     \hat e, \D ||- f}" or "\obl{\G, \hide{o \DEF \hat e}, \D ||- f}"
+%   or "\obl{\G, \NEW o, \D ||- f}" whose leaf obligations are instances
+%   of \tlatwo axioms..
+% \end{proof}
+
+\begin{lem}[Weakening] \label{thm:weaken}
+  %
+  If "\obl{\G, \D ||- e}" is true, then "\obl{\G, h, \D ||- e}" is true.
+\end{lem}
+
+% \begin{proof}[Proof Sketch]
+%   By induction on the structure of a correct proof of "\obl{\G, \D ||-
+%     e}" whose leaf obligations are instances of \tlatwo axioms.
+% \end{proof}
+
+As mentioned earlier, filtration makes the obligation implicationally
+weaker.  That observation is a corollary 
+%
+% LL: I have no idea what the following parenthesized \ref is supposed
+% to mean, so I omitted it.
+% 
+% (\ref{thm:filtration}) 
+% 
+of the following lemma.
+%
+% LL: I omitted the following from the previous clause because I
+% couldn't understand it.  If someone wants to reinsert it, either
+% reword it so it makes sense or else tell me what it's supposed to mean
+% and I'll do it.
+%
+% with a strengthened induction invariant.
+
+\begin{lem} \label{thm:filtration-lemma}
+  %
+  If "\obl{\filter{\G}, \D ||- e}" is true and "\obl{\D ||- e}" is
+  filtered, then "\obl{\G, \D ||- e}" is true.
+\end{lem}
+
+\llnote{Will someone tell me what ``i.h.'' means.  (It's used several times in the proof.)
+Does it need to be explained?}
+\begin{proof}
+  We proceed by induction on the structure of "\G".
+  \begin{icom}
+  \item [\s11.] \textit{Case} "\G" \textit{is} "\cdot" \Trivial
+  \item [\s12.] \textit{Case} "\G" \textit{is} "\W, \NEW x"
+    \begin{icom}
+% LL: The following step was changed because of the removal of the formal def of 
+%     filtered.
+    \item [\s21.] "\obl{\NEW x, \D ||- e}" is filtered \by definition of \emph{filtered}.
+% LL: The proof language uses QED, not Thus.  Since we numbered QED steps in the
+%     example, we should do it here.
+%     \item [\s2.] \textit{Thus}, "\G, \D ||- e" is true \by i.h. on "\W", \s21
+    \item [\s22.] \Qed (which asserts "\obl{\G, \D ||- e}") \by i.h. on "\W", \s21
+    \end{icom}
+%   \item [\s13.] \textit{Cases of} "\G" being "\W, o \DEF \hat e" or "\W, \phi" are similar to \s12.
+\end{icom}
+The proofs of the next two statements are similar to that of \s12 and are omitted.
+\begin{icom}
+  \item [\s13.] \textit{Case} "\G" \textit{is} "\W, o \DEF \hat e" 
+  \item [\s14.] \textit{Case} "\G" \textit{is} "\W, \phi" 
+  \item [\s15.] \textit{Case} "\G" \textit{is} "\W, \hide{o \DEF \hat e}".
+    \begin{icom}
+    \item [\s21.] "\obl{\NEW o, \D ||- e}" is filtered \by definition of \textit{filtered}.
+    \item [\s22.] "\obl{\W, \NEW o, \D ||- e}" is true \by i.h. on "\W", \s21
+\llnote{Lemma~\ref{thm:op-subst} contains a hypothesis about bounding of free
+identifiers.  Why is that hypothesis true?}
+    \item [\s23.] \Qed 
+% \textit{Thus}, "\G, \D ||- e" is true 
+                 \by \s22, lemma~\ref{thm:op-subst}
+    \end{icom}
+  \item [\s16.] \textit{case} "\G" \textit{is} "\W, \hide{\phi}".
+    \begin{icom}
+    \item [\s21.] "\obl{\filter{\W}, \D ||- e}" is true \by definition of \textit{filtered}.
+    \item [\s22.] "\obl{\W, \D ||- e}" is true \by i.h. on "\W", \s21
+    \item [\s23.] \Qed
+(which asserts "\obl{\W, \hide{\phi}, \D ||- e}") \by \s22, lemma~\ref{thm:weaken}
+    \end{icom}
+  \item [\s17.] \Qed 
+%%%%    (all cases covered) 
+                 \by \s11\,\dots\,\s16.
+  \end{icom}
+\end{proof}
+An immediate corollary of Lemma~\ref{thm:filtration-lemma} is:
+
+\begin{cor} \label{thm:filtration}
+  % 
+  If "\filter{\G ||- e}" is true, then "\obl{\G ||- e}" is true.
+\end{cor}
+
+% \begin{proof}
+%   By lemma~\ref{thm:filtration-lemma} (for "\D = \cdot").
+% \end{proof}
+
+Obligations also admit a form of \textit{cut}, wherein a proof of a
+sub-obligation can be used to discharge its uses as an assumption in a
+different obligation.  The following lemma is proved by induction on the
+structure of a correct proof.
+
+\begin{lem}[Cut] \label{thm:cut}
+  %
+  If "\obl{\G, \D ||- e}" and "\obl{\G, (\D ||- e) ||- f}" are true,
+  then "\obl{\G ||- f}" is true.
+\end{lem}
+
+% \begin{proof}[Proof Sketch]
+%   By induction on the structure of a correct proof of "\obl{\G, (\D
+%     ||- e) ||- f}" whose leaf obligations are instances of \tlatwo
+%   axioms.
+% \end{proof}
+
+\llnote{I would recommend removing the following paragraph.  If not, it should
+be made clear whether these lemmas \emph{have} been proved in Isabelle, or
+whether we think they should be easy to prove in Isabelle.}
+
+Formal proofs of these lemmas require defining the notion of a
+\textit{primitive} \tlatwo proof that generates only obligations that
+are instances of the axioms of \tlatwo and then reasoning by induction
+on such proofs.  These lemmas are simple facts in minimal logic 
+("=>,\forall") and are easily proved by Isabelle.
+
+% We have not given the full details of the unsurprising
+% lemmas~\ref{thm:op-subst}, \ref{thm:delete}, \ref{thm:weaken},
+% and~\ref{thm:cut}; a more formal development will have to define the
+% notion of a \textit{primitive} \tlatwo proof that only generates
+% obligations that are instances of the axioms of \tlatwo, and then
+% reason by induction on such proofs. Indeed, these lemmas are trivial
+% facts in minimal logic ("=>, \forall") and easily discharged by
+% Isabelle.
+
+We finish our description of context management by describing how
+making definitions usable and hiding them with \USE\ and \HIDE\ steps
+is handled.  We denote such using and hiding with the terms
+\kwd{using} and \kwd{hiding}.  Recall that the truth value of an
+obligation is changed when hidden facts and definitions are removed by
+filtering, not when they are made usable or hidden.
+
+\llnote{Kaustuv, this definition needs to be completely rewritten.  
+Here are some of its problems:\\
+-- The term ``context'' is misused, since a context contains a current goal.
+The correct term is probably \emph{assumption} or \emph{sequence of assumptions}.
+You should check the terminology that's used in Section 3.  It may be useful
+to add a term for it (and use it in Section 3). \\
+-- The use of equality is bizarre.  If what you're calling a ``context'' is
+a sequence of assumptions, then you have proof rules whose hypothesis
+states that $\Delta$ is equal to one thing and whose conclusion states that $\Delta$
+is equal to something else.  \\
+-- The use of $h \in\ldots$ is less objectionable, but
+is obviously some sort of informal notation.  It looks like you're
+using pedantic notation to try to pretend that something completely informal
+is actually a formal definition.\\
+-- This is called a definition, but there is no indication of what it's a definition
+of.  You seem to be defining an algorithm.  I suggest that you remove the ``Definition''
+label and just describe the algorithm in text. \vspace{-1.6\baselineskip}
+}
+
+\begin{defn} \label{defn:use/hide}
+  %
+  If "\G" is a context and "\P" a list of operator names, then:
+  \begin{ecom}
+  \item "\G \USING \P" is a context "\D" given by induction on "\P" as follows:
+    \begin{gather*}
+      \I{"\G_0, h, \G_1 \USING \P, o = \D"}
+        {"\G_0, h, \G_1 \USING \P = \D"
+         &
+         h \in \{ \NEW o, o \DEF \hat e \}
+        }
+      \LSP
+      \I{"\G_0, \hide{o \DEF \hat e}, \G_1 \USING \P, o = \D"}
+        {"\G_0, o \DEF \hat e, \G_1 \USING \P = \D"}
+    \end{gather*}
+  \item "\G \HIDING \P" is a context "\D" given by induction on "\P" as follows:
+    \begin{gather*}
+      \I{"\G_0, h, \G_1 \HIDING \P, o = \D"}
+        {"\G_0, h, \G_1 \HIDING \P = \D"
+         &
+         h \in \{ \NEW o, \hide{o \DEF \hat e} \}
+        }
+      \LSP
+      \I{"\G_0, o \DEF \hat e, \G_1 \HIDING \P, o = \D"}
+        {"\G_0, \hide{o \DEF \hat e}, \G_1 \HIDING \P = \D"}
+    \end{gather*}
+  \end{ecom}
+\end{defn}
+
+\llnote{Why is the following a fact and not a theorem/lemma?  
+Where is its proof? \vspace{-1.6\baselineskip}}
+
+\begin{fac} \label{thm:use/hide}
+  %
+  "\obl{\G ||- e}" is true iff "\obl{\D ||- e}" is true where "\G
+  \USING \P = \D" or "\G \HIDING \P = \D". \qed
+\end{fac}
+
+\section{Computing Obligations}
+\label{sec:appendix.proof-transformation}
+
+As mentioned in section~\ref{sec:obligations}, the \PM uses a \tlatwo
+proof to perform a pair of computations on obligations:
+\textit{checking} and \textit{transformation}. Each procedure is
+declaritively specified below. For the purposes of this section, we
+shall treat an unlabelled step start token "\s{n}" as a labelled start
+token "\s{n}{l}" with "l" empty.
+
+\llnote{We've already called "\pi : \obl{\G ||- e}" a claim.  We can't
+now say that writing it means something new.  Also, I have no idea
+what it's supposed to mean to derive this claim from proof rules.
+We've already said a derivation step works from the conclusion to the
+hypotheses.  How on earth are we supposed to derive a single claim
+"\pi : \obl{\G ||- e}" using proof rules that have more than one
+hypothesis?  }
+
+\begin{defn}[Proof checking] \label{defn:checking}
+  % 
+  The \tlatwo proof "\pi" \emph{checks} an obligation "\obl{\G ||-
+    e}", written "\pi : \obl{\G ||- e}", if there is a derivation of
+  "\pi : \obl{\G ||- e}" using the three inference rules below such
+  that the leaves of the derivation have one of the two primitive
+  forms "\OBVIOUS : (\W ||- g)" and "\OMITTED : (\W ||- g)".
+  \begin{gather*}
+    \I[\BY]{"\BY\ \Phi\ \DEFS\ \P : (\G
+      ||- e)"}
+      {"\s{\infty}.\ \USE\ \Phi\ \DEFS\ \P" : "(\G ||- e) --> (\D ||- f)"
+       &
+       "\OBVIOUS : (\D ||- f)"}
+    \SP
+    \I[\QED]{"\s{n}l.\ \QED\ \PROOF\ \pi : (\G ||- e)"}
+      {"\pi : (\G ||- e)"}
+    \\
+    \I[non-\QED]{"\s{n}l_1.\ \sigma_1\ \s{n}l_2.\ \sigma_2\ \dotso \s{n}l_m.\ \sigma_m : (\G ||- e)"}
+      {"m > 1"
+       &
+       "\s n l_1.\ \sigma_1 : (\G ||- e) --> (\D ||- f)"
+       &
+       "\s{n}l_2.\ \sigma_2\ \dotso\ \s{n}l_m.\ \sigma_m : (\D ||- f)"}
+  \end{gather*}  
+\end{defn}
+
+\llnote{We've already said that a proof obligation is a primitive claim.
+You're now using ``obligation'' to mean something else.  You need to make the 
+notation of the appendix consistent with that of the main body.  You also need
+to add some prose indicating how this formalism relates to the informal
+discussion in the main text.  In particular, nowhere is the hypothesis that
+the claim is meaningful mentioned.\\[.3em]
+Also, you are still using ``='' here in a way that strikes me as rather informal.
+Here, it seems to be used as a syntactic precondition, not really as a hypothesis.
+In particular, the algorithm for generating proof obligations involves working
+from conclusion to hypotheses.  However, a ``hypothesis'' like the first one
+in the first rule doesn't lead to any proof obligations---it's a precondition
+for applying the rule.\vspace{-.65\baselineskip}}
+
+\begin{defn}[Proof transformation] \label{defn:transform}
+  %
+  The \tlatwo proof step "\s{n}l.\ \sigma" \emph{transforms} the
+  obligation "\obl{\G ||- e}" into "\obl{\D ||- f}", written "\s n l.\
+  \sigma : \obl{\G ||- e} --> \obl{\D ||- f}".
+  %
+  \begin{gather*}
+    \I[\USE\ \DEFS]{"\s n l.\ \USE\ \Phi\ \DEFS\ \P : \obl{\G ||- e} --> \obl{\D ||- f}"}
+      {"\G \USING \P = \W"
+       &
+       "\s n l.\ \USE\ \Phi : \obl{\W ||- e} --> \obl{\D ||- f}"}
+    \\
+    \I[\HIDE\ \DEFS]{"\s n l.\ \HIDE\ \Phi\ \DEFS\ \P : \obl{\G ||- e} --> \obl{\D ||- f}"}
+      {"\G \HIDING \P = \W"
+       &
+       "\s n l.\ \HIDE\ \Phi : \obl{\W ||- e} --> \obl{\D ||- f}"}
+    \\
+    \I[\DEFINE]{"\s n l.\ \DEFINE\ o \DEF \hat e : \obl{\G ||- e} --> \obl{\G, \hide{o \DEF \hat e} ||- e}"}
+    \\
+    \I["\USE_0"]{"\s n l.\ \USE\ \cdot : \obl{\G ||- e} --> \obl{\G ||- e}"}
+    \SP
+    \I["\HIDE_0"]{"\s n l.\ \HIDE\ \cdot : \obl{\G ||- e} --> \obl{\G ||- e}"}
+    \\
+    \I["\USE_1"]{"\s n l.\ \USE\ \obl{\G_0 ||- e_0}, \Phi : \obl{\G ||- e} --> \obl{\D ||- f}"}
+      {"\OBVIOUS : \obl{\G, \G_0 ||- e_0}"
+       &
+       "\s n l.\ \USE\ \Phi : \obl{\G, \obl{\G_0 ||- e_0} ||- e} --> \obl{\D ||- f}"}
+    \\
+    \I["\HIDE_1"]{"\s n l.\ \HIDE\ \phi, \Phi : \obl{\G_0, \phi, \G_1 ||- e} --> \obl{\D ||- f}"}
+      {"\s n l.\ \HIDE\ \Phi : \obl{\G_0, hide{\phi}, \G_1 ||- e} --> \obl{\D ||- f}"}
+    \\
+    \I["\TAKE_0"]{"\s n l.\ \TAKE\ \cdot : \obl{\G ||- e} --> \obl{\G ||- e}"}
+    \LSP
+    \I["\WITNESS_0"]{"\s n l.\ \WITNESS\ \cdot : \obl{\G ||- e} --> \obl{\G ||- e}"}
+    \\
+    \I["\TAKE_1"]{"\s n l.\ \TAKE\ u, \vec\beta : \obl{\G ||- \forall x : e} --> \obl{\D ||- f}"}
+      {"\s n l.\ \TAKE\ \vec\beta : \obl{\G, \NEW u ||- e [x := u]} --> \obl{\D ||- f}"}
+    \\
+    \I["\TAKE_2"]{"\s n l.\ \TAKE\ u \in T, \vec\beta : \obl{\G ||- \forall x \in S : e} --> \obl{\D ||- f}"}
+      {"\OBVIOUS : \obl{\G ||- S \subseteq T}"
+       &
+       "\s n l.\ \TAKE\ \vec\beta : \obl{\G, \NEW u, u \in T ||- e [x := u]} --> \obl{\D ||- f}"}
+    \\
+    \I["\WITNESS_1"]{"\s n l.\ \WITNESS\ w, \W : \obl{\G ||- \exists x : e} --> \obl{\D ||- f}"}
+      {"\s n l.\ \WITNESS\ \W : \obl{\G ||- e [x := w]} --> \obl{\D ||- f}"}
+    \\
+    \I["\WITNESS_2"]{"\s n l.\ \WITNESS\ w \in T, \W : \obl{\G ||- \exists x \in S : e} --> \obl{\D ||- f}"}
+      {\begin{array}[b]{c}
+          "\OBVIOUS : \obl{\G ||- T \subseteq S}" \\
+          "\OBVIOUS : \obl{\G ||- w \in T}"
+       \end{array}
+       &
+       "\s n l.\ \WITNESS\ \W : \obl{\G, w \in T ||- e [x := w]} --> \obl{\D ||- f}"}
+    \\
+    \I[\HAVE]{"\s n l.\ \HAVE\ g : \obl{\G ||- e => f} --> \obl{\G, g ||- f}"}
+      {"\OBVIOUS : \obl{\G, e ||- g}"}
+    \\
+    \I[\ASSERT]{"\s n l.\ \obl{\D ||- f}\ \PROOF\ \pi : \obl{\G_0 ||- e} --> {}"
+        \left\{ \begin{array}{ll}
+            "\obl{\G, \obl{\D ||- f} ||- e}" & \text{if "l" empty} \\
+            "\obl{\G, \hide{\obl{\D ||- f}} ||- e}" & \text{otherwise}
+        \end{array} \right.
+      }
+      {\G = \left\{\begin{array}{ll}
+          \G_0 & \text{if "l" empty} \\
+          \G_0, \s n l \DEF \obl{"\D ||- f"} & \text{otherwise}
+       \end{array} \right.
+       &
+       \begin{array}{c} \\"\pi : \obl{\G, \hide{\lnot e}, \D ||- f}" \end{array}
+      }
+    \\
+    \I[\CASE]{"\s n l.\ \CASE\ g\ \PROOF\ \pi : \obl{\G ||- e}
+                     --> \obl{\D ||- f}"}
+      {"\s n l.\ \obl{g ||- e}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\D ||- f}"}
+    \\
+    \I[\SUFFICES]{"\s n l.\ \SUFFICES\ \obl{\D ||- f}\ \PROOF\ \pi : \obl{\G_0 ||- e} --> \obl{\G, \hide{\lnot e}, \D ||- f}"}
+      {\G = \left\{\begin{array}{ll}
+          \G_0 & \text{if "l" empty} \\
+          \G_0, \s n l \DEF \obl{"\D ||- f"} & \text{otherwise}
+       \end{array} \right.
+       &
+       \pi : 
+       \left\{ \begin{array}{ll}
+           "\obl{\G, \obl{\D ||- f} ||- e}" & \text{if "l" empty} \\
+           "\obl{\G, \hide{\obl{\D ||- f}} ||- e}" & \text{otherwise}
+       \end{array} \right.
+      }
+    \\
+    \I[\PICK]{"\s n l.\ \PICK\ \vec\beta : p\ \PROOF\ \pi :
+                \obl{\G ||- e} --> \obl{\G, \bigl\|\vec \beta\bigr\|, p ||- e}"}
+      {"\pi : \obl{\G ||- \exists \vec \beta : p}"}
+  \end{gather*}
+\end{defn}
+
+\ednote{KC}{Still need to define "\bigl\|\vec\beta\bigr\|" or find a way to avoid it.}
+
+We now give a somewhat detailed proof of the completeness theorem.
+
+\begin{thm}[Completeness] \mbox{}
+  %
+  \begin{ecom}
+  \item If "\pi : \obl{\G ||- e}" is complete, then "\obl{\G ||- e}"
+    is true.
+  \item If "\sigma : \obl{\G ||- e} --> \obl{\D ||- f}" is complete and
+    "\obl{\D ||- f}" is true, then "\obl{\G ||- e}" is true.
+  \end{ecom}
+\end{thm}
+
+\begin{proof}
+  By induction on the structure of the given complete derivations.
+  %
+  \begin{icom} \setlength{\itemsep}{6pt}
+  \item[\s1.] \textit{Case }
+    %
+    $ \Ic[\BY.]{"\BY\ \Phi\ \DEFS\ \P : \obl{\G
+      ||- e}"} {"\s{\infty}.\ \USE\ \Phi\ \DEFS\ \P : \obl{\G
+      ||- e} --> \obl{\D ||- f}" & "\OBVIOUS : \obl{\D ||- f}" }$\\
+
+    \begin{icom}
+    \item[\s21.] "\obl{\D ||- f}" is true \by (1), completeness
+    \item[\s2.] \textit{Thus} "\obl{\G ||- e}" is true \by (2), completeness,
+      \s21
+    \end{icom}
+
+  \item[\s1.] \textit{Case }
+    $\Ic[\QED]{"\s{n}l.\ \QED\ \PROOF\ \pi : (\G ||- e)"}{"\pi : (\G ||- e)"}$ \by (1), completeness
+
+  \item[\s1.] \textit{Case }
+    %
+    $\Ic[non-\QED]{"\s{n}l_1.\ \sigma_1\ \s{n}l_2.\ \sigma_2\ \dotso \s{n}l_m.\ \sigma_m : (\G ||- e)"}
+      {"\s n l_1.\ \sigma_1 : (\G ||- e) --> (\D ||- f)"
+       &
+       "\s{n}l_2.\ \sigma_2\ \dotso\ \s{n}l_m.\ \sigma_m : (\D ||- f)"}$ \\
+
+    \begin{icom}
+    \item[\s21.] "\obl{\D ||- f}" is true \by (1), completeness
+    \item[\s2.] \textit{Thus} "\obl{\G ||- e}" is true \by (2), completeness,
+      \s21
+    \end{icom}
+    
+  \item[---] This covers all the cases for (1).
+
+  \item[\s1.] \textit{Case }
+    %
+    $\Ic[\USE\ \DEFS.]{"\s n l.\ \USE\ \Phi\ \DEFS\ \P : \obl{\G ||- e} --> \obl{\D ||- f}"}
+        {"\G \USING \P = \W"
+         &
+         "\s n l.\ \USE\ \Phi : \obl{\W ||- e} --> \obl{\D ||- f}"}$ \\
+
+    \begin{icom}
+    \item[\s21.] \textit{Assume} "\obl{\D ||- f}" is true
+    \item[\s22.] "\obl{\W ||- e}" is true \by (2), assumption, \s21
+    \item[\s2.] \textit{Thus} "\obl{\G ||- e}" is true \by \s22,
+      fact~\ref{thm:use/hide}
+    \end{icom}
+
+  \item[\s1.] \textit{Case } "\HIDE\ \DEFS" is similar to $\<1\>$4.
+
+  \item[\s1.] \textit{Case }
+    %
+    $\Ic[\DEFINE.]
+        {"\s n l.\ \DEFINE\ o \DEF \hat e : \obl{\G ||- e}
+            --> \obl{\G, \hide{o \DEF \hat e} ||- e}"}$ \\
+
+    \begin{icom}
+    \item[\s21.] \textit{Assume} "\obl{\G, \hide{o \DEF \hat e} ||- e}" is true
+    \item[\s2.] \textit{Thus} "\obl{\G ||- e}" is true \by \s21, lemma~\ref{thm:delete}, closedness assumption
+    \end{icom}
+    
+  \item[\s1.] \textit{Cases of} "\USE_0", "\HIDE_0", "\TAKE_0", and
+    "\WITNESS_0" are trivial.
+
+  \item[\s1.] \textit{Case }
+    %
+    $\Ic["\USE_1".]{"\s n l.\ \USE\ \obl{\G_0 ||- e_0}, \Phi : \obl{\G ||- e} --> \obl{\D ||- f}"}
+        {"\OBVIOUS : \obl{\G, \G_0 ||- e_0}"
+         &
+         "\s n l.\ \USE\ \Phi : \obl{\G, \obl{\G_0 ||- e_0} ||- e} --> \obl{\D ||- f}"}$ \\
+
+    \begin{icom}
+    \item[\s21.] \textit{Assume} "\obl{\D ||- f}" is true
+    \item[\s22.] "\obl{\G, \obl{\G_0 ||- e_0} ||- e}" is true \by (2),
+      completeness, \s21
+    \item[\s23.] "\obl{\G, \G_0 ||- e_0}" is true \by (1), completeness
+    \item[\s2.] \textit{Thus} "\obl{\G ||- e}" is true \by \s22, \s23,
+      cut (thm.~\ref{thm:cut})
+    \end{icom}
+
+  \item[\s1.] \textit{Case }
+    %
+    $\Ic["\HIDE_1".]{"\s n l.\ \HIDE\ \phi, \Phi : \obl{\G_0, \phi, \G_1 ||- e} --> \obl{\D ||- f}"}
+        {"\s n l.\ \HIDE\ \Phi : \obl{\G_0, hide{\phi}, \G_1 ||- e} --> \obl{\D ||- f}"}$ \\
+
+    \begin{icom}
+    \item[\s21.] \textit{Assume} "\obl{\D ||- f}" is true
+    \item[\s22.] "\obl{\G_0, \hide{\phi}, \G_1 ||- e}" is true \by (2),
+      completeness, \s21
+    \item[\s2.] \textit{Thus} "\obl{\G_0, \phi, \G_1 ||- e}" is true
+      \by \s22
+    \end{icom}
+
+  \item[\s1.] \textit{Case }
+    % 
+    $\Ic["\TAKE_1".]{"\s n l.\ \TAKE\ u, \vec\beta : \obl{\G ||- \forall x : e} --> \obl{\D ||- f}"}
+        {"\s n l.\ \TAKE\ \vec\beta : \obl{\G, \NEW u ||- e [x := u]} --> \obl{\D ||- f}"}$ \\
+
+    \begin{icom}
+    \item[\s21.] \textit{Assume} "\obl{\D ||- f}" is true
+    \item[\s22.] "\obl{\G, \NEW u ||- e [x := u]}" is true \by (2), completeness,
+      \s21
+    \item[\s2.] \textit{Thus} "\obl{\G ||- \forall x : e}" is true \by \s22
+    \end{icom}
+
+  \item[\s1.] \textit{Case }
+    %
+    $\Ic["\TAKE_2".]{"\s n l.\ \TAKE\ u \in T, \vec\beta : \obl{\G ||- \forall x \in S : e} --> \obl{\D ||- f}"}
+      {"\OBVIOUS : \obl{\G ||- S \subseteq T}"
+         &
+         "\s n l.\ \TAKE\ \vec\beta : \obl{\G, \NEW u, u \in T ||- e [x := u]} --> \obl{\D ||- f}"}$ \\
+
+    \begin{icom}
+    \item[\s21.] \textit{Assume} "\obl{\D ||- f}" is true
+    \item[\s22.] "\obl{\G, \NEW u, u \in S ||- e[x := u]}" is true
+      \begin{icom}
+      \item[\s31.] "\obl{\G, \NEW u, u \in T ||- e [x := u]}" is true
+        \by (2), completeness, \s21
+      \item[\s32.] "\obl{\G, \NEW u, u \in S ||- u \in T}" \by (1),
+        completeness, \textit{defn.} of $\subseteq$
+      \item[\s3.] \Qed \by \s31, \s32, cut
+      \end{icom}
+    \item[\s2.] \textit{Thus} "\obl{\G ||- \forall x \in S : e}" is true \by \s22
+    \end{icom}
+
+  \item[\s1.] \textit{Case }
+    %
+    $\Ic["\WITNESS_1".]{"\s n l.\ \WITNESS\ w, \W : \obl{\G ||- \exists x : e} --> \obl{\D ||- f}"}
+        {"\s n l.\ \WITNESS\ \W : \obl{\G ||- e [x := w]} --> \obl{\D ||- f}"}$ \\
+
+    \begin{icom}
+    \item[\s21.] \textit{Assume} "\obl{\D ||- f}" is true
+    \item[\s22.] "\obl{\G ||- e [x := w]}" is true \by (2), completeness,
+      \s21
+    \item[\s2.] \textit{Thus} "\obl{\G ||- \exists x : e}" is true \by \s22
+    \end{icom}
+
+  \item[\s1.] \textit{Case }
+    %
+    $\Im["\WITNESS_2".]{"\s n l.\ \WITNESS\ w \in T, \W : \obl{\G ||- \exists x \in S : e} --> \obl{\D ||- f}"}
+        {\begin{array}[b]{c}
+            "\OBVIOUS : \obl{\G ||- T \subseteq S}" \\
+            "\OBVIOUS : \obl{\G ||- w \in T}"
+         \end{array}
+         &
+         "\s n l.\ \WITNESS\ \W : \obl{\G, w \in T ||- e [x := w]} --> \obl{\D ||- f}"}$ \\
+
+    \begin{icom}
+    \item[\s21.] \textit{Assume} "\obl{\D ||- f}" is true
+    \item[\s22.] "\obl{\G ||- w \in S}" is true
+      \begin{icom}
+      \item[\s31.] "\obl{\G, w \in T ||- w \in S}" is true \by (1),
+        \textit{defn}. of $\subseteq$
+      \item[\s3.] \Qed \by \s31, (1), cut
+      \end{icom}
+    \item[\s{2}{3}.] "\obl{\G ||- e [x := w]}" is true
+      \begin{icom}
+      \item[\s{3}{1}.] "\obl{\G, w \in T ||- e [x := w]}" is true \by
+        (2), completeness, \s21
+      \item[\s{3}.] \Qed \by \s31, (1), cut
+      \end{icom}
+    \item[\s{2}.] \textit{Thus} "\obl{G ||- \exists x \in S : e}" is
+      true \by \s22, \s23
+    \end{icom}
+
+  \item[\s1.] \textit{Case }
+    %
+    $\Ic[\HAVE.]{"\s n l.\ \HAVE\ g : \obl{\G ||- e => f} --> \obl{\G, g ||- f}"}
+        {"\OBVIOUS : \obl{\G, e ||- g}"}$ \\
+
+    \begin{icom}
+    \item[\s21.] \textit{Assume} "\obl{\G, g ||- f}" is true
+    \item[\s22.] "\obl{\G, e, g ||- f}" is true \by \s21, weakening (thm.~\ref{thm:weaken})
+    \item[\s23.] "\obl{\G, e ||- g}" is true \by (1)
+    \item[\s24.] "\obl{\G, e ||- f}" is true \by \s22, \s23,
+      cut
+    \item[\s2.] \textit{Thus} "\G ||- e => f" is true \by \s24
+    \end{icom}
+
+  \item[\s1.] \textit{Case }
+    %
+    $\Ic[\ASSERT.]{"\s n l.\ \obl{\D ||- f}\ \PROOF\ \pi : \obl{\G_0 ||- e} --> {}"
+          \left\{ \begin{array}{ll}
+              "\obl{\G, \obl{\D ||- f} ||- e}" & \text{if "l" empty} \\
+              "\obl{\G, \hide{\obl{\D ||- f}} ||- e}" & \text{otherwise}
+          \end{array} \right.
+        }
+        {\G = \left\{\begin{array}{ll}
+            \G_0 & \text{if "l" empty} \\
+            \G_0, \s n l \DEF \obl{"\D ||- f"} & \text{otherwise}
+         \end{array} \right.
+         &
+         \begin{array}{c} \\"\pi : \obl{\G, \hide{\lnot e}, \D ||- f}" \end{array}
+        }$ \\
+
+    \begin{icom}
+    \item[\s2.] \textit{Case} "l" empty
+      \begin{icom}
+      \item[\s31.] \textit{Assume} "\obl{\G, \obl{\D ||- f} ||- e}" is true
+      \item[\s32.] "\obl{\G, \hide{\lnot e}, \obl{\D ||- f} ||- e}" \by \s31, weakening
+      \item[\s33.] "\obl{\G, \hide{\lnot e}, \D ||- f}" is true \by (1), completeness
+      \item[\s34.] "\obl{\G, \hide{\lnot e} ||- e}" is true \by \s32, \s33, cut
+      \item[\s3.] \textit{Thus} "\G ||- e" is true \by \s34, Peirce's law
+      \end{icom}
+    \item[\s2.] \textit{Case} "l" non-empty
+      \begin{icom}
+      \item[\s31.] \textit{Assume} "\obl{\G, \hide{\obl{\D ||- f}} ||- e}" is true
+      \item[\s32.] "\obl{\G, \hide{\lnot e}, \hide{\obl{\D ||- f}} ||- e}" \by \s31, weakening
+      \item[\s33.] "\obl{\G, \hide{\lnot e}, \D ||- f}" is true \by (1), completeness
+      \item[\s34.] "\obl{\G, \hide{\lnot e} ||- e}" is true \by \s32, \s33, cut
+      \item[\s3.] \textit{Thus} "\G ||- e" is true \by \s34, Peirce's law
+      \end{icom}
+    \item[\s2.] \Qed (all cases covered)
+    \end{icom}
+
+    \ednote{KC}{Peirce's law not defined, and the instance "(\lnot e
+      => e) => e" of Peirce's law goes by many other names.}
+
+  \item[\s1.] \textit{Cases of } \CASE and \SUFFICES are similar to that of \ASSERT.
+
+  \item[\s1.] \textit{Case }
+    %
+    $\Ic[\PICK.]{"\s n l.\ \PICK\ \vec\beta : p\ \PROOF\ \pi :
+                \obl{\G ||- e} --> \obl{\G, \bigl\|\vec \beta\bigr\|, p ||- e}"}
+      {"\pi : \obl{\G ||- \exists \vec \beta : p}"}$ \\
+
+    \begin{icom}
+    \item[\s21.] \textit{Assume} "\obl{\G, \bigl\| \vec \beta \bigr\|, p ||- e}" is true
+    \item[\s22.] "\obl{\G, \exists \vec \beta : p ||- e}" \by \s21,
+      $\exists_L$
+      \ednote{KC}{Need to define $\exists_L$?}
+    \item[\s23.] "\obl{\G ||- \exists \vec \beta : p}" is true \by (1), completeness
+    \item[\s2.] \textit{Thus} "\obl{\G ||- e}" is true \by \s22, \s33,
+      cut
+    \end{icom}
+
+  \item[\s1.] \Qed (all inductive cases covered) \qedhere
+  \end{icom}
+\end{proof}
+
+%%%% PLEASE DO NOT EDIT BELOW THIS LINE
+\ifx\master\undefined
+{\let\master\relax\input{rearmatter}}
+\end{document}
+\fi

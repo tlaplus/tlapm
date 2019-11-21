@@ -1,0 +1,106 @@
+#!/bin/sh
+# Copyright (C) 2013 INRIA and Microsoft Corporation
+
+BASEDIR="`pwd`"
+TOOLDIR="$BASEDIR/TOOLS"
+export TLAPM="pkill -f cvc3 | $BASEDIR/../tlapm --stretch 10 --threads 4 -I $BASEDIR/../library"
+
+# create output folder
+juDIR=$BASEDIR/test_reports/tmp
+mkdir -p $juDIR || exit
+
+#### Clean old reports
+echo "+++ Removing old junit reports from: $juDIR "
+rm -f $juDIR/junit-*
+
+
+exitcode=/tmp/exitcode.$$.log
+errfile=/tmp/errfile.$$.log
+failcode=/tmp/failcode.$$.log
+eVal() {
+  eval "$1" 2>$errfile
+  echo $? | tr -d "\n" >$exitcode
+}
+
+find "$1" -name '*.tlaps' -prune -o -name '*_test.tla' -print | (
+
+errors=0
+total=0
+content=""
+totaltime=0
+
+outf=/var/tmp/ju$$.txt
+
+  while read f; do
+    FILE="`basename $f`"
+    DIR="`dirname $f`"
+
+    cmd="cd $DIR; ${TLAPM} --toolbox 0 0 --nofp $FILE"
+    echo ""                         | tee -a $outf
+    echo "+++ Running case: $FILE " | tee -a $outf
+    echo "+++ working dir: "`pwd`           | tee -a $outf
+    echo "+++ command: $cmd"            | tee -a $outf
+    ini=`date +%s`
+    # we need to pipe echo as tlapm eats the input stream
+    echo | (eVal "$cmd")                 | tee -a $outf
+    end=`date +%s`
+    evErr=`cat $exitcode`
+    rm -f $exitcode
+    time=`expr $end - $ini`
+    total=`expr $total + 1`
+    totaltime=`expr $totaltime + $time`
+
+    echo "+++ time: $time"        | tee -a $outf
+    echo "+++ total time: $totaltime"        | tee -a $outf
+    echo "+++ exit code: $evErr"        | tee -a $outf
+
+    awk 'BEGIN { RS = "@!!BEGIN" ; FS = "\n" }
+/@!!status:proved/ { proved[substr($3,7)] = 1}
+/@!!status:failed/ { failed[substr($3,7)] = 1}
+END {
+  for (var in failed)
+    if (!(var in proved))
+      exit 1
+  exit 0
+}' $errfile
+    echo $? | tr -d "\n" >$failcode
+    evFail=`cat $failcode`
+    rm -f $failcode
+    echo "+++ fail code: $evFail"        | tee -a $outf
+    anyErr=`expr $evErr + $evFail`
+
+    # set the appropriate error, based on the exit and fail code
+    [ $anyErr != 0 ] && err=1 && errors=`expr $errors + 1` || err=0
+
+    errmsg=`cat $errfile | sed -e 's/^\([^+]\)/| \1/g' -e 's/</(/g' -e 's/>/)/g'`
+###    rm -f $errfile
+
+    # write the junit xml report
+    ## failure tag
+    [ $err = 0 ] && failure="" || failure="
+        <failure type=\"TLAPM Error\">$errmsg</failure>
+    "
+
+    ## testcase tag
+    content="$content
+      <testcase assertions=\"1\" name=\"$FILE\" time=\"$time\">
+      $failure
+      </testcase>
+    "
+  done
+
+out=`cat $outf | sed -e 's/^\([^+]\)/| \1/g' -e 's/</(/g' -e 's/>/)/g'`
+rm -f $outf
+
+## testsuite block
+cat <<EOF >$juDIR/junit_regression_testss.xml
+<testsuite name="regression_tests" tests="$total" errors="$errors" time="$totaltime">
+  $content
+      <system-out>
+  <![CDATA[
+  $out
+  ]]>
+      </system-out>
+</testsuite>
+EOF
+)

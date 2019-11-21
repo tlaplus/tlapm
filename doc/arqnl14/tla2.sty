@@ -1,0 +1,951 @@
+%%  TLA+ DOCUMENT STYLE
+%%  (c) 1994, 1998 by Leslie Lamport
+%%  Last modified on Wed 10 July 2013 at 11:22:06 PST by lamport      %
+%
+%  WARNING: Some normal LaTeX commands don't work as they should with
+%  this style.  These are the known problems:
+%  --  In tla mode, $ is fragile, so it must be \protect'ed if
+%      it appears in a moving argument.
+%  
+%   Changes:
+%      5 Sep 11 : Calls pf2.sty instead of pf.sty
+%     18 Nov 98 : Made \nocoloncommands the default.
+%     28 Jun 98 : Changed \label so it doesn't leave an extra space.
+%     13 Feb 98 : Put a little more space around :\: 
+%     20 Jan 98 : Replaced \flushleft with \raggedright in module,
+%                 submodule, and nomodule environments (as suggested
+%                 by Karsten Loer).
+%      7 Jan 98 : Added defs of \TeXAA and \restoreAA
+%     24 Dec 97 : Changed def of \tla@while to correct -+->.
+%     17 May 97 : Changed def of \deq to use \Delta instead of \mathchar
+%                 so it works with mathtime.  (I don't remember
+%                 why I originally used \mathchar.)
+%      2 Mar 97 : Kludgy bug fix to make \thanks work in \maketitle.  
+%      1 Feb 97 : Modified \IF\THEN\ELSE.  Added \LSE and \OTHER.
+%                 Added \mbox to \CASE, etc.  Added new TLA+
+%                 keywords like \EXTENDS.
+%     16 Apr 96 : Minor bug fix to \LET and \IN
+%     27 Dec 95 : Removed bug that caused error on blank line inside
+%                 \assume or \prove argument.
+%      1 Mar 95 : Made \V work with negative argument.
+%     14 Oct 94 : Made equation and eqnarray environments use TLA mode
+%                 Also redefined \label and \ref so they work with
+%                 arbitrary labels inside TLA mode.
+%
+%
+%   This style calls the pf2 style, and the abbrev style.  These other 
+%   styles should not be loaded separately.
+%
+%   This style puts LaTeX in TLA mode.  This mode causes the following 
+%   changes to LaTeX's normal math mode:
+%   
+%  Characters are in the normal italic font, rather than math italic.
+%  Thus $Off$ will produce something that looks like {\it Off} rather
+%  than the usual formula that's supposed to equal $Of^{2}$.
+%  
+%  The following sequences produce the following commands when LaTeX is
+%  `inside math mode', where being inside math mode means being in math
+%  mode or in the argument of a command or in an environment (such as
+%  \mbox or a minipage or tabular environment) that appears inside a math
+%  formula.  (See below for how to customize the abbreviations.)
+%  
+%    ==   :  equals by definition (\deq)
+%    =>   : \Rightarrow
+%    :\:  : \backslash
+%    []   : \Box 
+%    <>   : \Diamond
+%    ~>   : \leadsto
+%    ~    : \lnot
+%    -+-> : the TLA "while-plus" operator: an arrow with a "+" over it.
+%    <--  : \longleftarrow
+%    <-   : \leftarrow
+%    <<   : \langle
+%    >>   : \rangle
+%    -->  : \longrightarrow
+%    ->   : \rightarrow
+%    |-   : \vdash
+%    |=   : \models
+%    |->  : \mapsto
+%    #    : \neq
+%    \/   : \lor
+%    /\   : \land   (This command must be followed by a space, and must
+%                   not come at the end of a line, unless the line is
+%                   ended by a % )
+%    "text"  :  {\rm ``{\sf text}''}  (a TLA+ string constant)
+%    _.      :  \, 
+%    __      :  Produces a `unit' space
+%    ___     :  Produces two `unit' spaces
+%    __..._  :  Produces n `unit' spaces
+%           The default value of a unit space is 1em.  You can reset its 
+%           value to .75em by \indentspace{.75em}.
+%  
+%  The \coloncommands declaration causes LaTeX to enter colon-command mode.  
+%  In colon-command mode,
+%  whenever LaTeX is inside math-mode, the string :xxx: is interpreted as
+%  \xxx, for any `xxx'.  When LaTeX is inside math mode, a regular colon
+%  must be followed by a space.  The declaration \nocoloncommands causes
+%  LaTeX to leave colon-command mode.  The default is \nocoloncommands.
+%  
+%  You can leave TLA mode with the \notla declaration, and re-enter it
+%  with the \tla declaration.  
+%  
+%  In TLA mode, the following characters are active while inside math
+%  mode:  
+%  
+%     : [ = < > " _ | / ! - #
+%  
+%  This means that these characters cannot be used for many purposes--
+%  for example:
+%  
+%     You can't use [ to begin an optional argument.
+%     You can't use the following with \left or \right: < > / |
+%     You can't use - as a minus sign in something like \hspace{-3pt}.
+%  
+%  (Since \\ is often used with an optional argument for adding
+%  space, the command \V is proved, where \V{.7} means \\[.7em])
+%  You can make these characters inactive by a \notlachars command,
+%  and reactivate them with \tlachars--for example, so you can write
+%  
+%       {\notlachars \sqrt[n]{2}}
+%  
+%  in TLA mode--so long as this doesn't appear in the argument of any
+%  command.  The command \xtla{...} is equivalent to
+%  
+%       {\notlachars ... }
+%  
+%  The style also defines the following math commands (some particular
+%  useful in colon-command mode):
+%  
+%    \A  :  \forall
+%    \E  :  \exists
+%    \EE :  bold \exists (TLA's temporal existential quantification)
+%    \AA :  bold \forall (TLA's temporal universal quantification)
+%    \X  :  \times
+%   
+%  Note: \TeXAA is defined to be TeX's normal \AA command.
+%  The command \restoreAA redefines \AA to its normal value. appropriately
+%
+%  The following commands, defined here (or in the pf style) are useful
+%  in formatting math formulas:
+%  
+%    For conjunction and disjunction lists, use the conj and disj environments;
+%    use noj for a nonbulleted list.
+%   
+%       \begin{conj}                   /\ x = 7
+%          x = 7 \\                    /\ \/ x > z                       
+%          \begin{disj}                   \/ (y < foo)  =>
+%             x > z \\                         x = 7
+%             \begin{noj}
+%               (y < foo) => \\ 
+%               __x = 7
+%             \end{noj}
+%           \end{disj}              
+%       \end{conj}
+%   
+%    The environments noj2, noj3, and noj4 make 2-, 3-, and 4-column
+%    arrays, with columns separated by &, as usual.
+%    These are array environments.
+%   
+%    if/then/else's are made as follows:
+%      \IF{x > 0}    \\                              IF x > 0
+%           \THEN    foo                               THEN foo
+%           \ELSE    \IF{y > 3} \THEN y + 6 \\         ELSE IF y > 3 THEN y + 6
+%                               \ELSE y + 7 \FI \\                   ELSE y + 7
+%                    + 3  \FI \\                            + 3
+%
+%    use \LSE instead of \ELSE to suppress the line break after the
+%    THEN clause.
+%    
+%    Let's are made as follows:
+%       \LET x == ... \\
+%            y == ... 
+%       \IN  ...  \NI
+%
+%    CASE's are made with the \CASE command, which just makes the
+%    "CASE"--e.g.,
+%
+%      \CASE \begin{noj3}
+%              p & -> & xy + 7 \\
+%              q & -> & xx + 33
+%            \end{noj3}
+%  The commands \comment{text} and \tlacomment{text} produce
+%  multiline comments (lines separated by \\) that take up no
+%  vertical space.  Text is "normal" in \comment (except that
+%  \noTeXmath is in effect), and in TLA mode in \tlacomment 
+
+%
+%  The style provides the following environments for TLA+ specs:
+%     The module, decls, and submodule environments work as 
+%     indicated below:
+%                           
+%       \begin{module}{name}                __________| name |___________
+%                                          |          |      |           |
+%    
+%         \begin{decls}{parameters}          PARAMETERS
+%            xyz    : \VARIABLE \\            xyz : VARIABLE
+%            foobar : \CONSTANT               foobar : CONSTANT
+%         \end{decls}
+%    
+%       \midbar                            |-----------------------------|
+%    
+%          \begin{decls}{actions}            ACTIONS
+%              ...                            ...
+%          \end{decls}
+%   
+%          \begin{submodule}{submod}          _________| submod |________
+%                                            |         |        |        |
+%                ...                              ...   
+%    
+%          \end{submodule}                   |___________________________|
+%    
+%       \end{module}                       |_____________________________|
+%   
+%   
+%    The decls environment is a tabbing environment, so lines are ended with 
+%    \\, and \= , \>, \\, etc. work as usual.  However, its entries are set 
+%    in math mode (so TLA-mode commands work).  Inside a module or submodule
+%    environment but outside a decls environment, LaTeX is in paragraph
+%    mode, with \it in effect.
+%
+%    The nodecls environment is like the decls environment, except it 
+%    has no title (and no argument) and does not indent and does
+%
+%    For splitting a module across figures, there is the nomodule
+%    environment, which is like the module environment but does
+%    not produce the top and bottom module lines.  These lines are 
+%    produced by the commands \topbar{MODULE-NAME} and \bottombar.
+%
+%    The following commands produce the obvious keywords:
+%
+%       \EXTENDS      \INSTANCE     \WITH         \LOCAL
+%       \VARIABLE     \CONSTANT     \THEOREM      \CHOOSE
+%       \VARIABLES    \CONSTANTS    \ASSUME       \EXCEPT
+%       \UNCHANGED    \UNION        \SUBSET       \DOMAIN 
+%       \BOOLEAN      \ENABLED      \TRUE         \FALSE  
+%       \CHOOSE       \STRING       \ACTION       \STATEFCN      
+%       \HAVE         \PICK         \SUFFICES     \ASSUMPTION
+%       \HIDE         \PROOF        \TAKE         \AXIOM
+%       \LAMBDA       \PROPOSITION  \TEMPORAL     \BY
+%       \LEMMA        \PROVE        \USE          \DEF
+%       \NEW          \QED          \WITNESS      \DEFINE
+%       \OBVIOUS      \RECURSIVE     \DEFS        \OMITTED
+%       \STATE
+
+%    The following obsolete old commands have been removed 
+%       \IMPORT       \EXPORT       
+%       \AS           \INCLUDE      
+%
+%    These are written without final "\", as in
+%
+%       \INSTANCE Foo \WITH Bar <- Rab
+%
+%    not as "\INCLUDE\ Foo \WITH\ ...".
+%
+%
+%    The following commands are used to introduce space:
+%        \s{1.2}     A 1.2em horizontal space
+%        \vs{1.2}    A 1.2em vertical space, made either with a vertical strut 
+%                    extending 1.2em below the line, or a \vspace{1.2em}, 
+%                    depending on whether used in outer par mode or not.
+%        \V{1.2}     Equivalent to \\[1.2em] (which can't be used in math
+%                    mode in TLA mode).
+%
+%
+% CUSTOMIZING THE ABBREVIATIONS
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+%  You can create a new set of abbreviations.  However, it is advisable
+%  to keep the current ones and just add to them.  You do this with
+%  a tlabbrev environment, which is just like an abbreviate environment
+%  except without the first argument.  (See abbrev.sty for documentation
+%  on the abbreviate environment.)  The following tlabbrev environment
+%  creates the standard abbreviations.  Modify it to add your own
+%  abbreviations.
+%
+% \begin{tlabbrev}{:[=<-/|#"_!>}{:[=<-/|#"_!\:>}
+%   \x ==   {\ensuremath{\;\;\deq\;\;}}
+%   \x =>   {\ensuremath{\Rightarrow}}
+%   \x =    {=}
+%   \x :\:  {\ensuremath{\,\backslash}}
+%   \x ::   {::}
+%   \x :    {\tlacolon}
+%   \x []   {\ensuremath{\Box}}
+%   \x [    {[}
+%   \x <>   {\ensuremath{\Diamond}}
+%   \x <--  {\ensuremath{\longleftarrow}}
+%   \x <-   {\ensuremath{\leftarrow}}
+%   \x <<   {\ensuremath{\langle\tlathin}}
+%   \x <    {\ensuremath{<}}
+%   \x >>   {\ensuremath{\tlathin\rangle}}
+%   \x >    {\ensuremath{>}}
+%   \x -->  {\ensuremath{\longrightarrow}}
+%   \x --   {--}
+%   \x -+-> {\ensuremath{\tlawhilep}}
+%   \x -+-  {-+-}
+%   \x -+   {-+}
+%   \x ->   {\ensuremath{\rightarrow}}
+%   \x -    {\ensuremath{-}}
+%   \x |->  {\ensuremath{\mapsto}}
+%   \x |-   {\ensuremath{\vdash}}
+%   \x |=   {\ensuremath{\models}}
+%   \x |    {\ensuremath{|}}
+%   \x #    {\ensuremath{\neq}}
+%   \x ~>   {\ensuremath{\leadsto}}
+%   \x ~    {\ensuremath{\lnot}}
+%   \x /    {\tlaslash}
+%   \x "    {\ensuremath{\tlaquote}}
+%   \x _.   {\,}
+%   \x __   {\tlaunder}
+%   \x _    {\tlasubscript}
+%   \x !    {\ensuremath{\tlathin!\tlathin}}
+% \end{tlabbrev}
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\input{abbrev.sty}
+
+%% Have to redefine \abr@sanitize  and \abr@unsanitize so they
+%% don't muck with $.  For efficiency, remove the mucking about
+%% with  &  and %  as well
+\gdef\abr@sanitize{\abr@mkother##\abr@mkother^\abr@mkother_}
+\gdef\abr@unsanitize{\catcode`##6\catcode`^7\catcode`_8\relax}
+
+%% \noTeXmath
+%% \TeXmath
+%%   The \noTeXmath command makes all letters in math mode come
+%%   from the text italic font (family 4) rather than the usual math
+%%   italic family.  Thus $Word$ is just an italic word, not a
+%%   weird math formula.  Useful when math symbols are mostly
+%%   multiletter. \TeXmath resets to normal.
+
+% 
+%%
+%% Redefine Math Mode commands to use \tla@everymath
+%%  Changed 14 Oct 94 to redefine \equation and \eqnarray as well.
+%%
+%%  (Can't use \everymath because $ apparently gives next character its 
+%%  catcode before executing \everymath)
+
+\def\tla@math{\relax\ifmmode $\else $\tla@everymath\fi}
+\let\@begmath\(
+\let\@begdispmath\[
+\let\@begeqn\equation
+\let\@begeqnarray\eqnarray
+\def\tla@everymath{}  %% initialization
+
+\catcode`$\active
+\let$\tla@math
+\def\({\@begmath\tla@everymath}
+\def\[{\@begdispmath\tla@everymath}
+\def\equation{\@begeqn\tla@everymath}
+\def\eqnarray{\tla@everymath\@begeqnarray}
+
+%% Redefine \label and \ref
+
+\let\@oldlabel\label
+\def\label{\@bsphack\begingroup\notla\@xlabel}
+\def\@xlabel#1{\@oldlabel{#1}\endgroup\@esphack}
+
+\let\@oldref\ref
+\def\ref{\begingroup\notla\@xref}
+\def\@xref#1{\@oldref{#1}\endgroup}
+
+\newenvironment{tlabbrev}{\begin{abbreviate}{tla@abbrev}}{\end{abbreviate}}
+
+
+\begin{tlabbrev}{:[=<-/|#"_!>}{:[=<-/|#"_!\:>}
+  \x ==   {\ensuremath{\;\;\deq\;\;}}
+  \x =>   {\ensuremath{\Rightarrow}}
+  \x =    {=}
+  \x :\:  {\ensuremath{\,\backslash}\,}
+  \x ::   {::}
+  \x :    {\tlacolon}
+  \x []   {\ensuremath{\Box}}
+  \x [    {[}
+  \x <>   {\ensuremath{\Diamond}}
+  \x <--  {\ensuremath{\longleftarrow}}
+  \x <-   {\ensuremath{\leftarrow}}
+  \x <<   {\ensuremath{\langle\tlathin}}
+  \x <    {\ensuremath{<}}
+  \x >>   {\ensuremath{\tlathin\rangle}}
+  \x >    {\ensuremath{>}}
+  \x -->  {\ensuremath{\longrightarrow}}
+  \x --   {--}
+  \x -+-> {\ensuremath{\tlawhilep}}
+  \x -+-  {-+-}
+  \x -+   {-+}
+  \x ->   {\ensuremath{\rightarrow}}
+  \x -    {\ensuremath{-}}
+  \x |->  {\ensuremath{\mapsto}}
+  \x |-   {\ensuremath{\vdash}}
+  \x |=   {\ensuremath{\models}}
+  \x |    {\ensuremath{|}}
+  \x #    {\ensuremath{\neq}}
+  \x ~>   {\ensuremath{\leadsto}}
+  \x ~    {\ensuremath{\lnot}}
+  \x /    {\tlaslash}
+  \x "    {\ensuremath{\tlaquote}}
+  \x _.   {\,}
+  \x __   {\tlaunder}
+  \x _    {\tlasubscript}
+  \x !    {\ensuremath{\tlathin!\tlathin}}
+\end{tlabbrev}
+
+%% -+-> : 
+\def\tla@while{-\hspace{-.16em}\triangleright}
+\def\tlawhilep{\stackrel
+  {\mbox{\raisebox{-.3em}[0pt][0pt]{$\scriptscriptstyle+\;\,$}}}{\tla@while}}
+
+%% \tlachars 
+%% \notlachars 
+%%    Sets / unsets the catcodes of the following characters to active
+%%    :  [  =  <  -  /  |  #  "  _   ! 
+
+\let\tlachars\tla@abbrevact
+\let\notlachars\notla@abbrev
+
+
+
+\newif\if@tlamode
+\@tlamodetrue
+
+%%%%  The following definitions are made with TLA catcodes activated and 
+%%%%  with "." catcoded to mean "#".
+
+\begingroup
+\catcode`?6\relax
+\tlachars
+
+%% :
+\gdef\tla@cmdcolon?1:{\ensuremath{\csname ?1\endcsname}}
+
+%% "
+\gdef\tlaquote?1"{\mbox{\rm``{\sf ?1}''}}
+
+
+
+%% _ : 
+  \gdef\tlaunder{\hspace*{\tla@indentspace}%
+                         \@nsifnextchar{_}{\tla@spaceunder}{}}
+  \gdef\tla@spaceunder_{\hspace*{\tla@indentspace}%
+                         \@nsifnextchar{_}{\tla@spaceunder}{}}
+
+\endgroup
+
+%%%%%%%%%%%%%%%%%%%%%%%%  end of active characters  %%%%%%%%%%%%%%%%%
+
+
+%% \optional
+\newcommand{\xtla}{\begingroup \notlachars \@xtla}
+\newcommand{\@xtla}[1]{#1\endgroup}
+
+
+%% :
+%% \coloncommands
+%% \nocoloncommands
+%%    Declarations that enable or disable the interpreting of :...: as 
+%%    commands in TLA mode. However, :\: is always interpreted as \backslash
+%%    in TLA mode.  The default is \coloncommands.
+\newcommand{\coloncommands}{%
+  \def\tlacolon{\@ifspace{\tla@realcolon}{\tla@cmdcolon}}} 
+\newcommand{\nocoloncommands}{\def\tlacolon{\tla@realcolon}}
+
+\coloncommands  %% THE DEFAULT
+\def\tla@realcolon{\ifmmode \,:\,\else{\rm :}\fi}
+
+%% [   makes [] : \Box       %%% must be changed if ] is made active
+%\def\tla@lb{\@nsifnextchar{]}{\tla@lbx}{[}}
+%\def\tla@lbx]{\ensuremath{\Box}}
+
+%% =   
+%\def\tla@realeq{=}
+
+%% <
+%\def\tla@reallt{\ensuremath{<}}
+
+%% >
+%\def\tla@realgt{\ensuremath{>}}
+
+%% !
+%\def\tla@bang{\ensuremath{\tlathin!\tlathin}}
+
+%% / : defines \tlaslash so \tlaslash\ expands to \land
+\def\tlaslash{\@nsifnextchar{\ }{\tla@slashx}{/}}
+\def\tla@slashx\ {\ensuremath{\land}}
+
+% The following was a valiant attempt to make /\ work when
+% not followed by a space.  However, it doesn't work if the /\ is
+% inside a command argument, in which case the following "\..." has already
+% been tokenized before the "/" gets a chance to look at what's ahead.
+% (Isn't TeX wonderful?)
+%   \def\@makebsother{\catcode`\\=12\relax}
+%   \def\@makebsescape{\catcode`\\=0\relax}
+%   \begingroup
+%   \catcode`?=0\relax
+%   \@makebsother
+%   ?gdef?tlaslash
+%         {?@makebsother?@nsifnextchar{\}{?tla@slashx}{?@makebsescape/}}
+%   ?gdef?tla@slashx\{?@makebsescape?ensuremath{?land}}
+%   ?endgroup
+
+
+
+%% -
+%\def\tla@realminus{-}
+
+%%_
+\def\tlasubscript#1{\ensuremath{\mbox{}_{#1}}}
+
+%% |
+%\def\tla@realvert{\ensuremath{|}}
+
+
+
+%% # produces \neq
+%\def\tla@hash{\ensuremath{\neq}}
+
+
+%% \tla ==  Make characters active;
+%%          
+\def\tla{\@tlamodetrue
+          \def\tla@everymath{%
+                \noTeXmath
+                 \tla@abbrev
+                \def\/{\lor}}%
+           \tla@abbrev
+           \notla@abbrev
+         \ifmmode\tla@everymath\fi}
+
+\def\notla{\def\tla@everymath{}%
+  \@tlamodefalse
+  \TeXmath
+  \def\/{\@italcor}%
+  \let~\@realtilde
+  \notlachars}
+
+
+
+%%% MISCELLANY
+%% \ensuremath: the LaTeX2e command
+%
+\def\ensuremath#1{\relax\ifmmode #1\else $#1$\fi}
+
+% \@italcor = normal \/
+% \@realtilde = normal ~
+\let\@italcor\/ %%%%% \/ redefined to \or
+\let\@realtilde~
+
+% SPACING
+%
+% \tlathin : a math-mode space 1/2 the width of \,
+%
+\def\tlathin{\mskip.5\thinmuskip}
+\def\indentspace#1{\def\tla@indentspace{#1}}
+\indentspace{1em}
+
+
+% \@ifspace{A}{B} executes A if the next token is a space token,
+% else it executes B and replaces next token.
+%
+
+\def\@ifspace#1#2{\def\@tempa{#1}\def\@tempb{#2}\futurelet\@tempc\@ifspacex}
+\def\@ifspacex{\ifx\@sptoken\@tempc\let\@tempd\@tempa\else
+     \let\@tempd\@tempb\fi\@tempd}
+
+% \@nsifnextchar like \@ifnextchar, except it doesn't skip over
+% space tokens.
+\def\@nsifnextchar#1#2#3{\let\@tempe #1\def\@tempa{#2}\def\@tempb{#3}\futurelet
+    \@tempc\@ifnsnch}
+\def\@ifnsnch{\ifx \@tempc \@tempe\let\@tempd\@tempa\else\let\@tempd\@tempb\fi
+      \@tempd}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%% MATH SYMBOLS %%%%%%%%%%%%%%%%%%%
+%
+%\newcommand{\deq}{\mathrel{\stackrel{\scriptscriptstyle\mathchar"7001}{=}}}
+\newcommand{\deq}{\mathrel{\stackrel{\scriptscriptstyle\Delta}{=}}}
+\def\A{\forall\,}
+\def\E{\exists\,}
+\newcommand{\EE}{\makebox{$\raisebox{.05em}{\makebox
+   [0pt][l]{$\exists\s{-.517}\exists\s{-.517}\exists$}}\exists\s{-.517}\exists
+            \s{-.517}\exists\,$}}
+\let\TeXAA=\AA
+\newcommand{\restoreAA}{\let\AA=\TeXAA}
+
+\renewcommand{\AA}{\makebox{$\raisebox{.05em}{\makebox
+   [0pt][l]{$\forall\s{-.517}\forall\s{-.517}\forall$}}\forall\s{-.517}\forall
+            \s{-.517}\forall\,$}}
+\newcommand{\X}{\ensuremath{\times}}
+
+%%%%%%%%%%%%%%%% INITIALZE
+
+%%%%%%%%%%% LOAD pf2.sty %%%%%%%%%%%%%%%
+\typeout{Loading pf2 style}
+\usepackage{pf2}%
+\tla
+
+
+% Redefine conj and disj to leave more space %% ++ 
+
+\renewenvironment{conj}{%
+ \begin{array}[t]{@{\land\ }l@{}}%
+ }{%
+ \end{array}}
+
+\renewenvironment{disj}{%
+ \begin{array}[t]{@{\lor\ }l@{}}%
+ }{%
+ \end{array}}
+
+\renewenvironment{conj*}{%
+ \@push\pf@conj{\the\value{pf@conjCounter}}%
+ \setcounter{pf@conjCounter}{0}%
+ \begin{array}[t]{@{\addtocounter{pf@conjCounter}{1}%
+   \mbox{\protect\small\protect\arabic{pf@conjCounter}.}
+   \land\ }l@{}}%
+ }{%
+ \end{array}%
+ \@pop\pf@conj\pf@temp
+  \setcounter{pf@conjCounter}{\pf@temp}}
+
+\renewenvironment{disj*}{%
+ \@push\pf@conj{\the\value{pf@conjCounter}}%
+ \setcounter{pf@conjCounter}{0}%
+ \begin{array}[t]{@{\addtocounter{pf@conjCounter}{1}%
+   \mbox{\protect\small\protect\alph{pf@conjCounter}.}
+   \lor\ }l@{}}%
+ }{%
+ \end{array}%
+ \@pop\pf@conj\pf@temp
+  \setcounter{pf@conjCounter}{\pf@temp}}
+
+%% ++ \renewcommand{\pf}{{\kwfont Proof\@italcor}:}
+
+%%%%%%%%%%%%% redefine some pf.sty commands with $ having its normal definition
+\begingroup
+\catcode`$3\relax
+
+\gdef\pfstepnumber#1#2#3{%
+   \ifnum \pfLevelCount < \pfshortNumberLevel
+       #3%
+     \else $\langle#1\rangle#2$%
+   \fi}
+
+\gdef\pflevelnumber#1#2{%
+   \ifnum \pfLevelCount < \pfshortNumberLevel
+       #2%
+     \else $\langle#1\rangle$%
+   \fi}
+
+\gdef\pfSetName{%
+  \edef\pfLongStep{%
+    \ifnum\pfLevelCount>\@ne
+      \pfLongLevel\pfdot\the\pfStepCount
+     \else\the\pfStepCount\fi}%
+  \edef\pfStepName{%
+   \ifnum \pfLevelCount < \pfshortNumberLevel
+    {\pfLongStep}{\pfLongStep}%
+    \else
+     {$\langle\the\pfLevelCount\rangle$}%
+     {$\langle\the\pfLevelCount\rangle\the\pfStepCount$}%
+   \fi}}
+\endgroup
+
+%% Redefine \step, \assume, \prove, \pflet, and \case  so their arguments
+%% have characters made active.
+
+%% ++ \let\tla@stepy\step
+%% ++ \renewcommand{\step}[1]{\begingroup\if@tlamode\tlachars\fi\tla@stepx{#1}}
+%% ++ \newcommand{\tla@stepx}[2]{\endgroup\tla@stepy{#1}{#2}}
+%% ++ %% 27 Dec 95 -- changed \def to \newcommand
+%% ++ 
+%% ++ \let\tla@assumey\assume
+%% ++ \renewcommand{\assume}{\begingroup\if@tlamode\tlachars\fi\tla@assumex}
+%% ++ \newcommand{\tla@assumex}[1]{\endgroup\tla@assumey{#1}}
+%% ++ 
+%% ++ \let\tla@provey\prove
+%% ++ \renewcommand{\prove}{\begingroup\if@tlamode\tlachars\fi\tla@provex}
+%% ++ \newcommand{\tla@provex}[1]{\endgroup\tla@provey{#1}}
+%% ++ 
+%% ++ \let\tla@casey\case
+%% ++ \renewcommand{\case}{\begingroup\if@tlamode\tlachars\fi\tla@casex}
+%% ++ \newcommand{\tla@casex}[1]{\endgroup\tla@casey{#1}}
+%% ++ 
+%% ++ \let\tla@pflety\pflet
+%% ++ \renewcommand{\pflet}{\begingroup\if@tlamode\tlachars\fi\tla@pfletx}
+%% ++ \newcommand{\tla@pfletx}[1]{\endgroup\tla@pflety{#1}}
+
+
+%%%%%%%%%%%%%%  Module formatting commands
+
+%%%% noj, if/then/else %%%%%%%%%%%%%%%%%%
+% \def\IF#1{\begin{array}[t]{@{}l@{}l@{}l@{}}%
+%             \@ifnextchar{\\}%
+%               {\makebox[.6em][l]{{\bf if\, }$#1$}}{\mbox{{\bf if }$#1$ }}}
+% \def\THEN{&\mbox{\bf \,then }&\begin{array}[t]{@{}l@{}}}
+% \def\ELSE{\end{array}\\ &\mbox{\bf \,else }&\begin{array}[t]{@{}l@{}}}
+% \def\FI{\end{array}\end{array}}
+%%%
+\newcommand{\gobbleone}[1]{}
+\def\IF#1{\@ifnextchar{\\}%
+           {\begin{array}[t]{@{\hspace{.6em}}l@{}l@{}}
+              \multicolumn{2}{@{}l}{\mbox{{\sc if\, }$#1$}}\\
+            \gobbleone}%
+           {\mbox{{\sc if\, }$#1$ }%
+             \begin{array}[t]{@{}l@{}l@{}}}}
+\def\THEN{\mbox{\sc \,then\, }&\begin{array}[t]{@{}l@{}}}
+\def\ELSE{\end{array}\\\mbox{\sc \,else\, }&\begin{array}[t]{@{}l@{}}}
+\def\FI{\end{array}\end{array}}
+\def\LSE{\mbox{\sc\ \,else\, }}
+
+\newenvironment{noj}{\begin{array}[t]{@{}l@{}}}{\end{array}}
+\newenvironment{noj2}{\begin{array}[t]{@{}l@{\;\;}l@{}}}{\end{array}}
+\newenvironment{noj3}{\begin{array}[t]{@{}l@{\;\;}l@{\;\;}l@{}}}{\end{array}}
+\newenvironment{noj4}%
+  {\begin{array}[t]{@{}l@{\;\;}l@{\;\;}l@{\;\;}l@{}}}{\end{array}}
+
+%\newenvironment{noj}{\begin{array}[t]{@{}l@{}}}%
+%                    {\end{array}}
+
+
+%%%% let %%%%%%%%
+%% \LET and \IN corrected 16 Apr 96 to add \mbox's.
+%% Correction suggested by Denis Roegel
+\newcommand{\LET}{\begin{array}[t]{@{}l@{\;\;}l@{}} \mbox{\sc let}% 
+                              &\begin{array}[t]{@{}l@{}}} 
+\newcommand{\IN}{\end{array}\\\mbox{\sc in}&\begin{array}[t]{@{}l@{}}}
+
+% \newcommand{\LET}{\begin{array}[t]{@{}l@{\;\;}l@{}} {\sc let}% 
+%                              &\begin{array}[t]{@{}l@{}}} 
+% \newcommand{\IN}{\end{array}\\{\sc in}&\begin{array}[t]{@{}l@{}}}
+\newcommand{\NI}{\end{array}\end{array}}
+
+%%%% case %%%
+%\newcommand{\CASE}{{\bf case\ }}
+\newcommand{\CASE}{\mbox{\sc case\ }}
+\newcommand{\OTHER}{\mbox{\sc other}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+%                  COMMANDS FROM spec92.sty                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+\newlength{\@charwidth}
+\settowidth{\@charwidth}{{\small\tt M}}
+\newlength{\boxrulewd}\setlength{\boxrulewd}{.4pt}
+\newlength{\boxindent}\setlength{\boxindent}{22\@charwidth}
+\newlength{\boxlineht}\setlength{\boxlineht}{.5\baselineskip}
+\newcommand{\boxsep}{\@charwidth}
+\newlength{\boxruleht}
+\newlength{\boxruledp}
+\newcommand{\@computerule}{%
+  \setlength{\boxruleht}{.5ex}%
+  \setlength{\boxruledp}{-\boxruleht}%
+  \addtolength{\boxruledp}{\boxrulewd}}
+\newcommand{\boxrule}{\leaders\hrule height \boxruleht depth \boxruledp
+                      \hfill\mbox{}}
+
+\newcommand{\@nmlineraise}{\if@botline -\boxrulewd
+    \else-\boxlineht\fi}
+\newcommand{\nameline}[1]{\hspace*{-\boxsep}%
+    \raisebox{\@nmlineraise}[0pt][0pt]{\rule[.5ex]{\boxrulewd
+               }{\boxlineht}}%
+    \boxrule
+    #1\boxrule
+    \raisebox{\@nmlineraise}[0pt][0pt]{\rule[.5ex]{\boxrulewd
+               }{\boxlineht}}\hspace{-\boxsep}\vspace{.5\baselineskip}}
+\newif\if@botline
+
+%%%%%%%%%%%%%%%%%%END COMMANDS FROM spec92.sty %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\topbar}[1]{\tlanameline{\ 
+     {\sc module} {\it #1\@italcor} }\par}
+
+\newenvironment{nomodule}{\begin{trivlist}\raggedright\@computerule
+            \item[]\it
+            \catcode`_=\active\relax
+        }{\par\end{trivlist}}
+
+\newenvironment{module}[1]{\begin{trivlist}\raggedright\@computerule
+            \item[]\tlanameline{\ {\sc module} {\it #1\@italcor} }\par\it
+            \catcode`_=\active\relax
+        }{\par\bottombar\end{trivlist}}
+
+
+\newenvironment{submodule}[1]{\par
+        \vspace{-.5em}%%%%%%%%%%%  space at top of submodule
+    \begin{list}{}{%
+       \leftmargin=1em%
+       \labelwidth=0pt%
+       \labelsep=0pt%
+       \parsep=0pt%
+       \topsep=0pt%
+       \partopsep=0pt%
+       \itemsep=0pt}\raggedright\@computerule
+            \item[]\tlanameline{\ {\sc module} {\it #1\@italcor} }\par
+        }{\par\bottombar\end{list}}
+
+
+\newcommand{\tlanameline}[1]{\hspace*{-\boxsep}%
+    \raisebox{\@nmlineraise}[0pt][0pt]{\rule[.5ex]{\boxrulewd
+               }{\boxlineht}}%
+    \boxrule
+    #1\boxrule
+    \raisebox{\@nmlineraise}[0pt][0pt]{\rule[.5ex]{\boxrulewd
+               }{\boxlineht}}\hspace{-\boxsep}%
+          \vspace{.2em}%%% EXTRA SPACE BELOW TOP LINE OF MODULE
+               }
+
+%%%%% Fix to \midline and \botline from spec92
+
+\newcommand{\midbar}{\par\hspace{-\boxsep}%
+    \raisebox{-.5\boxlineht}[0pt][0pt]{\rule[.5ex]{\boxrulewd
+               }{\boxlineht}}%
+     \boxrule
+    \raisebox{-.5\boxlineht}[0pt][0pt]{\rule[.5ex]{\boxrulewd
+               }{\boxlineht}}\hspace{-\boxsep}%
+         \vspace{-.2em}%%% SPACE BELOW \midbar
+                \par}
+
+\newcommand{\bottombar}{\hspace{-\boxsep}%
+    \raisebox{-\boxrulewd}[0pt][0pt]{\rule[.5ex]{\boxrulewd
+               }{\boxlineht}}%
+     \boxrule
+    \raisebox{-\boxrulewd}[0pt][0pt]{\rule[.5ex]{\boxrulewd
+               }{\boxlineht}}\hspace{-\boxsep}\vspace{0pt}}
+
+\newcommand{\xtrivlist}{\begin{list}{}{%
+       \leftmargin=1em%
+       \labelwidth=0pt%
+       \labelsep=0pt%
+       \parsep=0pt%
+       \topsep=0pt%     
+       \partopsep=0pt%
+       \itemsep=0pt}}
+\def\endxtrivlist{\end{list}}
+
+\let\@@startfield\@startfield
+\let\@@stopfield\@stopfield
+
+%% need to change \@tabcr because its look-ahead at the next
+%  character causes that character to be prematurely cat-coded.
+%
+\def\tla@tabcr{\@stopline\@startline\ignorespaces}
+
+\def\xtabbing{\lineskip \z@\let\>\@rtab\let\<\@ltab\let\=\@settab
+     \def\@startfield{\@@startfield\(}
+     \def\@stopfield{\)\@@stopfield}
+     \let\+\@tabplus
+     \let\-\@tabminus
+     \let\`\@tabrj\let\'\@tablab
+     \let\\=\tla@tabcr
+     \global\@hightab\@firsttab
+     \global\@nxttabmar\@firsttab
+     \dimen\@firsttab\@totalleftmargin
+     \global\@tabpush0 \global\@rjfieldfalse
+     \xtrivlist \item[]\if@minipage\else\vskip\parskip\fi
+     \setbox\@tabfbox\hbox{\rlap{\indent\hskip\@totalleftmargin
+       \the\everypar}}\def\@itemfudge{\box\@tabfbox}\@startline\ignorespaces}
+
+\def\endxtabbing{\@stopline\ifnum\@tabpush > 0 \@badpoptabs \fi\endxtrivlist}
+
+\newenvironment{decls}[1]{\par
+      \addvspace{.4em}%%%  EXTRA SPACE ABOVE decls ENVIRONMENT
+{\sc #1}\begin{xtabbing}%
+  \hspace{1em}\=\+\kill}{\end{xtabbing}}
+
+\newenvironment{nodecls}{\par
+      \addvspace{.4em}%%%  EXTRA SPACE ABOVE nodecls ENVIRONMENT
+\begin{xtabbing}}{\end{xtabbing}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% KEYWORDS %%%%%%%%%%%%%%%%%%
+%
+\newcommand{\tlacomment}{\begingroup\tlachars\@comment}
+%\newcommand{\@tlacomment}[1]{\endgroup\mbox{\footnotesize\rm #1}}
+\newcommand{\comment}{\begingroup\notlachars\@comment}
+\newcommand{\@comment}[1]{\endgroup
+    \raisebox{0pt}[0pt][0pt]{\footnotesize\rm %
+       \begin{tabular}[t]{@{}l@{}}#1\end{tabular}}}
+%\newcommand{\@comment}[1]{\endgroup
+%    \mbox{\footnotesize\rm \raisebox{0pt}[0pt][0pt]{%
+%       \begin{tabular}[t]{@{}l@{}}#1\end{tabular}}}}
+\newcommand{\EXTENDS}{\mbox{\sc extends }}
+\newcommand{\INSTANCE}{\mbox{\sc instance }}
+\newcommand{\THEOREM}{\mbox{\sc theorem }}
+\newcommand{\ASSUME}{\mbox{\sc assume }}
+\newcommand{\LOCAL}{\mbox{\sc local }}
+\newcommand{\VARIABLE}{\mbox{\sc variable }}
+\newcommand{\VARIABLES}{\mbox{\sc variables }}
+\newcommand{\CONSTANT}{\mbox{\sc constant }}
+\newcommand{\CONSTANTS}{\mbox{\sc constants }}
+\newcommand{\WITH}{\mbox{\sc\ with }}
+\newcommand{\BOOLEAN}{\mbox{\sc boolean}}
+\newcommand{\UNION}{\mbox{\sc union }}
+\newcommand{\TRUE}{\mbox{\sc true}}
+\newcommand{\FALSE}{\mbox{\sc false}}
+\newcommand{\UNCHANGED}{\mbox{\sc unchanged }}
+\newcommand{\EXCEPT}{\mbox{\sc\ except }}
+\newcommand{\CHOOSE}{\mbox{\sc choose }}
+\newcommand{\STRING}{\mbox{\sc string}}
+\newcommand{\ENABLED}{\mbox{\sc Enabled\s{.2}}}
+\newcommand{\DOMAIN}{\mbox{\sc domain\s{.2}}}
+\newcommand{\SUBSET}{\mbox{\sc subset\s{.2}}}
+\newcommand{\WF}{\mbox{\rm WF}}
+\newcommand{\SF}{\mbox{\rm SF}}
+% obsolete
+% \newcommand{\ACTION}{\mbox{\sc action}}
+\newcommand{\STATEFCN}{\mbox{\sc state fcn}}
+% \newcommand{\IMPORT}{\mbox{\sc import }}
+% \newcommand{\EXPORT}{\mbox{\sc export }}
+% \newcommand{\INCLUDE}{\mbox{\sc include }}
+% \newcommand{\AS}{\,\mbox{\sc as }}
+% added 31 Oct 2009
+\newcommand{\ACTION}{\mbox{\sc action }}
+\newcommand{\HAVE}{\mbox{\sc have }}
+\newcommand{\PICK}{\mbox{\sc pick }}
+\newcommand{\SUFFICES}{\mbox{\sc suffices }}
+\newcommand{\ASSUMPTION}{\mbox{\sc assumption }}
+\newcommand{\HIDE}{\mbox{\sc hide }}
+\newcommand{\PROOF}{\mbox{\sc proof }}
+\newcommand{\TAKE}{\mbox{\sc take }}
+\newcommand{\AXIOM}{\mbox{\sc axiom }}
+\newcommand{\LAMBDA}{\mbox{\sc lambda }}
+\newcommand{\PROPOSITION}{\mbox{\sc proposition }}
+\newcommand{\TEMPORAL}{\mbox{\sc temporal }}
+\newcommand{\BY}{\mbox{\sc by }}
+\newcommand{\LEMMA}{\mbox{\sc lemma }}
+\newcommand{\PROVE}{\mbox{\sc prove }}
+\newcommand{\USE}{\mbox{\sc use }}
+\newcommand{\DEF}{\mbox{\sc def }}
+\newcommand{\NEW}{\mbox{\sc new }}
+\newcommand{\QED}{\mbox{\sc qed }}
+\newcommand{\WITNESS}{\mbox{\sc witness }}
+\newcommand{\DEFINE}{\mbox{\sc define }}
+\newcommand{\OBVIOUS}{\mbox{\sc obvious }}
+\newcommand{\RECURSIVE}{\mbox{\sc recursive }}
+\newcommand{\DEFS}{\mbox{\sc defs }}
+\newcommand{\OMITTED}{\mbox{\sc omitted }}
+\newcommand{\STATE}{\mbox{\sc state }}
+
+
+%%%%%%%%%%%%%%%%%%%%%%% SPACE COMMANDS %%%%%%%%%%%%%%%%%%%%%%
+%
+\newcommand{\s}{\begingroup\notlachars\tla@s}
+\newcommand{\tla@s}[1]{\endgroup\hspace*{#1em}}
+\newcommand{\vs}{\begingroup\notlachars\tla@vs}
+\newcommand{\tla@vs}[1]{\endgroup\ifinner
+                       \raisebox{-.34em}{\raisebox{-#1em}{\rule{0pt}{.1pt}}}
+                      \else \vspace{#1em}\fi}
+%%% 1 Mar 95 : Made \V work with negative argument.
+\newcommand{\V}{\begingroup\notlachars\tla@V}
+\def\tla@V#1{\endgroup\ifdim #1em<\z@\\[#1em]\else\vs{#1}\\\fi} 
+
+%%%%%%%%%%%%%%%%%%%% Fixing \maketitle %%%%%%%%%%%%%%%%%%%%%%%
+
+% For some unfathomable reason, a \maketitle command with a \thanks
+% doesn't work in tla mode.  The kludge to fix this is to redefine
+% \maketitle to {\notla \maketitle}.  This kludge will fail if
+% \maketitle is redefined by some package loaded after the tla package.
+
+\let\@savedmaketitle=\maketitle
+\def\maketitle{{\notla\@savedmaketitle}}
+
+\nocoloncommands

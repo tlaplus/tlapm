@@ -1,0 +1,159 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link rel="stylesheet" type="text/css" id="ss"/>
+<title>TLA+ Proof System</title>
+</head>
+<body>
+<script type="text/javascript">
+  var baseurl = (document.URL.match (/.*[\\\/]content[\\\/]/))[0]
+  baseurl = baseurl.slice (0, baseurl.length - "content/".length)
+  document.getElementById('ss').href = baseurl + 'assets/css/common.css'
+  document.write ('\x3Cscript type="text/javascript" src="'
+                  + baseurl + 'assets/header.js">\x3C/script>')
+</script>
+
+<!-- DO NOT EDIT ABOVE THIS LINE, DO NOT REMOVE THIS LINE -->
+
+<div class="section">
+
+  <h2>Advanced options</h2>
+  <div class="hr"></div>
+
+  <h3>Status checking</h3>
+  <div class="hr"></div>
+  <p> The Toolbox remembers the coloring of proof steps.  It can be
+    very useful when re-opening a module to know quicky what has been
+    already proved and what has not. However, the color used by the
+    Toolbox to highlight a proof step reflects the step's proof status
+    the last time TLAPS checked the proof. This status may be
+    obsolete if you have edited the proof since then. You can check the
+    current status of a proof step (and of all its substeps) by clicking
+    and then right-clicking on the step (or use the <code>ctrl+G,ctrl+T
+      / cmd-G,cmd-T</code> shortcut), as shown in the following
+    screenshot:</p>
+  <div class="bg">
+    <table style="position:relative; left:auto; right:auto;">
+      <tr><td>
+          <a href="screenshots/ao0.png">
+            <img alt="screenshot" src="screenshots/ao0s.png"/>
+          </a>
+      </td></tr>
+    </table>
+  </div>
+
+  <p>Proving an obligation can take time, but checking its status is
+    pretty fast.  (It is not instantaneous because the obligations
+    still have to be computed.)
+    It's a good idea to check the proof status of the complete theorem
+    from time to time, since changing some step could change a later
+    proof obligation, making its previous status no longer meaningful.
+    You can edit your file while the Toolbox is checking proof statuses.
+    (The file is read-only while a proof is in progress.)  You can
+    instruct TLAPS to check the status of (or to prove) all theorems in
+    the file by giving the usual command when the cursor is
+    outside any theorem or its proof.</p>
+
+  <h3>Prover options</h3>
+  <div class="hr"></div>
+
+<p>If you don't use <a href="Tactics.html">tactics</a>, the
+  default behaviour of TLAPS is to send obligations to CVC3, then to
+  Zenon, then to Isabelle,  stopping when one of them succeeds. You can
+  change this behavior, by clicking on &quot;Launch Prover&quot; when
+  right-clicking on a proof-step:</p>
+
+  <div class="bg">
+    <table style="position:relative; left:auto; right:auto;">
+      <tr><td>
+          <a href="screenshots/ao1.png">
+            <img alt="screenshot" src="screenshots/ao1s.png" />
+        </a>
+      </td></tr>
+    </table>
+  </div>
+
+  <p></p><p></p>
+  <p>As you can see, you can
+    either ask TLAPS not to prove obligations (that's similar to status
+    checking), or ask TLAPS to make Isabelle check proofs provided by
+    Zenon<!-- obsolete, doesn't work anymore
+         , or also ask TLAPS not to use Isabelle -->.</p>
+
+  <div class="bg">
+    <table style="position:relative; left:auto; right:auto;">
+      <tr><td>
+          <a href="screenshots/ao2.png">
+            <img alt="screenshot" src="screenshots/ao2s.png" />
+          </a>
+      </td></tr>
+    </table>
+  </div>
+
+  <p></p><p></p>
+  <p><!-- obsolete
+                                          &quot;Paranoid
+    checking&quot; means asking Isabelle to check all proofs (even
+    proofs direcly given by TLAPS for &quot;trivial&quot; obligations
+    but note that SMT solvers currently do not produce proofs checkable by
+    Isabelle/TLA+). -->
+    You can also ask TLAPS to forget previous results
+    about obligations of a particular proof-step or the entire
+    module.</p>
+
+  <p> Finally, you can specify command-line options that will be
+    added to the ones normally used by the Toolbox when it launches
+    <code>tlapm</code>. The most useful options are the following:
+  <ul>
+  <li><code>--threads</code> <em>n</em> : change the maximum number of
+  back-end provers that are launched in parallel. The default is the
+  number of CPU cores on your machine.</li>
+  <li><code>--method</code> <em>list</em> : change the default list of
+  back-end provers for <tla>BY</tla>
+  and <tla>OBVIOUS</tla> steps. The argument is a
+  comma-separated list of methods. The following methods are available:
+    <table frame="box" rules="all">
+      <tr><th>name</th><th>method</th></tr>
+      <tr><td><tla>zenon</tla></td><td>Zenon</td></tr>
+      <tr><td><tla>auto</tla></td><td>Isabelle with tactic <code>auto</code></td></tr>
+      <tr><td><tla>blast</tla></td><td>Isabelle with tactic <code>blast</code></td></tr>
+      <tr><td><tla>force</tla></td><td>Isabelle with tactic <code>force</code></td></tr>
+      <tr><td><tla>smt</tla></td><td>baseline SMT solver (by
+      default CVC3)</td></tr>
+      <tr><td><tla>z3</tla></td><td>Z3</td></tr>
+      <tr><td><tla>cvc3</tla></td><td>CVC3</td></tr>
+      <tr><td><tla>yices</tla></td><td>Yices</td></tr>
+    </table>
+  </li>
+  <li><code>--solver</code> <em>line</em> : change the baseline SMT
+  solver. See <a href="Tactics.html#solvers">Tactics</a> for
+  instructions on using this option.
+  <li><code>--fast-isabelle</code> : on Windows, invoke Isabelle via a
+  short-cut that saves a few seconds from Isabelle's start-up
+  time. On other architectures, this option does nothing.</li>
+  <li><code>--stretch</code> <em>f</em> : multiply all timeouts by a
+  factor of <em>f</em>. This is particularly useful when using a
+  slower machine to re-check proofs made on a faster machine.</li>
+  </ul>
+  </p>
+
+<!--
+  Document at least these command-line options:
+  --threads <n>
+  --method <meth>
+  --solver <cmd-line>
+  --fast-isabelle
+  --stretch <n>
+-->
+
+</div> <!-- section -->
+
+<!-- DO NOT EDIT BELOW THIS LINE, DO NOT REMOVE THIS LINE -->
+
+<script type="text/javascript">
+  document.write ('\x3Cscript type="text/javascript" src="'
+                  + baseurl + 'assets/footer.js">\x3C/script>')
+</script>
+</body>
+</html>

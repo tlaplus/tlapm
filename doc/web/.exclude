@@ -1,0 +1,9 @@
+.svn
+*.in
+*.log
+*.thy*
+*.pl
+.exclude
+Makefile
+msr-inria-blurb.html
+template.html

@@ -1,0 +1,576 @@
+\documentclass[11pt,fleqn]{article}
+\listfiles
+\usepackage{latexsym}
+\usepackage{tla2}
+
+
+\newcommand{\dd}{\,\ldotp\ldotp}
+\newcommand{\tth}{\ensuremath{^{\rm th}}}
+\newcommand{\st}{\ensuremath{^{\rm st}}}
+\newcommand{\tlaplus}{TLA$^{+}$}
+\newcommand{\ov}[1]{\ensuremath{\overline{\rule{0pt}{.65em}#1}}}
+\newcommand{\en}{{\rm\textsc{enabled}}}
+\newcommand{\enb}{{\textit{Enabled}}}
+\newcommand{\M}[1]{\ensuremath{[\![#1]\!]}}
+\newcommand{\MM}[2]{\ensuremath{[\![#1]\!](#2)}}
+\newcommand{\B}{\begingroup\tlachars\BB}
+\newcommand{\BB}[1]{\endgroup\,\fbox{\rule{0pt}{.7em}%
+\let\tlacolon\midcolon\ensuremath{#1}}\,}
+\newcommand{\C}[1]{\ensuremath{\mathcal{C}\{#1\}}}
+\newcommand{\EN}[1]{\ensuremath{\mathcal{E}\{\!|#1]\!\}}}
+\renewcommand{\X}[1]{\ensuremath{\mathcal{X}\{\!|#1]\!\}}}
+\renewcommand{\WITH}{\;\textsc{with}\;}
+\renewcommand{\O}{\C{O, e_{NL}}}
+\renewcommand{\L}[2]{\ensuremath{\mathcal{L}\{\![#1,#2]\!\}}}
+\newcommand{\Lz}[1]{\ensuremath{\mathcal{L}\{\![#1]\!\}}}
+%\newcommand{\Sj}[2]{\ensuremath{(\!(#1,#2)\!)}}
+\renewcommand{\P}[1]{\ensuremath{\mathcal{P}\{\!|#1]\!\}}}
+\newcommand{\oneto}[2]{\ensuremath{#1_{1},\,\ldots,\,#1_{#2}}}
+\newtheorem{observation}{Observation}
+\newtheorem{conjecture}{Conjecture}
+\newtheorem{theorem}{Theorem}
+
+%&c&\textsc{#}&
+%&b&\textbf{#}&
+
+\title{\textbf{The \tlaplus\ Front-Ends}}
+\author{The TLAPS Project}
+\date{\moddate}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                 MODIFICATION DATE                               %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                 %
+% Defines \moddate to expand to modification date such as         %
+%                                                                 %
+%    5 Aug 1991                                                   %
+%                                                                 %
+% and \prdate to print it in a large box.  Assumes editor         %
+% updates modification date in standard SRC Gnu Emacs style.      %
+% (should work for any user name).                                %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\def\ypmd{%                                                       %
+%                                                                 %
+%                                                                 %
+  Last modified on Sun  1 December 2013 at 18:22:30 PST by lamport        %
+  endypmd}                                                        %
+%                                                                  %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\moddate}{\expandafter\xpmd\ypmd}                     %
+\def\xpmd Last modified                                           %
+on #1 #2 #3 #4 at #5:#6:#7 #8 by #9 endypmd{#2 #3 #4}                %
+\newcommand{\prdate}{\noindent\fbox{\Large\moddate}}              %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\renewcommand{\strut}{\rule{0pt}{.85em}}
+
+\begin{document}
+
+\maketitle
+
+\section{Introduction}
+
+A \emph{front end} performs a \tlaplus\ to \tlaplus\ translation of an
+obligation for some class of backend provers.  Its main function is to
+hide from a backend prover operators that the prover can't handle, or
+would handle incorrectly.  A front end is a device for describing what
+TLAPS does.  It is not necessarily implemented as a separate component
+of the proof manager.
+
+We want the translation to be sound, meaning that if the translated
+obligation is provable then the original obligation is valid.  One way
+to do that is to ensure that the translated obligation is equivalent
+to the original.  The translation may introduce new uninterpreted
+symbols.  In that case, we show soundness by showing that the
+translation is \emph{definably equivalent} to the original, meaning
+that there exist definitions of the new symbols that make it
+equivalent to the original.
+
+For now, we seem to need the following front ends (the names are not
+fixed).
+\begin{description}
+\item[Action] This is used for ordinary action reasoning.  It hides
+temporal operators and a class of operators called non-Leibniz
+operators, described below.
+
+\item[PTL] This is used for PTL (propositional temporal logic)
+reasoning, the resulting obligations sent to a PTL backend prover.  It
+hides all operators except those of PTL.
+
+\item[TLA] This is used for temporal predicate logic (quantification
+over constants [rigid variables]) and application of temporal proof
+rules, the resulting obligations sent to a backend for temporal
+reasoning that has yet to be implemented.
+
+\item[Enabled] This is a front end used in conjunction with the Action
+front end for reasoning about the \tlaplus\ \textsc{enabled} operator.
+Instead of hiding \textsc{enabled}, this front end eliminates it from
+an obligation by expandingits definition.
+
+\end{description}
+These front ends are described in Section~\ref{sec:front-ends}.
+Central to front ends are the concepts of 
+\emph{coalescing} and \emph{Leibnizing}, which we discuss after
+introducing a bit of notation.
+
+TLAPS processes each proof obligation independently.  We therefore
+assume a single original obligation that is being transformed to its
+translated version.
+
+
+
+%
+
+\section{Preliminaries}
+
+We assume some notion of \emph{syntactic equivalence} of expressions
+and operator symbols that satisfies the following conditions:
+\begin{itemize}
+
+\item Any operator symbol or expression is syntactically equivalent
+to itself.
+
+\item 
+$F(\oneto{d}{n}) = G(\oneto{e}{n})$ if
+$F$, \oneto{d}{n} are syntactically equivalent to $G$, \oneto{e}{n},
+respectively.
+\end{itemize}
+
+For any expressions or operator symbols \oneto{e}{n}, we let
+\B{\oneto{e}{n}} be an identifier not appearing in the obligation such
+that \B{\oneto{d}{m}} and \B{\oneto{e}{n}} are the same identifier iff
+$m=n$ and $d_{i}$ is syntactically equivalent to $e_{i}$, for all $i$ in
+$1\dd m$.
+
+\section{Coalescing}
+
+In its simplest form, coalescing is replacing an expression $exp$ by
+\B{exp}.  We expect to show that the new obligation produced
+in this way is definably equivalent to the original one under the
+definition
+ \[ \B{exp} == exp\]
+However, it need not be in the presence of bound identifiers.  For
+example, suppose we define $P(a)=a$, so \mbox{$\A b : P(b)=b$} is a valid
+formula.  This way of coalescing the expression $P(b)$ in that formula
+produces the formula \mbox{$\A b: \B{P(b)}=b$}, which is not valid.
+(Remember that \B{P(b)} is just a symbol, bearing no relation to the
+symbol $b$, so from this formula a prover can deduce $\B{P(b)}=1$
+and $\B{P(b)}=2$, proving $1=2$.)
+
+In general, suppose $exp$ is an expression in which \oneto{id}{m} are
+all the identifiers occurring in $exp$ that are bound in the context
+in which $exp$ appears.  We then coalesce $exp$ as $\B{exp,
+\oneto{id}{m}}(\oneto{id}{m})$.  We obtain definable equivalence with
+the definition
+  \[ \B{exp, \oneto{id}{m}}(\oneto{id}{m}) == exp\]
+Note that we can use any ordering of the identifiers $id_{i}$.
+Changing the ordering changes both the identifier \B{exp,
+\oneto{id}{m}} and its definition.
+
+To make the translated obligation as easy as possible to prove, we
+would like to use the same new symbol to coalesce as many different
+expression occurrences as possible.  We can try to do this by
+coalescing the expression $exp$ as if the identifiers $id_{i}$ had
+been replaced by some standard symbols.  However, this is unlikely to
+help in practice.  If two expressions can be coalesced with the same
+new operator, it's best to count on the user writing them in a
+syntactically equivalent form rather than hoping to make them
+syntactically equivalent by some standard transformation.  The only
+thing a front-end transformation should do is to make the ordering of
+the $id_{i}$ in the coalescing depend only on the identifiers
+themselves---e.g., by putting them in alphabetical order.
+
+\section{Leibnizing}
+\begin{flushright}
+\emph{You can verb anything.}\\
+Ron Ziegler (quoted by Brian Reid)
+\end{flushright}
+%
+\noindent The \emph{Leibniz principle} asserts that for any
+expressions $d$, $e$, and $F$, the formula $(d=e)=>(F =
+F^{e}_{\!\!\!d})$ is valid, where $F^{e}_{\!\!\!d}$ is the expression
+obtained from $F$ by replacing all instances of $d$ by $e$.  The
+Leibniz principle does not hold for a modal logic like TLA\@.  For
+example, if $x$ and $y$ are variables, then the Leibniz principle
+implies $(x=y)=>(x'=y')$, which is not in general valid.
+
+The Leibniz principle can be violated by an expression $exp$ only if
+the expression obtained from $exp$ by (recursively) expanding all user
+definitions contains a non-constant operator of \tlaplus---that is,
+one of the action operators or temporal operators listed in Tables~3
+and~4 on page 269 of \emph{Specifying Systems}.  (This is well-defined
+because, in \tlaplus, a recursive definition is just an abbreviation
+for a more complicated non-recursive one.)
+
+Most back-end provers assume the Leibniz principle, meaning that they
+will freely substitute equals for equals anywhere they can.  They are
+prevented from doing that by a front-end transformation.  For example,
+the Action front-end coalesces $x'$ and $y'$ to \B{x'} and \B{y'},
+so $(x=y)=>(x'=y')$ becomes $(x=y)=>(\B{x'}=\B{y'})$, which cannot
+be proved. 
+
+Unexpanded user-defined operators pose a problem.  The user
+could define 
+  $P(a) \deq a'$
+and write $(x=y)=>(P(x)=P(y))$, an expression that contains no
+explicit primes.  We say that an operator $F$ is Leibniz if
+ $(d=e)=>(P(d)=P(e))$
+is valid for any expressions $d$ and $e$.  (The definition for
+operators with multiple arguments is obvious.)  \emph{Leibnizing} is
+the procedure of replacing an occurrence $P(x)$ of a non-Leibniz
+operator $P$ by $\B{\ldots}(x)$, which is equivalent to $P(x)$ when
+\B{\ldots} is defined to be some Leibniz operator.  We explain below
+what the ``\ldots'' is.
+
+
+
+\subsection{Some Definitions}
+
+We recursively define what it means for the $i$\tth\ argument position
+of an operator $Op$ to be Leibniz as follows:
+\begin{itemize}
+\item All argument positions of the \tlaplus\ built-in constant
+operators are Leibniz and all argument positions of its non-constant
+operators are non-Leibniz.
+
+\item For an operator $Op$ defined by $Op(\oneto{a}{n}) \deq def$, the
+$i$\tth\ argument position of $Op$ is Leibniz iff $a_{i}$ does not
+appear in $def$ within a non-Leibniz argument position of an operator.
+\end{itemize}
+An operator is Leibniz, in the sense defined above, if all of its
+argument positions are Leibniz.  The converse is true in most
+practical examples.  Therfore, by a Leibniz operator, we now mean one
+all of whose argument positions are Leibniz.
+
+Higher-order operators complicate matters.  Consider the operator
+ \[ G(F(\_), a) == F(a)
+ \]
+Both argument positions of $G$ are Leibniz according to our definition
+above, but
+ \[ (x=y) \;=> \;(G(\,'\,,\,x) = G(\,'\,,\, y)) \]
+is not in general valid.  As this shows, whether or not the Leibniz
+principle applies to an ordinary (non-operator) argument can depend on
+what operators occur in its operator arguments.  There is no problem
+if we only 
+
+Let $Op$ be defined as above.  We say that (ordinary) argument
+position $i$ of $Op$ occurs in position $j$ of its $k$\tth\ argument
+iff $a_{i}$ appears in $def$ in the $j$\tth\ argument of the
+(operator) argument $a_{k}$.  We say that the $i$\tth\ argument
+of the expression $Op(\oneto{e}{n})$ is \emph{non}-Leibniz
+iff either:
+\begin{itemize}
+\item The $i$\tth\ argument of $Op$
+is an operator argument and either the $i$\tth\ argument
+position of $Op$ is non-Leibniz or $e_{i}$ is a non-Leibniz operator.
+
+\item The $i$\tth\ argument of $Op$ is an ordinary argument and either
+the $i$\tth\ argument position of $Op$ is non-Leibniz, or for some $j$
+and $k$, argument position $i$ of $Op$ occurs in position $j$ of its
+$k$\tth\ argument and the $j$\tth\ argument position of $e_{k}$ is
+non-Leibniz.
+\end{itemize}
+
+
+\subsection{Leibniz for Constants}
+
+Although \tlaplus\ doesn't satisfy the Leibniz principle, it satisfies
+the Leibniz principle for constants.  More precisely:
+\begin{itemize}
+\item[] The formula $(d=e) => (F(d) = F(e))$ is valid for any constant
+expressions $d$ and $e$ and any operator $F$ definable in \tlaplus.
+\end{itemize}
+
+
+\subsection{How to Leibniz}
+
+
+We replace the application $Op(\oneto{e}{n})$ of a non-Leibniz operator
+$Op$ by 
+ \[ \B{Op,\oneto{\epsilon}{n}}(\oneto{e}{n})
+ \]
+where 
+\begin{tabbing}
+\s{2} $\epsilon_{i}$ \  \= = \ $e_{i}$ \= \ if the $i$\tth\ expression of
+                  $Op(\oneto{e}{n})$ is non-Leibniz \\
+     \> \> and $e_{i}$ is not a constant expression\\
+     \> = $\tau$ \ \> \ otherwise
+\end{tabbing}
+where $\tau$ is a fixed new symbol (the same symbol for all $i$ and
+all Leibnizings).
+
+\begin{sloppypar}
+To show definable equivalence, we have to define a Leibniz operator
+\B{Op,\oneto{\epsilon}{n}} for which
+$\B{Op,\oneto{\epsilon}{n}}(\oneto{e}{n})$ is equivalent to
+$Op(\oneto{e}{n})$.  In the definition, how each argument $e_{i}$
+is handled depends on which of the following kinds of argument it is:
+\end{sloppypar}
+\begin{enumerate}
+\item A Leibniz argument.
+
+\item A non-Leibniz argument that is a constant expression.
+
+\item A non-Leibniz argument that is either an operator or a non-constant
+      expression.
+\end{enumerate}
+We illustrate this with the expression $F(x\!+\!1, 22, x\!+\!3)$ where
+$x$ is a variable and 
+ \[ F(a, b, c) == a + (b + c)'\]
+so its first argument position is Leibniz and its last two are
+non-Leibniz.  We then define
+  \[  \B{F,\tau, \tau, x\!+\!3}(a, b, c) == 
+      \CHOOSE z : \E bb : \begin{conj}
+                          b = bb \\ z = F(a, bb,\, x\!+\!3)
+                          \end{conj}
+  \]
+It is easy to check that \B{F,\tau, \tau, x\!+\!3} is Leibniz in all its
+arguments, because none of the formal parameters $a$, $b$, or $c$ occur
+in a non-Leibniz argument position.  That
+ \[ \B{F,\tau, \tau, x\!+\!3}(x\!+\!1, 22, x\!+\!3) = F(x\!+\!1, 22, x\!+\!3)
+ \]
+follows easily from the fact that any operator satisfies the Leibniz
+principle for constants, and the bound identifier $bb$ in the
+definition is a constant.  Finally, we must show that the Leibnizing
+of any other expression that yields the same operator symbol
+\B{F,\tau, \tau, x\!+\!3} produces the same definition.  This is
+obvious.
+Observe that this Leibnizing allows a prover to deduce
+  \[ (x=y) => (F(x\!+\!1, 22, x\!+\!3) = F(y\!+\!1, 20\!+\!2, x\!+\!3))
+ \]
+Note: since \textsc{choose} can be applied only to action-level
+formulas, this definition wouldn't work if $F(x\!+\!1, 22, x\!+\!3)$
+were a temporal-level expression.  However, the syntax of \tlaplus\
+implies that temporal-level expressions are formulas, so in that
+case we could change the definition to:
+  \[  \B{F,\tau, \tau, x\!+\!3}(a, b, c) == 
+      \E bb : \begin{conj}
+                          b = bb \\ F(a, bb,\, x\!+\!3)
+                          \end{conj}
+  \]
+
+Leibnizing replaces an operator application by a definably equal one.
+However, that doesn't necessarily produce a definably equal obligation
+if those operator applications occur in a non-Leibniz argument.  
+Therefore, Leibnizing needs to be done in a top-down fashion---Leibnizing
+an operator application $Op(\oneto{e}{n})$
+before Leibnizing operator applications in the arguments $e_{i}$.
+
+
+\section{The Front Ends} \label{sec:front-ends}
+
+\begin{sloppypar}
+One operation that a front end may perform is distributing primes over
+operators.  Currently this is done by replacing $Op(\oneto{e}{n})'$
+with $Op(\oneto{e'}{n})$ for any constant operator $Op$.  For any
+non-constant Leibniz operator $Op$ with no operator arguments, we can
+also transform $Op(\oneto{e}{n})'$ to $\B{Op'}(\oneto{e'}{n})$.  We
+can define
+ $\B{Op'}(\oneto{a}{n})$
+to be the expression obtained by fully expanding all definitions in
+ $Op(\oneto{a}{n})'$, distributing primes over constant
+\tlaplus\ operators, and replacing each $a_{i}'$ by $a_{i}$.
+This defines $\B{Op'}(\oneto{e'}{n})$ to equal
+  $Op(\oneto{e}{n})'$
+because since $Op$ is Leibniz, each $a_{i}$ occurs only as arguments
+of constant operators in the definition.
+(It's not clear how useful this enhancement will be in practice.)
+\end{sloppypar}
+
+A front end transforms the assumptions and the goal of the obligation.
+It first expands usable user-defined operations and perhaps some
+built-in \tlaplus\ operators.  It may then distribute primes over
+operators.  It then may coalesce expressions and Leibniz operator
+applications.  An operator application must be Leibnized before any
+subexpression of its arguments can be coalesced or Leibnized.  (It is
+safe to coalesce or Leibniz arguments of a Leibnized operator
+application because the newly introduced operator is Leibniz.)
+
+
+
+\subsection{The Action Front End}
+
+This is the default front end, used for action reasoning.  It expands
+the definitions of the operators \textsc{unchanged}, $[A]_{v}$ and
+$<<A>>_{v}$; and it distributes primes over operators.  It then
+coalesces all expressions whose principal operator is a non-constant
+\tlaplus\ operator and Leibnizes non-Leibniz operator applications.
+
+\subsection{The PTL Front End}
+
+This first expands the definitions of $[A]_{v}$, $<<A>>_{v}$, $~>$,
+WF, and SF. It then coalesces every expression whose principal
+operator is not $[]$, $<>$, $\,'\,$\,.  or an operator of
+propositional logic ($/\ $, $~$, $=>$, etc.).  The \,$'$\, operator is
+given to the backend provers as the LTL (Linear-time Temporal Logic)
+\emph{next} operator.  (After coalescing, all remaining primes are
+priming formulas.)
+
+
+
+\subsection{The TLA Front End}
+
+This is for a backend that can handle temporal formulas
+including quantification over constants (rigid variables).  A minimum
+requirement is that it must be able to apply the tautology:
+ \[  (\E i : <>P(i)) \,\equiv\, <> (\E i : P(i))
+ \]
+The backend is under development, so we do not yet know exactly what its
+front end will do.
+
+
+\subsection{The Enabled Front End}
+
+This frontend eliminates \textsc{enabled} expressions by expanding the
+definition of \textsc{enabled}.  It is used in conjunction with the
+Action front end.  Let $\oneto{x}{m}$ be the declared
+\textsc{variables} of the module.  The basic idea is to replace
+$\textsc{enabled} A$ with
+ \[ \E \B{x_{1}'},\, \ldots,\, \B{x_{m}'} : \overline{A}
+ \]
+where $\overline{A}$ is obtained from $A$ approximately by replacing
+each instance of each $x_{i}'$ with \B{x_{i}'}.  There are two reasons
+for the ``approximately'': nested \textsc{enabled} expressions and
+user-defined operators.  
+
+Handling nested \textsc{enabled}s is straightforward.  They are
+eliminated in a bottom-up fashion, renaming the bound identifiers
+\B{x_{1}'} as needed to produce a valid \tlaplus\ expression.
+
+\begin{sloppypar}
+User-defined operators can ``hide'' instances of primed variables
+$x_{i}'$ in their definitions, and those hidden instances must be made
+visible as instances of \B{x_{i}'} when expanding the definition of
+$\textsc{enabled}$.  For example, if $B$ is defined to equal 
+ \mbox{$x' \in S$}, 
+then $\ENABLED B$ must be replaced by 
+ \mbox{$\E \B{x'} : \B{B}(\B{x'})$}.
+\end{sloppypar}
+
+It is always sound to replace any operator application 
+$Op(\oneto{e}{n})$ with 
+   $\B{Op}(\oneto{e}{n}, \B{x_{1}'},\,\ldots,\, \B{x_{m}'})$.
+However, we would like to add as arguments only those
+\B{x'_{i}} for which $x_{i}'$ actually occurs in the expansion
+of $Op(\oneto{e}{n})$.  For example, this would allow a prover
+to deduce 
+  \[ (\ENABLED A /\ B) \; \equiv (\ENABLED A) \, /\ \, (\ENABLED B)
+ \]
+if $A$ and $B$ have no primed variables in common.
+
+When expanding an \textsc{enabled} expression, the front-end will
+replace any occurence $Op(\oneto{e}{n})$ of a Leibniz operator $Op$
+that does not occur within a primed expression by
+  \[ \B{Op}(\oneto{e}{n}, \B{x_{i_{1}}'},\,\ldots,\, \B{x_{i_{k}}'})
+  \]
+where the $x'_{i_{j}}$ are all the primed variables that actually
+occur in the expansion of the definition of $Op$.
+
+It is possible to do this for the other cases as well: $Op$
+non-Leibniz or the operator application occurring within a primed
+expression.  However, this is probably not worth doing because those
+cases should rarely occur in practice.
+
+
+
+\end{document}
+
+%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Notation}
+
+We introduce some rather unusual notation that will take some getting
+used to.  However, it allows us to do things more generally and we
+hope will smooth the path to implementing the ideas.
+
+For any finite set $S$, let $|S|$ be the cardinality of $S$.  If
+$S$ is the set $\{i_{1}, \ldots , i_{j}\}$ of integers with
+ $i_{1} < \ldots < i_{j}$,
+define $v_{S}$ to be an abbreviation for 
+  $v_{i_{1}}, \ldots, v_{i_{j}}$.  
+%
+% For $j$ in $1\ldots |S|$, we define \Sj{S}{j} to equal $i_{j}$.
+Thus, 
+\begin{itemize}
+\item $\E x_{1\!\ldots 3} : P(x_{1\!\ldots 3})$ \ is an abbreviation for \
+$\E x_{1}, x_{2}, x_{3}: P(x_{1}, x_{2}, x_{3})$.
+
+\item  $<<x_{1\!\dd n},\,y_{1\!\dd m}>>$ \ means \
+$<<x_{1}, \ldots, x_{n}, y_{1}, \ldots, y_{m}>>$.  
+
+
+\item $<<x_{S}>> = <<y_{S}>>$ \ is equivalent to 
+the assertion that $x_{i}=y_{i}$ for all $i$ in $S$.
+
+% \item $\Sj{1\dd n}{j} \ = \ j$, for all $j \in 1\dd n$.
+
+% \item \Sj{\{1, 3, 5\}}{2} \ equals \ 3.
+
+% \item $<<x_{S}>>$ \ equals \ $[j \in 1\dd |S| |-> x_{\Sj{S}{j}}]$.
+\end{itemize}
+%
+We let these expressions have the obvious meanings when $S$ is the empty set.
+For example,
+\begin{itemize}
+\item $\E x_{\{\}} : P(x_{\{\}})$ \ means \ $P$.
+
+\item $<<x_{1\!\dd n},\,y_{1\!\dd m}>>$ \ means \ $<< >>$ \ if $m=n=0$.
+\end{itemize}
+%
+If
+$S$ is the set $\{i_{1}, \ldots , i_{j}\}$ of integers with
+ $i_{1} < \ldots < i_{j}$ and $\pi$ is a permutation of $1\dd j$, we
+define $v_{\pi(S)}$ to equal $v_{i_{\pi(1)}}, \ldots, v_{i_{\pi(j)}}$.
+
+Let \,$e \WITH id <- d$\, be the expression obtained from the expression $e$
+by substituting the expression $d$ for the identifier $id$.  We define
+\ $e \WITH id_{1\!\dd n} <- d_{1\!\dd n}$ \ in the obvious way to equal
+ \[ (\ldots(e \WITH id_{1} <- d_{1}) \WITH \ldots) \WITH id_{n} <- d_{n}
+ \]
+More generally, this defines $e \WITH id_{S} <- d_{T}$ for any index
+sets $S$ and $T$ with $|S| = |T|$.
+
+For any expression $e$, define \X{e} to be the expression obtained
+from $e$ by recursively using definitions to expand all occurrences of
+user-defined operators.  The following is a consequence of the meaning
+of definitions:
+\begin{observation}\label{obs:def} \rm
+For any user-defined operator $Op$ of $n$ arguments (some of which may
+be operator arguments) and any expression $e$ and expressions or
+operators $e_{1\!\dd n}$\,:
+\begin{enumerate}
+\item $e$ equals $\X{e}$.
+ 
+\item If $Op$ is defined by
+ \,$Op(\alpha_{1\!\dd n}) \deq d$\,,
+then
+ \[ \X{Op(e_{1\!\dd n})} \;=\; \X{d} \WITH \alpha_{1\!\dd n} <- e_{1\!\dd n}\]
+\end{enumerate}
+\end{observation}
+%
+Let an \emph{ordinary} operator be one all of whose arguments are
+expressions; and let a \emph{higher-order} operator be one having at
+least one operator argument.  In Observation~\ref{obs:def}, if
+$\alpha_{i}$ is an operator argument then the corresponding $e_{i}$ is
+either an operator name or a \textsc{lambda} expression.
+
+\subsection{Semantics}
+
+The meaning of a \tlaplus\ expression is a mapping from behaviors to
+values.  A behavior is a sequence of states, where a state is a
+mapping from variables to values.  Since \tlaplus\ is based on ZFC set
+theory, a value is a set.  
+
+For any behavior $\sigma$, define $\sigma_{i}$ to be the $i$\tth\
+state of $\sigma$, so $\sigma$ equals $\sigma_{1}, \sigma_{2},\ldots$\,.  Let
+$\sigma^{+n}$ be the behavior $\sigma_{n+1}, \sigma_{n+2}, \ldots$.
+
+Let \M{e} be the meaning of the expression
+$e$, so $\M{e}(\sigma)$ is a value, for any behavior $\sigma$.
+The meaning of an ordinary \tlaplus\ operator is a mapping from
+mappings of behaviors to values to a mapping from behaviors to values.
+For example, \M{\Box} is defined by 
+ \[ \M{\Box(F)}(\sigma) == \A n \in Nat : \M{F}(\sigma^{+n})
+ \]
+
+

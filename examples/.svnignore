@@ -1,0 +1,8 @@
+#!/bin/sh
+
+svn propset -R svn:ignore '
+
+*.tlaps
+*.toolbox
+
+' .

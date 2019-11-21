@@ -1,0 +1,229 @@
+\section{Hints on Using the Prover Effectively}
+
+\begin{frame}
+  \frametitle{Control the Size of Formulas}
+
+  \begin{itemize}
+  \item \tc{dkblue}{Proof obligations are often large}
+
+    \begin{itemize}
+    \o long definitions of actions and invariants
+    \o \kw{let} constructions add to complexity when expanded
+    \end{itemize}
+
+  \oo \tc{dkblue}{The backend provers are easily overwhelmed by large formulas}
+
+    \begin{itemize}
+    \o may work on top-level operators or deeply inside a long formula
+    \o even simple proof steps may take an extraordinate amount of time
+    \end{itemize}
+
+  \oo \alert{Use local definitions and \HIDE\ them when unnecessary}
+
+    \begin{itemize}
+    \o prove facts about a \kw{let}-bound operator, then \HIDE\ it
+    \end{itemize}
+  \end{itemize}
+
+  \vfill\vfill
+\end{frame}
+
+\begin{frame}
+  \frametitle{Example: Controlling the Size of Expressions}
+
+  \qquad\begin{tlablock}
+    \LEMMA\
+    \begin{noj2}
+      & \begin{conj}
+          x \in SomeVeryBigExpression\\
+          y \in AnotherBigExpression
+        \end{conj}\\
+      \biimplies &
+        \begin{conj}
+            y \in AnotherBigExpression\\
+            x \in SomeVeryBigExpression
+        \end{conj}
+\pause
+        \hspace{1cm}\raisebox{0cm}[0pt][0pt]{\begin{minipage}{3cm}
+          \begin{beamercolorbox}[rounded=true,shadow=true]{postit}\footnotesize
+            \OBVIOUS\ may take\\forever here
+          \end{beamercolorbox}
+        \end{minipage}}
+    \end{noj2}\\
+\pause
+    \ps{1}{.}\ \ \ \DEFINE\ S\ \deq\ SomeVeryBigExpression\\
+    \ps{1}{.}\ \ \ \DEFINE\ T\ \deq\ AnotherBigExpression\\
+    \ps{1}{1.}\ S = SomeVeryBigExpression\\
+    \quad\OBVIOUS\\
+    \ps{1}{2.}\ T = AnotherBigExpression\\
+    \quad\OBVIOUS\\
+    \ps{1}{.}\ \ \ \HIDE\ \DEF\ S,\ T\\
+    \ps{1}{3.}\ 
+      \begin{noj2}
+        & x \in S \land y \in T\\
+        \biimplies & y \in T \land x \in S
+      \end{noj2}\\
+    \quad\OBVIOUS\\
+    \ps{1}{4.}\ \QED\qquad\BY\ \ps{1}{1},\ \ps{1}{2},\ \ps{1}{3}
+  \end{tlablock}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Avoid Circular Rewrites}
+
+  \begin{itemize}
+  \item \tc{dkblue}{Rewriting is often effective for reasoning about equalities}
+
+    \begin{itemize}
+    \o idea: replace left-hand side of equality by right-hand side
+    \o Isabelle's automatic tactic are based on rewriting
+    \o for example, use\ \ \tc{dkgreen}{$x' = x-y \land y'=y$}\ \ to eliminate $x'$ and $y'$    \end{itemize}
+
+\pause
+
+  \oo \tc{dkblue}{Must make sure that rewriting terminates}
+
+    \begin{itemize}
+    \o consider\ \ \tc{dkgreen}{$s = f(t) \land t = g(s)$}
+    \o Isabelle attempts to reject circular sets of equations
+    \o if rejected, proof may get stuck
+    \o if not rejected, proof may never terminate
+    \end{itemize}
+
+  \oo \alert{Use local definitions, and \HIDE\ them to break loops}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Circular Rewrites: Example}
+
+  \qquad\begin{tlablock}
+    \ps{4}{5.}\ r.name = \str{xyz}\\
+    \quad\ps{5}{1.}\ r = [name \mapsto "xyz",\ value \mapsto \alt<1>{r}{\alert{r}}.value]\\
+    \quad\quad\BY\ \ps{2}{2}\\
+    \quad\ps{5}{2.}\ \QED\\
+    \quad\quad\BY\ \ps{5}{1}
+  \end{tlablock}
+
+\pause
+
+  \vfill\vfill
+
+  \qquad\alert{The equation in step $\ps{5}{1}$ is circular!}
+
+  \vfill\vfill
+
+\pause
+
+  \qquad\begin{tlablock}
+    \ps{4}{5.}\ r.name = \str{xyz}\\
+    \quad\ps{5}{}\ \ \ \DEFINE\ rval\ \deq\ r.value\\
+    \quad\ps{5}{1.}\ r = [name \mapsto "xyz",\ value \mapsto rval]\\
+    \quad\quad\BY\ \ps{2}{2}\\
+    \quad\ps{5}{}\ \ \ \HIDE\ \DEF\ rval\\
+    \quad\ps{5}{2.}\ \QED\\
+    \quad\quad\BY\ \ps{5}{1}
+  \end{tlablock}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Establishing Facts About \CHOOSE}
+
+  \qquad\begin{tlablock}
+    \DEFINE\ m\ \deq\ \CHOOSE x \in S : P(x)\\
+    \DEFINE\ NoValue\ \deq\ \CHOOSE x : x \notin Value
+  \end{tlablock}
+
+  \begin{itemize}
+  \oo \tc{dkblue}{How to prove a property $Q(m)$ ?}
+
+    \begin{itemize}
+    \o \CHOOSE\ always denotes some value, even if $P(x)$ holds for no $x \in S$
+    \end{itemize}
+
+\pause
+
+  \oo \tc{dkblue}{In practice, must establish the two following facts}
+
+    \begin{itemize}
+    \o $\E x \in S : P(x)$
+    \o $\A x \in S : P(x) \implies Q(x)$
+    \o \tlaps\ will then deduce $Q(m)$
+    \end{itemize}
+
+\pause
+
+  \oo \tc{dkblue}{Important special case: ``null'' values}
+
+    \begin{itemize}
+    \o existence of such a value follows from the library theorem
+
+      \medskip
+
+      \begin{tlablock}
+        NoSetContainsEverything\ \deq\ \A S : \E x : x \notin S
+      \end{tlablock}
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{It's Easier To Prove Something If It's True}
+
+  \begin{itemize}
+  \item \tc{dkblue}{All specifications initially contain mistakes}
+
+    \begin{itemize}
+    \o errors range from typos to misunderstandings to genuine bugs
+    \o formal mathematical definitions are hard to get right
+    \end{itemize}
+
+  \oo \tc{dkblue}{\tlaps\ is not good at catching specification errors}
+
+    \begin{itemize}
+    \o if you are stuck on a proof, is it you, the prover or the specification?
+    \o even with structured proofs, complexity quickly gets out of hand
+    \end{itemize}
+
+  \oo \tc{dkblue}{Extensively debug your specifications using \tlc}
+
+    \begin{itemize}
+    \o almost all bugs manifest themselves on small instances
+    \o run \tlc\ on many properties and inspect the counter-examples
+    \end{itemize}
+  \end{itemize}
+\end{frame}
+
+\begin{frame}
+  \frametitle{Focus On The Theorems You Are Interested In}
+
+  \begin{itemize}
+  \item \tc{dkblue}{\tlaps\ currently has limited support for theories}
+
+    \begin{itemize}
+    \o set theory and functions are fully supported
+    \o decision procedure for elementary integer arithmetic
+    \o very rudimentary support for sequences
+    \end{itemize}
+
+\pause
+
+  \oo \tc{dkblue}{State facts about ``data'' as assumptions}
+
+    \begin{itemize}
+    \o do you want to verify an algorithm or basic mathematics?
+    \o but --- isn't that dangerous?
+    \o it is, but you can validate many assumptions using \tlc
+    \o override infinite sets with finite ones in the model, e.g.\ \ \tc{dkgreen}{$Nat\ \deq\ 0..50$}
+    \end{itemize}
+
+\pause
+
+  \oo \alert{Theory support will improve slowly and your help is welcome}
+  \end{itemize}
+\end{frame}
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "tutorial"
+%%% End: 

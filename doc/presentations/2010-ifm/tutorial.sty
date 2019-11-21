@@ -1,0 +1,276 @@
+\newcommand{\tla}[1][]{\textrm{TLA\textsuperscript{#1}}}
+\newcommand{\tlaplus}{\tla[+]}
+\newcommand{\tlaps}{\textsc{tlaps}}
+\newcommand{\tlc}{\textsc{tlc}}
+\newcommand{\pluscal}{\textsc{PlusCal}}
+
+\let\slasho\o
+\renewcommand{\o}{\vfill\item}
+\newcommand{\oo}{\vfill\vfill\item}
+\newcommand{\tc}[1]{\textcolor{#1}}
+\newcommand{\deq}{\mathrel{\smash{\stackrel{\scriptscriptstyle\Delta}{=}}}}
+\newcommand{\seq}[1]{\langle #1 \rangle}
+\newcommand{\kw}[1]{\textsc{#1}}
+\newcommand{\str}[1]{\text{\textsf{\footnotesize ``#1''}}}
+\renewcommand{\O}[1]{\overline{#1}}
+\newcommand{\lbrakk}{[\![}
+\newcommand{\rbrakk}{]\!]}
+\newcommand{\hyps}[1]{\lbrakk\, #1 \,\rbrakk}
+\renewcommand{\implies}{\Rightarrow}
+\newcommand{\biimplies}{\ensuremath{\Leftrightarrow}}
+\newcommand{\A}{\forall}
+\newcommand{\E}{\exists}
+\newcommand{\alw}{\Box}
+\newcommand{\eve}{\Diamond}
+\newcommand{\fun}{\rightarrow}
+\newcommand{\ok}{\tc{dkgreen}{\large $\smiley$}}
+\newcommand{\ko}{\tc{red}{\large $\frownie$}}
+\newcommand{\ps}[2]{\langle #1 \rangle #2}
+
+\newcommand{\WF}{\textrm{\upshape\mdseries WF}}
+\newcommand{\SF}{\textrm{\upshape\mdseries SF}}
+
+\definecolor{dkblue}{rgb}{0,0,.4}
+\definecolor{soft}{rgb}{.25,.25,.25}
+\definecolor{softblue}{rgb}{.6,.6,.9}
+\definecolor{brown}{rgb}{.7,.3,0}
+\definecolor{yellow}{rgb}{1,.5,0}
+\definecolor{lightyellow}{rgb}{.95,.95,0}
+\definecolor{magenta}{rgb}{.8,0,.4}
+\definecolor{lightmagenta}{rgb}{1,0,1}
+\definecolor{cyan}{rgb}{0,.6,.6}
+\definecolor{dkgreen}{rgb}{0,0.5,0}
+\definecolor{softgreen}{rgb}{0.7,1,0.7}
+
+\setbeamercolor{postit}{bg=cyan!35!white}
+\setbeamercolor{tla}{bg=lightyellow!35!white}
+\newenvironment{tlablock}[1][.82]{%
+  \begin{minipage}{#1\textwidth}\footnotesize%
+  \begin{beamerboxesrounded}[lower=tla]{}%
+  \renewcommand{\arraystretch}{1.2}%
+  \hspace*{1em}\begin{math}\begin{array}{@{}l@{}}%
+}{\end{array}\end{math}\end{beamerboxesrounded}\end{minipage}\smallskip}
+\newcommand{\tlabox}[1]{%
+  \usebeamercolor{tla}\colorbox{bg}{\small\ensuremath{#1}}}
+
+\newenvironment{conj}{\begin{array}[t]{@{\mbox{$\land$\ }}l@{}}}{\end{array}}
+\newenvironment{disj}{\begin{array}[t]{@{\mbox{$\lor$\ }}l@{}}}{\end{array}}
+\newenvironment{noj}{\begin{array}[t]{@{}l@{}}}{\end{array}}
+\newenvironment{noj2}{\begin{array}[t]{@{}ll@{}}}{\end{array}}
+
+%%%%%%%%%%%%%%  Module formatting commands (from Lamport's tla style)
+
+%%%% if/then/else %%%%%%%%%%%%%%%%%%
+%\newcommand{\gobbleone}[1]{}
+%\def\IF#1{\@ifnextchar{\\}%
+%           {\begin{array}[t]{@{\hspace{.6em}}l@{}l@{}}
+%              \multicolumn{2}{@{}l}{\mbox{{\sc if\, }$#1$}}\\
+%            \gobbleone}%
+%           {\mbox{{\sc if\, }$#1$ }%
+%             \begin{array}[t]{@{}l@{}l@{}}}}
+%\def\THEN{\mbox{\sc \,then\, }&\begin{array}[t]{@{}l@{}}}
+%\def\ELSE{\end{array}\\\mbox{\sc \,else\, }&\begin{array}[t]{@{}l@{}}}
+%\def\FI{\end{array}\end{array}}
+%\def\LSE{\mbox{\sc\ \,else\, }}
+\newcommand{\IF}{\textsc{if}}
+\newcommand{\THEN}{\textsc{then}}
+\newcommand{\ELSE}{\textsc{else}}
+
+%%%% let %%%%%%%%
+%% \LET and \IN corrected 16 Apr 96 to add \mbox's.
+%% Correction suggested by Denis Roegel
+\newcommand{\LET}{\begin{array}[t]{@{}l@{\;\;}l@{}} \mbox{\sc let}% 
+                              &\begin{array}[t]{@{}l@{}}} 
+\newcommand{\IN}{\end{array}\\\mbox{\sc in}&\begin{array}[t]{@{}l@{}}}
+
+\newcommand{\NI}{\end{array}\end{array}}
+
+%%%% case %%%
+\newcommand{\CASE}{\mbox{\sc case\ }}
+\newcommand{\OTHER}{\mbox{\sc other}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%    
+%                  COMMANDS FROM spec92.sty                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newlength{\@charwidth}
+\settowidth{\@charwidth}{{\small\tt M}}
+\newlength{\boxrulewd}\setlength{\boxrulewd}{.4pt}
+\newlength{\boxindent}\setlength{\boxindent}{22\@charwidth}
+\newlength{\boxlineht}\setlength{\boxlineht}{.5\baselineskip}
+\newcommand{\boxsep}{\@charwidth}
+\newlength{\boxruleht}
+\newlength{\boxruledp}
+\newcommand{\@computerule}{%
+  \setlength{\boxruleht}{.5ex}%
+  \setlength{\boxruledp}{-\boxruleht}%
+  \addtolength{\boxruledp}{\boxrulewd}}
+\newcommand{\boxrule}{\leaders\hrule height \boxruleht depth \boxruledp
+                      \hfill\mbox{}}
+
+\newcommand{\@nmlineraise}{\if@botline -\boxrulewd
+    \else-\boxlineht\fi}
+\newcommand{\nameline}[1]{\hspace*{-\boxsep}%
+    \raisebox{\@nmlineraise}[0pt][0pt]{\rule[.5ex]{\boxrulewd
+               }{\boxlineht}}%
+    \boxrule
+    #1\boxrule
+    \raisebox{\@nmlineraise}[0pt][0pt]{\rule[.5ex]{\boxrulewd
+               }{\boxlineht}}\hspace{-\boxsep}\vspace{.5\baselineskip}}
+\newif\if@botline
+
+%%%%%%%%%%%%%%%%%%END COMMANDS FROM spec92.sty %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newcommand{\topbar}[1]{\tlanameline{\ 
+     {\sc module} {\it #1\/} }\par}
+
+\newenvironment{nomodule}[1][.92]{\begin{minipage}{#1\linewidth}\begin{trivlist}\raggedright\@computerule
+            \item[]\it
+%            \catcode`_=\active\relax
+        }{\par\end{trivlist}\end{minipage}}
+
+\newenvironment{module}[2][.92]{\begin{minipage}{#1\linewidth}\begin{trivlist}\raggedright\@computerule
+            \item[]\tlanameline{\ {\sc module} {\it #2\/} }\par\it
+%            \catcode`_=\active\relax
+        }{\par\bottombar\end{trivlist}\end{minipage}}
+
+
+\newenvironment{submodule}[1]{\par
+        \vspace{-.5em}%%%%%%%%%%%  space at top of submodule
+    \begin{list}{}{%
+       \leftmargin=1em%
+       \labelwidth=0pt%
+       \labelsep=0pt%
+       \parsep=0pt%
+       \topsep=0pt%
+       \partopsep=0pt%
+       \itemsep=0pt}\raggedright\@computerule
+            \item[]\tlanameline{\ {\sc module} {\it #1\/} }\par
+        }{\par\bottombar\end{list}}
+
+
+\newcommand{\tlanameline}[1]{\hspace*{-\boxsep}%
+    \raisebox{\@nmlineraise}[0pt][0pt]{\rule[.5ex]{\boxrulewd
+               }{\boxlineht}}%
+    \boxrule
+    #1\boxrule
+    \raisebox{\@nmlineraise}[0pt][0pt]{\rule[.5ex]{\boxrulewd
+               }{\boxlineht}}\hspace{-\boxsep}%
+          \vspace{.2em}%%% EXTRA SPACE BELOW TOP LINE OF MODULE
+               }
+
+%%%%% Fix to \midline and \botline from spec92
+
+\newcommand{\midbar}{\par\hspace{-\boxsep}%
+    \raisebox{-.5\boxlineht}[0pt][0pt]{\rule[.5ex]{\boxrulewd
+               }{\boxlineht}}%
+     \boxrule
+    \raisebox{-.5\boxlineht}[0pt][0pt]{\rule[.5ex]{\boxrulewd
+               }{\boxlineht}}\hspace{-\boxsep}%
+         \vspace{-.2em}%%% SPACE BELOW \midbar
+                \par}
+
+\newcommand{\bottombar}{\hspace{-\boxsep}%
+    \raisebox{-\boxrulewd}[0pt][0pt]{\rule[.5ex]{\boxrulewd
+               }{\boxlineht}}%
+     \boxrule
+    \raisebox{-\boxrulewd}[0pt][0pt]{\rule[.5ex]{\boxrulewd
+               }{\boxlineht}}\hspace{-\boxsep}\vspace{0pt}}
+
+\newcommand{\xtrivlist}{\begin{list}{}{%
+       \leftmargin=1em%
+       \labelwidth=0pt%
+       \labelsep=0pt%
+       \parsep=0pt%
+       \topsep=0pt%     
+       \partopsep=0pt%
+       \itemsep=0pt}}
+\def\endxtrivlist{\end{list}}
+
+\let\@@startfield\@startfield
+\let\@@stopfield\@stopfield
+
+%% need to change \@tabcr because its look-ahead at the next
+%  character causes that character to be prematurely cat-coded.
+%
+\def\tla@tabcr{\@stopline\@startline\ignorespaces}
+
+\def\xtabbing{\lineskip \z@\let\>\@rtab\let\<\@ltab\let\=\@settab
+     \def\@startfield{\@@startfield\(}
+     \def\@stopfield{\)\@@stopfield}
+     \let\+\@tabplus
+     \let\-\@tabminus
+     \let\`\@tabrj\let\'\@tablab
+     \let\\=\tla@tabcr
+     \global\@hightab\@firsttab
+     \global\@nxttabmar\@firsttab
+     \dimen\@firsttab\@totalleftmargin
+     \global\@tabpush0 \global\@rjfieldfalse
+     \xtrivlist \item[]\if@minipage\else\vskip\parskip\fi
+     \setbox\@tabfbox\hbox{\rlap{\indent\hskip\@totalleftmargin
+       \the\everypar}}\def\@itemfudge{\box\@tabfbox}\@startline\ignorespaces}
+
+\def\endxtabbing{\@stopline\ifnum\@tabpush > 0 \@badpoptabs \fi\endxtrivlist}
+
+\newenvironment{decls}[1]{\par
+      \addvspace{.4em}%%%  EXTRA SPACE ABOVE decls ENVIRONMENT
+{\sc #1}\begin{xtabbing}%
+  \hspace{1em}\=\+\kill}{\end{xtabbing}}
+
+\newenvironment{nodecls}{\par
+      \addvspace{.4em}%%%  EXTRA SPACE ABOVE nodecls ENVIRONMENT
+\begin{xtabbing}}{\end{xtabbing}}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%% KEYWORDS %%%%%%%%%%%%%%%%%%
+%
+\newcommand{\comment}[1]{\text{\color{brown}\upshape\footnotesize \textbackslash * #1}}
+%\newcommand{\comment}{\begingroup\@comment}
+%\newcommand{\@comment}[1]{\endgroup
+%    \raisebox{0pt}[0pt][0pt]{\footnotesize\rm %
+%       \begin{tabular}[t]{@{\textbackslash*\ }l@{}}#1\end{tabular}}}
+%\newcommand{\@comment}[1]{\endgroup
+%    \mbox{\footnotesize\rm \raisebox{0pt}[0pt][0pt]{%
+%       \begin{tabular}[t]{@{}l@{}}#1\end{tabular}}}}
+\newcommand{\EXTENDS}{\mbox{\sc extends}}
+\newcommand{\INSTANCE}{\mbox{\sc instance}}
+\newcommand{\THEOREM}{\mbox{\sc theorem}}
+\newcommand{\LEMMA}{\mbox{\sc lemma}}
+\newcommand{\PROPOSITION}{\mbox{\sc proposition}}
+\newcommand{\ASSUME}{\mbox{\sc assume}}
+\newcommand{\AXIOM}{\mbox{\sc axiom}}
+\newcommand{\PROVE}{\mbox{\sc prove}}
+\newcommand{\PROOF}{\mbox{\sc proof}}
+\newcommand{\LOCAL}{\mbox{\sc local}}
+\newcommand{\VARIABLE}{\mbox{\sc variable}}
+\newcommand{\VARIABLES}{\mbox{\sc variables}}
+\newcommand{\CONSTANT}{\mbox{\sc constant}}
+\newcommand{\CONSTANTS}{\mbox{\sc constants}}
+\newcommand{\WITH}{\mbox{\sc\ with}}
+\newcommand{\BOOLEAN}{\mbox{\sc boolean}}
+\newcommand{\UNION}{\mbox{\sc union}}
+\newcommand{\UNCHANGED}{\mbox{\sc unchanged}}
+\newcommand{\EXCEPT}{\mbox{\sc\ except}}
+\newcommand{\CHOOSE}{\ensuremath{\mathop{\kw{choose}}}}
+\newcommand{\STRING}{\mbox{\sc string}}
+\newcommand{\ENABLED}{\mbox{\sc Enabled}}
+\newcommand{\DOMAIN}{\mbox{\sc domain}}
+\newcommand{\SUBSET}{\mbox{\sc subset}}
+\newcommand{\BY}{\mbox{\sc by}}
+\newcommand{\ONLY}{\mbox{\sc only}}
+\newcommand{\DEF}{\mbox{\sc def}}
+\newcommand{\QED}{\mbox{\sc qed}}
+\newcommand{\TRUE}{\kw{true}}
+\newcommand{\FALSE}{\kw{false}}
+\newcommand{\DEFINE}{\kw{define}}
+\newcommand{\SUFFICES}{\kw{suffices}}
+\newcommand{\HAVE}{\kw{have}}
+\newcommand{\TAKE}{\kw{take}}
+\newcommand{\WITNESS}{\kw{witness}}
+\newcommand{\PICK}{\kw{pick}}
+\newcommand{\USE}{\kw{use}}
+\newcommand{\HIDE}{\kw{hide}}
+\newcommand{\NEW}{\kw{new}}
+\newcommand{\STATE}{\kw{state}}
+\newcommand{\ACTION}{\kw{action}}
+\newcommand{\TEMPORAL}{\kw{temporal}}
+\newcommand{\OBVIOUS}{\kw{obvious}}
+\newcommand{\DEFS}{\kw{defs}}

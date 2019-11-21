@@ -1,0 +1,287 @@
+----------------------- REVIEW 1 ---------------------
+PAPER: 4
+TITLE: Coalescing: Syntactic Abstraction for Reasoning in First-Order Modal Logics
+AUTHORS: Damien Doligez, Jael Kriener, Leslie Lamport, Tomer Libal and Stephan Merz
+
+OVERALL EVALUATION: -1 (weak reject)
+REVIEWER'S CONFIDENCE: 4 (high)
+
+----------- REVIEW -----------
+The paper analyzes first order modal logic in view of applications to verification problems. 
+Thus, for instance, the authors are  mostly interested in a constant domains semantic framework where only variables are
+interpreted in a non rigid way. 
+
+The focus is  concentrated on reasoning problems and especially in modular 
+reasoning. The main idea is to decompose a first order modal satisfiability problem into a purely modal-propositional part and a purely first-order part. From a practical perspective, it is argued that such decomposition should perform much better that standard translation methods (eliminating the modal component in favor of many-sorted first order logic).  
+
+The project is interesting and the above claim has good chances to be substatiated with success. 
+The paper is also clearly written. However, the results presented in the manuscript are rather poor
+and basically trivial. As such, they do not attain the standards required by a top conference like IJCAR. 
+We miss both experimental data and sufficiently deep metatheorems (for instance, one should be able to identify a significant class of formulae where the proposed methodology is complete).
+
+From a conceptual point of view, I only have the following remark. There is nothing in the paper discussing the representation of de re/de dicto distinctions. My feeling is that we need some tool in that direction to be able to adequately exploit the  power of lambda abstraction (i.e. of  'coalescing'-style techniques). In short, modal literature on predicate abstraction (tracing back to old Stalnaker-Thomason papers) should be better taken into account, despite the fact that it was originated from a different kind of motivations (see section 3.3 of ref. [2] for basic information).
+
+
+----------------------- REVIEW 2 ---------------------
+PAPER: 4
+TITLE: Coalescing: Syntactic Abstraction for Reasoning in First-Order Modal Logics
+AUTHORS: Damien Doligez, Jael Kriener, Leslie Lamport, Tomer Libal and Stephan Merz
+
+OVERALL EVALUATION: -1 (weak reject)
+REVIEWER'S CONFIDENCE: 4 (high)
+
+----------- REVIEW -----------
+A simple, abstraction based method is presented, which aims at partly
+automating first-order modal logic (FOML) problems with automated
+theorem provers (ATPs) for first-order logic (FOL) or propositional
+logic (PL). The method, which is related to well known
+naming-techniques in FOL ATPs, abstracts away all modal logic aspects
+in a given proof problem so that the contained propositional or
+first-order logic aspects can be attacked with FOL or PL ATPs in a
+sound way. Obviously the method is incomplete. The work is motivated
+from the perspective of the TLAPS proof system, which mechanizes the
+TLA+ specification language (providing two temporal operators Always
+and Next). Typical applications of TLAPS are in program verification,
+and, as the authors argue, current ATPs for FOML are too weak to
+handle these application problems fully automatically, so that that a
+combination of interactive proof (proof goal decomposition) and
+subgoal automation is required to effectively tackle the problems. It
+is claimed that semantic translation based methods are not suited in
+this context, since they would completely rewrite the modal logic
+aspects and thus have a negative effect on human intuition. Instead
+the presented method is advocated, which is intended to be applied to
+simple subgoals resulting from interactive proof decomposition.  The
+presented work is foremost of practical nature. Completeness of the
+method for FOML is not an issue and no completeness proof, not even
+for some fragments of FOML, are presented in the paper.
+
+
+Assessment: Early work in progress is presented; no empirical evidence
+for the method is given; there are different conceptual issues which
+remain unclear; several incorrect, unjustified, or highly debatable
+statements are made; related work is not properly discussed.
+
+More details on these judgments are given below. In summary, the paper
+is not ready yet for high quality conference publication. 
+
+
+Early work in progress / no empirical evidence:
+===============================================
+
+On page 15 the authors admit "We have begun writing formal liveness
+proofs, but TLAPS will not completely check them until we have a
+translation that can handle formulas which, like the Barcan formula,
+inextricably mix quantifiers and modal operators. We also have not yet
+implemented coalescing of non-Leibniz defined operators, but we expect
+to do that before we prepare the final version of this paper."
+Earlier, on page 3, they said: "We believe that translation by
+coalescing will be useful for verification with modal logics other
+than TLA+." Several further claims are made throughout the paper that
+the method is likely suitable in the TLAPS resp. TLA+ context and
+beyond, but no supporting evidence (e.g. in form of experiments) is
+given.
+
+
+Conceptual issues: 
+==================
+
+(1) Why don't the authors first decompose the FOML problems as they
+motivate and then apply the semantic translation approach with FOL
+ATPs (in the background) to the resulting subproblems. If such a proof
+attempt then still fails, then the interactive proof could be
+continued in TLAPS. The paper is not well discussing, why this is not
+an option. In fact, a comment on page 14 ("TLA proofs contains only a
+small number of such proof obligations, and we expect TLAPS to be able
+to handle them easily with a semantic translation to FOL.") seems to
+indicate that semantic translation to FOL in fact is considered and
+required as an additional approach. I wonder whether the approach
+presented in this paper is then needed at all, since it might be
+subsumed by the semantic translation. Again, I would expect to clarify
+this question with respective experiments.
+
+(2) If the semantic translation approach is applied within an
+interactive higher-order theorem prover (cf. [1]), stepwise expansion
+of single FOML operators and proof decomposition is perfectly well
+supported (cf. in particular the Coq proof mentioned in [1]). This
+contradicts the claims made in the paper about the unintuitive nature
+of the semantic translation approach. Hence these statements need to
+be restricted in the paper to the related work on SPASS and Saturate;
+the work in [1], on the contrary, does not at all suffer from the
+mentioned problem. See also the statement on page 10: "If the precise
+definition is unimportant, it is better to leave the operator
+unexpanded in order to keep the formulas small." Exactly this has been
+done with approach employed in [1] in the context of Coq.
+
+
+Incorrect, unjustified, or debatable statements; other issues:
+
+(1) "These two translations are semantically complete on two
+subclasses of proof obligations that together include the great
+majority of obligations in a practical TLA+ verification." I have
+problems here with "great majority", since, again, no concrete data is
+provided.
+
+(2) Leibniz equality: "... Leibniz principle, often called
+extensionality of equality." This is confusing and seems odd; where
+exactly is Leibniz principle called extensionality of equality?
+Moreover, the example formula "(v = 0) => P(v = 0)" doesn't seem to
+relate to "(d = e) => (P(d) = P(e))".
+
+(3) page 4: "Incorporating these into first-order reasoning may not be
+easy. For example, in TLA+ the P modality corresponds to the
+transitive closure of the prime modality, and this is not first-order
+axiomatizable." This is indeed a problem for semantic translations
+into FOL as done in SPASS and Saturate. It seems much less a problem,
+if at all, for the approach as employed in [1].
+
+(4) page 4: "We show how soundness is preserved by replacing an
+expression P(a,b) with [P,E1,E2](a,b), for suitable expressions E1 and
+E2 ..."  Your motivation was to preserve intuition as good as
+possible. However, also in your approach, formulas are manipulated
+syntactically and they are replaced by slightly more complex
+terms. Hence, I am wondering to what extend intuition is
+actually better preserved than in the alternative approaches. Again,
+no evidence is provided.
+
+(5) The notion of FOML as presented on page 5 seems to allow equations
+between formulas; this is not a FOML construct, and, in fact, this
+aspect is not properly handled in the remainder of the paper (see (6)
+and (8) below).
+
+(6) page 6: "FOL does not have flexible variables V or expressions
+[]e."  Most importantly, you need to mention, that FOL does not have
+expressions "e1 = e2" where e1 and e2 are FOML propositions. Your FOML
+language formally does support such expressions.
+
+(7) page 7: "-- (e1 = e2)^y_FOL =def (e1)^y_FOL = (e2)^y_FOL" There
+is a problem here with translation an expression like (a \/ b) = (b \/
+a) to FOL. The result, according to your definition, is (a \/ b) = (b
+\/ a), which is not a FOL formula.
+
+(8) Section 5.4: The technical machinery sketched here seems in slight
+conflict with the idea of keeping the approach as intuitive as
+possible (cf. issue (4) above).
+
+(9) "We have found that our techniques for coalescing FOML formulas to
+FOL and ML are useful for verifying temporal logic properties of TLA+
+specifications." No empirical evidence is given that support this statement.
+
+(10) "One recent experiment [1] found this technique entirely
+satisfactory, but it used a modal logic too weak to handle the
+applications that concern us." In what sense is the approach in [1]
+too weak? Be more precise. 
+
+
+Further issues: 
+===============
+
+page 3: "This principle asserts (d = e) => (P(d) = P(e)) for any
+expressions d and e and operator P. " What exactly do you mean with
+operator here?
+
+page 4: "For example, a naive coalescing of the expression {a, a} in
+the valid formula ... .  A correct coalescing yields ... ."  I
+actually did not fully get this example.
+
+page 5: It is slightly unfortunate that your motivating example on
+page 2 contains the Next and the [] modality, while your FOML
+language on page 5 only introduces one standard [] operator.
+
+page 5: "We do not allow quantification over flexible variables, so
+our flexible variables are equivalent to the 'flexible function
+symbols of arity 0' found in other systems." Maybe you want to give an
+example of such a system.
+
+page 5: "Note that we assume a constant universe, independent of the
+states of the model, and we also assume that all operators in O are
+rigid--i.e., interpreted independently of the states." How easy or
+difficult is it to adapt your approach to these other conditions?
+
+page 7: "(The formula is not valid because it is false at a state w of
+a model in which ..., but ... for some state w' accessible from w.)"
+You may want to say this already in the beginning.
+
+page 9: "Theorem 2. For any set Gamma of FOML formulas and any FOML
+formula ..." Better motivate/explain why "{Phi}" is needed here.
+
+page 12: The notion of "pattern" is not further introduced and no
+reference is given.
+
+
+----------------------- REVIEW 3 ---------------------
+PAPER: 4
+TITLE: Coalescing: Syntactic Abstraction for Reasoning in First-Order Modal Logics
+AUTHORS: Damien Doligez, Jael Kriener, Leslie Lamport, Tomer Libal and Stephan Merz
+
+OVERALL EVALUATION: 1 (weak accept)
+REVIEWER'S CONFIDENCE: 3 (medium)
+
+----------- REVIEW -----------
+In this paper, the authors discuss a method of translating
+first-order modal logics (with equality) to first-order logic
+by renaming subformulae and adding definitions (this type of
+renaming is called ``coalescing'' in the paper).
+
+The difficulties are illustrated by examples, and the
+solutions are explained in detail.
+
+The paper is clearly in the scope of IJCAR; its topic is of
+great interest nowadays, especially if we take into account
+the importance of first-order formalisms to verification
+which use temporal logics and modal or dynamic logics.
+
+However, I think that the presentation can be improved
+(detailed comments are given below). What I am missing after
+having read this paper is a more complex example in which the
+advantages and the drawbacks of the method are illustrated.
+A comparison with other methods for translating FOML to FOL
+(such as the one in [9]) would have also been helpful.
+
+Overall, my evaluation is ``weak accept''.
+
+Detailed comments
+=================
+page 1: please explain what is \Gamma and what is |=.
+       (on page 6, |= is defined to be global entailment)
+
+page 2. Section 1.1: The authors illustrate the ideas
+of the method they propose, under the assumption that
+the reader already knows the definition of TLA and TLA^+.
+
+Without a brief explanation of the syntax and semantics
+of TLA and TLA^+ this part is difficult to understand.
+- Line 4 of Sect. 1.1: What is the relationship between
+  prime and Next?
+- Why is [Next]_v equal to Next \vee v = v'?
+  Why is a transition predicate used as a modal operator?
+
+page 3: Please explain the abbreviation PTL.
+
+page 5: Please explain what the flexible variables are used for.
+
+page 6: In formula (2) are x, y rigid variables?
+
+page 7
+- line 13: Please point out here that v is a flexible
+          variable, and explain why you do not need to use
+          v as an argument to the atom abbreviating \Box (v = 0).
+
+- line -6: what kind of variables are y, z here?
+          Are only rigid variables used as arguments to the
+          atoms abbreviating the modal formulae?
+
+page 9
+- line 6: is x here a rigid variable?
+
+page 14
+I think it would be very useful if at least in the conclusion
+the authors would address the following questions:
+ - How can the method be used to prove certain properties.
+ - What are the advantages compared with the classical
+   translation from FOML to FOL (e.g. in [9])
+   - the method presented in this paper is not complete;
+     is the method in [9] complete?
+   - how can the method be used such that incompleteness is
+     not a problem?
+   - how efficient is the method compared to the classical
+     translation from FOML to FOL?

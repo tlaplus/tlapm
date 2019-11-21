@@ -1,0 +1,556 @@
+%%% -*- mode: LaTeX; TeX-master: "main.tex"; -*-
+
+\ifx\master\undefined
+\documentclass[a4paper]{easychair}
+\usepackage{submission}
+\begin{document}
+{\let\master\relax\input{frontmatter}}
+\fi
+%%%% PLEASE DO NOT EDIT ABOVE THIS LINE
+
+\section{\tlaplus and its Proof Language}
+\label{sec:proof-language}
+
+\subsection{TLA}
+\label{sec:proof-language.tla} 
+
+The \tlaplus\ language is based on the Temporal Logic of Actions
+(TLA)~\cite{lamport:newtla}, a linear-time temporal logic. The rigid
+variables of TLA are called \emph{constants} and the flexible
+variables are called simply \emph{variables}.  TLA assumes an
+underlying ordinary (non-modal) logic for constructing expressions.
+Operators of that logic are called \emph{constant} operators.  A
+\emph{state function} is an expression built from constant operators
+and TLA constants and variables.  The elementary (non-temporal)
+formulas of TLA are \textit{actions}, which are formulas built with
+constant operators, constants, variables, and expressions of the form
+$f'$, where $f$ is a state function.  (TLA also has an \ENABLED
+operator that is used in reasoning about liveness, but we ignore it
+for brevity.)  An action is interpreted as a predicate on pairs of
+states that describes a set of possible state transitions, where state
+functions refer to the starting state and primed state functions refer
+to the ending state.  Because priming distributes over constant
+operators and because $c'$ is equal to $c$ for any constant $c$, an
+action can be reduced to a formula built from constant operators,
+constants, variables, and primed variables.
+
+TLA is practical for describing systems because all the complexity of
+a specification is in the action formulas.  Temporal operators are
+essentially used only to assert liveness properties, including
+fairness of system actions.  Most of the work in a TLA proof is in
+proving action formulas; temporal reasoning occurs only in proving
+liveness properties and is limited to propositional temporal logic and
+to applying a handful of proof rules whose main premises are action
+formulas.  Because temporal reasoning is such a small part of TLA
+proofs, we have deferred its implementation.  The \PM\ now handles
+only action formulas.  We have enough experience mechanizing TLA's
+temporal reasoning~\cite{engberg:mechanical} to be fairly confident
+that it will not be hard to extend the \PM to support it.
+
+A formula built from constant operators, constants, variables, and
+primed variables is valid iff it is a valid formula of the underlying
+logic when constants, variables, and primed variables are treated as
+distinct variables of the logic---that is, if $v$ and $v'$ are
+considered to be two distinct variables of the underlying logic, for
+any TLA variable $v$.  Since any action formula is reducible to such a
+formula, action reasoning is immediately reducible to reasoning in the
+underlying logic.  We therefore ignore variables and priming here and
+consider only constant formulas.
+
+
+\subsection{\tlaplus}
+
+The \tlaplus\ language adds the following to the TLA logic:
+\begin{icom}
+\item An underlying logic that is essentially ZFC set theory plus
+  classical untyped first-order logic with Hilbert's
+  $\varepsilon$~\cite{leisenring:mathematical-logic}.
+% LL: I deleted
+% 
+%    which is written \CHOOSE\ in \tlaplus.  
+% 
+% to save a line and avoid unnecessarily introducing a name.
+% 
+The major difference between this underlying
+  logic and traditional ZFC is that functions are defined axiomatically 
+  rather than being represented as sets of ordered pairs.
+
+\item A mechanism for defining operators, where a user-defined
+operator is essentially a macro that is expanded syntactically.
+(\tlaplus\ permits recursive function definitions, but they are
+translated to ordinary definitions using Hilbert's $\varepsilon$.)
+
+%% LL: changed ``A module language'' to ``Modules''
+\item Modules, where one module can import definitions
+  and theorems from other modules.  A module is parameterized by its
+  declared variables and constants, and it may be instantiated in another
+  module by substituting expressions for its parameters. The
+  combination of substitution and the \ENABLED\ operator introduces
+  some complications, but space limitations prevent us from discussing
+  them, so we largely ignore modules in this paper.
+\end{icom}
+\tlaplus\ has been extensively documented~\cite{lamport03tla}.  Since
+we are concerned only with reasoning about its underlying logic, which
+is a very familiar one, we do not bother to describe \tlaplus\ in any
+detail.  All of its nonstandard notation that appears in our examples is
+explained.
+
+\subsection{The Proof Language}
+\label{sec:proof-language.lang}
+
+The major new feature of \tlatwo\ is its proof language.  (For reasons
+having nothing to do with proofs, \tlatwo\ also introduces recursive
+operator definitions, which we ignore here for brevity.)  We describe
+the basic proof language, omitting a few constructs
+%%
+% LL: I don't think we omitted any ``uninteresting'' constructs,
+%     so I deleted:
+% 
+% 
+%    for simplicity a few constructs that are either uninteresting or
+%    
+% 
+that concern aspects such as module instantiation that we are not
+discussing.  \tlatwo\ also adds constructs for naming subexpressions
+of a definition or theorem, which is important in practice for writing
+proofs but is orthogonal to the concerns of this paper.
+
+The goal of the language is to make proofs easy to read and write for
+someone with no knowledge of how the proofs are being checked.  This
+leads to a mostly declarative language, built around the uses and
+proofs of assertions rather than around the application of
+proof-search tactics.  It is therefore more akin to
+Isabelle/Isar~\cite{isar} than to more operational interactive
+languages such as Coq's Vernacular~\cite{coq}.
+Nevertheless, the proof language does include a few operational
+constructs that can eliminate the repetition of common idioms, albeit
+with some loss of perspicuity.
+
+% at the cost of some loss of perspicuity.
+
+
+At any point in a \tlaplus\ proof, there is a current obligation that
+is to be proved.  The obligation contains a \emph{context} of
+\emph{known} facts, definitions, and declarations, and a
+\emph{goal}.
+%%
+%% SM: slight rewording of the following
+%%
+% which is a proposition that the obligation claims to be entailed by
+% the context.
+The obligation claims that the goal is logically entailed by the context.
+Some of the facts and definitions in the
+context are marked as \emph{usable} for reasoning, while the remaining
+facts and definitions are \textit{hidden}.
+%
+%% LL: We'd better say more about this below, so it's redundant
+%% here:
+% 
+% and may not be used in the
+% proof unless explicitly made usable with a \USE declaration (see
+% below).
+
+\ednote{SM}{I don't think we are quite consistent about what is an
+  assertion. This presentation suggests that an assertion is not just
+  an \ASSUME{} \PROOF{}, but also ``contains'' the context in which
+  that \ASSUME{} \PROOF{} appears. I think that the term ``assertion''
+  is used differently towards the end of this section, although the
+  description here matches what we say in Section 3.}
+
+Proofs are structured hierarchically.
+%
+%% LL: This is deferred until the first use of PROOF.
+% and optionally begin with the token \PROOF. 
+%
+% At the lowest levels of the hierarchy are the
+% \textit{leaf proofs}.  
+The leaf (lowest-level) proof \OBVIOUS\ asserts that the
+current goal follows easily from the usable facts and definitions.
+The leaf proof
+\begin{gather*}
+  \BY\ e_{1},\ldots, e_{m} \ \DEFS\ o_{1},\ldots, o_{n}
+\end{gather*}
+asserts that the current goal follows easily from the usable facts and
+definitions together with (i)~the facts $e_{i}$ that must themselves
+follow easily from the context and (ii)~the known definitions of
+$o_{j}$.  Whether a goal follows easily from definitions and facts
+depends on who is trying to prove it.  The \PM\ generates proof
+obligations for each leaf proof, so in practice ``follows easily''
+means that a back-end prover can prove them.
+
+A non-leaf proof is a sequence of \textit{steps}, each consisting of a
+begin-step token and a proof construct.  For some constructs
+(including a simple assertion of a proposition) the step takes a
+subproof, which may be omitted.  The final step in the sequence simply
+asserts the current goal, which is represented by the token \QED.
+%
+A begin-step token is either a \emph{level token} of the form \s{n} or
+a \emph{label} of the form \s{n}"l", where $n$ is a level number that
+is the same for all steps of this non-leaf proof, and "l" is an
+arbitrary name.  The hierarchical structure is deduced from the level
+numbers of the begin-step tokens, a higher level number beginning a
+subproof.
+
+%% LL: I changed 
+%   A step that makes declarations or definitions or that changes the form
+%   of the current goal does not require a proof,
+%   but one that makes an assertion is followed by its proof 
+%
+% because (a) SUFFICES changes the goal and requires a proof and 
+% (b) PICK makes a definition and requires a proof
+% (c) WITNESS e \in S makes an assertion but does not take a proof.
+%  Also assertions whose proof is omitted are not followed by their proof--
+%  at least not with the reader's current understanding of proof.
+%
+Some steps make declarations or definitions or change the current
+goal and do not require a proof.  Other steps make assertions that
+become the current goals for their proofs.  An omitted proof (or one
+consisting of the token \OMITTED) is considered to be a leaf proof
+that instructs the assertion to be accepted as true.  Of course, the
+proof is then incomplete and cannot be certified.  Following a step
+that makes an assertion (and the step's proof), until the end of the
+current proof (after the \QED\ step), the contexts contain that
+assertion in their sets of known facts.  The assertion is marked
+usable iff the begin-step token is a level token; otherwise it can be
+referred to by its label in a \BY\ proof.
+
+The hierarchical structure of proofs not only aids in reading finished
+proof but is also quite useful in incrementally writing proofs.  The
+steps of a non-leaf proof are first written with all proofs but that
+of the \QED\ step omitted.  After checking the proof of the \QED
+step, the proofs omitted for other steps in this or earlier levels
+are written in any order.  When writing the proof, one may discover
+facts that are needed in the proofs of multiple steps.
+% 
+% LL: I modified the following text because we say in conclusion
+%     that adding lemmas is bad. 
+%
+Such a fact is then added to the proof as an early step, or added at a
+higher level.  It can also be removed from the proof of the theorem
+and proved separately as a lemma.  However, the hierarchical proof
+language encourages facts relevant only for a particular proof to be
+kept within the proof, making the proof's structure easier to see and
+simplifying maintenance of the proof.  For correctness proofs of
+systems, the first few levels of the hierarchy are generally
+determined by the structure of the formula to be proved---for example,
+the proof that a formula implies a conjunction usually consists of steps
+asserting that it implies each conjunct.
+
+As an example, we incrementally construct a hierarchical proof of
+Cantor's theorem, which states that there is no surjective function
+from a set to its powerset. It is written in \tlaplus as:
+%
+\begin{quote} \small
+  \begin{tabbing}
+    \THEOREM\ "\forall S : \forall f \in [S -> \SUBSET\ S] : 
+        \exists A \in \SUBSET\ S : \forall x \in S : f[x] \neq A"
+  \end{tabbing}
+\end{quote}
+%
+%% SM: cosmetic change of the following that heeds Leslie's advice below
+%% (I think it used to be more or less like that before, why did it
+%% change?)
+%%
+%where "f[x]" is the application of the function "f" to "x",
+where function application is written using square brackets,
+"\SUBSET\ S" is the powerset of "S", and "[S -> T]" is the set of
+functions from $S$ to $T$.
+% \llnote{One should not write two mathematical operators like
+% $x$ and $\SUBSET$ separated only by punctuation, since that is hard to
+% read.  The sentence above needs to be rewritten.}
+
+The statement of the theorem is the current goal for 
+its top-level proof. A goal of the form $\forall v:e$ is
+proved by introducing a generic constant and proving the formula
+obtained by 
+substituting it for the bound identifier. We express this as follows,
+using the \ASSUME/\PROVE construct of \tlatwo:
+% \llnote{\ASSUME/\PROVE should be introduced earlier, where we mention
+% assertions---probably back where we introduce "||-".}
+
+\begin{quote} \small
+  \begin{tabbing}
+    \THEOREM\ "\forall S : \forall f \in [S -> \SUBSET\ S] : 
+                \exists A \in \SUBSET\ S : \forall x \in S : f[x] \neq A" \\
+%%    \PROOF \\
+    \LSP \= \s11.\ \= \ASSUME \= "\NEW\ S", \\
+         \>        \>         \> "\NEW\ f \in [S -> \SUBSET\ S]"\\
+         \>        \> \PROVE "\exists A \in \SUBSET\ S : \forall x \in S : f[x] \neq A" \\
+         \> \s12.  \> \QED \BY \s11
+  \end{tabbing}
+\end{quote}
+%
+%
+Step \s11 asserts that for any constants "S" and "f" with "f \in [S
+-> \SUBSET\ S]", the proposition to the right of the \PROVE is true.
+More precisely, the current context for the proof of \s11 (which we
+have yet to write) contains the declarations of $S$ and $f$ and the
+usable fact "f \in [S -> \SUBSET\ S]", and the \PROVE\ assertion is
+its goal.  The \QED step states that the original goal (the theorem)
+follows from the assertion in step~\s11.
+
+We tell the \PM to check this (incomplete) proof, which it does by
+having the back-end provers verify the proof obligation for the \QED
+step.  The verification succeeds, and we now continue by writing the
+proof of \s11.  (Had the verification failed because \s11 did not
+imply the current goal, we would have caught the error before
+attempting to prove \s11, which we expect to be harder to do.)
+
+\llnote{Check minor edit below.}
+
+We optimistically start with the proof \OBVIOUS, but it is too hard
+for the back-end to prove, and the \PM reports a timeout.  Often this
+means that a necessary fact or definition in the context is hidden and
+we merely have to make it usable with a \USE step or a \BY proof.  In
+this case we have no such hidden assumptions, so we must refine the
+goal into simpler goals with a non-leaf proof.  We let this proof have
+level 2 (we can use any level greater than 1).  Since the goal itself
+is existentially quantified, we must supply a witness.  In this case,
+the witness is the classic diagonal set, which we call~"T".
+%
+\begin{quote} \small
+  \begin{tabbing}
+    \THEOREM\ "\forall S : \forall f \in [S -> \SUBSET\ S] : \exists A \in \SUBSET\ S : \forall x \in S : f[x] \neq A" \kill
+    \PROOF \kill
+    \LSP \= \s11.\ \= \ASSUME \= "\NEW\ S", \\
+         \>        \>         \> "\NEW\ f \in [S -> \SUBSET\ S]" \\
+         \>        \> \PROVE "\exists A \in \SUBSET\ S : \forall x \in S : f[x] \neq A" \\
+%         \>        \> \PROOF \\
+         \>   \hspace{1em}     \= \s21.\ \= \DEFINE "T \DEF \{z \in S : z \notin f[z]\}" \\
+         \>        \> \s22.  \> "\forall x \in S : f[x] \neq T" \\
+         \>        \> \s23.  \> \QED \BY \s22
+  \end{tabbing}
+\end{quote}
+Because definitions made within a proof are usable by default, the
+definition of $T$ is usable in the proofs of \s22\ and \s23.  Once
+again, the proof of the \QED\ step is automatically verified, so all
+that remains is to prove \s22.  (The \DEFINE\ step requires no proof.)
+
+% \llnote{I added to the paragraph above an explanation of why the
+%   definition of $T$ is usable.  Stephan asks if it wouldn't it be more
+%   consistent to give the definition a level token.  In a comment that
+%   got deleted along the way, I proposed changing the language to make
+%   labeled definitions unusable and allow the user to write $\BY\
+%   \DEFS\ \s21$ as well as $\BY\ \DEFS\ T$.  However, we had already
+%   decided that the user is most likely to want local definitions to be
+%   \USE{}d by default, and many users might prefer to give step numbers
+%   to all their steps.  So, we decided to defer a decision on this
+%   point.  In the conclusion, I added this as the kind of fine tuning
+%   we are likely to make to the language.}
+% 
+% \ednote{SM}{Fine with me. There must be a way to hide definitions
+%   because they can get in the way. Your suggestion to make labeled
+%   definitions unusable looks clean and consistent to me, but in its
+%   absence we can at least write HIDE DEF.}
+% 
+% \ednote{KC}{In my opinion, the presence or absence of a label should
+%   not be the deciding factor on whether the contents of the step, be
+%   they definitions or facts, are usable or hidden. Instead, the label
+%   should determine whether the contents of the step are namable by the
+%   step token or not. Since definitions are not namable, it does not
+%   matter whether we number "\DEFINE" steps or not. (Subexpressions of
+%   the body of the definition are reachable via the defined operator
+%   name.)}
+
+%
+% \llnote{This example suggests that we should modify the current language
+% definition so that definitions in a labeled step are not automatically
+% usable.  There's no reason why they need to be, and it would make it
+% clear that the \QED\ step's proof doesn't depend on the definition.
+% We could allow BY DEF \s21\ to include all the definitions made
+% in the step.}
+
+The system 
+%% LL: changed ``will accept'' to ``accepts'' because it does so right now.
+accepts \OBVIOUS\ as the proof of \s22 because the only
+difficulty in the proof of \s11 is finding the
+witness. However, suppose we want to add another level of proof for the benefit
+of a human reader.  The universal quantification is proved as above,
+by introducing a fresh constant:
+
+\begin{quote} \small
+  \begin{tabbing}
+    \THEOREM\ "\forall S : \forall f \in [S -> \SUBSET\ S] : \exists A \in \SUBSET\ S : \forall x \in S : f[x] \neq A" \kill
+    \PROOF \kill
+    \LSP \= \s11.\ \= \ASSUME \= "\NEW\ S", \kill
+         \>        \>         \> "\NEW\ f \in [S -> \SUBSET\ S]" \kill
+         \>        \> \PROVE "\exists A \in \SUBSET\ S : \forall x \in S : f[x] \neq A" \kill
+         \>        \> \PROOF \kill
+         \>   \hspace{1em} \= \s21.\ \= \DEFINE "T == \{z \in S : z \notin f[z]\}" \kill
+         \>        \> \s22.  \> "\forall x \in S : f[x] \neq T" \\
+         \>        \> \hspace{1em} \= \s31.\ \= \ASSUME "\NEW\ x \in S" \PROVE "f[x] \neq T" \\
+         \>        \>        \> \s32.\ \> \QED \BY \s31
+  \end{tabbing}
+\end{quote}
+%
+% Naturally, the system verifies the proof of the \QED\ step.  (Remember
+% that it could verify \s22\ by itself.)
+%     the QED step has nothing to do with \s22  -- KC
+\ednote{KC}{Should be able to trim the text for this last level below}
+Naturally, the \QED step is verified.  Although the system accepts
+\OBVIOUS\ as the proof of \s31 (remember that it could verify \s22\ by
+itself), we can provide more detail with yet another level
+of proof.  We write this proof the way it would seem natural to a
+person---by breaking it into two cases:
+%
+\begin{quote} \small
+  \begin{tabbing}
+    \THEOREM\ "\forall S : \forall f \in [S -> \SUBSET\ S] : \exists A \in \SUBSET\ S : \forall x \in S : f[x] \neq A" \kill
+    \PROOF \kill
+    \LSP \= \s11.\ \= \ASSUME \= "\NEW\ S", \kill
+         \>        \>         \> "\NEW\ f \in [S -> \SUBSET\ S]" \kill
+         \>        \> \PROVE "\exists A \in \SUBSET\ S : \forall x \in S : f[x] \neq A" \kill
+         \>        \> \PROOF \kill
+         \> \hspace{1em} \= \s21.\ \= \DEFINE "T == \{z \in S : z \notin f[z]\}" \kill
+         \>        \> \s22.  \> "\forall x \in S : f[x] \neq T" \kill
+         \>        \>  \hspace{1em} \= \s31.\ \= \ASSUME "\NEW\ x \in S" \PROVE "f[x] \neq T" \\
+         \>        \>        \> \hspace{1em} \= \s41.\ \= \CASE "x \in T" \\
+         \>        \>        \>        \> \s42.\ \> \CASE "x \notin T" \\
+         \>        \>        \>        \> \s43.\ \> \QED \BY \s41, \s42
+  \end{tabbing}
+\end{quote}
+The (omitted) proof of the \CASE\ statement \s41\ has as its goal
+"f[x]\neq T" and has the additional usable fact $x\in T$ in its context.
+
+\llnote{Minor edit below.}
+
+We continue refining the proof in this way, stopping 
+with an \OBVIOUS or \BY proof when a goal is
+obvious enough for the back-end prover or for a human reader,
+depending on who the proof is being written for. 
+A \BY\ statement can guide the prover or the human reader
+by listing helpful obvious consequences of known facts.  For example,
+the proof of \s41\ might be "\BY\ x \notin f[x]".
+%
+The complete proof appears in Appendix~\ref{apx:cantor}.
+
+This example illustrates how the proof language supports a
+hierarchical, non-linear, and incremental development of proofs.  The
+proof writer can work on the most problematic unproved steps first,
+leaving the easier ones for later.  Finding that a step cannot be
+proved (for example, because it is invalid) may require changing other
+steps, making proofs of those other steps wasted effort.  We intend to
+provide an interface to the \PM\ that will make it easy for the user
+to indicate which proofs should be checked and will avoid
+unnecessarily rechecking proofs.
+
+The example also shows how already-proved facts are generally not made
+usable, but are invoked explicitly in \BY\ proofs.  Global definitions
+are also hidden by default and the user must explicitly make them
+usable.  This makes proofs easier to read by telling the reader what
+facts and definitions are being used to prove each step.  It also
+helps constrain the search space for an automated back-end prover,
+leading to more efficient verification.  Facts and definitions can be
+switched between usable and hidden by \USE\ and \HIDE\ steps, which
+have the same syntax as \BY. As noted above, omitting the label from a
+step's starting token (for example, writing \s4 instead of \s42) makes
+the fact it asserts usable.  This might be done for compactness at
+the lowest levels of a proof.
+
+% The Isar proof language~\cite{isar} is similarly explicit about
+% usable assumptions, but the facility is local to a proof and does
+% not persist into sub-proofs, causing repetition in sibling
+% sub-proofs. In the \tlatwo proof language, the visibility of an
+% assumption persists until hidden, so one \USE declaration at a
+% suitable level is enough. (The assumption can be selectively hidden
+% at lower levels if needed for performance reasons.)
+
+% \llnote{The preceding stuff about Isar needs to be moved to the conclusion.}
+
+
+The example also indicates how the current proof obligation at every
+step of the proof is clear, having been written explicitly in a parent
+assertion.  This clear structure comes at the cost of introducing many
+levels of proof, which can be inconvenient.  One way of avoiding these
+extra levels is by using an assertion of the form "\SUFFICES\ A",
+which asserts that proving $A$ proves the current goal, and makes $A$
+the new current goal in subsequent steps.  In our example proof, one
+level in the proof of step \s22\ can be eliminated by writing the
+proof as:
+\begin{quote} \small
+  \begin{tabbing}
+    \THEOREM\ "\forall S : \forall f \in [S -> \SUBSET\ S] : \exists A \in \SUBSET\ S : \forall x \in S : f[x] \neq A" \kill
+    \PROOF \kill
+    \LSP \= \s11.\ \= \ASSUME \= "\NEW\ S", \kill
+         \>        \>         \> "\NEW\ f \in [S -> \SUBSET\ S]" \kill
+         \>        \> \PROVE "\exists A \in \SUBSET\ S : \forall x \in S : f[x] \neq A" \kill
+         \>        \> \PROOF \kill
+         \> \hspace{1em} \= \s21.\ \= \DEFINE "T == \{z \in S : z \notin f[z]\}" \kill
+         \>        \> \s22.  \> "\forall x \in S : f[x] \neq T" \\
+         \>        \>  \hspace{1em} \= \s31.\ \= \SUFFICES \ASSUME "\NEW\ x \in S" \PROVE "f[x] \neq T" \\
+         \>        \>        \> \hspace{1em} \PROOF \OBVIOUS \\
+         \>        \>        \> \s32.\ \> \CASE "x \in T" \\
+         \>        \>        \> \s33.\ \> \CASE "x \notin T" \\
+         \>        \>        \> \s34.\ \> \QED \BY \s32, \s33
+  \end{tabbing}
+\end{quote}
+where the proofs of the \CASE\ steps are the same as before.  The
+\SUFFICES\ statement changes the current goal of the level-3 proof to
+$f[x]\neq T$ after adding a declaration of "x" and the usable fact "x
+\in S" to the context. This way of proving a universally quantified
+formula is sufficiently common that \tlatwo\ provides a \TAKE\
+construct that allows the \SUFFICES\ assertion \s31 and its \OBVIOUS
+proof to be written \mbox{\,$\TAKE\ x \in S$\,}. 
+
+There is a similar construct, "\WITNESS\ f \in S" for proving an
+existentially quantified goal $\exists x\in S: e$, which changes the
+goal to "e[x := f]".
+% the := notation for capture-avoiding substitution is universal
+% enough, especially in the community reading this paper
+For implicational goals "e => f", the construct $\HAVE\ e$ changes the
+goal to $f$.  No other constructs in the \tlatwo proof language change
+the form of the current goal. We advise that these constructs be used
+only at the lowest levels of the proof, since the new goal they create
+must be derived %% SM: commented out "algebraically"
+instead of being available textually in
+a parent assertion.  (As a check and an aid to the reader, one can at
+any point insert a redundant \SUFFICES\ step that simply asserts the
+current goal.)
+
+The final \tlatwo\ proof construct is $\PICK\ x : e$, which introduces
+a new symbol $x$ that satisfies $e$.  The goal of the proof of this
+\PICK step is $\exists x : e$, and it changes the context of
+subsequent steps by adding a declaration of "x" and the fact "e". 
+%
+A more formal summary of the language appears in
+Appendix~\ref{apx}.
+
+The semantics of a \tlatwo\ proof is independent of any back-end
+prover. Different provers will have different notions of what
+``follows easily'', so an \OBVIOUS\ proof may be verified by one
+prover and not another.  In practice, many provers such as Isabelle
+must be directed to use decision procedures or special tactics to
+prove some assertions.  For this purpose, special standard modules
+will contain dummy theorems for giving directives to the
+\PM.  Using such a theorem (with a \USE\ step or \BY\ proof) will
+% LL: What generated proof obligation?  And why filter something
+%     rather than not putting it into proof obligations in the 
+%     first place?
+cause the \PM\ not to use it as a fact, 
+but instead to generate special directives for back-end
+provers.  It could even cause the \PM\ to use a different back-end
+prover.  (The dummy theorem will assert a true fact that suggests the
+purpose of the directive.)
+For instance, using the theorem \emph{Arithmetic}
+%% LL: Engineers have never heard of Peano Arithmetic, and we don't
+%%     have so much space that we can squander it on such an example.
+%%   \textit{PeanoArithmetic} might assert the existence of a set of
+%%   natural numbers satisfying the axioms of Peano Arithmetic; a "\BY\
+%%   \mathit{PeanoArithmetic}" proof 
+%
+might be interpreted as an instruction to use a decision procedure for
+integers.
+
+\llnote{I replaced ``natural numbers'' by ``integers'' above, which seems
+to me what arithmetic reasoning is more likely to mean.}
+
+We hope that almost all uses of this feature will leave the \tlatwo
+proof independent of the back-end prover(s).  The proof will not have
+to be changed if the \PM\ is reconfigured to replace one decision
+procedure with a different one.
+
+%%%% PLEASE DO NOT EDIT BELOW THIS LINE
+\ifx\master\undefined
+{\let\master\relax\input{rearmatter}}
+\end{document}
+\fi

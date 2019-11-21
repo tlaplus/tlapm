@@ -1,0 +1,2159 @@
+%\documentclass[a4paper,fleqn,envcountsame,orivec]{llncs}
+\documentclass{easychair}
+
+\usepackage{latexsym}
+\usepackage{amsfonts}
+\usepackage{url}
+\usepackage{xspace}
+\usepackage{color}
+
+% LL added the following command to remove a horrible formatting of page 4
+% caused by an incompetent document style.
+\raggedbottom 
+
+%% The tla2 and easychair packages don't cohabitate easily. Since we don't use
+%% much of tla2 I don't use it anymore and just included the few macros that we
+%% really need.
+%% Compatibility with llncs: undefine macros from llncs that are redefined by tla2
+% \let\proof\relax
+% \let\endproof\relax
+% \let\case\relax
+% \let\qed\relax
+% \usepackage{tla2}
+
+\newif\ifdraft
+\drafttrue           %% final version: \draftfalse
+\draftfalse
+%\pagestyle{plain}    %% remove for final version
+%\raggedbottom
+%\newcommand{\tth}{\ensuremath{^{\mathrm{th}}}}
+
+\newcommand{\commentOut}[1]{\ifdraft{%
+ \edmargin{\color{green}\mbox{}\\[2em]Note}{Green text is commented out and
+     appears only in draft mode.}%
+\color{green}#1}\else\fi}
+
+
+\newcommand{\CR}{\\}
+
+\newcommand{\VS}{\vspace{0pt}}
+%% The following commands put a sensible amount of space between
+%% items in a list. Comment them out if we need to squeeze
+%% to make the page count.
+  \let\olditemize=\itemize
+  \renewcommand{\itemize}{\olditemize\setlength{\itemsep}{2pt}}
+  \renewcommand{\VS}{\vspace{2pt}}
+%%% End of sensible spacing commands
+
+%\newcommand{\itemstretch}{\vspace{2pt}}  %% Use this to add space
+\newcommand{\itemstretch}{}  %% Use this if the paper gets too long
+
+\title{
+  Coalescing: Syntactic Abstraction for Reasoning in First-Order Modal Logics
+  \thanks{This work has been partially funded by the Microsoft Research-Inria Joint
+    Centre, France. It has also been supported by the European Union Seventh
+    Framework Programme under grant agreement no. 295261 (MEALS) and
+    by the French BGLE Project ADN4SE.}
+}
+\titlerunning{Coalescing for Reasoning in First-Order Modal Logics}
+
+%  Alphabetically by surname
+\author{
+  Damien Doligez\inst{1} \and
+  Jael Kriener\inst{2} \and
+  Leslie Lamport\inst{3} \and\\
+  Tomer Libal\inst{2} \and
+  Stephan Merz\inst{4}
+}
+
+\authorrunning{Doligez, Kriener, Lamport, Libal, Merz}
+
+\institute{
+  Inria, Paris, France \and
+  MSR-Inria Joint Centre, Saclay, France \and
+  Microsoft Research, Mountain View, CA, U.S.A. \and
+  Inria, Villers-l\`es-Nancy, France
+}
+
+\renewcommand{\vec}[1]{\mathbf{#1}}
+
+\renewcommand{\qed}{\hspace*{\fill}\textsc{q.e.d.}}
+\renewcommand{\th}{\textsuperscript{th}\xspace}
+\newcommand{\eqdef}{\ =_\textsf{\scriptsize\upshape def}\ }
+\newcommand{\eps}{\epsilon}
+\renewcommand{\implies}{\Rightarrow}
+\newcommand{\tlaplus}{\mbox{TLA\kern -.35ex$^+$}\xspace}
+\newcommand{\kw}[1]{\textsc{#1}}  % TLA+ keywords
+\newcommand{\ps}[2]{\ensuremath{\langle #1 \rangle #2}}
+\newcommand{\nat}{\mathbb{N}}
+\newcommand{\sem}[1]{\ensuremath{[\![ #1 ]\!]}}
+\newcommand{\fun}{\rightarrow}
+\newcommand{\true}{\textsf{tt}}
+\newcommand{\false}{\textsf{ff}}
+\newcommand{\FOL}[1]{\ensuremath{#1_{\textit{\scriptsize FOL}}}}
+\newcommand{\PL}[1]{\ensuremath{#1_{\textit{\scriptsize PL}}}}
+\newcommand{\ML}[1]{\ensuremath{#1_{\textit{\scriptsize ML}}}}
+\newcommand{\XL}[1]{\ensuremath{#1_{\textit{\scriptsize XL}}}}
+\newcommand{\folmodels}{\mathop{\models_{\textit{\scriptsize FOL}}}}
+\newcommand{\plmodels}{\mathop{\models_{\textit{\scriptsize PL}}}}
+\newcommand{\nfolmodels}{\mathop{\not\models_{\textit{\scriptsize FOL}}}}
+\newcommand{\mlmodels}{\mathop{\models_{\textit{\scriptsize ML}}}}
+\newcommand{\xlmodels}{\mathop{\models_{\textit{\scriptsize XL}}}}
+\newcommand{\nmlmodels}{\mathop{\not\models_{\textit{\scriptsize ML}}}}
+
+\newcommand{\modal}{\nabla}
+\newcommand{\dual}{\Delta}
+
+\newcommand{\btu}{\Box}
+%\newcommand{\btu}{\bigtriangleup}
+\newcommand{\fpr}{\overline}
+\newcommand{\tlax}{\Gamma^{TLA}}
+\newcommand{\tlafol}{\FOL{(\tlax)}}
+\newcommand{\init}{\texttt{INIT}}
+\newcommand{\next}{\texttt{NEXT}}
+
+
+\newcommand{\FF}{\mathcal{F}}
+\newcommand{\HH}{\mathcal{H}}
+\newcommand{\II}{\mathcal{I}}
+\newcommand{\KK}{\mathcal{K}}
+\newcommand{\LL}{\mathcal{L}}
+\newcommand{\MM}{\mathcal{M}}
+\newcommand{\SMM}{\mathfrak{M}}
+\newcommand{\OO}{\mathcal{O}}
+\newcommand{\PP}{\mathcal{P}}
+\renewcommand{\SS}{\mathcal{S}}
+\newcommand{\VV}{\mathcal{V}}
+\newcommand{\WW}{\mathcal{W}}
+\newcommand{\XX}{\mathcal{X}}
+
+\newcommand{\B}[1]{\framebox{\rule{0pt}{.6em}\ensuremath{\!\tlachars #1\!}}\,}
+% \newcommand{\B}{\begingroup\tlachars\BB}
+% \newcommand{\BB}[1]{\endgroup\,\fbox{\rule{0pt}{.7em}%
+% \let\tlacolon\midcolon\ensuremath{#1}}\,}
+
+% Some other definitions.
+% Spacing definitions for formatting the figures.
+\def\S#1{\hspace*{#1em}}
+\def\T#1{\hspace*{-#1pt}}
+
+% The following defines \str{foo} to be the properly
+% typeset TLA+ string "foo".
+\makeatletter \let\str=\@w \makeatother
+
+% The display environment can be used to set off things like formulas
+% and program statements
+\newenvironment{display}{\begin{itemize}\item[]}{\end{itemize}}
+
+
+\ifdraft
+\long\def\ednote#1#2{\begin{quote}\framebox{\begin{minipage}{0.99\linewidth}\footnotesize\color{red} #1: #2\end{minipage}}\end{quote}}
+\newcommand{\edmargin}[2]{\marginpar{\raggedright\footnotesize\color{red}#1: #2}}
+\else
+\long\def\ednote#1#2{}
+\newcommand{\edmargin}[2]{}
+\fi
+
+\def\llnote{\ednote{LL}}
+\def\llmargin{\edmargin{LL}}
+\def\smnote{\ednote{SM}}
+\def\smmargin{\edmargin{SM}}
+\def\tlnote{\ednote{TL}}
+\def\tlmargin{\edmargin{TL}}
+\def\jknote{\ednote{JK}}
+\def\jkmargin{\edmargin{JK}}
+\def\ddnote{\ednote{DD}}
+\def\ddmargin{\edmargin{DD}}
+
+%\spnewtheorem*{proofsketch}{Proof sketch}{\itshape}{\rmfamily}
+\newtheorem{theorem}{Theorem}
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{corollary}[theorem]{Corollary}
+
+\newenvironment{proofsketch}{\par\noindent\textbf{Proof (sketch).}\quad}{\medskip\par\noindent}
+
+% ------------------------------------------------------------
+% Relevant stuff from tla2.sty: that style appears to be incompatible with
+% easychair.cls, and we don't need much from it.
+
+\let\tlachars\relax
+\let\notla\relax
+\newcommand{\deq}{\mathrel{\stackrel{\scriptscriptstyle\Delta}{=}}}
+\def\A{\forall\,}
+\def\E{\exists\,}
+\newcommand{\TRUE}{\mbox{\sc true}}
+\newcommand{\FALSE}{\mbox{\sc false}}
+\newenvironment{noj}{\begin{array}[t]{@{}l@{}}}{\end{array}}
+\newenvironment{noj2}{\begin{array}[t]{@{}l@{\;\;}l@{}}}{\end{array}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \noTeXmath
+% \TeXmath
+%    The \noTeXmath causes TeX to use ordinary italic instead of math
+%    italic in math mode.  The \TeXmath command reverts to TeX's normal
+%    behavior.  (Modified 10 Aug to work with arbitrary \itfam.)
+%
+
+\makeatletter
+\newcounter{abr@ctr}
+\newcommand{\abr@c}{\c@abr@ctr\advance\c@abr@ctr\@ne}
+
+% Let it work with LaTeX2e's native mode:
+% D. Roegel, 29/8/1994
+\ifx\documentclass\undefined
+\else
+  \DeclareSymbolFont{tlaitalics}{\encodingdefault}{cmr}{m}{it}
+  \let\itfam\symtlaitalics
+\fi
+
+\newcommand{\noTeXmath}{%
+\c@abr@ctr=\itfam
+\multiply\c@abr@ctr"100\relax
+\advance\c@abr@ctr "7061\relax
+\mathcode`a=\abr@c\mathcode`b=\abr@c\mathcode`c=\abr@c\mathcode`d=\abr@c
+\mathcode`e=\abr@c\mathcode`f=\abr@c\mathcode`g=\abr@c\mathcode`h=\abr@c
+\mathcode`i=\abr@c\mathcode`j=\abr@c\mathcode`k=\abr@c\mathcode`l=\abr@c
+\mathcode`m=\abr@c\mathcode`n=\abr@c\mathcode`o=\abr@c\mathcode`p=\abr@c
+\mathcode`q=\abr@c\mathcode`r=\abr@c\mathcode`s=\abr@c\mathcode`t=\abr@c
+\mathcode`u=\abr@c\mathcode`v=\abr@c\mathcode`w=\abr@c\mathcode`x=\abr@c
+\mathcode`y=\abr@c\mathcode`z=\abr@c
+\c@abr@ctr=\itfam
+\multiply\c@abr@ctr"100\relax
+\advance\c@abr@ctr "7041\relax
+\mathcode`A=\abr@c\mathcode`B=\abr@c\mathcode`C=\abr@c\mathcode`D=\abr@c
+\mathcode`E=\abr@c\mathcode`F=\abr@c\mathcode`G=\abr@c\mathcode`H=\abr@c
+\mathcode`I=\abr@c\mathcode`J=\abr@c\mathcode`K=\abr@c\mathcode`L=\abr@c
+\mathcode`M=\abr@c\mathcode`N=\abr@c\mathcode`O=\abr@c\mathcode`P=\abr@c
+\mathcode`Q=\abr@c\mathcode`R=\abr@c\mathcode`S=\abr@c\mathcode`T=\abr@c
+\mathcode`U=\abr@c\mathcode`V=\abr@c\mathcode`W=\abr@c\mathcode`X=\abr@c
+\mathcode`Y=\abr@c\mathcode`Z=\abr@c}
+
+\newcommand{\TeXmath}{%
+\mathcode`a="7161\mathcode`b="7162\mathcode`c="7163\mathcode`d="7164%
+\mathcode`e="7165\mathcode`f="7166\mathcode`g="7167\mathcode`h="7168%
+\mathcode`i="7169\mathcode`j="716A\mathcode`k="716B\mathcode`l="716C%
+\mathcode`m="716D\mathcode`n="716E\mathcode`o="716F\mathcode`p="7170%
+\mathcode`q="7171\mathcode`r="7172\mathcode`s="7173\mathcode`t="7174%
+\mathcode`u="7175\mathcode`v="7176\mathcode`w="7177\mathcode`x="7178%
+\mathcode`y="7179\mathcode`z="717A\mathcode`A="7141\mathcode`B="7142%
+\mathcode`C="7143\mathcode`D="7144\mathcode`E="7145\mathcode`F="7146%
+\mathcode`G="7147\mathcode`H="7148\mathcode`I="7149\mathcode`J="714A%
+\mathcode`K="714B\mathcode`L="714C\mathcode`M="714D\mathcode`N="714E%
+\mathcode`O="714F\mathcode`P="7150\mathcode`Q="7151\mathcode`R="7152%
+\mathcode`S="7153\mathcode`T="7154\mathcode`U="7155\mathcode`V="7156%
+\mathcode`W="7157\mathcode`X="7158\mathcode`Y="7159\mathcode`Z="715A}
+
+\makeatother
+\noTeXmath
+% ------------------------------------------------------------
+
+
+\begin{document}
+
+\maketitle
+
+%\ifdraft
+%\begin{center}
+%\large\today
+%\end{center}
+%\fi
+
+% \llnote{10 Jan. Compare the following abstract with the previous
+% version, in the comments with some stylistic notes.}
+\begin{abstract}
+  We present
+  a syntactic abstraction method to reason about
+  first-order modal logics by using theorem provers for standard
+  first-order logic and for propositional modal logic.
+
+% OLD VERSION:
+%  -- ``It is desirable'' is wishy-washy.   Avoid the passive voice
+%      whenever reasonable.
+%  -- There's no need to say in the abstract that what we're doing
+%     is sound.  Would we do it if we didn't think it was?
+%  -- Note the use of ``by using'' in the new version.  I originally
+%     wrote ``with'', but I realized that this made it easy to
+%     parse the sentence the wrong way.
+% When reasoning about first-order modal logics, it is desirable to use
+% existing theorem provers for standard first-order logic and for
+% propositional modal logic in order to prove formulas that are
+% instances of theorems of one or the other sublogics.  We present
+% syntactic abstraction techniques for doing this in a sound manner.
+
+\end{abstract}
+
+% \llnote{17 Jan. The source contains commands that add a little
+%  space between list items.  They can be commented out to save some
+%  space, but that should be done only if we're desperate.}
+
+\section{Introduction}\label{sec:intro}
+
+
+% \llnote{9 Jan.
+% One question: Why do we use $\models$ instead of $\vdash$, which I
+% would expect logicians to use?\\
+% %
+% SM: 10 Jan. Logicians use $\models$
+% for semantics and $\vdash$ for derivations.
+% I chose $\models$ over $\vdash$ because we do not introduce a new proof
+% calculus. Everything we do can be explained at the level of semantics,
+% independently of doing resolution, natural deduction or Hilbert-style axiom
+% systems. We only require that the provers be sound for $\models$, since we give
+% up completeness anyway. Others may feel differently.
+% }
+
+Verification of distributed and concurrent systems requires reasoning
+about temporal behaviors.  A common approach is to express the
+properties to be proved in a modal logic having one or more temporal
+modalities.  For verifying real-world systems, a proof language must
+%
+%\smmargin{06-26: added ``interpreted theories''}
+%
+also include equality, quantification, interpreted theories,
+and local definitions.  It must
+therefore encompass FOML (\emph{F}irst \emph{O}rder \emph{M}odal
+\emph{L}ogic) and support operator definitions.  One such language is
+\tlaplus \cite{lamport:tla+}, based on the logic TLA
+that has two temporal modalities: the
+usual $\Box$ (always) operator of linear-time temporal logic and 
+$'$ (prime), a
+%
+%\smmargin{06-26: reformulated for clarity}
+%\llmargin{07-02: slight rewording for clarity}
+%
+restricted next-state operator such that $e'$ is the value of
+$e$ at the next state if $e$ is an expression that does not contain a
+modal operator.
+
+A common way to prove an FOML sequent
+$\Gamma\models\varphi$ ($\varphi$ holds in context $\Gamma$)
+is to translate it to a semantically equivalent FOL sequent
+$\Gamma^* \folmodels \varphi^*$
+%
+% \smmargin{changed $\FOL{\ldots}$ to $\ldots^*$ in order to avoid a clash with
+%   notation used later} %
+%
+and to prove this FOL sequent.  For some FOMLs, this method is
+semantically complete---that is, $\Gamma\models\varphi$ is valid iff
+$\Gamma^* \folmodels \varphi^*$ is~\cite{ohlbach:translation}.
+This approach has been followed for embedding FOML in
+SPASS~\cite{hustadt:mspass}, Saturate~\cite{ganzinger:saturate}, and other theorem
+provers.
+
+Such a semantic translation may be appropriate for completely
+automatic provers.  However, we are very far from being able to
+automatically prove a formula that expresses a correctness property of
+a non-trivial system.  A person must break the proof into smaller
+steps that we call \emph{proof obligations}, usually by interacting
+with the prover.  Requiring the user to interactively prove the
+semantic translation of the FOML formula destroys the whole purpose of
+using modal logic, which is to allow her to think in terms of the
+simpler FOML abstraction of the theorem.  The user should therefore
+decompose the FOML proof into FOML proof obligations.
+
+In this paper we describe a method called \emph{coalescing} that handles many
+FOML proof obligations by soundly abstracting them into formulas of either FOL
+or propositional modal logic (ML). The resulting formulas are dealt with by
+existing theorem provers for these logics. Although the basic idea of coalescing
+is simple, some care has to be taken in the presence of equality and bound
+variables. The translation becomes trickier in the presence of defined
+operators.
+
+%% SM 23/01: I am a bit uneasy about the following paragraph.
+%% (1) FOL -> PL need not always be trivial, and theorem proving people may
+%%     misunderstand what we are saying.
+%% (2) The soundness problem is discussed later.
+%% I therefore propose to suppress the paragraph.
+
+% A major reason to decompose a proof into smaller obligations is that
+% different proof tactics can be applied to the different obligations.
+% For example, a FOL prover may prove some obligations with a
+% propositional-logic decision procedure.  Viewed formally, the prover
+% is translating a FOL obligation $\Gamma\folmodels\varphi$ to a
+% theorem $\PL{\Gamma}\plmodels\PL{\varphi}$ of a simpler logic PL
+% (\emph{P}ropositional \emph{L}ogic) and proving for PL\@.  This
+% translation is so simple and deducing $\Gamma\folmodels\varphi$ from
+% $\PL{\Gamma}\plmodels\PL{\varphi}$ is so obviously sound that it is
+% generally implemented in an \emph{ad hoc} manner.  There are analogous
+% translations for an FOML prover.  However, maintaining soundness is
+% not so easy and requires somewhat tricky translations.  We formally
+% describe two useful translations and show that they are sound.
+
+% Text Deleted 16 Jan 2014:
+%
+% The disadvantage of using a semantics-based translation is that the
+% translated formulas $\varphi^*$ are longer and contain more
+% quantifiers than $\varphi$.  (Methods that eschew modal logic require
+% the user to write the longer formulas in the first place.)
+%
+% Our approach is based on the observation that current theorem provers
+% are very far from being able to automatically prove a formula that
+% expresses a correctness property of a non-trivial system.  The user
+% must decompose the proof into many smaller steps, which we call
+% \emph{proof obligations}.  It is common practice to use different
+% proof engines to prove different obligations.  The TLAPS proof
+% system \cite{cousineau:tlaps}
+% for \tlaplus extends this idea by allowing the use of different logics
+% to reason about different steps.  That is, it can translate
+% obligations $\Gamma\models\varphi$ to obligations
+% $\XL{\Gamma}\xlmodels\XL{\varphi}$, for different logics XL\@. For
+% soundness, we require only that the validity of
+% $\XL{\Gamma}\xlmodels\XL{\varphi}$ implies the validity of
+% $\Gamma\models\varphi$, not that the two be semantically equivalent.
+% % \smmargin{Minor rewording.}
+% While losing semantic completeness, doing so allows us to obtain a simpler obligation
+% $\XL{\Gamma}\xlmodels\XL{\varphi}$ that can be easier to prove than
+%  %would
+% a translation that preserves semantic equivalence.  We have
+% implemented two such translations in TLAPS, one to FOL and one to
+% propositional ML\@.  Each is semantically complete on a subclass of
+% proof obligations that together include the great majority of
+% obligations in a practical \tlaplus verification.  We can obtain
+% semantic completeness for TLAPS by using a more traditional
+% semantically complete FOL translation for the remaining obligations,
+% but we may be able to handle them with a simpler translation.
+
+
+
+
+
+% \commentOut{%
+\paragraph{Outline of this Paper.}
+
+% %\llmargin{24 Jan. This whole subsection could be deleted if we need the space.}
+%
+Section~\ref{sec:motivation} motivates our proposal by its application within
+the \tlaplus Proof System TLAPS.
+% sm Jun 26: removed since we say so later
+% where coalescing can be complete over a fragment
+% of proofs involving temporal logic.
+Section~\ref{sec:foml} formally introduces FOML and its two fragments,
+FOL and ML\@.  Sections~\ref{sec:coalescing-modal} and
+\ref{sec:coalescing-fol} present coalescing for modal and first-order
+expressions respectively, proving their soundness.  Section
+\ref{sec:leibnizing} extends the results to languages containing local
+definitions.  In Section \ref{sec:safety} we outline a proof of the completeness of coalescing for proving safety properties. Section~\ref{sec:conclusion} discusses semantic translation vs.\
+coalescing and suggests some optimizations and future work.
+% }
+
+
+
+\section{Motivation} \label{sec:motivation}
+
+% \smmargin{Jun 27: split into two subsections}
+
+\subsection{A Sample \tlaplus Proof}
+
+\begin{figure}[bp]
+  \centering
+  \begin{minipage}[t]{.3\linewidth}
+    \begin{tabular}[t]{@{}l@{}}
+      $Init \deq \ldots$\\
+      $Step \deq \ldots$\\
+      $v \deq \ldots$\\
+      $Spec \deq Init \land \Box[Step]_v$\\[.5ex]
+%%%% TypeOK %%%  $TypeOK \deq \ldots$ \\
+      $Safe(p) \deq \ldots$
+%%%% TypeOK %%% \\[.5ex]
+%%%% TypeOK %%% \kw{lemma} $\mbox{TypeCorrect} \deq$\\
+%%%% TypeOK %%% \quad$Spec \implies \Box TypeOK$
+    \end{tabular}
+  \end{minipage}
+  \begin{minipage}[t]{.55\linewidth}
+    \begin{tabular}[t]{@{}l@{}}
+      \kw{theorem} $Spec \implies \A p \in Proc : \Box Safe(p)$\\
+      \ps{1}{.} \kw{suffices}%
+                  \begin{tabular}[t]{@{\ }l@{\ }l}
+                    \kw{assume} & \kw{new} $p \in Proc$\\
+                    \kw{prove}  & $Spec \implies \Box Safe(p)$
+                  \end{tabular}\\[-.4em]
+      \quad\kw{obvious}\\
+      \ps{1}{1.} $Init \implies Safe(p)$\\
+      \quad\kw{by} \kw{def} $Init$, $Safe$\\
+      \ps{1}{2.}
+%%%% TypeOK %%%            TypeOK \land
+         $Safe(p) \land [Step]_v \implies Safe(p)'$\\
+      \quad\kw{by} \kw{def}
+%%%% TypeOK %%% $TypeOK$,
+        $Safe$, $Step$, $v$\\
+      \ps{1}{3.} \kw{qed}\\
+      \quad\kw{by} \ps{1}{1}, \ps{1}{2},
+%%%% TypeOK %%%         TypeCorrect,
+      PTL \kw{def} $Spec$
+    \end{tabular}
+  \end{minipage}
+  \caption{Proof of a safety property in TLAPS.}
+  \label{fig:safety-example}
+\end{figure}
+
+Our motivation comes from designing the TLAPS proof
+system~\cite{cousineau:tlaps} for \tlaplus, which can check
+correctness proofs of complex, real-world algorithms~\cite{lamport:byzantizing}.
+The essence of TLA proofs is to decompose proofs of temporal logic formulas
+so that most of the obligations
+% $\Gamma\models\varphi$ are for formulas $\varphi$ containing
+contain no modal operator except \emph{prime}. Figure~\ref{fig:safety-example}
+  % \llmargin{24 Jan.  Commented out $TypeOK$ from example.  Search
+  %      \texttt{.tex} file for \texttt{\%\% TypeOK \%\%}.}
+contains the outline of the proof of a simple safety property in TLAPS that
+illustrates this decomposition. The system
+specification is formula $Spec$, defined to equal
+  $Init \land \Box[Step]_v$.
+In this formula, $Init$ is a \emph{state predicate} that describes the possible
+initial states, and $Step$ is an \emph{action predicate} that describes
+possible state transitions. Syntactically: $Init$ is a FOL formula containing
+state (a.k.a.\ flexible) variables; $Step$ is a formula containing state
+variables, FOL operators, and the \emph{prime} operator; and
+$v$ is a tuple of all state variables in the specification.
+The formula $[Step]_v$ is a shorthand for $Step \lor (v'=v)$, and $\Box$ is the
+usual ``always'' operator of temporal logic.
+%
+%\smmargin{Jun 27: added sentence}
+%
+The temporal logic formula $Spec$ is evaluated over $\omega$-sequences of
+states; it is true of a sequence $s_0 s_1 \ldots$ iff $Init$ is true at state
+% \llmargin{2 July: tiny rewording}%
+$s_0$ and, for all pairs of states $s_i$ and $s_{i+1}$, either $Step$ is true
+or the value of $v$ does not change. The definitions of the formulas $Init$ and
+$Step$, and the reason for writing $\Box[Step]_v$ instead
+of $\Box Step$, are irrelevant in the context of this paper.
+%
+%%%% TypeOK %%% We also assume given
+%%%% TypeOK %%% definitions of two state predicates $TypeOK$ and $Safe(p)$.
+%%%% TypeOK %%% Informally, $TypeOK$ represents an
+%%%% TypeOK %%%  auxiliary invariant that constrains
+% the values of the state variables appearing in $Spec$, whereas
+%
+We wish to prove that a state formula $Safe(p)$ is true throughout any behavior
+described by $Spec$, for every process $p \in Proc$.
+%
+% The definitions of these formulas, and the reason for writing $\Box[Step]_v$ instead
+% of $\Box Step$, are irrelevant for understanding the proof.
+
+%%%% TypeOK %%% We also assume given a proof of the implication
+%%%% TypeOK %%% $Spec \implies \Box TypeOK$, asserting that $Spec$
+%%%% TypeOK %%% ensures the auxiliary invariant.
+
+The right-hand side of Figure~\ref{fig:safety-example} shows the
+assertion and proof of the theorem.
+%
+The first step in the proof is purely first-order: it introduces a fresh
+constant~$p$, assumes \mbox{$p \in Proc$}, and reduces the overall proof to showing the
+implication $Spec \implies \Box Safe(p)$. Step $\ps{1}{1}$ asserts that the
+initial condition implies $Safe(p)$. This formula does not contain any modal
+operators.
+%
+% and we assume that it can be discharged by a FOL theorem prover after
+% the definitions of formulas $Init$ and $Safe$ have been expanded.
+%
+Step $\ps{1}{2}$ shows that $Safe(p)$ is preserved by every transition
+(as specified by $[Step]_v$).
+%%%% TypeOK %%% , assuming the auxiliary invariant.
+The proof of this step is essentially first-order, although TLAPS must
+handle the \emph{prime} modality.  The basic idea is to distribute
+primes
+ % \llmargin{24 Jan.  I don't know what distributing primes\emph{over}
+ % an expression means, so ``over complex'' by ``inward in''.
+ % If ``distributing over'' is common terminology, undo my change.
+ % }
+inward in expressions using rules such as $(x+y)' = x'+y'$,
+and then to replace the remaining primed expressions by new atoms.
+For this example, we are
+assuming that the specification is so simple that, after the
+definitions of $Init$, $Next$, $v$, and $Safe$ have been expanded, the
+FOL proof obligations generated for these two steps can be discharged
+by a theorem prover.
+
+
+Step $\ps{1}{3}$ concludes the proof.
+%  \smmargin{25 Jan. Without the auxiliary lemma, $\Box Q \implies Q$ isn't needed.}
+% It is based on propositional temporal reasoning that combines the two principles
+It is justified by propositional temporal reasoning, in particular the principle
+\[
+  \begin{array}{@{}c}
+    P \land A \implies P'\\
+    \hline
+    P \land \Box A \implies \Box P
+  \end{array}
+  % \qquad\mbox{and}\qquad
+  % \Box Q \implies Q
+ \]
+The \emph{PTL} in the step's proof tells TLAPS to invoke a PTL
+decision procedure, which it does after replacing $Spec$ by its
+definition and the formulas $Init$, $Safe(p)$ and $[Next]_v$ by fresh
+atoms.  This effectively hides all operators other than those of
+propositional logic, $\Box$, and \emph{prime}.
+
+We call \emph{coalescing} the process of replacing expressions by atoms. It is
+similar to the introduction of names for subformulas that theorem provers apply
+during pre-processing steps such as CNF transformation. However, it has a
+different purpose: the fresh names hide complex formulas that are meaningless to
+a proof backend for a fragment of the original logic.
+As explained in the example above, TLAPS uses coalescing in its translations to
+invoke FOL and PTL backend provers, where the first do not support the modal
+operators $\Box$ and \emph{prime}, and the second
+do not support first-order constructs such as
+quantification, equality or terms.
+  \smmargin{Jul 3: added reference to KSAT}
+%
+An idea similar to coalescing underlies the KSAT decision
+procedure~\cite{giunchiglia:ksat} for propositional multi-modal logic in that
+modal top-level literals are abstracted by fresh atoms. Unlike KSAT, we consider
+first-order modal logic, and we do not recursively construct formulas that must
+be analyzed at deeper modal levels.
+
+Coalescing cannot in itself be semantically complete because it cannot support
+proof steps that rely on the interplay of the sublogics. For example,
+separate FOL and PTL provers
+cannot
+prove rules that distribute quantifiers over temporal modalities. Similarly,
+proofs of liveness properties via well-founded orderings essentially mix
+quantification and temporal logic. However, we need very few such proof steps
+in actual
+proofs, and we can handle them using a more traditional
+backend that relies on a FOL translation of temporal modalities. Coalescing is
+complete for a class of temporal logic properties that includes safety
+properties, which can be established by propositional temporal logic from
+action-level hypotheses. For these applications, we have found coalescing to
+be more flexible and more powerful in practice than a more traditional FOL
+translation. In particular, proofs need not follow the simple schema of the
+proof shown in Figure~\ref{fig:safety-example} but can invoke auxiliary
+invariants or lemmas. The inductive reasoning underlying much of temporal logic
+is embedded in PTL decision procedures but would be difficult to automate in a
+FOL prover. On the other hand, the \emph{prime} modality by itself is simple
+enough that it can be handled by a pre-processing step applied before passing
+the proof obligation to a FOL prover.
+
+% These two translations are semantically complete on two subclasses
+% of proof obligations that together include the great majority of
+% obligations in a practical \tlaplus verification.  We can obtain
+% % \ddmargin{As I read the sentence, it says we might get semantic
+% % completeness with a simpler translation. I suggest adding "in
+% % practice" after the "but"}%
+% semantic completeness for TLAPS by using a more traditional
+% semantically complete FOL translation for the remaining obligations,
+% but we may be able to handle the obligations that
+% occur in practice with a simpler translation.
+
+
+\subsection{Coalescing In First-Order Modal Logic}
+
+We believe that coalescing will be useful for proofs in
+modal logics other than \tlaplus. We therefore present its fundamental
+principles here using a simpler FOML containing a single modal operator $\Box$.
+Corresponding to the translations we have implemented in TLAPS, we give two
+translations of FOML obligations, one into FOL and the other into ML, and we
+prove their soundness.
+
+The idea underlying coalescing is very simple: abstract away a class
+of operators by introducing a fresh atom in place of a subformula
+whose principal operator is in that class.
+However, doing this in a sound way in the presence of equality is not
+trivial because of the \emph{Leibniz principle}, which asserts
+ $(d=e) \Rightarrow (P(d) = P(e))$
+for any expressions $d$ and $e$ and operator $P$.  The Leibniz
+principle is valid in FOL but not FOML, which makes translating from
+FOML obligations to FOL obligations tricky~\cite{mendelsohn:foml}.
+%  \llmargin{Added last sentence of this paragraph.}%
+% It is made even trickier by the presence of operators that can be
+% defined in terms of modal operators.
+
+For example, the formula $(v=0) \implies \Box(v=0)$ is not valid
+in \tlaplus or more generally
+in FOML when $v$ is flexible.
+A naive application of standard FOL provers could
+propagate the equality in the antecedent by substituting $0$ for $v$
+throughout this formula, effectively applying the instance
+$((v=0) = \TRUE) \implies (\Box(v=0) = \Box\TRUE)$
+of the Leibniz principle, and consequently prove the formula using the axiom
+$\Box\TRUE$. Such an approach is clearly unsound.
+The standard translation of FOML into predicate logic~\cite{ohlbach:translation}
+avoids this problem by making explicit the states at which formulas are
+evaluated, but at the price of adding significant complexity to the
+formula. Moreover, one
+typically assumes specific properties about the accessibility relation(s)
+underlying modal logics.  Incorporating these into first-order reasoning may
+not be easy. For example, the $\Box$ modality of \tlaplus corresponds to the
+transitive closure of the \emph{prime} modality, and this is not first-order
+axiomatizable. Of course, whether this is an issue or not depends on the
+particular modal logic one is interested in: semantic translation works very
+well in applications such as~\cite{benzmueller:god} that are based on a modal
+logic whose frame conditions are first-order axiomatizable.
+
+
+Our approach is to coalesce expressions and formulas that are outside
+the scope of a given theorem prover.  For the example above, coalescing
+to FOL yields
+%\begin{equation}\label{eq:1-tr}
+\(  (v = 0) \implies \B{\Box(v=0)} \)
+%\end{equation}
+where $\B{\Box(v=0)}$ is a new $0$-ary predicate symbol, and this formula is
+clearly not provable.
+Similarly, coalescing to ML yields
+\(  \B{v=0} \implies \Box\B{v=0}  \)
+of propositional modal logic, and again, this formula is not provable.
+We give a
+detailed description of how to derive a new symbol $\B{exp}$ for an
+arbitrary expression $exp$.  Care has to be taken when the coalesced expression
+contains bound variables.
+%% sm Jun 27: replaced by a "modal" example since reviewers didn't get the point
+For example, a naive coalescing into FOL of the formula
+  \mbox{$\A a : \Box(a=1) \implies a=1$},
+which is valid over reflexive frames, would yield
+  \mbox{$\A a : \B{\Box(a=1)} \implies a=1$},
+from which we can deduce $\B{\Box(a=1)} \implies 0=1$ and then
+  \mbox{$\A a: \lnot\Box(a=1)$},
+which is clearly not valid. A correct coalescing yields
+  \mbox{$\A a : \B{\Box(a=1)}(a) \implies a=1$}.
+% For example, a naive
+% coalescing of the expression $\{a, a\}$ in the valid formula
+%   \mbox{$\A a : \{a, a\} = \{a\}$}
+% would yield
+%   \mbox{$\A a : \B{\{a, a\}} = \{a\}$},
+% from which we can deduce $\B{\{a, a\}} = \{1\}$ and $\B{\{a, a\}} = \{2\}$,
+% proving $1=2$.  A correct
+% coalescing yields
+%   \mbox{$\A a : \B{\{a, a\}}(a) = \{a\}$}.
+
+
+\paragraph{Operator Definitions.}
+
+Coalescing is trickier for a language with
+ % \llmargin{24 Jan. The definition was in a displayed numbered equation,
+ %   but the number was never referenced.}%
+operator definitions like
+%
+% \begin{equation}\label{eq:2}
+  \,\,$P(x,y) \deq exp$\,,
+% \end{equation}
+%
+where $exp$ does not contain free variables other than $x$ and $y$.
+Definitions are necessary for structuring specifications and for
+managing the complexity of proofs through lemmas about the defined
+operators.  We therefore do not want to systematically expand all
+defined operators in order to obtain formulas of basic FOML. The
+Leibniz principle may not hold for an expression $P(a, b)$ if the
+operator $P$ is defined in terms of modal operators---that is,
+$(a=c) \land (b=d)$ need not imply
+  $P(a,b)=P(c,d)$.  It would
+therefore be unsound to encode $P$ as an uninterpreted predicate
+symbol in first-order logic.  We show how soundness is preserved
+by replacing an expression $P(a,b)$ with $\B{P,\eps_1,\eps_2}(a,b)$,
+for some suitable expressions $\eps_1$ and $\eps_2$ (described 
+in Section~\ref{sec:abstraction-defined} below),
+%\ddmargin{07-02: added parenthesis}
+where $\B{P,\eps_1,\eps_2}$ can be defined so it
+satisfies the Leibniz
+principle and also satisfies
+\(
+  \B{P,\eps_1,\eps_2}(a,b) = P(a,b)
+\)
+in suitably extended models of FOML, ensuring equisatisfiability of the original
+and the coalesced formula.
+Since it satisfies the Leibniz principle,
+$\B{P,\eps_1,\eps_2}$ can be taken to be an uninterpreted
+predicate symbol by a first-order theorem prover.
+Our construction extends to the
+case of definitions of second-order operators, which are allowed in \tlaplus.
+
+% \llnote{10 Jan. Commented out some text saying what we've done
+% that seems unnecessary in light of changes made above.}
+
+% REMOVED TEXT:
+%
+% Our proposal has been implemented within
+% the \tlaplus Proof System and has successfully allowed us to use
+% theorem provers for ordinary first-order logic and decision procedures
+% for propositional temporal logic within \tlaplus proofs. For completeness, it
+% must be complemented by a prover for full first-order temporal logic, but in
+% practice, many obligations can be handled using coalescing.
+
+% \llnote{
+%   Should we say that we also need to and intend to add a prover for TL with
+%   quantification over rigid variables?
+% }
+
+%\llnote{2 July: A \texttt{$\backslash$raggedbottom} command added to the
+%       preamble prevented a horrible page break here.}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{First-Order Modal Logic}
+\label{sec:foml}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{Syntax.}
+
+We introduce a language of first-order modal logic whose modal operator we
+denote by $\modal$ in order to avoid confusion with the $\Box$ of \tlaplus.
+The language omits the
+customary distinction between function and predicate symbols, and
+hence between terms and formulas.  This simplifies notation and allows our
+results to apply to \tlaplus as well as to a conventional language
+that does distinguish terms and formulas---the conventional
+language just having a smaller set
+of legal formulas.
+
+We assume a first-order signature consisting of non-empty distinct denumerable sets
+$\XX$ of rigid variables, $\VV$ of flexible variables, and $\OO$ of operator symbols.
+Operator symbols have arities in $\nat$ and generalize both function and predicate symbols.
+Expressions $e$ of FOML are then inductively defined by the following grammar:
+%
+ \[
+  e\ \ ::=\ \
+  x\ \,|\,\
+  v\ \,|\,\
+  op(e,\ldots,e)\ \,|\,\
+  e = e\ \,|\,\
+  \FALSE\ \,|\,\
+  e \implies e\ \,|\,\
+  \A x: e\ |\
+  \modal e
+ \]
+%
+% \smnote{Should we also include $\CHOOSE$ expressions? Pro: we'd have non-trivial
+%   non-Boolean modal expressions. Con: it complicates the semantics and we'd have
+%   to say that the technique doesn't depend on the presence of $\CHOOSE$.\\[.5em]
+% %
+% LL: I think \textsc{choose} is interesting here only because it allows
+% syntactic rather than just semantic definitions of the coalesced operators.
+% Since I doubt if we'll have the space to go into that, I think we should
+% continue to omit \textsc{choose}.
+% }
+%
+where $x \in \XX$, $v \in \VV$, $op \in \OO$, and arities are
+respected (empty parentheses are omitted for $0$-ary symbols).  We do
+not allow quantification over flexible variables, so our flexible
+variables are really ``flexible function symbols of arity 0''.
+While \tlaplus\ allows quantification
+over flexible variables,
+ % \smmargin{24 Jan. Change of justification.}
+% it is not used in real-world specifications.
+it can be considered as another modal operator for the purposes of coalescing.
+
+The notions of free and bound (rigid) variables are the usual ones. We say that
+an expression is \emph{rigid} iff it contains neither flexible variables
+nor subexpressions of the form
+$\modal e$. The
+standard propositional ($\TRUE$, $\lnot$, $\land$, $\lor$, $\equiv$)
+and first-order ($\exists$) connectives are defined in the usual
+way. The dual modality $\dual$ is introduced by defining $\dual e$ as
+$\lnot\modal\lnot e$.
+The extension to a multi-modal language is straightforward.
+
+\subsection{Semantics.}
+
+A \emph{Kripke model} $\MM$ for FOML
+is a 6-tuple $(\II, \xi, \WW, R, \zeta, \modal_{\MM})$,
+where:
+\begin{itemize}
+\item $\II$ is a standard first-order interpretation consisting of a universe
+  $|\II|$ and, for every operator symbol $op$, an interpretation
+%
+  \(
+    \II(op): |\II|^n \rightarrow |\II|
+  \)
+%
+  where $n$ agrees with the arity of $op$. We assume that the universe $|\II|$
+  contains two distinguished, distinct values $\true$ and $\false$.
+\item $\xi: \XX \rightarrow |\II|$ is a valuation of the rigid variables.
+\item $\WW$ is a non-empty set of states, and
+%  \smmargin{25 Jan. Removed irrelevant (?) remark about restricted $R$}
+  $R \subseteq \WW \times \WW$ is the accessibility relation.
+  % ; specific modal logics differ by
+  % restricting to particular classes of accessibility relations.
+\item $\zeta: \VV \times \WW \rightarrow |\II|$ is a valuation of the flexible
+  variables at the different states of the model.
+\item $\modal_{\MM}: 2^{|\II|} \fun |\II|$ is a function such that
+  $\modal_{\MM}(S) = \true$ iff $S \subseteq \{\true\}$.
+\end{itemize}
+%
+Note that we assume a constant universe, independent of the states of
+the model, and we also assume that all operators in $\OO$
+are rigid---i.e., interpreted independently of
+the states.
+
+We inductively define the interpretations of expressions $\notla\sem{e}^{\MM}_w$
+at state $w$ of model $\MM$. When the model $\MM$ is understood from the context,
+we drop it from the notation.
+%
+\begin{itemize}
+\item $\notla\sem{x}^{\MM}_w \eqdef \xi(x)$\quad for $x \in \XX$
+\item $\notla\sem{v}^{\MM}_w \eqdef \zeta(v,w)$\quad for $v \in \VV$
+\item $\notla\sem{op(e_1, \ldots, e_n)}^{\MM}_w \eqdef \II(op)(\sem{e_1}^{\MM}_w, \ldots, \sem{e_n}^{\MM}_w)$\quad
+  for $op \in \OO$
+\item $\notla\sem{e_1 = e_2}^{\MM}_w \eqdef
+  \left\{\begin{array}{l@{\ \ }l}
+    \true & \mbox{if}\ \sem{e_1}^{\MM}_w = \sem{e_2}^{\MM}_w\\
+    \false & \mbox{otherwise}
+  \end{array}\right.$
+\item $\notla\sem{\FALSE}^{\MM}_w \eqdef \false$
+\item $\notla\sem{\varphi \implies \psi}^{\MM}_w \eqdef
+  \left\{\begin{array}{l@{\ \ }l}
+    \true & \mbox{if}\ \sem{\varphi}^{\MM}_w \neq \true\ \mbox{or}\ \sem{\psi}^{\MM}_w = \true\\
+    \false & \mbox{otherwise}
+  \end{array}\right.$
+\item $\notla\sem{\A x: \varphi}^{\MM}_w \eqdef
+  \left\{\begin{array}{l@{\ \ }l}
+    \true & \mbox{if}\
+            \begin{noj}
+              \sem{\varphi}^{\MM'}_w = \true\
+              \mbox{for all $\MM' =
+              (\II,\xi',\WW,R,\zeta,\modal_{\MM})$ such that}\\
+              \mbox{$\xi'(y) = \xi(y)$ for all $y \in \XX$ different from $x$}
+            \end{noj}\\
+    \false & \mbox{otherwise}
+  \end{array}\right.$
+\item $\notla\sem{\modal \varphi}^{\MM}_w \eqdef
+  \modal_{\MM}(\{\sem{\varphi}^{\MM}_{w'} : (w,w') \in R\})$
+\end{itemize}
+%
+We write $\MM,w \models \varphi$ instead of
+$\notla\sem{\varphi}^{\MM}_w = \true$. We say that $\varphi$ is \emph{valid}
+iff $\MM,w \models \varphi$ holds for
+all $\MM$ and $w$, and that it is \emph{satisfiable} iff $\MM,w \models \varphi$ for
+some $\MM$ and $w$.
+We define a consequence relation
+\,$\models$\, as follows (where $\Gamma$ is a set of formulas):
+$\Gamma \models \varphi$ iff for all $\MM$, if $\MM, w \models \psi$
+for all $\psi \in \Gamma$ and $w \in \WW$, then $\MM, w \models \varphi$ for
+all $w \in \WW$.
+
+Our definition of the semantics is a straightforward extension of the standard
+Kripke semantics to our setting, where $\modal e$ need not denote a truth value.
+The condition on the function $\modal_{\MM}$ used for interpreting $\modal$
+ensures that $\MM,w \models \modal \varphi$ iff $\MM,w' \models \varphi$ for all
+$w'$ such that $(w,w') \in R$ as in the standard Kripke semantics.
+Because we assume a constant domain of interpretation, both Barcan formulas are
+valid---that is, we have validity of%
+ % \llmargin{24 Jan. Removed equation number that had no label
+ %              from equation.}
+\begin{equation}\label{eq:barcan}
+  (\forall x : \modal \varphi)\ \equiv\ \modal(\forall x: \varphi).
+\end{equation}
+%
+Moreover, since all operator symbols have rigid interpretations, it is easy to
+prove by induction on the expression syntax that $\notla\sem{e}_w =
+\sem{e}_{w'}$ holds for all states $w,w'$ whenever $e$ is a rigid expression.
+It follows that implications of the form
+%
+\(
+  \varphi \implies \modal \varphi
+\)
+%
+are valid for rigid $\varphi$---for example:
+%
+\begin{equation}\label{eq:rigid-box}
+  \A x,y : (x=y) \implies \modal(x=y).
+\end{equation}
+
+%% NB: The reverse implication is not valid because \modal\varphi could hold
+%% trivially if there is no accessible world.
+
+
+\subsection{FOL and ML fragments of FOML}
+
+Two natural sublogics of FOML are first-order logic (FOL) and propositional modal
+logic (ML).
+
+FOL does not have flexible variables $\VV$ or expressions $\modal e$.
+A first-order structure $(\II,\xi)$ consists of an interpretation $\II$ as above
+and a valuation $\xi$ of the (rigid) variables.
+%  \smmargin{25 Jan. Removed a sentence that didn't seem to make sense.}
+%%  I don't think the following remark makes sense
+%%  without defining a translation: the translation must produce a legal FOL formula.
+%%  Added remark in section 3 below.
+% (Thus, when translating an FOML formula $\varphi$ into FOL, all flexible variables of $\varphi$ become rigid.)
+%% \llnote{
+%%   I presume ``variables'' now means rigid and flexible variables.
+%%   If so, we should change this to say ``rigid and flexible variables''.\\[.5em]
+%%   SM: I'd prefer to have only rigid variables in FOL so that the semantics can
+%%   be defined using a single valuation (note that $\zeta$ takes states as
+%%   arguments, which wouldn't make sense in a FOL structure) and rather consider
+%%   the coalesced FOL formulas as having an extended set of rigid variables $\XX
+%%   \cup \VV$.\\[.5em]
+%%  LL. I thought you were defining the FOL corresponding to a particular FOML,
+%%     which would then be
+%%      the logic without $\modal$ in which rigid and flexible variables were
+%%      both considered to be rigid.  Apparently you're defining what
+%%      a FOL is, and are just re-using parts of the definition of an FOML.  If you
+%%      think that this is a mis-understanding that someone in the IJCAR
+%%      crowd might also have, then please make it clear what you're doing.
+%%      Otherwise just ignore my remark.}
+The inductive definition of the
+semantics consists of the relevant clauses of the one given above for FOML, and
+the notions of first-order validity $\folmodels \,\varphi$, satisfiability, and
+consequence carry over in the usual way.
+
+%% sm: clarified below
+% {\bf [You are saying that the variables of FOL are the ones in $\XX$.  However,
+%      I think they should be the variables in $\XX\cup\VV$.  See the proof
+%      of Theorem 1.]}
+
+%\subsubsection{ML.}
+
+ML does not have rigid variables, quantifiers, operator symbols or equality.
+A (propositional) Kripke model for ML is given as $\KK = (\WW, R, \zeta)$ where
+the set of states $\WW$ and the accessibility relation $R$ are as for FOML, and the
+valuation $\zeta: \VV \times \WW \fun \{\true,\false\}$ assigns truth values to
+flexible variables at every state. The inductive definition of
+$\notla\sem{e}^{\KK}_w \in \{\true,\false\}$ specializes to the following clauses:
+
+\begin{itemize}
+\item \makebox[3cm][l]{$\sem{v}^{\KK}_w\ =\ \zeta(v,w)$} for $v \in \VV$
+\item $\sem{\FALSE}^{\KK}_w\ =\ \false$
+\item \makebox[3cm][l]{$\sem{\varphi \implies \psi}^{\KK}_w\ =\ \true$}
+  iff\ \ $\sem{\varphi}^{\KK}_w = \false$ or $\sem{\psi}^{\KK}_w = \true$
+\item \makebox[3cm][l]{$\sem{\modal \varphi}^{\KK}_w\ =\ \true$}
+  iff\ \ $\sem{\varphi}^{\KK}_{w'} = \true$ for all $w' \in W$ such that $(w,w') \in R$
+\end{itemize}
+%
+The notions of validity $\mlmodels\, \varphi$, satisfiability, and consequence
+carry over as usual.
+
+%% tl: retracted
+%\tlnote{Do you think we need to write a bit more about the two sublogics? For example,
+%  we can show that FOL is just a syntactic restriction of FOML and ML is
+%  a syntactic restriction plus a restricition on the domain.
+%  On the other hand, we can also give semantical isomorphism between the FOL/ML
+%  sublogics of FOML and the regular FOL/ML structures.
+%  Maybe it will be easier later to prove soundness as clearly if a formula is FOL/ML valid then
+%  it is also FOML valid in this case.}
+%\tlnote{Is there a reason why we describe FOML without flexible quantifiers? Is it because we want
+%  to avoid speaking about stuttering? In intensional modal logic they give un-stuttered semantics
+%  (although they have a finer spectrum of variable flexibility). We can also refer to FOML as
+%  intensional multi-modal logic and just comment that it is a bit different from TLA because of
+%  the stuttering. It seems that this logic is the most well-known.\\[.5em]
+%%
+%LL: In a formal sense, we don't need to consider quantification over
+%flexible variables.  With set theory + FOL, quantification over rigid
+%variables gives you all the expressiveness of quantification over
+%flexible variables.  To express quantification over a flexible
+%variable, you just quantify over a rigid variable whose value
+%``predicts'' the sequence of values assumed by the flexible variable.
+%That doesn't mean quantification over flexible variables isn't
+%important, but it's a possible justification for not mentioning it
+%in a paper as theoretical as this one.\\[.5em]
+%%
+%SM: I simply didn't introduce flexible quantifiers because I didn't know if we
+%had anything interesting to say. I believe that ``standard'' first-order modal
+%logic only has rigid quantifiers? Tomer, have you thought about coalescing
+%formulas with flexible quantifiers?
+% }
+
+
+\section{Coalescing Modal Expressions}
+\label{sec:coalescing-modal}
+
+\subsection{Definition of the abstraction $\FOL{e}$}
+
+One of our objectives is to apply standard first-order theorem provers
+for proving theorems of FOML that are instances of first-order
+reasoning.  Since the operator~$\modal$ is not available in first-order
+logic, we must translate FOML formulas $\psi$ to purely
+first-order formulas $\FOL{\psi}$ such that the consequence
+$\FOL{\Gamma} \,\folmodels\, \FOL{\varphi}$ entails $\Gamma \models
+\varphi$.  A naive but unsound approach would be to replace the modal
+operator $\modal$ by a fresh monadic operator symbol $Nec$.
+As explained in Section~\ref{sec:motivation}, this approach is not sound.
+%% sm 27 Jun: commented out the following more detailed text
+% would
+% allow one to prove the invalid
+% formula %(\ref{eq:1}):
+% $(v=0) \implies \modal(v=0)$.
+% (The formula is not valid because it is false at a state $w$ of a model
+% in which $\zeta(v,w) = \II(0)$, but $\zeta(v,w') \neq \II(0)$
+% for some state $w'$ accessible from $w$.)
+As we observed, a sound approach is to define $\FOL{\varphi}$ by using
+the well-known standard translation from modal logic to first-order
+logic~\cite{brauner:foml,ohlbach:translation} that makes explicit the
+FOML semantics.  However, that translation introduces additional
+complexity---complexity that is unnecessary for proof obligations that
+follow from ordinary first-order reasoning.
+
+Instead, we define $\FOL{\varphi}$ to be a syntactic first-order
+abstraction of $\varphi$ in which modal subexpressions are
+coalesced---that is, replaced by fresh operators.
+If $\varphi$ is %(\ref{eq:1})
+$(v=0) \implies \modal(v=0)$, then $\FOL{\varphi}$ is %(\ref{eq:1-tr}):
+$(v = 0) \implies \B{\modal(v=0)}$,
+where $\B{\modal(v=0)}$ is a new $0$-ary operator symbol.
+% sm 27 Jun: commented out the following somewhat mysterious sentence.
+%The variable $v$ is considered a free variable in $\FOL{\varphi}$.
+%
+%\llnote{$\FOL{\varphi}$ is a formula of FOL, in which there aren't rigid
+%  and flexible variables, just variables.}%
+
+We want to ensure that subexpressions appearing more than once are
+abstracted by the same operators, allowing for instances of first-order theorems
+to remain valid.  This requires some care for expressions that contain bound
+variables. For example, we expect to prove
+% \jknote{
+%   I'm confused by the use of `$\equiv$' here: in the two previous it seems to be a symbol of the meta-language, defining a translation; here, it seems to mean `$\Leftrightarrow$' ?\\
+%   TL: In addition, below we define the actual coalescing using $\deq$ and in Sec. 5 we use it as part of the language. Maybe we can use a new symbol for both meta definitions?\\
+%   SM: I removed the occurrences of `$\equiv$' above and replaced `$\deq$' below
+%   by `$=$' (which was already used in the individual items), so `$\equiv$' means
+%   logical equivalence. Is it clear enough now or do we really need another meta-equality?
+% }
+%
+\begin{equation}\label{eq:ex-box}
+  (\E x,z: \modal(v=x)) \equiv (\E y: \modal(v=y))
+\end{equation}
+%
+We therefore define the fresh operator symbols
+$\B{\modal e}$ as $\lambda$-abstractions over the
+bound variables occurring in $e$, and these are identified modulo
+$\alpha$-equivalence.  Formally, we let
+ $\FOL{e} = \FOL{e^{\varepsilon}}$
+where $\varepsilon$ denotes the empty list and,
+for a list $\vec{y}$ of rigid variables, the first-order
+expression $\FOL{e^{\vec{y}}}$ over the extended set of
+variables $\XX \cup \VV$ is defined inductively as follows.
+%
+\begin{itemize}
+\item $\FOL{x^{\vec{y}}} \eqdef x$ for $x \in \XX$ a rigid variable,
+\item $\FOL{v^{\vec{y}}} \eqdef v$ for $v \in \VV$ a flexible variable,
+\item $\FOL{(op(e_1, \ldots, e_n))^{\vec{y}}} \eqdef
+  op(\FOL{(e_1)^{\vec{y}}}, \ldots, \FOL{(e_n)^{\vec{y}}})$
+  for $op \in \OO$,
+\item $\FOL{(e_1 = e_2)^{\vec{y}}} \eqdef \FOL{(e_1)^{\vec{y}}} = \FOL{(e_2)^{\vec{y}}}$,
+\item $\FOL{\FALSE^{\vec{y}}} \eqdef \FALSE$
+\item $\FOL{(e_1 \implies e_2)^{\vec{y}}} \eqdef \FOL{(e_1)^{\vec{y}}} \implies \FOL{(e_2)^{\vec{y}}}$,
+\item $\FOL{(\A x : e)^{\vec{y}}} \eqdef \A x : \FOL{e^{x,\vec{y}}}$,
+\item $\FOL{(\modal e)^{\vec{y}}} \eqdef \B{\lambda \vec{z}: \modal e}(\vec{z})$ where
+  $\vec{z}$ is the subsequence of rigid variables in $\vec{y}$
+   that appear free in $e$.
+  (If $z$ is the empty sequence, this is simply $\B{\modal e}$.)
+\end{itemize}
+%
+With these definitions, the formula (\ref{eq:ex-box}) is coalesced as
+%
+\begin{equation}\label{eq:ex-box-c}
+  (\E x,z : \B{\lambda x: \modal(v=x)}(x)) \,\equiv\,
+  (\E y: \B{\lambda y: \modal(v=y)}(y))
+\end{equation}
+%
+which is an instance of the valid first-order equivalence%
+%  \llmargin{24 Jan. Removed another unused equation number.}
+% \begin{equation}
+  \[ (\E x,z: P(x)) \,\equiv\, (\E y: P(y)) \]
+% \end{equation}
+In particular, the two operator symbols occurring in (\ref{eq:ex-box-c}) are
+identified because the two $\lambda$-expressions are $\alpha$-equivalent.
+Identification of coalesced formulas modulo $\alpha$-equivalence ensures that
+the translation is insensitive to the names of bound (rigid)
+variables.  Section~\ref{sec:conclusion} discusses techniques for
+  % \llmargin{17 Jan. Changed sentence so the ``such as'' clause
+  %          talked about differences.}
+abstracting from less superficial differences in first-order
+expressions, such as between $\lambda x, y$ and $\lambda y, x$ and
+between $a=b$ and $b=a$.
+
+
+\subsection{Soundness of coalescing to FOL}
+
+For a set $\Gamma$ of FOML formulas, we denote by $\FOL{\Gamma}$ the set of all
+formulas $\FOL{\psi}$, for $\psi \in \Gamma$. We now show the soundness of the
+abstraction.
+%
+\begin{theorem}\label{thm:coal-modal}
+  For any set $\Gamma$ of FOML formulas and any FOML formula $\varphi$,
+  if $\FOL{\Gamma} \,\folmodels \,\FOL{\varphi}$ then $\Gamma \models \varphi$.
+\end{theorem}
+\begin{proofsketch}
+  % We prove the contra-positive $\neg \Gamma \models \varphi
+  % \Rightarrow \neg \FOL{\Gamma} \folmodels \FOL{\varphi}$. To show
+  % this, it is sufficient to construct a FOL-structure that does not
+  % satisfy $\FOL{\Gamma} \folmodels \FOL{\varphi}$ from a Kripke model
+  % that does not satisfy $\Gamma \models \varphi$.
+  Assume that $\Gamma \not\models \varphi$, so
+  $\MM = (\II, \xi, \WW, R, \zeta, \modal_{\MM})$ is a Kripke model such that
+  $\MM,w' \models \psi$ for all $\psi \in \Gamma$ and $w' \in \WW$, but that
+  $\MM,w \not\models \varphi$ for some $w \in \WW$.
+
+  For the extended set of variables $\XX \cup \VV$, define the first-order
+  structure $\SS = (\II', \xi')$ where $\II'$ agrees with $\II$ for all operator
+ % \llmargin{24 Jan. Changed ``$\in\XX$, $\xi'(v)=$'' to
+ %                  ``$\in\XX$ and $\xi'(v)=$''. \\ Is this OK?}%
+  symbols that appear in $\Gamma$ or $\varphi$, and where the valuation
+  $\xi'$ is
+  defined by $\xi'(x) = \xi(x)$ for $x \in \XX$
+  and $\xi'(v) = \zeta(w,v)$ for $v
+  \in \VV$. For the additional operator symbols introduced in $\FOL{\Gamma}$ and
+  $\FOL{\varphi}$, we define
+  \[
+    \II'(\B{\lambda \vec{z}: \modal e})(d_1, \ldots, d_n)\ \ =\ \
+    \sem{\modal e}^{\MM'}_w
+  \]
+  where $\MM'$ agrees with $\MM$ except for the valuation $\xi'$ that assigns
+  the $i$\th variable of $\vec{z}$ to $d_i$. This interpretation is
+  well-defined: if
+  $\modal e_1$ and $\modal e_2$ are two expressions in $\Gamma$ or $\varphi$ that
+  give rise to the same operator symbol, then $(\lambda \vec{z}_1 : \modal e_1)$
+  and $(\lambda \vec{z}_2 : \modal e_2)$ must be $\alpha$-equivalent, and
+  therefore $\II'(\B{\lambda \vec{z}_1: \modal e_1})(d_1, \ldots, d_n) =
+  \II'(\B{\lambda \vec{z}_2: \modal e_2})(d_1, \ldots, d_n)$.
+
+  It is straightforward to prove that $\notla\sem{\FOL{e}}^{\SS} = \sem{e}^{\MM}_w$
+  holds for all expressions $\FOL{e}$ that appear in $\FOL{\Gamma}$ or
+  $\FOL{\varphi}$. In particular, it follows that $\SS \,\folmodels \,\FOL{\psi}$
+  for all $\psi \in \Gamma$ and $\SS \,\nfolmodels\, \FOL{\varphi}$. This shows that
+  $\FOL{\Gamma} \,\nfolmodels\, \FOL{\varphi}$ and concludes the proof.
+  %
+  \qed
+\end{proofsketch}
+
+
+%\subsection{Completeness for distributive idempotent modalities}
+%\label{sec:complete-modal}
+%
+%Coalescing to FOL does not by itself give rise to a complete proof technique.
+%For example, $(\forall x: \modal P(x)) \implies \modal \forall x: P(x)$ is
+%coalesced to
+%%
+%\(
+%  (\forall x: \B{\lambda x: \modal P(x)}(x)) \implies \B{\modal \forall x: P(x)}
+%\)
+%%
+%for two distinct new operator symbols $\B{\lambda x: \modal P(x)}$ (unary) and
+%$\B{\modal \forall x: P(x)}$ ($0$-ary), and this formula is not FOL-valid. We will now
+%show that coalescing is complete in case the modality $\modal$ commutes with all
+%connectives and operators and is idempotent. Although this is a very stringent
+%requirement, we will see in Section~\ref{sec:safety} that it is satisfied by the
+%\emph{prime} modality of \tlaplus, giving rise to a completeness result for
+%proving safety properties of \tlaplus specifications.
+%
+%\begin{definition}[Distributive idempotent modalities]
+%  For any expression $e$, we denote by $\fpr{e}$ the expression obtained by
+%  distributing $\modal$ over all operators and connectives, cancelling any
+%  duplicate occurrences of $\modal$:
+%  \[\begin{array}{ll}
+%    \fpr{x} \eqdef x\ \ \mbox{for } x \in \XX &
+%    \fpr{\modal x} \eqdef x\ \ \mbox{for } x \in \XX \\
+%    \fpr{v} \eqdef v\ \ \mbox{for } v \in \VV &
+%    \fpr{\modal v} \eqdef \modal v\ \ \mbox{for } v \in \VV\\
+%    \fpr{op(e_1, \ldots, e_n)} \eqdef op(\fpr{e_1}, \ldots, \fpr{e_n}) &
+%    \fpr{\modal op(e_1, \ldots, e_n)} \eqdef op(\fpr{\modal e_1}, \ldots, \fpr{\modal e_n}) \\
+%    \fpr{e_1 = e_2} \eqdef \fpr{e_1} = \fpr{e_2} &
+%    \fpr{\modal(e_1 = e_2)} \eqdef \fpr{(\modal e_1)} = \fpr{(\modal e_2)} \\
+%    \fpr{\FALSE} \eqdef \FALSE &
+%    \fpr{\modal \FALSE} \eqdef \FALSE \\
+%    \fpr{e_1 \implies e_2} \eqdef \fpr{e_1} \implies \fpr{e_2} &
+%    \fpr{\modal(e_1 \implies e_2)} \eqdef \fpr{(\modal e_1)} \implies \fpr{(\modal e_2)} \\
+%    \fpr{\A x: e} \eqdef \A x : \fpr{e} &
+%    \fpr{\modal(\A x : e)} \eqdef \A x : \fpr{\modal e}\\
+%    & \fpr{\modal\modal e} \eqdef \fpr{\modal e}
+%  \end{array}\]
+%%
+%  For a set $\Gamma$ of expressions, $\fpr{\Gamma}$ denotes the set containing
+%  $\fpr{e}$, for all $e \in \Gamma$.
+%
+%  We say that $\modal$ is \emph{distributive and idempotent} for a Kripke model $\MM$
+%  if for any expression~$e$ and any state $w$, we have $\MM,w \models e = \fpr{e}$.
+%\end{definition}
+%
+%Observe that $\modal$ occurs only in the form $\modal v$ in $\fpr{e}$, i.e.\
+%only directly in front of flexible variables, and without duplication.
+%
+%Before we prove the next theorem, we define the set $\SMM_0$ of \emph{minimal models} $(\II,\xi,\WW,R,\zeta)$
+%such that $\II$ interprets rigidly all symbols, $\WW = \{w_1,w_2\}$
+%for some worlds $w_1$ and $w_2$, $R = \{(w_1,w_2)\}$ and $\xi$ and $\zeta$ are arbitrary. It is easy to see that
+%for every modality $\modal$, $\modal$ is distributive and idempotent for all models in $\SMM_0$.
+%
+%\begin{theorem}
+%  \label{thm:next-complete}
+%  Let $\varphi$ be a formula containing a set of modalities $\Delta$ and $\SMM$ be
+%  a set of kripke models containing $\SMM_0$ such that for every $\modal\in\Delta$ and for every
+%  $\MM\in\SMM, \modal$ is distributive and idempotent for $\MM$. Then, if $\MM\models \fpr{\varphi}$
+% for all $\MM\in\SMM$, then $\folmodels \FOL{\fpr{\varphi}}$.
+%\end{theorem}
+%\begin{proofsketch}
+%  Assume that $\nfolmodels \FOL{\fpr{\varphi}}$, and let $\SS=(\II,\xi)$ be a
+%  structure such that $\SS\not\models\FOL{\fpr{\varphi}}$. Define the Kripke structure
+%  $\MM=(\II',\xi',\WW',R',\zeta',\modal_{\MM})$ as follows:
+%  \begin{itemize}
+%  \item $\II'$ is the restriction of $\II$ to the operators that occur in
+%    $\varphi$.
+%  \item $\WW' = \{w,w'\}$, $R' = \{(w,w')\}$.
+%  \item $\xi'(x) = \xi(x)$ for $x \in \XX$.
+%  \item For $v \in \VV$, $\zeta'(w,v) = \xi(v)$, and $\zeta'(w',v) = \II(\B{\modal v})$.
+%  \item $\modal_{\MM}(\{d\}) = d$, $\modal_{\MM}(S) = \false$ for any
+%    non-singleton set $S$.
+%  \end{itemize}
+%  It is now easy to prove that for any expression $e$, one has
+%  $\sem{\fpr{e}}^{\MM}_w = \sem{\FOL{\fpr{e}}}^{\SS}$. In particular, it follows
+%  that $\MM,w \not\models \fpr{\varphi}$ and we complete the proof by noting that $\MM\in\SMM_0$.
+%%
+%  \qed
+%\end{proofsketch}
+%
+%It follows that coalescing is complete for proving FOML theorems over a class of
+%Kripke models for which $\modal$ is a distributive idempotent modality.
+
+%\smnote{%
+%  There are currently two problems: (1) I don't see how to extend the proof of
+%  completeness to consequences $\Gamma \models \varphi$, since one would have to
+%  show that the premises hold at \emph{all} states of the modal structure. (2)
+%  In the definition of distributive modalities, it doesn't make sense to require
+%  that the equality is valid, one can at best assume that it holds over a class
+%  of frames. But then it is not really enough to show that validity of
+%  $\fpr{\varphi}$ coincides with validity of $\FOL{\fpr{\varphi}}$: the proof
+%  should be adapted to that class of frames. In particular, one should show that
+%  one can construct a modal structure within that class.
+%%
+%}
+
+
+% We will conclude this section by proving the completeness of coalescing for a restricted, but important,
+% set of formulas. We will argue in section \ref{sec:safety} that this set contains all safety properties
+% (see section \ref{sec:motivation}) and many liveness properties.
+
+% \begin{definition}[Distributivity of modalities]
+%   Let $\btu f(a_1,\ldots,a_n)$ be a formula, then we say that $\btu$ distributes over $f$ if
+% $\btu f(a_1,\ldots,a_n) \Leftrightarrow f(\btu a_1,\ldots, \btu a_n)$.
+% \end{definition}
+
+% \begin{definition}[Propagation up to atoms]
+%   We say that we can propagate a modality $\btu$ up to atoms in a formula $f$, if
+% $\btu$ distributes over all symbols in $f$ except constants and variables. We denote the fully propagated version by $\fpr{f}$.
+% \end{definition}
+
+% \begin{definition}[Next modality]
+%   \tlnote{improve this definition: linearity of the modality?}
+%   A modality $\btu$ is called a next modality iff for every expression $e$ and model $\MM=(\II,\xi,\WW,R,\zeta)$ such that $\MM\models e$,
+%   $\WW$ contains at least two worlds $w_1$ and $w_2$ and $w_1 R w_2$ is the only relation containing $w_1$ as left argument.
+% \end{definition}
+
+% \begin{theorem}
+% Let $\varphi$ be a formula and $\Gamma$ a set of formulas containing the next modality $\btu$ such that we can propagate $\btu$
+% up to their atoms, then $\Gamma\models\varphi$ iff $\FOL{\fpr{\Gamma}}\folmodels\FOL{\fpr{\varphi}}$.
+% \end{theorem}
+% \begin{proofsketch}
+% Since $\btu$ can be propagated up to the atoms of $\varphi$, we need to prove only that $\fpr{\Gamma}\models\fpr{\varphi}$ iff $\FOL{\fpr{\Gamma}}\folmodels\FOL{\fpr{\varphi}}$.
+% The direction that $\FOL{\fpr{\Gamma}}\folmodels\FOL{\fpr{\varphi}}$ implies $\fpr{\Gamma}\models\fpr{\varphi}$ follows from Thm. \ref{thm:coal-modal}.
+% Assume that $\fpr{\Gamma}\models\fpr{\varphi}$, i.e. that for every model $\MM$ and world $w$, if $\MM,w\models\fpr{\psi}$ for all $\fpr{\psi}\in\fpr{\Gamma}$
+% then $\MM,w\models\fpr{\varphi}$. Let assume that there is a structure $\SS=(\II,\xi)$ such that $\SS\folmodels\fpr{\psi}$ for all $\fpr{\psi}\in\fpr{\Gamma}$
+% but that $\SS\not\models\fpr{\varphi}$. Let $\MM=(\II',\xi',\WW',R',\zeta')$ such that $w_1,w_2\in\WW'$, $(w_1,w_2)\in R'$, $\II'=\II$ and define
+%   $\xi'$ to be
+%   $\xi'(x) = \xi(x)$ for $x \in \XX$,
+% $\zeta'(w_1,v) = \xi(v)$ for $v \in \VV$ and
+% \[
+%   \zeta'(w_2,v) =
+%   \left\{\begin{array}{l@{\quad}l}
+%         \II(\B{\lambda v: \btu v}) & \mbox{if}\ \B{\lambda v: \btu v}\in\II\\
+%         \false & \mbox{otherwise}
+%       \end{array}\right.
+% \]
+% It is easy now to see that $\sem{\FOL{e}}^\SS = \sem{e}^\MM_{w_1}$ for all $e\in\fpr{\Gamma}\cup\{\fpr{\varphi}\}$ and therefore
+% that $\MM,w_1\models\psi$ for all $\psi\in\fpr{\Gamma}$ and that $\MM,w_1\not\models\fpr{\varphi}$
+% in contradiction to the assumption. We will show that for the following cases:
+% \begin{itemize}
+%   \item $\sem{v}^\MM_{w_1} = \zeta'(w_1,v) = \xi(v) = \xi(\FOL{v}) =  \sem{\FOL{v}}^\SS$.
+%   \item $\sem{\btu v}^\MM_{w_1} = \sem{v}^\MM_{w_2} = \zeta'(w_2,v) = \II(\B{\lambda v: \btu v}) = \II(\B{\lambda \FOL{v}: \btu \FOL{v}}) = \sem{\FOL{(\btu v)}}^\SS$.
+% \end{itemize}
+% \end{proofsketch}
+
+
+\section{Coalescing First-Order Expressions}
+\label{sec:coalescing-fol}
+
+We now define an abstraction $\ML{\varphi}$ of FOML formulas to formulas of
+propositional modal logic. Again, we require for soundness that $\Gamma \models
+\varphi$ whenever $\ML{\Gamma}\, \mlmodels \,\ML{\varphi}$---that is, consequence
+between abstracted formulas implies consequence between the original ones. In
+ %\ddmargin{changed "for carrying out" into "to carry out"}%
+this way, we can use theorem provers for propositional modal logic to carry out
+FOML proofs that are instances of propositional modal reasoning. The abstraction
+$\ML{\varphi}$ replaces all first-order subexpressions $e$ of $\varphi$ by new
+(propositional) flexible variables $\B{e}$, where variables $\B{\A x:e}$
+are
+ % \llmargin{Might the ``again'' be confusing, since before
+ %  we did this for $\lambda$, not $\A$.\\
+ % DD: Could we replace it with ``once more'' or ``once again''? \\
+ %LL: 17 Jan. Could and did.}%
+once again identified modulo $\alpha$-equivalence. Formally, the translation is defined
+as follows.
+%
+\begin{itemize}
+\item $\ML{x} \eqdef \B{x}$ for $x \in \XX$ a rigid variable,
+\item $\ML{v} \eqdef v$ for $v \in \VV$ a flexible variable,
+\item $\ML{(op(t_1, \ldots, t_n))} \eqdef \B{op(t_1, \ldots, t_n)}$
+    for $op\in \OO$,
+\item $\ML{(e_1 = e_2)} \eqdef \B{e_1 = e_2}$,
+\item $\ML{\FALSE} \eqdef \FALSE$,
+\item $\ML{(e_1 \implies e_2)} \eqdef \ML{(e_1)} \implies \ML{(e_2)}$,
+\item $\ML{(\A x: e)} \eqdef \B{\A x: e}$,
+\item $\ML{(\modal e)} \eqdef \modal \ML{e}$.
+\end{itemize}
+%
+As an example,
+%  \llmargin{24 Jan. Removed another unused eqn number.}
+coalescing the formula
+%
+% \begin{equation}\label{eq:box-eq}
+  \[ (x=y) \,\land\, \modal\dual\TRUE \,\implies\, \modal\dual(x=y) \]
+% \end{equation}
+%
+%  \llmargin{12 Jan. Moved assumption that $x$, $y$ rigid
+%     because it doesn't affect coalescing.}%
+yields the ML-formula
+%
+\begin{equation}\label{eq:box-eq-c}
+  \B{x=y} \,\land\, \modal\dual\TRUE \,\implies\, \modal\dual\B{x=y}
+\end{equation}
+%
+The implication (\ref{eq:box-eq-c}) is not ML-valid. However,
+for rigid variables $x$ and $y$,
+it follows from
+the hypothesis $\B{x=y} \implies \modal\B{x=y}$, which is justified by the FOML
+law (\ref{eq:rigid-box}).
+
+For a set $\Gamma$ of FOML formulas, we denote by $\ML{\Gamma}$ the set of modal
+abstractions $\ML{\psi}$, for all $\psi \in \Gamma$. Moreover, we define the set
+$\HH(\Gamma)$ to consist of all formulas of the form $\B{e} \implies
+\modal\B{e}$, for all flexible variables $\B{e}$ introduced in $\ML{\Gamma}$ that
+correspond to rigid expressions $e$ in $\Gamma$.
+
+\begin{theorem}
+  Assume that $\Gamma$ is a set of FOML formulas and that $\varphi$ is a FOML formula.
+  If\/ $\ML{\Gamma}, \HH(\Gamma \cup \{\varphi\}) \,\mlmodels\, \ML{\varphi}$
+  then $\Gamma \models \varphi$.
+\end{theorem}
+%
+\begin{proofsketch}
+  As in Theorem~\ref{thm:coal-modal}, we prove the contra-positive.
+  Assume that $\MM = (\II,\xi,\WW,R,\zeta,\modal_{\MM})$ is a Kripke model such that $\MM,w'
+  \models \psi$ for all $\psi \in \Gamma$ and $w' \in \WW$, but $\MM,w
+  \not\models \varphi$ for a certain $w \in \WW$.
+
+  Define the propositional Kripke model $\KK = (\WW,R,\zeta')$ where $\zeta'$
+  assigns truth values in $\{\true,\false\}$ to all states $w' \in \WW$ and
+  flexible variables in $\ML{\Gamma}$ or $\ML{\varphi}$:
+  \[\begin{array}{@{}l}
+    \zeta'(w',v) = \true\ \ \mbox{iff}\ \ \zeta(w',v) = \true\ \ \mbox{for $v \in \VV$}\VS\\
+    \zeta'(w',\B{x}) = \true\ \ \mbox{iff}\ \ \xi(x) = \true\ \ \mbox{for $x \in \XX$}\VS\\
+    \zeta'(w',\B{op(t_1,\ldots,t_n)}) = \true\ \ \mbox{iff}\ \
+      \notla\sem{op(t_1,\ldots,t_n)}^{\MM}_{w'} = \true\VS\\
+    \zeta'(w',\B{e_1 = e_2}) = \true\ \ \mbox{iff}\ \
+      \notla\sem{e_1}^{\MM}_{w'} = \sem{e_2}^{\MM}_{w'}\VS\\
+    \zeta'(w',\B{\A x:e}) = \true\ \ \mbox{iff}\ \ \MM,w' \models \A x:e
+  \end{array}\]
+  Again,
+% \llmargin{12 Jan.  The sentence structure makes it hard to see what the
+%           quantifier ``for all'' applies to.  Someone please rewrite this.\\
+%  DD 14 Jan. attempted rewrite. Note that you cannot really quantify on $\ML{e}$.}%
+  $\zeta'$ is well-defined. It is easy to prove, for all $w' \in \WW$
+  and all $e$ such that $\ML{e}$ appears in $\ML{\Gamma}$ or
+  $\ML{\varphi}$, that
+  $\KK,w' \models \ML{e}$ iff $\notla\sem{e}^{\MM}_{w'} = \true$.
+  In particular, it follows that $\KK,w' \models \ML{\psi}$ for
+  all $\psi \in \Gamma$ and that $\KK,w \,\nmlmodels\, \ML{\varphi}$.
+
+  Furthermore, the definition of $\KK$ ensures that $\KK,w' \models \psi$ holds for
+  all $\psi \in \HH(\Gamma \cup \{\varphi\})$ and all $w' \in \WW$
+  because $\notla\sem{e}^{\MM}_{w'} =
+  \sem{e}^{\MM}_{w''}$ holds for all rigid expressions $e$
+  and all states $w',w'' \in \WW$.
+
+  It follows that $\ML{\Gamma}, \HH(\Gamma \cup \{\varphi\})
+  \,\nmlmodels\, \ML{\varphi}$, which concludes the proof.~\qed
+%
+%  \hfill\qed
+\end{proofsketch}
+
+
+\section{Coalescing in the presence of operator definitions}
+\label{sec:leibnizing}
+
+\subsection{Operator definitions}
+\label{sec:definitions}
+
+We now extend our language to allow definitions of the form
+\[
+  d(x_1,\ldots,x_n)\ \deq\ e
+\]
+where $d$ is a fresh symbol,
+$x_1,\ldots,x_n$ are pairwise distinct rigid
+variables, and $e$ is an expression whose free rigid variables are among
+$x_1,\ldots,x_n$.
+
+%\llnote{12 Jan.  For people who know \tlaplus, should we add
+%a footnote saying that a rigid \textsc{constant} $c$, which can occur
+%in $e$, can be replaced by a variable $c$ plus the assumption
+%$\E i : \Box(c=i)$?\\
+%DD 16 Jan. I think it would be more natural to replace it with an
+%operator $b$ defined as $b\ \deq\ c$ just before the definition of $d$.
+%} -- no, as discussed on Skype
+
+For an operator $d$ defined as above and expressions $e_1,\ldots,e_n$, the
+application $d(e_1,\ldots,e_n)$ is a well-formed expression whose semantics is
+given by:
+\[\notla
+  \sem{d(e_1,\ldots,e_n)}^{\MM}_w =
+  \sem{e[e_1/x_1, \ldots, e_n/x_n]}^{\MM}_w
+\] In other words, the defining expression is evaluated when the
+arguments have been substituted for the variables.  However, when
+reasoning about expressions containing defined operators, one does not
+wish to systematically expand definitions.  If the precise definition
+is unimportant, it is better to leave the operator unexpanded in order
+to keep the formulas small.  We now extend the coalescing techniques
+introduced in the preceding sections to handle expressions that may
+contain defined operators.
+
+It is easy
+to see that the algorithm introduced in
+Section~\ref{sec:coalescing-fol} for abstracting first-order subexpressions
+remains sound if we handle defined operators like operators in $\OO$.
+In particular, two expressions $d(\vec{e}_1)$ and $d(\vec{e}_2)$
+  %\smmargin{25 Jan. Up to $\alpha$-equivalence if $\vec{e}$ contain quantifiers.}
+are abstracted by the same flexible variable only if they are syntactically
+equal up to $\alpha$-equivalence.
+%
+However, this simple approach does not work for
+the algorithm of Section~\ref{sec:coalescing-modal} that abstracts
+modal subexpressions. As an example, consider the
+definition
+%
+\begin{equation}\label{eq:def-cst}
+  cst(x)\ \deq\ \E y: \modal(x=y)
+\end{equation}
+%
+and the formula
+\begin{equation}\label{eq:use-cst}
+  (u=v) \,\implies\, (cst(u) \equiv cst(v))
+\end{equation}
+where $u$ and $v$ are flexible variables.  An expression $e$ satisfies
+$cst(e)$ at state $w$ iff the value of $e$ is the same at all
+reachable states $w'$.  Hence, formula (\ref{eq:use-cst}) is obviously
+not valid.  If $cst$ were treated like an operator in $\OO$, the
+algorithm of Section~\ref{sec:coalescing-modal} would leave
+(\ref{eq:use-cst}) unchanged.  However, $u$ and $v$ would be
+considered ordinary (rigid) variables and $cst$ would be considered an
+uninterpreted operator symbol, so (\ref{eq:use-cst}), seen as a FOL
+formula, would be
+provable.  Thus, it would be unsound to simply treat defined operators
+like operators in $\OO$ in our algorithm for coalescing modal
+subexpressions.
+
+
+\subsection{Rigid arguments and Leibniz positions}
+\label{sec:leibniz-cases}
+
+The example above shows that in the presence of definitions, FOML formulas
+without any
+% \llmargin{12 Jan. Changed ``apparent'' to ``visible''}%
+visible modal operators may violate the Leibniz principle that
+substituting equals for equals should yield equal results. However, a first
+observation shows that the Leibniz principle still holds for rigid arguments.
+
+\begin{lemma}\label{thm:rigid-leibniz}
+  For any defined $n$-ary operator $d$, expressions $e_1, \ldots, e_n$, any $i
+  \in 1\,..\,n$ with
+  $e_i$ rigid, Kripke model $\MM$, state $w$, and
+  rigid variable $x$ that does not occur free in any $e_j$, we have
+%
+  \[\notla
+    \sem{d(e_1,\ldots,e_n)}^{\MM}_w =
+    \sem{d(e_1,\ldots,e_{i-1},x,e_{i+1},\ldots,e_n)}^{\MM'}_w
+  \]
+%
+  where $\MM'$ agrees with $\MM$ except for the valuation $\xi'$ of rigid
+  variables, which is like $\xi$ but assigns $x$ to $\notla\sem{e_i}^{\MM}_w$.
+\end{lemma}
+\begin{proofsketch}
+  Since $e_i$ is rigid, the value of
+  $\notla\sem{e_i}^{\MM}_{w'}$, for any $w' \in W$, is independent of the state
+  $w'$. The assertion is then proved by induction on the defining expression for
+  operator $d$.
+%
+  \qed
+\end{proofsketch}
+%
+For a non-rigid argument of a defined operator, the Leibniz principle is
+preserved when the argument does not appear in a modal context in the defining
+expression. We inductively define which argument positions of an FOML operator or
+connective are Leibniz (satisfy the Leibniz principle).
+
+\pagebreak %% Added by LL on 6 July 2014 to correct bad page break
+
+\begin{definition}[Leibniz argument positions]\label{def:leibniz-pos}\mbox{}
+  \begin{itemize}
+  \item All argument positions of the operators in $\OO$ and of all FOML
+    connectives except $\modal$ are Leibniz. The single argument position of $\modal$
+    is not Leibniz.
+  \item For an operator defined by $d(x_1,\ldots,x_n) \deq e$, the
+    $i$\th argument position of $d$ is Leibniz iff
+    $x_i$ does not occur within a non-Leibniz argument position in $e$.
+  \end{itemize}
+\end{definition}
+%
+In other words, the $i$\th argument position of a defined operator is Leibniz iff
+the $i$\th parameter does not appear in the scope of any
+occurrence of $\modal$
+in the full expansion of the defining expression.
+
+\begin{lemma}\label{thm:leibniz-pos}
+  Assume that $d$ is a defined $n$-ary operator whose $i$\th argument position
+  is Leibniz (for $i \in 1\,..\,n$). For any expressions $e_1, \ldots, e_n$, Kripke model
+  $\MM$, state $w$ and rigid variable $x$ that does not occur free in any $e_j$,
+  we have
+%
+  \[\notla
+    \sem{d(e_1,\ldots,e_n)}^{\MM}_w =
+    \sem{d(e_1,\ldots,e_{i-1},x,e_{i+1},\ldots,e_n)}^{\MM'}_w
+  \]
+%
+  where $\MM'$ agrees with $\MM$ except for the valuation $\xi'$ of rigid
+  variables, which is like $\xi$ but assigns $x$ to $\notla\sem{e_i}^{\MM}_w$.
+\end{lemma}
+\begin{proofsketch}
+  Induction on the syntax of the defining expression for $d$.~\qed
+\end{proofsketch}%
+%
+It follows from Lemmas~\ref{thm:rigid-leibniz} and~\ref{thm:leibniz-pos} that
+the implication
+%
+\[\begin{noj}
+  (e_{i}=f) \;\implies\; % \\ \hspace*{1em}
+  (d(e_1,\ldots,e_{n}) = d(e_1,\ldots,e_{i-1},f,e_{i+1},\ldots,e_{n}))
+\end{noj}\]
+%
+is valid when $e_{i}$ and $f$ are rigid expressions or when the
+$i$\th argument position of $d$ is Leibniz.
+
+
+\subsection{Coalescing for defined operators}
+\label{sec:abstraction-defined}
+
+%  \llmargin{26 Jan. Did you want to leave ``abstraction'' here?
+%  (Yes is a perfectly acceptable answer.)\\
+%  SM: 27 Jan. Yes, intentional.}%
+The definition
+of the syntactic abstraction $\FOL{e}$ for the extended language
+is now completed by defining
+\begin{itemize}
+\item $\FOL{(d(e_1, \ldots, e_n))^{\vec{y}}} \eqdef
+  \B{d,\epsilon_1,\ldots,\epsilon_n}(\FOL{(e_1)^{\vec{y}}},\ldots,\FOL{(e_n)^{\vec{y}}})$
+  for a defined $n$-ary operator $d$ where
+%
+  \[\begin{array}{@{}ll}
+    \epsilon_i = \ast &
+    \mbox{if the $i$\th position of $d$ is Leibniz or $e_i$ is
+      a rigid expression,}\\
+    \epsilon_i = e_i & \mbox{otherwise.}
+  \end{array}\]
+\end{itemize}
+%
+With these definitions,
+the single argument position of operator $cst$
+introduced by (\ref{eq:def-cst}) is not Leibniz, and
+coalescing formula (\ref{eq:use-cst}) yields
+%
+\[
+  (v=w) \,\implies\, (\B{cst,v}(v) \equiv \B{cst,w}(w))
+\]
+%
+for two distinct fresh operators $\B{cst,v}$ and $\B{cst,w}$. As expected, this
+formula cannot be proved. However, the formula
+%
+\(
+  \A x,y: (x=y) \,\implies\, (cst(x) \equiv cst(y))
+\)
+%
+is coalesced as
+%
+\(
+  \A x,y: (x=y) \,\implies\, (\B{cst,\ast}(x) \equiv \B{cst,\ast}(y))
+\)
+%
+and is valid.
+
+\pagebreak %% Added by LL on 6 July 2014 to give better page breaking.
+
+\begin{theorem}\label{thm:coal-def}
+  Theorem~\ref{thm:coal-modal} remains valid for FOML formulas in the presence
+  of defined operator symbols.
+\end{theorem}
+\begin{proofsketch}
+  Extending the proof of Theorem~\ref{thm:coal-modal}, we define the
+  interpretation of the fresh operator symbols as follows:
+  \[\notla\begin{noj}
+    \II'(\B{d,\epsilon_1,\ldots,\epsilon_n})(d_1,\ldots,d_n)\ =\
+    \sem{d(\alpha_1,\ldots,\alpha_n)}^{\MM'}_w\\[2mm]
+    \mbox{where}\ \alpha_i =
+    \left\{\begin{array}{l@{\ \ }l}
+        e_i & \mbox{if } \epsilon_i = e_i\\
+        x_i & \mbox{if } \epsilon_i = \ast
+    \end{array}\right.
+  \end{noj}\]
+  In this definition, $w$ is the state fixed in the proof and $\MM'$ agrees with
+  $\MM$ except for the valuation $\xi'$ that assigns the variables $x_i$ to $d_i$.
+
+  Again, one proves that $\notla\sem{\FOL{e}}^{\SS} = \sem{e}^{\MM}_w$ for all
+  expressions $\FOL{e}$ that appear in $\FOL{\Gamma}$ or $\FOL{\varphi}$. For
+  the expressions corresponding to applications of defined operators, the
+  proof is obvious for those arguments where $\epsilon_i = e_i$, and it
+  makes use
+  of Lemmas~\ref{thm:rigid-leibniz} and~\ref{thm:leibniz-pos} when $\epsilon_i =
+  \ast$.~\qed
+\end{proofsketch}
+
+%\tlmargin{removed "optimization" of coalescing.}
+%\tlmargin{14 Jan. added an extension to Section 3 based on the definitions of this Section.}
+%\tlnote{
+%  I think we should mention here that using this theorem we can improve on the result in section 3.
+%  I.e. that we do not apply the more complex coalescing on $\modal$ when the argument is rigid but the starred one. \\
+%LL. 13 Jan.  Tomer, please write what you think belongs here.  Also add a
+%forward pointer in Section 3 saying simply that the algorithm will be
+%improved below.  (Mark where you made that change so we know it's
+%first-pass text and may need editing.)
+%}
+
+%In the light of the above theorem, we can also improve the results of Sec. \ref{sec:coalescing-modal}.
+%Although the position of the modal operator is of course non-Leibniz, we can abstract over its argument
+%if it is rigid.
+%
+%We therefore change the definition of coalescing a modal expression from Sec. \ref{sec:coalescing-modal} as follows:
+%\begin{itemize}
+%\item $\FOL{(\modal e)^{\vec{y}}} = \B{\lambda \vec{z}: \modal \epsilon}(\vec{z})$ where
+%  $\vec{z}$ is the subsequence of variables in $\vec{y}$
+%   that appear free in $e$ and where
+%  \[\begin{array}{@{}ll}
+%    \epsilon = \ast &
+%    \mbox{if $e$ is a rigid expression.}\\
+%    \epsilon = e & \mbox{otherwise.}
+%  \end{array}\]
+%\end{itemize}
+%
+%The correctness of this new definition of coalescing follows immediately from Thm. \ref{thm:coal-def}.
+
+%\subsection{Second-order definitions}
+%\label{sec:second-order}
+%
+%We have so far considered simple definitions whose arguments were restricted to
+%ordinary FOML expressions. The preceding techniques extend to definitions of
+%operators that take operator arguments, which are permitted by \tlaplus. We
+%therefore extend the syntax of operator definitions to
+%\[
+%  d(p_1, \ldots, p_n)\ \deq\ e
+%\]
+%where every \emph{pattern} $p_i$ is either a rigid variable as before or has the
+%form $f(\_\,,\ldots,\_\,)$ indicating an operator parameter and its arity. As
+%before, all identifiers occurring in these patterns must be pairwise distinct,
+%and all free rigid variables in $e$ must be among those that occur as
+%patterns $p_i$. Moreover, all operators occurring in $e$ must be either in $\OO$,
+%previously defined operators, or among the operator arguments in the patterns $p_i$.
+%
+%An application $d(arg_1, \ldots, arg_n)$ of such a ``second-order'' operator is
+%well-formed if every $arg_i$ is
+%\begin{itemize}
+%\item an FOML expression if the pattern $p_i$ is a rigid variable,
+%\item a first-order operator (i.e., an operator that does not take operator
+%  arguments) of matching arity if the pattern $p_i$ is of the form
+%  $f(\_\,,\ldots,\_\,)$.
+%\end{itemize}
+%%
+%For example, we could define
+%\[
+%  eqv(f(\_\,),x,y)\ \deq\ f(x) \equiv f(y)
+%\]
+%and rewrite example (\ref{eq:use-cst}) as
+%%
+%\begin{equation}\label{eq:second-order}
+%  (v=w) \,\implies\, eqv(cst,v,w).
+%\end{equation}
+%%
+%This motivates the following adaptations of the preceding definitions. We first
+%extend the notion of Leibniz argument positions
+%% \llmargin{Tried to clarify.}%
+%(cf.\
+%Definition~\ref{def:leibniz-pos}) to second-order operators,
+%the definition
+%considering all
+%argument positions of operator parameters to be Leibniz. An
+%operator argument position is
+%defined to be
+%non-Leibniz iff the operator occurs in the scope of
+%a $\modal$ in the defining expression. For example, all positions of the operator
+%$eqv$ defined above are Leibniz.
+%
+%We say that the $i$\th argument of the expression $d(arg_1,\ldots,arg_n)$ is
+%Leibniz iff the $i$\th argument position of $d$ is Leibniz and either
+%\begin{itemize}
+%\item $arg_i$ is a (first-order) operator all of whose argument
+%  positions are Leibniz, or
+%\item $arg_i$ is an ordinary argument and all occurrences of the variable $p_i$
+%  in the definition of $d$ as sub-expressions of arguments of patterns $p_k$
+%  corresponding to operator arguments occur in Leibniz argument positions of the
+%  corresponding arguments $arg_k$.
+%\end{itemize}
+%%
+%In the example (\ref{eq:second-order}) above, all three arguments of the
+%expression $eqv(cst,v,w)$ are non-Leibniz.  The operator argument $cst$ has a
+%non-Leibniz argument position.
+%The variables $x$ and $y$ that
+%correspond to arguments $v$ and $w$ appear as the argument of the
+%operator argument pattern $f(\_)$, and the corresponding argument $cst$ is
+%non-Leibniz in its single argument position. With this extension, we define the
+%abstraction of applications of second-order operators by
+%\begin{itemize}
+%\item $\FOL{(d(arg_1,\ldots,arg_n))^{\vec{y}}} =
+%  \B{d,\epsilon_1,\ldots,\epsilon_n}(\FOL{(arg_1)^{\vec{y}}},\ldots,\FOL{(arg_n)^{\vec{y}}})$
+%  where
+%%
+%  \[\begin{array}{@{}ll}
+%    \epsilon_i = \ast &
+%    \mbox{if $arg_i$ is a rigid FOML expression or a Leibniz argument,}\\
+%    \epsilon_i = arg_i & \mbox{otherwise.}
+%  \end{array}\]
+%\end{itemize}
+%%
+%%% 25 Jan: Thanks Leslie, you are right on both counts.
+%% \smnote{
+%%   \begin{enumerate}
+%%   \item Strictly speaking, this requires defining $\FOL{d}$ for first-order
+%%     operators whereas so far we've only defined $\FOL{d(\vec{e})}$. Perhaps add
+%%     a remark.
+%%   \item In order to formalize the correctness of the construction, we'd have to
+%%     define a formal semantics for second-order operators. Is it worth the
+%%     trouble?
+%%   \end{enumerate}
+%% LL: 13 Jan.  I'm still waiting for an answer to this:\\
+%% I haven't had time to think this through, but isn't
+%% $\FOL{(arg_i)^{\vec{y}}}$ just $arg_{i}$ if $arg_{i}$ is an
+%% operator argument?  If so, this should be stated.  As for point 2,
+%% I think we should say something like:
+%% ``With the appropriate extension of the semantics to cover second-order
+%% operators, we can show that Theorem~6 remains true.''  (I presume
+%% ``the correctness of the construction'' means that Theorem 6 holds.)
+%% }
+%%
+%In the expression above, $\FOL{(arg_i)^{\vec{y}}}$ for an operator argument
+%$arg_i$ is just $arg_i$.
+%With the appropriate extension of the semantics to cover second-order
+%operators, we can show that Theorem~\ref{thm:coal-def} remains true.
+
+\section{Proving Safety Properties by Coalescing in TLA}
+\label{sec:safety}
+
+We now give evidence for the usefulness of coalescing by showing that it can be
+the basis for a complete proof system for establishing safety properties in
+\tlaplus, assuming the ability to prove any valid first-order formula in the
+set-theoretic language underlying \tlaplus. In fact, we argue that proofs of
+arbitrary safety properties can be transformed into the form used in
+Section~\ref{sec:motivation}.
+
+In \tlaplus, properties of systems are expressed as temporal logic formulas,
+which are evaluated over infinite sequences of states. We say that a formula is
+true of a finite sequence of states if it is true for some infinite extension of
+that finite sequence. A formula expresses a \emph{safety property} if it holds
+for an infinite sequence of states if and only if it holds for every finite
+prefix of that sequence.
+
+The standard form of a \tlaplus specification is $Init \land \Box[Next]_v \land
+L$ where $Init$ is a state predicate (a first-order formula that contains only
+unprimed state variables), $v$ is a tuple containing all state variables, $Next$
+  \smmargin{Jul 3: slight rewording}
+is an action formula (a formula of first-order logic extended by the \emph{prime}
+operator), and $L$ is a conjunction of fairness conditions that are irrelevant
+for proving safety properties. In order to prove that the specification
+establishes a safety property $P$, we need to establish the theorem
+\[
+  Init \land \Box[Next]_v \implies P.
+\]
+%
+The first step is to reformulate the problem as an \emph{invariant assertion} of
+the form
+%
+\begin{equation}\label{eq:tla-inv}
+  HInit \land \Box[HNext]_{hv} \implies \Box Inv
+\end{equation}
+%
+where $Inv$ is a state predicate. A general way to do this is to add a
+\emph{history variable}~\cite{abadi:existence} to the original specification.
+The history variable records the sequence of states seen so far, and $Inv$ is
+true for a given value of the history variable if and only if the safety
+property $P$ is true for the corresponding sequence of states.
+
+\pagebreak %% Added by LL on 6 July 2014 to give better page breaking.
+
+The second step is to prove the invariance of $Inv$ 
+by using an \emph{inductive
+  invariant}---a state predicate $IInv$ such that all of the following formulas
+are valid:
+\begin{enumerate}
+\item $HInit \implies IInv$
+\item $IInv \land [HNext]_{hv} \implies IInv'$
+\item $IInv \implies Inv$
+\end{enumerate}
+
+Assuming that formula \eqref{eq:tla-inv} is valid, a suitable inductive
+invariant $IInv$ exists under standard assumptions on the expressiveness of the
+language of state predicates (see, e.g., \cite{Apt:1981}), and these assumptions
+are satisfied by the set-theoretic language underlying \tlaplus.
+
+By coalescing to propositional temporal logic using the techniques described in
+Section~\ref{sec:coalescing-fol}, a PTL decision procedure easily checks that
+\eqref{eq:tla-inv} follows from facts (1)--(3) above. In practice, we find
+it preferable to verify inferences in temporal logic by appealing to a decision
+procedure rather than by applying a fixed set of rules because the
+user is then free
+to structure the proof in the most convenient way. For example, the inductive
+invariant could be split into several mutually inductive formulas, for which the
+corresponding facts may be easier to check than (1)--(3) in the
+standard invariance proof above. On the other hand, the inductive nature of the
+typical temporal logic proofs such as the one above makes it unrealistic to
+expect that an ordinary FOL prover would be able to establish the FOL
+translation of \eqref{eq:tla-inv} from (1)--(3).
+
+Completing the proof of \eqref{eq:tla-inv} requires proving 
+formulas (1)--(3). Observe that (1) and (3) are state predicates
+and thus ordinary first-order formulas in \tlaplus's set theory. By assumption,
+their proofs can be discharged by the underlying FOL prover.
+
+Formula (2) is an action formula and therefore contains \tlaplus's \emph{prime}
+operator in addition to first-order logic, but no other operator of temporal
+logic. We now show how we reduce the proof of an action formula $A$ to FOL
+proofs with the help of coalescing.
+
+We begin by eliminating all defined operators that occur in $A$, expanding their
+definitions. This results in an action formula $B$ that is equivalent to $A$,
+but that only contains built-in \tlaplus operators. Second, we use the fact that
+\emph{prime} distributes over all non-modal built-in \tlaplus operators and rewrite
+%\tlmargin{2.7 - added non-modal}
+formula $B$ to an equivalent action formula $C$ in which \emph{prime} is only
+applied to flexible variables.\footnote{%
+  The syntax of \tlaplus ensures that \emph{prime} cannot be nested.
+%, but the
+%  present argument does not rely on this restriction.
+} %
+Finally, we apply the coalescing technique described in
+Section~\ref{sec:coalescing-modal} for abstracting the \emph{prime} modality,
+and obtain a formula $\FOL{C}$. It 
+ %is easy to see 
+can be shown
+that for the restricted
+fragment where all modal expressions are of the form $v'$ for flexible
+variables $v$, the formula $C$ is FOML-valid if and only if $\FOL{C}$ is FOL-valid,
+%   TL/SM : completeness does not hold for sequents with premises. However, it is
+%   enough for this argument to have equivalidity of simple formulas.
+% coalescing is not only sound but also complete,
+and therefore the
+underlying FOL prover will be able to prove formula (2) above.
+% \tlnote{2.7 - it is not that easy to see and we even failed to fully prove it for
+%   general "primes" due to the possible existence of background theories. For TLA
+%   action reasoning
+%   it is seemingly provable because the theory is first-order (set-theory, equality, arithmetic, etc.)
+%   plus axioms about primes.
+%   Should we mention any of this or at least mention it is not that 
+%   straightforward?\\[.5em]
+% LL: later on 2 July - introducing $\modal^n$ out of nowhere seemed confusing,
+%  and the generalization uninteresting because what other modal operator
+%  distributes over $\Rightarrow$, $\lor$, and $\land$?  So I removed all
+%  the generalization (including in the footnote) and changed it to just
+% talk about \tlaplus's prime.  Since Tomer doesn't think it's easy,
+% I changed ``easy to see'' to ``can be shown''.\\[.5em]
+% SM: Tomer, I don't understand. (1) \tlaplus has a fixed background theory.
+%   (2) What's important is that prime commutes with the operators of that theory.
+%   (3) The interpretation of $v'$ is unconstrained so we can equivalently replace
+%   it by a fresh variable $v\_prime$, and that's exactly what coalescing does,
+%   hence we get completeness?
+% }
+
+The procedure above shows how in theory the two forms of coalescing
+that we have proposed in this paper can be complete for proving safety
+properties in \tlaplus, assuming that we have a complete proof
+procedure for the set theory underlying \tlaplus.  In practice, no
+such procedure can exist and it is preferable to keep formulas small,
+so it is important not to expand all definitions.  These practical
+considerations underlie the handling of defined operators described in
+Section~\ref{sec:leibnizing}.  
+ \llnote{2 July: I rewrote the rest of this paragraph on liveness,
+  saying a tiny bit more about \tlaplus\ liveness proofs,
+  tightening the prose, and removing text that said steps 
+  requiring a full FOML backend prover are ``rare''.  
+  Note that this material is largely repeated in the 2nd paragraph
+  of the conclusion.\\[.5em]
+  SM: Leslie, thanks for the rewrite. I was aware of the redundancy with the
+  conclusion but considered some repetition to be acceptable, given that
+  IJCAR reviewers apparently didn't get this point.
+}
+Although we have focused on safety properties, for which we can obtain
+a completeness result, the same overall technique can also be applied
+to the proof of liveness properties.  In TLA, liveness properties are
+also proved by combining action-level reasoning and temporal logic proof
+rules.  Most of the steps in such a proof can be reduced by coalescing
+to FOL or propositional ML reasoning.  However, there will often be a
+few steps that require non-propositional temporal logic
+reasoning---for example, because they are based on well-founded
+orderings.  Because there are not many such steps, a backend prover
+for them with a low degree of automation should be acceptable.
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+We presented a technique of coalescing that allows a user to decompose the proof
+of FOML formulas into purely first-order and purely propositional modal
+reasoning. This technique is inspired by reasoning about \tlaplus specifications
+and has been implemented in the \tlaplus Proof System, where we have found it
+useful for verifying temporal logic properties.
+In particular, the overwhelming majority of proof
+obligations that arise during \tlaplus proofs
+  %\smmargin{25 Jan. Cut out part of a sentence to save some space.}
+% fall within the fragment of formulas that
+contain only the \emph{prime} modal operator. For this fragment,
+rewriting by the valid equality $op(e_1,\ldots,e_n)' = op(e_1',\ldots,e_n')$, for
+operators $op \in \OO$, followed by coalescing to FOL is complete. Many of the
+proof obligations that involve the $\Box$ modality of \tlaplus are instances of
+propositional temporal reasoning, and these can be handled by coalescing to
+ML and invoking a decision procedure for propositional temporal logic.
+
+Coalescing to FOL eschews semantic translation of FOML
+formulas~\cite{ohlbach:translation} in favor of replacing a subformula whose
+principal operator is modal by a fresh operator symbol.
+The resulting formulas
+are simpler than those obtained by semantic translation, and they can readily be
+understood in terms of the original FOML formulation of the problem. Coalescing
+is not a complete proof procedure in itself. For example, the valid Barcan
+formula (\ref{eq:barcan})
+cannot be proved using only our two translations.  TLA proofs contain
+only a small number of such proof obligations, and we expect TLAPS to
+be able to handle them with a semantic translation to FOL\@.
+In our context, the validity problem of first-order temporal logic is
+$\Pi_1^1$-complete, so incompleteness should not be considered an
+argument against the use of coalescing. Semantic translation of temporal logic
+would require inductive reasoning over natural numbers, and we could not even
+expect simple proofs such as the one shown in Section~\ref{sec:motivation} to be
+discharged automatically, whereas proof by coalescing benefits from efficient
+decision procedures for propositional temporal logic.
+For applications other than \tlaplus theorem proving that require
+first-order modal reasoning, the trade-off in choosing between semantic
+translation and coalescing will depend upon how effective one expects
+semantic translation and standard first-order theorem proving to work
+in practice.  One recent experiment~\cite{benzmueller:god} found this
+technique entirely satisfactory, but it used a modal logic too weak to
+handle the applications that concern us.
+
+The definition of coalescing to FOL presented in
+Section~\ref{sec:coalescing-modal} identifies modal subformulas such as
+(\ref{eq:ex-box}) that are identical up to the names of bound rigid variables
+that they contain. This definition can be refined to identify formulas that
+differ in less superficial ways.
+For example, it may be desirable to reorder bound variables according to their
+appearance in coalesced subformulas. This would allow us to coalesce the formula
+\[
+  (\E y\, \A x : \Box P(x,y)) \implies (\A x\, \E y : \Box P(x,y))
+\]
+to the valid FOL formula
+\[
+  (\E y\, \A x : \B{\lambda x,y : \Box P(x,y)}(x,y)) \implies
+  (\A x\, \E y : \B{\lambda x,y : \Box P(x,y)}(x,y))
+\]
+rather than the formula
+\[
+  (\E y\, \A x : \B{\lambda y,x : \Box P(x,y)}(y,x)) \implies
+  (\A x\, \E y : \B{\lambda x,y : \Box P(x,y)}(x,y))
+\] obtained according to the definition given in
+Section~\ref{sec:coalescing-modal}, which results in the two fresh
+operators being distinct.  In general, we would like coalesced
+versions of different expressions to use the same atomic symbol
+wherever that would be valid.  For example,
+$\B{e_{1}=e_{2}}$ and $\B{e_{2}=e_{1}}$ could be the same symbol.
+%
+% Before coalescing, it is useful to rewrite modal subformulas using
+% sound simplification rules, such as replacing $e=e$ by $\TRUE$ and
+% using constant propagation, or reordering equations $e_1 = e_2$ using
+% appropriate syntactic criteria so that symmetry of equality is taken
+% into account.
+%
+
+Rewriting a formula before coalescing can also make the translated
+obligation easier to prove.  For example, the formula $\Box e$ for a
+rigid expression $e$ can be replaced by $\B{\Box\FALSE} \lor e$.
+In a modal logic whose $\Box$ modality is
+reflexive, the disjunct $\B{\Box\FALSE}$ is not necessary.
+In this way, the formula
+\[
+  \A x,y : \Box(x=y) \implies \Box(f(x) = f(y))
+ \]
+for $f \in \OO$ could be proved directly by
+translating with coalescing to FOL instead of requiring two steps, the
+first proving $(x=y) \implies (f(x)=f(y))$ with FOL and the second being
+translated to ML\@.
+%
+Another such rewriting is distributing TLA's modal \emph{prime} operator
+over rigid operators used by TLAPS when translating to FOL\@.
+%
+% \llnote{I removed the sentence
+% \begin{quote}
+% This idea can be further refined for handling
+% formulas $\Box\varphi$ that contain rigid subformulas.
+% \end{quote}
+% because I didn't think it added much.  I also
+% removed
+% \begin{quote}
+% We have
+% implemented some such optimizations in our coalescing procedures in
+% TLAPS but leave the evaluation of their effectiveness to future work.
+% \end{quote}
+% because I'm not sure if we've done anything of this nature
+% other than distributing primes.  With the following paragraph that
+% I added, we just have room for a few more lines}%
+
+We don't know yet if optimizations of the translations beyond those we
+have already implemented in TLAPS will be useful in practice.  So far,
+we have proved only safety properties for realistic algorithms, which
+in TLA requires little temporal reasoning.  We have begun writing
+formal liveness proofs, but TLAPS will not completely check them until
+we have a translation that can handle formulas which, like the Barcan
+formula, inextricably mix quantifiers and modal operators.
+
+
+
+
+
+% There's a bug caused by an interaction between BibTeX and the \url
+% command that is fixed by the following
+%
+%% File url.sty  created 25 Feb Mar 1996 by Leslie Lamport
+%%
+%% \url{ARG} -- typesets ARG as a URL, by:
+%%      * Using a \tt declaration.
+%%      * Making  % ~ $ # & _ ^ and \  act like ordinary letters. $
+%%      * Allowing a line break after each "." and before each
+%%        "/" and "//".
+%%    It also allows a line break immediately before and after
+%%    ARG, so you can allow a line break between A and RG by
+%%    writing \url{A}\url{RG} instead of \url{ARG}.
+\makeatletter
+\def\realslash{/}
+\begingroup
+\catcode`\/\active
+\catcode`\.\active
+\catcode`:\active
+\gdef\urlslash{\@ifnextchar/{\doubleslash}{\discretionary{}{}{}\realslash}}
+\gdef\urlend#1{\let/\urlslash\let.\urldot
+                 \discretionary{}{}{}#1\discretionary{}{}{}\endgroup}
+\endgroup
+\def\urldot{.\discretionary{}{}{}}
+\def\url{\begingroup\urlbegin}
+\def\urlbegin{%\catcode`\%12\relax
+                       \catcode`\~12\relax
+                       \catcode`\#12\relax
+                       \catcode`\$12\relax
+                       \catcode`\&12\relax
+                       \catcode`\_12\relax
+                       \catcode`\^12\relax
+                       \catcode`\\12\relax
+                       \catcode`\/\active
+                       \catcode`\.\active
+                       \tt
+                       \urlend}
+\def\doubleslash#1{\discretionary{}{}{}//}
+
+\makeatother
+
+\bibliographystyle{abbrv}
+\bibliography{bib}
+\end{document}
+

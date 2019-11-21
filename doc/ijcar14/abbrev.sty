@@ -1,0 +1,576 @@
+%% File abbrev.sty
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                      DOCUMENTATION                             %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% This file defines the abbreviate environment, which allows you to do
+% things like typing $=>$ instead of $\Rightarrow$.  It also defines
+% a few useful commands, including one to make math-mode use ordinary
+% italic characters.
+%
+%
+% THE abbreviate ENVIRONMENT
+% ~~~~~~~~~~~~~~~~~~~~~~~~~~
+% This environment is explained in terms of the following example:
+% 
+%    \begin{abbreviate}{FOO}{=#(}{=#(}
+%      \x ==>  {\Longrightarrow}
+%      \x ==   {==}
+%      \x =>  {\Rightarrow}
+%      \x =   {=}
+%      \x #   {\neq}
+%      \x (+) {\oplus}
+%      \x (+  {(+}
+%      \x (   {(}
+%    \end{abbreviate}
+% 
+% This defines the declaration \FOO that does the following:
+%   * Makes the three characters  
+%           =  #  ( 
+%     active--so they are commands like the character ~ (tilde).
+% 
+%   * Defines these characters in such a way that 
+%       ==> is an abbreviation for  \Logrightarrow, 
+%       ==  does what it normally does 
+%       =   does what it normally does
+%       #   is an abbreviation for \neq
+%       etc.
+% 
+% It also defines the declaration \noFOO to undo the effects of the
+% declaration \FOO.  Here are the rules
+% 
+%    * The following characters can appear as the first character
+%      of an abbreviation:
+% 
+%         ! @ # $ % ^ & * ( ) _ - + = ~ ` | [ ] : ; " ' < > , . ? /
+% 
+%    * The other characters in an abbreviation can be anything except
+%      the three characters  \  {  } .  They can contain % only if
+%      %  appears in the last two arguments of the abbreviate environment.
+%
+%    * The second and third arguments of the abbreviate environment consist 
+%      of the first characters that appear in abbreviations.  However,
+%      ~ (tilde) does not appear in these arguments, even if it's
+%      used as the first character of an abbreviation. [As a NOTE below
+%      explains, the second and third arguments need not always have
+%      the same characters.]
+% 
+%    * An abbreviation definition consists of \x followed by
+%      the abbreviation, followed by one or more spaces, followed
+%      by its definition, enclosed in braces.
+%
+%    * The sequence of abbreviations being defined must obey the following 
+%      rules:
+%
+%         - The first abbreviation is arbitrary.
+%
+%         - Every subsequent abbreviation must be obtained by deleting
+%           the last character from the previous abbreviation and adding
+%           any (possibly empty) string of characters.
+%
+%         - The last abbreviation defined must be a single character.
+%
+%      It is a consequence of these rules that, to define an abbreviation,
+%      It is necessary to define every prefix of that abbreviation.
+%
+%
+%   NOTE: You can have multiple abbreviate environments to define
+%   different sets of abbreviations.  
+%
+%   WARNING: When a character is active, it doesn't behave like it normally
+%   does.  In particular, if  [  or  ]  is active, then [ ] cannot be
+%   used to enclose optional arguments.   Use something like
+%
+%           \noFOO \command[arg] \FOO   or  {\noFOO \command[arg]}
+%
+%   if you need a command with optional arguments.
+%
+%   NOTE: In the example above, the command \FOO both activates the
+%   characters  = # ( and defines their active versions appropriately.
+%   The abbreviate environment also defines the command \FOOact, 
+%   which just activates the characters.  Since the definitions 
+%   aren't changed by \noFOO, the sequence of commands
+%
+%      \FOO \noFOO \FOOact 
+%
+%   is equivalent to \FOO.  If you're writing macros that do a lot
+%   of messing around, you may want to take advantage of this.
+%
+%   NOTE: You can use commands of the form \<single-letter>, such
+%   as \: in an abbreviation, as long as it's not the first letter.
+%   If you use such a command, it must go in the third argument (but
+%   NOT the second) of the abbreviate environment.
+%
+%
+%   USEFUL COMMANDS
+%   ~~~~~~~~~~~~~~~
+%
+% \ensuremath{FORMULA}
+%    Typesets FORMULA in math mode, regardless of current mode.
+%    (This is a standard LaTeX-2e command.)
+%
+% \noTeXmath
+% \TeXmath   
+%    In math mode, TeX normally typesets characters in math italic,
+%    which makes $different$ look like $d$ time $i$ times $f$ times ...
+%    and not like {\it different}.  The \noTeXmath causes TeX to use
+%    ordinary italic, so $different$ is the same as {\it different}.
+%    This makes it easier to use multi-letter identifiers in formulas.
+%    The \TeXmath command reverts to TeX's normal behavior
+%
+% \makeactive{CHARS} : 
+%    CHARS should be a string of characters, not containing any of the
+%    three characters "\", "{", or "}".  This activates all the characters
+%    (sets their catcode to active [catcode = 13]).
+%
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                THE abbreviate ENVIRONMENT                      %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% DEFINE COUNTERS
+%
+\newcounter{abr@ctr}
+\newcounter{abr@level} \setcounter{abr@level}{0}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% THE abbreviate ENVIRONMENT
+%
+% \abbreviate{PREFIX}{ACTIVECHARS}{ACTIVECHARS}
+%
+\def\abbreviate#1{%
+  \def\abr@prefix{#1}%      \abr@prefix := PREFIX
+  \global\let\abr@tilde~%   \abr@tilde  := real tilde
+  \gdef\abr@activechars{}%
+  \let~\relax
+  \abr@sanitize
+  \abr@abbreva}
+
+\def\abr@abbreva#1{%          %% \abr@activate  := catcode characters to active
+  \gdef\abr@activate{}%       %% \abr@deactivate := make everything normal
+  \gdef\abr@deactivate{}%
+  \@tfor\i:=#1\do{%
+    %%\typeout{Loop: i = \i}
+    \xdef\abr@activate{\abr@activate\catcode`\i\active}%
+    \xdef\abr@deactivate{\abr@deactivate\catcode`\i12\relax}}%
+    \xdef\abr@deactivate{\abr@deactivate\noexpand\abr@unsanitize
+                         \noexpand\let\noexpand~\noexpand\abr@tilde}%
+   \abr@activate
+   \abr@abbrevb}
+
+\def\abr@abbrevb#1{%   % Let all active characters to \relax and 
+   \@tfor\i:=#1\do{%   % let \x to \abr@getsub
+     \expandafter\let\i\relax}%
+   \let\x\abr@getsub}
+
+\def\endabbreviate{%
+  \expandafter\abr@defineactives\abr@activechars\do\abr@tempx
+  \expandafter\global\expandafter\let\csname\abr@prefix\endcsname\abr@tempx
+  \expandafter\global\expandafter\let
+         \csname\abr@prefix act\endcsname\abr@activate
+  \expandafter\global\expandafter\let
+      \csname no\abr@prefix\endcsname\abr@deactivate}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% THE INVARIANT
+%
+% The following invariant is maintained in the body of the abbreviate
+% environment, where def_i[foo] is the definition of (the macro
+% expansion of) foo at \begingroup nesting level i.  (Nesting level 0 is
+% the top.)
+% 
+% IF the last command processed was
+%     c_0 ... c_n {val} 
+% THEN Exists \cmd_1 ... \cmd_n :
+%   LET X(i) == \abr@ifnextchar c_i{\cmd_i}{\csname def_i[abr@else]\endcsname}
+%   IN  * \value{abr@level} = n
+%       * current \begingroup nesting level = n
+%       *   \csname \abr@prefix\string c_0] \endcsname  =g  IF n = 0 THEN val
+%                                                                    ELSE X(1)
+%       * For all i in {1, ... ,n-1} : 
+%          \cmd_i =g c_i -> X(i+1)
+%       * For all i in {1, ... , n} :
+%          \csname def_i[abr@else]\endcsname is undefined at level 0.
+% 
+%       * \cmd_n =g c_n -> the right sequence to process c_0...c_n
+%       * \prefix@activechars = ... c_0
+% 
+
+% \abr@addcmd{STRING}{VAL} 
+%    The guts of the abbreviate environment. \x STRING {VAL} expands
+%    to \abr@addcmd{STRING}{VAL}.  
+%
+%  BEGIN
+%    abr@ctr := 0
+%    Remaining := STRING
+%    WHILE Remaining # empty
+%    DO  \char     := Head(Remaining)
+%        Remaining := Tail(Remaining)
+%        IF abr@ctr < abr@level
+%          THEN %%%  Do nothing
+%          ELSE %%% Current string length >= previous one
+%               IF abr@ctr = abr@level 
+%                 THEN %% this is beginning of new string suffix
+%                      IF abr@level = 0
+%                        THEN %% new beginning char
+%                              \abr@then :=g \abr@prefix \string\char
+%                              \abr@activechars := 
+%                                 \abr@activechars :o: \char
+%                        ELSE %% have to clean up preceding char
+%                             \abr@temp :=g \abr@else
+%                             \abr@then :=g new_cs
+%                             \abr@else := new_cs
+%                             \gdef \csname \abr@temp\endcsname 
+%                                  {\abr@ifnextch {\char}%
+%                                       {\csname\abr@then\endcsname}%
+%                                       {\csname\abr@else\endcsname}}
+%                      FI
+%                 ELSE %% We've gotten started on new suffix
+%                      \abr@temp :=g \abr@then
+%                      \abr@then :=g new_cs
+%                      \begingroup
+%                      \abr@else := new_cs
+%                      IF abr@ctr = 1
+%                        THEN %% previous char was first one
+%                             \gdef \csname \abr@temp\endcsname
+%                               {\abr@ifnextch {\char}%
+%                                       {\csname\abr@then\endcsname}%
+%                                       {\csname\abr@else\endcsname}}
+%                        ELSE \gdef \csname \abr@temp\endcsname \lastchar
+%                               {\abr@ifnextch {\char}%
+%                                       {\csname\abr@then\endcsname}%
+%                                       {\csname\abr@else\endcsname}}
+%                      FI
+%               FI
+%               \prevchar := \char
+%        FI
+%        abr@ctr := abr@ctr + 1
+%    OD
+%    %% 
+%    IF abr@ctr = abr@level
+%      THEN %% Current string one char shorter than previous one.
+%           \gdef \csname \abr@else \endcsname {VAL}
+%           \endgroup
+%      ELSE %% Current string of length >= previous one.
+%           IF abr@ctr = 1
+%             THEN %% just a one-char string
+%                  \gdef\csname \abr@then \endcsname{VAL}
+%             ELSE %% multi-char string
+%                  \gdef\csname \abr@then \endcsname \prevchar{VAL}
+%           FI
+%    FI
+%    abr@level = abr@ctr - 1
+% END definition of \abr@addcmd
+
+\def\abr@addcmd#1#2{%
+\setcounter{abr@ctr}{0}%
+\@tfor\char:=#1\do{%
+  \ifnum \value{abr@ctr} < \value{abr@level}%
+    \else \ifnum \value{abr@ctr} = \value{abr@level}%
+              \ifnum \value{abr@level} = \z@
+                 \xdef\abr@then{\abr@prefix \expandafter\string\char}
+                  \xdef\abr@activechars{\abr@activechars\char}
+                 %\typeout{ELSE THEN THEN, abr@then := \abr@then}
+                \else  \xdef\abr@temp{\abr@else}%
+                       \abr@gnewcs\abr@then
+                       \abr@newcs\abr@else
+                        %\typeout{ELSE THEN ELSE, abr@temp = \abr@temp}
+                       \expandafter\xdef\csname\abr@temp\endcsname{%
+                           \noexpand\abr@ifnextch\char%
+                           {\expandafter\noexpand\csname\abr@then\endcsname}%
+                           {\expandafter\noexpand\csname\abr@else\endcsname}}
+              \fi
+            \else  \xdef\abr@temp{\abr@then}
+                   \abr@gnewcs\abr@then
+                   \begingroup
+                   \abr@newcs\abr@else
+                   \ifnum \value{abr@ctr}=\@ne
+                       %\typeout{ELSE ELSE THEN, abr@temp = \abr@temp}
+                      \expandafter\xdef\csname\abr@temp\endcsname{%
+                           \noexpand\abr@ifnextch\char%
+                           {\expandafter\noexpand\csname\abr@then\endcsname}%
+                           {\expandafter\noexpand\csname\abr@else\endcsname}}
+                     \else                    
+                       %\typeout{ELSE ELSE ELSE, abr@temp = \abr@temp}
+                        \expandafter\expandafter\expandafter\xdef
+                           \expandafter\csname\expandafter\abr@temp
+                           \expandafter\endcsname\prevchar{%
+                           \noexpand\abr@ifnextch\char%
+                           {\expandafter\noexpand\csname\abr@then\endcsname}%
+                           {\expandafter\noexpand\csname\abr@else\endcsname}}
+                   \fi
+          \fi
+          \let\prevchar\char
+  \fi
+  \addtocounter{abr@ctr}{1}%
+ }%
+  \ifnum \value{abr@ctr} = \value{abr@level}%
+    %\typeout{DONE THEN abr@else = \abr@else}
+    \expandafter\gdef\csname \abr@else \endcsname{#2}%
+     \endgroup
+   \else \ifnum \value{abr@ctr}=\@ne
+           %\typeout{DONE ELSE THEN abr@then = \abr@then}
+            \expandafter\gdef\csname\abr@then\endcsname{#2}
+          \else 
+            %\typeout{DONE ELSE ELSE abr@then = \abr@then}
+            \expandafter\abr@gdef\prevchar{\abr@then}{#2}%
+          \fi
+  \fi
+  \setcounter{abr@level}{\value{abr@ctr}}
+  \addtocounter{abr@level}{-1}} %% END definition of \abr@addcmd
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                      USEFUL COMMANDS                           %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% 
+% \makeactive{CHARS} : 
+%    CHARS should be a string of characters, not containing any of the
+%    three characters "\", "{", or "}".  This \catcodes all the characters
+%    to active (catcode 13).
+%
+\def\abr@makeactive#1{\catcode`#1\active}
+\def\makeactive#1{\@tfor\i:=#1\do{\expandafter\abr@makeactive\i}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \ensuremath{FORMULA}
+%    Typesets FORMULA in math mode, regardless of current mode.
+%
+\def\ensuremath#1{\relax\ifmmode #1\else $#1$\fi}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \noTeXmath
+% \TeXmath   
+%    The \noTeXmath causes TeX to use ordinary italic instead of math
+%    italic in math mode.  The \TeXmath command reverts to TeX's normal
+%    behavior.  (Modified 10 Aug to work with arbitrary \itfam.)
+%    
+
+\newcommand{\abr@c}{\c@abr@ctr\advance\c@abr@ctr\@ne}
+
+% Let it work with LaTeX2e's native mode:
+% D. Roegel, 29/8/1994
+\ifx\documentclass\undefined
+\else
+  \DeclareSymbolFont{tlaitalics}{\encodingdefault}{cmr}{m}{it}
+  \let\itfam\symtlaitalics
+\fi
+
+\newcommand{\noTeXmath}{%
+\c@abr@ctr=\itfam
+\multiply\c@abr@ctr"100\relax
+\advance\c@abr@ctr "7061\relax
+\mathcode`a=\abr@c
+\mathcode`b=\abr@c
+\mathcode`c=\abr@c
+\mathcode`d=\abr@c
+\mathcode`e=\abr@c
+\mathcode`f=\abr@c
+\mathcode`g=\abr@c
+\mathcode`h=\abr@c
+\mathcode`i=\abr@c
+\mathcode`j=\abr@c
+\mathcode`k=\abr@c
+\mathcode`l=\abr@c
+\mathcode`m=\abr@c
+\mathcode`n=\abr@c
+\mathcode`o=\abr@c
+\mathcode`p=\abr@c
+\mathcode`q=\abr@c
+\mathcode`r=\abr@c
+\mathcode`s=\abr@c
+\mathcode`t=\abr@c
+\mathcode`u=\abr@c
+\mathcode`v=\abr@c
+\mathcode`w=\abr@c
+\mathcode`x=\abr@c
+\mathcode`y=\abr@c
+\mathcode`z=\abr@c
+\c@abr@ctr=\itfam
+\multiply\c@abr@ctr"100\relax
+\advance\c@abr@ctr "7041\relax
+\mathcode`A=\abr@c
+\mathcode`B=\abr@c
+\mathcode`C=\abr@c
+\mathcode`D=\abr@c
+\mathcode`E=\abr@c
+\mathcode`F=\abr@c
+\mathcode`G=\abr@c
+\mathcode`H=\abr@c
+\mathcode`I=\abr@c
+\mathcode`J=\abr@c
+\mathcode`K=\abr@c
+\mathcode`L=\abr@c
+\mathcode`M=\abr@c
+\mathcode`N=\abr@c
+\mathcode`O=\abr@c
+\mathcode`P=\abr@c
+\mathcode`Q=\abr@c
+\mathcode`R=\abr@c
+\mathcode`S=\abr@c
+\mathcode`T=\abr@c
+\mathcode`U=\abr@c
+\mathcode`V=\abr@c
+\mathcode`W=\abr@c
+\mathcode`X=\abr@c
+\mathcode`Y=\abr@c
+\mathcode`Z=\abr@c}
+
+\newcommand{\TeXmath}{%
+\mathcode`a="7161%
+\mathcode`b="7162%
+\mathcode`c="7163%
+\mathcode`d="7164%
+\mathcode`e="7165%
+\mathcode`f="7166%
+\mathcode`g="7167%
+\mathcode`h="7168%
+\mathcode`i="7169%
+\mathcode`j="716A%
+\mathcode`k="716B%
+\mathcode`l="716C%
+\mathcode`m="716D%
+\mathcode`n="716E%
+\mathcode`o="716F%
+\mathcode`p="7170%
+\mathcode`q="7171%
+\mathcode`r="7172%
+\mathcode`s="7173%
+\mathcode`t="7174%
+\mathcode`u="7175%
+\mathcode`v="7176%
+\mathcode`w="7177%
+\mathcode`x="7178%
+\mathcode`y="7179%
+\mathcode`z="717A%
+\mathcode`A="7141%
+\mathcode`B="7142%
+\mathcode`C="7143%
+\mathcode`D="7144%
+\mathcode`E="7145%
+\mathcode`F="7146%
+\mathcode`G="7147%
+\mathcode`H="7148%
+\mathcode`I="7149%
+\mathcode`J="714A%
+\mathcode`K="714B%
+\mathcode`L="714C%
+\mathcode`M="714D%
+\mathcode`N="714E%
+\mathcode`O="714F%
+\mathcode`P="7150%
+\mathcode`Q="7151%
+\mathcode`R="7152%
+\mathcode`S="7153%
+\mathcode`T="7154%
+\mathcode`U="7155%
+\mathcode`V="7156%
+\mathcode`W="7157%
+\mathcode`X="7158%
+\mathcode`Y="7159%
+\mathcode`Z="715A}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                      AUXILIARY COMMANDS                        %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% \abr@newcs\CMD   
+% \abr@gnewcs\CMD :
+%    Defines \CMD to be a new string prefixed with \abr@prefix.  
+%    The definition is local with \abr@newcs, and global with
+%    \abr@gnewcs
+%
+\newcount\abr@csctr
+\def\abr@newcs#1{\global\advance\abr@csctr\@ne
+                 \edef#1{\abr@prefix\the\abr@csctr}}
+\def\abr@gnewcs#1{\global\advance\abr@csctr\@ne
+                 \xdef#1{\abr@prefix\the\abr@csctr}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \abr@sanitize   
+% \abr@unsanitize 
+%    "sanitizing" catcodes $ & # ^ _ %  to "other".
+%    "unsanitizing" catcodes these characters back to normal.
+%
+\def\abr@mkother#1{\catcode`#112\relax}
+\begingroup
+\abr@mkother$\abr@mkother&\abr@mkother#\abr@mkother^\abr@mkother_
+\catcode`\%12\relax
+\gdef\abr@sanitize{\abr@mkother$\abr@mkother&\abr@mkother#\abr@mkother
+                 ^\abr@mkother_\abr@mkother%}
+\gdef\abr@unsanitize{\catcode`$3\catcode`&4\catcode`#6\catcode`^7\catcode
+                     `_8\catcode`%14\relax}
+\endgroup
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \abr@gdef CHAR{STRING}{DEF} 
+%    CHAR must be a character.  
+%    This command does \gdef\STRING CHAR{DEF}
+%
+\def\abr@gdef#1#2#3{\expandafter\gdef\csname#2\endcsname#1{#3}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \abr@defineactive{CHARS}\CS
+%    CHARS must be a string of active characters.
+%    Defines \CS to do a \let c=\csname \abr@prefix\string c,
+%    For all characters c in the string CHARS.
+
+\def\abr@defineactive#1#2{\gdef#2{}%
+  \let\abr@temp\relax
+  \@tfor\char:=#1\do{%
+    \xdef#2{#2\expandafter\abr@temp\char}}%
+    \def\abr@temp##1{%
+        \noexpand\let\noexpand##1\expandafter\noexpand
+        \csname\abr@prefix\string##1\endcsname}%
+  %\show#2
+   \xdef#2{#2}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \abr@getsub STRING \do {VAL}
+%   Expands to \abr@addcmd{STRING}{VAL}, where
+%   STRING is evaluated with the special characters activated,
+%   and VAL is evalued with them deactivated.  
+%   It assumes that the characters are activated, and it
+%   leaves them activated.
+%
+\def\abr@getsub#1 {\def\abr@temp{#1}\abr@deactivate\abr@getsuba}
+\def\abr@getsuba#1{%
+  \abr@activate 
+  \let~\relax
+  \expandafter\abr@addcmdx\abr@temp\do{#1}}
+%\def\abr@addcmdx#1\do#2{\abr@addcmd{#1}{#2\relax}}  
+\def\abr@addcmdx#1\do#2{\abr@addcmd{#1}{#2}}  
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% \abr@ifnextch{c}{TRUE}{FALSE}
+%   If the immediately following character is c, then TRUE, else FALSE.
+%   This should be at the end of whatever macro is looking ahead.
+
+\def\abr@ifnextch#1#2#3{\let\@tempe =#1\def\@tempa{#2}\def\@tempb{#3}\futurelet
+    \@tempc\abr@ifnsnch}
+\def\abr@ifnsnch{\ifx 
+   \@tempc \@tempe\let\@tempd\@tempa\else\let\@tempd\@tempb\fi \@tempd}
+
+% \abr@defineactives\do\CS
+%    CHARS must be a string of active characters.
+%    Defines \CS to do \abr@activate followed by a 
+%       \let c=\csname \abr@prefix\string c, 
+%    for all characters c in the string.
+%
+\def\abr@defineactives#1\do#2{\gdef#2{}%
+  \let\abr@temp\relax
+  \@tfor\char:=#1\do{%
+    \xdef#2{#2\expandafter\abr@temp\char}}%
+    \def\abr@temp##1{%
+        \noexpand\let\noexpand##1\expandafter\noexpand
+        \csname\abr@prefix\string##1\endcsname}%
+   \xdef#2{\abr@activate#2}}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%  DEBUGGING
+%
+%  \@show{FOO} : \show\FOO
+\newcommand{\@show}[1]{\expandafter\show\csname#1\endcsname}

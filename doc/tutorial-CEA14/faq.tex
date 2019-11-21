@@ -1,0 +1,591 @@
+\documentclass{article}
+\usepackage{amsmath, amssymb}
+\usepackage{minipage}
+\usepackage{url}
+\usepackage[left=2cm, right=2cm, top=2cm, bottom=2cm]{geometry}
+
+\newcommand{\code}[1]{\mathsf{#1}}
+
+\title{TLA PM -- Quick FAQ}
+\author{Jael Kriener}
+
+\begin{document}
+\maketitle
+
+
+
+\section{Introduction}
+This is meant to be a quick reference guide to help the reader 
+develop proofs. The code-patterns below will work in specific 
+situations. There are other ways of writing the same things in 
+TLA+ and the keywords used below can be used in other situations.
+So please take this as a starting point, and refer to the TLA+ Guide\footnote{ 
+\url{http://research.microsoft.com/en-us/um/people/lamport/tla/tla2-guide.pdf}}
+and Chapter 10 of the Hyperbook\footnote{\url{http://research.microsoft.com/en-us/um/people/lamport/tla/hyperbook.html}} to go in further breadth and depth.
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%            HOW DO I PROVE ?            %%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\section{How Do I Prove ... ?}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{$\code{A \wedge B}$}
+\hrule
+\vspace{10pt}
+\begin{minipage}{230pt}
+To prove $A \wedge B$, we have to prove both $A$ and $B$. \\
+
+\vspace{5pt}
+
+Therefore, we need to write (something like):
+
+\vspace{20pt}
+\end{minipage}
+%
+\hspace{15pt} \vline \hspace{15pt}
+%
+\begin{minipage}{300pt}
+\begin{verbatim}
+<1>1 A
+    ...
+<1>2 B
+    ...
+<1>q QED
+    BY <1>1, <1>2
+\end{verbatim}
+\end{minipage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{$\code{A \vee B}$}
+\hrule
+\vspace{10pt}
+\begin{minipage}{230pt}
+To prove $A \vee B$, it is enough to prove either $A$ or $B$. \\
+
+\vspace{5pt}
+
+Therefore, we need to write (something like):
+\end{minipage}
+%
+\hspace{15pt} \vline \hspace{15pt}
+%
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 A
+    ...
+<1>q QED
+    BY <1>1
+\end{verbatim}
+\end{minipage}
+\hspace{5pt} \vline \hspace{25pt}
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 B
+    ...
+<1>q QED
+    BY <1>1
+\end{verbatim}
+\end{minipage}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{$\code{A \Rightarrow B}$}
+\hrule
+\vspace{10pt}
+\begin{minipage}{230pt}
+To prove $A \Rightarrow B$, we have to prove $B$ under the assumption that $A$. \\
+
+\vspace{5pt}
+
+Therefore, we need to write (something like):
+\vspace{10pt}
+\end{minipage}
+%
+\hspace{15pt} \vline \hspace{15pt}
+%
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 ASSUME A
+     PROVE  B
+       ...
+<1>q QED
+    BY <1>1
+\end{verbatim}
+\vspace{1pt}
+\end{minipage}
+\hspace{5pt} \vline \hspace{15pt}
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 SUFFICES
+        ASSUME A
+        PROVE  B
+   ...
+<1>q QED
+    BY <1>1
+\end{verbatim}
+\end{minipage}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{$\code{\sim A}$}
+\hrule
+\vspace{10pt}
+\begin{minipage}{230pt}
+I think of proving $\sim A$, as proving $A \Rightarrow F$, where `$F$' 
+is any contradiction; it could be `\verb|FALSE|', but it could also be 
+something like $2 \leq 1$, or $a \le b \wedge b \le a$ for $a, b \in Int$ \\
+
+\vspace{5pt}
+
+Therefore, we need to write (something like):
+\end{minipage}
+%
+\hspace{15pt} \vline \hspace{15pt}
+%
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 ASSUME A
+     PROVE  F 
+       ...
+<1>q QED
+    BY <1>1
+\end{verbatim}
+\vspace{5pt}
+\end{minipage}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{$\code{\forall\ x : P(x)}$}
+\hrule
+\vspace{10pt}
+\begin{minipage}{230pt}
+Again, proving an universal quantifier is a lot like proving an
+implication. To prove $\forall x : P(x)$ we need to prove
+$P(x)$ for \emph{any} $x$, i.e. for an $x$ about which we
+make no other assumptions.\\
+
+\vspace{5pt}
+
+The way to write that in TLA+ is (something like):
+\end{minipage}
+%
+\hspace{15pt} \vline \hspace{15pt}
+%
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 ASSUME NEW x
+     PROVE  P(x)
+       ...
+<1>q QED
+    BY <1>1
+\end{verbatim}
+\end{minipage}
+
+
+\subsubsection{$\code{\forall\ x \in S : P(x)}$}
+\vspace{10pt}
+\begin{minipage}{230pt}
+When a universal quantifier is bounded, i.e. comes with a domain
+assumption, that assumption can be used in the prove. So to prove
+$\forall x \in S : P(x)$, we need to prove $P(x)$ for
+\emph{any} $x \in S$, i.e. for an $x$ about which we make
+no assumptions \emph{other than} that it is in $S$. \\
+
+
+\vspace{5pt}
+
+The way to write that in TLA+ is (something like):
+\end{minipage}
+%
+\hspace{15pt} \vline \hspace{15pt}
+%
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 ASSUME NEW x \in S
+     PROVE  P(x)
+       ...
+<1>q QED
+    BY <1>1
+\end{verbatim}
+\end{minipage}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{$\code{\exists\ x : P(x)}$}
+\hrule
+\vspace{10pt}
+\begin{minipage}{230pt}
+To prove an existential quantifier we need to provide a witness, 
+i.e. to prove $\exists x : P(x)$ we need to prove $P(a)$ for some
+$a$ already in the context. \\
+
+\vspace{5pt} 
+In TLA+ we can do that, either by simply proving $P(a)$
+for some $a$, or by first declaring which $a$ we will use, by means of
+the \verb|WITNESS|-keyword, and then proving $P(a)$.
+The way to write that in TLA+ is (something like):
+\end{minipage}
+%
+\hspace{15pt} \vline \hspace{15pt}
+%
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 P(a)
+    ...
+<1>q QED
+    BY <1>1
+\end{verbatim}
+\vspace{0pt}
+\end{minipage}
+\hspace{25pt} \vline \hspace{20pt}
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1> WITNESS a
+<1>1 P(a)
+    ...
+<1>q QED
+    BY <1>1
+\end{verbatim}
+\end{minipage}
+
+
+\subsubsection{$\code{\exists\ x \in S : P(x)}$}
+\vspace{10pt}
+\begin{minipage}{230pt}
+When an existential quantifier is bounded, i.e. comes with a domain
+assumption, that assumption also needs to be proved. So to prove
+$\exists x \in S : P(x)$, we need to prove both $a \in S$ and
+$P(a)$ for some $a$ already in the context.\\
+
+\vspace{5pt}
+There are two things to notice about the \verb|WITNESS|-keyword here:
+\begin{itemize}
+  \item[a] Its syntax needs to correspond to the syntax of the
+    existential quantifier it refers to; i.e. if the existential 
+    is bounded, the \verb|WITNESS|-statement requires a bound.
+    
+  \item[b] A bounded \verb|WITNESS|-step discharges the domain
+    assumption, i.e. the obligation $a \in S$. However, the step does
+    not take a proof. So at this point, it needs to be obvious, that
+    $a \in S$.  When a bounded \verb|WITNESS|-step does not turn
+    green, it is a good idea to insert a step ``\verb|<1> a \in S|''
+    and prove that step.
+\end{itemize}
+
+\end{minipage}
+%
+\hspace{15pt} \vline \hspace{15pt}
+%
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 a \in S
+    ...
+<1>2 P(a)
+    ...
+<1>q QED
+    BY <1>1, <1>2
+\end{verbatim}
+%\vspace{35pt}
+\end{minipage}
+\hspace{25pt} \vline \hspace{15pt}
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1> WITNESS a \in S
+<1>1 P(a)
+    ...
+<1>q QED
+    BY <1>1
+\end{verbatim}
+\vspace{5pt}
+\end{minipage}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\subsection{$\Box A$}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\subsection{$\Diamond A$}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%            HOW DO I USE ?              %%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\section{How Do I Use ... ?}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{$\code{A \wedge B}$}
+\hrule
+\vspace{10pt}
+\begin{minipage}{230pt}
+To use $A \wedge B$, we don't have to actually do anything;
+$A \wedge B$ in the context is as good as each $A$ and $B$ in
+the context independently. \\
+
+\vspace{5pt}
+
+$A \wedge B$ enables us to write both:
+\end{minipage}
+%
+\hspace{15pt} \vline \hspace{15pt}
+%
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 A
+    OBVIOUS
+\end{verbatim}
+\end{minipage}
+\hspace{5pt} \vline \hspace{15pt}
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 B
+    OBVIOUS
+\end{verbatim}
+\end{minipage}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{$\code{A \vee B}$}
+\hrule
+\vspace{10pt}
+\begin{minipage}{230pt}
+To use $A \vee B$, we have to prove the current goal twice, 
+once assuming $A$, and once assuming $B$. \\
+
+\vspace{5pt}
+
+Probably the simplest way to use $A \vee B$, is by means of the
+\verb|CASE|-keyword:
+
+\vspace{15pt}
+\end{minipage}
+%
+\hspace{15pt} \vline \hspace{15pt}
+%
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 CASE A
+    ...
+<1>2 CASE B
+    ...
+<1>q QED
+    BY <1>1, <1>2
+\end{verbatim}
+\end{minipage}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{$\code{A \Rightarrow B}$}
+\hrule
+\vspace{10pt}
+\begin{minipage}{230pt}
+$A \Rightarrow B$ in the context means that, as soon as we have proved
+$A$, we can get $B$ straight away.  \\
+
+\vspace{5pt}
+$A \Rightarrow B$ in the context enables us to write:
+
+\vspace{15pt}
+\end{minipage}
+%
+\hspace{15pt} \vline \hspace{15pt}
+%
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 A
+    ...
+<1>2 B
+    BY <1>1
+\end{verbatim}
+\end{minipage}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{$\code{\sim A}$}
+\hrule
+\vspace{10pt}
+\begin{minipage}{230pt}
+Again, I think it is useful to think of $\sim A$ as $A \Rightarrow F$,
+for any $F$. That means that, if we have $\sim A$ in the context, and 
+we manage to prove $A$, we are done. \\
+
+\vspace{5pt}
+
+$\sim A$ in the context enables us to write:
+\end{minipage}
+%
+\hspace{15pt} \vline \hspace{15pt}
+%
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 A
+     ...
+<1>q QED
+    BY <1>1
+\end{verbatim}
+\vspace{5pt}
+\end{minipage}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsection{$\code{\forall\ x : P(x)}$}
+\hrule
+\vspace{10pt}
+\begin{minipage}{230pt}
+$\forall x : P(x)$ in the context allows us to assert $P(a)$ for 
+any $a$ in the context.
+\vspace{5pt}
+
+That is to say, for all \verb|a| in the context, it enables us to write:
+\end{minipage}
+%
+\hspace{15pt} \vline \hspace{15pt}
+%
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 P(a)
+  OBVIOUS
+\end{verbatim}
+\vspace{5pt}
+\end{minipage}
+
+
+\subsubsection{$\code{\forall \ x \in S : P(x)}$}
+\vspace{10pt}
+\begin{minipage}{230pt}
+A bounded universal quantifier of the form $\forall x \in S : P(x)$,
+in the context allows us to assert $P(a)$ for 
+any $a$, as long as we can prove that $a \in S$.
+\vspace{5pt}
+
+That is to say, for all \verb|a| in the context, it enables us to write:
+\end{minipage}
+%
+\hspace{15pt} \vline \hspace{15pt}
+%
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 a \in S
+    ...
+<1>2 P(a)
+  BY <1>1
+\end{verbatim}
+\vspace{5pt}
+\end{minipage}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\subsection{$\code{\exists\ x : P(x)}$}
+\hrule
+\vspace{10pt}
+\begin{minipage}{230pt}
+An existential quantifier like $\exists x : P(x)$ in the context
+allows us to introduce a new $a$ into the context, and assert that
+$P(a)$.
+\vspace{5pt}
+
+There are different ways of doing that. One is with a simple
+\verb|ASSUME/PROVE|; in that case the current goal \verb|G| has to be
+repeated.  An alternative is to use the \verb|PICK|-keyword, which in
+this situation is short-hand for \verb|SUFFICES-ASSUME/PROVE|.
+
+\end{minipage}
+%
+\hspace{15pt} \vline \hspace{15pt}
+%
+%
+\begin{minipage}{100pt}
+\begin{verbatim}
+<1>1 ASSUME NEW a,
+            P(a)
+     PROVE  G
+      ...
+<1>q QED
+    BY <1>1
+\end{verbatim}
+\end{minipage}
+\hspace{0pt} \vline \hspace{10pt}
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 PICK a : P(a)
+    OBVIOUS
+
+
+
+
+\end{verbatim}
+\end{minipage}
+
+\subsection{$\code{\exists\ x \in S : P(x)}$}
+\vspace{10pt}
+\begin{minipage}{230pt}
+A bounded existential quantifier $\exists x \in S : P(x)$ in the context
+allows us to introduce a new $a$ into the context, and assert both 
+that $a \in S$ and that $P(a)$.
+
+\vspace{5pt}
+
+The additional fact that $a \in S$ is added to the
+\verb|ASSUME/PROVE|-step, as you would expect. 
+The \verb|PICK|-keyword also looks as we would expect. 
+\end{minipage}
+%
+\hspace{15pt} \vline \hspace{5pt}
+%
+%
+\begin{minipage}{100pt}
+\begin{verbatim}
+<1>1 ASSUME NEW a,
+            a \in S,
+            P(a)
+     PROVE  G
+      ...
+<1>q QED
+    BY <1>1
+\end{verbatim}
+\end{minipage}
+\hspace{10pt} \vline \hspace{10pt}
+\begin{minipage}{80pt}
+\begin{verbatim}
+<1>1 PICK a \in S : P(a)
+    OBVIOUS
+
+
+
+
+
+\end{verbatim}
+\end{minipage}
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\subsection{$\Box A$}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\subsection{$\Diamond A$}
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%         FREQUENT SITUATIONS           %%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
+\section{Why Doesn't This Turn Green?}
+
+
+
+\end{document}

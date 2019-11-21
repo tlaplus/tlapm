@@ -1,0 +1,1131 @@
+\let\master\relax
+\documentclass[a4paper]{llncs}
+ 
+%&b&\textbf{#}&
+%&c&\textsc{#}&
+%&t&\texttt{#}&
+
+\listfiles
+
+
+%\usepackage{tla+}
+
+%% The tlatex package defines the tlatex environment.
+%% The stuff in the tlatex environments in this paper was created
+%% by tweaking the LaTeX output produced by TLATeX gets put.  
+%% You should not muck with anything in a tlatex environment unless 
+%% you're sure you know what you're doing.
+\usepackage{tlatex}
+\usepackage{url}
+\usepackage{submission}  % contains all macros
+\ifdraft\pagestyle{plain}\fi
+\raggedbottom
+
+
+\renewcommand{\implies}{\Rightarrow}
+
+% The following redefine the commands used by the tlatex environment
+% to what they were before all the crappy packages loaded
+% by the submission package screwed them up.
+%
+\makeatletter
+\renewcommand{\ASSUME}{\textsc{assume }}
+\renewcommand{\ASSUMPTION}{\textsc{assumption }}
+\renewcommand{\AXIOM}{\textsc{axiom }}
+\renewcommand{\BOOLEAN}{\textsc{boolean }}
+\renewcommand{\CASE}{\textsc{case }}
+\renewcommand{\CONSTANT}{\textsc{constant }}
+\renewcommand{\CONSTANTS}{\textsc{constants }}
+\renewcommand{\ELSE}{\settowidth{\symlength}{\THEN}%
+   \makebox[\symlength][l]{\textsc{ else}}}
+\renewcommand{\EXCEPT}{\textsc{ except }} 
+\renewcommand{\EXTENDS}{\textsc{extends }}
+\renewcommand{\FALSE}{\textsc{false}}
+\renewcommand{\IF}{\textsc{if }}
+\renewcommand{\IN}{\settowidth{\symlength}{\LET}%
+   \makebox[\symlength][l]{\textsc{in}}}
+\renewcommand{\INSTANCE}{\textsc{instance }}
+\renewcommand{\LET}{\textsc{let }}
+\renewcommand{\LOCAL}{\textsc{local }}
+\renewcommand{\MODULE}{\textsc{module }}
+\renewcommand{\OTHER}{\textsc{other }}
+\renewcommand{\STRING}{\textsc{string}}
+\renewcommand{\THEN}{\textsc{ then }}
+\renewcommand{\THEOREM}{\textsc{theorem }}
+\renewcommand{\LEMMA}{\textsc{lemma }}
+\renewcommand{\PROPOSITION}{\textsc{proposition }}
+\renewcommand{\COROLLARY}{\textsc{corollary }}
+\renewcommand{\TRUE}{\textsc{true}}
+\renewcommand{\VARIABLE}{\textsc{variable }}
+\renewcommand{\VARIABLES}{\textsc{variables }}
+\renewcommand{\WITH}{\textsc{ with }}
+\renewcommand{\WF}{\textrm{WF}}
+\renewcommand{\SF}{\textrm{SF}}
+\renewcommand{\CHOOSE}{\textsc{choose }}
+\renewcommand{\ENABLED}{\textsc{enabled }}
+\renewcommand{\UNCHANGED}{\textsc{unchanged }}
+\renewcommand{\SUBSET}{\textsc{subset }}
+\renewcommand{\UNION}{\textsc{union }}
+\renewcommand{\DOMAIN}{\textsc{domain }}
+% Added for tla2tex
+\renewcommand{\BY}{\textsc{by }}
+\renewcommand{\OBVIOUS}{\textsc{obvious }}
+\renewcommand{\HAVE}{\textsc{have }}
+\renewcommand{\QED}{\textsc{qed }}
+\renewcommand{\TAKE}{\textsc{take }}
+\renewcommand{\DEF}{\textsc{def }}
+\renewcommand{\HIDE}{\textsc{hide }}
+\renewcommand{\RECURSIVE}{\textsc{recursive }}
+\renewcommand{\USE}{\textsc{use }}
+\renewcommand{\DEFINE}{\textsc{define }}
+\renewcommand{\PROOF}{\textsc{proof }}
+\renewcommand{\WITNESS}{\textsc{witness }}
+\renewcommand{\PICK}{\textsc{pick }}
+\renewcommand{\DEFS}{\textsc{defs }}
+\renewcommand{\PROVE}{\settowidth{\symlength}{\ASSUME}%
+   \makebox[\symlength][l]{\textsc{prove}}\@s{-4.1}}%
+  %% The \@s{-4.1) is a kludge added on 24 Oct 2009 [happy birthday, Ellen]
+  %% so the correct alignment occurs if the user types
+  %%   ASSUME X
+  %%   PROVE  Y
+  %% because it cancels the extra 4.1 pts added because of the 
+  %% extra space after the PROVE.  This seems to works OK.
+  %% However, the 4.1 equals Parameters.LaTeXLeftSpace(1) and
+  %% should be changed if that method ever changes.
+\renewcommand{\SUFFICES}{\textsc{suffices }}
+\renewcommand{\NEW}{\textsc{new }}
+\renewcommand{\LAMBDA}{\textsc{lambda }}
+\renewcommand{\STATE}{\textsc{state }}
+\renewcommand{\ACTION}{\textsc{action }}
+\renewcommand{\TEMPORAL}{\textsc{temporal }}
+\renewcommand{\ONLY}{\textsc{only }}              %% added by LL on 2 Oct 2009
+\renewcommand{\OMITTED}{\textsc{omitted }}        %% added by LL on 31 Oct 2009
+
+% \step{3}{4} produces step number <3>4
+\newcommand{\step}[2]{{\tlatex \@pfstepnum{#1}{#2}}}
+
+\makeatother
+
+% Some other definitions.  
+% Spacing definitions for formatting the figures.
+\def\S#1{\hspace*{#1em}}
+\def\T#1{\hspace*{-#1pt}}
+
+% The following defines \str{foo} to be the properly 
+% typeset TLA+ string "foo".
+\makeatletter \let\str=\@w \makeatother
+
+% The display environment can be used to set off things like formulas
+% and program statements
+\newenvironment{display}{\begin{itemize}\item[]}{\end{itemize}}
+
+% \proofrule{A}{B} produces:   A
+%                             ---
+%                              B
+\newcommand{\proofrule}[2]{\setlength{\arrayrulewidth}{.6pt}%
+  {\ensuremath{\begin{array}[t]{@{}c@{}}%
+       \begin{array}[t]{@{}l@{}} #1\raisebox{-.1em}{\strut}\end{array}\\
+       \hline \raisebox{.1em}{\strut}#2\end{array}}}}
+
+
+\begin{document}
+
+\title{\tlaplus\ Proofs}
+	
+
+%  Alphabetically by surname
+\author{
+   Denis Cousineau\inst{1} \and
+   Damien Doligez\inst{1,2} \and
+   Leslie Lamport\inst{3} \and
+   Stephan Merz\inst{4} \and \\
+   Daniel Ricketts\inst{5} \and
+   Hern\'an Vanzetto\inst{1,4}
+}
+
+\authorrunning{Cousineau, Doligez, Lamport, Merz, Ricketts and Vanzetto}
+
+\institute{
+   INRIA-Microsoft Research Joint Centre \and
+   INRIA \and
+   Microsoft Research \and
+   INRIA \& LORIA \and
+   Department of Computer Science, University of California, San Diego
+ }
+
+
+
+\maketitle
+
+%\ifdraft
+%\begin{center}
+%\large\today
+%\end{center}
+%\fi
+
+\begin{abstract}
+
+\tlaplus is a specification language based on standard set theory and
+temporal logic that has constructs for hierarchical proofs.  We
+describe how to write \tlaplus proofs and check them with TLAPS, the
+\tlaplus Proof System, using Peterson's mutual exclusion algorithm as
+an example.  We explain how \tlaplus's hierarchical proofs and its
+proof system help manage large, complex proofs.
+
+\end{abstract}
+
+
+
+\section{Introduction} 
+
+\tlaplus~\cite{lamport03tla} is a specification language originally
+designed for specifying concurrent and distributed systems and their
+properties.  Specifications and properties are written as formulas of
+TLA, a linear-time temporal logic.  \tlaplus\ adds to TLA
+Zermelo-Fraenkel set theory with the axiom of choice, constructs for
+writing proofs, and various language features like modules.  \tlaplus\
+permits hierarchical natural-deduction proofs to be written in a style
+based on one used for writing rigorous hand
+proofs~\cite{lamport93amm}.
+
+% Proofs in \tlaplus are natural deduction proofs written in a
+% hierarchical style that is useful both for proving ordinary
+% mathematics~\cite{lamport93amm} and for managing the
+% complexity of correctness proofs of systems~\cite{gafni:disk-paxos}.
+
+The \tlaplus\ Toolbox is an integrated development environment for
+writing \tlaplus\ specifications and running the \tlaplus\ tools on
+them, including TLAPS, the \tlaplus\ proof system, and the TLC model
+checker. When developing a proof, it is useful to be able to run the model checker on
+the same formulas that one reasons about.  The Toolbox also provides
+commands to hide and unhide parts of a proof, which help a user read
+and write \tlaplus's hierarchically structured proofs.
+
+% It aids in developing \tlaplus\ proofs, with useful commands for
+% folding/unfolding subparts of a proof, linking definitions names to
+% their values, etc...  And it allows the user to run the \tlaplus\
+% tools: SANY, a syntactic analyzer, TLC, a model-checker, and TLAPS, a
+% proof system that can mechanically check \tlaplus proofs.
+% \marginpar{\small DC: maybe add a sentence to describe the incremental
+% use of those tools (first SANY, then TLC and finally TLAPS)?}
+
+
+TLAPS has a \textit{Proof Manager} (\PM) that transforms a proof into
+independent proof obligations that it sends to back-end provers.
+Currently, the back-end provers are Isabelle/\tlaplus, a faithful
+axiomatisation of \tlaplus as an object logic in Isabelle~\cite{wenzel:isabelle},
+Zenon~\cite{bonichon07lpar}, a tableau prover for classical
+first-order logic with equality, and SMT solvers (using either a generic
+SMT-LIB~\cite{smtlib} back end or optimized translations to the native input
+formats of Yices~\cite{yices} and Z3~\cite{z3}).
+The \PM\ also provides an implementation of Cooper's
+algorithm for Presburger arithmetic.  Currently, Isabelle serves as
+the most trusted back-end prover.  Zenon can export its proofs as Isar
+scripts that Isabelle can certify.
+%% We explain this later.
+% Currently, proofs by the SMT
+% solvers and Cooper's algorithm are not certified by Isabelle.
+
+Users never interact directly with the provers and need to know
+nothing about how they work.  They learn through experience what the
+strengths and weaknesses of the different back ends are, so they can
+avoid wasting time asking a prover to try proving something that it
+can't.  The documentation will eventually provide hints to help
+them.
+
+The following section explains how to write and check \tlaplus\ proofs,
+using a tiny example: a proof that Peterson's algorithm implements
+mutual exclusion.  We write Peterson's algorithm in PlusCal, a
+simple algorithm language that is extremely expressive because it uses
+\tlaplus\ as its expression language~\cite{lamport:pluscal}.  The
+PlusCal code is translated to a \tlaplus\ specification, which is what
+we reason about.  Section~\ref{sec:other-properties} briefly discusses
+proofs of other properties, and Section~\ref{sec:real-proofs}
+describes how \tlaplus\ proofs scale to realistic examples.  A
+concluding section discusses what we have done and plan to do.
+%% Well, not really ... -sm
+%%, and compares \tlaplus\ and TLAPS to other languages and proof systems.
+
+
+\section{Peterson's Algorithm: Mutual Exclusion}
+\label{sec:peterson-mutex}
+
+Peterson's algorithm \cite{peterson:myths} is a classic, very simple
+two-process mutual algorithm.  We prove that it satisfies mutual
+exclusion, meaning that no two processes are in their critical sections
+at the same time.
+
+We first have the Toolbox open a new specification, which creates an
+empty \tlaplus\ module.  We will write Peterson's algorithm in the
+PlusCal algorithm language.  We name the two processes $0$ and $1$,
+and we put the following definition in the module, which defines the
+operator $Not$ so that $Not(0)=1$ and \mbox{$Not(1)=0$}:
+\begin{display}
+\begin{tlatex}
+\@x{ Not ( i ) \.{\defeq}\, {\IF} i \.{=} 0 \.{\THEN} 1 \.{\ELSE} 0}%
+\end{tlatex}
+\end{display}
+%
+We next enter the algorithm, which goes in a comment in the module.
+The PlusCal code is shown in Figure~\ref{fig:the-algorithm}.  The
+\textbf{variables} statement declares the variables and their initial
+values, $flag$ initially being an array with $flag[0]=flag[1]=\FALSE$.
+(Mathematically, an array is a function.)  To specify a multiprocess
+algorithm, it is necessary to specify what its atomic actions are.  In
+PlusCal, an atomic action consists of execution from one label to the
+next.  With this brief explanation, the reader should be able to
+figure out what the code means.%
+%
+\newsavebox{\fnbox}%
+\begin{lrbox}{\fnbox}
+\footnotesize
+\verb/variables flag = [i \in {0, 1} |-> FALSE], turn = 0;/
+\end{lrbox}%
+%
+\footnote{We give only the pretty-printed version of PlusCal code
+and \tlaplus\ formulas.  As an example of how they are typed,
+here is the \textsc{ascii} version of the \textbf{variables}
+declaration:\\[.25em]
+\S{2}\usebox{\fnbox}}
+%
+
+\begin{figure}[tb]
+\newlength{\labelsdim}
+\settowidth{\labelsdim}{$a3a$:}
+\newcommand{\makelab}[1]{\makebox[\labelsdim][r]{$#1$: }}
+\begin{tabbing}
+\S{5}\=\+\texttt{-{}-}\textbf{algorithm} Peterson \{ \\
+\S{1.5}\=\+
+  \textbf{variables} $flag = [i \in \{0, 1\} \mapsto \FALSE]$, $turn = 0$;\\
+  \textbf{process} $(proc \in \{0,1\})$ \{\\
+  \S{1.5}\=\+ \makelab{a0} \textbf{while} $(\TRUE)$ \{ \\
+     \makelab{a1}\S{1.5}\=   $flag[self] := \TRUE$; \\
+     \makelab{a2}\>   $turn := Not(self)$; \\
+     \makelab{a3a}\>  \textbf{if} $(flag[Not(self)])$
+                      \{\textbf{goto} $a3b$\} \textbf{else} 
+                      \{\textbf{goto} $cs$\} ; \\
+     \makelab{a3b}\>  \textbf{if} $(turn = Not(self))$ 
+                      \{\textbf{goto} $a3a$\} \textbf{else} 
+                      \{\textbf{goto} $cs$\} ; \\
+     \makelab{cs}\>   \textbf{skip};  $\backslash*$ critical section \\
+     \makelab{a4}\>   $flag[self] := \FALSE$; \\
+     \hspace*{\labelsdim}\ \}  $\backslash*$  end while \- \\
+    \} $\backslash*$  end process \- \\
+  \S{.5}\} $\backslash*$  end algorithm
+\end{tabbing}
+\caption{Peterson's algorithm in PlusCal.}
+\label{fig:the-algorithm}
+\end{figure}
+
+We next run the PlusCal translator, which translates the algorithm's
+code to a \tlaplus\ specification that it inserts into the module.  In
+this narrative, we ignore the many errors that one inevitably
+makes---even in such a simple example.  For example, we ignore the
+syntax errors that will be reported by the PlusCal translator, and the
+misspelled identifiers in the algorithm's expressions that produce
+parsing errors in the \tlaplus\ translation.
+
+Before trying to prove correctness of the algorithm, we use TLC,
+the \tlaplus\ model checker, to check it for errors.
+We first instruct the Toolbox to have TLC check for
+``execution errors''.\footnote{The translation is a
+  temporal logic formula, so there is no obvious definition of an
+   execution error.  An execution error occurs in a
+  behavior if whether or not the behavior satisfies the formula is not
+  specified by the semantics of \tlaplus---for example, because
+  the semantics do not specify whether or not 0 equals $\FALSE$.}
+What are type errors in typed languages are one source of execution
+errors in \tlaplus.
+
+The Toolbox runs TLC on a model of a \tlaplus\ specification.  A model
+usually assigns particular values to specification constants, such as
+the number $N$ of processes; and it can restrict the set of states
+explored, which is useful if the specification allows an infinite number
+of reachable states.  For this trivial example, there are no constants
+to specify and only 146 reachable states.  TLC finds no execution
+errors.
+
+We next check if the algorithm actually satisfies mutual exclusion.
+Since we made execution of the critical section an atomic action,
+mutual exclusion means that the two processes never both have control
+at label $cs$.  The translation adds a variable $pc$ to hold the
+control state, where control in process $i$ is at $cs$ iff $pc[i]$
+equals the string \str{cs}.  Mutual exclusion therefore holds iff the
+following predicate $MutualExclusion$ is an invariant of the
+algorithm---meaning that it is true in all reachable states:
+\begin{display}
+\begin{tlatex}
+ \@x{ MutualExclusion \.{\defeq}\@s{4.1} ( pc [ 0 ] \.{\neq}\@w{cs} ) \.{\lor}
+ ( pc [ 1 ] \.{\neq}\@w{cs} )}%
+\end{tlatex}
+\end{display}
+We instruct the Toolbox to have TLC check if the algorithm satisfies
+this invariant, and TLC reports that it does.  The algorithm is so
+simple that TLC has checked that all possible executions satisfy
+mutual exclusion; there is no need to prove it deductively.  However,
+our purpose is to describe the \tlaplus\ Proof System, so we write a
+proof.  Proofs of more interesting algorithms, including ones with an
+infinite set of reachable states, differ from the proof of Peterson's
+algorithm by being longer and more complicated and by using some
+additional features of the language and the proof system.
+
+\begin{figure}[btp]
+\begin{tlatex}
+\@xx{}%
+\@x{ {\VARIABLES} flag ,\, turn ,\, pc}%
+\@x{ vars \.{\defeq} {\langle} flag ,\, turn ,\, pc {\rangle}}%
+\par\vspace{6.01pt}%
+ \@x{ Init\@s{2.02} \.{\defeq} \.{\land} flag\@s{2.82} \.{=} [ i \.{\in} \{ 0
+ ,\, 1 \} \.{\mapsto} {\FALSE} ]}%
+\@x{\T{2.82}\@s{37.72} \.{\land} turn \.{=} 0}%
+ \@x{\T{2.82}\@s{37.72} \.{\land} pc \.{=} [ self \.{\in} \{ 0 ,\, 1 \}
+ \.{\mapsto}\@w{a0} ]}%
+\par\vspace{6.01pt}%
+\@x{ a0 ( self ) \.{\defeq} \.{\land} pc [ self ] \.{=}\@w{a0}}%
+ \@x{\T{4.04}\@s{53.97} \.{\land} pc \.{'} \.{=} [ pc {\EXCEPT} {\bang} [ self ]
+ \.{=}\@w{a1} ]}%
+\@x{\T{4.04}\@s{53.97} \.{\land} {\UNCHANGED} {\langle} flag ,\, turn {\rangle}}%
+\par\vspace{6.01pt}%
+\@x{ a1 ( self ) \.{\defeq} \.{\land} pc [ self ] \.{=}\@w{a1}}%
+ \@x{\T{4.04}\@s{53.97} \.{\land} flag \.{'} \.{=} [ flag {\EXCEPT} {\bang} [ self ]
+ \.{=} {\TRUE} ]}%
+ \@x{\T{4.04}\@s{53.97} \.{\land} pc \.{'} \.{=} [ pc {\EXCEPT} {\bang} [ self ]
+ \.{=}\@w{a2} ]}%
+\@x{\T{4.04}\@s{53.97} \.{\land} turn \.{'} \.{=} turn}%
+\par\vspace{6.01pt}%
+\@x{ a2 ( self ) \.{\defeq} \.{\land} pc [ self ] \.{=}\@w{a2}}%
+\@x{\T{4.04}\@s{53.97} \.{\land} turn \.{'} \.{=} Not ( self )}%
+ \@x{\T{4.04}\@s{53.97} \.{\land} pc \.{'} \.{=} [ pc {\EXCEPT} {\bang} [ self ]
+ \.{=}\@w{a3a} ]}%
+\@x{\T{4.04}\@s{53.97} \.{\land} flag \.{'} \.{=} flag}%
+\par\vspace{6.01pt}%
+\@x{ a3a ( self ) \.{\defeq} \.{\land} pc [ self ] \.{=}\@w{a3a}}%
+\@x{\T{4.48}\@s{59.85} \.{\land} {\IF} flag [ Not ( self ) ]}%
+ \@x{\T{12}\@s{83.11} \.{\THEN} pc \.{'} \.{=} [ pc {\EXCEPT} {\bang} [ self ]
+ \.{=}\@w{a3b} ]}%
+ \@x{\T{12}\@s{83.11} \.{\ELSE} pc \.{'} \.{=} [ pc {\EXCEPT} {\bang} [ self ]
+ \.{=}\@w{cs} ]}%
+\@x{\T{4.48}\@s{59.85} \.{\land} {\UNCHANGED} {\langle} flag ,\, turn {\rangle}}%
+\par\vspace{6.01pt}%
+\@x{ a3b ( self )\@s{0.64} \.{\defeq} \.{\land} pc [ self ] \.{=}\@w{a3b}}%
+\@x{\T{4.48}\@s{59.85} \.{\land} {\IF} turn \.{=} Not ( self )}%
+ \@x{\T{12}\@s{83.11} \.{\THEN} pc \.{'} \.{=} [ pc {\EXCEPT} {\bang} [ self ]
+ \.{=}\@w{a3a} ]}%
+ \@x{\T{12}\@s{83.11} \.{\ELSE} pc \.{'} \.{=} [ pc {\EXCEPT} {\bang} [ self ]
+ \.{=}\@w{cs} ]}%
+\@x{\T{4.48}\@s{59.85} \.{\land} {\UNCHANGED} {\langle} flag ,\, turn {\rangle}}%
+\par\vspace{6.01pt}%
+\@x{ cs ( self )\@s{1.36} \.{\defeq} \.{\land} pc [ self ] \.{=}\@w{cs}}%
+ \@x{\T{4.04}\@s{53.97} \.{\land} pc \.{'} \.{=} [ pc {\EXCEPT} {\bang} [ self ]
+ \.{=}\@w{a4} ]}%
+\@x{\T{4.04}\@s{53.97} \.{\land} {\UNCHANGED} {\langle} flag ,\, turn {\rangle}}%
+\par\vspace{6.01pt}%
+\@x{ a4 ( self ) \.{\defeq} \.{\land} pc [ self ] \.{=}\@w{a4}}%
+ \@x{\T{4.04}\@s{53.97} \.{\land} flag \.{'} \.{=} [ flag {\EXCEPT} {\bang} [ self ]
+ \.{=} {\FALSE} ]}%
+ \@x{\T{4.04}\@s{53.97} \.{\land} pc \.{'} \.{=} [ pc {\EXCEPT} {\bang} [ self ]
+ \.{=}\@w{a0} ]}%
+\@x{\T{4.04}\@s{53.97} \.{\land} turn \.{'} \.{=} turn}%
+\par\vspace{6.01pt}%
+ \@x{ proc ( self ) \.{\defeq} a0 ( self ) \.{\lor} a1 ( self ) \.{\lor} a2 (
+ self ) \.{\lor} a3a ( self ) \.{\lor} a3b ( self )}%
+\@x{\@s{76.44} \.{\lor} cs ( self ) \.{\lor} a4 ( self )}%
+\par\vspace{6.01pt}%
+\@x{ Next \.{\defeq} \E\, self \.{\in} \{ 0 ,\, 1 \} \.{:} proc ( self )}%
+\par\vspace{6.01pt}%
+\@x{ Spec\@s{1.46} \.{\defeq} Init \.{\land} {\Box} [ Next ]_{ vars}}%
+\end{tlatex}
+
+\caption{The \tlaplus\ translation, slightly simplified.}
+\label{fig:translation}
+\end{figure}
+
+It is now time to examine the \tlaplus\ translation of the PlusCal
+code, which appears in Figure~\ref{fig:translation}.  We have simplified
+the translation slightly, but the proof we develop works for the
+unmodified translation.\footnote{The simplification
+ removed a definition by ``in-lining'' it.  Our proof works on
+ the original translation if we add a global declaration that causes
+ the definition to be expanded throughout the proof.}
+The heart of the \tlaplus\ specification consists of the initial
+predicate $Init$, which describes the initial state, and the
+next-state relation $Next$, which describes how the state can change.
+
+Given the PlusCal code, the meaning of formula $Init$ in the figure is
+straightforward.  The formula $Next$ is a predicate on
+old-state/new-state pairs.  Unprimed variables refer to the old state
+and primed variables to the new state.  Formula $Next$ is the
+disjunction of the two formulas $proc(0)$ and $proc(1)$, and each
+$proc(self)$ is the disjunction of seven formulas---one for each label
+in the body of the \textbf{process}.  The formula $a0(self)$ specifies
+the state change performed by process $self$ executing an atomic
+action starting at label $a0$, and similarly for the other six labels.
+The reader should be able to figure out the meaning of the \tlaplus\
+notation and of formula $Next$ by comparing these seven definitions
+with the corresponding PlusCal code.
+
+The temporal formula $Spec$ is the complete specification.  It is
+satisfied by a behavior iff the behavior starts in a state satisfying
+$Init$ and each of its steps (pairs of successive states) either
+satisfies $Next$ or else leaves the values of the three variables
+$flag$, $turn$, and $pc$ unchanged.\footnote{``Stuttering steps'' that
+  leave all variables unchanged are allowed in order to make refinement
+  simple~\cite{lamport:what-good}.} The $\Box$ is the ordinary
+\emph{always} operator of linear-time temporal logic, and
+$[Next]_{vars}$ is an abbreviation for \,\mbox{$Next \,\lor\,
+\UNCHANGED vars$}\,, where $\UNCHANGED vars$ is an abbreviation for
+$vars'=vars$ and priming an expression means priming all the variables
+that occur in it.
+
+The assertion that Peterson's algorithm implements mutual exclusion
+is formalized in \tlaplus\ as:
+ \[ \THEOREM Spec \implies \Box MutualExclusion
+ \]
+%
+The standard method of proving this invariance property is to find an
+inductive invariant $Inv$ that implies $MutualExclusion$.  An
+inductive invariant is one that is true in the initial state and whose
+truth is preserved by the next-state relation.  \tlaplus\ proofs are
+hierarchically structured and are generally written top-down.  The
+top level of this invariance proof is shown in
+Figure~\ref{fig:high-level-pf}.  Step \step{1}{2} asserts that 
+the truth of $Inv$ is preserved by the next-state relation.
+
+\begin{figure}[bt]
+\begin{tlatex}
+\@x{ {\THEOREM} Spec \.{\implies} {\Box} MutualExclusion}%
+\@x{\@pfstepnum{1}{1.}\  Init \.{\implies} Inv}%
+%
+ \@x{\@pfstepnum{1}{2.}\  Inv \.{\land} [ Next ]_{ vars} \.{\implies} Inv
+ \.{'}}%
+%
+\@x{\@pfstepnum{1}{3.}\  Inv \.{\implies} MutualExclusion}%
+%
+\@x{\@pfstepnum{1}{4.}\  {\QED}}%
+\end{tlatex}
+\caption{The high-level proof.}
+\label{fig:high-level-pf}
+\end{figure}
+
+Each proof in the hierarchy ends with a \QED step that asserts the
+goal of that proof, the \QED step for the top level asserting the
+statement of the theorem.  We usually write the \QED step's proof
+first.  This \QED step follows easily from \step{1}{1}, \step{1}{2},
+and \step{1}{3} by propositional logic and the following two
+temporal-logic proof rules:
+ \[ \proofrule{I \land [N]_v \implies I'}{I \land \Box[N]_v \implies \Box I}
+   \S{4}
+    \proofrule{P \implies Q}{\Box P \implies \Box Q}
+ \] 
+However, TLAPS does not yet handle temporal reasoning, so we omit the
+proof of the \QED step.  When temporal reasoning is added to TLAPS, we expect it easily
+to check such a trivial proof.
+
+To continue the proof, we must define the inductive invariant $Inv$.
+(A definition must precede its use, so the definition of $Inv$ appears
+in the module before the proof.)  Figure~\ref{fig:inv} 
+%
+\begin{figure}[bt]
+\begin{tlatex}
+\@xx{}%
+ \@x{ TypeOK \.{\defeq} \.{\land} pc \.{\in} [\, \{ 0 ,\, 1 \} \.{\rightarrow}
+ \{\@w{a0} ,\,\@w{a1} ,\,\@w{a2} ,\,\@w{a3a} ,\,\@w{a3b} ,\,\@w{cs}
+ ,\,\@w{a4} \} \,]}%
+\@x{\T{4.2}\@s{56.14} \.{\land} turn \.{\in} \{ 0 ,\, 1 \}}%
+ \@x{\T{4.2}\@s{56.14} \.{\land} flag\@s{2.82} \.{\in} [ \,\{ 0 ,\, 1 \}
+ \.{\rightarrow} {\BOOLEAN}]}%
+\par\vspace{8.0pt}%
+\@x{ I \.{\defeq} \A\, i \.{\in} \{ 0 ,\, 1 \} \.{:}}%
+ \@x{\@s{31.54} \.{\land} pc [ i ] \.{\in} \{\@w{a2} ,\,\@w{a3a} ,\,\@w{a3b}
+ ,\,\@w{cs} ,\,\@w{a4} \} \.{\implies} flag [ i ] }%
+\@x{\@s{31.54} \.{\land} pc [ i ] \.{\in} \{\@w{cs} ,\,\@w{a4} \} }%
+ \@x{\@s{50.64} \.{\implies} \.{\land} pc [ Not ( i ) ] \.{\notin} \{\@w{cs}
+ ,\,\@w{a4} \}}%
+ \@x{\@s{66.20} \.{\land} pc [ Not ( i ) ] \.{\in} \{\@w{a3a} ,\,\@w{a3b} \}
+ \.{\implies} turn \.{=} i}%
+\par\vspace{8.0pt}%
+\@x{ Inv \.{\defeq} TypeOK \.{\land} I}%
+\end{tlatex}
+\caption{The inductive invariant.}
+\label{fig:inv}
+\end{figure}
+%
+defines $Inv$ to be the conjunction of two formulas.  The first,
+$TypeOK$, is a ``type-correctness'' invariant, asserting that the
+values of all variables are elements of the ``right'' set.  (The
+expression $[S\rightarrow T]$ is the set of all functions with domain
+$S$ and range a subset of $T$.)  In an untyped logic like that of
+\tlaplus, almost any inductive invariant must assert type correctness.
+The second conjunct, $I$, is the interesting one that explains why
+Peterson's algorithm implements mutual exclusion.
+
+There is no point trying to prove that a formula is an inductive
+invariant if TLC can show that it's not even an invariant.  So, we
+first run TLC to test if $Inv$ is an invariant.  Peterson's algorithm
+is so simple that TLC can check not only that it is an invariant, but
+that it is an inductive invariant.  We check that $Inv$ is an
+inductive invariant of $Spec$ by checking that it is an (ordinary)
+invariant of the specification 
+ \,\mbox{$Inv \land \Box[Next]_{vars}$}\,.  
+In most real examples, TLC can at best check an inductive invariant on
+a very tiny model---one that is too small to gain any confidence that
+it really is an inductive invariant.  However, TLC can still often find
+simple errors in an inductive invariant.
+
+We now prove steps \step{1}{1}--\step{1}{3}.  We can prove them in any
+order; let us start with \step{1}{1}.  We expect this step to follow
+easily from the definitions of $Init$ and $Inv$ and simple properties
+of sets and functions.  TLAPS knows about sets and functions, but it
+does not expand definitions unless directed to do so.  (In complex
+proofs, automatically expanding definitions often leads to formulas
+that are too big for provers to handle.)  We assert that the
+step follows from simple math and the definitions of $Init$ and $Inv$
+by writing the following leaf proof immediately after the step:
+\begin{display}
+\textsc{by def} $Init$, $Inv$
+\end{display}
+We then tell the Toolbox to run TLAPS to check this proof.  It does so
+and reports that the prover failed to prove the following obligation:
+\begin{display}
+\small
+\begin{verbatim}
+ASSUME NEW VARIABLE flag,
+       NEW VARIABLE turn,
+       NEW VARIABLE pc
+PROVE  (/\ flag  =  [i \in {0, 1} |-> FALSE]
+        /\ turn  =  0
+        /\ pc  =  [self \in {0, 1} |-> "a0"])
+        =>  TypeOK  /\  I
+\end{verbatim}
+\end{display}
+This obligation is exactly what TLAPS's back-end provers are trying to
+prove.  They are given no other facts.  In particular, the
+provers know nothing about $TypeOK$ and $I$, so they obviously can't
+prove the obligation.  We have to tell TLAPS also to use the definitions
+of $TypeOK$ and $I$.  We do that by making the obvious change to the
+\textsc{by} proof, after which TLAPS easily proves the step.
+
+Step \step{1}{3} is proved the same way, by simply expanding the
+definitions of $MutualExclusion$, $Inv$, $I$, $TypeOK$, and $Not$.  We
+next try the same technique on \step{1}{2}.  A little thought shows
+that we have to tell TLAPS to expand all the definitions in the module
+up to and including the definition of $Next$, except for the
+definition of $Init$.  This is a bit tedious but not hard.  However,
+when we direct TLAPS to prove the step, it fails to do so, reporting a
+65-line proof obligation. 
+
+TLAPS uses Zenon and Isabelle as its default back-end provers, first
+trying Zenon and then trying Isabelle if Zenon fails to find a proof.
+% (TLAPS can be directed to use Isabelle to check Zenon's
+% proofs, but one would do that only as a last step after the entire
+% proof has been checked.)
+However, TLAPS also includes an SMT solver back end that is capable of
+handling larger ``shallow'' proof obligations---in particular, ones
+that do not contain significant quantifier reasoning.  We instruct
+TLAPS to use the SMT back end when proving the current step by writing
+\begin{display}
+\textsc{by} SMT \textsc{def} \ldots
+\end{display}
+The SMT back end translates the proof obligation to
+SMT-LIB~\cite{smtlib}, the standard input language for different SMT
+solvers, and calls an SMT solver (CVC3 by default) to try to prove the
+resulting formula.  CVC3 proves step \step{1}{2} in a 
+few seconds.
+%  \footnote{In the current release of TLAPS, the SMT back end
+%  does not prove this.  It will in the next release. }
+Variants of the SMT back end translate to the native input languages of
+Yices and Z3, which sometimes perform better than does CVC3 using the
+standard SMT-LIB translation.
+
+For sufficiently complicated examples, an SMT solver will not be able
+to prove inductive invariance as a single obligation.  The proof will
+have to be hierarchically decomposed.  To illustrate how this is done,
+we now write a proof of \step{1}{2} that can be checked using only the
+Zenon and Isabelle back-end provers.  
+
+Step \step{1}{2} and its top-level proof appear in
+Figure~\ref{fig:1-2pf}.  The first step in the proof of an implication
+like this would normally be:
+\begin{display}
+% \small
+$\begin{array}{lll}
+ \step{2}{1}.\ \SUFFICES & \ASSUME & Inv,\ [Next]_{vars} \\
+                        & \PROVE & Inv'
+ \end{array}
+$
+\end{display}
+This step asserts that to prove the current goal, which is step
+\step{1}{2}, it suffices to assume that $Inv$ and $[Next]_{vars}$ are
+true and prove $Inv'$.  The step also changes the goal of the rest of
+the level-2 proof to $Inv'$ and allows the assumptions $Inv$ and
+$[Next]_{vars}$ to be used in the rest of the proof.  This step's
+assertion is obviously true, and TLAPS will check the one-word leaf
+proof \textsc{obvious}.  However, the proof of Figure~\ref{fig:1-2pf}
+does something a little different.
+
+\begin{figure}[bt]
+\begin{tlatex}
+ \@x{\@pfstepnum{1}{2.}\  Inv \.{\land} [ Next ]_{ vars} \.{\implies} Inv
+ \.{'}}%
+\@x{\@s{8.2}\@pfstepnum{2}{1.}\  {\SUFFICES} {\ASSUME} Inv ,\, Next}%
+\@x{\T{5.7}\@s{76.37} {\PROVE} Inv \.{'}}%
+\@x{\@s{8.2}\@pfstepnum{2}{2.}\  TypeOK \.{'}}%
+\@x{\@s{8.2}\@pfstepnum{2}{3.}\  I \.{'}}%
+\@x{\@s{8.2}\@pfstepnum{2}{4.}\  {\QED}}%
+\end{tlatex}
+\caption{The top-level proof of \step{1}{2}.}
+\label{fig:1-2pf}
+\end{figure}
+
+Since the assumption $[Next]_{vars}$ equals 
+  \,\mbox{$Next \lor \UNCHANGED vars$}\,,
+it leaves two cases to be proved: (i)~$Next$ is true and (ii)~all
+variables are unchanged, so their primed values equal their unprimed
+values.  The proof in the second case is trivial, and TLAPS should
+have no trouble checking it.  In Figure~\ref{fig:1-2pf}, the
+assumption in the \textsc{suffices} statement is $Next$ rather than
+$[Next]_{vars}$, so the remainder of the proof only has to consider
+case~(i).  To show that it suffices to prove $Inv'$ under this
+stronger assumption, the proof of that \textsc{suffices} step has to
+prove case~(ii).
+
+% The following paragraph was begun before I decided to avoid it by
+% naming the SUFFICES step. -- LL
+
+% The \textsc{suffices} step in Figure~\ref{fig:1-2pf} differs from the
+% one above in another way: instead of having a complete step name like
+% \step{2}{1}, it is labeled by just the level number~\step{2}.  If the
+% step were named, then TLAPS would use assumptions only if explicitly
+% directed to (using the name).  Omitting the complete name tells TLAPS
+% to use the assumptions in all obligations in the rest of the level-2
+% proof.  In general, doing this is a bad idea because the assumptions
+% are usually not needed in all obligations of all subproofs, and using
+% unnecessary assumptions makes it harder for a back-end prover to find
+% the proof.  It is not a problem here because a prover will find the
+% assumptions $Inv$ and $Next$ meaningless, and hence will ignore them,
+% unless the definitions of $Inv$ and $Next$ are expanded.  Therefore
+
+\begin{sloppypar}
+The remainder of the level-2 proof is straightforward.  Since $Inv$
+equals \,\mbox{$TypeOK \land I$}, the goal $Inv'$ is the conjunction
+of the two formulas $TypeOK'$ and $I'$.  We therefore decompose the
+proof by proving each conjunct separately.  
+The proof of the \QED step is simply
+\end{sloppypar}
+\begin{display}
+\begin{tlatex}
+\@x{{\BY}\@pfstepnum{2}{2} ,\,\@pfstepnum{2}{3}\  {\DEF} Inv}%
+\end{tlatex}
+\end{display}
+Observe that we have to tell TLAPS exactly what facts to use as well
+as what definitions to expand.  
+
+We next prove \step{2}{1}--\step{2}{3}.  Zenon proves \step{2}{1} when
+the definitions of $vars$, $Inv$, $TypeOK$, and $I$ are expanded.
+Note that the definition of $Next$ is not needed.  To prove
+\step{2}{2} and \step{2}{3}, we need to use the definition of
+$Next$---that is, with all definitions expanded down to \tlaplus\
+primitives---as well as the definition of $Inv$.  We also have to use
+the assumption that $Inv$ and $Next$ are true, introduced by step
+\step{2}{1}.  This leads us to try the following proof for
+\step{2}{2}.
+\begin{display}
+\begin{tlatex}
+ \@x{{\BY}\@pfstepnum{2}{1}\  {\DEF} Inv ,\, TypeOK ,\, Next ,\,
+ proc ,\, a0 ,\, a1 ,\, a2 ,\, a3a ,\, a3b ,\, cs ,\, a4 ,\, Not}
+\end{tlatex}
+\end{display}
+Zenon fails on this proof, but Isabelle succeeds.  However, both Zenon
+and Isabelle fail on the corresponding proof of \step{2}{3} (which
+requires also using the definition of $I$).  To prove it (with only
+Zenon and Isabelle), we need one more level of proof.  That level
+appears in Figure~\ref{fig:complete-proof}, which contains the
+complete proof of the theorem.
+
+\begin{figure}[tb]
+\begin{tlatex}
+\@x{ {\THEOREM} Spec \.{\implies} {\Box} MutualExclusion}%
+\@x{\@pfstepnum{1}{1.}\  Init \.{\implies} Inv}%
+\@x{\@s{8.2} {\BY} {\DEF} Init ,\, Inv ,\, I ,\, TypeOK}%
+ \@x{\@pfstepnum{1}{2.}\  Inv \.{\land} [ Next ]_{ vars} \.{\implies} Inv
+ \.{'}}%
+\@x{\@s{8.2}\@pfstepnum{2}{1.}\  {\SUFFICES} {\ASSUME} Inv ,\, Next}%
+\@x{\T{5.7}\@s{76.37} {\PROVE} Inv \.{'}}%
+\@x{\@s{16.4} {\BY} {\DEF} vars ,\, Inv ,\, TypeOK ,\, I}%
+\@x{\@s{8.2}\@pfstepnum{2}{2.}\  TypeOK \.{'}}%
+ \@x{\@s{16.4} {\BY}\@pfstepnum{2}{1}\  {\DEF} Inv ,\, TypeOK ,\, Next ,\,
+ proc ,\, a0 ,\, a1 ,\, a2 ,\, a3a ,\, a3b ,\, cs ,\, a4 ,\, Not}%
+\@x{\@s{8.2}\@pfstepnum{2}{3.}\  I \.{'}}%
+ \@x{\@s{16.4}\@pfstepnum{3}{1.}\  {\SUFFICES} {\ASSUME} {\NEW} j \.{\in} \{ 0
+ ,\, 1 \}}%
+\@x{\T{6.33}\@s{84.57} {\PROVE}\@s{4.1} I {\bang} ( j ) \.{'}}%
+\@x{\@s{24.59} {\BY} {\DEF} I}%
+ \@x{\@s{16.4}\@pfstepnum{3}{2.}\  {\PICK} i \.{\in} \{ 0 ,\, 1 \} \.{:} proc
+ ( i )}%
+\@x{\@s{24.59} {\BY}\@pfstepnum{2}{1}\  {\DEF} Next}%
+\@x{\@s{16.4}\@pfstepnum{3}{3.}\  {\CASE} i \.{=} j}%
+ \@x{\@s{24.59} {\BY}\@pfstepnum{2}{1} ,\,\@pfstepnum{3}{2}
+ ,\,\@pfstepnum{3}{3}\  {\DEF} Inv ,\, I ,\, TypeOK ,\, proc ,\, a0 ,\, a1
+ ,\, a2 ,\, a3a ,\, a3b ,\,}%
+\@x{\T{9.74}\@s{130.15} cs ,\, a4 ,\, Not}%
+\@x{\@s{16.4}\@pfstepnum{3}{4.}\  {\CASE} i \.{\neq} j}%
+ \@x{\@s{24.59} {\BY}\@pfstepnum{2}{1} ,\,\@pfstepnum{3}{2}
+ ,\,\@pfstepnum{3}{4}\  {\DEF} Inv ,\, I ,\, TypeOK ,\, proc ,\, a0 ,\, a1
+ ,\, a2 ,\, a3a ,\, a3b ,\,}%
+\@x{\T{9.74}\@s{130.15} cs ,\, a4 ,\, Not}%
+\@x{\@s{16.4}\@pfstepnum{3}{5.}\  {\QED}}%
+\@x{\@s{24.59} {\BY}\@pfstepnum{3}{3} ,\,\@pfstepnum{3}{4}\ }%
+\@x{\@s{8.2}\@pfstepnum{2}{4.}\  {\QED}}%
+\@x{\@s{16.4} {\BY}\@pfstepnum{2}{2} ,\,\@pfstepnum{2}{3}\  {\DEF} Inv}%
+\@x{\@pfstepnum{1}{3.}\  Inv \.{\implies} MutualExclusion}%
+\@x{\@s{8.2} {\BY} {\DEF} MutualExclusion ,\, Inv ,\, I ,\, TypeOK ,\, Not}%
+\@x{\@pfstepnum{1}{4.}\  {\QED}}%
+\@x{\@s{8.2} {\PROOF} {\OMITTED}}%
+\end{tlatex}
+
+\caption{The complete proof.}
+\label{fig:complete-proof}
+\end{figure}
+
+Since priming a formula means priming all variables in it, the goal
+$I'$ has the form $\A i \in \{0,1\}: exp(i)'$.  A standard way to prove
+this formula is by 
+$\A$-introduction: we introduce a new variable, say $j$, we assume
+$j\in\{0,1\}$, and we prove $exp(j)'$.  (We could also use $i$ instead
+of $j$, since $i$ has no meaning at this point in the proof.)
+%
+\tlaplus\ provides a notation for naming subexpressions of a
+definition.  With that notation, the expression $exp(j)$ is written
+$I!(j)$.  This leads us to begin the proof of \step{2}{3} with the
+\textsc{suffices} step \step{3}{1} of Figure~\ref{fig:complete-proof}
+and its simple proof.
+
+The assumption $Next$ (introduced by \step{2}{1}) equals
+ \,\mbox{$\E self \in \{0,1\}: proc(self)$}\,.
+A standard way to use such an assumption is by $\E$-elimination: we
+pick some value of $self$ such that $proc(self)$ is true.  That is
+what step \step{3}{2} does, naming the value~$i$.
+
+We simplified our task to proving $I!(j)'$ instead of $I'$, using
+$proc(i)$ instead of $Next$, which eliminates two quantifiers.
+However, Zenon and Isabelle still cannot prove the goal in a single
+step.  By using $proc(i)$ instead of $Next$, we have reduced the proof
+that the next-state action preserves the invariant to proving that a
+process $i$ preserves it.  The usual way to decompose this proof is to
+show that each separate atomic action of process $i$ preserves the
+invariant.  In mathematical terms, $proc(i)$ is the disjunction of the
+seven formulas $a0(i)$, \ldots, $a4(i)$, each describing one of the
+process's atomic action.  We can decompose the proof by considering
+each of the seven formulas as a separate case.
+
+While this is the usual procedure, Peterson's algorithm is simple
+enough that it is not necessary.  Instead, we just have to help the
+back-end provers by splitting the proof into the two cases of $i=j$
+and $i\neq j$.  The reader can see how this is done in
+Figure~\ref{fig:complete-proof}.  Observe that in the proof of
+\textsc{case} statement \step{3}{3}, the name \step{3}{3} refers to
+the case assumption $i=j$.  There is no explicit use of \step{3}{1}
+because a \textsc{new} assumption in an \textsc{assume} is used by
+default in all proofs in the assumption's scope.  The same is true of
+the formula $i\in\{0,1\}$ asserted by the \textsc{pick} step.  (This
+is a pragmatic choice in the design of TLAPS, based on the observation
+that such facts are used so often.)
+
+We warn readers that the proof of Figure~\ref{fig:complete-proof} does
+not succeed on all computers.  We have found it best to have TLAPS
+consider a back-end prover to have failed to prove an obligation if it
+takes too long.  (The cause of failure is reported by the Toolbox.)
+On slower computers, TLAPS may have to be directed to give the provers
+more time.
+
+
+\section{Other Properties of Peterson's Algorithm}
+\label{sec:other-properties}
+
+Peterson's algorithm satisfies other properties besides mutual
+exclusion.  The most obvious property is starvation-freedom.  Define a
+process to be in its non-critical section when control is at $a0$ (at
+the beginning of the \textbf{while} loop).  For mutual exclusion
+algorithms, one usually makes the fairness assumption that any process
+not in its non-critical section keeps taking steps.  A mutual
+exclusion algorithm is starvation-free if, under this fairness
+assumption, any process executing the code between its non-critical
+and critical sections eventually enters its critical section.
+
+It is easy to add this fairness assumption to the PlusCal code and to
+express starvation-freedom for Peterson's algorithm in \tlaplus.  TLC
+can then check that the algorithm is starvation free.
+Starvation-freedom is a liveness property, and TLA was designed for
+reasoning about fairness and liveness.  However, proofs of liveness
+require a fair amount of temporal reasoning, which is not yet handled
+by TLAPS\@.  
+
+Another property satisfied by Peterson's algorithm is bounded waiting,
+which in this case means roughly that one process can enter its
+critical section at most once before a waiting process enters its
+critical section.  Bounded waiting is a safety property, but not
+an invariance property.  To show that Peterson's algorithm satisfies
+this property, we must first write a \tlaplus\ specification of
+bounded waiting and then prove that (the \tlaplus\ specification of)
+the algorithm refines that specification.  Since this is a safety
+proof, as in the case of invariance, a \tlaplus\ refinement proof 
+requires only a tiny bit of trivial temporal reasoning.
+
+
+
+Space does not permit us to explain refinement in TLA\@.  
+Refinement in state-based formalisms is explained
+in~\cite{abadi:existence}.  A significant
+refinement proof that has been checked by
+TLAPS is described in~\cite{lamport:byzantine-paxos}.
+
+\section{Writing Real Proofs}
+\label{sec:real-proofs}
+
+We have described how one writes and checks a \tlaplus\ proof of a
+tiny example.  \tlaplus\ and TLAPS, with its Toolbox interface,
+provide a number of features to help manage the complexity of large
+proofs.
+
+The most important aid in writing large proofs is the language's
+hierarchical proof structure.  The \tlaplus\ proof language is
+hierarchical and declarative in the sense that intermediate proof
+obligations are stated explicitly.  While declarative proofs are more
+verbose than standard tactic scripts, they are easier to understand
+and maintain because the information on what is currently being proved
+is available at each point.  Hierarchical proofs enable a user to keep
+decomposing a complex proof into smaller steps until the steps become
+provable by one of the back-end provers.
+
+A linear presentation, as in Fig.~\ref{fig:complete-proof}, is
+unsuitable for reading or writing large proofs.  The Toolbox's editor
+supports reading and writing hierarchical proofs with commands that
+show or hide particular subproofs.  Commands to hide a proof (or
+subproof) or view just its top level aid in reading a proof.  A
+command that is particularly useful when writing a subproof is one
+that hides all preceding steps that cannot be used in that subproof
+(because of their positions in the hierarchy).
+
+\tlaplus's hierarchical proofs provide a much more powerful mechanism
+for structuring complex proofs than the conventional approach using
+lemmas.  In a \tlaplus\ proof, each step with a non-leaf proof is
+effectively a lemma.  One 1100-line invariance
+proof~\cite{lamport:byzantine-paxos}, which we expect to be typical,
+contains 100 such steps.  A conventional linear proof with 100 lemmas
+would be impossible to read.  (\tlaplus\ proofs typically introduce
+lemmas for facts---mainly ones that are used in the proof of more than
+one theorem.)
+
+Users can develop proofs in any order, working on the proof of a step
+independently of the state of the proof of any other step.  This
+permits them to concentrate on the part of a proof that is most likely
+to be wrong and require changes to other parts of the proof.  The
+Toolbox makes it easy to instruct TLAPS to check the proof of
+everything in a file, of any single theorem, or of any single step.
+TLAPS produces a set of independent obligations that it sends to the
+back-end provers.  It displays every obligation whose proof fails or
+is taking too long; in the latter case the user can cancel the proof.
+Clicking on the obligation shows the part of the proof that generated
+it.
+
+
+
+The Toolbox displays the proof status of each step, indicating by
+color whether the step has been proved or some obligation in its proof
+has failed or been omitted.  (The user can control what information is
+displayed.)  Each obligation sent to the back-end provers is
+completely self-contained, and TLAPS stores its proof status (using a
+fingerprinting mechanism).  By default, TLAPS does not 
+reprove an
+obligation that it has already proved---even if the proof has been
+reorganized and the step that generated it has been moved, or if the
+step was removed from the proof and reinserted in a later version.
+Looking up an obligation's status takes little time, so the user can
+tell TLAPS to re-prove a step even if only a small part of the proof
+has changed, because TLAPS will not recheck any obligation that
+has not changed.  There is also a check-status command that 
+displays the proof status without attempting any new proofs.  One can
+stop a partially-complete proof, restart it months later, and use this
+command to quickly retrieve the status of all proofs.
+
+Several larger case studies have been carried out using the system.
+These include the verification of Byzantine
+Paxos~\cite{lamport:byzantine-paxos}, of the Memoir security
+architecture~\cite{parno:memoir}, and of the lookup and join protocols
+of the Pastry algorithm for maintaining a distributed hashtable over a
+peer-to-peer network~\cite{lu:pastry}.
+
+An incident that occurred in the Byzantine Paxos proof reveals the
+advantages of our method of writing proofs.  The third author wrote
+the safety proof primarily as a way of debugging TLAPS, spending a
+total of a few weeks over several months.  Later, when writing a
+paper about the algorithm, he discovered that it did not satisfy the
+desired liveness property, so it had to be modified.  He changed the
+algorithm, fixed minor bugs found by TLC, and reproved the safety
+property.  He did all this in a day and a half, with about 12 hours of
+actual work.  He was able to do it that fast because of the
+hierarchical proof structure, TLAPS's fingerprinting mechanism (about
+3/4 of the proof obligations in the new proof had already been
+proved), and the Toolbox's aid in managing the proof.
+
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+
+We have presented the \tlaplus\ proof system from a user's point of
+view, taking Peterson's algorithm as an example.  That algorithm was
+chosen because it is well known and simple---so simple that all the
+high-level steps of the mutual exclusion proof (shown in
+Fig.~\ref{fig:high-level-pf}) can be proved by TLAPS with leaf proofs.
+We explained in Section~\ref{sec:real-proofs} why \tlaplus\ proofs
+scale to more complex algorithms and systems that we do not expect any
+prover to handle automatically.
+
+Peterson's algorithm displays very little of the expressive power of
+PlusCal and even less of \tlaplus.  Moreover, its proof does not
+illustrate a number of features of the \tlaplus\ proof language.  The
+most important of these are steps that: provide a witness to prove an
+existentially quantified formula, introduce local definitions, and
+specify facts that are to be used in proofs even when not explicitly
+mentioned.
+
+\tlaplus\ proofs are declarative, stating what facts are needed to
+prove a certain result, in contrast to imperative proofs that tell the
+prover what tactics to apply.  This means that users have limited
+control over how back ends behave.  Although facts can be cited in
+\textsc{by} clauses, users have no way of indicating how these facts
+should be used (e.g., for forward or backward chaining, or for
+rewriting).  This may sometimes frustrate users who are intimately
+familiar with the inner workings of a particular prover.  However,
+declarative proofs are more robust than imperative ones.
+They are much more independent of what back-end prover is used, and
+are less sensitive to changes in what is to be proved.
+
+Different proof techniques, such as resolution, tableau methods,
+rewriting engines, and SMT solvers offer complementary strengths.
+Future versions of TLAPS will probably add new back-end provers and
+may launch several provers in parallel for proving each obligation.
+Adding a new back end mainly involves writing a translation from
+\tlaplus to the input language of the prover.  Such
+translations can be complex, and there is a legitimate concern about
+their soundness as well as about the soundness of the back ends
+themselves.  For back ends that can produce proof traces, TLAPS
+provides the option to certify the traces within Isabelle.\footnote{The
+proof manager also carries out some transformations, such
+  as replacing $(a+b)'$ by $(a'+b')$,
+that are critical for soundness.} 
+% 
+Proof trace certification has been implemented for Zenon,
+and we plan to implement it for other back ends including SMT
+solvers.  Still, it is much more likely that a proof is meaningless
+because of an error in the formula we are proving than because of
+an error in a back end.
+
+%\medskip
+
+\tlaplus\ proofs are hierarchically structured.  We write complex
+proofs by hierarchically structuring their logic.  Unlike proofs using
+conventional lemmas, a \tlaplus\ proof's syntactic structure can
+display its logical structure.  Although hierarchical proof languages
+exist for some other interactive proof systems such as
+Mizar~\cite{trybulec:mizar} and Isabelle/Isar~\cite{wenzel:isar}, to
+the best of our knowledge these systems do not provide the Toolbox's
+abilities to use that structure to aid in reading and writing proofs and to prove
+individual steps in any order---facilities that we find crucial in developing
+and managing large proofs.
+
+We cannot overstate how important it is that TLAPS is integrated with
+the other \tlaplus\ tools---especially the TLC model checker.
+Checking putative invariants and assertions with TLC on finite
+instances of a specification is much more productive than discovering
+errors during the proof.  
+%% Leslie, I found this argument a little confusing, and I suspect it will be
+%% more confusing to readers who do not know TLA.
+% By running TLC on models that are separate from the specification, 
+Users check the exact same specifications that
+appear in their proofs.  Less obvious is how useful it is that TLC can
+evaluate \tlaplus\ formulas.  When verifying a system, we don't
+want to prove well-known mathematical facts; we want to assume them.
+However, it is easy to make a mistake in formalizing even simple
+mathematics, and assuming the truth of an incorrect formula can lead
+to an incorrect proof.  TLC can usually check a formula on a large
+enough model to make us confident that our formalization of a correct
+mathematical result is indeed correct.
+
+% \medskip
+
+We are actively developing TLAPS. While we believe the basic design to
+be stable, details may change and features may be added.  Our main
+short-term objective is to add support for temporal reasoning.  It is
+not obvious how best to extend natural deduction to temporal logic.
+We have developed an approach involving two forms of
+\textsc{assume}/\textsc{prove} with different semantics that we think
+will work well.  We will know if it does only after implementing it
+and using it.  We also plan to improve support for standard \tlaplus\
+data structures such as sequences.  
+%  \marginpar{Stephan: I consider the last sentence of the
+%     paragraph to be too speculative
+%     and suggest removing it.  But I'll leave the decision to you.}
+% More ambitiously, it would be interesting to reconsider the decision
+% that definitions and facts to be used must be cited explicitly,
+% perhaps by adopting machine learning
+% techniques~\cite{boehme:sledgehammer,tsivtsivadze:semantic}.
+
+
+\paragraph{Note to referees:} The \tlaplus Proof System is available at
+\url{http://msr-inria.inria.fr/~doligez/tlaps/}. The SMT back end mentioned in
+section~\ref{sec:peterson-mutex} is not part of the current stable version, but
+will be included in the next release, scheduled to appear before VSTTE 2012.
+%(if the referees ask for, we can give access to a nightly build of the Proof System)
+
+
+%% SM: I've added \usepackage{url} in the preamble -- don't know if the following is
+%% still necessary (but it doesn't appear to hurt).
+
+% There's a bug caused by an intereaction between BibTeX and the \url
+% command that is fixed by the following
+%
+%% File url.sty  created 25 Feb Mar 1996 by Leslie Lamport
+%%
+%% \url{ARG} -- typesets ARG as a URL, by: 
+%%      * Using a \tt declaration.
+%%      * Making  % ~ $ # & _ ^ and \  act like ordinary letters. $
+%%      * Allowing a line break after each "." and before each  
+%%        "/" and "//".
+%%    It also allows a line break immediately before and after
+%%    ARG, so you can allow a line break between A and RG by
+%%    writing \url{A}\url{RG} instead of \url{ARG}.
+\makeatletter
+\newcommand{\realslash}{/}
+\begingroup
+\catcode`\/\active
+\catcode`\.\active
+\catcode`:\active
+\gdef\urlslash{\@ifnextchar/{\doubleslash}{\discretionary{}{}{}\realslash}}
+\gdef\urlend#1{\let/\urlslash\let.\urldot
+                 \discretionary{}{}{}#1\discretionary{}{}{}\endgroup}
+\endgroup
+\newcommand{\urldot}{.\discretionary{}{}{}}
+\renewcommand{\url}{\begingroup\urlbegin}
+\newcommand{\urlbegin}{%\catcode`\%12\relax
+                       \catcode`\~12\relax
+                       \catcode`\#12\relax
+                       \catcode`\$12\relax
+                       \catcode`\&12\relax
+                       \catcode`\_12\relax
+                       \catcode`\^12\relax
+                       \catcode`\\12\relax
+                       \catcode`\/\active
+                       \catcode`\.\active
+                       \tt
+                       \urlend}
+\newcommand{\doubleslash}[1]{\discretionary{}{}{}//}
+
+\makeatother 
+\bibliographystyle{abbrv}
+\bibliography{submission}
+
+
+\end{document}

@@ -1,0 +1,114 @@
+%% This is file `amstext.sty' generated from `amstext.doc'
+%% on 21-JUN-1991 by the docstrip.ams utility (1.0). 
+%% 
+%%@texfile{%
+%% filename="amstext.sty",
+%% version="1.1",
+%% date="21-JUN-1991",
+%% filetype="AMS-LaTeX: option",
+%% copyright="Copyright (C) American Mathematical Society, all rights
+%%   reserved.  Copying of this file is authorized only if either:
+%%   (1) you make absolutely no changes to your copy, including name;
+%%   OR (2) if you do make changes, you first rename it to some other
+%%   name.",
+%% author="American Mathematical Society",
+%% address="American Mathematical Society,
+%%   Technical Support Group,
+%%   P. O. Box 6248,
+%%   Providence, RI 02940,
+%%   USA",
+%% telephone="401-455-4080 or (in the USA) 800-321-4AMS",
+%% email="Internet: Tech-Support@Math.AMS.com",
+%% checksumtype="line count",
+%% checksum="114",
+%% codetable="ISO/ASCII",
+%% keywords="latex, amslatex, ams-latex",
+%% abstract="This file is part of the AMS-\LaTeX{} package, ver. 1.1.
+%%   It is a \LaTeX{} option file that defines a \verb|\text| macro, which
+%%   makes it easy to incorporate fragments of text inside a displayed
+%%   equation or a sub or superscript. Font sizes are automatically
+%%   scaled in sub/superscripts."
+%%}
+\expandafter\ifx\csname amstext.sty\endcsname\relax
+\expandafter\def\csname amstext.sty\endcsname{}
+\else\message{---already loaded}\endinput\fi
+\def\filename{amstext.sty}
+\def\fileversion{1.1} \def\filedate{21-JUN-1991}
+\immediate\write16{%
+AMS-LaTeX option `\filename' (\fileversion, \filedate)}
+%%% end of file header
+\@ifundefined{extract@font}
+     {\errmessage{The style option `amstext' does not make sense if you
+               do not use a format with the new font selection scheme.}
+      \endinput}
+     {}
+\def\RIfM@{\relax\protect\ifmmode}
+\def\text{\RIfM@\expandafter\text@\else\expandafter\mbox\fi}
+\def\text@#1{\mathchoice
+   {\textdef@\displaystyle\f@size{#1}}%
+   {\textdef@\textstyle\f@size{\firstchoice@false #1}}%
+   {\textdef@\scriptstyle\sf@size{\firstchoice@false #1}}%
+   {\textdef@\scriptscriptstyle
+             \ssf@size
+             {\firstchoice@false #1}}%
+   \glb@settings}
+
+\def\textdef@#1#2#3{\hbox{{%
+                    \everymath{#1}%
+                    \let\f@size#2\selectfont
+                    #3}}}
+\newif\iffirstchoice@
+\firstchoice@true
+\def\stepcounter#1{%
+  \iffirstchoice@
+     \global\expandafter\advance\csname c@#1\endcsname \@ne
+     \let\@elt\@stpelt
+         \csname cl@#1\endcsname
+     \let\@elt\relax
+  \fi}
+\def\ref#1{\@ifundefined{r@#1}%
+         {{\bf ??}%
+          \iffirstchoice@
+             \@warning
+                {Reference `#1' on page \thepage\space undefined}%
+          \fi}%
+         {\expandafter\expandafter\expandafter
+          \@car \csname r@#1\endcsname \@nil\null}}
+\def\pageref#1{\@ifundefined{r@#1}{{\bf ??}%
+   \iffirstchoice@ \@warning
+       {Reference `#1' on page \thepage \space
+    undefined}\fi}{\edef\@tempa{\csname r@#1\endcsname}\expandafter
+    \@cdr\@tempa\@nil\null}}
+\def\@wrindex#1{\iffirstchoice@\let\thepage\relax
+   \xdef\@gtempa{\write\@indexfile{\string
+      \indexentry{#1}{\thepage}}}\endgroup\@gtempa
+   \if@nobreak \ifvmode\nobreak\fi\fi\fi\@esphack}
+
+\def\@wrglossary#1{\iffirstchoice@\let\thepage\relax
+   \xdef\@gtempa{\write\@glossaryfile{\string
+      \glossaryentry{#1}{\thepage}}}\endgroup\@gtempa
+   \if@nobreak \ifvmode\nobreak\fi\fi\fi\@esphack}
+\def\label#1{\@bsphack\iffirstchoice@\if@filesw {\let\thepage\relax
+   \def\protect{\noexpand\noexpand\noexpand}%
+\xdef\@gtempa{\write\@auxout{\string
+      \newlabel{#1}{{\@currentlabel}{\thepage}}}}}\@gtempa
+   \if@nobreak \ifvmode\nobreak\fi\fi\fi\fi\@esphack}
+\def\mathhexbox#1#2#3{\text{$\m@th\mathchar"#1#2#3$}}
+%% \CharacterTable
+%%  {Upper-case    \A\B\C\D\E\F\G\H\I\J\K\L\M\N\O\P\Q\R\S\T\U\V\W\X\Y\Z
+%%   Lower-case    \a\b\c\d\e\f\g\h\i\j\k\l\m\n\o\p\q\r\s\t\u\v\w\x\y\z
+%%   Digits        \0\1\2\3\4\5\6\7\8\9
+%%   Exclamation   \!     Double quote  \"     Hash (number) \#
+%%   Dollar        \$     Percent       \%     Ampersand     \&
+%%   Acute accent  \'     Left paren    \(     Right paren   \)
+%%   Asterisk      \*     Plus          \+     Comma         \,
+%%   Minus         \-     Point         \.     Solidus       \/
+%%   Colon         \:     Semicolon     \;     Less than     \<
+%%   Equals        \=     Greater than  \>     Question mark \?
+%%   Commercial at \@     Left bracket  \[     Backslash     \\
+%%   Right bracket \]     Circumflex    \^     Underscore    \_
+%%   Grave accent  \`     Left brace    \{     Vertical bar  \|
+%%   Right brace   \}     Tilde         \~}
+\endinput
+%% 
+%% End of file `amstext.sty'.

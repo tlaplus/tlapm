@@ -1,0 +1,29 @@
+%%% -*- mode: LaTeX; TeX-master: "main.tex"; -*-
+
+\ifx\master\undefined
+\documentclass[a4paper]{easychair}
+\usepackage{submission}
+\begin{document}
+{\let\master\relax\input{frontmatter}}
+\fi
+%%%% PLEASE DO NOT EDIT ABOVE THIS LINE
+
+\begin{abstract}
+  We describe an extension to the \tlaplus{} specification language
+  with constructs for writing proofs and a proof environment, called
+  the Proof Manager (PM), that checks those proofs.  The language and
+  the \PM\ support the incremental development and checking of
+  hierarchically structured proofs.  The \PM\ translates a proof into
+  a set of independent proof obligations and calls upon a collection
+  of back-end provers to verify them.  Different provers can be used
+  to verify different obligations.  The currently supported back-ends
+  are the tableau prover Zenon and Isabelle/\tlaplus{}, an
+  axiomatisation of \tlaplus\ in Isabelle/Pure.  Isabelle/\tlaplus{}
+  can also certify the correctness of a complete proof.
+\end{abstract}
+
+
+%%%% PLEASE DO NOT EDIT BELOW THIS LINE
+\ifx\master\undefined
+\end{document}
+\fi

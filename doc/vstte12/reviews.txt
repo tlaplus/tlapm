@@ -1,0 +1,87 @@
+----------------------- REVIEW 1 ---------------------
+PAPER: 36
+TITLE: TLA+ Proofs
+AUTHORS: Denis Cousineau, Damien Doligez, Leslie Lamport, Stephan Merz, Daniel Ricketts and Hernán Vanzetto
+
+OVERALL RATING: 1 (I can accept this paper, but I will not champion it)
+REVIEWER'S CONFIDENCE: 2 (medium)
+What is your overall expertise concerning the subject areas of this paper?: 2 (I am knowledgeable in the area, though not an expert)
+
+The paper describes how to write TLA+ proofs and check them with TLAPS. To do so it uses Peterson's mutual exclusion algorithm as an example. The author walks the reader through a complete (although simple) verification scenario, showing how to use the different available back-ends. The main steps are the specification in +CAL, automatic translation to TLA+, debugging with TLC, uncertified proof with SMT and finally a certified proof of the algorithm using the Isabelle and Zenon back-end. Then, Section 4 describes the features that should allow users to write more complex proofs, notably hierarchical proofs, independence of proof steps, and the fingerprinting mechanism.
+
+The example of Peterson's algorithm is well-written and makes clear how to use TLA+ and TLAPS to prove algorithms correct.
+
+The main weakness of the paper is that it doesn't mention or compares to any related work. Thus, despite making clear that TLA+ and TLAPS have many nice features, the uniformed reader can not know if TLA+ and TLAPS improve on the state of the art.
+
+For example, some proof assistants can provide counter-examples when a proof fails. I can't find any discussion about this in the paper.
+More generally, the paper doesn't discuss debugging errors that are not caught by TLC. It seems that when a proof step cannot be discharged, the user can not get any indication of whether what she tries to prove is incorrect, or correct but not provable by the back-ends. Is TLC also a proof back-end (so that individual proof steps may be checked by TLC)?
+It is mentioned that users should become familiar with the different back-ends by experimenting with TLAPS. Given the above problem, the difficulty of the task may be overwhelming.
+
+
+----------------------- REVIEW 2 ---------------------
+PAPER: 36
+TITLE: TLA+ Proofs
+AUTHORS: Denis Cousineau, Damien Doligez, Leslie Lamport, Stephan Merz, Daniel Ricketts and Hernán Vanzetto
+
+OVERALL RATING: -2 (Serious problems. I will argue to reject this paper)
+REVIEWER'S CONFIDENCE: 3 (high)
+What is your overall expertise concerning the subject areas of this paper?: 2 (I am knowledgeable in the area, though not an expert)
+
+Authors present the TLA+ specification language, and the TLAPS proof system. Both language, and proof system have been under development for years, and have the practical application in specifying and proving the properties of concurrent and distributed systems. These proofs are to be written manually using the proof manager, which then sends them to back-end provers like Isabelle.
+
+Authors give an example (Peterson algorithm) and explain in a tutorial style how to work in the system with this example. But they claim neither theoretical nor practical contribution for the TLAPS. In the page 13 they confirm that the given example does not illustrate a number of features of the TLA+ language. Authors refer the reader to the external sources for some concrete case studies, which are larger and more complicated, than the presented one.
+
+The paper is badly motivated. As mentioned at the end of page 3, here there is no need to prove the property deductively, because the given algorithm is simple. Why then the authors do so instead of taking into consideration any other, more complicated, example? Moreover, the considered example was already used by the authors in the tutorial for IFM 2010, and can be found at the TLAPS webpage. Figures 1, 2, 4 at the submitted paper overlap with this tutorial.
+
+The role of TLC model checker is not clear from the paper. If it checks for the execution errors, the definition and examples of such errors have to be specified. Here, it is noted at the page 3, that "there is no obvious definition of an execution error", which keeps the question of  the goal of the model checker unanswered.
+
+The remark "the proof does not succeed on all computers" on the page 11 must be described in details. The classification of computers into "faster and slower ones" is rather fuzzy. From a user perspective (as the paper is positioned), there must be some system characteristics and requirements given. But from the research and experimentation point, it is always better to present the proper evaluation table: for every possible SMT solver or theorem prover, what time was taken, on which machine, and so on.
+
+The paper has a poor structure. There is only 5 sections, and no subsections. This obstructs the understanding of section 2. These 10 pages can be split into at least 6 subsections: 1) basics of PlusCal, 2) encoding the algorithm, 3) translation into TLC+, 4) theorems and proof obligations, 5) the proof strategy, 6) technical issues. Now, the hierarchical proofs take more than 5 pages of a plain text. Despite the fact that the hierarchy of proofs is more-or-less preserved in the explanations, it is hard to follow it.
+
+As a minor issue, the tools mentioned at the paper are not properly cited. While it is OK with Isabelle and Zenon, but there are only home pages, cited for Yices and Z3. Both tools have tool papers, which should be cited instead of the links. CVC3 is mentioned at page 7, but not cited anyhow.
+
+Summarizing, the reviewer does not recommend the paper for the conference. First, there is no novelty and contribution in the work, and it can not be considered as a research paper. Second, there is no system description. The example does not cover all features of TLAPS, and does not say anything about its implementation, so it can not be considered as a tool paper. Third, there is no experimentation, nor evaluation, nor comparison with the other verification tools, so it can not be considered as experimentation paper. The closest keyword to the work is "tutorial", which is out of the scope of VSTTE.
+
+
+----------------------- REVIEW 3 ---------------------
+PAPER: 36
+TITLE: TLA+ Proofs
+AUTHORS: Denis Cousineau, Damien Doligez, Leslie Lamport, Stephan Merz, Daniel Ricketts and Hernán Vanzetto
+
+OVERALL RATING: -1 (This paper should be rejected, though I will not fight strongly against it)
+REVIEWER'S CONFIDENCE: 2 (medium)
+What is your overall expertise concerning the subject areas of this paper?: 1 (I am not an expert. My evaluation is that of an informed outsider)
+
+This paper describes the TLAPS - a proof system for TLA.  
+It illustrates its use with an example of proving 
+Peterson's algorithm satisfies mutual exclusion.  
+
+I found the first part of section 2, an approachable 
+introduction to TLA. However, the last four pages are 
+really hard to follow.  You are describing pretty 
+detailed proof steps.  But it is very hard for a reader 
+to maintain context in this section. I think summarising 
+more would make this more accessible. 
+
+Section 3, doesn't really say anything.  Perhaps relegate 
+these comments to an appendix.
+
+I found section 4 really interesting.  The engineering 
+that has been developed to support the proving process 
+sounds quite powerful to me (I am not an expert in this).
+Particularly, the finger printing mechanism sounds very 
+interesting, and reusable to other systems. Also, 
+explicitly writing in the dependency DAG seems to really 
+help with avoiding false dependencies.  I have found this 
+to be very annoying in interactive theorem provers. 
+Common refactorings just like moving the lemmas into a 
+sensible order can take several minutes to reverify even 
+if they don't change anything semantically.  
+
+Overall, I think there are some interesting aspects in 
+the paper about engineering proofs.  I don't think the 
+paper spends enough time on them, and section 2 would be 
+better written as a tutorial for a summer school, rather
+than shoehorned into a conference paper.  This paper 
+should not be accepted in its current form.

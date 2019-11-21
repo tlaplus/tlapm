@@ -1,0 +1,158 @@
+\documentclass[xcolor=dvipsnames]{beamer}
+
+\usepackage{mathptmx}
+\usepackage{
+%% arev
+%% avant
+% bookman
+%% chancery
+ charter
+%% euler
+%% helvet
+%% lmodern
+%%% mathtime
+%% mathptm
+%% mathptmx
+% newcent
+% palatino
+%% pifont
+%% utopia
+}
+
+\usefonttheme{serif} % default family is serif
+
+\usepackage{amsthm, stmaryrd, bussproofs}
+\usepackage{pdfpages}
+\usepackage{tikz}
+\usepackage{wasysym}
+%\usepackage{enumitem}
+%\usepackage{mymacros}
+
+
+%\usetheme{Hannover}
+%\usetheme{Berkeley}
+\usetheme{Warsaw}
+%\usetheme{Berlin}
+%\usetheme{Darmstadt}
+%\usetheme{Frankfurt}
+%\usetheme{CambridgeUS}
+%\usetheme{Singapore}
+%$\usecolortheme{beaver}
+\usecolortheme{crane}
+%\usecolortheme{rose}
+%\usecolortheme{dove}
+%\usepackage[usenames, dvipsnames]{color}
+\setbeamertemplate{footline}[frame number]
+
+
+%\input{mydefs}
+\newcommand{\realtiny}{\fontsize{0.5}{0.5}\selectfont}
+\newcommand{\comment}[1]{}
+\newcommand{\code}[1]{\mathsf{#1}}
+
+\newcommand{\tla}{\textsc{TLA}}
+\newcommand{\tlapm}{\textsc{TLAPM}}
+\newcommand{\tlaps}{\textsc{TLAPS}}
+\newcommand{\tlaplus}{\textsc{TLA\!\textsuperscript{+}}}
+
+\newcommand{\kw}[1]{\textsc{#1}}
+
+
+\newcommand{\tempA}{\forall \hspace{-4.5pt} \forall}
+\newcommand{\tempE}{\exists \hspace{-4.5pt} \exists}
+\newcommand{\enabled}{\textsc{enabled}}
+\newcommand{\seq}{\ \ \vdash \ \ }
+
+\newcommand{\rlable}[1]{\scriptsize $\mathsf{#1}$}
+\newtheorem{rl}{Rule}
+
+
+\newcommand{\myframe}[2]{
+\begin{frame}
+\frametitle{\color{Maroon}\normalsize #1\color{black}}
+\small #2 
+\end{frame}} 
+
+
+\setcounter{tocdepth}{2}
+
+
+\title{Proofs in \tlaplus: Theory and Practice}
+\author{Jael E. Kriener}
+\date{London, 30\textsuperscript{th} April, 2014}
+
+\begin{document}
+\begin{frame}
+\maketitle
+\end{frame}
+
+
+%\section{\tlaplus overview}
+% diagram
+
+\input{tla-pic.tex}
+
+\myframe{\hfill overview of \tlaplus \hspace{4.5pt} }
+{
+\scriptsize
+\begin{tikzpicture}[thick, main node/.style={rectangle, draw, rounded corners=1.5, align=center}]
+\node[main node] (0) [ ] {\tla: specification language\\{\color{blue}ZFC + modalities}}; 
+% There is the language, and then there are the tools -> `+'
+\node[main node, color=ForestGreen] (1) [below=0, yshift=15pt, xshift=130pt] {\\ \vdots\\ }; 
+
+\node[main node] (2) [below=0, yshift=-40pt] {proof language\\{\color{blue}hierarchical structuring + tactics}} ;
+
+% proof language (keywords like ASSUME/PROVE, HAVE, etc) 
+\node[main node] (9) [below=1, yshift=-80pt] {  \tlapm: proof manager\\{\color{blue}`compiles' proofs into obligations}};
+% proof manager
+\node[main node] (11) [below=9, yshift=-120pt, xshift=-130pt] {SMT solvers\\{\color{blue}(Z3, CVC)} };
+\node[main node] (12) [below=9, yshift=-120pt, xshift=-50pt] {$1^{st}$\!-order solvers\\{\color{blue}(Zenon)}};
+\node[main node] (13) [below=9, yshift=-120pt, xshift=20] {Isabelle};
+\node[main node] (14) [below=9, yshift=-120pt, xshift=90pt] {Modal solvers\\{\color{blue}(LS4)}};
+\node[main node] (15) [below=9, yshift=-120pt, xshift=150pt] {\ \ldots ? };
+
+\path[]
+ (0.east) edge [draw=ForestGreen] node [] {} (1.west)
+ (0.north) edge [draw=ForestGreen] node [] {} (0,1.3)
+ (0) edge [] node [] {} (2)
+ (2) edge [] node [] {} (9) 
+ (9) edge [] node [] {} (11)
+ (9) edge [] node [] {} (12)
+ (9) edge [] node [] {} (13)
+ (9) edge [] node [] {} (14)
+ (9) edge [] node [] {} (15)
+;
+
+\path[rounded corners, draw=Maroon, very thick, dashed]  
+ (-5, -1) edge node [above, yshift=-2pt, xshift=-97.5pt] {\color{Maroon} \textbf{\textsc{TLAPS}: proof system}} (5, -1) 
+ (2.8,-1.85) edge node [above, sloped, xshift=4pt] {\color{Maroon} \textbf{\textsc{TLC}: model checker}} (2.8, 1)
+(-5,1.1) edge node [below, sloped, yshift=2pt, xshift=-97.5pt] {\color{Maroon} \textbf{\textsc{PlusCal}: pseudo code}} (5, 1.1)
+;         
+\end{tikzpicture}
+}
+
+\myframe{\hfill this talk}
+{
+\tableofcontents
+}
+
+
+\section{\tla: The Specification Language}
+\input{tla.tex}
+
+\section{\tla PM: Proofs About \tla\ Specs}
+\input{tlapm.tex}
+
+
+\section{Application: Determinacy in a Real-Time Kernel}
+\input{cea.tex}
+
+
+\section{Implementation: The Messy Truth \hspace{34pt}}
+\subsection{ implementing a sound system for ZFC + ' + $\Box, \diamond, \tempA, \tempE$ + 
+$\enabled$}
+\input{implementation.tex}
+
+
+
+\end{document}

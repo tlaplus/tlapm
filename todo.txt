@@ -1,0 +1,311 @@
+Action Items:
+=============
+- Respond to Tom Rodeheffer's 24 September 2013 bug report about 
+  USE/HIDE DEF.  
+  Damen will Look at the code and see how much work it would be to 
+  implement the missing features.
+
+* Investigate Dan's report of a self-test failing when installing
+  the latest version.  (2 November 2013)
+  Can't be duplicated. DONE
+
+- Bug reported by Stephan on fingerprinting removing domain
+  assumptions.  Damien investigating.
+
+- Put TLAPS bugs on CodePlex
+  Tomer doing it?
+
+- Add to the documentation a real explanation of how one changes
+  the default SMT solver--e.g., that you have to do something different
+  when using Windows with Cygwin.  Also note that with the Toolbox, the
+  change should usually be made as a Preference.
+  Changes made, review in progress.
+
+- Fix TLA and TLAPS web pages. 
+  Jael will identify problems, Tomer will fix Inria site and Leslie will
+  fix Microsoft site.
+
+- Fix Toolbox to remove pointers to tlaplus.net.
+  About TLA+ Toolbox.
+
+
+Proof Manager
+=============
+
+v0.3.x (development branch)
+---------------------------
+* Improve error messages for illegal uses of HAVE, TAKE, etc.
+  DONE
+
+- Handle input in tla2sany dump format. Add option (set by default) to
+  expect input in this format.
+
+- Handle non-Leibniz user-defined operators.
+
+- ENABLED
+
+- Named Subexpressions
+
+- Module Instantiation
+
+- Implement BY/USE/HIDE MODULE Foo  
+  (so it importd unnamed theorems from the module as well as named ones)
+  and BY/USE/HIDE DEFS MODULE Foo.
+  The requires deciding what USE Foo means if Foo is the 
+  current module.  In particular, does a global USE mark as used 
+  only the theorems encountered so far or all later theorems as well.
+
+==================================================================
+
+Isabelle / Zenon
+----------------
+- Reasoning about the operators defined in the following modules:
+  - Integers
+  - Sequences
+  - FiniteSets
+  - TLC: @@ and :> 
+    => Isabelle supports these, but I doubt that the PM does (SM 2013-11-07)
+  - Reals
+
+- Temporal reasoning
+
+==================================================================
+
+Misc
+-------------
+- Change documentation and PM so definition in named 
+  THEOREM/ASSUMPTION is by default USEd.
+
+  - done on PM side
+
+- There is now no way to use an unnamed theorem or assumption.  This
+  should be fixed.  
+  It will be handled by the USE/BY MODULE Foo construct, which
+  will use the unnamed as well as the named theoresm of Foo.
+
+- PM/Zenon/Isabelle does not yet handle expressions 
+      {e : x_1 \in S_1, ... , x_n \in S_n}
+  for n > 1.
+
+====================================================================
+                EVERYTHING THAT'S NOT YET DONE
+                ------------------------------
+
+General remark about the PM: there is a difference between what the PM
+can translate if there were something to translate to, and what the PM
+cannot translate. The former I'm marking as "awaiting backend support"
+or "need to figure out canonical pragmas", while the latter as "in
+progress" or "planned". The difference between the latter two is that
+I had not begun working on any of the planned items. -- Kaustuv
+
+
+LOGIC
+- Quantifiers such as \A <<x, y>> and  \E <<x, y>> \in S \X T
+PM: waiting for backend support
+Zenon: 2 weeks after Isabelle encodes it
+Isabelle: Isabelle supports quantification of the form \E <<x,y,z,u,v>> \in S for
+  variable tuples up to length 5 (and S can in particular be a product) but the
+  PM probably doesn't use this, so it has never been tested. It looks harder to
+  extend the grammar for tuples of arbitrary length, but if it's important I can
+  look into it.
+
+- CHOOSE
+PM: need to figure out canonical pragmas
+Zenon: CHOOSE is supported (2009-07-03, rev 11743)
+Isabelle: CHOOSE is fully supported, but not automated
+
+  The two following theorems are useful for reasoning about CHOOSE
+  expressions "manually". They correspond to the Isabelle rules
+  chooseI2 and bChooseI2.
+
+THEOREM ChooseIntro ==
+   ASSUME NEW P(_), NEW Q(_),
+          \E x: P(x),
+          \A x: P(x) => Q(x)
+   PROVE  Q(CHOOSE x: P(x))
+OBVIOUS
+
+
+THEOREM BoundedChooseIntro ==
+   ASSUME NEW P(_), NEW Q(_), NEW S,
+          \E x \in S : P(x),
+          \A x \in S : P(x) => Q(x)
+   PROVE  Q(CHOOSE x \in S : P(x))
+OBVIOUS
+
+-------------------------------------------------------
+SETS 
+- expressions of the form {e : x_1 \in S_1, ...  , x_n \in S_n} 
+  for n > 1
+PM: waiting for backend support
+Zenon: 1 week after Isabelle encodes it
+Isabelle: to be done
+
+-------------------------------------------------------
+FUNCTIONS
+-Function definitions
+PM: waiting for backend support for functions of multiple arguments
+Zenon: single arguments work
+Isabelle: single arguments work
+
+-Recursive function definitions
+PM: turns into the equivalent CHOOSE form now. In the long run the
+    backends will have to provide some facility for recursive functions.
+Zenon:
+Isabelle:
+
+-Functions of multiple arguments.
+PM: waiting for backend support
+Zenon: waiting for Isabelle, not sure how much work there will be
+Isabelle: to be done
+
+-Complex EXCEPT expressions such as:
+
+    [f EXCEPT ![u] = x, ![v] = y]  (* multiple exceptions *)
+    [f EXCEPT ![u][v] = x]         (* multiple arguments to exception *)
+    [f EXCEPT ![u] = @ + 1]        (* @ expressions *)
+
+PM: simplifies into basic EXCEPT forms using rules on 
+    page 304 of TLA+ book. This is suboptimal in the long
+    run because this simplification is not checked by
+    Isabelle/TLA+.
+    2013-11-07 (SM): I believe EXCEPT forms are now fully supported, please check
+    and either delete item or explain what should be done.
+Zenon: nothing to do (depend on PM)?
+Isabelle: nothing to do (depend on PM)?    
+
+-------------------------------------------------------
+NUMBERS
+
+-Real Numbers
+  Currently not supported by any backend. Could easily be added to SMT.
+PM: waiting for backend support
+Zenon: not supported
+Isabelle: not supported
+-------------------------------------------------------
+MISCELLANEOUS CONSTRUCTS
+
+- INSTANCE
+PM: in progress
+Zenon & Isabelle: no plans (rely on PM)
+
+- RECURSIVE operator definitions
+    Not supported in initial release.
+-------------------------------------------------------
+PROOF CONSTRUCTS
+
+-  Operators like NEW P(_) in an ASSUME/PROVE 
+PM:
+  The following ALREADY works fine.
+
+     THEOREM ASSUME NEW P(_), NEW Q(_), NEW R,
+                    \A x : P(x) => R,
+                    \A x : Q(x) => R
+             PROVE \A x : P(x) \/ Q(x) => R
+     OBVIOUS
+
+  What does not work and CANNOT work in a first order system is a
+  theorem such as:
+
+     THEOREM ASSUME NEW x,
+                    ASSUME NEW P(_) PROVE P(x)
+             PROVE x # x
+     OBVIOUS
+
+  2013-11-07 (SM): This actually works (proved by Isabelle). I believe we can
+                   delete this item.
+Zenon: This will need a major rework to add higher-order
+Isabelle:  Nothing to do (any free symbols are implicitly universally
+  quantified)
+
+- Using level of defined operators.  For example, this
+  does not work
+
+        f == 42
+        THEOREM f' = f
+        OBVIOUS
+
+PM: Currently works when definition of f is expanded. Whether this should be required or
+    not is an issue for the action front end.
+Zenon: rely on PM
+Isabelle: rely on PM
+
+- STATE, ACTION, TEMPORAL declarations in ASSUME/PROVEs
+   Currently, the PM declares an error if it finds such a 
+   declaration.
+PM: To be done by appropriate front ends.
+Zenon: rely on PM?
+Isabelle: Extension to temporal logic will handle temporal formulas.
+
+- USE/HIDE MODULE 
+PM:       in progress
+Zenon:    Nothing to do?
+Isabelle: Nothing to do (rely on PM)
+-------------------------------------------------------
+ACTION OPERATORS
+- ENABLED
+  To be handled by specific front end.
+
+\cdot (action composition)
+  To be handled by specific front end?
+-------------------------------------------------------
+TEMPORAL OPERATORS
+  To be handled by specific front end(s)
+-------------------------------------------------------
+STANDARD MODULES
+
+MODULE Naturals
+MODULE Integers
+
+- Integer arithmetic is implemented in particular in the SMT front end, with full
+  support for linear integer arithmetic.
+
+- * and ^ are available in Isabelle and SMT but with little automation.
+
+- \div and % are available in Isabelle and SMT but with little automation.
+
+- .. is fully supported by SMT. To be done in Isabelle.
+
+MODULE Sequences
+- All operators (except SelectSeq and SubSeq?) are defined in the Isabelle and SMT
+  backends. Theorems are available through MODULE SequencesTheorems.
+
+MODULE FiniteSets
+
+- Theorems are available through MODULE FiniteSetTheorems.
+
+MODULE TLC
+- :>, @@
+PM: waiting for Zenon
+Zenon: need to add rules
+Isabelle: fully supported
+
+- Permutations, SortSeq
+To be supported through a standard module?
+
+
+MODULE Reals
+- Not supported by any backend.
+
+
+MODULE Bags
+- Initial draft of standard module for theorems, to be consolidated.
+
+MODULE RealTime
+- No support.
+
+-------------------------------------------------------
+ERRORS
+  Currently, error reporting is pretty bad.  
+PM: in progress
+Zenon: not sure how and what to improve
+Isabelle: Nothing much can be done?
+ -> For auto and simp it would be useful to display the simplified
+    goal to the user when these methods terminate without solving the
+    goal. NB: "by auto" will just fail if the proof doesn't succeed,
+    but if one writes "apply auto", Isabelle prints the simplified goal
+    ("done" then finishes the proof if there is nothing left to prove).
+
+       I've tried this before. In non-interactive mode (e.g., with
+       use_thy, as we currently use), apply auto doesn't print
+       anything. -- Kaustuv

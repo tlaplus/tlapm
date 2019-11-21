@@ -1,0 +1,57 @@
+#!/bin/sh
+# Copyright (C) 2011  INRIA and Microsoft Corporation
+
+
+BASEDIR="`pwd`"
+TOOLDIR="$BASEDIR/TOOLS"
+ARGS="$BASEDIR/../library"
+
+if [ "$1" = "smt_tests" ]
+  then export ARGS="$ARGS --method smt"
+fi
+
+export TLAPM="$BASEDIR/../tlapm -I $ARGS"
+export LOGFILE="$BASEDIR/tests.log"
+
+echo "###### `date '+%Y-%m-%d %H:%M:%S'` $0 $@" >>"$LOGFILE"
+
+find "$1" -name '*.tlaps' -prune -o -name '*_test.tla' -print | (
+
+  total=0
+  success=0
+  fail=0
+
+  while read f; do
+    total=`expr $total + 1`
+    printf "  %s " "$f"
+    export FILE="`basename $f`"
+    export DIR="`dirname $f`"
+    echo "    $f" >>"$LOGFILE"
+    echo | (cd $DIR; $TOOLDIR/do_one_test "$FILE" "$TOOLDIR/separator" \
+                                          "$FILE.out" "$FILE.err" \
+                                          >"$FILE.out" 2>"$FILE.err")
+    case $? in
+      0) echo ok
+         success=`expr $success + 1`
+         rm -f "$f.out" "$f.err"
+         ;;
+      *) echo FAILED
+         fail=`expr $fail + 1`
+         ;;
+    esac
+    rm -rf ${f}ps
+  done
+
+  echo
+  echo "total:   $total"
+  echo "success: $success"
+  echo "failure: $fail"
+
+  case $fail in
+    0) exit 0;;
+    *) echo
+       echo "**** WARNING: SOME TESTS FAILED ****"
+       echo
+       exit 3;;
+  esac
+)

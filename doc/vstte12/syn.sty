@@ -1,0 +1,238 @@
+%% -*- mode: LaTeX; TeX-master: t; -*-
+
+%%  Copyright (C) 2004 Kaustuv Chaudhuri <kaustuv@cmu.edu>
+%%
+%%  This library is free software; you can redistribute it and/or
+%%  modify it under the terms of the GNU Lesser General Public
+%%  License as published by the Free Software Foundation; either
+%%  version 2.1 of the License, or (at your option) any later version.
+%%
+%%  This library is distributed in the hope that it will be useful,
+%%  but WITHOUT ANY WARRANTY; without even the implied warranty of
+%%  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+%%  Lesser General Public License for more details.
+%%
+%%  You should have received a copy of the GNU Lesser General Public
+%%  License along with this library; if not, write to the Free Software
+%%  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
+%%
+
+%%  To use:
+%% 
+%%  Have a whole bunch of defs in the preamble or wherever. There are
+%%  two main ways of doing this:
+%% 
+%%  \sdef{thing}
+%%    and
+%%  \snewcommand{thing}
+%% 
+%%  One gives TeX semantics and the other LaTeX semantics.
+%% 
+%%  For example:
+%% 
+%%  \sdef{->}{\implies}
+%%  \sdef{&&}{\wedge}
+%%  \sdef{++}{\vee}
+%%  \sdef{forall}#1.{\forall #1.\ }
+%%  \sdef{exists}#1.{\exists #1.\ }
+%%  \sdef{top}{\top}
+%%  \sdef{false}{\bot}
+%% 
+%%  Then, in any part of the text you can just say \syn{foo}, and foo will be tokenized
+%%  using your sdefinitions.
+%% 
+%%  Don't use these for large definitions, because it is really slow -- similar to the
+%%  verbatim style in normal LaTeX.
+%% 
+%%  There is a commented out example at the end of the file.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{syn}[2004/02/20]
+
+\newif\if@synwarn \@synwarnfalse
+\newif\if@syndbg  \@syndbgfalse
+
+\RequirePackage{xspace}
+\RequirePackage{amsmath}
+
+\DeclareOption{debug}{\@syndbgtrue}
+\DeclareOption{warnings}{\@synwarntrue}
+
+\ProcessOptions
+
+\if@syndbg
+  \def\syn@debug#1{\typeout{#1}}
+\else
+  \def\syn@debug#1{}
+\fi
+
+\let\syn@EOT\relax              % end of tape
+
+% actually start processing
+\def\syn#1{{\catcode`\&=11\syn@do#1\syn@EOT\catcode`\&=4}\xspace}
+
+\newcount\syn@par               % count groups
+
+\newtoks\syn@twin               % the read ahead window
+\newtoks\syn@taccum             % the accumulated translation
+
+% the driver
+\def\syn@do{%
+\syn@twin={}\syn@taccum={}%
+\let\syn@done=\syn@ret%
+\syn@par=0%
+\futurelet\syn@c\syn@start}
+
+% final continuation
+\def\syn@ret{\syn@debug{DONE: '\the\syn@taccum'}\begingroup\the\syn@taccum\endgroup}
+
+% interjections
+\let\inter\relax
+
+% the main iteration loop
+% the implementation is basically a glorified Turing Machine.
+%
+% yuck.
+\def\syn@start{%
+\ifcat\noexpand\syn@c\bgroup\syn@debug{match1}\let\syn@next=\syn@bgroup\else%
+\ifcat\noexpand\syn@c\space\syn@debug{match3}\let\syn@next=\syn@space\else%
+\ifx\syn@c\syn@EOT\syn@debug{match4}\let\syn@next=\syn@end\else%
+\ifx\syn@c'\syn@debug{stopchar: tick}\let\syn@next=\syn@stop\else%
+\ifx\syn@c_\syn@debug{stopchar: sub}\let\syn@next=\syn@stop\else%
+\ifx\syn@c^\syn@debug{stopchar: sup}\let\syn@next=\syn@stop\else%
+\ifx\syn@c,\syn@debug{stopchar: comma}\let\syn@next=\syn@stop\else%
+\ifx\syn@c(\syn@debug{stopchar: lparen}\let\syn@next=\syn@stop\else%
+\ifx\syn@c)\syn@debug{stopchar: rparen}\let\syn@next=\syn@stop\else%
+% \ifx\syn@c[\syn@debug{stopchar: lbrack}\let\syn@next=\syn@stop\else%
+% \ifx\syn@c]\syn@debug{stopchar: rbrack}\let\syn@next=\syn@stop\else%
+\ifcat\noexpand\syn@c\relax\syn@debug{match8}\let\syn@next=\syn@stop\else% control
+\syn@debug{match9}\let\syn@next=\syn@append%
+\fi\fi\fi\fi\fi\fi\fi\fi\fi\fi%\fi\fi%
+\syn@debug{^^I [STATE: syn@twin = '\the\syn@twin'; syn@taccum = '\the\syn@taccum']}%
+\syn@next%
+}
+
+\def\syn@cont{\futurelet\syn@c\syn@start}
+
+\def\syn@append#1{\syn@debug{append: #1}\syn@twin=\expandafter{\the\syn@twin#1}\syn@cont}
+
+% read a group; if a {{foo}} is seen, then foo is used *outside* the syntax rule;
+% otherwise \syn is called recursively
+\def\syn@bgroup#1{\syn@debug{bgroup: ^^I[#1]}\syn@@bgroup\syn@EOT#1\syn@EOT}
+\def\syn@@bgroup\syn@EOT{\@ifnextchar\bgroup\syn@asis\syn@@@bgroup}
+\def\syn@asis#1\syn@EOT{\syn@upd\syn@grow{#1}\syn@cont}
+\def\syn@@@bgroup#1\syn@EOT{\syn@debug{real bgroup: #1}\syn@upd\syn@grow{{\syn{#1}}}\syn@cont}
+
+% reading a space is tricky. We don't want to lose the grouping that might follow,
+% so we have to explicitly check if the next thing is a group
+\def\syn@space{\syn@debug{space}\syn@upd\@ifnextchar\bgroup\syn@@space@g\syn@@space@nog}
+\def\syn@@space@g#1{\syn@debug{^^I g-arg = '\noexpand #1'}\syn@cont{#1}}
+
+% the no-group case is also sensitive if there is no argument, which can only happen
+% if there is a } after it (since the whole string is terminated by \syn@EOT).
+\def\syn@@space@nog{\syn@debug{^^I nog-check}\@ifnextchar\egroup\syn@cont\syn@@space@@nog}
+\def\syn@@space@@nog#1{\syn@debug{^^I nog-arg = '\noexpand #1'}\syn@cont#1}
+
+% handle stop characters and end
+%% \def\syn@stop{\futurelet\syn@stopchar\syn@@stop}
+%% \def\syn@@stop{\syn@debug{stop: '\syn@stopchar'}%
+%% \syn@upd%
+%% \expandafter\syn@grow\syn@stopchar%
+%% \syn@cont}
+
+\def\syn@stop#1{\syn@debug{stop: '\noexpand #1'}%
+\syn@upd%
+\syn@grow{#1}%
+\syn@cont}
+
+\def\syn@end\syn@EOT{\syn@debug{end}%
+\syn@upd%
+\syn@done}
+
+\def\syn@grow#1{%
+\syn@twin=\expandafter{\the\syn@twin#1}%
+\syn@@upd%
+}
+
+% update the accumulator after lookup
+\def\syn@upd{%
+\expandafter\ifx\csname empty\the\syn@twin\endcsname\empty\else%
+\expandafter\let\expandafter\syn@check\csname S!\the\syn@twin\endcsname%
+\ifx\syn@check\relax%
+\if@synwarn\PackageWarning{syn}{mnemonic '\the\syn@twin' unknown}\fi%
+\edef\syn@tmp{\the\syn@taccum\the\syn@twin}%
+\syn@taccum=\expandafter{\syn@tmp}%
+\else%
+\syn@twin=\expandafter{\csname S!\the\syn@twin\endcsname}%
+\edef\syn@tmp{\the\syn@taccum\the\syn@twin}%
+\syn@taccum=\expandafter{\syn@tmp}%
+\fi%
+\syn@twin={}%
+\syn@debug{update: syn@b = '\the\syn@taccum'}%
+\fi%
+}
+
+% update the accumulator without lookup
+\def\syn@@upd{%
+\edef\syn@tmp{\the\syn@taccum\the\syn@twin}%
+\syn@taccum=\expandafter{\syn@tmp}%
+\syn@twin={}%
+\syn@debug{update[GROWTH]: syn@b = '\the\syn@taccum'}%
+}
+
+% helpers to define the various syntax elements
+\def\sdef#1{\expandafter\gdef\csname S!#1\endcsname}
+\def\snewcommand#1{\expandafter\providecommand\csname S!#1\endcsname}
+
+
+% use " for syns
+
+\newcount\syn@oldcode
+\syn@oldcode=\catcode`\"
+
+\let\syn@dq="
+\catcode`" \active
+
+\def"{\@ifnextchar"{\@firstoftwo{\syn@dq}}\syn@inline}
+\def\syn@inline#1"{\ensuremath{\syn{#1}}}
+
+% allow for temporary disabling.
+% since this is done with catcodes, {\syndisable foo} has the right
+% scoping behaviour for foo
+\def\synenable{\catcode`" \active}
+\def\syndisable{\catcode`" \syn@oldcode}
+
+\synenable                      %enabled by default
+
+% EOP
+
+%%% an example document
+
+%% \documentclass{article}
+%%
+%% \usepackage{syn}
+%%
+%% \sdef{&&}{\wedge}
+%% \sdef{->}{\rightarrow}
+%%
+%% \sdef{<<}{\left\langle}
+%% \sdef{>>}{\right\rangle}
+%% \sdef{lam}#1.{\lambda #1.\ }
+%%
+%% \sdef{|-}{\vdash}
+%%
+%% \usepackage{proof}
+%%
+%% \begin{document}
+%%
+%% $$
+%% \vcenter{
+%%   \infer["&&"I]{"\Gamma ; \Delta |- << M, N >> : A && B"}{"\Gamma ; \Delta |- M : A" & "\Gamma ; \Delta |- N : B"}
+%% }$$
+%%
+%% $$
+%% \vcenter{
+%%   \infer["->"I]{"\Gamma ; \Delta |- lam x. M : A -> B"}{"\Gamma ; \Delta, x : A |- M : B"}
+%% }$$
+%%
+%% \end{document}

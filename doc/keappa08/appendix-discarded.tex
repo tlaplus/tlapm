@@ -1,0 +1,967 @@
+%%% -*- mode: LaTeX; TeX-master: "main.tex"; -*-
+
+\ifx\master\undefined
+\documentclass[a4paper]{easychair}
+\usepackage{submission}
+\begin{document}
+{\let\master\relax\input{frontmatter}}
+\fi
+%%%% PLEASE DO NOT EDIT ABOVE THIS LINE
+
+\clearpage
+\appendix
+
+\section{The \PM Specification}
+\label{apx}
+
+We shall now give a somewhat formal declarative specification of the
+\PM and prove the key correctness theorem~\ref{thm:meaning} (a
+generalization of which appears as Thm.~\ref{thm:correctness}).
+
+\subsection{Context Management}
+\label{apx:context}
+
+In this section we shall provide the details of all context management
+operations performed by the \PM. First, let us recall the main
+syntactic categories.
+
+\begin{defn}[Meta-syntax] \label{defn:syntax}
+  %
+  \emph{Assertions}, \emph{contexts}, \emph{assumptions} and
+  \emph{definables} have the following syntax, where "e" ranges over
+  \tlatwo expressions, "x" over \tlatwo identifiers, "\vec x" over
+  lists of \tlatwo identifiers, and "o" over \tlatwo operator names
+  %
+  \begin{quote}
+    \begin{tabbing}
+      (Assertions) \SP \= "\phi" \SP \LSP \= "::=" \ \= "\obl{\G ||- e}" \\
+      (Contexts) \> "\G, \D, \dotsc" \> "::=" \> "\cdot OR \G, h" \\
+      (Assumptions) \> "h" \> "::=" \> "\NEW x OR o \DEF \delta OR \phi OR \hide{o \DEF \delta} OR \hide{\phi}" \\
+      (Definables) \> "\delta" \> "::=" \> "\phi OR \LAMBDA\ \vec x : e"
+    \end{tabbing}
+  \end{quote}
+  %
+  The expression after "||-" in an assertion is called its
+  \emph{conclusion}.  Hidden assumptions are written inside square
+  brackets "\hide{\ }". As usual, "\obl{\cdot ||- e}" is written
+  simply as "e", and context adjunction is written with commas (that
+  is, "\G, \D" stands for "\G, h_1, ..., h_n" if "\D" is "\cdot, h_1,
+  ..., h_n"). The assumptions "\NEW x", "o \DEF \delta" and "\hide{o
+    \DEF \delta}" bind the identifiers "x" and "o" respectively to
+  their right in their contexts and conclusions. We say that "x \in
+  \G" if "x" is bound in "\G", and "x \notin \G" if "x" is not bound
+  in "\G".
+\end{defn}
+
+As mentioned in section~\ref{sec:backend.pm}, hidden facts and
+definitions are filtered out of assertions before an assertion is sent
+to the back-end. Hidden assertions are simply deleted, while hidden
+operator definitions "\hide{o \DEF \delta}" are treated as if they
+were replaced with declarations "\NEW o". The precise embedding into
+Isabelle/\tlaplus propositions is as follows.
+
+\begin{defn} \label{defn:isabelle-embedding}
+  %
+  The Isabelle/\tlaplus \emph{embedding} "\isa{-}" of assertions,
+  contexts and definables is as follows:
+  %
+  \begin{align*}
+    && \isa{"\G ||- e"} &= "\isa{\G} e" \\
+    \isa{"\G, \NEW x"} &= "\isa{\G} \And x." & \LSP
+    \isa{"\G, o \DEF \delta"} &= \isa{\G} "o \equiv \isa{\delta} ==>" & \LSP
+    \isa{"\G, \phi"} &= "\isa{\G} \isa{\phi} ==>" \\
+    \isa{\cdot} &= &
+    \isa{"\G, \hide{o \DEF \delta}"} &= \isa{\G} \And o. & \LSP
+    \isa{"\G, \hide{\phi}"} &= "\isa{\G}" \\
+    &&\isa{"\LAMBDA\ \vec x : e"} &= "\lambda \vec x.\ e"
+  \end{align*}
+\end{defn}
+
+%\noindent
+For example, "\isa{\NEW P, \obl{\NEW x ||- P(x)} ||- \forall x : P(x)}
+= \And P.\ \left(\And x.\ P(x)\right) ==> \forall x : P(x)". Note that
+the embedding of ordinary \tlatwo expressions is the identity because
+Isabelle/\tlaplus contains \tlatwo expressions as part of its object
+syntax. In practice, some aspects of \tlatwo expressions, such as the
+indentation-sensitive conjunction and disjunction lists, are sent by
+the \PM to Isabelle using an indentation-insensitive
+encoding. Moreover, as already mentioned, Isabelle/\tlaplus accepts
+only constant level expressions.
+
+\begin{defn}[Truth] \label{defn:true} \mbox{}
+  %
+  The assertion "\obl{\G ||- e}" is said to be \emph{true} if "\isa{\G
+    ||- e}" is a well-typed true proposition of Isabelle/\tlaplus.
+\end{defn}
+
+We state, omitting the trivial proofs, a number of facts about
+assertions in Isabelle/\tlaplus.
+
+\begin{fac}[Definition] \label{thm:definition}
+  % 
+  If "\obl{\G, \NEW o, \D ||- e}" is true, then "\obl{\G, o \DEF
+    \delta, \D ||- e}" is true.
+\end{fac}
+
+\begin{fac}[Instantiation] \label{thm:inst}
+  %
+  If "\obl{\G, \NEW o, \D ||- e}" is true, then "\obl{\G, \D[o :=
+    \delta] ||- e[o := \delta]}" is true.
+\end{fac}
+
+\begin{fac}[Weakening] \label{thm:weaken}
+  %
+  If "\obl{\G, \D ||- e}" is true, then "\obl{\G, h, \D ||- e}" is
+  true.
+\end{fac}
+
+\begin{fac}[Strengthening] \label{thm:delete}
+  %
+  If "\obl{\G, \NEW o, \D ||- e}" or "\obl{\G, o \DEF \delta, \D ||-
+    e}" or "\obl{\G, \hide{o \DEF \delta}, \D ||- e}" is true and "o"
+  is not free in "\obl{\D ||- e}", then "\obl{\G, \D ||- e}" is true.
+\end{fac}
+
+\begin{fac}[Cut] \label{thm:cut}
+  %
+  If "\obl{\G, \D ||- e}" and "\obl{\G, (\D ||- e) ||- f}" are true,
+  then "\obl{\G ||- f}" is true.
+\end{fac}
+
+The \USE/\HIDE \DEFS steps can expose or hide operator definitions in
+the context of their assertion, which we define with the help of the
+\kwd{using} and \kwd{hiding} meta-syntactic keywords respectively.
+
+\begin{defn} \label{defn:use/hide}
+  %
+  If "\G" is a context and "\P" a list of operator names, then:
+  \begin{ecom}
+  \item \emph{"\G" with "\P" marked usable}, written "\G \USING \P",
+    is defined by the following equations.
+    \begin{align*}
+      \G \USING\ \cdot &= \G \\
+      \G \USING \P, o &= \G \USING \P \LSP \text{if } o \notin \G \\
+      \G, \NEW x, \D \USING \P, x &= \G, \NEW x, \D \USING \P \\
+      \G, \hide{o \DEF \delta}, \D \USING \P, o &= \G, o \DEF \delta, \D \USING \P \\
+      \G, o \DEF \delta, \D \USING \P, o &= \G, o \DEF \delta, \D \USING \P
+    \end{align*}
+  \item \emph{"\G" with "\P" marked hidden}, written "\G \HIDING \P",
+    is defined by the following equations:
+    \begin{align*}
+      \G \HIDING\ \cdot &= \G \\
+      \G \HIDING \P, o &= \G \HIDING \P \LSP \text{if } o \notin \G \\
+      \G, \NEW x, \D \HIDING \P, x &= \G, \NEW x, \D \HIDING \P \\
+      \G, \hide{o \DEF \delta}, \D \HIDING \P, o &= \G, \hide{o \DEF \delta}, \D \HIDING \P \\
+      \G, o \DEF \delta, \D \HIDING \P, o &= \G, \hide{o \DEF \delta}, \D \HIDING \P
+    \end{align*}
+  \end{ecom}
+\end{defn}
+
+% \ednote{SM}{I have trouble making sense of (indeed, even parsing) the
+%   lines containing ``$= \Omega$'' (also, $\Omega$ has not been
+%   introduced as one of the syntactic categories).\\
+% DD: I removed them as I am quite sure they are leftovers from a
+% change of notation.}
+%
+% oops,and thanks. -- KC
+
+\noindent
+The effect of \USE/\HIDE \DEFS is characterized by means of the
+following lemma.
+
+\begin{lem}[Using/Hiding Definitions] \label{thm:use/hide-defs} \mbox{}
+  %
+  \begin{ecom}
+  \item If "\obl{\G ||- e}" is true then
+    "\obl{\G \USING \P ||- e}" is true.
+  \item If "\obl{\G \HIDING \P ||- e}" is true then
+    "\obl{\G ||- e}" is true.
+  \end{ecom}
+\end{lem}
+
+% \ednote{SM}{Simplified the assertions of the preceding lemma, in light
+%   of the following edits. The original versions are still there.}
+%
+% Thanks. I agree with the change. -- KC
+
+\begin{proof}
+  In either case, an immediate consequence of
+  fact~\ref{thm:definition}.
+\end{proof}
+
+\def\refl#1{\bigl\|\,#1\,\bigr\|}
+
+A sequence of binders "\vec \beta" in the \tlatwo expressions "\forall
+\vec \beta : e" or "\exists \vec \beta : e" can be reflected as
+assumptions.
+
+\begin{defn}[Binding Reflection] \label{defn:binding-reflection}
+  %
+  If "\vec \beta" is a list of binders with each element of the form
+  "x" or "x \in e", then the \emph{reflection} of "\vec \beta" as
+  assumptions, written "\refl{\vec \beta}", is given inductively as
+  follows.
+  \begin{align*}
+    \refl{\cdot} &= \cdot &
+    \refl{\vec \beta, x} &= \refl{\vec \beta}, \NEW x &
+    \refl{\vec \beta, x \in e} &= \refl{\vec \beta}, \NEW x, x \in e
+  \end{align*}
+\end{defn}
+
+\subsection{Computing Assertions}
+\label{apx:proof-transformation}
+
+As mentioned in section~\ref{sec:obligations}, the two claim forms
+"\OBVIOUS : \obl{\G ||- e}" and "\OMITTED : \obl{\G ||- e}" are said
+to be primitive. The \PM performs two operations on \tlatwo proofs and
+assertions, \textit{checking} and \textit{transformation}, in order to
+determine the set of primitive claims for a claim. Each procedure is
+declaritively specified below; note that the specifications are
+mutually recursive.
+
+\begin{defn}[Checking] \label{defn:checking}
+  % 
+  The \tlatwo proof "\pi" \emph{checks} the assertion "\obl{\G ||- e}"
+  if there is a derivation of "\pi : \obl{\G ||- e}" using the
+  following inference rules whose leaves are primitive claims.
+  %
+  \begin{gather*}
+    \I[\BY]{"\BY\ \Phi\ \DEFS\ \P : (\G
+      ||- e)"}
+      {"\s{0}.\ \USE\ \Phi\ \DEFS\ \P" : "(\G ||- e) --> (\D ||- f)"
+       &
+       "\OBVIOUS : (\D ||- f)"}
+    \SP
+    \I[\QED]{"\sigma.\ \QED\ \PROOF\ \pi : (\G ||- e)"}
+      {"\pi : (\G ||- e)"}
+    \\[1ex]
+    \I[non-\QED ("n > 1")]{"\sigma_1.\,\tau_1\ \ \sigma_2.\,\tau_2\ \ \dotsb\ \ \sigma_n.\,\tau_n : (\G ||- e)"}
+      {"\sigma_1.\,\tau_1 : (\G ||- e) --> (\D ||- f)"
+       &
+       "\sigma_2.\,\tau_2\ \dotsb\ \sigma_n.\,\tau_n : (\D ||- f)"}
+  \end{gather*}  
+\end{defn}
+
+\ednote{SM}{Why is there no step number in the conclusion of the \BY{}
+  rule? I presume that the use of $\s{0}$ in the premise is
+  arbitrary?}
+
+\ednote{KC}{I don't understand your first question. A \BY is not a
+  proof step but a proof. The terminology I am using, which I believe
+  is also Leslie's terminology, is that a proof "\pi" of level "n",
+  written "\pi(n)", is defined by the following syntax (roughly):
+  \begin{quote} \itshape
+    \begin{tabbing}
+      (proofs) \hspace{4em}  \= "\pi(n)" \quad \= "::=" \quad \= "\OBVIOUS OR \OMITTED OR \BY\ \Phi\ \DEFS\ \P OR \Pi(n)" \\[1ex]
+      (non-leaf proofs) \> "\Pi(n)" \> "::=" \> "\sigma(n).\ \QED\ \PROOF\ \pi(m)" \` ("m > n") \\
+                   \>          \> "\ \ |"  \> "\sigma(n).\ \tau(n)\quad \Pi(n)" \\[1ex]
+      (proof steps) \> "\tau(n)" \> "::=" \> "\USE\ \Phi\ \DEFS\ \P OR \HIDE\ \Phi\ \DEFS\ \P OR \DEFINE\ o \DEF e" \\
+                                               \` (proof context mutation) \\[1ex]
+                    \>         \> "\ \ |" \> "\HAVE\ e OR \TAKE\ \vec \beta OR \WITNESS\ \vec e" \` (steps without subproofs) \\[1ex]
+                    \>         \> "\ \ |" \> "\obl{\G ||- e}\ \PROOF\ \pi(m) OR \SUFFICES\ \obl{\G ||- e}\ \PROOF\ \pi(m)" \\
+                    \>         \> "\ \ |" \> "\PICK\ \vec \beta : e\ \PROOF\ \pi(m)" \` (steps with subproofs, "m > n") \\[1ex]
+      (begin-step tokens) \> "\sigma(n)" \> "::=" \> "\s n OR \s n l"
+    \end{tabbing}
+  \end{quote}
+  If it helps to make the text clearer, we can add a definition such
+  as the above earlier on, especially now that the table of \tlatwo
+  proof constructs has been removed from
+  section~\ref{sec:proof-language}.
+
+  \medskip
+  On the second question, yes, the 0 is arbitrary.}
+
+
+\begin{defn}[Transformation] \label{defn:transform}
+  %
+  The \tlatwo proof step "\sigma.\,\tau" \emph{transforms} the
+  assertion "\obl{\G ||- e}" into "\obl{\D ||- f}" if there is a
+  derivation of "\sigma.\ \tau : \obl{\G ||- e} --> \obl{\D ||- f}"
+  (called a \emph{transformation}) using the following inference rules
+  whose leaves are primitive claims.
+  %
+  \begin{gather*}
+    \I[\USE\ \DEFS]{"\sigma.\ \USE\ \Phi\ \DEFS\ \P : \obl{\G ||- e} --> \obl{\D ||- f}"}
+      {"\sigma.\ \USE\ \Phi : \obl{\G \USING \P ||- e} --> \obl{\D ||- f}"}
+    \\[1ex]
+    \I[\HIDE\ \DEFS]{"\sigma.\ \HIDE\ \Phi\ \DEFS\ \P : \obl{\G ||- e} --> \obl{\D \HIDING \P ||- f}"}
+       {"\sigma.\ \HIDE\ \Phi : \obl{\G ||- e} --> \obl{\D ||- f}"}
+    \\
+    \I[\DEFINE]{"\sigma.\ \DEFINE\ o \DEF \delta : \obl{\G ||- e} --> \obl{\G, \hide{o \DEF \delta} ||- e}"}
+    \\
+    \I["\USE_0"]{"\sigma.\ \USE\ \cdot : \obl{\G ||- e} --> \obl{\G ||- e}"}
+    \SP
+    \I["\HIDE_0"]{"\sigma.\ \HIDE\ \cdot : \obl{\G ||- e} --> \obl{\G ||- e}"}
+    \\[1ex]
+    \I["\USE_1"]{"\sigma.\ \USE\ \Phi, \obl{\G_0 ||- e_0} : \obl{\G ||- e} --> \obl{\D, \obl{\G_0 ||- e_0} ||- f}"}
+      {"\sigma.\ \USE\ \Phi : \obl{\G ||- e} --> \obl{\D ||- f}"
+       &
+       "\OBVIOUS : \obl{\D, \G_0 ||- e_0}"
+      }
+    \\[1ex]
+    \I["\HIDE_1"]{"\sigma.\ \HIDE\ \Phi, \phi : \obl{\G_0, \phi, \G_1 ||- e} --> \obl{\D ||- f}"}
+      {"\sigma.\ \HIDE\ \Phi : \obl{\G_0, hide{\phi}, \G_1 ||- e} --> \obl{\D ||- f}"}
+    \\
+    \I["\TAKE_0"]{"\sigma.\ \TAKE\ \cdot : \obl{\G ||- e} --> \obl{\G ||- e}"}
+    \LSP
+    \I["\WITNESS_0"]{"\sigma.\ \WITNESS\ \cdot : \obl{\G ||- e} --> \obl{\G ||- e}"}
+    \\[1ex]
+    \I["\TAKE_1"]{"\sigma.\ \TAKE\ u, \vec\beta : \obl{\G ||- \forall x : e} --> \obl{\D ||- f}"}
+      {"\sigma.\ \TAKE\ \vec\beta : \obl{\G, \NEW u ||- e [x := u]} --> \obl{\D ||- f}"}
+    \\[1ex]
+    \I["\TAKE_2"]{"\sigma.\ \TAKE\ u \in T, \vec\beta : \obl{\G ||- \forall x \in S : e} --> \obl{\D ||- f}"}
+      {"\OBVIOUS : \obl{\G ||- S \subseteq T}"
+       &
+       "\sigma.\ \TAKE\ \vec\beta : \obl{\G, \NEW u, u \in T ||- e [x := u]} --> \obl{\D ||- f}"}
+    \\[1ex]
+    \I["\WITNESS_1"]{"\sigma.\ \WITNESS\ w, \W : \obl{\G ||- \exists x : e} --> \obl{\D ||- f}"}
+      {"\sigma.\ \WITNESS\ \W : \obl{\G ||- e [x := w]} --> \obl{\D ||- f}"}
+    \\[1ex]
+    \I["\WITNESS_2"]{"\sigma.\ \WITNESS\ w \in T, \W : \obl{\G ||- \exists x \in S : e} --> \obl{\D ||- f}"}
+      {\begin{array}[b]{c}
+          "\OBVIOUS : \obl{\G ||- T \subseteq S}" \\
+          "\OBVIOUS : \obl{\G ||- w \in T}"
+       \end{array}
+       &
+       "\sigma.\ \WITNESS\ \W : \obl{\G, w \in T ||- e [x := w]} --> \obl{\D ||- f}"}
+    \\[1ex]
+    \I[\HAVE]{"\sigma.\ \HAVE\ g : \obl{\G ||- e => f} --> \obl{\G, g ||- f}"}
+      {"\OBVIOUS : \obl{\G, e ||- g}"}
+    \\[1ex]
+    \I[$\ASSERT_1$]{"\s n.\ \obl{\D ||- f}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\G, \obl{\D ||- f} ||- e}"}
+      {"\pi : \obl{\G, \hide{\lnot e}, \D ||- f}"}
+    \\[1ex]
+    \I[$\ASSERT_2$]{"\s n l.\ \obl{\D ||- f}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\G, \s n l \DEF \obl{\D ||- f}, \hide{\s n l} ||- e}"}
+      {"\pi : \obl{\G, \s n l \DEF \obl{\D ||- f}, \hide{\lnot e}, \D ||- f}"}
+    \\[1ex]
+    \I[\CASE]{"\sigma.\ \CASE\ g\ \PROOF\ \pi : \obl{\G ||- e}
+                     --> \obl{\D ||- f}"}
+      {"\sigma.\ \obl{g ||- e}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\D ||- f}"}
+    \\[1ex]
+    \I[$\SUFFICES_1$]{"\s n.\ \SUFFICES\ \obl{\D ||- f}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\G, \hide{\lnot e}, \D ||- f}"}
+      {"\pi : \obl{\G, \obl{\D ||- f} ||- e}"}
+    \\[1ex]
+    \I[$\SUFFICES_2$]{"\s n l.\ \SUFFICES\ \obl{\D ||- f}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\G, \s n l \DEF \obl{\D ||- f}, \hide{\lnot e}, \D ||- f}"}
+      {"\pi : \obl{\G, \s n l \DEF \obl{\D ||- f}, \hide{\s n l} ||- e}"}
+    \\[1ex]
+    \I[\PICK]{"\sigma.\ \PICK\ \vec\beta : p\ \PROOF\ \pi :
+                \obl{\G ||- e} --> \obl{\G, \refl{\vec \beta}, p ||- e}"}
+      {"\pi : \obl{\G ||- \exists \vec \beta : p}"}
+  \end{gather*}
+\end{defn}
+
+% \ednote{SM}{I marginally rewrote the rules $\USE\ \DEFS$ and $\HIDE\ \DEFS$
+%   to make them easier to read (IMHO). Please check that I didn't blunder.}
+%
+% I agree with this change. Thanks. -- KC
+
+Both the checking and the transformation derivations are
+deterministic: the conclusion of each derivation uniquely determines
+the entire derivation. Recall that in section~\ref{sec:obligations} we
+defined the \textit{proof obligations} of a claim to be the primitive
+claims that jointly imply the assertion of the claim. We now make this
+definition formal.
+
+\begin{defn}[Proof Obligations] \label{defn:obligations} \mbox{}
+  \begin{ecom}
+  \item The \emph{proof obligations} of a claim "\pi : \obl{\G ||- e}"
+    are the set of primitive claims at the leaves of its checking
+    derivation (defn.~\ref{defn:checking}).
+  \item The \emph{proof obligations} of a transformation
+    "\sigma.\,\tau : \obl{\G ||- e} --> \obl{\D ||- e}" are the set of
+    primitive claims at the leaves of its transformation derivation
+    (defn.~\ref{defn:transform}).
+  \end{ecom}
+\end{defn}
+
+\subsection{Correctness}
+\label{apx:correctness}
+
+If the obligations of a claim are true, then the claim itself ought to
+be true (theorem~\ref{thm:meaning}). In this section we shall prove
+this theorem by analysis of the checking and transformation
+derivations. The proof of this theorem will moreover demonstrate how
+to compute a proof of the structural obligation of a claim, which is a
+(meta-)implication from the obligations of a claim to the assertion of
+the claim.
+
+\begin{defn}[Truth of Checking and Transformation] \label{defn:proc-truth} \mbox{}
+  %
+  \begin{ecom}
+  \item The proof obligations "\OBVIOUS : \obl{\G ||- e}" and
+    "\OMITTED : \obl{\G ||- e}" are \emph{true} iff "\obl{\G ||- e}"
+    is true (defn.~\ref{defn:true})
+  \item The claim "\pi : \obl{\G ||- e}" is \emph{true} iff its proof
+    obligations are true.
+  \item The transformation "\sigma.\,\tau : \obl{\G ||- e} --> \obl{\D
+      ||- f}" is \emph{true} iff its proof obligations are true.
+  \end{ecom}
+\end{defn}
+
+We now prove the correctness of our procedure for generating primitive
+claims; Thm.~\ref{thm:meaning} is just assertion~1 of the following
+theorem.
+
+\begin{thm}[Correctness] \label{thm:correctness} \mbox{}
+  %
+  \begin{ecom}
+  \item If "\pi : \obl{\G ||- e}" is true, then "\obl{\G ||- e}" is
+    true.
+  \item If "\sigma.\,\tau : \obl{\G ||- e} --> \obl{\D ||- f}" is true and
+    "\obl{\D ||- f}" is true, then "\obl{\G ||- e}" is true.
+  \end{ecom}
+\end{thm}
+
+\ednote{SM}{Thm.~\ref{thm:meaning} moreover requires that
+  "\pi : \obl{\G ||- e}" be a meaningful claim.\\
+  Suggestion: if we omitted
+  Def.~\ref{defn:proc-truth} and replaced
+  ``"\pi : \obl{\G ||- e}" is true'' by ``the
+  proof obligations generated by "\pi : \obl{\G ||- e}" are true'',
+  introducing the former as a shorthand for the latter in the proof
+  (and similarly for assertion~2),
+  the correspondence between the assertions of the two theorems would
+  be more obvious.}
+
+\ednote{KC}{As far as I can tell, defn.~\ref{defn:proc-truth} does
+  exacly what you propose. Since defns.~\ref{defn:checking} and
+  \ref{defn:transform} do not specify a ``generation'' of proof
+  obligations as such, I say ``the proof obligations of a claim''
+  (defn.~\ref{defn:obligations}).
+
+  \medskip I agree about the further requirement that the claim is
+  meaningful. I implicitly make use of this assumption in the form of
+  the i.h. in, for example, \s{2}{10} below. I shall add it right
+  after this commit.}
+
+\begin{proof}
+  Let "\DD" be the checking derivation in (1) and let "\EE" be the transformation
+  derivation in (2). The proof will be by lexicographic
+  induction on the structures of "\DD" and "\EE", with a true
+  transformation allowed to justify a true claim.
+
+  \begin{ecom}[{$\s1$}1.]
+  \item If "\pi : \obl{\G ||- e}" is true, then "\obl{\G ||-
+      e}" is true.
+    %
+    \begin{ecom}[{$\s2$}1.] \setlength{\itemsep}{6pt}
+    \item \Case "\pi" is "\BY\ \Phi\ \DEFS\ \P", \ie,
+      \begin{gather*}
+        \DD = 
+        \Im[\BY.]{"\BY\ \Phi\ \DEFS\ \P : (\G ||- e)"}
+           {\deduce{"\s{0}.\ \USE\ \Phi\ \DEFS\ \P" : "(\G ||- e) --> (\D ||- f)"}{\EE_0}
+            &
+            "\OBVIOUS : (\D ||- f)"}
+      \end{gather*}
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\D ||- f}" is true
+        %
+        \by defn.~\ref{defn:proc-truth}.
+      \item If "\obl{\D ||- f}" then "\obl{\G ||- e}" is true
+        %
+        \by i.h. (induction hypothesis) on "\EE_0".
+      \item \Qed
+        %
+        \by \s31, \s32.
+      \end{ecom}
+
+    \item \Case "\pi" is "\sigma.\, \QED\ \PROOF\ \pi_0", \ie, 
+      $
+      \DD =
+      \Im[\QED.]{"\sigma.\ \QED\ \PROOF\ \pi_0 : (\G ||- e)"}
+         {\deduce{"\pi_0 : (\G ||- e)"}{\DD_0}}$
+      %
+      \by i.h. on "\DD_0".
+
+    \item \Case "\pi" is "\sigma_1.\,\tau_1\ \ \sigma_2.\,\tau_2\ \ \dotsb\ \ \sigma_n.\,\tau_n" with "n > 1", \ie,
+      \begin{gather*}
+        \DD =
+        \Im[non-\QED.]{"\sigma_1.\,\tau_1\ \ \sigma_2.\,\tau_2\ \ \dotsb\ \ \sigma_n.\,\tau_n : (\G ||- e)"}
+          {\deduce{"\sigma_1.\,\tau_1 : (\G ||- e) --> (\D ||- f)"}{\EE_0}
+           &
+           \deduce{"\sigma_2.\,\tau_2\ \dotsb\ \sigma_n.\,\tau_n : (\D ||- f)"}{\DD_0}
+          }
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item [\s31.] "\obl{\D ||- f}" is true
+        % 
+        \by i.h. on "\DD_0".
+      \item [\s32.] If "\obl{\D ||- f}" is true, then "\obl{\G ||- e}"
+        is true
+        % 
+        \by i.h. on "\EE_0".
+      \item [\s33.] \Qed
+        %
+        \by \s31, \s32.
+      \end{ecom}
+    \item \Qed \by \s21, \s22, \s23.
+    \end{ecom}
+
+  \item If "\sigma.\,\tau : \obl{\G ||- e} --> \obl{\D ||- f}" is true
+    and "\obl{\D ||- f}" is true, then "\obl{\G ||- e}" is true.
+    %
+    \begin{ecom}[{$\s2$}1.] \setlength{\itemsep}{6pt}
+
+    \item \Case "\tau" is "\USE\ \Phi\ \DEFS\ \P", \ie,
+      \begin{gather*}
+        \EE =
+        \Im[\USE\ \DEFS.]{"\sigma.\ \USE\ \Phi\ \DEFS\ \P : \obl{\G ||- e} --> \obl{\D ||- f}"}
+          {\deduce{"\sigma.\ \USE\ \Phi : \obl{\G \USING \P ||- e} --> \obl{\D ||- f}"}{\EE_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item If "\obl{\D ||- f}" is true then "\obl{\G \USING \P ||- e}" is true
+        %
+        \by i.h. on "\EE_0".
+      \item \Qed
+        %
+        \by \s31, lemma~\ref{thm:use/hide-defs}.
+      \end{ecom}
+
+% \ednote{SM}{I edited this step so that it agrees with the rewritten rules.}
+%
+% OK. -- KC
+
+    \item \Case "\tau" is "\HIDE\ \Phi\ \DEFS\ \P", \ie,
+      \begin{gather*}
+        \EE =
+        \Im[\HIDE\ \DEFS.]{"\sigma.\ \HIDE\ \Phi\ \DEFS\ \P : \obl{\G ||- e} --> \obl{\D \HIDING \P ||- f}"}
+           {\deduce{"\sigma.\ \HIDE\ \Phi : \obl{\G ||- e} --> \obl{\D ||- f}"}{\EE_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item If "\obl{\D ||- f}" is true then "\obl{\G ||- e}" is true
+        %
+        \by i.h. on "\EE_0".
+      \item If "\obl{\D \HIDING \P ||- f}" is true then "\obl{\D ||- f}" is true
+        %
+        \by lemma~\ref{thm:use/hide-defs}.
+      \item \Qed
+        %
+        \by \s31, \s32.
+      \end{ecom}
+
+\ednote{SM}{I edited this step so that it agrees with the rewritten rules.}
+
+    \item \Case "\tau" is "\DEFINE\ o \DEF \delta", \ie, 
+      \begin{gather*}
+        \EE =
+        \Im[\DEFINE.]{"\sigma.\ \DEFINE\ o \DEF \delta : \obl{\G ||- e} --> \obl{\G, \hide{o \DEF \delta} ||- e}"}{}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "o" is not free in "e"
+        %
+        \by \tlatwo syntactic restrictions.
+\ednote{SM}{This comes as somewhat of a surprise.}
+\ednote{KC}{I agree. Strictly speaking, the \PM does not enforce the \tlaplus bound variable freshness restriction. It avoids inadvertent capture by shifting (using de Bruijn terminology) "e" by one in the result of the transformation. It seemed best to me to avoid going down this explanatory detour, but suggestions for improvement will be gratefully accepted.}
+      \item \Qed
+        %
+        \by \s21, lemma~\ref{thm:delete}.
+      \end{ecom}
+
+    \item \Case "\tau" is "\USE\ \cdot", \ie,
+      $
+      \EE = 
+      \Im["\USE_0".]{"\sigma.\ \USE\ \cdot : \obl{\G ||- e} --> \obl{\G ||- e}"}{}
+      $
+      \Trivial
+
+    \item \Case "\tau" is "\HIDE\ \cdot", \ie,
+      $
+      \EE = 
+      \Im["\HIDE_0".]{"\sigma.\ \HIDE\ \cdot : \obl{\G ||- e} --> \obl{\G ||- e}"}{}
+      $
+      \Trivial
+
+    \item \Case "\tau" is "\USE\ \Phi, \phi", \ie,
+      \begin{gather*}
+        \EE = 
+        \Im["\USE_1"]{"\sigma.\ \USE\ \Phi, \obl{\G_0 ||- e_0} : \obl{\G ||- e} --> \obl{\D_0, \obl{\G_0 ||- e_0} ||- f}"}
+          {\deduce{"\sigma.\ \USE\ \Phi : \obl{\G ||- e} --> \obl{\D_0 ||- f}"}{\EE_0}
+           &
+           "\OBVIOUS : \obl{\D_0, \G_0 ||- e_0}"
+          }      
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\D_0, \G_0 ||- e_0}" is true
+        %
+        \by defn.~\ref{defn:proc-truth}.
+      \item "\obl{\D_0 ||- f}" is true
+        %
+        \by \s31, cut (fact~\ref{thm:cut}).
+      \item If "\obl{\D_0 ||- f}" is true, then "\obl{\G ||- e}" is true
+        %
+        \by i.h. on "\EE_0".
+      \item \Qed
+        %
+        \by \s32, \s33.
+      \end{ecom}
+
+    \item \Case "\tau" is "\HIDE\ \Phi, \phi", \ie,
+      \begin{gather*}
+        \EE =
+        \Im["\HIDE_1".]{"\sigma.\ \HIDE\ \Phi, \phi : \obl{\G_0, \phi, \G_1 ||- e} --> \obl{\D ||- f}"}
+           {\deduce{"\sigma.\ \HIDE\ \Phi : \obl{\G_0, hide{\phi}, \G_1 ||- e} --> \obl{\D ||- f}"}{\EE_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item If "\obl{\D ||- f}" is true, then "\obl{\G_0, \hide{\phi}, \G_1 ||- e}" is true
+        %
+        \by i.h. on "\EE_0".
+      \item If "\obl{\G_0, \hide{\phi}, \G_1 ||- e}" is true, then
+        "\obl{\G_0, \phi, \G_1 ||- e}" is true
+        %
+        \by defn.~\ref{defn:true}, weakening (fact~\ref{thm:weaken}).
+      \item \Qed
+        %
+        \by \s31, \s32.
+      \end{ecom}
+
+    \item \Case "\tau" is "\TAKE\ \cdot", \ie,
+      $
+      \EE = 
+      \Im["\TAKE_0".]{"\sigma.\ \TAKE\ \cdot : \obl{\G ||- e} --> \obl{\G ||- e}"}{}
+      $
+      \Trivial
+
+    \item \Case "\tau" is "\WITNESS\ \cdot", \ie,
+      $
+      \EE = 
+      \Im["\WITNESS_0".]{"\sigma.\ \WITNESS\ \cdot : \obl{\G ||- e} --> \obl{\G ||- e}"}{}
+      $
+      \Trivial
+
+    \item \Case "\tau" is "\TAKE\ u, \vec \beta", \ie,
+      \begin{gather*}
+        \EE =
+        \Im["\TAKE_1".]{"\sigma.\ \TAKE\ u, \vec\beta : \obl{\G ||- \forall x : e} --> \obl{\D ||- f}"}
+           {\deduce{"\sigma.\ \TAKE\ \vec\beta : \obl{\G, \NEW u ||- e [x := u]} --> \obl{\D ||- f}"}{\EE_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G, \NEW u ||- e [x := u]}" is true
+        %
+        \by i.h. on "\EE_0".
+      \item \Qed
+        %
+        \by \s31{} and predicate logic.
+% original version
+%        \by \s32.
+      \end{ecom}
+% \ednote{SM}{I changed the justification of the QED step, which didn't
+%   make sense. Kaustuv, please check.}
+%
+% OK, I agree. -- KC
+
+    \item \Case "\tau" is "\sigma.\ \TAKE\ u \in T", \ie,
+      \begin{gather*}
+        \EE =
+        \Im["\TAKE_2".]{"\sigma.\ \TAKE\ u \in T, \vec\beta : \obl{\G ||- \forall x \in S : e} --> \obl{\D ||- f}"}
+           {"\OBVIOUS : \obl{\G ||- S \subseteq T}"
+            &
+            \deduce{"\sigma.\ \TAKE\ \vec\beta : \obl{\G, \NEW u, u \in T ||- e [x := u]} --> \obl{\D ||- f}"}{\EE_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G, \NEW u, u \in T ||- e [x := u]}" is true
+        %
+        \by i.h on "\EE_0".
+      \item "\obl{\G, \NEW u, u \in S ||- u \in T}" is true
+        \begin{ecom}[{$\s4$}1.]
+        \item "\obl{\G, \NEW u ||- S \subseteq T}" is true
+          %
+          \by defn.~\ref{defn:proc-truth}, weakening
+          (fact~\ref{thm:weaken}).
+        \item \Qed
+          %
+          \by \s41, defn. of "\subseteq".
+        \end{ecom}
+      \item "\obl{\G, \NEW u, u \in S ||- e[x := u]}" is true
+        %
+        \by \s31, \s32, cut (fact~\ref{thm:cut}).
+      \item \Qed
+        %
+        \by \s33{} and predicate logic.
+      \end{ecom}
+% \ednote{SM}{I added ``and predicate logic'': if you edit, please keep
+%   it consistent with the preceding step.}
+%
+% No need to edit it. I agree with your modification. -- KC
+
+    \item \Case "\tau" is "\WITNESS\ w, \W", \ie,
+      \begin{gather*}
+        \EE =
+        \Im["\WITNESS_1".]{"\sigma.\ \WITNESS\ w, \W : \obl{\G ||- \exists x : e} --> \obl{\D ||- f}"}
+           {\deduce{"\sigma.\ \WITNESS\ \W : \obl{\G ||- e [x := w]} --> \obl{\D ||- f}"}{\EE_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G ||- e [x := w]}" is true
+        %
+        \by i.h. on "\EE_0".
+      \item \Qed
+        %
+        \by \s31.
+      \end{ecom}
+
+    \item \Case "\tau" is "\WITNESS\ w \in T, \W" and:
+      \begin{gather*}
+        \EE =
+        \Im["\WITNESS_2".]
+           {"\sigma.\ \WITNESS\ w \in T, \W : \obl{\G ||- \exists x \in S : e} --> \obl{\D ||- f}"}
+           {\begin{array}[b]{c}
+               "\OBVIOUS : \obl{\G ||- T \subseteq S}" \\
+               "\OBVIOUS : \obl{\G ||- w \in T}"
+            \end{array}
+            &
+            \deduce{"\sigma.\ \WITNESS\ \W : \obl{\G, w \in T ||- e [x := w]} --> \obl{\D ||- f}"}{\EE_0}}
+     \end{gather*}
+
+     \begin{ecom}[{$\s3$}1.]
+     \item "\obl{\G, w \in T ||- e [x := w]}" is true
+       % 
+       \by i.h. on "\EE_0".
+     \item "\obl{\G ||- w \in T}" is true
+       % 
+       \by defn.~\ref{defn:proc-truth}.
+     \item "\obl{\G ||- e [x := w]}" is true
+       % 
+       \by \s31, \s32, cut (fact~\ref{thm:cut}).
+     \item "\obl{\G ||- w \in S}" is true
+       \begin{ecom}[{$\s4$}1.]
+       \item "\obl{\G, w \in T ||- w \in S}" is true
+         % 
+         \by defn.~\ref{defn:proc-truth}, defn. of "\subseteq".
+       \item \Qed
+         % 
+         \by \s41, \s32, cut (fact~\ref{thm:cut}).
+       \end{ecom}
+     \item \Qed
+       % 
+       \by \s33, \s34, and predicate logic.
+     \end{ecom}
+     
+    \item "\tau" is "\HAVE\ g", \ie,
+      \begin{gather*}
+        \EE =
+        \Im[\HAVE.]{"\sigma.\ \HAVE\ g : \obl{\G ||- e => f} --> \obl{\G, g ||- f}"}
+           {"\OBVIOUS : \obl{\G, e ||- g}"}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G, e, g ||- f}" is true
+        %
+        \by weakening (fact~\ref{thm:weaken}).
+      \item "\obl{\G, e ||- g}" is true
+        %
+        \by defn.~\ref{defn:proc-truth}.
+      \item "\obl{\G, e ||- f}" is true
+        %
+        \by \s31, \s32, cut (fact~\ref{thm:cut}).
+      \item "\obl{\G ||- e => f}" is true
+        %
+        \by \s33.
+      \end{ecom}
+
+    \item "\sigma.\,\tau" is "\s n.\ \obl{\W ||- g}\ \PROOF\ \pi", \ie, 
+      \begin{gather*}
+        \EE =
+        \Im[$\ASSERT_1$.]{"\s n.\ \obl{\W ||- g}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\G, \obl{\W ||- g} ||- e}"}
+           {\deduce{"\pi : \obl{\G, \hide{\lnot e}, \W ||- g}"}{\DD_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G, \hide{\lnot e}, \obl{\W ||- g} ||- e}" is true
+        %
+        \by weakening (fact~\ref{thm:weaken}).
+      \item "\obl{\G, \hide{\lnot e}, \W ||- g}" is true
+        %
+        \by i.h. on "\DD_0".
+      \item "\obl{\G, \hide{\lnot e} ||- e}" is true
+        %
+        \by \s31, \s32, cut (fact~\ref{thm:cut}).
+      \item \Qed
+        %
+        \by \s33.
+      \end{ecom}
+
+    \item \Case "\sigma.\,\tau" is "\s n l.\ \obl{\W ||- g}\ \PROOF\ \pi", \ie,
+      \begin{gather*}
+        \EE =
+        \Im[$\ASSERT_2$.]{"\s n l.\ \obl{\W ||- g}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\s n l} ||- e}"}
+           {\deduce{"\pi : \obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\lnot e}, \W ||- g}"}{\DD_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\lnot e}, \hide{\s n l}, \W ||- g}" is true
+        % 
+        \by i.h. on "\DD_0", weakening (fact~\ref{thm:weaken}).
+      \item "\obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\lnot e}, \hide{\s n l}, \obl{\W ||- g} ||- e}" is true
+        % 
+        \by weakening.
+      \item "\obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\lnot e}, \hide{\s n l} ||- e}" is true
+        % 
+        \by \s31, \s32, cut (fact~\ref{thm:cut}).
+      \item "\isa{\G, \s n l \DEF \obl{\W ||- g}, \hide{\lnot e}, \hide{\s n l} ||- e} = \isa{\G, \s n l \DEF \obl{\W ||- g} ||- e}"
+        % 
+        \by defn.~\ref{defn:isabelle-embedding}.
+      \item "\obl{\G, \s n l \DEF \obl{\W ||- g} ||- e}" is true
+        % 
+        \by \s33, \s34, defn.~\ref{defn:true}.
+      \item \Qed
+        % 
+        \by \s35, strengthening (fact~\ref{thm:delete}).
+% SM: was "\by \s34, strengthening (fact~\ref{thm:delete})."
+      \end{ecom}
+      
+    \item "\tau" is "\CASE\ g\ \PROOF\ \pi", \ie,
+      \begin{gather*}
+        \EE =
+        \Im[\CASE.]{"\sigma.\ \CASE\ g\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\D ||- f}"}
+           {\deduce{"\sigma.\ \obl{g ||- e}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\D ||- f}"}{\EE_0}}
+      \end{gather*}
+
+      \textit{By} i.h. on "\EE_0".
+
+    \item "\tau" is "\s n.\ \SUFFICES\ \obl{\W ||- g}\ \PROOF\ \pi", \ie,
+      \begin{gather*}
+        \EE =
+        \Im[$\SUFFICES_1$.]{"\s n.\ \SUFFICES\ \obl{\D ||- f}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\G, \hide{\lnot e}, \W ||- g}"}
+           {\deduce{"\pi : \obl{\G, \obl{\W ||- g} ||- e}"}{\DD_0}}
+      \end{gather*}
+
+    \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G, \hide{\lnot e}, \obl{\W ||- g} ||- e}" is true
+        %
+        \by i.h. on "\DD_0", weakening (fact~\ref{thm:weaken}).
+      \item "\obl{\G, \hide{\lnot e} ||- e}" is true
+        %
+        \by \s31, cut (fact~\ref{thm:cut}).
+      \item \Qed
+        %
+        \by \s32.
+      \end{ecom}
+
+    \item "\sigma.\,\tau" is "\s n l.\ \SUFFICES\ \obl{\W ||- g}\ \PROOF\ \pi", \ie,
+      \begin{gather*}
+        \EE =
+        \Im[$\SUFFICES_2$.]{"\s n l.\ \SUFFICES\ \obl{\W ||- g}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\lnot e}, \W ||- g}"}
+           {\deduce{"\pi : \obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\s n l} ||- e}"}{\DD_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\s n l} ||- e}" is true
+        %
+        \by i.h. on "\DD_0".
+      \item "\isa{\G, \s n l \DEF \obl{\W ||- g}, \hide{\s n l} ||- e} = \isa{\G, \s n l \DEF \obl{\W ||- g} ||- e}"
+        %
+        \by defn.~\ref{defn:isabelle-embedding}.
+      \item "\obl{\G, \s n l \DEF \obl{\W ||- g} ||- e}" is true
+        %
+        \by \s31, \s32, defn.~\ref{defn:true}.
+      \item \Qed
+        % 
+        \by \s33, strenghening (fact~\ref{thm:delete}).
+      \end{ecom}
+
+    \item \Case "\tau" is "\PICK\ \vec\beta : p\ \PROOF\ \pi", \ie,
+      \begin{gather*}
+        \EE =
+        \Im[\PICK.]{"\sigma.\ \PICK\ \vec\beta : p\ \PROOF\ \pi :
+                        \obl{\G ||- e} --> \obl{\G, \refl{\vec \beta}, p ||- e}"}
+           {\deduce{"\pi : \obl{\G ||- \exists \vec \beta : p}"}{\DD_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G, \exists \vec \beta : p ||- e}" is true
+        %
+        \by predicate logic.
+% original version:
+%        \Trivial.
+      \item "\obl{\G ||- \exists \vec \beta : p}" is true
+        %
+        \by i.h. on "\DD_0".
+      \item \Qed
+        %
+        \by \s31, \s32, cut (fact~\ref{thm:cut}).
+      \end{ecom}
+
+    \item \Qed
+      %
+      \by \s21, \dots, \s220
+    \end{ecom}
+  \item \Qed
+    %
+    \by \s11, \s12.
+  \end{ecom}
+\end{proof}
+
+% \noindent
+% Note that theorem~\ref{thm:meaning} in sec.~\ref{sec:obligations} is
+% case 1 of the above correctness theorem.
+
+The rules "\ASSERT_1", "\ASSERT_2", "\SUFFICES_1" and "\SUFFICES_2"
+for transformation derivations, when transforming "\obl{\G ||- e}",
+add the negation of the conclusion "e" into the context for the proof
+of the assertion in the step. This is required because the logic of
+\tlatwo is classical. For instance, consider the following proof of
+double-negation elimination (where "A" is a constant proposition).
+%
+\begin{quote}
+  \begin{tabbing}
+    \THEOREM \= \ASSUME "\lnot \lnot A" \PROVE "A" \\
+    \s11.\ \= \FALSE \BY "\lnot A", "\lnot \lnot A" \\
+    \s22.\ \> \QED \BY \s11
+  \end{tabbing}
+\end{quote}
+%
+Intuitionistically, we can prove "\FALSE" from "\lnot A" and "\lnot
+\lnot A", and "A" from "\FALSE"; moreover "\lnot \lnot A" is present
+in the context, so \BY can certainly appeal to it. Therefore the only
+classical feature in this proof is the fragment "\BY\ \lnot A". If
+"\lnot A" were not added to the context before checking the subproof
+of step \s11, the obligation produced for "\BY\ \lnot A" would not be
+true.
+
+\ednote{SM}{Kaustuv, there is one thing that troubles me here. The
+  negated conclusion is added as a hidden assumption, and you say that
+  an assertion is true is its Isabelle translation is. However, hidden
+  assumptions are left out during the translation to Isabelle (and you
+  even use this in the justifications of the \ASSERT{} rules). So how
+  is Isabelle going to justify the proof obligation for $\lnot A$?}
+
+\ednote{KC}{Thanks for spotting this. The obligations generated for the \BY steps unhide all
+  definitions and facts in the context. That is, the "\USE_1" step should be as follows:
+  \begin{gather*}
+    \I["\USE_1"]{"\sigma.\ \USE\ \Phi, \obl{\G_0 ||- e_0} : \obl{\G ||- e} --> \obl{\D, \obl{\G_0 ||- e_0} ||- f}"}
+      {"\sigma.\ \USE\ \Phi : \obl{\G ||- e} --> \obl{\D ||- f}"
+       &
+       "\OBVIOUS : \obl{\D, \G_0 ||- e_0}_u"
+      }
+  \end{gather*}
+  where
+  \begin{gather*}
+    \obl{"\G ||- e"}_u = "\obl{\G}_u ||- e" \\
+    \begin{aligned}
+      \obl{\cdot}_u &= \cdot &
+      \obl{\G, \NEW x}_u &= \obl{\G}_u, \NEW x \\
+      \obl{\G, o \DEF \delta}_u &= \obl{\G}_u, o \DEF \delta &
+      \obl{\G, \phi}_u &= \obl{\G}_u, \phi \\
+      \obl{\G, \hide{o \DEF \delta}}_u &= \obl{\G}_u, o \DEF \delta &
+      \obl{\G, \hide{\phi}}_u &= \obl{\G}_u, \phi. \\
+    \end{aligned}
+  \end{gather*}
+
+  Not excusing my mistake, but such a definition used to be present in
+  the appendix at one point, but I appear to have inadvertently
+  skipped it when porting the rules over over to the new
+  terminology. Will add it after this commit.}
+
+%%%% PLEASE DO NOT EDIT BELOW THIS LINE
+\ifx\master\undefined
+{\let\master\relax\input{rearmatter}}
+\end{document}
+\fi

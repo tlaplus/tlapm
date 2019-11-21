@@ -1,0 +1,314 @@
+%%% -*- mode: LaTeX; TeX-master: "main.tex"; -*-
+
+\ifx\master\undefined
+\documentclass[a4paper]{easychair}
+\usepackage{submission}
+\begin{document}
+{\let\master\relax\input{frontmatter}}
+\fi
+%%%% PLEASE DO NOT EDIT ABOVE THIS LINE
+
+
+% \llnote{Section 4.2 makes sense only if the reader knows that we currently
+%  plan to use Isabelle as the ``ultimate authority'' to check the complete proof.
+% This needs to be stated somewhere above---perhaps in the place in Section 3
+% that talks about the structural obligation.}
+% 
+\section{Verifying Proof Obligations}
+\label{sec:backend}
+
+% \llnote{I changed the title of this section so it covers Section 4.1 
+% (whose title I also changed).}
+%\llnote{It would be nice to add an introductory sentence or two here.}
+% \ednote{DD}{This is rather redundant with the beginning of section 3
+%   and the end of section 4.2}
+% \llnote{I removed a bunch of redundant stuff here and added the
+% following intro to this section to try to justify its structure.  The
+% problem is that Section 4.1 is something of an orphan.  It belongs in
+% a section about what the PM does besides generating
+% obligations---namely, checking that a proof step is ``meaningful'',
+% and translating the obligations to the language of the back-end
+% provers.  But since we don't have much to say about this, it gets
+% tucked into a section about expanding definitions.  I want to justify
+% this by saying that expanding definitions is the only interesting
+% thing the PM does other than generating proof obligations.
+% I've sort of done that in this intro.  Kaustuv, please check that
+% you agree with what I've written---and correct it if you don't.}
+
+Once the \PM\ generates the primitive proof obligations, it must send
+them to the back-end provers.  The one non-obvious part of doing this
+is deciding whether definitions should be expanded by the \PM\ or by
+the prover.  This is discussed in Section~\ref{sec:backend.pm}.
+We then describe the state of our two current back-end provers,
+Isabelle/\tlaplus\ and Zenon.
+
+% they are sent
+% to a back-end prover that will try to verify them with automated
+% proof procedures and report success or failure.
+% The failure case is reported back to the user who must determine
+% whether it failed because the automated procedures are not powerful
+% enough (in which case the user will add more details to the proof)
+% or because something is wrong with the corresponding leaf proof.
+% The structural obligation is also sent to the back-end prover in
+% order to provide high assurance of the correctness of the proof.
+% 
+% In our design, Isabelle plays two roles: on the first hand
+% Isabelle/\tlaplus{} (the Isabelle kernel with the \tlaplus axioms)
+% is the certifier that provides the ultimate assurance of correctness
+% by certifying the proofs provided by the automatic procedures,
+% on the other hand Isabelle provides some of the automatic proof procedures
+% that are used to verify the proof obligations.
+
+\subsection{Expanding Definitions}
+\label{sec:backend.pm}
+
+Expansion of usable definitions cannot be left entirely to the
+back-end prover.  The \PM itself must do it for two reasons:
+\begin{icom}
+\item It must check that the current goal has the right form for a
+\TAKE, \WITNESS, or \HAVE\ step to be meaningful, and this can require
+expanding definitions.
+
+% \item Using TLA's modal operators such as prime (which we have been
+% ignoring), we can define an operator $O$ such that a prover based on
+% classical logic could verify an invalid formula if it contains $O$.
+% All instances of such operators must be removed by expanding their
+% definitions before a proof obligation is sent to the back-end prover.
+% (These operators seldom occur in practice.)
+
+\llnote{I rewrote the following.  It could use polishing.}
+
+\item The encoding of TLA+ in a back-end prover would be unsound if a
+modal operator like prime ($'$) were represented as an operator.
+Hence, encoding a definition like $O(x)\DEF x'$ as a definition in the
+prover's logic would be unsound.  All instances of such operators must
+be removed by expanding their definitions before a proof obligation is
+sent to the back-end prover.  (These operators seldom occur in
+practice.)
+
+\end{icom}
+%
+% \llnote{Kaustuv: Before you object to the preceding sentence, remember
+% that \ENABLED\ is not a defined operator.  Since we're not discussing
+% \ENABLED\ here, it would be an unnecessary distraction to say that
+% the PM must expand~it.}
+%
+Another reason for the \PM to handle definition expansion is that the
+Isabelle/\tlaplus object logic does not provide a direct encoding of
+definitions made within proofs.  The \PM therefore now performs all
+definition expansions.  We plan to reduce the amount of trusted code
+in the \PM\ by lambda-lifting all definitions out of each proof
+obligation and using Isabelle meta equality ($\equiv$) with the
+\texttt{unfolding} tactic before instructing Isabelle to search for a
+proof or to certify a given proof.
+
+% \ednote{SM}{I still don't understand the remark about definitions in
+%   Isabelle/\tlaplus. Are you saying that the current implementation of
+%   the \PM\ doesn't generate corresponding Isabelle definitions? A
+%   constant-level operator definition
+%   \[
+%     Op(x,y) \DEF exp
+%   \]
+%   can simply be written like this in Isabelle. ``Lambda-lifting'' is
+%   done by the Isabelle toplevel. Level-1 or 2 \tlaplus definitions
+%   require a little more care, but we omit them here.}
+% 
+% \begin{quote}
+%   \ednote{KC}{I assume you mean "\And x\ y.\ \mathit{Op}(x, y) \equiv
+%     \mathit{exp}", and possibly even "\And (x :: c).\ \And (y :: c).\
+%     \mathit{Op}(x, y) \equiv \mathit{exp}" because Isabelle can
+%     otherwise infer an overly general type for "\mathit{Op}". Even so,
+%     being Pure syntax, such a method only applies to the outermost
+%     operator definitions. The only way to use them for inner
+%     definitions (\ie, those inside \kwd{LET}-expressions) for the time
+%     being is to lift them out.}
+% \end{quote}
+% 
+% \llnote{Kaustuv told me that this kind of definition mechanism, which
+%   Isabelle provides, was not implemented as part of Isabelle/\tlaplus\
+%   for some reason that I forget.  Stephan seems to be saying that
+%   Kaustuv was mistaken, and that he should not be expanding
+%   definitions when sending things to Isabelle (except of course for
+%   non-Leibniz operators).  Will the two of you please work this out by
+%   email or telephone and let us know what the story is.}
+
+
+\subsection{Isabelle/\tlaplus}
+\label{sec:backend.isa}
+
+The core of \tlatwo is being encoded as a new object logic
+Isabelle/\tlaplus in the proof assistant
+Isabelle~\cite{paulson:isabelle}.
+% This encoding serves two distinct
+% purposes in the overall project. First, we rely on Isabelle's trusted
+% kernel to certify the overall correctness of a proof by checking the
+% structural obligation described in Section~\ref{sec:obligations}.
+% Second, Isabelle can be used as one of the back-end provers to
+% establish leaf steps of a proof.
+% 
+% \ednote{SM}{I have commented out a remark on the two roles of
+%   Isabelle, which Leslie added to the introduction of Sect.~4. If you
+%   think it should nevertheless be repeated here, uncomment it.}
+% 
+One of Isabelle's distinctive features that similar proof assistants
+such as Coq~\cite{coq} or HOL~\cite{gordon:hol,harrison:hol} lack is
+genericity with respect to different logics. The base system
+Isabelle/Pure provides the trusted kernel and a framework in which the
+syntax and proof rules of object logics can be defined. We have chosen
+to encode \tlatwo as a separate object logic rather than add it on top
+of one of the existing logics (such as ZF or HOL). This simplifies the
+translation and makes it easier to interpret the error messages when
+Isabelle fails to prove obligations. A strongly typed logic such as
+HOL would have been unsuitable for representing \tlatwo, which is
+untyped. Isabelle/ZF might seem like a natural choice, but differences
+between the way it and \tlaplus{} define functions and tuples would
+have made the encoding awkward and would have prevented us from
+reusing existing theories. Fortunately, the genericity of Isabelle
+helped us not only to define the new logic, but also to instantiate the
+main automated proof methods, including rewriting, resolution- and
+tableau provers, and case-based and inductive reasoning.
+Adding support for more specialized reasoning tools such as
+proof-producing SAT solvers~\cite{fontaine:automation} or SMT solvers
+such as haRVey~\cite{deharbe:decision} will be similarly helped by
+existing generic interfaces.
+
+% \ednote{LL}{I did some rewording of the preceding paragraph for
+%   readability. I don't think I changed what Stephan was trying to say.
+%   However, do COQ and HOL really lack genericity, as I think Stephan
+%   claimed?\\[.3em]
+% SM: In the sense that they impose a fixed logic (calculus of
+% constructions or simply-typed higher order logic). This is not to
+% say that these logics are not sufficiently expressive to define
+% \tlatwo{} but typically one would have to define new operators for
+% the Boolean connectives etc. instead of reusing those that already
+% exist. Isabelle/Pure only has implication and quantification, so
+% there is not much to redefine. Please tell me if I should make this
+% clearer above. (I assumed that the members of the community
+% organizing this workshop are familiar with this problem.)}
+% 
+% \ednote{SM}{ I could elaborate a little on the overall structure of
+%   the encoding, in particular the absence of types, but I wonder if
+%   this is interesting enough.}
+% 
+% \llnote{It looks OK to me.  However, assuming that our 10-page limit
+%   is not supposed to count the reference list, we do have a reasonable
+%   amount of extra space.  But rather than talking about the overall
+%   structure, is it possible to talk about one small aspect of the
+%   encoding in enough detail to give a flavor of what the whole thing
+%   looks like?}
+% 
+% \ednote{KC}{It is 10 pages including the bibliography and excluding
+%   the appendix.}
+
+The current encoding supports only a core subset of \tlatwo, including
+propositional and first-order logic, elementary set theory, functions,
+and the construction of natural numbers.  Support for arithmetic,
+strings, tuples, sequences, and records is now being added; support
+for the modal part of \tlatwo{} (variables, priming, and temporal
+logic) will be added later.  Nevertheless, the existing fragment can
+already be used to test the interaction of the \PM\ with Isabelle and
+other back-end provers.  As explained above, Isabelle/\tlaplus is used
+both as a back-end prover and to certify proof scripts produced by
+other back-end provers such as Zenon.  If it turns out to be
+necessary, we will enable the user to invoke 
+% 
+% LL: I eliminated the following prose, which says nothing that
+%     hasn't already been explained
+%
+%    When the \PM generates a proof obligation, it can pass it to a
+%    prover that produces a full proof as an Isar proof script (such as
+%    Zenon, described in Section~\ref{sec:backend.zenon} below).
+%    Isabelle/\tlaplus processes the proof script and generates a
+%    theorem that is certified by the kernel and can be used in
+%    subsequent steps.  Alternatively,
+% 
+one of Isabelle's automated proof methods (such as \texttt{auto} or
+\texttt{blast}) by using a dummy theorem, as explained at the end of
+Section~\ref{sec:proof-language.lang}.  If the method succeeds, one
+again obtains an Isabelle theorem.  Of course,
+%
+Isabelle/\tlaplus can also be used independently of the \PM, which is
+helpful when debugging tactics.
+% We plan to validate the interaction by porting some existing case
+% studies to Isabelle/\tlaplus, such as the proof of the Disk Paxos
+% consensus algorithm~\cite{gafni:disk-paxos} and a verification of
+% distributed clock synchronization
+% algorithms~\cite{barsotti:verification}.
+\llnote{I removed a sentence about porting existing case studies to
+Isabelle/\tlaplus\ from the end of the previous paragraph, and I
+replaced it with the ``helpful when debugging tactics.''.  I expect
+Stephan to rewrite this if he can find something more accurate or
+precise to say instead.  The problem with the original is it raised
+the question, why not rewrite the (presumably Isar) proofs in \tlatwo\
+and run them through the \PM\ rather than directly in
+Isabelle/\tlaplus.  I presume we are planning to do this.  Should we
+say so?\\[.4em]
+%
+SM: Indeed, I wanted to say that we plan to port the existing examples
+to \tlatwo, using the \PM. The preceding sentence about independent
+use of Isabelle/\tlaplus{} indeed obscured the meaning. Anyway, it is
+future work and should, if at all, go to the conclusion.}
+
+
+\subsection{Zenon}
+\label{sec:backend.zenon}
+
+Zenon~\cite{bonichon07lpar} is a tableau prover for classical
+first-order logic with equality that was initially designed to output
+formal proofs checkable by Coq~\cite{coq}.  We have extended Zenon to
+output Isar proof scripts for Isabelle/\tlaplus theorems, and the \PM
+uses Zenon as a back-end prover, shipping the proofs it produces to
+Isabelle for certification.  We have also extended Zenon with direct support
+for the \tlatwo logic, including definitions and rules about sets and
+functions.  Adding support in the form of rules (instead of axioms) is
+necessary because some rules are not expressible as first-order
+axioms, notably the rules about the set constructs:
+\begin{gather*} \small
+  \I[\textit{subsetOf}]{e\in\{x\in S:P\}}{e\in S & P[x:=e]}
+  \qquad
+  \I[\textit{setOfAll}]{e\in\{d:x\in S\}}{\exists y\in S:e=d[x:=y]}
+\end{gather*}
+Even for the rules that are expressible as first-order axioms, adding them
+as rules makes the proof search procedure much more efficient in practice.
+The most important example is extensionality: when set extensionality and
+function extensionality are
+added as axioms, they apply to every equality deduced by the system,
+and pollute the search space with large numbers of irrelevant formulas.
+By adding them as rules instead, we can use heuristics to apply them only
+in cases where they have some chance of being useful.
+
+Adding support for arithmetic, strings, tuples, sequences, and records
+will be done in parallel with the corresponding work on
+Isabelle/\tlaplus, to ensure that Zenon will produce proofs that
+Isabelle/\tlaplus\ will be able to certify.  Adding temporal logic
+will be left to future research.
+%
+% \llnote{I added to the preceding paragraph an explanation of why
+% adding support for those things will be done in parallel with
+% the Isabelle work.  Damien, please check that this explanation is
+% correct.}
+%
+We also plan to interface Zenon with Isabelle, so it can be called by a
+special Isabelle tactic the same way other tools
+%% SM: removed reference to haRVey because the haRVey interface is not
+%% currently part of the Isabelle distribution.
+are.
+This
+%
+% LL: People are not concerned with how much others have to work
+% 
+%    represents more implementation work but 
+% 
+will simplify the \PM\ by giving it a uniform interface to the
+back-end provers.  It will also allow using Zenon as an Isabelle tactic
+independently of \tlaplus{}.
+
+
+%%%% PLEASE DO NOT EDIT BELOW THIS LINE
+\ifx\master\undefined
+{\let\master\relax\input{rearmatter}}
+\end{document}
+\fi
+
+% LocalWords:  tex reasoners sequents Zenon Isar HOL ZF minimizes TLA Paxos SMT
+% LocalWords:  Charron Bost Schiper haRVey zenon

@@ -1,0 +1,107 @@
+%%% -*- mode: LaTeX; TeX-master: t; -*-
+%%% 
+%%% Please see the README file for usage information.
+
+%%% PLEASE DO NOT EDIT THE FOLLOWING BIT
+\let\master\relax
+\documentclass[a4paper]{easychair}
+%%% PLEASE DO NOT EDIT THE PRECEDING BIT
+ 
+%%% remove [draft] to suppress editorial notes, etc.
+%%%    DO THIS BEFORE SUBMISSION
+%%
+\usepackage{submission}  % contains all macros
+% \usepackage[draft]{submission}  % contains all macros
+%%
+
+\begin{document}
+
+\input{frontmatter}             % title, list of authors
+
+% \llnote{We have been inconsistent about what we call the prover.  
+%
+% \ednote{SM}{Indeed, we should be consistent. However, remember that
+%   the proofs found by the back-end(s) are in turn supposed to be
+%   checked by Isabelle, so ``checker'' may be a bit confusing.}
+%
+% \ednote{DD}{This has been resolved: we have ``back-end provers''
+% (Zenon and Isabelle tactics, later also haRVey) that ``verify'' proof
+% obligations, and a ``certifier'' (Isabelle/TLA+) that ``certifies''
+% their output} 
+% I have found some places where the proper notation is still not
+% being used.  I corrected all that I found, but I probably missed
+% some.  Please check.\\[.3em]
+% I also discovered that we have been writing ``\PM'' when we mean the
+% system consisting of the \PM\ together with its back-end provers.
+% (For example, we talk about the \PM\ checking a proof.)  I have used
+% the term ``proof system'' to mean the \PM\ plus the back-end provers,
+% and have introduced it where necessary.  But I've probably missed
+% some places.
+% }
+
+\ifdraft
+\begin{center}
+\large\today
+\end{center}
+\fi
+
+\input{abstract}                % 
+
+% \llnote{We should submit the paper with a table of contents.  A table of
+% contents helps the reader.  It is traditionally omitted from 
+% articles in journals and proceedings because it was hard to make
+% them when the journal or proceedings was typeset separately from
+% the typesetting of the individual articles.  It is stupid to omit
+% a table of contents in an article that is not part of a journal
+% or proceedings---even if it's a preprint of an article that will appear
+% in one.  The same goes for a date.\\[.3em]
+% In our case, creating this separate, unnumbered page also effectively
+% excludes the abstract from the 10-page limit.
+% }
+
+\ednote{KC}{I moved the TOC to the end of the paper (in non-draft mode
+  only). It is the French style, and it moreover allows all
+  supplemental material to be numbered differently. I am not a huge
+  fan of arguing with the PC about page limits. The paper without
+  ednotes as of this commit fits snugly in 10 pages.
+\llnote{And what happened to the statement saying that the appendix is
+for the reviewers use, and we are not committed to including it in the
+final version?}
+}
+
+\ifdraft
+\thispagestyle{empty}
+\tableofcontents
+\setcounter{page}{0}
+\fi
+
+\input{introduction}            % 
+
+\input{proof-language}          % sketch + examples
+
+\input{obligations}             % high level overview of
+                                % the PM
+
+\input{backend}                 % Zenon back-end
+%                                % Calling Isabelle
+%
+\input{conclusion}              % 
+%
+\input{rearmatter}              % bibliography
+
+\clearpage
+
+\ifdraft\else
+\setcounter{page}{1}
+\renewcommand{\thepage}{(\roman{page})}
+\fi
+
+\input{appendix-sm}                % checking/transformation details
+                                % proof of correctness
+
+\ifdraft\else
+\clearpage
+\tableofcontents
+\fi
+\end{document}
+

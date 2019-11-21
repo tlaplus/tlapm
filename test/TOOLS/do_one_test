@@ -1,0 +1,197 @@
+#!/usr/bin/awk -f
+
+# Copyright (C) 2011  INRIA and Microsoft Corporation
+
+function message (msg) {
+  print msg >>ENVIRON["LOGFILE"];
+}
+
+function fail (msg) {
+  message(msg);
+  failed = 1;
+  exit 3;
+}
+
+# run the command given as argument
+function run_command (command) {
+  result_code = system (command);
+  command_done = 1;
+}
+
+function debug_phase () {
+  print "phase := " phase " in " FILENAME >>ENVIRON["LOGFILE"];
+}
+
+BEGIN {
+  phase = 0;
+  test_result = 0;
+  num_out = 0;
+  num_err = 0;
+  command_done = 0;
+  expected_result = 0;
+  result_code = 0;
+  check_command = "";
+  failed = 0;
+}
+
+# remove trailing CR from input line
+{ sub (/\r$/, ""); }
+
+phase == 0 && /^====/ {
+  phase = 1;
+  next;
+}
+
+phase == 0 && FILENAME == "-" {
+  fail("missing ==== line");
+}
+
+phase == 1 && $1 == "command:" {
+  sub (/command: /, "");
+  run_command($0);
+  next;
+}
+
+phase == 1 && $1 == "result:" {
+  expected_result = $2;
+  next;
+}
+
+phase == 1 && $1 == "stdout:" {
+  sub (/stdout: /, "");
+  std_out[num_out++] = $0;
+  next;
+}
+
+phase == 1 && $1 == "nostdout:" {
+  sub (/nostdout: /, "");
+  no_std_out[num_no_out++] = $0;
+  next;
+}
+
+phase == 1 && $1 == "stderr:" {
+  sub (/stderr: /, "");
+  std_err[num_err++] = $0;
+  next;
+}
+
+phase == 1 && $1 == "nostderr:" {
+  sub (/nostderr: /, "");
+  no_std_err[num_no_err++] = $0;
+  next;
+}
+
+phase == 1 && $1 == "nostd*:" {
+  sub (/nostd\*: /, "");
+  no_std_out[num_no_out++] = $0;
+  no_std_err[num_no_err++] = $0;
+  next;
+}
+
+phase == 1 && $1 == "check:" {
+  check_command = sub (/check: /, "");
+  next;
+}
+
+phase == 1 && $0 ~ /^ *\\\*/ { next }
+phase == 1 && $0 ~ /^[ \t]*$/ { next }
+
+phase == 1 && FILENAME ~ /.*\/separator$/ {
+  if (check_command != ""){
+    result = system (check_command);
+    if (result != 0){ fail("explicit check failed"); }
+  }else if (!command_done){
+    run_command("${TLAPM} --toolbox 0 0 --nofp ${FILE}");
+  }
+  if (result_code != expected_result){
+    fail("wrong result code");
+  }
+  if (check_command == "" && num_out == 0 && num_no_out == 0 \
+      && num_err == 0 && num_no_err == 0){
+    no_std_out[num_no_out++] = "ending abnormally";
+    no_std_err[num_no_err++] = "ending abnormally";
+    no_std_out[num_no_out++] = "status:failed";
+    no_std_err[num_no_err++] = "status:failed";
+  }
+  phase = 2;
+  nextfile;
+}
+
+phase == 1 {
+  fail(sprintf ("unrecognized command: %s in file %s", $0, FILENAME));
+}
+
+phase == 2 && FILENAME != "-" {
+  phase = 3;
+  idx_out = 0;
+  out_file = FILENAME;
+}
+
+phase == 3 && idx_out < num_out && $0 ~ std_out[idx_out] {
+  ++ idx_out;
+}
+
+phase == 3 && $0 ~ /@!!id:[0-9]*/ {
+  cur_id = substr($0, 7, length - 6);
+  failure[cur_id] = "";
+}
+
+phase == 3 && $0 ~ /@!!END/ {
+  cur_id = 0;
+}
+
+phase == 3 && num_no_out > 0 {
+  for (i in no_std_out){
+    if ($0 ~ no_std_out[i]){
+      if (cur_id == 0){
+        fail("forbidden output is present");
+      }else{
+        failure[cur_id] = "forbidden output is present";
+      }
+    }
+  }
+}
+
+phase == 3 && FILENAME != out_file {
+  for (i in failure){
+    if (failure[i] != "") fail(failure[i]);
+  }
+  if (idx_out < num_out) { fail("required output is missing"); }
+  phase = 4;
+  idx_err = 0;
+  err_file = FILENAME;
+}
+
+phase == 4 && idx_err < num_err && $0 ~ std_err[idx_err] {
+  ++ idx_err;
+}
+
+phase == 4 && $0 ~ /@!!id:[0-9]*/ {
+  cur_id = substr($0, 7, length - 6);
+  failure[cur_id] = "";
+}
+
+phase == 4 && $0 ~ /@!!END/ {
+  cur_id = 0;
+}
+
+phase == 4 && num_no_err > 0 {
+  for (i in no_std_err){
+    if ($0 ~ no_std_err[i]){
+      if (cur_id == 0){
+        fail("forbidden output is present");
+      }else{
+        failure[cur_id] = "forbidden output is present";
+      }
+    }
+  }
+}
+
+END {
+  for (i in failure){
+    if (failure[i] != "") fail(failure[i]);
+  }
+  if (!failed){
+    if (idx_err < num_err) { fail("required error output is missing"); }
+  }
+}

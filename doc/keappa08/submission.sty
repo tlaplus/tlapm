@@ -1,0 +1,185 @@
+%%% -*- mode: LaTeX; TeX-master: "main.tex"; -*-
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{submission}[2008/09/20 submission]
+
+\RequirePackage{amsmath}
+\RequirePackage{amssymb}
+\RequirePackage{xspace}
+\RequirePackage{syn}
+\RequirePackage{proof}
+\RequirePackage{ecom}
+\RequirePackage{txfonts}
+\RequirePackage{color}
+
+\newif\ifdraft
+\draftfalse
+
+\DeclareOption{draft}{\drafttrue}
+
+\ProcessOptions
+
+\newcommand{\red}{\color{red}}
+
+\let\inferTabSkip\qquad
+
+\def\SP{\hspace{2em plus 1em minus 2em}}
+\def\LSP{\hspace{1em plus .5em minus .9em}}
+
+\def\DEF{\triangleq}
+\sdef{==}{\ \ \DEF\ \ }
+
+\def\tlaplus{\mbox{TLA\kern -.35ex$^+$}\xspace}
+\def\tlatwo{\mbox{TLA\kern -.35ex$^{+\text{\tiny 2}}$}\xspace}
+\def\PM{PM\xspace}
+
+\def\@kwd#1{\textsc{\MakeLowercase{#1}}}
+\def\kwd#1{\ifmmode\text{\@kwd{#1}}\else\@kwd{#1}\fi\xspace}
+\def\THEOREM{\kwd{theorem}}
+\def\DEFINE{\kwd{define}}
+\def\ASSERT{\kwd{assert}}
+\def\SUFFICES{\kwd{suffices}}
+\def\CASE{\kwd{case}}
+\def\HAVE{\kwd{have}}
+\def\TAKE{\kwd{take}}
+\def\WITNESS{\kwd{witness}}
+\def\PICK{\kwd{pick}}
+\def\BY{\kwd{by}}
+\def\DEFS{\kwd{defs}}
+\def\USE{\kwd{use}}           \def\USING{\mathbin{\kwd{using}}}
+\def\HIDE{\kwd{hide}}         \def\HIDING{\mathbin{\kwd{hiding}}}
+\def\OMITTED{\kwd{omitted}} \def\OBVIOUS{\kwd{obvious}}
+\def\QED{\kwd{qed}} \def\BY{\kwd{by}}
+\def\USE{\kwd{use}} \def\HIDE{\kwd{hide}}
+\def\ASSUME{\kwd{assume}}
+\def\NEW{\mathop{\kwd{new}}}
+\def\CONSTANT{\kwd{constant}} \def\STATE{\kwd{state}} \def\VARIABLE{\kwd{variable}} \def\ACTION{\kwd{action}} \def\TEMPORAL{\kwd{temporal}}
+\def\PROVE{\kwd{prove}} \def\PROOF{\kwd{proof}}
+\def\INSTANCE{\kwd{instance}}
+\def\SUBSET{\kwd{subset}}
+\def\ENABLED{\kwd{enabled}}
+\def\CHOOSE{\kwd{choose}}
+\def\LET{\kwd{let}}
+\def\IN{\kwd{in}}
+\def\TRUE{\kwd{true}} \def\FALSE{\kwd{false}}
+\def\IF{\kwd{if}}   \def\THEN{\kwd{then}}   \def\ELSE{\kwd{else}}
+\def\LAMBDA{\kwd{LAMBDA}}
+
+\ifdraft
+\long\def\ednote#1#2{\begin{quote}\framebox{\begin{minipage}{0.99\linewidth}\footnotesize\red #1: #2\end{minipage}}\end{quote}}
+\else
+\long\def\ednote#1#2{}
+\fi
+
+\def\llnote{\ednote{LL}}
+
+\let\I@align=\vbox
+\def\I@name@#1{\hbox{\textup{#1}}}
+\let\I@name=\I@name@
+\ifx\I\undefined
+\newcommand{\I}[2][]{\def\I@args{[#1]{#2}}\I@more}
+\else
+\renewcommand{\I}[2][]{\def\I@args{[#1]{#2}}\I@more}
+\fi
+\def\I@more{\@ifnextchar\bgroup\I@pre\I@nopre}
+\def\I@nopre{\expandafter\I@\I@args{\mathstrut}}
+\def\I@pre#1{\expandafter\I@\I@args{#1}}
+\def\I@[#1]#2#3{\I@align{{\let\I@align=\vbox\infer[\I@name{#1}]{\let\I@name=\I@name@ \mathstrut #2}{\let\I@name=\I@name@ #3}}}}
+\def\Ic{\let\I@align=\vcenter\I}
+\def\Ifoc{\def\I@name##1{\foc{\hbox{\textup{##1}}}}\I}
+\def\Ir#1{\def\I@align##1{\raisebox{#1}{\vcenter{##1}}}\I}
+\def\Im{\def\I@align##1{\mbox{\raisebox{-1.5ex}{\vbox{##1}}}}%
+\I}
+
+\def\GR@@K#1{\@ifnextchar*{\@firstoftwo{{#1}^*}}{#1}}
+\def\G{\GR@@K\Gamma}
+\def\P{\GR@@K\Psi}
+\def\D{\GR@@K\Delta}
+\def\W{\GR@@K\Omega}
+\def\X{\GR@@K\Xi}
+\def\F{\GR@@K\Phi}
+\def\Si{\GR@@K\Sigma}
+
+\sdef{=>}{\Rightarrow}
+\sdef{OR}{\ \ \vert\ \ }
+\sdef{::=}{\Coloneqq}
+\sdef{|-}{\vdash}
+\sdef{||-}{\Vdash}
+\sdef{...}{\dotsc}
+\sdef{->}{\rightarrow}
+\sdef{|->}{\mapsto}
+\sdef{-->}{\longrightarrow}
+%\sdef{--->}{\mathbin{\smash{\raisebox{-.3ex}{\xrightarrow{\,\text{\textup{trans}}\,}}}}}
+
+\def\<{\left\langle}
+\def\>{\right\rangle}
+
+\sdef{or}{\lor}
+\sdef{box}{\Box}
+\sdef{dia}{\Diamond}
+
+\def\isa#1{\left(#1\right)_{\mathrm{Isa}}}
+\sdef{==>}{\Longrightarrow}
+\def\And{\mathop{\textstyle{\bigwedge}}}
+\sdef{!!}{\And}
+
+\def\lev#1{\mathfrak{#1}}
+\sdef{LEV}{\lev{L}}
+\def\levof#1{\ensuremath{\mathop{\mathrm{level}}(#1)}\xspace}
+
+\sdef{dn}{\downarrow}
+\sdef{up}{\uparrow}
+
+\def\vc{v.c.\xspace}
+\def\vcs{v.c.'s\xspace}
+\def\vcx#1#2{\mathop{\mathrm{vcs}}_{#1}(#2)}
+
+\def\s#1{\ensuremath{\left\langle#1\right\rangle}}
+%
+% LL: I changed ``by'' to ``By'' to conform with Case, Obvious, etc.
+%
+\def\by{\hfill\LSP\textit{By}\xspace}
+
+% LL: I changed ``Trivial'' to ``Obvious'' since that's the term the
+% proof language uses.
+%\def\Trivial{\hfill\textit{Trivial}}
+\def\Trivial{\hfill\textit{Obvious}}
+%
+% LL: I omitted the periods since the proof language's keyword doesn't have them.
+%
+\def\Qed{\textit{Qed}\xspace}
+
+\def\Case{\textit{Case}\xspace}
+
+
+\def\obl#1{\left(#1\right)}
+\def\hide#1{\left[#1\right]}
+\def\unhide#1{\smash{\overline{#1}}}
+\sdef{hide}#1{\hide{#1}}
+\def\filter#1{\ensuremath{\left({#1}\right)_{\mathrm{f}}}\xspace}
+
+\sdef{hyps}#1{\mathrm{hyps}(#1)}
+\sdef{conc}#1{\mathrm{conc}(#1)}
+
+% \DeclareMathAlphabet{\mathpzc}{OT1}{pzc}{m}{it}
+
+\def\DD{\mathcal{D}}
+\def\EE{\mathcal{E}}
+\def\FF{\mathcal{F}}
+
+%\newtheorem*{varthm}{}% all text is supplied in the option
+\newtheorem{thm}{Theorem}
+\newtheorem{lem}[thm]{Lemma}
+\newtheorem{fac}[thm]{Fact}
+\newtheorem{cor}[thm]{Corollary}
+\newtheorem{defn}[thm]{Definition}
+\newtheorem{notn}[thm]{Notation}
+\newtheorem{prop}[thm]{Property}
+
+\newcommand{\ie}{\textit{i.e.}}
+\newcommand{\eg}{\textit{e.g.}}
+\newcommand{\etc}{\textit{etc}}
+\newcommand{\etal}{\textit{et al}}
+\newcommand{\cf}{\textit{cf}}
+
+\allowdisplaybreaks[4]
+%END

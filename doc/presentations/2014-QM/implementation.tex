@@ -1,0 +1,144 @@
+\subsection{\enabled\ and the Module System}
+\myframe{\hfill \enabled\ and the Module System }
+{
+Remember I said \enabled\ doesn't commute with substitution?
+\vspace{45pt}
+
+Let me also say: \\
+\hfill
+ the Module System is implemented as   substitution. 
+
+\vspace{45pt}
+}
+
+\subsection{Liveness Properties: Proving Diamonds}
+\myframe{proving things about \tla\ specs: \hfill liveness proofs}
+{
+For some lifeness property $P$,  the thing to prove is generally:
+\vspace{25pt}
+\begin{theorem}[Liveness]
+\begin{center}
+$ \Box (Spec\ \Rightarrow\  \Diamond\, P) $
+\end{center}
+\end{theorem}
+
+\vspace{75pt}
+}
+
+\myframe{proving things about \tla\ specs: \hfill liveness proofs}
+{
+For some liveness property $P$,  the thing to prove is generally:
+\vspace{25pt}
+\begin{theorem}[Liveness]
+\begin{center}
+$\Box (Init \wedge \Box\, [Next]_V  \wedge \kw{WF}_V (Next) \  \Rightarrow \ \Diamond\, P)$
+\end{center}
+\end{theorem}
+
+\vspace{75pt}
+}
+
+
+
+\myframe{proving things about \tla\ specs: \hfill liveness proofs}
+{
+For some liveness property $P$,  the thing to prove is generally:
+\vspace{25pt}
+\begin{theorem}[Liveness]
+\begin{center}
+$\Box (Init \wedge \Box\, [Next]_V  \wedge \kw{WF}_V (Next) \  \Rightarrow \ \Diamond\, P)$
+\end{center}
+\end{theorem}
+\vspace{20pt}
+{\color{Maroon} Question:} \\
+\hfill How does one prove a $\Diamond$ ?
+\vspace{27pt}
+}
+
+\myframe{proving things about \tla\ specs: \hfill liveness proofs}
+{
+For some liveness property $P$,  the thing to prove is generally:
+\vspace{25pt}
+\begin{theorem}[Liveness]
+\begin{center}
+$\Box (Init \wedge \Box\, [Next]_V  \wedge \kw{WF}_V (Next) \  \Rightarrow \ \Diamond\, P)$
+\end{center}
+\end{theorem}
+\vspace{20pt}
+{\color{Maroon} Question:} \\
+\hfill How does one prove  $\Box( A \Rightarrow \Diamond B)$ ?
+\vspace{27pt}
+}
+
+
+
+\myframe{proving things about \tla\ specs: \hfill proving leads-to}
+{
+\hspace{-18pt} {\color{Maroon}There are three rules that `make' a $\Diamond$:}
+\vspace{15pt}     
+\footnotesize
+\begin{rl}[$\kw{WF}$ -- and similarly for $\kw{SF}$]
+\begin{prooftree}
+         \AxiomC{$I, I', P, [N]_V \seq P' \vee Q'$}
+         \AxiomC{$I, I', P, \langle N \wedge A\rangle_V \seq  Q'$}
+         \AxiomC{$I, P \seq \enabled\ \langle A \rangle_V$}
+        % \RightLabel{\rlable{\kw{WF}}}    
+         \TrinaryInfC{$\Box \,I,  \Box\, [N]_V, \kw{WF}_V(A)  \seq \Box( P \Rightarrow \Diamond Q)$}   
+\end{prooftree}
+\end{rl}
+
+\vspace{20pt}
+
+\begin{rl}[Lattice]
+\begin{prooftree}
+        \AxiomC{$(D, \succ) \ well-founded$}
+        \AxiomC{$F, d \in D \seq \Box\big( G \Rightarrow \Diamond( H \vee \exists e \in D. \ d \succ e \wedge G[e/d] ) \big)  $}
+%         \RightLabel{\rlable{Nec}}    
+        \BinaryInfC{$ F, d \in D \seq  \Box(G \Rightarrow \Diamond H) $}
+\end{prooftree}
+\scriptsize
+\hfill $d$ not in $H$, $e$ not in $G$
+\end{rl}
+\vspace{45pt}
+
+}
+
+
+\myframe{proving things about \tla\ specs: \hfill liveness proofs}
+{
+\hspace{-18pt}{\color{Maroon} Therefore:}\\
+\vspace{25pt}
+If you want to prove liveness, we can:\\
+\hspace{25pt} - tell you what you have to prove, \\
+\hspace{25pt} - help you prove it (except the \enabled-bit),\\
+\vspace{15pt}
+\hfill but we cannot `tie the proof together' for you. 
+
+
+}
+
+
+
+
+\subsection{Interaction between Temporal and Non-Temporal Reasoning}
+
+\myframe{\hfill Necessication and Classical Logic}
+{}
+
+\myframe{\hfill Boxed and Non-Boxed Contexts}
+{}
+
+
+
+\subsection{Quantification in TLA}
+\myframe{}{}
+
+
+
+
+
+
+
+
+
+

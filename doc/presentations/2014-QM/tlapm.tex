@@ -1,0 +1,658 @@
+\myframe{proving things about \tla\ specs: \hfill correctness}{
+
+One may want to prove something like \\
+\vspace{5pt}
+\hfill the following about the Quicksort specification: 
+\vspace{15pt}
+\begin{example}[correctness]
+\[
+\begin{array}{r c l}
+Correctness & \triangleq & (U = \{\})\  \Rightarrow\  A \in PermsOf(A_0) \ \wedge \ IsSorted(A)\\
+\\
+\end{array}
+\]
+
+\end{example}
+
+\vspace{75pt}
+
+}
+
+
+\input{tla-pic.tex}
+
+\subsection{The Basics}
+
+\myframe{proving things about \tla\ specs: \hfill \tlapm}{
+
+{\color{Maroon} Idea:} \\
+\vspace{15pt}
+User writes something fairly close to\\ 
+\hspace{50pt} a Hilbert-style mathematical proof \\
+\hspace{45pt} (or a Fitch-style natural deduction proof); \\
+\vspace{13pt}
+\hfill backend provers take care of the annoying details. 
+\vspace{75pt}
+}
+
+\myframe{proving things about \tla\ specs: \hfill \tlapm}{
+
+{\color{Maroon} Idea:} \\
+\vspace{15pt}
+User writes something {\color{Maroon}fairly close} to\\ 
+\hspace{50pt} a Hilbert-style mathematical proof \\
+\hspace{45pt} (or a Fitch-style natural deduction proof); \\
+\vspace{15pt}
+\hfill backend provers take care of the annoying details.
+\vspace{25pt}
+
+% reasonably light-weight 
+{\color{Maroon} some guidance using keywords like\\
+\hfill \kw{assume-prove}, \kw{pick}, \kw{have}, \kw{witness}, \kw{case}, etc }
+
+\vspace{26pt}
+}
+
+\myframe{proving things about \tla\ specs: \hfill \tlapm}{
+
+{\color{Maroon} Idea:} \\
+\vspace{15pt}
+User writes something fairly close to\\ 
+\hspace{50pt} a Hilbert-style mathematical proof \\
+\hspace{45pt} (or a Fitch-style natural deduction proof); \\
+\vspace{15pt}
+\hfill backend provers {\color{Maroon}take care of the annoying details}. 
+\vspace{25pt}
+
+\hfill {\color{Maroon} we wish... \smiley }
+\vspace{38pt}
+}
+
+
+\myframe{proving things about \tla\ specs: \hfill \tlapm\ proofs}{
+ \hspace{-18pt} {\color{Maroon} The simplest \tlapm\ proof  is a one-liner:}
+
+\begin{example}[reflexivity of $PermsOf$]
+\vspace{-10pt}
+\[
+\begin{array}{r c l }
+\kw{lemma}\ PermsOf\_refl & \triangleq & 
+\kw{assume}\ \kw{new}\ S, \kw{new}\ T, \kw{new}\ X \in [S \rightarrow T] \\
+& & \kw{prove}\ \    X \in PermsOf(X) \\ \\
+&  \kw{by} &   \kw{def}\ \ PermsOf,\ Automorphisms,\ **
+\end{array}
+\]
+
+\end{example}               
+\vspace{80pt}
+}
+
+\myframe{proving things about \tla\ specs: \hfill \tlapm\ proofs}{
+ \hspace{-18pt} {\color{Maroon} The simplest \tlapm\ proof  is a one-liner:}
+
+\begin{example}[reflexivity of $PermsOf$]
+\vspace{-10pt}
+\[
+\begin{array}{r c l }
+\kw{lemma}\ PermsOf\_refl & \triangleq & 
+{\color{Maroon}\textbf{\kw{assume}}}\ \kw{new}\ S, \kw{new}\ T, \kw{new}\ X \in [S \rightarrow T] \\
+& &{\color{Maroon} \textbf{\kw{prove}}}\ \    X \in PermsOf(X) \\ \\
+&  \kw{by} &  \kw{def}\ \ PermsOf,\ Automorphisms,\ **
+\end{array}
+\]
+
+\end{example}               
+
+{\color{Maroon}
+\underline{\kw{assume-prove}} \\ \vspace{10pt}
+equivalent to: \hfill 
+$\forall S,\ \forall T,\ \forall X \in [S \rightarrow T] .\ X \in PermsOf(X) $\\ \vspace{10pt}
+actually: \hfill $S \in [S \rightarrow T]\ \vdash\ X \in PermsOf(X)$ 
+}
+\vspace{20pt}
+}
+
+
+\myframe{proving things about \tla\ specs: \hfill \tlapm\ proofs}{
+ \hspace{-18pt} {\color{Maroon} The simplest \tlapm\ proof  is a one-liner:}
+
+\begin{example}[reflexivity of $PermsOf$]
+\vspace{-10pt}
+\[
+\begin{array}{r c l }
+\kw{lemma}\ PermsOf\_refl & \triangleq & 
+\kw{assume}\ \kw{new}\ S, \kw{new}\ T, \kw{new}\ X \in [S \rightarrow T] \\
+& & \kw{prove}\ \    X \in PermsOf(X) \\ \\
+&{\color{Maroon} \textbf{\kw{by}}} &{\color{Maroon} \textbf{\kw{def}\ \ PermsOf,\ Automorphisms,\ **}}
+\end{array}
+\]
+
+\end{example}               
+\vspace{80pt}
+}
+
+\myframe{proving things about \tla\ specs: \hfill \tlapm\ proofs}{
+ \hspace{-18pt} {\color{Maroon} The simplest \tlapm\ proof  is a one-liner:}
+
+\begin{example}[reflexivity of $PermsOf$]
+\vspace{-10pt}
+\[
+\begin{array}{r c l }
+\kw{lemma}\ PermsOf\_refl & \triangleq & 
+\kw{assume}\ \kw{new}\ S, \kw{new}\ T, \kw{new}\ X \in [S \rightarrow T] \\
+& & \kw{prove}\ \    X \in PermsOf(X) \\ \\
+&{\color{Maroon} \textbf{\kw{by}}} &{\color{Maroon} Isa \ \ \textbf{\kw{def}\ \ PermsOf,\ Automorphisms,\ **}}
+\end{array}
+\]
+
+\end{example}               
+{\color{Maroon} 
+\underline{Tactics} \\ \vspace{10pt}
+\hfill \kw{SMT, (CVC, Z3, Yices), \ Isa, (Auto, Blast, Force), Zenon, TPL} \\ \vspace{10pt}
+default: \hfill \kw{SMT, Zenon, Isa}
+} 
+
+\vspace{22.5pt}
+}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% PERMS OF TRANS 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\myframe{proving things about \tla\ specs: \hfill \tlapm\ proofs}{
+ \hspace{-18pt} {\color{Maroon} Some \tla\ proofs are more complicated (`hierarchical'):}
+
+\footnotesize
+\begin{example}[transitivity of $PermsOf$]
+\footnotesize
+\vspace{-7pt}
+\[
+\begin{array}{r c l }
+\kw{lemma}\ PermsOf\_trans & \triangleq & 
+\kw{assume}\ \kw{new}\ S, \kw{new}\ T, \kw{new}\ X \in [S \rightarrow T], \\
+& & \kw{new}\ Y \in PermsOf(X), \kw{new}\ Z \in PermsOf(Y) \\
+& & \kw{prove}\ \    Z \in PermsOf(X) \\ \\
+\end{array} 
+\] \vspace{-15pt}
+%\scriptsize
+\[
+\begin{array}{r c l}
+& \langle1\rangle 1 & Y \in [S \rightarrow  T] \\
+&  & \kw{by}\  PermsOf\_type \\
+& \langle1\rangle 2 & \kw{pick}\ f \in Automorphisms(S) : Y = X **\, f \\
+&  & \kw{by}\  \kw{def}\  PermsOf \\
+& \langle1\rangle 3 & \kw{pick}\ g \in Automorphisms(S) : Z = Y **\, g \\
+&  & \kw{by}\  \langle1\rangle 1\ \ \kw{def}\  PermsOf \\
+& \langle1\rangle 4 & Z = X **\, (f **\, g) \\
+&  & \kw{by}\   \langle1\rangle 2, \langle1\rangle 3\ \  \kw{def}\  Automorphisms, ** \\
+& \langle1\rangle\ \  & \kw{qed} \\
+&  & \kw{by}\   Automorphisms\_trans, \langle1\rangle 4\ \  \kw{def}\  PermsOf \\
+\end{array}
+\]
+
+\end{example}               
+}
+
+
+
+\myframe{proving things about \tla\ specs: \hfill \tlapm\ proofs}{
+ \hspace{-18pt} {\color{Maroon} Some \tla\ proofs are more complicated (`hierarchical'):}
+
+\footnotesize
+\begin{example}[transitivity of $PermsOf$]
+\footnotesize
+\vspace{-7pt}
+\[
+\begin{array}{r c l }
+\kw{lemma}\ PermsOf\_trans & \triangleq & 
+\kw{assume}\ \kw{new}\ S, \kw{new}\ T, \kw{new}\ X \in [S \rightarrow T], \\
+& &  {\color{Maroon} \textbf{\kw{new}}\ Y \in PermsOf(X), \textbf{\kw{new}}\ Z \in PermsOf(Y)} \\
+& & \color{Maroon} \textbf{\kw{prove}}\ \ Z \in PermsOf(X) \\ \\
+\end{array} 
+\] \vspace{-15pt}
+%\scriptsize
+\[
+\begin{array}{r c l}
+& \langle1\rangle 1 & Y \in [S \rightarrow  T] \\
+&  & \kw{by}\  PermsOf\_type \\
+& \langle1\rangle 2 & \kw{pick}\ f \in Automorphisms(S) : Y = X **\, f \\
+&  & \kw{by}\  \kw{def}\  PermsOf \\
+& \langle1\rangle 3 & \kw{pick}\ g \in Automorphisms(S) : Z = Y **\, g \\
+&  & \kw{by}\  \langle1\rangle 1\ \ \kw{def}\  PermsOf \\
+& \langle1\rangle 4 & Z = X **\, (f **\, g) \\
+&  & \kw{by}\   \langle1\rangle 2, \langle1\rangle 3\ \  \kw{def}\  Automorphisms, ** \\
+& \langle1\rangle\ \  & \kw{qed} \\
+&  & \kw{by}\   Automorphisms\_trans, \langle1\rangle 4\ \  \kw{def}\  PermsOf \\
+\end{array}
+\]
+
+\end{example}               
+}
+
+
+\myframe{proving things about \tla\ specs: \hfill \tlapm\ proofs}{
+ \hspace{-18pt} {\color{Maroon} Some \tla\ proofs are more complicated (`hierarchical'):}
+
+\footnotesize
+\begin{example}[transitivity of $PermsOf$]
+\footnotesize
+\vspace{-7pt}
+\[
+\begin{array}{r c l }
+\kw{lemma}\ PermsOf\_trans & \triangleq & 
+\kw{assume}\ \kw{new}\ S, \kw{new}\ T, \kw{new}\ X \in [S \rightarrow T], \\
+& & \kw{new}\ Y \in PermsOf(X), \kw{new}\ Z \in PermsOf(Y) \\
+& & \kw{prove}\ \    Z \in PermsOf(X) \\ \\
+\end{array} 
+\] \vspace{-15pt}
+%\scriptsize
+\[
+\begin{array}{r c l}
+&\color{Maroon} \langle1\rangle 1 & Y \in [S \rightarrow  T] \\
+&  & {\color{Maroon}\textbf{\kw{by}}}\  PermsOf\_type \\
+&\color{Maroon} \langle1\rangle 2 & \kw{pick}\ f \in Automorphisms(S) : Y = X **\, f \\
+&  & {\color{Maroon}\textbf{\kw{by}}}\  \kw{def}\  PermsOf \\
+&\color{Maroon} \langle1\rangle 3 & \kw{pick}\ g \in Automorphisms(S) : Z = Y **\, g \\
+&  & {\color{Maroon}\textbf{\kw{by}}}\  \langle1\rangle 1\ \ \kw{def}\  PermsOf \\
+&\color{Maroon} \langle1\rangle 4 & Z = X **\, (f **\, g) \\
+&  & {\color{Maroon}\textbf{\kw{by}}}\   \langle1\rangle 2, \langle1\rangle 3\ \  \kw{def}\  Automorphisms, ** \\
+&\color{Maroon} \langle1\rangle\ \  & \color{Maroon} \textbf{\kw{qed}} \\
+&  & {\color{Maroon}\textbf{\kw{by}}}\   Automorphisms\_trans, \langle1\rangle 4\ \  \kw{def}\  PermsOf \\
+\end{array}
+\]
+
+\end{example}               
+}
+
+
+\myframe{proving things about \tla\ specs: \hfill \tlapm\ proofs}{
+ \hspace{-18pt} {\color{Maroon} Some \tla\ proofs are more complicated (`hierarchical'):}
+
+\footnotesize
+\begin{example}[transitivity of $PermsOf$]
+\footnotesize
+\vspace{-7pt}
+\[
+\begin{array}{r c l }
+\kw{lemma}\ PermsOf\_trans & \triangleq & 
+\kw{assume}\ \kw{new}\ S, \kw{new}\ T, \kw{new}\ X \in [S \rightarrow T], \\
+& & \kw{new}\ Y \in PermsOf(X), \kw{new}\ Z \in PermsOf(Y) \\
+& & \kw{prove}\ \    Z \in PermsOf(X) \\ \\
+\end{array} 
+\] \vspace{-15pt}
+%\scriptsize
+\[
+\begin{array}{r c l}
+& \langle1\rangle 1 & Y \in [S \rightarrow  T] \\
+&  & \kw{by}\ \color{Maroon} PermsOf\_type \\
+& \langle1\rangle 2 & \kw{pick}\ f \in Automorphisms(S) : Y = X **\, f \\
+&  & \kw{by}\  \kw{def}\  PermsOf \\
+& \langle1\rangle 3 & \kw{pick}\ g \in Automorphisms(S) : Z = Y **\, g \\
+&  & \kw{by}\ {\color{Maroon} \langle1\rangle 1}\ \ \kw{def}\  PermsOf \\
+& \langle1\rangle 4 & Z = X **\, (f **\, g) \\
+&  & \kw{by}\ {\color{Maroon} \langle1\rangle 2, \langle1\rangle 3}\ \  \kw{def}\  Automorphisms, ** \\
+& \langle1\rangle\ \  & \kw{qed} \\
+&  & \kw{by}\ {\color{Maroon} Automorphisms\_trans, \langle1\rangle 4}\ \  \kw{def}\  PermsOf \\
+\end{array}
+\]
+
+\end{example}               
+}
+
+\myframe{proving things about \tla\ specs: \hfill \tlapm\ proofs}{
+ \hspace{-18pt} {\color{Maroon} Some \tla\ proofs are more complicated (`hierarchical'):}
+
+\footnotesize
+\begin{example}[transitivity of $PermsOf$]
+\footnotesize
+\vspace{-7pt}
+\[
+\begin{array}{r c l }
+\kw{lemma}\ PermsOf\_trans & \triangleq & 
+\kw{assume}\ \kw{new}\ S, \kw{new}\ T, \kw{new}\ X \in [S \rightarrow T], \\
+& & \kw{new}\ Y \in PermsOf(X), \kw{new}\ Z \in PermsOf(Y) \\
+& & \kw{prove}\ \    Z \in PermsOf(X) \\ \\
+\end{array} 
+\] \vspace{-15pt}
+%\scriptsize
+\[
+\begin{array}{r c l}
+& \langle1\rangle 1 & \color{Maroon} \bf Y \in [S \rightarrow  T] \\
+&  & \kw{by}\  PermsOf\_type \\
+& \langle1\rangle 2 & \kw{pick}\ f \in Automorphisms(S) : Y = X **\, f \\
+&  & \kw{by}\  \kw{def}\  PermsOf \\
+& \langle1\rangle 3 & \kw{pick}\ g \in Automorphisms(S) : Z = Y **\, g \\
+&  & \kw{by}\  \langle1\rangle 1\ \ \kw{def}\  PermsOf \\
+& \langle1\rangle 4 & \color{Maroon} \bf Z = X **\, (f **\, g) \\
+&  & \kw{by}\   \langle1\rangle 2, \langle1\rangle 3\ \  \kw{def}\  Automorphisms, ** \\
+& \langle1\rangle\ \  & \kw{qed} \\
+&  & \kw{by}\   Automorphisms\_trans, \langle1\rangle 4\ \  \kw{def}\  PermsOf \\
+\end{array}
+\]
+
+\end{example}               
+}
+
+\myframe{proving things about \tla\ specs: \hfill \tlapm\ proofs}{
+ \hspace{-18pt} {\color{Maroon} Some \tla\ proofs are more complicated (`hierarchical'):}
+
+\footnotesize
+\begin{example}[transitivity of $PermsOf$]
+\footnotesize
+\vspace{-7pt}
+\[
+\begin{array}{r c l }
+\kw{lemma}\ PermsOf\_trans & \triangleq & 
+\kw{assume}\ \kw{new}\ S, \kw{new}\ T, \kw{new}\ X \in [S \rightarrow T], \\
+& & \kw{new}\ Y \in PermsOf(X), \kw{new}\ Z \in PermsOf(Y) \\
+& & \kw{prove}\ \    Z \in PermsOf(X) \\ \\
+\end{array} 
+\] \vspace{-15pt}
+%\scriptsize
+\[
+\begin{array}{r c l}
+& \langle1\rangle 1 & Y \in [S \rightarrow  T] \\
+&  & \kw{by}\  PermsOf\_type \\
+& \langle1\rangle 2 & {\color{Maroon} \text{\bf{\kw{pick}}}}\ f \in Automorphisms(S) : Y = X **\, f \\
+&  & \kw{by}\  \kw{def}\  PermsOf \\
+& \langle1\rangle 3 & {\color{Maroon} \text{\bf{\kw{pick}}}}\ g \in Automorphisms(S) : Z = Y **\, g \\
+&  & \kw{by}\  \langle1\rangle 1\ \ \kw{def}\  PermsOf \\
+& \langle1\rangle 4 & Z = X **\, (f **\, g) \\
+&  & \kw{by}\   \langle1\rangle 2, \langle1\rangle 3\ \  \kw{def}\  Automorphisms, ** \\
+& \langle1\rangle\ \  & \kw{qed} \\
+&  & \kw{by}\   Automorphisms\_trans, \langle1\rangle 4\ \  \kw{def}\  PermsOf \\
+\end{array}
+\]
+
+\end{example}               
+}
+
+
+\myframe{proving things about \tla\ specs: \hfill \tlapm\ proofs}{
+
+\begin{center}
+\href{run:examples/videos/PermsOf.mp4}{\textbf{PermsOf lemmas demo}}
+\end{center}
+
+}
+
+\subsection{Safety Properties: Proving Boxes}
+
+\myframe{proving things about \tla\ specs: \hfill safety proofs}
+{
+For some safety property $P$,  the thing to prove is generally:
+\vspace{25pt}
+\begin{theorem}[Safety]
+\begin{center}
+$Spec\ \Rightarrow\  \Box\, P$
+\end{center}
+\end{theorem}
+
+\vspace{75pt}
+}
+
+\myframe{proving things about \tla\ specs: \hfill safety proofs}
+{
+For some safety property $P$,  the thing to prove is generally:
+\vspace{25pt}
+\begin{theorem}[Safety]
+\begin{center}
+$Init \wedge \Box\, [Next]_V \  \Rightarrow \ \Box\, P$
+\end{center}
+\end{theorem}
+
+\vspace{75pt}
+}
+
+
+\myframe{proving things about \tla\ specs: \hfill safety proofs}
+{
+For some safety property $P$,  the thing to prove is generally:
+\vspace{25pt}
+\begin{theorem}[Safety]
+\begin{center}
+$Init \wedge \Box\, [Next]_V \  \Rightarrow \ \Box\, P$
+\end{center}
+\end{theorem}
+\vspace{20pt}
+{\color{Maroon} Question:} \\
+\hfill How does one prove a $\Box$ ?
+\vspace{27pt}
+}
+
+
+
+
+\myframe{proving things about \tla\ specs: \hfill proving $\Box$}
+{
+\hspace{-18pt} {\color{Maroon}There are two rules that `make' a $\Box$:}
+\vspace{15pt}       
+\begin{rl}[$\Box$-Induction -- standard LTL]
+\begin{prooftree}
+         \AxiomC{$Init \seq P$}
+         \AxiomC{$P\ ,\ [Next]_V \seq  P'$}
+         \RightLabel{\rlable{\Box-Ind}}    
+         \BinaryInfC{$Init\ ,\ \Box\, [Next]_V  \seq \Box\, P$}   
+\end{prooftree}
+\end{rl}
+
+\vspace{30pt}
+
+\begin{rl}[Necessitation]
+\begin{prooftree}
+        \AxiomC{$\seq P$}
+         \RightLabel{\rlable{Nec}}    
+        \UnaryInfC{$\hspace{8pt} \seq \Box\, P$}
+\end{prooftree}
+\end{rl}
+\vspace{45pt}
+
+}
+
+
+\myframe{proving things about \tla\ specs: \hfill proving $\Box$}
+{
+\hspace{-18pt} {\color{Maroon}There are two rules that `make' a $\Box$:}
+\vspace{15pt}       
+\begin{rl}[$\Box$-Induction -- standard LTL]
+\begin{prooftree}
+         \AxiomC{$Init \seq P$}
+         \AxiomC{$P\ ,\ [Next]_V \seq  P'$}
+         \RightLabel{\rlable{\Box-Ind}}    
+         \BinaryInfC{$Init\ ,\ \Box\, [Next]_V  \seq \Box\, P$}       
+\end{prooftree}
+\end{rl}
+
+\vspace{30pt}
+
+\begin{rl}[Necessitation]
+\begin{prooftree}
+        \AxiomC{$\Box\, F_1, \ldots, \Box\, F_n \seq P$}
+         \RightLabel{\rlable{Nec}}    
+        \UnaryInfC{$\hspace{8pt} \Box\, F_1, \ldots, \Box\, F_n \seq \Box\, P$}
+\end{prooftree}
+\end{rl}
+\vspace{45pt}
+
+}
+
+
+\myframe{proving things about \tla\ specs: \hfill proving $\Box$}
+{
+\hspace{-18pt} {\color{Maroon}There are two rules that `make' a $\Box$:}
+\vspace{15pt}       
+\begin{rl}[$\Box$-Induction -- standard LTL]
+\begin{prooftree}
+         \AxiomC{$Init \seq P$}
+         \AxiomC{$P\ ,\ [Next]_V \seq  P'$}
+         \RightLabel{\rlable{\Box-Ind}}    
+         \BinaryInfC{$Init\ ,\ \Box\, [Next]_V  \seq \Box\, P$}       
+\end{prooftree}
+\end{rl}
+
+\vspace{30pt}
+
+\begin{rl}[Necessitation -- careful about weakening !]
+\begin{prooftree}
+        \AxiomC{$\Box\, F_1, \ldots, \Box\, F_n \hspace{10pt} \seq P$}
+        \RightLabel{\rlable{WK}}
+         \UnaryInfC{$\hspace{1pt} \Box\, F_1, \ldots, \Box\, F_n, G \seq  P$}
+        \RightLabel{\color{Maroon} \Large $\times$}
+        \UnaryInfC{$\hspace{9pt} \Box\, F_1, \ldots, \Box\, F_n , G \seq \Box\, P$}
+\end{prooftree}
+\end{rl}
+\vspace{45pt}
+
+}
+
+
+
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% CORRECTNESS FOR QUICKSORT
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\myframe{proving things about \tla\ specs: \hfill correctness of Quicksort}{
+\hspace{-18pt} {\color{Maroon}Correctness of Quicksort is a safety property:}
+\vspace{10pt}
+\begin{example}[correctness of quicksort]
+\vspace{-12pt}
+\[
+\begin{array}{r c l}
+Correctness & \triangleq & (U = \{\})\  \Rightarrow\  A \in PermsOf(A_0) \ \wedge \ IsSorted(A)\\ \\
+\kw{theorem} & & Spec \Rightarrow \Box \, Correctness
+\\
+\end{array}
+\]
+
+\end{example}
+
+\vspace{15pt}
+
+Using $\Box$-Induction to prove this directly is not a good idea, \\
+\hfil because $Correctness$ is vacuously true as long as $U \neq \{\}$.
+
+\vspace{15pt}
+\hfill {\color{Maroon} We need an inductive invariant... }
+\vspace{18.5pt}
+}
+
+
+\myframe{proving things about \tla\ specs: \hfill correctness of Quicksort}{
+\hspace{-18pt} {\color{Maroon}Correctness of Quicksort is a safety property:}
+\vspace{10pt}
+\begin{example}[correctness of quicksort]
+\[
+\begin{array}{r c l}
+Correctness & \triangleq & (U = \{\})\  \Rightarrow\  A \in PermsOf(A_0) \ \wedge \ IsSorted(A)
+\\ \\
+% \kw{theorem} & & Spec \Rightarrow \Box \, Correctness
+% \\ \\
+UnsortedIsCovered & \triangleq &  \forall\ i, j \in 1\,..\,N .\  i < j \ \wedge \ A[j] < A[i] \\
+& & \Rightarrow \exists\ u \in U. \  \{i,j\} \subseteq u[1]\,..\, u[2]\\
+\\
+NoOverlap & \triangleq & \forall\ u,v \in U .\ (u[1]\, ..\, u[2]) \cap (v[1]\, ..\, v[2]) \neq \{\} \\
+& &  \Rightarrow u = v 
+\\ \\
+Inv & \triangleq & UnsortedIsCovered \wedge NoOverlap 
+\\
+\end{array}
+\]
+
+\end{example}
+}
+
+\myframe{proving things about \tla\ specs: \hfill correctness of Quicksort}{
+\hspace{-18pt} {\color{Maroon}The proof will look like this:}
+\vspace{10pt}
+\begin{example}[correctness of quicksort]
+\[
+\begin{array}{r c l r}
+\kw{theorem} & & Spec \Rightarrow \Box \, Correctness 
+\\ \\
+& \langle 1 \rangle 1 & Spec \Rightarrow \Box \, TypeOK & \mathsf{\Box-Ind}
+\\
+& \langle 1 \rangle 2 & Spec \Rightarrow \Box \, Inv & \mathsf{\Box-Ind}
+\\ 
+& \langle 1 \rangle 3 & TypeOK \wedge Inv \Rightarrow Correctness
+\\
+& \langle 1 \rangle q & \kw{qed} \\
+& & \kw{by}\ \langle1\rangle1, \langle1\rangle2, \langle1\rangle3, \kw{PTL} & \mathsf{Nec}
+\\
+\end{array}
+\]
+
+\end{example}
+
+\vspace{36.5pt}
+}
+
+
+
+\myframe{proving things about \tla\ specs: \hfill correctness of Quicksort}{
+\hspace{-18pt} {\color{Maroon}The problem with weakening manifests itself here:}
+\vspace{10pt}
+\begin{example}[correctness of quicksort]
+\[
+\begin{array}{r c l r}
+\kw{theorem} & & Spec \Rightarrow \Box \, Correctness 
+\\ \\
+& \langle 1 \rangle 1 & Spec \Rightarrow \Box \, TypeOK & \mathsf{\Box-Ind}
+\\
+& \langle 1 \rangle 2 & Spec \Rightarrow \Box \, Inv & \mathsf{\Box-Ind}
+\\ 
+& \langle 1 \rangle 3 & TypeOK \wedge Inv {\color{Maroon} \wedge\  Init} \Rightarrow Correctness
+\\
+& \langle 1 \rangle q & \kw{qed} \\
+& & \kw{by}\ \langle1\rangle1, \langle1\rangle2, \langle1\rangle3, \kw{PTL} & \color{Maroon} \Large{ \mathbf{\times}}
+\\
+\end{array}
+\]
+
+\end{example}
+
+\vspace{36.5pt}
+}
+
+
+
+\myframe{proving things about \tla\ specs: \hfill correctness of Quicksort}{
+
+\begin{center}
+\href{run:examples/videos/QuicksortCor.mp4}{\textbf{Quicksort correctness demo}}
+\end{center}
+% 1. dummy proof at bottom 
+% 2. add init show failure
+% 3. show proof with lemmata, show both lemmata
+
+}
+
+
+\myframe{proving things about \tla\ specs: \hfill so far so good ...}{
+\footnotesize
+\hspace{-18pt} {\color{Maroon} There are several nice aspects of writing proofs in \tla:}
+
+\begin{itemize}
+        \item little overhead over the pen-and-paper version ;
+        \item proofs are quite robust wrt to changes in definitions, etc 
+\href{run:examples/videos/NoOverlaps.mp4}{{\color{Maroon}(\textbf{demo})}} ; 
+        \item interface facilitates asynchronous working style ; % {\color{Maroon} ...}
+        \item module system ;
+        \item show me another ITP that supports modal reasoning.
+\end{itemize}
+
+\vspace{20pt}
+
+\hspace{-18pt} {\color{Maroon} There are also several not-so-nice aspects of writing proofs in \tla:}
+
+\begin{itemize}
+        \item controlling the exact obligations is subtle ; 
+% this is partly due to design decisions taken to minimize the explicit modal reasoning... 
+        \item modal reasoning is subtle, can look strange, and is limited {\color{Maroon} (at present)} ; 
+        \item no certificates {\color{Maroon} (at present)}.
+\end{itemize}
+\vspace{10pt}
+
+}
+

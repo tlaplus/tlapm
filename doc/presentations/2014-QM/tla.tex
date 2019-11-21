@@ -1,0 +1,427 @@
+\myframe{writing specifications in \tla: \hfill the language}
+{
+\hspace{-10pt}{\color{Maroon}\tla\ is based on Zermelo-Fraenkel set-theory, including Choice:}
+%\vspace{10pt}
+
+\begin{itemize}
+  \item sets + separation \& replacement
+  \item \kw{choose} operator
+  \item functions, arrays
+  \item (recursive) definitions
+  \item $\lambda$-abstraction
+
+% meant to represent things that don't change during execution  
+  \item \kw{constant}s (i.e. rigid variables)\\
+    \hspace{20pt} +  $1^{st}$-order quantifiers $\forall, \exists$\\
+    \hspace{20pt} + implicit $2^{nd}$-order quantification {\color{ForestGreen}(e.g. ``$\code{ \kw{constant}\ P(\_)}$'')}
+\end{itemize}
+\vspace{-15pt}
+\hspace{-10pt}{\color{Maroon} \footnotesize  constant \rule{280pt}{.5pt} }
+
+\vspace{34pt}
+}
+
+
+\myframe{writing specifications in \tla: \hfill the language}
+{
+\hspace{-10pt}{\color{Maroon}\tla\ is based on Zermelo-Fraenkel set-theory, including Choice:}
+%\vspace{10pt}
+
+\begin{itemize}
+  \item sets + separation \& replacement
+  \item \kw{choose} operator
+  \item functions, arrays
+  \item (recursive) definitions
+  \item $\lambda$-abstraction
+
+% meant to represent things that don't change during execution  
+  \item \kw{constant}s (i.e. rigid variables)\\
+    \hspace{20pt} +  $1^{st}$-order quantifiers $\forall, \exists$\\
+    \hspace{20pt} + implicit $2^{nd}$-order quantification {\color{ForestGreen}(e.g. ``$\code{ \kw{constant}\ P(\_)}$'')}
+\end{itemize}
+\vspace{-15pt}
+\hspace{-10pt}{\color{Maroon} \footnotesize  constant \rule{280pt}{.5pt} }
+
+\vspace{-8.5pt}
+\begin{itemize}
+% meant to represent things that may change during execution  
+  \item \kw{variable}s (i.e. flexible variables)\\
+%    \hspace{20pt} + $1^{st}$-order quantifiers ($\tempA, \tempE$)
+\end{itemize}
+\vspace{-15pt}
+\hspace{5pt}{\color{Maroon} \footnotesize state \rule{280pt}{.5pt} }
+}
+
+
+\myframe{writing specifications in \tla: \hfill the language}
+{
+\hspace{-10pt}{\color{Maroon}  \ldots constant + state + }
+\begin{itemize}
+  \item prime operator $'$
+\end{itemize}
+\hspace{0pt}{\color{Maroon} \footnotesize action \rule{280pt}{.5pt} }
+
+\vspace{150pt}
+
+}
+
+\myframe{writing specifications in \tla: \hfill the language}
+{
+\hspace{-10pt}{\color{Maroon}  \ldots constant + state + }
+\begin{itemize}
+  \item prime operator $'$
+\end{itemize}
+\hspace{0pt}{\color{Maroon} \footnotesize action \rule{280pt}{.5pt} }
+
+\vspace{62pt}
+
+\hspace{-10pt}{\color{Maroon}  \ldots constant + state + }
+\begin{itemize}
+  \item modalities $\Box, \quad (\Diamond \triangleq       \neg \Box \neg)$
+  \item temporal quantifiers $\tempE, \quad (\tempA \triangleq \neg \tempE \neg)$
+\end{itemize}
+\hspace{-12pt}{\color{Maroon} \footnotesize temporal \rule{280pt}{.5pt} }
+\vspace{15pt}
+}
+
+
+\myframe{writing specifications in \tla: \hfill stuttering}
+{
+\hspace{-18pt} {\color{Maroon} Careful: \hfill Not all actions can be boxed.} \\
+\vspace{25pt}
+
+In fact, only {\color{Maroon} stuttering} steps can be boxed: \\
+
+\begin{center} $[A]_v \ \triangleq\  A \vee v' = v$ \end{center} 
+
+\vspace{75pt}
+}
+
+
+\myframe{writing specifications in \tla: \hfill stuttering}
+{
+\hspace{-18pt} {\color{Maroon} Careful: \hfill Not all actions can be boxed.} \\
+\vspace{25pt}
+
+ In fact, only {\color{Maroon} stuttering} steps can be boxed: \\
+
+\begin{center} $[A]_v \ \triangleq\  A \vee v' = v$ \end{center} 
+
+\hspace{-18pt} {\color{Maroon} Why? \hfill Refinement}\\
+ % spec of clock without seconds is implemented by clock with seconds
+
+\vspace{63pt}
+}
+
+
+
+\myframe{writing specifications in \tla: \hfill \enabled}
+{
+\hspace{-18pt}{\color{Maroon}For an action $A$, $\enabled\ A$ is intended to be a state-predicate\\
+\hfill that is true iff $A$ can be executed in the current state. }
+
+\vspace{25pt}
+        
+ \enabled\ turns action- into state-expressions \\ 
+    \hfill  by binding all primed variables $x'$ under an $\exists$. 
+
+\vspace{100pt}
+}
+
+
+\myframe{writing specifications in \tla: \hfill \enabled}
+{
+\hspace{-18pt}{\color{Maroon}For an action $A$, $\enabled\ A$ is intended to be a state-predicate\\
+\hfill that is true iff $A$ can be executed in the current state. }
+
+\vspace{25pt}
+
+ \enabled\ turns action- into state-expressions \\ 
+    \hfill  by binding all primed variables $x'$ under an $\exists$. 
+
+\begin{example}[\enabled]
+\[
+\begin{array}{ r c l}
+Decrement(x) &   \triangleq &  \hspace{16pt} x \in \mathbb{N} \setminus \{0\}\  \wedge\   x' = x-1 \\
+\\
+\enabled\ Decrement(x) & \triangleq &  \exists y.\ x \in \mathbb{N} \setminus \{0\} \ \wedge\  y\, = x - 1 \\
+& \Leftrightarrow & \hspace{16pt} x \in \mathbb{N} \setminus  \{0\}
+\end{array}
+\]
+\scriptsize
+\hfill So $Decrement(x)$ is not enabled in any state where $x=0$, $x = "abc"$ etc.
+\end{example}
+
+}
+
+
+\myframe{writing specifications in \tla: \hfill \enabled}
+{
+\hspace{-18pt}{\color{Maroon}For an action $A$, $\enabled\ A$ is intended to be a state-predicate\\
+\hfill that is true iff $A$ can be executed in the current state. }
+
+\vspace{15pt}
+\enabled\ is rather complicated to handle: 
+%\vspace{8pt}
+
+\begin{example}[\enabled\ does not commute with substitution.]
+\[
+\begin{array}{ r c l}
+A &   \triangleq & \hspace{16pt} x \in \mathbb{Z} \ \wedge\ x' \in \mathbb{Z} \ \wedge\ x' < 0\\ 
+\\
+\big(\enabled\ A\big)[ n^2 / v] & \triangleq &  \exists y.\ x \in \mathbb{Z}  \ \wedge\  y\, \in \mathbb{Z} \ \wedge \ y\, < 0 \\
+& \Leftrightarrow &  \hspace{16pt} x \in \mathbb{Z} \\ 
+\\
+\enabled\ \big( A [n^2 / v] \big) & \triangleq & \exists y. \ n^2 \in \mathbb{Z} \ \wedge \ y^2 \in \mathbb{Z} \ \wedge \ y^2 < 0 \\
+& \Leftrightarrow & \kw{false}
+\end{array}
+\]
+\end{example}
+
+}
+
+
+\myframe{writing specifications in \tla: \hfill Fairness}
+{
+
+... but \enabled\ is needed to express fairness: 
+
+\vspace{25pt}
+
+\begin{definition}[Fairness]
+\[
+\begin{array}{r c l}
+\kw{WF}_v(A) & \triangleq & \Box \Diamond \neg \enabled\ \langle A \rangle_v \ \vee\ \Box \Diamond \langle A \rangle _v \\
+& \Leftrightarrow & \Diamond \Box \hspace{7pt} \enabled\ \langle A \rangle_v \Rightarrow \Box \Diamond \langle A \rangle_v \\
+& \Leftrightarrow & \Box \big( \Box \enabled\ \langle A \rangle_v \Rightarrow \Diamond \langle A \rangle_v \big) \\
+\\
+\kw{SF}_v(A) & \triangleq & \Diamond  \Box \neg \enabled\ \langle A \rangle_v \ \vee\ \Box \Diamond \langle A \rangle _v \\
+& \Leftrightarrow &  \Box \Diamond \hspace{7pt} \enabled\ \langle A \rangle_v \Rightarrow \Box \Diamond \langle A \rangle_v \\
+& \Leftrightarrow & \Box \big( \Box \Diamond  \enabled\ \langle A \rangle_v \Rightarrow \Diamond \langle A \rangle_v \big)
+
+\end{array}
+\]
+\scriptsize
+\hfill where $\langle A \rangle_v \ \triangleq\  A \wedge t' \neq t$ is the dual of $[A]_v$.
+\end{definition}
+
+}
+
+
+% enabled is required to express fairness.
+
+% enabled does not distribute with substitution
+\myframe{writing specifications in \tla: \hfill Quicksort} {
+{\color{Maroon} Let's go through a simple example... }
+
+}
+
+\myframe{writing specifications in \tla: \hfill Quicksort} {
+\footnotesize
+\begin{example}[Input + Types \ \& \ Correctness]
+\footnotesize
+\[
+\begin{array}{r c l}
+
+\\
+\kw{constants} 
+& & A_0, N \\
+%
+ConstantAssump 
+& \triangleq & N \in Nat \setminus \{0\}\ \\
+& \wedge &  A_0 \in [1\, .. \,N \rightarrow Int]\\ 
+%
+\\ \hline \\
+IsSorted(B) & \triangleq 
+& \forall\ i, j \in 1\,.. \,N : (i < j) \Rightarrow (B[i] \leq B[j]) \\ \\
+\end{array}
+\]
+\end{example}
+}
+
+\myframe{writing specifications in \tla: \hfill Quicksort} {
+\footnotesize
+\begin{example}[Permutations \& Partition]
+\footnotesize
+\[
+\begin{array}{r c l}
+\vspace{-20pt}\\
+f **\, g & \triangleq &  [\,x \in \kw{domain}\ g \mapsto f[g[x]]\,]\\
+\\
+% (* The set of automorphisms of a finite set S. *)
+Automorphisms(S) 
+& \triangleq & \{ f \in [S \rightarrow S] :\ \forall\ y \in S : \exists\ x \in S : f[x] = y \}\\
+\\
+%
+% (* Set of permutations of array Arr (with finite domain). *)
+PermsOf(Arr) & \triangleq & \{ Arr **\, f :\ f \in Automorphisms(\kw{domain}\ Arr) \}\\
+\\ \hline \\
+\color{YellowGreen}
+%
+% (* Set of permutations such that all elements below p are smaller than all elements above it. *)
+OrderingPerms(Arr, p) & \color{YellowGreen} \triangleq &
+\color{YellowGreen}  \{ B \in PermsOf(Arr) :\\
+& & \color{YellowGreen} 
+ \hspace{10pt} \forall\ i,j \in \kw{domain}\ Arr
+ : i \leq p \wedge p < j \rightarrow B[i] \leq B[j] \}\\
+\\
+%
+% (* Copy of array Arr with elements between lo and hi overridden with values from B. *)
+\color{YellowGreen} Override(Arr, lo, hi, B) & \color{YellowGreen} \triangleq &
+\color{YellowGreen}  [x \in \kw{domain}\ Arr \mapsto \kw{if}\ x \in lo\ ..\ hi\\
+& & \color{YellowGreen} \hspace{74pt}  \kw{then}\ B[x]\ \kw{else}\ Arr[x]]\\
+\\
+%
+\color{YellowGreen} Partitions(B, p, lo, hi) & \color{YellowGreen} \triangleq &
+\color{YellowGreen}  \{ Override(B, lo, hi, C) : \\
+& & \color{YellowGreen} \hspace{10pt} C \in OrderingPerms(Restrict(B, lo\ ..\ hi), p) \} \\
+\end{array}
+\]
+\end{example}
+
+}
+
+
+\myframe{writing specifications in \tla: \hfill Quicksort} {
+\footnotesize
+\begin{example}[Permutations \& Partition]
+\footnotesize
+\[
+\begin{array}{r c l} 
+\vspace{-20pt}\\
+f **\, g & \triangleq &  [\,x \in \kw{domain}\ g \mapsto f[g[x]]\,]\\
+\\
+% (* The set of automorphisms of a finite set S. *)
+Automorphisms(S) 
+& \triangleq & \{ f \in [S \rightarrow S] :\ \forall\ y \in S : \exists\ x \in S : f[x] = y \}\\
+\\
+%
+% (* Set of permutations of array Arr (with finite domain). *)
+PermsOf(Arr) & \triangleq & \{ Arr **\, f :\ f \in Automorphisms(\kw{domain}\ Arr) \}\\
+\\ \hline \\
+%
+% (* Set of permutations such that all elements below p are smaller than all elements above it. *)
+OrderingPerms(Arr, p) & \triangleq &
+  \{ B \in PermsOf(Arr) :\\ 
+& & \hspace{10pt} \forall\ i,j \in \kw{domain}\ Arr
+ : i \leq p \wedge p < j \rightarrow B[i] \leq B[j] \}\\
+\\
+%
+% (* Copy of array Arr with elements between lo and hi overridden with values from B. *)
+Override(Arr, lo, hi, B) & \triangleq &
+  [x \in \kw{domain}\ Arr \mapsto \kw{if}\ x \in lo\ ..\ hi\\
+& & \hspace{74pt}  \kw{then}\ B[x]\ \kw{else}\ Arr[x]]\\
+\\
+%
+Partitions(B, p, lo, hi) & \triangleq &
+  \{ Override(B, lo, hi, C) : \\
+& & \hspace{10pt} C \in OrderingPerms(Restrict(B, lo\ ..\ hi), p) \} \\
+\end{array}
+\]
+\end{example}
+}
+
+
+\myframe{writing specifications in \tla: \hfill Quicksort} {
+\footnotesize
+\begin{example}[Variables + Types \& Algorithm Specification]
+\footnotesize
+\[
+\begin{array}{r c l}
+\vspace{-20pt}\\
+\kw{variables} & & A, U \\
+TypeOK  & \triangleq &  A \in [1\,..\,N \rightarrow Int] \\
+& \wedge &  A \in PermsOf(A_0) \\
+& \wedge & U \in \kw{subset}\ \{ u \in (1\, ..\, N) \times (1\, ..\, N) : u[1] \leq u[2] \} \\
+%          
+\\ \hline \\
+%
+\color{YellowGreen} Init & \color{YellowGreen} \triangleq & \color{YellowGreen}  A = A_0  \wedge  U = \{ \langle 1, N \rangle \} \\
+\\ 
+\color{YellowGreen} Next & \color{YellowGreen} \triangleq % &  U \neq \{\} \\
+  & \color{YellowGreen}   \exists\ b \in 1\, ..\, N,\ t \in 1\, ..\, N : \langle b, t\rangle \in U \ \wedge \\
+  & & \color{YellowGreen} \kw{if}\ b \neq t \ \kw{then}\ \ \exists\ p \in b..(t-1) : \\
+  & &    \hspace{58pt}   \color{YellowGreen}   A' \in Partitions(A, p, b, t) \  \wedge \\
+  & &    \hspace{58pt}   \color{YellowGreen}   U' = (U \setminus \{\langle b, t\rangle \}) \cup \{\langle b, p\rangle, \langle p+1, t\rangle \} \\
+  & & \hspace{32pt} \color{YellowGreen} \kw{else}\ \ \  U' = \ \ U \setminus \{\langle b, t\rangle \}\  \wedge\  A' = A \\
+\\                        
+\color{YellowGreen} Spec & \color{YellowGreen} \triangleq & \color{YellowGreen} Init \wedge \Box[Next]_{\langle A, U \rangle} \wedge \kw{WF}_{\langle A, U\rangle}(Next) \\
+\end{array}
+\]
+\end{example}
+}
+
+
+\myframe{writing specifications in \tla: \hfill Quicksort} {
+\footnotesize
+\begin{example}[Variables + Types \& Algorithm Specification]
+\footnotesize
+\[
+\begin{array}{r c l}
+\vspace{-20pt}\\
+\kw{variables} & & A, U \\
+TypeOK  & \triangleq &  A \in [1\,..\,N \rightarrow Int] \\
+& \wedge &  A \in PermsOf(A_0) \\
+& \wedge & U \in \kw{subset}\ \{ u \in (1\, ..\, N) \times (1\, ..\, N) : u[1] \leq u[2] \} \\
+%          
+\\ \hline \\
+%
+Init & \triangleq &  A = A_0  \wedge  U = \{ \langle 1, N \rangle \} \\
+\\ 
+Next & \triangleq % &  U \neq \{\} \\
+  &   \exists\ b \in 1\, ..\, N,\ t \in 1\, ..\, N : \langle b, t\rangle \in U \ \wedge \\
+  & & \kw{if}\ b \neq t \
+             \kw{then}\ \ \exists\ p \in b..(t-1) : \\
+  & &    \hspace{58pt}      A' \in Partitions(A, p, b, t) \  \wedge \\
+  & &    \hspace{58pt}      U' = (U \setminus \{\langle b, t\rangle \}) \cup \{\langle b, p\rangle, \langle p+1, t\rangle \} \\
+  & & \hspace{32pt}  \kw{else}\ \ \  U' = \ \ U \setminus \{\langle b, t\rangle \}\  \wedge\  A' = A \\
+\\                        
+\color{YellowGreen} Spec & \color{YellowGreen} \triangleq & \color{YellowGreen} Init \wedge \Box[Next]_{\langle A, U \rangle} \wedge \kw{WF}_{\langle A, U\rangle}(Next) \\
+\end{array}
+\]
+\end{example}
+}
+
+
+\myframe{writing specifications in \tla: \hfill Quicksort} {
+\footnotesize
+\begin{example}[Variables + Types \& Algorithm Specification]
+\footnotesize
+\[
+\begin{array}{r c l}
+\vspace{-20pt}\\
+\kw{variables} & & A, U \\
+TypeOK  & \triangleq &  A \in [1\, ..\, N \rightarrow Int] \\
+& \wedge &  A \in PermsOf(A_0) \\
+& \wedge & U \in \kw{subset}\ \{ u \in (1\, ..\, N) \times (1\, ..\, N) : u[1] \leq u[2] \} \\
+%          
+\\ \hline \\
+%
+Init & \triangleq &  A = A_0  \wedge  U = \{ \langle 1, N \rangle \} \\
+\\ 
+Next & \triangleq % &  U \neq \{\} \\
+  &   \exists\ b \in 1\, ..\, N,\ t \in 1\, ..\, N : \langle b, t\rangle \in U \ \wedge \\
+  & & \kw{if}\ b \neq t \
+             \kw{then}\ \ \exists\ p \in b..(t-1) : \\
+  & &    \hspace{58pt}      A' \in Partitions(A, p, b, t) \  \wedge \\
+  & &    \hspace{58pt}      U' = (U \setminus \{\langle b, t\rangle \}) \cup \{\langle b, p\rangle, \langle p+1, t\rangle \} \\
+  & & \hspace{32pt}  \kw{else}\ \ \  U' = \ \ U \setminus \{\langle b, t\rangle \}\  \wedge\  A' = A \\
+\\                        
+Spec & \triangleq & Init \wedge \Box[Next]_{\langle A, U \rangle} \wedge \kw{WF}_{\langle A, U\rangle}(Next) \\
+\end{array}
+\]
+\end{example}
+}
+
+\myframe{writing specifications in \tla: \hfill By the way ...} {
+ 
+... \textsc{PlusCal} is a pseudo-code language, \\ 
+\vspace{25pt}
+\hfill from which \tla\ specifications can be automatically derived.
+\vspace{100pt}
+}
+
+% Now we can write down interesting things like:
+% - simple: Quicksort
+% - complex: Paxos
+% Notice, everything always looks like Init /\ [Next]_vars (+ Fairness)

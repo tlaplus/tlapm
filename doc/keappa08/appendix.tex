@@ -1,0 +1,1047 @@
+%%% -*- mode: LaTeX; TeX-master: "main.tex"; -*-
+
+\ifx\master\undefined
+\documentclass[a4paper]{easychair}
+\usepackage{submission}
+\begin{document}
+{\let\master\relax\input{frontmatter}}
+\fi
+%%%% PLEASE DO NOT EDIT ABOVE THIS LINE
+
+\appendix
+
+% \def\nil{\bullet}
+\def\nil{%
+  \begin{picture}(0,1)(0,-3)%
+    \circle*{2}
+  \end{picture}%
+}
+
+The appendices are provided as an aid to the Programme Committee and
+the reviewers of the submission. They contain a level of detail that
+may be inappropriate for a final version, and any part of it that is
+found to be invaluable in understanding the body of the paper will be
+incorporated into the body.
+
+
+\section{Details of the \PM}
+\label{apx}
+
+\ednote{KC}{Unblobbify the definition paragraphs in this page.}
+
+\llnote{On a quick reading, this looks OK.  However, I think it's longer
+than it needs to be.  Just because it isn't included in the page count
+doesn't mean we shouldn't be as concise as possible.  Let's see if we
+can cut unnecessary material.\\[.3em]
+Also, we need to be consistent
+in whether we write \emph{Def.} or \emph{Defn.} or \emph{Definition}.
+In the main body of the text, I have eliminated such abbreviations
+(e.g., using \emph{Section} instead of \emph{Sec.}).  But they're
+OK in the appendix.
+}
+
+We shall now give a somewhat formal declarative specification of the
+\PM and prove the key theorem~\ref{thm:meaning}. First, a quick
+summary of the abstract syntax of \tlatwo proofs, ignoring the
+stylistic aspects of their concrete representation.
+
+\sdef{lev}#1{_{\s{#1}}}
+
+\begin{defn}[\tlatwo Proof Language] \label{defn:proof-language}
+  %
+  % All constructs in the \tlatwo proof language have an associated
+  % \emph{level}, which is a natural number representing the nesting
+  % depth of the proof; a construct "\chi" of level "n" is written as
+  % "\chi lev n". 
+  \tlatwo \emph{proofs}, \emph{non-leaf proofs}, \emph{proof steps}
+  and \emph{begin-step} tokens have the following syntax, where "n"
+  ranges over natural numbers, "l" over labels, "e" over expressions,
+  "\Phi" over lists of expressions, "o" over operator definitions,
+  "\P" over sets of operator names, "\vec \beta" over lists of binders
+  (\ie, constructs of the form "x" and "x \in e" used to build
+  quantified expressions), and "\alpha" over expressions or \ASSUME
+  \ldots \PROVE forms.
+
+  \begin{quote} \itshape
+    \begin{tabbing}
+      (Proofs) \hspace{4.5em}  \= "\pi" \LSP \= "::=" \ \= "\OBVIOUS OR \OMITTED OR \BY\ \Phi\ \DEFS\ \P OR \Pi" \\
+      (Non-leaf proofs) \> "\Pi" \> "::=" \> "\sigma_n.\ \QED\ \PROOF\ \pi" \\
+                   \>             \> "\ \ \ |"  \> "\sigma_n.\ \tau\quad \Pi" \\
+      (Proof steps) \> "\tau" \> "::=" \> "\USE\ \Phi\ \DEFS\ \P OR \HIDE\ \Phi\ \DEFS\ \P OR \DEFINE\ o" \\
+                    \>          \> "\ \ \ |" \> "\HAVE\ e OR \TAKE\ \vec \beta OR \WITNESS\ \Phi" \\
+                    \>          \> "\ \ \ |" \> "\alpha\ \PROOF\ \pi OR \SUFFICES\ \alpha\ \PROOF\ \pi 
+                                                    OR \PICK\ \vec \beta : e\ \PROOF\ \pi" \\
+      (Begin-step tokens) \> "\sigma_n" \> "::=" \> "\s n OR \s n l"
+    \end{tabbing}
+  \end{quote}
+  A proof that is not a non-leaf proof is called a \emph{leaf
+    proof}. The level numbers that occur in the begin-step tokens of
+  the proof of a step (the "\pi" in "\alpha\ \PROOF\ \pi", \etc.) must be strictly higher than those of the step
+  itself.
+\end{defn}
+
+\subsection{The Meta-Language}
+\label{apx:context}
+
+The \PM uses proofs in the \tlatwo proof language
+(Def.~\ref{defn:proof-language}) to manipulate constructs in the
+meta-language of \tlatwo. Although this meta-language naturally has no
+representation in \tlatwo itself, we define its syntax formally as
+follows.
+
+\begin{defn}[Meta-Language] \label{defn:syntax}
+  %
+  The \tlatwo meta-language consists of \emph{obligations},
+  \emph{assumptions} and \emph{definables} with the following syntax,
+  where "e" ranges over \tlatwo expressions, "x" and "o" over \tlatwo
+  identifiers, and "\vec x" over lists of \tlatwo identifiers.
+  %
+  \begin{quote}
+    \begin{tabbing}
+      (Obligations) \SP \= "\phi" \SP \LSP \= "::=" \ \= "\obl{h_1, \dotsc, h_n ||- e}" \` ("n \ge 0") \\
+      (Assumptions) \> "h" \> "::=" \> "\NEW x OR o \DEF \delta OR \phi OR \hide{o \DEF \delta} OR \hide{\phi}" \\
+      (Definables) \> "\delta" \> "::=" \> "\phi OR \LAMBDA\ \vec x : e"
+    \end{tabbing}
+  \end{quote}
+  %
+  The expression after "||-" in an obligation is called its
+  \emph{goal}. An assumption written inside square brackets
+  "\hide{\ }" is said to be \emph{hidden}; otherwise it is
+  \emph{usable}. An assumption "h" can be \emph{made usable}, written
+  "\unhide h", by removing the brackets surrounding it (if any).
+  %
+  A list of assumptions is called a \emph{context}, with the empty
+  context written as "\nil"; we let "\G", "\D" and "\W" range over
+  contexts, with "\G, \D" standing for the context that is the
+  concatenation of "\G" and "\D". The context "\unhide{\G}" is "\G"
+  with all its hidden assumptions made usable.
+  % 
+  The obligation "\obl{\nil ||- e}" is written simply as "e". The
+  assumptions "\NEW x", "o \DEF \delta" and "\hide{o \DEF \delta}"
+  \emph{bind} the identifiers "x" and "o" respectively. We write "x
+  \in \G" if "x" is bound in "\G" and "x \notin \G" if "x" is not
+  bound in "\G". The context "\G, h" is considered syntactically
+  well-formed iff "h" does not bind an identifier already bound in
+  "\G".
+\end{defn}
+
+An obligation is a statement that its goal follows from the
+assumptions in its context. \tlatwo already defines such a statement
+using \ASSUME \ldots \PROVE, but the context in such statements have
+no hidden assumptions or definitions. (To simplify the presentation
+slightly, we give the semantics of a slightly enhanced proof language
+where proof steps are allowed to mention obligations instead of just
+\tlatwo \ASSUME \ldots \PROVE statements.) We define an embedding of
+obligations into Isabelle/\tlaplus propositions, which we take as the
+ultimate primitives of the \tlatwo meta-logic.
+
+\begin{defn} \label{defn:isabelle-embedding}
+  %
+  The Isabelle/\tlaplus \emph{embedding} "\isa{-}" of obligations,
+  contexts and definables is as follows:
+  %
+  \begin{align*}
+    % \begin{aligned}
+    \isa{"\G ||- e"} &\ =\  "\isa{\unhide{\G}}\, e" \\[1ex]
+    % \end{aligned}
+    % \qquad \qquad \qquad
+    % \begin{aligned}
+    \isa{\nil} &\ =\  \\
+    \isa{"\G, \NEW x"} &\ =\  \isa{\G}\,\And x. \\
+    \isa{"\G, o \DEF \delta"} &\ =\  \isa{\G}\,\And o.\,\bigl(o \equiv \isa{\delta}\bigr)\ "==>" \\
+    \isa{"\G, \phi"} &\ =\  \isa{\G}\,\bigl(\isa{\phi}\bigr)\ "==>" \\[1ex]
+    % \end{aligned}
+    \isa{"\LAMBDA\ \vec x : e"} &\ =\ "\lambda \vec x.\ e" % \\[1ex]
+  \end{align*}
+\end{defn}
+
+\noindent
+For example, "\isa{\NEW P, \hide{\obl{\NEW x ||- P(x)}} ||- \forall x
+  : P(x)} = \And P.\ \left(\And x.\ P(x)\right) ==> \forall x : P(x)".
+Note that usable and hidden assumptions are treated identically for
+the verifiability of an obligation.
+
+The embedding of ordinary \tlatwo expressions is the identity because
+Isabelle/\tlaplus contains \tlatwo expressions as part of its object
+syntax. Thus, we do not have to trust the embedding of ordinary
+\tlatwo expressions, just that of the obligation language.  In
+practice, some aspects of \tlatwo expressions, such as the
+indentation-sensitive conjunction and disjunction lists, are sent by
+the \PM to Isabelle using an indentation-insensitive
+encoding. Moreover, as already mentioned, Isabelle/\tlaplus accepts
+only constant level expressions. While Isabelle/\tlaplus can
+implicitly generalize over the free identifiers in a lemma, we shall
+be explicit about binding and consider obligations verifiable only if
+they are closed.
+
+\begin{defn}[Verifiability] \label{defn:verifiable} \mbox{}
+  %
+  The obligation "\obl{\G ||- e}" is said to \emph{be verifiable} iff
+  it is closed and "\isa{\G ||- e}" is a well-typed proposition of
+  Isabelle/\tlaplus and is certified by Isabelle kernel to follow from
+  the axioms of the Isabelle/\tlaplus logic.
+\end{defn}
+
+We state, omitting the trivial proofs, a number of useful facts about
+obligations (which are all theorems in Isabelle/\tlaplus). The last one
+(fact~\ref{thm:classic}) is true because \tlaplus is based on
+classical logic.
+
+\begin{fac}[Definition] \label{thm:definition}
+  % 
+  If "\obl{\G, \NEW o, \D ||- e}" is verifiable, then "\obl{\G, o \DEF
+    \delta, \D ||- e}" is verifiable.
+\end{fac}
+
+\begin{fac}[Weakening] \label{thm:weaken}
+  %
+  If "\obl{\G, \D ||- e}" is verifiable, then "\obl{\G, h, \D ||- e}"
+  is verifiable.
+\end{fac}
+
+\begin{fac}[Expansion] \label{thm:expand}
+  %
+  If "\obl{\G, o \DEF \delta, \D ||- e}" is verifiable, then "\obl{\G, o
+    \DEF \delta, \D[o := \delta] ||- e[o := \delta]}" is verifiable.
+\end{fac}
+
+\begin{fac}[Strengthening] \label{thm:delete}
+  %
+  If "\obl{\G, \NEW o, \D ||- e}" or "\obl{\G, o \DEF \delta, \D ||-
+    e}" is verifiable and "o"
+  is not free in "\obl{\D ||- e}", then "\obl{\G, \D ||- e}" is verifiable.
+\end{fac}
+
+\begin{fac}[Cut] \label{thm:cut}
+  %
+  If "\obl{\G, \D ||- e}" is verifiable and "\obl{\G, (\D ||- e), \W ||- f}" is verifiable,
+  then "\obl{\G, \W ||- f}" is verifiable.
+\end{fac}
+
+\begin{fac} \label{thm:classic}
+  %
+  If "\obl{\G, \lnot e, \D ||- e}" is verifiable, then "\obl{\G, \D ||- e}"
+  is verifiable.
+\end{fac}
+
+The \USE/\HIDE \DEFS steps change the visibility of definitions in a
+context (Defn.~\ref{defn:use/hide} below). Note that changing the
+visibility of a definition does not affect the verifiability of an obligation
+because the Isabelle embedding (Defn.~\ref{defn:isabelle-embedding})
+makes all hidden definitions usable.
+
+\pagebreak[2]
+
+\begin{defn} \label{defn:use/hide}
+  %
+  If "\G" is a context and "\P" a set of operator names, then:
+  \begin{ecom}
+  \item \emph{"\G" with "\P" made usable}, written "\G \USING \P", is
+    constructed from "\G" by replacing all assumptions of the form
+    "\hide{o \DEF \delta}" in "\G" with "o \DEF \delta" for every "o
+    \in \P".
+  \item \emph{"\G" with "\P" made hidden}, written "\G \HIDING \P", is
+    constructed from "\G" by replacing all assumptions of the form "o
+    \DEF \delta" in "\G" with "\hide{o \DEF \delta}" for every "o \in
+    \P".
+  \end{ecom}
+\end{defn}
+
+\def\refl#1{\bigl\|\,#1\,\bigr\|}
+
+A sequence of binders "\vec \beta" in the \tlatwo expressions "\forall
+\vec \beta : e" or "\exists \vec \beta : e" can be reflected as
+assumptions.
+
+\begin{defn}[Binding Reflection] \label{defn:binding-reflection}
+  %
+  If "\vec \beta" is a list of binders with each element of the form
+  "x" or "x \in e", then the \emph{reflection} of "\vec \beta" as
+  assumptions, written "\refl{\vec \beta}", is given inductively as
+  follows.
+  \begin{align*}
+    \refl{\nil} &= \nil &
+    \refl{\vec \beta, x} &= \refl{\vec \beta}, \NEW x &
+    \refl{\vec \beta, x \in e} &= \refl{\vec \beta}, \NEW x, x \in e
+  \end{align*}
+\end{defn}
+
+\subsection{Interpreting Proofs}
+\label{apx:proof-transformation}
+
+Let us recall some definitions from section~\ref{sec:obligations}.
+
+\begin{defn}[Claims and Transformations] \label{defn:check/trans-def}
+  %
+  A \emph{claim} is a judgement of the form "\pi : \obl{\G ||- e}"
+  where "\pi" is a \tlatwo proof. A \emph{transformation} is a
+  judgement of the form "\sigma.\,\tau : \obl{\G ||- e} --> \obl{\D
+    ||- f}" where "\sigma" is a begin-step token and "\tau" a proof
+  step.
+\end{defn}
+
+The \PM generates proof obligations from claims using two mutually
+recursive procedures, \textit{checking} and
+\textit{transformation}. Each procedure is specified below using the
+formalism of a \textit{primitive derivation}.
+
+\begin{defn} \label{defn:primitive}
+  %
+  A \emph{primitive derivation} is a derivation constructed using
+  inferences
+  % note to concerned citizens: I don't mean "inference rule" here. A
+  % derivation is made up of a tree of inferences, with each inference
+  % following a schematic inference rule.
+  of the form
+  \begin{gather*}
+    \Ic{E}{\DD_1 & \dotsb & \DD_n} \tag*{"(n \ge 0)"}
+  \end{gather*}
+  where "E" is either a claim or a transformation, and "\DD_1, ...,
+  \DD_n" are primitive derivations or obligations. An obligation at the
+  leaf of a primitive derivation is called a \emph{proof obligation},
+  and we say that a primitive derivation \emph{generates} the set of
+  proof obligations at its leaves.
+\end{defn}
+
+\begin{defn}[Checking and Transformation Procedures] \label{defn:check/trans-proc} \mbox{}
+  \begin{ecom}
+  \item The \tlatwo proof "\pi" \emph{checks} the obligation "\obl{\G
+      ||- e}" if there is a primitive derivation concluding "\pi :
+    \obl{\G ||- e}" using the inference rules below and transformation
+    rules.
+    %
+    \begin{gather*}
+      % \I[\OBVIOUS]{\OBVIOUS : \obl{"\G ||- e"}}{\OBVIOUS : \obl{"\G ||- e"}}
+      % \SP
+      % \I[\OMITTED]{\OMITTED : \obl{"\G ||- e"}}{\OMITTED : \obl{"\G ||- e"}}
+      % \\[1ex]
+      \I[\BY]{"\BY\ \Phi\ \DEFS\ \P : (\G
+        ||- e)"}
+        {"\s{0}.\ \USE\ \Phi\ \DEFS\ \P" : "(\G ||- e) --> (\D ||- f)"
+         &
+         "\OBVIOUS : (\D ||- f)"}
+      \\[1ex]
+      \I[\QED]{"\sigma.\ \QED\ \PROOF\ \pi : (\G ||- e)"}
+        {"\pi : (\G ||- e)"}
+      \SP
+      \I[non-\QED]{"\sigma.\,\tau\ \ \Pi : (\G ||- e)"}
+        {"\sigma.\,\tau : (\G ||- e) --> (\D ||- f)"
+         &
+         "\Pi : (\D ||- f)"}
+    \end{gather*}  
+  \item 
+    The \tlatwo proof step "\sigma.\,\tau" \emph{transforms} the
+    obligation "\obl{\G ||- e}" into "\obl{\D ||- f}" if there is a
+    primitive derivation concluding "\sigma.\,\tau : \obl{\G ||- e} -->
+    \obl{\D ||- f}" using the inference rules below and checking rules.
+    %
+    \begin{gather*}
+      \I[\USE\ \DEFS]{"\sigma.\ \USE\ \Phi\ \DEFS\ \P : \obl{\G ||- e} --> \obl{\D ||- f}"}
+        {"\sigma.\ \USE\ \Phi : \obl{\G \USING \P ||- e} --> \obl{\D ||- f}"}
+      \\[1ex]
+      \I[\HIDE\ \DEFS]{"\sigma.\ \HIDE\ \Phi\ \DEFS\ \P : \obl{\G ||- e} --> \obl{\D \HIDING \P ||- f}"}
+         {"\sigma.\ \HIDE\ \Phi : \obl{\G ||- e} --> \obl{\D ||- f}"}
+      \\
+      \I[\DEFINE ("o \notin \G")]{"\sigma.\ \DEFINE\ o \DEF \delta : \obl{\G ||- e} --> \obl{\G, \hide{o \DEF \delta} ||- e}"}
+      \\
+      \I["\USE_0"]{"\sigma.\ \USE\ \nil : \obl{\G ||- e} --> \obl{\G ||- e}"}
+      \SP
+      \I["\HIDE_0"]{"\sigma.\ \HIDE\ \nil : \obl{\G ||- e} --> \obl{\G ||- e}"}
+      \\[1ex]
+      \I["\USE_1"]{"\sigma.\ \USE\ \Phi, \obl{\G_0 ||- e_0} : \obl{\G ||- e} --> \obl{\D, \obl{\G_0 ||- e_0} ||- f}"}
+        {"\sigma.\ \USE\ \Phi : \obl{\G ||- e} --> \obl{\D ||- f}"
+         &
+         "\OBVIOUS : \obl{\unhide{\D}, \G_0 ||- e_0}"
+        }
+      \\[1ex]
+      \I["\HIDE_1"]{"\sigma.\ \HIDE\ \Phi, \phi : \obl{\G_0, \phi, \G_1 ||- e} --> \obl{\D ||- f}"}
+        {"\sigma.\ \HIDE\ \Phi : \obl{\G_0, hide{\phi}, \G_1 ||- e} --> \obl{\D ||- f}"}
+      \\
+      \I["\TAKE_0"]{"\sigma.\ \TAKE\ \nil : \obl{\G ||- e} --> \obl{\G ||- e}"}
+      \LSP
+      \I["\WITNESS_0"]{"\sigma.\ \WITNESS\ \nil : \obl{\G ||- e} --> \obl{\G ||- e}"}
+      \\[1ex]
+      \I["\TAKE_1"]{"\sigma.\ \TAKE\ u, \vec\beta : \obl{\G ||- \forall x : e} --> \obl{\D ||- f}"}
+        {"\sigma.\ \TAKE\ \vec\beta : \obl{\G, \NEW u ||- e [x := u]} --> \obl{\D ||- f}"}
+      \\[1ex]
+      \I["\TAKE_2"]{"\sigma.\ \TAKE\ u \in T, \vec\beta : \obl{\G ||- \forall x \in S : e} --> \obl{\D ||- f}"}
+        {"\OBVIOUS : \obl{\G ||- S \subseteq T}"
+         &
+         "\sigma.\ \TAKE\ \vec\beta : \obl{\G, \NEW u, u \in T ||- e [x := u]} --> \obl{\D ||- f}"}
+      \\[1ex]
+      \I["\WITNESS_1"]{"\sigma.\ \WITNESS\ w, \W : \obl{\G ||- \exists x : e} --> \obl{\D ||- f}"}
+        {"\sigma.\ \WITNESS\ \W : \obl{\G ||- e [x := w]} --> \obl{\D ||- f}"}
+      \\[1ex]
+      \I["\WITNESS_2"]{"\sigma.\ \WITNESS\ w \in T, \W : \obl{\G ||- \exists x \in S : e} --> \obl{\D ||- f}"}
+        {\begin{array}[b]{c}
+            "\OBVIOUS : \obl{\G ||- T \subseteq S}" \\
+            "\OBVIOUS : \obl{\G ||- w \in T}"
+         \end{array}
+         &
+         "\sigma.\ \WITNESS\ \W : \obl{\G, w \in T ||- e [x := w]} --> \obl{\D ||- f}"}
+      \\[1ex]
+      \I[\HAVE]{"\sigma.\ \HAVE\ g : \obl{\G ||- e => f} --> \obl{\G, g ||- f}"}
+        {"\OBVIOUS : \obl{\G, e ||- g}"}
+      \\[1ex]
+      \I[$\ASSERT_1$]{"\s n.\ \obl{\D ||- f}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\G, \obl{\D ||- f} ||- e}"}
+        {"\pi : \obl{\G, \hide{\lnot e}, \D ||- f}"}
+      \\[1ex]
+      \I[$\ASSERT_2$]{"\s n l.\ \obl{\D ||- f}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\G, \s n l \DEF \obl{\D ||- f}, \hide{\s n l} ||- e}"}
+        {"\pi : \obl{\G, \s n l \DEF \obl{\D ||- f}, \hide{\lnot e}, \D ||- f}"}
+      \\[1ex]
+      \I[\CASE]{"\sigma.\ \CASE\ g\ \PROOF\ \pi : \obl{\G ||- e}
+                       --> \obl{\D ||- f}"}
+        {"\sigma.\ \obl{g ||- e}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\D ||- f}"}
+      \\[1ex]
+      \I[$\SUFFICES_1$]{"\s n.\ \SUFFICES\ \obl{\D ||- f}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\G, \hide{\lnot e}, \D ||- f}"}
+        {"\pi : \obl{\G, \obl{\D ||- f} ||- e}"}
+      \\[1ex]
+      \I[$\SUFFICES_2$]{"\s n l.\ \SUFFICES\ \obl{\D ||- f}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\G, \s n l \DEF \obl{\D ||- f}, \hide{\lnot e}, \D ||- f}"}
+        {"\pi : \obl{\G, \s n l \DEF \obl{\D ||- f}, \hide{\s n l} ||- e}"}
+      \\[1ex]
+      \I[\PICK]{"\sigma.\ \PICK\ \vec\beta : p\ \PROOF\ \pi :
+                  \obl{\G ||- e} --> \obl{\G, \refl{\vec \beta}, p ||- e}"}
+        {"\pi : \obl{\G ||- \exists \vec \beta : p}"}
+    \end{gather*}
+  \end{ecom}
+\end{defn}
+
+The inference rules in the two definitions above are deterministic:
+the conclusion of each rule uniquely determines the premises. However,
+the rules are partial; for example, there is no rule that concludes a
+transformation of the form "\sigma.\,\TAKE\ x \in S : \obl{\G ||- B \land C}
+--> \obl{\D ||- f}".
+
+\begin{defn} \label{defn:meaningful}
+  % 
+  A claim or a transformation is said to be \emph{meaningful} if it
+  has a primitive derivation.
+\end{defn}
+
+In the rest of this appendix we limit our attention to meaningful
+claims and transformations.
+
+\subsection{Correctness}
+\label{apx:correctness}
+
+If the proof obligations generated by a meaningful claim are
+verifiable, then the obligation in the claim itself ought to be
+verifiable. In this section we shall prove this theorem by analysis of
+the checking and transformation derivations. The proof of this theorem
+will moreover demonstrate how to produce a proof of the ``structural
+theorem'' of a claim, which is a (meta-)implication from the
+obligations of the proof obligations of the claim to the obligation of
+the claim.
+
+\begin{defn}[Verifiability of Claims and Transformation]
+  %
+  \label{defn:proc-truth} \mbox{}
+  %
+  \begin{ecom}
+  \item The claim "\pi : \obl{\G ||- e}" is \emph{verifiable} iff it is
+    meaningful and the proof obligations it generates are all verifiable.
+  \item The transformation "\sigma.\,\tau : \obl{\G ||- e} --> \obl{\D
+      ||- f}" is \emph{verifiable} iff it is meaningful and the proof
+    obligations it generates are all verifiable.
+  \end{ecom}
+\end{defn}
+
+\begin{thm}[Correctness] \label{thm:correctness} \mbox{}
+  %
+  \begin{ecom}[\LSP (1)]
+  \item If "\pi : \obl{\G ||- e}" is verifiable, then "\obl{\G ||- e}"
+    is verifiable.
+  \item If "\sigma.\,\tau : \obl{\G ||- e} --> \obl{\D ||- f}" is
+    verifiable and "\obl{\D ||- f}" is verifiable, then "\obl{\G ||-
+      e}" is verifiable.
+  \end{ecom}
+\end{thm}
+
+\begin{proof}
+  Let "\DD" be the primitive derivation for the claim in (1) and "\EE"
+  be the primitive derivation for the transformation in (2). The proof
+  will be by lexicographic induction on the structures of "\DD" and
+  "\EE", with a verifiable transformation allowed to justify a
+  verifiable claim.
+
+  \begin{ecom}[{$\s1$}1.]
+  \item If "\pi : \obl{\G ||- e}" is verifiable, then "\obl{\G ||-
+      e}" is verifiable.
+    %
+    \begin{ecom}[{$\s2$}1.] \setlength{\itemsep}{6pt}
+    \item \Case "\pi" is "\BY\ \Phi\ \DEFS\ \P", \ie,
+      \begin{gather*}
+        \DD = 
+        \Im[\BY.]{"\BY\ \Phi\ \DEFS\ \P : (\G ||- e)"}
+           {\deduce{"\s{0}.\ \USE\ \Phi\ \DEFS\ \P" : "(\G ||- e) --> (\D ||- f)"}{\EE_0}
+            &
+            "\OBVIOUS : (\D ||- f)"}
+      \end{gather*}
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\D ||- f}" is verifiable
+        %
+        \by Def.~\ref{defn:proc-truth}.
+      \item \Qed
+        %
+        \by \s31, i.h. (inductive hypothesis) for "\EE_0".
+      % \item \Qed
+      %   %
+      %   \by \s31, \s32.
+      \end{ecom}
+
+    \item \Case "\pi" is "\sigma.\, \QED\ \PROOF\ \pi_0", \ie, 
+      $
+      \DD =
+      \Im[\QED.]{"\sigma.\ \QED\ \PROOF\ \pi_0 : (\G ||- e)"}
+         {\deduce{"\pi_0 : (\G ||- e)"}{\DD_0}}$
+      %
+      \by i.h. for "\DD_0".
+
+    \item \Case "\pi" is "\sigma.\,\tau\ \ \Pi", \ie,
+      \begin{gather*}
+        \DD =
+        \Im[non-\QED.]{"\sigma.\,\tau\ \ \Pi : (\G ||- e)"}
+          {\deduce{"\sigma.\,\tau : (\G ||- e) --> (\D ||- f)"}{\EE_0}
+           &
+           \deduce{"\Pi : (\D ||- f)"}{\DD_0}
+          }
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item [\s31.] "\obl{\D ||- f}" is verifiable
+        % 
+        \by i.h. for "\DD_0".
+      \item [\s33.] \Qed
+        %
+        \by \s31, i.h. for "\EE_0".
+      \end{ecom}
+    \item \Qed \by \s21, \s22, \s23.
+    \end{ecom}
+
+  \item If "\sigma.\,\tau : \obl{\G ||- e} --> \obl{\D ||- f}" is
+    verifiable and "\obl{\D ||- f}" is verifiable, then "\obl{\G ||-
+      e}" is verifiable.
+    %
+    \begin{ecom}[{$\s2$}1.] \setlength{\itemsep}{6pt}
+
+    \item \Case "\tau" is "\USE\ \Phi\ \DEFS\ \P", \ie,
+      \begin{gather*}
+        \EE =
+        \Im[\USE\ \DEFS.]{"\sigma.\ \USE\ \Phi\ \DEFS\ \P : \obl{\G ||- e} --> \obl{\D ||- f}"}
+          {\deduce{"\sigma.\ \USE\ \Phi : \obl{\G \USING \P ||- e} --> \obl{\D ||- f}"}{\EE_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G \USING \P ||- e}" is verifiable
+        %
+        \by i.h. for "\EE_0".
+      \item \Qed
+        %
+        \by \s31, Defn.~\ref{defn:use/hide}.
+      \end{ecom}
+
+    \item \Case "\tau" is "\HIDE\ \Phi\ \DEFS\ \P", \ie,
+      \begin{gather*}
+        \EE =
+        \Im[\HIDE\ \DEFS.]{"\sigma.\ \HIDE\ \Phi\ \DEFS\ \P : \obl{\G ||- e} --> \obl{\D \HIDING \P ||- f}"}
+           {\deduce{"\sigma.\ \HIDE\ \Phi : \obl{\G ||- e} --> \obl{\D ||- f}"}{\EE_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\D ||- f}" is verifiable
+        %
+        \by verifiability of "\obl{\D \HIDING \P ||- f}" and Defn.~\ref{defn:use/hide}.
+      \item \Qed
+        %
+        \by \s31, i.h. for "\EE_0".
+      \end{ecom}
+
+    \item \Case "\tau" is "\DEFINE\ o \DEF \delta" with "o \notin \G", \ie, 
+      \begin{gather*}
+        \EE =
+        \Im[\DEFINE.]{"\sigma.\ \DEFINE\ o \DEF \delta : \obl{\G ||- e} --> \obl{\G, \hide{o \DEF \delta} ||- e}"}{}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "o" is not free in "e"
+        %
+        \by "o \notin \G" and closedness of "\obl{\G ||- e}".
+      \item \Qed
+        %
+        \by \s31, strengthening (fact~\ref{thm:delete}).
+      \end{ecom}
+
+    \item \Case "\tau" is "\USE\ \nil", \ie,
+      $
+      \EE = 
+      \Im["\USE_0".]{"\sigma.\ \USE\ \nil : \obl{\G ||- e} --> \obl{\G ||- e}"}{}
+      $
+      \Trivial
+
+    \item \Case "\tau" is "\HIDE\ \nil", \ie,
+      $
+      \EE = 
+      \Im["\HIDE_0".]{"\sigma.\ \HIDE\ \nil : \obl{\G ||- e} --> \obl{\G ||- e}"}{}
+      $
+      \Trivial
+
+    \item \Case "\tau" is "\USE\ \Phi, \phi", \ie,
+      \begin{gather*}
+        \EE = 
+        \Im["\USE_1"]{"\sigma.\ \USE\ \Phi, \obl{\G_0 ||- e_0} : \obl{\G ||- e} --> \obl{\D_0, \obl{\G_0 ||- e_0} ||- f}"}
+          {\deduce{"\sigma.\ \USE\ \Phi : \obl{\G ||- e} --> \obl{\D_0 ||- f}"}{\EE_0}
+           &
+           "\OBVIOUS : \obl{\unhide{\D_0}, \G_0 ||- e_0}"
+          }      
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\unhide{\D_0}, \G_0 ||- e_0}" is verifiable
+        %
+        \by Def.~\ref{defn:proc-truth}.
+      \item "\obl{\D_0, \G_0 ||- e_0}" is verifiable
+        %
+        \by \s31, Def.~\ref{defn:isabelle-embedding}.
+      \item "\obl{\D_0 ||- f}" is verifiable
+        %
+        \by verifiability of "\obl{\D_0, (\G_0 ||- e_0) ||- f}", \s32, cut (fact~\ref{thm:cut}).
+      \item \Qed
+        %
+        \by \s33, i.h. for "\EE_0"
+      \end{ecom}
+
+    \item \Case "\tau" is "\HIDE\ \Phi, \phi", \ie,
+      \begin{gather*}
+        \EE =
+        \Im["\HIDE_1".]{"\sigma.\ \HIDE\ \Phi, \phi : \obl{\G_0, \phi, \G_1 ||- e} --> \obl{\D ||- f}"}
+           {\deduce{"\sigma.\ \HIDE\ \Phi : \obl{\G_0, hide{\phi}, \G_1 ||- e} --> \obl{\D ||- f}"}{\EE_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G_0, \hide{\phi}, \G_1 ||- e}" is verifiable
+        %
+        \by verifiability of "\obl{\D ||- f}", i.h. for "\EE_0".
+      \item \Qed
+        %
+        \by \s31, "\isa{\G_0, \hide{\phi}, \G_1 ||- e} = \isa{\G_0, \phi, \G_1 ||- e}" (Def.~\ref{defn:isabelle-embedding}).
+      \end{ecom}
+
+    \item \Case "\tau" is "\TAKE\ \nil", \ie,
+      $
+      \EE = 
+      \Im["\TAKE_0".]{"\sigma.\ \TAKE\ \nil : \obl{\G ||- e} --> \obl{\G ||- e}"}{}
+      $
+      \Trivial
+
+    \item \Case "\tau" is "\WITNESS\ \nil", \ie,
+      $
+      \EE = 
+      \Im["\WITNESS_0".]{"\sigma.\ \WITNESS\ \nil : \obl{\G ||- e} --> \obl{\G ||- e}"}{}
+      $
+      \Trivial
+
+    \item \Case "\tau" is "\TAKE\ u, \vec \beta", \ie,
+      \begin{gather*}
+        \EE =
+        \Im["\TAKE_1".]{"\sigma.\ \TAKE\ u, \vec\beta : \obl{\G ||- \forall x : e} --> \obl{\D ||- f}"}
+           {\deduce{"\sigma.\ \TAKE\ \vec\beta : \obl{\G, \NEW u ||- e [x := u]} --> \obl{\D ||- f}"}{\EE_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G, \NEW u ||- e [x := u]}" is verifiable
+        %
+        \by i.h. for "\EE_0".
+      \item \Qed
+        %
+        \by \s31{} and predicate logic.
+% original version
+%        \by \s32.
+      \end{ecom}
+% \ednote{SM}{I changed the justification of the QED step, which didn't
+%   make sense. Kaustuv, please check.}
+%
+% OK, I agree. -- KC
+
+    \item \Case "\tau" is "\sigma.\ \TAKE\ u \in T", \ie,
+      \begin{gather*}
+        \EE =
+        \Im["\TAKE_2".]{"\sigma.\ \TAKE\ u \in T, \vec\beta : \obl{\G ||- \forall x \in S : e} --> \obl{\D ||- f}"}
+           {"\OBVIOUS : \obl{\G ||- S \subseteq T}"
+            &
+            \deduce{"\sigma.\ \TAKE\ \vec\beta : \obl{\G, \NEW u, u \in T ||- e [x := u]} --> \obl{\D ||- f}"}{\EE_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G, \NEW u, u \in T ||- e [x := u]}" is verifiable
+        %
+        \by i.h on "\EE_0".
+      \item "\obl{\G, \NEW u, u \in S ||- u \in T}" is verifiable
+        \begin{ecom}[{$\s4$}1.]
+        \item "\obl{\G, \NEW u ||- S \subseteq T}" is verifiable
+          %
+          \by Def.~\ref{defn:proc-truth}, weakening
+          (fact~\ref{thm:weaken}).
+        \item \Qed
+          %
+          \by \s41, Def. of "\subseteq".
+        \end{ecom}
+      \item "\obl{\G, \NEW u, u \in S ||- e[x := u]}" is verifiable
+        %
+        \by \s31, \s32, cut (fact~\ref{thm:cut}).
+      \item \Qed
+        %
+        \by \s33{} and predicate logic.
+      \end{ecom}
+% \ednote{SM}{I added ``and predicate logic'': if you edit, please keep
+%   it consistent with the preceding step.}
+%
+% No need to edit it. I agree with your modification. -- KC
+
+    \item \Case "\tau" is "\WITNESS\ w, \W", \ie,
+      \begin{gather*}
+        \EE =
+        \Im["\WITNESS_1".]{"\sigma.\ \WITNESS\ w, \W : \obl{\G ||- \exists x : e} --> \obl{\D ||- f}"}
+           {\deduce{"\sigma.\ \WITNESS\ \W : \obl{\G ||- e [x := w]} --> \obl{\D ||- f}"}{\EE_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G ||- e [x := w]}" is verifiable
+        %
+        \by i.h. for "\EE_0".
+      \item \Qed
+        %
+        \by \s31.
+      \end{ecom}
+
+    \item \Case "\tau" is "\WITNESS\ w \in T, \W" and:
+      \begin{gather*}
+        \EE =
+        \Im["\WITNESS_2".]
+           {"\sigma.\ \WITNESS\ w \in T, \W : \obl{\G ||- \exists x \in S : e} --> \obl{\D ||- f}"}
+           {\begin{array}[b]{c}
+               "\OBVIOUS : \obl{\G ||- T \subseteq S}" \\
+               "\OBVIOUS : \obl{\G ||- w \in T}"
+            \end{array}
+            &
+            \deduce{"\sigma.\ \WITNESS\ \W : \obl{\G, w \in T ||- e [x := w]} --> \obl{\D ||- f}"}{\EE_0}}
+     \end{gather*}
+
+     \begin{ecom}[{$\s3$}1.]
+     \item "\obl{\G, w \in T ||- e [x := w]}" is verifiable
+       % 
+       \by i.h. for "\EE_0".
+     \item "\obl{\G ||- w \in T}" is verifiable
+       % 
+       \by Def.~\ref{defn:proc-truth}.
+     \item "\obl{\G ||- e [x := w]}" is verifiable
+       % 
+       \by \s31, \s32, cut (fact~\ref{thm:cut}).
+     \item "\obl{\G ||- w \in S}" is verifiable
+       \begin{ecom}[{$\s4$}1.]
+       \item "\obl{\G, w \in T ||- w \in S}" is verifiable
+         % 
+         \by Def.~\ref{defn:proc-truth}, Def. of "\subseteq".
+       \item \Qed
+         % 
+         \by \s41, \s32, cut (fact~\ref{thm:cut}).
+       \end{ecom}
+     \item \Qed
+       % 
+       \by \s33, \s34, and predicate logic.
+     \end{ecom}
+     
+    \item "\tau" is "\HAVE\ g", \ie,
+      \begin{gather*}
+        \EE =
+        \Im[\HAVE.]{"\sigma.\ \HAVE\ g : \obl{\G ||- e => f} --> \obl{\G, g ||- f}"}
+           {"\OBVIOUS : \obl{\G, e ||- g}"}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G, e, g ||- f}" is verifiable
+        %
+        \by weakening (fact~\ref{thm:weaken}).
+      \item "\obl{\G, e ||- g}" is verifiable
+        %
+        \by Def.~\ref{defn:proc-truth}.
+      \item "\obl{\G, e ||- f}" is verifiable
+        %
+        \by \s31, \s32, cut (fact~\ref{thm:cut}).
+      \item "\obl{\G ||- e => f}" is verifiable
+        %
+        \by \s33.
+      \end{ecom}
+
+    \item "\sigma.\,\tau" is "\s n.\ \obl{\W ||- g}\ \PROOF\ \pi", \ie, 
+      \begin{gather*}
+        \EE =
+        \Im[$\ASSERT_1$.]{"\s n.\ \obl{\W ||- g}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\G, \obl{\W ||- g} ||- e}"}
+           {\deduce{"\pi : \obl{\G, \hide{\lnot e}, \W ||- g}"}{\DD_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G, \hide{\lnot e}, \obl{\W ||- g} ||- e}" is verifiable
+        %
+        \by weakening (fact~\ref{thm:weaken}).
+      \item "\obl{\G, \hide{\lnot e}, \W ||- g}" is verifiable
+        %
+        \by i.h. for "\DD_0".
+      \item "\obl{\G, \hide{\lnot e} ||- e}" is verifiable
+        %
+        \by \s31, \s32, cut (fact~\ref{thm:cut}).
+      \item \Qed
+        %
+        \by \s33, fact~\ref{thm:classic}.
+      \end{ecom}
+
+    \item \Case "\sigma.\,\tau" is "\s n l.\ \obl{\W ||- g}\ \PROOF\ \pi", \ie,
+      \begin{gather*}
+        \EE =
+        \Im[$\ASSERT_2$.]{"\s n l.\ \obl{\W ||- g}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\s n l} ||- e}"}
+           {\deduce{"\pi : \obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\lnot e}, \W ||- g}"}{\DD_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\lnot e}, \hide{\s n l} ||- e}" is verifiable
+        \\\mbox{}
+        \by verifiability of "\obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\s n l} ||- e}", weakening (fact~\ref{thm:weaken}).
+      \item "\obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\lnot e}, \hide{\obl{\W ||- g}} ||- e}" is verifiable
+        %
+        \by \s31, expansion (fact~\ref{thm:expand}).
+      \item "\obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\lnot e}, \W ||- g}" is verifiable
+        % 
+        \by i.h. for "\DD_0", weakening.
+      \item "\obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\lnot e} ||- e}" is verifiable
+        %
+        \by \s32, \s33, cut (fact~\ref{thm:cut}).
+      \item "\obl{\G, \hide{\lnot e} ||- e}" is verifiable
+        %
+        \by \s34, strengthening (fact~\ref{thm:delete}).
+      \item \Qed
+        %
+        \by \s35, fact~\ref{thm:classic}.
+      \end{ecom}
+      
+    \item "\tau" is "\CASE\ g\ \PROOF\ \pi", \ie,
+      \begin{gather*}
+        \EE =
+        \Im[\CASE.]{"\sigma.\ \CASE\ g\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\D ||- f}"}
+           {\deduce{"\sigma.\ \obl{g ||- e}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\D ||- f}"}{\EE_0}}
+      \end{gather*}
+
+      \textit{By} i.h. for "\EE_0".
+
+    \item "\tau" is "\s n.\ \SUFFICES\ \obl{\W ||- g}\ \PROOF\ \pi", \ie,
+      \begin{gather*}
+        \EE =
+        \Im[$\SUFFICES_1$.]{"\s n.\ \SUFFICES\ \obl{\D ||- f}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\G, \hide{\lnot e}, \W ||- g}"}
+           {\deduce{"\pi : \obl{\G, \obl{\W ||- g} ||- e}"}{\DD_0}}
+      \end{gather*}
+
+    \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G, \hide{\lnot e}, \obl{\W ||- g} ||- e}" is verifiable
+        %
+        \by i.h. for "\DD_0", weakening (fact~\ref{thm:weaken}).
+      \item "\obl{\G, \hide{\lnot e} ||- e}" is verifiable
+        %
+        \by verifiability of "\obl{\G, \hide{\lnot e}, \W ||- g}", \s31, cut (fact~\ref{thm:cut}).
+      \item \Qed
+        %
+        \by \s32, fact~\ref{thm:classic}.
+      \end{ecom}
+
+    \item "\sigma.\,\tau" is "\s n l.\ \SUFFICES\ \obl{\W ||- g}\ \PROOF\ \pi", \ie,
+      \begin{gather*}
+        \EE =
+        \Im[$\SUFFICES_2$.]{"\s n l.\ \SUFFICES\ \obl{\W ||- g}\ \PROOF\ \pi : \obl{\G ||- e} --> \obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\lnot e}, \W ||- g}"}
+           {\deduce{"\pi : \obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\s n l} ||- e}"}{\DD_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\lnot e}, \hide{\s n l} ||- e}" is verifiable
+        %
+        \by i.h. for "\DD_0", weakening (fact~\ref{thm:weaken}).
+      \item "\obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\lnot e}, \hide{\obl{\W ||- g}} ||- e}" is verifiable
+        %
+        \by \s31, expansion (fact~\ref{thm:expand}).
+      \item "\obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\lnot e} ||- e}" is verifiable
+        \\\mbox{}
+        \by \s32, verifiability of "\obl{\G, \s n l \DEF \obl{\W ||- g}, \hide{\lnot e}, \W ||- g}", cut (fact~\ref{thm:cut}).
+      \item "\obl{\G, \hide{\lnot e} ||- e}" is verifiable
+        %
+        \by \s33, strengthening (fact~\ref{thm:delete}).
+      \item \Qed
+        %
+        \by \s34, fact~\ref{thm:classic}.
+      \end{ecom}
+
+    \item \Case "\tau" is "\PICK\ \vec\beta : p\ \PROOF\ \pi", \ie,
+      \begin{gather*}
+        \EE =
+        \Im[\PICK.]{"\sigma.\ \PICK\ \vec\beta : p\ \PROOF\ \pi :
+                        \obl{\G ||- e} --> \obl{\G, \refl{\vec \beta}, p ||- e}"}
+           {\deduce{"\pi : \obl{\G ||- \exists \vec \beta : p}"}{\DD_0}}
+      \end{gather*}
+
+      \begin{ecom}[{$\s3$}1.]
+      \item "\obl{\G, \exists \vec \beta : p ||- e}" is verifiable
+        %
+        \by verifiability of "\obl{\G, \refl{\vec \beta}, p ||- e}", predicate logic.
+      \item "\obl{\G ||- \exists \vec \beta : p}" is verifiable
+        %
+        \by i.h. for "\DD_0".
+      \item \Qed
+        %
+        \by \s31, \s32, cut (fact~\ref{thm:cut}).
+      \end{ecom}
+
+    \item \Qed
+      %
+      \by \s21, \dots, \s220
+    \end{ecom}
+  \item \Qed
+    %
+    \by \s11, \s12.
+  \end{ecom}
+\end{proof}
+
+\subsection{Constrained Search}
+\label{apx:constraints}
+
+The correctness theorem (\ref{thm:correctness}) establishes an
+implication from the proof obligations generated by a meaningful claim
+to its obligation. It is always true, regardless of the verifiability
+of any individual obligation. While changing the visibility of
+assumptions in an obligation does not change its verifiability, it can
+change its verifiability if important assumptions are hidden.  As
+already mentioned in Section~\ref{sec:obligations}, the \PM removes
+these hidden assumptions before sending a proof obligation to a
+back-end prover.  Therefore, in order to establish the structural
+soundness theorem (\ref{thm:meaning}), we must prove a property about
+the result of this removal.
+
+\begin{defn}[Filtration] \label{defn:filter} 
+  %
+  The \emph{filtered} form of any obligation "\phi", written
+  "\filter\phi", is obtained by deleting all assumptions of the form
+  "\hide{\phi_0}" and replacing all assumptions of the form "\hide{o
+    \DEF \delta}" with "\NEW o" anywhere inside "\phi".
+\end{defn}
+
+For example, if "\phi" is "\obl{\NEW x, \hide{y \DEF x} ||- x = y}",
+then "\filter\phi = \obl{\NEW x, \NEW y ||- x = y}". Clearly,
+filtration makes an obligation implicationally weaker, for "\phi" is
+verifiable while "\filter\phi" is not.
+
+\begin{lem}[Verification Lemma] \label{thm:verification}
+  %
+  If "\filter{\phi}" is verifiable, then "\phi" is verifiable.
+\end{lem}
+
+\begin{proof}[Proof Sketch]
+  By induction on the structure of the obligation "\phi", with each
+  case a straightforward consequence of facts~\ref{thm:definition}
+  and~\ref{thm:weaken}.
+\end{proof}
+
+We now prove the structural soundness theorem (\ref{thm:meaning}).
+
+\setcounter{thm}{0}
+
+\begin{thm}
+  % 
+  If "\pi:\phi" is a meaningful claim, and for every proof obligations
+  "\phi" it generates, "\filter{\phi}" is verifiable, then "\phi" is
+  verifiable.
+\end{thm}
+
+\begin{proof}\mbox {}
+  \begin{ecom}[{$\s1$}1.]
+  \item For every proof obligation "\phi_0" generated by "\pi : \phi",
+    it must be that "\phi_0" is verifiable.
+    \begin{ecom}[{$\s2$}1.]
+    \item \textit{Take} "\phi_0" as a proof obligation generated by
+      "\pi : \phi".
+    \item "\filter{\phi_0}" is verifiable \by assumptions.
+    \item \Qed \by \s22, verification lemma~\ref{thm:verification}.
+    \end{ecom}
+  \item \Qed \by correctness theorem~\ref{thm:correctness}.
+  \end{ecom}
+\end{proof}
+
+\clearpage
+
+\section{A \tlatwo Proof of Cantor's Theorem}
+\label{apx:cantor}
+
+The following is the full \tlatwo proof of Cantor's theorem.
+%
+\begin{quote} \small
+  \begin{tabbing}
+    \THEOREM\ "\forall S : \forall f \in [S -> \SUBSET\ S] : \exists A \in \SUBSET\ S : \forall x \in S : f[x] \neq A" \\
+    \s11.\ \= \ASSUME \= "\NEW\ S", \\
+           \>         \> "\NEW\ f \in [S -> \SUBSET\ S]" \\
+           \> \PROVE "\exists A \in \SUBSET\ S : \forall x \in S : f[x] \neq A" \\
+           \> \s21.\ \= \DEFINE "T \DEF \{z \in S : z \notin f[z]\}" \\
+           \> \s22.  \> "\forall x \in S : f[x] \neq T" \\
+           \>        \> \s31.\ \= \ASSUME "\NEW\ x \in S" \PROVE "f[x] \neq T" \\
+           \>        \>        \> \s41.\ \= \CASE "x \in T" \OBVIOUS \\
+           \>        \>        \> \s42.\ \> \CASE "x \notin T" \OBVIOUS \\
+           \>        \>        \> \s43.\ \> \QED \BY \s41, \s42 \\
+           \>        \> \s32.  \> \QED\ \BY\ \s31 \\
+           \> \s23.  \> \QED\ \BY\ \s22 \\
+    \s12.  \> \QED\ \BY\ \s11
+  \end{tabbing}
+\end{quote}
+%
+As an example, the obligation generated (see Appendix~\ref{apx:correctness}) for the proof of \s41 is:
+%
+\begin{quote} \small
+  \begin{tabbing}
+    "\OBVIOUS : \smash{\Bigl(}"
+    \= "\s11 \DEF \obl{\NEW S, \NEW f, f \in [S -> \SUBSET\ S] ||- \exists A \in \SUBSET\ S : \forall x \in S : f[x] \neq A}", \\
+    \> "\NEW S", \\
+    \> "\NEW f", "f \in [S -> \SUBSET\ S]", \\
+    \> "T \DEF \{z \in S : z \notin f[z]\}", \\
+    \> "\hide{\lnot \left(\exists A \in \SUBSET\ S : \forall x \in S : f[x] \neq A\right)}", \\
+    \> "\s22 \DEF \forall x \in S : f[x] \neq T", \\
+    \> "\hide{\lnot \left( \forall x \in S : f[x] \neq T \right)}", \\
+    \> "\s31 \DEF \obl{\NEW x, x \in S ||- f[x] \neq T}", \\
+    \> "\NEW x", "x \in S", \\
+    \> "\hide{\lnot \left( f[x] \neq T \right)}", \\
+    \> "\s41 \DEF \obl{x \in T ||- f[x] \neq T}", \\
+    \> "x \in T" \\
+    \> "||- f[x] \neq T" "\smash{\Bigr)}".
+  \end{tabbing}
+\end{quote}
+%
+Filtering its obligation (see Def.~\ref{defn:filter}) and expanding all definitions gives:
+%
+\begin{quote} \small
+  \begin{tabbing}
+    "\smash{\Bigl(}"
+    \= "\NEW S", \\
+    \> "\NEW f", "f \in [S -> \SUBSET\ S]", \\
+    \> "\NEW x", "x \in S", \\
+    \> "x \in \{z \in S : z \notin f[z]\} ||- f[x] \neq \{z \in S : z \notin f[z]\}" "\smash{\Bigr)}".
+  \end{tabbing}
+\end{quote}
+%
+In Isabelle/\tlaplus, this is the following lemma:
+\begin{quote} \small
+  \begin{tabbing}
+    \texttt{lemma} \= "!! S." \\
+                   \> "!! f.\ " \= " f \in [S -> \SUBSET\ S] ==>" \\
+                   \>                 \> "\Bigl(!! x.\ \bigl\llbracket" \= "x \in S ;" \\
+                   \> \> \> "x \in \{z \in S : z \notin f[z]\} \ \bigr\rrbracket
+                         ==> f[x] \neq \{z \in S : z \notin f[z]\} \Bigr)".
+  \end{tabbing}
+\end{quote}
+
+
+
+%%%% PLEASE DO NOT EDIT BELOW THIS LINE
+\ifx\master\undefined
+{\let\master\relax\input{rearmatter}}
+\end{document}
+\fi

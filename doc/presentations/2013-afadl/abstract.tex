@@ -1,0 +1,110 @@
+\documentclass[a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage{url}
+
+\title{
+  Tutorial on the \tlaplus{} Method and Tools\\
+  for Modeling and Verifying Algorithms
+}
+\author{
+  Stephan Merz and Hernán Vanzetto\\
+  Inria Nancy Grand-Est and LORIA\\
+  MSR-Inria Joint Centre Saclay
+}
+\date{}
+
+\newcommand{\tlaplus}{{\upshape TLA\textsuperscript{+}}}
+\newcommand{\implies}{\ensuremath{\Rightarrow}}
+
+
+\begin{document}
+
+\maketitle
+
+\section{The \tlaplus{} language and tools}
+
+\tlaplus~\cite{lamport:tlabook,merz:tlabook} is a specification language based
+on Zermelo-Fraenkel set theory for modeling data structures and on the
+linear-time temporal logic TLA for specifying system executions and their
+properties. It is mainly intended for describing discrete systems such as
+concurrent and distributed algorithms at a high level of abstraction. TLA
+formulas represent specifications as well as properties. Consequently, the
+implication $F \implies G$ can alternatively be understood as asserting that $G$
+is a property of the system described by $F$, or that $F$ refines a higher-level
+specification $G$ of the same system. The underlying refinement notion
+corresponds to trace inclusion modulo finite stuttering; it is essentially
+analogous to the refinement concept underlying the Event-B
+method~\cite{abrial:event-b}, except that full fairness and liveness properties
+are available thanks to the expressiveness of temporal logic. In a similar
+manner, conjunction of specifications corresponds to parallel composition, and
+(existential) quantification over state variables represents hiding.
+
+Developing and analysing \tlaplus{} specifications is supported by the
+\tlaplus{} tool set, which includes a parser and semantic analyzer, a pretty
+printer, and the finite-state model checker TLC~\cite{yu:model-checking}. In
+particular, TLC interprets a fragment of \tlaplus{} that corresponds to
+descriptions of state transition systems, and it allows users to verify
+invariants and temporal properties (including refinement between specifications)
+for finite instances of \tlaplus{} specifications. TLC copes with large state
+spaces by using the disk, recent versions also support distributed model
+checking on clusters of work stations. The \tlaplus{} tool set is accessible
+from the \tlaplus{} Toolbox, an Eclipse-based integrated development
+environment.
+
+More recently, constructs for writing proofs have been added to
+\tlaplus~\cite{cousineau:tla-proofs}. The proof language lets users write proofs
+of \tlaplus{} theorems in a hierarchical style, where proofs are decomposed into
+sequences of proof steps. TLAPS, the \tlaplus{} proof
+system~\cite{chaudhuri:tlaps}, interprets these proofs and delegates leaf proof
+steps to automated proof backends. Currently, backend provers include
+Zenon, %~\cite{bonichon:zenon}
+a tableau prover for first-order logic and set theory, Isabelle/\tlaplus{}, an
+encoding of \tlaplus{} in the Isabelle logical
+framework %~\cite{wenzel:isabelle}
+that provides automated proof methods, and an interface for SMT
+solvers. %~\cite{merz:harnessing}.
+Backend provers are expected to provide proof traces that can be checked by
+Isabelle/\tlaplus{}, the trusted proof component in TLAPS. Users can work on
+different proof steps in any order, and the \tlaplus{} Toolbox indicates the
+status of parts of a proof using color coding. It also provides commands that
+facilitate writing and reading hierarchical proofs. Finally, TLAPS maintains a
+database of previous invocations of backend provers for the current project,
+thus supporting status checking and proof maintenance in the presence of
+changing specifications and proofs. The integration of TLC and TLAPS in a
+unified interface allows users to model check assertions before attempting a
+full-fledged proof.
+
+\bigskip
+
+\noindent%
+This tutorial will present the \tlaplus{} language and tools through a running
+example that progressively introduces different features of the notation, of the
+TLC model checker, and of the \tlaplus{} proof system. Depending on the schedule
+of AFADL, we propose a duration of two or three hours. It can be presented in
+English or French.
+
+
+\section{About the presenters}
+
+\emph{Stephan Merz} is a senior researcher at Inria Nancy and LORIA. He has
+long-standing experience with using the \tlaplus{} formalism and tools, and has
+published several papers about the concepts and the logic underlying \tlaplus{}.
+He has also presented the formalism and the tool set at different summer schools.
+Through a project at the MSR-Inria Joint Centre in Saclay, he has contributed to
+the design and development of TLAPS.
+%, in particular to Isabelle/\tlaplus{} and the SMT backend.
+
+\medskip
+
+\noindent%
+\emph{Hernán Vanzetto} is a PhD student supported by the project at the
+MSR-Inria Joint Centre in Saclay for the development of TLAPS. He has in
+particular designed and implemented the SMT backend, which has significantly
+increased the level of automation of \tlaplus{} proofs.
+
+
+\bibliographystyle{abbrv}
+\bibliography{abstract}
+
+\end{document}

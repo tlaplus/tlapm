@@ -1,0 +1,71 @@
+%% from enumerate.sty 3.00, modified by Kaustuv Chaudhuri
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{ecom}[2004/12/10 ecom]
+\newtoks\@enLab
+\def\@enQmark{?}
+\def\@enLabel#1#2{%
+  \edef\@enThe{\noexpand#1{\@ecomctr}}%
+  \@enLab\expandafter{\the\@enLab\csname the\@ecomctr\endcsname}%
+  \@enloop}
+\def\@enSpace{\afterassignment\@enSp@ce\let\@tempa= }
+\def\@enSp@ce{\@enLab\expandafter{\the\@enLab\space}\@enloop}
+\def\@enGroup#1{\@enLab\expandafter{\the\@enLab{#1}}\@enloop}
+\def\@enOther#1{\@enLab\expandafter{\the\@enLab#1}\@enloop}
+\def\@enloop{\futurelet\@entemp\@enloop@}
+\def\@enloop@{%
+  \ifx A\@entemp         \def\@tempa{\@enLabel\Alph  }\else
+  \ifx a\@entemp         \def\@tempa{\@enLabel\alph  }\else
+  \ifx i\@entemp         \def\@tempa{\@enLabel\roman }\else
+  \ifx I\@entemp         \def\@tempa{\@enLabel\Roman }\else
+  \ifx 1\@entemp         \def\@tempa{\@enLabel\arabic}\else
+  \ifx \@sptoken\@entemp \let\@tempa\@enSpace         \else
+  \ifx \bgroup\@entemp   \let\@tempa\@enGroup         \else
+  \ifx \@ecom@\@entemp   \let\@tempa\@gobble          \else
+                         \let\@tempa\@enOther
+                         \@enhook
+             \fi\fi\fi\fi\fi\fi\fi\fi
+  \@tempa}
+\providecommand\@enhook{}
+\let\endecom\endenumerate
+\def\ecom{%
+  \ifnum \@enumdepth >3 \@toodeep\else
+      \advance\@enumdepth \@ne
+      \edef\@ecomctr{enum\romannumeral\the\@enumdepth}\fi
+  \@ifnextchar[{\@@ecom@}{\@ecom@}}
+\def\@@ecom@[#1]{%
+  \@enLab{}\let\@enThe\@enQmark
+  \@enloop#1\@ecom@
+  \ifx\@enThe\@enQmark\@warning{The counter will not be printed.%
+   ^^J\space\@spaces\@spaces\@spaces The label is: \the\@enLab}\fi
+  \expandafter\edef\csname label\@ecomctr\endcsname{\the\@enLab}%
+  \expandafter\let\csname the\@ecomctr\endcsname\@enThe
+  \csname c@\@ecomctr\endcsname7
+  \expandafter\settowidth
+            \csname leftmargin\romannumeral\@enumdepth\endcsname
+            {\the\@enLab\hspace{\labelsep}}%
+  \@ecom@}
+\def\@ecom@{\list{\csname label\@ecomctr\endcsname}%
+           {\usecounter{\@ecomctr}
+            \parsep 0pt %plus 1pt
+            \partopsep 0pt %plus 1pt
+            \topsep 2pt %plus 2pt minus 1pt
+            \itemsep 0pt %plus 1pt
+            \def\makelabel##1{\hss\llap{##1}}}}
+
+\newenvironment{icom}{%
+  \ifnum\@itemdepth>3 \@toodeep
+  \else \advance\@itemdepth\@ne
+    \edef\@itemitem{labelitem\romannumeral\the\@itemdepth}%
+    \list{\csname\@itemitem\endcsname}%
+      {\parsep 0pt plus 1pt
+       \partopsep 0pt plus 1pt
+       \topsep 2pt plus 2pt minus 1pt
+       \itemsep 0pt plus 1pt
+       \def\makelabel##1{\hss\llap{\upshape##1}}}%
+  \fi
+}{%
+  \endlist
+}
+\let\endicom=\endlist % for efficiency
+%%
+%% End of file `ecom.sty'.

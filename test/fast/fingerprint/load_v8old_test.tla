@@ -1,0 +1,133 @@
+------------------------------ MODULE load_v8old_test ------------------------
+EXTENDS Integers, Sequences, TLAPS, TLC
+
+THEOREM ASSUME NEW N \in Nat
+        PROVE  N+N = 2*N
+BY SMT  \* PROVED 
+
+THEOREM ASSUME NEW N \in Nat, NEW M \in Nat
+        PROVE  N*M = N*(M-1) + N
+BY SMT   \* PROVED
+
+
+THEOREM ASSUME NEW F(_), F(1) \in Nat
+        PROVE  F(1) + 1 > F(1)
+BY SMT  \* PROVED 
+
+THEOREM ASSUME NEW F(_), NEW x, F(x) \in Nat
+        PROVE  F(x) + 1 > F(x)
+BY SMT \* PROVED 
+
+THEOREM ASSUME NEW S, NEW f \in [S -> Nat], NEW x \in S
+PROVE  f[x] + 1 > f[x]
+BY SMT \* PROVED
+
+THEOREM ASSUME NEW S, NEW F(_), \A i \in S : F(i) \in Nat,  NEW x \in S
+PROVE  F(x) + 1 > F(x)
+BY SMT \* PROVED
+
+THEOREM ASSUME NEW S, NEW f \in [S -> Nat], NEW x \in S
+        PROVE  [f EXCEPT ![x]=2][x]+1 = 3        
+BY SMT \* PROVED
+
+
+THEOREM ASSUME NEW f, NEW x , f[x] \in Nat
+PROVE  f[x] + 1 > f[x]
+BY SMT \* NOT PROVED
+
+THEOREM <<1, 2>> \o <<3>> = <<1, 2, 3>>
+BY SMT \* NOT PROVED
+
+THEOREM ASSUME NEW N \in Nat, N > 0
+        PROVE  (2 % N) = (1+1)%N
+BY SMT \* NOT PROVED
+
+THEOREM  5 % 2 = 1
+BY SMT \* NOT PROVED (unknown exception)
+
+THEOREM ASSUME NEW F(_)
+        PROVE  F(1+1) = F(2)
+BY SMT \* NOT PROVED  
+
+THEOREM ASSUME NEW F(_), NEW S, \A i \in Nat : F(i) \in S
+        PROVE  F(1+1) = F(2)
+BY SMT \* PROVED
+
+THEOREM ASSUME NEW x \in {n \in Nat : n > 2}
+        PROVE  x > 2
+BY SMT \* PROVED
+
+THEOREM ASSUME NEW x \in {n \in Nat : n > 5},
+                   x \in {n \in Nat : n < 8}
+        PROVE  x \in {6, 7}
+BY SMT \* PROVED
+
+THEOREM ASSUME NEW S, NEW f \in [S -> Nat], NEW x \in S
+        PROVE [f EXCEPT ![x] = f[x]] = f
+BY SMT \* PROVED
+
+THEOREM ASSUME NEW S, NEW T
+        PROVE S \cup T = T \cup S
+BY SMT \* PROVED
+
+THEOREM ASSUME NEW S, NEW T, NEW U
+        PROVE U \cap (S \cup T)  = (T \cap U)  \cup (S \cap U)
+BY SMT \* PROVED
+
+THEOREM ASSUME NEW S, NEW f \in [S -> Nat], NEW g \in [S -> Nat],
+               \A x \in S : f[x] > g[x]
+        PROVE  LET h == [x \in S |-> f[x] + g[x]]
+               IN  \A x \in S : h[x] > 2*g[x]
+BY SMT \* PROVED
+
+LEMMA Induction == ASSUME NEW P(_),
+                          P(0),
+                          ASSUME NEW i \in Nat , P(i) 
+                          PROVE  P(i+1)
+                   PROVE  \A i \in Nat : P(i)
+
+  THEOREM
+   ASSUME NEW P(_), NEW Q(_),
+          \E x: P(x),
+          \A x: P(x) => Q(x)
+   PROVE  Q(CHOOSE x: P(x))
+OBVIOUS
+
+  THEOREM
+   ASSUME NEW S, NEW P(_), NEW Q(_),
+    \E x \in S : P(x),
+          \A x \in S : P(x) => Q(x)
+   PROVE  Q(CHOOSE x \in S : P(x))
+
+OBVIOUS
+
+THEOREM \A S, x : \A T \in S : x \in T => x \in UNION S
+             OBVIOUS
+F[i \in Nat] == F[i-1]     
+THEOREM F = CHOOSE f : /\ f = [i \in DOMAIN f |-> f[i]]
+                       /\ DOMAIN f = Nat
+                       /\ \A i \in Nat : f[i] = f[i-1]
+BY DEF F
+
+G == [i \in Nat \X Nat |-> i[1]+ i[2]]
+
+H[i \in Nat] == i
+
+THEOREM [H EXCEPT ![1]=@+@][1] = 1+1
+BY DEF H
+
+THEOREM "abc"[1] = "axy"[1]
+OBVIOUS
+
+f == 42
+
+THEOREM f' = f
+OBVIOUS
+================================================
+command: rm -rf load_v8old_test.tlaps
+command: cp -r load_v8old_test.tlaps.testbase load_v8old_test.tlaps
+command: ${TLAPM} --toolbox 0 0 --isaprove ${FILE}
+stdout: fingerprints written
+stderr: Translating fingerprints from version 8
+stderr: already:true
+nostd*: ending abnormally

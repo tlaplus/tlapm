@@ -1,0 +1,46 @@
+----------------------- REVIEW 1 ---------------------
+PAPER: 5
+TITLE: Coalescing: Syntactic Abstraction for Reasoning in First-Order Modal Logics
+AUTHORS: Damein Doligez, Jael Kriener, Leslie Lamport, Tomer Libal and Stephan Merz
+
+OVERALL EVALUATION: 2 (accept)
+REVIEWER'S CONFIDENCE: 3 (medium)
+
+----------- REVIEW -----------
+A quite dense but interesting paper.
+
+The idea behind coalescing is indeed quite simple and intuitive, so I found it a bit surprising that the development gets to be quite technical and dense, and not always as clear as it should be (a few examples would be helpful). Still, I fully appreciate the need for formal development and justification and, although I did not check all proofs in detail, it seems to me that the results are all quite properly justified.
+The paper is in general quite well written.
+It will be quite a challenge to extract a talk that is not extremely technical from this paper, but I am confident that the authors will find a way.
+
+
+
+----------------------- REVIEW 2 ---------------------
+PAPER: 5
+TITLE: Coalescing: Syntactic Abstraction for Reasoning in First-Order Modal Logics
+AUTHORS: Damein Doligez, Jael Kriener, Leslie Lamport, Tomer Libal and Stephan Merz
+
+OVERALL EVALUATION: 3 (strong accept)
+REVIEWER'S CONFIDENCE: 4 (high)
+
+----------- REVIEW -----------
+The paper is about theorem proving for first-order temporal logic via a new method using a sort of abstraction. The method bears some resemblance with Giunchiglia and Sebastiani's K-SAT procedure (KR 1998, Information and Computation 2000). The latter propose a theorem proving method for modal logics that involves the abstraction of modal formulas into propositional formulas. Their aim is different (to take advantage of propositional SAT in automated modal theorem proving), but the basic idea is exactly what the authors' coalescing is about: replacing expressions by atoms in order to obtain formulas that are supported by the target proof method, which is SAT in Giunchiglia and Sebastiani's case. The abstraction being only sound but not complete, they intertwine abstraction with a tableaux procedure that is applied in an incremental way. The present paper clearly goes beyond Giunchiglia and Sebastiani's work because first-order logic is considered instead of propositional log!
+ ic, which comes with some intricacies as the authors explain in Section 3.1. Furthermore, abstraction is here also applied to FOL quantifiers in order to obtain modal formulas. I believe this to be a very interesting and promising research avenue.
+
+Readability for a general audience could be improved by providing a bit more explanations in the introduction. For example, say what priming is.
+
+
+----------------------- REVIEW 3 ---------------------
+PAPER: 5
+TITLE: Coalescing: Syntactic Abstraction for Reasoning in First-Order Modal Logics
+AUTHORS: Damein Doligez, Jael Kriener, Leslie Lamport, Tomer Libal and Stephan Merz
+
+OVERALL EVALUATION: 3 (strong accept)
+REVIEWER'S CONFIDENCE: 4 (high)
+
+----------- REVIEW -----------
+This is a very interesting article that introduces a new technique to reason on languages that mix first-order and modal aspects.  The article discusses the cases of TLA+, and describes a method called coalescing that handles FO Modal Logic proof obligations by soundly abstracting them into formulas of either first-order logic (FOL) or propositional modal logic (MOL).  The basic idea behind coalescing is simple, but not trivial, and a number of subtle issues arises in the presence of equality, defined operators and bound variables.
+The article is well written and, as far as I was able to check, technically sound.  The research is still "work on progress" somewhat, and the authors themselves mention that the final version of the article would contain additional results.  But even in it present form I consider the results presenting worthwhile of a publication at the workshop.
+The technique of coalescing bears some resemblance with the standard abstractions used in SMT proving, but it seems to go "both ways" with translations that can abstract first-order structure into pure propositional modal formulas, and modal sub-formulas into pure first-order formulas.  Perhaps a comment relation coalescing with SMT would be useful to the reader.
+In some places, the article relies too much on previous knowledge of TLA+.  This happens, for example in page 4, in the discussion of an improper abstraction over {a,a} in a proof of \forall a: {a,a} = {a}.  I was not able to follow how \box{{a,a}} = {1} would be proved.
+Also in page 4, the paragraph discussing Operator Definitions is hard to understand, this early in the paper. In particular, it is unclear why, \epsilon_1 and \epsilon_2 are needed here.
