@@ -646,6 +646,8 @@ let encode_fof ff ob =
   fprintf ff "@?@[<hov2>fof(conc,conjecture,@,@[<hov2>%a@]).@]@." (to_fol_expr ecx) c;
 ;;
 
+(* Everything below is part of a deprecated version of the SMT encoding; ignore it *)
+(*
 open Smtlib.T
 open Smtlib.Fmt
 
@@ -726,4 +728,5 @@ let pp_print_obligation ?solver:(solver="?") ?logic:(logic=AUFNIRA) ff ob =
 
 (* REDIRECT! *)
 (*let encode_smtlib = pp_print_obligation ~logic:UFNIA*)
+  *)
 

@@ -9,6 +9,7 @@
 val encode_smtlib : ?solver:string -> Format.formatter -> Proof.T.obligation -> unit
 val encode_fof : Format.formatter -> Proof.T.obligation -> unit
 
+(*
 type smt_logic =
   | AUFNIRA
   | UFNIA
@@ -16,4 +17,5 @@ type smt_logic =
 val to_string : smt_logic -> string
 
 val pp_print_obligation : ?solver:string -> ?logic:smt_logic -> Format.formatter -> Proof.T.obligation -> unit
+*)
 

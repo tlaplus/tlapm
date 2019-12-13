@@ -38,7 +38,6 @@ EXPR_PACK = \
   expr/e_leibniz expr/e_parser expr/e_tla_norm expr/e_temporal_props \
   expr/e_elab expr/e_anon
 
-# Old
 TYPESYSTEM_DIR = \
   typesystem/typ_t typesystem/typ_e typesystem/typ_c \
   typesystem/typ_cg1 typesystem/typ_cg2 typesystem/typ_impgraph typesystem/typ_system
@@ -46,15 +45,6 @@ TYPESYSTEM_DIR = \
 SMT_DIR = \
   smt/smtcommons ${TYPESYSTEM_DIR} smt/fmt smt/boolify smt/normal smt/ectx \
   smt/preprocess smt/axioms
-# /Old
-
-# New
-TYPE_PACK = \
-	type/t_t type/t_cgen type/t_csolve type/t_infer
-
-SMTLIB_PACK = \
-  smtlib/s_t smtlib/s_symbs smtlib/s_axioms smtlib/s_direct smtlib/s_fmt
-# /New
 
 # FIXME remove useless files: dumpfp abstractor method_old backend/cooper
 MODULES = revision sysconf \
@@ -62,14 +52,13 @@ MODULES = revision sysconf \
   params ${PARS_PACK} pars util/property \
   util/util ctx errors optable util/fmtutil \
   isabelle_keywords tla_parser util/deque alexer ${EXPR_PACK} expr \
-  method_prs \
-  ${PROOF_PACK} proof ${SMT_DIR} ${TYPE_PACK} ${SMTLIB_PACK} smtlib util/timing \
+  method_prs ${PROOF_PACK} proof ${SMT_DIR} util/timing \
 	${MODULE_PACK} module ${FRONTEND_PACK} \
   backend/toolbox backend/schedule ${BACKEND_PACK} backend \
   tlapm_args tlapm
 
 INC0 = -I ../backend -I ../frontend -I ../expr -I ../module -I ../proof \
-       -I ../util -I ../pars -I ../typesystem -I ../type -I ../smt -I ../smtlib
+       -I ../util -I ../pars -I ../typesystem -I ../smt
 
 INC = ${INC0:../%=%}
 INC1 = ${INC0} -I ..
