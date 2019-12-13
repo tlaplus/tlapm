@@ -19,7 +19,7 @@ FRONTEND_PACK = \
 BACKEND_PACK = \
   backend/types backend/isabelle backend/zenon \
   backend/ls4 backend/fingerprints backend/fpfile \
-  backend/smt backend/prep
+  backend/smt backend/smtlib backend/prep
 
 MODULE_PACK = \
   module/m_t module/m_fmt module/m_globalness module/m_gen module/m_elab \
@@ -38,6 +38,12 @@ EXPR_PACK = \
   expr/e_leibniz expr/e_parser expr/e_tla_norm expr/e_temporal_props \
   expr/e_elab expr/e_anon
 
+TYPE_PACK = \
+	type/t_t
+
+REDUCE_PACK = \
+	
+
 TYPESYSTEM_DIR = \
   typesystem/typ_t typesystem/typ_e typesystem/typ_c \
   typesystem/typ_cg1 typesystem/typ_cg2 typesystem/typ_impgraph typesystem/typ_system
@@ -52,13 +58,13 @@ MODULES = revision sysconf \
   params ${PARS_PACK} pars util/property \
   util/util ctx errors optable util/fmtutil \
   isabelle_keywords tla_parser util/deque alexer ${EXPR_PACK} expr \
-  method_prs ${PROOF_PACK} proof ${SMT_DIR} util/timing \
+  method_prs ${PROOF_PACK} proof ${TYPE_PACK} type ${REDUCE_PACK} reduce ${SMT_DIR} util/timing \
 	${MODULE_PACK} module ${FRONTEND_PACK} \
   backend/toolbox backend/schedule ${BACKEND_PACK} backend \
   tlapm_args tlapm
 
 INC0 = -I ../backend -I ../frontend -I ../expr -I ../module -I ../proof \
-       -I ../util -I ../pars -I ../typesystem -I ../smt
+       -I ../util -I ../pars -I ../type -I ../reduce -I ../typesystem -I ../smt
 
 INC = ${INC0:../%=%}
 INC1 = ${INC0} -I ..

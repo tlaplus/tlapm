@@ -405,6 +405,15 @@ let gen_smt_solve suffix exec desc fmt_expr meth ob org_ob f res_cont comm =
     Schedule.Immediate (res_cont w (Method.NotTried msg) None)
 ;;
 
+(* NOTE
+ * This part redirects to the new SMT encoding
+ * Comment out this module definition to get Hernan Vanzetto's encoding *)
+module Smt = struct
+  let encode_smtlib = Smtlib.pp_print_obligation
+  let encode_fof = Smtlib.pp_print_obligation
+end
+(* *)
+
 let smt_solve ob org_ob f res_cont =
   gen_smt_solve ".smt" Params.smt "default SMT solver" Smt.encode_smtlib
                 (Method.Smt3 f) ob org_ob f res_cont ";;"
