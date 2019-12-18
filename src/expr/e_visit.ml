@@ -400,3 +400,322 @@ class virtual ['s] iter = object (self : 'self)
         scx
 
 end
+
+class virtual ['s, 'a] foldmap = object (self : 'self)
+
+  method expr (scx : 's scx) a oe =
+    match oe.core with
+    | Ix n ->
+        a, Ix n @@ oe
+    | Internal b ->
+        a, Internal b @@ oe
+    | Opaque o ->
+        a, Opaque o @@ oe
+    | Bang (e, sels) ->
+        let a, e = self#expr scx a e in
+        let a, sels = List.fold_left begin fun (a, sels) sel ->
+          let a, sel = self#sel scx a sel in
+          a, sel :: sels
+        end (a, []) sels in
+        let sels = List.rev sels in
+        a, Bang (e, sels) @@ oe
+    | Lambda (vs, e) ->
+        let scx = adjs scx (List.map begin fun (v, shp) ->
+          Fresh (v, shp, Unknown, Unbounded) @@ v
+        end vs) in
+        let a, e = self#expr scx a e in
+        a, Lambda (vs, e) @@ oe
+    | String s ->
+        a, String s @@ oe
+    | Num (m, n) ->
+        a, Num (m, n) @@ oe
+    | Apply (op, es) ->
+        let a, op = self#expr scx a op in
+        let a, es = List.fold_left begin fun (a, es) e ->
+          let a, e = self#expr scx a e in
+          a, e :: es
+        end (a, []) es in
+        let es = List.rev es in
+        a, Apply (op, es) @@ oe
+    | Sequent sq ->
+        let _, a, sq = self#sequent scx a sq in
+        a, Sequent sq @@ oe
+    | With (e, m) ->
+        let a, e = self#expr scx a e in
+        a, With (e, m) @@ oe
+    | Let (ds, e) ->
+        let scx, a, ds = self#defns scx a ds in
+        let a, e = self#expr scx a e in
+        a, Let (ds, e) @@ oe
+    | If (e, f, g) ->
+        let a, e = self#expr scx a e in
+        let a, f = self#expr scx a f in
+        let a, g = self#expr scx a g in
+        a, If (e, f, g) @@ oe
+    | List (q, es) ->
+        let a, es = List.fold_left begin fun (a, es) e ->
+          let a, e = self#expr scx a e in
+          a, e :: es
+        end (a, []) es in
+        let es = List.rev es in
+        a, List (q, es) @@ oe
+    | Quant (q, bs, e) ->
+        let scx, a, bs = self#bounds scx a bs in
+        let a, e = self#expr scx a e in
+        a, Quant (q, bs, e) @@ oe
+    | Tquant (q, vs, e) ->
+        let scx = adjs scx (List.map begin fun v ->
+          Flex v @@ v
+        end vs) in
+        let a, e = self#expr scx a e in
+        a, Tquant (q, vs, e) @@ oe
+    | Choose (v, optdom, e) ->
+        let a, optdom, h =
+          match optdom with
+          | None ->
+              a, None, Fresh (v, Shape_expr, Constant, Unbounded) @@ v
+          | Some dom ->
+              let a, dom = self#expr scx a dom in
+              a, Some dom, Fresh (v, Shape_expr, Constant, Bounded (dom, Visible)) @@ v
+        in
+        let scx = adj scx h in
+        let a, e = self#expr scx a e in
+        a, Choose (v, optdom, e) @@ oe
+    | SetSt (v, dom, e) ->
+        let a, dom = self#expr scx a dom in
+        let scx = adj scx (Fresh (v, Shape_expr, Constant, Bounded (dom, Visible)) @@ v) in
+        let a, e = self#expr scx a e in
+        a, SetSt (v, dom, e) @@ oe
+    | SetOf (e, bs) ->
+        let scx, a, bs = self#bounds scx a bs in
+        let a, e = self#expr scx a e in
+        a, SetOf (e, bs) @@ oe
+    | SetEnum es ->
+        let a, es = List.fold_left begin fun (a, es) e ->
+          let a, e = self#expr scx a e in
+          a, e :: es
+        end (a, []) es in
+        let es = List.rev es in
+        a, SetEnum es @@ oe
+    | Fcn (bs, e) ->
+        let scx, a, bs = self#bounds scx a bs in
+        let a, e = self#expr scx a e in
+        a, Fcn (bs, e) @@ oe
+    | FcnApp (f, es) ->
+        let a, f = self#expr scx a f in
+        let a, es = List.fold_left begin fun (a, es) e ->
+          let a, e = self#expr scx a e in
+          a, e :: es
+        end (a, []) es in
+        let es = List.rev es in
+        a, FcnApp (f, es) @@ oe
+    | Arrow (e, f) ->
+        let a, e = self#expr scx a e in
+        let a, f = self#expr scx a f in
+        a, Arrow (e, f) @@ oe
+    | Product es ->
+        let a, es = List.fold_left begin fun (a, es) e ->
+          let a, e = self#expr scx a e in
+          a, e :: es
+        end (a, []) es in
+        let es = List.rev es in
+        a, Product es @@ oe
+    | Tuple es ->
+        let a, es = List.fold_left begin fun (a, es) e ->
+          let a, e = self#expr scx a e in
+          a, e :: es
+        end (a, []) es in
+        let es = List.rev es in
+        a, Tuple es @@ oe
+    | Rect fs ->
+        let a, fs = List.fold_left begin fun (a, fs) (s, e) ->
+          let a, e = self#expr scx a e in
+          a, (s, e) :: fs
+        end (a, []) fs in
+        let fs = List.rev fs in
+        a, Rect fs @@ oe
+    | Record fs ->
+        let a, fs = List.fold_left begin fun (a, fs) (s, e) ->
+          let a, e = self#expr scx a e in
+          a, (s, e) :: fs
+        end (a, []) fs in
+        let fs = List.rev fs in
+        a, Record fs @@ oe
+    | Except (e, xs) ->
+        let a, e = self#expr scx a e in
+        let a, xs = List.fold_left begin fun (a, xs) x ->
+          let a, x = self#exspec scx a x in
+          a, x :: xs
+        end (a, []) xs in
+        let xs = List.rev xs in
+        a, Except (e, xs) @@ oe
+    | Dot (e, f) ->
+        let a, e = self#expr scx a e in
+        a, Dot (e, f) @@ oe
+    | Sub (s, e, f) ->
+        let a, e = self#expr scx a e in
+        let a, f = self#expr scx a f in
+        a, Sub (s, e, f) @@ oe
+    | Tsub (s, e, f) ->
+        let a, e = self#expr scx a e in
+        let a, f = self#expr scx a f in
+        a, Tsub (s, e, f) @@ oe
+    | Fair (fop, e, f) ->
+        let a, e = self#expr scx a e in
+        let a, f = self#expr scx a f in
+        a, Fair (fop, e, f) @@ oe
+    | Case (arms, oth) ->
+        let a, arms = List.fold_left begin fun (a, arms) (e, f) ->
+          let a, e = self#expr scx a e in
+          let a, f = self#expr scx a f in
+          a, (e, f) :: arms
+        end (a, []) arms in
+        let arms = List.rev arms in
+        let a, oth =
+          match oth with
+          | None ->
+              a, None
+          | Some o ->
+              let a, o = self#expr scx a o in
+              a, Some o
+        in
+        a, Case (arms, oth) @@ oe
+    | At b ->
+        a, At b @@ oe
+    | Parens (e, pf) ->
+        let a, e = self#expr scx a e in
+        let a, pf = self#pform scx a pf in
+        a, Parens (e, pf) @@ oe
+
+  method pform scx a pf = a, pf
+
+  method sel scx a sel =
+    match sel with
+    | Sel_inst args ->
+        let a, e = List.fold_left begin fun (a, args) e ->
+          let a, e = self#expr scx a e in
+          a, e :: args
+        end (a, []) args in
+        let args = List.rev args in
+        a, Sel_inst args
+    | Sel_lab (l, args) ->
+        let a, e = List.fold_left begin fun (a, args) e ->
+          let a, e = self#expr scx a e in
+          a, e :: args
+        end (a, []) args in
+        let args = List.rev args in
+        a, Sel_lab (l, args)
+    | _ ->
+        a, sel
+
+  method sequent scx a sq =
+    let scx, a, hyps = self#hyps scx a sq.context in
+    let a, act = self#expr scx a sq.active in
+    scx, a, { context = hyps ; active = act }
+
+  method defn scx a df =
+    match df.core with
+      | Recursive (nm, shp) ->
+          a, Recursive (nm, shp) @@ df
+      | Operator (nm, e) ->
+          let a, e = self#expr scx a e in
+          a, Operator (nm, e) @@ df
+      | Instance (nm, i) ->
+          let a, i = self#instance scx a i in
+          a, Instance (nm, i) @@ df
+      | Bpragma(nm, e, l) ->
+          let a, e = self#expr scx a e in
+          a, Bpragma (nm, e, l) @@ df
+
+  method defns scx a ds =
+    match ds with
+    | [] -> scx, a, []
+    | df :: dfs ->
+        let a, df = self#defn scx a df in
+        let scx = adj scx (Defn (df, User, Visible, Local) @@ df) in
+        let scx, a, dfs = self#defns scx a dfs in
+        scx, a, df :: dfs
+
+  method bounds scx a bs =
+    let a, bs = List.fold_left begin fun (a, bs) (v, k, dom) ->
+      match dom with
+      | Domain d ->
+          let a, d = self#expr scx a d in
+          a, (v, k, Domain d) :: bs
+      | _ ->
+          a, (v, k, dom) :: bs
+    end (a, []) bs in
+    let bs = List.rev bs in
+    let hs = List.map begin
+      fun (v, k, _) -> Fresh (v, Shape_expr, k, Unbounded) @@ v
+    end bs in
+    let scx = adjs scx hs in
+    scx, a, bs
+
+  method bound scx (a : 'a) b =
+    match self#bounds scx a [b] with
+      | scx, a, [b] -> scx, a, b
+      | _ -> assert false
+
+  method exspec scx a (trail, res) =
+    let a, trail = List.fold_left begin fun (a, trail) x ->
+      match x with
+      | Except_dot s ->
+          a, (Except_dot s) :: trail
+      | Except_apply e ->
+          let a, e = self#expr scx a e in
+          a, (Except_apply e) :: trail
+    end (a, []) trail in
+    let trail = List.rev trail in
+    let a, res = self#expr scx a res in
+    a, (trail, res)
+
+  method instance scx a i =
+    let scx = List.fold_left begin fun scx v ->
+      adj scx (Fresh (v, Shape_expr, Unknown, Unbounded) @@ v)
+    end scx i.inst_args in
+    let a, sub = List.fold_left begin fun (a, sub) (v, e) ->
+      let a, e = self#expr scx a e in
+      a, (v, e) :: sub
+    end (a, []) i.inst_sub in
+    let sub = List.rev sub in
+    a, { i with inst_sub = sub }
+
+  method hyp scx a h =
+    match h.core with
+    | Fresh (nm, shp, lc, dom) ->
+        let a, dom =
+          match dom with
+          | Unbounded ->
+              a, Unbounded
+          | Bounded (r, rvis) ->
+              let a, r = self#expr scx a r in
+              a, Bounded (r, rvis)
+        in
+        let h = Fresh (nm, shp, lc, dom) @@ h in
+        let scx = adj scx h in
+        scx, a, h
+    | Flex s ->
+        let h = Flex s @@ h in
+        let scx = adj scx h in
+        scx, a, h
+    | Defn (df, wd, vis, ex) ->
+        let a, df = self#defn scx a df in
+        let h = Defn (df, wd, vis, ex) @@ h in
+        let scx = adj scx h in
+        scx, a, h
+    | Fact (e, vis, tm) ->
+        let a, e = self#expr scx a e in
+        let h = Fact (e, vis, tm) @@ h in
+        let scx = adj scx h in
+        scx, a, h
+
+  method hyps scx a hs =
+    match Dq.front hs with
+    | None -> scx, a, Dq.empty
+    | Some (h, hs) ->
+        let scx, a, h = self#hyp scx a h in
+        let scx, a, hs = self#hyps scx a hs in
+        scx, a, Dq.cons h hs
+
+end
