@@ -63,7 +63,7 @@ INC0 = -I ../backend -I ../frontend -I ../expr -I ../module -I ../proof \
 INC = ${INC0:../%=%}
 INC1 = ${INC0} -I ..
 
-LIB_CMA = unix.cma str.cma nums.cma
+LIB_CMA = unix.cma str.cma
 LIB_CMXA = ${LIB_CMA:.cma=.cmxa}
 
 ML = ${MODULES:=.ml}
