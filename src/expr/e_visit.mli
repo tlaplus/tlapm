@@ -58,3 +58,18 @@ class virtual ['s, 'a] foldmap : object
   method hyp      : 's scx -> 'a -> hyp -> 's scx * 'a * hyp
   method hyps     : 's scx -> 'a -> hyp Deque.dq -> 's scx * 'a * hyp Deque.dq
 end
+
+class virtual ['s, 'a] fold : object
+  method expr     : 's scx -> 'a -> expr -> 'a
+  method pform    : 's scx -> 'a -> pform -> 'a
+  method sel      : 's scx -> 'a -> sel -> 'a
+  method sequent  : 's scx -> 'a -> sequent -> 's scx * 'a
+  method defn     : 's scx -> 'a -> defn -> 'a
+  method defns    : 's scx -> 'a -> defn list -> 's scx * 'a
+  method bounds   : 's scx -> 'a -> bound list -> 's scx * 'a
+  method bound    : 's scx -> 'a -> bound -> 's scx * 'a
+  method exspec   : 's scx -> 'a -> exspec -> 'a
+  method instance : 's scx -> 'a -> instance -> 'a
+  method hyp      : 's scx -> 'a -> hyp -> 's scx * 'a
+  method hyps     : 's scx -> 'a -> hyp Deque.dq -> 's scx * 'a
+end
