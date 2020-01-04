@@ -208,12 +208,12 @@ THEOREM Fun_InjInverse ==
   ASSUME NEW S, NEW T, NEW f \in Injection(S,T), S = {} => T = {}
   PROVE  Inverse(f,S,T) \in Surjection(T,S)
 <1>. DEFINE g == Inverse(f,S,T)
-<1>0. f \in [S -> T]  BY DEF Injection
-<1>1. g \in [T -> S]  BY <1>0, Fun_InverseProperties, Zenon
-<1>2. ASSUME NEW s \in S  PROVE \E t \in T : g[t] = s
+<1>1. f \in [S -> T]  BY DEF Injection
+<1>2. g \in [T -> S]  BY <1>1, Fun_InverseProperties, Zenon
+<1>3. ASSUME NEW s \in S  PROVE \E t \in T : g[t] = s
   <2>10. g[f[s]] = s  BY DEF Inverse, Range, Injection
-  <2>. QED  BY <2>10, <1>0
-<1>. QED  BY <1>1, <1>2 DEF Surjection
+  <2>. QED  BY <2>10, <1>1
+<1>. QED  BY <1>2, <1>3 DEF Surjection
 
 
 (***************************************************************************)
@@ -385,7 +385,7 @@ BY Fun_BijInverse DEF ExistsBijection
 THEOREM Fun_ExistsBijTransitive ==
   ASSUME NEW S, NEW T, NEW U, ExistsBijection(S,T), ExistsBijection(T,U)  
   PROVE  ExistsBijection(S,U)
-BY Fun_BijTransitive DEF ExistsBijection
+BY Fun_BijTransitive, Zenon DEF ExistsBijection
 
 
 
@@ -412,14 +412,14 @@ THEOREM Fun_ExistsInjTransitive ==
   ASSUME NEW S, NEW T, NEW U,
          ExistsInjection(S,T), ExistsInjection(T,U)
   PROVE  ExistsInjection(S,U)
-BY Fun_InjTransitive DEF ExistsInjection
+BY Fun_InjTransitive, Zenon DEF ExistsInjection
 
 
 THEOREM Fun_ExistsSurjTransitive ==
   ASSUME NEW S, NEW T, NEW U,
          ExistsSurjection(S,T), ExistsSurjection(T,U)
   PROVE  ExistsSurjection(S,U)
-BY Fun_SurjTransitive DEF ExistsSurjection
+BY Fun_SurjTransitive, Zenon DEF ExistsSurjection
 
 
 -----------------------------------------------------------------------------
@@ -447,160 +447,158 @@ BY Fun_SurjTransitive DEF ExistsSurjection
 THEOREM Fun_CantorBernsteinSchroeder_Lemma ==
   ASSUME NEW S, NEW T, T \subseteq S, ExistsInjection(S,T)
   PROVE  ExistsBijection(S,T)
-PROOF
-  <1> PICK F \in Injection(S,T) : TRUE  BY Fun_ExistsInj
+<1> PICK F \in Injection(S,T) : TRUE  BY Fun_ExistsInj
 
-  <1>1. /\ F \in [S -> T]
-        /\ \A a,b \in S : F[a] = F[b] => a = b  
-    BY Fun_InjectionProperties
+<1>1. /\ F \in [S -> T]
+      /\ \A a,b \in S : F[a] = F[b] => a = b  
+  BY Fun_InjectionProperties
   
-  (*************************************************************************)
-  (* Pick Y as S excluding T.                                              *)
-  (*************************************************************************)
-  <1>2. PICK Y : Y = S \ T  OBVIOUS
+(*************************************************************************)
+(* Pick Y as S excluding T.                                              *)
+(*************************************************************************)
+<1>2. PICK Y : Y = S \ T  BY Zenon
   
-  (*************************************************************************)
-  (* Define Ci[0] as Y, and Ci[i+1] as the image of Ci[i] under F.         *)
-  (*************************************************************************)
-  <1> DEFINE Ci[i \in Nat] ==
-        IF i = 0 THEN Y ELSE {F[s] : s \in Ci[i-1]}
-  <1> HIDE DEF Ci
+(*************************************************************************)
+(* Define Ci[0] as Y, and Ci[i+1] as the image of Ci[i] under F.         *)
+(*************************************************************************)
+<1> DEFINE Ci[i \in Nat] ==
+      IF i = 0 THEN Y ELSE {F[s] : s \in Ci[i-1]}
+<1> HIDE DEF Ci
   
-  <1>3. \A i \in Nat : Ci[i] =
-        IF i = 0 THEN Y ELSE {F[s] : s \in Ci[i-1]}
-    (***********************************************************************)
-    (* Use NatInductiveDef to prove that Ci equals its definition.         *)
-    (***********************************************************************)
-    <2> DEFINE
+<1>3. \A i \in Nat : Ci[i] = IF i = 0 THEN Y ELSE {F[s] : s \in Ci[i-1]}
+  (***********************************************************************)
+  (* Use NatInductiveDef to prove that Ci equals its definition.         *)
+  (***********************************************************************)
+  <2> DEFINE
       f0       == Y
       Def(v,i) == {F[s] : s \in v}
       f        == CHOOSE f : f = [i \in Nat |-> IF i = 0 THEN f0 ELSE Def(f[i-1],i)]
-    <2> SUFFICES \A i \in Nat : f[i] = IF i = 0 THEN f0 ELSE Def(f[i-1],i)  BY DEF Ci
-    <2> HIDE DEF f0, Def, f
-    <2> SUFFICES NatInductiveDefConclusion(f,f0,Def)  BY DEF NatInductiveDefConclusion
-    <2> SUFFICES NatInductiveDefHypothesis(f,f0,Def)  BY NatInductiveDef
-    <2> QED BY DEF NatInductiveDefHypothesis, f
+  <2> SUFFICES \A i \in Nat : f[i] = IF i = 0 THEN f0 ELSE Def(f[i-1],i)  BY DEF Ci
+  <2> HIDE DEF f0, Def, f
+  <2> SUFFICES NatInductiveDefConclusion(f,f0,Def)  BY DEF NatInductiveDefConclusion
+  <2> SUFFICES NatInductiveDefHypothesis(f,f0,Def)  BY NatInductiveDef
+  <2> QED BY DEF NatInductiveDefHypothesis, f
   
-  (*************************************************************************)
-  (* Applying F to an element of Ci[i] produces an element of Ci[i+1].     *)
-  (*************************************************************************)
-  <1>4. ASSUME NEW i \in Nat, NEW s \in Ci[i]
-        PROVE F[s] \in Ci[i+1]
-     (* old proof fails:
-        BY <1>3, SMT
-     *)
+(*************************************************************************)
+(* Applying F to an element of Ci[i] produces an element of Ci[i+1].     *)
+(*************************************************************************)
+<1>4. ASSUME NEW i \in Nat, NEW s \in Ci[i]
+      PROVE F[s] \in Ci[i+1]
+   (* old proof fails:
+      BY <1>3, SMT
+   *)
+   BY <1>3, i+1 \in Nat \ {0}, (i+1)-1 = i, Zenon
+  
+(*************************************************************************)
+(* Each element of Ci[i+1] is the application of F to some element in    *)
+(* Ci[i].                                                                *)
+(*************************************************************************)
+<1>5. ASSUME NEW i \in Nat, NEW t \in Ci[i+1]
+      PROVE \E s \in Ci[i] : F[s] = t
+   (* old proof fails:
+      BY <1>3, SMT
+   *)
+   <2>1. Ci[i+1] = {F[s] : s \in Ci[i]}
      BY <1>3, i+1 \in Nat \ {0}, (i+1)-1 = i, Zenon
-  
-  (*************************************************************************)
-  (* Each element of Ci[i+1] is the application of F to some element in    *)
-  (* Ci[i].                                                                *)
-  (*************************************************************************)
-  <1>5. ASSUME NEW i \in Nat, NEW t \in Ci[i+1]
-        PROVE \E s \in Ci[i] : F[s] = t
-     (* old proof fails:
-        BY <1>3, SMT
-     *)
-     <2>1. Ci[i+1] = {F[s] : s \in Ci[i]}
-       BY <1>3, i+1 \in Nat \ {0}, (i+1)-1 = i, Zenon
-     <2>. QED  BY <2>1
+   <2>. QED  BY <2>1
 
-  (*************************************************************************)
-  (* Each Ci[i] \subseteq S.                                               *)
-  (*************************************************************************)
-  <1>6. \A i \in Nat : Ci[i] \subseteq S
-    <2> DEFINE Prop(i) == Ci[i] \subseteq S
-    <2> SUFFICES \A i \in Nat : Prop(i)  OBVIOUS
-    <2>1. Prop(0)  BY <1>2, <1>3, Zenon
-    <2>2. ASSUME NEW i \in Nat, Prop(i)  PROVE Prop(i+1)
-      <3> SUFFICES ASSUME NEW t \in Ci[i+1]  PROVE t \in S  OBVIOUS
-      <3>1. PICK s \in Ci[i] : F[s] = t  BY <1>5
-      <3>2. s \in S  BY <2>2
-      <3> QED BY <3>1, <3>2, <1>1
-    <2> HIDE DEF Prop
-    <2> QED BY <2>1, <2>2, NatInduction, Isa
+(*************************************************************************)
+(* Each Ci[i] \subseteq S.                                               *)
+(*************************************************************************)
+<1>6. \A i \in Nat : Ci[i] \subseteq S
+  <2> DEFINE Prop(i) == Ci[i] \subseteq S
+  <2> SUFFICES \A i \in Nat : Prop(i)  OBVIOUS
+  <2>1. Prop(0)  BY <1>2, <1>3, Zenon
+  <2>2. ASSUME NEW i \in Nat, Prop(i)  PROVE Prop(i+1)
+    <3> SUFFICES ASSUME NEW t \in Ci[i+1]  PROVE t \in S  OBVIOUS
+    <3>1. PICK s \in Ci[i] : F[s] = t  BY <1>5
+    <3>2. s \in S  BY <2>2
+    <3> QED BY <3>1, <3>2, <1>1
+  <2> HIDE DEF Prop
+  <2> QED BY <2>1, <2>2, NatInduction, Isa
 
-  (*************************************************************************)
-  (* Pick C as the union of all Ci[i].                                     *)
-  (*************************************************************************)
-  <1>7. PICK C : C = UNION {Ci[i] : i \in Nat}  OBVIOUS
-  <1>8. C \subseteq S  BY <1>6, <1>7
+(*************************************************************************)
+(* Pick C as the union of all Ci[i].                                     *)
+(*************************************************************************)
+<1>7. PICK C : C = UNION {Ci[i] : i \in Nat}  OBVIOUS
+<1>8. C \subseteq S  BY <1>6, <1>7
   
-  (*************************************************************************)
-  (* Pick FC as the image of C under F.                                    *)
-  (*************************************************************************)
-  <1>9. PICK FC : FC = {F[c] : c \in C}  BY Zenon
-  <1>10. FC \subseteq T  BY <1>1, <1>8, <1>9, Isa
+(*************************************************************************)
+(* Pick FC as the image of C under F.                                    *)
+(*************************************************************************)
+<1>9. PICK FC : FC = {F[c] : c \in C}  BY Zenon
+<1>10. FC \subseteq T  BY <1>1, <1>8, <1>9, Isa
   
-  (*************************************************************************)
-  (* C = Y \cup FC because Ci[0] = Y and Ci[i+1] = image of Ci[i] under F. *)
-  (*************************************************************************)
-  <1>11. C = Y \cup FC
-    <2>1. ASSUME NEW c \in C  PROVE c \in Y \cup FC
-      <3>1. PICK i \in Nat : c \in Ci[i]  BY <1>7
-      <3>2. CASE i = 0  BY <3>1, <3>2, <1>3, Zenon
-      <3>3. CASE i # 0
-        (* old proof fails:
-        <4>1. PICK s \in Ci[i-1] : F[s] = c  BY <3>1, <3>3, <1>5, SMT
-        *)
-        <4>0. PICK j \in Nat : i = j+1
-          BY <3>3
-        <4>1. PICK s \in Ci[j] : F[s] = c
-          BY <4>0, <3>1, <1>5, Zenon
-        <4>2. s \in C  BY <3>3, <1>7
-        <4> QED BY <4>1, <4>2, <1>9
-      <3> QED BY <3>2, <3>3
-    <2>2. ASSUME NEW c \in Y \cup FC  PROVE c \in C
-      <3>1. CASE c \in Y  BY <3>1, <1>3, <1>7, Zenon
-      <3>2. CASE c \in FC
-        <4>1. PICK s \in C : F[s] = c  BY <3>2, <1>9
-        <4>2. PICK i \in Nat : s \in Ci[i]  BY <4>1, <1>7
-        <4>3. F[s] \in Ci[i+1]  BY <4>2, <1>4
-        <4> QED BY <4>1, <4>3, <1>7
-      <3> QED BY <3>1, <3>2
-    <2> QED BY <2>1, <2>2
+(*************************************************************************)
+(* C = Y \cup FC because Ci[0] = Y and Ci[i+1] = image of Ci[i] under F. *)
+(*************************************************************************)
+<1>11. C = Y \cup FC
+  <2>1. ASSUME NEW c \in C  PROVE c \in Y \cup FC
+    <3>1. PICK i \in Nat : c \in Ci[i]  BY <1>7
+    <3>2. CASE i = 0  BY <3>1, <3>2, <1>3, Zenon
+    <3>3. CASE i # 0
+      (* old proof fails:
+      <4>1. PICK s \in Ci[i-1] : F[s] = c  BY <3>1, <3>3, <1>5, SMT
+      *)
+      <4>0. PICK j \in Nat : i = j+1
+        BY <3>3
+      <4>1. PICK s \in Ci[j] : F[s] = c
+        BY <4>0, <3>1, <1>5, Zenon
+      <4>2. s \in C  BY <3>3, <1>7
+      <4> QED BY <4>1, <4>2, <1>9
+    <3> QED BY <3>2, <3>3
+  <2>2. ASSUME NEW c \in Y \cup FC  PROVE c \in C
+    <3>1. CASE c \in Y  BY <3>1, <1>3, <1>7, Zenon
+    <3>2. CASE c \in FC
+      <4>1. PICK s \in C : F[s] = c  BY <3>2, <1>9
+      <4>2. PICK i \in Nat : s \in Ci[i]  BY <4>1, <1>7
+      <4>3. F[s] \in Ci[i+1]  BY <4>2, <1>4
+      <4> QED BY <4>1, <4>3, <1>7
+    <3> QED BY <3>1, <3>2
+  <2> QED BY <2>1, <2>2
   
-  (*************************************************************************)
-  (* S \ C is the same as T \ FC.                                          *)
-  (*************************************************************************)
-  <1>12. S \ C = T \ FC  BY <1>2, <1>11
+(*************************************************************************)
+(* S \ C is the same as T \ FC.                                          *)
+(*************************************************************************)
+<1>12. S \ C = T \ FC  BY <1>2, <1>11
 
-  (*************************************************************************)
-  (* Pick H as F on C and the identity on S \ C.  Since F (restricted to   *)
-  (* C) is a bijection from C to FC and S \ C = T \ FC, this makes H a     *)
-  (* bijection from S to T.                                                *)
-  (*************************************************************************)
-  <1>13. PICK H : H = [s \in S |-> IF s \in C THEN F[s] ELSE s]  OBVIOUS
-  <1>14. H \in Bijection(S,T)
-    (***********************************************************************)
-    (* A useful lemma.  If a \in C and b \notin C, then H[a] # H[b].       *)
-    (***********************************************************************)
-    <2>1. ASSUME NEW a \in S, NEW b \in S, a \in C, b \notin C  PROVE H[a] # H[b]
-      <3>1. H[a] \in FC  BY <2>1, <1>1, <1>9, <1>13
-      <3>2. H[b] \in T \ FC  BY <2>1, <1>12, <1>13
-      <3> QED BY <3>1, <3>2
+(*************************************************************************)
+(* Pick H as F on C and the identity on S \ C.  Since F (restricted to   *)
+(* C) is a bijection from C to FC and S \ C = T \ FC, this makes H a     *)
+(* bijection from S to T.                                                *)
+(*************************************************************************)
+<1>13. PICK H : H = [s \in S |-> IF s \in C THEN F[s] ELSE s]  OBVIOUS
+<1>14. H \in Bijection(S,T)
+  (***********************************************************************)
+  (* A useful lemma.  If a \in C and b \notin C, then H[a] # H[b].       *)
+  (***********************************************************************)
+  <2>1. ASSUME NEW a \in S, NEW b \in S, a \in C, b \notin C  PROVE H[a] # H[b]
+    <3>1. H[a] \in FC  BY <2>1, <1>1, <1>9, <1>13
+    <3>2. H[b] \in T \ FC  BY <2>1, <1>12, <1>13
+    <3> QED BY <3>1, <3>2
       
-    <2>2. H \in [S -> T]
-      <3> SUFFICES ASSUME NEW s \in S  PROVE H[s] \in T  BY <1>13
-      <3>1. CASE s \in C  BY <3>1, <1>1, <1>10, <1>13
-      <3>2. CASE s \notin C  BY <3>2, <1>12, <1>13
-      <3> QED BY <3>1, <3>2
+  <2>2. H \in [S -> T]
+    <3> SUFFICES ASSUME NEW s \in S  PROVE H[s] \in T  BY <1>13
+    <3>1. CASE s \in C  BY <3>1, <1>1, <1>10, <1>13
+    <3>2. CASE s \notin C  BY <3>2, <1>12, <1>13
+    <3> QED BY <3>1, <3>2
       
-    <2>3. ASSUME NEW a \in S, NEW b \in S, H[a] = H[b]  PROVE a = b
-      <3> H[a] = H[b]  BY <2>3
-      <3>1. CASE a \in C /\ b \in C  BY <3>1, <1>1, <1>13
-      <3>2. CASE a \in C /\ b \notin C  BY <3>2, <2>1  (* impossible by lemma *)
-      <3>3. CASE a \notin C /\ b \in C  BY <3>3, <2>1  (* impossible by lemma *)
-      <3>4. CASE a \notin C /\ b \notin C  BY <3>4, <1>13
-      <3> QED BY <3>1, <3>2, <3>3, <3>4
+  <2>3. ASSUME NEW a \in S, NEW b \in S, H[a] = H[b]  PROVE a = b
+    <3> H[a] = H[b]  BY <2>3
+    <3>1. CASE a \in C /\ b \in C  BY <3>1, <1>1, <1>13
+    <3>2. CASE a \in C /\ b \notin C  BY <3>2, <2>1  (* impossible by lemma *)
+    <3>3. CASE a \notin C /\ b \in C  BY <3>3, <2>1  (* impossible by lemma *)
+    <3>4. CASE a \notin C /\ b \notin C  BY <3>4, <1>13
+    <3> QED BY <3>1, <3>2, <3>3, <3>4
       
-    <2>4. ASSUME NEW t \in T  PROVE \E s \in S : H[s] = t
-      <3>1. CASE t \in FC  BY <3>1, <1>8, <1>9, <1>13
-      <3>2. CASE t \notin FC  BY <3>2, <1>12, <1>13
-      <3> QED BY <3>1, <3>2
+  <2>4. ASSUME NEW t \in T  PROVE \E s \in S : H[s] = t
+    <3>1. CASE t \in FC  BY <3>1, <1>8, <1>9, <1>13
+    <3>2. CASE t \notin FC  BY <3>2, <1>12, <1>13
+    <3> QED BY <3>1, <3>2
     
-    <2> QED BY <2>2, <2>3, <2>4, Fun_IsBij
+  <2> QED BY <2>2, <2>3, <2>4, Fun_IsBij
  
-  <1> QED BY <1>14, Fun_ExistsBij
+<1> QED BY <1>14, Fun_ExistsBij
 
 
 
@@ -739,48 +737,36 @@ THEOREM Fun_ExistsBijInterval ==
 THEOREM Fun_NatInjLeq ==
   ASSUME NEW n \in Nat, NEW m \in Nat
   PROVE  ExistsInjection(1..n,1..m) <=> n \leq m
-PROOF
-  (*************************************************************************)
-  (* n \leq m means Injection exists.  This part is easy.                  *)
-  (*************************************************************************)
-  <1>1. ASSUME n \leq m PROVE [i \in 1..n |-> i] \in Injection(1..n, 1..m)
-    BY SMT, <1>1 DEF Injection
+(*************************************************************************)
+(* n \leq m means Injection exists.  This part is easy.                  *)
+(*************************************************************************)
+<1>1. ASSUME n \leq m PROVE [i \in 1..n |-> i] \in Injection(1..n, 1..m)
+  BY <1>1 DEF Injection
 
-  (*************************************************************************)
-  (* Injection exists means n \leq m.  This part is harder.                *)
-  (*************************************************************************)
-  <1>2. ASSUME ExistsInjection(1..n,1..m)  PROVE n \leq m
-    <2>. DEFINE P(mm) == \A nn \in Nat : nn > mm => Injection(1..nn, 1..mm) = {}
-    <2>1. SUFFICES \A mm \in Nat : P(mm)  BY SMT, <1>2 DEF ExistsInjection
-    <2>2. P(0)  BY Z3 DEF Injection
-    <2>3. ASSUME NEW mm \in Nat, P(mm)  PROVE P(mm+1)
-      <3>1. SUFFICES ASSUME NEW nn \in Nat, nn > mm+1,
-                            NEW f \in Injection(1..nn, 1..mm+1)
-                     PROVE  FALSE
-        OBVIOUS
-      <3>2. ASSUME NEW i \in 1..nn, f[i] = mm+1 PROVE FALSE
-        <4>. DEFINE g == [j \in 1..nn-1 |-> IF j<i THEN f[j] ELSE f[j+1]]
-        <4>1. nn-1 \in Nat /\ nn-1 > mm  BY SMT, <3>1
-        <4>2. g \in Injection(1..nn-1, 1..mm)  BY SMT, <3>2 DEF Injection
-        <4>. QED  BY <4>1, <4>2, P(mm), Zenon DEF Injection
-      <3>3. ASSUME ~\E i \in 1..nn : f[i] = mm+1  PROVE FALSE
-        (** old proof fails:
-        <4>1. f \in Injection(1..nn, 1..mm)  BY SMT, <3>3 DEF Injection
-        **)
-        <4>1. /\ f \in [1 .. nn -> 1 .. mm+1]
-              /\ \A i \in 1 .. nn : f[i] \in (1 .. mm+1) \ {mm+1}
-          BY <3>3 DEF Injection
-        <4>2. (1 .. mm+1) \ {mm+1} = 1 .. mm
-          OBVIOUS
-        <4>3. f \in [1 .. nn -> 1 .. mm]
-          BY <4>1, <4>2
-        <4>4. f \in Injection(1..nn, 1..mm)
-          BY <4>3, <3>3 DEF Injection
-        <4>. QED  BY SMT, <4>4, <3>1, P(mm)
-      <3>. QED  BY <3>2, <3>3
-    <2>. QED  BY Isa, NatInduction, <2>2, <2>3
+(*************************************************************************)
+(* Injection exists means n \leq m.  This part is harder.                *)
+(*************************************************************************)
+<1>2. ASSUME ExistsInjection(1..n,1..m)  PROVE n \leq m
+  <2>. DEFINE P(mm) == \A nn \in Nat : nn > mm => Injection(1..nn, 1..mm) = {}
+  <2>1. SUFFICES \A mm \in Nat : P(mm)  BY <1>2 DEF ExistsInjection
+  <2>2. P(0)  BY DEF Injection
+  <2>3. ASSUME NEW mm \in Nat, P(mm)  PROVE P(mm+1)
+    <3>1. SUFFICES ASSUME NEW nn \in Nat, nn > mm+1,
+                          NEW f \in Injection(1..nn, 1..mm+1)
+                   PROVE  FALSE
+      OBVIOUS
+    <3>2. ASSUME NEW i \in 1..nn, f[i] = mm+1 PROVE FALSE
+      <4>. DEFINE g == [j \in 1..nn-1 |-> IF j<i THEN f[j] ELSE f[j+1]]
+      <4>1. nn-1 \in Nat /\ nn-1 > mm  BY <3>1
+      <4>2. g \in Injection(1..nn-1, 1..mm)  BY <3>2 DEF Injection
+      <4>. QED  BY <4>1, <4>2, P(mm), Zenon DEF Injection
+    <3>3. ASSUME ~\E i \in 1..nn : f[i] = mm+1  PROVE FALSE
+      <4>. f \in Injection(1..nn, 1..mm)  BY <3>3 DEF Injection
+      <4>. QED  BY <3>1, P(mm)
+    <3>. QED  BY <3>2, <3>3
+  <2>. QED  BY Isa, NatInduction, <2>2, <2>3
 
-  <1> QED BY <1>1, <1>2 DEF ExistsInjection
+<1> QED BY <1>1, <1>2 DEF ExistsInjection
 
 
 
@@ -881,7 +867,7 @@ THEOREM Fun_NatBijEmpty ==
   <2>. ExistsInjection(S, 1..0)  BY <1>1, Fun_ExistsBijEquiv
   <2>. QED  BY <1>1 DEF ExistsInjection, Injection
 <1>2. ASSUME S = {}  PROVE ExistsBijection(1..0, S)
-  BY SMT, <1>2, Fun_ExistsBijReflexive
+  BY <1>2, Fun_ExistsBijReflexive
 <1>3. QED  BY <1>1, <1>2
 
 
@@ -896,7 +882,7 @@ THEOREM Fun_NatBijSingleton ==
   ASSUME NEW S
   PROVE  ExistsBijection(1..1,S) <=> \E s : S = {s}
 <1>1. ASSUME NEW f \in Bijection(1..1, S)  PROVE \E s : S = {s}
-  BY Z3 DEF Bijection, Injection, Surjection
+  BY DEF Bijection, Injection, Surjection
 <1>2. ASSUME NEW s, S = {s}  PROVE [i \in 1..1 |-> s] \in Bijection(1..1, S)
   BY <1>2 DEF Bijection, Injection, Surjection
 <1>. QED  BY <1>1, <1>2 DEF ExistsBijection
@@ -916,7 +902,7 @@ THEOREM Fun_NatBijSubset ==
          NEW T \in SUBSET S
   PROVE  \E n \in Nat : ExistsBijection(1..n,T) /\ n \leq m
 
-<1>1. CASE T = {}  BY <1>1, Fun_NatBijEmpty, IsaM("force")
+<1>1. CASE T = {}  BY <1>1, Fun_NatBijEmpty
 <1>2. CASE T # {}
   <2>0. ExistsSurjection(1..m, S)  BY Fun_ExistsBijEquiv
   <2>1. ExistsSurjection(S, T)  BY <1>2, Fun_ExistsSurjSubset
@@ -983,7 +969,7 @@ THEOREM Fun_NatBijSubElem ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Oct 18 11:55:33 CEST 2019 by merz
+\* Last modified Fri Dec 20 13:52:16 CET 2019 by merz
 \* Last modified Tue Jun 11 12:30:05 CEST 2013 by bhargav
 \* Last modified Fri May 31 15:27:41 CEST 2013 by bhargav
 \* Last modified Fri May 03 12:55:32 PDT 2013 by tomr

@@ -81,12 +81,12 @@ THEOREM ConcatEqualIffEmpty ==
   PROVE  /\ s \o t = s <=> t = << >>
          /\ s \o t = t <=> s = << >>
          /\ s \o t = << >> <=> s = << >> /\ t = << >>
-OBVIOUS \* BY Z3
+OBVIOUS
 
 THEOREM ConcatAssociative ==
   ASSUME NEW S, NEW s \in Seq(S), NEW t \in Seq(S), NEW u \in Seq(S)
   PROVE  (s \o t) \o u = s \o (t \o u)
-BY Z3
+OBVIOUS
 (*
 <1>. DEFINE lhs == (s \o t) \o u
             rhs == s \o (t \o u)
@@ -96,22 +96,17 @@ BY Z3
 <1>. QED  BY <1>1, <1>2, SeqEqual, Zenon
 *)
 
+(****************************************************************************)
+(* Intentionally not written as an ASSUME ... PROVE such that the conjuncts *)
+(* can be named individually.                                               *)
+(****************************************************************************)
 THEOREM ConcatSimplifications ==
-  ASSUME NEW S
-  PROVE  /\ \A s,t \in Seq(S) : s \o t = s <=> t = <<>>
-         /\ \A s,t \in Seq(S) : s \o t = t <=> s = <<>>
-         /\ \A s,t \in Seq(S) : s \o t = <<>> <=> s = <<>> /\ t = <<>>
-         /\ \A s,t,v \in Seq(S) : s \o t = s \o v <=> t = v
-         /\ \A s,t,v \in Seq(S) : s \o v = t \o v <=> s = t
-<1>1. /\ \A s,t \in Seq(S) : s \o t = s <=> t = <<>>
-      /\ \A s,t \in Seq(S) : s \o t = t <=> s = <<>>
-      /\ \A s,t \in Seq(S) : s \o t = <<>> <=> s = <<>> /\ t = <<>>
-  BY Z3  \*   BY ConcatEqualIffEmpty, Isa
-<1>2. \A s,t,v \in Seq(S) : s \o t = s \o v <=> t = v
-  BY Z3
-<1>3. \A s,t,v \in Seq(S) : s \o v = t \o v <=> s = t
-  BY Z3
-<1>. QED  BY <1>1, <1>2, <1>3, Zenon
+  /\ idRight:: \A S : \A s,t \in Seq(S) : s \o t = s => t = <<>>
+  /\ idLeft:: \A S : \A s,t \in Seq(S) : s \o t = t => s = <<>>
+  /\ concIsEmpty:: \A S : \A s,t \in Seq(S) : s \o t = <<>> => s = <<>> /\ t = <<>>
+  /\ cancelLeft:: \A S : \A s,t,v \in Seq(S) : s \o t = s \o v => t = v
+  /\ cancelRight:: \A S : \A s,t,v \in Seq(S) : s \o v = t \o v => s = t
+OBVIOUS
 
 (***************************************************************************)
 (*                     SubSeq, Head and Tail                               *)
@@ -221,7 +216,7 @@ THEOREM AppendProperties ==
          /\ Len(Append(seq, elt)) = Len(seq)+1
          /\ \A i \in 1.. Len(seq) : Append(seq, elt)[i] = seq[i]
          /\ Append(seq, elt)[Len(seq)+1] = elt
-OBVIOUS
+BY CVC4
 
 THEOREM AppendIsConcat ==
   ASSUME NEW S, NEW seq \in Seq(S), NEW elt \in S
@@ -237,7 +232,7 @@ OBVIOUS
 THEOREM AppendInjective ==
   ASSUME NEW S, NEW e \in S, NEW s \in Seq(S), NEW f \in S, NEW t \in Seq(S)
   PROVE  Append(s,e) = Append(t,f) <=> s = t /\ e = f
-OBVIOUS  \* BY Z3
+OBVIOUS
 
 THEOREM SequenceEmptyOrAppend == 
   ASSUME NEW S, NEW seq \in Seq(S), seq # << >>
@@ -248,7 +243,7 @@ THEOREM SequenceEmptyOrAppend ==
      /\ last \in S
      /\ seq = Append(front, last)
   OBVIOUS
-<1>. QED  OBVIOUS
+<1>. QED  BY Zenon
 
 (***************************************************************************)
 (* Inductive reasoning for sequences                                       *)
@@ -269,7 +264,9 @@ THEOREM SequencesInductionAppend ==
   <2>. SUFFICES ASSUME NEW s \in Seq(S), Len(s) = n+1
                 PROVE P(s)
     OBVIOUS
-  <2>. QED  BY SequenceEmptyOrAppend, Z3
+  <2>. PICK seq \in Seq(S), e \in S : s = Append(seq,e) /\ Len(seq) = n
+    BY SequenceEmptyOrAppend
+  <2>. QED  BY <1>2
 <1>3. QED  BY <1>1, <1>2, NatInduction, Isa
 
 THEOREM SequencesInductionTail ==
