@@ -37,6 +37,26 @@ let ty_int = TAtom TInt
 let ty_real = TAtom TReal
 let ty_str = TAtom TStr
 
+let get_atom = function
+  | TAtom a -> a
+  | _ -> invalid_arg "Type.T.get_atom: not an atomic type"
+
+let get_atoms ty =
+  let add x l =
+    if List.exists ((=) x) l then l else x :: l
+  in
+  let rec f acc = function
+    | TAtom a -> add a acc
+    | TSet ty -> f acc ty
+    | TArrow (ty1, ty2) ->
+        let acc = f acc ty1 in
+        f acc ty2
+    | TProd tys ->
+        List.fold_left f acc tys
+    | _ -> acc
+  in
+  f [] ty
+
 
 (* {3 Type Annotations} *)
 

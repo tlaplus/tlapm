@@ -17,6 +17,10 @@ open Proof.T
 open Type.T
 open Tla_parser
 
+open Util.Coll
+open Smttable
+
+module A = Axiom
 module B = Builtin
 
 exception Unsupported of string
@@ -144,7 +148,7 @@ let rec pp_apply cx ff op args =
       | B.Ratio,      [e ; f] -> nonatomic "/" [e ; f]
       | B.Quotient,   [e ; f] -> nonatomic "div" [e ; f]
       | B.Remainder,  [e ; f] -> nonatomic "mod" [e ; f]
-      | B.Exp,        [e ; f] -> nonatomic "arith__power" [e ; f]
+      | B.Exp,        [e ; f] -> nonatomic "arith__intexp" [e ; f]
       | B.Infinity,   []      -> atomic "arith__Infinity"
       | B.Lteq,       [e ; f] -> nonatomic "<=" [e ; f]
       | B.Lt,         [e ; f] -> nonatomic "<" [e ; f]
@@ -463,6 +467,23 @@ and pp_print_expr cx ff e =
 let pp_print_obligation ?(solver="CVC4") ff ob =
   let sq = Type.MinRecon.min_reconstruct ob.obl.core in
 
+  (* Collect symbols *)
+  let module C = NT_Collector in
+  let smbs = C.collect sq in
+  let decls = Sm.map C.get_decl smbs in
+
+  let srts, decls = Sm.partition begin fun id decl ->
+    match decl.content with Srt _ -> true | _ -> false
+  end decls in
+  let funs, axms = Sm.partition begin fun id decl ->
+    match decl.content with Fun _ -> true | _ -> false
+  end decls in
+
+  let srts = Sm.bindings srts |> List.map snd in
+  let funs = Sm.bindings funs |> List.map snd in
+  let axms = Sm.bindings axms in
+
+  (* Print preample *)
   pp_print_newline ff ();
   fprintf ff ";; TLA+ Proof Manager %s@." (Params.rawversion ());
   fprintf ff ";; Proof obligation #%d@." (Option.get ob.id);
@@ -472,29 +493,47 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
   fprintf ff "(set-logic UFNIA)@.";
   pp_print_newline ff ();
 
-  let pp_print_sortdecl ff (nm, ar) =
-    fprintf ff "@[<hov 2>(declare-sort@ %s@ %d@]@,)@." nm ar
+  let rec pp_print_cmds ?(skip=false) fmt ff al =
+    match al with
+    | [] -> ()
+    | a :: [] ->
+        fmt ff a;
+        pp_print_newline ff ()
+    | a :: al ->
+        fmt ff a;
+        pp_print_newline ff ();
+        if skip then pp_print_newline ff ()
+        else ();
+        pp_print_cmds ~skip fmt ff al
   in
-  let sorts = [] (* TODO *) in
+
+  (* Print sort declarations *)
   fprintf ff ";; Sort Declarations@.";
-  pp_print_delimited ~sep:pp_print_newline pp_print_sortdecl ff sorts;
+  (*pp_print_delimited ~sep:pp_print_newline pp_print_decl ff srts;*)
+  pp_print_cmds pp_print_decl ff srts;
   pp_print_newline ff ();
 
-  let pp_print_fundecl ff (nm, pars, ret) =
-    fprintf ff "@[<hov 2>(declare-fun@ %s@ @[<hov 2>(%a@]@,)@ %a@]@,)@." nm
-    (pp_print_delimited ~sep:pp_print_space pp_print_sort) pars
-    pp_print_sort ret
-  in
-  let funs = [] (* TODO *) in
+  (* Print fun declarations *)
   fprintf ff ";; Operator Declarations@.";
-  pp_print_delimited ~sep:pp_print_newline pp_print_fundecl ff funs;
+  (*pp_print_delimited ~sep:pp_print_newline pp_print_decl ff funs;*)
+  pp_print_cmds pp_print_decl ff funs;
   pp_print_newline ff ();
 
+  (* Print axioms *)
+  fprintf ff ";; Axioms@.";
+  let pp_print_axm ff (id, d) =
+    fprintf ff "; %s@." id;
+    pp_print_decl ff d;
+    pp_print_newline ff ()
+  in
+  pp_print_delimited ~sep:pp_print_newline pp_print_axm ff axms;
+  pp_print_newline ff ();
+
+  (* Print hypotheses *)
   let pp_print_assert cx ff e =
     fprintf ff "@[<hov 2>(assert@ %a@]@,)@."
     (pp_print_expr cx) e
   in
-
   let rec spin cx hs =
     match Deque.front hs with
     | None ->
@@ -511,14 +550,17 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
     | Some ({ core = Flex nm }, hs) ->
         let srt = get_annot nm in
         let ncx, nm = adj cx nm in
-        pp_print_fundecl ff (nm, [], srt);
-        pp_print_fundecl ff (primed nm, [], srt);
+        let decl1 = mk_fdecl nm [] (TAtom srt) in
+        let decl2 = mk_fdecl (primed nm) [] (TAtom srt) in
+        pp_print_decl ff decl1;
+        pp_print_decl ff decl2;
         pp_print_newline ff ();
         spin ncx hs
     | Some ({ core = Fresh (nm, _, _, Bounded (b, Visible)) }, hs) ->
         let srt = get_annot nm in
         let ncx, nm = adj cx nm in
-        pp_print_fundecl ff (nm, [], srt);
+        let decl = mk_fdecl nm [] (TAtom srt) in
+        pp_print_decl ff decl;
         pp_print_assert cx ff (
           Apply (Internal B.Mem %% [], [ Opaque nm %% [] ; b ]) %% []);
         pp_print_newline ff ();
@@ -526,7 +568,8 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
     | Some ({ core = Fresh (nm, _, _, _) }, hs) ->
         let srt = get_annot nm in
         let ncx, nm = adj cx nm in
-        pp_print_fundecl ff (nm, [], srt);
+        let decl = mk_fdecl nm [] (TAtom srt) in
+        pp_print_decl ff decl;
         spin ncx hs
     | Some ({ core = Defn ({ core = Operator (nm, _) }, _, vis, _) }, hs)
     | Some ({ core = Defn ({ core = Instance (nm, _) }, _, vis, _) }, hs)
@@ -539,9 +582,10 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         pp_print_newline ff ();
         spin ncx hs
   in
-
   fprintf ff ";; Hypotheses@.";
   let cx = spin Ctx.dot sq.context in
+
+  (* Print goal *)
   fprintf ff ";; Goal@.";
   pp_print_assert cx ff (Apply (Internal B.Neg %% [], [sq.active]) %% []);
   pp_print_newline ff ();

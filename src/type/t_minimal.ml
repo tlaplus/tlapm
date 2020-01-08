@@ -163,7 +163,7 @@ let rec expr scx oe =
       if ty1 = mk_atom TInt && ty2 = mk_atom TInt then
         Apply (op, [ e ; f ]) @@ oe, mk_atom TAtSet
       else
-        let s = "arith__intrange" in
+        let s = "arith__range" in
         Apply (Opaque s @@ op, [ mk_set e (get_atom ty1) ; mk_set f (get_atom ty2) ]) @@ oe, mk_atom TAtSet
   | Internal b ->
       Errors.bug ~at:oe "Type.MinRecon.expr"

@@ -29,6 +29,9 @@ module T : sig
   val ty_real : ty
   val ty_str : ty
 
+  val get_atom : ty -> ty_atom
+  val get_atoms : ty -> ty_atom list
+
   val type_annot : hint -> ty -> hint
   val has_type_annot : hint -> bool
   val get_type_annot : hint -> ty

@@ -34,6 +34,9 @@ val ty_int : ty
 val ty_real : ty
 val ty_str : ty
 
+val get_atom : ty -> ty_atom
+val get_atoms : ty -> ty_atom list
+
 
 (* {3 Type Annotations} *)
 
