@@ -23,6 +23,12 @@ module T : sig
   module Sm = Coll.Sm
   type tmap = ty Sm.t
 
+  val ty_bool : ty
+  val ty_aset : ty
+  val ty_int : ty
+  val ty_real : ty
+  val ty_str : ty
+
   val type_annot : hint -> ty -> hint
   val has_type_annot : hint -> bool
   val get_type_annot : hint -> ty
@@ -33,5 +39,9 @@ module T : sig
   module Props : sig
     val type_prop : ty pfuncs
   end
+end
+
+module MinRecon : sig
+  val min_reconstruct : Expr.T.sequent -> Expr.T.sequent
 end
 

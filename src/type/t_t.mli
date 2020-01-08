@@ -28,6 +28,12 @@ module Props : sig
   val type_prop : ty pfuncs
 end
 
+val ty_bool : ty
+val ty_aset : ty
+val ty_int : ty
+val ty_real : ty
+val ty_str : ty
+
 
 (* {3 Type Annotations} *)
 

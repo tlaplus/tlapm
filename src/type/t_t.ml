@@ -31,6 +31,12 @@ module Props = struct
   let type_prop = make "Type.T.Props.type_prop"
 end
 
+let ty_bool = TAtom TBool
+let ty_aset = TAtom TAtSet
+let ty_int = TAtom TInt
+let ty_real = TAtom TReal
+let ty_str = TAtom TStr
+
 
 (* {3 Type Annotations} *)
 

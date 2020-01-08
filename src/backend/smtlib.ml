@@ -461,6 +461,8 @@ and pp_print_expr cx ff e =
 (* {3 Obligation Formatting} *)
 
 let pp_print_obligation ?(solver="CVC4") ff ob =
+  let sq = Type.MinRecon.min_reconstruct ob.obl.core in
+
   pp_print_newline ff ();
   fprintf ff ";; TLA+ Proof Manager %s@." (Params.rawversion ());
   fprintf ff ";; Proof obligation #%d@." (Option.get ob.id);
@@ -493,7 +495,6 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
     (pp_print_expr cx) e
   in
 
-  let sq = ob.obl.core in
   let rec spin cx hs =
     match Deque.front hs with
     | None ->
