@@ -201,12 +201,12 @@ LEMMA VotedInv ==
         MsgInv /\ TypeOK => 
             \A a \in Acceptors, v \in Values, b \in Ballots :
                 VotedForIn(a, v, b) => SafeAt(v, b) /\ b =< maxVBal[a]
-BY Z3 DEF VotedForIn, MsgInv, Messages, TypeOK
+BY DEF VotedForIn, MsgInv, Messages, TypeOK
 
 LEMMA VotedOnce == 
         MsgInv =>  \A a1, a2 \in Acceptors, b \in Ballots, v1, v2 \in Values :
                        VotedForIn(a1, v1, b) /\ VotedForIn(a2, v2, b) => (v1 = v2)
-BY Z3 DEF MsgInv, VotedForIn
+BY DEF MsgInv, VotedForIn
 
 AccInv ==
   \A a \in Acceptors:
@@ -237,7 +237,7 @@ LEMMA SafeAtStable == Inv /\ Next /\ TypeOK' =>
 <1> USE DEF Send, Inv, Ballots
 <1>1. ASSUME NEW bb \in Ballots, Phase1a(bb)
       PROVE  SafeAt(v, b)'
-  BY <1>1, Z3 DEF SafeAt, Phase1a, VotedForIn, WontVoteIn
+  BY <1>1 DEF SafeAt, Phase1a, VotedForIn, WontVoteIn
 <1>2. ASSUME NEW a \in Acceptors, Phase1b(a)
       PROVE  SafeAt(v, b)'
   BY <1>2, QuorumAssumption DEF TypeOK, SafeAt, WontVoteIn, VotedForIn, Phase1b
@@ -247,7 +247,7 @@ LEMMA SafeAtStable == Inv /\ Next /\ TypeOK' =>
 <1>4. ASSUME NEW a \in Acceptors, Phase2b(a)
       PROVE  SafeAt(v, b)'
   <2>1. PICK m \in msgs : Phase2b(a)!(m)
-    BY <1>4 DEF Phase2b
+    BY <1>4, Zenon DEF Phase2b
   <2>2 \A aa \in Acceptors, bb \in Ballots, vv \in Values :
             VotedForIn(aa, vv, bb) => VotedForIn(aa, vv, bb)'
     BY <2>1 DEF TypeOK, VotedForIn
@@ -275,10 +275,9 @@ LEMMA SafeAtStable == Inv /\ Next /\ TypeOK' =>
   <2>5 \A aa \in Acceptors, bb \in Ballots : WontVoteIn(aa, bb) => WontVoteIn(aa, bb)'
     BY <2>3, <2>4 DEF WontVoteIn
   <2> QED
-    BY <2>2, <2>5, QuorumAssumption, Z3 DEF SafeAt
+    BY <2>2, <2>5, QuorumAssumption DEF SafeAt
                          
-<1>5. QED
-  BY <1>1, <1>2, <1>3, <1>4 DEF Next
+<1>. QED  BY <1>1, <1>2, <1>3, <1>4 DEF Next
 
 THEOREM Invariant == Spec => []Inv
 <1> USE DEF Ballots
@@ -288,7 +287,7 @@ THEOREM Invariant == Spec => []Inv
 <1>2. Inv /\ [Next]_vars => Inv'
   <2> SUFFICES ASSUME Inv, Next
                PROVE  Inv'
-    BY Z3 DEF vars, Inv, TypeOK, MsgInv, AccInv, SafeAt, VotedForIn, WontVoteIn
+    BY DEF vars, Inv, TypeOK, MsgInv, AccInv, SafeAt, VotedForIn, WontVoteIn
   <2> USE DEF Inv
   <2>1. TypeOK'
     <3>1. ASSUME NEW b \in Ballots, Phase1a(b) PROVE TypeOK'
@@ -303,18 +302,15 @@ THEOREM Invariant == Spec => []Inv
     <3>3. ASSUME NEW a \in Acceptors, Phase1b(a) PROVE TypeOK'
       <4>. PICK m \in msgs : Phase1b(a)!(m)
         BY <3>3, Zenon DEF Phase1b
-      <4>. QED
-        BY DEF Send, TypeOK, Messages
+      <4>. QED  BY DEF Send, TypeOK, Messages
     <3>4. ASSUME NEW a \in Acceptors, Phase2b(a) PROVE TypeOK'
       <4>. PICK m \in msgs : Phase2b(a)!(m)
         BY <3>4, Zenon DEF Phase2b
-      <4>. QED
-        BY DEF Send, TypeOK, Messages
-    <3>. QED
-      BY <3>1, <3>2, <3>3, <3>4 DEF Next
+      <4>. QED  BY DEF Send, TypeOK, Messages
+    <3>. QED  BY <3>1, <3>2, <3>3, <3>4 DEF Next
   <2>2. AccInv'
     <3>1. ASSUME NEW b \in Ballots, Phase1a(b) PROVE AccInv'
-      BY <2>1, <3>1, SafeAtStable, Z3 DEF AccInv, TypeOK, Phase1a, VotedForIn, Send
+      BY <2>1, <3>1, SafeAtStable DEF AccInv, TypeOK, Phase1a, VotedForIn, Send
     <3>2. ASSUME NEW b \in Ballots, Phase2a(b) PROVE AccInv'
         BY <2>1, <3>2, SafeAtStable DEF AccInv, TypeOK, Phase2a, VotedForIn, Send
     <3>3. ASSUME NEW a \in Acceptors, Phase1b(a) PROVE AccInv'
@@ -325,7 +321,7 @@ THEOREM Invariant == Spec => []Inv
       <4>2. \A acc \in Acceptors : 
                /\ maxVal'[acc] = None <=> maxVBal'[acc] = -1
                /\ maxVBal'[acc] =< maxBal'[acc]
-        BY <2>1, <4>1, NoneNotAValue, Z3 DEF AccInv, TypeOK, Messages
+        BY <2>1, <4>1, NoneNotAValue DEF AccInv, TypeOK, Messages
       <4>3. \A aa,vv,bb : VotedForIn(aa,vv,bb)' <=>
                           VotedForIn(aa,vv,bb) \/ (aa = a /\ vv = maxVal'[a] /\ bb = maxVBal'[a])
         BY <4>1, Isa DEF VotedForIn, Send, TypeOK, Messages
@@ -337,15 +333,14 @@ THEOREM Invariant == Spec => []Inv
             PROVE  FALSE
         BY <4>1, <4>3, <4>5, <2>1 DEF AccInv, TypeOK
       <4>. QED  BY <4>2, <4>4, <4>5 DEF AccInv
-    <3>. QED
-      BY <3>1, <3>2, <3>3, <3>4 DEF Next
+    <3>. QED  BY <3>1, <3>2, <3>3, <3>4 DEF Next
   <2>3. MsgInv'
     <3>1. ASSUME NEW b \in Ballots, Phase1a(b)
           PROVE  MsgInv'
       <4>1. \A aa,vv,bb : VotedForIn(aa,vv,bb)' <=> VotedForIn(aa,vv,bb)
         BY <3>1 DEF Phase1a, Send, VotedForIn
       <4>. QED
-        BY <3>1, <4>1, SafeAtStable, <2>1, Z3 DEF Phase1a, MsgInv, TypeOK, Messages, Send
+        BY <3>1, <4>1, SafeAtStable, <2>1 DEF Phase1a, MsgInv, TypeOK, Messages, Send
     <3>2. ASSUME NEW a \in Acceptors, Phase1b(a)
           PROVE  MsgInv'
       <4>. PICK m \in msgs : Phase1b(a)!(m)
@@ -366,7 +361,7 @@ THEOREM Invariant == Spec => []Inv
                 ~ \E v \in Values : VotedForIn(mm.acc, v, c)
         BY DEF AccInv, TypeOK, Messages
       <4>. QED
-        BY <4>1, <4>2, <4>3, <4>4, SafeAtStable, Z3 DEF MsgInv, TypeOK, Messages, Send
+        BY <4>1, <4>2, <4>3, <4>4, SafeAtStable DEF MsgInv, TypeOK, Messages, Send
     <3>3. ASSUME NEW b \in Ballots, Phase2a(b)
           PROVE  MsgInv'
       <4>1. ~ \E m \in msgs : (m.type = "2a") /\ (m.bal = b)
@@ -405,7 +400,7 @@ THEOREM Invariant == Spec => []Inv
         <5>1. CASE \A m \in S : m.maxVBal = -1
           \* In that case, no acceptor in Q voted in any ballot less than b,
           \* by the last conjunct of MsgInv for type "1b" messages, and that's enough
-          BY <5>1, <5>0, Z3 DEF TypeOK, MsgInv, SafeAt, WontVoteIn, Messages
+          BY <5>1, <5>0 DEF TypeOK, MsgInv, SafeAt, WontVoteIn, Messages
         <5>2. ASSUME NEW c \in 0 .. (b-1),
                      \A m \in S : m.maxVBal =< c,
                      NEW ma \in S, ma.maxVBal = c, ma.maxVal = v
@@ -418,7 +413,7 @@ THEOREM Invariant == Spec => []Inv
             \* The "1b" message for v with maxVBal value c must have been safe
             \* according to MsgInv for "1b" messages and lemma VotedInv, 
             \* and that proves the assertion
-            BY <5>2, <6>1, VotedInv, Z3 DEF SafeAt, MsgInv, TypeOK, Messages
+            BY <5>2, <6>1, VotedInv DEF SafeAt, MsgInv, TypeOK, Messages
           <6>2. CASE d = c
             <7>1. VotedForIn(ma.acc, v, c)
               BY <5>2 DEF MsgInv
@@ -431,7 +426,7 @@ THEOREM Invariant == Spec => []Inv
           <6>3. CASE d \in (c+1) .. (b-1)
             \* By the last conjunct of MsgInv for type "1b" messages, no acceptor in Q
             \* voted at any of these ballots.
-            BY <6>3, <5>0, <5>2, Z3 DEF MsgInv, TypeOK, Messages, WontVoteIn
+            BY <6>3, <5>0, <5>2 DEF MsgInv, TypeOK, Messages, WontVoteIn
           <6>. QED  BY <6>1, <6>2, <6>3
         <5>. QED  BY <5>0, <5>1, <5>2
       <4>11. SafeAt(mm.val,mm.bal)'
@@ -439,48 +434,10 @@ THEOREM Invariant == Spec => []Inv
       <4>. QED
          BY <2>1, <4>1a, <4>3, <4>4, <4>6, <4>11, SafeAtStable, Zenon
            DEF MsgInv, TypeOK, Messages
-\*        The following decomposition added by LL on 21 Nov 2014 because
-\*        Zenon failed on this proof.  However, ZenonT(200) worked.
-(*
-        <5> SUFFICES ASSUME NEW m \in msgs'
-                    PROVE MsgInv!(m)'
-         BY DEF MsgInv
-         
-       <5>1. m.type = "1b"
-              => (/\ m.bal =< maxBal[m.acc]
-                  /\ \/ /\ m.maxVal \in Values
-                        /\ m.maxVBal \in Nat
-                        /\ VotedForIn(m.acc, m.maxVal, m.maxVBal)
-                     \/ /\ m.maxVal = None
-                        /\ m.maxVBal = -1
-                  /\ \A c \in m.maxVBal + 1..m.bal - 1 :
-                        ~(\E v_1 \in Values : VotedForIn(m.acc, v_1, c)))'
-         BY <2>1, <4>1a, <4>3, <4>4, <4>6, <4>11, SafeAtStable \*, Zenon
-           DEF MsgInv, TypeOK, Messages
-
-       <5>2.  m.type = "2a"
-              => (/\ SafeAt(m.val, m.bal)
-                  /\ \A ma \in msgs :
-                        ma.type = "2a" /\ ma.bal = m.bal => ma = m)'
-         BY <2>1, <4>1a, <4>3, <4>4, <4>6, <4>11, SafeAtStable \*, Zenon
-           DEF MsgInv, TypeOK, Messages
-
-       <5>3. m.type = "2b"
-              => (/\ \E ma \in msgs :
-                        /\ ma.type = "2a"
-                        /\ ma.bal = m.bal
-                        /\ ma.val = m.val
-                  /\ m.bal =< maxVBal[m.acc])'
-         BY <2>1, <4>1a, <4>3, <4>4, <4>6, <4>11, SafeAtStable\* , Zenon
-           DEF MsgInv, TypeOK, Messages
-
-       <5>4. QED
-         BY <5>1, <5>2, <5>3 
-*)
     <3>4. ASSUME NEW a \in Acceptors, Phase2b(a)
           PROVE  MsgInv'
       <4>. PICK m \in msgs : Phase2b(a)!(m)
-        BY <3>4 DEF Phase2b
+        BY <3>4, Zenon DEF Phase2b
       <4>1. \A aa, vv, bb : VotedForIn(aa,vv,bb) => VotedForIn(aa,vv,bb)'
         BY DEF VotedForIn, Send
       <4>2. \A mm \in msgs : mm.type = "1b"
@@ -488,14 +445,11 @@ THEOREM Invariant == Spec => []Inv
                      ~ VotedForIn(mm.acc, v, c) => ~ VotedForIn(mm.acc, v, c)'
         BY DEF Send, VotedForIn, MsgInv, TypeOK, Messages
       <4>. QED
-        BY <4>1, <4>2, SafeAtStable, <2>1, Z3 DEF MsgInv, Send, TypeOK, Messages
-    <3>5. QED
-      BY <3>1, <3>2, <3>3, <3>4 DEF Next
-  <2>4. QED
-    BY <2>1, <2>2, <2>3 DEF Inv
+        BY <4>1, <4>2, SafeAtStable, <2>1 DEF MsgInv, Send, TypeOK, Messages
+    <3>. QED  BY <3>1, <3>2, <3>3, <3>4 DEF Next
+  <2>. QED  BY <2>1, <2>2, <2>3 DEF Inv
 
-<1>3. QED
-  BY <1>1, <1>2, PTL DEF Spec
+<1>. QED  BY <1>1, <1>2, PTL DEF Spec
 
     
 THEOREM Consistent == Spec => []Consistency
@@ -524,16 +478,13 @@ THEOREM Consistent == Spec => []Consistency
       BY VotedInv, QuorumNonEmpty, QuorumAssumption DEF ChosenIn, Inv
     <3>2. PICK Q2 \in Quorums : 
                   \A a \in Q2 : VotedForIn(a, v2, b1) \/ WontVoteIn(a, b1)
-      BY <3>1, <2>2, Z3 DEF SafeAt
+      BY <3>1, <2>2 DEF SafeAt
     <3>3. PICK Q1 \in Quorums : \A a \in Q1 : VotedForIn(a, v1, b1)
       BY DEF ChosenIn
-    <3>4. QED
-      BY <3>2, <3>3, QuorumAssumption, VotedOnce, Z3 DEF WontVoteIn, Inv
-  <2>3. QED
-    BY <2>1, <2>2
+    <3>4 QED  BY <3>2, <3>3, QuorumAssumption, VotedOnce DEF WontVoteIn, Inv
+  <2>. QED  BY <2>1, <2>2
 
-<1>2. QED
-  BY Invariant, <1>1, PTL
+<1>. QED  BY Invariant, <1>1, PTL
 
 -----------------------------------------------------------------------------
 chosenBar == {v \in Values : Chosen(v)}
@@ -557,7 +508,7 @@ THEOREM Refinement == Spec => C!Spec
   <2>2. \A v, w \in chosenBar': v = w
     BY DEF Consistency, chosenBar, ChosenIn, TypeOK
   <2>3. chosenBar = {}
-    BY <2>1, <2>2, SetExtensionality, Z3
+    BY <2>1, <2>2\*, SetExtensionality
   <2>. QED
     BY <2>1, <2>2, <2>3 DEF C!Next, chosenBar
 
@@ -566,7 +517,7 @@ THEOREM Refinement == Spec => C!Spec
 
 =============================================================================
 \* Modification History
-\* Last modified Mon Oct 21 08:53:29 CEST 2019 by merz
+\* Last modified Fri Jan 10 17:34:42 CET 2020 by merz
 \* Last modified Sun Oct 20 18:25:27 CEST 2019 by merz
 \* Last modified Fri Nov 28 10:39:17 PST 2014 by lamport
 \* Last modified Sun Nov 23 14:45:09 PST 2014 by lamport

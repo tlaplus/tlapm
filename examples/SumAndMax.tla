@@ -89,9 +89,25 @@ THEOREM Spec => []Correctness
   BY NType, SMT DEF Init, Inv, TypeOK
 <1>2. Inv => Correctness
   BY NType DEF Correctness, Inv, TypeOK
-<1>3. Inv /\ [Next]_vars => Inv'
-  BY NType, aType, SMT DEF Inv, TypeOK, Next, vars, Lbl_1
-<1>. QED  BY <1>1, <1>2, <1>3, PTL DEF Spec
+<1>3. Inv /\ Lbl_1 => Inv'
+  <2>. SUFFICES ASSUME Inv, Lbl_1 PROVE Inv'
+    OBVIOUS
+  <2>1. /\ TypeOK'
+        /\ pc' = "Done" => i' = N
+    BY NType, aType DEF Inv, TypeOK, Lbl_1
+  <2>2. sum' <= i' * max'
+    \* FIXME: This case distinction used to be unnecessary.
+    <3>1. CASE i < N /\ max < a[i]
+      BY <3>1, NType, aType DEF Inv, TypeOK, Lbl_1
+    <3>2. CASE i < N /\ ~(max < a[i])
+      BY <3>2, NType, aType DEF Inv, TypeOK, Lbl_1
+    <3>3. CASE ~(i < N)
+      BY <3>3 DEF Inv, Lbl_1
+    <3>. QED  BY <3>1, <3>2, <3>3
+  <2>. QED  BY <2>1, <2>2 DEF Inv
+<1>4. Inv /\ UNCHANGED vars => Inv'
+  BY DEF Inv, TypeOK, vars
+<1>. QED  BY <1>1, <1>2, <1>3, <1>4, PTL DEF Spec, Next
 
 
 =============================================================================

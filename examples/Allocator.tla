@@ -273,9 +273,7 @@ THEOREM AllocateMutex ==
     BY <1>1, <1>2, <2>1,
        <2>2, <2>3, <2>4, <2>5, <2>6
     DEFS Allocate, TypeInvariant
-<1>6. 1=1
-    OBVIOUS
- <1>7. QED
+ <1>. QED
   BY <1>3, <1>4, <1>5
 
 LEMMA NextMutex == TypeInvariant /\ Mutex /\ [Next]_vars => Mutex'

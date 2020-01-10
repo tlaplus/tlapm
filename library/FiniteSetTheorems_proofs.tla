@@ -246,7 +246,7 @@ BY FS_NatBijection, FS_CountingElements
 (***************************************************************************)
 (* `.  .'                                                                  *)
 (*                                                                         *)
-(* The image of a finite set under a bijection or surjection is finite.    *)
+(* The image of a finite set under a bijection is finite.                  *)
 (*                                                                         *)
 (* `.  .'                                                                  *)
 (***************************************************************************)
@@ -441,6 +441,14 @@ THEOREM FS_Surjection ==
   <2>. QED  BY <1>1, <2>2, FS_CountingElements
 <1>. QED  BY <1>4, <1>5, <1>6
 
+THEOREM FS_Image ==
+  ASSUME NEW S, IsFiniteSet(S), NEW Op(_)
+  PROVE  LET T == {Op(x) : x \in S}
+         IN  /\ IsFiniteSet(T)
+             /\ Cardinality(T) <= Cardinality(S)
+<1>. DEFINE f == [x \in S |-> Op(x)]
+<1>. f \in Surjection(S, {Op(x) : x \in S})  BY DEF Surjection
+<1>. QED  BY FS_Surjection
 
 (***************************************************************************)
 (* `.  .'                                                                  *)
@@ -893,7 +901,7 @@ THEOREM FS_SUBSET ==
    
 =============================================================================
 \* Modification History
-\* Last modified Fri Dec 20 15:02:18 CET 2019 by merz
+\* Last modified Wed Jan 08 17:42:32 CET 2020 by merz
 \* Last modified Thu Jul 04 15:15:07 CEST 2013 by bhargav
 \* Last modified Tue Jun 04 11:44:51 CEST 2013 by bhargav
 \* Last modified Fri May 03 12:02:51 PDT 2013 by tomr

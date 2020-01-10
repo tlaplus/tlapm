@@ -226,19 +226,18 @@ THEOREM GGIrreflexive == ASSUME NEW i \in P,
                          PROVE  ~ (GG(i, j) /\ GG(j, i))
 <1>. /\ i \in Nat /\ j \in Nat /\ i # j
      /\ num[i] \in Nat /\ num[j] \in Nat
-  BY PsubsetNat
+  BY PsubsetNat, Zenon
 <1>1. CASE j > i
   <2>1. ~(i > j)
-    BY <1>1, GTAxiom
+    BY <1>1, GTAxiom, Zenon
   <2>3. QED
-    BY <1>1, <2>1, GTAxiom, GEQorLT DEF GG
+    BY <1>1, <2>1, GTAxiom, GEQorLT, Zenon DEF GG
 <1>2. CASE i > j
   <2>1. ~(j > i)
-    BY <1>2, GTAxiom
+    BY <1>2, GTAxiom, Zenon
   <2>3. QED
-    BY <1>2, <2>1, GTAxiom, GEQorLT DEF GG
-<1>3. QED
-  BY <1>1, <1>2, i#j, GEQAxiom
+    BY <1>2, <2>1, GTAxiom, GEQorLT, Zenon DEF GG
+<1>. QED  BY <1>1, <1>2, i#j, GEQAxiom, Zenon
 
 -----------------------------------------------------------------------------
 THEOREM InitImpliesTypeOK == 
@@ -250,15 +249,14 @@ THEOREM InitImpliesTypeOK ==
       /\ max  \in  [P -> Nat]
       /\ nxt  \in  [P -> P]
       /\ pc  \in  [P -> {"p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"}]
-   BY DEF Init
+   BY Zenon DEF Init
 <1>2. \A i \in P : pc[i] \notin {"p2", "p5", "p6"}
-  BY DEF Init
+  BY Zenon DEF Init
 <1>3. \A i \in P : pc[i] \notin {"p2", "p3"}
-  BY DEF Init
+  BY Zenon DEF Init
 <1>4. \A i \in P : pc[i] # "p6"
-  BY DEF Init
-<1>q. QED
-  BY <1>1, <1>2, <1>3, <1>4 DEF TypeOK
+  BY Zenon DEF Init
+<1>. QED  BY <1>1, <1>2, <1>3, <1>4, Zenon DEF TypeOK
 
 THEOREM TypeOKInvariant ==
         ASSUME TypeOK,
@@ -267,12 +265,12 @@ THEOREM TypeOKInvariant ==
 <1>. SUFFICES ASSUME NEW self \in P,
                      p(self)
               PROVE  TypeOK'
-  BY DEF Next, TypeOK, vars
+  BY Zenon DEF Next, TypeOK, vars
 
 <1>. USE DEF TypeOK
 
 <1>1. CASE p1(self)
-  BY <1>1 DEF p1
+  BY <1>1, Zenon DEF p1
 
 <1>2. CASE p2(self)
   <2>1. CASE unread[self] = {}
@@ -286,44 +284,40 @@ THEOREM TypeOKInvariant ==
                           ELSE max
                 /\ pc' = [pc EXCEPT ![self] = "p2"]
                 /\ num' = num /\ flag' = flag /\ nxt' = nxt 
-      BY <1>2, <2>2 DEF p2
-    <3>2. QED
-      BY <3>1
-  <2>3. QED
-    BY <2>1, <2>2
+      BY <1>2, <2>2, Zenon DEF p2
+    <3>2. QED  BY <3>1, Zenon
+  <2>3. QED  BY <2>1, <2>2, Zenon
 
 <1>3. CASE p3(self)
-  BY <1>3, Plus1 DEF p3
+  BY <1>3, Plus1, Zenon DEF p3
 
 <1>4. CASE p4(self)
-  BY <1>4 DEF p4
+  BY <1>4, Zenon DEF p4
 
 <1>5. CASE p5(self)
   <2>1. CASE unread[self] = {}
-    BY <1>5, <2>1 DEF p5
+    BY <1>5, <2>1, Zenon DEF p5
   <2>2. CASE unread[self] # {}
     <3>1. PICK k \in unread[self] :
                /\ pc[self] = "p5"
                /\ nxt' = [nxt EXCEPT ![self] = k]
                /\ pc' = [pc EXCEPT ![self] = "p6"]
                /\ UNCHANGED <<num, flag, unread, max>>
-      BY <1>5, <2>2 DEF p5
-    <3>2. QED
-      BY <3>1
-  <2>3. QED
-    BY <2>1, <2>2
+      BY <1>5, <2>2, Zenon DEF p5
+    <3>. QED  BY <3>1, Zenon
+  <2>3. QED  BY <2>1, <2>2, Zenon
 
 <1>6. CASE p6(self)
-  BY <1>6 DEF p6
+  BY <1>6, Zenon DEF p6
 
 <1>7. CASE p7(self)
-  BY <1>7 DEF p7
+  BY <1>7, Zenon DEF p7
 
 <1>8. CASE p8(self)
-  BY <1>8 DEF p8
+  BY <1>8, Zenon DEF p8
 
 <1>9. QED
-  BY p(self), <1>1, <1>2, <1>3, <1>4, <1>5, <1>6, <1>7, <1>8 DEF p
+  BY p(self), <1>1, <1>2, <1>3, <1>4, <1>5, <1>6, <1>7, <1>8, Zenon DEF p
 
 THEOREM InitInv == Init => Inv
 BY InitImpliesTypeOK, Zenon DEF Init, Inv, IInv
@@ -364,10 +358,8 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
                         \/ pc'[i] \in {"p7", "p8"} /\ j \in P \ {i}
                  PROVE  After(j,i)'
       BY Zenon
-   <3>1. QED
-     BY ZenonT(20) DEF After, GG
- <2>2. QED
-   BY <2>1, Zenon DEF IInv
+   <3>. QED  BY ZenonT(20) DEF After, GG
+ <2>2. QED  BY <2>1, Zenon DEF IInv
 
 <1>2a. CASE p2(self) /\ unread[self] = {}
       (* simplified description of the action helps Zenon to find some proofs *)
@@ -382,10 +374,8 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
                          \/ pc'[i] \in {"p7", "p8"} /\ j \in P \ {i}
                   PROVE  After(j,i)'
       BY Zenon
-   <3>2. QED
-     BY <3>1, Zenon DEF After, GG
- <2>2. QED
-   BY <2>1, Zenon DEF IInv
+   <3>. QED  BY <3>1, Zenon DEF After, GG
+ <2>. QED  BY <2>1, Zenon DEF IInv
 
 <1>2b. CASE p2(self) /\ unread[self] # {}
  <2>.  PICK k \in unread[self]:
@@ -425,8 +415,7 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
           \/ pc'[nxt'[i]] = "p3"
        => max'[nxt'[i]] >= num'[i]
    BY <2>1, GEQTransitive, Zenon
- <2>5. QED
-   BY <2>3, <2>4, Zenon DEF IInv
+ <2>. QED  BY <2>3, <2>4, Zenon DEF IInv
 
 <1>3. CASE p3(self)
  <2>. USE <1>3 DEF p3
@@ -458,10 +447,8 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
        BY <3>1, <4>4, Zenon DEF After
    <3>3. CASE j # self
      BY <3>1, <3>3, AfterPrime, Zenon
-   <3>4. QED
-     BY <3>2, <3>3, Zenon
- <2>3. QED
-   BY <2>1, <2>2, Zenon DEF IInv
+   <3>. QED  BY <3>2, <3>3, Zenon
+ <2>. QED  BY <2>1, <2>2, Zenon DEF IInv
 
 <1>4. CASE p4(self)
  <2>. USE <1>4 DEF p4
@@ -472,10 +459,8 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
                         \/ pc'[i] \in {"p7", "p8"} /\ j \in P \ {i}
                  PROVE  After(j,i)'
       BY Zenon
-   <3>2. QED
-     BY <3>1, Zenon DEF After, GG
- <2>2. QED
-   BY <2>1, Zenon DEF IInv
+   <3>. QED  BY <3>1, Zenon DEF After, GG
+ <2>. QED  BY <2>1, Zenon DEF IInv
 
 <1>5a. CASE p5(self) /\ unread[self] = {}
  <2>. /\ pc[self] = "p5" /\ unread[self] = {}
@@ -493,10 +478,8 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
      BY <3>1, AfterPrime, Zenon
    <3>2. CASE i # self
      BY <3>2, Zenon DEF After, GG
-   <3>3. QED
-     BY <3>1, <3>2, Zenon
- <2>2. QED
-   BY <2>1, Zenon DEF IInv
+   <3>. QED  BY <3>1, <3>2, Zenon
+ <2>. QED  BY <2>1, Zenon DEF IInv
 
 <1>5b. CASE p5(self) /\ unread[self] # {}
  <2>. PICK k \in unread[self] :
@@ -519,8 +502,7 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
      BY <3>1, <3>2, AfterPrime, Zenon
    <3>3. CASE i # self /\ j = self
      BY <3>1, <3>3, Zenon DEF After, GG
-   <3>4. QED
-     BY <3>2, <3>3, Zenon
+   <3>. QED  BY <3>2, <3>3, Zenon
  <2>2. /\ (pc'[i] = "p6")
        /\ \/ (pc'[nxt'[i]] = "p2") /\ (i \notin unread'[nxt'[i]])
           \/ pc'[nxt'[i]] = "p3"
@@ -534,10 +516,8 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
      BY IInv(k), Zenon DEF Inv, IInv
    <3>3. CASE i # self
      BY <3>3, Zenon
-   <3>4. QED
-     BY <3>2, <3>3, Zenon
- <2>3. QED
-   BY <2>1, <2>2, Zenon DEF IInv
+   <3>. QED  BY <3>2, <3>3, Zenon
+ <2>. QED  BY <2>1, <2>2, Zenon DEF IInv
 
 <1>6. CASE p6(self)
   <2>. USE <1>6 DEF p6
@@ -572,23 +552,17 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
                  BY <6>1, <8>1, Zenon DEF IInv, After
                <9>2. QED
                  BY <9>1, GGIrreflexive, Zenon
-             <8>2. QED
-               BY <6>2, <8>1, Zenon DEF After
+             <8>. QED  BY <6>2, <8>1, Zenon DEF After
            <7>2. CASE pc[j] \in {"p7", "p8"}  (* leads to contradiction *)
              <8>1. GG(j,i)
                BY <6>1, <7>2, Zenon DEF IInv, After
-             <8>2. QED
-               BY <8>1, GGIrreflexive, Zenon
-           <7>3. QED
-             BY <6>1, <7>1, <7>2, Zenon DEF IInv
-         <6>5. QED
-           BY <6>3, <6>4, Zenon DEF GG
-       <5>3. QED
-         BY <5>1, <5>2, Zenon
+             <8>. QED  BY <8>1, GGIrreflexive, Zenon
+           <7>. QED  BY <6>1, <7>1, <7>2, Zenon DEF IInv
+         <6>. QED  BY <6>3, <6>4, Zenon DEF GG
+       <5>. QED  BY <5>1, <5>2, Zenon
      <4>2. UNCHANGED <<num[j], num[i], pc[j], unread[j], max[j]>>
        BY Zenon
-     <4>3. QED
-       BY <4>1, <4>2, AfterPrime, Zenon
+     <4>. QED  BY <4>1, <4>2, AfterPrime, Zenon
    <3>2. CASE i # self /\ j = self
      <4>. USE <3>2
      <4>1. After(j,i)
@@ -603,28 +577,22 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
          <6>2. num[self] >= num[nxt[self]]
            BY <4>2, <5>1, GTAxiom, PsubsetNat, Zenon DEF GG  
               (* from definition of GG and assumptions for i and j *)
-         <6>3. QED
-           BY <6>1, <6>2, Transitivity2, GTAxiom, Zenon
+         <6>. QED  BY <6>1, <6>2, Transitivity2, GTAxiom, Zenon
        <5>2. CASE ~(self > nxt[self])
          <6>1. num[nxt[self]] >= num[self]
            BY <5>2, Zenon  (* from definition of p6 *)
          <6>2. num[self] > num[nxt[self]]
            BY <4>2, <5>2, GEQAxiom, PsubsetNat, Zenon DEF GG
               (* from definition of GG, assumptions for i and j *)
-         <6>3. QED
-           BY <6>1, <6>2, Transitivity2, GTAxiom, Zenon
-       <5>3. QED
-         BY <5>1, <5>2, Zenon
+         <6>. QED  BY <6>1, <6>2, Transitivity2, GTAxiom, Zenon
+       <5>. QED  BY <5>1, <5>2, Zenon
      <4>4. CASE i # nxt[self]
        BY <4>1, <4>2, <4>4, Zenon DEF After, GG
-     <4>5. QED
-       BY <4>3, <4>4, Zenon
+     <4>. QED  BY <4>3, <4>4, Zenon
    <3>3. CASE i # self /\ j # self
      BY <3>3, AfterPrime, Zenon
-   <3>4. QED
-     BY <3>1, <3>2, <3>3, Zenon
-  <2>2. QED
-   BY <2>1, Zenon DEF IInv
+   <3>. QED  BY <3>1, <3>2, <3>3, Zenon
+  <2>. QED  BY <2>1, Zenon DEF IInv
 
 <1>7. CASE p7(self)
   <2>. USE <1>7 DEF p7
@@ -635,10 +603,8 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
                          \/ pc'[i] \in {"p7", "p8"} /\ j \in P \ {i}
                   PROVE  After(j,i)'
       BY Zenon
-   <3>2. QED
-     BY <3>1, Zenon DEF After, GG
-  <2>2. QED
-    BY <2>1, Zenon DEF IInv
+   <3>. QED  BY <3>1, Zenon DEF After, GG
+  <2>. QED  BY <2>1, Zenon DEF IInv
 
 <1>8. CASE p8(self)
   <2>. USE <1>8 DEF p8
@@ -649,10 +615,8 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
                          \/ pc'[i] \in {"p7", "p8"} /\ j \in P \ {i}
                   PROVE  After(j,i)'
       BY Zenon
-   <3>2. QED
-     BY <3>1, Zenon DEF After, GG
-  <2>2. QED
-   BY <2>1, Zenon DEF IInv
+   <3>. QED  BY <3>1, Zenon DEF After, GG
+  <2>. QED  BY <2>1, Zenon DEF IInv
 
 <1>9. CASE UNCHANGED vars
    (************************************************************************)
@@ -661,7 +625,7 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
    (************************************************************************)
    BY <1>9, SimplifyAndSolve DEF IInv, After, GG, vars
 
-<1>10. QED
+<1>. QED
   BY <1>1, <1>2a, <1>2b, <1>3, <1>4, <1>5a, <1>5b, <1>6, <1>7, <1>8, <1>9, Zenon DEF p
 
 THEOREM Safety == Spec => [] MutualExclusion
