@@ -172,7 +172,7 @@ let zenon =
   make_exec "zenon" "zenon -p0 -x tla -oisar -max-time 1d \"$file\"" "zenon -v"
 ;;
 
-let cvc3 =
+let cvc4 =
   if Sys.os_type = "Cygwin" then
     make_exec "cvc4" "cvc4 --lang=smt2 --pre-skolem-quant \"$winfile\"" "cvc4 --version"  (* --ignore-user-patterns *)
   else
@@ -255,7 +255,7 @@ let mk_meth name timeout =
   | "z3" ->
      let timeout = Option.default Method.default_smt2_timeout timeout in
      Method.Z33 timeout
-  | "cvc3" ->
+  | "cvc4" ->
      let timeout = Option.default Method.default_smt2_timeout timeout in
      Method.Cvc33 timeout
   | "yices" ->
@@ -287,7 +287,7 @@ let parse_default_methods s =
     printf "  force   -- Isabelle with \"force\" tactic\n";
     printf "  smt     -- Default SMT solver\n";
     printf "  z3      -- Z3\n";
-    printf "  cvc3    -- CVC4\n";
+    printf "  cvc4    -- CVC4\n";
     printf "  yices   -- Yices\n";
     printf "  verit   -- VeriT\n";
     printf "  spass   -- SPASS\n";
@@ -397,7 +397,7 @@ let configuration toolbox force =
     @ List.flatten (List.map (external_tool_config force)
                              [("Isabelle", isabelle);
                               ("zenon", zenon);
-                              ("CVC3", cvc3);
+                              ("CVC4", cvc4);
                               ("Yices", yices);
                               ("Z3", z3);
                               ("VeriT", verit);

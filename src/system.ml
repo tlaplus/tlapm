@@ -106,7 +106,7 @@ type line_buffer = {
 
 let make_line_buffer fd = {desc = fd; buf = Buffer.create 100};;
 
-let rawbuf = String.create 1000;;
+let rawbuf = Bytes.create 1000;;
 
 let read_lines buf =
   let n = Unix.read buf.desc rawbuf 0 (String.length rawbuf) in

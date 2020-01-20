@@ -411,7 +411,7 @@ let smt_solve ob org_ob f res_cont =
 ;;
 
 let cvc3_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt" Params.smt "CVC3" Smt.encode_smtlib
+  gen_smt_solve ".smt" Params.cvc4 "CVC4" Smt.encode_smtlib
                 (Method.Cvc33 f) ob org_ob f res_cont ";;"
 ;;
 
@@ -643,8 +643,8 @@ let prove_with ob org_ob meth save =  (* FIXME add success fuction *)
      vprintf "(* ... using Z3(v3) *)\n" ;
      z3_solve ob org_ob f res_cont
   | Method.Cvc33 f ->
-     vprintf "(* ... using CVC3(v3) *)\n" ;
-     smt_solve ob org_ob f res_cont
+     vprintf "(* ... using CVC4(v3) *)\n" ;
+     cvc3_solve ob org_ob f res_cont
   | Method.Yices3 f ->
      vprintf "(* ... using Yices(v3) *)\n" ;
      yices_solve ob org_ob f res_cont

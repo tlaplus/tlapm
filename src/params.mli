@@ -26,7 +26,7 @@ val isabelle_success_string : string;;
 val isabelle : exec;;
 val set_fast_isabelle : unit -> unit;;
 val smt : exec;;
-val cvc3 : exec;;
+val cvc4 : exec;;
 val yices : exec;;
 val z3 : exec;;
 val verit : exec;;
