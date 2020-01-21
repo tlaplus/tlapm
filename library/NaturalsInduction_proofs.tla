@@ -204,7 +204,7 @@ THEOREM RecursiveFcnOfNat ==
     <3>1. FF[k][i] = G(k)[k][i]  OBVIOUS
     <3>2. G(k)[k][i] = Def(G(k)[k-1], i)  BY <2>2, CVC4
     <3>. HIDE DEF P
-    <3>3. \A j \in 0 .. i-1 : G(k)[k-1][j] = FF[k-1][j]  BY <2>2, <2>3
+    <3>3. \A j \in 0 .. i-1 : G(k)[k-1][j] = FF[k-1][j]  BY <2>2, <2>3, CVC4
     <3>. HIDE DEF FF
     <3>4. Def(G(k)[k-1], i) = Def(FF[k-1], i)  BY <3>3
     <3>. QED  BY <3>1, <3>2, <3>4
@@ -447,7 +447,7 @@ THEOREM FactorialType == factorial \in [Nat -> Nat]
   BY <1>1, NatInductiveDefType, FactorialDefConclusion, Isa
 
 \* Modification History
-\* Last modified Fri Dec 20 16:22:50 CET 2019 by merz
+\* Last modified Tue Jan 21 11:44:24 CET 2020 by merz
 \* Last modified Tue Oct 15 12:06:48 CEST 2013 by shaolin
 \* Last modified Sat Nov 26 08:49:59 CET 2011 by merz
 \* Last modified Mon Nov 07 08:58:05 PST 2011 by lamport

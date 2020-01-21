@@ -604,7 +604,7 @@ THEOREM BasicInvariant == Spec => []BasicInv
       <4>1. CASE p = n
         <5>. SUFFICES ASSUME NEW q \in Proc, CommInv(p)!2!3!(q)
                       PROVE  CommInv(p)!2!3!(q)'
-          BY <3>1, <3>3, <4>1 DEF BasicInv, CommInv
+          BY <3>1, <3>3, <4>1, CVC4 DEF BasicInv, CommInv
         <5>1. CASE q = k
           <6>. /\ q \in ack'[p]
                /\ ~ Contains(network'[p][q], "req")
@@ -821,7 +821,7 @@ THEOREM ClockInvariant == Spec => []ClockInv
               PROVE  i \in 1 .. Len(pq) /\ pq'[i] = pq[i]
           BY <3>1, <4>2, <5>2
         <5>3. Contains(qp', "ack") <=> Contains(qp, "ack")
-          BY <3>1, <4>2, ContainsTail DEF BasicInv, NetworkInv
+          BY <3>1, <4>2, ContainsTail, CVC4 DEF BasicInv, NetworkInv
         <5>4. ~(\E i \in 1 .. Len(qp') : qp'[i].type = "req")
           BY <4>0, <4>2, ContainsTail, Isa DEF Contains
         <5>5. ASSUME p \in crit'
@@ -861,7 +861,7 @@ THEOREM ClockInvariant == Spec => []ClockInv
                      NEW i \in 1 .. Len(qp'), qp'[i].type = "req"
               PROVE  /\ Precedes(qp, "ack", "req")
                      /\ i+1 \in 1 .. Len(qp) /\ qp'[i] = qp[i+1]
-          BY <3>1, <4>1, <5>2, PrecedesInTail
+          BY <3>1, <4>1, <5>2, PrecedesInTail, CVC4
         <5>. QED  BY <3>2, <5>1, <5>2 DEF ClockInvInner, beats
       <4>2. CASE p = k /\ q = n
         <5>1. UNCHANGED << qp, ack[p], clock, req, crit >>

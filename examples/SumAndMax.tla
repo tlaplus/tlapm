@@ -83,24 +83,31 @@ TypeOK == /\ sum \in Nat
 Inv == /\ TypeOK
        /\ sum =< i * max
        /\ (pc = "Done") => (i = N)
-       
+
+USE NType, aType
+
 THEOREM Spec => []Correctness
 <1>1. Init => Inv
-  BY NType, SMT DEF Init, Inv, TypeOK
+  BY DEF Init, Inv, TypeOK
 <1>2. Inv => Correctness
-  BY NType DEF Correctness, Inv, TypeOK
+  BY DEF Correctness, Inv, TypeOK
 <1>3. Inv /\ Lbl_1 => Inv'
   <2>. SUFFICES ASSUME Inv, Lbl_1 PROVE Inv'
     OBVIOUS
   <2>1. /\ TypeOK'
         /\ pc' = "Done" => i' = N
-    BY NType, aType DEF Inv, TypeOK, Lbl_1
+    BY DEF Inv, TypeOK, Lbl_1
   <2>2. sum' <= i' * max'
     \* FIXME: This case distinction used to be unnecessary.
     <3>1. CASE i < N /\ max < a[i]
-      BY <3>1, NType, aType DEF Inv, TypeOK, Lbl_1
+      <4>. USE <3>1 DEF Inv, TypeOK
+      <4>1. sum' = sum + a[i]       BY DEF Lbl_1
+      <4>3. @ <= i * a[i] + a[i]    OBVIOUS
+      <4>4. @ = (i+1) * a[i]        OBVIOUS
+      <4>5. @ = i' * max'           BY DEF Lbl_1
+      <4>. QED  BY <4>1, <4>3, <4>4, <4>5 DEF Inv, TypeOK
     <3>2. CASE i < N /\ ~(max < a[i])
-      BY <3>2, NType, aType DEF Inv, TypeOK, Lbl_1
+      BY <3>2 DEF Inv, TypeOK, Lbl_1
     <3>3. CASE ~(i < N)
       BY <3>3 DEF Inv, Lbl_1
     <3>. QED  BY <3>1, <3>2, <3>3

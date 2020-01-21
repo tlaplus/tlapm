@@ -317,7 +317,7 @@ THEOREM IsStrictPrefixProperties ==
   <2>1. ASSUME IsStrictPrefix(s,t)
         PROVE  \E u \in Seq(S) : u # << >> /\ t = s \o u
     <3>1. PICK u \in Seq(S) : t = s \o u
-      BY <2>1, IsPrefixProperties DEF IsStrictPrefix
+      BY <2>1, IsPrefixProperties, Isa DEF IsStrictPrefix
     <3>2. u # << >>
       BY <2>1, <3>1 DEF IsStrictPrefix
     <3>. QED  BY <3>1, <3>2
@@ -329,7 +329,11 @@ THEOREM IsStrictPrefixProperties ==
       BY <2>2
     <3>.  QED  BY <3>1, <3>2 DEF IsStrictPrefix
   <2>. QED  BY <2>1, <2>2, Zenon
-<1>. QED  BY <1>1, <1>2, IsPrefixProperties DEF IsStrictPrefix
+<1>3. /\ IsStrictPrefix(s,t) <=> Len(s) < Len(t) /\ s = SubSeq(t, 1, Len(s))
+      /\ IsStrictPrefix(s,t) <=> Len(s) < Len(t) /\ s = Restrict(t, DOMAIN s)
+      /\ IsStrictPrefix(s,t) <=> IsPrefix(s,t) /\ Len(s) < Len(t)
+  BY <1>1, IsPrefixProperties DEF IsStrictPrefix
+<1>. QED  BY <1>1, <1>2, <1>3
 
 THEOREM IsPrefixElts ==
   ASSUME NEW S, NEW s \in Seq(S), NEW t \in Seq(S), NEW i \in 1 .. Len(s),
@@ -436,7 +440,14 @@ THEOREM IsStrictPrefixStrictPartialOrder ==
   PROVE  /\ \A s \in Seq(S) : ~ IsStrictPrefix(s,s)
          /\ \A s,t \in Seq(S) : IsStrictPrefix(s,t) => ~ IsStrictPrefix(t,s)
          /\ \A s,t,u \in Seq(S) : IsStrictPrefix(s,t) /\ IsStrictPrefix(t,u) => IsStrictPrefix(s,u)
-BY IsStrictPrefixProperties
+\* FIXME: although Z3 proves each conjunct separately, it doesn't prove the conjunction (anymore)
+<1>1. \A s \in Seq(S) : ~ IsStrictPrefix(s,s)
+  BY IsStrictPrefixProperties
+<1>2. \A s,t \in Seq(S) : IsStrictPrefix(s,t) => ~ IsStrictPrefix(t,s)
+  BY IsStrictPrefixProperties
+<1>3. \A s,t,u \in Seq(S) : IsStrictPrefix(s,t) /\ IsStrictPrefix(t,u) => IsStrictPrefix(s,u)
+  BY IsStrictPrefixProperties
+<1>. QED  BY <1>1, <1>2, <1>3
 
 THEOREM IsStrictPrefixWellFounded ==
   ASSUME NEW S
@@ -532,8 +543,12 @@ THEOREM IsStrictSuffixProperties ==
     <3>2. s # t
       BY <2>2
     <3>. QED  BY <3>1, <3>2 DEF IsStrictSuffix
-  <2>. QED  BY <2>1, <2>2
-<1>. QED  BY <1>1, <1>2, IsSuffixProperties DEF IsStrictPrefix, IsStrictSuffix
+  <2>. QED  BY <2>1, <2>2, Zenon
+<1>3. /\ IsStrictSuffix(s,t) <=> Len(s) < Len(t) /\ IsSuffix(s,t)
+      /\ IsStrictSuffix(s,t) <=> Len(s) < Len(t) /\ s = SubSeq(t, Len(t)-Len(s)+1, Len(t))
+      /\ IsStrictSuffix(s,t) <=> IsStrictPrefix(Reverse(s), Reverse(t))
+  BY <1>1, IsSuffixProperties DEF IsStrictPrefix, IsStrictSuffix
+<1>. QED  BY <1>1, <1>2, <1>3, Zenon
 
 THEOREM IsSuffixElts ==
   ASSUME NEW S, NEW s \in Seq(S), NEW t \in Seq(S), NEW i \in 1 .. Len(s),
@@ -616,7 +631,7 @@ THEOREM ConcatIsSuffixCancel ==
   <2>2. u \o t = (v \o s) \o t
     BY <2>1
   <2>3. u = v \o s
-    BY <2>2, ConcatSimplifications!cancelRight
+    BY <2>2, ConcatSimplifications!cancelRight, v \o s \in Seq(S), Zenon
   <2>. QED  BY <2>3, IsSuffixProperties, Zenon
 <1>. QED  BY <1>1, <1>2
 
