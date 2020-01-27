@@ -3,7 +3,7 @@
 TLAPSVER=$(echo "tlaps-@VERSION@" | sed -e 's/ /_/g')
 TARGET="`/bin/pwd`/$TLAPSVER.tar.gz"
 
-PS_DIR="$(pwd)/../../../repository-gforge-git"
+PS_DIR="$(pwd)/../../../tlaps"
 PM_DIR="$(pwd)/../.."
 
 cat <<EOF
