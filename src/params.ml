@@ -174,9 +174,10 @@ let zenon =
 
 let cvc4 =
   if Sys.os_type = "Cygwin" then
-    make_exec "cvc4" "cvc4 --lang=smt2 --pre-skolem-quant \"$winfile\"" "cvc4 --version"  (* --ignore-user-patterns *)
+    make_exec "cvc4" "cvc4 --lang=smt2 \"$winfile\"" "cvc4 --version"
   else
-    make_exec "cvc4" "cvc4 --lang=smt2 --pre-skolem-quant \"$file\"" "cvc4 --version";;  (* --ignore-user-patterns *)
+    make_exec "cvc4" "cvc4 --lang=smt2 \"$file\"" "cvc4 --version"
+;;
 
 let yices = make_exec "yices" "yices -tc \"$file\"" "yices --version";;
 let z3 =
