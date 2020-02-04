@@ -25,7 +25,7 @@
     MacOSX, etc.</p>
   <p>Notes for Windows users:</p>
   <ul>
-    <li>TLAPS requires Cygwin 1.7.24 or later. At this time it works only
+    <li>TLAPS requires Cygwin 3.0.7 or later. At this time it works only
       with the 32-bit version of cygwin.</li>
     <li>The following Cygwin packages are required for the
       instructions below: <code>gcc4</code>, <code>make</code>,
@@ -34,7 +34,7 @@
   </ul>
 
   <p> TLAPS tarball:
-    <a href="../../dist/current/tlaps-1.4.3.tar.gz">tlaps-1.4.3.tar.gz</a></p>
+    <a href="../../dist/current/tlaps-1.4.4.tar.gz">tlaps-1.4.4.tar.gz</a></p>
 
 
   <h3>1. Unpack TLAPS tarball</h3>
@@ -42,18 +42,18 @@
 
   <p>You can unpack TLAPS by running the following command:</p>
 
-  <div class="terminal">$ tar -xzf tlaps-1.4.3.tar.gz</div>
+  <div class="terminal">$ tar -xzf tlaps-1.4.4.tar.gz</div>
 
-  <p>This creates a directory named <code>tlaps-1.4.3</code> that
+  <p>This creates a directory named <code>tlaps-1.4.4</code> that
   contains four subdirectories: <code>tlapm</code>, <code>zenon</code>,
   <code>isabelle</code> and <code>emacs</code>.</p>
 
   <h3>2. Install OCaml</h3>
   <div class="hr"></div>
 
-  <p>TLAPS is implemented in OCaml and requires version 3.12.1 or
+  <p>TLAPS is implemented in OCaml and requires version 4.04.2 or
   higher.  You can follow any of the suggestions
-  on <a href="http://caml.inria.fr/ocaml/release.en.html">the offical
+  on <a href="https://ocaml.org/docs/install.html">the offical
   OCaml release page</a> to install OCaml. On Windows/Cygwin, OCaml
   can be installed directly from Cygwin's <code>setup.exe</code>.
   On most modern
@@ -81,25 +81,21 @@
     </tbody>
   </table>
 
-  <p> On MacOSX, you can either use
-    the <a href="http://caml.inria.fr/download.en.html">binary
-      distribution</a> of OCaml, or use the package
-    managers <a href="http://www.macports.org">MacPorts</a>
-    (<code>port install ocaml</code>)
-    or <a href="http://brew.sh/">Homebrew</a>
-    (<code>brew install objective-caml</code>).</p>
+  <p> On MacOSX, you can use the package
+    managers <a href="http://brew.sh/">Homebrew</a>
+    (<code>brew install objective-caml</code>)
+    or <a href="http://www.macports.org">MacPorts</a>
+    (<code>port install ocaml</code>).</p>
 
-  <p>If you want to install OCaml from source, consider using a source
-    distribution of OCaml such
-    as <a href="http://godi.camlcity.org/godi/index.html">GODI</a>
-    or <a href="opam.ocamlpro.com">OPAM</a>.</p>
+  <p>If you want to install OCaml from source, consider
+  using <a href="http://opam.ocaml.org">OPAM</a>.</p>
 
   <h3>3. Compile and Install Zenon</h3>
   <div class="hr"></div>
 
   <p>Run the following commands.</p>
 
-  <div class="terminal">$ pushd tlaps-1.4.3/zenon<br/>
+  <div class="terminal">$ pushd tlaps-1.4.4/zenon<br/>
 $ ./configure &amp;&amp; make &amp;&amp; make install<br/>
 $ popd</div>
 
@@ -108,7 +104,7 @@ $ popd</div>
   directory, or would rather install Zenon elsewhere, such as
   in <code>$HOME/bin</code>, run the following:</p>
 
-  <div class="terminal">$ pushd tlaps-1.4.3/zenon<br/>
+  <div class="terminal">$ pushd tlaps-1.4.4/zenon<br/>
 $ ./configure --prefix $HOME &amp;&amp; make &amp;&amp; make install<br/>
 $ popd</div>
 
@@ -148,7 +144,7 @@ $ tar -xzf -C /usr/local polyml-5.4.0.tar.gz</div>
   <div class="terminal">$ pushd /usr/local/Isabelle/src/Pure<br/>
 $ isabelle make<br/>
 $ popd<br/>
-$ pushd tlaps-1.4.3/isabelle<br/>
+$ pushd tlaps-1.4.4/isabelle<br/>
 $ make<br/>
 $ popd</div>
 
@@ -161,7 +157,7 @@ $ popd</div>
 
   <p>Run the following commands.</p>
 
-  <div class="terminal">$ pushd tlaps-1.4.3/tlapm<br/>
+  <div class="terminal">$ pushd tlaps-1.4.4/tlapm<br/>
 $ ./configure &amp;&amp; make all<br/>
 $ sudo make install<br/>
 $ popd</div>
@@ -171,7 +167,7 @@ $ popd</div>
   directory, or would rather install the <code>TLAPM</code> elsewhere,
   such as in <code>$HOME/bin</code>, run the following:</p>
 
-  <div class="terminal">$ pushd tlaps-1.4.3/tlapm<br/>
+  <div class="terminal">$ pushd tlaps-1.4.4/tlapm<br/>
 $ ./configure --prefix $HOME &amp;&amp; make all<br/>
 $ make install<br/>
 $ popd</div>

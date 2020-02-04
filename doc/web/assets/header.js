@@ -32,6 +32,7 @@ var menumap = [
     " Unsupported features",
     " Publications",
     " TLA+ Hyperbook",
+    " TLA+ Video Course",
     " Misc",
     "Community",
     " Contact",

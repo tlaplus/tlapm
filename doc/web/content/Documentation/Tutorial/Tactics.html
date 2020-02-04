@@ -58,7 +58,7 @@
     succession: <tla>SMT</tla>, <tla>Zenon</tla>,
     and <tla>Isa</tla>.
     <ul>
-    <li><tla>SMT</tla> is the baseline SMT solver (by default CVC3);
+    <li><tla>SMT</tla> is the baseline SMT solver (by default Z3);
     it is tried with a timeout of 5 seconds.</li>
     <li><a href="http://zenon-prover.org/"><tla>Zenon</tla></a> is a
     tableaux-based prover for first-order logic; it is tried with a
@@ -98,21 +98,19 @@
   <h3><a name="solvers">SMT solvers</a></h3>
   <div class="hr"></div>
 
-  <p><span style="font-weight:bold">Note</span>: the CVC3 solver is
-    distributed with TLAPS.
-    If you want to use Yices (only version&nbsp;1 is supported) or Z3,
-    you have to download and install them
-    from <a href="http://yices.csl.sri.com/download.shtml">Yices&nbsp;1</a> and
-    <a href="http://z3.codeplex.com/">Z3</a>. Please check that
+  <p><span style="font-weight:bold">Note</span>: the Z3 solver is
+    distributed with TLAPS. If you want to use CVC4
+    you have to download and install it from
+    <a href="https://cvc4.github.io">CVC4</a>. Please check that
     you are allowed to install a version according to the licensing
     conditions of these solvers, and make sure
     that the executables are in your <code>$PATH</code>.</p>
 
   <p>The <tla>SMT</tla> backend identifier invokes the baseline SMT
     solver. By default this is
-    the <a href="http://cs.nyu.edu/acsys/cvc3/">CVC3</a> solver, but you
-    can change it to call any SMT solver that can
-    read <a href="http://combination.cs.uiowa.edu/smtlib/">SMT-LIB</a>
+    the <a href="https://github.com/Z3Prover/z3/wiki">Z3</a>
+    solver, but you can change it to call any SMT solver that can
+    read <a href="http://smtlib.cs.uiowa.edu">SMT-LIB</a>
     format (version 2) input and can handle linear integer and real
     reasoning. In order to invoke this backend alone (without falling
     back to Zenon or Isabelle), use the <tla>SMT</tla>
@@ -133,27 +131,9 @@
   </p>
 
   <p>In order to
-  invoke <a href="http://cs.nyu.edu/acsys/cvc3/">CVC3</a> explicitly, use
-  the <code>CVC3</code> or <code>CVC3T</code> identifiers in
-  a <code><span class="purple">USE</span></code> or
-  <code><span class="purple">BY</span></code> clause.</p>
-
-  <table class="listing" cellspacing="5px" cellpadding="5px"
-         style="margin-left:50px;">
-    <tr>
-      <td><span class="listing sole"><span class="purple">BY</span> CVC3</span></td>
-      <td>Call CVC3 backend with default timeout of 5 seconds.</td>
-    </tr>
-    <tr>
-      <td><span class="listing sole"><span class="purple">BY</span> CVC3T(60)  </span></td>
-      <td>Call CVC3 with a different timeout.</td>
-    </tr>
-  </table>
-
-  <p>In order to invoke <a href="http://z3.codeplex.com/">Z3</a>, use
+ invoke <a href="https://github.com/Z3Prover/z3/wiki">Z3</a> explicitly, use
   the <tla>Z3</tla> or <tla>Z3T</tla> identifiers in
-  a <tla>USE</tla> or <tla>BY</tla> clause (but remember
-  that Z3 is not distributed with TLAPS).</p>
+  a <tla>USE</tla> or <tla>BY</tla> clause.</p>
 
   <table class="listing" cellspacing="5px" cellpadding="5px"
          style="margin-left:50px;">
@@ -167,22 +147,22 @@
     </tr>
   </table>
 
-  <p> TLAPS also contains a backend translator
-    to the native language of <a href="http://yices.csl.sri.com/">Yices</a>.
-    In order to invoke this backend, use the <tla>Yices</tla>
-    or <tla>YicesT</tla> identifiers in
-    a <tla>USE</tla> or <tla>BY</tla> clause (again,
-    remember that Yices is not distributed with the proof system).</p>
+  <p>In order to
+  invoke <a href="https://cvc4.github.io">CVC4</a>, use
+  the <code>CVC4</code> or <code>CVC4T</code> identifiers in
+  a <code><span class="purple">USE</span></code> or
+  <code><span class="purple">BY</span></code> clause (but remember
+  that CVC4 is not distributed with TLAPS).</p>
 
-  <table class="listing" cellspacing="5px" cellpadding="5px"
+z  <table class="listing" cellspacing="5px" cellpadding="5px"
          style="margin-left:50px;">
     <tr>
-      <td><span class="listing sole"><span class="purple">BY</span> Yices</span></td>
-      <td>Call Yices with default timeout of 30 seconds.</td>
+      <td><span class="listing sole"><span class="purple">BY</span> CVC4</span></td>
+      <td>Call CVC4 backend with default timeout of 5 seconds.</td>
     </tr>
     <tr>
-      <td><span class="listing sole"><span class="purple">BY</span> YicesT(60)</span></td>
-      <td>Call Yices with a different timeout.</td>
+      <td><span class="listing sole"><span class="purple">BY</span> CVC4T(60)  </span></td>
+      <td>Call CVC4 with a different timeout.</td>
     </tr>
   </table>
 
@@ -190,8 +170,6 @@
 
   <li>First option: change the baseline SMT solver only for the
     current run of TLAPS.
-    <strong>[Note: this option does not work with the
-    current (1.4.7) or earlier versions of the Toolbox]</strong>
     To do this, give the <code>--solver</code>
     command-line option to tlapm with the solver's command line
     (described below) as argument, surrounded by single quotes. If you use the
@@ -201,9 +179,7 @@
     box as follows:
     <table frame="box" rules="all">
       <tr><th>solver</th><th>text box contents</th></tr>
-      <tr><td>CVC3</td><td><code>--solver 'cvc3 -lang smt2 "$file"'</code></td></tr>
       <tr><td>CVC4</td><td><code>--solver 'cvc4 -L smt "$file"'</code></td></tr>
-      <tr><td>Yices</td><td><code>--solver 'yices -tc "$file"'</code></td></tr>
       <tr><td>Z3 (Windows)</td><td><code>--solver 'z3 /smt2 "$file"'</code></td></tr>
       <tr><td>Z3 (Linux, MacOS)</td><td><code>--solver 'z3 -smt2 "$file"'</code></td></tr>
     </table></li>
@@ -218,9 +194,7 @@
     file name. Here are a few examples:
     <table frame="box" rules="all">
       <tr><th>solver</th><th>command line</th></tr>
-      <tr><td>CVC3</td><td><code>cvc3 -lang smt2 "$file"</code></td></tr>
       <tr><td>CVC4</td><td><code>cvc4 -L smt "$file"</code></td></tr>
-      <tr><td>Yices</td><td><code>yices -tc "$file"</code></td></tr>
       <tr><td>Z3 (Windows)</td><td><code>z3 /smt2 "$file"</code></td></tr>
       <tr><td>Z3 (Linux, MacOS)</td><td><code>z3 -smt2 "$file"</code></td></tr>
     </table></li>
@@ -232,7 +206,7 @@
     add the line
   <table>
     <tr><td>
-    <span class="listing sole">export TLAPM_SMT_SOLVER='cvc3 -lang smt2 "$file"' </span>
+    <span class="listing sole">export TLAPM_SMT_SOLVER='cvc4 -lang smt2 "$file"' </span>
     </td></tr></table>
     to your shell's startup file (<code>.bashrc</code>).</li>
   </p>
