@@ -29,7 +29,8 @@ mkdir -p "$TLAPS_DIR"
 cd "$TLAPS_DIR"
 git_export "$PS_DIR" isabelle
 ( mkdir tlapm && cd tlapm && git_export "$PM_DIR" . )
-rm -rf tlapm/bugs tlapm/bugs-archive tlapm/fixed-bugs tlapm/doc
+rm -rf tlapm/bugs tlapm/bugs-archive tlapm/fixed-bugs tlapm/doc \
+       tlapm/examples-draft
 git_export "$PS_DIR" zenon
 ( mkdir emacs && cd emacs && git_export "$PS_DIR/misc" tla-mode )
 cd ..
