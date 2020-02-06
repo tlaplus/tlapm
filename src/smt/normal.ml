@@ -567,11 +567,7 @@ class rw1 = object (self : 'self)
           let ex = self#expr scx ex in
           begin match op2, ex.core with
           | B.SUBSET, _ ->
-              (* forall ~dom:x ~typ:(get_tybase scx x) (implies (mem ix1 (sh1 x)) (mem ix1 (sh1 ex))) |> self#expr scx *)
-              forall ~dom:x ~typ:(get_tybase scx x) (mem ix1 (sh1 ex))
-              |> self#expr scx
-                (* self#expr scx (Apply (Internal B.Subseteq |> noprops, [x ; ex]) |> mk) *)
-                (* self#expr scx (apply2 B.Subseteq x ex) *)
+              self#expr scx (apply2 B.Subseteq x ex)
           | B.UNION, SetEnum es                   -> self#expr scx (lOr (map (mem x) es))
           | B.UNION, SetOf (ex, ([v,_,Domain s])) -> self#expr scx (exists ~dom:s ~typ:(get_tybase scx s) (mem (sh1 x) ex))
           | B.UNION, SetSt (v, s, p)              -> self#expr scx (exists ~dom:s ~typ:(get_tybase scx s) (lAnd [p ; mem (sh1 x) ix1]))
@@ -607,7 +603,7 @@ class rw1 = object (self : 'self)
                (** Cat(r,t) \in Seq(ex)      --> r \in Seq(ex) /\ t \in Seq(ex) *)
               | Apply ({core = Internal B.Cat}, [r ; t])        ->
                   lAnd [mem r y ; mem t y] |> self#expr scx
-              (** SubSeq(s,m,n) \in Seq(ex) --> s \in Seq(ex) /\ m \in Int /\ n \in Int 
+              (** SubSeq(s,m,n) \in Seq(ex) --> s \in Seq(ex) /\ m \in Int /\ n \in Int
               | Apply ({core = Internal B.SubSeq}, [s ; m ; n]) ->
                   lAnd [mem s y ; mem m ints ; mem n ints] |> self#expr scx
               *)
