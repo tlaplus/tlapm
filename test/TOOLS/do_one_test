@@ -101,7 +101,7 @@ phase == 1 && FILENAME ~ /.*\/separator$/ {
     result = system (check_command);
     if (result != 0){ fail("explicit check failed"); }
   }else if (!command_done){
-    run_command("${TLAPM} --toolbox 0 0 --nofp ${FILE}");
+    run_command("${CMD}");
   }
   if (result_code != expected_result){
     fail("wrong result code");

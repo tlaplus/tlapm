@@ -4,13 +4,10 @@
 
 BASEDIR="`pwd`"
 TOOLDIR="$BASEDIR/TOOLS"
-ARGS="$BASEDIR/../library"
 
-if [ "$1" = "smt_tests" ]
-  then export ARGS="$ARGS --method smt"
-fi
+export ARGS="-I $BASEDIR/../library --toolbox 0 0 --nofp"
 
-export TLAPM="$BASEDIR/../tlapm -I $ARGS"
+export TLAPM="$BASEDIR/../tlapm"
 export LOGFILE="$BASEDIR/tests.log"
 
 echo "###### `date '+%Y-%m-%d %H:%M:%S'` $0 $@" >>"$LOGFILE"
@@ -26,6 +23,7 @@ find "$1" -name '*.tlaps' -prune -o -name '*_test.tla' -print | (
     printf "  %s " "$f"
     export FILE="`basename $f`"
     export DIR="`dirname $f`"
+    export CMD="$TLAPM $ARGS $FILE"
     echo "    $f" >>"$LOGFILE"
     echo | (cd $DIR; $TOOLDIR/do_one_test "$FILE" "$TOOLDIR/separator" \
                                           "$FILE.out" "$FILE.err" \
