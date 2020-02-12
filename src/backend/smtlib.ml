@@ -66,7 +66,7 @@ let pp_print_sort ff (a : ty_atom) =
   let s =
     match a with
     | TBool -> "Bool"
-    | TAtSet -> "set"
+    | TU -> "set"
     | TInt -> "Int"
     | TReal -> "real"
     | TStr -> "string"

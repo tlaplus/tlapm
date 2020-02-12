@@ -49,7 +49,7 @@ let mk_adecl ?(hidden=false) id ff =
 
 let pp_print_tyatom ff = function
   | TBool -> pp_print_string ff "Bool"
-  | TAtSet -> pp_print_string ff "set"
+  | TU -> pp_print_string ff "set"
   | TInt -> pp_print_string ff "Int"
   | TReal -> pp_print_string ff "real"
   | TStr -> pp_print_string ff "str"
@@ -282,53 +282,53 @@ module NT_Basic_Collector = struct
     let id = get_fid smb in
     let isig, osig =
       match smb with
-      | NT_TLA_STRING -> [], ty_aset
-      | NT_TLA_BOOLEAN -> [], ty_aset
-      | NT_TLA_SUBSET -> [ty_aset], ty_aset
-      | NT_TLA_UNION -> [ty_aset], ty_aset
-      | NT_TLA_DOMAIN -> [ty_aset], ty_aset
-      | NT_TLA_subseteq -> [ty_aset; ty_aset], ty_bool
-      | NT_TLA_in -> [ty_aset; ty_aset], ty_bool
-      | NT_TLA_setminus -> [ty_aset; ty_aset], ty_aset
-      | NT_TLA_cap -> [ty_aset; ty_aset], ty_aset
-      | NT_TLA_cup -> [ty_aset; ty_aset], ty_aset
-      | NT_TLA_Enum n -> (List.init n (fun _ -> ty_aset)), ty_aset
+      | NT_TLA_STRING -> [], ty_u
+      | NT_TLA_BOOLEAN -> [], ty_u
+      | NT_TLA_SUBSET -> [ty_u], ty_u
+      | NT_TLA_UNION -> [ty_u], ty_u
+      | NT_TLA_DOMAIN -> [ty_u], ty_u
+      | NT_TLA_subseteq -> [ty_u; ty_u], ty_bool
+      | NT_TLA_in -> [ty_u; ty_u], ty_bool
+      | NT_TLA_setminus -> [ty_u; ty_u], ty_u
+      | NT_TLA_cap -> [ty_u; ty_u], ty_u
+      | NT_TLA_cup -> [ty_u; ty_u], ty_u
+      | NT_TLA_Enum n -> (List.init n (fun _ -> ty_u)), ty_u
       | NT_TLA_Prod n ->
-          if n = 0 then [], ty_aset
+          if n = 0 then [], ty_u
           else if n = 1 then invalid_arg "cannot define 'TLA__Prod_1'"
-          else (List.init n (fun _ -> ty_aset)), ty_aset
+          else (List.init n (fun _ -> ty_u)), ty_u
       | NT_TLA_tuple n ->
-          if n = 0 then [], ty_aset
+          if n = 0 then [], ty_u
           else if n = 1 then invalid_arg "cannot define 'TLA__tuple_1'"
-          else (List.init n (fun _ -> ty_aset)), ty_aset
-      | NT_TLA_fcnapp -> [ty_aset; ty_aset], ty_aset
-      | NT_TLA_Arrow -> [ty_aset; ty_aset], ty_aset
-      | NT_TLA_Rect n -> (List.init (2*n) (fun _ -> ty_aset)), ty_aset
-      | NT_TLA_record n -> (List.init (2*n) (fun _ -> ty_aset)), ty_aset
-      | NT_TLA_except -> [ty_aset; ty_aset; ty_aset], ty_aset
-      | NT_Arith_N -> [], ty_aset
-      | NT_Arith_Z -> [], ty_aset
-      | NT_Arith_R -> [], ty_aset
-      | NT_Arith_plus -> [ty_aset; ty_aset], ty_aset
-      | NT_Arith_uminus -> [ty_aset], ty_aset
-      | NT_Arith_minus -> [ty_aset; ty_aset], ty_aset
-      | NT_Arith_ratio -> [ty_aset; ty_aset], ty_aset
-      | NT_Arith_quotient -> [ty_aset; ty_aset], ty_aset
-      | NT_Arith_remainder -> [ty_aset; ty_aset], ty_aset
-      | NT_Arith_exp -> [ty_aset; ty_aset], ty_aset
-      | NT_Arith_intexp -> [ty_int; ty_int], ty_aset
+          else (List.init n (fun _ -> ty_u)), ty_u
+      | NT_TLA_fcnapp -> [ty_u; ty_u], ty_u
+      | NT_TLA_Arrow -> [ty_u; ty_u], ty_u
+      | NT_TLA_Rect n -> (List.init (2*n) (fun _ -> ty_u)), ty_u
+      | NT_TLA_record n -> (List.init (2*n) (fun _ -> ty_u)), ty_u
+      | NT_TLA_except -> [ty_u; ty_u; ty_u], ty_u
+      | NT_Arith_N -> [], ty_u
+      | NT_Arith_Z -> [], ty_u
+      | NT_Arith_R -> [], ty_u
+      | NT_Arith_plus -> [ty_u; ty_u], ty_u
+      | NT_Arith_uminus -> [ty_u], ty_u
+      | NT_Arith_minus -> [ty_u; ty_u], ty_u
+      | NT_Arith_ratio -> [ty_u; ty_u], ty_u
+      | NT_Arith_quotient -> [ty_u; ty_u], ty_u
+      | NT_Arith_remainder -> [ty_u; ty_u], ty_u
+      | NT_Arith_exp -> [ty_u; ty_u], ty_u
+      | NT_Arith_intexp -> [ty_int; ty_int], ty_u
       | NT_Arith_Infinity -> [], ty_real
-      | NT_Arith_range -> [ty_aset; ty_aset], ty_aset
-      | NT_Arith_intrange -> [ty_int; ty_int], ty_aset
-      | NT_Arith_lteq -> [ty_aset; ty_aset], ty_bool
-      | NT_Arith_lt -> [ty_aset; ty_aset], ty_bool
-      | NT_Arith_gteq -> [ty_aset; ty_aset], ty_bool
-      | NT_Arith_gt -> [ty_aset; ty_aset], ty_bool
-      | NT_Cast_BoolToSet -> [ty_bool], ty_aset
-      | NT_Cast_IntToSet -> [ty_int], ty_aset
+      | NT_Arith_range -> [ty_u; ty_u], ty_u
+      | NT_Arith_intrange -> [ty_int; ty_int], ty_u
+      | NT_Arith_lteq -> [ty_u; ty_u], ty_bool
+      | NT_Arith_lt -> [ty_u; ty_u], ty_bool
+      | NT_Arith_gteq -> [ty_u; ty_u], ty_bool
+      | NT_Arith_gt -> [ty_u; ty_u], ty_bool
+      | NT_Cast_BoolToSet -> [ty_bool], ty_u
+      | NT_Cast_IntToSet -> [ty_int], ty_u
       | NT_Cast_IntToReal -> [ty_int], ty_real
-      | NT_Cast_RealToSet -> [ty_real], ty_aset
-      | NT_Cast_StrToSet -> [ty_str], ty_aset
+      | NT_Cast_RealToSet -> [ty_real], ty_u
+      | NT_Cast_StrToSet -> [ty_str], ty_u
     in mk_fdecl id isig osig
   let get_adecl axm =
     let id = get_aid axm in

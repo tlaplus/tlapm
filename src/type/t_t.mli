@@ -12,34 +12,47 @@ open Property
 (* {3 Generalities} *)
 
 type ty =
+  | TUnknown
   | TVar of string
   | TAtom of ty_atom
+  | TSet of ty
   | TArrow of ty * ty
   | TProd of ty list
-  | TSet of ty
-  | TUnknown
 and ty_atom =
-  | TBool | TAtSet | TInt | TReal | TStr
+  | TU | TBool | TInt | TReal | TStr
+and ty_op =
+  | TOp of ty_op list * ty
 
 module Sm = Coll.Sm
 type tmap = ty Sm.t
 
-module Props : sig
-  val type_prop : ty pfuncs
-end
-
+val ty_u    : ty
 val ty_bool : ty
-val ty_aset : ty
-val ty_int : ty
+val ty_int  : ty
 val ty_real : ty
-val ty_str : ty
+val ty_str  : ty
 
-val get_atom : ty -> ty_atom
+val mk_atom_ty  : ty_atom -> ty
+val mk_op_ty    : ty_op list -> ty -> ty_op
+val mk_cst_ty   : ty -> ty_op
+val mk_fstop_ty : ty list -> ty -> ty_op
+
+val get_atom  : ty -> ty_atom
+val get_ty    : ty_op -> ty
+
 val get_atoms : ty -> ty_atom list
 
 
 (* {3 Type Annotations} *)
 
+(** These properties are intended as annotations on hints *)
+module Props : sig
+  val type_prop : ty pfuncs
+  val tyop_prop : ty_op pfuncs
+  val sort_prop : ty_atom pfuncs
+end
+
+(* FIXME remove *)
 val type_annot : hint -> ty -> hint
 val has_type_annot : hint -> bool
 val get_type_annot : hint -> ty

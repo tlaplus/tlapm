@@ -15,31 +15,39 @@ open Property
 (* {3 Generalities} *)
 
 type ty =
+  | TUnknown
   | TVar of string
   | TAtom of ty_atom
+  | TSet of ty
   | TArrow of ty * ty
   | TProd of ty list
-  | TSet of ty
-  | TUnknown
 and ty_atom =
-  | TBool | TAtSet | TInt | TReal | TStr
+  | TU | TBool | TInt | TReal | TStr
+and ty_op =
+  | TOp of ty_op list * ty
 
 module Sm = Coll.Sm
 type tmap = ty Sm.t
 
 module Props = struct
+  let tyop_prop = make "Type.T.Props.tyop_prop"
   let type_prop = make "Type.T.Props.type_prop"
+  let sort_prop = make "Type.T.Props.sort_prop"
 end
 
-let ty_bool = TAtom TBool
-let ty_aset = TAtom TAtSet
-let ty_int = TAtom TInt
-let ty_real = TAtom TReal
-let ty_str = TAtom TStr
+let mk_atom_ty a = TAtom a
+
+let mk_op_ty tyops ty  = TOp (tyops, ty)
+let mk_cst_ty ty       = TOp ([], ty)
+let mk_fstop_ty tys ty = TOp (List.map mk_cst_ty tys, ty)
 
 let get_atom = function
   | TAtom a -> a
   | _ -> invalid_arg "Type.T.get_atom: not an atomic type"
+
+let get_ty = function
+  | TOp ([], ty) -> ty
+  | _ -> invalid_arg "Type.T.get_ty: not a constant operator type"
 
 let get_atoms ty =
   let add x l =
@@ -56,6 +64,12 @@ let get_atoms ty =
     | _ -> acc
   in
   f [] ty
+
+let ty_u = mk_atom_ty TU
+let ty_bool = mk_atom_ty TBool
+let ty_int = mk_atom_ty TInt
+let ty_real = mk_atom_ty TReal
+let ty_str = mk_atom_ty TStr
 
 
 (* {3 Type Annotations} *)
@@ -108,7 +122,7 @@ and pp_print_tyatom ff ty =
 and pp_print_tatom ff a =
   match a with
   | TBool -> pp_print_string ff "bool"
-  | TAtSet -> pp_print_string ff "set"
+  | TU -> pp_print_string ff "set"
   | TInt -> pp_print_string ff "int"
   | TReal -> pp_print_string ff "real"
   | TStr -> pp_print_string ff "string"

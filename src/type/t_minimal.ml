@@ -25,10 +25,10 @@ let mk_atom a = TAtom a
 
 (* Make a type from a {!Expr.T.shape} *)
 let from_shp = function
-  | Shape_expr -> mk_atom TAtSet
+  | Shape_expr -> mk_atom TU
   | Shape_op n ->
-      let ty1 = TProd (List.init n (fun _ -> mk_atom TAtSet)) in
-      let ty2 = mk_atom TAtSet in
+      let ty1 = TProd (List.init n (fun _ -> mk_atom TU)) in
+      let ty2 = mk_atom TU in
       TArrow (ty1, ty2)
 
 let mk_eq e1 e2 =
@@ -39,7 +39,7 @@ let mk_eq e1 e2 =
  * the sort of the input expression. *)
 let mk_formula e = function
   | TBool  -> e
-  | TAtSet -> mk_eq e (SetEnum [] %% [])
+  | TU -> mk_eq e (SetEnum [] %% [])
   | TInt   -> mk_eq e (Num ("0", "") %% [])
   | TReal  -> mk_eq e (Num ("0", "0") %% [])
   | TStr   -> mk_eq e (String "foo" %% [])
@@ -47,7 +47,7 @@ let mk_formula e = function
 (* Make an expression of sort [set] from anything, like {!mk_formula} above
  * This inserts opaque coercion operators *)
 let mk_set e = function
-  | TAtSet -> e
+  | TU -> e
   | TBool  -> Apply (Opaque "BoolToSet" %% [], [ e ]) @@ e
   | TInt   -> Apply (Opaque "IntToSet" %% [], [ e ]) @@ e
   | TReal  -> Apply (Opaque "RealToSet" %% [], [ e ]) @@ e
@@ -102,12 +102,12 @@ let rec expr scx oe =
       if ty1 = ty2 then
         Apply (op, [ e ; f ]) @@ oe, ty1
       else
-        Apply (op, [ mk_set e (get_atom ty1) ; mk_set e (get_atom ty2) ]) @@ oe, mk_atom TAtSet
+        Apply (op, [ mk_set e (get_atom ty1) ; mk_set e (get_atom ty2) ]) @@ oe, mk_atom TU
   | Internal (B.STRING | B.BOOLEAN | B.Nat | B.Int | B.Real) as op ->
-      op @@ oe, mk_atom TAtSet
+      op @@ oe, mk_atom TU
   | Apply ({ core = Internal (B.SUBSET | B.UNION | B.DOMAIN) } as op, [ e ]) ->
       let e, ty = expr scx e in
-      Apply (op, [ mk_set e (get_atom ty) ]) @@ oe, mk_atom TAtSet
+      Apply (op, [ mk_set e (get_atom ty) ]) @@ oe, mk_atom TU
   | Apply ({ core = Internal (B.Subseteq | B.Mem | B.Notmem) } as op, [ e ; f ]) ->
       let e, ty1 = expr scx e in
       let f, ty2 = expr scx f in
@@ -115,7 +115,7 @@ let rec expr scx oe =
   | Apply ({ core = Internal (B.Setminus | B.Cap | B.Cup) } as op, [ e ; f ]) ->
       let e, ty1 = expr scx e in
       let f, ty2 = expr scx f in
-      Apply (op, [ mk_set e (get_atom ty1) ; mk_set f (get_atom ty2) ]) @@ oe, mk_atom TAtSet
+      Apply (op, [ mk_set e (get_atom ty1) ; mk_set f (get_atom ty2) ]) @@ oe, mk_atom TU
   | Apply ({ core = Internal (B.Plus | B.Minus | B.Times | B.Ratio | B.Quotient | B.Remainder | B.Exp as b) } as op, [ e ; f ]) ->
       let e, ty1 = expr scx e in
       let f, ty2 = expr scx f in
@@ -132,14 +132,14 @@ let rec expr scx oe =
           | B.Exp -> "arith__exp"
           | _ -> assert false
         in
-        Apply (Opaque s @@ op, [ mk_set e (get_atom ty1) ; mk_set f (get_atom ty2) ]) @@ oe, mk_atom TAtSet
+        Apply (Opaque s @@ op, [ mk_set e (get_atom ty1) ; mk_set f (get_atom ty2) ]) @@ oe, mk_atom TU
   | Apply ({ core = Internal B.Uminus } as op, [ e ; f ]) ->
       let e, ty = expr scx e in
       if ty = mk_atom TInt then
         Apply (op, [ e ]) @@ oe, mk_atom TInt
       else
         let s = "arith__uminus" in
-        Apply (Opaque s @@ op, [ mk_set e (get_atom ty) ]) @@ oe, mk_atom TAtSet
+        Apply (Opaque s @@ op, [ mk_set e (get_atom ty) ]) @@ oe, mk_atom TU
   | Internal B.Infinity as op ->
       op @@ oe, mk_atom TReal
   | Apply ({ core = Internal (B.Lteq | B.Lt | B.Gteq | B.Gt as b) } as op, [ e ; f ]) ->
@@ -161,10 +161,10 @@ let rec expr scx oe =
       let e, ty1 = expr scx e in
       let f, ty2 = expr scx f in
       if ty1 = mk_atom TInt && ty2 = mk_atom TInt then
-        Apply (op, [ e ; f ]) @@ oe, mk_atom TAtSet
+        Apply (op, [ e ; f ]) @@ oe, mk_atom TU
       else
         let s = "arith__range" in
-        Apply (Opaque s @@ op, [ mk_set e (get_atom ty1) ; mk_set f (get_atom ty2) ]) @@ oe, mk_atom TAtSet
+        Apply (Opaque s @@ op, [ mk_set e (get_atom ty1) ; mk_set f (get_atom ty2) ]) @@ oe, mk_atom TU
   | Internal b ->
       Errors.bug ~at:oe "Type.MinRecon.expr"
   | Lambda (vs, e) ->
@@ -196,7 +196,7 @@ let rec expr scx oe =
         | TArrow (TProd tys11, ty12), arg_tys2 ->
             let args = List.map2 begin fun ty1 (arg, ty2) ->
               match ty1 with
-              | TAtom TAtSet -> mk_set arg (get_atom ty2)
+              | TAtom TU -> mk_set arg (get_atom ty2)
               | TAtom TBool -> mk_formula arg (get_atom ty2)
               | _ -> typebad ~at:oe
             end tys11 arg_tys2 in
@@ -204,7 +204,7 @@ let rec expr scx oe =
         | TArrow (ty11, ty12), [ arg, ty2 ] ->
             let f =
               match get_atom ty11 with
-              | TAtSet -> mk_set
+              | TU -> mk_set
               | TBool -> mk_formula
               | _ -> typebad ~at:oe
             in
@@ -232,7 +232,7 @@ let rec expr scx oe =
         if ty2 = ty3 then
           f, g, ty2
         else
-          mk_set f (get_atom ty2), mk_set g (get_atom ty3), mk_atom TAtSet
+          mk_set f (get_atom ty2), mk_set g (get_atom ty3), mk_atom TU
       in
       If (e, f, g) @@ oe, ty4
   | List (bl, es) ->
@@ -251,7 +251,7 @@ let rec expr scx oe =
       Quant (q, bs, mk_formula e (get_atom ty)) @@ oe, mk_atom TBool
   | Tquant (q, hs, e) ->
       let scx, hs = List.fold_left begin fun (scx, hs) h ->
-        let h, scx = adj scx h (mk_atom TAtSet) in
+        let h, scx = adj scx h (mk_atom TU) in
         scx, h :: hs
       end (scx, []) hs in
       let hs = List.rev hs in
@@ -265,70 +265,70 @@ let rec expr scx oe =
             let dom, ty = expr scx dom in
             Some (mk_set dom (get_atom ty))
       in
-      let h, scx = adj scx h (mk_atom TAtSet) in
+      let h, scx = adj scx h (mk_atom TU) in
       let e, ty = expr scx e in
       Choose (h, hdom, mk_formula e (get_atom ty)) @@ oe, mk_atom TBool
   | SetSt (h, e1, e2) ->
       let e1, ty1 = expr scx e1 in
-      let h, scx = adj scx h (mk_atom TAtSet) in
+      let h, scx = adj scx h (mk_atom TU) in
       let e2, ty2 = expr scx e2 in
-      SetSt (h, mk_set e1 (get_atom ty1), mk_formula e2 (get_atom ty2)) @@ oe, mk_atom TAtSet
+      SetSt (h, mk_set e1 (get_atom ty1), mk_formula e2 (get_atom ty2)) @@ oe, mk_atom TU
   | SetOf (e, bs) ->
       let scx, bs, _ = bounds scx bs in
       let e, ty = expr scx e in
-      SetOf (mk_set e (get_atom ty), bs) @@ oe, mk_atom TAtSet
+      SetOf (mk_set e (get_atom ty), bs) @@ oe, mk_atom TU
   | SetEnum es ->
       let es = List.map begin fun e ->
         let e, ty = expr scx e in
         mk_set e (get_atom ty)
       end es in
-      SetEnum es @@ oe, mk_atom TAtSet
+      SetEnum es @@ oe, mk_atom TU
   | Product es ->
       let es = List.map begin fun e ->
         let e, ty = expr scx e in
         mk_set e (get_atom ty)
       end es in
-      Product es @@ oe, mk_atom TAtSet
+      Product es @@ oe, mk_atom TU
   | Tuple es ->
       let es = List.map begin fun e ->
         let e, ty = expr scx e in
         mk_set e (get_atom ty)
       end es in
-      Tuple es @@ oe, mk_atom TAtSet
+      Tuple es @@ oe, mk_atom TU
   | Fcn (bs, e) ->
       let scx, bs, _ = bounds scx bs in
       let e, ty = expr scx e in
-      Fcn (bs, mk_set e (get_atom ty)) @@ oe, mk_atom TAtSet
+      Fcn (bs, mk_set e (get_atom ty)) @@ oe, mk_atom TU
   | FcnApp (e, es) ->
       let e, ty = expr scx e in
       let es = List.map begin fun e ->
         let e, ty = expr scx e in
         mk_set e (get_atom ty)
       end es in
-      FcnApp (mk_set e (get_atom ty), es) @@ oe, mk_atom TAtSet
+      FcnApp (mk_set e (get_atom ty), es) @@ oe, mk_atom TU
   | Arrow (e1, e2) ->
       let e1, ty1 = expr scx e1 in
       let e2, ty2 = expr scx e2 in
-      Arrow (mk_set e1 (get_atom ty1), mk_set e2 (get_atom ty2)) @@ oe, mk_atom TAtSet
+      Arrow (mk_set e1 (get_atom ty1), mk_set e2 (get_atom ty2)) @@ oe, mk_atom TU
   | Rect fs ->
       let fs = List.map begin fun (f, e) ->
         let e, ty = expr scx e in
         (f, mk_set e (get_atom ty))
       end fs in
-      Rect fs @@ oe, mk_atom TAtSet
+      Rect fs @@ oe, mk_atom TU
   | Record fs ->
       let fs = List.map begin fun (f, e) ->
         let e, ty = expr scx e in
         (f, mk_set e (get_atom ty))
       end fs in
-      Record fs @@ oe, mk_atom TAtSet
+      Record fs @@ oe, mk_atom TU
   | Except (e, exs) ->
       let exs, _ = List.map (exspec scx) exs |> List.split in
       let e, ty = expr scx e in
-      Except (mk_set e (get_atom ty), exs) @@ oe, mk_atom TAtSet
+      Except (mk_set e (get_atom ty), exs) @@ oe, mk_atom TU
   | Dot (e, s) ->
       let e, ty = expr scx e in
-      Dot (mk_set e (get_atom ty), s) @@ oe, mk_atom TAtSet
+      Dot (mk_set e (get_atom ty), s) @@ oe, mk_atom TU
   | Sub (m, e1, e2) ->
       let e1, ty1 = expr scx e1 in
       let e2, ty2 = expr scx e2 in
@@ -376,7 +376,7 @@ let rec expr scx oe =
             let ty = Option.get o_ty in
             mk_set e (get_atom ty)
           end o in
-          ps, o, mk_atom TAtSet
+          ps, o, mk_atom TU
       in
       Case (ps, o) @@ oe, ty
   | String s ->
@@ -418,7 +418,7 @@ and bounds scx bs =
             Domain (mk_set d (get_atom ty))
         | _ -> dom
       in
-      let h, scx' = adj scx' h (mk_atom TAtSet) in
+      let h, scx' = adj scx' h (mk_atom TU) in
       let b = (h, k, dom) in
       (scx', b :: bs)
     end (scx, []) bs
@@ -474,16 +474,16 @@ and hyp scx h =
       in
       let ty =
         match shp with
-        | Shape_expr -> ty_aset
+        | Shape_expr -> ty_u
         | Shape_op n ->
-            if n = 1 then TArrow (ty_aset, ty_aset)
-            else TArrow (TProd (List.init n (fun _ -> ty_aset)), ty_aset)
+            if n = 1 then TArrow (ty_u, ty_u)
+            else TArrow (TProd (List.init n (fun _ -> ty_u)), ty_u)
       in
       let v, scx = adj scx v ty in
       let h = Fresh (v, shp, k, hdom) @@ h in
       scx, h, TUnknown
   | Flex v ->
-      let ty = ty_aset in
+      let ty = ty_u in
       let v, scx = adj scx v ty in
       let h = Flex v @@ h in
       scx, h, TUnknown
