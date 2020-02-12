@@ -27,9 +27,9 @@ stest:
 junit:
 	./TOOLS/do_junit_tests regression_tests
 
-.PHONY: smt
-smt:
-	./TOOLS/do_tests smt_tests
+.PHONY: unit
+unit:
+	./TOOLS/do_tests unit
 
 clean:
 	@find . \( -name '*.tlaps' -o -name '*.tla.out' -o -name '*.tla.err' \) \
