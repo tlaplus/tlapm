@@ -31,9 +31,11 @@ let get_ty_atom ty =
   | TAtom a -> a
   | _ ->
       let mssg =
-        fprintf str_formatter "non-atomic type: %a@."
+        let buf = Buffer.create 64 in
+        let ff = formatter_of_buffer buf in
+        fprintf ff "non-atomic type: %a@."
         pp_print_type ty;
-        flush_str_formatter ()
+        Buffer.contents buf
       in
       unsupp mssg
 
