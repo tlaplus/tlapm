@@ -166,6 +166,7 @@ module T : sig
   and time = Now | Always | NotSet
 
   val get_val_from_id : 'hyp Deque.dq -> int -> 'hyp;;
+  val hyp_hint : hyp -> hint;;
   val hyp_name : hyp -> string;;
   val exprify_sequent : sequent -> expr_;;
 end;;
@@ -277,6 +278,21 @@ module Visit : sig
     method hyp      : 's scx -> 'a -> hyp -> 's scx * 'a
     method hyps     : 's scx -> 'a -> hyp Deque.dq -> 's scx * 'a
   end
+end;;
+
+module Collect : sig
+  open T
+  open Util.Coll
+  type ctx = hyp Deque.dq
+  type var_set = Is.t
+  val get_hints : ctx -> var_set -> Hs.t
+  val get_strings : ctx -> var_set -> Ss.t
+  val vs_fold : ctx -> (int -> hyp -> 'a -> 'a) -> var_set -> 'a -> 'a
+  val vs_partition : ctx -> (int -> hyp -> bool) -> var_set -> var_set * var_set
+  val vs : ?ctx:ctx -> expr -> Is.t * Is.t
+  val bvs : ?ctx:ctx -> expr -> Is.t
+  val fvs : ?ctx:ctx -> expr -> Is.t
+  val opaques : ?ctx:ctx -> expr -> Hs.t
 end;;
 
 module Eq : sig

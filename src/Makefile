@@ -34,8 +34,8 @@ PARS_PACK = \
   pars/error pars/intf pars/lazyList pars/pco
 
 EXPR_PACK = \
-  expr/e_t expr/e_visit expr/e_constness expr/e_fmt expr/e_subst expr/e_eq expr/e_deref \
-  expr/e_leibniz expr/e_parser expr/e_tla_norm expr/e_temporal_props \
+  expr/e_t expr/e_visit expr/e_collect expr/e_constness expr/e_fmt expr/e_subst \
+	expr/e_eq expr/e_deref expr/e_leibniz expr/e_parser expr/e_tla_norm expr/e_temporal_props \
   expr/e_elab expr/e_anon
 
 TYPE_PACK = \

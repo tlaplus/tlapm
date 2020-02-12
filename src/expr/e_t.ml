@@ -176,14 +176,16 @@ let get_val_from_id cx n = match Deque.nth ~backwards:true cx (n - 1) with
 | Some e -> e
 | None -> failwith "unknown bound variable"
 
-let hyp_name h = match h.core with
+let hyp_hint h = match h.core with
   | Fresh (nm, _, _, _)
   | Flex nm
   | Defn ({core = Operator (nm, _) | Instance (nm, _)
                   | Bpragma(nm,_,_) | Recursive (nm, _)},
           _, _, _)
-  -> nm.core
-  | Fact (_, _,_) -> "_"
+  -> nm
+  | Fact (_, _,_) -> "_" %% []
+
+let hyp_name h = (hyp_hint h).core
 
 let exprify_sequent sq =
   if Deque.null sq.context

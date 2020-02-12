@@ -10,6 +10,7 @@ module T = E_t;;
 module Fmt = E_fmt;;
 module Subst = E_subst;;
 module Visit = E_visit;;
+module Collect = E_collect;;
 module Eq = E_eq;;
 module Deref = E_deref;;
 module Leibniz = E_leibniz;;

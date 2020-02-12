@@ -168,6 +168,7 @@ and time = Now | Always | NotSet
 val get_val_from_id : 'hyp Deque.dq -> int -> 'hyp;;
 
 (* fmt.ml *)
+val hyp_hint : hyp_ Property.wrapped -> hint;;
 val hyp_name : hyp_ Property.wrapped -> string;;
 
 (* anon.ml *)
