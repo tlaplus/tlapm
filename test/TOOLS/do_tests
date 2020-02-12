@@ -20,7 +20,7 @@ find "$1" -name '*.tlaps' -prune -o -name '*_test.tla' -print | (
 
   while read f; do
     total=`expr $total + 1`
-    printf "  %s " "$f"
+    printf "  %-32s " "${f%_test.tla}"
     export FILE="`basename $f`"
     export DIR="`dirname $f`"
     export CMD="$TLAPM $ARGS $FILE"
@@ -29,11 +29,11 @@ find "$1" -name '*.tlaps' -prune -o -name '*_test.tla' -print | (
                                           "$FILE.out" "$FILE.err" \
                                           >"$FILE.out" 2>"$FILE.err")
     case $? in
-      0) echo ok
+      0) echo "\e[32mok\e[0m"
          success=`expr $success + 1`
          rm -f "$f.out" "$f.err"
          ;;
-      *) echo FAILED
+      *) echo "\e[31mFAILED\e[0m"
          fail=`expr $fail + 1`
          ;;
     esac
