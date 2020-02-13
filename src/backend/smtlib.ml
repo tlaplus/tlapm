@@ -26,23 +26,11 @@ module B = Builtin
 exception Unsupported of string
 let unsupp o = raise (Unsupported o)
 
-let get_ty_atom ty =
-  match ty with
-  | TAtom a -> a
-  | _ ->
-      let mssg =
-        let buf = Buffer.create 64 in
-        let ff = formatter_of_buffer buf in
-        fprintf ff "non-atomic type: %a@."
-        pp_print_type ty;
-        Buffer.contents buf
-      in
-      unsupp mssg
+let get_sort h =
+  get h Props.sort_prop
 
-(* All anotations required to be atomic *)
-let get_annot h =
-  let ty = get_type_annot h in
-  get_ty_atom ty
+let get_kind h =
+  get h Props.tyop_prop
 
 let primed s = s ^ "__prime"
 
@@ -210,7 +198,7 @@ and fmt_expr cx oe =
           let ncx = bump cx in
           fmt_expr ncx (Sequent { sq with context = hs } @@ oe)
       | Some ({ core = Flex nm }, hs) ->
-          let srt = get_annot nm in
+          let srt = get_sort nm in
           let ncx, nm = adj cx nm in
           Fu.Atm begin fun ff ->
             fprintf ff "@[<hov 2>(@,forall @[<hov 2>(@,(%s %a)@ (%s %a)@]@,)@ %a@]@,)"
@@ -219,7 +207,8 @@ and fmt_expr cx oe =
             (pp_print_expr ncx) (Sequent { sq with context = hs } @@ oe)
           end
       | Some ({ core = Fresh (nm, _, _, Bounded (b, Visible)) }, hs) ->
-          let srt = get_annot nm in
+          let k = get_kind nm in
+          let srt = get_atom (get_ty k) in
           let ncx, nm = adj cx nm in
           Fu.Atm begin fun ff ->
             fprintf ff "@[<hov 2>(@,forall @[<hov 2>(@,(%s %a)@]@,)@ @[<hov 2>(@,=> @[<hov 2>(@,TLA__in@ %s@ %a@]@,)@ %a@]@,)@]@,)"
@@ -228,7 +217,8 @@ and fmt_expr cx oe =
             (pp_print_expr ncx) (Sequent { sq with context = hs } @@ oe)
           end
       | Some ({ core = Fresh (nm, _, _, _) }, hs) ->
-          let srt = get_annot nm in
+          let k = get_kind nm in
+          let srt = get_atom (get_ty k) in
           let ncx, nm = adj cx nm in
           Fu.Atm begin fun ff ->
             fprintf ff "@[<hov 2>(@,forall @[<hov 2>(@,(%s %a)@]@,)@ %a@]@,)"
@@ -297,18 +287,18 @@ and fmt_expr cx oe =
           match bs with
           | [] -> (acc_cx, acc_bs, acc_ds)
           | (nm, _, No_domain) :: bs ->
-              let srt = get_annot nm in
+              let srt = get_sort nm in
               let acc_cx, nm = adj acc_cx nm in
               let acc_bs = (nm, srt) :: acc_bs in
               f None acc_cx acc_bs acc_ds bs
           | (nm, _, Domain b) :: bs ->
-              let srt = get_annot nm in
+              let srt = get_sort nm in
               let acc_cx, nm = adj acc_cx nm in
               let acc_bs = (nm, srt) :: acc_bs in
               let acc_ds = (nm, b) :: acc_ds in
               f (Some b) acc_cx acc_bs acc_ds bs
           | (nm, _, Ditto) :: bs ->
-              let srt = get_annot nm in
+              let srt = get_sort nm in
               let acc_cx, nm = adj acc_cx nm in
               let acc_bs = (nm, srt) :: acc_bs in
               let acc_ds = (nm, Option.get d) :: acc_ds in
@@ -550,28 +540,35 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         pp_print_newline ff ();
         spin ncx hs
     | Some ({ core = Flex nm }, hs) ->
-        let srt = get_annot nm in
+        let srt = get_sort nm in
         let ncx, nm = adj cx nm in
-        let decl1 = mk_fdecl nm [] (TAtom srt) in
-        let decl2 = mk_fdecl (primed nm) [] (TAtom srt) in
+        let decl1 = mk_fdecl nm [] (mk_atom_ty srt) in
+        let decl2 = mk_fdecl (primed nm) [] (mk_atom_ty srt) in
         pp_print_decl ff decl1;
+        pp_print_newline ff ();
+        pp_print_newline ff ();
         pp_print_decl ff decl2;
+        pp_print_newline ff ();
         pp_print_newline ff ();
         spin ncx hs
     | Some ({ core = Fresh (nm, _, _, Bounded (b, Visible)) }, hs) ->
-        let srt = get_annot nm in
+        let TOp (_, ty) = get_kind nm in (* constant op assumed *)
         let ncx, nm = adj cx nm in
-        let decl = mk_fdecl nm [] (TAtom srt) in
+        let decl = mk_fdecl nm [] (mk_atom_ty (get_atom ty)) in
         pp_print_decl ff decl;
+        pp_print_newline ff ();
+        pp_print_newline ff ();
         pp_print_assert cx ff (
           Apply (Internal B.Mem %% [], [ Opaque nm %% [] ; b ]) %% []);
         pp_print_newline ff ();
         spin ncx hs
     | Some ({ core = Fresh (nm, _, _, _) }, hs) ->
-        let srt = get_annot nm in
+        let TOp (ks, ty) = get_kind nm in
         let ncx, nm = adj cx nm in
-        let decl = mk_fdecl nm [] (TAtom srt) in
+        let decl = mk_fdecl nm (List.map get_ty ks) (mk_atom_ty (get_atom ty)) in
         pp_print_decl ff decl;
+        pp_print_newline ff ();
+        pp_print_newline ff ();
         spin ncx hs
     | Some ({ core = Defn ({ core = Operator (nm, _) }, _, vis, _) }, hs)
     | Some ({ core = Defn ({ core = Instance (nm, _) }, _, vis, _) }, hs)
@@ -579,13 +576,19 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
     | Some ({ core = Defn ({ core = Bpragma (nm, _, _) }, _, vis, _) }, hs) ->
         let ncx, nm = adj cx nm in
         begin if vis = Visible then
-          fprintf ff "; hidden definition: %s@." nm
+          fprintf ff "; hidden definition: %s@." nm (* ?? *)
         end;
         pp_print_newline ff ();
         spin ncx hs
   in
   fprintf ff ";; Hypotheses@.";
-  let cx = spin Ctx.dot sq.context in
+  let cx =
+    if Deque.size sq.context = 0 then begin
+      pp_print_newline ff ();
+      Ctx.dot
+    end else
+      spin Ctx.dot sq.context
+  in
 
   (* Print goal *)
   fprintf ff ";; Goal@.";

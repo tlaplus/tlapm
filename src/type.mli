@@ -41,12 +41,6 @@ module T : sig
 
   val get_atoms : ty -> ty_atom list
 
-  (* FIXME remove *)
-  val type_annot : hint -> ty -> hint
-  val has_type_annot : hint -> bool
-  val get_type_annot : hint -> ty
-  val get_opt_type_annot : hint -> ty option
-
   val pp_print_type : Format.formatter -> ty -> unit
 
   module Props : sig
@@ -57,6 +51,7 @@ module T : sig
 end
 
 module MinRecon : sig
+  val u_cast : T.ty_atom -> string
   val min_reconstruct : Expr.T.sequent -> Expr.T.sequent
 end
 

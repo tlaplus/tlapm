@@ -5,29 +5,30 @@
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
 
-(** This module implements a "minimal typing" reconstruction on POs.
-    Minimal typing assigns to each expression one of the following basic sorts:
-      - [bool] for formulas;
-      - [set] for most non-formulas expressions;
-      - [int] for unambiguous integer expressions like integer literals;
-      - [string] for string literals;
-      - a few other "basic" sorts.
+(** This module implements a disambiguation on sequents, which is close to
+    type reconstruction but for basic sorts only.  In the result sequent, every
+    bound variable has a sort annotation; every declared operator has a kind
+    annotation (see {!Type.T}).
 
-    Even for encodings that do not require sophisticated type reconstruction,
-    these basic types may be useful, even necessary. The algorithm works by
-    inserting type coercions (or "casts") where necessary. One important case
-    is coercions from/to the [bool] type:
-      - Coercions from [bool] to [set] are sound because TRUE and FALSE are
-        also values in the universe of set theory;
-      - Coercions from [set] to [bool] are sound, they are the source of the
-        so-called liberal interpretation of TLA+.
+    This algorithm is intended to be called before any encoding to a multi-
+    sorted language, like SMT-LIB.
 
-    Allowed coercions are (here "T1 <: T2" means that casting from T1 to T2
-    is allowed):
-      - T <: set      for all T
-      - T <: bool     for all T
-    Coercions are inserted as opaques operators.
+    Sorts:
+        Can be [U] (the "universal" or "unknown" sort---its domain is the
+        universe of sets), [bool] (formulas), and primitive sorts [int],
+        [real], [string].
+
+        Casts from any sort [s] to [U] may be inserted where necessary.  When
+        an operator is overloaded (e.g. "+" can be for integers, reals, or
+        sets), a particular version is selected.  When a boolean is expected,
+        the formula is arranged.
+
+    Kinds:
+        May be constant, first-order, or second-order.
 *)
+
+(** Opaque casts *)
+val u_cast : T_t.ty_atom -> string
 
 val min_reconstruct : Expr.T.sequent -> Expr.T.sequent
 

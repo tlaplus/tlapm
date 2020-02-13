@@ -52,12 +52,6 @@ module Props : sig
   val sort_prop : ty_atom pfuncs
 end
 
-(* FIXME remove *)
-val type_annot : hint -> ty -> hint
-val has_type_annot : hint -> bool
-val get_type_annot : hint -> ty
-val get_opt_type_annot : hint -> ty option
-
 
 (* {3 Pretty-printing} *)
 

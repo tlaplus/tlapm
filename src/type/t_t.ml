@@ -29,12 +29,6 @@ and ty_op =
 module Sm = Coll.Sm
 type tmap = ty Sm.t
 
-module Props = struct
-  let tyop_prop = make "Type.T.Props.tyop_prop"
-  let type_prop = make "Type.T.Props.type_prop"
-  let sort_prop = make "Type.T.Props.sort_prop"
-end
-
 let mk_atom_ty a = TAtom a
 
 let mk_op_ty tyops ty  = TOp (tyops, ty)
@@ -74,13 +68,11 @@ let ty_str = mk_atom_ty TStr
 
 (* {3 Type Annotations} *)
 
-let type_annot h ty = assign h Props.type_prop ty
-
-let has_type_annot h = has h Props.type_prop
-
-let get_type_annot h = get h Props.type_prop
-
-let get_opt_type_annot h = query h Props.type_prop
+module Props = struct
+  let tyop_prop = make "Type.T.Props.tyop_prop"
+  let type_prop = make "Type.T.Props.type_prop"
+  let sort_prop = make "Type.T.Props.sort_prop"
+end
 
 
 (* {3 Pretty-printing} *)
