@@ -1130,11 +1130,13 @@ class rw1 = object (self : 'self)
         | B.Neq, _, _ -> neg (self#expr scx (eq x y))
         | B.Notmem, _, _ -> neg (self#expr scx (mem x y))
 
+        (** {e1, ..., en} \subseteq S  -->  e1 \in S /\ ... /\ en \in S *)
         | B.Subseteq, SetEnum es, _ ->
-            lAnd (map (fun e -> mem e y) es) |> self#expr scx
+          lAnd (map (fun e -> mem e y) es) |> self#expr scx
+
+        (** S \subseteq T  -->  \A x \in S: x \in T *)
         | B.Subseteq, _, _ ->
-            forall ~dom:x (* ~typ:(get_tybase scx x) *) (mem ix1 (sh1 y))            (** Don't add the type: it constraints [x]'s domain more than required. *)
-            |> self#expr scx
+          forall ~dom:x ~typ:(get_tybase scx x) (mem ix1 (sh1 y)) |> self#expr scx
 
         (* | B.BSeq, _, _          -> opq "BSeq"      (map (self#expr scx) [x ; y])
         | B.Cat, _, _           -> opq "Cat"       (map (self#expr scx) [x ; y])
