@@ -9,7 +9,7 @@ open Expr.T
 (* val unbound : hyp list -> expr -> expr *)
 (* val rw : sequent -> sequent *)
 
-class rw1 : object
+class rw : object
   inherit [unit] Expr.Visit.map
   (* method expr     : unit Expr.Visit.scx -> expr -> expr
   method sequent  : unit Expr.Visit.scx -> sequent -> unit Expr.Visit.scx * sequent

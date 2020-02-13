@@ -280,12 +280,24 @@ smt/boolify.cmo: smt/boolify.mlt smt/smtcommons.cmi revision.cmi util/property.c
     util/ext.cmi expr.cmi builtin.cmi smt/boolify.cmi
 smt/boolify.cmx: smt/boolify.mlt smt/smtcommons.cmx revision.cmx util/property.cmx \
     util/ext.cmx expr.cmx builtin.cmx smt/boolify.cmi
-smt/normal.cmo: smt/normal.mlt typesystem/typ_t.cmi tla_parser.cmi smt/smtcommons.cmi \
-    revision.cmi util/property.cmi util/fmtutil.cmi util/ext.cmi expr.cmi \
-    util/deque.cmi builtin.cmi smt/normal.cmi
-smt/normal.cmx: smt/normal.mlt typesystem/typ_t.cmx tla_parser.cmx smt/smtcommons.cmx \
-    revision.cmx util/property.cmx util/fmtutil.cmx util/ext.cmx expr.cmx \
-    util/deque.cmx builtin.cmx smt/normal.cmi
+smt/rewrite_trivial.cmo: smt/rewrite_trivial.mlt typesystem/typ_t.cmi smt/smtcommons.cmi \
+    util/property.cmi util/ext.cmi expr.cmi builtin.cmi \
+    smt/rewrite_trivial.cmi
+smt/rewrite_trivial.cmx: smt/rewrite_trivial.mlt typesystem/typ_t.cmx smt/smtcommons.cmx \
+    util/property.cmx util/ext.cmx expr.cmx builtin.cmx \
+    smt/rewrite_trivial.cmi
+smt/rewrite_arith.cmo: smt/rewrite_arith.mlt typesystem/typ_t.cmi smt/smtcommons.cmi \
+    util/property.cmi util/ext.cmi expr.cmi builtin.cmi smt/rewrite_arith.cmi
+smt/rewrite_arith.cmx: smt/rewrite_arith.mlt typesystem/typ_t.cmx smt/smtcommons.cmx \
+    util/property.cmx util/ext.cmx expr.cmx builtin.cmx smt/rewrite_arith.cmi
+smt/rewrite.cmo: smt/rewrite.mlt typesystem/typ_t.cmi tla_parser.cmi smt/smtcommons.cmi \
+    smt/rewrite_trivial.cmi smt/rewrite_arith.cmi revision.cmi \
+    util/property.cmi util/fmtutil.cmi util/ext.cmi expr.cmi util/deque.cmi \
+    builtin.cmi smt/rewrite.cmi
+smt/rewrite.cmx: smt/rewrite.mlt typesystem/typ_t.cmx tla_parser.cmx smt/smtcommons.cmx \
+    smt/rewrite_trivial.cmx smt/rewrite_arith.cmx revision.cmx \
+    util/property.cmx util/fmtutil.cmx util/ext.cmx expr.cmx util/deque.cmx \
+    builtin.cmx smt/rewrite.cmi
 smt/ectx.cmo: smt/ectx.mlt typesystem/typ_t.cmi tla_parser.cmi smt/smtcommons.cmi \
     revision.cmi util/property.cmi util/ext.cmi expr.cmi errors.cmi \
     util/deque.cmi ctx.cmi smt/axioms.cmi smt/ectx.cmi
@@ -446,14 +458,14 @@ backend/fpfile.cmx: backend/fpfile.mlt util/util.cmx backend/types.cmx revision.
     method.cmx util/ext.cmx errors.cmx backend/fpfile.cmi
 backend/smt.cmo: backend/smt.mlt util/util.cmi typesystem/typ_t.cmi \
     typesystem/typ_system.cmi typesystem/typ_e.cmi tla_parser.cmi \
-    smt/smtcommons.cmi revision.cmi util/property.cmi proof.cmi \
-    smt/preprocess.cmi params.cmi smt/normal.cmi util/fmtutil.cmi smt/fmt.cmi \
+    smt/smtcommons.cmi smt/rewrite.cmi revision.cmi util/property.cmi \
+    proof.cmi smt/preprocess.cmi params.cmi util/fmtutil.cmi smt/fmt.cmi \
     util/ext.cmi expr.cmi errors.cmi smt/ectx.cmi util/deque.cmi ctx.cmi \
     builtin.cmi smt/boolify.cmi smt/axioms.cmi backend/smt.cmi
 backend/smt.cmx: backend/smt.mlt util/util.cmx typesystem/typ_t.cmx \
     typesystem/typ_system.cmx typesystem/typ_e.cmx tla_parser.cmx \
-    smt/smtcommons.cmx revision.cmx util/property.cmx proof.cmx \
-    smt/preprocess.cmx params.cmx smt/normal.cmx util/fmtutil.cmx smt/fmt.cmx \
+    smt/smtcommons.cmx smt/rewrite.cmx revision.cmx util/property.cmx \
+    proof.cmx smt/preprocess.cmx params.cmx util/fmtutil.cmx smt/fmt.cmx \
     util/ext.cmx expr.cmx errors.cmx smt/ectx.cmx util/deque.cmx ctx.cmx \
     builtin.cmx smt/boolify.cmx smt/axioms.cmx backend/smt.cmi
 backend/prep.cmo: backend/prep.mlt backend/zenon.cmi util/util.cmi backend/types.cmi \
@@ -562,7 +574,9 @@ typesystem/typ_system.cmi : typesystem/typ_t.cmi typesystem/typ_e.cmi \
     typesystem/typ_c.cmi expr.cmi
 smt/fmt.cmi : expr.cmi util/deque.cmi
 smt/boolify.cmi : expr.cmi
-smt/normal.cmi : expr.cmi
+smt/rewrite_trivial.cmi : expr.cmi
+smt/rewrite_arith.cmi : expr.cmi
+smt/rewrite.cmi : expr.cmi
 smt/ectx.cmi : expr.cmi util/deque.cmi ctx.cmi smt/axioms.cmi
 smt/preprocess.cmi : expr.cmi
 smt/axioms.cmi : expr.cmi builtin.cmi

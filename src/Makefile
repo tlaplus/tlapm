@@ -43,7 +43,7 @@ TYPESYSTEM_DIR = \
   typesystem/typ_cg1 typesystem/typ_cg2 typesystem/typ_impgraph typesystem/typ_system
 
 SMT_DIR = \
-  smt/smtcommons ${TYPESYSTEM_DIR} smt/fmt smt/boolify smt/normal smt/ectx \
+  smt/smtcommons ${TYPESYSTEM_DIR} smt/fmt smt/boolify smt/rewrite_trivial smt/rewrite_arith smt/rewrite smt/ectx \
   smt/preprocess smt/axioms
 
 # FIXME remove useless files: dumpfp abstractor method_old backend/cooper
