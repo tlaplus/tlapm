@@ -54,7 +54,36 @@ module T : sig
 end
 
 module Disambiguation : sig
-  val u_cast : T.ty_atom -> string
+  val cast_nm : T.ty_atom -> T.ty_atom -> string
+  val z_plus      : string
+  val z_minus     : string
+  val z_uminus    : string
+  val z_times     : string
+  val z_quotient  : string
+  val z_remainder : string
+  val z_exp       : string
+  val z_lteq      : string
+  val z_lt        : string
+  val z_gteq      : string
+  val z_gt        : string
+  val z_range     : string
+  val r_plus      : string
+  val r_minus     : string
+  val r_uminus    : string
+  val r_times     : string
+  val r_ratio     : string
+  val r_quotient  : string
+  val r_remainder : string
+  val r_exp       : string
+  val r_lteq      : string
+  val r_lt        : string
+  val r_gteq      : string
+  val r_gt        : string
+  val r_range     : string
+  val u_any : string
+  val z_any : string
+  val r_any : string
+  val s_any : string
   val min_reconstruct : Expr.T.sequent -> Expr.T.sequent
 end
 

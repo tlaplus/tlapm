@@ -15,6 +15,57 @@ open T_t
 module B = Builtin
 
 
+(* {3 Symbols} *)
+
+let cast_nm s1 s2 =
+  match s1, s2 with
+  | TBool, TU   -> "__bool_to_u"
+  | TInt, TU    -> "__int_to_u"
+  | TReal, TU   -> "__real_to_u"
+  | TStr, TU    -> "__string_to_u"
+  | TInt, TReal -> "__int_to_real"
+  | _ -> invalid_arg "Type.Disambiguation.cast_nm: unauthorized cast"
+
+let u_cast s = cast_nm s TU
+
+let tla_prefix = "TLA__"
+let z_arith_prefix = "Z_arith__"
+let r_arith_prefix = "R_arith__"
+let s_arith_prefix = "S__"
+
+let z_plus = z_arith_prefix ^ "plus"
+let z_minus = z_arith_prefix ^ "minus"
+let z_uminus = z_arith_prefix ^ "uminus"
+let z_times = z_arith_prefix ^ "times"
+let z_quotient = z_arith_prefix ^ "quotient"
+let z_remainder = z_arith_prefix ^ "remainder"
+let z_exp = z_arith_prefix ^ "exp"
+let z_lteq = z_arith_prefix ^ "lteq"
+let z_lt = z_arith_prefix ^ "lt"
+let z_gteq = z_arith_prefix ^ "gteq"
+let z_gt = z_arith_prefix ^ "gt"
+let z_range = z_arith_prefix ^ "range"
+
+let r_plus = r_arith_prefix ^ "plus"
+let r_minus = r_arith_prefix ^ "minus"
+let r_uminus = r_arith_prefix ^ "uminus"
+let r_times = r_arith_prefix ^ "times"
+let r_ratio = r_arith_prefix ^ "ratio"
+let r_quotient = r_arith_prefix ^ "quotient"
+let r_remainder = r_arith_prefix ^ "remainder"
+let r_exp = r_arith_prefix ^ "exp"
+let r_lteq = r_arith_prefix ^ "lteq"
+let r_lt = r_arith_prefix ^ "lt"
+let r_gteq = r_arith_prefix ^ "gteq"
+let r_gt = r_arith_prefix ^ "gt"
+let r_range = r_arith_prefix ^ "range"
+
+let u_any = tla_prefix ^ "any"
+let z_any = z_arith_prefix ^ "any"
+let r_any = r_arith_prefix ^ "any"
+let s_any = s_arith_prefix ^ "any"
+
+
 (* {3 Utils} *)
 
 (* Make a fist-order kind from a {!Expr.T.shape} *)
@@ -30,17 +81,10 @@ let mk_eq e1 e2 =
  * the sort of the input expression. *)
 let mk_formula e = function
   | TBool  -> e
-  | TU     -> mk_eq e (SetEnum [] %% [])
-  | TInt   -> mk_eq e (Num ("0", "") %% [])
-  | TReal  -> mk_eq e (Num ("0", "0") %% [])
-  | TStr   -> mk_eq e (String "foo" %% [])
-
-let u_cast = function
-  | TU -> assert false
-  | TBool -> "__bool_to_u"
-  | TInt  -> "__int_to_u"
-  | TReal -> "__real_to_u"
-  | TStr  -> "__string_to_u"
+  | TU     -> mk_eq e (Opaque u_any %% [])
+  | TInt   -> mk_eq e (Opaque z_any %% [])
+  | TReal  -> mk_eq e (Opaque r_any %% [])
+  | TStr   -> mk_eq e (Opaque s_any %% [])
 
 (* Make an expression of sort [U] from anything, like {!mk_formula} above
  * This inserts opaque coercion operators *)
@@ -123,16 +167,20 @@ let rec expr scx oe =
       let srt = lookup_srt scx n in
       Ix n @@ oe, srt
 
-  (* NOTE Particular cases for builtins treated here to handle overriden ops *)
+  (* NOTE Particular cases for builtins treated here to handle overloaded ops. *)
+  (* Arithmetic operators are replaced by a specialized version if possible. *)
   | Internal (B.TRUE | B.FALSE) as op ->
       op @@ oe, TBool
+
   | Apply ({ core = Internal (B.Implies | B.Equiv | B.Conj | B.Disj) } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       Apply (op, [ mk_formula e srt1 ; mk_formula f srt2 ]) @@ oe, TBool
+
   | Apply ({ core = Internal B.Neg } as op, [ e ]) ->
       let e, srt = expr scx e in
       Apply (op, [ mk_formula e srt ]) @@ oe, TBool
+
   | Apply ({ core = Internal (B.Eq | B.Neq) } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
@@ -140,69 +188,115 @@ let rec expr scx oe =
         Apply (op, [ e ; f ]) @@ oe, TBool
       else
         Apply (op, [ mk_set e srt1 ; mk_set e srt2 ]) @@ oe, TBool
+
   | Internal (B.STRING | B.BOOLEAN | B.Nat | B.Int | B.Real) as op ->
       op @@ oe, TU
+
   | Apply ({ core = Internal (B.SUBSET | B.UNION | B.DOMAIN) } as op, [ e ]) ->
       let e, srt = expr scx e in
       Apply (op, [ mk_set e srt ]) @@ oe, TU
+
   | Apply ({ core = Internal (B.Subseteq | B.Mem | B.Notmem) } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TBool
+
   | Apply ({ core = Internal (B.Setminus | B.Cap | B.Cup) } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TU
-  | Apply ({ core = Internal (B.Plus | B.Minus | B.Times | B.Ratio | B.Quotient | B.Remainder | B.Exp as b) } as op, [ e ; f ]) ->
+
+  | Apply ({ core = Internal (B.Plus | B.Minus | B.Times | B.Quotient | B.Remainder | B.Exp as b) } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       if srt1 = TInt && srt2 = TInt then
-        Apply (op, [ e ; f ]) @@ oe, TInt
-      else
         let s =
           match b with
-          | B.Plus -> "arith__plus"
-          | B.Minus -> "arith__minus"
-          | B.Times -> "arith__ratio"
-          | B.Quotient -> "arith__quotient"
-          | B.Remainder -> "arith__remainder"
-          | B.Exp -> "arith__exp"
+          | B.Plus -> z_plus
+          | B.Minus -> z_minus
+          | B.Times -> z_times
+          | B.Quotient -> z_quotient
+          | B.Remainder -> z_remainder
+          | B.Exp -> z_exp
           | _ -> assert false
         in
-        Apply (Opaque s @@ op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TU
+        Apply (Opaque s @@ op, [ e ; f ]) @@ oe, TInt
+      else if srt1 = TReal && srt2 = TReal then
+        let s =
+          match b with
+          | B.Plus -> r_plus
+          | B.Minus -> r_minus
+          | B.Times -> r_times
+          | B.Quotient -> r_quotient
+          | B.Remainder -> r_remainder
+          | B.Exp -> r_exp
+          | _ -> assert false
+        in
+        Apply (Opaque s @@ op, [ e ; f ]) @@ oe, TReal
+      else
+        Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TU
+
+  | Apply ({ core = Internal B.Ratio } as op, [ e ; f ]) ->
+      let e, srt1 = expr scx e in
+      let f, srt2 = expr scx f in
+      if srt1 = TReal && srt2 = TReal then
+        let s = r_ratio in
+        Apply (Opaque s @@ op, [ e ; f ]) @@ oe, TReal
+      else
+        Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TU
+
   | Apply ({ core = Internal B.Uminus } as op, [ e ; f ]) ->
       let e, srt = expr scx e in
       if srt = TInt then
-        Apply (op, [ e ]) @@ oe, TInt
+        let s = z_uminus in
+        Apply (Opaque s @@ op, [ e ]) @@ oe, TInt
+      else if srt = TReal then
+        let s = z_uminus in
+        Apply (Opaque s @@ op, [ e ]) @@ oe, TReal
       else
-        let s = "arith__uminus" in
-        Apply (Opaque s @@ op, [ mk_set e srt ]) @@ oe, TU
+        Apply (op, [ mk_set e srt ]) @@ oe, TU
+
   | Internal B.Infinity as op ->
       op @@ oe, TReal
+
   | Apply ({ core = Internal (B.Lteq | B.Lt | B.Gteq | B.Gt as b) } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       if srt1 = TInt && srt2 = TInt then
-        Apply (op, [ e ; f ]) @@ oe, TBool
-      else
         let s =
           match b with
-          | B.Lteq -> "arith__lteq"
-          | B.Lt -> "arith__lt"
-          | B.Gteq -> "arith__gteq"
-          | B.Gt -> "arith__gt"
+          | B.Lteq -> z_lteq
+          | B.Lt -> z_lt
+          | B.Gteq -> z_gteq
+          | B.Gt -> z_gt
           | _ -> assert false
         in
-        Apply (Opaque s @@ op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TBool
+        Apply (Opaque s @@ op, [ e ; f ]) @@ oe, TBool
+      else if srt1 = TReal && srt2 = TReal then
+        let s =
+          match b with
+          | B.Lteq -> r_lteq
+          | B.Lt -> r_lt
+          | B.Gteq -> r_gteq
+          | B.Gt -> r_gt
+          | _ -> assert false
+        in
+        Apply (Opaque s @@ op, [ e ; f ]) @@ oe, TBool
+      else
+        Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TBool
+
   | Apply ({ core = Internal B.Range } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       if srt1 = TInt && srt2 = TInt then
-        Apply (op, [ e ; f ]) @@ oe, TU
+        let s = z_range in
+        Apply (Opaque s @@ op, [ e ; f ]) @@ oe, TU
+      else if srt1 = TReal && srt2 = TReal then
+        let s = r_range in
+        Apply (Opaque s @@ op, [ e ; f ]) @@ oe, TU
       else
-        let s = "arith__range" in
-        Apply (Opaque s @@ op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TU
-  (* NOTE Case by case done *)
+        Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TU
+  (* NOTE Case by case ends here *)
 
   | Apply (op, args) ->
       let op, (TKind (ks, ty)) = lexpr scx op in
