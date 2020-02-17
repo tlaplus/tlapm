@@ -39,7 +39,7 @@ EXPR_PACK = \
   expr/e_elab expr/e_anon
 
 TYPE_PACK = \
-	type/t_t type/t_minimal
+	type/t_t type/t_disambiguation
 
 REDUCE_PACK = \
 	

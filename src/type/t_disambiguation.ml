@@ -1,5 +1,5 @@
 (*
- * type/minimal.ml --- minimal typing
+ * type/disambiguation.ml --- sort expressions
  *
  *
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
@@ -17,16 +17,10 @@ module B = Builtin
 
 (* {3 Utils} *)
 
-let annot_bvar (h : hint) (a : ty_atom) =
-  assign h Props.sort_prop a
-
-let annot_op (h : hint) (k : ty_op) =
-  assign h Props.tyop_prop k
-
 (* Make a fist-order kind from a {!Expr.T.shape} *)
 let from_shp = function
-  | Shape_expr -> mk_cst_ty ty_u
-  | Shape_op n -> mk_fstop_ty (List.init n (fun _ -> ty_u)) ty_u
+  | Shape_expr -> mk_cstk_ty ty_u
+  | Shape_op n -> mk_fstk_ty (List.init n (fun _ -> ty_u)) ty_u
 
 let mk_eq e1 e2 =
   Apply (Internal B.Eq %% [], [ e1 ; e2 ]) %% []
@@ -63,7 +57,7 @@ let mk_set e a =
 *)
 type ty =
   | Sort of ty_atom
-  | Op of ty_op
+  | Kind of ty_kind
   | Unknown
 
 type cx = ty Ctx.t
@@ -71,8 +65,8 @@ type cx = ty Ctx.t
 let adj cx v ty =
   let v =
     match ty with
-    | Sort a -> annot_bvar v a
-    | Op k -> annot_op v k
+    | Sort a  -> assign v Props.atom_prop a
+    | Kind k  -> assign v Props.kind_prop k
     | Unknown -> assign v Props.type_prop TUnknown
   in
   (v, Ctx.adj cx v.core ty)
@@ -94,12 +88,12 @@ let lookup_srt cx n =
   match lookup_ty cx n with
   (* Some sorts are put into the context as a constant kind.
    * e.g. ASSUME NEW x PROVE .. *)
-  | Sort a | Op (TOp ([], TAtom a)) -> a
+  | Sort a | Kind (TKind ([], TAtom a)) -> a
   | _ -> invalid_arg "Type.MinRecon.lookup_srt: not a sort"
 
 let lookup_kind cx n =
   match lookup_ty cx n with
-  | Op k -> k
+  | Kind k -> k
   | _ -> invalid_arg "Type.MinRecon.lookup_kind: not a kind"
 
 
@@ -211,9 +205,9 @@ let rec expr scx oe =
   (* NOTE Case by case done *)
 
   | Apply (op, args) ->
-      let op, (TOp (ks, ty)) = lexpr scx op in
+      let op, (TKind (ks, ty)) = lexpr scx op in
       let args =
-        List.map2 begin fun arg (TOp (ks, ty)) ->
+        List.map2 begin fun arg (TKind (ks, ty)) ->
           match ks, get_atom ty with
           | [], TU ->
               let arg, srt = expr scx arg in
@@ -223,7 +217,7 @@ let rec expr scx oe =
               mk_formula arg srt
           | _, _ ->
               let arg, k = lexpr scx arg in
-              if k = TOp (ks, ty) then
+              if k = TKind (ks, ty) then
                 arg
               else
                 invalid_arg "Type.MinRecon.expr: bad operator argument"
@@ -449,7 +443,7 @@ and lexpr scx loe =
       let scx, vs, ks =
         List.fold_left begin fun (scx, vs, ks) (h, shp) ->
           let k = from_shp shp in
-          let h, scx = adj scx h (Op k) in
+          let h, scx = adj scx h (Kind k) in
           let v = (h, shp) in
           (scx, v :: vs, k :: ks)
         end (scx, [], []) vs
@@ -457,7 +451,7 @@ and lexpr scx loe =
       let ks = List.rev ks in
       let vs = List.rev vs in
       let e, srt = expr scx e in
-      Lambda (vs, e) @@ loe, mk_op_ty ks (mk_atom_ty srt)
+      Lambda (vs, e) @@ loe, mk_kind_ty ks (mk_atom_ty srt)
   | _ -> Errors.bug ~at:loe "Type.MinRecon.lexpr"
 
 and sequent scx sq =
@@ -504,13 +498,13 @@ and defn scx df =
   match df.core with
   | Recursive (h, shp) ->
       let k = from_shp shp in
-      let h, scx = adj scx h (Op k) in
+      let h, scx = adj scx h (Kind k) in
       scx, Recursive (h, shp) @@ df, Unknown
   | Operator (h, ({ core = Lambda (vs, e) } as oe)) ->
       let scx', vs, ks =
         List.fold_left begin fun (scx, vs, ks) (h, shp) ->
           let k = from_shp shp in
-          let h, scx = adj scx h (Op k) in
+          let h, scx = adj scx h (Kind k) in
           let v = (h, shp) in
           (scx, v :: vs, k :: ks)
         end (scx, [], []) vs
@@ -518,12 +512,12 @@ and defn scx df =
       let ks = List.rev ks in
       let vs = List.rev vs in
       let e, srt = expr scx' e in
-      let h, scx = adj scx h (Op (mk_op_ty ks (mk_atom_ty srt))) in
+      let h, scx = adj scx h (Kind (mk_kind_ty ks (mk_atom_ty srt))) in
       scx, Operator (h, Lambda (vs, e) @@ oe) @@ df, Unknown
   | Operator (h, e) ->
       let e, srt = expr scx e in
       (* Annotated as a constant kind for consistency reasons *)
-      let h, scx = adj scx h (Op (mk_cst_ty (mk_atom_ty srt))) in
+      let h, scx = adj scx h (Kind (mk_cstk_ty (mk_atom_ty srt))) in
       scx, Operator (h, e) @@ df, Unknown
   | Instance (h, i) ->
       Errors.bug ~at:df "Type.MinRecon.defn"
@@ -551,7 +545,7 @@ and hyp scx h =
             Bounded (mk_set dom srt, vis)
       in
       let k = from_shp shp in
-      let v, scx = adj scx v (Op k) in
+      let v, scx = adj scx v (Kind k) in
       let h = Fresh (v, shp, kd, hdom) @@ h in
       scx, h, Unknown
   | Flex v ->

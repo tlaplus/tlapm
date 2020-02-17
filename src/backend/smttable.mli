@@ -29,7 +29,7 @@ type fmt = Format.formatter -> unit -> unit
 
 type smb =
   | Srt of int
-  | Fun of ty list * ty
+  | Fun of ty_atom list * ty_atom
   | Axm of fmt
 
 type decl =
@@ -39,7 +39,7 @@ type decl =
   }
 
 val mk_sdecl : ?hidden:bool -> string -> int -> decl
-val mk_fdecl : ?hidden:bool -> string -> ty list -> ty -> decl
+val mk_fdecl : ?hidden:bool -> string -> ty_atom list -> ty_atom -> decl
 val mk_adecl : ?hidden:bool -> string -> fmt -> decl
 
 val pp_print_decl : Format.formatter -> decl -> unit

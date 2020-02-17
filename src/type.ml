@@ -6,5 +6,5 @@ Revision.f "$Rev$"
 
 module T = T_t
 
-module MinRecon = T_minimal
+module Disambiguation = T_disambiguation
 

@@ -20,11 +20,13 @@ type ty =
   | TProd of ty list
 and ty_atom =
   | TU | TBool | TInt | TReal | TStr
-and ty_op =
-  | TOp of ty_op list * ty
+and ty_kind =
+  | TKind of ty_kind list * ty
 
 module Sm = Coll.Sm
 type tmap = ty Sm.t
+
+val ord : ty_kind -> int
 
 val ty_u    : ty
 val ty_bool : ty
@@ -33,12 +35,12 @@ val ty_real : ty
 val ty_str  : ty
 
 val mk_atom_ty  : ty_atom -> ty
-val mk_op_ty    : ty_op list -> ty -> ty_op
-val mk_cst_ty   : ty -> ty_op
-val mk_fstop_ty : ty list -> ty -> ty_op
+val mk_kind_ty  : ty_kind list -> ty -> ty_kind
+val mk_cstk_ty  : ty -> ty_kind
+val mk_fstk_ty  : ty list -> ty -> ty_kind
 
 val get_atom  : ty -> ty_atom
-val get_ty    : ty_op -> ty
+val get_ty    : ty_kind -> ty
 
 val get_atoms : ty -> ty_atom list
 
@@ -48,12 +50,14 @@ val get_atoms : ty -> ty_atom list
 (** These properties are intended as annotations on hints *)
 module Props : sig
   val type_prop : ty pfuncs
-  val tyop_prop : ty_op pfuncs
-  val sort_prop : ty_atom pfuncs
+  val atom_prop : ty_atom pfuncs
+  val kind_prop : ty_kind pfuncs
 end
 
 
 (* {3 Pretty-printing} *)
 
 val pp_print_type : Format.formatter -> ty -> unit
+val pp_print_atom : Format.formatter -> ty_atom -> unit
+val pp_print_kind : Format.formatter -> ty_kind -> unit
 

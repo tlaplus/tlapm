@@ -1,5 +1,5 @@
 (*
- * type/minimal.mli --- minimal typing
+ * type/disambiguation.mli --- sort expressions
  *
  *
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation

@@ -27,10 +27,10 @@ exception Unsupported of string
 let unsupp o = raise (Unsupported o)
 
 let get_sort h =
-  get h Props.sort_prop
+  get h Props.atom_prop
 
 let get_kind h =
-  get h Props.tyop_prop
+  get h Props.kind_prop
 
 let primed s = s ^ "__prime"
 
@@ -56,10 +56,10 @@ let pp_print_sort ff (a : ty_atom) =
   let s =
     match a with
     | TBool -> "Bool"
-    | TU -> "set"
+    | TU -> "TLA__U"
     | TInt -> "Int"
-    | TReal -> "real"
-    | TStr -> "string"
+    | TReal -> "Real"
+    | TStr -> "TLA__String"
   in
   pp_print_string ff s
 
@@ -457,7 +457,8 @@ and pp_print_expr cx ff e =
 (* {3 Obligation Formatting} *)
 
 let pp_print_obligation ?(solver="CVC4") ff ob =
-  let sq = Type.MinRecon.min_reconstruct ob.obl.core in
+  (* Sort reconstruction *)
+  let sq = Type.Disambiguation.min_reconstruct ob.obl.core in
 
   (* Collect symbols *)
   let module C = NT_Collector in
@@ -542,8 +543,8 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
     | Some ({ core = Flex nm }, hs) ->
         let srt = get_sort nm in
         let ncx, nm = adj cx nm in
-        let decl1 = mk_fdecl nm [] (mk_atom_ty srt) in
-        let decl2 = mk_fdecl (primed nm) [] (mk_atom_ty srt) in
+        let decl1 = mk_fdecl nm [] srt in
+        let decl2 = mk_fdecl (primed nm) [] srt in
         pp_print_decl ff decl1;
         pp_print_newline ff ();
         pp_print_newline ff ();
@@ -552,9 +553,9 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         pp_print_newline ff ();
         spin ncx hs
     | Some ({ core = Fresh (nm, _, _, Bounded (b, Visible)) }, hs) ->
-        let TOp (_, ty) = get_kind nm in (* constant op assumed *)
+        let TKind (_, ty) = get_kind nm in (* constant op assumed *)
         let ncx, nm = adj cx nm in
-        let decl = mk_fdecl nm [] (mk_atom_ty (get_atom ty)) in
+        let decl = mk_fdecl nm [] (get_atom ty) in
         pp_print_decl ff decl;
         pp_print_newline ff ();
         pp_print_newline ff ();
@@ -563,9 +564,9 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         pp_print_newline ff ();
         spin ncx hs
     | Some ({ core = Fresh (nm, _, _, _) }, hs) ->
-        let TOp (ks, ty) = get_kind nm in
+        let TKind (ks, ty) = get_kind nm in
         let ncx, nm = adj cx nm in
-        let decl = mk_fdecl nm (List.map get_ty ks) (mk_atom_ty (get_atom ty)) in
+        let decl = mk_fdecl nm (List.map (fun k -> get_atom (get_ty k)) ks) (get_atom ty) in
         pp_print_decl ff decl;
         pp_print_newline ff ();
         pp_print_newline ff ();
@@ -576,7 +577,7 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
     | Some ({ core = Defn ({ core = Bpragma (nm, _, _) }, _, vis, _) }, hs) ->
         let ncx, nm = adj cx nm in
         begin if vis = Visible then
-          fprintf ff "; hidden definition: %s@." nm (* ?? *)
+          fprintf ff "; hidden definition: %s@." nm
         end;
         pp_print_newline ff ();
         spin ncx hs

@@ -20,7 +20,7 @@ type fmt = Format.formatter -> unit -> unit
 
 type smb =
   | Srt of int
-  | Fun of ty list * ty
+  | Fun of ty_atom list * ty_atom
   | Axm of fmt
 
 type decl =
@@ -49,16 +49,10 @@ let mk_adecl ?(hidden=false) id ff =
 
 let pp_print_tyatom ff = function
   | TBool -> pp_print_string ff "Bool"
-  | TU -> pp_print_string ff "set"
+  | TU -> pp_print_string ff "TLA__U"
   | TInt -> pp_print_string ff "Int"
-  | TReal -> pp_print_string ff "real"
-  | TStr -> pp_print_string ff "str"
-
-let pp_print_srt ff = function
-  | TVar v -> pp_print_string ff v
-  | TAtom a -> pp_print_tyatom ff a
-  | TUnknown -> pp_print_string ff "?"
-  | _ -> invalid_arg "Backend.SmtTable.pp_print_srt: not a valid type"
+  | TReal -> pp_print_string ff "Real"
+  | TStr -> pp_print_string ff "TLA__string"
 
 let pp_print_decl ff d =
   if d.hidden then
@@ -74,8 +68,8 @@ let pp_print_decl ff d =
         fprintf ff "@[(declare-sort %s %d@])" d.id ar
     | Fun (isig, osig) ->
         fprintf ff "@[(declare-fun %s @[(%a@]) %a@])" d.id
-        (pp_print_delimited ~sep:(fun ff () -> pp_print_string ff " ") pp_print_srt)
-        isig pp_print_srt osig
+        (pp_print_delimited ~sep:(fun ff () -> pp_print_string ff " ") pp_print_tyatom)
+        isig pp_print_tyatom osig
     | Axm fmt ->
         fprintf ff "@[(assert %a@])" fmt ()
   end
@@ -132,6 +126,12 @@ end
 
 
 (* {3 Concrete Tables} *)
+
+let ty_u = TU
+let ty_bool = TBool
+let ty_int = TInt
+let ty_real = TReal
+let ty_str = TStr
 
 (* {4 No Types Encoding} *)
 
@@ -205,11 +205,11 @@ module NT_Basic_Collector = struct
   let arith_prefix = "arith__"
 
   let get_sid = function
-    | NT_Set -> "set"
+    | NT_Set -> tla_prefix ^ "U"
     | NT_Bool -> "Bool"
     | NT_Int -> "Int"
-    | NT_Real -> "real"
-    | NT_Str -> "str"
+    | NT_Real -> "Real"
+    | NT_Str -> tla_prefix ^ "String"
   let get_fid = function
     | NT_TLA_STRING -> tla_prefix ^ "STRING"
     | NT_TLA_BOOLEAN -> tla_prefix ^ "BOOLEAN"
@@ -335,25 +335,25 @@ module NT_Basic_Collector = struct
     let fmt = fun ff () ->
       match axm with
       | NT_SetExt ->
-          fprintf ff "@[<hov 2>(forall ((x set) (y set)) @[<hov 2>(@,\
-                        => @[<hov 2>(@,forall ((z set)) @[<hov 2>(@,\
+          fprintf ff "@[<hov 2>(forall ((x TLA__U) (y TLA__U)) @[<hov 2>(@,\
+                        => @[<hov 2>(@,forall ((z TLA__U)) @[<hov 2>(@,\
                               (= (TLA__in z x) (TLA__in z y))@]@,)@]@,)\
                           (= x y)@]@,)@]@,)"
       | NT_SubseteqDef ->
-          fprintf ff "@[<hov 2>(forall ((x set) (y set)) @[<hov 2>(@,\
+          fprintf ff "@[<hov 2>(forall ((x TLA__U) (y TLA__U)) @[<hov 2>(@,\
                         = @[<hov 2>(@,TLA__subseteq x y@]@,) \
-                          @[<hov 2>(@,forall ((z set)) @[<hov 2>(@,\
+                          @[<hov 2>(@,forall ((z TLA__U)) @[<hov 2>(@,\
                             => (TLA__in z x) (TLA__in z y)@]@,)@]@,)\
                       @]@,)@]@]@,)"
       | NT_EmptyDef ->
-          fprintf ff "@[<hov 2>(forall ((x set)) @[<hov 2>(@,\
+          fprintf ff "@[<hov 2>(forall ((x TLA__U)) @[<hov 2>(@,\
                         not @[<hov 2>(@,TLA__in x TLA__Empty@]@,)\
                       @]@,)@]@,)"
       | NT_EnumDef n ->
           let pars = List.init n (fun i -> "a" ^ string_of_int (i+1)) in
-          let bs = List.map (fun a -> "(" ^ a ^ " set)") pars |> String.concat " " in
+          let bs = List.map (fun a -> "(" ^ a ^ " TLA__U)") pars |> String.concat " " in
           let vec = String.concat " " pars in
-          fprintf ff "@[<hov 2>(forall @[<hov 2>(@,%s (x set)@]@,) @[<hov 2>(@,\
+          fprintf ff "@[<hov 2>(forall @[<hov 2>(@,%s (x TLA__U)@]@,) @[<hov 2>(@,\
                         = @[<hov 2>(@,TLA__in x @[<hov 2>(@,TLA__Enum_%d %s@]@,)@]@,)\
                           @[<hov 2>(@,or %a@]@,)\
                       @]@,)@]@,)"

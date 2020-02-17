@@ -23,24 +23,29 @@ type ty =
   | TProd of ty list
 and ty_atom =
   | TU | TBool | TInt | TReal | TStr
-and ty_op =
-  | TOp of ty_op list * ty
+and ty_kind =
+  | TKind of ty_kind list * ty
 
 module Sm = Coll.Sm
 type tmap = ty Sm.t
 
+let rec ord (TKind (ks, _)) =
+  match ks with
+  | [] -> 0
+  | _ -> List.fold_left (fun m k -> max m (ord k)) 1 ks
+
 let mk_atom_ty a = TAtom a
 
-let mk_op_ty tyops ty  = TOp (tyops, ty)
-let mk_cst_ty ty       = TOp ([], ty)
-let mk_fstop_ty tys ty = TOp (List.map mk_cst_ty tys, ty)
+let mk_kind_ty ks ty  = TKind (ks, ty)
+let mk_cstk_ty ty     = TKind ([], ty)
+let mk_fstk_ty tys ty = TKind (List.map mk_cstk_ty tys, ty)
 
 let get_atom = function
   | TAtom a -> a
   | _ -> invalid_arg "Type.T.get_atom: not an atomic type"
 
 let get_ty = function
-  | TOp ([], ty) -> ty
+  | TKind ([], ty) -> ty
   | _ -> invalid_arg "Type.T.get_ty: not a constant operator type"
 
 let get_atoms ty =
@@ -69,9 +74,9 @@ let ty_str = mk_atom_ty TStr
 (* {3 Type Annotations} *)
 
 module Props = struct
-  let tyop_prop = make "Type.T.Props.tyop_prop"
   let type_prop = make "Type.T.Props.type_prop"
-  let sort_prop = make "Type.T.Props.sort_prop"
+  let atom_prop = make "Type.T.Props.atom_prop"
+  let kind_prop = make "Type.T.Props.kind_prop"
 end
 
 
@@ -107,16 +112,20 @@ and pp_print_tyset ff ty =
 and pp_print_tyatom ff ty =
   match ty with
   | TVar x -> pp_print_string ff x
-  | TAtom a -> pp_print_tatom ff a
+  | TAtom a -> pp_print_atom ff a
   | TUnknown -> pp_print_string ff "?"
   | _ -> fprintf ff "@[(%a@])" pp_print_tyarrow ty
 
-and pp_print_tatom ff a =
+and pp_print_atom ff a =
   match a with
   | TBool -> pp_print_string ff "bool"
-  | TU -> pp_print_string ff "set"
+  | TU -> pp_print_string ff "U"
   | TInt -> pp_print_string ff "int"
   | TReal -> pp_print_string ff "real"
   | TStr -> pp_print_string ff "string"
 
+let rec pp_print_kind ff (TKind (ks, ty)) =
+  fprintf ff "@[[%a@]]%a"
+  (pp_print_delimited pp_print_kind) ks
+  pp_print_type ty
 
