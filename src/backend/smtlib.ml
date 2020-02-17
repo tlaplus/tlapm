@@ -460,7 +460,16 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
   (* Sort reconstruction *)
   let sq = Type.Disambiguation.min_reconstruct ob.obl.core in
 
+  (* Data collection *)
+  let ns = Reduce.NtCollect.collect sq in
+
+  (* TODO reduce to 1st order *)
+
+  (* Axiomatization *)
+  let sq = Reduce.NtTable.nt_axiomatize ns sq in
+
   (* Collect symbols *)
+(*
   let module C = NT_Collector in
   let smbs = C.collect sq in
   let decls = Sm.map C.get_decl smbs in
@@ -475,6 +484,7 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
   let srts = Sm.bindings srts |> List.map snd in
   let funs = Sm.bindings funs |> List.map snd in
   let axms = Sm.bindings axms in
+*)
 
   (* Print preample *)
   pp_print_newline ff ();
@@ -483,9 +493,11 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
   fprintf ff ";; Generated from %s@." (Util.location ~cap:false ob.obl);
   pp_print_newline ff ();
 
+  (* Print options *)
   fprintf ff "(set-logic UFNIA)@.";
   pp_print_newline ff ();
 
+  (*
   let rec pp_print_cmds ?(skip=false) fmt ff al =
     match al with
     | [] -> ()
@@ -499,20 +511,24 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         else ();
         pp_print_cmds ~skip fmt ff al
   in
+  *)
 
   (* Print sort declarations *)
+  (*
   fprintf ff ";; Sort Declarations@.";
-  (*pp_print_delimited ~sep:pp_print_newline pp_print_decl ff srts;*)
   pp_print_cmds pp_print_decl ff srts;
   pp_print_newline ff ();
+  *)
 
   (* Print fun declarations *)
+  (*
   fprintf ff ";; Operator Declarations@.";
-  (*pp_print_delimited ~sep:pp_print_newline pp_print_decl ff funs;*)
   pp_print_cmds pp_print_decl ff funs;
   pp_print_newline ff ();
+  *)
 
   (* Print axioms *)
+  (*
   fprintf ff ";; Axioms@.";
   let pp_print_axm ff (id, d) =
     fprintf ff "; %s@." id;
@@ -521,7 +537,9 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
   in
   pp_print_delimited ~sep:pp_print_newline pp_print_axm ff axms;
   pp_print_newline ff ();
+  *)
 
+  (* FIXME dont use pp_print_decl *)
   (* Print hypotheses *)
   let pp_print_assert cx ff e =
     fprintf ff "@[<hov 2>(assert@ %a@]@,)@."
