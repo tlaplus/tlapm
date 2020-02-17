@@ -42,7 +42,7 @@ TYPE_PACK = \
 	type/t_t type/t_disambiguation
 
 REDUCE_PACK = \
-	
+	reduce/r_commons
 
 TYPESYSTEM_DIR = \
   typesystem/typ_t typesystem/typ_e typesystem/typ_c \
