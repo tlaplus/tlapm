@@ -456,17 +456,36 @@ and pp_print_expr cx ff e =
 
 (* {3 Obligation Formatting} *)
 
-let pp_print_obligation ?(solver="CVC4") ff ob =
-  (* Sort reconstruction *)
-  let sq = Type.Disambiguation.min_reconstruct ob.obl.core in
+(* FIXME integrate sort collection in axiomatize? *)
+let collect_sorts = object (self : 'self)
+  inherit [unit, ty_atom Sm.t] Expr.Visit.fold as super
 
-  (* Data collection *)
-  let ns = Reduce.NtCollect.collect sq in
+    (* TODO *)
+
+  method expr scx ss oe =
+    match oe.core with
+    | _ -> super#expr scx ss oe
+end
+
+let preprocess ?solver sq =
+  let _ = solver in (* FIXME what to do with this? *)
+
+  let sq = Type.Disambiguation.min_reconstruct sq in
+
+  let data = Reduce.NtCollect.collect sq in
+  let _ = data in
 
   (* TODO reduce to 1st order *)
 
-  (* Axiomatization *)
-  let sq = Reduce.NtTable.nt_axiomatize ns sq in
+  (*
+  let top = Reduce.NtTable.nt_axiomatize data Reduce.Commons.init in
+  let sq = Reduce.Commons.join top sq in
+*)
+  sq
+
+let pp_print_obligation ?(solver="CVC4") ff ob =
+  (* Shape the sequent into a form that can be translated *)
+  let sq = preprocess ~solver ob.obl.core in
 
   (* Collect symbols *)
 (*
@@ -496,6 +515,11 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
   (* Print options *)
   fprintf ff "(set-logic UFNIA)@.";
   pp_print_newline ff ();
+
+  (* Declare sorts *)
+  (* FIXME handle this in NtTable in some way *)
+  fprintf ff "(declare-sort TLA__U 0)@.";
+  fprintf ff "(declare-sort TLA__String 0)@.";
 
   (*
   let rec pp_print_cmds ?(skip=false) fmt ff al =
@@ -549,6 +573,7 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
     match Deque.front hs with
     | None ->
         cx
+
     | Some ({ core = Fact (e, vis, _) }, hs) ->
         let ncx = bump cx in
         begin if vis = Visible then
@@ -558,6 +583,7 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         end;
         pp_print_newline ff ();
         spin ncx hs
+
     | Some ({ core = Flex nm }, hs) ->
         let srt = get_sort nm in
         let ncx, nm = adj cx nm in
@@ -570,6 +596,7 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         pp_print_newline ff ();
         pp_print_newline ff ();
         spin ncx hs
+
     | Some ({ core = Fresh (nm, _, _, Bounded (b, Visible)) }, hs) ->
         let TKind (_, ty) = get_kind nm in (* constant op assumed *)
         let ncx, nm = adj cx nm in
@@ -581,6 +608,7 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
           Apply (Internal B.Mem %% [], [ Opaque nm %% [] ; b ]) %% []);
         pp_print_newline ff ();
         spin ncx hs
+
     | Some ({ core = Fresh (nm, _, _, _) }, hs) ->
         let TKind (ks, ty) = get_kind nm in
         let ncx, nm = adj cx nm in
@@ -589,17 +617,17 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         pp_print_newline ff ();
         pp_print_newline ff ();
         spin ncx hs
-    | Some ({ core = Defn ({ core = Operator (nm, _) }, _, vis, _) }, hs)
-    | Some ({ core = Defn ({ core = Instance (nm, _) }, _, vis, _) }, hs)
-    | Some ({ core = Defn ({ core = Recursive (nm, _) }, _, vis, _) }, hs)
-    | Some ({ core = Defn ({ core = Bpragma (nm, _, _) }, _, vis, _) }, hs) ->
+
+    | Some ({ core = Defn ({ core = Operator (nm, _) }, _, _, _) }, hs)
+    | Some ({ core = Defn ({ core = Instance (nm, _) }, _, _, _) }, hs)
+    | Some ({ core = Defn ({ core = Recursive (nm, _) }, _, _, _) }, hs)
+    | Some ({ core = Defn ({ core = Bpragma (nm, _, _) }, _, _, _) }, hs) ->
         let ncx, nm = adj cx nm in
-        begin if vis = Visible then
-          fprintf ff "; hidden definition: %s@." nm
-        end;
+        fprintf ff "; hidden definition: %s@." nm; (* definitions never shown *)
         pp_print_newline ff ();
         spin ncx hs
   in
+
   fprintf ff ";; Hypotheses@.";
   let cx =
     if Deque.size sq.context = 0 then begin

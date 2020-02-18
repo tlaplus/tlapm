@@ -5,8 +5,9 @@
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
 
+open Ext
 open Expr.T
-open Type.T
+open Util.Coll
 open Property
 
 

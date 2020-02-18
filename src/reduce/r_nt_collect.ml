@@ -1,5 +1,5 @@
 (*
- * reduce/ntcollect.ml --- collect data for notypes encoding
+ * reduce/nt_collect.ml --- collect data for notypes encoding
  *
  *
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
@@ -9,7 +9,7 @@ open Expr.T
 open Util.Coll
 open Property
 
-open R_nttable
+open R_nt_table
 
 let visitor = object (self : 'self)
   inherit [unit, nt_node Sm.t] Expr.Visit.fold as super

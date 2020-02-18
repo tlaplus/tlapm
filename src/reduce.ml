@@ -7,6 +7,6 @@
 Revision.f "$Rev$";;
 
 module Commons = R_commons
-module NtTable = R_nttable
-module NtCollect = R_ntcollect
+module NtTable = R_nt_table
+module NtCollect = R_nt_collect
 
