@@ -13,6 +13,7 @@ open Util.Coll
 open Property
 
 open R_commons
+open R_nt_axioms
 
 
 (* {3 General} *)
@@ -20,7 +21,9 @@ open R_commons
 type nt_node =
   (* Set Theory *)
   | NT_U
+  | NT_Str
   | NT_UAny
+  | NT_StringAny
   | NT_Mem
   | NT_Subseteq
   | NT_Enum of int
@@ -41,7 +44,9 @@ type nt_node =
 let nt_get_id node =
   match node with
   | NT_U -> "nt_u"
+  | NT_Str -> "nt_str"
   | NT_UAny -> "nt_uany"
+  | NT_StringAny -> "nt_stringany"
   | NT_Mem -> "nt_mem"
   | NT_Subseteq -> "nt_subseteq"
   | NT_Enum n -> "nt_enum_" ^ string_of_int n
@@ -99,7 +104,9 @@ let nt_base = from_list [ NT_U ; NT_UAny ; NT_Mem ]
 let nt_get_deps_l node =
   match node with
   | NT_U -> []
+  | NT_Str -> []
   | NT_UAny -> [ NT_U ]
+  | NT_StringAny -> [ NT_Str ]
   | NT_Mem -> [ NT_U ]
   | NT_Subseteq -> [ NT_U ; NT_Mem ]
   | NT_Enum _ -> [ NT_U ; NT_Mem ]
@@ -123,8 +130,23 @@ let nt_get_deps node =
 let nt_get_hyps node =
   let hs =
     match node with
-    | NT_U -> []
-    | _ -> [] (* TODO *)
+    | NT_U | NT_Str -> []
+    | NT_UAny -> [ uany_decl ]
+    | NT_StringAny -> [ stringany_decl ]
+    | NT_Mem -> [ mem_decl ]
+    | NT_Subseteq -> [ subseteq_decl ]
+    | NT_Enum n -> [ enum_decl n ]
+    | NT_Union -> [ union_decl ]
+    | NT_Power -> [ power_decl ]
+    | NT_Cup -> [ cup_decl ]
+    | NT_Cap -> [ cap_decl ]
+    | NT_Setminus -> [ setminus_decl ]
+    | NT_SetSt (s, k) -> [ setst_decl s k ]
+    | NT_Boolean -> [ boolean_decl ]
+    | NT_BoolToU -> [ booltou_decl ]
+    | NT_String -> [ string_decl ]
+    | NT_StringToU -> [ stringtou_decl ]
+    | NT_StringLit s -> [ stringlit_decl s ]
   in
   Deque.of_list hs
 

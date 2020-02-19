@@ -9,6 +9,7 @@ open Expr.T
 open Util.Coll
 open Property
 
+open R_nt_axioms
 open R_nt_table
 
 let visitor = object (self : 'self)

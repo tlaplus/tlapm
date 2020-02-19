@@ -51,6 +51,18 @@ module T : sig
     val atom_prop : ty_atom pfuncs
     val kind_prop : ty_kind pfuncs
   end
+
+  val annot_type : hint -> ty -> hint
+  val annot_sort : hint -> ty_atom -> hint
+  val annot_kind : hint -> ty_kind -> hint
+
+  val has_type : hint -> bool
+  val has_sort : hint -> bool
+  val has_kind : hint -> bool
+
+  val get_type : hint -> ty
+  val get_sort : hint -> ty_atom
+  val get_kind : hint -> ty_kind
 end
 
 module Disambiguation : sig

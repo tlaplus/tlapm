@@ -79,6 +79,18 @@ module Props = struct
   let kind_prop = make "Type.T.Props.kind_prop"
 end
 
+let annot_type h t = assign h Props.type_prop t
+let annot_sort h s = assign h Props.atom_prop s
+let annot_kind h k = assign h Props.kind_prop k
+
+let has_type h = has h Props.type_prop
+let has_sort h = has h Props.atom_prop
+let has_kind h = has h Props.kind_prop
+
+let get_type h = get h Props.type_prop
+let get_sort h = get h Props.atom_prop
+let get_kind h = get h Props.kind_prop
+
 
 (* {3 Pretty-printing} *)
 
