@@ -81,6 +81,15 @@ module NtTable : sig
   val nt_axiomatize : nt_node Sm.t -> hyp Deque.dq -> hyp Deque.dq
 end
 
+module NtCook : sig
+  open Expr.T
+  open Type.T
+  open Property
+  val setst_nm : string -> string
+  val setst_prop : ty_kind pfuncs
+  val cook : sequent -> sequent
+end
+
 module NtCollect : sig
   open Expr.T
   open Util.Coll

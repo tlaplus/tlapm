@@ -48,22 +48,6 @@ let get_ty = function
   | TKind ([], ty) -> ty
   | _ -> invalid_arg "Type.T.get_ty: not a constant operator type"
 
-let get_atoms ty =
-  let add x l =
-    if List.exists ((=) x) l then l else x :: l
-  in
-  let rec f acc = function
-    | TAtom a -> add a acc
-    | TSet ty -> f acc ty
-    | TArrow (ty1, ty2) ->
-        let acc = f acc ty1 in
-        f acc ty2
-    | TProd tys ->
-        List.fold_left f acc tys
-    | _ -> acc
-  in
-  f [] ty
-
 let ty_u = mk_atom_ty TU
 let ty_bool = mk_atom_ty TBool
 let ty_int = mk_atom_ty TInt

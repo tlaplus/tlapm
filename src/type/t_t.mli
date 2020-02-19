@@ -42,8 +42,6 @@ val mk_fstk_ty  : ty list -> ty -> ty_kind
 val get_atom  : ty -> ty_atom
 val get_ty    : ty_kind -> ty
 
-val get_atoms : ty -> ty_atom list
-
 
 (* {3 Type Annotations} *)
 

@@ -41,8 +41,6 @@ module T : sig
   val get_atom  : ty -> ty_atom
   val get_ty    : ty_kind -> ty
 
-  val get_atoms : ty -> ty_atom list
-
   val pp_print_type : Format.formatter -> ty -> unit
   val pp_print_kind : Format.formatter -> ty_kind -> unit
 

@@ -471,11 +471,10 @@ let preprocess ?solver sq =
   let _ = solver in (* FIXME what to do with this? *)
 
   let sq = Type.Disambiguation.min_reconstruct sq in
+  let sq = Reduce.NtCook.cook sq in
 
   let data = Reduce.NtCollect.collect sq in
   let _ = data in
-
-  (* TODO reduce to 1st order *)
 
   (*
   let top = Reduce.NtTable.nt_axiomatize data Reduce.Commons.init in
@@ -585,7 +584,8 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         spin ncx hs
 
     | Some ({ core = Flex nm }, hs) ->
-        let srt = get_sort nm in
+        let TKind (_, ty) = get_kind nm in (* constant assumed *)
+        let srt = get_atom ty in
         let ncx, nm = adj cx nm in
         let decl1 = mk_fdecl nm [] srt in
         let decl2 = mk_fdecl (primed nm) [] srt in

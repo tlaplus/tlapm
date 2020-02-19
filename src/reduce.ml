@@ -9,5 +9,6 @@ Revision.f "$Rev$";;
 module Commons = R_commons
 module NtAxioms = R_nt_axioms
 module NtTable = R_nt_table
+module NtCook = R_nt_cook
 module NtCollect = R_nt_collect
 

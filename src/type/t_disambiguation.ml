@@ -643,9 +643,9 @@ and hyp scx h =
       let h = Fresh (v, shp, kd, hdom) @@ h in
       scx, h, Unknown
   | Flex v ->
-      let v, scx = adj scx v (Sort TU) in
+      let v, scx = adj scx v (Kind (mk_cstk_ty ty_u)) in
       let v_p = (v.core ^ "__prime") @@ v in
-      let _, scx = adj scx v_p (Sort TU) in
+      let _, scx = adj scx v_p (Kind (mk_cstk_ty ty_u)) in
       let h = Flex v @@ h in
       scx, h, Unknown
   | Defn (df, wd, vis, ex) ->
