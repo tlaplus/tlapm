@@ -31,6 +31,10 @@ junit:
 unit:
 	./TOOLS/do_tests unit
 
+.PHONY: nunit
+nunit:
+	./TOOLS/do_tests nunit
+
 .PHONY: constant
 constant:
 	./TOOLS/do_tests constant
