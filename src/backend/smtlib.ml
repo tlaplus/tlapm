@@ -520,50 +520,6 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
   fprintf ff "(declare-sort TLA__U 0)@.";
   fprintf ff "(declare-sort TLA__String 0)@.";
 
-  (*
-  let rec pp_print_cmds ?(skip=false) fmt ff al =
-    match al with
-    | [] -> ()
-    | a :: [] ->
-        fmt ff a;
-        pp_print_newline ff ()
-    | a :: al ->
-        fmt ff a;
-        pp_print_newline ff ();
-        if skip then pp_print_newline ff ()
-        else ();
-        pp_print_cmds ~skip fmt ff al
-  in
-  *)
-
-  (* Print sort declarations *)
-  (*
-  fprintf ff ";; Sort Declarations@.";
-  pp_print_cmds pp_print_decl ff srts;
-  pp_print_newline ff ();
-  *)
-
-  (* Print fun declarations *)
-  (*
-  fprintf ff ";; Operator Declarations@.";
-  pp_print_cmds pp_print_decl ff funs;
-  pp_print_newline ff ();
-  *)
-
-  (* Print axioms *)
-  (*
-  fprintf ff ";; Axioms@.";
-  let pp_print_axm ff (id, d) =
-    fprintf ff "; %s@." id;
-    pp_print_decl ff d;
-    pp_print_newline ff ()
-  in
-  pp_print_delimited ~sep:pp_print_newline pp_print_axm ff axms;
-  pp_print_newline ff ();
-  *)
-
-  (* FIXME dont use pp_print_decl *)
-  (* Print hypotheses *)
   let pp_print_assert cx ff e =
     fprintf ff "@[<hov 2>(assert@ %a@]@,)@."
     (pp_print_expr cx) e
@@ -628,6 +584,53 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         spin ncx hs
   in
 
+  (* Print top context *)
+  (* TODO *)
+
+  (*
+  let rec pp_print_cmds ?(skip=false) fmt ff al =
+    match al with
+    | [] -> ()
+    | a :: [] ->
+        fmt ff a;
+        pp_print_newline ff ()
+    | a :: al ->
+        fmt ff a;
+        pp_print_newline ff ();
+        if skip then pp_print_newline ff ()
+        else ();
+        pp_print_cmds ~skip fmt ff al
+  in
+  *)
+
+  (* Print sort declarations *)
+  (*
+  fprintf ff ";; Sort Declarations@.";
+  pp_print_cmds pp_print_decl ff srts;
+  pp_print_newline ff ();
+  *)
+
+  (* Print fun declarations *)
+  (*
+  fprintf ff ";; Operator Declarations@.";
+  pp_print_cmds pp_print_decl ff funs;
+  pp_print_newline ff ();
+  *)
+
+  (* Print axioms *)
+  (*
+  fprintf ff ";; Axioms@.";
+  let pp_print_axm ff (id, d) =
+    fprintf ff "; %s@." id;
+    pp_print_decl ff d;
+    pp_print_newline ff ()
+  in
+  pp_print_delimited ~sep:pp_print_newline pp_print_axm ff axms;
+  pp_print_newline ff ();
+  *)
+
+  (* FIXME dont use pp_print_decl *)
+  (* Print hypotheses *)
   fprintf ff ";; Hypotheses@.";
   let cx =
     if Deque.size sq.context = 0 then begin
