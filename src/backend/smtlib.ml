@@ -18,7 +18,6 @@ open Type.T
 open Tla_parser
 
 open Util.Coll
-open Smttable
 
 module A = Axiom
 module B = Builtin
@@ -454,19 +453,10 @@ and pp_print_expr cx ff e =
   Fu.pp_print_minimal ff (fmt_expr cx e)
 
 
-(* {3 Obligation Formatting} *)
+(* {3 Preprocessing} *)
 
-(* FIXME integrate sort collection in axiomatize? *)
-let collect_sorts = object (self : 'self)
-  inherit [unit, ty_atom Sm.t] Expr.Visit.fold as super
-
-    (* TODO *)
-
-  method expr scx ss oe =
-    match oe.core with
-    | _ -> super#expr scx ss oe
-end
-
+(* This very important function does several transformations on the sequent
+ * to shape it into something translatable to SMT-LIB. *)
 let preprocess ?solver sq =
   let _ = solver in (* FIXME what to do with this? *)
 
@@ -476,33 +466,32 @@ let preprocess ?solver sq =
   let data = Reduce.NtCollect.collect sq in
   let _ = data in
 
+  let top = Deque.empty in
   (*
   let top = Reduce.NtTable.nt_axiomatize data Reduce.Commons.init in
   let sq = Reduce.Commons.join top sq in
 *)
-  sq
+  top, sq
+
+
+(* {3 Obligation Formatting} *)
+
+let pp_print_assert cx ff e =
+  fprintf ff "@[<hov 2>(assert@ %a@]@,)@."
+  (pp_print_expr cx) e
+
+let pp_print_declaresort ff nm ar =
+  fprintf ff "@[<hov 2>(declare-sort %s %d@])@."
+  nm ar
+
+let pp_print_declarefun ff nm ins out =
+  fprintf ff "@[<hov 2>(declare-fun %s (%a) %a@])@." nm
+  (pp_print_delimited ~sep:pp_print_space pp_print_sort) ins
+  pp_print_sort out
 
 let pp_print_obligation ?(solver="CVC4") ff ob =
   (* Shape the sequent into a form that can be translated *)
-  let sq = preprocess ~solver ob.obl.core in
-
-  (* Collect symbols *)
-(*
-  let module C = NT_Collector in
-  let smbs = C.collect sq in
-  let decls = Sm.map C.get_decl smbs in
-
-  let srts, decls = Sm.partition begin fun id decl ->
-    match decl.content with Srt _ -> true | _ -> false
-  end decls in
-  let funs, axms = Sm.partition begin fun id decl ->
-    match decl.content with Fun _ -> true | _ -> false
-  end decls in
-
-  let srts = Sm.bindings srts |> List.map snd in
-  let funs = Sm.bindings funs |> List.map snd in
-  let axms = Sm.bindings axms in
-*)
+  let top, sq = preprocess ~solver ob.obl.core in
 
   (* Print preample *)
   pp_print_newline ff ();
@@ -515,15 +504,6 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
   fprintf ff "(set-logic UFNIA)@.";
   pp_print_newline ff ();
 
-  (* Declare sorts *)
-  (* FIXME handle this in NtTable in some way *)
-  fprintf ff "(declare-sort TLA__U 0)@.";
-  fprintf ff "(declare-sort TLA__String 0)@.";
-
-  let pp_print_assert cx ff e =
-    fprintf ff "@[<hov 2>(assert@ %a@]@,)@."
-    (pp_print_expr cx) e
-  in
   let rec spin cx hs =
     match Deque.front hs with
     | None ->
@@ -543,22 +523,16 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         let TKind (_, ty) = get_kind nm in (* constant assumed *)
         let srt = get_atom ty in
         let ncx, nm = adj cx nm in
-        let decl1 = mk_fdecl nm [] srt in
-        let decl2 = mk_fdecl (primed nm) [] srt in
-        pp_print_decl ff decl1;
+        pp_print_declarefun ff nm [] srt;
         pp_print_newline ff ();
-        pp_print_newline ff ();
-        pp_print_decl ff decl2;
-        pp_print_newline ff ();
+        pp_print_declarefun ff (primed nm) [] srt;
         pp_print_newline ff ();
         spin ncx hs
 
     | Some ({ core = Fresh (nm, _, _, Bounded (b, Visible)) }, hs) ->
         let TKind (_, ty) = get_kind nm in (* constant op assumed *)
         let ncx, nm = adj cx nm in
-        let decl = mk_fdecl nm [] (get_atom ty) in
-        pp_print_decl ff decl;
-        pp_print_newline ff ();
+        pp_print_declarefun ff nm [] (get_atom ty);
         pp_print_newline ff ();
         pp_print_assert cx ff (
           Apply (Internal B.Mem %% [], [ Opaque nm %% [] ; b ]) %% []);
@@ -568,9 +542,9 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
     | Some ({ core = Fresh (nm, _, _, _) }, hs) ->
         let TKind (ks, ty) = get_kind nm in
         let ncx, nm = adj cx nm in
-        let decl = mk_fdecl nm (List.map (fun k -> get_atom (get_ty k)) ks) (get_atom ty) in
-        pp_print_decl ff decl;
-        pp_print_newline ff ();
+        let ins = List.map (fun k -> get_atom (get_ty k)) ks in
+        let out = get_atom ty in
+        pp_print_declarefun ff nm ins out;
         pp_print_newline ff ();
         spin ncx hs
 
@@ -585,59 +559,27 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
   in
 
   (* Print top context *)
+  fprintf ff ";; Top context@.";
+  let cx =
+    if Deque.size top = 0 then begin
+      pp_print_newline ff ();
+      Ctx.dot
+    end else
+      spin Ctx.dot top
+  in
+  (* FIXME handle this in NtTable in some way *)
+  pp_print_declaresort ff "TLA__U" 0;
+  pp_print_declaresort ff "TLA__String" 0;
   (* TODO *)
 
-  (*
-  let rec pp_print_cmds ?(skip=false) fmt ff al =
-    match al with
-    | [] -> ()
-    | a :: [] ->
-        fmt ff a;
-        pp_print_newline ff ()
-    | a :: al ->
-        fmt ff a;
-        pp_print_newline ff ();
-        if skip then pp_print_newline ff ()
-        else ();
-        pp_print_cmds ~skip fmt ff al
-  in
-  *)
-
-  (* Print sort declarations *)
-  (*
-  fprintf ff ";; Sort Declarations@.";
-  pp_print_cmds pp_print_decl ff srts;
-  pp_print_newline ff ();
-  *)
-
-  (* Print fun declarations *)
-  (*
-  fprintf ff ";; Operator Declarations@.";
-  pp_print_cmds pp_print_decl ff funs;
-  pp_print_newline ff ();
-  *)
-
-  (* Print axioms *)
-  (*
-  fprintf ff ";; Axioms@.";
-  let pp_print_axm ff (id, d) =
-    fprintf ff "; %s@." id;
-    pp_print_decl ff d;
-    pp_print_newline ff ()
-  in
-  pp_print_delimited ~sep:pp_print_newline pp_print_axm ff axms;
-  pp_print_newline ff ();
-  *)
-
-  (* FIXME dont use pp_print_decl *)
   (* Print hypotheses *)
   fprintf ff ";; Hypotheses@.";
   let cx =
     if Deque.size sq.context = 0 then begin
       pp_print_newline ff ();
-      Ctx.dot
+      cx
     end else
-      spin Ctx.dot sq.context
+      spin cx sq.context
   in
 
   (* Print goal *)

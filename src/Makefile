@@ -19,7 +19,7 @@ FRONTEND_PACK = \
 BACKEND_PACK = \
   backend/types backend/isabelle backend/zenon \
   backend/ls4 backend/fingerprints backend/fpfile \
-  backend/smt backend/smttable backend/smtlib backend/prep
+  backend/smt backend/smtlib backend/prep
 
 MODULE_PACK = \
   module/m_t module/m_fmt module/m_globalness module/m_gen module/m_elab \
