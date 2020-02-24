@@ -164,8 +164,8 @@ struct
   let get_id = nt_get_id
   let get_deps = nt_get_deps
 
-  let get_ac ns top =
-    Deque.append (nt_get_hyps ns) top
+  let get_ac n top =
+    Deque.append top (nt_get_hyps n)
 end
 
 module NT_Axiomatize = Closure (NT_Graph)
