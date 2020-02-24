@@ -19,7 +19,7 @@ open Tla_parser
 
 open Util.Coll
 
-module A = Axiom
+module Names = Reduce.NtAxioms
 module B = Builtin
 
 exception Unsupported of string
@@ -55,10 +55,10 @@ let pp_print_sort ff (a : ty_atom) =
   let s =
     match a with
     | TBool -> "Bool"
-    | TU -> "TLA__U"
+    | TU -> Names.usort_nm
     | TInt -> "Int"
     | TReal -> "Real"
-    | TStr -> "TLA__String"
+    | TStr -> Names.stringsort_nm
   in
   pp_print_string ff s
 
@@ -108,17 +108,17 @@ let rec pp_apply cx ff op args =
       | B.Eq,       [e ; f] -> nonatomic "=" [e ; f]
       | B.Neq,      [e ; f] -> nonatomic "distinct" [e ; f]
 
-      | B.STRING,   []      -> atomic "TLA__STRING"
-      | B.BOOLEAN,  []      -> atomic "TLA__BOOLEAN"
-      | B.SUBSET,   [e]     -> nonatomic "TLA__SUBSET" [e]
-      | B.UNION,    [e]     -> nonatomic "TLA__UNION" [e]
-      | B.DOMAIN,   [e]     -> nonatomic "TLA__DOMAIN" [e]
-      | B.Subseteq, [e ; f] -> nonatomic "TLA__subseteq" [e ; f]
-      | B.Mem,      [e ; f] -> nonatomic "TLA__in" [e ; f]
-      | B.Notmem,   [e ; f] -> negate (fun () -> nonatomic "TLA__in" [e ; f])
-      | B.Setminus, [e ; f] -> nonatomic "TLA__setminus" [e ; f]
-      | B.Cap,      [e ; f] -> nonatomic "TLA__cap" [e ; f]
-      | B.Cup,      [e ; f] -> nonatomic "TLA__cup" [e ; f]
+      | B.STRING,   []      -> atomic Names.string_nm
+      | B.BOOLEAN,  []      -> atomic Names.boolean_nm
+      | B.SUBSET,   [e]     -> nonatomic Names.power_nm [e]
+      | B.UNION,    [e]     -> nonatomic Names.union_nm [e]
+      | B.DOMAIN,   [e]     -> nonatomic Names.domain_nm [e]
+      | B.Subseteq, [e ; f] -> nonatomic Names.subseteq_nm [e ; f]
+      | B.Mem,      [e ; f] -> nonatomic Names.mem_nm [e ; f]
+      | B.Notmem,   [e ; f] -> negate (fun () -> nonatomic Names.mem_nm [e ; f])
+      | B.Setminus, [e ; f] -> nonatomic Names.setminus_nm [e ; f]
+      | B.Cap,      [e ; f] -> nonatomic Names.cap_nm [e ; f]
+      | B.Cup,      [e ; f] -> nonatomic Names.cup_nm [e ; f]
 
       | B.Leadsto,  [e ; f] -> unsupp "~>"
       | B.ENABLED,  [e]     -> unsupp "ENABLED"
@@ -127,23 +127,23 @@ let rec pp_apply cx ff op args =
       | B.Box _,    [e]     -> unsupp "[]"
       | B.Diamond,  [e]     -> unsupp "<>"
 
-      | B.Nat,        []      -> atomic "arith__N"
-      | B.Int,        []      -> atomic "arith__Z"
-      | B.Real,       []      -> atomic "arith__R"
-      | B.Plus,       [e ; f] -> nonatomic "+" [e ; f]
-      | B.Minus,      [e ; f] -> nonatomic "-" [e ; f]
-      | B.Uminus,     [e]     -> nonatomic "-" [e]
-      | B.Times,      [e ; f] -> nonatomic "*" [e ; f]
-      | B.Ratio,      [e ; f] -> nonatomic "/" [e ; f]
-      | B.Quotient,   [e ; f] -> nonatomic "div" [e ; f]
-      | B.Remainder,  [e ; f] -> nonatomic "mod" [e ; f]
-      | B.Exp,        [e ; f] -> nonatomic "arith__intexp" [e ; f]
-      | B.Infinity,   []      -> atomic "arith__Infinity"
-      | B.Lteq,       [e ; f] -> nonatomic "<=" [e ; f]
-      | B.Lt,         [e ; f] -> nonatomic "<" [e ; f]
-      | B.Gteq,       [e ; f] -> nonatomic ">=" [f ; e]
-      | B.Gt,         [e ; f] -> nonatomic ">" [f ; e]
-      | B.Range,      [e ; f] -> nonatomic "arith__intrange" [e ; f]
+      | B.Nat,        []      -> atomic Names.nset_nm
+      | B.Int,        []      -> atomic Names.zset_nm
+      | B.Real,       []      -> atomic Names.rset_nm
+      | B.Plus,       [e ; f] -> nonatomic Names.plus_nm [e ; f]
+      | B.Minus,      [e ; f] -> nonatomic Names.minus_nm [e ; f]
+      | B.Uminus,     [e]     -> nonatomic Names.uminus_nm [e]
+      | B.Times,      [e ; f] -> nonatomic Names.times_nm [e ; f]
+      | B.Ratio,      [e ; f] -> nonatomic Names.ratio_nm [e ; f]
+      | B.Quotient,   [e ; f] -> nonatomic Names.quotient_nm [e ; f]
+      | B.Remainder,  [e ; f] -> nonatomic Names.remainder_nm [e ; f]
+      | B.Exp,        [e ; f] -> nonatomic Names.exp_nm [e ; f]
+      | B.Infinity,   []      -> atomic Names.infinity_nm
+      | B.Lteq,       [e ; f] -> nonatomic Names.lteq_nm [e ; f]
+      | B.Lt,         [e ; f] -> nonatomic Names.lt_nm [e ; f]
+      | B.Gteq,       [e ; f] -> nonatomic Names.gteq_nm [f ; e]
+      | B.Gt,         [e ; f] -> nonatomic Names.gt_nm [f ; e]
+      | B.Range,      [e ; f] -> nonatomic Names.range_nm [e ; f]
 
       | B.Seq,        [e]         -> nonatomic "TLA__Seq" [e]
       | B.Len,        [e]         -> nonatomic "TLA__Len" [e]
@@ -166,7 +166,7 @@ let rec pp_apply cx ff op args =
       | B.Permutations,   [s]     -> nonatomic "TLA__Permutations" [s]
       | B.SortSeq,        [s ; o] -> nonatomic "TLA__SortSeq" [s ; o]
       | B.RandomElement,  [s]     -> nonatomic "TLA__RandomElement" [s]
-      | B.Any,            []      -> atomic "TLA__Any"
+      | B.Any,            []      -> atomic Names.uany_nm
       | B.ToString,       [v]     -> nonatomic "TLA__ToString" [v]
 
       | B.Unprimable, [e] -> pp_print_expr cx ff e
@@ -210,9 +210,9 @@ and fmt_expr cx oe =
           let srt = get_atom (get_ty k) in
           let ncx, nm = adj cx nm in
           Fu.Atm begin fun ff ->
-            fprintf ff "@[<hov 2>(@,forall @[<hov 2>(@,(%s %a)@]@,)@ @[<hov 2>(@,=> @[<hov 2>(@,TLA__in@ %s@ %a@]@,)@ %a@]@,)@]@,)"
+            fprintf ff "@[<hov 2>(@,forall @[<hov 2>(@,(%s %a)@]@,)@ @[<hov 2>(@,=> @[<hov 2>(@,%s@ %s@ %a@]@,)@ %a@]@,)@]@,)"
             nm pp_print_sort srt
-            nm (pp_print_expr cx) b
+            Names.mem_nm nm (pp_print_expr cx) b
             (pp_print_expr ncx) (Sequent { sq with context = hs } @@ oe)
           end
       | Some ({ core = Fresh (nm, _, _, _) }, hs) ->
@@ -312,8 +312,8 @@ and fmt_expr cx oe =
         | Exists -> "exists"
       in
       let pp_print_bound cx ff (nm, b) =
-        fprintf ff "@[<hov 2>(@,TLA__in@ %s@ %a@]@,)"
-        nm (pp_print_expr cx) b
+        fprintf ff "@[<hov 2>(@,%s@ %s@ %a@]@,)"
+        Names.mem_nm nm (pp_print_expr cx) b
       in
       Fu.Atm begin fun ff ->
         fprintf ff "@[<hov 2>(@,%s @[<hov 2>(@,%a@]@,) " qrep
@@ -341,12 +341,12 @@ and fmt_expr cx oe =
   | SetOf _ -> unsupp "{ _ : x \\in _ }"
   | SetEnum [] ->
       Fu.Atm begin fun ff ->
-        fprintf ff "TLA__Empty"
+        fprintf ff "%s" (Names.enum_nm 0)
       end
   | SetEnum es ->
       let n = List.length es in
       Fu.Atm begin fun ff ->
-        fprintf ff "@[<hov 2>(@,TLA__Enum_%d@ %a@]@,)" n
+        fprintf ff "@[<hov 2>(@,%s@ %a@]@,)" (Names.enum_nm n)
         (pp_print_delimited ~sep:pp_print_space (pp_print_expr cx)) es
       end
   | Product [] ->
@@ -378,20 +378,23 @@ and fmt_expr cx oe =
       Errors.bug ~at:oe "Backend.Smtlib.fmt_expr"
   | FcnApp (e, [e1]) ->
       Fu.Atm begin fun ff ->
-        fprintf ff "@[<hov 2>(TLA__fcnapp@ %a@ %a@]@,)"
+        fprintf ff "@[<hov 2>(%s@ %a@ %a@]@,)"
+        Names.fcnapp_nm
         (pp_print_expr cx) e
         (pp_print_expr cx) e1
       end
   | FcnApp (e, es) ->
       let n = List.length es in
       Fu.Atm begin fun ff ->
-        fprintf ff "@[<hov 2>(@,TLA__fcnapp@ %a@ @[<hov 2>(@,TLA__tuple_%d@ %a@]@,)@]@,)"
+        fprintf ff "@[<hov 2>(@,%s@ %a@ @[<hov 2>(@,TLA__tuple_%d@ %a@]@,)@]@,)"
+        Names.fcnapp_nm
         (pp_print_expr cx) e n
         (pp_print_delimited ~sep:pp_print_space (pp_print_expr cx)) es
       end
   | Arrow (e1, e2) ->
       Fu.Atm begin fun ff ->
-        fprintf ff "@[<hov 2>(@,TLA__Arrow@ %a@ %a@]@,)"
+        fprintf ff "@[<hov 2>(@,%s@ %a@ %a@]@,)"
+        Names.arrow_nm
         (pp_print_expr cx) e1
         (pp_print_expr cx) e2
       end
@@ -417,7 +420,8 @@ and fmt_expr cx oe =
       Errors.bug ~at:oe "Backend.Smtlib.fmt_expr"
   | Except (e1, [[Except_apply e2], e3]) ->
       Fu.Atm begin fun ff ->
-        fprintf ff "@[<hov 2>(@,TLA__except@ %a@ %a@ %a@]@,)"
+        fprintf ff "@[<hov 2>(@,%s@ %a@ %a@ %a@]@,)"
+        Names.fcnexcept_nm
         (pp_print_expr cx) e1
         (pp_print_expr cx) e2
         (pp_print_expr cx) e3
@@ -464,13 +468,7 @@ let preprocess ?solver sq =
   let sq = Reduce.NtCook.cook sq in
 
   let data = Reduce.NtCollect.collect sq in
-  let _ = data in
-
-  let top = Deque.empty in
-  (*
-  let top = Reduce.NtTable.nt_axiomatize data Reduce.Commons.init in
-  let sq = Reduce.Commons.join top sq in
-*)
+  let top = Reduce.NtTable.nt_axiomatize data Deque.empty in
   top, sq
 
 
@@ -560,6 +558,11 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
 
   (* Print top context *)
   fprintf ff ";; Top context@.";
+  (* FIXME handle this in NtTable in some way *)
+  pp_print_newline ff ();
+  pp_print_declaresort ff Names.usort_nm 0;
+  pp_print_declaresort ff Names.stringsort_nm 0;
+  pp_print_newline ff ();
   let cx =
     if Deque.size top = 0 then begin
       pp_print_newline ff ();
@@ -567,10 +570,6 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
     end else
       spin Ctx.dot top
   in
-  (* FIXME handle this in NtTable in some way *)
-  pp_print_declaresort ff "TLA__U" 0;
-  pp_print_declaresort ff "TLA__String" 0;
-  (* TODO *)
 
   (* Print hypotheses *)
   fprintf ff ";; Hypotheses@.";

@@ -12,6 +12,9 @@ end
 module NtAxioms : sig
   open Expr.T
   open Type.T
+
+  val usort_nm : string
+  val stringsort_nm : string
   val uany_nm : string
   val stringany_nm : string
   val mem_nm : string
@@ -25,6 +28,34 @@ module NtAxioms : sig
   val setminus_nm : string
   val setst_nm : string -> ty_kind -> string
   (*val setof_nm : string -> ty_kind -> string*)
+  val boolean_nm : string
+  val booltou_nm : string
+  val string_nm : string
+  val stringtou_nm : string
+  val stringlit_nm : string -> string
+  val arrow_nm : string
+  val fcn_nm : string -> ty_kind -> string
+  val domain_nm : string
+  val fcnapp_nm : string
+  val fcnexcept_nm : string
+  val zset_nm : string
+  val nset_nm : string
+  val rset_nm : string
+  val plus_nm : string
+  val uminus_nm : string
+  val minus_nm : string
+  val times_nm : string
+  val ratio_nm : string
+  val quotient_nm : string
+  val remainder_nm : string
+  val exp_nm : string
+  val infinity_nm : string
+  val lteq_nm : string
+  val lt_nm : string
+  val gteq_nm : string
+  val gt_nm : string
+  val range_nm : string
+
   val uany_decl : hyp
   val stringany_decl : hyp
   val mem_decl : hyp
