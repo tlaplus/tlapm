@@ -37,8 +37,11 @@ module Closure (G : Graph) = struct
       match n1, n2 with
       | None, None -> None
       | Some n, None | None, Some n -> Some n
-      | _ -> invalid_arg
-          ("Util.Deps.Closure.union: non unique label '" ^ id ^ "'")
+      | Some n1, Some n2 ->
+          if n1 = n2 then Some n2
+          else
+            invalid_arg ("Util.Deps.Closure.union: \
+                          non unique label '" ^ id ^ "'")
     end m1 m2
 
   (* Explore graph recursively;
