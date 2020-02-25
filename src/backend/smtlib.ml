@@ -585,12 +585,15 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         pp_print_newline ff ();
         spin ncx hs
 
-    | Some ({ core = Defn ({ core = Operator (nm, _) }, _, _, _) }, hs)
-    | Some ({ core = Defn ({ core = Instance (nm, _) }, _, _, _) }, hs)
-    | Some ({ core = Defn ({ core = Recursive (nm, _) }, _, _, _) }, hs)
-    | Some ({ core = Defn ({ core = Bpragma (nm, _, _) }, _, _, _) }, hs) ->
+    | Some ({ core = Defn ({ core = Operator (nm, _) }, _, vis, _) }, hs)
+    | Some ({ core = Defn ({ core = Instance (nm, _) }, _, vis, _) }, hs)
+    | Some ({ core = Defn ({ core = Recursive (nm, _) }, _, vis, _) }, hs)
+    | Some ({ core = Defn ({ core = Bpragma (nm, _, _) }, _, vis, _) }, hs) ->
+        let TKind (ks, ty) = get_kind nm in
         let ncx, nm = adj cx nm in
-        fprintf ff "; hidden definition: %s@." nm; (* definitions never shown *)
+        let ins = List.map (fun k -> get_atom (get_ty k)) ks in
+        let out = get_atom ty in
+        pp_print_declarefun ff nm ins out;
         pp_print_newline ff ();
         spin ncx hs
   in
