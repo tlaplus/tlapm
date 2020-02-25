@@ -15,55 +15,36 @@ open T_t
 module B = Builtin
 
 
+(* {3 Annotations} *)
+
+let int_special_prop = make "Type.Disambiguation.int_special_prop"
+let real_special_prop = make "Type.Disambiguation.real_special_prop"
+let cast_special_prop = make "Type.Disambiguation.cast_special_prop"
+let any_special_prop = make "Type.Disambiguation.any_special_prop"
+
+
 (* {3 Symbols} *)
+
+let tla_prefix = "TLA__"
 
 let cast_nm s1 s2 =
   match s1, s2 with
-  | TBool, TU   -> "__bool_to_u"
-  | TInt, TU    -> "__int_to_u"
-  | TReal, TU   -> "__real_to_u"
-  | TStr, TU    -> "__string_to_u"
-  | TInt, TReal -> "__int_to_real"
+  | TBool, TU   -> tla_prefix ^ "bool_to_u"
+  | TInt, TU    -> tla_prefix ^ "int_to_u"
+  | TReal, TU   -> tla_prefix ^ "real_to_u"
+  | TStr, TU    -> tla_prefix ^ "string_to_u"
+  | TInt, TReal -> tla_prefix ^ "int_to_real"
   | _ -> invalid_arg "Type.Disambiguation.cast_nm: unauthorized cast"
 
 let u_cast s = cast_nm s TU
 
-let tla_prefix = "TLA__"
-let z_arith_prefix = "Z_arith__"
-let r_arith_prefix = "R_arith__"
-let s_arith_prefix = "S__"
-
-let z_plus = z_arith_prefix ^ "plus"
-let z_minus = z_arith_prefix ^ "minus"
-let z_uminus = z_arith_prefix ^ "uminus"
-let z_times = z_arith_prefix ^ "times"
-let z_quotient = z_arith_prefix ^ "quotient"
-let z_remainder = z_arith_prefix ^ "remainder"
-let z_exp = z_arith_prefix ^ "exp"
-let z_lteq = z_arith_prefix ^ "lteq"
-let z_lt = z_arith_prefix ^ "lt"
-let z_gteq = z_arith_prefix ^ "gteq"
-let z_gt = z_arith_prefix ^ "gt"
-let z_range = z_arith_prefix ^ "range"
-
-let r_plus = r_arith_prefix ^ "plus"
-let r_minus = r_arith_prefix ^ "minus"
-let r_uminus = r_arith_prefix ^ "uminus"
-let r_times = r_arith_prefix ^ "times"
-let r_ratio = r_arith_prefix ^ "ratio"
-let r_quotient = r_arith_prefix ^ "quotient"
-let r_remainder = r_arith_prefix ^ "remainder"
-let r_exp = r_arith_prefix ^ "exp"
-let r_lteq = r_arith_prefix ^ "lteq"
-let r_lt = r_arith_prefix ^ "lt"
-let r_gteq = r_arith_prefix ^ "gteq"
-let r_gt = r_arith_prefix ^ "gt"
-let r_range = r_arith_prefix ^ "range"
-
-let u_any = tla_prefix ^ "any"
-let z_any = z_arith_prefix ^ "any"
-let r_any = r_arith_prefix ^ "any"
-let s_any = s_arith_prefix ^ "any"
+let any_nm s =
+  match s with
+  | TU    -> tla_prefix ^ "any_u"
+  | TBool -> tla_prefix ^ "any_bool"
+  | TInt  -> tla_prefix ^ "any_int"
+  | TReal -> tla_prefix ^ "any_real"
+  | TStr  -> tla_prefix ^ "any_string"
 
 
 (* {3 Utils} *)
@@ -80,18 +61,14 @@ let mk_eq e1 e2 =
  * Last argument is a {!Type.T.ty_atom} object, representing
  * the sort of the input expression. *)
 let mk_formula e = function
-  | TBool  -> e
-  | TU     -> mk_eq e (Opaque u_any %% [])
-  | TInt   -> mk_eq e (Opaque z_any %% [])
-  | TReal  -> mk_eq e (Opaque r_any %% [])
-  | TStr   -> mk_eq e (Opaque s_any %% [])
+  | TBool -> e
+  | s -> mk_eq e (assign (Opaque (any_nm s) %% []) any_special_prop ())
 
 (* Make an expression of sort [U] from anything, like {!mk_formula} above
  * This inserts opaque coercion operators *)
-let mk_set e a =
-  match a with
+let mk_set e = function
   | TU -> e
-  | _ -> Apply (Opaque (u_cast a) %% [], [e]) @@ e
+  | a -> Apply (assign (Opaque (u_cast a) %% []) cast_special_prop (), [e]) @@ e
 
 
 (* {3 Contexts} *)
@@ -133,12 +110,12 @@ let lookup_srt cx n =
   (* Some sorts are put into the context as a constant kind.
    * e.g. ASSUME NEW x PROVE .. *)
   | Sort a | Kind (TKind ([], TAtom a)) -> a
-  | _ -> invalid_arg "Type.MinRecon.lookup_srt: not a sort"
+  | _ -> invalid_arg "Type.Disambiguation.lookup_srt: not a sort"
 
 let lookup_kind cx n =
   match lookup_ty cx n with
   | Kind k -> k
-  | _ -> invalid_arg "Type.MinRecon.lookup_kind: not a kind"
+  | _ -> invalid_arg "Type.Disambiguation.lookup_kind: not a kind"
 
 
 (* {3 Main} *)
@@ -206,33 +183,13 @@ let rec expr scx oe =
       let f, srt2 = expr scx f in
       Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TU
 
-  | Apply ({ core = Internal (B.Plus | B.Minus | B.Times | B.Quotient | B.Remainder | B.Exp as b) } as op, [ e ; f ]) ->
+  | Apply ({ core = Internal (B.Plus | B.Minus | B.Times | B.Quotient | B.Remainder | B.Exp) } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       if srt1 = TInt && srt2 = TInt then
-        let s =
-          match b with
-          | B.Plus -> z_plus
-          | B.Minus -> z_minus
-          | B.Times -> z_times
-          | B.Quotient -> z_quotient
-          | B.Remainder -> z_remainder
-          | B.Exp -> z_exp
-          | _ -> assert false
-        in
-        Apply (Opaque s @@ op, [ e ; f ]) @@ oe, TInt
+        Apply (assign op int_special_prop (), [ e ; f ]) @@ oe, TInt
       else if srt1 = TReal && srt2 = TReal then
-        let s =
-          match b with
-          | B.Plus -> r_plus
-          | B.Minus -> r_minus
-          | B.Times -> r_times
-          | B.Quotient -> r_quotient
-          | B.Remainder -> r_remainder
-          | B.Exp -> r_exp
-          | _ -> assert false
-        in
-        Apply (Opaque s @@ op, [ e ; f ]) @@ oe, TReal
+        Apply (assign op real_special_prop (), [ e ; f ]) @@ oe, TReal
       else
         Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TU
 
@@ -240,48 +197,29 @@ let rec expr scx oe =
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       if srt1 = TReal && srt2 = TReal then
-        let s = r_ratio in
-        Apply (Opaque s @@ op, [ e ; f ]) @@ oe, TReal
+        Apply (assign op real_special_prop (), [ e ; f ]) @@ oe, TReal
       else
         Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TU
 
   | Apply ({ core = Internal B.Uminus } as op, [ e ; f ]) ->
       let e, srt = expr scx e in
       if srt = TInt then
-        let s = z_uminus in
-        Apply (Opaque s @@ op, [ e ]) @@ oe, TInt
+        Apply (assign op int_special_prop (), [ e ]) @@ oe, TInt
       else if srt = TReal then
-        let s = z_uminus in
-        Apply (Opaque s @@ op, [ e ]) @@ oe, TReal
+        Apply (assign op real_special_prop (), [ e ]) @@ oe, TReal
       else
         Apply (op, [ mk_set e srt ]) @@ oe, TU
 
   | Internal B.Infinity as op ->
       op @@ oe, TReal
 
-  | Apply ({ core = Internal (B.Lteq | B.Lt | B.Gteq | B.Gt as b) } as op, [ e ; f ]) ->
+  | Apply ({ core = Internal (B.Lteq | B.Lt | B.Gteq | B.Gt) } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       if srt1 = TInt && srt2 = TInt then
-        let s =
-          match b with
-          | B.Lteq -> z_lteq
-          | B.Lt -> z_lt
-          | B.Gteq -> z_gteq
-          | B.Gt -> z_gt
-          | _ -> assert false
-        in
-        Apply (Opaque s @@ op, [ e ; f ]) @@ oe, TBool
+        Apply (assign op int_special_prop (), [ e ; f ]) @@ oe, TBool
       else if srt1 = TReal && srt2 = TReal then
-        let s =
-          match b with
-          | B.Lteq -> r_lteq
-          | B.Lt -> r_lt
-          | B.Gteq -> r_gteq
-          | B.Gt -> r_gt
-          | _ -> assert false
-        in
-        Apply (Opaque s @@ op, [ e ; f ]) @@ oe, TBool
+        Apply (assign op real_special_prop (), [ e ; f ]) @@ oe, TBool
       else
         Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TBool
 
@@ -289,11 +227,9 @@ let rec expr scx oe =
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       if srt1 = TInt && srt2 = TInt then
-        let s = z_range in
-        Apply (Opaque s @@ op, [ e ; f ]) @@ oe, TU
+        Apply (assign op int_special_prop (), [ e ; f ]) @@ oe, TU
       else if srt1 = TReal && srt2 = TReal then
-        let s = r_range in
-        Apply (Opaque s @@ op, [ e ; f ]) @@ oe, TU
+        Apply (assign op real_special_prop (), [ e ; f ]) @@ oe, TU
       else
         Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TU
   (* NOTE Case by case ends here *)
@@ -314,23 +250,23 @@ let rec expr scx oe =
               if k = TKind (ks, ty) then
                 arg
               else
-                invalid_arg "Type.MinRecon.expr: bad operator argument"
+                invalid_arg "Type.Disambiguation.expr: bad operator argument"
         end args ks
       in
       Apply (op, args) @@ oe, get_atom ty
 
   | Internal _ ->
-      Errors.bug ~at:oe "Type.MinRecon.expr: Encounter Internal"
+      Errors.bug ~at:oe "Type.Disambiguation.expr: Encounter Internal"
   | Lambda _ ->
-      Errors.bug ~at:oe "Type.MinRecon.expr: Encounter Lambda"
+      Errors.bug ~at:oe "Type.Disambiguation.expr: Encounter Lambda"
   | Bang _ ->
-      Errors.bug ~at:oe "Type.MinRecon.expr: Encounter Bang"
+      Errors.bug ~at:oe "Type.Disambiguation.expr: Encounter Bang"
   | Opaque s ->
       (* FIXME primed variables may occur as opaques here *)
       (* This is very annoying *)
-      Errors.bug ~at:oe ("Type.MinRecon.expr: Encounter Opaque '" ^ s ^ "'")
+      Errors.bug ~at:oe ("Type.Disambiguation.expr: Encounter Opaque '" ^ s ^ "'")
   | At _ ->
-      Errors.bug ~at:oe "Type.MinRecon.expr: Encounter At"
+      Errors.bug ~at:oe "Type.Disambiguation.expr: Encounter At"
 
   | Sequent sq ->
       let _, sq, _ = sequent scx sq in
@@ -546,7 +482,7 @@ and lexpr scx loe =
       let vs = List.rev vs in
       let e, srt = expr scx e in
       Lambda (vs, e) @@ loe, mk_kind_ty ks (mk_atom_ty srt)
-  | _ -> Errors.bug ~at:loe "Type.MinRecon.lexpr"
+  | _ -> Errors.bug ~at:loe "Type.Disambiguation.lexpr"
 
 and sequent scx sq =
   let scx, hs, _ = hyps scx sq.context in
@@ -614,7 +550,7 @@ and defn scx df =
       let h, scx = adj scx h (Kind (mk_cstk_ty (mk_atom_ty srt))) in
       scx, Operator (h, e) @@ df, Unknown
   | Instance (h, i) ->
-      Errors.bug ~at:df "Type.MinRecon.defn"
+      Errors.bug ~at:df "Type.Disambiguation.defn"
   | Bpragma (h, e, args) ->
       let e, srt = expr scx e in
       let h, scx = adj scx h (Sort srt) in

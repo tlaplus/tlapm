@@ -97,6 +97,15 @@ let rec pp_apply cx ff op args =
         f ();
         fprintf ff "@]@,)"
       in
+      let is_zarith b =
+        has b Type.Disambiguation.int_special_prop
+      in
+      let is_rarith b =
+        has b Type.Disambiguation.real_special_prop
+      in
+      let is_zrarith b =
+        is_zarith b || is_rarith b
+      in
       begin match b, args with
       | B.TRUE,     []      -> atomic "true"
       | B.FALSE,    []      -> atomic "false"
@@ -130,6 +139,21 @@ let rec pp_apply cx ff op args =
       | B.Nat,        []      -> atomic Names.nset_nm
       | B.Int,        []      -> atomic Names.zset_nm
       | B.Real,       []      -> atomic Names.rset_nm
+
+      | B.Plus,       [e ; f] when is_zrarith op -> nonatomic "+" [e ; f]
+      | B.Minus,      [e ; f] when is_zrarith op -> nonatomic "-" [e ; f]
+      | B.Uminus,     [e]     when is_zrarith op -> nonatomic "-" [e]
+      | B.Times,      [e ; f] when is_zrarith op -> nonatomic "*" [e ; f]
+      | B.Ratio,      [e ; f] when is_rarith op  -> nonatomic "/" [e ; f]
+      | B.Quotient,   [e ; f] when is_zarith op  -> nonatomic "div" [e ; f]
+      | B.Remainder,  [e ; f] when is_zarith op  -> nonatomic "mod" [e ; f]
+      | B.Exp,        [e ; f] when is_zrarith op -> nonatomic Names.exp_nm [e ; f]
+      | B.Lteq,       [e ; f] when is_zrarith op -> nonatomic "<=" [e ; f]
+      | B.Lt,         [e ; f] when is_zrarith op -> nonatomic "<" [e ; f]
+      | B.Gteq,       [e ; f] when is_zrarith op -> nonatomic ">=" [f ; e]
+      | B.Gt,         [e ; f] when is_zrarith op -> nonatomic ">" [f ; e]
+      | B.Range,      [e ; f] when is_zrarith op -> nonatomic Names.range_nm [e ; f]
+
       | B.Plus,       [e ; f] -> nonatomic Names.plus_nm [e ; f]
       | B.Minus,      [e ; f] -> nonatomic Names.minus_nm [e ; f]
       | B.Uminus,     [e]     -> nonatomic Names.uminus_nm [e]

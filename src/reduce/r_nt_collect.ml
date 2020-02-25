@@ -59,14 +59,22 @@ let visitor = object (self : 'self)
     | Internal B.Cup ->
         add NT_Cup ns
 
-    | Opaque s when s = D.u_any ->
-        add NT_UAny ns
-    | Opaque s when s = D.s_any ->
-        add NT_StringAny ns
-    | Opaque s when s = D.cast_nm TBool TU ->
-        add NT_BoolToU ns
-    | Opaque s when s = D.cast_nm TStr TU ->
-        add NT_StringToU ns
+    | Opaque s when has oe D.any_special_prop ->
+        let n =
+          if s = D.any_nm TU then NT_UAny
+          else if s = D.any_nm TStr then NT_StringAny
+          else Errors.bug ~at:oe "Reduce.NtCollect: unrecognized 'any' constant"
+        in
+        add n ns
+
+    | Opaque s when has oe D.cast_special_prop ->
+        let n =
+          if s = D.cast_nm TBool TU then NT_BoolToU
+          else if s = D.cast_nm TStr TU then NT_StringToU
+          else Errors.bug ~at:oe "Reduce.NtCollect: unrecognized 'cast' operator"
+        in
+        add n ns
+
     | Opaque s when has oe C.setst_prop ->
         (* FIXME set s *)
         let k = get oe C.setst_prop in
