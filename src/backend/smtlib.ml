@@ -75,6 +75,20 @@ let rec pp_apply cx ff op args =
           args
       end
   | Opaque s ->
+      let s =
+        if has op Type.Disambiguation.any_special_prop then
+          match get op Type.Disambiguation.any_special_prop with
+          | TU -> Names.uany_nm
+          | TStr -> Names.stringany_nm
+          | _ -> s
+        else if has op Type.Disambiguation.cast_special_prop then
+          match get op Type.Disambiguation.cast_special_prop with
+          | TBool, TU -> Names.booltou_nm
+          | TStr, TU -> Names.stringtou_nm
+          | _, _ -> s
+        else
+          s
+      in
       begin match args with
       | [] ->
           pp_print_string ff s

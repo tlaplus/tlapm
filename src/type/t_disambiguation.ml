@@ -62,13 +62,13 @@ let mk_eq e1 e2 =
  * the sort of the input expression. *)
 let mk_formula e = function
   | TBool -> e
-  | s -> mk_eq e (assign (Opaque (any_nm s) %% []) any_special_prop ())
+  | a -> mk_eq e (assign (Opaque (any_nm a) %% []) any_special_prop a)
 
 (* Make an expression of sort [U] from anything, like {!mk_formula} above
  * This inserts opaque coercion operators *)
 let mk_set e = function
   | TU -> e
-  | a -> Apply (assign (Opaque (u_cast a) %% []) cast_special_prop (), [e]) @@ e
+  | a -> Apply (assign (Opaque (u_cast a) %% []) cast_special_prop (a, TU), [e]) @@ e
 
 
 (* {3 Contexts} *)

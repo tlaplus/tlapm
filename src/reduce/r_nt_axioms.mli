@@ -8,21 +8,9 @@
 open Expr.T
 open Type.T
 
-(* {3 Sorts} *)
-
-val usort_nm : string
-val stringsort_nm : string
-
-(* {3 Special} *)
-
-val uany_nm : string
-val stringany_nm : string
-
-val uany_decl : hyp
-val stringany_decl : hyp
-
 (* {3 Set Theory} *)
-
+val usort_nm : string
+val uany_nm : string
 val mem_nm : string
 val subseteq_nm : string
 val empty_nm : string
@@ -35,6 +23,7 @@ val setminus_nm : string
 val setst_nm : string -> ty_kind -> string
 (*val setof_nm : string -> ty_kind -> string*)
 
+val uany_decl : hyp
 val mem_decl : hyp
 val subseteq_decl : hyp
 val empty_decl : hyp
@@ -47,22 +36,29 @@ val setminus_decl : hyp
 val setst_decl : string -> ty_kind -> hyp
 (*val setof_decl : string -> ty_kind -> hyp*)
 
-(* {3 Base Sets} *)
+val subseteq_fact : hyp
+val enum_fact : int -> hyp
 
+(* {3 Booleans} *)
 val boolean_nm : string
 val booltou_nm : string
-val string_nm : string
-val stringtou_nm : string
-val stringlit_nm : string -> string
 
 val boolean_decl : hyp
 val booltou_decl : hyp
-val string_decl : hyp
+
+(* {3 Strings} *)
+val stringsort_nm : string
+val stringany_nm : string
+val stringtou_nm : string
+val string_nm : string
+val stringlit_nm : string -> string
+
+val stringany_decl : hyp
 val stringtou_decl : hyp
+val string_decl : hyp
 val stringlit_decl : string -> hyp
 
 (* {3 Functions} *)
-
 val arrow_nm : string
 val fcn_nm : string -> ty_kind -> string
 val domain_nm : string
@@ -70,7 +66,6 @@ val fcnapp_nm : string
 val fcnexcept_nm : string
 
 (* {3 Arithmetic} *)
-
 val zset_nm : string
 val nset_nm : string
 val rset_nm : string
@@ -89,4 +84,8 @@ val gteq_nm : string
 val gt_nm : string
 val range_nm : string
 
+(* {3 Tuples} *)
+(* TODO *)
+
 (* {3 Sequences} *)
+(* TODO *)

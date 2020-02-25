@@ -28,20 +28,31 @@ let mk_fresh nm ss s =
   in
   Fresh (annot_kind (nm %% []) k, shp, Constant, Unbounded)
 
-(* {3 Sorts} *)
+let mk_fact e =
+  Fact (e, Visible, Now)
 
-let usort_nm = nt_prefix ^ "U"
-let stringsort_nm = nt_prefix ^ "String"
+let app b es = Apply (Internal b %% [], es)
 
-(* {3 Special} *)
+let una b e1    = app b [ e1 ]
+let ifx b e1 e2 = app b [ e1 ; e2 ]
 
-let uany_nm = nt_prefix ^ "any_u"
-let stringany_nm = nt_prefix ^ "any_string"
+let quant q xs e = Quant (q, List.map (fun x -> (annot_sort (x %% []) TU, Constant, No_domain)) xs, e)
+let all xs e = quant Forall xs e
+let exi xs e = quant Exists xs e
 
-let uany_decl = mk_fresh uany_nm [] TU %% []
-let stringany_decl = mk_fresh uany_nm [] TStr %% []
+let gen x n = List.init n (fun i -> x ^ string_of_int (i + 1))
+(** [gen "x" n] = [ "x1" ; .. ; "xn" ] *)
+
+let ixi ?(shift=0) n = List.init n (fun i -> Ix (shift + n - i) %% [])
+(** [ixi n]          = [ Ix n ; .. ; Ix 2 ; Ix 1 ]
+    [ixi ~shift:s n] = [ Ix (s+n) ; .. ; Ix (s+2) ; Ix (s+1) ]
+*)
+
 
 (* {3 Set Theory} *)
+
+let usort_nm = nt_prefix ^ "U"
+let uany_nm = nt_prefix ^ "any_u"
 
 let mem_nm = nt_prefix ^ "mem"
 let subseteq_nm = nt_prefix ^ "subseteq"
@@ -53,6 +64,8 @@ let cup_nm = nt_prefix ^ "cup"
 let cap_nm = nt_prefix ^ "cap"
 let setminus_nm = nt_prefix ^ "setminus"
 let setst_nm s _ = nt_prefix ^ "SetSt_" ^ s
+
+let uany_decl = mk_fresh uany_nm [] TU %% []
 
 let mem_decl = mk_fresh mem_nm [ TU ; TU ] TBool %% []
 let subseteq_decl = mk_fresh subseteq_nm [ TU ; TU ] TBool %% []
@@ -74,19 +87,74 @@ let setst_decl s k =
   in
   mk_fresh (setst_nm s k) (TU :: ss) TU %% []
 
-(* {3 Base Sets} *)
+let subseteq_def =
+  all [ "x" ; "y" ] (
+    ifx B.Equiv (
+      ifx B.Subseteq (Ix 2 %% []) (Ix 1 %% []) %% []
+    ) (
+      all [ "z" ] (
+        ifx B.Implies (
+          ifx B.Mem (Ix 1 %% []) (Ix 3 %% []) %% []
+        ) (
+          ifx B.Mem (Ix 1 %% []) (Ix 2 %% []) %% []
+        ) %% []
+      ) %% []
+    ) %% []
+  ) %% []
+
+let empty_def =
+  all [ "x" ] (
+    una B.Neg (
+      ifx B.Mem (Ix 1 %% []) (SetEnum [] %% []) %% []
+    ) %% []
+  ) %% []
+
+let enum_def n =
+  if n = 0 then
+    empty_def
+  else
+    all (gen "a" n @ [ "x" ]) (
+      ifx B.Equiv (
+        ifx B.Mem (
+          Ix 1 %% []
+        ) (
+          SetEnum (ixi ~shift:1 n) %% []
+        ) %% []
+      ) (
+        List (Or, List.init n begin fun i ->
+          ifx B.Eq (Ix 1 %% []) (Ix (n - i + 1) %% []) %% []
+        end) %% []
+      ) %% []
+    ) %% []
+
+let subseteq_fact = mk_fact subseteq_def %% []
+let enum_fact n = mk_fact (enum_def n) %% []
+
+
+(* {3 Booleans} *)
 
 let boolean_nm = nt_prefix ^ "Boolean"
 let booltou_nm = nt_prefix ^ "bool_to_u"
+
+let boolean_decl = mk_fresh boolean_nm [] TU %% []
+let booltou_decl = mk_fresh booltou_nm [ TBool ] TU %% []
+
+
+(* {3 Strings} *)
+
+let stringsort_nm = nt_prefix ^ "String"
+let stringany_nm = nt_prefix ^ "any_string"
+
 let string_nm = nt_prefix ^ "String"
 let stringtou_nm = nt_prefix ^ "string_to_u"
 let stringlit_nm s = nt_prefix ^ "string_lit_" ^ s
 
-let boolean_decl = mk_fresh boolean_nm [] TU %% []
-let booltou_decl = mk_fresh booltou_nm [ TBool ] TU %% []
+let stringany_decl = mk_fresh uany_nm [] TStr %% []
+
 let string_decl = mk_fresh string_nm [] TU %% []
 let stringtou_decl = mk_fresh stringtou_nm [ TStr ] TU %% []
 let stringlit_decl s = mk_fresh (stringlit_nm s) [] TStr %% []
+
 
 (* {3 Functions} *)
 
@@ -95,6 +163,7 @@ let fcn_nm s _ = nt_prefix ^ "fcn_" ^ s
 let domain_nm = nt_prefix ^ "domain"
 let fcnapp_nm = nt_prefix ^ "fcnapp"
 let fcnexcept_nm = nt_prefix ^ "fcnexcept"
+
 
 (* {3 Arithmetic} *)
 
@@ -116,4 +185,12 @@ let gteq_nm = nt_prefix ^ "gteq"
 let gt_nm = nt_prefix ^ "gt"
 let range_nm = nt_prefix ^ "range"
 
+
+(* {3 Tuples} *)
+
+(* TODO *)
+
+
 (* {3 Sequences} *)
+
+(* TODO *)

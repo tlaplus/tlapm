@@ -26,9 +26,7 @@ open R_commons
 type nt_node =
   (* Set Theory *)
   | NT_U
-  | NT_Str
   | NT_UAny
-  | NT_StringAny
   | NT_Mem
   | NT_Subseteq
   | NT_Enum of int
@@ -38,15 +36,15 @@ type nt_node =
   | NT_Cap
   | NT_Setminus
   | NT_SetSt of string * ty_kind
-    (* The arg. characterizes the body of the comprehension set
-     * "F" : U × s1 × .. × sn → Bool
-     * The set (for params S, a1, .., an) is equal to:
-     * { x \in S : F(x, a1, .., an) } *)
   (*| NT_SetOf of string * ty_kind*)  (* TODO *)
-  | NT_Boolean
+  (* Booleans *)
   | NT_BoolToU
-  | NT_String
+  | NT_Boolean
+  (* Strings *)
+  | NT_Str
+  | NT_StringAny
   | NT_StringToU
+  | NT_String
   | NT_StringLit of string
 
 (** Safe add: @raise Invalid_argument if already present *)

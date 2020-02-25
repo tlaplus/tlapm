@@ -66,8 +66,8 @@ end
 module Disambiguation : sig
   val int_special_prop : unit Property.pfuncs
   val real_special_prop : unit Property.pfuncs
-  val cast_special_prop : unit Property.pfuncs
-  val any_special_prop : unit Property.pfuncs
+  val cast_special_prop : (T.ty_atom * T.ty_atom) Property.pfuncs
+  val any_special_prop : T.ty_atom Property.pfuncs
   val cast_nm : T.ty_atom -> T.ty_atom -> string
   val any_nm : T.ty_atom -> string
   val min_reconstruct : Expr.T.sequent -> Expr.T.sequent

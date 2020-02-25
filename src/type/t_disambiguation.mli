@@ -41,8 +41,8 @@ val any_nm : T_t.ty_atom -> string
 
 val int_special_prop : unit Property.pfuncs
 val real_special_prop : unit Property.pfuncs
-val cast_special_prop : unit Property.pfuncs
-val any_special_prop : unit Property.pfuncs
+val cast_special_prop : (T_t.ty_atom * T_t.ty_atom) Property.pfuncs
+val any_special_prop : T_t.ty_atom Property.pfuncs
 
 
 (* {3 Main} *)

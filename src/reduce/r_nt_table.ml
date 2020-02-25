@@ -21,9 +21,7 @@ open R_nt_axioms
 type nt_node =
   (* Set Theory *)
   | NT_U
-  | NT_Str
   | NT_UAny
-  | NT_StringAny
   | NT_Mem
   | NT_Subseteq
   | NT_Enum of int
@@ -34,10 +32,14 @@ type nt_node =
   | NT_Setminus
   | NT_SetSt of string * ty_kind
   (*| NT_SetOf of string * ty_kind*)  (* TODO *)
-  | NT_Boolean
+  (* Booleans *)
   | NT_BoolToU
-  | NT_String
+  | NT_Boolean
+  (* Strings *)
+  | NT_Str
+  | NT_StringAny
   | NT_StringToU
+  | NT_String
   | NT_StringLit of string
   (* TODO functions, arith, tuples, sequences, etc. *)
 
@@ -104,9 +106,7 @@ let nt_base = from_list [ NT_U ; NT_UAny ; NT_Mem ]
 let nt_get_deps_l node =
   match node with
   | NT_U -> []
-  | NT_Str -> []
   | NT_UAny -> [ NT_U ]
-  | NT_StringAny -> [ NT_Str ]
   | NT_Mem -> [ NT_U ]
   | NT_Subseteq -> [ NT_U ; NT_Mem ]
   | NT_Enum _ -> [ NT_U ; NT_Mem ]
@@ -116,11 +116,15 @@ let nt_get_deps_l node =
   | NT_Cap -> [ NT_U ; NT_Mem ]
   | NT_Setminus -> [ NT_U ; NT_Mem ]
   | NT_SetSt _ -> [ NT_U ; NT_Mem ]
+
   | NT_BoolToU -> [ NT_U ; NT_Mem ]
   | NT_Boolean -> [ NT_U ; NT_Mem ; NT_BoolToU ]
+
+  | NT_Str -> []
+  | NT_StringAny -> [ NT_Str ]
   | NT_StringToU -> [ NT_U ; NT_Mem ]
   | NT_String -> [ NT_U ; NT_Mem ; NT_StringToU ]
-  | NT_StringLit s -> [ NT_U ; NT_Mem ; NT_StringToU ; NT_String ]
+  | NT_StringLit _ -> [ NT_U ; NT_Mem ; NT_StringToU ; NT_String ]
 
 let nt_get_deps node =
   List.fold_left begin fun sm node ->
