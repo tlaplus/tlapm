@@ -477,7 +477,10 @@ and fmt_expr cx oe =
       fmt_expr cx (If (e1, e2, e3) @@ oe)
   | Case ((e1, e2) :: ps, Some o) ->
       fmt_expr cx (If (e1, e2, Case (ps, Some o) %% []) @@ oe)
-  | String _ -> unsupp "String literals"
+  | String s ->
+      Fu.Atm begin fun ff ->
+        fprintf ff "%s" (Names.stringlit_nm s)
+      end
   | Num (m, "") ->
       Fu.Atm begin fun ff ->
         fprintf ff "%s" m

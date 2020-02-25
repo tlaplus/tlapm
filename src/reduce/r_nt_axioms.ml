@@ -262,6 +262,28 @@ let string_decl = mk_fresh string_nm [] TU %% []
 let stringtou_decl = mk_fresh stringtou_nm [ TStr ] TU %% []
 let stringlit_decl s = mk_fresh (stringlit_nm s) [] TStr %% []
 
+let string_def =
+  all [ "x" ] (
+    ifx B.Equiv (
+      ifx B.Mem (Ix 1 %% []) (Internal B.STRING %% []) %% []
+    ) (
+      Quant (
+        Exists, [ annot_sort ("s" %% []) TStr, Constant, No_domain ],
+        ifx B.Eq (
+          Ix 2 %% []
+        ) (
+          Apply (Opaque stringtou_nm %% [], [ Ix 1 %% [] ]) %% []
+        ) %% []
+      ) %% []
+    ) %% []
+  ) %% []
+
+let stringlit_distinct s1 s2 =
+  ifx B.Neq (Opaque (stringlit_nm s1) %% []) (Opaque (stringlit_nm s2) %% []) %% []
+
+let string_fact = mk_fact string_def %% []
+let stringlit_distinct_fact s1 s2 = mk_fact (stringlit_distinct s1 s2) %% []
+
 
 (* {3 Functions} *)
 

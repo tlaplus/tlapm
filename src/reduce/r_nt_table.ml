@@ -131,10 +131,13 @@ let nt_get_deps node =
     Sm.add (nt_get_id node) node sm
   end Sm.empty (nt_get_deps_l node)
 
+let stringlits = ref Ss.empty
+
 let nt_get_hyps node =
   let hs =
     match node with
     | NT_U | NT_Str -> []
+
     | NT_UAny -> [ uany_decl ]
     | NT_Mem -> [ mem_decl ]
     | NT_Subseteq -> [ subseteq_decl ; subseteq_fact ]
@@ -145,12 +148,23 @@ let nt_get_hyps node =
     | NT_Cap -> [ cap_decl ; cap_fact ]
     | NT_Setminus -> [ setminus_decl ; setminus_fact ]
     | NT_SetSt (s, k) -> [ setst_decl s k ]
+
     | NT_BoolToU -> [ booltou_decl ]
     | NT_Boolean -> [ boolean_decl ; boolean_fact ]
+
     | NT_StringAny -> [ stringany_decl ]
     | NT_StringToU -> [ stringtou_decl ]
-    | NT_String -> [ string_decl ]
-    | NT_StringLit s -> [ stringlit_decl s ]
+    | NT_String -> [ string_decl ; string_fact ]
+
+    | NT_StringLit s ->
+        if Ss.mem s !stringlits then []
+        else
+          let previous_lits = Ss.elements !stringlits in
+          let distinct_facts = List.map begin fun s' ->
+            stringlit_distinct_fact s s'
+          end previous_lits in
+          stringlits := Ss.add s !stringlits;
+          stringlit_decl s :: distinct_facts
   in
   Deque.of_list hs
 

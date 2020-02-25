@@ -112,6 +112,9 @@ let visitor = object (self : 'self)
         let ns = add (NT_Enum n) ns in
         super#expr scx ns oe
 
+    | String s ->
+        add (NT_StringLit s) ns
+
     | _ -> super#expr scx ns oe
 
   method bounds scx ns bs =
