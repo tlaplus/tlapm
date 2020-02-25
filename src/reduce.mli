@@ -56,6 +56,8 @@ module NtAxioms : sig
   val boolean_decl : hyp
   val booltou_decl : hyp
 
+  val boolean_fact : hyp
+
   (* Strings *)
   val stringsort_nm : string
   val stringany_nm : string

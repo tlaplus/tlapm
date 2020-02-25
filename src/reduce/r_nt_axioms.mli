@@ -51,6 +51,8 @@ val booltou_nm : string
 val boolean_decl : hyp
 val booltou_decl : hyp
 
+val boolean_fact : hyp
+
 (* {3 Strings} *)
 val stringsort_nm : string
 val stringany_nm : string

@@ -227,6 +227,25 @@ let booltou_nm = nt_prefix ^ "bool_to_u"
 let boolean_decl = mk_fresh boolean_nm [] TU %% []
 let booltou_decl = mk_fresh booltou_nm [ TBool ] TU %% []
 
+let boolean_def =
+  all [ "x" ] (
+    ifx B.Equiv (
+      ifx B.Mem (Ix 1 %% []) (Internal B.BOOLEAN %% []) %% []
+    ) (
+      ifx B.Disj (
+        ifx B.Eq (Ix 1 %% []) (
+          Apply (Opaque booltou_nm %% [], [ Internal B.TRUE %% [] ]) %% []
+        ) %% []
+      ) (
+        ifx B.Eq (Ix 1 %% []) (
+          Apply (Opaque booltou_nm %% [], [ Internal B.FALSE %% [] ]) %% []
+        ) %% []
+      ) %% []
+    ) %% []
+  ) %% []
+
+let boolean_fact = mk_fact boolean_def %% []
+
 
 (* {3 Strings} *)
 

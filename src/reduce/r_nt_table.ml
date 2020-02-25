@@ -136,7 +136,6 @@ let nt_get_hyps node =
     match node with
     | NT_U | NT_Str -> []
     | NT_UAny -> [ uany_decl ]
-    | NT_StringAny -> [ stringany_decl ]
     | NT_Mem -> [ mem_decl ]
     | NT_Subseteq -> [ subseteq_decl ; subseteq_fact ]
     | NT_Enum n -> [ enum_decl n ; enum_fact n ]
@@ -146,10 +145,11 @@ let nt_get_hyps node =
     | NT_Cap -> [ cap_decl ; cap_fact ]
     | NT_Setminus -> [ setminus_decl ; setminus_fact ]
     | NT_SetSt (s, k) -> [ setst_decl s k ]
-    | NT_Boolean -> [ boolean_decl ]
     | NT_BoolToU -> [ booltou_decl ]
-    | NT_String -> [ string_decl ]
+    | NT_Boolean -> [ boolean_decl ; boolean_fact ]
+    | NT_StringAny -> [ stringany_decl ]
     | NT_StringToU -> [ stringtou_decl ]
+    | NT_String -> [ string_decl ]
     | NT_StringLit s -> [ stringlit_decl s ]
   in
   Deque.of_list hs
