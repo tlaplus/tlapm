@@ -164,7 +164,7 @@ let rec expr scx oe =
       if srt1 = srt2 then
         Apply (op, [ e ; f ]) @@ oe, TBool
       else
-        Apply (op, [ mk_set e srt1 ; mk_set e srt2 ]) @@ oe, TBool
+        Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TBool
 
   | Internal (B.STRING | B.BOOLEAN | B.Nat | B.Int | B.Real) as op ->
       op @@ oe, TU
