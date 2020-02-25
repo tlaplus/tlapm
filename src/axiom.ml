@@ -122,7 +122,7 @@ let enum_def n =
         ) %% []
       ) (
         List (Or, List.init n begin fun i ->
-          ifx B.Eq (Ix 1 %% []) (Ix (n - i) %% []) %% []
+          ifx B.Eq (Ix 1 %% []) (Ix (n - i + 1) %% []) %% []
         end) %% []
       ) %% []
     ) %% []

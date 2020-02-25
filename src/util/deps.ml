@@ -22,13 +22,13 @@ end
 module Closure (G : Graph) = struct
 
   (* No node treated twice *)
-  let treated = ref Ss.empty
+  let seen = ref Ss.empty
 
   type action = G.s -> G.s
 
-  let get_untreated ns =
+  let remove_seen ns =
     snd (Sm.partition begin fun id _ ->
-      Ss.mem id !treated
+      Ss.mem id !seen
     end ns)
 
   (* FIXME in standard library for >= 4.03.0 *)
@@ -44,26 +44,27 @@ module Closure (G : Graph) = struct
                           non unique label '" ^ id ^ "'")
     end m1 m2
 
-  (* Explore graph recursively;
-   * Don't traverse already treated nodes;
-   * Stack actions, do all in the end. *)
-  let rec ac_deps_aux (stack : action Deque.dq) ns s =
+  (* Return double-ended queue of actions.
+   * Pre-condition: no loops in the graph
+   * Post-condition:
+   *   if n1 -> .. -> n2 in the graph, then
+   *   (front) :: .. :: n1 :: .. :: n2 :: .. :: (rear) in the deque.
+   *)
+  let rec ac_deps_aux (dq: action Deque.dq) ns =
     try
       let id, n = Sm.choose ns in
-      let deps = G.get_deps n in
-      let more = get_untreated deps in
-      let ns = union (Sm.remove id ns) more in
-      let stack = Deque.snoc stack (G.get_ac n) in
-      treated := Ss.add id !treated;
-      ac_deps_aux stack ns s
+      seen := Ss.add id !seen;  (* Prevent circularity *)
+      let deps = remove_seen (G.get_deps n) in
+      (* Necessary rec. call: dependencies must be resolved first *)
+      let dq = ac_deps_aux dq deps in
+      let dq = Deque.cons (G.get_ac n) dq in
+      ac_deps_aux dq (remove_seen ns)
     with Not_found ->
-      Deque.fold_right (@@) stack s
+      dq
 
   let ac_deps ns s =
     let ns = union ns G.base in
-    let _, ns = Sm.partition begin fun id _ ->
-      Ss.mem id !treated
-    end ns in
-    ac_deps_aux Deque.empty ns s
+    let dq = ac_deps_aux Deque.empty (remove_seen ns) in
+    Deque.fold_right (@@) dq s
 
 end

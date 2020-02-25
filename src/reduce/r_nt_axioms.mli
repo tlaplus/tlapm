@@ -38,6 +38,11 @@ val setst_decl : string -> ty_kind -> hyp
 
 val subseteq_fact : hyp
 val enum_fact : int -> hyp
+val union_fact : hyp
+val power_fact : hyp
+val cup_fact : hyp
+val cap_fact : hyp
+val setminus_fact : hyp
 
 (* {3 Booleans} *)
 val boolean_nm : string

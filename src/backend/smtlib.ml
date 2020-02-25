@@ -526,7 +526,8 @@ let pp_print_declarefun ff nm ins out =
   pp_print_sort out
 
 let pp_print_obligation ?(solver="CVC4") ff ob =
-  (* Shape the sequent into a form that can be translated *)
+  (* Shape the sequent into a form that can be translated;
+   * Get the top context containing additional declarations and axioms *)
   let top, sq = preprocess ~solver ob.obl.core in
 
   (* Print preample *)

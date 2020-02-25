@@ -43,6 +43,11 @@ module NtAxioms : sig
 
   val subseteq_fact : hyp
   val enum_fact : int -> hyp
+  val union_fact : hyp
+  val power_fact : hyp
+  val cup_fact : hyp
+  val cap_fact : hyp
+  val setminus_fact : hyp
 
   (* Booleans *)
   val boolean_nm : string

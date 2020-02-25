@@ -127,8 +127,96 @@ let enum_def n =
       ) %% []
     ) %% []
 
+let union_def =
+  all [ "a" ; "x" ] (
+    ifx B.Equiv (
+      ifx B.Mem (Ix 1 %% []) (una B.UNION (Ix 2 %% []) %% []) %% []
+    ) (
+      exi [ "y" ] (
+        ifx B.Conj (
+          ifx B.Mem (Ix 1 %% []) (Ix 3 %% []) %% []
+        ) (
+          ifx B.Mem (Ix 2 %% []) (Ix 1 %% []) %% []
+        ) %% []
+      ) %% []
+    ) %% []
+  ) %% []
+
+let power_def =
+  all [ "a" ; "x" ] (
+    ifx B.Equiv (
+      ifx B.Mem (Ix 1 %% []) (una B.SUBSET (Ix 2 %% []) %% []) %% []
+    ) (
+      all [ "y" ] (
+        ifx B.Implies (
+          ifx B.Mem (Ix 1 %% []) (Ix 2 %% []) %% []
+        ) (
+          ifx B.Mem (Ix 1 %% []) (Ix 3 %% []) %% []
+        ) %% []
+      ) %% []
+    ) %% []
+  ) %% []
+
+let cup_def =
+  all [ "a" ; "b" ; "x" ] (
+    ifx B.Equiv (
+      ifx B.Mem (
+        Ix 1 %% []
+      ) (
+        ifx B.Cup (Ix 3 %% []) (Ix 2 %% []) %% []
+      ) %% []
+    ) (
+      ifx B.Disj (
+        ifx B.Mem (Ix 1 %% []) (Ix 3 %% []) %% []
+      ) (
+        ifx B.Mem (Ix 1 %% []) (Ix 2 %% []) %% []
+      ) %% []
+    ) %% []
+  ) %% []
+
+let cap_def =
+  all [ "a" ; "b" ; "x" ] (
+    ifx B.Equiv (
+      ifx B.Mem (
+        Ix 1 %% []
+      ) (
+        ifx B.Cap (Ix 3 %% []) (Ix 2 %% []) %% []
+      ) %% []
+    ) (
+      ifx B.Conj (
+        ifx B.Mem (Ix 1 %% []) (Ix 3 %% []) %% []
+      ) (
+        ifx B.Mem (Ix 1 %% []) (Ix 2 %% []) %% []
+      ) %% []
+    ) %% []
+  ) %% []
+
+let setminus_def =
+  all [ "a" ; "b" ; "x" ] (
+    ifx B.Equiv (
+      ifx B.Mem (
+        Ix 1 %% []
+      ) (
+        ifx B.Setminus (Ix 3 %% []) (Ix 2 %% []) %% []
+      ) %% []
+    ) (
+      ifx B.Conj (
+        ifx B.Mem (Ix 1 %% []) (Ix 3 %% []) %% []
+      ) (
+        una B.Neg (
+          ifx B.Mem (Ix 1 %% []) (Ix 2 %% []) %% []
+        ) %% []
+      ) %% []
+    ) %% []
+  ) %% []
+
 let subseteq_fact = mk_fact subseteq_def %% []
 let enum_fact n = mk_fact (enum_def n) %% []
+let union_fact = mk_fact union_def %% []
+let power_fact = mk_fact power_def %% []
+let cup_fact = mk_fact cup_def %% []
+let cap_fact = mk_fact cap_def %% []
+let setminus_fact = mk_fact setminus_def %% []
 
 
 (* {3 Booleans} *)
