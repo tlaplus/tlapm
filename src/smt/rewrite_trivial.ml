@@ -23,7 +23,7 @@ let rec range2set a b =
 
 (** Simplify trivialities, flatten conj/disjunctions *)
 let rec rw e =
-(* Util.eprintf "rw: %a" (Expr.Fmt.pp_print_expr (Deque.empty, Ctx.dot)) e ; *)
+(* Util.eprintf "rw_trivial: %a" (Expr.Fmt.pp_print_expr (Deque.empty, Ctx.dot)) e ; *)
   let mk x = { e with core = x } in
   let build ex = match ex.core with a -> a |> mk in                             (** mantains e's original properties, especially [Boolify.boolify_prop] *)
   let apply op e1 e2 = Apply (Internal op |> mk, [e1 ; e2]) |> mk in
@@ -68,6 +68,7 @@ let rec rw e =
       SetEnum (fold_left (fun r e -> if exists (Expr.Eq.expr e) fs then e :: r else r) [] es) |> mk
     | B.Setminus, _, SetEnum [] -> x
     | B.Setminus, SetEnum [], _ -> x
+    | B.Mem, Tuple [], Apply ({core = Internal B.Seq}, [_]) -> tla_true
     | B.Mem, Num (m,""), Internal B.Int when str_is_int m -> tla_true
     | B.Mem, Num (m,""), Internal B.Nat when str_is_nat m -> tla_true
     | (B.Eq | B.Equiv), _, _ when Expr.Eq.expr x y -> tla_true
@@ -117,6 +118,7 @@ let rec rw e =
     | B.Neg, Internal B.TRUE  -> tla_false
     | B.Neg, Internal B.FALSE -> tla_true
     | B.Neg, Apply ({core = Internal B.Neg}, [x]) when T.is_hard_bool x -> build x
+    | B.DOMAIN, Tuple [] -> SetEnum [] |> mk
     | B.Uminus, Num (n,"") -> Num ("-"^n,"") @@ ex
     | B.Tail, Tuple [] -> Tuple [] |> mk
     (* | B.SUBSET, SetEnum es -> SetEnum (map (fun xs -> SetEnum xs |> mk) (all_perms es)) |> mk *)

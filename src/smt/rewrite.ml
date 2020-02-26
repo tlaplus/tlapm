@@ -192,10 +192,6 @@ class rw = object (self : 'self)
         (** x \in Seq(ex) --> ... *)
         | B.Seq, _ ->
           begin match x.core with
-            (** <<>> \in Seq(ex) --> TRUE *)
-            | Tuple [] ->
-              tla_true
-
             (** <<e1, ..., en>> \in Seq(ex) --> e1 \in ex /\ ... /\ en \in ex *)
             | Tuple es ->
               let es = map (self#expr scx) es in
@@ -834,8 +830,6 @@ class rw = object (self : 'self)
               | [ex] -> self#expr scx ex
               | exs -> self#expr scx (Tuple exs |> mk)
             end
-        | B.DOMAIN, Tuple [] ->
-          empty_set
         | B.DOMAIN, Tuple es ->
           range one (Num (string_of_int (length es), "") |> mk)
         | B.DOMAIN, Record fes ->
