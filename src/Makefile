@@ -44,6 +44,9 @@ TYPE_PACK = \
 REDUCE_PACK = \
 	reduce/r_nt_axioms reduce/r_nt_cook reduce/r_nt_table reduce/r_nt_collect
 
+ENCODE_PACK = \
+	encode/n_table encode/n_cook
+
 TYPESYSTEM_DIR = \
   typesystem/typ_t typesystem/typ_e typesystem/typ_c \
   typesystem/typ_cg1 typesystem/typ_cg2 typesystem/typ_impgraph typesystem/typ_system
@@ -58,13 +61,13 @@ MODULES = revision sysconf \
   params ${PARS_PACK} pars util/property \
   util/util ctx errors optable util/fmtutil \
   isabelle_keywords tla_parser util/deque util/deps alexer ${EXPR_PACK} expr axiom \
-  method_prs ${PROOF_PACK} proof ${TYPE_PACK} type ${REDUCE_PACK} reduce ${SMT_DIR} util/timing \
+  method_prs ${PROOF_PACK} proof ${TYPE_PACK} type ${REDUCE_PACK} reduce ${ENCODE_PACK} encode ${SMT_DIR} util/timing \
 	${MODULE_PACK} module ${FRONTEND_PACK} \
   backend/toolbox backend/schedule ${BACKEND_PACK} backend \
   tlapm_args tlapm
 
 INC0 = -I ../backend -I ../frontend -I ../expr -I ../module -I ../proof \
-       -I ../util -I ../pars -I ../type -I ../reduce -I ../typesystem -I ../smt
+       -I ../util -I ../pars -I ../type -I ../reduce -I ../encode -I ../typesystem -I ../smt
 
 INC = ${INC0:../%=%}
 INC1 = ${INC0} -I ..
