@@ -1125,7 +1125,8 @@ class rw = object (self : 'self)
       in
       let es = map (fun a -> ex <~ a) es in
       let ex = match q, es with
-        | _, [] -> tla_true
+        | Forall, [] -> tla_true
+        | Exists, [] -> tla_false
         | _, [ex] -> ex
         | Forall, _ -> lAnd es
         | Exists, _ -> lOr es
