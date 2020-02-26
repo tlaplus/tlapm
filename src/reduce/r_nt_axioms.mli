@@ -43,6 +43,7 @@ val power_fact : hyp
 val cup_fact : hyp
 val cap_fact : hyp
 val setminus_fact : hyp
+val setst_fact : string -> ty_kind -> expr -> hyp
 
 (* {3 Booleans} *)
 val boolean_nm : string

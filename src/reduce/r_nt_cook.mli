@@ -9,7 +9,7 @@ open Expr.T
 open Type.T
 open Property
 
-val setst_nm : string -> string
-val setst_prop : ty_kind pfuncs
+val setst_nm : ty_kind -> expr -> string
+val setst_special_prop : (ty_kind * expr) pfuncs
 
 val cook : sequent -> sequent

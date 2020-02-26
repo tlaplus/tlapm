@@ -30,7 +30,7 @@ type nt_node =
   | NT_Cup
   | NT_Cap
   | NT_Setminus
-  | NT_SetSt of string * ty_kind
+  | NT_SetSt of string * ty_kind * expr
   (*| NT_SetOf of string * ty_kind*)  (* TODO *)
   (* Booleans *)
   | NT_BoolToU
@@ -57,7 +57,7 @@ let nt_get_id node =
   | NT_Cup -> "nt_cup"
   | NT_Cap -> "nt_cap"
   | NT_Setminus -> "nt_setminus"
-  | NT_SetSt (s, _) -> "nt_setst_" ^ s
+  | NT_SetSt (s, _, _) -> "nt_setst_" ^ s
   | NT_Boolean -> "nt_boolean"
   | NT_BoolToU -> "nt_booltou"
   | NT_String -> "nt_string"
@@ -147,7 +147,7 @@ let nt_get_hyps node =
     | NT_Cup -> [ cup_decl ; cup_fact ]
     | NT_Cap -> [ cap_decl ; cap_fact ]
     | NT_Setminus -> [ setminus_decl ; setminus_fact ]
-    | NT_SetSt (s, k) -> [ setst_decl s k ]
+    | NT_SetSt (s, k, e) -> [ setst_decl s k ; setst_fact s k e ]
 
     | NT_BoolToU -> [ booltou_decl ]
     | NT_Boolean -> [ boolean_decl ; boolean_fact ]

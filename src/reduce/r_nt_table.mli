@@ -35,7 +35,7 @@ type nt_node =
   | NT_Cup
   | NT_Cap
   | NT_Setminus
-  | NT_SetSt of string * ty_kind
+  | NT_SetSt of string * ty_kind * expr
   (*| NT_SetOf of string * ty_kind*)  (* TODO *)
   (* Booleans *)
   | NT_BoolToU

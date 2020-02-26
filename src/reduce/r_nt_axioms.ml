@@ -78,14 +78,14 @@ let cap_decl = mk_fresh cap_nm [ TU ; TU ] TU %% []
 let setminus_decl = mk_fresh setminus_nm [ TU ; TU ] TU %% []
 
 let setst_decl s k =
-  let ss =
+  let ins =
     match k with
-    | TKind (TKind ([], TAtom TU) :: ks, TAtom TBool) ->
+    | TKind (TKind ([], TAtom TU) :: ks, TAtom TU) ->
         List.map (fun k -> get_atom (get_ty k)) ks
     | _ -> invalid_arg ("Reduce.NtAxioms.setst_decl: \
                         bad kind provided")
   in
-  mk_fresh (setst_nm s k) (TU :: ss) TU %% []
+  mk_fresh (setst_nm s k) (TU :: ins) TU %% []
 
 let subseteq_def =
   all [ "x" ; "y" ] (
@@ -210,6 +210,61 @@ let setminus_def =
     ) %% []
   ) %% []
 
+let setst_def s k e =
+  let _ = s, k, e in
+  Internal B.TRUE %% []
+  (*all (gen "a" n @ [ "s" ; "x" ]) (
+    ifx B.Equiv (
+      ifx B.Mem (
+        Ix 1 %% []
+      ) (
+        SetSt ("y" %% [], Ix 2 %% [],
+          Apply (Ix (n + 3) %% [], ixi ~shift:4 n @ [ Ix 1 %% [] ]) %% []
+        ) %% []
+      ) %% []
+    ) (
+      ifx B.Conj (
+        ifx B.Mem (Ix 1 %% []) (Ix 2 %% []) %% []
+      ) (
+        Apply (Ix (n + 3) %% [], ixi ~shift:2 n @ [ Ix 1 %% [] ]) %% []
+      ) %% []
+    ) %% []
+  ) %% []*)
+
+let setof_def m n =
+  all (gen "a" m @ gen "s" n @ [ "y" ]) (
+    ifx B.Equiv (
+      ifx B.Mem (
+        Ix 1 %% []
+      ) (
+        SetOf (
+          Apply (Ix (m + n + 2) %% [], ixi ~shift:(2*n + 1) m @ ixi n) %% [],
+          List.init n begin fun i ->
+            let x = "x" ^ string_of_int (i + 1) in
+            (x %% [], Constant, Domain (Ix (n - i) %% []))
+          end
+        ) %% []
+      ) %% []
+    ) (
+      exi (gen "x" n) (
+        List (And,
+          List.init n begin fun i ->
+            ifx B.Mem (Ix (n - i) %% []) (Ix (2*n - i) %% []) %% []
+          end
+          @ [ ifx B.Eq (
+                Ix n %% []
+              ) (
+                Apply (
+                  Ix (m + 2*n + 2) %% [],
+                  ixi ~shift:(2*n + 1) m @ ixi n
+                ) %% []
+              ) %% []
+          ]
+        ) %% []
+      ) %% []
+    ) %% []
+  ) %% []
+
 let subseteq_fact = mk_fact subseteq_def %% []
 let enum_fact n = mk_fact (enum_def n) %% []
 let union_fact = mk_fact union_def %% []
@@ -217,6 +272,7 @@ let power_fact = mk_fact power_def %% []
 let cup_fact = mk_fact cup_def %% []
 let cap_fact = mk_fact cap_def %% []
 let setminus_fact = mk_fact setminus_def %% []
+let setst_fact s k e = mk_fact (setst_def s k e) %% []
 
 
 (* {3 Booleans} *)

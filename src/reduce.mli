@@ -48,6 +48,7 @@ module NtAxioms : sig
   val cup_fact : hyp
   val cap_fact : hyp
   val setminus_fact : hyp
+  val setst_fact : string -> ty_kind -> expr -> hyp
 
   (* Booleans *)
   val boolean_nm : string
@@ -123,7 +124,7 @@ module NtTable : sig
     | NT_Cup
     | NT_Cap
     | NT_Setminus
-    | NT_SetSt of string * ty_kind
+    | NT_SetSt of string * ty_kind * expr
     (*| NT_SetOf of string * ty_kind*)  (* TODO *)
     (* Booleans *)
     | NT_BoolToU
@@ -148,8 +149,8 @@ module NtCook : sig
   open Expr.T
   open Type.T
   open Property
-  val setst_nm : string -> string
-  val setst_prop : ty_kind pfuncs
+  val setst_nm : ty_kind -> expr -> string
+  val setst_special_prop : (ty_kind * expr) pfuncs
   val cook : sequent -> sequent
 end
 
