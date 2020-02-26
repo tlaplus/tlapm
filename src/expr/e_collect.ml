@@ -28,7 +28,7 @@ let collect_vars = object (self : 'self)
   method expr (unit, hx as scx) (su, sb as s) oe =
     match oe.core with
     | Ix n ->
-        if n < Deque.size hx then
+        if n <= Deque.size hx then
           (su, Is.add n sb)
         else
           (Is.add n su, sb)

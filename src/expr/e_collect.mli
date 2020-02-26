@@ -24,7 +24,7 @@ val vs_fold : ctx -> (int -> hyp -> 'a -> 'a) -> var_set -> 'a -> 'a
 val vs_partition : ctx -> (int -> hyp -> bool) -> var_set -> var_set * var_set
 
 (** Get free vars and bounded vars (respectively).
- *
+ 
     A variable is bounded if its index is < to its depth, accounting for
     the context ctx; otherwise it is free.
 
