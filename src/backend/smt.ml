@@ -369,7 +369,7 @@ let collect_data scx (hs,c) =
 (****************************************************************************)
 
 (** Rewriter object *)
-let rws = new Normal.rw1
+let rws = new Rewrite.rw
 
 (** Rewrite and simplify hypotheses [hs] + conclusion [c] *)
 let rw_hsc scx (hs,c) =
@@ -729,4 +729,3 @@ let pp_print_obligation ?solver:(solver="?") ?logic:(logic=AUFNIRA) ff ob =
 (* REDIRECT! *)
 (*let encode_smtlib = pp_print_obligation ~logic:UFNIA*)
   *)
-
