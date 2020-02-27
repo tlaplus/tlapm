@@ -512,8 +512,8 @@ let preprocess ?solver sq =
   let sq = Reduce.NtCook.cook sq in
 
   let data = Reduce.NtCollect.collect sq in
-  let top = Reduce.NtTable.nt_axiomatize data Deque.empty in
-  { sq with context = Deque.append top sq.context }
+  let sq = Reduce.NtTable.nt_axiomatize data sq in
+  sq
 
 
 (* {3 Obligation Formatting} *)
