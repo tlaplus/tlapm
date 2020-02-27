@@ -10,8 +10,6 @@ open Type.T
 open Util.Coll
 open Deps
 
-open R_commons
-
 (** To modify the declarations and axioms of the 'No Types' (NT) encoding,
     you should add/remove constructors in the {!nt_node} datatype, specify
     names in the {!nt_get_id} function and dependencies in the {!nt_get_deps}

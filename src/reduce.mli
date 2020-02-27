@@ -4,11 +4,6 @@
 
 (* Packaging module for the modules that implement PO transformations *)
 
-module Commons : sig
-  open Expr.T
-  val add_hyp : hyp -> ?opq:string -> sequent -> sequent
-end
-
 module NtAxioms : sig
   open Expr.T
   open Type.T
@@ -107,11 +102,19 @@ module NtAxioms : sig
   (* TODO *)
 end
 
+module NtCook : sig
+  open Expr.T
+  open Type.T
+  open Property
+  val setst_nm : ty_kind -> expr -> string
+  val setst_special_prop : (ty_kind * expr) pfuncs
+  val cook : sequent -> sequent
+end
+
 module NtTable : sig
   open Expr.T
   open Type.T
   open Util.Coll
-  open Commons
   type nt_node =
     (* Set Theory *)
     | NT_U
@@ -143,15 +146,6 @@ module NtTable : sig
   val nt_get_deps : nt_node -> nt_node Sm.t
   val nt_get_hyps : nt_node -> hyp Deque.dq
   val nt_axiomatize : nt_node Sm.t -> sequent -> sequent
-end
-
-module NtCook : sig
-  open Expr.T
-  open Type.T
-  open Property
-  val setst_nm : ty_kind -> expr -> string
-  val setst_special_prop : (ty_kind * expr) pfuncs
-  val cook : sequent -> sequent
 end
 
 module NtCollect : sig
