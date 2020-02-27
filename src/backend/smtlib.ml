@@ -513,7 +513,7 @@ let preprocess ?solver sq =
 
   let data = Reduce.NtCollect.collect sq in
   let top = Reduce.NtTable.nt_axiomatize data Deque.empty in
-  top, sq
+  { sq with context = Deque.append top sq.context }
 
 
 (* {3 Obligation Formatting} *)
@@ -533,8 +533,8 @@ let pp_print_declarefun ff nm ins out =
 
 let pp_print_obligation ?(solver="CVC4") ff ob =
   (* Shape the sequent into a form that can be translated;
-   * Get the top context containing additional declarations and axioms *)
-  let top, sq = preprocess ~solver ob.obl.core in
+   * Append a top context containing additional declarations and axioms *)
+  let sq = preprocess ~solver ob.obl.core in
 
   (* Print preample *)
   pp_print_newline ff ();
@@ -604,29 +604,19 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         spin ncx hs
   in
 
-  (* Print top context *)
-  fprintf ff ";; Top context@.";
+  (* Print hypotheses *)
+  fprintf ff ";; Hypotheses@.";
   (* FIXME handle this in NtTable in some way *)
   pp_print_newline ff ();
   pp_print_declaresort ff Names.usort_nm 0;
   pp_print_declaresort ff Names.stringsort_nm 0;
   pp_print_newline ff ();
   let cx =
-    if Deque.size top = 0 then begin
+    if Deque.size sq.context = 0 then begin
       pp_print_newline ff ();
       Ctx.dot
     end else
-      spin Ctx.dot top
-  in
-
-  (* Print hypotheses *)
-  fprintf ff ";; Hypotheses@.";
-  let cx =
-    if Deque.size sq.context = 0 then begin
-      pp_print_newline ff ();
-      cx
-    end else
-      spin cx sq.context
+      spin Ctx.dot sq.context
   in
 
   (* Print goal *)
