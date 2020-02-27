@@ -214,6 +214,7 @@ module Subst : sig
   val app_defn : sub -> defn -> defn
   val app_defns : sub -> defn list -> sub * defn list
   val app_sequent : sub -> sequent -> sequent
+  val app_hyps : sub -> hyp Deque.dq -> sub * hyp Deque.dq
   val app_hyp : sub -> hyp -> hyp
 end;;
 
