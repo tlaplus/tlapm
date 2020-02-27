@@ -13,6 +13,9 @@ open Util.Coll
 module A = R_nt_axioms
 module B = Builtin
 
+
+type hyp_nm = string
+
 let scount = ref 0
 let get_scount () =
   scount := !scount + 1;
@@ -68,11 +71,17 @@ end
 
 (* {3 Main} *)
 
-let locally_bound (_, hx) xs =
-  snd (Expr.Collect.vs_partition hx begin fun _ h ->
+let split_global_local (_, hx) xs =
+  Expr.Collect.vs_partition hx begin fun _ h ->
     let nm = hyp_hint h in
     has nm is_global_prop
-  end xs)
+  end xs
+
+let globally_bound scx xs =
+  fst (split_global_local scx xs)
+
+let locally_bound scx xs =
+  snd (split_global_local scx xs)
 
 let hyp_sort hx ix =
   let h = (get_val_from_id hx ix) in
@@ -90,14 +99,17 @@ let visitor = object (self : 'self)
         let e2 = self#expr scx e2 in
 
         let ys = Expr.Collect.fvs ~ctx:(Deque.snoc Deque.empty hyp) e2 in
-        let ys = locally_bound scx ys in
+        let gs, ys = split_global_local scx ys in
         let ys = Is.elements ys in
+
+        let min = Is.min_elt gs in
+        let nm = hyp_name (get_val_from_id hx min) in
 
         let ins = List.map (hyp_sort hx) ys in
         let k = mk_fstk_ty (ty_u :: List.map mk_atom_ty ins) ty_u in
         let s = setst_nm k e2 in
-        let op = assign (Opaque s %% []) setst_special_prop (k, e2) in
-        Apply (op, e1 :: List.map (fun i -> Ix (i - 1) %% []) ys) @@ oe
+        let op = assign (Opaque s %% []) setst_special_prop (Some nm, k, e2) in
+        Apply (op, e1 :: List.map (fun i -> Ix i %% []) ys) @@ oe
 
     | _ -> super#expr scx oe
 end

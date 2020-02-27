@@ -106,8 +106,9 @@ module NtCook : sig
   open Expr.T
   open Type.T
   open Property
+  type hyp_nm = string
   val setst_nm : ty_kind -> expr -> string
-  val setst_special_prop : (ty_kind * expr) pfuncs
+  val setst_special_prop : (hyp_nm option * ty_kind * expr) pfuncs
   val cook : sequent -> sequent
 end
 
@@ -127,7 +128,7 @@ module NtTable : sig
     | NT_Cup
     | NT_Cap
     | NT_Setminus
-    | NT_SetSt of string * ty_kind * expr
+    | NT_SetSt of NtCook.hyp_nm option * string * ty_kind * expr
     (*| NT_SetOf of string * ty_kind*)  (* TODO *)
     (* Booleans *)
     | NT_BoolToU

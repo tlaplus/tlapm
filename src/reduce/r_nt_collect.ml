@@ -77,8 +77,8 @@ let visitor = object (self : 'self)
 
     | Opaque s when has oe C.setst_special_prop ->
         (* FIXME set s *)
-        let k, e = get oe C.setst_special_prop in
-        add (NT_SetSt (s, k, e)) ns
+        let nm, k, e = get oe C.setst_special_prop in
+        add (NT_SetSt (nm, s, k, e)) ns
 
     | Lambda (vs, e) ->
         let ns = List.fold_left begin fun ns (v, _) ->

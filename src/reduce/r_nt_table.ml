@@ -17,6 +17,8 @@ open R_nt_axioms
 
 (* {3 General} *)
 
+type hyp_nm = R_nt_cook.hyp_nm
+
 type nt_node =
   (* Set Theory *)
   | NT_U
@@ -29,7 +31,7 @@ type nt_node =
   | NT_Cup
   | NT_Cap
   | NT_Setminus
-  | NT_SetSt of string * ty_kind * expr
+  | NT_SetSt of hyp_nm option * string * ty_kind * expr
   (*| NT_SetOf of string * ty_kind*)  (* TODO *)
   (* Booleans *)
   | NT_BoolToU
@@ -56,7 +58,7 @@ let nt_get_id node =
   | NT_Cup -> "nt_cup"
   | NT_Cap -> "nt_cap"
   | NT_Setminus -> "nt_setminus"
-  | NT_SetSt (s, _, _) -> "nt_setst_" ^ s
+  | NT_SetSt (_, s, _, _) -> "nt_setst_" ^ s
   | NT_Boolean -> "nt_boolean"
   | NT_BoolToU -> "nt_booltou"
   | NT_String -> "nt_string"
@@ -110,6 +112,7 @@ let from_list ns =
  * associated with the node should go just below the hypothesis with that name.
  *)
 let nt_get_place = function
+  | NT_SetSt (nm, _, _, _) -> nm
   | _ -> None
 
 
@@ -161,7 +164,7 @@ let nt_get_hyps node =
     | NT_Cup -> [ cup_decl ; cup_fact ]
     | NT_Cap -> [ cap_decl ; cap_fact ]
     | NT_Setminus -> [ setminus_decl ; setminus_fact ]
-    | NT_SetSt (s, k, e) -> [ setst_decl s k ; setst_fact s k e ]
+    | NT_SetSt (_, s, k, e) -> [ setst_decl s k ; setst_fact s k e ]
 
     | NT_BoolToU -> [ booltou_decl ]
     | NT_Boolean -> [ boolean_decl ; boolean_fact ]
