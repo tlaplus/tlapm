@@ -64,4 +64,4 @@ val nt_get_hyps : nt_node -> hyp Deque.dq
 (** [nt_axiomatize ns hs] adds to [hs] all hypotheses required by nodes [ns],
     accouting for depending nodes.  [hs] represents a generic top context.
 *)
-val nt_axiomatize : nt_node Sm.t -> hyp Deque.dq -> hyp Deque.dq
+val nt_axiomatize : nt_node Sm.t -> sequent -> sequent

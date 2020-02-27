@@ -142,7 +142,7 @@ module NtTable : sig
   val nt_get_id : nt_node -> string
   val nt_get_deps : nt_node -> nt_node Sm.t
   val nt_get_hyps : nt_node -> hyp Deque.dq
-  val nt_axiomatize : nt_node Sm.t -> hyp Deque.dq -> hyp Deque.dq
+  val nt_axiomatize : nt_node Sm.t -> sequent -> sequent
 end
 
 module NtCook : sig
