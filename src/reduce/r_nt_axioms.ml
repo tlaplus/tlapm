@@ -210,26 +210,23 @@ let setminus_def =
     ) %% []
   ) %% []
 
-let setst_def s k e =
-  let _ = s, k, e in
-  Internal B.TRUE %% []
-  (*all (gen "a" n @ [ "s" ; "x" ]) (
+let setst_def s (TKind (ks, _)) body =
+  let n = List.length ks -1 in
+  all ([ "s" ] @ gen "a" n @ [ "x" ]) (
     ifx B.Equiv (
       ifx B.Mem (
         Ix 1 %% []
       ) (
-        SetSt ("y" %% [], Ix 2 %% [],
-          Apply (Ix (n + 3) %% [], ixi ~shift:4 n @ [ Ix 1 %% [] ]) %% []
-        ) %% []
+        Apply (Ix (n + 3) %% [], ixi ~shift:1 (n + 1)) %% []
       ) %% []
     ) (
       ifx B.Conj (
-        ifx B.Mem (Ix 1 %% []) (Ix 2 %% []) %% []
+        ifx B.Mem (Ix 1 %% []) (Ix (n + 2) %% []) %% []
       ) (
-        Apply (Ix (n + 3) %% [], ixi ~shift:2 n @ [ Ix 1 %% [] ]) %% []
+        body
       ) %% []
     ) %% []
-  ) %% []*)
+  ) %% []
 
 let setof_def m n =
   all (gen "a" m @ gen "s" n @ [ "y" ]) (

@@ -190,14 +190,16 @@ let nt_get_hyps node =
 
 module NT_Graph : Graph
   with type node = nt_node
-   and type s = (hyp Deque.dq) Deque.dq * expr (* yikes *) =
+   and type s = (int * hyp Deque.dq) Deque.dq * expr (* yikes *) =
 struct
   type node = nt_node
   (* Shattered sequent.  The context is divided into parcels, which are joined
    * at the end of the axiomatization process.  A parcel is split when some
    * hypothesis has to be inserted in the middle.  The first parcel is treated
-   * as a special top context, where hypotheses go by default. *)
-  type s = (hyp Deque.dq) Deque.dq * expr
+   * as a special top context, where hypotheses go by default.  For each parcel
+   * we also record the number of hypotheses that were appended at the rear;
+   * this is used to compute a substitution to apply to some axioms. *)
+  type s = (int * hyp Deque.dq) Deque.dq * expr
 
   let base = nt_base
   let get_id n = nt_get_id n
@@ -205,9 +207,9 @@ struct
 
   let app_hss_e sub (hss, e) =
     let (sub, hss) =
-      Deque.fold_left begin fun (sub, hss') hs ->
+      Deque.fold_left begin fun (sub, hss') (k, hs) ->
         let sub, hs = Expr.Subst.app_hyps sub hs in
-        (sub, Deque.snoc hss' hs)
+        (sub, Deque.snoc hss' (k, hs))
       end (sub, Deque.empty) hss
     in
     let e = Expr.Subst.app_expr sub e in
@@ -228,17 +230,19 @@ struct
       match Deque.front r with
       | None -> invalid_arg ("Reduce.NtTable.split_hss: \
                               cannot find hypothesis '" ^ nm ^ "'")
-      | Some (hs, r) ->
+      | Some ((k, hs), r) ->
           begin match Deque.find hs test with
           | None ->
-              spin (Deque.snoc l hs) r
-          | Some (k, _) ->
-              let hs_left, hs_right = do_split (k + 1) hs in
+              spin (Deque.snoc l (k, hs)) r
+          | Some (p, _) ->
+              let hs_left, hs_right = do_split (p + 1) hs in
               (* Relevant hyp at the rear of l.  So l is non-empty *)
-              let l = Deque.snoc l hs_left in
+              (* The number of added hyps in the left split parcel is 0
+               * as we assume all splits occur between original hypotheses. *)
+              let l = Deque.snoc l (0, hs_left) in
               let r =
                 if Deque.size hs_right = 0 then r
-                else Deque.cons hs_right r
+                else Deque.cons (k, hs_right) r
               in
               (l, r)
           end
@@ -248,27 +252,31 @@ struct
   let get_ac n (hss, e) =
     match nt_get_place n with
     | None ->
-        let top, hss = Option.get (Deque.front hss) in
+        let (k, top), hss = Option.get (Deque.front hss) in
         let more = nt_get_hyps n in
+        let p = Deque.size more in
         let top = Deque.append top more in
-        let sub = Expr.Subst.shift (Deque.size more) in
+        let sub = Expr.Subst.shift p in
         let (hss, e) = app_hss_e sub (hss, e) in
-        (Deque.cons top hss, e)
+        (Deque.cons (k + p, top) hss, e)
     | Some nm ->
         let (hss_left, hss_right) = split_hss nm hss in
         let more = nt_get_hyps n in
-        let hss_left, hs = Option.get (Deque.rear hss_left) in
+        let p = Deque.size more in
+        let sub = Expr.Subst.shift 0 in
+        let _, more = Expr.Subst.app_hyps sub more in
+        let hss_left, (k, hs) = Option.get (Deque.rear hss_left) in
         let hs = Deque.append hs more in
-        let sub = Expr.Subst.shift (Deque.size more) in
+        let sub = Expr.Subst.shift p in
         let (hss_right, e) = app_hss_e sub (hss_right, e) in
-        (Deque.append (Deque.snoc hss_left hs) hss_right, e)
+        (Deque.append (Deque.snoc hss_left (k + p, hs)) hss_right, e)
 end
 
 module NT_Axiomatize = Closure (NT_Graph)
 
 let nt_axiomatize ns sq =
-  let x = ([ Deque.empty ; sq.context ] |> Deque.of_list, sq.active) in
+  let x = ([ 0, Deque.empty ; 0, sq.context ] |> Deque.of_list, sq.active) in
   let x = NT_Axiomatize.ac_deps ns x in
-  Deque.fold_right begin fun hs sq ->
+  Deque.fold_right begin fun (_, hs) sq ->
     { sq with context = Deque.append hs sq.context }
   end (fst x) { context = Deque.empty ; active = snd x }

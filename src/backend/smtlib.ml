@@ -49,8 +49,6 @@ let lookup_id cx n =
 
 (* {3 Expression Formatting} *)
 
-(* TODO: support higher-order expressions *)
-
 let pp_print_sort ff (a : ty_atom) =
   let s =
     match a with
