@@ -109,8 +109,8 @@ let is_bvar cx n =
     has_boundvar (nth cx (n - 1))
 
 let turn_first_char is_bv id =
-  let is_lowercase s = s.[0] = (Char.lowercase s.[0]) in
-  let is_uppercase s = s.[0] = (Char.uppercase s.[0]) in
+  let is_lowercase s = s.[0] = (Char.lowercase_ascii s.[0]) in
+  let is_uppercase s = s.[0] = (Char.uppercase_ascii s.[0]) in
   if !mode = Fof
   (* then (if is_bvar cx n then String.capitalize id else String.uncapitalize id)  *)
   then (if is_bv

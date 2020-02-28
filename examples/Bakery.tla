@@ -325,7 +325,7 @@ THEOREM Spec => []MutualExclusion
   <2>2. ASSUME NEW self \in P,
                p2(self)
         PROVE  Inv'
-    BY <2>2 DEF p2, TypeOK, IInv, After, LL
+    BY <2>2, Z3T(60) DEF p2, TypeOK, IInv, After, LL
   <2>3. ASSUME NEW self \in P,
                p3(self)
         PROVE  Inv'
@@ -336,7 +336,7 @@ THEOREM Spec => []MutualExclusion
     <3>1. TypeOK'
       BY <2>4, Zenon DEF p4, TypeOK
     <3>2. ASSUME NEW i \in P PROVE IInv(i)'
-      BY <2>4 DEF p4, TypeOK, IInv, After, LL
+      BY <2>4, Z3T(60) DEF p4, TypeOK, IInv, After, LL
     <3>. QED  BY <3>1, <3>2
   <2>5. ASSUME NEW self \in P,
                p5(self)
@@ -345,7 +345,7 @@ THEOREM Spec => []MutualExclusion
   <2>6. ASSUME NEW self \in P,
                p6(self)
         PROVE  Inv'
-    BY <2>6 DEF p6, TypeOK, IInv, After, LL
+    BY <2>6, Z3T(60) DEF p6, TypeOK, IInv, After, LL
   <2>7. ASSUME NEW self \in P,
                cs(self)
         PROVE  Inv'
@@ -356,11 +356,10 @@ THEOREM Spec => []MutualExclusion
     BY <2>8, Z3T(60) DEF p7, TypeOK, IInv, After, LL
   <2>9. CASE UNCHANGED vars
     BY <2>9 DEF vars, TypeOK, IInv, After, LL
-  <2>10. QED
+  <2>. QED
     BY <2>1, <2>2, <2>3, <2>4, <2>5, <2>6, <2>7, <2>8, <2>9 DEF Next, p
   
 <1>3. Inv => MutualExclusion
   BY DEF TypeOK, IInv, After, LL, MutualExclusion 
-<1>4. QED
-  BY <1>1, <1>2, <1>3, PTL DEF Spec
+<1>. QED  BY <1>1, <1>2, <1>3, PTL DEF Spec
 =============================================================================

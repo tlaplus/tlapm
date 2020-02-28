@@ -91,27 +91,27 @@ THEOREM WFMin ==
 <1>1. NatInductiveDefConclusion(f, f0, Def)
   <2>1. NatInductiveDefHypothesis(f, f0, Def)
     BY DEF NatInductiveDefHypothesis
-  <2>2. QED
+  <2>. QED
     BY <2>1, NatInductiveDef   
 <1>2. f \in [Nat -> T]
   <2>1. f0 \in T
     OBVIOUS
   <2>2. \A v \in T, n \in Nat \ {0} : Def(v, n) \in T
     OBVIOUS
-  <2>3. QED
+  <2>. QED
     BY <1>1, <2>1, <2>2, NatInductiveDefType, Isa
 <1>3. ASSUME NEW n \in Nat 
       PROVE  <<f[n+1], f[n]>> \in R 
   (* FIXME: SMT backend raises exception "Index past end of list" 
   BY <1>1, <1>2 DEF NatInductiveDefConclusion
   *)
-  <2>1. /\ n+1 \in Nat
-        /\ n+1 # 0
-        /\ (n+1)-1 = n
+  <2>. /\ n+1 \in Nat
+       /\ n+1 # 0
+       /\ (n+1)-1 = n
     OBVIOUS
-  <2>3. QED
-    BY <2>1, <1>1, <1>2, Zenon DEF NatInductiveDefConclusion
-<1>4. QED
+  <2>. QED
+    BY <1>1, <1>2, Zenon DEF NatInductiveDefConclusion
+<1>. QED
   BY <1>2, <1>3, Zenon DEF IsWellFoundedOn
 
 
@@ -290,9 +290,9 @@ LEMMA WFInductiveDefLemma ==
   <2>6. WFInductiveDefines(F(x), LT(x), Def)
     BY <2>5 DEF WFInductiveDefines
   <2>7. g = F(x)
-    BY <2>5, <2>6, <2>2 DEF WFInductiveUnique
+    BY <2>5, <2>6, <2>2, Zenon DEF WFInductiveUnique
   <2>. QED
-    BY <1>1, <2>7 DEF ff
+    BY <1>1, <2>7, Zenon DEF ff
 
 <1>3. QED
   <2>1. WFInductiveDefines(ff, S, Def)
@@ -323,8 +323,7 @@ LEMMA TransitiveClosureThm ==
   BY DEF TransitiveClosureOn
 <1>2. IsTransitivelyClosedOn(TransitiveClosureOn(R, S), S)
   BY Zenon DEF TransitiveClosureOn, IsTransitivelyClosedOn
-<1>3. QED
-  BY <1>1, <1>2
+<1>. QED  BY <1>1, <1>2
 
 LEMMA TransitiveClosureMinimal ==
         ASSUME NEW R, NEW S, NEW U \in SUBSET (S \X S),
@@ -383,10 +382,10 @@ LEMMA TransitiveClosureChopLast ==
                  PROVE  <<x,z>> \in U
     BY Zenon DEF IsTransitivelyClosedOn
   <2>2. <<x,y>> \in TransitiveClosureOn(R,S)
-    BY <2>1, <1>2
+    BY <2>1, <1>2, Zenon
   <2>3. PICK s \in S : /\ <<s,z>> \in R
                        /\ y=s \/ <<y,s>> \in TransitiveClosureOn(R,S)
-    BY <2>1
+    BY <2>1, Zenon
   <2>4. <<x,s>> \in TransitiveClosureOn(R,S)
     BY <2>2, <2>3, TransitiveClosureThm DEF IsTransitivelyClosedOn
   <2> QED
@@ -395,7 +394,7 @@ LEMMA TransitiveClosureChopLast ==
   <2>1. TransitiveClosureOn(R,S) \subseteq U
     BY <1>1, <1>3, TransitiveClosureMinimal
   <2>2. QED
-    BY <2>1
+    BY <2>1, Zenon
 
 (***************************************************************************)
 (* NB: In a similar way to the preceding lemma, one could prove            *)
@@ -422,7 +421,7 @@ THEOREM TransitiveClosureWF ==
 <1> DEFINE TT == T \cup { j \in S : \E i,k \in T : /\ <<i,j>> \in TransitiveClosureOn(R,S)
                                                    /\ <<j,k>> \in TransitiveClosureOn(R,S) }
 <1>1. PICK x \in TT : \A y \in TT : ~(<<y,x>> \in R)
-  BY WFMin
+  BY WFMin, Zenon
 <1>2. x \in T
   <2>1. ASSUME NEW i \in T, NEW k \in T,
                <<i,x>> \in TransitiveClosureOn(R,S),
@@ -433,13 +432,13 @@ THEOREM TransitiveClosureWF ==
       BY <2>1, TransitiveClosureChopLast, Zenon
     <3>2. j \in TT
       <4>1. CASE <<i,j>> \in TransitiveClosureOn(R,S)
-        BY <3>1, <4>1, <2>1, RTCTC
+        BY <3>1, <4>1, <2>1, RTCTC, Zenon
       <4>2. QED
         BY <3>1, <4>1
     <3>3. QED
-      BY <3>1, <3>2, <1>1
+      BY <3>1, <3>2, <1>1, Zenon
   <2>2. QED
-    BY <2>1
+    BY <2>1, Zenon
 <1>3. ASSUME NEW y \in T, <<y,x>> \in TransitiveClosureOn(R, S)
       PROVE  FALSE
   <2>1. PICK j \in S : /\ <<j,x>> \in R
@@ -451,7 +450,7 @@ THEOREM TransitiveClosureWF ==
     <3>2. QED
       BY <2>1, <3>1
   <2>3. QED
-    BY <2>1, <2>2, <1>1
+    BY <2>1, <2>2, <1>1, Zenon
 <1> QED
   BY <1>2, <1>3
 
@@ -526,14 +525,14 @@ THEOREM NatLessThanWellFounded == IsWellFoundedOn(OpToRel(<,Nat), Nat)
 <1>1. SUFFICES ASSUME NEW ff \in [Nat -> Nat],
                       \A n \in Nat : ff[n+1] < ff[n] 
                PROVE  FALSE 
-  BY DEF  IsWellFoundedOn, OpToRel                      
+  BY Zenon DEF IsWellFoundedOn, OpToRel                      
 
 <1> DEFINE P(n) == \E f \in [Nat -> Nat] : 
                       /\ \A m \in Nat : <<f[m+1], f[m]>> \in R 
                       /\ f[0] = n
-<1>1a. P(ff[0])
+<1>2. P(ff[0])
   BY <1>1, Isa DEF OpToRel
-<1>2. ASSUME NEW n \in Nat, 
+<1>3. ASSUME NEW n \in Nat, 
                  \A m \in 0..(n-1) : ~ P(m)
       PROVE  ~ P(n)
   <2> SUFFICES ASSUME NEW f \in [Nat -> Nat],
@@ -555,15 +554,15 @@ THEOREM NatLessThanWellFounded == IsWellFoundedOn(OpToRel(<,Nat), Nat)
       BY ONLY <3>2
     <3>. QED  BY <3>3, Isa
   <2>4 QED
-    BY <2>1, <2>2, <2>3, <1>2
-<1>3. ~ P(ff[0])
+    BY <2>1, <2>2, <2>3, <1>3
+<1>4. ~ P(ff[0])
   <2> HIDE DEF P
   <2> \A n \in Nat : ~ P(n)
-    BY ONLY <1>2, GeneralNatInduction, Isa
+    BY ONLY <1>3, GeneralNatInduction, Isa
   <2> QED
     BY DEF P
-<1>4. QED
-    BY <1>1a, <1>3
+<1>5. QED
+    BY <1>2, <1>4
 
 (***************************************************************************)
 (* The next definition would be easier to read if we used the TLA+         *)
@@ -587,7 +586,7 @@ THEOREM PreImageWellFounded ==
       PROVE  <<gg[n+1], gg[n]>> \in R
   BY Isa DEF PreImage
 <1> QED
- BY <1>1 DEF IsWellFoundedOn
+ BY <1>1, Zenon DEF IsWellFoundedOn
 
 (***************************************************************************)
 (* We now prove that the lexicographical ordering on the Cartesian product *)
@@ -606,19 +605,19 @@ THEOREM WFLexPairOrdering ==
           PROVE  IsWellFoundedOn(LexPairOrdering(R1, R2, S1, S2), S1 \X S2)
 <1> SUFFICES ASSUME NEW T \in SUBSET (S1 \X S2), T # {}
              PROVE  \E x \in T : \A y \in T : <<y,x>> \notin LexPairOrdering(R1, R2, S1, S2)
-  BY MinWF
+  BY MinWF, Zenon
 <1> DEFINE T1 == { tt[1] : tt \in T }
 <1>1. PICK x1 \in T1 : \A y1 \in T1 : <<y1,x1>> \notin R1
   <2>1. T1 \subseteq S1 /\ T1 # {}
     OBVIOUS
   <2>2. QED
-    BY <2>1, WFMin
+    BY <2>1, WFMin, Zenon
 <1> DEFINE T2 == { tt[2] : tt \in { uu \in T : uu[1] = x1 } }
 <1>2. PICK x2 \in T2 : \A y2 \in T2 : <<y2,x2>> \notin R2
   <2>1. T2 \subseteq S2 /\ T2 # {}
     OBVIOUS
   <2>2. QED
-    BY <2>1, WFMin
+    BY <2>1, WFMin, Zenon
 <1>3. ASSUME NEW t \in T,
              << t, <<x1,x2>> >> \in LexPairOrdering(R1, R2, S1, S2)
       PROVE  FALSE
@@ -651,7 +650,7 @@ THEOREM WFLexProductOrdering ==
 <1> DEFINE LPO(m) == LexProductOrdering(R, S, m)
 <1> DEFINE P(m) == IsWellFoundedOn(LPO(m), [1..m -> S])
 <1>1. P(0)
-  BY EmptyIsWellFounded, Z3 DEF LexProductOrdering
+  BY EmptyIsWellFounded, 1..0 = {}, Zenon DEF LexProductOrdering
 <1>2. ASSUME NEW m \in Nat, P(m)
       PROVE  P(m+1)
   <2>1. IsWellFoundedOn(LexPairOrdering(LPO(m), R, [1..m -> S], S), [1..m -> S] \X S)
@@ -697,7 +696,7 @@ THEOREM WFLexProductOrdering ==
         <5>3. QED
           BY <5>1, <5>2
       <4>3. QED
-        BY <4>2 DEF PreImage
+        BY <4>2, Zenon DEF PreImage
     <3>2. PreImage(g, [1..m+1 -> S], LexPairOrdering(LPO(m), R, [1..m -> S], S)) \subseteq LPO(m+1)
       <4> SUFFICES ASSUME NEW x \in [1..m+1 -> S], NEW y \in [1..m+1 -> S],
                           << g(x), g(y) >> \in LexPairOrdering(LPO(m), R, [1..m -> S], S)
@@ -724,9 +723,9 @@ THEOREM WFLexProductOrdering ==
         <5>3. \A i \in 1..(m+1)-1 : x[i] = y[i]
           BY <4>2, <5>2, Isa
         <5> QED
-          BY <5>1, <5>3, Z3 DEF LexProductOrdering
+          BY <5>1, <5>3 DEF LexProductOrdering
       <4> QED
-        BY <4>1, <4>2 DEF LexPairOrdering
+        BY <4>1, <4>2, Zenon DEF LexPairOrdering
     <3>3. QED
       BY <3>1, <3>2
   <2>. QED
@@ -738,6 +737,6 @@ THEOREM WFLexProductOrdering ==
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Aug 22 18:31:26 CEST 2019 by merz
+\* Last modified Sat Jan 04 12:13:45 CET 2020 by merz
 \* Last modified Sun Jan 01 18:39:23 CET 2012 by merz
 \* Last modified Wed Nov 23 10:13:18 PST 2011 by lamport

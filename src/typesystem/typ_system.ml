@@ -153,14 +153,20 @@ let rec rewrite_constructs (env,vs,cs) =
     | CAtom w :: cs -> 
         begin match w with
         | CEq (_, Tdom (TyVar ([],a)), t) 
+            when T.is_atomic_type (T.ref_to_base t) -> 
+            Some (Tdom (TyVar ([],a)), t)
         | CEq (_, t, Tdom (TyVar ([],a))) 
             when T.is_atomic_type (T.ref_to_base t) -> 
             Some (Tdom (TyVar ([],a)), t)
         | CEq (_, Tcod (TyVar ([],a)), t) 
+            when T.is_atomic_type (T.ref_to_base t) -> 
+            Some (Tcod (TyVar ([],a)), t)
         | CEq (_, t, Tcod (TyVar ([],a))) 
             when T.is_atomic_type (T.ref_to_base t) -> 
             Some (Tcod (TyVar ([],a)), t)
         | CEq (_, Rec_dot (TyVar ([],a), h), t) 
+            when T.is_atomic_type (T.ref_to_base t) ->    (** TODO change to accept also Rec_dot *)
+            Some (Rec_dot (TyVar ([],a), h), t)
         | CEq (_, t, Rec_dot (TyVar ([],a), h)) 
             when T.is_atomic_type (T.ref_to_base t) ->    (** TODO change to accept also Rec_dot *)
             Some (Rec_dot (TyVar ([],a), h), t)

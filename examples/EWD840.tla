@@ -180,8 +180,8 @@ THEOREM Spec => []TerminationDetection
 
 (* Dijkstra's invariant is inductive relative to the type invariant *)
 <1>3 TypeOK /\ Inv /\ [Next]_vars => Inv'
-  BY Z3 DEF Inv, TypeOK, Next, vars, Controlled, Environment,
-            InitiateProbe, PassToken, SendMsg, Deactivate, Nodes, Color
+  BY DEF Inv, TypeOK, Next, vars, Controlled, Environment,
+         InitiateProbe, PassToken, SendMsg, Deactivate, Nodes, Color
 
 <1> QED
   BY <1>1, <1>2, <1>3, TypeOK_inv, PTL DEF Spec
@@ -222,7 +222,7 @@ LEMMA Inv_implies_Termination == Inv => TerminationDetection
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Aug 28 14:15:04 CEST 2019 by merz
+\* Last modified Wed Jan 08 15:06:01 CET 2020 by merz
 \* Last modified Fri May 30 23:04:12 CEST 2014 by shaolin
 \* Last modified Wed May 21 11:36:56 CEST 2014 by jael
 \* Created Mon Sep 09 11:33:10 CEST 2013 by merz

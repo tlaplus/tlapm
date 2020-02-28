@@ -121,7 +121,7 @@ THEOREM Implementation == Spec => A!Spec
   <2>1. Init => A!Init
     BY Mod2 DEF Init, A!Init, vBar
   <2>2. Inv /\ [Next]_<<p, c, x>>  => [A!Next]_<<vBar, x>>
-    BY (*Mod2, Isa*) Z3 DEF Inv, Next, ProducerStep, ConsumerStep, A!Next, vBar
+    BY (*Mod2, Isa*) DEF Inv, Next, ProducerStep, ConsumerStep, A!Next, vBar
   <2>3. QED
      BY <1>1, <2>1, <2>2, PTL DEF Spec, A!Spec
 ==============================================================

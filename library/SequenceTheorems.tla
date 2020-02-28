@@ -77,12 +77,11 @@ THEOREM ConcatAssociative ==
   PROVE  (s \o t) \o u = s \o (t \o u)
 
 THEOREM ConcatSimplifications ==
-  ASSUME NEW S
-  PROVE  /\ \A s,t \in Seq(S) : s \o t = s <=> t = <<>>
-         /\ \A s,t \in Seq(S) : s \o t = t <=> s = <<>>
-         /\ \A s,t \in Seq(S) : s \o t = <<>> <=> s = <<>> /\ t = <<>>
-         /\ \A s,t,v \in Seq(S) : s \o t = s \o v <=> t = v
-         /\ \A s,t,v \in Seq(S) : s \o v = t \o v <=> s = t
+  /\ idRight:: \A S : \A s,t \in Seq(S) : s \o t = s => t = <<>>
+  /\ idLeft:: \A S : \A s,t \in Seq(S) : s \o t = t => s = <<>>
+  /\ concIsEmpty:: \A S : \A s,t \in Seq(S) : s \o t = <<>> => s = <<>> /\ t = <<>>
+  /\ cancelLeft:: \A S : \A s,t,v \in Seq(S) : s \o t = s \o v => t = v
+  /\ cancelRight:: \A S : \A s,t,v \in Seq(S) : s \o v = t \o v => s = t
 
 (***************************************************************************)
 (*                     SubSeq, Head and Tail                               *)

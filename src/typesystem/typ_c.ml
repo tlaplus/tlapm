@@ -375,25 +375,29 @@ let rec rewrite_eqs (env,vs,cs) =
   let rec collect_ss vs = function 
     | CAtom w :: cs -> 
         (* let w = simp_cc w in *)
+        let collect_bound env' a t =
+          if T.occurs a t then begin
+            let cxe,_,_ = SMap.find a !E.tyvar_assignment in
+            let cx,e = Option.default ([],Internal B.TRUE %% []) cxe in
+            Smt.ifprint 1 "Recursive equality %a where \\%s is the type of %a"
+              ppc (env $! env',w) a
+              (Expr.Fmt.pp_print_expr (Smt.to_scx cx, Ctx.dot)) e ;
+            raise Typeinf_failed
+            end
+          else (a,t) :: collect_ss vs cs
+        in
         begin match w with
         | CEq (e, TyVar (_,a), TyVar (_,a'))                                  (** ignore this case *)
             when a = a' -> 
             collect_ss vs cs
-        | CEq (env', TyVar (_,a), t) 
-        | CEq (env', t, TyVar (_,a))
-            when mem a vs                                                     (** The type variable [a] is one of the bound variables [vs] *)
+        | CEq (env', TyVar (_,a), t) when mem a vs
+            (** The type variable [a] is one of the bound variables [vs] *)
             (* && not (mem a (T.fv t))  *)
             (* && not (mem a (E.finds e (expr_fv t)))  *)
-            ->  
-						if T.occurs a t then begin
-              let cxe,_,_ = SMap.find a !E.tyvar_assignment in
-              let cx,e = Option.default ([],Internal B.TRUE %% []) cxe in
-              Smt.ifprint 1 "Recursive equality %a where \\%s is the type of %a" 
-                ppc (env $! env',w) a 
-								(Expr.Fmt.pp_print_expr (Smt.to_scx cx, Ctx.dot)) e ;
-              raise Typeinf_failed
-              end
-            else (a,t) :: collect_ss vs cs
+            -> collect_bound env' a t
+        | CEq (env', t, TyVar (_,a))
+            when mem a vs
+            -> collect_bound env' a t
         (* | CEq (e, t, TyVar (_,a))
         | CEq (e, TyVar (_,a), t) 
             when T.is_atomic_type t && mem a vs -> 

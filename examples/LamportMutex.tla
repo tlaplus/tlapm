@@ -229,28 +229,28 @@ LEMMA TypeCorrect == Spec => []TypeOK
           /\ Head(network[q][p]) \in Message
           /\ Tail(network[q][p]) \in Seq(Message)
           /\ Head(network[q][p]) \in {ReqMessage(c) : c \in Clock}
-          /\ Head(network[q][p]).clock + 1 \in Clock
+          /\ Head(network[q][p]).clock \in Clock
           /\ clock[p]+1 \in Clock
           /\ Append(network[p][q], AckMessage) \in Seq(Message)
           /\ UNCHANGED <<ack, crit>>
-      BY <2>4, HeadTailProperties, Z3 DEF ReceiveRequest, AckMessage, RelMessage, ReqMessage
+      BY <2>4, HeadTailProperties DEF ReceiveRequest, AckMessage, RelMessage, ReqMessage
     <3>2. clock' \in [Proc -> Clock]
       BY <2>4, <3>1 DEF ReceiveRequest
     <3>3. req' \in [Proc -> [Proc -> Nat]]
       BY <2>4, <3>1 DEF ReceiveRequest
     <3>4. network' \in [Proc -> [Proc -> Seq(Message)]]
-      BY <3>1, <2>4 DEF ReceiveRequest
+      BY <3>1, <2>4, Zenon DEF ReceiveRequest
     <3>. QED  BY <3>1, <3>2, <3>3, <3>4
   <2>5. ASSUME NEW p \in Proc,
                NEW q \in Proc \ {p},
                ReceiveAck(p,q)
         PROVE  TypeOK'
-    BY <2>5 DEF ReceiveAck
+    BY <2>5, CVC4 DEF ReceiveAck
   <2>6. ASSUME NEW p \in Proc,
                NEW q \in Proc \ {p},
                ReceiveRelease(p,q)
         PROVE  TypeOK'
-    BY <2>6 DEF ReceiveRelease
+    BY <2>6, CVC4 DEF ReceiveRelease
   <2>7. CASE UNCHANGED vars
     BY <2>7 DEF vars
   <2>8. QED   BY <2>1, <2>2, <2>3, <2>4, <2>5, <2>6, <2>7 DEF Next
@@ -303,7 +303,7 @@ LEMMA ContainsTail ==
   ASSUME NEW s \in Seq(Message), s # << >>,
          NEW mtype, AtMostOne(s, mtype)
   PROVE  Contains(Tail(s), mtype) <=> Contains(s, mtype) /\ Head(s).type # mtype
-BY Z3 DEF Contains, AtMostOne
+BY DEF Contains, AtMostOne
 
 LEMMA AtMostOneHead ==
   ASSUME NEW s \in Seq(Message), NEW mtype,
@@ -348,7 +348,7 @@ LEMMA PrecedesInTail ==
          Head(s).type = mt1 \/ Head(s).type \notin {mt1, mt2},
          Precedes(Tail(s), mt1, mt2)
   PROVE  Precedes(s, mt1, mt2)
-BY Z3 DEF Precedes
+BY DEF Precedes
 
 -----------------------------------------------------------------------------
 (***************************************************************************)
@@ -428,7 +428,8 @@ THEOREM BasicInvariant == Spec => []BasicInv
                     /\ Contains(network'[p][q], "req")
                     /\ ~ Contains(network'[q][p], "ack")
                     /\ Precedes(network'[p][q], "rel", "req")
-          BY <3>1, <3>2, <4>1, ContainsSend, NotContainsPrecedes, PrecedesSend DEF Broadcast
+          BY <3>1, <3>2, <4>1, ContainsSend, NotContainsPrecedes, PrecedesSend, CVC4
+             DEF Broadcast
         <5>. QED  BY DEF CommInv
       <4>2. CASE p # n
         <5>. CommInv(p)
@@ -442,7 +443,7 @@ THEOREM BasicInvariant == Spec => []BasicInv
           BY <3>1, <4>2 DEF Broadcast
         <5>. n # p => Contains(network'[n][p], "ack") <=> Contains(network[n][p], "ack")
           BY <3>1, <4>2, ContainsSend DEF Broadcast
-        <5>. QED  BY DEF CommInv
+        <5>. QED  BY Zenon DEF CommInv
       <4>. QED  BY <4>1, <4>2
     <3>. QED  BY <3>3, <3>4 DEF BasicInv
   <2>2. ASSUME NEW n \in Proc, Enter(n)
@@ -461,7 +462,7 @@ THEOREM BasicInvariant == Spec => []BasicInv
           /\ req' = [req EXCEPT ![n][n] = 0]
           /\ ack' = [ack EXCEPT ![n] = {}]
           /\ clock' = clock
-      BY <2>3, Z3 DEF Exit, Broadcast, BasicInv, CommInv
+      BY <2>3 DEF Exit, Broadcast, BasicInv, CommInv
     <3>. /\ RelMessage \in Message
          /\ RelMessage.type = "rel"
       BY DEF RelMessage, Message
@@ -556,7 +557,7 @@ THEOREM BasicInvariant == Spec => []BasicInv
           <6>. pq' = pq /\ qp' = qp /\ ack'[p] = ack[p]
             BY <3>1, <3>3, <4>1, <5>2
           <6>. CommInv(p)!2!3!(q)
-            BY <3>3, <4>1 DEF BasicInv, CommInv
+            BY <3>3, <4>1, Zenon DEF BasicInv, CommInv
           <6>. QED  OBVIOUS
         <5>. QED  BY <5>1, <5>2
       <4>2. CASE p = n
@@ -603,13 +604,13 @@ THEOREM BasicInvariant == Spec => []BasicInv
       <4>1. CASE p = n
         <5>. SUFFICES ASSUME NEW q \in Proc, CommInv(p)!2!3!(q)
                       PROVE  CommInv(p)!2!3!(q)'
-          BY <3>1, <3>3, <4>1 DEF BasicInv, CommInv
+          BY <3>1, <3>3, <4>1, CVC4 DEF BasicInv, CommInv
         <5>1. CASE q = k
           <6>. /\ q \in ack'[p]
                /\ ~ Contains(network'[p][q], "req")
                /\ ~ Contains(network'[q][p], "ack")
                /\ ~ Contains(network'[p][q], "rel")
-            BY <3>1, <3>3, <4>1, <5>1, AtMostOneHead DEF BasicInv, NetworkInv
+            BY <3>1, <3>3, <4>1, <5>1, AtMostOneHead, CVC4 DEF BasicInv, NetworkInv
           <6>. QED  OBVIOUS
         <5>2. CASE q # k
           BY <3>1, <3>3, <4>1, <5>2
@@ -763,7 +764,7 @@ THEOREM ClockInvariant == Spec => []ClockInv
           BY <3>1, <4>2, ContainsSend, PrecedesSend DEF Broadcast
         <5>4. \A i \in 1 .. Len(network'[n][p]) : network'[n][p][i].type # "req"
           BY <3>1 DEF Broadcast, Contains
-        <5>. QED  BY <5>1, <5>2, <5>3, <5>4, Z3 DEF ClockInv, ClockInvInner, beats
+        <5>. QED  BY <5>1, <5>2, <5>3, <5>4 DEF ClockInv, ClockInvInner, beats
       <4>. QED  BY <4>1, <4>2
     <3>. QED  BY <3>2 DEF ClockInv
   <2>4. ASSUME NEW n \in Proc, NEW k \in Proc \ {n}, ReceiveRequest(n,k)
@@ -811,7 +812,7 @@ THEOREM ClockInvariant == Spec => []ClockInv
         <5>5. ASSUME Precedes(qp', "ack", "req"), 
                      NEW i \in 1 .. Len(qp'), qp'[i].type = "req"
               PROVE  FALSE
-          BY <3>1, <4>1, <5>5 DEF Precedes
+          BY <3>1, <4>1, <5>5, CVC4 DEF Precedes
         <5>. QED  BY <5>2, <5>3, <5>4, <5>5 DEF ClockInvInner
       <4>2. CASE p = n /\ q = k
         <5>1. UNCHANGED << req[q][p], clock[q], ack >>
@@ -820,7 +821,7 @@ THEOREM ClockInvariant == Spec => []ClockInv
               PROVE  i \in 1 .. Len(pq) /\ pq'[i] = pq[i]
           BY <3>1, <4>2, <5>2
         <5>3. Contains(qp', "ack") <=> Contains(qp, "ack")
-          BY <3>1, <4>2, ContainsTail DEF BasicInv, NetworkInv
+          BY <3>1, <4>2, ContainsTail, CVC4 DEF BasicInv, NetworkInv
         <5>4. ~(\E i \in 1 .. Len(qp') : qp'[i].type = "req")
           BY <4>0, <4>2, ContainsTail, Isa DEF Contains
         <5>5. ASSUME p \in crit'
@@ -860,7 +861,7 @@ THEOREM ClockInvariant == Spec => []ClockInv
                      NEW i \in 1 .. Len(qp'), qp'[i].type = "req"
               PROVE  /\ Precedes(qp, "ack", "req")
                      /\ i+1 \in 1 .. Len(qp) /\ qp'[i] = qp[i+1]
-          BY <3>1, <4>1, <5>2, PrecedesInTail
+          BY <3>1, <4>1, <5>2, PrecedesInTail, CVC4
         <5>. QED  BY <3>2, <5>1, <5>2 DEF ClockInvInner, beats
       <4>2. CASE p = k /\ q = n
         <5>1. UNCHANGED << qp, ack[p], clock, req, crit >>

@@ -101,7 +101,7 @@ let pp_print_tactic ff m =
   | Smt2z3 f -> fprintf ff "(z3_2 %g s)" f
   | Smt3 f -> fprintf ff "(smt %g s)" f
   | Z33 f -> fprintf ff "(z3 %g s)" f
-  | Cvc33 f -> fprintf ff "(cvc3 %g s)" f
+  | Cvc33 f -> fprintf ff "(cvc4 %g s)" f
   | Yices3 f -> fprintf ff "(yices %g s)" f
   | Verit f -> fprintf ff "(verit %g s)" f
   | Spass f -> fprintf ff "(spass %g s)" f
@@ -127,7 +127,7 @@ let prover_meth_of_tac tac =
     | Smt2z3 f -> (Some "smt2z3", None)
     | Smt3 f -> (Some "smt", None)
     | Z33 f -> (Some "z3", None)
-    | Cvc33 f -> (Some "cvc3", None)
+    | Cvc33 f -> (Some "cvc4", None)
     | Yices3 f -> (Some "yices", None)
     | Verit f -> (Some "verit", None)
     | Spass f -> (Some "spass", None)

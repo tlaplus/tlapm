@@ -93,14 +93,14 @@ and token = parse
   | (numeral+ as i)
       { [ NUM (i, "") ] }
   | ("\\b" ['0' '1']+ as b)
-      { b.[0] <- '0' ;
+      { Bytes.set b 0 '0' ;
         [ NUM (string_of_int (int_of_string b), "") ] }
   | ("\\o" ['0'-'7']+ as o)
-      { o.[0] <- '0' ;
+      { Bytes.set o 0 '0' ;
         [ NUM (string_of_int (int_of_string o), "") ] }
   | ("\\h" (numeral | ['a'-'f' 'A'-'F'])+ as h)
-      { h.[0] <- '0' ;
-        h.[1] <- 'x' ;
+      { Bytes.set h 0 '0' ;
+        Bytes.set h 1 'x' ;
         [ NUM (string_of_int (int_of_string h), "") ] }
 
   (* strings *)
@@ -232,7 +232,7 @@ and comment depth = parse
         let nc = Buffer.length buf in
         if nc <= n then begin
           for i = 0 to nc - 1 do
-            String.set outs (nread + i) (Buffer.nth buf i)
+            Bytes.set outs (nread + i) (Buffer.nth buf i)
           done ;
           if refill buf ic then
             read (nread + nc) (n - nc)
@@ -240,7 +240,7 @@ and comment depth = parse
             nread + nc
         end else begin
           for i = 0 to n - 1 do
-            String.set outs (nread + i) (Buffer.nth buf i)
+            Bytes.set outs (nread + i) (Buffer.nth buf i)
           done ;
           let s = Buffer.sub buf n (Buffer.length buf - n) in
           Buffer.clear buf ;

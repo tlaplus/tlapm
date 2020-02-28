@@ -65,7 +65,7 @@ THEOREM FS_CardinalityType ==
 (***************************************************************************)
 (* `.  .'                                                                  *)
 (*                                                                         *)
-(* The image of a finite set under a bijection or surjection is finite.    *)
+(* The image of a finite set under a bijection is finite.                  *)
 (*                                                                         *)
 (* `.  .'                                                                  *)
 (***************************************************************************)
@@ -109,6 +109,11 @@ THEOREM FS_Surjection ==
          /\ Cardinality(T) <= Cardinality(S)
          /\ Cardinality(T) = Cardinality(S) <=> f \in Injection(S,T)
 
+THEOREM FS_Image ==
+  ASSUME NEW S, IsFiniteSet(S), NEW Op(_)
+  PROVE  LET T == {Op(x) : x \in S}
+         IN  /\ IsFiniteSet(T)
+             /\ Cardinality(T) <= Cardinality(S)
 
 (***************************************************************************)
 (* `.  .'                                                                  *)
@@ -370,7 +375,7 @@ THEOREM FS_SUBSET ==
    
 =============================================================================
 \* Modification History
-\* Last modified Fri Oct 18 14:20:59 CEST 2019 by merz
+\* Last modified Wed Jan 08 17:43:30 CET 2020 by merz
 \* Last modified Thu Jul 04 15:15:07 CEST 2013 by bhargav
 \* Last modified Tue Jun 04 11:44:51 CEST 2013 by bhargav
 \* Last modified Fri May 03 12:02:51 PDT 2013 by tomr
