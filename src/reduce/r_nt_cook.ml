@@ -150,7 +150,7 @@ let visitor = object (self : 'self)
 
         let lvs = locally_bound scx' vs in
         let lvs' = Is.add 1 lvs in
-        let e2 = badaboom lsz lvs' ~sft1:1 e2 in (* Dark magic *)
+        let e2 = badaboom lsz lvs' ~sft1:2 e2 in (* Dark magic *)
 
         let lsz' = 1 + Is.cardinal lvs' in (* Size of new local ctx of e2 *)
         let _ = lsz' in

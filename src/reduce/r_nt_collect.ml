@@ -76,7 +76,6 @@ let visitor = object (self : 'self)
         add n ns
 
     | Opaque s when has oe C.setst_special_prop ->
-        (* FIXME set s *)
         let nm, k, e = get oe C.setst_special_prop in
         add (NT_SetSt (nm, s, k, e)) ns
 
