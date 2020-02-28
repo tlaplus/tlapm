@@ -143,7 +143,6 @@ let visitor = object (self : 'self)
         let e2 = self#expr scx' e2 in
 
         let gx, lx = split_ctx hx' in
-        let gsz = Deque.size gx in
         let lsz = Deque.size lx in
 
         let vs = Expr.Collect.fvs e2 in
@@ -153,11 +152,6 @@ let visitor = object (self : 'self)
         let e2 = badaboom lsz lvs' ~sft1:2 e2 in (* Dark magic *)
 
         let lsz' = 1 + Is.cardinal lvs' in (* Size of new local ctx of e2 *)
-        let _ = lsz' in
-
-        Format.eprintf "SIZE OF G: %d@." gsz;
-        Format.eprintf "SIZE OF L: %d@." lsz;
-        Format.eprintf "SIZE OF L': %d@." lsz';
 
         (* shift global variables along skipped global ctx *)
         (* FIXME This part would not be necessary if the hypothesis was
@@ -165,12 +159,10 @@ let visitor = object (self : 'self)
         let gvs = Is.filter (fun i -> not (Is.mem i lvs)) vs in
         let nm, e2 =
           if Is.is_empty gvs then begin
-            Format.eprintf "NO GVAR@.";
             None, e2
           end else begin
             let m = Is.min_elt gvs in
             let v = hyp_name (get_val_from_id gx (m - lsz)) in
-            Format.eprintf "FIRST GVAR: %d:%s@." m v;
             let s = lsz - m + 1 in
             let sub = Expr.Subst.bumpn lsz' (Expr.Subst.shift s) in
             let e2 = Expr.Subst.app_expr sub e2 in
