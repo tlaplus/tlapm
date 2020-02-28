@@ -5,6 +5,7 @@
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
 
+open Ext
 open Expr.T
 open Type.T
 open Property
@@ -87,29 +88,108 @@ let hyp_sort hx ix =
   let h = (get_val_from_id hx ix) in
   get_sort (hyp_hint h)
 
+let depth (_, hx) =
+  Deque.find ~backwards:true hx (fun h -> has (hyp_hint h) is_global_prop)
+  |> Ext.Option.get |> fst
+
+(* Returns (hx1, hx2) where hx1 is global and hx2 local *)
+let split_ctx hx =
+  let rec spin l r =
+    match Deque.rear l with
+    | None ->
+        (l, r)
+    | Some (_, h) when has (hyp_hint h) is_global_prop ->
+        (l, r)
+    | Some (l, h) ->
+        spin l (Deque.cons h r)
+  in
+  spin hx Deque.empty
+
+let dummy = Opaque "error" %% []
+
+(* Here be dragons *)
+let badaboom n xs ?(sft1=0) ?(sft2=0) e =
+  (* shft1: length of additional upper local ctx *)
+  (* shft2: length of additional lower local ctx *)
+  let j = ref 0 in
+  let dq =
+    List.fold_left begin fun dq i ->
+      let k =
+        if Is.mem i xs then
+          begin j := !j + 1; Some (!j) end
+        else
+          None
+      in
+      Deque.snoc dq k
+    end Deque.empty (List.init n (fun i -> i + 1))
+  in
+  let sub = Deque.fold_right begin function
+    | None -> Expr.Subst.scons dummy
+    | Some k -> Expr.Subst.scons (Ix (k + sft2) %% [])
+  end dq (Expr.Subst.shift (Is.cardinal xs + sft1)) in
+  Expr.Subst.app_expr sub e
+
 let visitor = object (self : 'self)
   inherit [unit] Expr.Visit.map as super
 
-  method expr scx oe =
+  method expr (_, hx as scx) oe =
     match oe.core with
     | SetSt (h, e1, e2) ->
         let e1 = self#expr scx e1 in
         let hyp = Fresh (h, Shape_expr, Constant, Bounded (e1, Visible)) @@ h in
-        let (_, hx as scx) = Expr.Visit.adj scx hyp in
-        let e2 = self#expr scx e2 in
+        let (_, hx' as scx') = Expr.Visit.adj scx hyp in
+        (* distinct name for hx' bc we need to contextualise the final
+         * expression in hx at the end *)
+        let e2 = self#expr scx' e2 in
 
-        let ys = Expr.Collect.fvs ~ctx:(Deque.snoc Deque.empty hyp) e2 in
-        let gs, ys = split_global_local scx ys in
-        let ys = Is.elements ys in
+        let gx, lx = split_ctx hx' in
+        let gsz = Deque.size gx in
+        let lsz = Deque.size lx in
 
-        let min = Is.min_elt gs in
-        let nm = hyp_name (get_val_from_id hx min) in
+        let vs = Expr.Collect.fvs e2 in
 
-        let ins = List.map (hyp_sort hx) ys in
+        let lvs = locally_bound scx' vs in
+        let lvs' = Is.add 1 lvs in
+        let e2 = badaboom lsz lvs' ~sft1:1 e2 in (* Dark magic *)
+
+        let lsz' = 1 + Is.cardinal lvs' in (* Size of new local ctx of e2 *)
+        let _ = lsz' in
+
+        Format.eprintf "SIZE OF G: %d@." gsz;
+        Format.eprintf "SIZE OF L: %d@." lsz;
+        Format.eprintf "SIZE OF L': %d@." lsz';
+
+        (* shift global variables along skipped global ctx *)
+        (* FIXME This part would not be necessary if the hypothesis was
+         * simply inserted right above the local ctx. *)
+        let gvs = Is.filter (fun i -> not (Is.mem i lvs)) vs in
+        let nm, e2 =
+          if Is.is_empty gvs then begin
+            Format.eprintf "NO GVAR@.";
+            None, e2
+          end else begin
+            let m = Is.min_elt gvs in
+            let v = hyp_name (get_val_from_id gx (m - lsz)) in
+            Format.eprintf "FIRST GVAR: %d:%s@." m v;
+            let s = lsz - m + 1 in
+            let sub = Expr.Subst.bumpn lsz' (Expr.Subst.shift s) in
+            let e2 = Expr.Subst.app_expr sub e2 in
+            Some v, e2
+          end
+        in
+
+        let args = lvs
+          |> Is.remove 1
+          |> Is.elements
+          |> List.map (fun i -> i - 1)
+          |> List.rev
+        in
+
+        let ins = List.map (hyp_sort hx) args in
         let k = mk_fstk_ty (ty_u :: List.map mk_atom_ty ins) ty_u in
         let s = setst_nm k e2 in
-        let op = assign (Opaque s %% []) setst_special_prop (Some nm, k, e2) in
-        Apply (op, e1 :: List.map (fun i -> Ix i %% []) ys) @@ oe
+        let op = assign (Opaque s %% []) setst_special_prop (nm, k, e2) in
+        Apply (op, e1 :: List.map (fun i -> Ix i %% []) args) @@ oe
 
     | _ -> super#expr scx oe
 end

@@ -210,14 +210,14 @@ let setminus_def =
     ) %% []
   ) %% []
 
-let setst_def s (TKind (ks, _)) body =
+let setst_def s (TKind (ks, _) as k) body =
   let n = List.length ks -1 in
   all ([ "s" ] @ gen "a" n @ [ "x" ]) (
     ifx B.Equiv (
       ifx B.Mem (
         Ix 1 %% []
       ) (
-        Apply (Ix (n + 3) %% [], ixi ~shift:1 (n + 1)) %% []
+        Apply (Opaque (setst_nm s k) %% [], ixi ~shift:1 (n + 1)) %% []
       ) %% []
     ) (
       ifx B.Conj (
