@@ -240,7 +240,7 @@ struct
               (* The number of added hyps in the left split parcel is 0
                * as we assume all splits occur between original hypotheses. *)
               let l = Deque.snoc l (0, hs_left) in
-              let r =
+              let r = (* FIXME can hs_right really be empty? *)
                 if Deque.size hs_right = 0 then r
                 else Deque.cons (k, hs_right) r
               in
@@ -262,11 +262,16 @@ struct
     | Some nm ->
         let (hss_left, hss_right) = split_hss nm hss in
         let more = nt_get_hyps n in
-        let p = Deque.size more in
-        let sub = Expr.Subst.shift 0 in
+        let _, sub = Deque.fold_right begin fun (k, hs) (d, sub) ->
+          let sub' = Expr.Subst.bumpn d (Expr.Subst.shift k) in
+          let sub = Expr.Subst.compose sub' sub in
+          let n = Deque.size hs in
+          (d + n, sub)
+        end hss_left (0, Expr.Subst.shift 0) in
         let _, more = Expr.Subst.app_hyps sub more in
         let hss_left, (k, hs) = Option.get (Deque.rear hss_left) in
         let hs = Deque.append hs more in
+        let p = Deque.size more in
         let sub = Expr.Subst.shift p in
         let (hss_right, e) = app_hss_e sub (hss_right, e) in
         (Deque.append (Deque.snoc hss_left (k + p, hs)) hss_right, e)
