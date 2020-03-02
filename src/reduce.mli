@@ -67,6 +67,7 @@ module NtAxioms : sig
   val stringlit_decl : string -> hyp
 
   val string_fact : hyp
+  val stringcast_fact : hyp
   val stringlit_distinct_fact : string -> string -> hyp
 
   (* Functions *)

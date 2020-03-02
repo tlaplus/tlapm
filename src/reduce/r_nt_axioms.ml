@@ -331,10 +331,26 @@ let string_def =
     ) %% []
   ) %% []
 
+let stringcast_inj =
+  Quant (
+    Forall, [ annot_sort ("s1" %% []) TStr, Constant, No_domain
+            ; annot_sort ("s2" %% []) TStr, Constant, No_domain ],
+    ifx B.Implies (
+      ifx B.Eq (
+        Apply (Opaque stringtou_nm %% [], [ Ix 2 %% [] ]) %% []
+      ) (
+        Apply (Opaque stringtou_nm %% [], [ Ix 1 %% [] ]) %% []
+      ) %% []
+    ) (
+      ifx B.Eq (Ix 2 %% []) (Ix 1 %% []) %% []
+    ) %% []
+  ) %% []
+
 let stringlit_distinct s1 s2 =
   ifx B.Neq (Opaque (stringlit_nm s1) %% []) (Opaque (stringlit_nm s2) %% []) %% []
 
 let string_fact = mk_fact string_def %% []
+let stringcast_fact = mk_fact stringcast_inj %% []
 let stringlit_distinct_fact s1 s2 = mk_fact (stringlit_distinct s1 s2) %% []
 
 

@@ -67,6 +67,7 @@ val string_decl : hyp
 val stringlit_decl : string -> hyp
 
 val string_fact : hyp
+val stringcast_fact : hyp
 val stringlit_distinct_fact : string -> string -> hyp
 
 (* {3 Functions} *)

@@ -170,7 +170,7 @@ let nt_get_hyps node =
     | NT_Boolean -> [ boolean_decl ; boolean_fact ]
 
     | NT_StringAny -> [ stringany_decl ]
-    | NT_StringToU -> [ stringtou_decl ]
+    | NT_StringToU -> [ stringtou_decl ; stringcast_fact ]
     | NT_String -> [ string_decl ; string_fact ]
 
     | NT_StringLit s ->
