@@ -23,6 +23,7 @@ module Closure (G : Graph) = struct
 
   (* No node treated twice *)
   let seen = ref Ss.empty
+  let init () = seen := Ss.empty
 
   type action = G.s -> G.s
 

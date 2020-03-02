@@ -146,7 +146,8 @@ module NtTable : sig
   val nt_base : nt_node Sm.t
   val nt_get_id : nt_node -> string
   val nt_get_deps : nt_node -> nt_node Sm.t
-  val nt_get_hyps : nt_node -> hyp Deque.dq
+  type state
+  val nt_get_hyps : state -> nt_node -> state * hyp Deque.dq
   val nt_axiomatize : nt_node Sm.t -> sequent -> sequent
 end
 

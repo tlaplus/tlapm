@@ -148,49 +148,51 @@ let nt_get_deps node =
     Sm.add (nt_get_id node) node sm
   end Sm.empty (nt_get_deps_l node)
 
-let stringlits = ref Ss.empty
+type state =
+  { stringlits : Ss.t
+  }
 
-let nt_get_hyps node =
-  let hs =
+let nt_get_hyps st node =
+  let (st, hs) =
     match node with
-    | NT_U | NT_Str -> []
+    | NT_U | NT_Str -> st, []
 
-    | NT_UAny -> [ uany_decl ]
-    | NT_Mem -> [ mem_decl ]
-    | NT_Subseteq -> [ subseteq_decl ; subseteq_fact ]
-    | NT_Enum n -> [ enum_decl n ; enum_fact n ]
-    | NT_Union -> [ union_decl ; union_fact ]
-    | NT_Power -> [ power_decl ; power_fact ]
-    | NT_Cup -> [ cup_decl ; cup_fact ]
-    | NT_Cap -> [ cap_decl ; cap_fact ]
-    | NT_Setminus -> [ setminus_decl ; setminus_fact ]
-    | NT_SetSt (_, s, k, e) -> [ setst_decl s k ; setst_fact s k e ]
+    | NT_UAny -> st, [ uany_decl ]
+    | NT_Mem -> st, [ mem_decl ]
+    | NT_Subseteq -> st, [ subseteq_decl ; subseteq_fact ]
+    | NT_Enum n -> st, [ enum_decl n ; enum_fact n ]
+    | NT_Union -> st, [ union_decl ; union_fact ]
+    | NT_Power -> st, [ power_decl ; power_fact ]
+    | NT_Cup -> st, [ cup_decl ; cup_fact ]
+    | NT_Cap -> st, [ cap_decl ; cap_fact ]
+    | NT_Setminus -> st, [ setminus_decl ; setminus_fact ]
+    | NT_SetSt (_, s, k, e) -> st, [ setst_decl s k ; setst_fact s k e ]
 
-    | NT_BoolToU -> [ booltou_decl ]
-    | NT_Boolean -> [ boolean_decl ; boolean_fact ]
+    | NT_BoolToU -> st, [ booltou_decl ]
+    | NT_Boolean -> st, [ boolean_decl ; boolean_fact ]
 
-    | NT_StringAny -> [ stringany_decl ]
-    | NT_StringToU -> [ stringtou_decl ; stringcast_fact ]
-    | NT_String -> [ string_decl ; string_fact ]
+    | NT_StringAny -> st, [ stringany_decl ]
+    | NT_StringToU -> st, [ stringtou_decl ; stringcast_fact ]
+    | NT_String -> st, [ string_decl ; string_fact ]
 
     | NT_StringLit s ->
-        if Ss.mem s !stringlits then []
+        if Ss.mem s st.stringlits then st, []
         else
-          let previous_lits = Ss.elements !stringlits in
+          let previous_lits = Ss.elements st.stringlits in
           let distinct_facts = List.map begin fun s' ->
             stringlit_distinct_fact s s'
           end previous_lits in
-          stringlits := Ss.add s !stringlits;
-          stringlit_decl s :: distinct_facts
+          let st' = { stringlits = Ss.add s st.stringlits } in
+          st', stringlit_decl s :: distinct_facts
   in
-  Deque.of_list hs
+  (st, Deque.of_list hs)
 
 
 (* {3 Make Utilities} *)
 
 module NT_Graph : Graph
   with type node = nt_node
-   and type s = (int * hyp Deque.dq) Deque.dq * expr (* yikes *) =
+   and type s = state * (int * hyp Deque.dq) Deque.dq * expr (* yikes *) =
 struct
   type node = nt_node
   (* Shattered sequent.  The context is divided into parcels, which are joined
@@ -199,7 +201,7 @@ struct
    * as a special top context, where hypotheses go by default.  For each parcel
    * we also record the number of hypotheses that were appended at the rear;
    * this is used to compute a substitution to apply to some axioms. *)
-  type s = (int * hyp Deque.dq) Deque.dq * expr
+  type s = state * (int * hyp Deque.dq) Deque.dq * expr
 
   let base = nt_base
   let get_id n = nt_get_id n
@@ -249,19 +251,19 @@ struct
     in
     spin Deque.empty hss
 
-  let get_ac n (hss, e) =
+  let get_ac n (st, hss, e) =
     match nt_get_place n with
     | None ->
         let (k, top), hss = Option.get (Deque.front hss) in
-        let more = nt_get_hyps n in
+        let st, more = nt_get_hyps st n in
         let p = Deque.size more in
         let top = Deque.append top more in
         let sub = Expr.Subst.shift p in
         let (hss, e) = app_hss_e sub (hss, e) in
-        (Deque.cons (k + p, top) hss, e)
+        (st, Deque.cons (k + p, top) hss, e)
     | Some nm ->
         let (hss_left, hss_right) = split_hss nm hss in
-        let more = nt_get_hyps n in
+        let st, more = nt_get_hyps st n in
         let _, sub = Deque.fold_right begin fun (k, hs) (d, sub) ->
           let sub' = Expr.Subst.bumpn d (Expr.Subst.shift k) in
           let sub = Expr.Subst.compose sub' sub in
@@ -274,14 +276,19 @@ struct
         let p = Deque.size more in
         let sub = Expr.Subst.shift p in
         let (hss_right, e) = app_hss_e sub (hss_right, e) in
-        (Deque.append (Deque.snoc hss_left (k + p, hs)) hss_right, e)
+        (st, Deque.append (Deque.snoc hss_left (k + p, hs)) hss_right, e)
 end
 
 module NT_Axiomatize = Closure (NT_Graph)
 
 let nt_axiomatize ns sq =
-  let x = ([ 0, Deque.empty ; 0, sq.context ] |> Deque.of_list, sq.active) in
-  let x = NT_Axiomatize.ac_deps ns x in
+  NT_Axiomatize.init ();
+  let st =
+    { stringlits = Ss.empty
+    }
+  in
+  let x = (st, [ 0, Deque.empty ; 0, sq.context ] |> Deque.of_list, sq.active) in
+  let _, ctx, act = NT_Axiomatize.ac_deps ns x in
   Deque.fold_right begin fun (_, hs) sq ->
     { sq with context = Deque.append hs sq.context }
-  end (fst x) { context = Deque.empty ; active = snd x }
+  end ctx { context = Deque.empty ; active = act }

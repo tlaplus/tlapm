@@ -54,10 +54,12 @@ val nt_base : nt_node Sm.t
 val nt_get_id : nt_node -> string
 val nt_get_deps : nt_node -> nt_node Sm.t
 
+type state
+
 (** Each node corresponds to one or several hypotheses to add to a context.
     Usually it's one declaration and a few axioms.
 *)
-val nt_get_hyps : nt_node -> hyp Deque.dq
+val nt_get_hyps : state -> nt_node -> state * hyp Deque.dq
 
 (** [nt_axiomatize ns hs] adds to [hs] all hypotheses required by nodes [ns],
     accouting for depending nodes.  [hs] represents a generic top context.
