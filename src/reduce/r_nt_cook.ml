@@ -70,29 +70,10 @@ let mark_global = object (self : 'self)
 end
 
 
-(* {3 Main} *)
+(* {3 Relocalization} *)
 
-let split_global_local (_, hx) xs =
-  Expr.Collect.vs_partition hx begin fun _ h ->
-    let nm = hyp_hint h in
-    has nm is_global_prop
-  end xs
-
-let globally_bound scx xs =
-  fst (split_global_local scx xs)
-
-let locally_bound scx xs =
-  snd (split_global_local scx xs)
-
-let hyp_sort hx ix =
-  let h = (get_val_from_id hx ix) in
-  get_sort (hyp_hint h)
-
-let depth (_, hx) =
-  Deque.find ~backwards:true hx (fun h -> has (hyp_hint h) is_global_prop)
-  |> Ext.Option.get |> fst
-
-(* Returns (hx1, hx2) where hx1 is global and hx2 local *)
+(* Assuming [hx] is of the form [hx1 @ hx2] where all hyps in [hx1] are marked
+ * global and none in [hx2], this function returns [(hx1, hx2)]. *)
 let split_ctx hx =
   let rec spin l r =
     match Deque.rear l with
@@ -105,29 +86,60 @@ let split_ctx hx =
   in
   spin hx Deque.empty
 
+let split_set n is =
+  Is.partition (fun i -> i > n) is
+
 let dummy = Opaque "error" %% []
 
-(* Here be dragons *)
-let badaboom n xs ?(sft1=0) ?(sft2=0) e =
-  (* shft1: length of additional upper local ctx *)
-  (* shft2: length of additional lower local ctx *)
-  let j = ref 0 in
-  let dq =
-    List.fold_left begin fun dq i ->
-      let k =
-        if Is.mem i xs then
-          begin j := !j + 1; Some (!j) end
-        else
-          None
-      in
-      Deque.snoc dq k
-    end Deque.empty (List.init n (fun i -> i + 1))
+(* A context map describes a transformation of a local context.
+ * Starting from the bottom (Ix 1), each instruction specifies what to do with
+ * a bound variable. *)
+type ctx_map = instruction list
+and instruction =
+  | Keep  (* Keep this variable in the new context *)
+  | Skip  (* Do not keep this variable in the new context *)
+  | Intro (* Introduce a fresh variable *)
+
+(* Example: the context is [a, x, y], the expression has the form E(a, y).
+ * We want to relocalize this expression from the local context [x, y] to the
+ * new local context [y, z].  The map for this is:
+ *  Intro   to insert the fresh 'z'
+ *  Keep    to keep 'y'
+ *  Skip    to skip 'x'
+ * As for the variable 'a', it is treated as a global variable; a final shift
+ * will correct its index. *)
+
+let mk_renaming m =
+  (* The result subst. has the form 'cons x1 (cons x2 .. (shift s) ..)'
+   * where 'xi' is either a dummy expr. or an int, and the sequence increases.
+   * The 's' parameter corrects global vars.  It must be equal to the length of
+   * the new local context. *)
+  let (n, dq) =
+    List.fold_left begin fun (n, dq) -> function
+      | Keep ->
+          (n + 1, Deque.snoc dq (Some n))
+      | Skip ->
+          (n, Deque.snoc dq None)
+      | Intro ->
+          (n + 1, dq)
+    end (1, Deque.empty) m
   in
-  let sub = Deque.fold_right begin function
+  let s = n - 1 in
+  Deque.fold_right begin function
     | None -> Expr.Subst.scons dummy
-    | Some k -> Expr.Subst.scons (Ix (k + sft2) %% [])
-  end dq (Expr.Subst.shift (Is.cardinal xs + sft1)) in
+    | Some k -> Expr.Subst.scons (Ix k %% [])
+  end dq (Expr.Subst.shift s)
+
+let relocalize e m =
+  let sub = mk_renaming m in
   Expr.Subst.app_expr sub e
+
+
+(* {3 Main} *)
+
+let hyp_sort hx ix =
+  let h = (get_val_from_id hx ix) in
+  get_sort (hyp_hint h)
 
 let visitor = object (self : 'self)
   inherit [unit] Expr.Visit.map as super
@@ -138,7 +150,7 @@ let visitor = object (self : 'self)
         let e1 = self#expr scx e1 in
         let hyp = Fresh (h, Shape_expr, Constant, Bounded (e1, Visible)) @@ h in
         let (_, hx' as scx') = Expr.Visit.adj scx hyp in
-        (* distinct name for hx' bc we need to contextualise the final
+        (* distinct name for hx' bc we need to contextualize the final
          * expression in hx at the end *)
         let e2 = self#expr scx' e2 in
 
@@ -147,16 +159,21 @@ let visitor = object (self : 'self)
 
         let vs = Expr.Collect.fvs e2 in
 
-        let lvs = locally_bound scx' vs in
-        let lvs' = Is.add 1 lvs in
-        let e2 = badaboom lsz lvs' ~sft1:2 e2 in (* Dark magic *)
+        let gvs, lvs = split_set lsz vs in
+        let lvs' = Is.add 1 lvs in (* count the 'x \in ..' even if absent *)
 
-        let lsz' = 1 + Is.cardinal lvs' in (* Size of new local ctx of e2 *)
+        let m =
+          List.init lsz begin fun i ->
+            if Is.mem (i + 1) lvs' then Keep
+            else Skip
+          end
+          @ [ Intro ; Intro ]
+        in
+        let e2 = relocalize e2 m in
 
         (* shift global variables along skipped global ctx *)
         (* FIXME This part would not be necessary if the hypothesis was
-         * simply inserted right above the local ctx. *)
-        let gvs = Is.filter (fun i -> not (Is.mem i lvs)) vs in
+         * simply inserted at the end of the global ctx *)
         let nm, e2 =
           if Is.is_empty gvs then begin
             None, e2
@@ -164,7 +181,8 @@ let visitor = object (self : 'self)
             let m = Is.min_elt gvs in
             let v = hyp_name (get_val_from_id gx (m - lsz)) in
             let s = lsz - m + 1 in
-            let sub = Expr.Subst.bumpn lsz' (Expr.Subst.shift s) in
+            let d = 1 + Is.cardinal lvs' in
+            let sub = Expr.Subst.bumpn d (Expr.Subst.shift s) in
             let e2 = Expr.Subst.app_expr sub e2 in
             Some v, e2
           end
@@ -187,6 +205,7 @@ let visitor = object (self : 'self)
 end
 
 let cook sq =
+  scount := 0;
   let _, sq = mark_global#sequent ((), Deque.empty) sq in
   let _, sq = visitor#sequent ((), Deque.empty) sq in
   sq
