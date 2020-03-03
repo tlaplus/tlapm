@@ -36,9 +36,20 @@ let app b es = Apply (Internal b %% [], es)
 let una b e1    = app b [ e1 ]
 let ifx b e1 e2 = app b [ e1 ; e2 ]
 
-let quant q xs e = Quant (q, List.map (fun x -> (annot_sort (x %% []) TU, Constant, No_domain)) xs, e)
-let all xs e = quant Forall xs e
-let exi xs e = quant Exists xs e
+let quant q xs ?ss e =
+  match ss with
+  | None ->
+      Quant (q, List.map (fun x ->
+        (annot_sort (x %% []) TU, Constant, No_domain)
+      ) xs, e)
+  | Some ss ->
+      let xs = List.map2 (fun x s ->
+        (annot_sort (x %% []) s, Constant, No_domain)
+      ) xs ss in
+      Quant (q, xs, e)
+
+let all xs ?ss e = quant Forall xs ?ss e
+let exi xs ?ss e = quant Exists xs ?ss e
 
 let gen x n = List.init n (fun i -> x ^ string_of_int (i + 1))
 (** [gen "x" n] = [ "x1" ; .. ; "xn" ] *)
@@ -211,8 +222,10 @@ let setminus_def =
   ) %% []
 
 let setst_def s (TKind (ks, _) as k) body =
-  let n = List.length ks -1 in
-  all ([ "s" ] @ gen "a" n @ [ "x" ]) (
+  let ss = List.map (fun k -> get_atom (get_ty k)) ks in
+  let ss = List.tl ss in
+  let n = List.length ks - 1 in
+  all ([ "s" ] @ gen "a" n @ [ "x" ]) ~ss:([ TU ] @ ss @ [ TU ]) (
     ifx B.Equiv (
       ifx B.Mem (
         Ix 1 %% []
@@ -223,7 +236,7 @@ let setst_def s (TKind (ks, _) as k) body =
       ifx B.Conj (
         ifx B.Mem (Ix 1 %% []) (Ix (n + 2) %% []) %% []
       ) (
-        body
+        body (* Dark magic; see Cook.relocalize *)
       ) %% []
     ) %% []
   ) %% []
@@ -320,8 +333,7 @@ let string_def =
     ifx B.Equiv (
       ifx B.Mem (Ix 1 %% []) (Internal B.STRING %% []) %% []
     ) (
-      Quant (
-        Exists, [ annot_sort ("s" %% []) TStr, Constant, No_domain ],
+      exi [ "s" ] ~ss:[ TStr ] (
         ifx B.Eq (
           Ix 2 %% []
         ) (
@@ -332,9 +344,7 @@ let string_def =
   ) %% []
 
 let stringcast_inj =
-  Quant (
-    Forall, [ annot_sort ("s1" %% []) TStr, Constant, No_domain
-            ; annot_sort ("s2" %% []) TStr, Constant, No_domain ],
+  all [ "s1" ; "s2" ] ~ss:[ TStr ; TStr ] (
     ifx B.Implies (
       ifx B.Eq (
         Apply (Opaque stringtou_nm %% [], [ Ix 2 %% [] ]) %% []
