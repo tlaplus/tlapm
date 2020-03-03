@@ -166,8 +166,7 @@ let make_salt_explicit sq =
       [<<a_1, ..., a_n>> = <<b_1, ..., b_n>>]  -->
       [a_1 = b_1 /\ ... /\ a_n = b_n]
       ```
-    - Rewrite [x = TRUE|FALSE]  -->  [x <=> TRUE|FALSE]
-    - Rewrite `[x # {}]  -->  [(\A y:  ~ y \in x) => FALSE]`  in conclusions
+    - Rewrite `[x # {}]  -->  [(\A y :  ~ y \in x) => FALSE]`  in conclusions
     - Insert operator symbols and primed variable symbols in the context
     - Remove [B.Unprimable] from expressions
     - Sort string elements in sets `{s1, ..., sn}` alphabetically
@@ -198,10 +197,6 @@ let prepreproc sq =
           let hs,_ = List.split res in
           Smt.record_signatures := hs :: !Smt.record_signatures;
           Record (List.map (fun (s, e) -> (s, self#expr scx e)) res) @@ e
-      | Apply ({core = Internal B.Eq}, [x ; {core = Internal (B.TRUE | B.FALSE)} as y])
-      | Apply ({core = Internal B.Eq}, [{core = Internal (B.TRUE | B.FALSE)} as y ; x]) ->
-          let x = super#expr scx x in
-          app B.Equiv [x ; y]
       | SetEnum es when List.for_all is_string es ->
           SetEnum (List.sort ~cmp:sort_string_exp es) @@ e
       | Sequent sq ->
