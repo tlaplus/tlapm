@@ -34,7 +34,7 @@ type nt_node =
   | NT_Cap
   | NT_Setminus
   | NT_SetSt of R_nt_cook.hyp_nm option * string * ty_kind * expr
-  (*| NT_SetOf of string * ty_kind*)  (* TODO *)
+  | NT_SetOf of R_nt_cook.hyp_nm option * string * int * ty_kind * expr
   (* Booleans *)
   | NT_BoolToU
   | NT_Boolean

@@ -21,7 +21,7 @@ val cup_nm : string
 val cap_nm : string
 val setminus_nm : string
 val setst_nm : string -> ty_kind -> string
-(*val setof_nm : string -> ty_kind -> string*)
+val setof_nm : string -> int -> ty_kind -> string
 
 val uany_decl : hyp
 val mem_decl : hyp
@@ -34,7 +34,7 @@ val cup_decl : hyp
 val cap_decl : hyp
 val setminus_decl : hyp
 val setst_decl : string -> ty_kind -> hyp
-(*val setof_decl : string -> ty_kind -> hyp*)
+val setof_decl : string -> int -> ty_kind -> hyp
 
 val subseteq_fact : hyp
 val enum_fact : int -> hyp
@@ -44,6 +44,7 @@ val cup_fact : hyp
 val cap_fact : hyp
 val setminus_fact : hyp
 val setst_fact : string -> ty_kind -> expr -> hyp
+val setof_fact : string -> int -> ty_kind -> expr -> hyp
 
 (* {3 Booleans} *)
 val boolean_nm : string

@@ -21,7 +21,7 @@ module NtAxioms : sig
   val cap_nm : string
   val setminus_nm : string
   val setst_nm : string -> ty_kind -> string
-  (*val setof_nm : string -> ty_kind -> string*)
+  val setof_nm : string -> int -> ty_kind -> string
 
   val uany_decl : hyp
   val mem_decl : hyp
@@ -34,7 +34,7 @@ module NtAxioms : sig
   val cap_decl : hyp
   val setminus_decl : hyp
   val setst_decl : string -> ty_kind -> hyp
-  (*val setof_decl : string -> ty_kind -> hyp*)
+  val setof_decl : string -> int -> ty_kind -> hyp
 
   val subseteq_fact : hyp
   val enum_fact : int -> hyp
@@ -44,6 +44,7 @@ module NtAxioms : sig
   val cap_fact : hyp
   val setminus_fact : hyp
   val setst_fact : string -> ty_kind -> expr -> hyp
+  val setof_fact : string -> int -> ty_kind -> expr -> hyp
 
   (* Booleans *)
   val boolean_nm : string
@@ -109,7 +110,9 @@ module NtCook : sig
   open Property
   type hyp_nm = string
   val setst_nm : ty_kind -> expr -> string
+  val setof_nm : int -> ty_kind -> expr -> string
   val setst_special_prop : (hyp_nm option * ty_kind * expr) pfuncs
+  val setof_special_prop : (hyp_nm option * int * ty_kind * expr) pfuncs
   val cook : sequent -> sequent
 end
 
@@ -130,7 +133,7 @@ module NtTable : sig
     | NT_Cap
     | NT_Setminus
     | NT_SetSt of NtCook.hyp_nm option * string * ty_kind * expr
-    (*| NT_SetOf of string * ty_kind*)  (* TODO *)
+    | NT_SetOf of NtCook.hyp_nm option * string * int * ty_kind * expr
     (* Booleans *)
     | NT_BoolToU
     | NT_Boolean

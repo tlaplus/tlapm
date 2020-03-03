@@ -32,7 +32,7 @@ type nt_node =
   | NT_Cap
   | NT_Setminus
   | NT_SetSt of hyp_nm option * string * ty_kind * expr
-  (*| NT_SetOf of string * ty_kind*)  (* TODO *)
+  | NT_SetOf of hyp_nm option * string * int * ty_kind * expr
   (* Booleans *)
   | NT_BoolToU
   | NT_Boolean
@@ -59,6 +59,7 @@ let nt_get_id node =
   | NT_Cap -> "nt_cap"
   | NT_Setminus -> "nt_setminus"
   | NT_SetSt (_, s, _, _) -> "nt_setst_" ^ s
+  | NT_SetOf (_, s, _, _, _) -> "nt_setof_" ^ s
   | NT_Boolean -> "nt_boolean"
   | NT_BoolToU -> "nt_booltou"
   | NT_String -> "nt_string"
@@ -112,7 +113,8 @@ let from_list ns =
  * associated with the node should go just below the hypothesis with that name.
  *)
 let nt_get_place = function
-  | NT_SetSt (nm, _, _, _) -> nm
+  | NT_SetSt (nm, _, _, _)
+  | NT_SetOf (nm, _, _, _, _) -> nm
   | _ -> None
 
 
@@ -133,6 +135,7 @@ let nt_get_deps_l node =
   | NT_Cap -> [ NT_U ; NT_Mem ]
   | NT_Setminus -> [ NT_U ; NT_Mem ]
   | NT_SetSt _ -> [ NT_U ; NT_Mem ]
+  | NT_SetOf _ -> [ NT_U ; NT_Mem ]
 
   | NT_BoolToU -> [ NT_U ; NT_Mem ]
   | NT_Boolean -> [ NT_U ; NT_Mem ; NT_BoolToU ]
@@ -167,6 +170,7 @@ let nt_get_hyps st node =
     | NT_Cap -> st, [ cap_decl ; cap_fact ]
     | NT_Setminus -> st, [ setminus_decl ; setminus_fact ]
     | NT_SetSt (_, s, k, e) -> st, [ setst_decl s k ; setst_fact s k e ]
+    | NT_SetOf (_, s, n, k, e) -> st, [ setof_decl s n k ; setof_fact s n k e ]
 
     | NT_BoolToU -> st, [ booltou_decl ]
     | NT_Boolean -> st, [ boolean_decl ; boolean_fact ]

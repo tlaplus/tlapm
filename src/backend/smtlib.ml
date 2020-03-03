@@ -88,6 +88,9 @@ let rec pp_apply cx ff op args =
         else if has op Reduce.NtCook.setst_special_prop then
           let _, k, _ = get op Reduce.NtCook.setst_special_prop in
           Names.setst_nm s k
+        else if has op Reduce.NtCook.setof_special_prop then
+          let _, n, k, _ = get op Reduce.NtCook.setof_special_prop in
+          Names.setof_nm s n k
         else
           s
       in

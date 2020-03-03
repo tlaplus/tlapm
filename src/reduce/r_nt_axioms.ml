@@ -75,6 +75,7 @@ let cup_nm = nt_prefix ^ "cup"
 let cap_nm = nt_prefix ^ "cap"
 let setminus_nm = nt_prefix ^ "setminus"
 let setst_nm s _ = nt_prefix ^ "SetSt_" ^ s
+let setof_nm s _ _ = nt_prefix ^ "SetOf_" ^ s
 
 let uany_decl = mk_fresh uany_nm [] TU %% []
 
@@ -97,6 +98,25 @@ let setst_decl s k =
                         bad kind provided")
   in
   mk_fresh (setst_nm s k) (TU :: ins) TU %% []
+
+let setof_decl s n k =
+  let ins =
+    match k with
+    | TKind (ks, TAtom TU) ->
+        let rec spin n ks =
+          if n = 0 then ks
+          else
+            match ks with
+            | TKind ([], TAtom TU) :: ks ->
+                spin (n - 1) ks
+            | _ -> invalid_arg ("Reduce.NtAxioms.setof_decl: \
+                                  bad kind provided")
+        in
+        List.map (fun k -> get_atom (get_ty k)) (spin n ks)
+    | _ -> invalid_arg ("Reduce.NtAxioms.setof_decl: \
+                        bad kind provided")
+  in
+  mk_fresh (setof_nm s n k) (List.init n (fun _ -> TU) @ ins) TU %% []
 
 let subseteq_def =
   all [ "x" ; "y" ] (
@@ -241,34 +261,44 @@ let setst_def s (TKind (ks, _) as k) body =
     ) %% []
   ) %% []
 
-let setof_def m n =
-  all (gen "a" m @ gen "s" n @ [ "y" ]) (
+let setof_def s n (TKind (ks, _) as k) body =
+  let ins =
+    let rec spin n ks =
+      if n = 0 then ks
+      else
+        match ks with
+        | TKind ([], TAtom TU) :: ks ->
+            spin (n - 1) ks
+        | _ -> invalid_arg ("Reduce.NtAxioms.setof_def: \
+                              bad kind provided")
+    in
+    List.map (fun k -> get_atom (get_ty k)) (spin n ks)
+  in
+  let m = List.length ins in
+  all (gen "s" n @ gen "a" m @ [ "y" ]) ~ss:(List.init n (fun i -> TU) @ ins @ [ TU ]) (
     ifx B.Equiv (
       ifx B.Mem (
         Ix 1 %% []
       ) (
-        SetOf (
-          Apply (Ix (m + n + 2) %% [], ixi ~shift:(2*n + 1) m @ ixi n) %% [],
-          List.init n begin fun i ->
-            let x = "x" ^ string_of_int (i + 1) in
-            (x %% [], Constant, Domain (Ix (n - i) %% []))
-          end
-        ) %% []
+        Apply (Opaque (setof_nm s n k) %% [], ixi ~shift:1 (m + n)) %% []
       ) %% []
     ) (
       exi (gen "x" n) (
-        List (And,
+        List (
+          And,
           List.init n begin fun i ->
-            ifx B.Mem (Ix (n - i) %% []) (Ix (2*n - i) %% []) %% []
+            ifx B.Mem (
+              Ix (n - i) %% []
+            ) (
+              Ix (2*n + 1 + m - i) %% []
+            ) %% []
           end
-          @ [ ifx B.Eq (
-                Ix n %% []
-              ) (
-                Apply (
-                  Ix (m + 2*n + 2) %% [],
-                  ixi ~shift:(2*n + 1) m @ ixi n
-                ) %% []
-              ) %% []
+          @ [
+            ifx B.Eq (
+              Ix (n + 1) %% []
+            ) (
+              body (* Dark magic *)
+            ) %% []
           ]
         ) %% []
       ) %% []
@@ -283,6 +313,7 @@ let cup_fact = mk_fact cup_def %% []
 let cap_fact = mk_fact cap_def %% []
 let setminus_fact = mk_fact setminus_def %% []
 let setst_fact s k e = mk_fact (setst_def s k e) %% []
+let setof_fact s n k e = mk_fact (setof_def s n k e) %% []
 
 
 (* {3 Booleans} *)

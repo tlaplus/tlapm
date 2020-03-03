@@ -79,6 +79,10 @@ let visitor = object (self : 'self)
         let nm, k, e = get oe C.setst_special_prop in
         add (NT_SetSt (nm, s, k, e)) ns
 
+    | Opaque s when has oe C.setof_special_prop ->
+        let nm, n, k, e = get oe C.setof_special_prop in
+        add (NT_SetOf (nm, s, n, k, e)) ns
+
     | Lambda (vs, e) ->
         let ns = List.fold_left begin fun ns (v, _) ->
           let k = get_kind v in
