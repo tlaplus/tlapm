@@ -324,7 +324,7 @@ let rec expr scx oe =
       in
       let h, scx = adj scx h (Sort TU) in
       let e, srt = expr scx e in
-      Choose (h, hdom, mk_formula e srt) @@ oe, TBool
+      Choose (h, hdom, mk_formula e srt) @@ oe, TU
 
   | SetSt (h, e1, e2) ->
       let e1, srt1 = expr scx e1 in
