@@ -26,6 +26,12 @@ let get_scount () =
 let setst_nm _ _ = "cooked_" ^ string_of_int (get_scount ())
 let setof_nm _ _ _ = "cooked_" ^ string_of_int (get_scount ())
 
+(* FIXME There is a major flaw in the way reduction is performed.  It cannot
+ * handle nested lambdas.  If there is a nested lambda, it will be replaced by
+ * an applied first-order operator, but this one will in turn disappear when
+ * the upper lambda is treated.  I am giving up on this bug because it requires
+ * too much dirty work to be resolved, and I already intend to revise the
+ * encoding process. *)
 let setst_special_prop = make "Reduce.Cook.setst_special_prop"
 let setof_special_prop = make "Reduce.Cook.setof_special_prop"
 
