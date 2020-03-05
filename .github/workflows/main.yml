@@ -1,0 +1,131 @@
+name: Build and Package TLA Proof Manager
+on: [push, pull_request]
+
+## The 'release' job creates an empty Github (draft) release before the 'publish' job 
+## below builds and uploads installers into the release.  This complexity is required
+## because the standard Github release action cannot be executed as part of the matrix
+## job (the first runner to create the release wins but the others fail).  In other words,
+## we need a single runner to create the release to which all runners will upload their
+## assets (installers).  Things would be simpler if e.g. Linux could build the installers
+## for all platforms.
+jobs:
+  release:
+    name: Create Github Release
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get current date
+      id: date
+      run: echo "::set-output name=date::$(date +'%Y%m%d%H%M')"
+    - name: Create Github Release
+      id: create_release
+      uses: actions/create-release@v1.0.0
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{steps.date.outputs.date}}
+        release_name: ${{steps.date.outputs.date}}
+        draft: false
+        prerelease: true
+    ## Remember the release URL and ID so the runners executing 'publish' below
+    ## know where to upload assets.
+    - name: Output Release URL and ID File
+      run: |
+           echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
+           echo "${{steps.date.outputs.date}}" > release_id.txt
+    - name: Save Release URL File for publish
+      uses: actions/upload-artifact@v1
+      with:
+        name: release_url
+        path: release_url.txt
+    - name: Save Release ID File for publish
+      uses: actions/upload-artifact@v1
+      with:
+        name: release_id
+        path: release_id.txt
+
+  publish:
+    name: Build and Test
+    needs: [release]
+    runs-on: ${{ matrix.operating-system }}
+    strategy: 
+      fail-fast: false
+      matrix:
+        operating-system: [macos-latest, ubuntu-latest]
+        ocaml-version: [ '4.06.1' ]
+        include: 
+        - operating-system: macos-latest
+          INSTALLER: tlaps-1.4.5-i386-darwin-inst.bin
+          DOWNLOADS: tlaps-1.4.5-i386-darwin-inst
+
+        - operating-system: ubuntu-latest
+          INSTALLER: tlaps-1.4.5-x86_64-linux-gnu-inst.bin
+          DOWNLOADS: tlaps-1.4.5-x86_64-linux-gnu
+    steps:
+      ## See "Output Release URL and ID File" of 'release' job above.
+      - name: Load Release URL File from release job
+        uses: actions/download-artifact@v1
+        with:
+          name: release_url
+      - name: Get Release File Name & Upload URL
+        id: get_release_info
+        run: |
+          echo ::set-output name=file_name::${REPOSITORY_NAME##*/}-${TAG_REF_NAME##*/v} # RepositoryName-v1.0.0
+          value=`cat release_url/release_url.txt`
+          echo ::set-output name=upload_url::$value
+        env:
+          TAG_REF_NAME: ${{ github.ref }}
+          REPOSITORY_NAME: ${{ github.repository }}
+      ## Get TLAPS repository checked out.
+      - uses: actions/checkout@master
+      ## Setup OCaml environment.
+      - uses: avsm/setup-ocaml@master
+        with:
+          ocaml-version: ${{ matrix.ocaml-version }}
+      ## The TLAPM test suite requries the kaputt package.
+      - name: Install OCaml dependencies
+        run: opam install kaputt
+      - uses: actions/cache@v1
+        id: cache
+        with:
+          path: ${{ matrix.DOWNLOADS }}
+          key: ${{ matrix.DOWNLOADS }}
+      ## Create the installer and run the 'fast' test suite as smoke tests before
+      ## installers are uploaded to the Github release.
+      - name: Build and Test TLAPM installer
+        run: |
+            eval $(opam env)
+            ./configure
+            cd tools/installer
+            ./tlaps-release.sh
+            ./${{ matrix.INSTALLER }} -d ../..
+            cd ../..
+            PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make test
+      - name: Upload Release Asset
+        id: upload-release-asset 
+        uses: actions/upload-release-asset@v1.0.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+          asset_path: tools/installer/${{ matrix.INSTALLER }}
+          asset_name: ${{ matrix.INSTALLER }}
+          asset_content_type: application/octet-stream
+      ## Run the full test suite.
+      - name: Download and Test TLAPM installer
+        if: matrix.operating-system == 'ubuntu-latest'
+        ## The test suite has known failures, thus keep going until the
+        ## test suite has been fixed (TODO). 
+        continue-on-error: true
+        run: |
+            ls -lah
+            eval $(opam env)
+            ocaml --version
+            make
+            PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH which tlapm
+            PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH which zenon
+            PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH tlapm --version
+            PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make testall
+      - name: Print Test Results
+        if: matrix.operating-system == 'ubuntu-latest'
+        run: cat test/tests.log
+
