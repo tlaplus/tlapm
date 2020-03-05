@@ -17,7 +17,7 @@ case "@EXE@" in
 esac
 TARGET="$OLDPWD/$TARGET_FILE"
 
-PS_DIR="$(pwd)/../../../tlaps"
+PS_DIR="$(pwd)/../.."
 PM_DIR="$(pwd)/../.."
 
 cat <<EOF
@@ -73,7 +73,7 @@ download () {
 
 ################################################################################
 
-TLAPSDIR="/tmp/$TLAPSVER"
+TLAPSDIR="$PS_DIR/$TLAPSVER"
 DOWNDIR="$TLAPSDIR/download"
 BUILDDIR="$TLAPSDIR/build"
 INSTDIR="$TLAPSDIR/install"
