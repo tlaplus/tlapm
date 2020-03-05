@@ -1,0 +1,160 @@
+%!
+
+%  Copyright 2004 INRIA
+%  $Id: zenon-logo.ps,v 1.1 2006-02-28 14:33:28 doligez Exp $
+
+% Use ghostscript to translate to png format:
+(
+  gs -q -sDEVICE=png16m -sOutputFile=zenon-logo.png -r720 -g2400x800 \
+     -dNOPAUSE -dBATCH zenon-logo.ps
+) pop
+
+%%%% background
+
+/frametop    1 def
+/frameleft   1 def
+/frameright  2 def
+/framebottom 2 def
+
+0 0 0 setrgbcolor
+0 0 moveto
+240 0 lineto
+240 80 lineto
+0 80 lineto
+closepath fill
+
+1.0 0.95 0.67 setrgbcolor
+frameleft           framebottom      moveto
+240 frameright sub  framebottom      lineto
+240 frameright sub  80 frametop sub  lineto
+frameleft           80 frametop sub  lineto
+closepath fill
+
+%%%% arrow
+
+/x 23 def
+/y 62 def
+
+/arrow {
+    gsave
+    -10 5 rlineto
+    10 -5 rmoveto
+    -10 -5 rlineto
+    10 5 rmoveto
+    stroke
+    grestore
+} def
+
+1 setlinecap
+2 setlinewidth
+0.3 0.2 0.0 setrgbcolor
+newpath
+x y moveto
+135 0 rlineto
+stroke
+
+1 setlinewidth
+0.2 0.2 0.2 setrgbcolor
+x y moveto arrow
+5 0 rmoveto arrow
+5 0 rmoveto arrow
+
+0 0 0 setrgbcolor
+x y moveto
+138 0 rmoveto
+-10 5 rlineto
+5 -5 rlineto
+-5 -5 rlineto
+closepath fill
+
+
+%%%% turtle
+
+/x 174 def
+/y 57 def
+
+0.0 0.2 0.0 setrgbcolor
+
+x y moveto
+-5 -2 rlineto
+9 1 rlineto
+closepath fill
+
+x y moveto
+6 -1 rmoveto
+-11 -4 -1 -9 4 -1 rcurveto
+closepath fill
+
+x y moveto
+39 -1 rmoveto
+11 -4 1 -9 -4 -1 rcurveto
+closepath fill
+
+x y moveto
+45 0 rmoveto
+4 5 4 5 6 4 rcurveto
+4 0 4 4 0 5 rcurveto
+-3 1 -3 1 -9 -7 rcurveto
+closepath fill
+
+0.1 0.5 0.1 setrgbcolor
+
+newpath
+x y moveto
+15 15 30 15 45 0 rcurveto
+-15 -5 -30 -5 -45 0 rcurveto
+fill
+
+%%%% Text
+
+/x -3 def
+/y 10 def
+/ratio 0.5 def
+
+/kern1 1 def
+/kern2 -1 def
+/kern3 -3.5 def
+/kern4 -3.5 def
+/kern5 10 def
+
+0 0 0 setrgbcolor
+x y moveto
+
+/Symbol findfont 48 scalefont setfont
+
+4.55 1 scale
+(Z) show
+kern1 0 rmoveto
+ratio 1 scale
+(e) show
+kern2 0 rmoveto
+ratio 1 scale
+(n) show
+kern3 0 rmoveto
+ratio 1 scale
+(o) show
+kern4 0 rmoveto
+ratio 1 scale
+(n) show
+kern5 0 rmoveto
+ratio 1 scale
+(e) show
+kern1 0 rmoveto
+ratio 1 scale
+(l) show
+kern2 0 rmoveto
+ratio 1 scale
+
+% whatever... it's unreadable anyway
+
+(e) show
+kern3 0 rmoveto
+ratio 1 scale
+(a) show
+kern4 0 rmoveto
+ratio 1 scale
+(s) show
+kern5 0 rmoveto
+ratio 1 scale
+
+showpage

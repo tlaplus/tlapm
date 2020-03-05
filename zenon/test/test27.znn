@@ -1,0 +1,13 @@
+;  Copyright 2006 INRIA
+;  $Id: test27.znn,v 1.6 2011-12-28 16:43:33 doligez Exp $
+
+$sig abst_T () "Type"
+$sig not_b ("bool") "bool"
+$sig abst_equal ("abst_T" "abst_T") "bool"
+
+$hyp "h" (A. ((x "bool") (<=> (Is_true (not_b x)) (-. (Is_true x)))))
+
+$def "d" (abst_different x y) (not_b (abst_equal x y))
+
+$goal (A. ((x "abst_T") (A. ((y "abst_T")
+         (=> (Is_true (abst_equal x y)) (-. (Is_true (abst_different x y))))))))

@@ -1,0 +1,40 @@
+;  Copyright 2006 INRIA
+;  $Id: test35.znn,v 1.6 2011-12-28 16:43:33 doligez Exp $
+
+# file: species_general_set.foc
+# species: ordered_lattice
+# property: leq_reflexive
+
+;     (* to be proved *)
+; (x: abst_T) (y: abst_T)
+; ((Is_true ((abst_equal  x y)) ))-> 
+;   (Is_true ((abst_leq  x y)) )
+; By
+;   abst_inf_idempotent: (x: abst_T) (y: abst_T)
+;   ((Is_true ((abst_equal  x y)) ))-> 
+;     (Is_true ((abst_equal  x (abst_inf  x y))) )
+;   abst_order_compatible_with_inf: (x: abst_T) (y: abst_T)
+;   ((Is_true ((abst_order_inf  x y)) ))-> 
+;     (Is_true ((abst_leq  x y)) )
+; By def abst_order_inf:= [x: abst_T][y: abst_T](abst_equal  x (abst_inf  x y))
+; (* Qed *).
+
+$sig abst_T () "Type"
+$sig abst_equal ("abst_T" "abst_T") "bool"
+$sig abst_leq ("abst_T" "abst_T") "bool"
+$sig abst_inf ("abst_T" "abst_T") "abst_T"
+
+$def "d" (abst_order_inf x y) (abst_equal x (abst_inf x y))
+
+$hyp "abst_inf_idempotent" (A. ((x "abst_T") (A. ((y "abst_T")
+     (=> (Is_true (abst_equal x y))
+         (Is_true (abst_equal x (abst_inf x y))))))))
+
+$hyp "abst_order_compatible_with_inf" (A. ((x "abst_T") (A. ((y "abst_T")
+     (=> (Is_true (abst_order_inf x y))
+         (Is_true (abst_leq x y)))))))
+
+$goal
+  (A. ((x "abst_T") (A. ((y "abst_T")
+    (=> (Is_true (abst_equal x y))
+        (Is_true (abst_leq x y)))))))

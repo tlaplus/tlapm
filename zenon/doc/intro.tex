@@ -1,0 +1,24 @@
+%  Copyright 2006 INRIA
+%  $Id: intro.tex,v 1.3 2006-03-01 14:39:03 doligez Exp $
+
+\chapter{Introduction}\label{chap:intro}
+
+Zenon is an automatic theorem-prover whose main claim to fame is that
+it produces actual proofs of theorems.
+Correctness is an explicit non-goal in the design of Zenon: the proof
+output needs to be checked by another program before the theorem is
+considered proved.
+  As a consequence, Zenon is not
+designed for direct use by humans, but rather for interfacing into
+formal proof systems, such as interactive proof assistants and
+non-interactive proof checkers.
+
+This document gives a detailed description of all the information
+needed by users of Zenon.  Chapter~\ref{chap:install} describes how to
+compile and install Zenon from source code.  Chapter~\ref{chap:options}
+describes all the command-line options accepted by Zenon.
+Chapter~\ref{chap:input-zen} describes the native input syntax of
+Zenon; chapter~\ref{chap:input-tptp} describes the TPTP input syntax;
+chapter~\ref{chap:input-coq} describes the Coq-style input
+syntax.  Chapter~\ref{chap:messages} describes the error and warning
+messages that Zenon may output when searching for a proof.

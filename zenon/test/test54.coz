@@ -1,0 +1,27 @@
+(*  Copyright 2006 INRIA  *)
+(*  $Id: test54.coz,v 1.7 2006-07-20 13:19:21 doligez Exp $  *)
+
+(*
+; file: species_general_additive_law.foc
+; species: partially_ordered_additive_monoid
+; property: sup_idempotent / __goal_12
+*)
+
+Parameter abst_T : Type.
+Parameter abst_equal : abst_T -> abst_T -> bool.
+Parameter abst_sup : abst_T -> abst_T -> abst_T.
+Parameter abst_plus : abst_T -> abst_T -> abst_T.
+Parameter x : abst_T.
+Parameter y : abst_T.
+
+Parameter
+  abst_plus_is_regular: forall (x: abst_T) (y: abst_T) (z: abst_T),
+  ((Is_true ((abst_equal  (abst_plus  x y) (abst_plus  x z))) ))-> 
+    (Is_true ((abst_equal  y z)) ).
+Parameter __lemma_1_1: (Is_true
+  ((abst_equal (abst_plus y x ) (abst_plus y (abst_sup x y ) ) )) ).
+
+Theorem thm :
+(Is_true ((abst_equal x (abst_sup x y ) ))
+)
+.

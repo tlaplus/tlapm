@@ -1,0 +1,6 @@
+;  Copyright 2006 INRIA
+;  $Id: test24.znn,v 1.5 2011-12-28 16:43:33 doligez Exp $
+
+$def "def_x" (x) _1
+
+$goal (= x _1)

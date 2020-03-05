@@ -1,0 +1,69 @@
+;  Copyright 2006 INRIA
+;  $Id: test34.znn,v 1.7 2011-12-28 16:43:33 doligez Exp $
+
+# file: species_general_set.foc
+# species: lattice
+# property: order_inf_is_transitive
+
+#      (* to be proved *)
+#  (x: abst_T) (y: abst_T) (z: abst_T)
+#  ((Is_true ((abst_order_inf  x y)) ))-> 
+#    ((Is_true ((abst_order_inf  y z)) ))-> 
+#      (Is_true ((abst_order_inf  x z)) )
+#  By
+#    abst_inf_congruence: (x: abst_T) (y: abst_T) (z: abst_T)
+#    ((Is_true ((abst_equal  x y)) ))-> 
+#      (and (Is_true ((abst_equal  (abst_inf  x z) (abst_inf  y z))) ) (Is_true
+#      ((abst_equal  (abst_inf  z x) (abst_inf  z y))) ))
+#    abst_equal_transitive: (x: abst_T) (y: abst_T) (z: abst_T)
+#    ((Is_true ((abst_equal  x y)) ))-> 
+#      ((Is_true ((abst_equal  y z)) ))-> 
+#        (Is_true ((abst_equal  x z)) )
+#    abst_equal_symmetric: (x: abst_T) (y: abst_T)
+#    ((Is_true ((abst_equal  x y)) ))-> 
+#      (Is_true ((abst_equal  y x)) )
+#    abst_inf_is_associative:
+#    (x: abst_T) (y: abst_T) (z: abst_T) (Is_true
+#    ((abst_equal  (abst_inf  (abst_inf  x y) z) (abst_inf  x (abst_inf  y z))))
+#    )
+#  By def abst_order_inf:= [x: abst_T][y: abst_T](abst_equal  x (abst_inf  x y))
+#  (* Qed *).
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Zenon can't solve this problem yet ;;
+;; hence the following line...        ;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+$hyp "h00" F.
+
+$sig abst_T () "Type"
+$sig abst_equal ("abst_T" "abst_T") "bool"
+$sig abst_inf ("abst_T" "abst_T") "abst_T"
+
+$def "d" (abst_order_inf x y) (abst_equal x (abst_inf x y))
+
+$hyp "abst_inf_congruence"
+(A. ((x "abst_T") (A. ((y "abst_T") (A. ((z "abst_T")
+  (=> (Is_true (abst_equal x y))
+      (/\ (Is_true (abst_equal (abst_inf x z) (abst_inf y z)))
+          (Is_true (abst_equal (abst_inf z x) (abst_inf z y)))))))))))
+
+$hyp "abst_equal_transitive"
+(A. ((x "abst_T") (A. ((y "abst_T") (A. ((z "abst_T")
+     (=> (Is_true (abst_equal x y))
+         (=> (Is_true (abst_equal y z))
+             (Is_true (abst_equal x z))))))))))
+
+$hyp "abst_equal_symmetric"
+(A. ((x "abst_T") (A. ((y "abst_T")
+     (=> (Is_true (abst_equal x y)) (Is_true (abst_equal y x)))))))
+
+$hyp "abst_inf_is_associative"
+(A. ((x "abst_T") (A. ((y "abst_T") (A. ((z "abst_T")
+     (Is_true (abst_equal (abst_inf (abst_inf x y) z)
+                          (abst_inf x (abst_inf y z))))))))))
+
+$goal
+  (A. ((x "abst_T") (A. ((y "abst_T") (A. ((z "abst_T")
+    (=> (Is_true (abst_order_inf x y))
+        (=> (Is_true (abst_order_inf y z))
+            (Is_true (abst_order_inf x z))))))))))

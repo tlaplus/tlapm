@@ -1,0 +1,61 @@
+;  Copyright 2006 INRIA
+;  $Id: test29.znn,v 1.7 2011-12-28 16:43:33 doligez Exp $
+
+# file: species_general_set.foc
+# species: partial_order
+# theorem: gt_is_lt
+
+#  (* to be proved *)
+#(x: abst_T) (y: abst_T)
+#(and
+#  ((Is_true ((abst_gt  x y)) ))-> 
+#    (and (Is_true ((abst_geq  x y)) ) (Is_true ((abst_different  x y)) ))
+#  ((Is_true ((abst_geq  x y)) ))-> 
+#    (or (Is_true ((abst_gt  x y)) ) (Is_true ((abst_equal  x y)) )))
+#By
+#  abst_equal_symmetric: (x: abst_T) (y: abst_T)
+#  ((Is_true ((abst_equal  x y)) ))-> 
+#    (Is_true ((abst_equal  y x)) )
+#  abst_lt_is_not_leq: (x: abst_T) (y: abst_T)
+#  (and
+#    ((Is_true ((abst_lt  x y)) ))-> 
+#      (and (Is_true ((abst_leq  x y)) ) (Is_true ((abst_different  x y)) ))
+#    ((Is_true ((abst_leq  x y)) ))-> 
+#      (or (Is_true ((abst_lt  x y)) ) (Is_true ((abst_equal  x y)) )))
+#By def
+#      abst_different:= [x: abst_T][y: abst_T](not_b  (abst_equal  x y))
+#      abst_geq:= [x: abst_T][y: abst_T](abst_leq  y x) abst_gt:=
+#      [x: abst_T][y: abst_T](abst_lt  y x)
+#(* Qed *).
+
+$sig not_b ("bool") "bool"
+$sig abst_equal ("zenon_U" "zenon_U") "bool"
+$sig abst_leq ("zenon_U" "zenon_U") "bool"
+$sig abst_lt ("zenon_U" "zenon_U") "bool"
+
+$def "d1" (abst_different x y) (not_b (abst_equal x y))
+$def "d2" (abst_geq x y) (abst_leq y x)
+$def "d3" (abst_gt x y) (abst_lt y x)
+
+$hyp "h1"
+  (A. ((x) (A. ((y)
+    (=> (Is_true (abst_equal x y)) (Is_true (abst_equal y x)))))))
+
+$hyp "h2"
+  (A. ((x) (A. ((y)
+    (/\ (=> (Is_true (abst_lt x y))
+            (/\ (Is_true (abst_leq x y)) (Is_true (abst_different x y))))
+        (=> (Is_true (abst_leq x y))
+            (\/ (Is_true (abst_lt x y)) (Is_true (abst_equal x y)))))))))
+
+
+
+# from Bool.v
+$hyp "h3" (A. ((x "bool") (<=> (Is_true (not_b x)) (-. (Is_true x)))))
+
+$goal
+  (A. ((x) (A. ((y)
+    (/\ (=> (Is_true (abst_gt x y))
+            (/\ (Is_true (abst_geq x y)) (Is_true (abst_different x y))))
+        (=> (Is_true (abst_geq x y))
+            (\/ (Is_true (abst_gt x y)) (Is_true (abst_equal x y)))))))))

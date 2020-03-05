@@ -1,0 +1,5 @@
+;  Copyright 2006 INRIA
+;  $Id: test10.znn,v 1.7 2011-12-28 16:43:33 doligez Exp $
+
+$hyp "h" (A. ((x) (\/ (R x) (R (f x)))))
+$goal (E. ((x) (/\ (R x) (R (f (f x))))))

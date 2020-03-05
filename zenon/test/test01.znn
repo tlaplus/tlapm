@@ -1,0 +1,9 @@
+;  Copyright 2006 INRIA
+;  $Id: test01.znn,v 1.6 2011-12-28 16:43:33 doligez Exp $
+
+$sig P ("nat") "Prop"
+$sig Q ("nat") "Prop"
+
+$hyp "h1" (A. ((x "nat") (P x)))
+$hyp "h2" (A. ((x "nat") (Q x)))
+$goal (-. (\/ (A. ((x "nat") (-. (Q x)))) (A. ((x "nat") (-. (P x))))))

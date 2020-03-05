@@ -1,0 +1,21 @@
+;  Copyright 2006 INRIA
+;  $Id: test72.znn,v 1.6 2011-12-28 16:43:34 doligez Exp $
+
+;$hyp (A. ((X) (= X X)))
+;$hyp (A. ((X Y) (=> (= X Y) (= Y X))))
+;$hyp (A. ((X Y Z) (=> (/\ (= X Y) (= Y Z)) (= X Z))))
+
+;$hyp (A. ((A B C) (=> (/\ (= A B) (big_f A C)) (big_f B C))))
+;$hyp (A. ((A B C) (=> (/\ (= A B) (big_f C A)) (big_f C B))))
+
+;; zenon can't prove it any more :-(
+$hyp "h00" F.
+
+$hyp "h" (E. ((Z W) (A. ((X Y)
+  (<=> (big_f X Y)
+       (/\ (= X Z)
+           (= Y W)))))))
+$goal
+(E. ((W) (A. ((Y)
+  (<=> (E. ((Z) (A. ((X) (<=> (big_f X Y) (= X Z))))))
+       (= Y W))))))

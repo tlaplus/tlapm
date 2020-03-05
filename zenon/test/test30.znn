@@ -1,0 +1,29 @@
+;  Copyright 2006 INRIA
+;  $Id: test30.znn,v 1.7 2011-12-28 16:43:33 doligez Exp $
+
+# file: species_general_set.foc
+# species: ordered_set
+# property: equal_reflexive
+
+#  (* to be proved *)
+#(x: abst_T) (Is_true ((abst_equal  x x))
+#)
+#By
+#  abst_total_order: (x: abst_T) (y: abst_T)
+#  (or (Is_true ((abst_leq  x y)) ) (Is_true ((abst_leq  y x)) ))
+#By def
+#      abst_equal:= [x: abst_T][y: abst_T](and_b  (abst_leq  x y) (abst_leq  y
+#      x))
+#(* Qed *).
+
+$sig abst_T () "Type"
+$sig abst_leq ("abst_T" "abst_T") "bool"
+
+$def "d" (abst_equal x y) (coq_builtins.bi__and_b (abst_leq x y) (abst_leq y x))
+
+$hyp "h"
+  (A. ((x "abst_T") (A. ((y "abst_T")
+    (\/ (Is_true (abst_leq x y)) (Is_true (abst_leq y x)))))))
+
+$goal
+  (A. ((x "abst_T") (Is_true (abst_equal x x))))

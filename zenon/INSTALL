@@ -1,0 +1,26 @@
+(*  Copyright 2006 INRIA  *)
+
+
+Licence: New BSD Licence (see the file LICENSE for details)
+
+
+Prerequisites:
+  - OCaml 3.08.x or 3.09.x (with ocamlopt)
+  - Coq 8.0.x
+  - ImageMagick (optional)
+  - Ghostscript (optional)
+
+
+Compile and install with:
+  configure
+  make
+  make install
+
+
+For checking the proofs with coqc, add this to your $HOME/.coqrc file:
+  Add LoadPath "/usr/local/lib/zenon".
+If you specified an alternate libdir when configuring zenon, you will
+need to adjust this command accordingly.
+
+
+Contact: Damien Doligez <damien.doligez@inria.fr>

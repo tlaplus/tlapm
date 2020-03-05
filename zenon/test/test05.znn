@@ -1,0 +1,11 @@
+;  Copyright 2006 INRIA
+;  $Id: test05.znn,v 1.6 2011-12-28 16:43:33 doligez Exp $
+
+# TPTP syn051+1
+
+$sig F ("nat") "Prop"
+
+$hyp "h1" (E. ((X "nat") (=> p (F X))))
+$hyp "h2" (E. ((X "nat") (=> (F X) p)))
+
+$goal (E. ((X "nat") (<=> p (F X))))

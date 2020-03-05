@@ -1,0 +1,6 @@
+;  Copyright 2006 INRIA
+;  $Id: test19.znn,v 1.3 2006-03-01 14:39:03 doligez Exp $
+
+# trivial (Pierre Weis)
+$goal (=> (/\ (/\ (=> A B) (=> B C)) (=> C A))
+          (/\ (/\ (<=> A B) (<=> B C)) (<=> A C)))

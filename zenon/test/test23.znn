@@ -1,0 +1,8 @@
+;  Copyright 2006 INRIA
+;  $Id: test23.znn,v 1.5 2011-12-28 16:43:33 doligez Exp $
+
+$hyp "h1" (=> (<=> A B) (<=> B C))
+$hyp "h2" (=> (<=> B C) (<=> C A))
+$hyp "h3" (=> (<=> C A) (<=> A B))
+
+$goal (=> A B)

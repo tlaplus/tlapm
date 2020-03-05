@@ -1,0 +1,145 @@
+
+
+        TLA+2 MODE FOR EMACS
+
+
+0. Installation
+
+Copy the file tla-mode.el in some directory (for example, ~/lib).  Add
+the following line to your ~/.emacs file, changing the directory name
+as needed:
+  (load-file "~/lib/tla-mode.el")
+
+
+1. Syntax Coloring
+
+Two faces are defined.  You can change them to customize the
+syntax coloring.
+
+tla-tabs-face
+  Used for tab characters.  By default: red background.
+
+tla-ellipsis-face
+  Used for the end of line after an ellipsis.  This is used only if
+  you activate the tla-ellipsis-line option.
+
+
+2. Automatic up-casing of keywords
+
+This uses emacs's abbrev mode.  Just type the keyword in lower case and
+it is automatically converted to upper case.  This feature is disabled
+by default.  To enable it, add this line to your .emacs after the line
+that loads tla-mode.el:
+  (setq tla-mode-enable-abbrevs t)
+
+
+3. Hiding and showing parts of the proof trees
+
+This uses emacs's outline mode.  You can focus on some subtree of the
+proof by hiding other parts.  The commands are as follows.  In the
+following, the "current node" is the node that contains the point and
+the "current subtree" is the subtree rooted at the current node.
+The root node of a proof is the THEOREM keyword and the name and
+statement that follow it.
+
+key                  command
+
+control-PageUp       tla-hide-all
+  Hide all non-root nodes in the file.
+
+control-PageDown     tla-show-all
+  Show all proof nodes in the file.
+
+control-DownArrow    tla-show-subtree
+  Show all nodes of the current subtree.
+
+control-UpArrow      tla-hide-subtree
+  Hide the current node's descendents.
+
+control-RightArrow   tla-show-node
+  Show the current node and the headings of its sons.
+
+control-LeftArrow    tla-hide-node
+  Hide the current node's descendents.
+
+control-c control-s  tla-show-focus
+  Show the current subtree and the branch leading to it (its ancestors
+  and their siblings), and hide all other nodes.
+
+
+If you want Emacs to hide all proofs whenever it opens a TLA+2 file,
+add this line to your .emacs after the line that loads tla-mode.el:
+  (setq tla-mode-hide-on-open t)
+
+
+4. Selectively disabling and enabling leaf proofs
+
+This is done by editing the text file to add and remove the characters
+(*{_}*) before the BY, OBVIOUS, PICK, HAVE and WITNESS keywords.  This
+is done only on keywords that are preceded by a newline or a space.
+If you add a (*comment*) right before the keyword, it will be ignored
+by these commands.
+
+A leaf node is called "disabled" if it has (*{_}*) before its keyword
+and "enabled" if it doesn't.
+
+
+key                  command
+
+control-c control-a  tla-enable-all
+  Enable all leaf nodes in the file.  (A for all)
+
+control-c control-n  tla-disable-all
+  Disable all leaf nodes in the file.  (N for none)
+
+control-c control-e  tla-enable-subtree
+  Enable the leaf nodes of the current subtree.
+
+control-c control-d  tla-disable-subtree
+  Disable the leaf nodes of the current subtree.
+
+control-c control-t  tla-enable-focus
+  Enable the leaf nodes of the current subtree and disable all other
+  leaf nodes.
+
+control-c control-o  tla-disable-above
+  Disable all leaf nodes from the beginning of the file to the cursor.
+
+
+5. Miscellaneous commands
+
+These two are the most useful.
+
+key                  command
+
+control-c control-f  tla-focus
+  Show the current subtree and the branch leading to it and hide
+  everything else.  Enable the current subtree and disable everything
+  else.
+
+control-c control-l  tla-goto-last-error
+  Go to the last location mentioned in the *compilation* buffer.  When
+  Isabelle's auto tactic fails to terminate, this will show which
+  leaf proof it is trying to prove.
+
+
+6. Options
+
+Tla-mode has five options that you can set, by setting variables after
+loading tla-mode.el but before loading any TLA+ file.
+
+- Automatic up-casing of keywords.  Enabled with:
+    (setq tla-enable-abbrevs t)
+- Hiding of all proofs when opening a file.  Enabled with:
+    (setq tla-hide-on-open t)
+- Marking the hidden proofs with a horizontal line that extends to the
+  right margin.  Enabled with:
+    (setq tla-ellipsis-line t)
+- Putting the ellipsis at the end of the statement instead of putting it
+  on its own line.  Enabled with:
+    (setq tla-ellipsis-compact t)
+- Changing the ellipsis string to whatever string you want.  For example,
+  you can change it from the default "--- proof hidden ---" to "..." with:
+    (setq ellipsis-string "...")
+
+$Id$

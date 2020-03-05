@@ -1,0 +1,7 @@
+;  Copyright 2006 INRIA
+;  $Id: test25.znn,v 1.4 2006-03-01 14:39:03 doligez Exp $
+
+$sig abst_T () "Type"
+$sig abst_p ("abst_T") "bool"
+
+$goal (A. ((x "abst_T") (=> (Is_true (abst_p x)) (Is_true (abst_p x)))))

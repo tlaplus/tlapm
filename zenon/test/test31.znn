@@ -1,0 +1,59 @@
+;  Copyright 2006 INRIA
+;  $Id: test31.znn,v 1.7 2011-12-28 16:43:33 doligez Exp $
+
+# file: species_general_set.foc
+# species: ordered_set
+# property: lt_is_not_leq
+
+#    (* to be proved *)
+#(x: abst_T) (y: abst_T)
+#(and
+#  ((Is_true ((abst_lt  x y)) ))-> 
+#    (and (Is_true ((abst_leq  x y)) ) (Is_true ((abst_different  x y)) ))
+#  ((Is_true ((abst_leq  x y)) ))-> 
+#    (or (Is_true ((abst_lt  x y)) ) (Is_true ((abst_equal  x y)) )))
+#By
+#  abst_equal_symmetric: (x: abst_T) (y: abst_T)
+#  ((Is_true ((abst_equal  x y)) ))-> 
+#    (Is_true ((abst_equal  y x)) )
+#  abst_leq_reflexive: (x: abst_T) (y: abst_T)
+#  ((Is_true ((abst_equal  x y)) ))-> 
+#    (Is_true ((abst_leq  x y)) ) 
+#  abst_total_order: (x: abst_T) (y: abst_T)
+#  (or (Is_true ((abst_leq  x y)) ) (Is_true ((abst_leq  y x)) ))
+#  abst_leq_antisymmetric: (x: abst_T) (y: abst_T)
+#  ((Is_true ((abst_leq  x y)) ))-> 
+#    ((Is_true ((abst_leq  y x)) ))-> 
+#      (Is_true ((abst_equal  x y)) )
+#By def
+#      abst_different:= [x: abst_T][y: abst_T](not_b  (abst_equal  x y))
+#      abst_lt:= [x: abst_T][y: abst_T](not_b  (abst_leq  y x))
+#(* Qed *).
+
+$sig abst_T () "Type"
+$sig abst_equal ("abst_T" "abst_T") "bool"
+$sig abst_leq ("abst_T" "abst_T") "bool"
+
+$def "d1" (abst_different x y) (coq_builtins.bi__not_b (abst_equal x y))
+$def "d2" (abst_lt x y) (coq_builtins.bi__not_b (abst_leq y x))
+
+$hyp "h1" (A. ((x "abst_T") (A. ((y "abst_T")
+     (=> (Is_true (abst_equal x y)) (Is_true (abst_equal y x)))))))
+
+$hyp "h2" (A. ((x "abst_T") (A. ((y "abst_T")
+     (=> (Is_true (abst_equal x y)) (Is_true (abst_leq x y)))))))
+
+$hyp "h3" (A. ((x "abst_T") (A. ((y "abst_T")
+     (\/ (Is_true (abst_leq x y)) (Is_true (abst_leq y x)))))))
+
+$hyp "h4" (A. ((x "abst_T") (A. ((y "abst_T")
+     (=> (Is_true (abst_leq x y))
+         (=> (Is_true (abst_leq y x))
+             (Is_true (abst_equal x y))))))))
+
+$goal
+  (A. ((x "abst_T") (A. ((y "abst_T")
+    (/\ (=> (Is_true (abst_lt x y))
+            (/\ (Is_true (abst_leq x y)) (Is_true (abst_different x y))))
+        (=> (Is_true (abst_leq x y))
+            (\/ (Is_true (abst_lt x y)) (Is_true (abst_equal x y)))))))))

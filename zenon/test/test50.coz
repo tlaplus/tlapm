@@ -1,0 +1,11 @@
+(*  Copyright 2006 INRIA  *)
+(*  $Id: test50.coz,v 1.7 2006-07-20 13:19:21 doligez Exp $  *)
+
+(*
+; test du parseur de syntaxe Coq
+*)
+
+Parameter A : Prop.
+Parameter B : Prop.
+
+Theorem thm : forall (x: nat), A -> forall (y: nat), B -> A.

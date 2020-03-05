@@ -1,0 +1,179 @@
+#!/bin/sh
+
+#**********************************************************************#
+#                                                                      #
+#                        FoCaLiZe compiler                             #
+#                                                                      #
+#            François Pessaux                                          #
+#            Pierre Weis                                               #
+#            Damien Doligez                                            #
+#                                                                      #
+#                               LIP6  --  INRIA Rocquencourt           #
+#                                                                      #
+#  Copyright 2008 INRIA                                                #
+#  Distributed only by permission.                                     #
+#                                                                      #
+#**********************************************************************#
+
+BOLDTAG="\033[1m"
+UNDERLINETAG="\033[4m"
+NORMALTAG="\033[0m"
+
+touch .depend
+
+# First recover the configuration file providing the name of ocaml and coq commands.
+if [ -f "../.config_var" ] ;
+    then
+    source ../.config_var
+else
+    echo "Error.Global configuration file not found."
+    echo "Run ./configure from the parent directory."
+    exit 1
+fi
+
+# Look for a hash command.
+check_command () {
+  type "$1" >/dev/null 2>&1
+}
+
+SUM_COMMAND=""
+for i in sum md5 md5sum md5deep sha1deep sha256deep; do
+  if check_command $i ; then SUM_COMMAND=$i ; break ; fi
+done
+
+
+# Remembering the number of arguments to this script, in order
+# to parse them properly.
+argc="$#"
+
+INTERACTIVE=false;
+INSTALL_PREFIX_GIVEN=false;
+INSTALL_PREFIX=/usr/local
+
+
+usage () {
+    echo "usage: ./configure [options] [<directory>]"
+    echo
+    echo "Options are:"
+    echo "  [-]-install_prefix <directory>"
+    echo "    set <directory> as the directory prefix for installation of"
+    echo "    the FoCaLize commands."
+    echo "    (Default value for <directory> is $BOLDTAG$INSTALL_PREFIX$NORMALTAG.)"
+    echo "  [-]-interactive"
+    echo "    run interactively, asking questions."
+}
+
+
+# #############################################################################
+# Installation stuff.
+case ${argc} in
+  0) ;;
+  *)
+  while : ; do
+    # If nothing else to parse then end the loop.
+    case $# in 0) break;; *);; esac
+    case "$1" in
+      -interactive | --interactive)
+       INTERACTIVE=true;
+       shift;;
+      -install_prefix | --install_prefix)
+       INSTALL_PREFIX_GIVEN=true;
+       INSTALL_PREFIX="$2";
+       shift 2;;
+      -help | --help)
+       usage;
+       shift;
+       exit 0;;
+      -*)
+       option="$1";
+       echo "./configure: bad option '${option}'" >&2 && \
+       echo "For help, use ./configure -help" >&2 && \
+       shift;
+       exit 2;;
+    esac;
+  done
+  ;;
+esac
+
+# At this point, if INSTALL_PREFIX has been overriden while parsing options,
+# both the 2 following variables will take benefit of this overriding.
+INSTALL_BIN_DIR=${INSTALL_PREFIX}/bin
+INSTALL_LIB_DIR=${INSTALL_PREFIX}/lib/zenon
+
+if [ $INSTALL_PREFIX_GIVEN != true ]
+then
+    if [ $INTERACTIVE = true ]
+    then
+        # Ask question only in interactive mode, otherwise keep default value.
+        echo $BOLDTAG"Where to install Zenon binaries ?"$NORMALTAG
+        echo "Default is $INSTALL_BIN_DIR."
+        echo "Just press enter to use default location."
+        read USER_INPUT
+        if [ "$USER_INPUT" != "" ] ;
+        then
+            INSTALL_BIN_DIR=$USER_INPUT
+        fi
+    fi
+fi
+# Else, explicit install prefix given while parsing options, keep it blindly.
+
+if [ $INSTALL_PREFIX_GIVEN != true ]
+then
+    if [ $INTERACTIVE = true ]
+    then
+        # Ask question only in interactive mode, otherwise keep default value.
+        echo $BOLDTAG"Where to install Zenon libraries ?"$NORMALTAG
+        echo "Default is $INSTALL_LIB_DIR."
+        echo "Just press enter to use default location."
+        read USER_INPUT
+        if [ "$USER_INPUT" != "" ] ;
+        then
+            INSTALL_LIB_DIR=$USER_INPUT
+        fi
+    fi
+fi
+# Else, explicit install prefix given while parsing options, keep it blindly.
+
+# Check if installation directories are writable, if so do not use sudo
+# otherwise, use it.
+SUDO=
+touch $INSTALL_BIN_DIR/writable_p
+if [ "$?" = 0 ] ;
+then
+    rm -f $INSTALL_BIN_DIR/writable_p
+else
+    SUDO=sudo
+fi
+
+if [ "$SUDO" = "" ] ;
+then
+    mkdir -p $INSTALL_LIB_DIR && touch $INSTALL_LIB_DIR/writable_p
+    if [ "$?" = 0 ]
+    then
+        rm -f $INSTALL_LIB_DIR/writable_p
+    else
+        SUDO=sudo
+    fi
+fi
+
+
+# #############################################################################
+# Generate the installation and configuration file containing tools vars.
+CONFIGURATION_VARS_FILE=.config_var
+
+rm -f $CONFIGURATION_VARS_FILE
+echo "INSTALL_BIN_DIR=$INSTALL_BIN_DIR" >> $CONFIGURATION_VARS_FILE
+echo "INSTALL_LIB_DIR=$INSTALL_LIB_DIR" >> $CONFIGURATION_VARS_FILE
+echo "SUM=$SUM_COMMAND" >> $CONFIGURATION_VARS_FILE
+echo "SUDO=$SUDO" >> $CONFIGURATION_VARS_FILE
+cat ../.config_var >> $CONFIGURATION_VARS_FILE
+chmod a-w $CONFIGURATION_VARS_FILE
+
+# #############################################################################
+# Summary feedback.
+echo "Configuration summary for Zenon:"
+echo "  binaries -> $INSTALL_BIN_DIR"
+echo "  libraries -> $INSTALL_LIB_DIR"
+echo "  checksum command: $SUM_COMMAND"
+echo "  Use sudo to install -> $SUDO"
+echo "Done."

@@ -1,0 +1,49 @@
+(*  Copyright 2006 INRIA  *)
+(*  $Id: test55.coz,v 1.7 2006-07-20 13:19:21 doligez Exp $  *)
+
+(*
+; file: species_general_additive_law.foc
+; species: partially_ordered_additive_monoid
+; property: order_inf_reverse_order_sup / __lemma_1_1
+*)
+
+Parameter abst_T : Type.
+Parameter abst_equal : abst_T -> abst_T -> bool.
+Parameter abst_plus : abst_T -> abst_T -> abst_T.
+Parameter abst_inf : abst_T -> abst_T -> abst_T.
+Parameter abst_sup : abst_T -> abst_T -> abst_T.
+Parameter x : abst_T.
+Parameter y : abst_T.
+
+Definition abst_order_inf:=
+ (fun (x: abst_T) => (fun (y: abst_T) => (abst_equal  x (abst_inf  x y)))).
+
+Parameter
+  abst_equal_symmetric: forall (x: abst_T) (y: abst_T),
+  ((Is_true ((abst_equal  x y)) ))-> 
+    (Is_true ((abst_equal  y x)) ).
+Parameter
+ abst_equal_transitive: forall (x: abst_T)
+  (y: abst_T) (z: abst_T),
+  ((Is_true ((abst_equal  x y)) ))-> 
+    ((Is_true ((abst_equal  y z)) ))-> 
+      (Is_true ((abst_equal  x z)) ).
+Parameter
+  H_1_1: (Is_true ((abst_order_inf x y )) ).
+Parameter
+ abst_plus_is_left_congruence:
+  forall (x: abst_T) (y: abst_T) (z: abst_T),
+  ((Is_true ((abst_equal  x y)) ))-> 
+    (Is_true ((abst_equal  (abst_plus  x z) (abst_plus  y z))) ).
+Parameter
+  abst_sum_is_inf_plus_sup: forall (x: abst_T) (y: abst_T), (Is_true
+  ((abst_equal  (abst_plus  x y) (abst_plus  (abst_inf  x y) (abst_sup  x
+   y))))
+  ).
+
+Theorem thm :
+(Is_true
+((abst_equal
+  (abst_plus (abst_inf x y ) y ) (abst_plus (abst_inf x y ) (abst_sup x y ) )
+ ))
+).

@@ -1,0 +1,8 @@
+;  Copyright 2006 INRIA
+;  $Id: test75.znn,v 1.7 2011-12-28 16:43:34 doligez Exp $
+
+$hyp "h1" (A. ((X) (A. ((Y) (A. ((Z) (=> (/\ (r X Y) (r Y Z)) (r X Z))))))))
+$hyp "h2" (A. ((X Y) (=> (r X Y) (r Y X))))
+$hyp "h3" (A. ((x) (r b x)))
+$hyp "h4" (=> T. (= a b))
+$goal (r c a)

@@ -1,0 +1,64 @@
+;  Copyright 2006 INRIA
+;  $Id: test48.znn,v 1.7 2011-12-28 16:43:33 doligez Exp $
+
+; file: species_general_additive_law.foc
+; species: partially_ordered_additive_monoid
+; property: add_absorbes_sup / __goal_10
+
+;     (* to be proved *)
+; (Is_true
+; ((abst_equal
+;   (abst_plus x (abst_plus x y ) ) (abst_plus x (abst_sup (abst_plus x y ) x )
+;   )
+;  ))
+; )
+; By
+;   abst_equal_symmetric: (x: abst_T) (y: abst_T)
+;   ((Is_true ((abst_equal  x y)) ))-> 
+;     (Is_true ((abst_equal  y x)) ) abst_equal_transitive: (x: abst_T)
+;   (y: abst_T) (z: abst_T)
+;   ((Is_true ((abst_equal  x y)) ))-> 
+;     ((Is_true ((abst_equal  y z)) ))-> 
+;       (Is_true ((abst_equal  x z)) )
+;   abst_plus_is_left_congruence: (x: abst_T) (y: abst_T) (z: abst_T)
+;   ((Is_true ((abst_equal  x y)) ))-> 
+;     (Is_true ((abst_equal  (abst_plus  x z) (abst_plus  y z))) )
+;   __lemma_1_1_2: (Is_true ((abst_equal x (abst_inf (abst_plus x y ) x ) )) )
+;   __lemma_1_1_1: (Is_true
+;   ((abst_equal
+;     (abst_plus x (abst_plus x y ) )
+;     (abst_plus (abst_inf (abst_plus x y ) x ) (abst_sup (abst_plus x y ) x )
+;     )
+;    ))
+;   )
+; By def 
+; (* Qed *).
+
+$sig abst_equal ("zenon_U" "zenon_U") "bool"
+
+$hyp "abst_equal_symmetric"
+(A. ((x) (A. ((y)
+  (=> (Is_true (abst_equal x y)) (Is_true (abst_equal y x)))))))
+
+$hyp "abst_equal_transitive"
+(A. ((x) (A. ((y) (A. ((z)
+  (=> (Is_true (abst_equal x y))
+      (=> (Is_true (abst_equal y z))
+          (Is_true (abst_equal x z))))))))))
+
+$hyp "abst_plus_is_left_congruence"
+(A. ((x) (A. ((y) (A. ((z)
+  (=> (Is_true (abst_equal x y))
+      (Is_true (abst_equal (abst_plus x z) (abst_plus y z))))))))))
+
+$hyp "__lemma_1_1_2"
+(Is_true (abst_equal x (abst_inf (abst_plus x y) x)))
+
+$hyp "__lemma_1_1_1"
+(Is_true (abst_equal (abst_plus x (abst_plus x y))
+                     (abst_plus (abst_inf (abst_plus x y) x)
+                                (abst_sup (abst_plus x y) x))))
+
+$goal
+(Is_true (abst_equal (abst_plus x (abst_plus x y))
+                     (abst_plus x (abst_sup (abst_plus x y) x))))

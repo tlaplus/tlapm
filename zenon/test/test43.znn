@@ -1,0 +1,56 @@
+;  Copyright 2006 INRIA
+;  $Id: test43.znn,v 1.6 2011-12-28 16:43:33 doligez Exp $
+
+; file: species_general_set.foc
+; species: lattice
+; property: order_inf_is_transitive / __goal_7
+
+;     (* to be proved *)
+; (Is_true ((abst_order_inf x z ))
+; )
+; By
+;   abst_equal_transitive: (x: abst_T) (y: abst_T) (z: abst_T)
+;   ((Is_true ((abst_equal  x y)) ))-> 
+;     ((Is_true ((abst_equal  y z)) ))-> 
+;       (Is_true ((abst_equal  x z)) )
+;   abst_inf_is_associative: (x: abst_T) (y: abst_T) (z: abst_T) (Is_true
+;   ((abst_equal  (abst_inf  (abst_inf  x y) z) (abst_inf  x (abst_inf  y z))))
+;   ) __lemma_1_2: (Is_true
+;   ((abst_equal (abst_inf (abst_inf x y ) z ) (abst_inf x z ) )) )
+;   __lemma_1_1: (Is_true ((abst_equal x (abst_inf x (abst_inf y z ) ) )) )
+; By def abst_order_inf:= [x: abst_T][y: abst_T](abst_equal  x (abst_inf  x y))
+; (* Qed *).
+
+$sig abst_T () "Type"
+$sig abst_equal ("abst_T" "abst_T") "bool"
+$sig abst_inf ("abst_T" "abst_T") "abst_T"
+
+$def "d" (abst_order_inf x y) (abst_equal x (abst_inf x y))
+
+$hyp "abst_equal_transitive"
+   (A. ((x "abst_T") (A. ((y "abst_T") (A. ((z "abst_T")
+     (=> (Is_true (abst_equal x y))
+         (=> (Is_true (abst_equal y z))
+             (Is_true (abst_equal x z))))))))))
+
+$hyp "abst_equal_symmetric"
+   (A. ((x "abst_T") (A. ((y "abst_T")
+     (=> (Is_true (abst_equal x y)) (Is_true (abst_equal y x)))))))
+
+$hyp "abst_inf_is_associative"
+   (A. ((x "abst_T") (A. ((y "abst_T") (A. ((z "abst_T")
+     (Is_true (abst_equal (abst_inf (abst_inf x y) z)
+                          (abst_inf x (abst_inf y z))))))))))
+
+$sig x () "abst_T"
+$sig y () "abst_T"
+$sig z () "abst_T"
+
+$hyp "__lemma_1_2"
+(Is_true (abst_equal (abst_inf (abst_inf x y) z) (abst_inf x z)))
+
+$hyp "__lemma_1_1"
+(Is_true (abst_equal x (abst_inf x (abst_inf y z))))
+
+$goal
+(Is_true (abst_order_inf x z))

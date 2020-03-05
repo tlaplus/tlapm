@@ -1,0 +1,37 @@
+;  Copyright 2006 INRIA
+;  $Id: test44.znn,v 1.7 2011-12-28 16:43:33 doligez Exp $
+
+; file: species_general_additive_law.foc
+; species: partially_ordered_additive_monoid
+; property: sum_is_inf_plus_sup
+
+;     (* to be proved *)
+; (x: abst_T) (y: abst_T) (Is_true
+; ((abst_equal  (abst_plus  x y) (abst_plus  (abst_inf  x y) (abst_sup  x y))))
+; )
+; By
+;   abst_minus_substracts: (x: abst_T) (y: abst_T) (z: abst_T)
+;   ((Is_true ((abst_equal  z (non_failed  (abst_minus  x y)))) ))-> 
+;     (Is_true ((abst_equal  x (abst_plus  y z))) ) abst_equal_reflexive:
+;   (x: abst_T) (Is_true ((abst_equal  x x)) )
+; By def
+;       abst_sup:= [x: abst_T][y: abst_T](non_failed  (abst_minus  (abst_plus 
+;       x y) (abst_inf  x y)))
+; (* Qed *).
+
+$sig abst_equal ("zenon_U" "zenon_U") "bool"
+
+$def "d" (abst_sup x y) (non_failed (abst_minus (abst_plus x y) (abst_inf x y)))
+
+$hyp "abst_minus_substracts"
+(A. ((x) (A. ((y) (A. ((z)
+  (=> (Is_true (abst_equal z (non_failed (abst_minus x y))))
+      (Is_true (abst_equal x (abst_plus y z))))))))))
+
+$hyp "abst_equal_reflexive"
+(A. ((x) (Is_true (abst_equal x x))))
+
+$goal
+(A. ((x) (A. ((y)
+  (Is_true (abst_equal (abst_plus x y)
+                       (abst_plus (abst_inf x y) (abst_sup x y))))))))

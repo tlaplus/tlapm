@@ -1,0 +1,10 @@
+;  Copyright 2006 INRIA
+;  $Id: test07.znn,v 1.4 2006-03-01 14:39:03 doligez Exp $
+
+# TPTP syn064+1
+
+$sig P ("nat" "nat") "Prop"
+
+$goal
+(E. ((X "nat") (E. ((Y "nat")
+  (=> (P X Y) (A. ((Z "nat") (A. ((W "nat") (P Z W))))))))))

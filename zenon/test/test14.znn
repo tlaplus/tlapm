@@ -1,0 +1,10 @@
+;  Copyright 2006 INRIA
+;  $Id: test14.znn,v 1.5 2011-12-28 16:43:33 doligez Exp $
+
+# File : SYN549+1
+# Status : theorem
+# Rating : 0.00
+$hyp "reflexivity_of_reachable" (A. ((X) (reachable X X)))
+$hyp "transitivity_of_reachable" (A. ((X) (A. ((Y) (A. ((Z) (=> (/\ (reachable X Y) (reachable Y Z)) (reachable X Z))))))))
+# [negated] conjecture : prove_this
+$goal (E. ((X) (/\ (reachable (initial_world) X) (A. ((Y) (=> (reachable X Y) (<=> (E. ((Z) (/\ (reachable Y Z) (\/ (p Z) (E. ((V) (/\ (reachable Z V) (q V)))))))) (\/ (E. ((W) (/\ (reachable Y W) (p W)))) (E. ((W) (/\ (reachable Y W) (q W))))))))))))

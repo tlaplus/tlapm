@@ -1,0 +1,11 @@
+;  Copyright 2006 INRIA
+;  $Id: test06.znn,v 1.5 2011-12-28 16:43:33 doligez Exp $
+
+# TPTP syn054+1
+
+$hyp "h1" (-. (E. ((X) (/\ (S X) (Q X)))))
+$hyp "h2" (A. ((X) (=> (P X) (\/ (Q X) (R X)))))
+$hyp "h3" (=> (-. (E. ((X) (P X)))) (E. ((Y) (Q Y))))
+$hyp "h4" (A. ((X) (=> (\/ (Q X) (R X)) (S X))))
+
+$goal (E. ((X) (/\ (P X) (R X))))

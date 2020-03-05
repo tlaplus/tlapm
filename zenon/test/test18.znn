@@ -1,0 +1,6 @@
+;  Copyright 2006 INRIA
+;  $Id: test18.znn,v 1.3 2006-03-01 14:39:03 doligez Exp $
+
+# buveurs
+
+$goal (E. ((x) (=> (P x) (A. ((y) (P y))))))

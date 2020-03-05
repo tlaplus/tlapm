@@ -1,0 +1,43 @@
+(*  Copyright 2006 INRIA  *)
+(*  $Id: test70.coz,v 1.7 2006-07-20 13:19:21 doligez Exp $  *)
+
+(*
+; file: products.foc
+; species: cartesian
+; property: equal_reflexive / __lemma_1_2
+
+; Attention, ce fichier a ete modifie a la main
+*)
+
+Parameter abst_T : Type.
+Parameter x : abst_T.
+Parameter foo : Type.
+Parameter first : abst_T -> foo.
+Parameter scnd : abst_T -> foo.
+Parameter setoid_equal : foo -> foo -> foo -> bool.
+Parameter self_s1 : foo.
+Parameter self_s2 : foo.
+Parameter and_b : bool -> bool -> bool.
+
+Parameter
+def_and_b: forall (x : bool) (y : bool),
+   (Is_true (and_b x y)) <-> ((Is_true x) /\ (Is_true y)).
+
+Definition
+      abst_equal:= (fun (a: abst_T) => (fun (b: abst_T) =>
+      let a1:= (first  a) in
+      let a2:= (scnd  a) in
+      let b1:= (first  b) in
+      let b2:= (scnd  b) in
+      (and_b  ((setoid_equal  self_s1 )  a1 b1) ((setoid_equal  self_s2 )  a2
+      b2)))).
+
+Parameter
+  __lemma_1_2: (Is_true (((setoid_equal  self_s2 ) (scnd x ) (scnd x ) )) ).
+Parameter
+  __lemma_1_1: (Is_true (((setoid_equal  self_s1 ) (first x ) (first x ) )) ).
+
+Theorem thm :
+(Is_true ((abst_equal x x ))
+)
+.

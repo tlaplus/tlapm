@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+
+<html>
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+  <title>Isabelle/TLA+</title>
+</head>
+
+<body>
+
+<h2>TLA+: Lamport's Temporal Logic of Actions specification language</h2>
+
+<p><a href="http://www.research.digital.com/SRC/personal/Leslie_Lamport/tla/tla.html">TLA</a>
+is a linear-time temporal logic introduced by Leslie Lamport in
+<em>The Temporal Logic of Actions</em> (ACM TOPLAS 16(3), 1994,
+872-923). Unlike other temporal logics, both systems and properties
+are represented as logical formulas, and logical connectives such as
+implication, conjunction, and existential quantification represent
+structural relations such as refinement, parallel composition, and
+hiding.</p>
+
+<p>TLA+ is a language for specifying and verifying concurrent and distributed systems. It is based on a variant of Zermelo-Fraenkel set theory for describing the data structures manipulated by the algorithms to be verified, and on TLA for describing their dynamic behavior. TLA+ has been applied to numerous case studies.
+</p>
+
+<p>This directory formalizes TLA+ in Isabelle (version 2009-1), as follows:
+<ul>
+  <li>
+  <em>PredicateLogic</em> theory
+  defines classical first-order logic as a basis for an encoding
+  of TLA+. TLA+ is untyped, to the extent that it does not
+  even distinguish between terms and formulas. We therefore
+  declare a single type <em>c</em> that represents the universe of
+  "constants" rather than introducing the traditional types <em>i</em> and
+  <em>o</em> of first-order logic that, for example, underly Isabelle/ZF.
+  </li>
+
+  <li>
+  <em>SetTheory</em> defines the basic syntax and axiomatization of
+  set theory.
+  </li>
+
+  <li>
+  The <em>FixedPoints</em> theory develops the
+  Knaster-Tarski theorems for least and greatest fixed points in the
+  subset lattice. This development is used for the construction of
+  natural numbers; it also serves as a test for the encoding of TLA+
+  set theory.
+  </li>
+
+  <li>
+  <em>Functions</em> theory: functions in TLA+ are not defined
+  (e.g., as sets of pairs),
+  but axiomatized, and in fact, pairs and tuples are later defined as special
+  functions. Incidentally, this approach helps us to identify functional
+  values, and to automate the reasoning about them. This theory considers
+  only unary functions; functions with multiple arguments are defined
+  as functions over products.
+  </li>
+
+  <li>
+  <em>Peano</em> theory: Peano's axioms for natural numbers. We prove
+  the existence of a structure satisfying these axioms and derive the
+  set of natural numbers.
+  </li>
+
+  <li>
+  <em>NatOrderings</em> theory: introduces the order &lt;= over
+  natural numbers. It also defines <em>a &lt; b</em> (for arbitrary
+  values) as <em>a &lt;= b &amp; a # b</em>. Proves many lemmas over
+  these orders. Also defines intervals <em>m .. n</em> for natural
+  numbers <em>m</em> and <em>n</em>.
+  </li>
+
+  <li>
+  The <em>Tuples</em> theory defines tuples and relations in TLA+.
+  Tuples are functions whose domains are intervals of the form
+  <em>1 .. n</em>, for some natural number <em>n</em>, and relations are
+  sets of tuples. This theory also introduces the notation <em>[x : S,
+  y : T]</em> to denote the set of functions <em>f</em> with domain
+  <em>{x,y}</em> such that <em>f[x] \in S</em> and <em>f[y] \in T</em>.
+
+  <p>
+  
+  Finally, this theory introduces standard notions for binary
+  relations, such as orderings, equivalence relations and so on.
+  </li>
+
+  <li>
+  <em>CaseExpressions</em> theory: reasoning about CASE expressions in
+  TLA+.
+  </li>
+
+  <li>
+  <em>Strings</em> theory: encoding of characters and strings (written
+  with two single quotes: ''string''). Characters are represented as
+  pairs of hexadecimal numbers, strings are sequences of characters.
+
+  <p>
+
+  Records should be written as finite functions, e.g. <em>(''foo''
+  :&gt; 1) @@ (''bar'' :&gt; TRUE)</em>, and sets of records can be
+  written using the notation for sets of finite functions introduced
+  in theory <em>Tuples</em>.
+  </li>
+
+  <li>
+  <em>NatArith</em> theory: addition, subtraction, and multiplication
+  over natural numbers. The subtraction (noted <em>--</em>) is defined
+  such that the result is cut off at 0: this is different from
+  the standard difference over integers.
+  </li>
+
+  <li>
+  <em>NatDivision</em> theory: divisibility relation, division and
+  modulus for natural numbers.
+  </li>
+
+</ul>
+
+<p>
+
+The theories are accompanied by two examples:
+
+<ul>
+  <li>
+  <em>Allocator</em>:
+  a case study for the specification and analysis of reactive systems
+  in TLA+ . This theory contains some elementary invariant proofs over
+  a specification that uses basic set theory.
+  </li>
+
+  <li>
+  <em>AtomicBakeryG</em>:
+  proof of type correctness and mutual exclusion for
+  the well-known Bakery algorithm for <em>N</em> processes.
+  </li>
+</ul>
+
+<hr>
+
+<address>
+<a href="mailto:stephan.merz@loria.fr">Stephan Merz</a>
+</address>
+<!-- hhmts start -->
+Last modified: Mon Jun  8 11:15:49 CET 2009
+<!-- hhmts end -->
+</body></html>

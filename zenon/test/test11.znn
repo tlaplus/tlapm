@@ -1,0 +1,8 @@
+;  Copyright 2006 INRIA
+;  $Id: test11.znn,v 1.5 2011-12-28 16:43:33 doligez Exp $
+
+$hyp "h1" (-. (E. ((x) (/\ (S x) (Q x)))))
+$hyp "h2" (A. ((x) (\/ (-. (P x)) (\/ (Q x) (R x)))))
+$hyp "h3" (\/ (E. ((x) (P x))) (E. ((x) (Q x))))
+$hyp "h4" (A. ((x) (\/ (-. (\/ (Q x) (R x))) (S x))))
+$goal (E. ((x) (/\ (P x) (R x))))

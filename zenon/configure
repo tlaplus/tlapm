@@ -1,0 +1,143 @@
+#!/bin/sh
+
+#  Copyright 2004 INRIA
+
+# Configuration script for Zenon
+
+# Default settings
+
+PREFIX=/usr/local
+BIN_DIR="${PREFIX}/bin"
+LIB_DIR="${PREFIX}/lib/zenon"
+
+DEBUG=false
+
+
+# Find the needed tools
+
+check () {
+  type "$1" >/dev/null 2>&1
+}
+
+if check ocamlc.opt; then
+  OCAMLC=ocamlc.opt
+elif check ocamlc; then
+  OCAMLC=ocamlc
+else
+  echo 'Cannot find ocamlc[.opt] compiler in path' >&2
+  exit 2
+fi
+
+if check ocamlopt.opt; then
+  OCAMLOPT=ocamlopt.opt
+elif check ocamlopt; then
+  OCAMLOPT=ocamlopt
+else
+  echo 'Cannot find ocamlopt[.opt] compiler in path' >&2
+  exit 2
+fi
+
+if check convert; then CONVERT=convert; else CONVERT=:; fi
+if check coqc; then COQC=coqc; else COQC=:; fi
+if check coqdep; then COQDEP=coqdep; else COQDEP=:; fi
+if check gs; then GS=gs; else GS=:; fi
+
+for i in sum md5 md5sum md5deep sha1deep sha256deep; do
+  if check $i; then SUM=$i; break; fi
+done
+
+
+# Set EXE if compiling under cygwin
+
+if check cygpath; then EXE=.exe; else EXE=""; fi
+
+
+# Parse options
+
+while : ; do
+  case $# in 0) break;; esac
+  case "$1" in
+    -prefix | --prefix) BIN_DIR="$2/bin"; LIB_DIR="$2/lib"; shift 2;;
+    -bindir | --bindir) BIN_DIR="$2"; shift 2;;
+    -libdir | --libdir) LIB_DIR="$2"; shift 2;;
+    -convert | --convert) CONVERT="$2"; shift 2;;
+    -coqc | --coqc) COQC="$2"; shift 2;;
+    -debug | --debug | -enable-debug | --enable-debug) DEBUG=true; shift;;
+    -gs | --gs) GS="$2"; shift 2;;
+    -nodebug | --nodebug | -disable-debug | --disable-debug)
+       DEBUG=false; shift;;
+    -suffix | --suffix) EXE="$2"; shift 2;;
+    -sum | --sum) SUM="$2"; shift 2;;
+    -help | --help)
+       echo "usage: ./configure [options]"
+       echo "options are:"
+       echo "  [-]-bindir <directory>"
+       echo "    set install directory for executables (default ${BIN_DIR})"
+       echo "  [-]-convert <executable-file>"
+       echo "    set absolute path for the \"convert\" command."
+       echo "  [-]-coqc <executable-file>"
+       echo "    set absolute path for the \"coqc\" command."
+       echo "  [-]-debug | [-]-enable-debug"
+       echo "    enable debugging"
+       echo "  [-]-nodebug | [-]-disable-debug"
+       echo "    disable debugging (default)"
+       echo "  [-]-exe <suffix>"
+       echo "    set suffix for executable files"
+       echo "  [-]-gs <executable-file>"
+       echo "    set absolute path for the \"gs\" command."
+       echo "  [-]-libdir <directory>"
+       echo "    set install directory for libraries (default ${LIB_DIR})"
+       echo "  [-]-prefix <directory>"
+       echo "    set prefix for install directories (default ${PREFIX})"
+       echo "  [-]-sum <executable-file>"
+       echo "    set absolute path for the \"sum\" command."
+       echo "  [-]-help";
+       echo "    display this help text and exit"
+       exit 0
+       ;;
+    *) echo "./configure: bad option '$1'" >&2
+       echo "For help, use ./configure -help" >&2
+       exit 2
+       ;;
+  esac
+done
+
+if $DEBUG; then
+  BYT_DEBUG_FLAGS="-g -dtypes -warn-error A"
+  BIN_DEBUG_FLAGS="-dtypes -warn-error A"
+else
+  BYT_DEBUG_FLAGS=
+  BIN_DEBUG_FLAGS=
+fi
+
+
+# Output the configuration file
+
+rm -f .config_var
+echo "EXE=$EXE" >> .config_var
+echo "INSTALL_BIN_DIR=$BIN_DIR" >>.config_var
+echo "INSTALL_LIB_DIR=$LIB_DIR" >>.config_var
+echo "BYT_DEBUG_FLAGS=$BYT_DEBUG_FLAGS" >>.config_var
+echo "BIN_DEBUG_FLAGS=$BIN_DEBUG_FLAGS" >>.config_var
+echo "SUM=$SUM" >>.config_var
+echo "CONVERT=$CONVERT" >>.config_var
+echo "GS=$GS" >>.config_var
+echo "CAMLBYT=$OCAMLC" >>.config_var
+echo "CAMLBIN=$OCAMLOPT" >>.config_var
+echo "CAMLLEX=ocamllex" >>.config_var
+echo "CAMLYACC=ocamlyacc" >>.config_var
+echo "CAMLDEP=ocamldep" >>.config_var
+echo "COQC=$COQC" >>.config_var
+echo "COQDEP=$COQDEP" >>.config_var
+
+
+# Create the .depend file
+
+touch .depend
+${MAKE:-make} depend
+
+
+# Show the configuration to the user
+
+echo "Configuration summary for zenon:"
+cat .config_var

@@ -1,0 +1,27 @@
+;  Copyright 2006 INRIA
+;  $Id: test39.znn,v 1.7 2011-12-28 16:43:33 doligez Exp $
+
+; file: species_general_additive_law.foc
+; species: partially_ordered_additive_monoid
+; property: min_is_min / __lemma_1_1
+
+;     (* to be proved *)
+; (Is_true ((abst_equal (abst_plus abst_min x ) x ))
+; )
+; By
+;   abst_zero_is_neutral: (x: abst_T)
+;   (and (Is_true ((abst_equal  (abst_plus  x abst_zero) x)) ) (Is_true
+;   ((abst_equal  (abst_plus  abst_zero x) x)) ))
+; By def abst_min:= abst_zero
+; (* Qed *).
+
+$sig abst_equal ("zenon_U" "zenon_U") "bool"
+
+$def "d" (abst_min) abst_zero
+
+$hyp "abst_zero_is_neutral"
+(A. ((x) (/\ (Is_true (abst_equal (abst_plus x abst_zero) x))
+             (Is_true (abst_equal (abst_plus abst_zero x) x)))))
+
+$goal
+(A. ((x) (Is_true (abst_equal (abst_plus abst_min x) x))))

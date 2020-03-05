@@ -1,0 +1,13 @@
+;  Copyright 2006 INRIA
+;  $Id: test73.znn,v 1.5 2011-12-28 16:43:34 doligez Exp $
+
+;$hyp (A. ((y) (<=> (= y (f (g y))) (= x0 y))))
+;$goal (E. ((x1) (A. ((y1) (=> (= y1 (g (f y1))) (= x1 y1))))))
+
+;$hyp (= x (f y))
+;$hyp (-. (= z (g (f y))))
+;$hyp (= z (g x))
+
+$hyp "h" (E. ((x) (A. ((y) (<=> (= y (f (g y))) (= x y))))))
+;$goal (E. ((x) (A. ((y) (=> (= y (g (f y))) (= x y))))))
+$goal (E. ((x) (A. ((y) (<=> (= x y) (= y (g (f y))))))))

@@ -1,0 +1,27 @@
+;  Copyright 2006 INRIA
+;  $Id: test36.znn,v 1.7 2011-12-28 16:43:33 doligez Exp $
+
+# pas utilise
+
+# file: species_general_additive_law.foc
+# species: partially_ordered_additive_monoid
+# property: inf_idempotent / __lemma_1_1
+
+;       (* to be proved *)
+; (Is_true ((abst_equal x (abst_inf x (abst_plus x abst_zero ) ) ))
+; )
+; By
+;   abst_add_keeps_inf: (x: abst_T) (y: abst_T) (Is_true
+;   ((abst_order_inf  x (abst_plus  x y))) )
+; By def abst_order_inf:= [x: abst_T][y: abst_T](abst_equal  x (abst_inf  x y))
+; (* Qed *).
+
+$sig abst_equal ("zenon_U" "zenon_U") "bool"
+
+$def "d" (abst_order_inf x y) (abst_equal x (abst_inf x y))
+
+$hyp "abst_add_keeps_inf"
+(A. ((x) (A. ((y)
+     (Is_true (abst_order_inf x (abst_plus x y)))))))
+
+$goal (Is_true (abst_equal x (abst_inf x (abst_plus x abst_zero))))

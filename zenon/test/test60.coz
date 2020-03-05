@@ -1,0 +1,32 @@
+(*  Copyright 2006 INRIA  *)
+(*  $Id: test60.coz,v 1.7 2006-07-20 13:19:21 doligez Exp $  *)
+
+(*
+; file: species_general_additive_law.foc
+; species: partially_ordered_additive_monoid
+; property: order_inf_reverse_order_sup / __goal_20
+*)
+
+Parameter abst_T : Type.
+Parameter abst_equal : abst_T -> abst_T -> bool.
+Parameter abst_order_inf : abst_T -> abst_T -> bool.
+Parameter abst_order_sup : abst_T -> abst_T -> bool.
+Parameter x : abst_T.
+Parameter y : abst_T.
+
+Parameter
+  __lemma_2:
+  forall (xx: abst_T) (yy: abst_T), ((Is_true ((abst_order_sup xx yy )) ))-> 
+    (Is_true ((abst_order_inf yy xx )) ).
+Parameter __lemma_1: (Is_true
+  ((abst_order_sup y x )) ).
+
+Theorem thm :
+(
+  ((Is_true ((abst_order_inf  x y)) ))-> 
+    (Is_true ((abst_order_sup  y x)) )
+) /\ (
+  ((Is_true ((abst_order_sup  x y)) ))-> 
+    (Is_true ((abst_order_inf  y x)) )
+)
+.

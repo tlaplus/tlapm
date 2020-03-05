@@ -1,0 +1,10 @@
+;  Copyright 2006 INRIA
+;  $Id: test12.znn,v 1.7 2011-12-28 16:43:33 doligez Exp $
+
+$hyp "h1" (\/ A B)
+$hyp "h2" (=> B C)
+$hyp "h3" (=> A C)
+$hyp "h4" (=> C D)
+$hyp "h5" (-. D)
+
+$goal F.

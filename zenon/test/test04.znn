@@ -1,0 +1,10 @@
+;  Copyright 2006 INRIA
+;  $Id: test04.znn,v 1.3 2006-03-01 14:39:03 doligez Exp $
+
+# TPTP syn036+1
+
+$goal
+  (<=> (<=> (E. ((X) (A. ((Y) (<=> (big_p X) (big_p Y))))))
+            (<=> (E. ((U) (big_q U))) (A. ((W) (big_q W)))))
+       (<=> (E. ((X1) (A. ((Y1) (<=> (big_q X1) (big_q Y1))))))
+            (<=> (E. ((U1) (big_p U1))) (A. ((W1) (big_p W1))))))
