@@ -45,21 +45,21 @@ SeqToBag(seq) == [ x \in Range(seq) |-> Cardinality({i \in DOMAIN seq: seq[i]=x}
 THEOREM Bags_SqsubsetPO_Reflexivity == 
   ASSUME NEW B, IsABag(B)
   PROVE B \sqsubseteq B
-BY DEF \sqsubseteq, IsABag                                  
+BY DEF \sqsubseteq, IsABag
 
 (*Antisymmetry*)
 THEOREM Bags_SqsubseteqPO_AntiSymmetry == 
   ASSUME NEW A, NEW B, IsABag(A), IsABag(B),
          A \sqsubseteq B, B \sqsubseteq A  
   PROVE A = B
-BY Z3 DEF IsABag, \sqsubseteq
+BY DEF IsABag, \sqsubseteq
 
 (*Transitivity*)            
 THEOREM Bags_SqsubseteqPO_Transitivity == 
   ASSUME NEW A, NEW B, NEW C, IsABag(A), IsABag(B), IsABag(C),
          A \sqsubseteq B, B \sqsubseteq C
   PROVE A \sqsubseteq C
-BY Z3 DEF IsABag, \sqsubseteq
+BY DEF IsABag, \sqsubseteq
 
 (***************************************************************************)
 (* Lemmas on EmptyBags                                                     *)
@@ -96,7 +96,7 @@ THEOREM Bags_Scaling ==
   BY DEF Scaling, IsABag                
 <1>5. Scaling(n*m, B) = Scaling(n, Scaling(m, B))
   <2>1. CASE m>0 /\ n>0
-    BY <2>1 DEF Scaling, IsABag
+    BY <2>1, n*m > 0 DEF Scaling, IsABag
   <2>2. CASE m=0
     BY <2>2, <1>2, <1>3 DEF Scaling
   <2>3. CASE n=0
@@ -113,7 +113,7 @@ THEOREM Bags_Scaling ==
 THEOREM Bags_Inverse == 
   ASSUME NEW S
   PROVE  BagToSet(SetToBag(S))=S
-BY DEF SetToBag, BagToSet                  
+BY DEF SetToBag, BagToSet
 
 THEOREM Bags_Inverse1 == 
   ASSUME NEW B, IsABag(B)
@@ -188,7 +188,7 @@ BY DEF IsABag, (+), \sqsubseteq
 THEOREM Bags_ScalingMonotonic == 
   ASSUME NEW B, IsABag(B), NEW n \in Nat, NEW m \in Nat, m <= n
   PROVE  Scaling(m, B) \sqsubseteq Scaling(n, B)
-BY DEF IsABag, Scaling, EmptyBag, SetToBag, \sqsubseteq
+BY CVC4 DEF IsABag, Scaling, EmptyBag, SetToBag, \sqsubseteq
 
 (***************************************************************************)
 (* Given Bags A and B, A(-)B \sqsubseteq A                                 *)
@@ -207,7 +207,7 @@ THEOREM Bags_EmptyBagOperations ==
   ASSUME NEW B, IsABag(B)
   PROVE  /\ B (+) EmptyBag = B
          /\ B (-) EmptyBag = B
-BY Z3 DEF IsABag, (+), (-), EmptyBag, SetToBag
+BY DEF IsABag, (+), (-), EmptyBag, SetToBag
 
 (***************************************************************************)
 (* SetToBag of a set is a bag.                                             *)

@@ -98,7 +98,7 @@ THEOREM
       BY FS_Subset, FS_CardinalityType
     <3>2. CASE Cardinality(Isolated) > 1
       <4>1. PICK x \in Isolated, y \in Isolated : x # y
-        BY <3>1, <3>2, FS_CardinalityType DEF ExistsBijection, Bijection
+        BY <3>1, <3>2, FS_CardinalityType, CVC4 DEF ExistsBijection, Bijection, Injection
       <4>. QED
         BY <1>3, <4>1
     <3>3. QED
@@ -125,18 +125,19 @@ THEOREM
     <3>2. ASSUME NEW e \in G,
                  NEW n \in e
           PROVE  \E m \in Connected : n # m /\ e = {m, n}
-      BY <2>5, NLEdgeElements, Z3 DEF SimpleGraphs
+      BY <2>5, NLEdgeElements DEF SimpleGraphs
     <3>3. SUFFICES ASSUME NEW n \in Connected
                    PROVE  Cardinality({e \in G : n \in e}) < Cardinality(Connected)
       BY <3>1, <3>3 DEF Degree
     <3> DEFINE  nEdges == {e \in G : n \in e}
                 PossibleNEdges == {{m, n} : m \in Connected \ {n}}
-    <3>4. /\ nEdges \subseteq PossibleNEdges
-          /\ IsFiniteSet(PossibleNEdges)
-          /\ Cardinality(PossibleNEdges) \in Nat
-          /\ Cardinality(nEdges) \in Nat
+    <3>4. /\ Cardinality(nEdges) \in Nat
           /\ Cardinality(nEdges) \leq Cardinality(PossibleNEdges)
-      BY <3>2, FS_Subset, FS_CardinalityType
+      <4>1. IsFiniteSet(Connected \ {n})
+        BY FS_Subset
+      <4>2. IsFiniteSet(PossibleNEdges)
+        BY <4>1, FS_Image, Isa
+      <4>. QED  BY <4>2, <3>2, FS_Subset, FS_CardinalityType
     <3> DEFINE NC == Cardinality(Connected \ {n})
     <3>5. /\ IsFiniteSet(Connected \ {n})
           /\ NC \in Nat
@@ -150,7 +151,7 @@ THEOREM
     <3>. QED  BY <2>2, <3>4, <3>5, <3>7
   <2>7. DEFINE f == [n \in Connected |-> Degree(n, G)]
   <2>8. f \in [Connected -> 1 .. (Cardinality(Connected)-1)]
-    BY <2>6, <2>2, Z3
+    BY <2>6, <2>2
   <2>9. \E m, n \in Connected: m # n /\ f[m] = f[n]
     <3> DEFINE CC1 == Cardinality(Connected)-1
     <3>1. /\ IsFiniteSet(1 .. CC1)

@@ -7,8 +7,6 @@
 
 Revision.f "$Rev$";;
 
-open Lazy
-
 type 'a llist = Ll of 'a front Lazy.t
 
 and 'a front =
@@ -18,8 +16,8 @@ and 'a front =
 type 'a t = 'a llist
 
 let expose (Ll ll) = Lazy.force ll
-let exact fr = Ll (lazy_from_val fr)
-let delay fr = Ll (lazy_from_fun fr)
+let exact fr = Ll (Lazy.from_val fr)
+let delay fr = Ll (Lazy.from_fun fr)
 
 let empty = exact Nil
 let cons x ll = exact (Cons (x, ll))

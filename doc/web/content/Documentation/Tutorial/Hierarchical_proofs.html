@@ -40,7 +40,7 @@
     reasoning, while the remaining facts and definitions
     are <span style="font-style:italic">hidden</span>. That obligation
     is then sent to a backend
-    (<a href="http://focal.inria.fr/zenon/">Zenon</a>,
+    (<a href="http://zenon-prover.org">Zenon</a>,
     <a href="http://www.cl.cam.ac.uk/research/hvg/Isabelle/">Isabelle</a>,
     SMT solvers &ndash; see the <a href="Tactics.html">tactics
     section</a>) that tries to prove it. The smaller the context is,
@@ -123,7 +123,7 @@
   <h3>The QED step</h3>
   <div class="hr"></div>
 
-  <p>To prove the theorem <tla></tla>, we have to reason by cases,
+  <p>To prove the theorem <tla>NextProperty</tla>, we have to reason by cases,
     and prove that <tla>InductiveInvariant'</tla> is true when one of
     the actions of <tla>Next</tla> is performed (i.e. when <tla>x
       &lt; y</tla> and also when <tla>x &gt; y</tla>). Let us write

@@ -52,7 +52,7 @@ TYPESYSTEM_DIR = \
   typesystem/typ_cg1 typesystem/typ_cg2 typesystem/typ_impgraph typesystem/typ_system
 
 SMT_DIR = \
-  smt/smtcommons ${TYPESYSTEM_DIR} smt/fmt smt/boolify smt/normal smt/ectx \
+  smt/smtcommons ${TYPESYSTEM_DIR} smt/fmt smt/boolify smt/rewrite_trivial smt/rewrite_arith smt/rewrite smt/ectx \
   smt/preprocess smt/axioms
 
 # FIXME remove useless files: dumpfp abstractor method_old backend/cooper
@@ -72,7 +72,7 @@ INC0 = -I ../backend -I ../frontend -I ../expr -I ../module -I ../proof \
 INC = ${INC0:../%=%}
 INC1 = ${INC0} -I ..
 
-LIB_CMA = unix.cma str.cma nums.cma
+LIB_CMA = unix.cma str.cma
 LIB_CMXA = ${LIB_CMA:.cma=.cmxa}
 
 ML = ${MODULES:=.ml}

@@ -122,14 +122,14 @@ THEOREM RecursiveFcnOfNat ==
     <3>. QED  BY <3>1, <3>2, Zenon
   <2>1. \A k \in Nat : \E g : P(g,k)
     <3>. DEFINE Q(k) == \E g : P(g,k)
-    <3>. SUFFICES \A k \in Nat : Q(k)  OBVIOUS
+    <3>. SUFFICES \A k \in Nat : Q(k)  BY Zenon
     <3>1. Q(0)
       <4>. DEFINE g0 == [n \in {0} |-> [i \in {} |-> {}]]
       <4>1. P(g0, 0)  OBVIOUS
-      <4>. QED  BY <4>1
+      <4>. QED  BY <4>1, Zenon
     <3>2. ASSUME NEW k \in Nat, Q(k)
           PROVE  Q(k+1)
-      <4>1. PICK g : P(g,k)  BY <3>2
+      <4>1. PICK g : P(g,k)  BY <3>2, Zenon
       <4>1a. ASSUME NEW n \in 0 .. k, NEW i \in 0 .. n-1
              PROVE  g[n][i] = Def(g[n-1], i)
         BY <4>1, <2>0, Zenon
@@ -146,7 +146,7 @@ THEOREM RecursiveFcnOfNat ==
         <5>3. Def(g[n-1],i) = Def(h[n-1],i)  BY <5>2
         <5>. QED  BY <5>1, <5>3
       <4>. HIDE DEF h
-      <4>. QED  BY <4>2
+      <4>. QED  BY <4>2, Zenon
     <3>. HIDE DEF Q
     <3>. QED  BY <3>1, <3>2, NatInduction, IsaM("blast")
   <2>2. \A k \in Nat : P(G(k), k)  BY <2>1, Zenon
@@ -183,26 +183,28 @@ THEOREM RecursiveFcnOfNat ==
           <6>1. hh[nn-1] = [ii \in 0 .. nn-2 |-> Def(h[nn-2],ii)]
             OBVIOUS
           <6>2. h[nn-1] = [ii \in 0 .. (nn-1)-1 |-> Def(h[(nn-1)-1],ii)]
-            BY nn-1 \in 0 .. l-1, nn-1 \in 0 .. l DEF P
+            BY nn-1 \in 0 .. l-1, nn-1 \in 0 .. l, Zenon DEF P
           <6>. QED  BY <6>1, <6>2
         <5>. QED  BY <5>1, Zenon DEF P
-      <4>4. \A m \in 0 .. i-1 : gg[l-1][m] = hh[l-1][m]  BY <3>1, <4>2, <4>3
+      <4>4. \A m \in 0 .. i-1 : gg[l-1][m] = hh[l-1][m]
+        <5>. HIDE DEF gg, hh  
+        <5>. QED  BY <3>1, <4>2, <4>3
       <4>5. \A m \in 0 .. i-1 : g[l-1][m] = gg[l-1][m]   BY <2>0
       <4>6. \A m \in 0 .. i-1 : h[l-1][m] = hh[l-1][m]   BY <2>0
-      <4>7. \A m \in 0 .. i-1 : g[l-1][m] = h[l-1][m]    BY <4>4, <4>5, <4>6
+      <4>7. \A m \in 0 .. i-1 : g[l-1][m] = h[l-1][m]    BY <4>4, <4>5, <4>6, Zenon
       <4>8. Def(g[l-1],i) = Def(h[l-1],i)                BY <4>7
       <4>. QED  BY <4>8, <2>0
     <3>. HIDE DEF Q
-    <3>. QED  BY <3>0, <3>1, NatInduction, Blast
+    <3>. QED  BY <3>0, <3>1, NatInduction, IsaM("blast")
   <2>4. FF = [n \in Nat |-> [i \in 0 .. n-1 |-> Def(FF[n-1], i)]]
     <3>. HIDE DEF G
     <3>. SUFFICES ASSUME NEW k \in Nat, NEW i \in 0 .. k-1
                   PROVE  FF[k][i] = Def(FF[k-1], i)
-      OBVIOUS
+      BY Zenon
     <3>1. FF[k][i] = G(k)[k][i]  OBVIOUS
-    <3>2. G(k)[k][i] = Def(G(k)[k-1], i)  BY <2>2
+    <3>2. G(k)[k][i] = Def(G(k)[k-1], i)  BY <2>2, CVC4
     <3>. HIDE DEF P
-    <3>3. \A j \in 0 .. i-1 : G(k)[k-1][j] = FF[k-1][j]  BY <2>2, <2>3
+    <3>3. \A j \in 0 .. i-1 : G(k)[k-1][j] = FF[k-1][j]  BY <2>2, <2>3, CVC4
     <3>. HIDE DEF FF
     <3>4. Def(G(k)[k-1], i) = Def(FF[k-1], i)  BY <3>3
     <3>. QED  BY <3>1, <3>2, <3>4
@@ -250,13 +252,13 @@ THEOREM RecursiveFcnOfNat ==
 <1>4. f = [n \in Nat |-> Def(f,n)]
   <2>. SUFFICES ASSUME NEW n \in Nat
                 PROVE  f[n] = Def(f,n)
-    OBVIOUS
+    BY Zenon
   <2>1. f[n] = Def(F[n], n)  BY <1>2
   <2>2. \A i \in 0 .. n-1 : F[n][i] = f[i]  BY <1>3
-  <2>3. Def(F[n],n) = Def(f,n)  BY <2>2
+  <2>3. Def(F[n],n) = Def(f,n)  BY <2>2, Zenon
   <2>. QED  BY <2>1, <2>3
 
-<1>. QED  BY <1>4
+<1>. QED  BY <1>4, Zenon
 
 
 (***************************************************************************)
@@ -385,7 +387,7 @@ THEOREM FiniteNatInductiveDef ==
   BY <1>2, Z3
 <1>. HIDE DEF gg
 <1>. QED
-  BY <1>3 DEF FiniteNatInductiveDefHypothesis, FiniteNatInductiveDefConclusion
+  BY <1>3, Zenon DEF FiniteNatInductiveDefHypothesis, FiniteNatInductiveDefConclusion
 
 THEOREM FiniteNatInductiveDefType ==
   ASSUME NEW S, NEW Def(_,_), NEW f, NEW c \in S, NEW m \in Nat, NEW n \in Nat,
@@ -444,9 +446,8 @@ THEOREM FactorialType == factorial \in [Nat -> Nat]
 <1>2. QED
   BY <1>1, NatInductiveDefType, FactorialDefConclusion, Isa
 
-
 \* Modification History
-\* Last modified Thu Aug 22 18:55:43 CEST 2019 by merz
+\* Last modified Tue Jan 21 11:44:24 CET 2020 by merz
 \* Last modified Tue Oct 15 12:06:48 CEST 2013 by shaolin
 \* Last modified Sat Nov 26 08:49:59 CET 2011 by merz
 \* Last modified Mon Nov 07 08:58:05 PST 2011 by lamport

@@ -280,12 +280,24 @@ smt/boolify.cmo: smt/boolify.mlt smt/smtcommons.cmi revision.cmi util/property.c
     util/ext.cmi expr.cmi builtin.cmi smt/boolify.cmi
 smt/boolify.cmx: smt/boolify.mlt smt/smtcommons.cmx revision.cmx util/property.cmx \
     util/ext.cmx expr.cmx builtin.cmx smt/boolify.cmi
-smt/normal.cmo: smt/normal.mlt typesystem/typ_t.cmi tla_parser.cmi smt/smtcommons.cmi \
-    revision.cmi util/property.cmi util/fmtutil.cmi util/ext.cmi expr.cmi \
-    util/deque.cmi builtin.cmi smt/normal.cmi
-smt/normal.cmx: smt/normal.mlt typesystem/typ_t.cmx tla_parser.cmx smt/smtcommons.cmx \
-    revision.cmx util/property.cmx util/fmtutil.cmx util/ext.cmx expr.cmx \
-    util/deque.cmx builtin.cmx smt/normal.cmi
+smt/rewrite_trivial.cmo: smt/rewrite_trivial.mlt typesystem/typ_t.cmi smt/smtcommons.cmi \
+    util/property.cmi util/ext.cmi expr.cmi builtin.cmi \
+    smt/rewrite_trivial.cmi
+smt/rewrite_trivial.cmx: smt/rewrite_trivial.mlt typesystem/typ_t.cmx smt/smtcommons.cmx \
+    util/property.cmx util/ext.cmx expr.cmx builtin.cmx \
+    smt/rewrite_trivial.cmi
+smt/rewrite_arith.cmo: smt/rewrite_arith.mlt typesystem/typ_t.cmi smt/smtcommons.cmi \
+    util/property.cmi util/ext.cmi expr.cmi builtin.cmi smt/rewrite_arith.cmi
+smt/rewrite_arith.cmx: smt/rewrite_arith.mlt typesystem/typ_t.cmx smt/smtcommons.cmx \
+    util/property.cmx util/ext.cmx expr.cmx builtin.cmx smt/rewrite_arith.cmi
+smt/rewrite.cmo: smt/rewrite.mlt typesystem/typ_t.cmi tla_parser.cmi smt/smtcommons.cmi \
+    smt/rewrite_trivial.cmi smt/rewrite_arith.cmi revision.cmi \
+    util/property.cmi util/fmtutil.cmi util/ext.cmi expr.cmi util/deque.cmi \
+    builtin.cmi smt/rewrite.cmi
+smt/rewrite.cmx: smt/rewrite.mlt typesystem/typ_t.cmx tla_parser.cmx smt/smtcommons.cmx \
+    smt/rewrite_trivial.cmx smt/rewrite_arith.cmx revision.cmx \
+    util/property.cmx util/fmtutil.cmx util/ext.cmx expr.cmx util/deque.cmx \
+    builtin.cmx smt/rewrite.cmi
 smt/ectx.cmo: smt/ectx.mlt typesystem/typ_t.cmi tla_parser.cmi smt/smtcommons.cmi \
     revision.cmi util/property.cmi util/ext.cmi expr.cmi errors.cmi \
     util/deque.cmi ctx.cmi smt/axioms.cmi smt/ectx.cmi
@@ -306,36 +318,6 @@ smt/axioms.cmo: smt/axioms.mlt typesystem/typ_t.cmi tla_parser.cmi smt/smtcommon
 smt/axioms.cmx: smt/axioms.mlt typesystem/typ_t.cmx tla_parser.cmx smt/smtcommons.cmx \
     revision.cmx util/property.cmx proof.cmx util/fmtutil.cmx util/ext.cmx \
     expr.cmx util/deque.cmx builtin.cmx smt/axioms.cmi
-type/t_t.cmo: type/t_t.mlt util/util.cmi util/property.cmi type/t_t.cmi
-type/t_t.cmx: type/t_t.mlt util/util.cmx util/property.cmx type/t_t.cmi
-type/t_cgen.cmo: type/t_cgen.mlt util/util.cmi type/t_t.cmi expr.cmi type/t_cgen.cmi
-type/t_cgen.cmx: type/t_cgen.mlt util/util.cmx type/t_t.cmx expr.cmx type/t_cgen.cmi
-type/t_csolve.cmo: type/t_csolve.mlt util/util.cmi type/t_csolve.cmi
-type/t_csolve.cmx: type/t_csolve.mlt util/util.cmx type/t_csolve.cmi
-type/t_infer.cmo: type/t_infer.mlt typesystem/typ_system.cmi expr.cmi type/t_infer.cmi
-type/t_infer.cmx: type/t_infer.mlt typesystem/typ_system.cmx expr.cmx type/t_infer.cmi
-smtlib/s_t.cmo: smtlib/s_t.mlt util/util.cmi util/ext.cmi util/deque.cmi smtlib/s_t.cmi
-smtlib/s_t.cmx: smtlib/s_t.mlt util/util.cmx util/ext.cmx util/deque.cmx smtlib/s_t.cmi
-smtlib/s_symbs.cmo: smtlib/s_symbs.mlt util/util.cmi smtlib/s_t.cmi util/ext.cmi \
-    smtlib/s_symbs.cmi
-smtlib/s_symbs.cmx: smtlib/s_symbs.mlt util/util.cmx smtlib/s_t.cmx util/ext.cmx \
-    smtlib/s_symbs.cmi
-smtlib/s_axioms.cmo: smtlib/s_axioms.mlt smtlib/s_t.cmi smtlib/s_symbs.cmi util/ext.cmi \
-    smtlib/s_axioms.cmi
-smtlib/s_axioms.cmx: smtlib/s_axioms.mlt smtlib/s_t.cmx smtlib/s_symbs.cmx util/ext.cmx \
-    smtlib/s_axioms.cmi
-smtlib/s_direct.cmo: smtlib/s_direct.mlt util/util.cmi smtlib/s_t.cmi smtlib/s_symbs.cmi \
-    smtlib/s_axioms.cmi util/property.cmi util/ext.cmi expr.cmi \
-    util/deque.cmi ctx.cmi builtin.cmi smtlib/s_direct.cmi
-smtlib/s_direct.cmx: smtlib/s_direct.mlt util/util.cmx smtlib/s_t.cmx smtlib/s_symbs.cmx \
-    smtlib/s_axioms.cmx util/property.cmx util/ext.cmx expr.cmx \
-    util/deque.cmx ctx.cmx builtin.cmx smtlib/s_direct.cmi
-smtlib/s_fmt.cmo: smtlib/s_fmt.mlt smtlib/s_t.cmi util/fmtutil.cmi smtlib/s_fmt.cmi
-smtlib/s_fmt.cmx: smtlib/s_fmt.mlt smtlib/s_t.cmx util/fmtutil.cmx smtlib/s_fmt.cmi
-smtlib.cmo: smtlib.mlt smtlib/s_t.cmi smtlib/s_symbs.cmi smtlib/s_fmt.cmi \
-    smtlib/s_direct.cmi smtlib/s_axioms.cmi smtlib.cmi
-smtlib.cmx: smtlib.mlt smtlib/s_t.cmx smtlib/s_symbs.cmx smtlib/s_fmt.cmx \
-    smtlib/s_direct.cmx smtlib/s_axioms.cmx smtlib.cmi
 util/timing.cmo: util/timing.mlt revision.cmi util/timing.cmi
 util/timing.cmx: util/timing.mlt revision.cmx util/timing.cmi
 module/m_t.cmo: module/m_t.mlt util/util.cmi revision.cmi util/property.cmi proof.cmi \
@@ -475,15 +457,15 @@ backend/fpfile.cmo: backend/fpfile.mlt util/util.cmi backend/types.cmi revision.
 backend/fpfile.cmx: backend/fpfile.mlt util/util.cmx backend/types.cmx revision.cmx params.cmx \
     method.cmx util/ext.cmx errors.cmx backend/fpfile.cmi
 backend/smt.cmo: backend/smt.mlt util/util.cmi typesystem/typ_t.cmi \
-    typesystem/typ_system.cmi typesystem/typ_e.cmi tla_parser.cmi smtlib.cmi \
-    smt/smtcommons.cmi revision.cmi util/property.cmi proof.cmi \
-    smt/preprocess.cmi params.cmi smt/normal.cmi util/fmtutil.cmi smt/fmt.cmi \
+    typesystem/typ_system.cmi typesystem/typ_e.cmi tla_parser.cmi \
+    smt/smtcommons.cmi smt/rewrite.cmi revision.cmi util/property.cmi \
+    proof.cmi smt/preprocess.cmi params.cmi util/fmtutil.cmi smt/fmt.cmi \
     util/ext.cmi expr.cmi errors.cmi smt/ectx.cmi util/deque.cmi ctx.cmi \
     builtin.cmi smt/boolify.cmi smt/axioms.cmi backend/smt.cmi
 backend/smt.cmx: backend/smt.mlt util/util.cmx typesystem/typ_t.cmx \
-    typesystem/typ_system.cmx typesystem/typ_e.cmx tla_parser.cmx smtlib.cmx \
-    smt/smtcommons.cmx revision.cmx util/property.cmx proof.cmx \
-    smt/preprocess.cmx params.cmx smt/normal.cmx util/fmtutil.cmx smt/fmt.cmx \
+    typesystem/typ_system.cmx typesystem/typ_e.cmx tla_parser.cmx \
+    smt/smtcommons.cmx smt/rewrite.cmx revision.cmx util/property.cmx \
+    proof.cmx smt/preprocess.cmx params.cmx util/fmtutil.cmx smt/fmt.cmx \
     util/ext.cmx expr.cmx errors.cmx smt/ectx.cmx util/deque.cmx ctx.cmx \
     builtin.cmx smt/boolify.cmx smt/axioms.cmx backend/smt.cmi
 backend/prep.cmo: backend/prep.mlt backend/zenon.cmi util/util.cmi backend/types.cmi \
@@ -592,21 +574,12 @@ typesystem/typ_system.cmi : typesystem/typ_t.cmi typesystem/typ_e.cmi \
     typesystem/typ_c.cmi expr.cmi
 smt/fmt.cmi : expr.cmi util/deque.cmi
 smt/boolify.cmi : expr.cmi
-smt/normal.cmi : expr.cmi
+smt/rewrite_trivial.cmi : expr.cmi
+smt/rewrite_arith.cmi : expr.cmi
+smt/rewrite.cmi : expr.cmi
 smt/ectx.cmi : expr.cmi util/deque.cmi ctx.cmi smt/axioms.cmi
 smt/preprocess.cmi : expr.cmi
 smt/axioms.cmi : expr.cmi builtin.cmi
-type/t_t.cmi : util/util.cmi
-type/t_cgen.cmi : type/t_t.cmi expr.cmi
-type/t_csolve.cmi : type/t_t.cmi
-type/t_infer.cmi : expr.cmi
-smtlib/s_t.cmi : util/util.cmi util/deque.cmi
-smtlib/s_symbs.cmi : smtlib/s_t.cmi
-smtlib/s_axioms.cmi : smtlib/s_t.cmi
-smtlib/s_direct.cmi : util/util.cmi smtlib/s_t.cmi smtlib/s_symbs.cmi \
-    expr.cmi util/deque.cmi ctx.cmi
-smtlib/s_fmt.cmi : smtlib/s_t.cmi
-smtlib.cmi : util/util.cmi expr.cmi util/deque.cmi
 util/timing.cmi :
 module/m_t.cmi : util/util.cmi util/property.cmi proof.cmi loc.cmi expr.cmi
 module/m_fmt.cmi : module/m_t.cmi expr.cmi ctx.cmi

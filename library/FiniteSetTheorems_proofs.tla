@@ -246,7 +246,7 @@ BY FS_NatBijection, FS_CountingElements
 (***************************************************************************)
 (* `.  .'                                                                  *)
 (*                                                                         *)
-(* The image of a finite set under a bijection or surjection is finite.    *)
+(* The image of a finite set under a bijection is finite.                  *)
 (*                                                                         *)
 (* `.  .'                                                                  *)
 (***************************************************************************)
@@ -340,7 +340,7 @@ THEOREM FS_AddElement ==
             IF x \in S THEN Cardinality(S) ELSE Cardinality(S)+1
 <1>1. CASE x \notin S
   BY <1>1, FS_CardinalityType, Fun_NatBijAddElem, FS_NatBijection, 
-     FS_CountingElements, Z3
+     FS_CountingElements
 <1>. QED  BY <1>1, Zenon  \* the case "x \in S" is trivial
 
 
@@ -351,7 +351,7 @@ THEOREM FS_RemoveElement ==
             IF x \in S THEN Cardinality(S)-1 ELSE Cardinality(S)
 <1>1. CASE x \in S
   BY <1>1, FS_CardinalityType, Fun_NatBijSubElem, FS_NatBijection, 
-     FS_CountingElements, FS_EmptySet, Z3
+     FS_CountingElements, FS_EmptySet
 <1>. QED  BY <1>1, Zenon  \* the case "x \notin S" is trivial
 
 
@@ -441,6 +441,14 @@ THEOREM FS_Surjection ==
   <2>. QED  BY <1>1, <2>2, FS_CountingElements
 <1>. QED  BY <1>4, <1>5, <1>6
 
+THEOREM FS_Image ==
+  ASSUME NEW S, IsFiniteSet(S), NEW Op(_)
+  PROVE  LET T == {Op(x) : x \in S}
+         IN  /\ IsFiniteSet(T)
+             /\ Cardinality(T) <= Cardinality(S)
+<1>. DEFINE f == [x \in S |-> Op(x)]
+<1>. f \in Surjection(S, {Op(x) : x \in S})  BY DEF Surjection
+<1>. QED  BY FS_Surjection
 
 (***************************************************************************)
 (* `.  .'                                                                  *)
@@ -455,7 +463,12 @@ THEOREM FS_Injection ==
          /\ Cardinality(S) <= Cardinality(T)
          /\ Cardinality(S) = Cardinality(T) <=> f \in Surjection(S,T)
 <1>1. CASE S = {}
-  BY <1>1, FS_CardinalityType, FS_EmptySet, Fun_IsSurj, Fun_SurjectionProperties, Z3
+  <2>1. IsFiniteSet(S) /\ Cardinality(S) <= Cardinality(T)
+    BY <1>1, FS_CardinalityType, FS_EmptySet
+  <2>2. Cardinality(S) = Cardinality(T) <=> f \in Surjection(S,T)
+    BY <1>1, FS_CardinalityType, FS_EmptySet, Fun_IsSurj, Fun_SurjectionProperties, Zenon
+       DEF Injection
+  <2>. QED  BY <2>1, <2>2
 <1>2. CASE S # {}
   <2>1. Inverse(f,S,T) \in Surjection(T,S)
     BY <1>2, Fun_InjInverse
@@ -807,7 +820,7 @@ THEOREM FS_Product ==
   <2>. DEFINE SX == { <<s,x>> : s \in S }
   <2>1. /\ IsFiniteSet(A \cup {x})
         /\ Cardinality(A \cup {x}) = Cardinality(A) + 1
-    BY <1>2, FS_AddElement
+    BY <1>2, FS_AddElement, Zenon
   <2>2. S \X (A \cup {x}) = (S \X A) \cup SX
     BY <1>2, Isa
   <2>3. ExistsBijection(S, SX)
@@ -854,7 +867,7 @@ THEOREM FS_SUBSET ==
 <1>2. ASSUME NEW A, NEW x, IsFiniteSet(A), x \notin A, P(A)
       PROVE  P(A \cup {x})
   <2>. DEFINE Ax == {B \cup {x} : B \in SUBSET A}
-  <2>1. Cardinality(A \cup {x}) = Cardinality(A) + 1  BY <1>2, FS_AddElement
+  <2>1. Cardinality(A \cup {x}) = Cardinality(A) + 1  BY <1>2, FS_AddElement, Zenon
   <2>2. 2^Cardinality(A \cup {x}) = 2^Cardinality(A) + 2^Cardinality(A)
     BY <2>1, <1>2, FS_CardinalityType, TwoExpLemma, Zenon
   <2>3. SUBSET (A \cup {x}) = (SUBSET A) \cup Ax  BY <1>2, Isa
@@ -888,7 +901,7 @@ THEOREM FS_SUBSET ==
    
 =============================================================================
 \* Modification History
-\* Last modified Fri Oct 18 14:20:59 CEST 2019 by merz
+\* Last modified Wed Jan 08 17:42:32 CET 2020 by merz
 \* Last modified Thu Jul 04 15:15:07 CEST 2013 by bhargav
 \* Last modified Tue Jun 04 11:44:51 CEST 2013 by bhargav
 \* Last modified Fri May 03 12:02:51 PDT 2013 by tomr

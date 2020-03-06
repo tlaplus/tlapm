@@ -33,12 +33,6 @@
     <li><code><span class="purple">ENABLED<class></code>, <code>\cdot</code>
       (action composition),
       and many temporal operators are unsupported.</li>
-    <li>TLAPS will accept some unsound proofs that use a non-Leibniz
-      operator whose definition is not
-      usable.  (Leibniz operators are explained in Section
-      5.2 of
-      <a href="http://research.microsoft.com/en-us/um/people/lamport/tla/tla2-guide.pdf">the
-      TLA+2 Preliminary Guide</a>).</li>
     <li>The Zenon and Isabelle back-ends do not know the definition of
       the <code>..</code> operator, but you can reason about it with
       SMT solvers. In general, proof obligations involving arithmetic
@@ -99,11 +93,6 @@
         where P is an operator with one or more arguments are only
         supported by the Isabelle backend.</li>
 
-    <li>We have some reports of fingerprints mysteriously disappearing.  If
-      you see such an occurrence, please make a copy of the
-      <code>.tlaps</code> directory
-      and send it to us in a bug report.</li>
-
     <li>We have reports of <code>tlapm</code> crashing with a stack
       backtrace that starts with
       <div class="listing sole">Unix.Unix_error(3, "select", "")</div>
@@ -120,16 +109,12 @@
     TEMPORAL</span></code> declarations but does not handle them
     correctly.</li>
 
-    <li>Parameterized instantiations of theorems are not handled.</li>
+    <li>Parameterized instantiations of theorems are not handled correctly.</li>
 
     <li>Subexpression references are not handled correctly when
       referencing a subexpression of
       an <code><span class="purple">ASSUME</span>
       ... <span class="purple">PROVE</span></code>.</li>
-
-    <li>TLAPS cannot handle a named instantiation with parameters: any
-    declaration of the form <code>P(n)
-    == <span class="purple">INSTANCE</span> M</code> will crash TLAPM.</li>
 
   </ul>
 </div>

@@ -578,9 +578,16 @@ let () =
       isabelle_settings in
   if isabelle_settings = isabelle_settings_modified then
     fatal_error "Could not modify %s." isabelle_settings_file ;
+  let isabelle_settings_modified2 =
+    replace_first
+      (regexp "^ML_PLATFORM=\"\\\\\$ISABELLE_PLATFORM\"\$")
+      "ML_PLATFORM=\"\${ISABELLE_PLATFORM64:-\$ISABELLE_PLATFORM}\""
+      isabelle_settings_modified in
+  if isabelle_settings_modified = isabelle_settings_modified2 then
+    fatal_error "Could not modify %s." isabelle_settings_file ;
   if fails begin fun () ->
     let f = open_out_bin isabelle_settings_file in
-    output_string f isabelle_settings_modified ;
+    output_string f isabelle_settings_modified2 ;
     close_out f
   end then
     fatal_error "Could not overwrite %s." isabelle_settings_file ;

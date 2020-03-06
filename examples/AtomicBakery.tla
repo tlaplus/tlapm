@@ -250,9 +250,9 @@ THEOREM Spec => []Inv
     BY <2>1 DEF p1
   <2>2. ASSUME NEW self \in P, p2(self) PROVE Inv'
     <3>1. CASE unread[self] = {}
-      BY <2>2, <3>1, Z3 DEF p2
+      BY <2>2, <3>1 DEF p2
     <3>2. CASE unread[self] # {}
-      BY <2>2, <3>2, Z3 DEF p2
+      BY <2>2, <3>2 DEF p2
     <3>3. QED
       BY <3>1, <3>2    
   <2>3. ASSUME NEW self \in P, p3(self) PROVE Inv'

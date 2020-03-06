@@ -528,16 +528,12 @@ let build_tla_ops (smap:t_map) std_set (* tuples record_ids *) =
 		    (exists [x,SInt] (lAnd [eq z (int2u x) ; leq m x ; leq x n])))
 	     [ mem z (app2 (m_tla B.Range) (int2u m) (int2u n)) ])
       ;
-      (** added sm 2019-02-20: Range is injective in "reasonable" cases.
-          The exact formulation is chosen so that it is suitable for
-          reasoning about equality of sequences. *)
+      (** added sm 2019-02-20, fixed sm 2019-12-16: 
+          Range is injective when intervals are non-empty. *)
       forall [m,SInt ; n,SInt ; x,SInt ; y,SInt ]
         (implies
            (lAnd [ lOr [ leq m n ;
-                         leq x y ;
-                         lAnd [ lOr [ eq m x ; eq n y ] ;
-                                lOr [ leq m (app2_op B.Plus n "1") ;
-                                      leq x (app2_op B.Plus y "1") ] ] ] ;
+                         leq x y ] ;
                    (eq (app2 (m_tla B.Range) (int2u m) (int2u n))
                        (app2 (m_tla B.Range) (int2u x) (int2u y))) ])
            (lAnd [eq m x ; eq n y]))

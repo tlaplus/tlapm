@@ -45,7 +45,7 @@ type process = {
   rest : (unit -> computation) list;
 };;
 
-let temp_buf = String.create 4096;;
+let temp_buf = Bytes.create 4096;;
 let read_to_stdout fd =
   try
     let r = Unix.read fd temp_buf 0 (String.length temp_buf) in

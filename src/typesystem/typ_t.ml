@@ -439,14 +439,10 @@ let rec simplify t =
           Ref (x, t1, Ex (cx, Internal B.TRUE %% []))
       | [Ref (x, t1, Ex (cx, e1)) ; Ref (_, t2, Ex (_, e2))] when eq t1 t2 ->
           Ref (x, t1, Ex (cx, List (Or, [e1 ; e2]) %% []))
-      | [Ref (x, t1, r) ; t2]
-      | [t2 ; Ref (x, t1, r)]
-          when eq t1 t2 ->
-          t2
-      | [Tbase t1 ; t2]
-      | [t2 ; Tbase t1]
-          when eq t1 t2 ->
-          Tbase t1
+      | [Ref (x, t1, r) ; t2] when eq t1 t2 -> t2
+      | [t2 ; Ref (x, t1, r)] when eq t1 t2 -> t2
+      | [Tbase t1 ; t2] when eq t1 t2 -> Tbase t1
+      | [t2 ; Tbase t1] when eq t1 t2 -> Tbase t1
       | [Set t1 ; Set t2] ->
           Set (TyPlus [t1;t2])
       | [Func (x,t1,t2) ; Func (y,t3,t4)] when eq t1 t3 ->
@@ -471,10 +467,8 @@ let rec simplify t =
       | [t1 ; t2] when eq t1 t2 -> t1
       | [Ref (x, t1, Ex (cx, e1)) ; Ref (y, t2, Ex (cx', e2))] when eq t1 t2 ->
           Ref (x, t1, Ex (cx, List (And, [e1 ; e2]) %% []))
-      | [Ref (x, t1, r) ; t2]
-      | [t2 ; Ref (x, t1, r)]
-          when eq t1 t2 ->
-          Ref (x, t1, r)
+      | [Ref (x, t1, r) ; t2] when eq t1 t2 -> Ref (x, t1, r)
+      | [t2 ; Ref (x, t1, r)] when eq t1 t2 -> Ref (x, t1, r)
       | [Set t1 ; Set t2] ->
           Set (TyTimes [t1;t2])
       | [Func (x,t1,t2) ; Func (y,t3,t4)] when eq t1 t3 ->

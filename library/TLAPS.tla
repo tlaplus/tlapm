@@ -41,11 +41,12 @@ SMTT(X) == TRUE (*{ by (prover:"smt3"; timeout:@) }*)
 
 
 (**************************************************************************)
-(* Backend pragma: CVC3 SMT solver                                        *)
+(* Backend pragma: CVC4 SMT solver                                        *)
 (*                                                                        *)
-(* CVC3 is used by default but you can also explicitly call it.           *)
+(* These methods translate the proof obligation to SMTLIB2 and call CVC4. *)
 (**************************************************************************)
 
+(* The CVC3* methods are here for backward compatibility. They call CVC4. *)
 CVC3 == TRUE (*{ by (prover: "cvc33") }*)
 CVC3T(X) == TRUE (*{ by (prover:"cvc33"; timeout:@) }*)
 
@@ -75,6 +76,7 @@ veriTT(X) == TRUE (*{ by (prover:"verit"; timeout:@) }*)
 (* Backend pragma: Z3 SMT solver                                          *)
 (*                                                                        *)
 (* This method translates the proof obligation to SMTLIB2 and calls Z3.   *)
+(* Z3 is used by default but you can also explicitly call it.             *)
 (**************************************************************************)
 
 Z3 == TRUE (*{ by (prover: "z33") }*)
