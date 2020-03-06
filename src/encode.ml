@@ -7,4 +7,5 @@
 Revision.f "$Rev$";;
 
 module Table = N_table
+module Canon = N_canon
 module Cook = N_cook
