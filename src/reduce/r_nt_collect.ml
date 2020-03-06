@@ -48,6 +48,8 @@ let visitor = object (self : 'self)
         add NT_Power ns
     | Internal B.UNION ->
         add NT_Union ns
+    | Internal B.DOMAIN ->
+        add NT_Domain ns
     | Internal B.Subseteq ->
         add NT_Subseteq ns
     | Internal (B.Mem | B.Notmem) ->
@@ -87,6 +89,10 @@ let visitor = object (self : 'self)
         let nm, n, k, e = get oe C.setof_special_prop in
         add (NT_SetOf (nm, s, n, k, e)) ns
 
+    | Opaque s when has oe C.fcn_special_prop ->
+        let nm, n, k, e = get oe C.fcn_special_prop in
+        add (NT_Fcn (nm, s, n, k, e)) ns
+
     | Lambda (vs, e) ->
         let ns = List.fold_left begin fun ns (v, _) ->
           let k = get_kind v in
@@ -117,6 +123,23 @@ let visitor = object (self : 'self)
     | SetEnum es ->
         let n = List.length es in
         let ns = add (NT_Enum n) ns in
+        super#expr scx ns oe
+
+    | FcnApp (_, es) ->
+        let n = List.length es in
+        let ns = add NT_Fcnapp ns in
+        let ns =
+          if n = 1 then ns
+          else ns (* TODO add tup_n *)
+        in
+        super#expr scx ns oe
+
+    | Arrow _ ->
+        let ns = add NT_Arrow ns in
+        super#expr scx ns oe
+
+    | Except _ ->
+        let ns = add NT_Except ns in
         super#expr scx ns oe
 
     | String s ->

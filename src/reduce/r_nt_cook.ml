@@ -26,6 +26,7 @@ let get_scount () =
 let choose_nm _ _ = "cooked_" ^ string_of_int (get_scount ())
 let setst_nm _ _ = "cooked_" ^ string_of_int (get_scount ())
 let setof_nm _ _ _ = "cooked_" ^ string_of_int (get_scount ())
+let fcn_nm _ _ _ = "cooked_" ^ string_of_int (get_scount ())
 
 (* FIXME There is a major flaw in the way reduction is performed.  It cannot
  * handle nested lambdas.  If there is a nested lambda, it will be replaced by
@@ -36,6 +37,7 @@ let setof_nm _ _ _ = "cooked_" ^ string_of_int (get_scount ())
 let choose_special_prop = make "Reduce.Cook.choose_special_prop"
 let setst_special_prop = make "Reduce.Cook.setst_special_prop"
 let setof_special_prop = make "Reduce.Cook.setof_special_prop"
+let fcn_special_prop = make "Reduce.Cook.setof_special_prop"
 
 
 (* {3 Mark Global Variables} *)
@@ -333,6 +335,64 @@ let visitor = object (self : 'self)
         let k = mk_fstk_ty (List.init n (fun _ -> ty_u) @ List.map mk_atom_ty ins) ty_u in
         let s = setof_nm n k e in
         let op = assign (Opaque s %% []) setof_special_prop (nm, n, k, e) in
+        Apply (op, bs @ List.map (fun i -> Ix i %% []) args) @@ oe
+
+    | Fcn (bs, e) ->
+        let ((_, hx' as scx'), bs) = self#bounds scx bs in
+        let e = self#expr scx' e in
+        let n = List.length bs in
+
+        let gx, lx = split_ctx hx' in
+        let lsz = Deque.size lx in
+        let vs = Expr.Collect.fvs e in
+        let gvs, lvs = split_set lsz vs in
+
+        let m =
+          List.init n (fun _ -> Keep)
+          @ List.init (lsz - n) begin fun i ->
+            if Is.mem (n + i + 1) lvs then Keep
+            else Skip
+          end
+          @ List.init n (fun _ -> Intro)
+          @ [ Intro ; Intro ]
+        in
+        let e = relocalize e m in
+
+        (* FIXME see same remark for setst *)
+        let nm, e =
+          if Is.is_empty gvs then begin
+            None, e
+          end else begin
+            let m = Is.min_elt gvs in
+            let v = hyp_name (get_val_from_id gx (m - lsz)) in
+            let s = lsz - m + 1 in
+            let lvs' = Is.union lvs (List.init n (fun i -> i+1) |> Is.of_list) in
+            let d = 2*n + 1 + Is.cardinal lvs' in
+            let sub = Expr.Subst.bumpn d (Expr.Subst.shift s) in
+            let e = Expr.Subst.app_expr sub e in
+            Some v, e
+          end
+        in
+
+        let _, bs = List.fold_left begin fun (last, bs) (_, _, dom) ->
+          match dom, last with
+          | Domain d, _
+          | Ditto, Some d -> (Some d, d :: bs)
+          | _ -> invalid_arg "Reduce.Cook.cook: missing bound in Fcn"
+        end (None, []) bs in
+        let bs = List.rev bs in
+
+        let args = lvs
+          |> fun s -> Is.diff s (List.init n (fun i -> i+1) |> Is.of_list)
+          |> Is.elements
+          |> List.map (fun i -> i - n)
+          |> List.rev
+        in
+
+        let ins = List.map (hyp_sort hx) args in
+        let k = mk_fstk_ty (List.init n (fun _ -> ty_u) @ List.map mk_atom_ty ins) ty_u in
+        let s = fcn_nm n k e in
+        let op = assign (Opaque s %% []) fcn_special_prop (nm, n, k, e) in
         Apply (op, bs @ List.map (fun i -> Ix i %% []) args) @@ oe
 
     | _ -> super#expr scx oe

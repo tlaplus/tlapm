@@ -44,7 +44,13 @@ type nt_node =
   | NT_StringToU
   | NT_String
   | NT_StringLit of string
-  (* TODO functions, arith, tuples, sequences, etc. *)
+  (* Functions *)
+  | NT_Arrow
+  | NT_Domain
+  | NT_Fcnapp
+  | NT_Fcn of R_nt_cook.hyp_nm option * string * int * ty_kind * expr
+  | NT_Except
+  (* TODO arith, tuples, sequences, etc. *)
 
 let nt_get_id node =
   match node with
@@ -68,6 +74,11 @@ let nt_get_id node =
   | NT_String -> "nt_string"
   | NT_StringToU -> "nt_stringtou"
   | NT_StringLit s -> "nt_stringlit_" ^ s
+  | NT_Arrow -> "nt_arrow"
+  | NT_Domain -> "nt_domain"
+  | NT_Fcnapp -> "nt_fcnapp"
+  | NT_Fcn (_, s, _, _, _) -> "nt_fcn_" ^ s
+  | NT_Except -> "nt_except"
 
 (* FIXME compile with >= 4.06.0 *)
 let update id upd_f ns =
@@ -118,7 +129,8 @@ let from_list ns =
 let nt_get_place = function
   | NT_Choose (nm, _, _, _)
   | NT_SetSt (nm, _, _, _)
-  | NT_SetOf (nm, _, _, _, _) -> nm
+  | NT_SetOf (nm, _, _, _, _)
+  | NT_Fcn (nm, _, _, _, _) -> nm
   | _ -> None
 
 
@@ -151,6 +163,12 @@ let nt_get_deps_l node =
   | NT_StringToU -> [ NT_U ; NT_Mem ]
   | NT_String -> [ NT_U ; NT_Mem ; NT_StringToU ]
   | NT_StringLit _ -> [ NT_U ; NT_Mem ; NT_StringToU ; NT_String ]
+
+  | NT_Domain -> [ NT_U ]
+  | NT_Fcnapp -> [ NT_U ]
+  | NT_Arrow -> [ NT_U ; NT_Mem ; NT_Domain ; NT_Fcnapp ]
+  | NT_Fcn _ -> [ NT_U ; NT_Mem ; NT_Domain ; NT_Fcnapp ]
+  | NT_Except -> [ NT_U ; NT_Mem ; NT_Domain ; NT_Fcnapp ]
 
 let nt_get_deps node =
   List.fold_left begin fun sm node ->
@@ -196,6 +214,12 @@ let nt_get_hyps st node =
           end previous_lits in
           let st' = { stringlits = Ss.add s st.stringlits } in
           st', stringlit_decl s :: distinct_facts
+
+    | NT_Domain -> st, [ domain_decl ]
+    | NT_Fcnapp -> st, [ fcnapp_decl ]
+    | NT_Arrow -> st, [ arrow_decl ; arrow_fact ; funext_fact ]
+    | NT_Fcn (_, s, n, k, e) -> st, [ fcn_decl s n k ; fcndom_fact s n k ; fcnapp_fact s n k e ]
+    | NT_Except -> st, [ fcnexcept_decl ; excdom_fact ; excapp_fact ]
   in
   (st, Deque.of_list hs)
 

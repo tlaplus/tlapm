@@ -79,10 +79,23 @@ module NtAxioms : sig
 
   (* Functions *)
   val arrow_nm : string
-  val fcn_nm : string -> ty_kind -> string
+  val fcn_nm : string -> int -> ty_kind -> string
   val domain_nm : string
   val fcnapp_nm : string
   val fcnexcept_nm : string
+
+  val arrow_decl : hyp
+  val fcn_decl : string -> int -> ty_kind -> hyp
+  val domain_decl : hyp
+  val fcnapp_decl : hyp
+  val fcnexcept_decl : hyp
+
+  val funext_fact : hyp
+  val arrow_fact : hyp
+  val fcndom_fact : string -> int -> ty_kind -> hyp
+  val fcnapp_fact : string -> int -> ty_kind -> expr -> hyp
+  val excdom_fact : hyp
+  val excapp_fact : hyp
 
   (* Arithmetic *)
   val zset_nm : string
@@ -118,9 +131,11 @@ module NtCook : sig
   val choose_nm : ty_kind -> expr -> string
   val setst_nm : ty_kind -> expr -> string
   val setof_nm : int -> ty_kind -> expr -> string
+  val fcn_nm : int -> ty_kind -> expr -> string
   val choose_special_prop : (hyp_nm option * ty_kind * expr) pfuncs
   val setst_special_prop : (hyp_nm option * ty_kind * expr) pfuncs
   val setof_special_prop : (hyp_nm option * int * ty_kind * expr) pfuncs
+  val fcn_special_prop : (hyp_nm option * int * ty_kind * expr) pfuncs
   val cook : sequent -> sequent
 end
 
@@ -153,6 +168,12 @@ module NtTable : sig
     | NT_StringToU
     | NT_String
     | NT_StringLit of string
+    (* Functions *)
+    | NT_Arrow
+    | NT_Domain
+    | NT_Fcnapp
+    | NT_Fcn of NtCook.hyp_nm option * string * int * ty_kind * expr
+    | NT_Except
   val add : nt_node -> nt_node Sm.t -> nt_node Sm.t
   val union : nt_node Sm.t -> nt_node Sm.t -> nt_node Sm.t
   val from_list : nt_node list -> nt_node Sm.t

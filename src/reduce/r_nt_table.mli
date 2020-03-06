@@ -46,6 +46,12 @@ type nt_node =
   | NT_StringToU
   | NT_String
   | NT_StringLit of string
+  (* Functions *)
+  | NT_Arrow
+  | NT_Domain
+  | NT_Fcnapp
+  | NT_Fcn of R_nt_cook.hyp_nm option * string * int * ty_kind * expr
+  | NT_Except
 
 (** Safe add: @raise Invalid_argument if already present *)
 val add : nt_node -> nt_node Sm.t -> nt_node Sm.t

@@ -430,10 +430,225 @@ let stringlit_distinct_fact s1 s2 = mk_fact (stringlit_distinct s1 s2) %% []
 (* {3 Functions} *)
 
 let arrow_nm = nt_prefix ^ "Arrow"
-let fcn_nm s _ = nt_prefix ^ "fcn_" ^ s
+let fcn_nm s _ _ = nt_prefix ^ "fcn_" ^ s
 let domain_nm = nt_prefix ^ "domain"
 let fcnapp_nm = nt_prefix ^ "fcnapp"
 let fcnexcept_nm = nt_prefix ^ "fcnexcept"
+
+let arrow_decl = mk_fresh arrow_nm [ TU ; TU ] TU %% []
+let domain_decl = mk_fresh domain_nm [ TU ] TU %% []
+let fcnapp_decl = mk_fresh fcnapp_nm [ TU ; TU ] TU %% []
+let fcnexcept_decl = mk_fresh fcnexcept_nm [ TU ; TU ; TU ] TU %% []
+
+let fcn_decl s n k =
+  let ins =
+    match k with
+    | TKind (ks, TAtom TU) ->
+        let rec spin n ks =
+          if n = 0 then ks
+          else
+            match ks with
+            | TKind ([], TAtom TU) :: ks ->
+                spin (n - 1) ks
+            | _ -> invalid_arg ("Reduce.NtAxioms.fcn_decl: \
+                                  bad kind provided")
+        in
+        List.map (fun k -> get_atom (get_ty k)) (spin n ks)
+    | _ -> invalid_arg ("Reduce.NtAxioms.fcn_decl: \
+                        bad kind provided")
+  in
+  mk_fresh (fcn_nm s n k) (List.init n (fun _ -> TU) @ ins) TU %% []
+
+let funext_def =
+  all [ "a" ; "b" ; "f" ; "g" ] (
+    ifx B.Implies (
+      List (
+        And, [
+          ifx B.Mem (
+            Ix 2 %% []
+          ) (
+            Apply (Opaque arrow_nm %% [], [ Ix 4 %% [] ; Ix 3 %% [] ]) %% []
+          ) %% [] ;
+          ifx B.Mem (
+            Ix 1 %% []
+          ) (
+            Apply (Opaque arrow_nm %% [], [ Ix 4 %% [] ; Ix 3 %% [] ]) %% []
+          ) %% [] ;
+          all [ "x" ] (
+            ifx B.Implies (
+              ifx B.Mem (
+                Ix 1 %% []
+              ) (
+                Ix 5 %% []
+              ) %% []
+            ) (
+              ifx B.Eq (
+                Apply (Opaque fcnapp_nm %% [], [ Ix 3 %% [] ; Ix 1 %% [] ]) %% []
+              ) (
+                Apply (Opaque fcnapp_nm %% [], [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
+              ) %% []
+            ) %% []
+          ) %% []
+        ]
+      ) %% []
+    ) (
+      ifx B.Eq (
+        Ix 2 %% []
+      ) (
+        Ix 1 %% []
+      ) %% []
+    ) %% []
+  ) %% []
+
+let arrow_def =
+  all [ "a" ; "b" ; "f" ] (
+    ifx B.Equiv (
+      ifx B.Mem (
+        Ix 1 %% []
+      ) (
+        Apply (Opaque arrow_nm %% [], [ Ix 3 %% [] ; Ix 2 %% [] ]) %% []
+      ) %% []
+    ) (
+      List (
+        And, [
+          ifx B.Eq (
+            Apply (Opaque domain_nm %% [], [ Ix 1 %% [] ]) %% []
+          ) (
+            Ix 3 %% []
+          ) %% [] ;
+          all [ "x" ] (
+            ifx B.Implies (
+              ifx B.Mem (
+                Ix 1 %% []
+              ) (
+                Ix 4 %% []
+              ) %% []
+            ) (
+              ifx B.Mem (
+                Apply (Opaque fcnapp_nm %% [], [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
+              ) (
+                Ix 3 %% []
+              ) %% []
+            ) %% []
+          ) %% []
+        ]
+      ) %% []
+    ) %% []
+  ) %% []
+
+let fcndom_def s n k =
+  let ss =
+    match  k with
+    | TKind (ks, TAtom TU) ->
+        let rec spin n ks =
+          if n = 0 then ks
+          else
+            match ks with
+            | TKind ([], TAtom TU) :: ks ->
+                spin (n - 1) ks
+            | _ -> invalid_arg ("Reduce.NtAxioms.fcndom_def: \
+                                  bad kind provided")
+        in
+        List.map (fun k -> get_atom (get_ty k)) (spin n ks)
+    | _ -> invalid_arg ("Reduce.NtAxioms.fcndom_def: \
+                        bad kind provided")
+  in
+  let m = List.length ss in
+  all (gen "s" n @ gen "a" m) ~ss:(List.init n (fun _ -> TU) @ ss) (
+    ifx B.Eq (
+      Apply (Opaque domain_nm %% [], [
+        Apply (Opaque (fcn_nm s n k) %% [], ixi (m + n)) %% []
+      ]) %% []
+    ) (
+      if n = 1 then
+        Ix (m + 1) %% []
+      else
+        Errors.bug "Reduce.NtAxioms.fcndom_def: \
+                    functions of more than one arg. not supported"
+    ) %% []
+  ) %% []
+
+let fcnapp_def s n k body =
+  let ss =
+    match  k with
+    | TKind (ks, TAtom TU) ->
+        let rec spin n ks =
+          if n = 0 then ks
+          else
+            match ks with
+            | TKind ([], TAtom TU) :: ks ->
+                spin (n - 1) ks
+            | _ -> invalid_arg ("Reduce.NtAxioms.fcndom_def: \
+                                  bad kind provided")
+        in
+        List.map (fun k -> get_atom (get_ty k)) (spin n ks)
+    | _ -> invalid_arg ("Reduce.NtAxioms.fcndom_def: \
+                        bad kind provided")
+  in
+  let m = List.length ss in
+  let args =
+    if n = 1 then [ "x" ]
+    else
+      Errors.bug "Reduce.NtAxioms.fcnapp_def: \
+                  functions of more than one arg. not supported"
+  in
+  all (gen "s" n @ gen "a" m @ args) (
+    ifx B.Eq (
+      Apply (Opaque fcnapp_nm %% [], [
+        Apply (Opaque (fcn_nm s n k) %% [], ixi ~shift:n (m + n)) %% [] ;
+        if n = 1 then
+          Ix 1 %% []
+        else
+          (*Apply (Opaque (tup_nm n) %% [], ixi n) %% []*)
+          Errors.bug "Reduce.NtAxioms.fcnapp_def: \
+                      functions of more than one arg. not supported"
+      ]) %% []
+    ) (
+      body (* Dark magic *)
+    ) %% []
+  ) %% []
+
+let excdom_def =
+  all [ "f" ; "x" ; "a" ] (
+    ifx B.Eq (
+      Apply (Opaque domain_nm %% [], [
+        Apply (Opaque fcnexcept_nm %% [], ixi 3) %% []
+      ]) %% []
+    ) (
+      Apply (Opaque domain_nm %% [], [ Ix 3 %% [] ]) %% []
+    ) %% []
+  ) %% []
+
+let excapp_def =
+  all [ "f" ; "x" ; "a" ; "z" ] (
+    ifx B.Implies (
+      ifx B.Mem (
+        Ix 1 %% []
+      ) (
+        Apply (Opaque domain_nm %% [], [ Ix 4 %% [] ]) %% []
+      ) %% []
+    ) (
+      ifx B.Eq (
+        Apply (Opaque fcnapp_nm %% [], [
+          Apply (Opaque fcnexcept_nm %% [], ixi ~shift:1 3) %% [] ;
+          Ix 1 %% []
+        ]) %% []
+      ) (
+        If (
+          ifx B.Eq (Ix 1 %% []) (Ix 3 %% []) %% [],
+          Ix 2 %% [],
+          Apply (Opaque fcnapp_nm %% [], [ Ix 4 %% [] ; Ix 1 %% [] ]) %% []
+        ) %% []
+      ) %% []
+    ) %% []
+  ) %% []
+
+let funext_fact = mk_fact funext_def %% []
+let arrow_fact = mk_fact arrow_def %% []
+let fcndom_fact s n k = mk_fact (fcndom_def s n k) %% []
+let fcnapp_fact s n k e = mk_fact (fcnapp_def s n k e) %% []
+let excdom_fact = mk_fact excdom_def %% []
+let excapp_fact = mk_fact excapp_def %% []
 
 
 (* {3 Arithmetic} *)

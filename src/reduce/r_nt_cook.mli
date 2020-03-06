@@ -14,8 +14,10 @@ type hyp_nm = string
 val choose_nm : ty_kind -> expr -> string
 val setst_nm : ty_kind -> expr -> string
 val setof_nm : int -> ty_kind -> expr -> string
+val fcn_nm : int -> ty_kind -> expr -> string
 val choose_special_prop : (hyp_nm option * ty_kind * expr) pfuncs
 val setst_special_prop : (hyp_nm option * ty_kind * expr) pfuncs
 val setof_special_prop : (hyp_nm option * int * ty_kind * expr) pfuncs
+val fcn_special_prop : (hyp_nm option * int * ty_kind * expr) pfuncs
 
 val cook : sequent -> sequent
