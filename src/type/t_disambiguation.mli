@@ -47,5 +47,6 @@ val any_special_prop : T_t.ty_atom Property.pfuncs
 
 (* {3 Main} *)
 
+(* TODO don't insert casts, annotate expressions *)
 val min_reconstruct : Expr.T.sequent -> Expr.T.sequent
 
