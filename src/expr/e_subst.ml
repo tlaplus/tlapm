@@ -117,7 +117,7 @@ and normalize ?(cx = Deque.empty) op args = match op.core with
       Apply (op, oargs @ args)
   | _ -> begin
       match args with
-        | [] -> op.core
+        | [] -> op.core (* NOTE The properties of op are lost! *)
         | _ -> Apply (op, args)
     end
 

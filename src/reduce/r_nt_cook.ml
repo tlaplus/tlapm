@@ -23,6 +23,7 @@ let get_scount () =
   !scount
 
 (* FIXME this is not very good *)
+let choose_nm _ _ = "cooked_" ^ string_of_int (get_scount ())
 let setst_nm _ _ = "cooked_" ^ string_of_int (get_scount ())
 let setof_nm _ _ _ = "cooked_" ^ string_of_int (get_scount ())
 
@@ -32,6 +33,7 @@ let setof_nm _ _ _ = "cooked_" ^ string_of_int (get_scount ())
  * the upper lambda is treated.  I am giving up on this bug because it requires
  * too much dirty work to be resolved, and I already intend to revise the
  * encoding process. *)
+let choose_special_prop = make "Reduce.Cook.choose_special_prop"
 let setst_special_prop = make "Reduce.Cook.setst_special_prop"
 let setof_special_prop = make "Reduce.Cook.setof_special_prop"
 
@@ -155,6 +157,72 @@ let visitor = object (self : 'self)
 
   method expr (_, hx as scx) oe =
     match oe.core with
+    | Choose (h, optdom, e) ->
+        let optdom = Option.map (self#expr scx) optdom in
+        let hyp = match optdom with
+          | None -> Fresh (h, Shape_expr, Constant, Unbounded) @@ h
+          | Some dom -> Fresh (h, Shape_expr, Constant, Bounded (dom, Visible)) @@ h
+        in
+        let (_, hx' as scx') = Expr.Visit.adj scx hyp in
+        let e = self#expr scx' e in
+
+        let gx, lx = split_ctx hx' in
+        let lsz = Deque.size lx in
+        let vs = Expr.Collect.fvs e in
+        let gvs, lvs = split_set lsz vs in
+        let lvs' = Is.add 1 lvs in
+
+        let m =
+          List.init lsz begin fun i ->
+            if Is.mem (i + 1) lvs' then Keep
+            else Skip
+          end
+          @ [ Intro ]
+        in
+        let e = relocalize e m in
+
+        let nm, e =
+          if Is.is_empty gvs then begin
+            None, e
+          end else begin
+            let m = Is.min_elt gvs in
+            let v = hyp_name (get_val_from_id gx (m - lsz)) in
+            let s = lsz - m + 1 in
+            let d = 1 + Is.cardinal lvs' in
+            let sub = Expr.Subst.bumpn d (Expr.Subst.shift s) in
+            let e = Expr.Subst.app_expr sub e in
+            Some v, e
+          end
+        in
+
+        let args = lvs
+          |> Is.remove 1
+          |> Is.elements
+          |> List.map (fun i -> i - 1)
+          |> List.rev
+        in
+
+        let e =
+          match optdom with
+          | None -> e
+          | Some dom ->
+              Apply (Internal B.Conj %% [], [
+                Apply (Internal B.Mem %% [], [ Ix 1 %% [] ; dom ]) %% []
+              ; e ]) %% []
+        in
+
+        let ins = List.map (hyp_sort hx) args in
+        let k = mk_fstk_ty (List.map mk_atom_ty ins) ty_u in
+        let s = choose_nm k e in
+        let op = assign (Opaque s %% []) choose_special_prop (nm, k, e) in
+        (* NOTE If the result is Apply(op, []), then a flaw in app_expr will
+         * make the properties of op disappear.  The problem is in the function
+         * {!Expr.Subst.normalize}. *)
+        begin match args with
+        | [] -> op $$ oe
+        | _ -> Apply (op, List.map (fun i -> Ix i %% []) args) @@ oe
+        end
+
     | SetSt (h, e1, e2) ->
         let e1 = self#expr scx e1 in
         let hyp = Fresh (h, Shape_expr, Constant, Bounded (e1, Visible)) @@ h in

@@ -8,6 +8,12 @@
 open Expr.T
 open Type.T
 
+(* {3 Logic} *)
+
+val choose_nm : string -> ty_kind -> string
+val choose_decl : string -> ty_kind -> hyp
+val critical_fact : string -> ty_kind -> expr -> hyp
+
 (* {3 Set Theory} *)
 val usort_nm : string
 val uany_nm : string

@@ -20,6 +20,8 @@ open R_nt_axioms
 type hyp_nm = R_nt_cook.hyp_nm
 
 type nt_node =
+  (* Logic *)
+  | NT_Choose of R_nt_cook.hyp_nm option * string * ty_kind * expr
   (* Set Theory *)
   | NT_U
   | NT_UAny
@@ -46,6 +48,7 @@ type nt_node =
 
 let nt_get_id node =
   match node with
+  | NT_Choose (_, s, _, _) -> "nt_choose_" ^ s
   | NT_U -> "nt_u"
   | NT_Str -> "nt_str"
   | NT_UAny -> "nt_uany"
@@ -113,6 +116,7 @@ let from_list ns =
  * associated with the node should go just below the hypothesis with that name.
  *)
 let nt_get_place = function
+  | NT_Choose (nm, _, _, _)
   | NT_SetSt (nm, _, _, _)
   | NT_SetOf (nm, _, _, _, _) -> nm
   | _ -> None
@@ -136,6 +140,8 @@ let nt_get_deps_l node =
   | NT_Setminus -> [ NT_U ; NT_Mem ]
   | NT_SetSt _ -> [ NT_U ; NT_Mem ]
   | NT_SetOf _ -> [ NT_U ; NT_Mem ]
+
+  | NT_Choose _ -> [ NT_U ; NT_Mem ]
 
   | NT_BoolToU -> [ NT_U ; NT_Mem ]
   | NT_Boolean -> [ NT_U ; NT_Mem ; NT_BoolToU ]
@@ -171,6 +177,8 @@ let nt_get_hyps st node =
     | NT_Setminus -> st, [ setminus_decl ; setminus_fact ]
     | NT_SetSt (_, s, k, e) -> st, [ setst_decl s k ; setst_fact s k e ]
     | NT_SetOf (_, s, n, k, e) -> st, [ setof_decl s n k ; setof_fact s n k e ]
+
+    | NT_Choose (_, s, k, e) -> st, [ choose_decl s k ; critical_fact s k e ]
 
     | NT_BoolToU -> st, [ booltou_decl ]
     | NT_Boolean -> st, [ boolean_decl ; boolean_fact ]

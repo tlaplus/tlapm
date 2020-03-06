@@ -75,6 +75,10 @@ let visitor = object (self : 'self)
         in
         add n ns
 
+    | Opaque s when has oe C.choose_special_prop ->
+        let nm, k, e = get oe C.choose_special_prop in
+        add (NT_Choose (nm, s, k, e)) ns
+
     | Opaque s when has oe C.setst_special_prop ->
         let nm, k, e = get oe C.setst_special_prop in
         add (NT_SetSt (nm, s, k, e)) ns

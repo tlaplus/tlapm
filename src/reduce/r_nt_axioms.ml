@@ -60,6 +60,38 @@ let ixi ?(shift=0) n = List.init n (fun i -> Ix (shift + n - i) %% [])
 *)
 
 
+(* {3 Logic} *)
+
+let choose_nm s _ = nt_prefix ^ "Choose_" ^ s
+
+let choose_decl s k =
+  let ins =
+    match k with
+    | TKind (ks, TAtom TU) ->
+        List.map (fun k -> get_atom (get_ty k)) ks
+    | _ -> invalid_arg ("Reduce.NtAxioms.choose_decl: \
+                        bad kind provided")
+  in
+  mk_fresh (choose_nm s k) ins TU %% []
+
+let critical_def s (TKind (ks, _) as k) body =
+  let ss = List.map (fun k -> get_atom (get_ty k)) ks in
+  let n = List.length ss in
+  all (gen "a" n @ [ "x" ]) ~ss:(ss @ [ TU ]) (
+    ifx B.Implies (
+      body (* Dark magic *)
+    ) (
+      let c =
+        Apply (Opaque (choose_nm s k) %% [], ixi ~shift:1 n) %% []
+      in
+      let sub = Expr.Subst.scons c (Expr.Subst.shift 1) in
+      Expr.Subst.app_expr sub body
+    ) %% []
+  ) %% []
+
+let critical_fact s k e = mk_fact (critical_def s k e) %% []
+
+
 (* {3 Set Theory} *)
 
 let usort_nm = nt_prefix ^ "U"
@@ -244,7 +276,7 @@ let setminus_def =
 let setst_def s (TKind (ks, _) as k) body =
   let ss = List.map (fun k -> get_atom (get_ty k)) ks in
   let ss = List.tl ss in
-  let n = List.length ks - 1 in
+  let n = List.length ss in
   all ([ "s" ] @ gen "a" n @ [ "x" ]) ~ss:([ TU ] @ ss @ [ TU ]) (
     ifx B.Equiv (
       ifx B.Mem (
@@ -262,7 +294,7 @@ let setst_def s (TKind (ks, _) as k) body =
   ) %% []
 
 let setof_def s n (TKind (ks, _) as k) body =
-  let ins =
+  let ss =
     let rec spin n ks =
       if n = 0 then ks
       else
@@ -274,8 +306,8 @@ let setof_def s n (TKind (ks, _) as k) body =
     in
     List.map (fun k -> get_atom (get_ty k)) (spin n ks)
   in
-  let m = List.length ins in
-  all (gen "s" n @ gen "a" m @ [ "y" ]) ~ss:(List.init n (fun i -> TU) @ ins @ [ TU ]) (
+  let m = List.length ss in
+  all (gen "s" n @ gen "a" m @ [ "y" ]) ~ss:(List.init n (fun i -> TU) @ ss @ [ TU ]) (
     ifx B.Equiv (
       ifx B.Mem (
         Ix 1 %% []

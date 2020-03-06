@@ -8,6 +8,12 @@ module NtAxioms : sig
   open Expr.T
   open Type.T
 
+  (* {3 Logic} *)
+
+  val choose_nm : string -> ty_kind -> string
+  val choose_decl : string -> ty_kind -> hyp
+  val critical_fact : string -> ty_kind -> expr -> hyp
+
   (* Set Theory *)
   val usort_nm : string
   val uany_nm : string
@@ -109,8 +115,10 @@ module NtCook : sig
   open Type.T
   open Property
   type hyp_nm = string
+  val choose_nm : ty_kind -> expr -> string
   val setst_nm : ty_kind -> expr -> string
   val setof_nm : int -> ty_kind -> expr -> string
+  val choose_special_prop : (hyp_nm option * ty_kind * expr) pfuncs
   val setst_special_prop : (hyp_nm option * ty_kind * expr) pfuncs
   val setof_special_prop : (hyp_nm option * int * ty_kind * expr) pfuncs
   val cook : sequent -> sequent
@@ -121,6 +129,8 @@ module NtTable : sig
   open Type.T
   open Util.Coll
   type nt_node =
+    (* Logic *)
+    | NT_Choose of NtCook.hyp_nm option * string * ty_kind * expr
     (* Set Theory *)
     | NT_U
     | NT_UAny

@@ -22,6 +22,8 @@ open Deps
 
 
 type nt_node =
+  (* Logic *)
+  | NT_Choose of R_nt_cook.hyp_nm option * string * ty_kind * expr
   (* Set Theory *)
   | NT_U
   | NT_UAny

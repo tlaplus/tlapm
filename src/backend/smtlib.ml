@@ -85,6 +85,9 @@ let rec pp_apply cx ff op args =
           | TBool, TU -> Names.booltou_nm
           | TStr, TU -> Names.stringtou_nm
           | _, _ -> s
+        else if has op Reduce.NtCook.choose_special_prop then
+          let _, k, _ = get op Reduce.NtCook.choose_special_prop in
+          Names.choose_nm s k
         else if has op Reduce.NtCook.setst_special_prop then
           let _, k, _ = get op Reduce.NtCook.setst_special_prop in
           Names.setst_nm s k
