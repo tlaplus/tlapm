@@ -232,7 +232,7 @@ Spec == Init /\ [][Next]_vars
 \* END TRANSLATION  (this ends the translation of the PlusCal code)
 
 (***************************************************************************)
-(* MutualExclusion asserts that two distinct processes are in their        *)
+(* MutualExclusion asserts that no two distinct processes are in their     *)
 (* critical sections.                                                      *)
 (***************************************************************************)
 MutualExclusion == \A i,j \in P : (i # j) => ~ /\ pc[i] = "cs"

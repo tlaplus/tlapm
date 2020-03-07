@@ -245,7 +245,8 @@ LEMMA TypeCorrect == Spec => []TypeOK
                NEW q \in Proc \ {p},
                ReceiveAck(p,q)
         PROVE  TypeOK'
-    BY <2>5, CVC4 DEF ReceiveAck
+    <3>. HIDE DEF Message
+    <3>. QED  BY <2>5 DEF ReceiveAck
   <2>6. ASSUME NEW p \in Proc,
                NEW q \in Proc \ {p},
                ReceiveRelease(p,q)
