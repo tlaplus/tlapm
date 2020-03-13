@@ -38,5 +38,6 @@ end
     Watch out for circular dependencies, they will make [ac_deps] run forever!
 *)
 module Closure (G : Graph) : sig
+  val init : unit -> unit (* Always start by calling init *)
   val ac_deps : G.node Sm.t -> G.s -> G.s
 end

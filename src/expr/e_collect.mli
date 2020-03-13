@@ -23,17 +23,17 @@ val get_strings : ctx -> var_set -> Ss.t
 val vs_fold : ctx -> (int -> hyp -> 'a -> 'a) -> var_set -> 'a -> 'a
 val vs_partition : ctx -> (int -> hyp -> bool) -> var_set -> var_set * var_set
 
-(** Get free vars and bounded vars (respectively).
- 
-    A variable is bounded if its index is < to its depth, accounting for
-    the context ctx; otherwise it is free.
+(** [fvs ~ctx e] returns the set of free variables in [e] assuming the local
+    context [ctx].  That means the expression is virtually treated as if it was
+    '\A (vars in ctx) : e'.
 
-    Most of the time we will want to know which variables are free from the
-    current local context, which can be done by providing an empty ctx.  For
-    this reason this is the default value for ctx.
+    The returned variables are represented as their De Bruijn indexes.  Default
+    [ctx] is the empty context.
+
+    NOTE: The indexes are calibrated relative to [ctx].  So the index [1] is
+    not the variable at the rear of [ctx], but rather the lowest index that is
+    *not* bound in [ctx].
 *)
-val  vs : ?ctx:ctx -> expr -> Is.t * Is.t
-val bvs : ?ctx:ctx -> expr -> Is.t
 val fvs : ?ctx:ctx -> expr -> Is.t
 
 

@@ -23,15 +23,16 @@ type var_set = Is.t
  * the context, so the methods are intended to be called with an empty context,
  * in order to get the variables free relative to some local context. *)
 let collect_vars = object (self : 'self)
-  inherit [unit, var_set * var_set] fold as super
+  inherit [unit, var_set] fold as super
 
-  method expr (unit, hx as scx) (su, sb as s) oe =
+  method expr (unit, hx as scx) s oe =
     match oe.core with
     | Ix n ->
-        if n <= Deque.size hx then
-          (su, Is.add n sb)
+        let depth = Deque.size hx in
+        if n > depth then
+          Is.add (n - depth) s
         else
-          (Is.add n su, sb)
+          s
     | _ -> super#expr scx s oe
 
 end
@@ -60,14 +61,8 @@ let get_strings hx is =
     Ss.add h hs
   end is Ss.empty
 
-let vs ?ctx:(ctx=Deque.empty) e =
-  collect_vars#expr ((), ctx) (Is.empty, Is.empty) e
-
 let fvs ?ctx:(ctx=Deque.empty) e =
-  fst (vs ~ctx e)
-
-let bvs ?ctx:(ctx=Deque.empty) e =
-  snd (vs ~ctx e)
+  collect_vars#expr ((), ctx) Is.empty e
 
 
 (* {3 Opaques} *)

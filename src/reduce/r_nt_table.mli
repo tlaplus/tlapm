@@ -22,6 +22,8 @@ open Deps
 
 
 type nt_node =
+  (* Logic *)
+  | NT_Choose of R_nt_cook.hyp_nm option * string * ty_kind * expr
   (* Set Theory *)
   | NT_U
   | NT_UAny
@@ -33,8 +35,8 @@ type nt_node =
   | NT_Cup
   | NT_Cap
   | NT_Setminus
-  | NT_SetSt of string * ty_kind * expr
-  (*| NT_SetOf of string * ty_kind*)  (* TODO *)
+  | NT_SetSt of R_nt_cook.hyp_nm option * string * ty_kind * expr
+  | NT_SetOf of R_nt_cook.hyp_nm option * string * int * ty_kind * expr
   (* Booleans *)
   | NT_BoolToU
   | NT_Boolean
@@ -44,6 +46,12 @@ type nt_node =
   | NT_StringToU
   | NT_String
   | NT_StringLit of string
+  (* Functions *)
+  | NT_Arrow
+  | NT_Domain
+  | NT_Fcnapp
+  | NT_Fcn of R_nt_cook.hyp_nm option * string * int * ty_kind * expr
+  | NT_Except
 
 (** Safe add: @raise Invalid_argument if already present *)
 val add : nt_node -> nt_node Sm.t -> nt_node Sm.t
@@ -54,10 +62,12 @@ val nt_base : nt_node Sm.t
 val nt_get_id : nt_node -> string
 val nt_get_deps : nt_node -> nt_node Sm.t
 
+type state
+
 (** Each node corresponds to one or several hypotheses to add to a context.
     Usually it's one declaration and a few axioms.
 *)
-val nt_get_hyps : nt_node -> hyp Deque.dq
+val nt_get_hyps : state -> nt_node -> state * hyp Deque.dq
 
 (** [nt_axiomatize ns hs] adds to [hs] all hypotheses required by nodes [ns],
     accouting for depending nodes.  [hs] represents a generic top context.

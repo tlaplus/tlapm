@@ -49,8 +49,6 @@ let lookup_id cx n =
 
 (* {3 Expression Formatting} *)
 
-(* TODO: support higher-order expressions *)
-
 let pp_print_sort ff (a : ty_atom) =
   let s =
     match a with
@@ -75,6 +73,7 @@ let rec pp_apply cx ff op args =
           args
       end
   | Opaque s ->
+      (* FIXME treat special operators upstream *)
       let s =
         if has op Type.Disambiguation.any_special_prop then
           match get op Type.Disambiguation.any_special_prop with
@@ -86,9 +85,18 @@ let rec pp_apply cx ff op args =
           | TBool, TU -> Names.booltou_nm
           | TStr, TU -> Names.stringtou_nm
           | _, _ -> s
+        else if has op Reduce.NtCook.choose_special_prop then
+          let _, k, _ = get op Reduce.NtCook.choose_special_prop in
+          Names.choose_nm s k
         else if has op Reduce.NtCook.setst_special_prop then
-          let k, _ = get op Reduce.NtCook.setst_special_prop in
+          let _, k, _ = get op Reduce.NtCook.setst_special_prop in
           Names.setst_nm s k
+        else if has op Reduce.NtCook.setof_special_prop then
+          let _, n, k, _ = get op Reduce.NtCook.setof_special_prop in
+          Names.setof_nm s n k
+        else if has op Reduce.NtCook.fcn_special_prop then
+          let _, n, k, _ = get op Reduce.NtCook.fcn_special_prop in
+          Names.fcn_nm s n k
         else
           s
       in

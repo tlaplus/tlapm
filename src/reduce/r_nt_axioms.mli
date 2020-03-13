@@ -8,6 +8,12 @@
 open Expr.T
 open Type.T
 
+(* {3 Logic} *)
+
+val choose_nm : string -> ty_kind -> string
+val choose_decl : string -> ty_kind -> hyp
+val critical_fact : string -> ty_kind -> expr -> hyp
+
 (* {3 Set Theory} *)
 val usort_nm : string
 val uany_nm : string
@@ -21,7 +27,7 @@ val cup_nm : string
 val cap_nm : string
 val setminus_nm : string
 val setst_nm : string -> ty_kind -> string
-(*val setof_nm : string -> ty_kind -> string*)
+val setof_nm : string -> int -> ty_kind -> string
 
 val uany_decl : hyp
 val mem_decl : hyp
@@ -34,7 +40,7 @@ val cup_decl : hyp
 val cap_decl : hyp
 val setminus_decl : hyp
 val setst_decl : string -> ty_kind -> hyp
-(*val setof_decl : string -> ty_kind -> hyp*)
+val setof_decl : string -> int -> ty_kind -> hyp
 
 val subseteq_fact : hyp
 val enum_fact : int -> hyp
@@ -44,6 +50,7 @@ val cup_fact : hyp
 val cap_fact : hyp
 val setminus_fact : hyp
 val setst_fact : string -> ty_kind -> expr -> hyp
+val setof_fact : string -> int -> ty_kind -> expr -> hyp
 
 (* {3 Booleans} *)
 val boolean_nm : string
@@ -67,14 +74,28 @@ val string_decl : hyp
 val stringlit_decl : string -> hyp
 
 val string_fact : hyp
+val stringcast_fact : hyp
 val stringlit_distinct_fact : string -> string -> hyp
 
 (* {3 Functions} *)
 val arrow_nm : string
-val fcn_nm : string -> ty_kind -> string
+val fcn_nm : string -> int -> ty_kind -> string
 val domain_nm : string
 val fcnapp_nm : string
 val fcnexcept_nm : string
+
+val arrow_decl : hyp
+val fcn_decl : string -> int -> ty_kind -> hyp
+val domain_decl : hyp
+val fcnapp_decl : hyp
+val fcnexcept_decl : hyp
+
+val funext_fact : hyp
+val arrow_fact : hyp
+val fcndom_fact : string -> int -> ty_kind -> hyp
+val fcnapp_fact : string -> int -> ty_kind -> expr -> hyp
+val excdom_fact : hyp
+val excapp_fact : hyp
 
 (* {3 Arithmetic} *)
 val zset_nm : string
