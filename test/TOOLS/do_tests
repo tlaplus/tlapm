@@ -10,7 +10,7 @@ if [ "$1" = "smt_tests" ]
   then export ARGS="$ARGS --method smt"
 fi
 
-export TLAPM="$BASEDIR/../tlapm -I $ARGS"
+export TLAPM="$BASEDIR/bin/tlapm --stretch 5"
 export LOGFILE="$BASEDIR/tests.log"
 
 echo "###### `date '+%Y-%m-%d %H:%M:%S'` $0 $@" >>"$LOGFILE"
