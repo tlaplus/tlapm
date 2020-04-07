@@ -45,24 +45,23 @@ val get_ty    : ty_kind -> ty
 
 (* {3 Type Annotations} *)
 
-(** These properties are intended as annotations on hints *)
 module Props : sig
   val type_prop : ty pfuncs
   val atom_prop : ty_atom pfuncs
   val kind_prop : ty_kind pfuncs
 end
 
-val annot_type : hint -> ty -> hint
-val annot_sort : hint -> ty_atom -> hint
-val annot_kind : hint -> ty_kind -> hint
+val annot_type : 'a wrapped -> ty -> 'a wrapped
+val annot_sort : 'a wrapped -> ty_atom -> 'a wrapped
+val annot_kind : 'a wrapped -> ty_kind -> 'a wrapped
 
-val has_type : hint -> bool
-val has_sort : hint -> bool
-val has_kind : hint -> bool
+val has_type : 'a wrapped -> bool
+val has_sort : 'a wrapped -> bool
+val has_kind : 'a wrapped -> bool
 
-val get_type : hint -> ty
-val get_sort : hint -> ty_atom
-val get_kind : hint -> ty_kind
+val get_type : 'a wrapped -> ty
+val get_sort : 'a wrapped -> ty_atom
+val get_kind : 'a wrapped -> ty_kind
 
 
 (* {3 Pretty-printing} *)

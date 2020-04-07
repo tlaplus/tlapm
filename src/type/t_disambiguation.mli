@@ -36,17 +36,30 @@
 
 (* {3 Symbols} *)
 
+(* FIXME remove *)
+val any_special_prop : T_t.ty_atom Property.pfuncs
+(* FIXME remove *)
+val cast_special_prop : (T_t.ty_atom * T_t.ty_atom) Property.pfuncs
+(* FIXME remove *)
+val int_special_prop : unit Property.pfuncs
+(* FIXME remove *)
+val real_special_prop : unit Property.pfuncs
+(* FIXME remove *)
 val cast_nm : T_t.ty_atom -> T_t.ty_atom -> string
+
+(** Any expression [e] can be projected in the sort [bool] by transforming it
+    into [e = any_T] where [T] is the sort of [e].  [any_nm T] returns the
+    string that identifies [any_T] in this module.
+
+    [any_T] is this actually implemented as [Opaque (any_nm T)].
+*)
 val any_nm : T_t.ty_atom -> string
 
-val int_special_prop : unit Property.pfuncs
-val real_special_prop : unit Property.pfuncs
-val cast_special_prop : (T_t.ty_atom * T_t.ty_atom) Property.pfuncs
-val any_special_prop : T_t.ty_atom Property.pfuncs
+(** Annotate any expression with a cast *)
+val as_prop : T_t.ty_atom Property.pfuncs
 
 
 (* {3 Main} *)
 
-(* TODO don't insert casts, annotate expressions *)
 val min_reconstruct : Expr.T.sequent -> Expr.T.sequent
 

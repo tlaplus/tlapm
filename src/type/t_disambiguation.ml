@@ -17,26 +17,24 @@ module B = Builtin
 
 (* {3 Annotations} *)
 
-let int_special_prop = make "Type.Disambiguation.int_special_prop"
-let real_special_prop = make "Type.Disambiguation.real_special_prop"
-let cast_special_prop = make "Type.Disambiguation.cast_special_prop"
+(* FIXME remove *)
 let any_special_prop = make "Type.Disambiguation.any_special_prop"
+(* FIXME remove *)
+let cast_special_prop = make "Type.Disambiguation.cast_special_prop"
+(* FIXME remove *)
+let int_special_prop = make "Type.Disambiguation.int_special_prop"
+(* FIXME remove *)
+let real_special_prop = make "Type.Disambiguation.real_special_prop"
+
+let as_prop = make "Type.Disambiguation.as_prop"
 
 
 (* {3 Symbols} *)
 
 let tla_prefix = "TLA__"
 
-let cast_nm s1 s2 =
-  match s1, s2 with
-  | TBool, TU   -> tla_prefix ^ "bool_to_u"
-  | TInt, TU    -> tla_prefix ^ "int_to_u"
-  | TReal, TU   -> tla_prefix ^ "real_to_u"
-  | TStr, TU    -> tla_prefix ^ "string_to_u"
-  | TInt, TReal -> tla_prefix ^ "int_to_real"
-  | _ -> invalid_arg "Type.Disambiguation.cast_nm: unauthorized cast"
-
-let u_cast s = cast_nm s TU
+(* FIXME remove *)
+let cast_nm s1 s2 = "?"
 
 let any_nm s =
   match s with
@@ -49,26 +47,29 @@ let any_nm s =
 
 (* {3 Utils} *)
 
-(* Make a fist-order kind from a {!Expr.T.shape} *)
 let from_shp = function
   | Shape_expr -> mk_cstk_ty ty_u
   | Shape_op n -> mk_fstk_ty (List.init n (fun _ -> ty_u)) ty_u
 
-let mk_eq e1 e2 =
-  Apply (Internal B.Eq %% [], [ e1 ; e2 ]) %% []
+let mk_kind srts srt =
+  mk_fstk_ty (List.map mk_atom_ty srts) (mk_atom_ty srt)
 
-(* Make an expression of sort [bool] from anything;
- * Last argument is a {!Type.T.ty_atom} object, representing
- * the sort of the input expression. *)
-let mk_formula e = function
-  | TBool -> e
-  | a -> mk_eq e (assign (Opaque (any_nm a) %% []) any_special_prop a)
+let mk_eq a e1 e2 =
+  let op = assign (Internal B.Eq %% []) Props.kind_prop (mk_kind [a; a] TBool) in
+  Apply (op, [ e1 ; e2 ]) %% []
 
-(* Make an expression of sort [U] from anything, like {!mk_formula} above
- * This inserts opaque coercion operators *)
-let mk_set e = function
-  | TU -> e
-  | a -> Apply (assign (Opaque (u_cast a) %% []) cast_special_prop (a, TU), [e]) @@ e
+let proj_bool = function
+  | TBool -> fun e -> e
+  | a ->
+      let any = assign (Opaque (any_nm a) %% []) Props.kind_prop (mk_kind [] a) in
+      fun e -> mk_eq a e any
+
+let cast a e =
+  assign e as_prop a
+
+let cast_to_set = function
+  | TU -> fun e -> e
+  | _ -> fun e -> cast TU e
 
 
 (* {3 Contexts} *)
@@ -146,69 +147,70 @@ let rec expr scx oe =
 
   (* NOTE Particular cases for builtins treated here to handle overloaded ops. *)
   (* Arithmetic operators are replaced by a specialized version if possible. *)
+  (* TODO int to real casts *)
   | Internal (B.TRUE | B.FALSE) as op ->
       op @@ oe, TBool
 
   | Apply ({ core = Internal (B.Implies | B.Equiv | B.Conj | B.Disj) } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
-      Apply (op, [ mk_formula e srt1 ; mk_formula f srt2 ]) @@ oe, TBool
+      Apply (op, [ proj_bool srt1 e ; proj_bool srt2 f ]) @@ oe, TBool
 
   | Apply ({ core = Internal B.Neg } as op, [ e ]) ->
       let e, srt = expr scx e in
-      Apply (op, [ mk_formula e srt ]) @@ oe, TBool
+      Apply (op, [ proj_bool srt e ]) @@ oe, TBool
 
   | Apply ({ core = Internal (B.Eq | B.Neq) } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       if srt1 = srt2 then
-        Apply (op, [ e ; f ]) @@ oe, TBool
+        Apply (assign op Props.kind_prop (mk_kind [srt1; srt1] TBool), [ e ; f ]) @@ oe, TBool
       else
-        Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TBool
+        Apply (op, [ cast_to_set srt1 e ; cast_to_set srt2 f ]) @@ oe, TBool
 
   | Internal (B.STRING | B.BOOLEAN | B.Nat | B.Int | B.Real) as op ->
       op @@ oe, TU
 
   | Apply ({ core = Internal (B.SUBSET | B.UNION | B.DOMAIN) } as op, [ e ]) ->
       let e, srt = expr scx e in
-      Apply (op, [ mk_set e srt ]) @@ oe, TU
+      Apply (op, [ cast_to_set srt e ]) @@ oe, TU
 
   | Apply ({ core = Internal (B.Subseteq | B.Mem | B.Notmem) } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
-      Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TBool
+      Apply (op, [ cast_to_set srt1 e ; cast_to_set srt2 f ]) @@ oe, TBool
 
   | Apply ({ core = Internal (B.Setminus | B.Cap | B.Cup) } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
-      Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TU
+      Apply (op, [ cast_to_set srt1 e ; cast_to_set srt2 f ]) @@ oe, TU
 
   | Apply ({ core = Internal (B.Plus | B.Minus | B.Times | B.Quotient | B.Remainder | B.Exp) } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       if srt1 = TInt && srt2 = TInt then
-        Apply (assign op int_special_prop (), [ e ; f ]) @@ oe, TInt
+        Apply (assign op Props.kind_prop (mk_kind [TInt; TInt] TInt), [ e ; f ]) @@ oe, TInt
       else if srt1 = TReal && srt2 = TReal then
-        Apply (assign op real_special_prop (), [ e ; f ]) @@ oe, TReal
+        Apply (assign op Props.kind_prop (mk_kind [TReal; TReal] TReal), [ e ; f ]) @@ oe, TReal
       else
-        Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TU
+        Apply (op, [ cast_to_set srt1 e ; cast_to_set srt2 f ]) @@ oe, TU
 
   | Apply ({ core = Internal B.Ratio } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       if srt1 = TReal && srt2 = TReal then
-        Apply (assign op real_special_prop (), [ e ; f ]) @@ oe, TReal
+        Apply (assign op Props.kind_prop (mk_kind [TReal; TReal] TReal), [ e ; f ]) @@ oe, TReal
       else
-        Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TU
+        Apply (op, [ cast_to_set srt1 e ; cast_to_set srt2 f ]) @@ oe, TU
 
   | Apply ({ core = Internal B.Uminus } as op, [ e ; f ]) ->
       let e, srt = expr scx e in
       if srt = TInt then
-        Apply (assign op int_special_prop (), [ e ]) @@ oe, TInt
+        Apply (assign op Props.kind_prop (mk_kind [TInt] TInt), [ e ]) @@ oe, TInt
       else if srt = TReal then
-        Apply (assign op real_special_prop (), [ e ]) @@ oe, TReal
+        Apply (assign op Props.kind_prop (mk_kind [TReal] TReal), [ e ]) @@ oe, TReal
       else
-        Apply (op, [ mk_set e srt ]) @@ oe, TU
+        Apply (op, [ cast_to_set srt e ]) @@ oe, TU
 
   | Internal B.Infinity as op ->
       op @@ oe, TReal
@@ -217,21 +219,21 @@ let rec expr scx oe =
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       if srt1 = TInt && srt2 = TInt then
-        Apply (assign op int_special_prop (), [ e ; f ]) @@ oe, TBool
+        Apply (assign op Props.kind_prop (mk_kind [TInt; TInt] TBool), [ e ; f ]) @@ oe, TBool
       else if srt1 = TReal && srt2 = TReal then
-        Apply (assign op real_special_prop (), [ e ; f ]) @@ oe, TBool
+        Apply (assign op Props.kind_prop (mk_kind [TReal; TReal] TBool), [ e ; f ]) @@ oe, TBool
       else
-        Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TBool
+        Apply (op, [ cast_to_set srt1 e ; cast_to_set srt2 f ]) @@ oe, TBool
 
   | Apply ({ core = Internal B.Range } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       if srt1 = TInt && srt2 = TInt then
-        Apply (assign op int_special_prop (), [ e ; f ]) @@ oe, TU
+        Apply (assign op Props.kind_prop (mk_kind [TInt; TInt] TU), [ e ; f ]) @@ oe, TU
       else if srt1 = TReal && srt2 = TReal then
-        Apply (assign op real_special_prop (), [ e ; f ]) @@ oe, TU
+        Apply (assign op Props.kind_prop (mk_kind [TReal; TReal] TU), [ e ; f ]) @@ oe, TU
       else
-        Apply (op, [ mk_set e srt1 ; mk_set f srt2 ]) @@ oe, TU
+        Apply (op, [ cast_to_set srt1 e ; cast_to_set srt2 f ]) @@ oe, TU
   (* NOTE Case by case ends here *)
 
   | Apply (op, args) ->
@@ -241,10 +243,10 @@ let rec expr scx oe =
           match ks, get_atom ty with
           | [], TU ->
               let arg, srt = expr scx arg in
-              mk_set arg srt
+              cast_to_set srt arg
           | [], TBool ->
               let arg, srt = expr scx arg in
-              mk_formula arg srt
+              proj_bool srt arg
           | _, _ ->
               let arg, k = lexpr scx arg in
               if k = TKind (ks, ty) then
@@ -283,14 +285,14 @@ let rec expr scx oe =
       (* If f and g have the same sort, the if-expression has that sort;
        * otherwise f and g are coerced to [U]. *)
       if srt2 = srt3 then
-        If (mk_formula e srt1, f, g) @@ oe, srt2
+        If (proj_bool srt1 e, f, g) @@ oe, srt2
       else
-        If (mk_formula e srt1, mk_set f srt2, mk_set f srt3) @@ oe, TU
+        If (proj_bool srt1 e, cast_to_set srt2 f, cast_to_set srt3 f) @@ oe, TU
 
   | List (bl, es) ->
       let es = List.map begin fun e ->
         let e, srt = expr scx e in
-        mk_formula e srt
+        proj_bool srt e
       end es in
       List (bl, es) @@ oe, TBool
 
@@ -302,7 +304,7 @@ let rec expr scx oe =
   | Quant (q, bs, e) ->
       let scx, bs, _ = bounds scx bs in
       let e, srt = expr scx e in
-      Quant (q, bs, mk_formula e srt) @@ oe, TBool
+      Quant (q, bs, proj_bool srt e) @@ oe, TBool
 
   | Tquant (q, hs, e) ->
       let scx, hs = List.fold_left begin fun (scx, hs) h ->
@@ -312,7 +314,7 @@ let rec expr scx oe =
       end (scx, []) hs in
       let hs = List.rev hs in
       let e, srt = expr scx e in
-      Tquant (q, hs, mk_formula e srt) @@ oe, TBool
+      Tquant (q, hs, proj_bool srt e) @@ oe, TBool
 
   | Choose (h, hdom, e) ->
       let hdom =
@@ -320,106 +322,106 @@ let rec expr scx oe =
         | None -> None
         | Some dom ->
             let dom, srt = expr scx dom in
-            Some (mk_set dom srt)
+            Some (cast_to_set srt dom)
       in
       let h, scx = adj scx h (Sort TU) in
       let e, srt = expr scx e in
-      Choose (h, hdom, mk_formula e srt) @@ oe, TU
+      Choose (h, hdom, proj_bool srt e) @@ oe, TU
 
   | SetSt (h, e1, e2) ->
       let e1, srt1 = expr scx e1 in
       let h, scx = adj scx h (Sort TU) in
       let e2, srt2 = expr scx e2 in
-      SetSt (h, mk_set e1 srt1, mk_formula e2 srt2) @@ oe, TU
+      SetSt (h, cast_to_set srt1 e1, proj_bool srt2 e2) @@ oe, TU
 
   | SetOf (e, bs) ->
       let scx, bs, _ = bounds scx bs in
       let e, srt = expr scx e in
-      SetOf (mk_set e srt, bs) @@ oe, TU
+      SetOf (cast_to_set srt e, bs) @@ oe, TU
 
   | SetEnum es ->
       let es = List.map begin fun e ->
         let e, srt = expr scx e in
-        mk_set e srt
+        cast_to_set srt e
       end es in
       SetEnum es @@ oe, TU
 
   | Product es ->
       let es = List.map begin fun e ->
         let e, srt = expr scx e in
-        mk_set e srt
+        cast_to_set srt e
       end es in
       Product es @@ oe, TU
 
   | Tuple es ->
       let es = List.map begin fun e ->
         let e, srt = expr scx e in
-        mk_set e srt
+        cast_to_set srt e
       end es in
       Tuple es @@ oe, TU
 
   | Fcn (bs, e) ->
       let scx, bs, _ = bounds scx bs in
       let e, srt = expr scx e in
-      Fcn (bs, mk_set e srt) @@ oe, TU
+      Fcn (bs, cast_to_set srt e) @@ oe, TU
 
   | FcnApp (e, es) ->
       let e, srt = expr scx e in
       let es = List.map begin fun e ->
         let e, srt = expr scx e in
-        mk_set e srt
+        cast_to_set srt e
       end es in
-      FcnApp (mk_set e srt, es) @@ oe, TU
+      FcnApp (cast_to_set srt e, es) @@ oe, TU
 
   | Arrow (e1, e2) ->
       let e1, srt1 = expr scx e1 in
       let e2, srt2 = expr scx e2 in
-      Arrow (mk_set e1 srt1, mk_set e2 srt2) @@ oe, TU
+      Arrow (cast_to_set srt1 e1, cast_to_set srt2 e2) @@ oe, TU
 
   | Rect fs ->
       let fs = List.map begin fun (f, e) ->
         let e, srt = expr scx e in
-        (f, mk_set e srt)
+        (f, cast_to_set srt e)
       end fs in
       Rect fs @@ oe, TU
 
   | Record fs ->
       let fs = List.map begin fun (f, e) ->
         let e, srt = expr scx e in
-        (f, mk_set e srt)
+        (f, cast_to_set srt e)
       end fs in
       Record fs @@ oe, TU
 
   | Except (e, exs) ->
       let exs, _ = List.map (exspec scx) exs |> List.split in
       let e, srt = expr scx e in
-      Except (mk_set e srt, exs) @@ oe, TU
+      Except (cast_to_set srt e, exs) @@ oe, TU
 
   | Dot (e, s) ->
       let e, srt = expr scx e in
-      Dot (mk_set e srt, s) @@ oe, TU
+      Dot (cast_to_set srt e, s) @@ oe, TU
 
   | Sub (m, e1, e2) ->
       let e1, srt1 = expr scx e1 in
       let e2, srt2 = expr scx e2 in
-      Sub (m, mk_set e1 srt1, mk_set e2 srt2) @@ oe, TBool
+      Sub (m, cast_to_set srt1 e1, cast_to_set srt2 e2) @@ oe, TBool
 
   | Tsub (m, e1, e2) ->
       let e1, srt1 = expr scx e1 in
       let e2, srt2 = expr scx e2 in
-      Tsub (m, mk_set e1 srt1, mk_set e2 srt2) @@ oe, TBool
+      Tsub (m, cast_to_set srt1 e1, cast_to_set srt2 e2) @@ oe, TBool
 
   | Fair (f, e1, e2) ->
       let e1, srt1 = expr scx e1 in
       let e2, srt2 = expr scx e2 in
-      Fair (f, mk_set e1 srt1, mk_set e2 srt2) @@ oe, TBool
+      Fair (f, cast_to_set srt1 e1, cast_to_set srt2 e2) @@ oe, TBool
 
   | Case (ps, o) ->
       let ps, tys =
         List.map begin fun (p, e) ->
           let p, srt1 = expr scx p in
           let e, srt2 = expr scx e in
-          (mk_formula p srt1, e), srt2
+          (proj_bool srt1 p, e), srt2
         end ps
         |> List.split
       in
@@ -443,11 +445,11 @@ let rec expr scx oe =
           ps, o, tty
         else
           let ps = List.map2 begin fun (p, e) srt ->
-            (p, mk_set e srt)
+            (p, cast_to_set srt e)
           end ps tys in
           let o = Option.map begin fun e ->
             let srt = Option.get o_ty in
-            mk_set e srt
+            cast_to_set srt e
           end o in
           ps, o, TU
       in
@@ -487,17 +489,17 @@ and lexpr scx loe =
 and sequent scx sq =
   let scx, hs, _ = hyps scx sq.context in
   let g, srt = expr scx sq.active in
-  scx, { context = hs ; active = mk_formula g srt }, TBool
+  scx, { context = hs ; active = proj_bool srt g }, TBool
 
 and exspec scx (exps, e) =
   let exps = List.map begin function
     | Except_dot s -> Except_dot s
     | Except_apply e ->
         let e, srt = expr scx e in
-        Except_apply (mk_set e srt)
+        Except_apply (cast_to_set srt e)
   end exps in
   let e, srt = expr scx e in
-  (exps, mk_set e srt), Unknown
+  (exps, cast_to_set srt e), Unknown
 
 and bounds scx bs =
   let scx, bs =
@@ -508,7 +510,7 @@ and bounds scx bs =
         match dom with
         | Domain d ->
             let d, srt = expr scx d in
-            Domain (mk_set d srt)
+            Domain (cast_to_set srt d)
         | _ -> dom
       in
       let h, scx' = adj scx' h (Sort TU) in
@@ -572,7 +574,7 @@ and hyp scx h =
         | Unbounded -> Unbounded
         | Bounded (dom, vis) ->
             let dom, srt = expr scx dom in
-            Bounded (mk_set dom srt, vis)
+            Bounded (cast_to_set srt dom, vis)
       in
       let k = from_shp shp in
       let v, scx = adj scx v (Kind k) in
@@ -590,7 +592,7 @@ and hyp scx h =
       scx, h, Unknown
   | Fact (e, vis, tm) ->
       let e, srt = expr scx e in
-      let e = mk_formula e srt in
+      let e = proj_bool srt e in
       let scx = bump scx in
       let h = Fact (e, vis, tm) @@ h in
       scx, h, Unknown

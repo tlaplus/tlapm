@@ -50,26 +50,32 @@ module T : sig
     val kind_prop : ty_kind pfuncs
   end
 
-  val annot_type : hint -> ty -> hint
-  val annot_sort : hint -> ty_atom -> hint
-  val annot_kind : hint -> ty_kind -> hint
+  val annot_type : 'a wrapped -> ty -> 'a wrapped
+  val annot_sort : 'a wrapped -> ty_atom -> 'a wrapped
+  val annot_kind : 'a wrapped -> ty_kind -> 'a wrapped
 
-  val has_type : hint -> bool
-  val has_sort : hint -> bool
-  val has_kind : hint -> bool
+  val has_type : 'a wrapped -> bool
+  val has_sort : 'a wrapped -> bool
+  val has_kind : 'a wrapped -> bool
 
-  val get_type : hint -> ty
-  val get_sort : hint -> ty_atom
-  val get_kind : hint -> ty_kind
+  val get_type : 'a wrapped -> ty
+  val get_sort : 'a wrapped -> ty_atom
+  val get_kind : 'a wrapped -> ty_kind
 end
 
 module Disambiguation : sig
+  (* FIXME remove *)
+  val any_special_prop : T_t.ty_atom Property.pfuncs
+  (* FIXME remove *)
+  val cast_special_prop : (T_t.ty_atom * T_t.ty_atom) Property.pfuncs
+  (* FIXME remove *)
   val int_special_prop : unit Property.pfuncs
+  (* FIXME remove *)
   val real_special_prop : unit Property.pfuncs
-  val cast_special_prop : (T.ty_atom * T.ty_atom) Property.pfuncs
-  val any_special_prop : T.ty_atom Property.pfuncs
-  val cast_nm : T.ty_atom -> T.ty_atom -> string
+  (* FIXME remove *)
+  val cast_nm : T_t.ty_atom -> T_t.ty_atom -> string
   val any_nm : T.ty_atom -> string
+  val as_prop : T_t.ty_atom Property.pfuncs
   val min_reconstruct : Expr.T.sequent -> Expr.T.sequent
 end
 
