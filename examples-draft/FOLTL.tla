@@ -119,9 +119,28 @@ THEOREM LATTICE ==
     BY <1>1, WFInduction, IsaM("blast")
   <2>. QED  BY DEF H
 
+-----------------------------------------------------------------------------
+
+THEOREM Barcan ==
+  ASSUME CONSTANT S, STATE x 
+  PROVE  <>(\E n \in S : [](x=n)) => (\E n \in S : <>[](x=n))
+<1>1. ASSUME NEW n PROVE [](x=n) => <>[](x=n)
+  BY PTL
+<1>2. (\E n \in S : [](x=n)) => (\E n \in S : <>[](x=n))
+  BY <1>1
+<1>3. <>(\E n \in S : [](x=n)) => <>(\E n \in S : <>[](x=n))
+  BY <1>2, PTL
+<1>4. <>(\E n \in S : <>[](x=n)) <=> (\E n \in S : <><>[](x=n))
+  OBVIOUS
+<1>5. ASSUME NEW n PROVE <><>[](x=n) <=> <>[](x=n)
+  BY PTL
+<1>6. (\E n \in S : <><>[](x=n)) <=> (\E n \in S : <>[](x=n))
+  BY <1>5
+<1>. QED  BY <1>3, <1>4, <1>6
+
 =============================================================================
 \* Modification History
-\* Last modified Sat Nov 16 08:41:21 CET 2019 by merz
+\* Last modified Sun Apr 12 09:34:48 CEST 2020 by merz
 \* Last modified Tue Nov 05 18:40:17 CET 2019 by merz
 \* Last modified Tue Nov 05 05:30:04 PST 2019 by lamport
 \* Created Wed Mar 15 11:46:27 PDT 2017 by lamport
