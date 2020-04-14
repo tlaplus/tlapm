@@ -17,4 +17,4 @@ THEOREM ASSUME NEW A,
     OBVIOUS
 
 ====
-
+stderr: status:failed

@@ -13,5 +13,4 @@ THEOREM 0 \in 1
     OBVIOUS
 
 ====
-result: 3
-
+stderr: status:failed

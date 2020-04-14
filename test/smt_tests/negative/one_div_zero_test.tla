@@ -12,4 +12,4 @@ THEOREM 1 \div 0 \in Int
     OBVIOUS
 
 ====
-
+stderr: status:failed
