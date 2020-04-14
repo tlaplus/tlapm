@@ -843,7 +843,7 @@ THEOREM Invariance == Spec => []Inv
           <6>3. QED
             BY <6>1, <6>2
         <5>7. Inv1!1!(q)!7'
-          BY SMT DEF Inv1, TypeOK, c
+          BY DEF Inv1, TypeOK, c
         <5>8. Inv1!1!(q)!8'
           BY SMT DEF Inv1, TypeOK, c
         <5>9. Inv1!1!(q)!9'
@@ -1002,7 +1002,7 @@ THEOREM Invariance == Spec => []Inv
           <6>7. nextout'[q] = nextout[q]
             BY <5>1
           <6>8. QED
-            BY <6>3, <6>6, <6>7, SMT
+            BY <6>3, <6>6, <6>7
         <5>4 QED
           BY <5>2, <5>3
       <4>2. CASE /\ notKnown'[p] = {}
@@ -1933,7 +1933,7 @@ THEOREM Spec => S!BigSpec
       <4>7. UNCHANGED << myVals, out >>
         BY <4>1
       <4>8. QED
-        BY <4>4, <4>5, <4>6, <4>7, Z3 DEF S!B  \* SMT worked on 14 Feb 2013, failed on 31 May 2013
+        BY <4>4, <4>5, <4>6, <4>7 DEF S!B
     <3>4. CASE /\ notKnown'[p] = {}
                /\ nbpart[p] # Cardinality(NUnion(A2))
       <4> SUFFICES UNCHANGED S!vars
@@ -2057,6 +2057,7 @@ THEOREM Spec => S!BigSpec
   (*************************************************************************)OMITTED
 =============================================================================
 \* Modification History
+\* Last modified Tue Apr 14 16:42:06 CEST 2020 by doligez
 \* Last modified Tue Jun 25 15:13:49 CEST 2013 by hernanv
 \* Last modified Sat Jun 01 10:16:42 CEST 2013 by merz
 \* Last modified Sat Jun 01 10:16:24 CEST 2013 by merz
