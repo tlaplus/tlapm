@@ -319,7 +319,20 @@ THEOREM Invariance == Spec => []Inv
       <4> USE DEF Inv, TypeOK
       <4>1. ASSUME NEW p \in Proc, a(p)
             PROVE  TypeOK'
-        BY <4>1, <3>1, CardType, ProcFinite, SubsetFinite, Z3 DEF a
+        <5>1. (A1 \in [Nat -> SUBSET Proc])'
+          BY <4>1, <3>1, CardType, ProcFinite, SubsetFinite, Z3 DEF a
+        <5>2. (result \in [Proc -> SUBSET Proc])'
+          BY <4>1, known'[p] \in SUBSET Proc DEF a
+        <5>3. (pc \in [Proc -> {"a", "b", "Done"}])'
+          BY <4>1, <3>1, CardType, ProcFinite, SubsetFinite DEF a
+        <5>4. (known \in [Proc -> SUBSET Proc])'
+          BY <4>1, <3>1, CardType, ProcFinite, SubsetFinite, Z3 DEF a
+        <5>5. (notKnown \in [Proc -> SUBSET Nat])'
+          BY <4>1, <3>1, CardType, ProcFinite, SubsetFinite, Z3 DEF a
+        <5>6. (\A p_1 \in Proc : (pc[p_1] = "b") => (notKnown[p_1] # {}))'
+          BY <4>1, <3>1, CardType, ProcFinite, SubsetFinite DEF a
+        <5>7. QED
+          BY <5>1, <5>2, <5>3, <5>4, <5>5, <5>6 DEF TypeOK
       <4>2. ASSUME NEW p \in Proc, b(p)
             PROVE  TypeOK'
         BY <4>2, SMT DEF b
@@ -378,7 +391,39 @@ THEOREM Invariance == Spec => []Inv
           PROVE  Inv'
       <4> USE DEF Inv
       <4>1. InvB'
-        BY <3>1, <3>2, <3>5, <3>7, Z3 DEF a, TypeOK, InvB
+        <5>1. (\A i \in Nat : (A1[i] # {}) => (Cardinality(A1[i]) >= i))'
+          BY <3>1, <3>2, <3>5, <3>7, Z3 DEF a, TypeOK, InvB
+        <5>2. (\A p_1 \in Proc :
+                 /\ (pc[p_1] = "b") => \A i \in notKnown[p_1] : i =< Cardinality(known[p_1])
+                 /\ p_1 \in known[p_1]
+                 /\ (result[p_1] # {}) <=> (pc[p_1] = "Done")
+                 /\ (result[p_1] # {}) => (result[p_1] = known[p_1]))'
+          <6> SUFFICES ASSUME NEW p_1 \in Proc
+                       PROVE  (/\ (pc[p_1] = "b") => \A i \in notKnown[p_1] : i =< Cardinality(known[p_1])
+                               /\ p_1 \in known[p_1]
+                               /\ (result[p_1] # {}) <=> (pc[p_1] = "Done")
+                               /\ (result[p_1] # {}) => (result[p_1] = known[p_1]))'
+            OBVIOUS
+          <6>1. ((pc[p_1] = "b") => \A i \in notKnown[p_1] : i =< Cardinality(known[p_1]))'
+            <7> CASE p_1 = p
+              BY <3>1, <3>2, <3>5, <3>7 DEF a, TypeOK, InvB
+            <7> CASE p_1 # p
+              BY <3>1, <3>2, <3>5, <3>7 DEF a, TypeOK, InvB
+            <7> QED OBVIOUS
+          <6>2. (p_1 \in known[p_1])'
+            BY <3>1, <3>2, <3>5, <3>7, Z3 DEF a, TypeOK, InvB
+          <6>3. ((result[p_1] # {}) <=> (pc[p_1] = "Done"))'
+            <7> CASE p_1 = p
+              BY <3>1, <3>2, <3>5, <3>7 DEF a, TypeOK, InvB
+            <7> CASE p_1 # p
+              BY <3>1, <3>2, <3>5, <3>7, pc'[p_1] = pc[p_1], result'[p_1] = result[p_1] DEF a, TypeOK, InvB
+            <7> QED OBVIOUS
+          <6>4. ((result[p_1] # {}) => (result[p_1] = known[p_1]))'
+            BY <3>1, <3>2, <3>5, <3>7 DEF a, TypeOK, InvB
+          <6>5. QED
+            BY <6>1, <6>2, <6>3, <6>4
+        <5>3. QED
+          BY <5>1, <5>2 DEF InvB
       <4>2. InvC'
         <5> SUFFICES ASSUME NEW q \in Proc, Cardinality(result'[q]) > 0,
                             NEW P \in PA1'
@@ -972,7 +1017,7 @@ THEOREM Invariance == Spec => []Inv
         <5>6. QED
           BY <5>5 DEF InvCI
       <4>3. GFXCorrect'
-        BY <3>8, SMT DEF b, TypeOK, GFXCorrect, Done
+        BY <3>8 DEF b, TypeOK, GFXCorrect, Done
       <4>4. QED
         BY <3>3, <4>1, <4>2, <4>3
     <3> HIDE DEF Inv
@@ -1127,7 +1172,7 @@ LEMMA StepSimulation ==  Inv /\ Inv' /\ [Next]_vars => [PS!Next]_PS!vars
       <4> QED
         BY SMT DEF pcBar
     <3>5. QED 
-      BY  <3>1, <3>2, <3>3, <3>4, SMT DEF PS!A, PS!Next, PS!Pr
+      BY  <3>1, <3>2, <3>3, <3>4 DEF PS!A, PS!Next, PS!Pr
   <2>4. QED
     BY <2>1, <2>2, <1>2 DEF a
 
@@ -1159,6 +1204,7 @@ THEOREM Spec => PS!Spec
 (***************************************************************************)OMITTED
 =============================================================================
 \* Modification History
+\* Last modified Fri Apr 17 12:16:54 CEST 2020 by doligez
 \* Last modified Wed Jan 29 16:32:19 CET 2014 by merz
 \* Last modified Wed Jan 29 16:29:57 CET 2014 by merz
 \* Last modified Tue Jun 25 15:22:24 CEST 2013 by hernanv
