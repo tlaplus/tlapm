@@ -15,9 +15,9 @@ THEOREM ASSUME NEW V,
 <1> HIDE DEF R
 <1>1 R \in R <=> R \notin R
     <2>1 R \in R => R \notin R
-        BY DEF R
+        BY Zenon DEF R
     <2>2 R \notin R => R \in R
-        BY DEF R
+        BY Zenon DEF R
     <2> QED
         BY ONLY <2>1, <2>2
 <1> QED

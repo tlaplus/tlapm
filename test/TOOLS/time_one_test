@@ -1,0 +1,8 @@
+#!/bin/sh
+
+FILE="$1"
+TOOLDIR="$2"
+
+exec "$TOOLDIR"/do_one_test "$FILE" "$TOOLDIR/separator" \
+                            "$FILE.out" "$FILE.err" \
+                            >"$FILE.out" 2>"$FILE.err"

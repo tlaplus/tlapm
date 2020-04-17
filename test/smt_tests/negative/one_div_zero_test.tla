@@ -12,4 +12,5 @@ THEOREM 1 \div 0 \in Int
     OBVIOUS
 
 ====
+stretch: 1
 stderr: status:failed

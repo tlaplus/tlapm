@@ -14,7 +14,11 @@ line of ==== are the commands for the test harness:
   with the "results" clause.  The standard outputs and standard error
   outputs of the commands are all concatenated in execution order.
   If this clause is omitted, the default command is executed:
-    ${TLAPM} --toolbox 0 0 --nofp ${FILE}
+    ${TLAPM} --toolbox 0 0 --nofp ${FILE} --stretch ${STRETCH}
+
+- stretch: <n>
+  Changes the STRETCH parameter to <n>. This should only be used for
+  testing obligations that must fail.
 
 - result: <n>
   Checks that the result code of the command is <n>.  If there is

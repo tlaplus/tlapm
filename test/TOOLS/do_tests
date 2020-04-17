@@ -10,7 +10,8 @@ if [ "$1" = "smt_tests" ]
   then export ARGS="$ARGS --method smt"
 fi
 
-export TLAPM="$BASEDIR/bin/tlapm --stretch 5"
+export TLAPM="$BASEDIR/bin/tlapm"
+export STRETCH=${STRETCH:-5}
 export LOGFILE="$BASEDIR/tests.log"
 
 echo "###### `date '+%Y-%m-%d %H:%M:%S'` $0 $@" >>"$LOGFILE"
@@ -27,13 +28,12 @@ find "$1" -name '*.tlaps' -prune -o -name '*_test.tla' -print | (
     export FILE="`basename $f`"
     export DIR="`dirname $f`"
     echo "    $f" >>"$LOGFILE"
-    echo | (cd $DIR; $TOOLDIR/do_one_test "$FILE" "$TOOLDIR/separator" \
-                                          "$FILE.out" "$FILE.err" \
-                                          >"$FILE.out" 2>"$FILE.err")
+    echo | (cd $DIR; /usr/bin/time "$TOOLDIR"/time_one_test "$FILE" "$TOOLDIR" \
+                     2>>"$LOGFILE")
     case $? in
       0) echo ok
          success=`expr $success + 1`
-         rm -f "$f.out" "$f.err"
+         #rm -f "$f.out" "$f.err"
          ;;
       *) echo FAILED
          fail=`expr $fail + 1`
