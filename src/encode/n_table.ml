@@ -72,55 +72,98 @@ let u_smb smb =
 
 (* {3 Table} *)
 
-(* TODO give unique name to each specialized smb *)
+let suffix s ss = String.concat "__" (s :: ss)
+
+let rec type_to_string ty =
+    match ty with
+    | TUnknown -> "Unknown"
+    | TVar a -> "Var" ^ a
+    | TAtom TU -> "U"
+    | TAtom TBool -> "Bool"
+    | TAtom TInt -> "Int"
+    | TAtom TReal -> "Real"
+    | TAtom TStr -> "String"
+    | TSet ty ->
+        let s = type_to_string ty in
+        "Set" ^ s
+    | TArrow (ty1, ty2) ->
+        let s1 = type_to_string ty1 in
+        let s2 = type_to_string ty2 in
+        "Arrow" ^ s1 ^ s2
+    | TProd tys ->
+        let ss = List.map type_to_string tys in
+        List.fold_left (^) "Prod" ss
 
 let choose ty =
-  mk_snd_smb Logic "Choose" [ ([ty], ty_bool) ] ty
+  let id = suffix "Choose" [ type_to_string ty ] in
+  mk_snd_smb Logic id [ ([ty], ty_bool) ] ty
 
 let mem ty =
-  mk_fst_smb Sets "Mem" [ ty ; TSet ty ] ty_bool
+  let id = suffix "Mem" [ type_to_string ty ] in
+  mk_fst_smb Sets id [ ty ; TSet ty ] ty_bool
 let subseteq ty =
-  mk_fst_smb Sets "Subseteq" [ TSet ty ; TSet ty ] ty_bool
+  let id = suffix "Subseteq" [ type_to_string ty ] in
+  mk_fst_smb Sets id [ TSet ty ; TSet ty ] ty_bool
 let setenum n ty =
-  mk_fst_smb Sets "SetEnum" (List.init n (fun _ -> ty)) (TSet ty)
+  let id = suffix "SetEnum" [ string_of_int n ; type_to_string ty ] in
+  mk_fst_smb Sets id (List.init n (fun _ -> ty)) (TSet ty)
 let union ty =
-  mk_fst_smb Sets "Union" [ TSet (TSet ty) ] (TSet ty)
+  let id = suffix "Union" [ type_to_string ty ] in
+  mk_fst_smb Sets id [ TSet (TSet ty) ] (TSet ty)
 let subset ty =
-  mk_fst_smb Sets "Subset" [ TSet ty ] (TSet (TSet ty))
+  let id = suffix "Subset" [ type_to_string ty ] in
+  mk_fst_smb Sets id [ TSet ty ] (TSet (TSet ty))
 let cup ty =
-  mk_fst_smb Sets "Cup" [ TSet ty ; TSet ty ] (TSet ty)
+  let id = suffix "Cup" [ type_to_string ty ] in
+  mk_fst_smb Sets id [ TSet ty ; TSet ty ] (TSet ty)
 let cap ty =
-  mk_fst_smb Sets "Cap" [ TSet ty ; TSet ty ] (TSet ty)
+  let id = suffix "Cap" [ type_to_string ty ] in
+  mk_fst_smb Sets id [ TSet ty ; TSet ty ] (TSet ty)
 let setminus ty =
-  mk_fst_smb Sets "Setminus" [ TSet ty ; TSet ty ] (TSet ty)
+  let id = suffix "Setminus" [ type_to_string ty ] in
+  mk_fst_smb Sets id [ TSet ty ; TSet ty ] (TSet ty)
 let setst ty =
-  mk_snd_smb Sets "SetSt" [ ([], TSet ty) ; ([ty], ty_bool) ] (TSet ty)
+  let id = suffix "SetSt" [ type_to_string ty ] in
+  mk_snd_smb Sets id [ ([], TSet ty) ; ([ty], ty_bool) ] (TSet ty)
 let setof tys ty =
-  mk_snd_smb Sets "SetOf" ( (tys, ty) :: List.map (fun ty -> ([], TSet ty)) tys ) (TSet ty)
+  let id = suffix "SetOf" (List.map type_to_string tys @ [ type_to_string ty ]) in
+  mk_snd_smb Sets id ( (tys, ty) :: List.map (fun ty -> ([], TSet ty)) tys ) (TSet ty)
 
 let set_boolean =
-  mk_cst_smb Booleans "Boolean" (TSet ty_bool)
+  let id = "Boolean" in
+  mk_cst_smb Booleans id (TSet ty_bool)
 let set_string =
-  mk_cst_smb Strings "String" (TSet ty_str)
+  let id = "String" in
+  mk_cst_smb Strings id (TSet ty_str)
 let set_int =
-  mk_cst_smb Arithmetic "Int" (TSet ty_int)
+  let id = "Int" in
+  mk_cst_smb Arithmetic id (TSet ty_int)
 let set_nat =
-  mk_cst_smb Arithmetic "Nat" (TSet ty_int)
+  let id = "Nat" in
+  mk_cst_smb Arithmetic id (TSet ty_int)
 let set_real =
-  mk_cst_smb Arithmetic "Real" (TSet ty_real)
+  let id = "Real" in
+  mk_cst_smb Arithmetic id (TSet ty_real)
 
 let arrow ty1 ty2 =
-  mk_fst_smb Functions "Arrow" [ TSet ty1 ; TSet ty2 ] (TSet (TArrow (ty1, ty2)))
+  let id = suffix "Arrow" [ type_to_string ty1 ; type_to_string ty2 ] in
+  mk_fst_smb Functions id [ TSet ty1 ; TSet ty2 ] (TSet (TArrow (ty1, ty2)))
 let domain ty1 ty2 =
-  mk_fst_smb Functions "Domain" [ TArrow (ty1, ty2) ] (TSet ty1)
+  let id = suffix "Domain" [ type_to_string ty1 ; type_to_string ty2 ] in
+  mk_fst_smb Functions id [ TArrow (ty1, ty2) ] (TSet ty1)
 let fcnapp ty1 ty2 =
-  mk_fst_smb Functions "FcnApp" [ TArrow (ty1, ty2) ; ty1 ] ty2
+  let id = suffix "FcnApp" [ type_to_string ty1 ; type_to_string ty2 ] in
+  mk_fst_smb Functions id [ TArrow (ty1, ty2) ; ty1 ] ty2
 let fcn ty1 ty2 =
-  mk_snd_smb Functions "Fcn" [ ([], TSet ty1) ; ([ty1], ty2) ] (TArrow (ty1, ty2))
+  let id = suffix "Fcn" [ type_to_string ty1 ; type_to_string ty2 ] in
+  mk_snd_smb Functions id [ ([], TSet ty1) ; ([ty1], ty2) ] (TArrow (ty1, ty2))
 let except ty1 ty2 =
-  mk_fst_smb Functions "Except" [ TArrow (ty1, ty2) ; ty1 ; ty2 ] (TArrow (ty1, ty2))
+  let id = suffix "Except" [ type_to_string ty1 ; type_to_string ty2 ] in
+  mk_fst_smb Functions id [ TArrow (ty1, ty2) ; ty1 ; ty2 ] (TArrow (ty1, ty2))
 
 let product tys =
-  mk_fst_smb Tuples "Product" tys (TSet (TProd tys))
+  let id = suffix "Product" (List.map type_to_string tys) in
+  mk_fst_smb Tuples id tys (TSet (TProd tys))
 let tuple tys =
-  mk_fst_smb Tuples "Tuple" tys (TProd tys)
+  let id = suffix "Tuple" (List.map type_to_string tys) in
+  mk_fst_smb Tuples id tys (TProd tys)

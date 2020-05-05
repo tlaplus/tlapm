@@ -64,6 +64,8 @@ tla_parser.cmx: tla_parser.mlt util/util.cmx revision.cmx util/property.cmx pars
     tla_parser.cmi
 util/deque.cmo: util/deque.mlt revision.cmi util/ext.cmi util/deque.cmi
 util/deque.cmx: util/deque.mlt revision.cmx util/ext.cmx util/deque.cmi
+util/deps.cmo: util/deps.mlt util/util.cmi util/deque.cmi util/deps.cmi
+util/deps.cmx: util/deps.mlt util/util.cmx util/deque.cmx util/deps.cmi
 alexer.cmo: alexer.mlt tla_parser.cmi pars.cmi loc.cmi pars/lazyList.cmi errors.cmi \
     pars/error.cmi alexer.cmi
 alexer.cmx: alexer.mlt tla_parser.cmx pars.cmx loc.cmx pars/lazyList.cmx errors.cmx \
@@ -76,6 +78,10 @@ expr/e_visit.cmo: expr/e_visit.mlt revision.cmi util/property.cmi util/ext.cmi e
     util/deque.cmi expr/e_visit.cmi
 expr/e_visit.cmx: expr/e_visit.mlt revision.cmx util/property.cmx util/ext.cmx expr/e_t.cmx \
     util/deque.cmx expr/e_visit.cmi
+expr/e_collect.cmo: expr/e_collect.mlt util/util.cmi util/property.cmi expr/e_visit.cmi \
+    expr/e_t.cmi util/deque.cmi expr/e_collect.cmi
+expr/e_collect.cmx: expr/e_collect.mlt util/util.cmx util/property.cmx expr/e_visit.cmx \
+    expr/e_t.cmx util/deque.cmx expr/e_collect.cmi
 expr/e_constness.cmo: expr/e_constness.mlt revision.cmi util/property.cmi util/ext.cmi \
     errors.cmi expr/e_visit.cmi expr/e_t.cmi util/deque.cmi builtin.cmi \
     expr/e_constness.cmi
@@ -145,11 +151,17 @@ expr/e_anon.cmx: expr/e_anon.mlt util/util.cmx revision.cmx util/property.cmx er
 expr.cmo: expr.mlt revision.cmi expr/e_visit.cmi expr/e_tla_norm.cmi \
     expr/e_temporal_props.cmi expr/e_t.cmi expr/e_subst.cmi expr/e_parser.cmi \
     expr/e_leibniz.cmi expr/e_fmt.cmi expr/e_eq.cmi expr/e_elab.cmi \
-    expr/e_deref.cmi expr/e_constness.cmi expr/e_anon.cmi expr.cmi
+    expr/e_deref.cmi expr/e_constness.cmi expr/e_collect.cmi expr/e_anon.cmi \
+    expr.cmi
 expr.cmx: expr.mlt revision.cmx expr/e_visit.cmx expr/e_tla_norm.cmx \
     expr/e_temporal_props.cmx expr/e_t.cmx expr/e_subst.cmx expr/e_parser.cmx \
     expr/e_leibniz.cmx expr/e_fmt.cmx expr/e_eq.cmx expr/e_elab.cmx \
-    expr/e_deref.cmx expr/e_constness.cmx expr/e_anon.cmx expr.cmi
+    expr/e_deref.cmx expr/e_constness.cmx expr/e_collect.cmx expr/e_anon.cmx \
+    expr.cmi
+axiom.cmo: axiom.mlt revision.cmi util/property.cmi util/ext.cmi expr.cmi \
+    util/deque.cmi builtin.cmi axiom.cmi
+axiom.cmx: axiom.mlt revision.cmx util/property.cmx util/ext.cmx expr.cmx \
+    util/deque.cmx builtin.cmx axiom.cmi
 method_prs.cmo: method_prs.mlt tla_parser.cmi revision.cmi method.cmi util/ext.cmi \
     method_prs.cmi
 method_prs.cmx: method_prs.mlt tla_parser.cmx revision.cmx method.cmx util/ext.cmx \
@@ -204,6 +216,60 @@ proof.cmo: proof.mlt revision.cmi proof/p_visit.cmi proof/p_t.cmi proof/p_subst.
 proof.cmx: proof.mlt revision.cmx proof/p_visit.cmx proof/p_t.cmx proof/p_subst.cmx \
     proof/p_simplify.cmx proof/p_parser.cmx proof/p_gen.cmx proof/p_fmt.cmx \
     proof/p_anon.cmx proof.cmi
+type/t_t.cmo: type/t_t.mlt util/util.cmi util/property.cmi util/fmtutil.cmi type/t_t.cmi
+type/t_t.cmx: type/t_t.mlt util/util.cmx util/property.cmx util/fmtutil.cmx type/t_t.cmi
+type/t_disambiguation.cmo: type/t_disambiguation.mlt util/util.cmi type/t_t.cmi util/property.cmi \
+    util/ext.cmi expr.cmi errors.cmi util/deque.cmi ctx.cmi builtin.cmi \
+    type/t_disambiguation.cmi
+type/t_disambiguation.cmx: type/t_disambiguation.mlt util/util.cmx type/t_t.cmx util/property.cmx \
+    util/ext.cmx expr.cmx errors.cmx util/deque.cmx ctx.cmx builtin.cmx \
+    type/t_disambiguation.cmi
+type.cmo: type.mlt type/t_t.cmi type/t_disambiguation.cmi revision.cmi type.cmi
+type.cmx: type.mlt type/t_t.cmx type/t_disambiguation.cmx revision.cmx type.cmi
+reduce/r_nt_axioms.cmo: reduce/r_nt_axioms.mlt type.cmi util/property.cmi util/ext.cmi expr.cmi \
+    errors.cmi builtin.cmi reduce/r_nt_axioms.cmi
+reduce/r_nt_axioms.cmx: reduce/r_nt_axioms.mlt type.cmx util/property.cmx util/ext.cmx expr.cmx \
+    errors.cmx builtin.cmx reduce/r_nt_axioms.cmi
+reduce/r_nt_cook.cmo: reduce/r_nt_cook.mlt util/util.cmi type.cmi reduce/r_nt_axioms.cmi \
+    util/property.cmi util/ext.cmi expr.cmi util/deque.cmi builtin.cmi \
+    reduce/r_nt_cook.cmi
+reduce/r_nt_cook.cmx: reduce/r_nt_cook.mlt util/util.cmx type.cmx reduce/r_nt_axioms.cmx \
+    util/property.cmx util/ext.cmx expr.cmx util/deque.cmx builtin.cmx \
+    reduce/r_nt_cook.cmi
+reduce/r_nt_table.cmo: reduce/r_nt_table.mlt util/util.cmi type.cmi reduce/r_nt_cook.cmi \
+    reduce/r_nt_axioms.cmi util/property.cmi util/ext.cmi expr.cmi \
+    util/deque.cmi util/deps.cmi reduce/r_nt_table.cmi
+reduce/r_nt_table.cmx: reduce/r_nt_table.mlt util/util.cmx type.cmx reduce/r_nt_cook.cmx \
+    reduce/r_nt_axioms.cmx util/property.cmx util/ext.cmx expr.cmx \
+    util/deque.cmx util/deps.cmx reduce/r_nt_table.cmi
+reduce/r_nt_collect.cmo: reduce/r_nt_collect.mlt util/util.cmi type.cmi reduce/r_nt_table.cmi \
+    reduce/r_nt_cook.cmi reduce/r_nt_axioms.cmi util/property.cmi \
+    util/ext.cmi expr.cmi errors.cmi util/deque.cmi builtin.cmi \
+    reduce/r_nt_collect.cmi
+reduce/r_nt_collect.cmx: reduce/r_nt_collect.mlt util/util.cmx type.cmx reduce/r_nt_table.cmx \
+    reduce/r_nt_cook.cmx reduce/r_nt_axioms.cmx util/property.cmx \
+    util/ext.cmx expr.cmx errors.cmx util/deque.cmx builtin.cmx \
+    reduce/r_nt_collect.cmi
+reduce.cmo: reduce.mlt revision.cmi reduce/r_nt_table.cmi reduce/r_nt_cook.cmi \
+    reduce/r_nt_collect.cmi reduce/r_nt_axioms.cmi reduce.cmi
+reduce.cmx: reduce.mlt revision.cmx reduce/r_nt_table.cmx reduce/r_nt_cook.cmx \
+    reduce/r_nt_collect.cmx reduce/r_nt_axioms.cmx reduce.cmi
+encode/n_table.cmo: encode/n_table.mlt type.cmi util/property.cmi util/ext.cmi \
+    encode/n_table.cmi
+encode/n_table.cmx: encode/n_table.mlt type.cmx util/property.cmx util/ext.cmx \
+    encode/n_table.cmi
+encode/n_cook.cmo: encode/n_cook.mlt encode/n_cook.cmi
+encode/n_cook.cmx: encode/n_cook.mlt encode/n_cook.cmi
+encode/n_canon.cmo: encode/n_canon.mlt type.cmi util/property.cmi encode/n_table.cmi \
+    util/ext.cmi expr.cmi errors.cmi util/deque.cmi ctx.cmi builtin.cmi \
+    encode/n_canon.cmi
+encode/n_canon.cmx: encode/n_canon.mlt type.cmx util/property.cmx encode/n_table.cmx \
+    util/ext.cmx expr.cmx errors.cmx util/deque.cmx ctx.cmx builtin.cmx \
+    encode/n_canon.cmi
+encode.cmo: encode.mlt revision.cmi encode/n_table.cmi encode/n_cook.cmi \
+    encode/n_canon.cmi encode.cmi
+encode.cmx: encode.mlt revision.cmx encode/n_table.cmx encode/n_cook.cmx \
+    encode/n_canon.cmx encode.cmi
 smt/smtcommons.cmo: smt/smtcommons.mlt util/util.cmi tla_parser.cmi revision.cmi \
     util/property.cmi params.cmi util/fmtutil.cmi util/ext.cmi expr.cmi \
     util/deque.cmi ctx.cmi builtin.cmi smt/smtcommons.cmi
@@ -468,14 +534,22 @@ backend/smt.cmx: backend/smt.mlt util/util.cmx typesystem/typ_t.cmx \
     proof.cmx smt/preprocess.cmx params.cmx util/fmtutil.cmx smt/fmt.cmx \
     util/ext.cmx expr.cmx errors.cmx smt/ectx.cmx util/deque.cmx ctx.cmx \
     builtin.cmx smt/boolify.cmx smt/axioms.cmx backend/smt.cmi
+backend/smtlib.cmo: backend/smtlib.mlt util/util.cmi type.cmi tla_parser.cmi revision.cmi \
+    reduce.cmi util/property.cmi proof.cmi params.cmi util/fmtutil.cmi \
+    util/ext.cmi expr.cmi errors.cmi util/deque.cmi ctx.cmi builtin.cmi \
+    backend/smtlib.cmi
+backend/smtlib.cmx: backend/smtlib.mlt util/util.cmx type.cmx tla_parser.cmx revision.cmx \
+    reduce.cmx util/property.cmx proof.cmx params.cmx util/fmtutil.cmx \
+    util/ext.cmx expr.cmx errors.cmx util/deque.cmx ctx.cmx builtin.cmx \
+    backend/smtlib.cmi
 backend/prep.cmo: backend/prep.mlt backend/zenon.cmi util/util.cmi backend/types.cmi \
-    backend/toolbox.cmi backend/smt.cmi backend/schedule.cmi revision.cmi \
+    backend/toolbox.cmi backend/smtlib.cmi backend/schedule.cmi revision.cmi \
     util/property.cmi proof.cmi frontend/pltl.cmi params.cmi method.cmi \
     backend/ls4.cmi loc.cmi backend/isabelle.cmi backend/fpfile.cmi \
     backend/fingerprints.cmi util/ext.cmi expr.cmi errors.cmi util/deque.cmi \
     ctx.cmi builtin.cmi frontend/action.cmi backend/prep.cmi
 backend/prep.cmx: backend/prep.mlt backend/zenon.cmx util/util.cmx backend/types.cmx \
-    backend/toolbox.cmx backend/smt.cmx backend/schedule.cmx revision.cmx \
+    backend/toolbox.cmx backend/smtlib.cmx backend/schedule.cmx revision.cmx \
     util/property.cmx proof.cmx frontend/pltl.cmx params.cmx method.cmx \
     backend/ls4.cmx loc.cmx backend/isabelle.cmx backend/fpfile.cmx \
     backend/fingerprints.cmx util/ext.cmx expr.cmx errors.cmx util/deque.cmx \
@@ -527,10 +601,12 @@ util/fmtutil.cmi : pars.cmi
 isabelle_keywords.cmi :
 tla_parser.cmi : util/property.cmi pars.cmi loc.cmi util/fmtutil.cmi
 util/deque.cmi :
+util/deps.cmi : util/util.cmi
 alexer.cmi : tla_parser.cmi pars.cmi loc.cmi pars/lazyList.cmi
 expr/e_t.cmi : util/util.cmi util/property.cmi method.cmi util/deque.cmi \
     builtin.cmi
 expr/e_visit.cmi : util/util.cmi expr/e_t.cmi util/deque.cmi
+expr/e_collect.cmi : util/util.cmi expr/e_t.cmi util/deque.cmi
 expr/e_constness.cmi : util/property.cmi expr/e_visit.cmi expr/e_t.cmi \
     util/deque.cmi
 expr/e_fmt.cmi : util/util.cmi tla_parser.cmi expr/e_t.cmi util/deque.cmi \
@@ -548,6 +624,7 @@ expr/e_elab.cmi : expr/e_visit.cmi expr/e_t.cmi util/deque.cmi
 expr/e_anon.cmi : expr/e_visit.cmi expr/e_t.cmi
 expr.cmi : util/util.cmi tla_parser.cmi util/property.cmi method.cmi \
     util/deque.cmi ctx.cmi builtin.cmi
+axiom.cmi : expr.cmi
 method_prs.cmi : tla_parser.cmi method.cmi
 proof/p_t.cmi : util/property.cmi method.cmi loc.cmi expr.cmi
 proof/p_fmt.cmi : proof/p_t.cmi expr.cmi util/deque.cmi ctx.cmi
@@ -561,6 +638,21 @@ proof/p_anon.cmi : proof/p_visit.cmi
 proof/p_parser.cmi : tla_parser.cmi proof/p_t.cmi
 proof.cmi : tla_parser.cmi util/property.cmi method.cmi loc.cmi expr.cmi \
     util/deque.cmi ctx.cmi
+type/t_t.cmi : util/util.cmi util/property.cmi
+type/t_disambiguation.cmi : type/t_t.cmi util/property.cmi expr.cmi
+type.cmi : util/util.cmi type/t_t.cmi util/property.cmi expr.cmi
+reduce/r_nt_axioms.cmi : type.cmi expr.cmi
+reduce/r_nt_cook.cmi : type.cmi util/property.cmi expr.cmi
+reduce/r_nt_table.cmi : util/util.cmi type.cmi reduce/r_nt_cook.cmi expr.cmi \
+    util/deque.cmi util/deps.cmi
+reduce/r_nt_collect.cmi : util/util.cmi reduce/r_nt_table.cmi expr.cmi
+reduce.cmi : util/util.cmi type.cmi util/property.cmi expr.cmi \
+    util/deque.cmi
+encode/n_table.cmi : type.cmi
+encode/n_cook.cmi :
+encode/n_canon.cmi : type.cmi util/property.cmi encode/n_table.cmi expr.cmi \
+    util/deque.cmi ctx.cmi
+encode.cmi : type.cmi util/property.cmi expr.cmi util/deque.cmi ctx.cmi
 smt/smtcommons.cmi : util/util.cmi util/property.cmi expr.cmi util/deque.cmi
 typesystem/typ_t.cmi : util/property.cmi expr.cmi util/deque.cmi
 typesystem/typ_e.cmi : typesystem/typ_t.cmi expr.cmi util/deque.cmi
@@ -606,6 +698,7 @@ backend/ls4.cmi : proof.cmi
 backend/fingerprints.cmi : proof.cmi
 backend/fpfile.cmi : backend/types.cmi method.cmi
 backend/smt.cmi : proof.cmi
+backend/smtlib.cmi : proof.cmi
 backend/prep.cmi : backend/types.cmi backend/schedule.cmi proof.cmi expr.cmi
 backend.cmi : proof.cmi method.cmi
 tlapm_args.cmi :

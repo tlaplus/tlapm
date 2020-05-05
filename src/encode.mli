@@ -59,10 +59,15 @@ module Table : sig
 end
 
 module Canon : sig
+  open Property
   open Expr.T
   open Type.T
   type gtx = ty_kind Ctx.t
   type ltx = ty_kind Ctx.t
+  val smb_prop : Table.smb pfuncs
+  val has_smb : 'a wrapped -> bool
+  val set_smb : Table.smb -> 'a wrapped -> 'a wrapped
+  val get_smb : 'a wrapped -> Table.smb
   val expr : gtx -> ltx -> expr -> expr * ty
   val sequent : gtx -> sequent -> gtx * sequent
   val defn : gtx -> ltx -> defn -> defn
