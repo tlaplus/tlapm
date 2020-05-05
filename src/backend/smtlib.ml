@@ -517,10 +517,17 @@ let preprocess ?solver sq =
   let _ = solver in (* FIXME what to do with this? *)
 
   let sq = Type.Disambiguation.min_reconstruct sq in
-  let sq = Reduce.NtCook.cook sq in
 
-  let data = Reduce.NtCollect.collect sq in
-  let sq = Reduce.NtTable.nt_axiomatize data sq in
+  (* FIXME remove below *)
+  (*let sq = Reduce.NtCook.cook sq in*)
+  (*let data = Reduce.NtCollect.collect sq in*)
+  (*let sq = Reduce.NtTable.nt_axiomatize data sq in*)
+
+  let sq = sq
+    |> Encode.Canon.main
+    |> Encode.Reduce.main
+    |> Encode.Axiomatize.main
+  in
   sq
 
 

@@ -26,3 +26,9 @@ val bound : gtx -> ltx -> bound -> bound
 val bounds : gtx -> ltx -> bound list -> ltx * bound list
 val hyp : gtx -> hyp -> hyp
 val hyps : gtx -> hyp Deque.dq -> gtx * hyp Deque.dq
+
+
+(* {3 Main} *)
+
+val main : sequent -> sequent
+

@@ -22,6 +22,7 @@ type family =
   | Arithmetic
   | Special
 
+(** Abstract type of a symbol: name + kind *)
 type smb
 
 val mk_smb : family -> string -> ty_kind -> smb
@@ -33,6 +34,16 @@ val get_fam  : smb -> family
 val get_name : smb -> string
 val get_kind : smb -> ty_kind
 val get_ord  : smb -> int
+
+module OrdSmb : sig
+  type t = smb
+  val compare : t -> t -> int
+end
+
+module SmbSet : Set.S with type elt = smb
+
+
+(* {3 Versions} *)
 
 val u_kind : ty_kind -> ty_kind
 val u_smb : smb -> smb

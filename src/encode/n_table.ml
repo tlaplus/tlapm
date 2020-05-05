@@ -32,11 +32,17 @@ type smb =
   }
 
 let mk_smb fam nm k =
-  { smb_fam = fam
-  ; smb_name = nm
-  ; smb_kind = k
-  ; smb_ord = ord k
-  }
+  let d = ord k in
+  if d < 0 || d > 2 then
+    let mssg = ("Attempt to create symbol '" ^ nm ^ "' \
+                of order " ^ string_of_int d) in
+    Errors.bug mssg
+  else
+    { smb_fam = fam
+    ; smb_name = nm
+    ; smb_kind = k
+    ; smb_ord = ord k
+    }
 
 let mk_snd_smb fam nm ints outt =
   let ks =
@@ -60,8 +66,31 @@ let get_name smb = smb.smb_name
 let get_kind smb = smb.smb_kind
 let get_ord smb = smb.smb_ord
 
-let rec u_kind (TKind (ks, ty)) =
-  TKind (List.map u_kind ks, ty_u)
+module OrdSmb = struct
+  type t = smb
+  let compare = Pervasives.compare (* TODO *)
+end
+
+module SmbSet = Set.Make (OrdSmb)
+
+
+(* {3 Versions} *)
+
+(* Replace every type with U, except positive occurrences of Bool *)
+let u_kind k =
+  let rec u_kind_pos (TKind (ks, ty)) =
+    let ks = List.map u_kind_neg ks in
+    let ty =
+      match ty with
+      | TAtom TBool -> ty_bool
+      | _ -> ty_u
+    in
+    TKind (ks, ty)
+  and u_kind_neg (TKind (ks, ty)) =
+    let ks = List.map u_kind_pos ks in
+    TKind (ks, ty_u)
+  in
+  u_kind_pos k
 
 let u_smb smb =
   { smb with

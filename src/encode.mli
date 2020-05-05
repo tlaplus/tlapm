@@ -7,6 +7,7 @@
 module Table : sig
   open Type.T
   type family =
+
     | Logic
     | Sets
     | Booleans
@@ -17,7 +18,9 @@ module Table : sig
     | Sequences
     | Arithmetic
     | Special
+
   type smb
+
   val mk_smb : family -> string -> ty_kind -> smb
   val mk_cst_smb : family -> string -> ty -> smb
   val mk_fst_smb : family -> string -> ty list -> ty -> smb
@@ -26,6 +29,14 @@ module Table : sig
   val get_name : smb -> string
   val get_kind : smb -> ty_kind
   val get_ord  : smb -> int
+
+  module OrdSmb : sig
+    type t = smb
+    val compare : t -> t -> int
+  end
+
+  module SmbSet : Set.S with type elt = smb
+
   val u_kind : ty_kind -> ty_kind
   val u_smb : smb -> smb
 
@@ -76,7 +87,19 @@ module Canon : sig
   val bounds : gtx -> ltx -> bound list -> ltx * bound list
   val hyp : gtx -> hyp -> hyp
   val hyps : gtx -> hyp Deque.dq -> gtx * hyp Deque.dq
+
+  val main : sequent -> sequent
 end
 
-module Cook : sig
+module Reduce : sig
+  open Expr.T
+
+  val main : sequent -> sequent
 end
+
+module Axiomatize : sig
+  open Expr.T
+
+  val main : sequent -> sequent
+end
+

@@ -69,6 +69,7 @@ let get_smb a = get a smb_prop
 let error ?at mssg =
   Errors.bug ?at ("Encode.Canon: " ^ mssg)
 
+(* FIXME Replace with subtype check *)
 let checkt_eq ?at ty1 ty2 =
   if (ty1 <> ty2) && (ty1 <> ty_u) then
     let () = Format.fprintf Format.str_formatter "typechecking error: expected %a, found %a"
@@ -93,6 +94,13 @@ let prepare_visitor = object (self : 'self)
   inherit [unit] Expr.Visit.map as super
 
   (* TODO *)
+
+  method expr scx oe =
+    match oe.core with
+    | Fcn (bs, e) when List.length bs > 1 ->
+        super#expr scx (Fcn (bs, e) @@ oe)
+
+    | _ -> super#expr scx oe
 end
 
 
@@ -119,23 +127,23 @@ let rec expr gx lx oe =
       | B.STRING ->
           let smb = T.set_string in
           let ty = get_ty (T.get_kind smb) in
-          (mk_opaque smb, ty)
+          (mk_opaque smb $$ oe, ty)
       | B.BOOLEAN ->
           let smb = T.set_boolean in
           let ty = get_ty (T.get_kind smb) in
-          (mk_opaque smb, ty)
+          (mk_opaque smb $$ oe, ty)
       | B.Nat ->
           let smb = T.set_nat in
           let ty = get_ty (T.get_kind smb) in
-          (mk_opaque smb, ty)
+          (mk_opaque smb $$ oe, ty)
       | B.Int ->
           let smb = T.set_int in
           let ty = get_ty (T.get_kind smb) in
-          (mk_opaque smb, ty)
+          (mk_opaque smb $$ oe, ty)
       | B.Real ->
           let smb = T.set_real in
           let ty = get_ty (T.get_kind smb) in
-          (mk_opaque smb, ty)
+          (mk_opaque smb $$ oe, ty)
       | _ ->
           error "misplaced builtin"
       end
@@ -203,7 +211,7 @@ let rec expr gx lx oe =
       checkt_eq ~at:e ty_bool ty2;
       let smb = T.choose ty1 in
       let args = [ Lambda ([ v, Shape_expr ], e) %% [] ] in
-      (Apply (mk_opaque smb, args) %% [], ty1) (* FIXME ret type safe? *)
+      (Apply (mk_opaque smb, args) @@ oe, ty1) (* FIXME ret type safe? *)
 
   | Choose (v, Some dom, e) ->
       let dom, ty1' = expr gx lx dom in
@@ -226,7 +234,7 @@ let rec expr gx lx oe =
       in
       let smb = T.choose ty1 in
       let args = [ Lambda ([ v, Shape_expr ], e) %% [] ] in
-      (Apply (mk_opaque smb, args) %% [], ty1) (* FIXME ret type safe? *)
+      (Apply (mk_opaque smb, args) @@ oe, ty1) (* FIXME ret type safe? *)
 
   | SetSt (v, dom, e) ->
       let dom, ty1' = expr gx lx dom in
@@ -237,7 +245,7 @@ let rec expr gx lx oe =
       checkt_eq ~at:e ty_bool ty2;
       let smb = T.setst ty1 in
       let args = [ dom ; Lambda ([ v, Shape_expr ], e) %% [] ] in
-      (Apply (mk_opaque smb, args) %% [], TSet ty1)
+      (Apply (mk_opaque smb, args) @@ oe, TSet ty1)
 
   | SetOf (e, bs) ->
       let lx, bs = bounds gx lx bs in
@@ -254,7 +262,7 @@ let rec expr gx lx oe =
       end (None, [], []) bs in
       let xs, bs = List.rev xs, List.rev bs in
       let args = bs @ [ Lambda (xs, e) %% [] ] in
-      (Apply (mk_opaque smb, args) %% [], TSet ty)
+      (Apply (mk_opaque smb, args) @@ oe, TSet ty)
 
   | SetEnum es ->
       let es_tys = List.map (expr gx lx) es in
@@ -269,7 +277,7 @@ let rec expr gx lx oe =
       let n = List.length es in
       let smb = T.setenum n ty in
       let args = es in
-      (Apply (mk_opaque smb, args) %% [], TSet ty)
+      (Apply (mk_opaque smb, args) @@ oe, TSet ty)
 
   (* NOTE Product and Tuple reduced to functions beforehand *)
 
@@ -281,7 +289,7 @@ let rec expr gx lx oe =
       let e, ty2 = expr gx lx e in
       let smb = T.fcn ty12 ty2 in
       let args = [ dom ; Lambda ([ v, Shape_expr ], e) %% [] ] in
-      (Apply (mk_opaque smb, args) %% [], TArrow (ty12, ty2))
+      (Apply (mk_opaque smb, args) @@ oe, TArrow (ty12, ty2))
 
   | FcnApp (e1, [e2]) -> (* FIXME prepare *)
       let e1, ty1 = expr gx lx e1 in
@@ -294,14 +302,14 @@ let rec expr gx lx oe =
       checkt_eq ~at:e2 ty11 ty2;
       let smb = T.fcnapp ty11 ty12 in
       let args = [ e1 ; e2 ] in
-      (Apply (mk_opaque smb, args) %% [], ty12)
+      (Apply (mk_opaque smb, args) @@ oe, ty12)
 
   | Arrow (e1, e2) ->
       let e1, ty1 = expr gx lx e1 in
       let e2, ty2 = expr gx lx e2 in
       let smb = T.arrow ty1 ty2 in
       let args = [ e1 ; e2 ] in
-      (Apply (mk_opaque smb, args) %% [], TSet (TArrow (ty1, ty2)))
+      (Apply (mk_opaque smb, args) @@ oe, TSet (TArrow (ty1, ty2)))
 
   (* TODO *)
 
@@ -373,11 +381,59 @@ and lexpr gx lx op =
 
   | Internal b ->
       begin match b with
+      | B.TRUE | B.FALSE ->
+          let k = mk_cstk_ty ty_bool in
+          (Internal b @@ op, k)
+      | B.Implies
+      | B.Equiv
+      | B.Conj
+      | B.Disj ->
+          let k = mk_fstk_ty [ty_bool; ty_bool] ty_bool in
+          (Internal b @@ op, k)
+      | B.Neg ->
+          let k = mk_fstk_ty [ty_bool] ty_bool in
+          (Internal b @@ op, k)
+      | B.Eq
+      | B.Neq ->
+          let k = Type.T.get_kind op in
+          (Internal b @@ op, k)
+
+      | B.STRING -> error "not implemented builtin: STRING"
+      | B.BOOLEAN -> error "not implemented builtin: BOOLEAN"
+
       | B.SUBSET ->
-          (* FIXME TODO annotate builtins with type info *)
-          let smb = T.subset TUnknown in
+          let k = Type.T.get_kind op in
+          let smb =
+            match k with
+            | TKind ([ TKind ([], TSet ty1) ], TSet (TSet ty2)) when ty1 = ty2 ->
+                T.subset ty1
+            | _ ->
+                T.u_smb (T.subset TUnknown)
+          in
           let k = T.get_kind smb in
-          (mk_opaque smb, k)
+          (mk_opaque smb $$ op, k)
+
+      | B.UNION -> error "not implemented builtin: UNION"
+      | B.DOMAIN -> error "not implemented builtin: DOMAIN"
+      | B.Subseteq -> error "not implemented builtin: Subseteq"
+
+      | B.Mem ->
+          let k = Type.T.get_kind op in
+          let smb =
+            match k with
+            | TKind ([ TKind ([], ty1) ; TKind ([], TSet ty2) ], TAtom TBool) when ty1 = ty2 ->
+                T.mem ty1
+            | _ ->
+                T.u_smb (T.mem TUnknown)
+          in
+          let k = T.get_kind smb in
+          (mk_opaque smb $$ op, k)
+
+      | B.Notmem -> error "not implemented builtin: Notmem"
+      | B.Setminus -> error "not implemented builtin: Setminus"
+      | B.Cap -> error "not implemented builtin: Cap"
+      | B.Cup -> error "not implemented builtin: Cup"
+
       | _ ->
           error "unrecognized builtin"
       end
@@ -470,3 +526,8 @@ and hyps gx hs =
       let v = hyp_hint h in
       let gx = gadj gx v in
       (gx, Deque.cons h hs)
+
+
+let main sq =
+  let gx = Ctx.dot in
+  snd (sequent gx sq)
