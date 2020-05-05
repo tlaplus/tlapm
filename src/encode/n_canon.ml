@@ -17,9 +17,6 @@ module T = N_table
  * to check equality between the annotation and the infered type from
  * a present domain. *)
 
-(* TODO In disambiguation: type annotation where a specific version
- * must be determined (builtins and empty set) *)
-
 (* TODO Reduce tuples to functions and products to arrows *)
 
 (* TODO Also reduce all function to one-argument functions *)

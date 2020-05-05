@@ -164,8 +164,11 @@ let rec expr scx oe =
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       if srt1 = srt2 then
-        Apply (assign op Props.kind_prop (mk_kind [srt1; srt1] TBool), [ e ; f ]) @@ oe, TBool
+        let srt = srt1 in
+        let op = assign op Props.kind_prop (mk_kind [ srt ; srt ] TBool) in
+        Apply (op, [ e ; f ]) @@ oe, TBool
       else
+        let op = assign op Props.kind_prop (mk_kind [ TU ; TU ] TBool) in
         Apply (op, [ cast_to_set srt1 e ; cast_to_set srt2 f ]) @@ oe, TBool
 
   | Internal (B.STRING | B.BOOLEAN | B.Nat | B.Int | B.Real) as op ->
@@ -173,43 +176,54 @@ let rec expr scx oe =
 
   | Apply ({ core = Internal (B.SUBSET | B.UNION | B.DOMAIN) } as op, [ e ]) ->
       let e, srt = expr scx e in
+      let op = assign op Props.kind_prop (mk_kind [ TU ] TU) in
       Apply (op, [ cast_to_set srt e ]) @@ oe, TU
 
   | Apply ({ core = Internal (B.Subseteq | B.Mem | B.Notmem) } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
+      let op = assign op Props.kind_prop (mk_kind [ TU ; TU ] TBool) in
       Apply (op, [ cast_to_set srt1 e ; cast_to_set srt2 f ]) @@ oe, TBool
 
   | Apply ({ core = Internal (B.Setminus | B.Cap | B.Cup) } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
+      let op = assign op Props.kind_prop (mk_kind [ TU ; TU ] TU) in
       Apply (op, [ cast_to_set srt1 e ; cast_to_set srt2 f ]) @@ oe, TU
 
   | Apply ({ core = Internal (B.Plus | B.Minus | B.Times | B.Quotient | B.Remainder | B.Exp) } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       if srt1 = TInt && srt2 = TInt then
-        Apply (assign op Props.kind_prop (mk_kind [TInt; TInt] TInt), [ e ; f ]) @@ oe, TInt
+        let op = assign op Props.kind_prop (mk_kind [ TInt ; TInt ] TInt) in
+        Apply (op, [ e ; f ]) @@ oe, TInt
       else if srt1 = TReal && srt2 = TReal then
-        Apply (assign op Props.kind_prop (mk_kind [TReal; TReal] TReal), [ e ; f ]) @@ oe, TReal
+        let op = assign op Props.kind_prop (mk_kind [ TReal ; TReal ] TReal) in
+        Apply (op, [ e ; f ]) @@ oe, TReal
       else
+        let op = assign op Props.kind_prop (mk_kind [ TU ; TU ] TU) in
         Apply (op, [ cast_to_set srt1 e ; cast_to_set srt2 f ]) @@ oe, TU
 
   | Apply ({ core = Internal B.Ratio } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       if srt1 = TReal && srt2 = TReal then
-        Apply (assign op Props.kind_prop (mk_kind [TReal; TReal] TReal), [ e ; f ]) @@ oe, TReal
+        let op = assign op Props.kind_prop (mk_kind [ TReal ; TReal ] TReal) in
+        Apply (op, [ e ; f ]) @@ oe, TReal
       else
+        let op = assign op Props.kind_prop (mk_kind [ TU ; TU ] TU) in
         Apply (op, [ cast_to_set srt1 e ; cast_to_set srt2 f ]) @@ oe, TU
 
   | Apply ({ core = Internal B.Uminus } as op, [ e ; f ]) ->
       let e, srt = expr scx e in
       if srt = TInt then
-        Apply (assign op Props.kind_prop (mk_kind [TInt] TInt), [ e ]) @@ oe, TInt
+        let op = assign op Props.kind_prop (mk_kind [ TInt ] TInt) in
+        Apply (op, [ e ]) @@ oe, TInt
       else if srt = TReal then
-        Apply (assign op Props.kind_prop (mk_kind [TReal] TReal), [ e ]) @@ oe, TReal
+        let op = assign op Props.kind_prop (mk_kind [ TReal ] TReal) in
+        Apply (op, [ e ]) @@ oe, TReal
       else
+        let op = assign op Props.kind_prop (mk_kind [ TU ] TU) in
         Apply (op, [ cast_to_set srt e ]) @@ oe, TU
 
   | Internal B.Infinity as op ->
@@ -219,20 +233,26 @@ let rec expr scx oe =
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       if srt1 = TInt && srt2 = TInt then
-        Apply (assign op Props.kind_prop (mk_kind [TInt; TInt] TBool), [ e ; f ]) @@ oe, TBool
+        let op = assign op Props.kind_prop (mk_kind [ TInt ; TInt ] TBool) in
+        Apply (op, [ e ; f ]) @@ oe, TBool
       else if srt1 = TReal && srt2 = TReal then
-        Apply (assign op Props.kind_prop (mk_kind [TReal; TReal] TBool), [ e ; f ]) @@ oe, TBool
+        let op = assign op Props.kind_prop (mk_kind [ TReal ; TReal ] TBool) in
+        Apply (op, [ e ; f ]) @@ oe, TBool
       else
+        let op = assign op Props.kind_prop (mk_kind [ TU ; TU ] TBool) in
         Apply (op, [ cast_to_set srt1 e ; cast_to_set srt2 f ]) @@ oe, TBool
 
   | Apply ({ core = Internal B.Range } as op, [ e ; f ]) ->
       let e, srt1 = expr scx e in
       let f, srt2 = expr scx f in
       if srt1 = TInt && srt2 = TInt then
-        Apply (assign op Props.kind_prop (mk_kind [TInt; TInt] TU), [ e ; f ]) @@ oe, TU
+        let op = assign op Props.kind_prop (mk_kind [ TInt ; TInt ] TU) in
+        Apply (op, [ e ; f ]) @@ oe, TU
       else if srt1 = TReal && srt2 = TReal then
-        Apply (assign op Props.kind_prop (mk_kind [TReal; TReal] TU), [ e ; f ]) @@ oe, TU
+        let op = assign op Props.kind_prop (mk_kind [ TReal ; TReal ] TU) in
+        Apply (op, [ e ; f ]) @@ oe, TU
       else
+        let op = assign op Props.kind_prop (mk_kind [ TU ; TU ] TU) in
         Apply (op, [ cast_to_set srt1 e ; cast_to_set srt2 f ]) @@ oe, TU
   (* NOTE Case by case ends here *)
 
@@ -470,7 +490,7 @@ and lexpr scx loe =
   match loe.core with
   | Ix n ->
       let k = lookup_kind scx n in
-      Ix n @@ loe, k
+      assign (Ix n @@ loe) Props.kind_prop k, k
   | Lambda (vs, e) ->
       let scx, vs, ks =
         List.fold_left begin fun (scx, vs, ks) (h, shp) ->
@@ -483,7 +503,8 @@ and lexpr scx loe =
       let ks = List.rev ks in
       let vs = List.rev vs in
       let e, srt = expr scx e in
-      Lambda (vs, e) @@ loe, mk_kind_ty ks (mk_atom_ty srt)
+      let k = mk_kind_ty ks (mk_atom_ty srt) in
+      assign (Lambda (vs, e) @@ loe) Props.kind_prop k, k
   | _ -> Errors.bug ~at:loe "Type.Disambiguation.lexpr"
 
 and sequent scx sq =
