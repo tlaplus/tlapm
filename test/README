@@ -1,5 +1,14 @@
+1. How to launch the tests
 
-Test files.
+Before you can launch the tests, the PM must be installed into this
+directory (the "test" directory). This is accomplished by launching
+the installer with the -d option:
+
+   ../tools/installer/tlaps-1.4.5-*-inst.exe -d `pwd`
+
+
+
+2. Format of the test files.
 
 Every file in this directory (and recursively in its subdirectories)
 with a name that ends in "_test.tla" defines one test of the test
