@@ -100,6 +100,13 @@ let prepare_visitor = object (self : 'self)
     | Fcn (bs, e) when List.length bs > 1 ->
         super#expr scx (Fcn (bs, e) @@ oe)
 
+    (* x \notin y -> ~ (x \in y) *)
+    | Apply ({ core = Internal B.Notmem } as op, [ e ; f ]) ->
+        Apply (Internal B.Neg %% [], [
+          Apply (Internal B.Mem @@ op, [ e ; f ]) %% []
+        ]) @@ oe
+        |> super#expr scx
+
     | _ -> super#expr scx oe
 end
 
@@ -217,7 +224,7 @@ let rec expr gx lx oe =
       let dom, ty1' = expr gx lx dom in
       let lx = ladj lx v in
       let ty1 = get_type lx 1 in
-      checkt_eq ~at:dom (TSet ty1) ty1';
+      (*checkt_eq ~at:dom (TSet ty1) ty1';*) (* FIXME *)
       let e, ty2 = expr gx lx e in
       checkt_eq ~at:e ty_bool ty2;
       let e =
@@ -240,7 +247,7 @@ let rec expr gx lx oe =
       let dom, ty1' = expr gx lx dom in
       let lx = ladj lx v in
       let ty1 = get_type lx 1 in
-      checkt_eq ~at:dom (TSet ty1) ty1';
+      (*checkt_eq ~at:dom (TSet ty1) ty1';*) (* FIXME *)
       let e, ty2 = expr gx lx e in
       checkt_eq ~at:e ty_bool ty2;
       let smb = T.setst ty1 in
@@ -285,7 +292,7 @@ let rec expr gx lx oe =
       let dom, ty11 = expr gx lx dom in
       let lx = ladj lx v in
       let ty12 = get_type lx 1 in
-      checkt_eq ~at:dom (TSet ty12) ty11;
+      (*checkt_eq ~at:dom (TSet ty12) ty11;*) (* FIXME *)
       let e, ty2 = expr gx lx e in
       let smb = T.fcn ty12 ty2 in
       let args = [ dom ; Lambda ([ v, Shape_expr ], e) %% [] ] in
@@ -359,6 +366,16 @@ let rec expr gx lx oe =
       let e, ty = expr gx lx e in
       (Parens (e, pf) @@ oe, ty)
 
+  | Sequent sq ->
+      (* FIXME This feels very wrong *)
+      let gx =
+        List.fold_left begin fun gx k ->
+          Ctx.adj gx "shadow" k
+        end gx (Ctx.to_list lx)
+      in
+      let sq = snd (sequent gx sq) in
+      (Sequent sq @@ oe, ty_bool)
+
   | _ -> (oe, TUnknown) (* TODO *)
 
 and lexpr gx lx op =
@@ -369,7 +386,7 @@ and lexpr gx lx op =
         let k = get_kind gx (n - Ctx.length lx) in
         (Ix n @@ op, k)
       else
-        error "unbound variable"
+        error ~at:op "unbound variable"
 
   | Lambda (vs, e) ->
       let lx = List.fold_left ladj lx (List.map fst vs) in
@@ -398,8 +415,15 @@ and lexpr gx lx op =
           let k = Type.T.get_kind op in
           (Internal b @@ op, k)
 
-      | B.STRING -> error "not implemented builtin: STRING"
-      | B.BOOLEAN -> error "not implemented builtin: BOOLEAN"
+      | B.STRING ->
+          let smb = T.set_string in
+          let k = T.get_kind smb in
+          (mk_opaque smb $$ op, k)
+
+      | B.BOOLEAN ->
+          let smb = T.set_boolean in
+          let k = T.get_kind smb in
+          (mk_opaque smb $$ op, k)
 
       | B.SUBSET ->
           let k = Type.T.get_kind op in
@@ -413,9 +437,41 @@ and lexpr gx lx op =
           let k = T.get_kind smb in
           (mk_opaque smb $$ op, k)
 
-      | B.UNION -> error "not implemented builtin: UNION"
-      | B.DOMAIN -> error "not implemented builtin: DOMAIN"
-      | B.Subseteq -> error "not implemented builtin: Subseteq"
+      | B.UNION ->
+          let k = Type.T.get_kind op in
+          let smb =
+            match k with
+            | TKind ([ TKind ([], TSet (TSet ty1)) ], TSet ty2) when ty1 = ty2 ->
+                T.union ty1
+            | _ ->
+                T.u_smb (T.union TUnknown)
+          in
+          let k = T.get_kind smb in
+          (mk_opaque smb $$ op, k)
+
+      | B.DOMAIN ->
+          let k = Type.T.get_kind op in
+          let smb =
+            match k with
+            | TKind ([ TKind ([], TArrow (ty1, ty2)) ], TSet ty3) when ty1 = ty3 ->
+                T.domain ty1 ty2
+            | _ ->
+                T.u_smb (T.domain TUnknown TUnknown)
+          in
+          let k = T.get_kind smb in
+          (mk_opaque smb $$ op, k)
+
+      | B.Subseteq ->
+          let k = Type.T.get_kind op in
+          let smb =
+            match k with
+            | TKind ([ TKind ([], TSet ty1) ; TKind ([], TSet ty2) ], TAtom TBool) when ty1 = ty2 ->
+                T.subseteq ty1
+            | _ ->
+                T.u_smb (T.subseteq TUnknown)
+          in
+          let k = T.get_kind smb in
+          (mk_opaque smb $$ op, k)
 
       | B.Mem ->
           let k = Type.T.get_kind op in
@@ -430,9 +486,42 @@ and lexpr gx lx op =
           (mk_opaque smb $$ op, k)
 
       | B.Notmem -> error "not implemented builtin: Notmem"
-      | B.Setminus -> error "not implemented builtin: Setminus"
-      | B.Cap -> error "not implemented builtin: Cap"
-      | B.Cup -> error "not implemented builtin: Cup"
+
+      | B.Setminus ->
+          let k = Type.T.get_kind op in
+          let smb =
+            match k with
+            | TKind ([ TKind ([], TSet ty1) ; TKind ([], TSet ty2) ], TSet ty3) when ty1 = ty2 && ty2 = ty3 ->
+                T.setminus ty1
+            | _ ->
+                T.u_smb (T.setminus TUnknown)
+          in
+          let k = T.get_kind smb in
+          (mk_opaque smb $$ op, k)
+
+      | B.Cap ->
+          let k = Type.T.get_kind op in
+          let smb =
+            match k with
+            | TKind ([ TKind ([], TSet ty1) ; TKind ([], TSet ty2) ], TSet ty3) when ty1 = ty2 && ty2 = ty3 ->
+                T.cap ty1
+            | _ ->
+                T.u_smb (T.cap TUnknown)
+          in
+          let k = T.get_kind smb in
+          (mk_opaque smb $$ op, k)
+
+      | B.Cup ->
+          let k = Type.T.get_kind op in
+          let smb =
+            match k with
+            | TKind ([ TKind ([], TSet ty1) ; TKind ([], TSet ty2) ], TSet ty3) when ty1 = ty2 && ty2 = ty3 ->
+                T.cup ty1
+            | _ ->
+                T.u_smb (T.cup TUnknown)
+          in
+          let k = T.get_kind smb in
+          (mk_opaque smb $$ op, k)
 
       | _ ->
           error "unrecognized builtin"
@@ -525,9 +614,13 @@ and hyps gx hs =
       let h = hyp gx h in
       let v = hyp_hint h in
       let gx = gadj gx v in
+      let gx, hs = hyps gx hs in
       (gx, Deque.cons h hs)
 
 
 let main sq =
+  let scx = ((), Deque.empty) in
+  let sq = snd (prepare_visitor#sequent scx sq) in
+
   let gx = Ctx.dot in
   snd (sequent gx sq)
