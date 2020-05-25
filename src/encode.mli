@@ -91,13 +91,16 @@ module Canon : sig
   val main : sequent -> sequent
 end
 
-module Reduce : sig
+module Axiomatize : sig
   open Expr.T
+  open Table
+  type ectx = SmbSet.t * expr Deque.dq
 
-  val main : sequent -> sequent
+  val collect : sequent -> ectx
+  val assemble : ectx -> sequent -> sequent
 end
 
-module Axiomatize : sig
+module Reduce : sig
   open Expr.T
 
   val main : sequent -> sequent
