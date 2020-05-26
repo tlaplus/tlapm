@@ -66,9 +66,30 @@ let get_name smb = smb.smb_name
 let get_kind smb = smb.smb_kind
 let get_ord smb = smb.smb_ord
 
+(* Prepend a letter to name of a smb according to family
+ * This is only used to sort symbols by family *)
+let extended_name smb =
+  let prefix =
+    match get_fam smb with
+    | Logic -> "A"
+    | Sets -> "B"
+    | Booleans -> "C"
+    | Strings -> "D"
+    | Tuples -> "E"
+    | Functions -> "F"
+    | Records -> "G"
+    | Sequences -> "H"
+    | Arithmetic -> "I"
+    | Special -> "J"
+  in
+  prefix ^ (get_name smb)
+
 module OrdSmb = struct
   type t = smb
-  let compare = Pervasives.compare (* TODO *)
+  let compare smb1 smb2 =
+    let nm1 = extended_name smb1 in
+    let nm2 = extended_name smb2 in
+    Pervasives.compare nm1 nm2
 end
 
 module SmbSet = Set.Make (OrdSmb)
