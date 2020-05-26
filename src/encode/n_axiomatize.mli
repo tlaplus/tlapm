@@ -17,14 +17,17 @@ open N_table
 
     That way, no complicated shifting is necessary in the original sequent.
 *)
-type ectx = SmbSet.t * expr Deque.dq
+type etx = SmbSet.t * expr Deque.dq
 
 
 (* {3 Main} *)
 
 (** Collect relevant symbols and axioms *)
-val collect : sequent -> ectx
+val collect : sequent -> etx
 
 (** Assemble a sequent with an extended context *)
-val assemble : ectx -> sequent -> sequent
+val assemble : etx -> sequent -> sequent
+
+(** Collect and assemble *)
+val main : sequent -> sequent
 

@@ -94,10 +94,11 @@ end
 module Axiomatize : sig
   open Expr.T
   open Table
-  type ectx = SmbSet.t * expr Deque.dq
+  type etx = SmbSet.t * expr Deque.dq
 
-  val collect : sequent -> ectx
-  val assemble : ectx -> sequent -> sequent
+  val collect : sequent -> etx
+  val assemble : etx -> sequent -> sequent
+  val main : sequent -> sequent
 end
 
 module Reduce : sig

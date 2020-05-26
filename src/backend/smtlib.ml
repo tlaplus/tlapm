@@ -525,9 +525,7 @@ let preprocess ?solver sq =
 
   let sq = sq
     |> Encode.Canon.main
-    |> fun sq ->
-        let ecx = Encode.Axiomatize.collect sq in
-        Encode.Axiomatize.assemble ecx sq
+    |> Encode.Axiomatize.main
     |> Encode.Reduce.main
   in
   sq
