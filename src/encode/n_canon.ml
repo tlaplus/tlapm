@@ -132,23 +132,23 @@ let rec expr gx lx oe =
       | B.FALSE ->
           (Internal b @@ oe, ty_bool)
       | B.STRING ->
-          let smb = T.set_string in
+          let smb = T.std_smb T.Strings in
           let ty = get_ty (T.get_kind smb) in
           (mk_opaque smb $$ oe, ty)
       | B.BOOLEAN ->
-          let smb = T.set_boolean in
+          let smb = T.std_smb T.Booleans in
           let ty = get_ty (T.get_kind smb) in
           (mk_opaque smb $$ oe, ty)
       | B.Nat ->
-          let smb = T.set_nat in
+          let smb = T.std_smb T.Nats in
           let ty = get_ty (T.get_kind smb) in
           (mk_opaque smb $$ oe, ty)
       | B.Int ->
-          let smb = T.set_int in
+          let smb = T.std_smb T.Ints in
           let ty = get_ty (T.get_kind smb) in
           (mk_opaque smb $$ oe, ty)
       | B.Real ->
-          let smb = T.set_real in
+          let smb = T.std_smb T.Reals in
           let ty = get_ty (T.get_kind smb) in
           (mk_opaque smb $$ oe, ty)
       | _ ->
@@ -216,7 +216,7 @@ let rec expr gx lx oe =
       let ty1 = get_type lx 1 in
       let e, ty2 = expr gx lx e in
       checkt_eq ~at:e ty_bool ty2;
-      let smb = T.choose ty1 in
+      let smb = T.std_smb (T.Choose ty1) in
       let args = [ Lambda ([ v, Shape_expr ], e) %% [] ] in
       (Apply (mk_opaque smb, args) @@ oe, ty1) (* FIXME ret type safe? *)
 
@@ -239,7 +239,7 @@ let rec expr gx lx oe =
           e
         ]) %% []
       in
-      let smb = T.choose ty1 in
+      let smb = T.std_smb (T.Choose ty1) in
       let args = [ Lambda ([ v, Shape_expr ], e) %% [] ] in
       (Apply (mk_opaque smb, args) @@ oe, ty1) (* FIXME ret type safe? *)
 
@@ -250,7 +250,7 @@ let rec expr gx lx oe =
       (*checkt_eq ~at:dom (TSet ty1) ty1';*) (* FIXME *)
       let e, ty2 = expr gx lx e in
       checkt_eq ~at:e ty_bool ty2;
-      let smb = T.setst ty1 in
+      let smb = T.std_smb (T.SetSt ty1) in
       let args = [ dom ; Lambda ([ v, Shape_expr ], e) %% [] ] in
       (Apply (mk_opaque smb, args) @@ oe, TSet ty1)
 
@@ -260,7 +260,7 @@ let rec expr gx lx oe =
       let tys = List.init (List.length bs) begin fun i ->
         get_type lx (i + 1)
       end in
-      let smb = T.setof tys ty in
+      let smb = T.std_smb (T.SetOf (tys, ty)) in
       let _, xs, bs = List.fold_left begin fun (dom', xs, bs) (v, _, dom) ->
         match dom', dom with
         | _, Domain dom -> (Some dom, (v, Shape_expr) :: xs, dom :: bs)
@@ -282,7 +282,7 @@ let rec expr gx lx oe =
       in
       let es = List.map fst es_tys in
       let n = List.length es in
-      let smb = T.setenum n ty in
+      let smb = T.std_smb (T.SetEnum (n, ty)) in
       let args = es in
       (Apply (mk_opaque smb, args) @@ oe, TSet ty)
 
@@ -294,7 +294,7 @@ let rec expr gx lx oe =
       let ty12 = get_type lx 1 in
       (*checkt_eq ~at:dom (TSet ty12) ty11;*) (* FIXME *)
       let e, ty2 = expr gx lx e in
-      let smb = T.fcn ty12 ty2 in
+      let smb = T.std_smb (T.Fcn (ty12, ty2)) in
       let args = [ dom ; Lambda ([ v, Shape_expr ], e) %% [] ] in
       (Apply (mk_opaque smb, args) @@ oe, TArrow (ty12, ty2))
 
@@ -307,14 +307,14 @@ let rec expr gx lx oe =
         | _ -> error ~at:oe "typechecking error: expected arrow type"
       in
       checkt_eq ~at:e2 ty11 ty2;
-      let smb = T.fcnapp ty11 ty12 in
+      let smb = T.std_smb (T.FcnApp (ty11, ty12)) in
       let args = [ e1 ; e2 ] in
       (Apply (mk_opaque smb, args) @@ oe, ty12)
 
   | Arrow (e1, e2) ->
       let e1, ty1 = expr gx lx e1 in
       let e2, ty2 = expr gx lx e2 in
-      let smb = T.arrow ty1 ty2 in
+      let smb = T.std_smb (T.Arrow (ty1, ty2)) in
       let args = [ e1 ; e2 ] in
       (Apply (mk_opaque smb, args) @@ oe, TSet (TArrow (ty1, ty2)))
 
@@ -416,12 +416,12 @@ and lexpr gx lx op =
           (Internal b @@ op, k)
 
       | B.STRING ->
-          let smb = T.set_string in
+          let smb = T.std_smb T.Strings in
           let k = T.get_kind smb in
           (mk_opaque smb $$ op, k)
 
       | B.BOOLEAN ->
-          let smb = T.set_boolean in
+          let smb = T.std_smb T.Booleans in
           let k = T.get_kind smb in
           (mk_opaque smb $$ op, k)
 
@@ -430,9 +430,9 @@ and lexpr gx lx op =
           let smb =
             match k with
             | TKind ([ TKind ([], TSet ty1) ], TSet (TSet ty2)) when ty1 = ty2 ->
-                T.subset ty1
+                T.std_smb (T.Subset ty1)
             | _ ->
-                T.u_smb (T.subset TUnknown)
+                T.std_smb (T.Uver (T.Subset TUnknown))
           in
           let k = T.get_kind smb in
           (mk_opaque smb $$ op, k)
@@ -442,9 +442,9 @@ and lexpr gx lx op =
           let smb =
             match k with
             | TKind ([ TKind ([], TSet (TSet ty1)) ], TSet ty2) when ty1 = ty2 ->
-                T.union ty1
+                T.std_smb (T.Union ty1)
             | _ ->
-                T.u_smb (T.union TUnknown)
+                T.std_smb (T.Uver (T.Union TUnknown))
           in
           let k = T.get_kind smb in
           (mk_opaque smb $$ op, k)
@@ -454,9 +454,9 @@ and lexpr gx lx op =
           let smb =
             match k with
             | TKind ([ TKind ([], TArrow (ty1, ty2)) ], TSet ty3) when ty1 = ty3 ->
-                T.domain ty1 ty2
+                T.std_smb (T.Domain (ty1, ty2))
             | _ ->
-                T.u_smb (T.domain TUnknown TUnknown)
+                T.std_smb (T.Uver (T.Domain (TUnknown, TUnknown)))
           in
           let k = T.get_kind smb in
           (mk_opaque smb $$ op, k)
@@ -466,9 +466,9 @@ and lexpr gx lx op =
           let smb =
             match k with
             | TKind ([ TKind ([], TSet ty1) ; TKind ([], TSet ty2) ], TAtom TBool) when ty1 = ty2 ->
-                T.subseteq ty1
+                T.std_smb (T.SubsetEq ty1)
             | _ ->
-                T.u_smb (T.subseteq TUnknown)
+                T.std_smb (T.Uver (T.SubsetEq TUnknown))
           in
           let k = T.get_kind smb in
           (mk_opaque smb $$ op, k)
@@ -478,9 +478,9 @@ and lexpr gx lx op =
           let smb =
             match k with
             | TKind ([ TKind ([], ty1) ; TKind ([], TSet ty2) ], TAtom TBool) when ty1 = ty2 ->
-                T.mem ty1
+                T.std_smb (T.Mem ty1)
             | _ ->
-                T.u_smb (T.mem TUnknown)
+                T.std_smb (T.Uver (T.Mem TUnknown))
           in
           let k = T.get_kind smb in
           (mk_opaque smb $$ op, k)
@@ -492,9 +492,9 @@ and lexpr gx lx op =
           let smb =
             match k with
             | TKind ([ TKind ([], TSet ty1) ; TKind ([], TSet ty2) ], TSet ty3) when ty1 = ty2 && ty2 = ty3 ->
-                T.setminus ty1
+                T.std_smb (T.SetMinus ty1)
             | _ ->
-                T.u_smb (T.setminus TUnknown)
+                T.std_smb (T.Uver (T.SetMinus TUnknown))
           in
           let k = T.get_kind smb in
           (mk_opaque smb $$ op, k)
@@ -504,9 +504,9 @@ and lexpr gx lx op =
           let smb =
             match k with
             | TKind ([ TKind ([], TSet ty1) ; TKind ([], TSet ty2) ], TSet ty3) when ty1 = ty2 && ty2 = ty3 ->
-                T.cap ty1
+                T.std_smb (T.Cap ty1)
             | _ ->
-                T.u_smb (T.cap TUnknown)
+                T.std_smb (T.Uver (T.Cap TUnknown))
           in
           let k = T.get_kind smb in
           (mk_opaque smb $$ op, k)
@@ -516,9 +516,9 @@ and lexpr gx lx op =
           let smb =
             match k with
             | TKind ([ TKind ([], TSet ty1) ; TKind ([], TSet ty2) ], TSet ty3) when ty1 = ty2 && ty2 = ty3 ->
-                T.cup ty1
+                T.std_smb (T.Cup ty1)
             | _ ->
-                T.u_smb (T.cup TUnknown)
+                T.std_smb (T.Uver (T.Cup TUnknown))
           in
           let k = T.get_kind smb in
           (mk_opaque smb $$ op, k)
