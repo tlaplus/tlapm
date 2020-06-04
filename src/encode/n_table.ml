@@ -10,7 +10,36 @@ open Type.T
 open Property
 
 
-(* {3 Symbols} *)
+(* {3 Symbols of TLA+} *)
+
+type tla_smb =
+  (* Logic *)
+  | Choose of ty
+  (* Set Theory *)
+  | Mem of ty
+  | SubsetEq of ty
+  | SetEnum of int * ty
+  | Union of ty
+  | Subset of ty
+  | Cup of ty
+  | Cap of ty
+  | SetMinus of ty
+  | SetSt of ty
+  | SetOf of ty list * ty
+  (* Primitive Sets *)
+  | Booleans
+  | Strings
+  | Ints
+  | Nats
+  | Reals
+  (* Functions *)
+  | Arrow of ty * ty
+  | Domain of ty * ty
+  | FcnApp of ty * ty
+  | Fcn of ty * ty
+  | Except of ty * ty
+  (* Special *)
+  | Uver of tla_smb (** Uninterpreted VERsion of a symbol *)
 
 type family =
   | Logic
@@ -24,11 +53,36 @@ type family =
   | Arithmetic
   | Special
 
+let rec get_tlafam = function
+  | Choose _ ->
+      Logic
+  | Mem _ | SubsetEq _ | SetEnum _ | Union _ | Subset _
+  | Cup _ | Cap _ | SetMinus _ | SetSt _ | SetOf _ ->
+      Sets
+  | Booleans ->
+      Booleans
+  | Strings ->
+      Strings
+  | Ints | Nats | Reals ->
+      Arithmetic
+  | Arrow _ | Domain _ | FcnApp _ | Fcn _ | Except _ ->
+      Functions
+  | Uver smb ->
+      get_tlafam smb
+
+let smbtable = function
+  (* TODO *)
+  | _ -> Some ([], [])
+
+
+(* {3 Symbol Data} *)
+
 type smb =
   { smb_fam  : family
   ; smb_name : string
   ; smb_kind : ty_kind
   ; smb_ord  : int
+  ; smb_defn : tla_smb option
   }
 
 let mk_smb fam nm k =
@@ -42,6 +96,7 @@ let mk_smb fam nm k =
     ; smb_name = nm
     ; smb_kind = k
     ; smb_ord = ord k
+    ; smb_defn = None
     }
 
 let mk_snd_smb fam nm ints outt =
@@ -65,37 +120,24 @@ let get_fam smb = smb.smb_fam
 let get_name smb = smb.smb_name
 let get_kind smb = smb.smb_kind
 let get_ord smb = smb.smb_ord
-
-(* Prepend a letter to name of a smb according to family
- * This is only used to sort symbols by family *)
-let extended_name smb =
-  let prefix =
-    match get_fam smb with
-    | Logic -> "A"
-    | Sets -> "B"
-    | Booleans -> "C"
-    | Strings -> "D"
-    | Tuples -> "E"
-    | Functions -> "F"
-    | Records -> "G"
-    | Sequences -> "H"
-    | Arithmetic -> "I"
-    | Special -> "J"
-  in
-  prefix ^ (get_name smb)
+let get_defn smb = smb.smb_defn
 
 module OrdSmb = struct
   type t = smb
   let compare smb1 smb2 =
-    let nm1 = extended_name smb1 in
-    let nm2 = extended_name smb2 in
-    Pervasives.compare nm1 nm2
+    let fam1 = get_fam smb1 in
+    let fam2 = get_fam smb2 in
+    match Pervasives.compare fam1 fam2 with
+    | 0 ->
+        let nm1 = get_name smb1 in
+        let nm2 = get_name smb2 in
+        Pervasives.compare nm1 nm2
+    | n -> n
 end
 
 module SmbSet = Set.Make (OrdSmb)
+module SmbMap = Map.Make (OrdSmb)
 
-
-(* {3 Versions} *)
 
 (* Replace every type with U, except positive occurrences of Bool *)
 let u_kind k =
@@ -120,11 +162,13 @@ let u_smb smb =
   }
 
 
-(* {3 Table} *)
+(* NOTE An "unknown" type attached to a symbol leads to no suffix.
+ * That may be dangerous if you're not careful. *)
+let suffix s ss =
+  let ss = List.filter (fun s -> String.length s <> 0) ss in
+  String.concat "__" (s :: ss)
 
-let suffix s ss = String.concat "__" (s :: ss)
-
-let rec type_to_string ty =
+let rec type_to_string_aux ty =
     match ty with
     | TUnknown -> "Unknown"
     | TVar a -> "Var" ^ a
@@ -134,15 +178,20 @@ let rec type_to_string ty =
     | TAtom TReal -> "Real"
     | TAtom TStr -> "String"
     | TSet ty ->
-        let s = type_to_string ty in
+        let s = type_to_string_aux ty in
         "Set" ^ s
     | TArrow (ty1, ty2) ->
-        let s1 = type_to_string ty1 in
-        let s2 = type_to_string ty2 in
+        let s1 = type_to_string_aux ty1 in
+        let s2 = type_to_string_aux ty2 in
         "Arrow" ^ s1 ^ s2
     | TProd tys ->
-        let ss = List.map type_to_string tys in
+        let ss = List.map type_to_string_aux tys in
         List.fold_left (^) "Prod" ss
+
+let type_to_string ty =
+  match ty with
+  | TUnknown -> ""
+  | _ -> type_to_string_aux ty
 
 let choose ty =
   let id = suffix "Choose" [ type_to_string ty ] in
@@ -217,3 +266,32 @@ let product tys =
 let tuple tys =
   let id = suffix "Tuple" (List.map type_to_string tys) in
   mk_fst_smb Tuples id tys (TProd tys)
+
+
+let rec std_smb_aux = function
+  | Choose ty -> choose ty
+  | Mem ty -> mem ty
+  | SubsetEq ty -> subseteq ty
+  | SetEnum (n, ty) -> setenum n ty
+  | Union ty -> union ty
+  | Subset ty -> subset ty
+  | Cup ty -> cup ty
+  | Cap ty -> cap ty
+  | SetMinus ty -> setminus ty
+  | SetSt ty -> setst ty
+  | SetOf (tys, ty) -> setof tys ty
+  | Booleans -> set_boolean
+  | Strings -> set_string
+  | Ints -> set_int
+  | Nats -> set_nat
+  | Reals -> set_real
+  | Arrow (ty1, ty2) -> arrow ty1 ty2
+  | Domain (ty1, ty2) -> domain ty1 ty2
+  | FcnApp (ty1, ty2) -> fcnapp ty1 ty2
+  | Fcn (ty1, ty2) -> fcn ty1 ty2
+  | Except (ty1, ty2) -> except ty1 ty2
+  | Uver tla_smb -> u_smb (std_smb_aux tla_smb)
+
+let std_smb tla_smb =
+  { (std_smb_aux tla_smb) with smb_defn = Some tla_smb }
+

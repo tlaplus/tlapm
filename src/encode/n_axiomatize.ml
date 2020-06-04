@@ -28,19 +28,36 @@ let error ?at mssg =
 
 (* {3 Collection} *)
 
-let axioms smb = [] (* TODO *)
-
-let add_smb smb (smbs, facts as ecx) =
-  if SmbSet.mem smb smbs then
-    ecx
-  else
-    let smbs =
-      SmbSet.add smb smbs
-    in
-    let facts =
-      List.fold_left Deque.snoc facts (axioms smb)
-    in
-    (smbs, facts)
+(* NOTE Important function
+ * Add symbol to extended context, along with all depending
+ * symbols and axioms *)
+let add_smb smb (smbs, facts) =
+  let rec more acc_smbs acc_facts work_smbs =
+    try
+      let smb = SmbSet.choose work_smbs in
+      if SmbSet.mem smb acc_smbs then
+        (acc_smbs, acc_facts)
+      else
+        let deps, axms =
+          match get_defn smb with
+          | None -> ([], [])
+          | Some defn -> begin
+            match smbtable defn with
+            | Some (tla_smbs, axms) -> (List.map std_smb tla_smbs, axms)
+            | None ->
+                let mssg = "unknown symbol: " ^ get_name smb in
+                error mssg
+          end
+        in
+        let acc_smbs = SmbSet.add smb acc_smbs in
+        let acc_facts = List.fold_left Deque.snoc acc_facts axms in
+        let work_smbs = SmbSet.remove smb work_smbs in
+        let work_smbs = List.fold_right SmbSet.add deps work_smbs in
+        more acc_smbs acc_facts work_smbs
+    with Not_found ->
+      (acc_smbs, acc_facts)
+  in
+  more smbs facts (SmbSet.singleton smb)
 
 let collect_visitor = object (self : 'self)
   inherit [unit, etx] Expr.Visit.fold as super

@@ -6,8 +6,36 @@
 
 module Table : sig
   open Type.T
-  type family =
+  type tla_smb =
+    (* Logic *)
+    | Choose of ty
+    (* Set Theory *)
+    | Mem of ty
+    | SubsetEq of ty
+    | SetEnum of int * ty
+    | Union of ty
+    | Subset of ty
+    | Cup of ty
+    | Cap of ty
+    | SetMinus of ty
+    | SetSt of ty
+    | SetOf of ty list * ty
+    (* Primitive Sets *)
+    | Booleans
+    | Strings
+    | Ints
+    | Nats
+    | Reals
+    (* Functions *)
+    | Arrow of ty * ty
+    | Domain of ty * ty
+    | FcnApp of ty * ty
+    | Fcn of ty * ty
+    | Except of ty * ty
+    (* Special *)
+    | Uver of tla_smb
 
+  type family =
     | Logic
     | Sets
     | Booleans
@@ -19,16 +47,10 @@ module Table : sig
     | Arithmetic
     | Special
 
-  type smb
+  val get_tlafam : tla_smb -> family
+  val smbtable : tla_smb -> (tla_smb list * Expr.T.expr list) option
 
-  val mk_smb : family -> string -> ty_kind -> smb
-  val mk_cst_smb : family -> string -> ty -> smb
-  val mk_fst_smb : family -> string -> ty list -> ty -> smb
-  val mk_snd_smb : family -> string -> (ty list * ty) list -> ty -> smb
-  val get_fam  : smb -> family
-  val get_name : smb -> string
-  val get_kind : smb -> ty_kind
-  val get_ord  : smb -> int
+  type smb
 
   module OrdSmb : sig
     type t = smb
@@ -36,6 +58,20 @@ module Table : sig
   end
 
   module SmbSet : Set.S with type elt = smb
+  module SmbMap : Map.S with type key = smb
+
+  val std_smb : tla_smb -> smb
+
+  val mk_smb : family -> string -> ty_kind -> smb
+  val mk_cst_smb : family -> string -> ty -> smb
+  val mk_fst_smb : family -> string -> ty list -> ty -> smb
+  val mk_snd_smb : family -> string -> (ty list * ty) list -> ty -> smb
+
+  val get_fam  : smb -> family
+  val get_name : smb -> string
+  val get_kind : smb -> ty_kind
+  val get_ord  : smb -> int
+  val get_defn : smb -> tla_smb option
 
   val u_kind : ty_kind -> ty_kind
   val u_smb : smb -> smb
