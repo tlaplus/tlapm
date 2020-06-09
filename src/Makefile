@@ -45,7 +45,7 @@ REDUCE_PACK = \
 	reduce/r_nt_axioms reduce/r_nt_cook reduce/r_nt_table reduce/r_nt_collect
 
 ENCODE_PACK = \
-	encode/n_table encode/n_canon encode/n_axiomatize encode/n_reduce
+	encode/n_axioms encode/n_table encode/n_canon encode/n_axiomatize encode/n_reduce
 
 TYPESYSTEM_DIR = \
   typesystem/typ_t typesystem/typ_e typesystem/typ_c \

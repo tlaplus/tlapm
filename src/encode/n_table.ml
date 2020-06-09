@@ -9,6 +9,8 @@ open Ext
 open Type.T
 open Property
 
+module A = N_axioms
+
 
 (* {3 Symbols of TLA+} *)
 
@@ -71,8 +73,27 @@ let rec get_tlafam = function
       get_tlafam smb
 
 let smbtable = function
-  (* TODO *)
-  | _ -> Some ([], [])
+  | Choose ty ->
+      Some ([], [ A.choose ty ])
+  | SubsetEq ty ->
+      Some ([ Mem ty ], [ A.subseteq ty ])
+  | SetEnum (n, ty) ->
+      Some ([ Mem ty ], [ A.setenum n ty ])
+  | Union ty ->
+      Some ([ Mem ty ], [ A.union ty ])
+  | Subset ty ->
+      Some ([ Mem ty ], [ A.subset ty ])
+  | Cup ty ->
+      Some ([ Mem ty ], [ A.cup ty ])
+  | Cap ty ->
+      Some ([ Mem ty ], [ A.cap ty ])
+  | SetMinus ty ->
+      Some ([ Mem ty ], [ A.setminus ty ])
+  | SetSt ty ->
+      Some ([ Mem ty ], [ A.setst ty ])
+  | SetOf (tys, ty) ->
+      Some (List.map (fun ty -> Mem ty) tys @ [ Mem ty ], [ A.setof tys ty ])
+  | _ -> None
 
 
 (* {3 Symbol Data} *)

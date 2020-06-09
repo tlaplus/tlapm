@@ -43,10 +43,8 @@ let add_smb smb (smbs, facts) =
           | None -> ([], [])
           | Some defn -> begin
             match smbtable defn with
+            | None -> ([], [])
             | Some (tla_smbs, axms) -> (List.map std_smb tla_smbs, axms)
-            | None ->
-                let mssg = "unknown symbol: " ^ get_name smb in
-                error mssg
           end
         in
         let acc_smbs = SmbSet.add smb acc_smbs in
