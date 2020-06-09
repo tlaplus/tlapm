@@ -13,8 +13,10 @@ function fail (msg) {
 }
 
 # run the command given as argument
-function run_command (command) {
-  result_code = system (command);
+function run_command (command,   cmd) {
+  cmd = "export STRETCH=\""stretch "\"; " command;
+  #print "running: " cmd >>ENVIRON["LOGFILE"];
+  result_code = system (cmd);
   command_done = 1;
 }
 
@@ -32,6 +34,7 @@ BEGIN {
   result_code = 0;
   check_command = "";
   failed = 0;
+  stretch = ENVIRON["STRETCH"];
 }
 
 # remove trailing CR from input line
@@ -49,6 +52,12 @@ phase == 0 && FILENAME == "-" {
 phase == 1 && $1 == "command:" {
   sub (/command: /, "");
   run_command($0);
+  next;
+}
+
+phase == 1 && $1 == "stretch:" {
+  sub (/stretch: /, "");
+  stretch = $0;
   next;
 }
 
@@ -101,7 +110,7 @@ phase == 1 && FILENAME ~ /.*\/separator$/ {
     result = system (check_command);
     if (result != 0){ fail("explicit check failed"); }
   }else if (!command_done){
-    run_command("${TLAPM} --toolbox 0 0 --nofp ${FILE}");
+    run_command("${TLAPM} --toolbox 0 0 --nofp ${FILE} --stretch ${STRETCH}");
   }
   if (result_code != expected_result){
     fail("wrong result code");

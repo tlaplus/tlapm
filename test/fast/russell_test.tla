@@ -1,7 +1,7 @@
------- MODULE russel_test ------
+------ MODULE russell_test ------
 
 (*****************************************************************************)
-(* Name: russel_test                                                         *)
+(* Name: russell_test                                                        *)
 (* Author: Antoine Defourné                                                  *)
 (* Date: 16/09/19                                                            *)
 (*****************************************************************************)
@@ -15,9 +15,9 @@ THEOREM ASSUME NEW V,
 <1> HIDE DEF R
 <1>1 R \in R <=> R \notin R
     <2>1 R \in R => R \notin R
-        BY SMT DEF R
+        BY Zenon DEF R
     <2>2 R \notin R => R \in R
-        BY SMT DEF R
+        BY Zenon DEF R
     <2> QED
         BY ONLY <2>1, <2>2
 <1> QED

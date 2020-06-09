@@ -319,8 +319,8 @@ THEOREM Inv /\ Next => Inv'
              /\ S # {}
              /\ IsFiniteSet(S))'
         <4>1. (S \subseteq Nat \ {0})'
-          BY <1>1, InputAssump, GCD1, GCD2, GCD3, CardThm, FiniteSetThm, Z3
-          DEF Inv, TypeOK, CorrectTermination, lbl
+          BY \A i, j \in S : j > i => j - i \in Nat \ {0},
+             <1>1 DEF Inv, TypeOK, lbl
         <4>2. (S # {})'
           BY <1>1, InputAssump, GCD1, GCD2, GCD3, CardThm, FiniteSetThm, Z3
           DEF Inv, TypeOK, CorrectTermination, lbl
@@ -334,7 +334,8 @@ THEOREM Inv /\ Next => Inv'
         <4>4. QED
           BY <4>1, <4>2, <4>3
       <3>2. ((pc = "Done") => gcd \in Nat \ {0})'
-        BY <1>1, InputAssump, GCD1, GCD2, GCD3, CardThm, FiniteSetThm, Z3
+        BY (CHOOSE t \in S : TRUE) \in Nat \{0},
+           <1>1, InputAssump, GCD1, GCD2, GCD3, CardThm, FiniteSetThm, Z3
         DEF Inv, TypeOK, CorrectTermination, lbl
       <3>3. (pc \in {"lbl", "Done"})'
         BY <1>1, InputAssump, GCD1, GCD2, GCD3, CardThm, FiniteSetThm, Z3
@@ -359,8 +360,13 @@ THEOREM Inv /\ Next => Inv'
 (*|*) <3>3. QED
 (*|*)   BY <3>1, <3>2
     <2>3. CorrectTermination'
-      BY <1>1, InputAssump, GCD1, GCD2, GCD3, CardThm, FiniteSetThm, Z3
-      DEF Inv, TypeOK, CorrectTermination, lbl
+      <3>1. Cardinality (S) = 1 => S = {CHOOSE t \in S : TRUE}
+        BY CardThm DEF Inv, TypeOK
+      <3>2. Cardinality (S) = 1 => GCD (S) = CHOOSE t \in S : TRUE
+        BY <3>1, GCD2 DEF Inv, TypeOK
+      <3> QED 
+        BY <1>1, <3>2, InputAssump, GCD1, GCD2, GCD3, CardThm, FiniteSetThm, Z3   
+        DEF Inv, TypeOK, CorrectTermination, lbl
     <2>4. QED
       BY <2>1, <2>2, <2>3 DEF Inv
 
@@ -372,5 +378,7 @@ THEOREM Inv /\ Next => Inv'
     BY <1>1, <1>2 DEF Next
 =============================================================================
 \* Modification History
+\* Last modified Fri Apr 17 10:56:11 CEST 2020 by doligez
+\* Last modified Wed Apr 15 12:33:00 CEST 2020 by doligez
 \* Last modified Thu Jan 31 14:04:57 PST 2013 by lamport
 \* Created Thu Jan 10 19:38:24 PST 2013 by lamport

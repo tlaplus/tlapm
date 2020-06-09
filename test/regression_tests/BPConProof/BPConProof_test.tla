@@ -4215,43 +4215,10 @@ THEOREM chosen \subseteq P!chosen
 <1> WITNESS b \in P!Ballot
 <1>3. QED
   BY <1>1
-zzzz == "abcdefgh"
 ==============================================================================
 \* Modification History
+\* Last modified Wed Apr 15 15:16:26 CEST 2020 by doligez
 \* Last modified Mon Aug 18 14:57:27 CEST 2014 by tomer
-\* Last modified Mon Mar 04 19:44:33 CET 2013 by doligez
 \* Last modified Mon Mar 04 17:24:05 CET 2013 by doligez
 \* Last modified Wed Nov 30 15:47:26 PST 2011 by lamport
 \* Last modified Wed Dec 01 11:35:29 PST 2010 by lamport
-
-This algorithm has no type 2a message and no Phase2a action.  Although a
-little more complicated, it might be better to add the message and the
-action and the existence of the 2a message as a precondition for the
-Phase2av action.  I started doing this, and BPConProof_10_11_02a.tla
-is as far as I got.  See the comments at the beginning of that file.
-
----
-After discovering that BConProof.10-11-01 was for an algorithm that didn't
-satisfy liveness, I rewrote it to this spec.  After model checking the
-revision (correcting a few trivial errors), I edited the proofs to remove
-references to variables that no longer existed (found by the parser) and
-use of record fields that no longer existed (found by a simple search).
-Where I could easily make those edits by rewriting the proof in a way that
-it could conceivably be valid, I did so.  If not, I just commented out
-the proof.
-
-I reproved a small number of preliminary lemmas, which probably required
-on the order of 10 new proofs.  I then decided to recheck the status
-of the whole proof, and I found that 1743 of 2321 obligations were already proved.
-
-Reproving was incredibly fast and easy.  There were two main reasons:
-
-1. The hierarchical proof style is wonderful.
-
-2. Using the customization feature for proof-status coloring, I made all
-steps that had not been proved brightly colored.  This made it trivial to
-see what I had left to do.  (This coloring is not the default because it's
-not what you want when you're writing the proof.)
-
-The complete proof now contains 2662 obligations, 1629 of them trivial.
-Zenon failed on 41 of them.

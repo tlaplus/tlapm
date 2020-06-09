@@ -1,5 +1,14 @@
+1. How to launch the tests
 
-Test files.
+Before you can launch the tests, the PM must be installed into this
+directory (the "test" directory). This is accomplished by launching
+the installer with the -d option:
+
+   ../tools/installer/tlaps-1.4.5-*-inst.exe -d `pwd`
+
+
+
+2. Format of the test files.
 
 Every file in this directory (and recursively in its subdirectories)
 with a name that ends in "_test.tla" defines one test of the test
@@ -14,7 +23,11 @@ line of ==== are the commands for the test harness:
   with the "results" clause.  The standard outputs and standard error
   outputs of the commands are all concatenated in execution order.
   If this clause is omitted, the default command is executed:
-    ${TLAPM} --toolbox 0 0 --nofp ${FILE}
+    ${TLAPM} --toolbox 0 0 --nofp ${FILE} --stretch ${STRETCH}
+
+- stretch: <n>
+  Changes the STRETCH parameter to <n>. This should only be used for
+  testing obligations that must fail.
 
 - result: <n>
   Checks that the result code of the command is <n>.  If there is
