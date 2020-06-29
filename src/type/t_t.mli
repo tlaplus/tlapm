@@ -42,8 +42,16 @@ val mk_fstk_ty  : ty list -> ty -> ty_kind
 val get_atom  : ty -> ty_atom
 val get_ty    : ty_kind -> ty
 
+(** Types occuring in a kind *)
+val get_types : ty_kind -> ty list
+
+(** String representation; no whitespaces *)
+val ty_to_string : ty -> string
+
 
 (* {3 Type Annotations} *)
+
+(* FIXME remove sort annotations, they are not relevant anymore *)
 
 module Props : sig
   val type_prop : ty pfuncs
@@ -62,6 +70,10 @@ val has_kind : 'a wrapped -> bool
 val get_type : 'a wrapped -> ty
 val get_sort : 'a wrapped -> ty_atom
 val get_kind : 'a wrapped -> ty_kind
+
+val query_type : 'a wrapped -> ty option
+val query_sort : 'a wrapped -> ty_atom option
+val query_kind : 'a wrapped -> ty_kind option
 
 
 (* {3 Pretty-printing} *)

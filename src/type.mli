@@ -41,6 +41,10 @@ module T : sig
   val get_atom  : ty -> ty_atom
   val get_ty    : ty_kind -> ty
 
+  val get_types : ty_kind -> ty list
+
+  val ty_to_string : ty -> string
+
   val pp_print_type : Format.formatter -> ty -> unit
   val pp_print_kind : Format.formatter -> ty_kind -> unit
 
@@ -61,6 +65,10 @@ module T : sig
   val get_type : 'a wrapped -> ty
   val get_sort : 'a wrapped -> ty_atom
   val get_kind : 'a wrapped -> ty_kind
+
+  val query_type : 'a wrapped -> ty option
+  val query_sort : 'a wrapped -> ty_atom option
+  val query_kind : 'a wrapped -> ty_kind option
 end
 
 module Disambiguation : sig

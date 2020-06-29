@@ -5,9 +5,9 @@
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
 
-open Format
-
+open Ext
 open Util
+open Format
 open Fmtutil
 open Property
 
@@ -54,6 +54,26 @@ let ty_int = mk_atom_ty TInt
 let ty_real = mk_atom_ty TReal
 let ty_str = mk_atom_ty TStr
 
+let rec get_types (TKind (ks, ty)) =
+  let tss = List.map get_types ks in
+  ty :: List.concat tss
+
+let rec ty_to_string ty =
+  match ty with
+  | TUnknown -> "Unknown"
+  | TVar a -> "Var" ^ a
+  | TAtom a -> "Atom" ^ tyatom_to_string a
+  | TSet ty -> "Set" ^ ty_to_string ty
+  | TArrow (ty1, ty2) -> "Fun" ^ ty_to_string ty1 ^ ty_to_string ty2
+  | TProd tys -> "Prod" ^ String.concat "" (List.map ty_to_string tys)
+and tyatom_to_string a =
+  match a with
+  | TU -> "U"
+  | TBool -> "Bool"
+  | TInt -> "Int"
+  | TReal -> "Real"
+  | TStr -> "String"
+
 
 (* {3 Type Annotations} *)
 
@@ -74,6 +94,10 @@ let has_kind h = has h Props.kind_prop
 let get_type h = get h Props.type_prop
 let get_sort h = get h Props.atom_prop
 let get_kind h = get h Props.kind_prop
+
+let query_type h = query h Props.type_prop
+let query_sort h = query h Props.atom_prop
+let query_kind h = query h Props.kind_prop
 
 
 (* {3 Pretty-printing} *)
