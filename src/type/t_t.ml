@@ -23,6 +23,11 @@ type ty =
   | TProd of ty list
 and ty_atom =
   | TU | TBool | TInt | TReal | TStr
+and ty_arg =
+  | TRg of ty
+  | TOp of ty list * ty
+and ty_sch =
+  | TSch of string list * ty_arg list * ty
 and ty_kind =
   | TKind of ty_kind list * ty
 
@@ -58,6 +63,25 @@ let rec get_types (TKind (ks, ty)) =
   let tss = List.map get_types ks in
   ty :: List.concat tss
 
+let rec apply_type_subst m ty =
+  match ty with
+  | TVar a when Sm.mem a m ->
+      Sm.find a m
+  | TSet ty ->
+      TSet (apply_type_subst m ty)
+  | TArrow (ty1, ty2) ->
+      TArrow (apply_type_subst m ty1, apply_type_subst m ty2)
+  | TProd tys ->
+      TProd (List.map (apply_type_subst m) tys)
+  | _ -> ty
+
+let apply_targ_subst m targ =
+  match targ with
+  | TRg ty ->
+      TRg (apply_type_subst m ty)
+  | TOp (tys, ty) ->
+      TOp (List.map (apply_type_subst m) tys, apply_type_subst m ty)
+
 let rec ty_to_string ty =
   match ty with
   | TUnknown -> "Unknown"
@@ -79,12 +103,19 @@ and tyatom_to_string a =
 
 module Props = struct
   let type_prop = make "Type.T.Props.type_prop"
+  let targ_prop = make "Type.T.Props.targ_prop"
+  let tsch_prop = make "Type.T.Props.tsch_prop"
+
   let atom_prop = make "Type.T.Props.atom_prop"
   let kind_prop = make "Type.T.Props.kind_prop"
+
+  let targs_prop = make "Type.T.Props.targs_prop"
+  let ucast_prop = make "Type.T.Props.ucast_prop"
+  let bproj_prop = make "Type.T.Props.bproj_prop"
 end
 
 let annot_type h t = assign h Props.type_prop t
-let annot_sort h s = assign h Props.atom_prop s
+let annot_sort h t = assign h Props.atom_prop t
 let annot_kind h k = assign h Props.kind_prop k
 
 let has_type h = has h Props.type_prop
@@ -143,6 +174,31 @@ and pp_print_atom ff a =
   | TInt -> pp_print_string ff "int"
   | TReal -> pp_print_string ff "real"
   | TStr -> pp_print_string ff "string"
+
+let pp_print_times ff () =
+  fprintf ff "@ * "
+
+let pp_print_targ ff targ =
+  match targ with
+  | TRg ty | TOp ([], ty) ->
+      pp_print_type ff ty
+  | TOp (tys, ty) ->
+      fprintf ff "%a@ -> %a"
+      (pp_print_delimited ~sep:pp_print_times pp_print_type) tys
+      pp_print_type ty
+
+let pp_print_tsch ff (TSch (vs, targs, ty)) =
+  let pp_print_targ ff targ =
+    match targ with
+    | TOp (tys, _) when List.length tys > 0 ->
+        pp_print_with_parens pp_print_targ ff targ
+    | _ ->
+        pp_print_targ ff targ
+  in
+  fprintf ff "(%a).@ %a@ -> %a"
+  (pp_print_delimited ~sep:pp_print_space pp_print_string) vs
+  (pp_print_delimited ~sep:pp_print_times pp_print_targ) targs
+  pp_print_type ty
 
 let rec pp_print_kind ff (TKind (ks, ty)) =
   fprintf ff "@[[%a@]]%a"

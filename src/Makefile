@@ -39,7 +39,7 @@ EXPR_PACK = \
   expr/e_elab expr/e_anon
 
 TYPE_PACK = \
-	type/t_t type/t_disambiguation
+	type/t_t type/t_simple type/t_disambiguation
 
 REDUCE_PACK = \
 	reduce/r_nt_axioms reduce/r_nt_cook reduce/r_nt_table reduce/r_nt_collect
