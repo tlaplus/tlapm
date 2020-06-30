@@ -323,6 +323,50 @@ let isabelle_prove ob org_ob tmo tac res_cont =
 
 (****************************************************************************)
 
+let print_obligation ob =
+    if ((Internal TRUE) <> ob.obl.core.active.core) then begin
+    let msg = (
+        "Proof obligation " ^ (string_of_int (Option.get ob.id)) ^
+        " :\n") in
+    let pr_obl fmt = ignore (
+        let print = Expr.Fmt.pp_print_sequent in
+        let cx = (Deque.empty, Ctx.dot) in
+        let fmt = Format.std_formatter in
+        print cx fmt ob.obl.core) in
+    Util.printf
+        ~at:ob.obl
+        ~prefix:"[INFO]: "
+        "%s@\n  @[<b0>%t@]@." msg pr_obl ;
+    (* TODO: conditional printing in more verbose mode of `tlapm`. *)
+    (* ignore (sequent_stats ob.obl.core) *)
+    end
+
+
+let log_info (msg: string) =
+    let at = noprops "" in
+    (* to print `prefix`, set `at <> None` *)
+    Util.printf
+        ~at:at
+        ~prefix:"[INFO]: " "%s" msg
+
+
+let print_obl_and_msg
+        (ob: Proof.T.obligation)
+        (msg: string):
+            unit =
+    (* Print message `msg` and then the obligation `ob`.
+
+    If the obligation is `TRUE` (trivial), then no printing.
+    *)
+    (* Trivial obligation ?  (for example, a proof directive) *)
+    if (((Internal TRUE) <> ob.obl.core.active.core)
+        && !Params.verbose) then
+    begin
+        log_info msg;
+        print_obligation ob
+    end
+
+
 let pp_print_ob ?comm:(c=";;") chan ob =
   output_string chan (Printf.sprintf "%s Proof obligation:\n%s" c c);
   let ob_buf = Buffer.create 2000 in
@@ -332,8 +376,8 @@ let pp_print_ob ?comm:(c=";;") chan ob =
   let replace inp out = Str.global_replace (Str.regexp_string inp) out in
   let ob_str = replace "\n" ("\n"^c^" ") (Buffer.contents ob_buf) in
   output_string chan ob_str;
-  output_string chan "\n";
-;;
+  output_string chan "\n"
+
 
 let spass_unsat_re = Str.regexp "SPASS beiseite: Proof found";;
 let eprover_unsat_re = Str.regexp "SZS status Theorem";;
@@ -536,6 +580,13 @@ let get_prover_name m =
   | Method.Verit _ -> "Verit"
   | Method.Spass _ -> "Spass"
   | Method.Tptp _ -> "TPTP"
+  | Method.ExpandENABLED -> "ExpandENABLED"
+  | Method.ExpandCdot -> "ExpandCdot"
+  | Method.AutoUSE -> "AutoUSE"
+  | Method.Lambdify -> "Lambdify"
+  | Method.ENABLEDaxioms -> "ENABLEDaxioms"
+  | Method.LevelComparison -> "LevelComparison"
+  | Method.Trivial -> "Trivial"
 ;;
 
 let already_processed ob meth =
@@ -560,50 +611,88 @@ let already_processed ob meth =
                     forget previous results." prover f2 prover;
     in
     match Fpfile.query fp meth with
+        (* No fingerprint *)
     | (None, others) -> (Some meth, [])
+        (* Successful proof already *)
     | (Some (NTriv (RSucc, m) as st), others) ->
        success_warning meth m;
        (None, [st])
+       (* No proof, fingerprint exists *)
+    | (Some (NTriv ((RFail r), m)), others) -> (None, [NTriv ((RFail r), m)])
+        (* Interrupted, fingerprint exists *)
+    | (Some (NTriv (RInt, m)), others) -> (None, [NTriv (RInt, m)])
+    | (Some Triv, others) -> (None, [Triv])
+        (*
     | (Some st, others) -> (None, [st])
+    *)
   end
 ;;
 
 (*******************************************************************)
 
+let make_methname meth =
+  Format.pp_print_string Format.str_formatter "attempted " ;
+  Method.pp_print_tactic Format.str_formatter meth ;
+  Format.flush_str_formatter ()
+
+
+let make_res_cont org_ob meth save =
+  let methname = make_methname meth in
+  let res_cont
+        (warnings: string)
+        (res: Method.result)
+        (time_used: float option):
+            bool =
+      match res with
+      | Method.Proved prf ->
+         let res = NTriv (RSucc, meth) in
+         Toolbox.print_new_res
+            (Lazy.force org_ob) res warnings time_used;
+         save methname prf res;
+         (* FIXME call success function *)
+         true
+      | Method.Failed msg ->
+         (* `res` has type `status_type6` of
+         `status_type_aux6 * Method.t`
+         and
+         `status_type_aux6` has value
+         `RFail of reason option`
+         and `reason option` has values
+         `None`
+         `Some False`
+         `Some Timeout`
+         `Some (Cantwork of string)`
+         *)
+         let res = NTriv (RFail (Some False), meth) in
+         Toolbox.print_new_res
+            (Lazy.force org_ob) res (warnings ^ msg) time_used;
+         save methname "" res;
+         false
+      | Method.Timedout ->
+         let res = NTriv (RFail (Some Timeout), meth) in
+         Toolbox.print_new_res
+            (Lazy.force org_ob) res warnings time_used;
+         save methname "" res;
+         false
+      | Method.Interrupted ->
+         let res = NTriv (RInt, meth) in
+         Toolbox.print_new_res
+            (Lazy.force org_ob) res warnings time_used;
+         save methname "" res;
+         false
+      | Method.NotTried msg ->
+         let res = NTriv (RFail (Some (Cantwork msg)), meth) in
+         Toolbox.print_new_res
+            (Lazy.force org_ob) res warnings time_used;
+         save methname "" res;
+         false
+    in
+    res_cont
+
+
 let prove_with ob org_ob meth save =  (* FIXME add success fuction *)
-  let methname =
-    Format.pp_print_string Format.str_formatter "attempted " ;
-    Method.pp_print_tactic Format.str_formatter meth ;
-    Format.flush_str_formatter ()
-  in
-  let res_cont w res time_used =
-    match res with
-    | Method.Proved prf ->
-       let res = NTriv (RSucc, meth) in
-       Toolbox.print_new_res (Lazy.force org_ob) res w time_used;
-       save methname prf res;
-       (* FIXME call success function *)
-       true
-    | Method.Failed msg ->
-       let res = NTriv (RFail (Some False), meth) in
-       Toolbox.print_new_res (Lazy.force org_ob) res (w ^ msg) time_used;
-       save methname "" res;
-       false
-    | Method.Timedout ->
-       let res = NTriv (RFail (Some Timeout), meth) in
-       Toolbox.print_new_res (Lazy.force org_ob) res w time_used;
-       save methname "" res;
-       false
-    | Method.Interrupted ->
-       let res = NTriv (RInt, meth) in
-       Toolbox.print_new_res (Lazy.force org_ob) res w time_used;
-       save methname "" res;
-       false
-    | Method.NotTried msg ->
-       let res = NTriv (RFail (Some (Cantwork msg)), meth) in
-       Toolbox.print_new_res (Lazy.force org_ob) res w time_used;
-       save methname "" res;
-       false
+  let methname = make_methname meth in
+  let res_cont = make_res_cont org_ob meth save
   in
   match meth with
   | Method.Zenon f ->
@@ -664,6 +753,29 @@ let prove_with ob org_ob meth save =  (* FIXME add success fuction *)
      Toolbox.print_new_res ob res (Errors.get_warnings ()) None;
      save methname "" res;
      Schedule.Immediate false
+  | Method.ExpandENABLED ->
+     (* TODO: use `Util.printf` ? *)
+     print_string "(* ... unexpected expansion of `ENABLED` *)\n";
+     assert false
+  | Method.ExpandCdot ->
+     print_string "(* ... unexpected expansion of `\\cdot` *)\n";
+     assert false
+  | Method.AutoUSE ->
+     print_string "(* ... unexpected auto-expansion of definitions *)\n";
+     assert false
+  | Method.Lambdify ->
+     print_string "(* ... unexpected lambdification *)\n";
+     assert false
+  | Method.ENABLEDaxioms ->
+     print_string "(* ... unexpected application of `ENABLED` axioms *)\n";
+     assert false
+  | Method.LevelComparison ->
+     print_string "(* ... unexpected level comparison *)\n";
+     assert false
+  | Method.Trivial ->
+     vprintf "%s" ("(* ... using only TLAPM " ^
+        "(trivial backend:  `Schedule.Immediate true` ) *)\n");
+     Schedule.Immediate true
   | Method.Fail ->
      vprintf "(* ... failing *)\n" ;
      Schedule.Immediate false
@@ -671,11 +783,249 @@ let prove_with ob org_ob meth save =  (* FIXME add success fuction *)
 
 (*****************************************************************************)
 
-let normalize ob =
-  match (Expr.Elab.normalize Deque.empty (noprops (Sequent ob.obl.core))).core
-  with
-  | Sequent sq -> { ob with obl = { ob.obl with core = sq } }
-  | _ -> failwith "Proof_prep.normalize"
+
+(* For reading, the function `Tlapm.process_obs.record`,
+which is called from within the function `save_result` below.
+*)
+(*
+let record
+        (success: bool)
+        (ob: Proof.T.obligation) =
+    (* the number `obl_id \in Nat` that identifies the obligation `ob` *)
+    let obl_id = Option.get ob.id in
+    (* store the obligation id number in the internal table `treated` *)
+    treated := IntSet.add obl_id !treated;
+    (* if the prover (frontend or backend) succeeded, *)
+    if success then (* then store the obligation id number in
+                    the internal table `proved`
+                    *)
+        proved := IntSet.add obl_id !proved;
+*)
+
+
+let save_result fpout thyout record (r: package) =
+    (* `record` is the function `Tlapm.process_obs.record` *)
+    if r.proof <> "" then Isabelle.thy_write thyout r.final_form r.proof;
+    (* write fingerprint and results to the fingerprints file `fpout` *)
+    let fingerprint: string = Option.get r.final_form.fingerprint in
+    Fpfile.fp_writes
+        fpout fingerprint r.results;
+    (* write results to the internal table `Tlapm.process_obs.treated` and
+    only those obligations whose proof succeeded in the internal table
+    `Tlapm.process_obs.proved`
+    *)
+    let f res =
+        match res with
+        | Types.Triv
+        | Types.NTriv (Types.RSucc, _) ->
+            record true r.final_form
+        | _ ->
+            record false r.final_form  (* filter obligations that have not been
+                proved, so that they are not added to the `IntSet` `proved`.
+                *)
+        in
+    List.iter f r.results;
+;;
+
+(*
+type Proot.T.obligation = {
+    id  : int option;
+    obl : sequent wrapped;
+    fingerprint : string option;
+    kind : obligation_kind;
+}
+*)
+
+
+let expr_from_obl
+        (ob: Proof.T.obligation):
+            Expr.T.expr =
+    (* Return expression for the sequent of the proof obligation `obl`. *)
+    let sequent_wrapped: Expr.T.sequent wrapped = ob.obl in
+    let sequent: Expr.T.sequent = sequent_wrapped.core in
+    let expr_: Expr.T.expr_ = Sequent sequent in
+    (* let expr: Expr.T.expr = noprops expr_ in *)
+    expr_ @@ ob.obl
+
+
+let obl_from_expr
+        (expr: Expr.T.expr)
+        (ob: Proof.T.obligation):
+            Proof.T.obligation =
+    (* Return proof obligation `obl` with the sequent from `expr`. *)
+    match expr.core with
+    | Sequent sequent ->
+        let sequent_wrapped = {ob.obl with core = sequent} in
+        (* the properties of `ob.obl` are propagated, because they are used in
+        Toolbox messages.
+        *)
+        {ob with obl = sequent_wrapped}
+    | _ -> failwith "Backend.Prep.obl_from_expr"
+
+
+let normalize_expr ob =
+    print_obl_and_msg ob (
+        "Proof obligation before `Backend.Prep.expand_defs`:\n");
+    let ob = expand_defs ob in
+    print_obl_and_msg ob (
+        "Proof obligation after `Backend.Prep.expand_defs` and " ^
+        "before `Expr.Elab.normalize`:\n");
+    let expr: Expr.T.expr =
+        let expr = expr_from_obl ob in
+        let cx = Deque.empty in
+        Expr.Elab.normalize cx expr in
+    let ob = obl_from_expr expr ob in
+    print_obl_and_msg ob "Proof obligation after `Expr.Elab.normalize`:\n";
+    ob
+
+
+let invert_renaming ob =
+    (* Map parameter names in `\E` bounds to variable names. *)
+    let expr = expr_from_obl ob in
+    let expr =
+        let cx = Deque.empty in
+        Expr.Action.invert_renaming cx expr in
+    let ob = obl_from_expr expr ob in
+    ob
+
+
+let expand_enabled_cdot ob
+        ~(expand_enabled:bool)
+        ~(expand_cdot:bool)
+        ~(autouse: bool)
+        ~(apply_lambdify: bool)
+        ~(enabled_axioms: bool)
+        ~(level_comparison: bool) =
+    (* Instantiate modules, use de Bruijn indices, expand action operators,
+    automatically expand definitions necessary for soundness of expanding
+    the operators `ENABLED` and `\cdot`.
+    *)
+    print_obl_and_msg ob (
+        "Proof obligation before `Expr.Action.expand_action_operators`:\n");
+    let expr = expr_from_obl ob in
+    let expr: Expr.T.expr = begin
+        if expand_enabled || expand_cdot then begin
+            let cx = Deque.empty in
+            Expr.Action.expand_action_operators
+            (* Expr.Action_quadratic.expand_action_operators *)
+            (* Expr.Action_iter.expand_action_operators *)
+                cx expr
+                ~expand_enabled:expand_enabled
+                ~expand_cdot:expand_cdot
+                ~autouse:autouse
+        end
+        else if apply_lambdify then begin
+            let cx = Deque.empty in
+            Expr.Action.lambdify
+                cx expr
+                ~lambdify_enabled:apply_lambdify
+                ~lambdify_cdot:apply_lambdify
+                ~autouse:autouse
+        end
+        else if level_comparison then begin
+            let cx = Deque.empty in
+            Expr.LevelComparison.check_level_change
+                cx expr
+        end
+        else if enabled_axioms then begin
+            if Expr.T.has_enabledaxioms expr then begin
+                print_string "expr has ENABLEDaxioms property ===\n";
+                if not (Expr.T.get_enabledaxioms ob.obl) then
+                    failwith "ENABLEDaxioms depends on assumptions of level > 1 \n\n"
+                end;
+            let cx = Deque.empty in
+            Expr.Action.implication_to_enabled cx expr
+        end
+        else
+            expr
+        end in
+    let ob = obl_from_expr expr ob in
+    print_obl_and_msg ob (
+        "Proof obligation after `Expr.Action.expand_action_operators` " ^
+        "(expansion of `ENABLED`, `\\cdot`, and definitions for soundness):\n");
+    ob
+
+
+let normalize_expand ob fpout thyout record
+        ~(expand_enabled:bool)
+        ~(expand_cdot:bool)
+        ~(autouse: bool)
+        ~(apply_lambdify: bool)
+        ~(enabled_axioms: bool)
+        ~(level_comparison: bool) =
+    let ob = normalize_expr ob in
+    try
+        let ob = expand_enabled_cdot
+            ob expand_enabled expand_cdot autouse
+            apply_lambdify enabled_axioms level_comparison in
+        (ob, true)
+    with Failure msg ->
+        (* `msg` is the message from soundness checks,
+        which describes which soundness check failed,
+        and how the input module could possibly be changed to
+        pass the soundness check.
+        *)
+    begin
+        assert (expand_enabled || expand_cdot || apply_lambdify
+            || enabled_axioms || level_comparison);
+        (* !cleanup (); *)
+        (* let warnings: string = Errors.get_warnings () in *)
+        let warnings = (msg ^ "\nObligation:\n\n") in
+            (* `warnings` is prepended to
+            the obligation, within the Toolbox message that is printed by the
+            function `Backend.Toolbox.toolbox_print`.
+
+            This assignment results in `msg` appearing in the Toolbox message
+            both:
+
+            - in the field `@!!reason:`, and
+
+            - in the field `@!!obl:`, prepended to the obligation.
+            *)
+        let res_cont =
+            (* TODO: consider case of multiple frontends,
+            and whether to iterate through all the frontends and
+            record the results in the fingerprints file
+            *)
+            let meth = if expand_enabled then
+                            Method.ExpandENABLED
+                        else if expand_cdot then begin
+                            Method.ExpandCdot
+                        end else if apply_lambdify then begin
+                            Method.Lambdify
+                        end else if enabled_axioms then begin
+                            Method.ENABLEDaxioms
+                        end else begin
+                            assert level_comparison;
+                            Method.LevelComparison
+                        end
+                    in
+            let save log proof res =
+                let r = {
+                    Types.final_form = ob;
+                    Types.log = [log];
+                    Types.proof = proof;
+                    Types.results = [res];
+                    } in
+                save_result fpout thyout record r
+                in
+            make_res_cont (lazy ob) meth save
+            in
+        (* let result: Method.result = Method.Proved msg in *)
+        let result: Method.result = Method.NotTried msg in
+        (* let result: Method.result = Method.Failed "" in *)
+        let time_used: float option = None in
+        let _ = res_cont warnings result time_used in
+        ();
+        (* assert false; *)
+        (* let schedule: Schedule.computation = Schedule.Immediate false
+        in ignore schedule ; *)
+        let new_seq =
+                {ob.obl.core with active = noprops (Internal Builtin.FALSE)}
+            in
+        let ob = {ob with obl = {ob.obl with core = new_seq}} in
+        (ob, false)
+    end
 ;;
 
 (*
@@ -825,6 +1175,20 @@ let compute_meth def args usept =
   | Some "tptp" ->
      let tmo = Option.default Method.default_tptp_timeout !timeout in
      Method.Tptp tmo
+  | Some "expandenabled" ->
+     Method.ExpandENABLED
+  | Some "expandcdot" ->
+     Method.ExpandCdot
+  | Some "autouse" ->
+     Method.AutoUSE
+  | Some "lambdify" ->
+     Method.Lambdify
+  | Some "enabledaxioms" ->
+     Method.ENABLEDaxioms
+  | Some "levelcomparison" ->
+     Method.LevelComparison
+  | Some "trivial" ->
+     Method.Trivial
   | Some s ->
      Errors.err ?at:!prover_loc "Unknown prover: %s" s;
      failwith "error in prover specification";
@@ -850,10 +1214,11 @@ let find_meth ob =
        | Fact ({core = With (_, m)} as fac, Visible, tm) -> (* FIXME remove *)
           meths := [m] :: !meths ;
           stack := None :: !stack;
-          Fact (fac, Hidden, tm) @@ h
-       | Defn ({core = Bpragma (h, e, l)} as def, wheredef, _, export) ->
+          Fact (fac, Visible, tm) @@ h
+       | Defn ({core = Bpragma (h, e, l)} as def,
+                wheredef, visibility, export) ->
            stack := Some (Premeth (l)) :: !stack;
-           Defn (def, wheredef, Hidden, export) @@ h
+           Defn (def, wheredef, visibility, export) @@ h
        | Fact ({core = Apply ({core = Ix n}, ll)} as fac, Visible, tm) ->
           begin match List.nth !stack (n-1) with
           | None ->
@@ -867,13 +1232,13 @@ let find_meth ob =
              let f x = compute_meth x ll fac in
              meths := (List.map f l) :: !meths;
              stack := None :: !stack;
-             Fact (fac, Hidden, tm) @@ h
+             Fact (fac, Visible, tm) @@ h
           | Some (Meth _) -> assert false  (* FIXME remove *)
           end
        | Defn ({core = Operator (h, {core = With (exp, m)})} as def,
                wheredef, Visible, export) ->  (* FIXME remove *)
           stack := Some (Meth m) :: !stack;
-          Defn (def, wheredef, Hidden, export) @@ h
+          Defn (def, wheredef, Visible, export) @@ h
        | Fact ({core = Ix n} as fac, Visible, tm) ->
           begin match List.nth !stack (n-1) with
           | None ->
@@ -882,7 +1247,7 @@ let find_meth ob =
           | Some (Meth m) ->          (* FIXME remove *)
              meths := [m] :: !meths;
              stack := None :: !stack;
-             Fact (fac, Hidden, tm) @@ h
+             Fact (fac, Visible, tm) @@ h  (* was `Hidden` *)
           | Some (Premeth (l)) ->
              if Property.get h Proof.T.Props.use_location != !use_loc then begin
                meths := [];
@@ -891,7 +1256,7 @@ let find_meth ob =
              let f x = compute_meth x [] fac in
              meths := (List.map f l) :: !meths;
              stack := None :: !stack;
-             Fact (fac, Hidden, tm) @@ h
+             Fact (fac, Visible, tm) @@ h
           end
        | _ ->
           stack := None :: !stack;
@@ -899,25 +1264,29 @@ let find_meth ob =
      in
      let cx = Deque.map f ob.obl.core.context in
      let meths =
-       match !meths with
-       | [] -> !Params.default_method
-       | m -> List.flatten (List.rev m)
+        match !meths with
+        | [] -> !Params.default_method
+        | m -> List.flatten (List.rev m)
+     in
+     let prover_meths = List.filter
+         (fun x -> (
+             (x <> Method.ExpandENABLED) &&
+             (x <> Method.ExpandCdot) &&
+             (x <> Method.AutoUSE) &&
+             (x <> Method.Lambdify) &&
+             (x <> Method.ENABLEDaxioms) &&
+             (x <> Method.LevelComparison)
+             ))
+         meths in
+     let meths =
+       match prover_meths with
+       | [] -> List.append meths !Params.default_method
+       | m -> meths
      in
      let sq = { context = cx ; active = ob.obl.core.active } in
      let obl = sq @@ ob.obl in
      let obl = assign obl Proof.T.Props.meth meths in
      { ob with obl = obl }
-;;
-
-let save_result fpout thyout record r =
-  if r.proof <> "" then Isabelle.thy_write thyout r.final_form r.proof;
-  Fpfile.fp_writes fpout (Option.get r.final_form.fingerprint) r.results;
-  let f res =
-    match res with
-    | Types.Triv | Types.NTriv (Types.RSucc, _) -> record true r.final_form
-    | _ -> record false r.final_form
-  in
-  List.iter f r.results;
 ;;
 
 let really_ship ob org_ob meth fpout thyout record =
@@ -947,6 +1316,7 @@ let really_ship ob org_ob meth fpout thyout record =
   end
 ;;
 
+(* TODO: constness visitor also called in frontends *)
 let add_constness ob =
   let e = noprops (Expr.T.Sequent ob.obl.core) in
   let visitor = object (self: 'self)
@@ -968,6 +1338,7 @@ let is_trivial x =
   try ignore (Lazy.force x); true with Nontrivial -> false
 ;;
 
+
 (* This function is called on every obligation in the range selected by the
    user. It produces a [Schedule.t] that represents the job of proving this
    obligation.
@@ -976,31 +1347,126 @@ let ship ob fpout thyout record =
   vprintf "(* trying obligation %d generated from %s *)\n" (Option.get ob.id)
           (Util.location ~cap:false ob.obl);
   begin try
+    print_obl_and_msg ob "Proof obligation before `find_meth`:\n";
     let ob = find_meth ob in
+    print_obl_and_msg ob "Proof obligation after `find_meth`:\n";
+    let meths = get ob.obl Proof.T.Props.meth in
+    let expand_enabled = List.exists
+        (fun x -> (x = Method.ExpandENABLED)) meths in
+    let expand_cdot = List.exists
+        (fun x -> (x = Method.ExpandCdot)) meths in
+    let autouse = List.exists
+        (fun x -> (x = Method.AutoUSE)) meths in
+    let apply_lambdify = List.exists
+        (fun x -> (x = Method.Lambdify)) meths in
+    let enabled_axioms = List.exists
+        (fun x -> (x = Method.ENABLEDaxioms)) meths in
+    let level_comparison = List.exists
+        (fun x -> (x = Method.LevelComparison)) meths in
+    let meths = List.filter
+        (fun x -> (
+            (x <> Method.ExpandENABLED) &&
+            (x <> Method.ExpandCdot) &&
+            (x <> Method.AutoUSE) &&
+            (x <> Method.Lambdify) &&
+            (x <> Method.ENABLEDaxioms) &&
+            (x <> Method.LevelComparison)
+            ))
+        meths in
+    assert ((List.length meths) > 0);
+    (* compute fingerprint:
+        The fingerprint is computed before:
+            - expanding definitions listed in `BY DEF`
+            - normalizing expressions
+            - auto-expanding definitions for sound `ENABLED`, `\cdot` expansion
+            - replacing `ENABLED` and `\cdot` with rigid quantification
+        The fingerprints include both the assertion and `BY` statement
+        proof directives.
+        *)
     let const_fp_ob =
       lazy (Fingerprints.write_fingerprint (add_constness ob))
     in
-    let normalize_expand_ob =
-      lazy (normalize (expand_defs (Lazy.force const_fp_ob)))
+    let p = lazy (normalize_expand (Lazy.force const_fp_ob)
+            fpout thyout record
+            ~expand_enabled:expand_enabled
+            ~expand_cdot:expand_cdot
+            ~autouse:autouse
+            ~apply_lambdify:apply_lambdify
+            ~enabled_axioms:enabled_axioms
+            ~level_comparison:level_comparison)
     in
-    (* Note: triviality check must be done after expanding definitions *)
-    let trivial_ob = lazy (trivial (Lazy.force normalize_expand_ob)) in
-    let meths = get ob.obl Proof.T.Props.meth in
     let prep_meth m =
       let ob = Lazy.force const_fp_ob in
       let m = Method.scale_time m !Params.timeout_stretch in
-      let to_do, to_print = already_processed ob m in
+        (* retrieve results from fingerprints file *)
+      let (to_do, to_print) = already_processed ob m in
+      assert ((List.length to_print) <= 1);
+        (* some method succeeded in proving ? *)
       let has_success = List.exists is_success to_print in
+      let with_enabled_and_fp =
+          if (to_do = None) && (not has_success) && expand_enabled then
+            begin match List.hd to_print with
+            | NTriv ((RFail r), m) ->
+                let (normalize_expand_ob, _) = Lazy.force p in
+                let ob = normalize_expand_ob in
+                let ob = invert_renaming ob in
+                let res = List.hd to_print in
+                Toolbox.print_old_res ob res true;
+                true
+            | NTriv (RInt, m) -> false
+            | NTriv (RSucc, m) -> assert false
+            | Triv -> assert false
+            end
+          else false
+        in
+      (* attempting to prove, or noting that proof obligation is trivial *)
       if has_success then begin
         List.iter (fun st -> Toolbox.print_old_res ob st false) to_print;
         record true ob;
         Schedule.Immediate true
-      end else if is_trivial trivial_ob then begin
-        save_result fpout thyout record (Lazy.force trivial_ob);
-        Schedule.Immediate true
       end else begin
-        List.iter (fun st -> Toolbox.print_old_res ob st true) to_print;
+        let (p1, expand_success) = Lazy.force p in
+        let normalize_expand_ob = lazy p1 in
+        (* Note: triviality check must be done after expanding definitions *)
+        let trivial_ob =
+            try
+                lazy (trivial (Lazy.force normalize_expand_ob))
+            with Failure msg ->
+                lazy (trivial (Lazy.force const_fp_ob))
+            in
+        let result = begin
+            try
+                if is_trivial trivial_ob then begin
+                    save_result fpout thyout record (Lazy.force trivial_ob);
+                    Some (Schedule.Immediate true)
+                end else begin
+                    None
+                end
+            with Failure msg ->
+                begin
+                record false ob;
+                Some (Schedule.Immediate false)
+                end
+            end
+        in
+        match result with
+        | Some schedule -> schedule  (* is trivial *)
+        | None -> (* nontrivial *)
+      begin
+        if not with_enabled_and_fp then
+            List.iter (fun st -> Toolbox.print_old_res ob st true) to_print;
         if to_print <> [] then record has_success ob;
+        assert (to_do <> Some Method.ExpandENABLED);
+        assert (to_do <> Some Method.ExpandCdot);
+        assert (to_do <> Some Method.AutoUSE);
+        assert (to_do <> Some Method.Lambdify);
+        assert (to_do <> Some Method.ENABLEDaxioms);
+        assert (to_do <> Some Method.LevelComparison);
+        (* try backends only if any expansions of `ENABLED` and `\cdot` that
+        have been requested have been completed successfully.
+        *)
+        if expand_success then
+        begin
         match to_do with
         | None -> Schedule.Immediate has_success
         | Some meth ->
@@ -1016,18 +1482,35 @@ let ship ob fpout thyout record =
                            (Lazy.force normalize_expand_ob))
            in
            let tmo = !Params.backend_timeout *. !Params.timeout_stretch in
-           let f () =
-             really_ship frontend_ob normalize_expand_ob meth fpout thyout
-                         record
+           print_obl_and_msg
+               (Lazy.force frontend_ob)
+               "Front-end returns the proof obligation:\n";
+            (*
+             assert ((not (
+                 Expr.Eq.expr (Lazy.force normalize_expand_ob).obl.core.active
+                                (noprops (Internal FALSE)) ))
+                || (
+                    Expr.Eq.expr (Lazy.force frontend_ob).obl.core.active
+                                (noprops (Internal FALSE)) ) );
+            *)
+            let f () = really_ship frontend_ob normalize_expand_ob meth
+                                fpout thyout record
+            (* let f () = Schedule.Immediate false *)
            in
+           begin
            match Util.run_with_timeout tmo f () with
            | Some result -> result
            | None ->
-             let msg = "\n\\* internal timeout while processing obligation\n" in
-             let res = NTriv (RFail (Some (Cantwork "internal timeout")), m) in
-             Toolbox.print_new_res ob res msg (Some tmo);
-             record false ob;
-             Schedule.Immediate false
+                 let msg =
+                    "\n\\* internal timeout while processing obligation\n" in
+                 let res =
+                    NTriv (RFail (Some (Cantwork "internal timeout")), m) in
+                 Toolbox.print_new_res ob res msg (Some tmo);
+                 record false ob;
+                 Schedule.Immediate false
+            end
+        end else Schedule.Immediate false
+      end
       end
     in
     List.map (fun x -> fun () -> prep_meth x) meths

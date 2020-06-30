@@ -72,7 +72,9 @@ class virtual const_visitor = object (self : 'self)
                     | _ ->
                         false
                   end
-                | _ -> Errors.bug ~at:e "Expr.Constness.propagate#expr: Ix"
+                | _ ->
+                    Util.printf ~at:e "\n%s\n" (E_fmt.string_of_expr cx e);
+                    Errors.bug ~at:e "Expr.Constness.propagate#expr: Ix"
             end
           |  Opaque _ ->
               true

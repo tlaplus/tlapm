@@ -12,7 +12,7 @@ module type Tok = sig
   type token
     (** Type of tokens *)
 
-  val bof : Loc.locus -> token
+  val bof : Loc.locus -> token  (* beginning of file *)
     (** token representing start of file *)
 
   val rep : token -> string

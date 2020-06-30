@@ -18,6 +18,7 @@ module Eq = E_eq;;
 
 let ( |> ) x f = f x
 
+(* see also `Expr.T.hyp_name` *)
 let hyp_is_named what h = match h.core with
   | Fresh (nm, _, _, _)
   | Flex nm
@@ -114,30 +115,51 @@ class anon_sg = object (self : 'self)
         self#expr scx (Bang (Apply (b, []) @@ b, sels) @@ e)
     | Apply ({core = Opaque name}, args) ->
       begin
-        if List.mem name (fst scx) then begin
-          Errors.err ~at:e
-            "Warning: %s does not introduce any assumptions. \
-             It does not make sense to use it here.\n" name;
-          Internal (Builtin.TRUE) @@ e
-        end else begin
-          let args = List.map (self#expr scx) args in
-          match Deque.find ~backwards:true (snd scx) (hyp_is_named name) with
-            | Some (dep, {core = Defn ({core = Operator (_, op)} as opc,
-                                       wd, _, _)}) ->
-                standard_form ~cx:(snd scx) ~dep:(dep + 1) ~wd:wd
-                  (op.core @@ e $$ opc) args
-            | Some (dep, opc) ->
-                if args = [] then
-                  Ix (dep + 1) @@ e $$ opc
-                else
-                  Apply (Ix (dep + 1) @@ e, args) @@ e $$ opc
-            | None ->
-               Util.eprintf ~at:e "Operator \"%s\" not found" name ;
-               Errors.set e (Printf.sprintf "Operator \"%s\" not found" name);
-               failwith "Expr.Anon: 4"
-        end
+        if List.mem name (fst scx) then
+            begin
+                Errors.err ~at:e
+                    "Warning: %s does not introduce any assumptions. \
+                     It does not make sense to use it here.\n" name;
+                Internal (Builtin.TRUE) @@ e
+            end
+        else
+            begin
+                let args = List.map (self#expr scx) args in
+                let cx = snd scx in
+                let name_test = hyp_is_named name in
+                let pair = Deque.find ~backwards:true cx name_test in
+                match pair with  (* Replace operator application with the
+                    de Bruijn index of the operator.
+                    Defined operators are not expanded. *)
+
+                    (* defined or builtin operator *)
+                    | Some (dep, {
+                        core = Defn (
+                            {core = Operator (_, op)} as opc,
+                            wd, _, _)
+                        }) ->
+                            (* does not expand defined operators *)
+                            standard_form ~cx:(snd scx) ~dep:(dep + 1) ~wd:wd
+                            (op.core @@ e $$ opc) args
+                    (* declared operator *)
+                    | Some (dep, opc) ->
+                        (* nullary *)
+                        if args = [] then
+                          Ix (dep + 1) @@ e $$ opc
+                        (* with arguments *)
+                        else
+                          Apply (Ix (dep + 1) @@ e, args) @@ e $$ opc
+                    | None ->
+                         (* TODO? allow builtin operators here ?
+                         possibly passing a context with builtin operators
+                         present as the starting context. *)
+                         Util.eprintf ~at:e "Operator \"%s\" not found" name ;
+                         Errors.set e (Printf.sprintf "Operator \"%s\" not found" name);
+                         failwith "Expr.Anon: 4"
+            end
       end
     | Opaque _ -> self#expr scx (Apply (e, []) @@ e)
+        (* remove parentheses that appear in the source text *)
     | Parens (e, {core = Syntax}) -> self#expr scx e
     | _ -> super#expr scx e
 

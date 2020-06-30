@@ -7,7 +7,13 @@
 
 (** Elaborate modules *)
 
-open Proof.T
+open Deque
+open Expr.T
+open Expr.Visit
+
 open M_t
 
-val normalize : modctx -> Expr.T.hyp Deque.dq -> mule -> modctx * mule * summary
+
+val normalize :
+    modctx -> Expr.T.ctx -> mule ->
+    modctx * mule * summary

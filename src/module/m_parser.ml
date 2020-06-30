@@ -92,6 +92,7 @@ and parse = lazy begin
   locate (use parse_)
 end
 
+(* submodules --- See above *)
 and parse_ = lazy begin
   (punct "----" >*> kwd "MODULE" >*> locate anyname <<< punct "----")
   <*> optional (kwd "EXTENDS" >>> sep1 (punct ",") (locate anyident))
@@ -102,7 +103,7 @@ and parse_ = lazy begin
     ; extendees = extends
     ; instancees = []
     ; defdepth = 0
-    ; important = false
+    ; important = (* false *) true  (* to simplify proofs of submodules *)
     ; body = List.concat mus
     ; stage = Parsed }
   end

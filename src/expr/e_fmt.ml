@@ -443,6 +443,8 @@ and fmt_apply (hx, vx as cx) op args = match op.core, args with
             else top
         | Opaque s ->
             let top = Optable.lookup s in
+            (* coalescing leads to this case, prepending "?" to the newly
+            introduced identifiers. *)
             { top with Optable.name = "?" ^ top.Optable.name }
         | Internal b ->
             Optable.standard_form b
@@ -504,8 +506,11 @@ and fmt_apply (hx, vx as cx) op args = match op.core, args with
                 )
               )
           | _ ->
-              Util.eprintf ~at:op "arity mismatch";
-              failwith "arity mismatch"
+              Util.eprintf ~at:op "%s" (
+                  "`Expr.Fmt`: arity mismatch for operator `" ^
+                  top.Optable.name ^ "`, with " ^
+                  (string_of_int (List.length args)) ^ " arguments.\n");
+              failwith "`Expr.Fmt`: arity mismatch"
       end
 
 and fmt_bounds cx bs =

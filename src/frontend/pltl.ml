@@ -5,7 +5,7 @@
  * (consider a version that does not expand the fairness predicates) and
  * coalesce all applications except those allowed in PLTL.
 
- * Copyright (C) 2013  INRIA and Microsoft Corporation
+ * Copyright (C) 2013-2019  INRIA and Microsoft Corporation
  *)
 
 Revision.f "$Rev: 32093 $";;
@@ -25,7 +25,7 @@ module B = Builtin
 let coalesce_fol =
   let visitor = object (self : 'self)
     inherit [unit] Expr.Visit.map as super
-    method expr (((), cx) as scx)  e = match e.core with
+    method expr ((_, cx) as scx) e = begin match e.core with
       (* pltl expr are not changed *)
       | Apply ({ core = (
           Internal B.Conj
@@ -54,6 +54,7 @@ let coalesce_fol =
         | B.Neg
       ) -> super#expr scx e
       | _ -> Coalesce.coalesce (snd scx) e
+      end
   end in
   fun scx e ->
     visitor#expr scx e
@@ -73,6 +74,7 @@ let box_assumptions =
   end in
   fun scx e ->
     visitor#expr scx e
+
 
 let expand_domains =
   let visitor = object (self : 'self)
@@ -113,13 +115,16 @@ let expand_domains =
 
 let process_eob ob =
   let cx = Deque.empty in
-  let scx = ((),cx) in
+  let scx = ((), cx) in
+  let ob = Coalesce.rename_with_loc cx ob in
   let ob = Expr.Tla_norm.expand_fairness scx ob in
   let ob = Expr.Tla_norm.expand_leadsto scx ob in
   let ob = Expr.Tla_norm.expand_action scx ob in
   let ob = expand_domains scx ob in
   let ob = box_assumptions scx ob in
-  let ob = coalesce_fol ((), cx) ob in
+  let ob = Expr.Levels.compute_level cx ob in
+  let ob = Expr.SubstOp.compute_subst cx ob in
+  let ob = coalesce_fol scx ob in
   ob
 
 let process_obligation ob =

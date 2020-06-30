@@ -1,5 +1,5 @@
 (*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
+ * Copyright (C) 2011-2019  INRIA and Microsoft Corporation
  *)
 
 module T : sig
@@ -148,6 +148,7 @@ module T : sig
     | All | Once
 
   (** Antecedents of a sequent *)
+  and ctx = hyp Deque.dq
   and hyp = hyp_ wrapped
   and hyp_ =
     | Fresh of hint * shape * kind * hdom
@@ -167,7 +168,21 @@ module T : sig
 
   val get_val_from_id : 'hyp Deque.dq -> int -> 'hyp;;
   val hyp_name : hyp -> string;;
+
+  val print_cx: ctx -> unit
+  val find_hyp_named : ctx -> string -> int * hyp
+  val cx_front : ctx -> int -> ctx
+  val scx_front : 'a * ctx -> int -> 'a * ctx
+  val format_locus : 'a wrapped -> string
+  val shape_to_arity : shape -> int
+
   val exprify_sequent : sequent -> expr_;;
+
+  val sequent_stats : sequent -> int
+
+  val enabledaxioms : bool pfuncs
+  val has_enabledaxioms : 'a Property.wrapped -> bool
+  val get_enabledaxioms : 'a Property.wrapped -> bool
 end;;
 
 module Fmt : sig
@@ -214,6 +229,27 @@ module Subst : sig
   val app_defns : sub -> defn list -> sub * defn list
   val app_sequent : sub -> sequent -> sequent
   val app_hyp : sub -> hyp -> hyp
+
+  class map : object
+      method expr     : sub -> expr -> expr
+      method exprs    : sub -> expr list -> expr list
+      method pform    : sub -> pform -> pform
+      method sels     : sub -> sel list -> sel list
+      method sel      : sub -> sel -> sel
+      method sequent  : sub -> sequent -> sub * sequent
+      method defn     : sub -> defn -> sub * defn
+      method defns    : sub -> defn list -> sub * defn list
+      method bounds   : sub -> bound list -> sub * bound list
+      (* TODO: method bound    : sub -> bound -> sub * bound *)
+      method bound    : sub -> bound -> bound
+      method exspec   : sub -> exspec -> exspec
+      method instance : sub -> instance -> instance
+      method hyp      : sub -> hyp -> sub * hyp
+      method hyps     : sub -> hyp Deque.dq -> sub * hyp Deque.dq
+      method normalize : ?cx:hyp Deque.dq -> expr -> expr list -> expr_
+  end
+
+  class map_visible_hyp : map
 end;;
 
 module Visit : sig
@@ -234,6 +270,8 @@ module Visit : sig
     method instance : 's scx -> instance -> instance
     method hyp      : 's scx -> hyp -> 's scx * hyp
     method hyps     : 's scx -> hyp Deque.dq -> 's scx * hyp Deque.dq
+    method adj      : 's scx -> hyp -> 's scx
+    method adjs     : 's scx -> hyp list -> 's scx
   end
   class virtual ['s] iter : object
     method expr     : 's scx -> expr -> unit
@@ -248,6 +286,27 @@ module Visit : sig
     method instance : 's scx -> instance -> unit
     method hyp      : 's scx -> hyp -> 's scx
     method hyps     : 's scx -> hyp Deque.dq -> 's scx
+  end
+  class virtual ['s] map_visible_hyp : ['s] map
+  class virtual ['s] iter_visible_hyp : ['s] iter
+
+  class virtual ['s] map_rename : object
+    method expr     : 's scx -> expr -> expr
+    method pform    : 's scx -> pform -> pform
+    method sel      : 's scx -> sel -> sel
+    method sequent  : 's scx -> sequent -> 's scx * sequent
+    method defn     : 's scx -> defn -> defn
+    method defns    : 's scx -> defn list -> 's scx * defn list
+    method bounds   : 's scx -> bound list -> 's scx * bound list
+    method bound    : 's scx -> bound -> 's scx * bound
+    method exspec   : 's scx -> exspec -> exspec
+    method instance : 's scx -> instance -> instance
+    method hyp      : 's scx -> hyp -> 's scx * hyp
+    method hyps     : 's scx -> hyp Deque.dq -> 's scx * hyp Deque.dq
+    method adj      : 's scx -> hyp -> 's scx
+    method adjs     : 's scx -> hyp list -> 's scx
+      method rename : ctx -> hyp -> Util.hint -> hyp * Util.hint
+      method renames : ctx -> hyp list -> Util.hint list -> hyp list * Util.hint list
   end
 end;;
 
@@ -285,24 +344,12 @@ end;;
 module Constness : sig
   open T
   val is_const : 'a Property.wrapped -> bool
-  class virtual const_visitor : object
-  inherit [unit] Visit.map
-    method expr     : unit Visit.scx -> expr -> expr
-    method pform    : unit Visit.scx -> pform -> pform
-    method sel      : unit Visit.scx -> sel -> sel
-    method sequent  : unit Visit.scx -> sequent -> unit Visit.scx * sequent
-    method defn     : unit Visit.scx -> defn -> defn
-    method defns    : unit Visit.scx -> defn list -> unit Visit.scx * defn list
-    method bounds   : unit Visit.scx -> bound list -> unit Visit.scx * bound list
-    method bound    : unit Visit.scx -> bound -> unit Visit.scx * bound
-    method exspec   : unit Visit.scx -> exspec -> exspec
-    method instance : unit Visit.scx -> instance -> instance
-    method hyp      : unit Visit.scx -> hyp -> unit Visit.scx * hyp
-    method hyps     : unit Visit.scx -> hyp Deque.dq -> unit Visit.scx * hyp Deque.dq
-  end
+  val has_const : 'a Property.wrapped -> bool
+  class virtual const_visitor : [unit] Visit.map
 end;;
 
 module Tla_norm : sig
+  val rewrite_unch : T.expr -> T.expr
   val expand_unchanged : unit Visit.scx -> T.expr -> T.expr
   val expand_action : unit Visit.scx -> T.expr -> T.expr
   val expand_leadsto : unit Visit.scx -> T.expr -> T.expr
@@ -340,4 +387,108 @@ module Parser : sig
   val instance : bool -> T.instance lprs
   val sequent : bool -> T.sequent lprs
   val opdecl : (Util.hint * shape) lprs
+end;;
+
+module Levels : sig
+    open Property
+    open T
+    open Visit
+
+    module StringSet: Set.S with type elt = string
+
+    type level_info = LevelInfo of int * bool list * StringSet.t
+
+    val exprlevel: level_info pfuncs
+    val has_level: 'a Property.wrapped -> bool
+    val rm_level: 'a Property.wrapped -> 'a Property.wrapped
+    val get_level_info: 'a Property.wrapped -> level_info
+    val get_level: 'a Property.wrapped -> int
+    val get_level_weights: 'a Property.wrapped -> bool list
+    val get_level_args: 'a Property.wrapped -> StringSet.t
+    val assert_has_correct_level: expr -> unit
+    val kind_to_level: kind -> int
+
+    class virtual ['s] level_computation : ['s] Visit.map
+    class virtual ['s] _rm_expr_level : ['s] Visit.map
+
+    val compute_level: ctx -> expr -> expr
+    val rm_expr_level: ctx -> expr -> expr
+end;;
+
+
+module Action : sig
+    open T
+
+    val invert_renaming: ctx -> expr -> expr
+    val implication_to_enabled: ctx -> expr -> expr
+    val lambdify:
+        ctx -> expr ->
+        lambdify_enabled:bool ->
+        lambdify_cdot:bool ->
+        autouse:bool ->
+            expr
+    val quantify:
+        ctx -> expr ->
+        expand_enabled:bool ->
+        expand_cdot:bool ->
+            expr
+    val expand_action_operators:
+        ctx -> expr ->
+        expand_enabled:bool ->
+        expand_cdot:bool ->
+        autouse:bool ->
+            expr
+end;;
+
+
+module SubstOp : sig
+    open Property
+    open T
+
+    type substitutive_args = bool array
+
+    val substitutive_arg: substitutive_args pfuncs
+    val has_substitutive: 'a Property.wrapped -> bool
+    val get_substitutive: 'a Property.wrapped -> substitutive_args
+    val get_substitutive_arg: 'a Property.wrapped -> int -> bool
+
+    val compute_subst: ctx -> expr -> expr
+end;;
+
+
+module LevelComparison : sig
+    open Property
+    open Util
+    open T
+
+    class level_comparison : object
+        method compare : ctx -> ctx -> expr -> expr -> bool
+
+        method expr : ctx -> ctx -> expr -> expr -> bool
+        method exprs : ctx -> ctx -> expr list -> expr list -> bool
+
+        method bounds_cx : ctx -> bounds -> ctx
+        method bounds : ctx -> ctx -> bounds -> bounds -> bool
+        method bound : ctx -> ctx -> bound -> bound -> bool
+        method bdom : ctx -> ctx -> bound_domain -> bound_domain -> bool
+
+        method opt_expr : ctx -> ctx -> expr option -> expr option -> bool
+
+        method defns_cx : ctx -> defn list -> ctx
+        method defns : ctx -> ctx -> defn list -> defn list -> bool
+        method defn : ctx -> ctx -> defn -> defn -> bool
+
+        method sequent : ctx -> ctx -> sequent -> sequent -> bool
+        method context : ctx -> ctx -> ctx -> ctx -> bool
+        method hyps_cx : ctx -> ctx -> ctx
+        method hyp : ctx -> ctx -> hyp -> hyp -> bool
+        method hyp_cx : ctx -> hyp -> ctx
+
+        method instance : ctx -> ctx -> instance -> instance -> bool
+        method sub : ctx -> ctx ->
+            (hint * expr) list -> (hint * expr) list -> bool
+        method sel : ctx -> ctx -> sel -> sel -> bool
+    end
+
+    val check_level_change : ctx -> expr -> expr
 end;;

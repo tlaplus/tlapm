@@ -504,7 +504,7 @@ let visitor = object (self : 'self)
           let had_first = (ret || had_first) in
           let scxp = self#myhyps scxp hs had_first in
           scxp
-  method expr ((ff,scx) as scxp) e = 
+  method expr ((ff,scx) as scxp) e =
     match e.core with
       (* treating infix binary pltl operators *)
     | Apply ({core = Internal B.Implies}, [f1;f2]) -> self#p_binary scxp "->" f1 f2
@@ -519,7 +519,11 @@ let visitor = object (self : 'self)
           | None -> failwith "impossible"
           | Some({core = Fresh (name, _, _, _) | Flex name}) ->
               self#expr scxp { e with core = Opaque name.core }
-          | _ -> super#expr scxp e
+          | Some({core=Defn ({core=Operator (name, _)}, _, _, _)}) ->
+                self#expr scxp (Opaque name.core @@ name)
+          | Some({core=Fact _}) -> assert false
+                (* super#expr *)
+          | Some({core=Defn _}) -> assert false
         end
     | Opaque id -> self#p_atom ff id
     (* nullary builtins *)
@@ -555,6 +559,12 @@ let visitor = object (self : 'self)
         | Or -> " | "
         in
 	self#write_list scxp rep es
+    | Apply (op, _) ->
+            let s = Coalesce.coalesce scx e in
+            self#expr scxp s
+    | Quant _ ->  (* coalescing of first-order logic *)
+            let s = Coalesce.coalesce scx e in
+            self#expr scxp s
     (* first-order failures including remaining applications *)
     | _ -> fprintf err_formatter " failure: fol - %a" (Expr.Fmt.pp_print_expr
       (scx, Ctx.dot)) e; super#expr scxp e

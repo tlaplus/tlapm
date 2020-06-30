@@ -44,6 +44,7 @@ let location ?(cap=true) lw = match query_locus lw with
 
 (* FIXME get rid of nonl *)
 let kfprintf ?debug ?at ?prefix ?nonl cont ff fmt =
+  (* Print `prefix` only if `at` is not `None`. *)
   match debug with
   | Some dbg when not (Params.debugging dbg) ->
       Format.ikfprintf cont ff fmt

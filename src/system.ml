@@ -109,13 +109,13 @@ let make_line_buffer fd = {desc = fd; buf = Buffer.create 100};;
 let rawbuf = Bytes.create 1000;;
 
 let read_lines buf =
-  let n = Unix.read buf.desc rawbuf 0 (String.length rawbuf) in
+  let n = Unix.read buf.desc rawbuf 0 (String.length (Bytes.to_string rawbuf)) in
   if n = 0 then begin
     let last = Buffer.contents buf.buf in
     Buffer.reset buf.buf;
     if last = "" then [Leof] else [Line last; Leof]
   end else begin
-    Buffer.add_substring buf.buf rawbuf 0 n;
+    Buffer.add_substring buf.buf (Bytes.to_string rawbuf) 0 n;
     let data = Buffer.contents buf.buf in
     let lines = Ext.split data '\n' in
     match List.rev lines with

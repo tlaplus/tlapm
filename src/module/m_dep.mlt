@@ -83,8 +83,11 @@ let t3 =
 	Test.make_simple_test
 		~title:(title_external_deps ^ t3_str)
     ( fun () ->
-      Assert.is_true (Hs.exists (fun x -> x.core = "TLC") (external_deps
-      (Sm.find "a" test_case)))
+      Assert.is_true (
+        Hs.exists (fun x -> x.core = "TLC")
+        (let (e, _, _) = (external_deps (Sm.find "a" test_case))
+        in e)
+      )
     )
 
 (* determines the kind of output for kaputt *)

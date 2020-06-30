@@ -18,7 +18,8 @@ type builtin =
   | Cup
     (* modal *)
   | Prime | StrongPrime | Leadsto | ENABLED | UNCHANGED | Cdot
-  | Actplus | Box of bool (* the bool indicates an applitcation of the Box to a
+  | Actplus  (* -+-> *)
+  | Box of bool (* the bool indicates an application of the Box to a
   non-temporal formula and is added in a post processing step *) | Diamond
     (* arithmetic *)
   | Nat | Int | Real | Plus | Minus | Uminus

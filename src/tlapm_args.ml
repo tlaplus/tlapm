@@ -36,6 +36,16 @@ let set_target_start s =
 let set_target_end e =
   tb_el := if e = 0 then max_int else e
 
+let set_target_line s =
+    toolbox := true;
+    if s = 0 then begin
+        tb_sl := 0;
+        tb_el := max_int
+    end else begin
+        tb_sl := s;
+        tb_el := s
+    end
+
 let set_default_method meth =
   try set_default_method meth
   with Failure msg -> raise (Arg.Bad ("--method: " ^ msg))
@@ -155,6 +165,8 @@ let init () =
                 "<meth> set default method to <meth> (try --method help)" ;
     "--solver", Arg.String set_smt_solver,
                 "<solver> set SMT solver to <solver>";
+    "--smt-logic", Arg.String set_smt_logic,
+                "<logic> set SMT logic to <logic>";
     "--fast-isabelle", Arg.Unit Params.set_fast_isabelle,
                        " (Windows-only) Launch Isabelle with fast shortcut";
     "--stretch", Arg.Set_float Params.timeout_stretch,
@@ -172,6 +184,8 @@ let init () =
     blank;
     "--toolbox", (Arg.Tuple [Arg.Int set_target_start;Arg.Int set_target_end]),
                  "<int><int> toolbox mode";
+    "--line", Arg.Int set_target_line,
+              "<int> line to prove";
     "--wait", Arg.Set_int wait,
               "<time> wait for <time> before printing obligations in progress";
     "--noproving", Arg.Set noproving,

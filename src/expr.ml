@@ -1,5 +1,5 @@
 (*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
+ * Copyright (C) 2011-2019  INRIA and Microsoft Corporation
  *)
 
 (* Packaging module for the modules that work on expressions *)
@@ -19,3 +19,7 @@ module Temporal_props = E_temporal_props;;
 module Elab = E_elab;;
 module Anon = E_anon;;
 module Parser = E_parser;;
+module Levels = E_levels;;
+module Action = E_action;;
+module SubstOp = E_substitutive;;
+module LevelComparison = E_level_comparison;;

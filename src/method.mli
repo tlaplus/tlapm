@@ -1,5 +1,5 @@
 (*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
+ * Copyright (C) 2011-2019  INRIA and Microsoft Corporation
  *)
 
 (* params.ml *)
@@ -22,6 +22,13 @@ type t =
   | Verit of float
   | Spass of float
   | Tptp of float
+  | ExpandENABLED
+  | ExpandCdot
+  | AutoUSE
+  | Lambdify
+  | ENABLEDaxioms
+  | LevelComparison
+  | Trivial
 ;;
 
 (* expr/fmt.ml *)

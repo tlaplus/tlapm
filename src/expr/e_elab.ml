@@ -66,7 +66,9 @@ let non_temporal =
       | Fact (_, Hidden,_) -> scx
       | _ -> super#hyp scx h
     method expr (good, _ as scx) oe = match oe.core with
-      | ( Apply ({core = Internal (B.Box _ | B.Diamond | B.Actplus | B.Cdot)}, _)
+      | ( Apply ({core = Internal (B.Box _ | B.Diamond | B.Actplus |
+            B.Leadsto | B.Cdot
+            )}, _)
         | Tsub _ | Fair _
         ) ->
           good := false

@@ -21,4 +21,11 @@ val make_task :
 
 val expand_defs : ?what:(Expr.T.wheredef -> bool) -> obligation -> obligation
 
-val normalize : obligation -> obligation
+(*
+val normalize :
+    obligation ->
+    expand_enabled: bool ->
+    expand_cdot: bool ->
+    auto_expand_defs: bool ->
+        obligation
+*)

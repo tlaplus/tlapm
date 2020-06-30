@@ -101,6 +101,7 @@ SpassT(X) == TRUE (*{ by (prover:"spass"; timeout:@) }*)
 (**************************************************************************)
 
 LS4 == TRUE (*{ by (prover: "ls4") }*)
+LS4T(X) == TRUE (*{ by (prover: "ls4"; timeout:@) }*)
 PTL == TRUE (*{ by (prover: "ls4") }*)
 
 (**************************************************************************)
@@ -314,6 +315,40 @@ AllIsaT(X) == TRUE (*{
     by (prover:"isabelle"; tactic:"auto, blast"; timeout:@)
   }*)
 
+
+(**************************************************************************)
+(* The pragma ExpandEnabled invokes expansion of the operator ENABLED.    *)
+(*                                                                        *)
+(* The pragma ExpandCdot invokes expansion of the operator \cdot.         *)
+(*                                                                        *)
+(* The pragma AutoUSE invokes automated expansion of definitions,         *)
+(* for both of ExpandEnabled and ExpandCdot, when each is present.        *)
+(*                                                                        *)
+(* The pragma Lambdify invokes expansion of the operators                 *)
+(* ENABLED and \cdot to an intermediate form with bound VARIABLES,        *)
+(* which is a form before introducing rigid quantifiers.                  *)
+(* The pragma Lambdify is sound for occurrences of ENABLED and \cdot      *)
+(* that are not nested.                                                   *)
+(**************************************************************************)
+ExpandENABLED == TRUE  (*{ by (prover:"expandenabled") }*)
+ExpandCdot == TRUE  (*{ by (prover:"expandcdot") }*)
+AutoUSE == TRUE  (*{ by (prover:"autouse") }*)
+Lambdify == TRUE  (*{ by (prover:"lambdify") }*)
+ENABLEDaxioms == TRUE  (*{ by (prover:"enabledaxioms") }*)
+LevelComparison == TRUE  (*{ by (prover:"levelcomparison") }*)
+
+(* The operators EnabledWrapper and CdotWrapper occur in an intermediate  *)
+(* representation within TLAPM.                                           *)
+EnabledWrapper(Op(_)) == FALSE
+CdotWrapper(Op(_)) == FALSE
+
+(***************************************************************************)
+(* The following may be used in a `BY ONLY ThmName` for unit testing the   *)
+(* triviality checks in TLAPM.                                             *)
+(***************************************************************************)
+Trivial == TRUE  (*{ by (prover:"trivial") }*)
+
+
 =============================================================================
 
 The material below is obsolete: the TLA proof rules below are superseded by
@@ -420,3 +455,4 @@ PROOF OMITTED
 (* propositional temporal logic.                                           *)
 (***************************************************************************)
 PropositionalTemporalLogic == TRUE
+=============================================================================

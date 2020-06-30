@@ -243,8 +243,12 @@ and deref_num cx (ds, e) n =
         let se = spin 0 sq.context in
         if has_negix se then begin
           Errors.warning := true;
-          Errors.set e  "Subexpression of ASSUME/PROVE uses identifiers declared therein\n\nTlapm does not handle yet such subexpression namings.";
-          Util.eprintf ~at:e "subexpression of ASSUME/PROVE uses identifiers declared therein" ;
+          Errors.set e (
+            "Subexpression of ASSUME/PROVE uses identifiers declared " ^
+            "therein\n\nTlapm does not handle yet such subexpression namings.");
+          Util.eprintf ~at:e "%s" (
+            "subexpression of ASSUME/PROVE uses identifiers declared therein" ^
+            "\nTlapm does not handle yet such subexpression namings.");
           failwith "Expr.Deref.deref_num"
         end else (ds, se)
       end
