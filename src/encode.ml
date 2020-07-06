@@ -6,6 +6,7 @@
 
 Revision.f "$Rev$";;
 
+module Hints = N_hints
 module Table = N_table
 module Canon = N_canon
 module Axiomatize = N_axiomatize
