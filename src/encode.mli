@@ -62,13 +62,14 @@ module Table : sig
 
   val std_smb : tla_smb -> smb
 
-  val mk_smb : family -> string -> ty_kind -> smb
+  val mk_smb : family -> string -> ?sch:ty_sch -> ty_kind -> smb
   val mk_cst_smb : family -> string -> ty -> smb
   val mk_fst_smb : family -> string -> ty list -> ty -> smb
   val mk_snd_smb : family -> string -> (ty list * ty) list -> ty -> smb
 
   val get_fam  : smb -> family
   val get_name : smb -> string
+  val get_sch  : smb -> ty_sch
   val get_kind : smb -> ty_kind
   val get_ord  : smb -> int
   val get_defn : smb -> tla_smb option

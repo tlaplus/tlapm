@@ -101,12 +101,13 @@ let smbtable = function
 type smb =
   { smb_fam  : family
   ; smb_name : string
-  ; smb_kind : ty_kind
+  ; smb_sch  : ty_sch option (* FIXME remove option *)
+  ; smb_kind : ty_kind       (* FIXME remove *)
   ; smb_ord  : int
   ; smb_defn : tla_smb option
   }
 
-let mk_smb fam nm k =
+let mk_smb fam nm ?sch:sch k =
   let d = ord k in
   if d < 0 || d > 2 then
     let mssg = ("Attempt to create symbol '" ^ nm ^ "' \
@@ -115,6 +116,7 @@ let mk_smb fam nm k =
   else
     { smb_fam = fam
     ; smb_name = nm
+    ; smb_sch = sch
     ; smb_kind = k
     ; smb_ord = ord k
     ; smb_defn = None
@@ -139,6 +141,7 @@ let mk_cst_smb fam nm ty =
 
 let get_fam smb = smb.smb_fam
 let get_name smb = smb.smb_name
+let get_sch smb = Option.get smb.smb_sch
 let get_kind smb = smb.smb_kind
 let get_ord smb = smb.smb_ord
 let get_defn smb = smb.smb_defn
