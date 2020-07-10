@@ -55,15 +55,6 @@ let get_type cx n =
   Type.T.get_ty (Option.get k)
 
 
-(* {3 Annotations} *)
-
-let smb_prop = Property.make "Encode.Canon.smb_prop"
-
-let has_smb a = has a smb_prop
-let set_smb smb a = assign a smb_prop smb
-let get_smb a = get a smb_prop
-
-
 (* {3 Helpers} *)
 
 let error ?at mssg =
@@ -85,7 +76,7 @@ let checkk_eq ?at k1 k2 =
 
 let mk_opaque smb =
   let c = Opaque (T.get_name smb) %% [] in
-  set_smb smb c
+  T.set_smb smb c
 
 
 (* {3 Prepare} *)

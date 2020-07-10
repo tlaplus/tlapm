@@ -5,6 +5,7 @@
 (* Packaging module for the modules that implement PO transformations *)
 
 module Table : sig
+  open Property
   open Type.T
   type tla_smb =
     (* Logic *)
@@ -60,6 +61,11 @@ module Table : sig
   module SmbSet : Set.S with type elt = smb
   module SmbMap : Map.S with type key = smb
 
+  val smb_prop : smb pfuncs
+  val has_smb : 'a wrapped -> bool
+  val set_smb : smb -> 'a wrapped -> 'a wrapped
+  val get_smb : 'a wrapped -> smb
+
   val std_smb : tla_smb -> smb
 
   val mk_smb : family -> string -> ?sch:ty_sch -> ty_kind -> smb
@@ -75,16 +81,17 @@ module Table : sig
   val get_defn : smb -> tla_smb option
 end
 
+module Direct : sig
+  open Expr.T
+  val main : sequent -> sequent
+end
+
 module Canon : sig
   open Property
   open Expr.T
   open Type.T
   type gtx = ty_kind Ctx.t
   type ltx = ty_kind Ctx.t
-  val smb_prop : Table.smb pfuncs
-  val has_smb : 'a wrapped -> bool
-  val set_smb : Table.smb -> 'a wrapped -> 'a wrapped
-  val get_smb : 'a wrapped -> Table.smb
   val expr : gtx -> ltx -> expr -> expr * ty
   val sequent : gtx -> sequent -> gtx * sequent
   val defn : gtx -> ltx -> defn -> defn

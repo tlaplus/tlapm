@@ -159,6 +159,13 @@ module OrdSmb = struct
     | n -> n
 end
 
+let smb_prop = make "Encode.Table.smb_prop"
+
+let has_smb a = has a smb_prop
+let set_smb smb a = assign a smb_prop smb
+let get_smb a = get a smb_prop
+
+
 module SmbSet = Set.Make (OrdSmb)
 module SmbMap = Map.Make (OrdSmb)
 

@@ -5,6 +5,7 @@
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
 
+open Property
 open Type.T
 
 
@@ -71,6 +72,13 @@ end
 
 module SmbSet : Set.S with type elt = smb
 module SmbMap : Map.S with type key = smb
+
+(** Attach a smb to something *)
+val smb_prop : smb pfuncs
+
+val has_smb : 'a wrapped -> bool
+val set_smb : smb -> 'a wrapped -> 'a wrapped
+val get_smb : 'a wrapped -> smb
 
 (** Get concrete smb of a TLA+ symbol *)
 val std_smb : tla_smb -> smb

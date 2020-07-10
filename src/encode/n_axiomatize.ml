@@ -10,7 +10,6 @@ open Property
 open Expr.T
 
 open N_table
-open N_canon
 
 
 (* {3 Contexts} *)
