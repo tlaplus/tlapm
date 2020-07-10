@@ -34,6 +34,8 @@ module Table : sig
     | Fcn of ty * ty
     | Except of ty * ty
     (* Special *)
+    | Any of ty
+    | Ucast of ty
     | Uver of tla_smb
 
   type family =

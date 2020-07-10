@@ -41,6 +41,8 @@ type tla_smb =
   | Fcn of ty * ty
   | Except of ty * ty
   (* Special *)
+  | Any of ty       (** Random element of a type *)
+  | Ucast of ty     (** Cast from any type to uninterpreted *)
   | Uver of tla_smb (** Uninterpreted VERsion of a symbol *)
 
 type family =
@@ -71,6 +73,8 @@ let rec get_tlafam = function
       Functions
   | Uver smb ->
       get_tlafam smb
+  | Any _ | Ucast _ ->
+      Special
 
 let smbtable = function
   | Choose ty ->
@@ -298,6 +302,14 @@ let tuple tys =
   let id = suffix "Tuple" (List.map type_to_string tys) in
   mk_fst_smb Tuples id tys (TProd tys)
 
+let any ty =
+  let id = suffix "Any" [ type_to_string ty ] in
+  mk_cst_smb Special id ty
+
+let ucast ty =
+  let id = suffix "Cast" [ type_to_string ty ] in
+  mk_fst_smb Special id [ ty ] (TAtom TU)
+
 
 let rec std_smb_aux = function
   | Choose ty -> choose ty
@@ -321,6 +333,8 @@ let rec std_smb_aux = function
   | FcnApp (ty1, ty2) -> fcnapp ty1 ty2
   | Fcn (ty1, ty2) -> fcn ty1 ty2
   | Except (ty1, ty2) -> except ty1 ty2
+  | Any ty -> any ty
+  | Ucast ty -> ucast ty
   | Uver tla_smb -> u_smb (std_smb_aux tla_smb)
 
 let std_smb tla_smb =

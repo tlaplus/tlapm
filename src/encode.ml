@@ -7,6 +7,7 @@
 Revision.f "$Rev$";;
 
 module Table = N_table
+module Direct = N_direct
 module Canon = N_canon
 module Axiomatize = N_axiomatize
 module Reduce = N_reduce

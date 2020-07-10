@@ -39,6 +39,8 @@ type tla_smb =
   | Fcn of ty * ty
   | Except of ty * ty
   (* Special *)
+  | Any of ty       (** Random element of a type *)
+  | Ucast of ty     (** Cast from any type to uninterpreted *)
   | Uver of tla_smb (** Uninterpreted VERsion of a symbol *)
 
 type family =

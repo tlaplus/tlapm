@@ -327,7 +327,7 @@ and pp_print_expr cx ff e =
 let preprocess ?solver sq =
   let _ = solver in (* NOTE not used *)
 
-  let sq = Type.Disambiguation.min_reconstruct sq in
+  (*let sq = Type.Disambiguation.min_reconstruct sq in*)
 
   (* FIXME remove below *)
   (*let sq = Reduce.NtCook.cook sq in*)
@@ -335,7 +335,8 @@ let preprocess ?solver sq =
   (*let sq = Reduce.NtTable.nt_axiomatize data sq in*)
 
   let sq = sq
-    |> Encode.Canon.main
+    (*|> Encode.Canon.main*)
+    |> Encode.Direct.main
     |> Encode.Axiomatize.main
     |> Encode.Reduce.main
   in
