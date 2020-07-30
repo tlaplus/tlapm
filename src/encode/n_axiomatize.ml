@@ -77,7 +77,9 @@ let collect sq =
 (* {3 Assembly} *)
 
 let mk_decl smb =
-  let nm = Type.T.annot_kind (get_name smb %% []) (get_kind smb) in
+  let nm = get_name smb %% [] in
+  let sch = get_sch smb in
+  let nm = assign nm Type.T.Props.tsch_prop sch in
   let shp = Shape_expr in (* NOTE shape should be irrelevant! *)
   Fresh (nm, shp, Constant, Unbounded) %% []
 

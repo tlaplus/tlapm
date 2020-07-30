@@ -133,15 +133,24 @@ let mk_snd_smb fam nm ints outt =
     end ints
   in
   let k = mk_kind_ty ks outt in
-  mk_smb fam nm k
+  let targs =
+    List.map begin function
+      | [], ty -> TRg ty
+      | tys, ty -> TOp (tys, ty)
+    end ints
+  in
+  let sch = TSch ([], targs, outt) in
+  mk_smb fam nm ~sch:sch k
 
 let mk_fst_smb fam nm ints outt =
   let k = mk_fstk_ty ints outt in
-  mk_smb fam nm k
+  let sch = TSch ([], List.map (fun ty -> TRg ty) ints, outt) in
+  mk_smb fam nm ~sch:sch k
 
 let mk_cst_smb fam nm ty =
   let k = mk_cstk_ty ty in
-  mk_smb fam nm k
+  let sch = TSch ([], [], ty) in
+  mk_smb fam nm ~sch:sch k
 
 let get_fam smb = smb.smb_fam
 let get_name smb = smb.smb_name
