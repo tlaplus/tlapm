@@ -42,7 +42,7 @@ let lookup_id cx n =
 (* {3 Expression Formatting} *)
 
 let pp_print_sexpr fmt ff v =
-  fprintf ff "@[<hov 2>(@,%a@])" fmt v
+  fprintf ff "@[<hov 2>(%a@])" fmt v
 
 let pp_print_sort ff ty =
   pp_print_string ff (ty_to_string ty)
@@ -94,15 +94,35 @@ let rec pp_apply cx ff op args =
         | _ -> error ~at:op "Backend.Smtlib.pp_apply: \
                              unexpected builtin encountered"
       in
-      pp_print_sexpr begin fun ff (op, args) ->
-        fprintf ff "%s %a" op
-        (pp_print_delimited ~sep:pp_print_space (pp_print_expr cx)) args
-      end ff (kw, args)
+      begin match args with
+      | [] ->
+          pp_print_string ff kw
+      | _ ->
+          pp_print_sexpr begin fun ff (op, args) ->
+            fprintf ff "%s %a" op
+            (pp_print_delimited ~sep:pp_print_space (pp_print_expr cx)) args
+          end ff (kw, args)
+      end
 
   | _ -> error ~at:op "Backend.Smtlib.pp_apply: \
                        unexpected operator encountered"
 
 and fmt_expr cx oe =
+  if has oe pattern_prop then
+    Fu.Atm (fun ff ->
+      let pats = get oe pattern_prop in
+      let pp_print_pat ff es =
+        fprintf ff ":pattern %a"
+        (pp_print_sexpr (
+          pp_print_delimited ~sep:pp_print_space (pp_print_expr cx))
+        ) es
+      in
+      pp_print_sexpr begin fun ff () ->
+        fprintf ff "! %a@ %a"
+        (pp_print_expr cx) (remove_patterns oe)
+        (pp_print_delimited ~sep:pp_print_space pp_print_pat) pats
+      end ff ())
+  else
   match oe.core with
   | Ix _ | Opaque _ | Internal _ ->
       Fu.Atm (fun ff -> pp_apply cx ff oe [])
@@ -425,6 +445,9 @@ let collect_sorts_visitor = object (self : 'self)
         let ss = more_tsch ss v in
         super#hyp scx ss h
     | Fresh (v, Shape_expr, _, _) ->
+        let ss = more_type ss v in
+        super#hyp scx ss h
+    | Flex v ->
         let ss = more_type ss v in
         super#hyp scx ss h
     | _ -> super#hyp scx ss h

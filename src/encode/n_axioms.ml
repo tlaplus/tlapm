@@ -34,15 +34,24 @@ let appb ?tys b es =
 let una ?tys b e1    = appb ?tys b [ e1 ]
 let ifx ?tys b e1 e2 = appb ?tys b [ e1 ; e2 ]
 
-let quant q xs ?tys e =
-  match tys with
-  | None ->
-      Quant (q, List.map (fun x -> (x %% [], Constant, No_domain)) xs, e)
-  | Some tys ->
-      Quant (q, List.map2 (fun x ty -> (annot (x %% []) ty, Constant, No_domain)) xs tys, e)
+let quant q xs ?tys ?pats e =
+  let xs =
+    match tys with
+    | None ->
+        List.map (fun x -> (x %% [], Constant, No_domain)) xs
+    | Some tys ->
+        List.map2 (fun x ty -> (annot (x %% []) ty, Constant, No_domain)) xs tys
+  in
+  let e =
+    match pats with
+    | None -> e
+    | Some pats ->
+        assign e pattern_prop pats
+  in
+  Quant (q, xs, e)
 
-let all xs ?tys e = quant Forall xs ?tys e
-let exi xs ?tys e = quant Exists xs ?tys e
+let all xs ?tys ?pats e = quant Forall xs ?tys ?pats e
+let exi xs ?tys ?pats e = quant Exists xs ?tys ?pats e
 
 let dupl a n = List.init n (fun _ -> a)
 

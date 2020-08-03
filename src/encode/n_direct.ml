@@ -92,6 +92,19 @@ let aty_to_xty = function
 (* {3 Main} *)
 
 let rec expr cx oe =
+  let oe =
+    match query oe pattern_prop with
+    | None -> oe
+    | Some pats ->
+        let pats =
+          List.map begin fun pat ->
+            List.map begin fun e ->
+              fst (expr cx e)
+            end pat
+          end pats
+        in
+        assign oe pattern_prop pats
+  in
   match oe.core with
   | Ix n ->
       let xt = lookup_id cx n in
