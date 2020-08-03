@@ -86,7 +86,7 @@ let rec ty_to_string ty =
   match ty with
   | TUnknown -> "Unknown"
   | TVar a -> "Var" ^ a
-  | TAtom a -> "Atom" ^ tyatom_to_string a
+  | TAtom a -> tyatom_to_string a
   | TSet ty -> "Set" ^ ty_to_string ty
   | TArrow (ty1, ty2) -> "Fun" ^ ty_to_string ty1 ^ ty_to_string ty2
   | TProd tys -> "Prod" ^ String.concat "" (List.map ty_to_string tys)

@@ -434,6 +434,9 @@ end
 let collect_sorts sq =
   let scx = (), Deque.empty in
   let _, srts = collect_sorts_visitor#sequent scx Ss.empty sq in
+  let srts = Ss.diff srts (Ss.of_list [
+    "Bool" ; "Int" ; "Real"
+  ]) in
   Ss.elements srts
 
 
