@@ -43,7 +43,12 @@ let add_smb smb (smbs, facts) =
           | Some defn -> begin
             match smbtable defn with
             | None -> ([], [])
-            | Some (tla_smbs, axms) -> (List.map std_smb tla_smbs, axms)
+            | Some (tla_smbs, axms) ->
+                let enc e =
+                  (* FIXME pass axioms through appropriate enc *)
+                  N_direct.expr Ctx.dot e |> fst
+                in
+                (List.map std_smb tla_smbs, List.map enc axms)
           end
         in
         let acc_smbs = SmbSet.add smb acc_smbs in
@@ -86,7 +91,7 @@ let mk_decl smb =
 let mk_fact e =
   Fact (e, Visible, NotSet) %% []
 
-let assemble_visitor decls laxms = object (self : 'self)
+let assemble_visitor decls = object (self : 'self)
   inherit [unit] Expr.Visit.map as super
 
   method expr ((), hx as scx) oe =
@@ -101,7 +106,7 @@ let assemble_visitor decls laxms = object (self : 'self)
                         ^ get_name smb ^ "' in context" in
               error mssg
         in
-        let ix = 1 + Deque.size hx + laxms + n in
+        let ix = 1 + Deque.size hx + n in
         remove (Ix ix @@ oe) smb_prop
 
     | _ -> super#expr scx oe
@@ -112,13 +117,13 @@ let assemble (decls, axms) sq =
     SmbSet.elements decls
     |> Deque.of_list
   in
-  let laxms = Deque.size axms in
   let scx = ((), Deque.empty) in
-  let _, sq = (assemble_visitor decls laxms)#sequent scx sq in
+  let sq = { sq with context =
+    Deque.append (Deque.map (fun _ -> mk_fact) axms) sq.context
+  } in
+  let _, sq = (assemble_visitor decls)#sequent scx sq in
   { sq with context =
-      sq.context
-      |> Deque.append (Deque.map (fun _ -> mk_fact) axms)
-      |> Deque.append (Deque.map (fun _ -> mk_decl) decls)
+      Deque.append (Deque.map (fun _ -> mk_decl) decls) sq.context
   }
 
 
