@@ -69,6 +69,13 @@ let rec pp_apply cx ff op args =
   | Opaque s ->
       begin match args with
       | [] ->
+          (* FIXME Ad hoc trick that formats primed variables.
+           * Would be cleaner to eliminate these beforehand *)
+          let s =
+            match String.split_on_char '#' s with
+            | [ s ; "prime" ] -> primed s
+            | _ -> s
+          in
           pp_print_string ff s
       | _ ->
           pp_print_sexpr begin fun ff (op, args) ->

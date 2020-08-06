@@ -132,6 +132,7 @@ let rec expr cx oe =
         in
         assign oe pattern_prop pats
   in
+
   match oe.core with
   | Ix n ->
       let xt = lookup_id cx n in
@@ -139,6 +140,11 @@ let rec expr cx oe =
         error ~at:oe "Not a set variable"
       end;
       (Ix n @@ oe, RSet)
+
+  (* NOTE It seems the only use for this case is to let primed variables pass
+   * through.  x' is encoded as (Opaque "x#prime") at this point. *)
+  | Opaque s ->
+      (Opaque s @@ oe, RSet)
 
   (* Propositional connectives treated separately, because the weak type system
    * specific to this module excludes operators that take boolean arguments, or
