@@ -349,6 +349,7 @@ let preprocess ?solver sq =
     (*|> Encode.Canon.main*)
     (*|> debug "After Canon" (* FIXME remove *)*)
     (* NOTE eliminating bound notation necessary to make all '\in' visible *)
+    |> Encode.Rewrite.simpl_elims
     |> Encode.Rewrite.simpl_bounds
     |> debug "Done Simpl. Bounds" (* FIXME remove *)
     |> Encode.Direct.main

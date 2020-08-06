@@ -12,3 +12,8 @@ open Expr.T
 *)
 val simpl_bounds : sequent -> sequent
 
+(** Elementary eliminations.
+    x \notin y  -->  ~ (x \in y)
+*)
+val simpl_elims : sequent -> sequent
+

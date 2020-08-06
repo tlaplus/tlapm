@@ -13,6 +13,7 @@ end
 module Rewrite : sig
   open Expr.T
   val simpl_bounds : sequent -> sequent
+  val simpl_elims : sequent -> sequent
 end
 
 module Table : sig

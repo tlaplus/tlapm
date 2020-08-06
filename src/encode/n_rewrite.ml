@@ -137,3 +137,22 @@ let simpl_bounds sq =
   let cx = ((), Deque.empty) in
   snd (simpl_bounds_visitor#sequent cx sq)
 
+
+let simpl_elims_visitor = object (self : 'self)
+  inherit [unit] Visit.map as super
+
+  method expr scx oe =
+    match oe.core with
+    | Apply ({ core = Internal B.Notmem } as op, [ e ; f ]) ->
+        let e = self#expr scx e in
+        let f = self#expr scx f in
+        Apply (Internal B.Neg %% [], [
+          Apply (Internal B.Mem @@ op, [ e ; f ]) %% []
+        ]) @@ oe
+    | _ -> super#expr scx oe
+end
+
+let simpl_elims sq =
+  let cx = ((), Deque.empty) in
+  snd (simpl_elims_visitor#sequent cx sq)
+
