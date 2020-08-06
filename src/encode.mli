@@ -10,6 +10,11 @@ module Hints : sig
   val main : sequent -> sequent
 end
 
+module Rewrite : sig
+  open Expr.T
+  val simpl_bounds : sequent -> sequent
+end
+
 module Table : sig
   open Property
   open Type.T

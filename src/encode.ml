@@ -7,6 +7,7 @@
 Revision.f "$Rev$";;
 
 module Hints = N_hints
+module Rewrite = N_rewrite
 module Table = N_table
 module Direct = N_direct
 module Canon = N_canon
