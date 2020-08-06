@@ -15,14 +15,16 @@ module B = Builtin
 module T = N_table
 
 
-(* {3 Context} *)
+let error ?at mssg =
+  let mssg = "Encode.Direct: " ^ mssg in
+  Errors.bug ?at mssg
 
 type rty = RSet | RForm                 (** Result type *)
 type aty = ASet | AOp of int * rty      (** Argument type *)
 type xty = XSet | XOp of aty list * rty (** Type *)
 
-type cx = xty Ctx.t
 
+(* {3 Conversions} *)
 
 let to_at = function
   | RSet -> TU
@@ -37,6 +39,32 @@ let to_sch = function
   | XSet -> TSch ([], [], TAtom TU)
   | XOp (ats, rt) -> TSch ([], List.map to_arg ats, TAtom (to_at rt))
 
+let from_at = function
+  | TU -> RSet
+  | TBool -> RForm
+  | _ -> error "from_at: bad conversion"
+
+let from_arg = function
+  | TRg (TAtom TU) -> ASet
+  | TOp (tys, TAtom at) ->
+      List.iter begin function
+        | TAtom TU -> ()
+        | _ -> error "from_arg: bad conversion"
+      end tys;
+      AOp (List.length tys, from_at at)
+  | _ -> error "from_arg: bad conversion"
+
+let from_sch = function
+  | TSch ([], [], TAtom TU) ->
+      XSet
+  | TSch ([], targs, TAtom at) ->
+      XOp (List.map from_arg targs, from_at at)
+  | _ -> error "from_sch: bad conversion"
+
+
+(* {3 Context} *)
+
+type cx = xty Ctx.t
 
 let adj cx v xt =
   let v =
@@ -63,23 +91,22 @@ let lookup_id cx n =
 
 (* {3 Helpers} *)
 
-let error ?at mssg =
-  Errors.bug ?at mssg
+let opq_from_smb tla_smb =
+  let smb = T.std_smb tla_smb in
+  let op = Opaque (T.get_name smb) %% [] in
+  let op = assign op T.smb_prop smb in
+  op
 
 let maybe_cast = function
   | RSet -> fun e -> e
   | RForm -> fun e ->
-      let smb = T.std_smb (T.Ucast (TAtom TBool)) in
-      let op = Opaque (T.get_name smb) %% [] in
-      let op = assign op T.smb_prop smb in
+      let op = opq_from_smb (T.Ucast (TAtom TBool)) in
       Apply (op, [ e ]) %% []
 
 let maybe_proj = function
   | RForm -> fun e -> e
   | RSet -> fun e ->
-      let smb = T.std_smb (T.Any (TAtom TU)) in
-      let any = Opaque (T.get_name smb) %% [] in
-      let any = assign any T.smb_prop smb in
+      let any = opq_from_smb (T.Any (TAtom TU)) in
       let op = Internal B.Eq %% [] in
       let op = assign op Props.targs_prop [ TAtom TU ] in
       Apply (op, [ e ; any ]) %% []
@@ -113,10 +140,9 @@ let rec expr cx oe =
       end;
       (Ix n @@ oe, RSet)
 
-  (* This module excludes operators that take boolean arguments from the
-   * context, because that simplifies the process.  For this reason,
-   * the regular connectives of propositional logic must be treated as
-   * separate cases. *)
+  (* Propositional connectives treated separately, because the weak type system
+   * specific to this module excludes operators that take boolean arguments, or
+   * boolean constants. *)
   | Internal (B.TRUE | B.FALSE) ->
       (oe, RForm)
   | Apply ({ core = Internal (B.Implies | B.Equiv | B.Conj | B.Disj) } as op, [ e ; f ]) ->
@@ -134,11 +160,13 @@ let rec expr cx oe =
       else
         (Apply (op, [ maybe_cast rt1 e ; maybe_cast rt2 f ]) @@ oe, RForm)
 
+  | Internal _ ->
+      expr cx (Apply (oe, []) %% [])
   | Apply (op, args) ->
       let op, xt = eopr cx op in
       begin match xt, args with
       | XSet, [] ->
-          (Apply (op, args) @@ oe, RSet)
+          (op $$ oe, RSet)
       | XSet, _ ->
           error ~at:oe "Application with incorrect number of arguments"
       | XOp (ats1, _), _ when List.length ats1 <> List.length args ->
@@ -235,8 +263,65 @@ let rec expr cx oe =
       let e, rt = expr cx e in
       (Tquant (q, List.rev rvs, maybe_proj rt e) @@ oe, RForm)
 
-  | Choose (v, b, e) ->
-      error ~at:oe "Not implemented"
+  | Choose (v, None, e) ->
+      let v, cx = adj cx v XSet in
+      let e, rt = expr cx e in
+      let op = opq_from_smb (T.Uver (T.Choose TUnknown)) in
+      (Apply (op, [ Lambda ([ v, Shape_expr ], maybe_proj rt e) %% [] ]) @@ oe, RSet)
+
+  | Choose (v, Some b, e) ->
+      let b, rt1 = expr cx b in
+      let v, cx = adj cx v XSet in
+      let e, rt2 = expr cx e in
+      let op = opq_from_smb (T.Uver (T.Choose TUnknown)) in
+      let mem = opq_from_smb (T.Uver (T.Mem TUnknown)) in
+      let b = Expr.Subst.app_expr (Expr.Subst.shift 1) (maybe_cast rt1 b) in
+      let e =
+        Apply (Internal B.Conj %% [], [
+          Apply (mem, [ Ix 1 %% [] ; b ]) %% [] ;
+          maybe_proj rt2 e
+        ]) %% []
+      in
+      (Apply (op, [ Lambda ([ v, Shape_expr ], e) %% [] ]) @@ oe, RSet)
+
+  | SetSt (v, b, e) ->
+      let b, rt1 = expr cx b in
+      let v, cx = adj cx v XSet in
+      let e, rt2 = expr cx e in
+      let op = opq_from_smb (T.Uver (T.SetSt TUnknown)) in
+      (Apply (op, [ maybe_cast rt1 b ; Lambda ([ v, Shape_expr ], maybe_proj rt2 e) %% [] ]) @@ oe, RSet)
+
+  | SetOf (e, bs) ->
+      let cx, rvs, rbs, _ =
+        List.fold_left begin fun (ncx, rvs, rbs, dit) (v, _, d) ->
+          match d with
+          | Domain b ->
+              let b, rt = expr cx b in
+              let v, ncx = adj ncx v XSet in
+              let b = maybe_cast rt b in
+              (ncx, (v, Shape_expr) :: rvs, b :: rbs, Some b)
+          | Ditto ->
+              let v, ncx = adj ncx v XSet in
+              let b = Option.get dit in
+              (ncx, (v, Shape_expr) :: rvs, b :: rbs, dit)
+          | No_domain ->
+              error ~at:v "Domain expected"
+        end (cx, [], [], None) bs
+      in
+      let e, rt = expr cx e in
+      let op = opq_from_smb (T.Uver (T.SetOf (List.init (List.length bs) (fun _ -> TUnknown), TUnknown))) in
+      (Apply (op, (Lambda (List.rev rvs, maybe_cast rt e) %% []) :: List.rev rbs) @@ oe, RSet)
+
+  | SetEnum es ->
+      let es =
+        List.map begin fun e ->
+          let e, rt = expr cx e in
+          maybe_cast rt e
+        end es
+      in
+      let n = List.length es in
+      let op = opq_from_smb (T.Uver (T.SetEnum (n, TUnknown))) in
+      (Apply (op, es) @@ oe, RSet)
 
   (* Cases below may be unnecessary, or unsound, I don't know *)
 
@@ -299,6 +384,27 @@ and eopr cx op =
       in
       let e, rt = expr cx e in
       (Lambda (List.rev rxs, e) @@ op, XOp (List.rev rats, rt))
+
+  | Internal b ->
+      let smb =
+        match b with
+        | B.STRING    -> T.Uver T.Strings
+        | B.BOOLEAN   -> T.Uver T.Booleans
+        | B.SUBSET    -> T.Uver (T.Subset TUnknown)
+        | B.UNION     -> T.Uver (T.Union TUnknown)
+        | B.DOMAIN    -> T.Uver (T.Domain (TUnknown, TUnknown))
+        | B.Subseteq  -> T.Uver (T.SubsetEq TUnknown)
+        | B.Mem       -> T.Uver (T.Mem TUnknown)
+        | B.Setminus  -> T.Uver (T.SetMinus TUnknown)
+        | B.Cap       -> T.Uver (T.Cap TUnknown)
+        | B.Cup       -> T.Uver (T.Cup TUnknown)
+        | _ ->
+            error ~at:op "Unsupported builtin"
+      in
+      let op = opq_from_smb smb in
+      let sch = T.get_sch (T.std_smb smb) in
+      let xt = from_sch sch in
+      (op, xt)
 
   | _ ->
       let e, rt = expr cx op in
@@ -382,10 +488,10 @@ and hyp cx h =
   | Fresh (v, shp, k, d) ->
       let d =
         match d with
-        | Unbounded -> Unbounded
-        | Bounded (e, vis) ->
+        | Bounded (e, Visible) ->
             let e, rt = expr cx e in
-            Bounded (maybe_cast rt e, vis)
+            Bounded (maybe_cast rt e, Visible)
+        | _ -> d
       in
       let at =
         match shp with
@@ -403,10 +509,14 @@ and hyp cx h =
       let cx, df = defn cx df in
       (cx, Defn (df, wd, vis, ex) @@ h)
 
-  | Fact (e, vis, tm) ->
+  | Fact (e, Visible, tm) ->
       let e, rt = expr cx e in
       let cx = bump cx in
-      (cx, Fact (maybe_proj rt e, vis, tm) @@ h)
+      (cx, Fact (maybe_proj rt e, Visible, tm) @@ h)
+
+  | Fact (_, Hidden, _ ) ->
+      let cx = bump cx in
+      (cx, h)
 
 and hyps cx hs =
   match Deque.front hs with
