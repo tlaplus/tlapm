@@ -12,6 +12,10 @@ module Option = struct
     fun fn -> function
       | Some x -> fn x
       | None -> ()
+  let fold : ('b -> 'a -> 'b) -> 'b -> 'a option -> 'b =
+    fun fn x -> function
+      | Some y -> fn x y
+      | None -> x
   let map : ('a -> 'b) -> 'a option -> 'b option =
     fun fn -> function
       | Some x -> Some (fn x)

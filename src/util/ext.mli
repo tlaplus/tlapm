@@ -58,6 +58,7 @@ end;;
 
 module Option : sig
   val get : 'a option -> 'a
+  val fold : ('b -> 'a -> 'b) -> 'b -> 'a option -> 'b
   val map : ('a -> 'b) -> 'a option -> 'b option
   val iter : ('a -> unit) -> 'a option -> unit
   val default : 'a -> 'a option -> 'a
