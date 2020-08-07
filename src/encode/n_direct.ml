@@ -416,23 +416,28 @@ and eopr cx op =
   | Internal b ->
       let smb =
         match b with
-        | B.STRING    -> T.Uver T.Strings
-        | B.BOOLEAN   -> T.Uver T.Booleans
-        | B.SUBSET    -> T.Uver (T.Subset TUnknown)
-        | B.UNION     -> T.Uver (T.Union TUnknown)
-        | B.DOMAIN    -> T.Uver (T.Domain (TUnknown, TUnknown))
-        | B.Subseteq  -> T.Uver (T.SubsetEq TUnknown)
-        | B.Mem       -> T.Uver (T.Mem TUnknown)
-        | B.Setminus  -> T.Uver (T.SetMinus TUnknown)
-        | B.Cap       -> T.Uver (T.Cap TUnknown)
-        | B.Cup       -> T.Uver (T.Cup TUnknown)
-        | _ ->
-            error ~at:op "Unsupported builtin"
+        | B.STRING    -> Some (T.Uver T.Strings)
+        | B.BOOLEAN   -> Some (T.Uver T.Booleans)
+        | B.SUBSET    -> Some (T.Uver (T.Subset TUnknown))
+        | B.UNION     -> Some (T.Uver (T.Union TUnknown))
+        | B.DOMAIN    -> Some (T.Uver (T.Domain (TUnknown, TUnknown)))
+        | B.Subseteq  -> Some (T.Uver (T.SubsetEq TUnknown))
+        | B.Mem       -> Some (T.Uver (T.Mem TUnknown))
+        | B.Setminus  -> Some (T.Uver (T.SetMinus TUnknown))
+        | B.Cap       -> Some (T.Uver (T.Cap TUnknown))
+        | B.Cup       -> Some (T.Uver (T.Cup TUnknown))
+        | _ -> None
       in
-      let op = opq_from_smb smb in
-      let sch = T.get_sch (T.std_smb smb) in
-      let xt = from_sch sch in
-      (op, xt)
+      begin match smb with
+      | Some smb ->
+          let op = opq_from_smb smb in
+          let sch = T.get_sch (T.std_smb smb) in
+          let xt = from_sch sch in
+          (op, xt)
+      | None ->
+          let e, rt = expr cx op in
+          (maybe_cast rt e $$ op, XSet)
+      end
 
   | _ ->
       let e, rt = expr cx op in

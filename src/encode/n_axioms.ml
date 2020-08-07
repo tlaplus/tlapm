@@ -19,13 +19,9 @@ let annot h ty = assign h Props.type_prop ty
 let targs a tys = assign a Props.targs_prop tys
 
 let app ?tys op es =
-  let op =
-    match tys with
-    | None -> op
-    | Some tys -> targs op tys
-  in
+  let op = Option.fold targs op tys in
   match es with
-  | [] -> Apply (op, []) (* previously just op, but loss of properties *)
+  | [] -> Apply (op, []) (* previously just op.core, but loss of properties *)
   | _ -> Apply (op, es)
 
 let appb ?tys b es =
@@ -63,13 +59,20 @@ let ixi ?(shift=0) n = List.init n (fun i -> Ix (shift + n - i) %% [])
     [ixi ~shift:s n] = [ Ix (s+n) ; .. ; Ix (s+2) ; Ix (s+1) ]
 *)
 
-let fresh x ?its ty =
-  let targ, shp =
-    match its with
-    | None -> TRg ty, Shape_expr
-    | Some its -> TOp (its, ty), Shape_op (List.length its)
+let fresh ?tsig ?(n=0) x =
+  let shp =
+    if n = 0 then Shape_expr
+    else Shape_op n
   in
-  let h = assign (x %% []) Props.targ_prop targ in
+  let h =
+    Option.fold begin fun h (tys, ty) ->
+      let targ =
+        if List.length tys = 0 then TRg ty
+        else TOp (tys, ty)
+      in
+      assign h Props.targ_prop targ
+    end (x %% []) tsig
+  in
   Fresh (h, shp, Constant, Unbounded)
 
 
@@ -78,15 +81,18 @@ let fresh x ?its ty =
 let choose ty =
   Sequent {
     context = [
-      fresh "P" ~its:[ ty ] (TAtom TBool) %% []
+      fresh ?tsig:(Option.map (fun ty -> [ ty ], TAtom TBool) ty)
+      ~n:1 "P" %% []
     ] |> Deque.of_list ;
     active =
-      all [ "x" ] ~tys:[ ty ] (
+      all [ "x" ] ?tys:(Option.map (fun ty -> [ ty ]) ty) ~pats:[ [
+        app (Ix 2 %% []) [ Ix 1 %% [] ] %% []
+      ] ] (
         ifx B.Implies (
           app (Ix 2 %% []) [ Ix 1 %% [] ] %% []
         ) (
           app (Ix 2 %% []) [
-            Choose (annot ("y" %% []) ty, None,
+            Choose (Option.fold annot ("y" %% []) ty, None,
             app (Ix 3 %% []) [ Ix 1 %% [] ] %% []) %% []
           ] %% []
         ) %% []
@@ -97,15 +103,23 @@ let choose ty =
 (* {3 Sets} *)
 
 let subseteq ty =
-  all [ "x" ; "y" ] ~tys:[ TSet ty ; TSet ty ] (
+  all [ "x" ; "y" ]
+  ?tys:(Option.map (fun ty -> [ TSet ty ; TSet ty ]) ty) ~pats:[ [
+    ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+    B.Subseteq (Ix 2 %% []) (Ix 1 %% []) %% []
+  ] ] (
     ifx B.Equiv (
-      ifx B.Subseteq (Ix 2 %% []) (Ix 1 %% []) %% []
+      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+      B.Subseteq (Ix 2 %% []) (Ix 1 %% []) %% []
     ) (
-      all [ "z" ] ~tys:[ ty ] (
+      all [ "z" ]
+      ?tys:(Option.map (fun ty -> [ ty ]) ty) (
         ifx B.Implies (
-          ifx ~tys:[ ty ] B.Mem (Ix 1 %% []) (Ix 3 %% []) %% []
+          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+          B.Mem (Ix 1 %% []) (Ix 3 %% []) %% []
         ) (
-          ifx ~tys:[ ty ] B.Mem (Ix 1 %% []) (Ix 2 %% []) %% []
+          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+          B.Mem (Ix 1 %% []) (Ix 2 %% []) %% []
         ) %% []
       ) %% []
     ) %% []
@@ -113,50 +127,97 @@ let subseteq ty =
 
 let setenum n ty =
   if n = 0 then
-    all [ "x" ] ~tys:[ ty ] (
+    all [ "x" ]
+    ?tys:(Option.map (fun ty -> [ ty ]) ty) ~pats:[ [
+      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+      B.Mem (
+        Ix 1 %% []
+      ) (
+        app ?tys:(Option.map (fun ty -> [ ty ]) ty) (
+          SetEnum [] %% []
+        ) [] %% []
+      ) %% []
+    ] ] (
       una B.Neg (
-        ifx ~tys:[ ty ] B.Mem (
+        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+        B.Mem (
           Ix 1 %% []
         ) (
-          app (SetEnum [] %% []) ~tys:[ ty ] [] %% []
+          app ?tys:(Option.map (fun ty -> [ ty ]) ty) (
+            SetEnum [] %% []
+          ) [] %% []
         ) %% []
       ) %% []
     ) %% []
   else
-    all (gen "a" n @ [ "x" ]) ~tys:(dupl ty (n + 1)) (
+    all (gen "a" n @ [ "x" ])
+    ?tys:(Option.map (fun ty -> dupl ty (n + 1)) ty) ~pats:[ [
+      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+      B.Mem (
+        Ix 1 %% []
+      ) (
+        app ?tys:(Option.map (fun ty -> [ ty ]) ty) (
+          SetEnum (ixi ~shift:1 n) %% []
+        ) [] %% []
+      ) %% []
+    ] ] (
       ifx B.Equiv (
-        ifx ~tys:[ ty ] B.Mem (
+        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+        B.Mem (
           Ix 1 %% []
         ) (
-          app ~tys:[ ty ] (SetEnum (ixi ~shift:1 n) %% []) [] %% []
+          app ?tys:(Option.map (fun ty -> [ ty ]) ty) (
+            SetEnum (ixi ~shift:1 n) %% []
+          ) [] %% []
         ) %% []
       ) (
-        List (Or, List.map begin fun e ->
-          ifx ~tys:[ ty ] B.Eq (Ix 1 %% []) e %% []
-        end (ixi ~shift:1 n)) %% []
+        if n = 1 then
+          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+          B.Eq (Ix 1 %% []) (Ix 2 %% []) %% []
+        else
+          List (Or, List.map begin fun e ->
+            ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+            B.Eq (Ix 1 %% []) e %% []
+          end (ixi ~shift:1 n)) %% []
       ) %% []
     ) %% []
 
 let union ty =
-  all [ "a" ; "x" ] ~tys:[ TSet (TSet ty) ; ty ] (
+  all [ "a" ; "x" ]
+  ?tys:(Option.map (fun ty -> [ TSet (TSet ty) ; ty ]) ty) ~pats:[ [
+    ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+    B.Mem (
+      Ix 1 %% []
+    ) (
+      una ?tys:(Option.map (fun ty -> [ ty ]) ty)
+      B.UNION (
+        Ix 2 %% []
+      ) %% []
+    ) %% []
+  ] ] (
     ifx B.Equiv (
-      ifx ~tys:[ ty ] B.Mem (
+      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+      B.Mem (
         Ix 1 %% []
       ) (
-        una ~tys:[ ty ] B.UNION (
+        una ?tys:(Option.map (fun ty -> [ ty ]) ty)
+        B.UNION (
           Ix 2 %% []
         ) %% []
       ) %% []
     ) (
-      exi [ "y" ] ~tys:[ TSet ty ] (
+      exi [ "y" ]
+      ?tys:(Option.map (fun ty -> [ TSet ty ]) ty) (
         ifx B.Conj (
-          ifx ~tys:[ TSet ty ] B.Mem (
+          ifx ?tys:(Option.map (fun ty -> [ TSet ty ]) ty)
+          B.Mem (
             Ix 1 %% []
           ) (
             Ix 3 %% []
           ) %% []
         ) (
-          ifx ~tys:[ ty ] B.Mem (
+          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+          B.Mem (
             Ix 2 %% []
           ) (
             Ix 1 %% []
@@ -167,25 +228,41 @@ let union ty =
   ) %% []
 
 let subset ty =
-  all [ "a" ; "x" ] ~tys:[ TSet ty ; TSet ty ] (
+  all [ "a" ; "x" ]
+  ?tys:(Option.map (fun ty -> [ TSet ty ; TSet ty ]) ty) ~pats:[ [
+    ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+    B.Mem (
+      Ix 1 %% []
+    ) (
+      una ?tys:(Option.map (fun ty -> [ ty ]) ty)
+      B.SUBSET (
+        Ix 2 %% []
+      ) %% []
+    ) %% []
+  ] ] (
     ifx B.Equiv (
-      ifx ~tys:[ ty ] B.Mem (
+      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+      B.Mem (
         Ix 1 %% []
       ) (
-        una ~tys:[ ty ] B.SUBSET (
+        una ?tys:(Option.map (fun ty -> [ ty ]) ty)
+        B.SUBSET (
           Ix 2 %% []
         ) %% []
       ) %% []
     ) (
-      all [ "y" ] ~tys:[ ty ] (
+      all [ "y" ]
+      ?tys:(Option.map (fun ty -> [ ty ]) ty) (
         ifx B.Implies (
-          ifx ~tys:[ ty ] B.Mem (
+          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+          B.Mem (
             Ix 1 %% []
           ) (
             Ix 2 %% []
           ) %% []
         ) (
-          ifx ~tys:[ ty ] B.Mem (
+          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+          B.Mem (
             Ix 1 %% []
           ) (
             Ix 3 %% []
@@ -196,12 +273,27 @@ let subset ty =
   ) %% []
 
 let cup ty =
-  all [ "a" ; "b" ; "x" ] ~tys:[ TSet ty ; TSet ty ; ty ] (
+  all [ "a" ; "b" ; "x" ]
+  ?tys:(Option.map (fun ty -> [ TSet ty ; TSet ty ; ty ]) ty) ~pats:[ [
+    ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+    B.Mem (
+      Ix 1 %% []
+    ) (
+      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+      B.Cup (
+        Ix 3 %% []
+      ) (
+        Ix 2 %% []
+      ) %% []
+    ) %% []
+  ] ] (
     ifx B.Equiv (
-      ifx ~tys:[ ty ] B.Mem (
+      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+      B.Mem (
         Ix 1 %% []
       ) (
-        ifx ~tys:[ ty ] B.Cup (
+        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+        B.Cup (
           Ix 3 %% []
         ) (
           Ix 2 %% []
@@ -209,13 +301,15 @@ let cup ty =
       ) %% []
     ) (
       ifx B.Disj (
-        ifx ~tys:[ ty ] B.Mem (
+        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+        B.Mem (
           Ix 1 %% []
         ) (
           Ix 3 %% []
         ) %% []
       ) (
-        ifx ~tys:[ ty ] B.Mem (
+        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+        B.Mem (
           Ix 1 %% []
         ) (
           Ix 2 %% []
@@ -225,12 +319,27 @@ let cup ty =
   ) %% []
 
 let cap ty =
-  all [ "a" ; "b" ; "x" ] ~tys:[ TSet ty ; TSet ty ; ty ] (
+  all [ "a" ; "b" ; "x" ]
+  ?tys:(Option.map (fun ty -> [ TSet ty ; TSet ty ; ty ]) ty) ~pats:[ [
+    ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+    B.Mem (
+      Ix 1 %% []
+    ) (
+      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+      B.Cap (
+        Ix 3 %% []
+      ) (
+        Ix 2 %% []
+      ) %% []
+    ) %% []
+  ] ] (
     ifx B.Equiv (
-      ifx ~tys:[ ty ] B.Mem (
+      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+      B.Mem (
         Ix 1 %% []
       ) (
-        ifx ~tys:[ ty ] B.Cap (
+        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+        B.Cap (
           Ix 3 %% []
         ) (
           Ix 2 %% []
@@ -238,13 +347,15 @@ let cap ty =
       ) %% []
     ) (
       ifx B.Conj (
-        ifx ~tys:[ ty ] B.Mem (
+        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+        B.Mem (
           Ix 1 %% []
         ) (
           Ix 3 %% []
         ) %% []
       ) (
-        ifx ~tys:[ ty ] B.Mem (
+        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+        B.Mem (
           Ix 1 %% []
         ) (
           Ix 2 %% []
@@ -254,12 +365,27 @@ let cap ty =
   ) %% []
 
 let setminus ty =
-  all [ "a" ; "b" ; "x" ] ~tys:[ TSet ty ; TSet ty ; ty ] (
+  all [ "a" ; "b" ; "x" ]
+  ?tys:(Option.map (fun ty -> [ TSet ty ; TSet ty ; ty ]) ty) ~pats:[ [
+    ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+    B.Mem (
+      Ix 1 %% []
+    ) (
+      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+      B.Setminus (
+        Ix 3 %% []
+      ) (
+        Ix 2 %% []
+      ) %% []
+    ) %% []
+  ] ] (
     ifx B.Equiv (
-      ifx ~tys:[ ty ] B.Mem (
+      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+      B.Mem (
         Ix 1 %% []
       ) (
-        ifx ~tys:[ ty ] B.Setminus (
+        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+        B.Setminus (
           Ix 3 %% []
         ) (
           Ix 2 %% []
@@ -267,14 +393,17 @@ let setminus ty =
       ) %% []
     ) (
       ifx B.Conj (
-        ifx ~tys:[ ty ] B.Mem (
+        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+        B.Mem (
           Ix 1 %% []
         ) (
           Ix 3 %% []
         ) %% []
       ) (
-        una ~tys:[ ty ] B.Neg (
-          ifx ~tys:[ ty ] B.Mem (
+        una ?tys:(Option.map (fun ty -> [ ty ]) ty)
+        B.Neg (
+          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+          B.Mem (
             Ix 1 %% []
           ) (
             Ix 2 %% []
@@ -288,17 +417,33 @@ let setminus ty =
 let setst ty =
   Sequent {
     context = [
-      fresh "P" ~its:[ ty ] (TAtom TBool) %% []
+      fresh ?tsig:(Option.map (fun ty -> [ ty ], TAtom TBool) ty)
+      ~n:1 "P" %% []
     ] |> Deque.of_list ;
     active =
-      all [ "a" ; "x" ] ~tys:[ TSet ty ; ty ] (
+      all [ "a" ; "x" ]
+      ?tys:(Option.map (fun ty -> [ TSet ty ; ty ]) ty) ~pats:[ [
+        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+        B.Mem (
+          Ix 1 %% []
+        ) (
+          app ?tys:(Option.map (fun ty -> [ ty ]) ty) (
+            SetSt (
+              Option.fold annot ("y" %% []) ty,
+              Ix 2 %% [],
+              app (Ix 4 %% []) [ Ix 1 %% [] ] %% []
+            ) %% []
+          ) [] %% []
+        ) %% []
+      ] ] (
         ifx B.Equiv (
-          ifx ~tys:[ ty ] B.Mem (
+          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+          B.Mem (
             Ix 1 %% []
           ) (
-            app ~tys:[ ty ] (
+            app ?tys:(Option.map (fun ty -> [ ty ]) ty) (
               SetSt (
-                annot ("y" %% []) ty,
+                Option.fold annot ("y" %% []) ty,
                 Ix 2 %% [],
                 app (Ix 4 %% []) [ Ix 1 %% [] ] %% []
               ) %% []
@@ -306,7 +451,8 @@ let setst ty =
           ) %% []
         ) (
           ifx B.Conj (
-            ifx ~tys:[ ty ] B.Mem (
+            ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+            B.Mem (
               Ix 1 %% []
             ) (
               Ix 2 %% []
@@ -318,35 +464,59 @@ let setst ty =
       ) %% []
   } %% []
 
-let setof tys ty =
+let setof n ttys =
+  let tys, ty =
+    match ttys with
+    | None -> (List.init n (fun _ -> None), None)
+    | Some (tys, ty) -> (List.map (fun ty -> Some ty) tys, Some ty)
+  in
   Sequent {
     context = [
-      fresh "P" ~its:tys ty %% []
+      fresh ?tsig:ttys ~n:n "F" %% []
     ] |> Deque.of_list ;
     active =
-      let n = List.length tys in
-      all (gen "a" n @ [ "x" ]) ~tys:(List.map (fun ty -> TSet ty) tys @ [ ty ]) (
+      all (gen "a" n @ [ "x" ])
+      ?tys:(Option.map (fun (tys, ty) -> List.map (fun ty -> TSet ty) tys @ [ ty ]) ttys) ~pats:[ [
+        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+        B.Mem (
+          Ix 1 %% []
+        ) (
+          app ?tys:(Option.map (fun ty -> [ ty ]) ty) (
+            SetOf (
+              app (Ix (2*n + 2) %% []) (ixi n) %% [],
+              List.map2 begin fun e ty ->
+                let h = Option.fold annot ("y" %% []) ty in
+                (h, Constant, Domain e)
+              end (ixi ~shift:1 n) tys
+            ) %% []
+          ) [] %% []
+        ) %% []
+      ] ] (
         ifx B.Equiv (
-          ifx ~tys:[ ty ] B.Mem (
+          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+          B.Mem (
             Ix 1 %% []
           ) (
-            app ~tys:[ ty ] (
+            app ?tys:(Option.map (fun ty -> [ ty ]) ty) (
               SetOf (
                 app (Ix (2*n + 2) %% []) (ixi n) %% [],
                 List.map2 begin fun e ty ->
-                  let h = annot ("y" %% []) ty in
+                  let h = Option.fold annot ("y" %% []) ty in
                   (h, Constant, Domain e)
                 end (ixi ~shift:1 n) tys
               ) %% []
             ) [] %% []
           ) %% []
         ) (
-          exi (gen "y" n) ~tys:tys (
+          exi (gen "y" n)
+          ?tys:(Option.map fst ttys) (
             List (And, List.map2 begin fun e1 (e2, ty) ->
-              ifx ~tys:[ ty ] B.Mem e1 e2 %% []
-            end (ixi n) (List.combine (ixi ~shift:1 n) tys)
+              ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+              B.Mem e1 e2 %% []
+            end (ixi n) (List.combine (ixi ~shift:(n + 1) n) tys)
             @ [
-              ifx ~tys:[ ty ] B.Eq (
+              ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+              B.Eq (
                 Ix (n + 1) %% []
               ) (
                 app (Ix (2*n + 2) %% []) (ixi n) %% []
@@ -361,17 +531,146 @@ let setof tys ty =
 
 (* {3 Functions} *)
 
-let arrow ty1 ty2 =
-  Internal B.TRUE %% []
+let arrow tys =
+  let ty1, ty2 =
+    match tys with
+    | None -> (None, None)
+    | Some (ty1, ty2) -> (Some ty1, Some ty2)
+  in
+  all [ "a" ; "b" ; "f" ]
+  ?tys:(Option.map (fun (ty1, ty2) -> [ TSet ty1 ; TSet ty2 ; TArrow (ty1, ty2) ]) tys)
+  ~pats:[ [
+    ifx ?tys:(Option.map (fun (ty1, ty2) -> [ TArrow (ty1, ty2) ]) tys)
+    B.Mem (
+      Ix 1 %% []
+    ) (
+      app ?tys:(Option.map (fun (ty1, ty2) -> [ ty1 ; ty2 ]) tys)
+      (Arrow (Ix 3 %% [], Ix 2 %% []) %% []) [] %% []
+    ) %% []
+  ] ] (
+    ifx B.Equiv (
+      ifx ?tys:(Option.map (fun (ty1, ty2) -> [ TArrow (ty1, ty2) ]) tys)
+      B.Mem (
+        Ix 1 %% []
+      ) (
+        app ?tys:(Option.map (fun (ty1, ty2) -> [ ty1 ; ty2 ]) tys)
+        (Arrow (Ix 3 %% [], Ix 2 %% []) %% []) [] %% []
+      ) %% []
+    ) (
+      List (And, [
+        ifx ?tys:(Option.map (fun ty -> [ TSet ty ]) ty1)
+        B.Eq (
+          una ?tys:(Option.map (fun ty -> [ ty ]) ty1)
+          B.DOMAIN (
+            Ix 1 %% []
+          ) %% []
+        ) (
+          Ix 3 %% []
+        ) %% [] ;
+        all [ "x" ] ?tys:(Option.map (fun ty -> [ ty ]) ty1) (
+          ifx B.Implies (
+            ifx ?tys:(Option.map (fun ty -> [ ty ]) ty1)
+            B.Mem (
+              Ix 1 %% []
+            ) (
+              Ix 4 %% []
+            ) %% []
+          ) (
+            ifx ?tys:(Option.map (fun ty -> [ ty ]) ty2)
+            B.Mem (
+              app ?tys:(Option.map (fun (ty1, ty2) -> [ ty1 ; ty2 ]) tys)
+              (FcnApp (
+                Ix 2 %% [],
+                [ Ix 1 %% [] ]
+              ) %% []) [] %% []
+            ) (
+              Ix 3 %% []
+            ) %% []
+          ) %% []
+        ) %% []
+      ]) %% []
+    ) %% []
+  ) %% []
 
-let domain ty1 ty2 =
-  Internal B.TRUE %% []
+let domain tys =
+  let ty1 = Option.map fst tys in
+  Sequent {
+    context = [
+      fresh ?tsig:(Option.map (fun (ty1, ty2) -> ([ ty1 ], ty2)) tys)
+      ~n:1 "F" %% []
+    ] |> Deque.of_list ;
+    active =
+      all [ "a" ]
+      ?tys:(Option.map (fun ty -> [ TSet ty ]) ty1) ~pats:[ [
+        una ?tys:(Option.map (fun ty -> [ ty ]) ty1)
+        B.DOMAIN (
+          Fcn (
+            [ Option.fold annot ("x" %% []) ty1, Constant, Domain (Ix 1 %% []) ],
+            app (Ix 3 %% []) [ Ix 1 %% [] ] %% []
+          ) %% []
+        ) %% []
+      ] ] (
+        ifx ?tys:(Option.map (fun ty -> [ TSet ty ]) ty1)
+        B.Eq (
+          una ?tys:(Option.map (fun ty -> [ ty ]) ty1)
+          B.DOMAIN (
+            Fcn (
+              [ Option.fold annot ("x" %% []) ty1, Constant, Domain (Ix 1 %% []) ],
+              app (Ix 3 %% []) [ Ix 1 %% [] ] %% []
+            ) %% []
+          ) %% []
+        ) (
+          Ix 1 %% []
+        ) %% []
+      ) %% []
+  } %% []
 
-let fcnapp ty1 ty2 =
-  Internal B.TRUE %% []
-
-let except ty1 ty2 =
-  Internal B.TRUE %% []
+let fcnapp tys =
+  let ty1, ty2 =
+    match tys with
+    | None -> (None, None)
+    | Some (ty1, ty2) -> (Some ty1, Some ty2)
+  in
+  Sequent {
+    context = [
+      fresh ?tsig:(Option.map (fun (ty1, ty2) -> ([ ty1 ], ty2)) tys)
+      ~n:1 "F" %% []
+    ] |> Deque.of_list ;
+    active =
+      all [ "a" ; "x" ]
+      ?tys:(Option.map (fun ty -> [ TSet ty ; ty ]) ty1) ~pats:[ [
+        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty1)
+        B.Mem (
+          Ix 1 %% []
+        ) (
+          Ix 2 %% []
+        ) %% []
+      ] ] (
+        ifx B.Implies (
+          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty1)
+          B.Mem (
+            Ix 1 %% []
+          ) (
+            Ix 2 %% []
+          ) %% []
+        ) (
+          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty2)
+          B.Eq (
+            app ?tys:(Option.map (fun (ty1, ty2) -> [ ty1 ; ty2 ]) tys) (
+              FcnApp (
+                Fcn (
+                  [ Option.fold annot ("y" %% []) ty1, Constant, Domain (Ix 2 %% []) ],
+                  app (Ix 4 %% []) [ Ix 1 %% [] ] %% []
+                ) %% [],
+                [ Ix 1 %% [] ]
+              ) %% []
+            ) [] %% []
+          ) (
+            app (Ix 3 %% []) [ Ix 1 %% [] ] %% []
+          ) %% []
+        ) %% []
+      ) %% []
+  } %% []
 
 
 (* {3 Booleans} *)

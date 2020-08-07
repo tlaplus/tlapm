@@ -273,45 +273,35 @@ let u_kind k =
   in
   u_kind_pos k
 
+let u_ty = function
+  | TAtom TBool -> TAtom TBool
+  | _ -> TAtom TU
+
+let u_targ = function
+  | TRg ty -> TRg (TAtom TU)
+  | TOp (tys, ty) -> TOp (List.init (List.length tys) (fun _ -> TAtom TU), u_ty ty)
+
+let u_sch (TSch (vs, targs, ty)) =
+  TSch ([], List.map u_targ targs, u_ty ty)
+
 let u_smb smb =
   { smb with
     smb_name = smb.smb_name (* NOTE /!\ This works in practise as long as
                              * u_smb is only called on standards symbols
                              * with type argument 'TUnknown' *)
   ; smb_kind = u_kind smb.smb_kind
+  ; smb_sch = Option.map u_sch smb.smb_sch
   }
 
 
-(* NOTE An "unknown" type attached to a symbol leads to no suffix.
- * That may be dangerous if you're not careful. *)
 let suffix s ss =
   let ss = List.filter (fun s -> String.length s <> 0) ss in
   String.concat "__" (s :: ss)
 
-let rec type_to_string_aux ty =
-    match ty with
-    | TUnknown -> "Unknown"
-    | TVar a -> "Var" ^ a
-    | TAtom TU -> "U"
-    | TAtom TBool -> "Bool"
-    | TAtom TInt -> "Int"
-    | TAtom TReal -> "Real"
-    | TAtom TStr -> "String"
-    | TSet ty ->
-        let s = type_to_string_aux ty in
-        "Set" ^ s
-    | TArrow (ty1, ty2) ->
-        let s1 = type_to_string_aux ty1 in
-        let s2 = type_to_string_aux ty2 in
-        "Arrow" ^ s1 ^ s2
-    | TProd tys ->
-        let ss = List.map type_to_string_aux tys in
-        List.fold_left (^) "Prod" ss
-
 let type_to_string ty =
   match ty with
-  | TUnknown -> ""
-  | _ -> type_to_string_aux ty
+  | TUnknown -> "" (* Empty string will not result in a suffix *)
+  | _ -> ty_to_string ty
 
 let choose ty =
   let id = suffix "Choose" [ type_to_string ty ] in

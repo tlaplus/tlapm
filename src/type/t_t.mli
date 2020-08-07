@@ -96,8 +96,8 @@ val query_kind : 'a wrapped -> ty_kind option
 (* {3 Pretty-printing} *)
 
 val pp_print_type : Format.formatter -> ty -> unit
-val pp_print_atom : Format.formatter -> ty_atom -> unit
 val pp_print_targ : Format.formatter -> ty_arg -> unit
 val pp_print_tsch : Format.formatter -> ty_sch -> unit
+val pp_print_atom : Format.formatter -> ty_atom -> unit (* FIXME remove *)
 val pp_print_kind : Format.formatter -> ty_kind -> unit (* FIXME remove *)
 

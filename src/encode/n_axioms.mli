@@ -10,26 +10,25 @@ open Type.T
 
 (* {3 Logic} *)
 
-val choose : ty -> expr
+val choose : ty option -> expr
 
 (* {3 Sets} *)
 
-val subseteq : ty -> expr
-val setenum : int -> ty -> expr
-val union : ty -> expr
-val subset : ty -> expr
-val cup : ty -> expr
-val cap : ty -> expr
-val setminus : ty -> expr
-val setst : ty -> expr
-val setof : ty list -> ty -> expr
+val subseteq : ty option -> expr
+val setenum : int -> ty option -> expr
+val union : ty option -> expr
+val subset : ty option -> expr
+val cup : ty option -> expr
+val cap : ty option -> expr
+val setminus : ty option -> expr
+val setst : ty option -> expr
+val setof : int -> (ty list * ty) option -> expr
 
 (* {3 Functions} *)
 
-val arrow : ty -> ty -> expr
-val domain : ty -> ty -> expr
-val fcnapp : ty -> ty -> expr
-val except : ty -> ty -> expr
+val arrow : (ty * ty) option -> expr
+val domain : (ty * ty) option -> expr
+val fcnapp : (ty * ty) option -> expr
 
 (* {3 Booleans} *)
 
