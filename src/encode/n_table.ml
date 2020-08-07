@@ -76,28 +76,102 @@ let rec get_tlafam = function
   | Any _ | Ucast _ ->
       Special
 
-let smbtable = function
+
+exception No_value
+
+let smbtable_aux = function
   | Choose ty ->
-      Some ([], [ A.choose ty ])
+      [],
+      [ A.choose (Some ty) ]
   | SubsetEq ty ->
-      Some ([ Mem ty ], [ A.subseteq ty ])
+      [ Mem ty ],
+      [ A.subseteq (Some ty) ]
   | SetEnum (n, ty) ->
-      Some ([ Mem ty ], [ A.setenum n ty ])
+      [ Mem ty ],
+      [ A.setenum n (Some ty) ]
   | Union ty ->
-      Some ([ Mem ty ], [ A.union ty ])
+      [ Mem ty ],
+      [ A.union (Some ty) ]
   | Subset ty ->
-      Some ([ Mem ty ], [ A.subset ty ])
+      [ Mem ty ],
+      [ A.subset (Some ty) ]
   | Cup ty ->
-      Some ([ Mem ty ], [ A.cup ty ])
+      [ Mem ty ],
+      [ A.cup (Some ty) ]
   | Cap ty ->
-      Some ([ Mem ty ], [ A.cap ty ])
+      [ Mem ty ],
+      [ A.cap (Some ty) ]
   | SetMinus ty ->
-      Some ([ Mem ty ], [ A.setminus ty ])
+      [ Mem ty ],
+      [ A.setminus (Some ty) ]
   | SetSt ty ->
-      Some ([ Mem ty ], [ A.setst ty ])
+      [ Mem ty ],
+      [ A.setst (Some ty) ]
   | SetOf (tys, ty) ->
-      Some (List.map (fun ty -> Mem ty) tys @ [ Mem ty ], [ A.setof tys ty ])
-  | _ -> None
+      List.map (fun ty -> Mem ty) tys @
+      [ Mem ty ],
+      [ A.setof (List.length tys) (Some (tys, ty)) ]
+  | Arrow (ty1, ty2) ->
+      [ Mem ty1
+      ; Mem ty2
+      ; Domain (ty1, ty2)
+      ; FcnApp (ty1, ty2) ],
+      [ A.arrow (Some (ty1, ty2)) ]
+  | Fcn (ty1, ty2) ->
+      [ Mem ty1
+      ; Domain (ty1, ty2)
+      ; FcnApp (ty1, ty2) ],
+      [ A.domain (Some (ty1, ty2))
+      ; A.fcnapp (Some (ty1, ty2)) ]
+  | Uver (Choose _) ->
+      [ Any (TAtom TU) ],
+      [ A.choose None ]
+  | Uver (SubsetEq _) ->
+      [ Uver (Mem TUnknown) ],
+      [ A.subseteq None ]
+  | Uver (SetEnum (n, _)) ->
+      [ Uver (Mem TUnknown) ],
+      [ A.setenum n None ]
+  | Uver (Union _) ->
+      [ Uver (Mem TUnknown) ],
+      [ A.union None ]
+  | Uver (Subset _) ->
+      [ Uver (Mem TUnknown) ],
+      [ A.subset None ]
+  | Uver (Cup _) ->
+      [ Uver (Mem TUnknown) ],
+      [ A.cup None ]
+  | Uver (Cap _) ->
+      [ Uver (Mem TUnknown) ],
+      [ A.cap None ]
+  | Uver (SetMinus _) ->
+      [ Uver (Mem TUnknown) ],
+      [ A.setminus None ]
+  | Uver (SetSt _) ->
+      [ Uver (Mem TUnknown) ],
+      [ A.setst None ]
+  | Uver (SetOf (tys, _)) ->
+      List.map (fun _ -> Uver (Mem TUnknown)) tys @
+      [ Uver (Mem TUnknown) ],
+      [ A.setof (List.length tys) None ]
+  | Uver (Arrow _) ->
+      [ Uver (Mem TUnknown)
+      ; Uver (Mem TUnknown)
+      ; Uver (Domain (TUnknown, TUnknown))
+      ; Uver (FcnApp (TUnknown, TUnknown)) ],
+      [ A.arrow None ]
+  | Uver (Fcn _) ->
+      [ Uver (Mem TUnknown)
+      ; Uver (Domain (TUnknown, TUnknown))
+      ; Uver (FcnApp (TUnknown, TUnknown)) ],
+      [ A.domain None
+      ; A.fcnapp None ]
+  | _ ->
+      raise No_value
+
+let smbtable smb =
+  try Some (smbtable_aux smb)
+  with No_value -> None
 
 
 (* {3 Symbol Data} *)
@@ -201,7 +275,9 @@ let u_kind k =
 
 let u_smb smb =
   { smb with
-    smb_name = smb.smb_name ^ "_U"
+    smb_name = smb.smb_name (* NOTE /!\ This works in practise as long as
+                             * u_smb is only called on standards symbols
+                             * with type argument 'TUnknown' *)
   ; smb_kind = u_kind smb.smb_kind
   }
 

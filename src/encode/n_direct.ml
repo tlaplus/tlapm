@@ -323,6 +323,28 @@ let rec expr cx oe =
       let op = opq_from_smb (T.Uver (T.SetEnum (n, TUnknown))) in
       (Apply (op, es) @@ oe, RSet)
 
+  (* Ignoring Product, Tuple, and Fcn with more than one arg.
+   * These should be encoded away *)
+
+  | Fcn ([ v, _, Domain e1 ], e2) ->
+      let e1, rt1 = expr cx e1 in
+      let v, cx = adj cx v XSet in
+      let e2, rt2 = expr cx e2 in
+      let op = opq_from_smb (T.Uver (T.Fcn (TUnknown, TUnknown))) in
+      (Apply (op, [ maybe_cast rt1 e1 ; Lambda ([ v, Shape_expr ], maybe_cast rt2 e2) %% [] ]) @@ oe, RSet)
+
+  | FcnApp (e1, [ e2 ]) ->
+      let e1, rt1 = expr cx e1 in
+      let e2, rt2 = expr cx e2 in
+      let op = opq_from_smb (T.Uver (T.FcnApp (TUnknown, TUnknown))) in
+      (Apply (op, [ maybe_cast rt1 e1 ; maybe_cast rt2 e2 ]) @@ oe, RSet)
+
+  | Arrow (e1, e2) ->
+      let e1, rt1 = expr cx e1 in
+      let e2, rt2 = expr cx e2 in
+      let op = opq_from_smb (T.Uver (T.Arrow (TUnknown, TUnknown))) in
+      (Apply (op, [ maybe_cast rt1 e1 ; maybe_cast rt2 e2 ]) @@ oe, RSet)
+
   (* Cases below may be unnecessary, or unsound, I don't know *)
 
   | With (e, m) ->
