@@ -13,16 +13,16 @@ module Subst = Expr.Subst
 module Visit = Expr.Visit
 module B = Builtin
 
+(* TODO Type preservation for elim_bounds, elim_multiarg, elim_tuples *)
+
 
 let error ?at mssg =
   let mssg = "Encode.Rewrite: " ^ mssg in
   Errors.bug ?at mssg
 
 
-let simpl_bounds_visitor = object (self : 'self)
+let elim_bounds_visitor = object (self : 'self)
   inherit [unit] Visit.map as super
-
-  (* TODO preserve type info *)
 
   method expr scx oe =
     match oe.core with
@@ -133,12 +133,12 @@ let simpl_bounds_visitor = object (self : 'self)
     (scx, { context = hs ; active = e })
 end
 
-let simpl_bounds sq =
+let elim_bounds sq =
   let cx = ((), Deque.empty) in
-  snd (simpl_bounds_visitor#sequent cx sq)
+  snd (elim_bounds_visitor#sequent cx sq)
 
 
-let simpl_elims_visitor = object (self : 'self)
+let elim_notmem_visitor = object (self : 'self)
   inherit [unit] Visit.map as super
 
   method expr scx oe =
@@ -152,7 +152,120 @@ let simpl_elims_visitor = object (self : 'self)
     | _ -> super#expr scx oe
 end
 
-let simpl_elims sq =
+let elim_notmem sq =
   let cx = ((), Deque.empty) in
-  snd (simpl_elims_visitor#sequent cx sq)
+  snd (elim_notmem_visitor #sequent cx sq)
+
+
+let elim_multiarg_visitor = object (self : 'self)
+  inherit [unit] Visit.map as super
+
+  method expr scx oe =
+    match oe.core with
+    | Fcn (bs, e) when List.length bs > 1 ->
+        let scx, bs = self#bounds scx bs in
+        let rvs, rbs, _ =
+          List.fold_left begin fun (rvs, rbs, dit) (v, _, d) ->
+            match d, dit with
+            | Domain b, _
+            | Ditto, Some b ->
+                (v :: rvs, b :: rbs, Some b)
+            | _, _ -> error ~at:oe "Missing bound on Fcn"
+          end ([], [], None) bs
+        in
+        let v = "t" %% [] in
+        let b = Product (List.rev rbs) %% [] in
+        let e = self#expr scx e in
+        let dfs =
+          List.mapi begin fun i v ->
+            Operator (v, FcnApp (
+              Ix 1 %% [], [ Num (string_of_int (i + 1), "") %% [] ]
+            ) %% []) %% []
+          end (List.rev rvs)
+        in
+        let e = Let (dfs, e) %% [] in
+        Fcn ([ v, Constant, Domain b ], e) @@ oe
+    | FcnApp (e1, es) when List.length es > 1 ->
+        let e1 = self#expr scx e1 in
+        let es = List.map (self#expr scx) es in
+        let e2 = Tuple es %% [] in
+        FcnApp (e1, [ e2 ]) @@ oe
+    | _ -> super#expr scx oe
+end
+
+let elim_multiarg sq =
+  let cx = ((), Deque.empty) in
+  snd (elim_multiarg_visitor #sequent cx sq)
+
+
+let elim_tuples_visitor = object (self : 'self)
+  inherit [unit] Visit.map as super
+
+  method expr scx oe =
+    match oe.core with
+    | Product es ->
+      let es = List.map (self#expr scx) es in
+      let n = List.length es in
+      let rg =
+        Apply (
+          Internal B.Range %% [],
+          [ Num ("1", "") %% [] ; Num (string_of_int n, "") %% [] ]
+        ) %% []
+      in
+      let e1 =
+        Arrow (
+          rg,
+          Apply (
+            Internal B.UNION %% [],
+            [ SetEnum es %% [] ]
+          ) %% []
+        ) %% []
+      in
+      let e2 =
+        List (
+          And,
+          List.mapi begin fun i e ->
+            Apply (
+              Internal B.Mem %% [],
+              [
+                FcnApp (Ix 1 %% [], [ Num (string_of_int (i + 1), "") %% [] ]) %% [] ;
+                e
+              ]
+            ) %% []
+          end es
+        ) %% []
+      in
+      let v = "f" %% [] in
+      SetSt (v, e1, e2) @@ oe
+    | Tuple es ->
+        let es = List.map (self#expr scx) es in
+        let n = List.length es in
+        let b =
+          Apply (
+            Internal B.Range %% [],
+            [ Num ("1", "") %% [] ; Num (string_of_int n, "") %% [] ]
+          ) %% []
+        in
+        let e =
+          Case (
+            List.mapi begin fun i e ->
+              let p =
+                Apply (
+                  Internal B.Eq %% [],
+                  [ Ix 1 %% [] ; Num (string_of_int (i + 1), "") %% [] ]
+                ) %% []
+              in
+              (p, e)
+            end es,
+            None
+          ) %% []
+        in
+        let v = "i" %% [] in
+        Fcn ([ v, Constant, Domain b ], e) @@ oe
+    | _ -> super#expr scx oe
+end
+
+let elim_tuples sq =
+  let cx = ((), Deque.empty) in
+  snd (elim_tuples_visitor #sequent cx sq)
 

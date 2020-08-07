@@ -12,8 +12,10 @@ end
 
 module Rewrite : sig
   open Expr.T
-  val simpl_bounds : sequent -> sequent
-  val simpl_elims : sequent -> sequent
+  val elim_bounds : sequent -> sequent
+  val elim_notmem : sequent -> sequent
+  val elim_multiarg : sequent -> sequent
+  val elim_tuples : sequent -> sequent
 end
 
 module Table : sig
