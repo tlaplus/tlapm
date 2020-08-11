@@ -30,6 +30,8 @@ module T : sig
   module Sm = Coll.Sm
   type tmap = ty Sm.t
 
+  module Ts : Set.S with type elt = ty
+
   val ord : ty_kind -> int
 
   val ty_u    : ty

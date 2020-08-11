@@ -34,6 +34,11 @@ and ty_kind =
 module Sm = Coll.Sm
 type tmap = ty Sm.t
 
+module Ts = Set.Make (struct
+  type t = ty
+  let compare = Pervasives.compare
+end)
+
 let rec ord (TKind (ks, _)) =
   match ks with
   | [] -> 0

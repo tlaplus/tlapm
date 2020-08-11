@@ -31,6 +31,8 @@ and ty_kind = (* FIXME remove *)
 module Sm = Coll.Sm
 type tmap = ty Sm.t
 
+module Ts : Set.S with type elt = ty
+
 (* FIXME remove below *)
 val ord : ty_kind -> int
 

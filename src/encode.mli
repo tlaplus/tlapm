@@ -18,6 +18,12 @@ module Rewrite : sig
   val elim_tuples : sequent -> sequent
 end
 
+module CollectTypes : sig
+  open Expr.T
+  open Type.T
+  val main : sequent -> Ts.t
+end
+
 module Table : sig
   open Property
   open Type.T
