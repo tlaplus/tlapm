@@ -157,6 +157,37 @@ let elim_notmem sq =
   snd (elim_notmem_visitor #sequent cx sq)
 
 
+let elim_compare_visitor = object (self : 'self)
+  inherit [unit] Visit.map as super
+
+  method expr scx oe =
+    match oe.core with
+    | Apply ({ core = Internal B.Lt } as op, [ e ; f ]) ->
+        let e = self#expr scx e in
+        let f = self#expr scx f in
+        Apply (Internal B.Conj %% [], [
+          Apply (Internal B.Lteq @@ op, [ e ; f ]) @@ oe ;
+          Apply (Internal B.Neq %% [], [ e ; f ]) %% []
+        ]) %% []
+    | Apply ({ core = Internal B.Gt } as op, [ e ; f ]) ->
+        let e = self#expr scx e in
+        let f = self#expr scx f in
+        Apply (Internal B.Conj %% [], [
+          Apply (Internal B.Lteq @@ op, [ f ; e ]) @@ oe ;
+          Apply (Internal B.Neq %% [], [ f ; e ]) %% []
+        ]) %% []
+    | Apply ({ core = Internal B.Gteq } as op, [ e ; f ]) ->
+        let e = self#expr scx e in
+        let f = self#expr scx f in
+        Apply (Internal B.Lteq @@ op, [ f ; e ]) @@ oe
+    | _ -> super#expr scx oe
+end
+
+let elim_compare sq =
+  let cx = ((), Deque.empty) in
+  snd (elim_compare_visitor #sequent cx sq)
+
+
 let elim_multiarg_visitor = object (self : 'self)
   inherit [unit] Visit.map as super
 
