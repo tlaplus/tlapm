@@ -12,3 +12,4 @@ THEOREM ASSUME NEW x
     OBVIOUS
 
 ====
+stderr: status:failed

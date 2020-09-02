@@ -32,3 +32,4 @@ THEOREM 0 = 1
 <1> QED             (*BY ONLY Cor, <1>1, <1>2*)
 
 ====
+stderr: status:failed
