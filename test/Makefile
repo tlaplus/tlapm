@@ -37,5 +37,5 @@ smt:
 
 clean:
 	find . \( -name '*.tlaps' -o -name '*.tla.out' -o -name '*.tla.err' \) \
-             -prune -exec rm -rf '{}' \;
+	    -prune -exec rm -rf '{}' \;
 	rm -f tests.log
