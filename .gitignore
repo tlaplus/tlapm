@@ -19,3 +19,6 @@
 /tools/installer/tlaps-release.sh
 /tools/installer/tlaps-source-release.sh
 tlapm
+
+/test/bin/
+/test/lib/
