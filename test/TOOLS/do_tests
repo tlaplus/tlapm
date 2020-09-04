@@ -13,6 +13,7 @@ fi
 export TLAPM="$BASEDIR/../tlapm -I $ARGS"
 export STRETCH=${STRETCH:-5}
 export LOGFILE="$BASEDIR/tests.log"
+export PATH=$BASEDIR/lib/tlaps/bin/:$PATH
 
 echo "###### `date '+%Y-%m-%d %H:%M:%S'` $0 $@" >>"$LOGFILE"
 
