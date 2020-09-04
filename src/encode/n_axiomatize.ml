@@ -29,13 +29,16 @@ let error ?at mssg =
 
 (* NOTE Important function
  * Add symbol to extended context, along with all depending
- * symbols and axioms *)
+ * symbols and axioms
+ * NOTE Axioms left unencoded because all declarations must
+ * be collected beforehand *)
 let add_smb smb (smbs, facts) =
   let rec more acc_smbs acc_facts work_smbs =
     try
       let smb = SmbSet.choose work_smbs in
       if SmbSet.mem smb acc_smbs then
-        (acc_smbs, acc_facts)
+        let work_smbs = SmbSet.remove smb work_smbs in
+        more acc_smbs acc_facts work_smbs
       else
         let deps, axms =
           match get_defn smb with
@@ -44,11 +47,7 @@ let add_smb smb (smbs, facts) =
             match smbtable defn with
             | None -> ([], [])
             | Some (tla_smbs, axms) ->
-                let enc e =
-                  (* FIXME pass axioms through appropriate enc *)
-                  N_direct.expr Ctx.dot e |> fst
-                in
-                (List.map std_smb tla_smbs, List.map enc axms)
+                (List.map std_smb tla_smbs, axms)
           end
         in
         let acc_smbs = SmbSet.add smb acc_smbs in
@@ -104,7 +103,7 @@ let assemble_visitor decls = object (self : 'self)
           | None ->
               let mssg = "cannot find symbol '"
                         ^ get_name smb ^ "' in context" in
-              error mssg
+              error ~at:oe mssg
         in
         let ix = 1 + Deque.size hx + n in
         remove (Ix ix @@ oe) smb_prop
@@ -130,7 +129,9 @@ let assemble (decls, axms) sq =
 (* {3 Main} *)
 
 let main sq =
-  let ex = collect sq in
-  let sq = assemble ex sq in
+  let decls, axms = collect sq in
+  let enc e = N_direct.expr Ctx.dot e |> fst in
+  let axms = Deque.map (fun _ -> enc) axms in
+  let sq = assemble (decls, axms) sq in
   sq
 
