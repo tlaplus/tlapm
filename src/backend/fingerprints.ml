@@ -510,7 +510,8 @@ and fp_let counthyp countvar stack buf ds e =
   let rec spin stack = function
     | [] -> fp_expr counthyp countvar stack buf e
     | d :: ds -> begin match d.core with
-        | Operator (hint, e) ->
+        | Operator (hint, e)
+        | Bpragma (hint, e, _) ->
             fp_expr counthyp countvar stack buf e ;
             Buffer.add_char buf '.' ;
             Stack.push stack (Identvar hint.core, ref false);
