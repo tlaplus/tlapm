@@ -516,8 +516,10 @@ and fp_let counthyp countvar stack buf ds e =
             Stack.push stack (Identvar hint.core, ref false);
             spin stack ds;
             ignore(Stack.pop stack)
+        | Instance _ ->
+            Errors.bug ~at:d "Backend.Fingerprints.fp_let: INSTANCE 3"
         | _ ->
-            Errors.bug ~at:d "Backend.Fingerprint.fp_let: INSTANCE 3"
+            Errors.bug ~at:d "Backend.Fingerprints.fp_let: other"
       end
   in
   spin stack ds
