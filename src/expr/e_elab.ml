@@ -155,6 +155,11 @@ let let_normalize =
                   let e = Let (ds, e) @@ dest in
                   let e = app_expr (scons op (shift 0)) e in
                   self#expr scx e
+              | Instance (name, _) ->
+                  Errors.bug ~at:d (
+                      "Found INSTANCE in Expr.Elab.let_normalize, " ^
+                      "all INSTANCE statements have been replaced " ^
+                      "with definitions in Module.Elab ")
               | _ ->
                   Errors.bug ~at:d "Expr.Elab.let_normalize"
           end
