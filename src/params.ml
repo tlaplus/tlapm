@@ -180,6 +180,7 @@ let cvc4 =
 ;;
 
 let yices = make_exec "yices" "yices -tc \"$file\"" "yices --version";;
+
 let z3 =
   if Sys.os_type = "Cygwin" then
     make_exec "z3"
@@ -192,12 +193,19 @@ let z3 =
               "z3 -smt2 -v:0 AUTO_CONFIG=false smt.MBQI=true \"$file\""
               "z3 -version"
 ;;
+
 let verit =
   make_exec "veriT"
             "veriT --input=smtlib2 --disable-ackermann \
                    --disable-banner --disable-print-success \"$file\""
             "echo unknown"
 ;;
+
+let zipper =
+  make_exec "zipperposition"
+            "zipperposition \"$file\""
+            "zipperposition --version"
+
 let spass_dfg = make_exec "SPASS" "SPASS -Auto -PGiven=0 -PProblem=0 -PStatistic=0 \"$file\"" "echo unknown";;
 let spass_tptp = make_exec "SPASS" "SPASS -Auto -TPTP -PGiven=0 -PProblem=0 -PStatistic=0 \"$file\"" "echo unknown";;
 let eprover = make_exec "eprover" "eprover --auto --tstp-format --silent \"$file\"" "eprover --version";;
@@ -265,6 +273,9 @@ let mk_meth name timeout =
   | "verit" ->
      let timeout = Option.default Method.default_smt2_timeout timeout in
      Method.Verit timeout
+  | "zipper" ->
+     let timeout = Option.default Method.default_zipper_timeout timeout in
+     Method.Zipper timeout
   | "spass" ->
      let timeout = Option.default Method.default_spass_timeout timeout in
      Method.Spass timeout

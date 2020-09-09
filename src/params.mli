@@ -30,6 +30,7 @@ val cvc4 : exec;;
 val yices : exec;;
 val z3 : exec;;
 val verit : exec;;
+val zipper : exec;;
 val spass_dfg : exec;;
 val spass_tptp : exec;;
 val eprover : exec;;

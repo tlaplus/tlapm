@@ -13,6 +13,7 @@ let default_z3_timeout = 5.
 let default_cvc3_timeout = 5.
 let default_smt_timeout = 5.
 let default_smt2_timeout = 5.
+let default_zipper_timeout = 5.
 let default_spass_timeout = 5.
 let default_tptp_timeout = 5.
 
@@ -33,6 +34,7 @@ type t =
   | Cvc33 of float
   | Yices3 of float
   | Verit of float
+  | Zipper of float
   | Spass of float
   | Tptp of float
 ;;
@@ -54,6 +56,7 @@ let timeout m =
   | Cvc33 f -> f
   | Yices3 f -> f
   | Verit f -> f
+  | Zipper f -> f
   | Spass f -> f
   | Tptp f -> f
 
@@ -80,6 +83,7 @@ let scale_time m s =
   | Cvc33 f -> Cvc33 (f *. s)
   | Yices3 f -> Yices3 (f *. s)
   | Verit f -> Verit (f *. s)
+  | Zipper f -> Zipper (f *. s)
   | Spass f -> Spass (f *. s)
   | Tptp f -> Tptp (f *. s)
 ;;
@@ -104,6 +108,7 @@ let pp_print_tactic ff m =
   | Cvc33 f -> fprintf ff "(cvc4 %g s)" f
   | Yices3 f -> fprintf ff "(yices %g s)" f
   | Verit f -> fprintf ff "(verit %g s)" f
+  | Zipper f -> fprintf ff "(zipper %g s)" f
   | Spass f -> fprintf ff "(spass %g s)" f
   | Tptp f -> fprintf ff "(tptp %g s)" f
   | Cooper -> fprintf ff "(cooper)"
@@ -130,6 +135,7 @@ let prover_meth_of_tac tac =
     | Cvc33 f -> (Some "cvc4", None)
     | Yices3 f -> (Some "yices", None)
     | Verit f -> (Some "verit", None)
+    | Zipper f -> (Some "zipper", None)
     | Spass f -> (Some "spass", None)
     | Tptp f -> (Some "tptp", None)
     | Cooper -> (Some "cooper", None)
