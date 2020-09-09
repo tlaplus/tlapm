@@ -256,8 +256,8 @@ let rec unroll_seq sq =
   | Some (h, hs) ->
       let sq = { sq with context = hs } in
       begin match h.core with
-        | Fresh (v, _, kn, ran) ->
-        (* | Fresh (v, Shape_expr, kn, ran) -> *)
+        | Fresh (v, Shape_expr, kn, ran)
+        | Fresh (v, Shape_op 0, kn, ran) ->
             let ran = match ran with
               | Bounded (ran, Visible) -> Domain ran
               | _ -> No_domain
@@ -270,6 +270,8 @@ let rec unroll_seq sq =
               | hs -> app B.Implies [List (And, hs) %% [] ; c]
             in
             Quant (Forall, [v, kn, ran], ex) @@ nowhere
+        | Fresh _ ->
+            failwith "smt/smtcommons.ml: encountered sequent-order sequent"
         | Flex v ->
             let v_prime = (v.core ^ "'") @@ v in
             Quant (Forall, [ v, Constant, No_domain
