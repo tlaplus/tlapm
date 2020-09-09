@@ -54,6 +54,16 @@ module Table : sig
     | FcnApp of ty * ty
     | Fcn of ty * ty
     | Except of ty * ty
+    (* Arithmetic *)
+    | Uminus
+    | Plus
+    | Minus
+    | Times
+    | Quotient
+    | Exp
+    | Lteq
+    | Range
+    | IntLit of int
     (* Special *)
     | Any of ty
     | Ucast of ty

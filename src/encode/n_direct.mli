@@ -12,8 +12,8 @@ open Util
 (** The purpose of this module is to encode expressions in a fragment of the
     language that doesn't use builtins.  No prior type reconstruction needed.
 
-    Any primitive construct is encoded as an application f(e_1,..,e_n) where
-    f is an opaque symbol with an annotation {!Encode.Table.smb}.  For
+    Any primitive construct is encoded as an application F(e_1,..,e_n) where
+    F is an opaque symbol with an annotation {!Encode.Table.smb}.  For
     instance, "a \cup b" results in "cup(a, b)".  This applies also to second-
     order constructs: "{ x \in a : E }" results in "setst(a, LAMBDA x : E)".
 
@@ -41,7 +41,7 @@ type cx = xty Ctx.t
 (* {3 Main} *)
 
 val expr : cx -> expr -> expr * rty
-val eopr : cx -> expr -> expr * xty (* Called on operator in an appliaction *)
+val eopr : cx -> expr -> expr * xty (* Called on operator in an application *)
 val earg : cx -> expr -> expr * aty (* Called on args in an application *)
 
 (* NOTE bound doesn't update cx because bounds are read in the upper context *)

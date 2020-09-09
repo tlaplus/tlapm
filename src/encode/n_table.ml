@@ -39,7 +39,17 @@ type tla_smb =
   | Domain of ty * ty
   | FcnApp of ty * ty
   | Fcn of ty * ty
-  | Except of ty * ty
+  | Except of ty * ty (* FIXME remove? *)
+  (* Arithmetic *)
+  | Uminus
+  | Plus
+  | Minus
+  | Times
+  | Quotient
+  | Exp
+  | Lteq
+  | Range
+  | IntLit of int
   (* Special *)
   | Any of ty       (** Random element of a type *)
   | Ucast of ty     (** Cast from any type to uninterpreted *)
@@ -67,7 +77,9 @@ let rec get_tlafam = function
       Booleans
   | Strings ->
       Strings
-  | Ints | Nats | Reals ->
+  | Ints | Nats | Reals
+  | Uminus | Plus | Minus | Times | Quotient | Exp | Lteq
+  | IntLit _ | Range ->
       Arithmetic
   | Arrow _ | Domain _ | FcnApp _ | Fcn _ | Except _ ->
       Functions
@@ -370,6 +382,34 @@ let except ty1 ty2 =
   let id = suffix "Except" [ type_to_string ty1 ; type_to_string ty2 ] in
   mk_fst_smb Functions id [ TArrow (ty1, ty2) ; ty1 ; ty2 ] (TArrow (ty1, ty2))
 
+let uminus =
+  let id = "Uminus" in
+  mk_fst_smb Arithmetic id [ TAtom TInt ] (TAtom TInt)
+let plus =
+  let id = "Plus" in
+  mk_fst_smb Arithmetic id [ TAtom TInt ; TAtom TInt ] (TAtom TInt)
+let minus =
+  let id = "Minus" in
+  mk_fst_smb Arithmetic id [ TAtom TInt ; TAtom TInt ] (TAtom TInt)
+let times =
+  let id = "Times" in
+  mk_fst_smb Arithmetic id [ TAtom TInt ; TAtom TInt ] (TAtom TInt)
+let quotient =
+  let id = "Quotient" in
+  mk_fst_smb Arithmetic id [ TAtom TInt ; TAtom TInt ] (TAtom TInt)
+let exp =
+  let id = "Exp" in
+  mk_fst_smb Arithmetic id [ TAtom TInt ; TAtom TInt ] (TAtom TInt)
+let lteq =
+  let id = "Lteq" in
+  mk_fst_smb Arithmetic id [ TAtom TInt ; TAtom TInt ] (TAtom TBool)
+let range =
+  let id = "Range" in
+  mk_fst_smb Arithmetic id [ TAtom TInt ; TAtom TInt ] (TSet (TAtom TInt))
+let intlit n =
+  let id = "IntLit_" ^ string_of_int n in
+  mk_cst_smb Arithmetic id (TAtom TInt)
+
 let product tys =
   let id = suffix "Product" (List.map type_to_string tys) in
   mk_fst_smb Tuples id tys (TSet (TProd tys))
@@ -408,6 +448,15 @@ let rec std_smb_aux = function
   | FcnApp (ty1, ty2) -> fcnapp ty1 ty2
   | Fcn (ty1, ty2) -> fcn ty1 ty2
   | Except (ty1, ty2) -> except ty1 ty2
+  | Uminus -> uminus
+  | Plus -> plus
+  | Minus -> minus
+  | Times -> times
+  | Quotient -> quotient
+  | Exp -> exp
+  | Range -> range
+  | Lteq -> lteq
+  | IntLit n -> intlit n
   | Any ty -> any ty
   | Ucast ty -> ucast ty
   | Uver tla_smb -> u_smb (std_smb_aux tla_smb)

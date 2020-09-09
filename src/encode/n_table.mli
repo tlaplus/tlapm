@@ -38,6 +38,16 @@ type tla_smb =
   | FcnApp of ty * ty
   | Fcn of ty * ty
   | Except of ty * ty
+  (* Arithmetic *)
+  | Uminus
+  | Plus
+  | Minus
+  | Times
+  | Quotient
+  | Exp
+  | Lteq
+  | Range
+  | IntLit of int
   (* Special *)
   | Any of ty       (** Random element of a type *)
   | Ucast of ty     (** Cast from any type to uninterpreted *)
