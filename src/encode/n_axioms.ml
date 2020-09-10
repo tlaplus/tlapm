@@ -15,8 +15,13 @@ module B = Builtin
 
 (* {3 Helpers} *)
 
+let special_prop = Property.make "Encode.Axioms.special_prop"
+
+let mk_special s = assign (Opaque s %% []) special_prop ()
+
 let annot h ty = assign h Props.type_prop ty
 let targs a tys = assign a Props.targs_prop tys
+let cast a = assign a Props.ucast_prop ()
 
 let app ?tys op es =
   let op = Option.fold targs op tys in
@@ -531,6 +536,22 @@ let setof n ttys =
 
 (* {3 Functions} *)
 
+let fcnisafcn =
+  Sequent {
+    context = [
+      fresh ~n:1 "F" %% []
+    ] |> Deque.of_list ;
+    active =
+      all [ "a" ] (
+        Apply (mk_special "IsAFcn", [
+          Fcn (
+            [ "x" %% [], Constant, Domain (Ix 1 %% []) ],
+            Apply (Ix 3 %% [], [ Ix 1 %% [] ]) %% []
+          ) %% []
+        ]) %% []
+      ) %% []
+  } %% []
+
 let arrow tys =
   let ty1, ty2 =
     match tys with
@@ -588,7 +609,11 @@ let arrow tys =
             ) %% []
           ) %% []
         ) %% []
-      ]) %% []
+      ] |> fun es ->
+        match tys with
+        | None -> Apply (mk_special "IsAFcn", [ Ix 1 %% [] ]) %% [] :: es
+        | Some _ -> es
+      ) %% []
     ) %% []
   ) %% []
 
@@ -675,8 +700,47 @@ let fcnapp tys =
 
 (* {3 Booleans} *)
 
+let boolcast_inj =
+  ifx B.Conj (
+    ifx B.Eq (
+      mk_special "tt"
+    ) (
+      cast (Internal B.TRUE %% [])
+    ) %% []
+  ) (
+    ifx B.Neq (
+      mk_special "tt"
+    ) (
+      cast (Internal B.FALSE %% [])
+    ) %% []
+  ) %% []
+
 let booleans =
-  Internal B.TRUE %% []
+  all [ "x" ]
+  ~tys:[ TAtom TU ] ~pats:[ [
+    ifx B.Mem (
+      Ix 1 %% []
+    ) (
+      cast (appb B.BOOLEAN [] %% [])
+    ) %% []
+  ] ] (
+    ifx B.Implies (
+      ifx B.Mem (
+        Ix 1 %% []
+      ) (
+        cast (appb B.BOOLEAN [] %% [])
+      ) %% []
+    ) (
+      exi [ "y" ] ~tys:[ TAtom TBool ] (
+        ifx ~tys:[ TAtom TU ]
+        B.Eq (
+          Ix 2 %% []
+        ) (
+          cast (Ix 1 %% [])
+        ) %% []
+      ) %% []
+    ) %% []
+  ) %% []
 
 
 (* {3 Strings} *)

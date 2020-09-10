@@ -49,17 +49,20 @@ module Table : sig
     | Nats
     | Reals
     (* Functions *)
+    | IsAFcn
     | Arrow of ty * ty
     | Domain of ty * ty
     | FcnApp of ty * ty
     | Fcn of ty * ty
     | Except of ty * ty
     (* Arithmetic *)
-    | Uminus
     | Plus
+    | Uminus
     | Minus
     | Times
+    | Ratio
     | Quotient
+    | Remainder
     | Exp
     | Lteq
     | Range

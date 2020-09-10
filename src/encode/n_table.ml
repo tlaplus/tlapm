@@ -35,17 +35,20 @@ type tla_smb =
   | Nats
   | Reals
   (* Functions *)
+  | IsAFcn
   | Arrow of ty * ty
   | Domain of ty * ty
   | FcnApp of ty * ty
   | Fcn of ty * ty
   | Except of ty * ty (* FIXME remove? *)
   (* Arithmetic *)
-  | Uminus
   | Plus
+  | Uminus
   | Minus
   | Times
+  | Ratio
   | Quotient
+  | Remainder
   | Exp
   | Lteq
   | Range
@@ -78,10 +81,10 @@ let rec get_tlafam = function
   | Strings ->
       Strings
   | Ints | Nats | Reals
-  | Uminus | Plus | Minus | Times | Quotient | Exp | Lteq
+  | Plus | Uminus | Minus | Times | Ratio | Quotient | Exp | Remainder | Lteq
   | IntLit _ | Range ->
       Arithmetic
-  | Arrow _ | Domain _ | FcnApp _ | Fcn _ | Except _ ->
+  | IsAFcn | Arrow _ | Domain _ | FcnApp _ | Fcn _ | Except _ ->
       Functions
   | Uver smb ->
       get_tlafam smb
@@ -168,22 +171,22 @@ let smbtable_aux = function
       [ A.setof (List.length tys) None ]
   | Uver (Arrow _) ->
       [ Uver (Mem TUnknown)
-      ; Uver (Mem TUnknown)
       ; Uver (Domain (TUnknown, TUnknown))
       ; Uver (FcnApp (TUnknown, TUnknown)) ],
       [ A.arrow None ]
   | Uver (Fcn _) ->
       [ Uver (Mem TUnknown)
+      ; IsAFcn
       ; Uver (Domain (TUnknown, TUnknown))
       ; Uver (FcnApp (TUnknown, TUnknown)) ],
-      [ A.domain None
+      [ A.fcnisafcn
+      ; A.domain None
       ; A.fcnapp None ]
+  | Ucast (TAtom TBool) ->
+      [ Any (TAtom TU) ],
+      [ A.boolcast_inj ]
   | _ ->
       raise No_value
-
-let smbtable smb =
-  try Some (smbtable_aux smb)
-  with No_value -> None
 
 
 (* {3 Symbol Data} *)
@@ -366,6 +369,9 @@ let set_real =
   let id = "Real" in
   mk_cst_smb Arithmetic id (TSet ty_real)
 
+let isafcn =
+  let id = "IsAFcn" in
+  mk_fst_smb Functions id [ TAtom TU ; TAtom TU ] (TAtom TBool)
 let arrow ty1 ty2 =
   let id = suffix "Arrow" [ type_to_string ty1 ; type_to_string ty2 ] in
   mk_fst_smb Functions id [ TSet ty1 ; TSet ty2 ] (TSet (TArrow (ty1, ty2)))
@@ -394,8 +400,14 @@ let minus =
 let times =
   let id = "Times" in
   mk_fst_smb Arithmetic id [ TAtom TInt ; TAtom TInt ] (TAtom TInt)
+let ratio =
+  let id = "Ratio" in
+  mk_fst_smb Arithmetic id [ TAtom TInt ; TAtom TInt ] (TAtom TInt)
 let quotient =
   let id = "Quotient" in
+  mk_fst_smb Arithmetic id [ TAtom TInt ; TAtom TInt ] (TAtom TInt)
+let remainder =
+  let id = "Remainder" in
   mk_fst_smb Arithmetic id [ TAtom TInt ; TAtom TInt ] (TAtom TInt)
 let exp =
   let id = "Exp" in
@@ -443,6 +455,7 @@ let rec std_smb_aux = function
   | Ints -> set_int
   | Nats -> set_nat
   | Reals -> set_real
+  | IsAFcn -> isafcn
   | Arrow (ty1, ty2) -> arrow ty1 ty2
   | Domain (ty1, ty2) -> domain ty1 ty2
   | FcnApp (ty1, ty2) -> fcnapp ty1 ty2
@@ -452,7 +465,9 @@ let rec std_smb_aux = function
   | Plus -> plus
   | Minus -> minus
   | Times -> times
+  | Ratio -> ratio
   | Quotient -> quotient
+  | Remainder -> remainder
   | Exp -> exp
   | Range -> range
   | Lteq -> lteq
@@ -461,6 +476,37 @@ let rec std_smb_aux = function
   | Ucast ty -> ucast ty
   | Uver tla_smb -> u_smb (std_smb_aux tla_smb)
 
+
 let std_smb tla_smb =
   { (std_smb_aux tla_smb) with smb_defn = Some tla_smb }
+
+
+let detect = function
+  | "IsAFcn" -> Some IsAFcn
+  | "tt" -> Some (Any (TAtom TU))
+  | _ -> None
+
+let decode_visitor = object (self : 'self)
+  inherit [unit] Expr.Visit.map as super
+  method expr scx oe =
+    match oe.core with
+    | Opaque s when has oe A.special_prop ->
+        Option.fold begin fun _ tla_smb ->
+          let smb = std_smb tla_smb in
+          let e = Expr.T.Opaque (get_name smb) %% [] in
+          assign e smb_prop smb
+        end oe (detect s)
+    | _ -> super#expr scx oe
+end
+
+let decode e =
+  let scx = ((), Deque.empty) in
+  decode_visitor#expr scx e
+
+let smbtable smb =
+  try
+    let smbs, axms = smbtable_aux smb in
+    let axms = List.map decode axms in
+    Some (smbs, axms)
+  with No_value -> None
 

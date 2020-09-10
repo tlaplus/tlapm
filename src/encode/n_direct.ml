@@ -418,31 +418,94 @@ and eopr cx op =
       let e, rt = expr cx e in
       (Lambda (List.rev rxs, e) @@ op, XOp (List.rev rats, rt))
 
+  | Internal (B.TRUE | B.FALSE) ->
+      let e, rt = expr cx op in
+      (e $$ op, XOp ([], rt))
+
   | Internal b ->
       let smb =
         match b with
-        | B.STRING    -> Some (T.Uver T.Strings)
-        | B.BOOLEAN   -> Some (T.Uver T.Booleans)
-        | B.SUBSET    -> Some (T.Uver (T.Subset TUnknown))
-        | B.UNION     -> Some (T.Uver (T.Union TUnknown))
-        | B.DOMAIN    -> Some (T.Uver (T.Domain (TUnknown, TUnknown)))
-        | B.Subseteq  -> Some (T.Uver (T.SubsetEq TUnknown))
-        | B.Mem       -> Some (T.Uver (T.Mem TUnknown))
-        | B.Setminus  -> Some (T.Uver (T.SetMinus TUnknown))
-        | B.Cap       -> Some (T.Uver (T.Cap TUnknown))
-        | B.Cup       -> Some (T.Uver (T.Cup TUnknown))
-        | _ -> None
+        | B.STRING    -> T.Uver T.Strings
+        | B.BOOLEAN   -> T.Uver T.Booleans
+        | B.SUBSET    -> T.Uver (T.Subset TUnknown)
+        | B.UNION     -> T.Uver (T.Union TUnknown)
+        | B.DOMAIN    -> T.Uver (T.Domain (TUnknown, TUnknown))
+        | B.Subseteq  -> T.Uver (T.SubsetEq TUnknown)
+        | B.Mem       -> T.Uver (T.Mem TUnknown)
+        | B.Setminus  -> T.Uver (T.SetMinus TUnknown)
+        | B.Cap       -> T.Uver (T.Cap TUnknown)
+        | B.Cup       -> T.Uver (T.Cup TUnknown)
+
+        | B.Nat       -> T.Uver T.Nats
+        | B.Int       -> T.Uver T.Ints
+        | B.Real      -> T.Uver T.Reals
+        | B.Plus      -> T.Uver T.Plus
+        | B.Uminus    -> T.Uver T.Uminus
+        | B.Minus     -> T.Uver T.Minus
+        | B.Times     -> T.Uver T.Times
+        | B.Ratio     -> T.Uver T.Ratio
+        | B.Quotient  -> T.Uver T.Quotient
+        | B.Remainder -> T.Uver T.Remainder
+        | B.Exp       -> T.Uver T.Exp
+        | B.Range     -> T.Uver T.Range
+        | B.Lteq      -> T.Uver T.Lteq
+
+        | B.Infinity
+        | B.Lt
+        | B.Gteq
+        | B.Gt
+        | B.Divides ->
+            error ~at:op "Unexpected arithmetic builtin"
+
+
+        | B.Prime
+        | B.StrongPrime
+        | B.Leadsto
+        | B.ENABLED
+        | B.UNCHANGED
+        | B.Cdot
+        | B.Actplus
+        | B.Box _
+        | B.Diamond ->
+            error ~at:op "Unexpected modal builtin"
+
+        | B.Seq
+        | B.Len
+        | B.BSeq
+        | B.Cat
+        | B.Append
+        | B.Head
+        | B.Tail
+        | B.SubSeq
+        | B.SelectSeq ->
+            error ~at:op "Unexpected sequences builtin"
+
+        | B.OneArg
+        | B.Extend
+        | B.Print
+        | B.PrintT
+        | B.Assert
+        | B.JavaTime
+        | B.TLCGet
+        | B.TLCSet
+        | B.Permutations
+        | B.SortSeq
+        | B.RandomElement
+        | B.Any
+        | B.ToString ->
+            error ~at:op "Unexpected TLC builtin"
+
+        | B.Unprimable
+        | B.Irregular ->
+            error ~at:op "Unexpected special builtin"
+
+        | _ ->
+            error ~at:op "Unexpected builtin"
       in
-      begin match smb with
-      | Some smb ->
-          let op = opq_from_smb smb in
-          let sch = T.get_sch (T.std_smb smb) in
-          let xt = from_sch sch in
-          (op, xt)
-      | None ->
-          let e, rt = expr cx op in
-          (maybe_cast rt e $$ op, XSet)
-      end
+      let op = opq_from_smb smb in
+      let sch = T.get_sch (T.std_smb smb) in
+      let xt = from_sch sch in
+      (op, xt)
 
   | _ ->
       let e, rt = expr cx op in

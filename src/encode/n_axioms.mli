@@ -8,6 +8,11 @@
 open Expr.T
 open Type.T
 
+(** Mark some opaques as special.
+    Used to replace the symbol "isafcn", which cannot be encoded here
+    because of circular dependencies *)
+val special_prop : unit Property.pfuncs
+
 (* {3 Logic} *)
 
 val choose : ty option -> expr
@@ -26,12 +31,14 @@ val setof : int -> (ty list * ty) option -> expr
 
 (* {3 Functions} *)
 
+val fcnisafcn : expr
 val arrow : (ty * ty) option -> expr
 val domain : (ty * ty) option -> expr
 val fcnapp : (ty * ty) option -> expr
 
 (* {3 Booleans} *)
 
+val boolcast_inj : expr
 val booleans : expr
 
 (* {3 Strings} *)
