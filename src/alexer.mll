@@ -93,14 +93,13 @@ and token = parse
   | (numeral+ as i)
       { [ NUM (i, "") ] }
   | ("\\b" ['0' '1']+ as b)
-      { Bytes.set b 0 '0' ;
+      { let b = "0" ^ (String.sub b 1 ((String.length b) - 1)) in
         [ NUM (string_of_int (int_of_string b), "") ] }
   | ("\\o" ['0'-'7']+ as o)
-      { Bytes.set o 0 '0' ;
+      { let o = "0" ^ (String.sub o 1 ((String.length o) - 1)) in
         [ NUM (string_of_int (int_of_string o), "") ] }
   | ("\\h" (numeral | ['a'-'f' 'A'-'F'])+ as h)
-      { Bytes.set h 0 '0' ;
-        Bytes.set h 1 'x' ;
+      { let h = "0x" ^ (String.sub h 2 ((String.length h) - 2)) in
         [ NUM (string_of_int (int_of_string h), "") ] }
 
   (* strings *)
