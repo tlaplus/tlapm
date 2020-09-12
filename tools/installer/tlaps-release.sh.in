@@ -371,13 +371,13 @@ let path ents = match ents with
      List.fold_left Filename.concat head rest
 
 let fatal_error fmt =
-  output_string Pervasives.stderr "FATAL ERROR: " ;
+  output_string Stdlib.stderr "FATAL ERROR: " ;
   kfprintf
     (fun _ ->
-       output_string Pervasives.stderr "\\n\\n    *** ABORT ***.\\n" ;
-       flush Pervasives.stderr ;
-       Pervasives.exit 2)
-    Pervasives.stderr fmt
+       output_string Stdlib.stderr "\\n\\n    *** ABORT ***.\\n" ;
+       flush Stdlib.stderr ;
+       Stdlib.exit 2)
+    Stdlib.stderr fmt
 
 let rm_ifempty path = try begin
   let d = opendir path in

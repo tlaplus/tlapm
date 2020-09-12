@@ -287,7 +287,7 @@ and comment depth = parse
 
   let lex fn =
     let ich =
-      try Pervasives.open_in fn
+      try Stdlib.open_in fn
       with Sys_error msg -> Errors.fatal "Cannot open file: %s" msg
     in
     lex_channel fn ich

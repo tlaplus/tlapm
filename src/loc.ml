@@ -109,7 +109,7 @@ let string_of_pt ?(file="<nofile>") l =
   string_of_locus { start = l ; stop = l ; file = file }
 
 let compare r s =
-  match Pervasives.compare (line r.start) (line s.start) with
+  match Stdlib.compare (line r.start) (line s.start) with
     | 0 ->
-        Pervasives.compare (column r.start) (column s.start)
+        Stdlib.compare (column r.start) (column s.start)
     | c -> c
