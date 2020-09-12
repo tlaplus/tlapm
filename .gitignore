@@ -16,6 +16,8 @@
 /src/config.ml
 /src/load.ml
 /src/tlapm.native
+/tlaps-*-x86_64-linux-gnu/
+/tlaps-*-i386-darwin/
 /tools/installer/tlaps-release.sh
 /tools/installer/tlaps-source-release.sh
 tlapm
