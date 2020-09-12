@@ -16,7 +16,7 @@ case "@EXE@" in
   *) TARGET_FILE="$TLAPSVER-inst@EXE@";;
 esac
 TARGET="$OLDPWD/$TARGET_FILE"
-
+GIT_BRANCH="`git rev-parse --abbrev-ref HEAD`"
 PS_DIR="$(pwd)/../.."
 PM_DIR="$(pwd)/../.."
 
@@ -26,7 +26,7 @@ This script builds a binary distribution of the TLA+ Proof System
 version @VERSION@, compiled with OCaml version @OCAMLCVER@.
 
 Target: ${TARGET}
-SVN branch: ${SVN_PATH}
+Git branch: ${GIT_BRANCH}
 
 EOF
 
