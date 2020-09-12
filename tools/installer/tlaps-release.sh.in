@@ -575,8 +575,8 @@ let () =
     replace_first
       (regexp "^ISABELLE_HOME_USER=.*\$")
       ("ISABELLE_HOME_USER=" ^ path [ !output_dir ; "lib" ; "tlaps" ])
-      isabelle_settings in
-  if isabelle_settings = isabelle_settings_modified then
+      (Bytes.to_string isabelle_settings) in
+  if (Bytes.to_string isabelle_settings) = isabelle_settings_modified then
     fatal_error "Could not modify %s." isabelle_settings_file ;
   let isabelle_settings_modified2 =
     replace_first
