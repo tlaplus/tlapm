@@ -632,7 +632,7 @@ let () =
 
 EOF
 
-ocamlopt -unsafe-string -w -3 -o "$TARGET" unix.cmxa str.cmxa "$SOURCE"
+ocamlopt -w -3 -o "$TARGET" unix.cmxa str.cmxa "$SOURCE"
 strip "$TARGET" || exit 0
 cat "$TLAPSVER.tar.gz" >> "$TARGET"
 rm -f "$TLAPSVER.tar.gz"
