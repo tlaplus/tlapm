@@ -91,7 +91,8 @@ let visitor = object (self : 'self)
 
   method hyp scx ss h =
     match h.core with
-    | Fresh (v, Shape_op n, _, _) when n <> 0 ->
+    (* NOTE Shape_op 0 is used for declarations inserted by Encode.Axiomatize *)
+    | Fresh (v, Shape_op n, _, _) ->
         let ss = more_tsch ss v in
         super#hyp scx ss h
     | Fresh (v, Shape_expr, _, _) ->

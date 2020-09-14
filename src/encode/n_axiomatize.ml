@@ -93,7 +93,7 @@ let mk_decl smb =
   let nm = get_name smb %% [] in
   let sch = get_sch smb in
   let nm = assign nm Type.T.Props.tsch_prop sch in
-  let shp = Shape_expr in (* NOTE shape should be irrelevant! *)
+  let shp = Shape_op 0 in (* special *)
   Fresh (nm, shp, Constant, Unbounded) %% []
 
 let mk_fact e =
