@@ -613,6 +613,12 @@ and hyp cx h =
       let cx, df = defn cx df in
       (cx, Defn (df, wd, Visible, ex) @@ h)
 
+  | Defn ({ core = Operator (v, ({core = Lambda ([_],_)} as op)) } as df, User, Hidden, ex)
+  when v.core = N_hints.with_id ->
+      let xt = XOp ([ ASet ], RForm) in
+      let v, cx = adj cx v xt in
+      (cx, Defn (Operator (v, op) @@ df, User, Hidden, ex) @@ h)
+
   | Defn (df, wd, Hidden, ex) ->
       (* NOTE Need to update df with a type annotation *)
       let cx, df =

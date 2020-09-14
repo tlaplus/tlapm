@@ -20,7 +20,9 @@ let search_with hs =
     | None -> None
     | Some (h, rhs) ->
         begin match h.core with
-        | Fresh (nm, Shape_op 1, _, Unbounded) when nm.core = with_id ->
+        (* FIXME change 'User' to 'Builtin'? *)
+        | Defn ({ core = Operator (nm, {core = Lambda ([_],_)}) }, User, _, _)
+            when nm.core = with_id ->
             Some (Deque.snoc lhs h, rhs)
         | _ ->
             spin (Deque.snoc lhs h) rhs
@@ -28,7 +30,7 @@ let search_with hs =
   in
   spin Deque.empty hs
 
-let negative_binder b = function
+let pol b = function
   | Forall -> not b
   | Exists -> b
 
@@ -40,7 +42,7 @@ let mk_patterns k xs =
   let n = List.length xs in
   let withs = List.mapi begin fun i v ->
     (* NOTE use type info on v? *)
-    Apply (Ix k %% [], [ Ix (n - i + 1) %% [] ]) %% []
+    Apply (Ix k %% [], [ Ix (n - i) %% [] ]) %% []
   end xs in
   [ withs ]
 
@@ -73,7 +75,7 @@ let visitor = object (self : 'self)
         let o = Option.map (self#expr scx) o in
         Case (ps, o) @@ oe
 
-    | Quant (q, bs, e) when negative_binder b q ->
+    | Quant (q, bs, e) when pol b q ->
         (* Do add patterns *)
         let ((k, b), cx as scx), bs = self#bounds scx bs in
         let xs = List.map (fun (nm, _, _) -> nm) bs in
@@ -101,6 +103,10 @@ let visitor = object (self : 'self)
     let ((k, b), cx), bs = super#bounds scx bs in
     ((k + List.length bs, b), cx), bs
 
+  method hyp scx h =
+    let ((k, b), cx), h = super#hyp scx h in
+    ((k + 1, b), cx), h
+
   method sequent scx sq =
     let ((k, b), cx as scx), hs = self#hyps scx sq.context in
     let e = self#expr ((k, not b), cx) sq.active in
@@ -112,7 +118,7 @@ let main sq =
   match search_with sq.context with
   | None -> sq
   | Some (lhs, rhs) ->
-      let init = (1, true) in
+      let init = (1, false) in
       let scx = Deque.fold_left Expr.Visit.adj (init, Deque.empty) lhs in
       let _, sq = visitor#sequent scx { sq with context = rhs } in
       { sq with context = Deque.append lhs sq.context }

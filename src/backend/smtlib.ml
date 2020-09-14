@@ -352,6 +352,7 @@ let preprocess ?solver sq =
   (* FIXME end remove *)
 
   let sq = sq
+    |> Encode.Hints.main
     |> debug "Start" (* FIXME remove *)
     (* NOTE eliminating bound notation necessary to make all '\in' visible *)
     |> Encode.Rewrite.elim_notmem
