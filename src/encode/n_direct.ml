@@ -136,10 +136,13 @@ let rec expr cx oe =
   match oe.core with
   | Ix n ->
       let xt = lookup_id cx n in
-      begin if xt <> XSet then
-        error ~at:oe "Not a set variable"
-      end;
-      (Ix n @@ oe, RSet)
+      let rt =
+        match xt with
+        | XSet -> RSet
+        | XOp ([], rt) -> rt
+        | _ -> error ~at:oe "Expected a constant type for variable"
+      in
+      (Ix n @@ oe, rt)
 
   (* NOTE It seems the only use for this case is to let primed variables pass
    * through.  x' is encoded as (Opaque "x#prime") at this point. *)
@@ -606,16 +609,39 @@ and hyp cx h =
       let v, cx = adj cx v XSet in
       (cx, Flex v @@ h)
 
-  | Defn (df, wd, vis, ex) ->
+  | Defn (df, wd, Visible, ex) ->
       let cx, df = defn cx df in
-      (cx, Defn (df, wd, vis, ex) @@ h)
+      (cx, Defn (df, wd, Visible, ex) @@ h)
+
+  | Defn (df, wd, Hidden, ex) ->
+      (* NOTE Need to update df with a type annotation *)
+      let cx, df =
+        begin match df.core with
+        | Operator (v, ({ core = Lambda (xs, _) } as op)) ->
+            let xt = XOp (
+              List.map begin function
+                | _, Shape_expr -> ASet
+                | _, Shape_op n -> AOp (n, RSet)
+              end xs, RSet)
+            in
+            let v, cx = adj cx v xt in
+            (cx, Operator (v, op) @@ df)
+        | Operator (v, e) ->
+            let xt = XSet in
+            let v, cx = adj cx v xt in
+            (cx, Operator (v, e) @@ df)
+        | _ ->
+            error ~at:df "Not implemented"
+        end
+      in
+      (cx, Defn (df, wd, Hidden, ex) @@ h)
 
   | Fact (e, Visible, tm) ->
       let e, rt = expr cx e in
       let cx = bump cx in
       (cx, Fact (maybe_proj rt e, Visible, tm) @@ h)
 
-  | Fact (_, Hidden, _ ) ->
+  | Fact (_, Hidden, _) ->
       let cx = bump cx in
       (cx, h)
 

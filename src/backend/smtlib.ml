@@ -353,8 +353,6 @@ let preprocess ?solver sq =
 
   let sq = sq
     |> debug "Start" (* FIXME remove *)
-    (*|> Encode.Canon.main*)
-    (*|> debug "After Canon" (* FIXME remove *)*)
     (* NOTE eliminating bound notation necessary to make all '\in' visible *)
     |> Encode.Rewrite.elim_notmem
     |> Encode.Rewrite.elim_multiarg
@@ -489,6 +487,8 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         pp_print_newline ff ();
         spin ncx hs
 
+    (* NOTE Hidden defns are still printed because the symbols
+     * may be used in the sequent. *)
     | Some ({ core = Defn ({ core = Operator (nm, _) }, _, vis, _) }, hs)
     | Some ({ core = Defn ({ core = Instance (nm, _) }, _, vis, _) }, hs)
     | Some ({ core = Defn ({ core = Recursive (nm, _) }, _, vis, _) }, hs)

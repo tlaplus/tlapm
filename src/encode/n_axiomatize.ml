@@ -70,6 +70,15 @@ let collect_visitor = object (self : 'self)
         add_smb smb ecx
 
     | _ -> super#expr scx ecx oe
+
+  method hyp scx ecx h =
+    match h.core with
+    | Defn (_, _, Hidden, _)
+    | Fact (_, Hidden, _) ->
+        let scx = Expr.Visit.adj scx h in
+        (scx, ecx)
+    | _ ->
+        super#hyp scx ecx h
 end
 
 let collect sq =
@@ -109,6 +118,15 @@ let assemble_visitor decls = object (self : 'self)
         remove (Ix ix @@ oe) smb_prop
 
     | _ -> super#expr scx oe
+
+  method hyp scx h =
+    match h.core with
+    | Defn (_, _, Hidden, _)
+    | Fact (_, Hidden, _) ->
+        let scx = Expr.Visit.adj scx h in
+        (scx, h)
+    | _ ->
+        super#hyp scx h
 end
 
 let assemble (decls, axms) sq =
