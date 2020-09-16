@@ -77,9 +77,9 @@ let pp_print_delimited ?(sep=pp_print_commasp) =
 let pp_print_sort ff ty =
   let s =
     match ty with
-    | TAtom TU -> "$i"
-    | TAtom TBool -> "$o"
-    | TAtom TInt -> "$int"
+    | TAtm TAIdv -> "$i"
+    | TAtm TABol -> "$o"
+    | TAtm TAInt -> "$int"
     | _ -> ty_to_string ty
   in
   pp_print_string ff s
@@ -87,30 +87,28 @@ let pp_print_sort ff ty =
 let pp_print_conn s ff () =
   fprintf ff " %s " s
 
-let pp_print_tyfunc ff (targs, ty) =
-  let pp_print_targ ff = function
-    | TRg ty ->
+let pp_print_tyfunc ff (ty1s, ty) =
+  let pp_print_ty1 ff = function
+    | Ty1 ([], ty) ->
         pp_print_sort ff ty
-    | TOp (tys, ty) ->
+    | Ty1 (ty0s, ty) ->
         fprintf ff "( %a )"
         (pp_print_delimited ~sep:(pp_print_conn ">") pp_print_sort)
-        (tys @ [ ty ])
+        (ty0s @ [ ty ])
   in
   pp_print_delimited ~sep:(pp_print_conn ">")
-  pp_print_targ ff (targs @ [ TRg ty ])
+  pp_print_ty1 ff (ty1s @ [ Ty1 ([], ty) ])
 
 (* Print type attached to hint, not the hint itself *)
 let pp_print_typeof ff v =
-  if has v Props.type_prop then
-    let ty = get v Props.type_prop in
+  if has v Props.ty0_prop then
+    let ty = get v Props.ty0_prop in
     pp_print_sort ff ty
-  else if has v Props.tsch_prop then
-    let sch = get v Props.tsch_prop in
-    match sch with
-    | TSch ([], targs, ty) ->
-        pp_print_tyfunc ff (targs, ty)
-    | _ ->
-        error ~at:v "Polymorphic type scheme on declaration"
+  else if has v Props.ty2_prop then
+    let ty2 = get v Props.ty2_prop in
+    match ty2 with
+    | Ty2 (ty1s, ty) ->
+        pp_print_tyfunc ff (ty1s, ty)
   else
     error ~at:v "Missing type annotation"
 
@@ -118,16 +116,8 @@ let pp_print_binding ff v =
   fprintf ff "%s: %a" v.core pp_print_typeof v
 
 
-open Encode.Table
 let is_arith op =
-  match query op smb_prop with
-  | Some smb ->
-      begin match get_defn smb with
-      | Some ( Plus | Uminus | Minus | Times | Lteq ) ->
-          true
-      | _ -> false
-      end
-  | None -> false
+  false (* FIXME *)
 
 
 let rec pp_print_thf_atomic cx ff oe =
@@ -352,7 +342,8 @@ and pp_print_thf_ite cx ff oe =
 and pp_print_thf_arith cx ff oe =
   match oe.core with
   | Apply (op, es) when is_arith op ->
-      let smb = get op smb_prop in
+      error ~at:oe "Not implemented" (* FIXME *)
+      (*let smb = get op smb_prop in
       let s =
         match Option.get (get_defn smb) with
         | Plus -> "sum"
@@ -363,7 +354,7 @@ and pp_print_thf_arith cx ff oe =
         | _ -> error ~at:op "Expected arithmetic operator"
       in
       fprintf ff "@[<hov 2>$%s(@,%a@])" s
-      (pp_print_delimited (pp_print_thf_atomic cx)) es
+      (pp_print_delimited (pp_print_thf_atomic cx)) es*)
 
   | _ ->
       pp_print_thf_atomic cx ff oe
@@ -401,9 +392,9 @@ let preprocess ?solver sq =
     |> Encode.Rewrite.elim_tuples
     |> Encode.Rewrite.elim_bounds
     |> debug "Done Simpl. Bounds" (* FIXME remove *)
-    |> Encode.Direct.main
+    (*|> Encode.Direct.main*)
     |> debug "Done Direct"
-    |> Encode.Axiomatize.main
+    (*|> Encode.Axiomatize.main*)
     |> debug "Done Axiomatize" (* FIXME remove *)
   in
   sq
@@ -460,7 +451,7 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
   pp_print_newline ff ();
   let srts = Encode.CollectTypes.main sq in
   let srts = Ts.filter begin function
-      TAtom TU | TAtom TBool | TAtom TInt -> false | _ -> true
+      TAtm TAIdv | TAtm TABol | TAtm TAInt -> false | _ -> true
   end srts in
   List.iteri begin fun i ty ->
     pp_print_thf Ctx.dot ff ("type" ^ string_of_int i) Type (Sort ty)

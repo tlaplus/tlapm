@@ -160,7 +160,7 @@ and fmt_expr cx oe =
           fmt_expr ncx (Sequent { sq with context = hs } @@ oe)
 
       | Some ({ core = Flex nm }, hs) ->
-          let ty = get_type nm in
+          let ty = get nm Props.ty0_prop in
           let ncx, nm = adj cx nm in
           Fu.Atm begin fun ff ->
             pp_print_sexpr begin fun ff (nm, ty, e) ->
@@ -176,7 +176,7 @@ and fmt_expr cx oe =
 
       | Some ({ core = Fresh (nm, _, _, _) }, hs) ->
           (* NOTE Second-order quantification rejected *)
-          let ty = get_type nm in
+          let ty = get nm Props.ty0_prop in
           let ncx, nm = adj cx nm in
           Fu.Atm begin fun ff ->
             pp_print_sexpr begin fun ff (nm, ty, e) ->
@@ -266,7 +266,7 @@ and fmt_expr cx oe =
           match bs with
           | [] -> (acc_cx, acc_bs)
           | (nm, _, _) :: bs ->
-              let ty = get_type nm in
+              let ty = get nm Props.ty0_prop in
               let acc_cx, nm = adj acc_cx nm in
               let acc_bs = (nm, ty) :: acc_bs in
               spin acc_cx acc_bs bs
@@ -360,11 +360,11 @@ let preprocess ?solver sq =
     |> Encode.Rewrite.elim_tuples
     |> Encode.Rewrite.elim_bounds
     |> debug "Done Simpl. Bounds" (* FIXME remove *)
-    |> Encode.Direct.main
+    (*|> Encode.Direct.main*)
     |> debug "Done Direct"
-    |> Encode.Axiomatize.main
+    (*|> Encode.Axiomatize.main*)
     |> debug "Done Axiomatize" (* FIXME remove *)
-    |> Encode.Reduce.main
+    (*|> Encode.Reduce.main*)
     |> debug "Done Reduce" (* FIXME remove *)
   in
   sq
@@ -453,7 +453,7 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         spin ncx hs
 
     | Some ({ core = Flex nm }, hs) ->
-        let ty = get nm Props.type_prop in
+        let ty = get nm Props.ty0_prop in
         let ncx, nm = adj cx nm in
         pp_print_declarefun ff nm [] ty;
         pp_print_newline ff ();
@@ -463,21 +463,19 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
 
     | Some ({ core = Fresh (nm, _, _, _) }, hs) ->
         let ins, out =
-          if has nm Props.type_prop then
-            ([], get nm Props.type_prop)
-          else if has nm Props.tsch_prop then
-            match get nm Props.tsch_prop with
-            | TSch ([], targs, ty) ->
+          if has nm Props.ty0_prop then
+            ([], get nm Props.ty0_prop)
+          else if has nm Props.ty2_prop then
+            match get nm Props.ty2_prop with
+            | Ty2 (ty1s, ty) ->
                 let ins =
                   List.map begin function
-                    | TRg ty -> ty
-                    | TOp _ -> error ~at:nm "Backend.Smtlib.pp_print_obligation: \
+                    | Ty1 ([], ty) -> ty
+                    | Ty1 _ -> error ~at:nm "Backend.Smtlib.pp_print_obligation: \
                                              Unsupported second-order declaration"
-                  end targs
+                  end ty1s
                 in
                 (ins, ty)
-            | _ -> error ~at:nm "Backend.Smtlib.pp_print_obligation: \
-                                 Polymorphic type scheme on declaration"
           else
             error ~at:nm ("Backend.Smtlib.pp_print_obligation: \
                           Missing type annotation on declaration '"
@@ -495,21 +493,19 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
     | Some ({ core = Defn ({ core = Recursive (nm, _) }, _, vis, _) }, hs)
     | Some ({ core = Defn ({ core = Bpragma (nm, _, _) }, _, vis, _) }, hs) ->
         let ins, out =
-          if has nm Props.type_prop then
-            ([], get nm Props.type_prop)
-          else if has nm Props.tsch_prop then
-            match get nm Props.tsch_prop with
-            | TSch ([], targs, ty) ->
+          if has nm Props.ty0_prop then
+            ([], get nm Props.ty0_prop)
+          else if has nm Props.ty2_prop then
+            match get nm Props.ty2_prop with
+            | Ty2 (ty1s, ty) ->
                 let ins =
                   List.map begin function
-                    | TRg ty -> ty
-                    | TOp _ -> error ~at:nm "Backend.Smtlib.pp_print_obligation: \
+                    | Ty1 ([], ty) -> ty
+                    | Ty1 _ -> error ~at:nm "Backend.Smtlib.pp_print_obligation: \
                                              Unsupported second-order declaration"
-                  end targs
+                  end ty1s
                 in
                 (ins, ty)
-            | _ -> error ~at:nm "Backend.Smtlib.pp_print_obligation: \
-                                 Polymorphic type scheme on declaration"
           else
             error ~at:nm "Backend.Smtlib.pp_print_obligation: \
                           Missing type annotation on declaration"

@@ -5,46 +5,37 @@
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
 
+open Ext
 open Property
 
 open Expr.T
 open Type.T
 
+
+(* {3 Helpers} *)
+
 let add_ty ss ty =
   Ts.add ty ss
 
-let more_type ss h =
-  match query h Props.type_prop with
-  | Some ty ->
-      add_ty ss ty
-  | None ->
-      ss (* NOTE ignore absent annotations *)
+let add_from_ty1 ss = function
+  | Ty1 (ty0s, ty) ->
+      List.fold_left add_ty ss (ty :: ty0s)
 
-let add_from_targ ss = function
-  | TRg ty ->
-      add_ty ss ty
-  | TOp (tys, ty) ->
-      List.fold_left add_ty ss (ty :: tys)
+let add_from_ty2 ss = function
+  | Ty2 (ty1s, ty) ->
+      List.fold_left add_from_ty1 (add_ty ss ty) ty1s
 
-let more_targ ss h =
-  match query h Props.targ_prop with
-  | Some targ ->
-      add_from_targ ss targ
-  | None ->
-      ss
 
-let add_from_tsch ss = function
-  | TSch ([], targs, ty) ->
-      List.fold_left add_from_targ (add_ty ss ty) targs
-  | TSch (_ :: _, _, _) ->
-      ss (* NOTE ignore polymorphic schemes *)
+(* Add to [ss] all types from annotations of [h]
+ * If no annotations then [ss] is unchanged *)
+let gather_types ss h =
+  let ss = Option.fold add_ty ss (query h Props.ty0_prop) in
+  let ss = Option.fold add_from_ty1 ss (query h Props.ty1_prop) in
+  let ss = Option.fold add_from_ty2 ss (query h Props.ty2_prop) in
+  ss
 
-let more_tsch ss h =
-  match query h Props.tsch_prop with
-  | Some tsch ->
-      add_from_tsch ss tsch
-  | None ->
-      ss
+
+(* {3 Main} *)
 
 let visitor = object (self : 'self)
   inherit [unit, Ts.t] Expr.Visit.fold as super
@@ -56,25 +47,25 @@ let visitor = object (self : 'self)
           List.fold_left begin fun ss (h, _) ->
             (* NOTE lambdas as expressions are first-order, so
              * all annotations are expected to be types *)
-            more_type ss h
+            gather_types ss h
           end ss xs
         in
         super#expr scx ss oe
     | Tquant (_, xs, _) ->
-        let ss = List.fold_left more_type ss xs in
+        let ss = List.fold_left gather_types ss xs in
         super#expr scx ss oe
     | Choose (x, _, _) ->
-        let ss = more_type ss x in
+        let ss = gather_types ss x in
         super#expr scx ss oe
     | SetSt (x, _, _) ->
-        let ss = more_type ss x in
+        let ss = gather_types ss x in
         super#expr scx ss oe
     | _ -> super#expr scx ss oe
 
   method bounds scx ss bs =
     let ss =
       List.fold_left begin fun ss (h, _, _) ->
-        more_type ss h
+        gather_types ss h
       end ss bs
     in
     super#bounds scx ss bs
@@ -82,10 +73,10 @@ let visitor = object (self : 'self)
   method defn scx ss df =
     match df.core with
     | Operator (h, { core = Lambda _ }) ->
-        let ss = more_tsch ss h in
+        let ss = gather_types ss h in
         super#defn scx ss df
     | Operator (h, _) ->
-        let ss = more_type ss h in
+        let ss = gather_types ss h in
         super#defn scx ss df
     | _ -> super#defn scx ss df
 
@@ -93,13 +84,13 @@ let visitor = object (self : 'self)
     match h.core with
     (* NOTE Shape_op 0 is used for declarations inserted by Encode.Axiomatize *)
     | Fresh (v, Shape_op n, _, _) ->
-        let ss = more_tsch ss v in
+        let ss = gather_types ss v in
         super#hyp scx ss h
     | Fresh (v, Shape_expr, _, _) ->
-        let ss = more_type ss v in
+        let ss = gather_types ss v in
         super#hyp scx ss h
     | Flex v ->
-        let ss = more_type ss v in
+        let ss = gather_types ss v in
         super#hyp scx ss h
     | _ -> super#hyp scx ss h
 
