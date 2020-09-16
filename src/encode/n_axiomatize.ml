@@ -99,12 +99,21 @@ let mk_decl smb =
 let mk_fact e =
   Fact (e, Visible, NotSet) %% []
 
+(* FIXME HACK *)
+let is_arith e =
+  let smb = get e smb_prop in
+  begin match get_defn smb with
+  | Some ( Plus | Uminus | Minus | Times | Lteq ) ->
+      true
+  | _ -> false
+  end
+
 let assemble_visitor decls = object (self : 'self)
   inherit [unit] Expr.Visit.map as super
 
   method expr ((), hx as scx) oe =
     match oe.core with
-    | Opaque _ when has_smb oe ->
+    | Opaque _ when has_smb oe && not (is_arith oe) ->
         let smb = get_smb oe in
         let n =
           match Deque.find ~backwards:true decls ((=) smb) with

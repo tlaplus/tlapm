@@ -579,7 +579,16 @@ and bounds cx bs =
   let cx, rbs =
     List.fold_left begin fun (cx, rbs) b ->
       let (v, k, d) = bound cx b in
-      let v, cx = adj cx v XSet in
+      (* FIXME This is a hack
+       * (get Direct to ignore type annotations in axioms) *)
+      let v, cx =
+        if has v Props.type_prop then
+          let _, cx = adj cx v XSet in
+          v, cx
+        else
+          adj cx v XSet
+      in
+      (*let v, cx = adj cx v XSet in*)
       (cx, (v, k, d) :: rbs)
     end (cx, []) bs
   in

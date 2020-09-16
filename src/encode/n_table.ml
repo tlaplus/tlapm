@@ -94,9 +94,6 @@ let rec get_tlafam = function
 
 exception No_value
 
-let type_axm = function
-  | _ -> failwith "Bad argument to 'type_axm'"
-
 let smbtable_aux = function
   | Choose ty ->
       [],
@@ -185,20 +182,42 @@ let smbtable_aux = function
       [ A.fcnisafcn
       ; A.domain None
       ; A.fcnapp None ]
-  | Uver
-  ( Plus
-  | Uminus
-  | Minus
-  | Times
-  | Ratio
-  | Quotient
-  | Remainder
-  | Exp
-  | Lteq
-  | Range as smb ) ->
-      let _ = smb in
-      [ Ucast (TAtom TInt) ],
-      [ (*type_axm smb*) ]
+  | Uver Plus ->
+      [ Ucast (TAtom TInt)
+      ; Plus ],
+      [ A.plus_type ]
+  | Uver Times ->
+      [ Ucast (TAtom TInt)
+      ; Times ],
+      [ A.times_type ]
+  | Uver Uminus ->
+      [ Ucast (TAtom TInt)
+      ; Uminus ],
+      [ A.uminus_type ]
+  | Uver Minus ->
+      [ Ucast (TAtom TInt)
+      ; Minus ],
+      [ A.minus_type ]
+  | Uver Quotient ->
+      [ Ucast (TAtom TInt)
+      ; Quotient ],
+      [ A.quotient_type ]
+  | Uver Remainder ->
+      [ Ucast (TAtom TInt)
+      ; Remainder ],
+      [ A.remainder_type ]
+  | Uver Exp ->
+      [ Ucast (TAtom TInt)
+      ; Exp ],
+      [ A.exp_type ]
+  | Uver Lteq ->
+      [ Ucast (TAtom TInt)
+      ; Lteq ],
+      [ A.lteq_type ]
+  | Uver Range ->
+      [ Ucast (TAtom TInt)
+      ; Range ],
+      [ A.range_type ]
   | Ucast (TAtom TBool) ->
       [ Any (TAtom TU) ],
       [ A.boolcast_inj ]
@@ -322,9 +341,11 @@ let u_sch (TSch (vs, targs, ty)) =
 
 let u_smb smb =
   { smb with
-    smb_name = smb.smb_name (* NOTE /!\ This works in practise as long as
+    smb_name = smb.smb_name ^ "___U"
+    (*smb_name = smb.smb_name (* NOTE /!\ This works in practise as long as
                              * u_smb is only called on standards symbols
-                             * with type argument 'TUnknown' *)
+                             * with type argument 'TUnknown' *)*)
+  (* FIXME broken for smbs like "+" which cant have argument 'TUnknown' *)
   ; smb_kind = u_kind smb.smb_kind
   ; smb_sch = Option.map u_sch smb.smb_sch
   }
@@ -506,11 +527,33 @@ let detect = function
   | "IsAFcn" -> Some IsAFcn
   | "tt" -> Some (Any (TAtom TU))
   | "Cast_Int" -> Some (Ucast (TAtom TInt))
+  | "Cast_SetInt" -> Some (Ucast (TSet (TAtom TInt)))
+  | "Plus_Int" -> Some Plus
+  | "Times_Int" -> Some Times
+  | "Uminus_Int" -> Some Uminus
+  | "Minus_Int" -> Some Minus
+  | "Quotient_Int" -> Some Quotient
+  | "Remainder_Int" -> Some Remainder
+  | "Exp_Int" -> Some Exp
+  | "Lteq_Int" -> Some Lteq
+  | "Range_Int" -> Some Range
   | _ -> None
 
 let decode_visitor = object (self : 'self)
   inherit [unit] Expr.Visit.map as super
   method expr scx oe =
+    let oe =
+      Option.fold begin fun oe pats ->
+        let pats =
+          List.map begin fun pat ->
+            List.map begin fun e ->
+              self#expr scx e
+            end pat
+          end pats
+        in
+        assign oe Expr.T.pattern_prop pats
+      end oe (query oe Expr.T.pattern_prop)
+    in
     match oe.core with
     | Opaque s when has oe A.special_prop ->
         Option.fold begin fun _ tla_smb ->

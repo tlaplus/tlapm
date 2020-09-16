@@ -778,3 +778,192 @@ let int_guard =
     ) %% []
   ) %% []
 
+let plus_type =
+  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
+    ifx B.Plus (
+      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+    ) %% []
+  ] ] (
+    ifx B.Eq (
+      ifx B.Plus (
+        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+      ) (
+        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+      ) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [
+        Apply (mk_special "Plus_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
+      ]) %% []
+    ) %% []
+  ) %% []
+
+let times_type =
+  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
+    ifx B.Times (
+      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+    ) %% []
+  ] ] (
+    ifx B.Eq (
+      ifx B.Times (
+        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+      ) (
+        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+      ) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [
+        Apply (mk_special "Times_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
+      ]) %% []
+    ) %% []
+  ) %% []
+
+let uminus_type =
+  all [ "n" ] ~tys:[ TAtom TInt ] ~pats:[ [
+    una B.Uminus (
+      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+    ) %% []
+  ] ] (
+    ifx B.Eq (
+      una B.Uminus (
+        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+      ) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [
+        Apply (mk_special "Uminus_Int", [ Ix 1 %% [] ]) %% []
+      ]) %% []
+    ) %% []
+  ) %% []
+
+
+let minus_type =
+  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
+    ifx B.Minus (
+      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+    ) %% []
+  ] ] (
+    ifx B.Eq (
+      ifx B.Minus (
+        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+      ) (
+        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+      ) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [
+        Apply (mk_special "Minus_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
+      ]) %% []
+    ) %% []
+  ) %% []
+
+
+let quotient_type =
+  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
+    ifx B.Quotient (
+      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+    ) %% []
+  ] ] (
+    ifx B.Eq (
+      ifx B.Quotient (
+        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+      ) (
+        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+      ) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [
+        Apply (mk_special "Quotient_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
+      ]) %% []
+    ) %% []
+  ) %% []
+
+
+let remainder_type =
+  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
+    ifx B.Remainder (
+      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+    ) %% []
+  ] ] (
+    ifx B.Eq (
+      ifx B.Remainder (
+        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+      ) (
+        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+      ) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [
+        Apply (mk_special "Remainder_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
+      ]) %% []
+    ) %% []
+  ) %% []
+
+
+let exp_type =
+  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
+    ifx B.Exp (
+      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+    ) %% []
+  ] ] (
+    ifx B.Eq (
+      ifx B.Exp (
+        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+      ) (
+        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+      ) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [
+        Apply (mk_special "Exp_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
+      ]) %% []
+    ) %% []
+  ) %% []
+
+
+let lteq_type =
+  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
+    ifx B.Lteq (
+      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+    ) %% []
+  ] ] (
+    ifx B.Equiv (
+      ifx B.Lteq (
+        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+      ) (
+        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+      ) %% []
+    ) (
+      Apply (mk_special "Lteq_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
+    ) %% []
+  ) %% []
+
+
+let range_type =
+  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
+    ifx B.Range (
+      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+    ) %% []
+  ] ] (
+    ifx B.Eq (
+      ifx B.Range (
+        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+      ) (
+        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+      ) %% []
+    ) (
+      Apply (mk_special "Cast_SetInt", [
+        Apply (mk_special "Range_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
+      ]) %% []
+    ) %% []
+  ) %% []
+

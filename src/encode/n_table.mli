@@ -50,7 +50,7 @@ type tla_smb =
   | Exp
   | Lteq
   | Range
-  | IntLit of int
+  | IntLit of int (* FIXME remove *)
   (* Special *)
   | Any of ty       (** Random element of a type *)
   | Ucast of ty     (** Cast from any type to uninterpreted *)

@@ -118,6 +118,18 @@ let pp_print_binding ff v =
   fprintf ff "%s: %a" v.core pp_print_typeof v
 
 
+open Encode.Table
+let is_arith op =
+  match query op smb_prop with
+  | Some smb ->
+      begin match get_defn smb with
+      | Some ( Plus | Uminus | Minus | Times | Lteq ) ->
+          true
+      | _ -> false
+      end
+  | None -> false
+
+
 let rec pp_print_thf_atomic cx ff oe =
   match oe.core with
   | Ix n ->
@@ -237,7 +249,7 @@ and pp_print_thf_logic cx ff oe =
 
 and pp_print_thf_apply cx ff oe =
   match oe.core with
-  | Apply (op, args) ->
+  | Apply (op, args) when not (is_arith op) ->
       pp_print_delimited ~sep:(pp_print_conn "@")
       (pp_print_thf_atomic cx) ff (op :: args)
 
@@ -333,6 +345,25 @@ and pp_print_thf_ite cx ff oe =
   | Except _ | Dot _ | Sub _ | Tsub _ | Fair _ | String _
   | At _ ->
       error ~at:oe "Unsupported expression"
+
+  | _ ->
+      pp_print_thf_arith cx ff oe
+
+and pp_print_thf_arith cx ff oe =
+  match oe.core with
+  | Apply (op, es) when is_arith op ->
+      let smb = get op smb_prop in
+      let s =
+        match Option.get (get_defn smb) with
+        | Plus -> "sum"
+        | Uminus -> "uminus"
+        | Minus -> "minus"
+        | Times -> "product"
+        | Lteq -> "lesseq"
+        | _ -> error ~at:op "Expected arithmetic operator"
+      in
+      fprintf ff "@[<hov 2>$%s(@,%a@])" s
+      (pp_print_delimited (pp_print_thf_atomic cx)) es
 
   | _ ->
       pp_print_thf_atomic cx ff oe
