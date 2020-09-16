@@ -760,3 +760,21 @@ let nats =
 let reals =
   Internal B.TRUE %% []
 
+let int_guard =
+  all [ "x" ] (
+    ifx B.Equiv (
+      ifx B.Mem (Ix 1 %% []) (Internal B.Int %% []) %% []
+    ) (
+      exi [ "n" ] ~tys:[ TAtom TInt ] (
+        ifx B.Eq (
+          Ix 2 %% []
+        ) (
+          Apply (
+            mk_special "Cast_Int",
+            [ Ix 1 %% [] ]
+          ) %% []
+        ) %% []
+      ) %% []
+    ) %% []
+  ) %% []
+

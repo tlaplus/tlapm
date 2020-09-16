@@ -41,6 +41,7 @@ let to_sch = function
 
 let from_at = function
   | TU -> RSet
+  | TInt -> RSet
   | TBool -> RForm
   | _ -> error "from_at: bad conversion"
 
@@ -168,6 +169,17 @@ let rec expr cx oe =
         (Apply (op, [ e ; f ]) @@ oe, RForm)
       else
         (Apply (op, [ maybe_cast rt1 e ; maybe_cast rt2 f ]) @@ oe, RForm)
+
+  (* FIXME HACK! *)
+  (* Make Encode.Direct ignore already processed expressions *)
+  | Apply (op, _) when has op T.smb_prop ->
+      let smb = get op T.smb_prop in
+      let rt =
+        match T.get_sch smb with
+        | TSch (_, _, TAtom at) -> from_at at
+        | _ -> failwith "Bad result type"
+      in
+      (oe, rt)
 
   | Internal _ ->
       expr cx (Apply (oe, []) %% [])
@@ -391,9 +403,13 @@ let rec expr cx oe =
       (Bang (e, sels) @@ oe, rt)
 
   | Num (s, "") ->
-      let smb = T.Uver (T.IntLit (int_of_string s)) in
+      (* FIXME remove *)
+      (*let smb = T.Uver (T.IntLit (int_of_string s)) in
+      let op = opq_from_smb smb in*)
+      let smb = T.Ucast (TAtom TInt) in
       let op = opq_from_smb smb in
-      (op $$ oe, RSet)
+      (*(op $$ oe, RSet)*)
+      (Apply (op, [ oe ]) %% [], RSet)
 
   | At b ->
       (At b @@ oe, RSet)

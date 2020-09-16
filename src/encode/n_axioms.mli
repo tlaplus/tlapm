@@ -8,10 +8,9 @@
 open Expr.T
 open Type.T
 
-(** Mark some opaques as special.
-    Used to replace the symbol "isafcn", which cannot be encoded here
-    because of circular dependencies *)
+(** Mark some opaques as special. *)
 val special_prop : unit Property.pfuncs
+(* FIXME Better architecture for Table and Axioms *)
 
 (* {3 Logic} *)
 
@@ -50,4 +49,6 @@ val strings : expr
 val ints : expr
 val nats : expr
 val reals : expr
+
+val int_guard : expr
 

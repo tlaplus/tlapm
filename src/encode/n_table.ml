@@ -94,6 +94,9 @@ let rec get_tlafam = function
 
 exception No_value
 
+let type_axm = function
+  | _ -> failwith "Bad argument to 'type_axm'"
+
 let smbtable_aux = function
   | Choose ty ->
       [],
@@ -182,9 +185,27 @@ let smbtable_aux = function
       [ A.fcnisafcn
       ; A.domain None
       ; A.fcnapp None ]
+  | Uver
+  ( Plus
+  | Uminus
+  | Minus
+  | Times
+  | Ratio
+  | Quotient
+  | Remainder
+  | Exp
+  | Lteq
+  | Range as smb ) ->
+      let _ = smb in
+      [ Ucast (TAtom TInt) ],
+      [ (*type_axm smb*) ]
   | Ucast (TAtom TBool) ->
       [ Any (TAtom TU) ],
       [ A.boolcast_inj ]
+  | Ucast (TAtom TInt) ->
+      [ Uver Ints
+      ; Uver (Mem TUnknown) ],
+      [ A.int_guard ]
   | _ ->
       raise No_value
 
@@ -484,6 +505,7 @@ let std_smb tla_smb =
 let detect = function
   | "IsAFcn" -> Some IsAFcn
   | "tt" -> Some (Any (TAtom TU))
+  | "Cast_Int" -> Some (Ucast (TAtom TInt))
   | _ -> None
 
 let decode_visitor = object (self : 'self)

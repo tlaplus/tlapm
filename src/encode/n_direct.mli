@@ -25,7 +25,7 @@ open Util
 *)
 
 
-(* Signatures are given for pedagogical purposes.
+(* Signatures are given for documentation.
  * Please only use {!Encode.Direct.main}. *)
 
 

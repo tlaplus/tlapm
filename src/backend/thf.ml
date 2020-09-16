@@ -79,6 +79,7 @@ let pp_print_sort ff ty =
     match ty with
     | TAtom TU -> "$i"
     | TAtom TBool -> "$o"
+    | TAtom TInt -> "$int"
     | _ -> ty_to_string ty
   in
   pp_print_string ff s
@@ -428,7 +429,7 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
   pp_print_newline ff ();
   let srts = Encode.CollectTypes.main sq in
   let srts = Ts.filter begin function
-      TAtom TU | TAtom TBool -> false | _ -> true
+      TAtom TU | TAtom TBool | TAtom TInt -> false | _ -> true
   end srts in
   List.iteri begin fun i ty ->
     pp_print_thf Ctx.dot ff ("type" ^ string_of_int i) Type (Sort ty)
