@@ -5,4 +5,5 @@
 Revision.f "$Rev$"
 
 module T = T_t
+module Bool = T_bool
 
