@@ -171,17 +171,22 @@ and time = Now | Always | NotSet (* this value exists because when we create
 facts, we need to wait for later normalization in order to know if the terms are
 constants or not *)
 
+type pat = expr list
+
 let pattern_prop = make "Expr.T.pattern_prop"
 
-let add_patterns oe sqs =
-  if has oe pattern_prop then
-    let pats = get oe pattern_prop in
-    assign oe pattern_prop (sqs @ pats)
-  else
-    assign oe pattern_prop sqs
+let add_patterns oe pats =
+  match query oe pattern_prop with
+  | Some pats' -> assign oe pattern_prop (pats @ pats')
+  | None -> assign oe pattern_prop pats
 
 let remove_patterns oe =
   remove oe pattern_prop
+
+let map_patterns oe f =
+  match query oe pattern_prop with
+  | None -> oe
+  | Some pats -> assign oe pattern_prop (List.map f pats)
 
 (* context helper function *)
 let get_val_from_id cx n = match Deque.nth ~backwards:true cx (n - 1) with
