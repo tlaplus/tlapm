@@ -42,7 +42,8 @@ TYPE_PACK = \
 	type/t_t type/t_bool
 
 ENCODE_PACK = \
-  encode/n_hints encode/n_rewrite encode/n_coltypes
+  encode/n_hints encode/n_rewrite encode/n_coltypes \
+  encode/n_smb
 
 TYPESYSTEM_DIR = \
   typesystem/typ_t typesystem/typ_e typesystem/typ_c \

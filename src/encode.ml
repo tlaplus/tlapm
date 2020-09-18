@@ -9,4 +9,5 @@ Revision.f "$Rev$";;
 module Hints = N_hints
 module Rewrite = N_rewrite
 module CollectTypes = N_coltypes
+module Smb = N_smb
 
