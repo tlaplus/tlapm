@@ -21,6 +21,7 @@ open Util.Coll
 module B = Builtin
 
 let error ?at mssg =
+  let mssg = "Backend.Smtlib: " ^ mssg in
   Errors.bug ?at mssg
 
 let primed s = s ^ "__prime"
@@ -98,8 +99,7 @@ let rec pp_apply cx ff op args =
         | B.Neg     -> "not"
         | B.Eq      -> "="
         | B.Neq     -> "distinct"
-        | _ -> error ~at:op "Backend.Smtlib.pp_apply: \
-                             unexpected builtin encountered"
+        | _ -> error ~at:op "Unexpected builtin encountered"
       in
       begin match args with
       | [] ->
@@ -111,8 +111,7 @@ let rec pp_apply cx ff op args =
           end ff (kw, args)
       end
 
-  | _ -> error ~at:op "Backend.Smtlib.pp_apply: \
-                       unexpected operator encountered"
+  | _ -> error ~at:op "Unexpected operator encountered"
 
 and fmt_expr cx oe =
   if has oe pattern_prop then
@@ -135,8 +134,7 @@ and fmt_expr cx oe =
       Fu.Atm (fun ff -> pp_apply cx ff oe [])
 
   | Lambda _ ->
-      error ~at:oe "Backend.Smtlib.fmt_expr: \
-                    unexpected lambda-abstraction"
+      error ~at:oe "Unexpected lambda-abstraction"
 
   | Apply (op, args) ->
       Fu.Atm (fun ff -> pp_apply cx ff op args)
@@ -186,8 +184,7 @@ and fmt_expr cx oe =
             end ff (nm, ty, Sequent { sq with context = hs } @@ oe)
           end
 
-      | _ -> error ~at:oe "Backend.Smtlib.fmt_expr: \
-                           unsupported sequent expression"
+      | _ -> error ~at:oe "Unsupported sequent expression"
       end
 
   | With (e, _) ->
@@ -204,8 +201,7 @@ and fmt_expr cx oe =
       end
 
   | List (Refs, []) ->
-      error ~at:oe "Backend.Smtlib.fmt_expr: \
-                    empty LIST expression"
+      error ~at:oe "Empty LIST expression"
 
   | List (Refs, [e]) ->
       fmt_expr cx e
@@ -232,15 +228,13 @@ and fmt_expr cx oe =
           match ds with
           | [] -> (acc_cx, acc_vs)
           | { core = Operator (_, { core = Lambda _ }) } :: _ ->
-              error ~at:oe "Backend.Smtlib.fmt_expr: \
-                            higher-order LET expression"
+              error ~at:oe "Higher-order LET expression"
           | { core = Operator (nm, e) } :: ds ->
               let acc_cx, nm = adj acc_cx nm in
               let acc_vs = (nm, e) :: acc_vs in
               f acc_cx acc_vs ds
           | _ ->
-              error ~at:oe "Backend.Smtlib.fmt_expr: \
-                            unsupported LET expression"
+              error ~at:oe "Unsupported LET expression"
         in
         f cx [] ds
       in
@@ -289,12 +283,10 @@ and fmt_expr cx oe =
       end
 
   | Case (_, None) ->
-      error ~at:oe "Backend.Smtlib.fmt_expr: \
-                    incomplete CASE expression encountered"
+      error ~at:oe "Incomplete CASE expression encountered"
 
   | Case ([], _) ->
-      error ~at:oe "Backend.Smtlib.fmt_expr: \
-                    empty CASE expression"
+      error ~at:oe "Empty CASE expression"
 
   | Case ([ (e1, e2) ], Some e3) ->
       fmt_expr cx (If (e1, e2, e3) @@ oe)
@@ -316,8 +308,7 @@ and fmt_expr cx oe =
       fmt_expr cx e
 
   | _ ->
-      error ~at:oe "Backend.Smtlib.fmt_expr: \
-                    unsupported expression"
+      error ~at:oe "Unsupported expression"
 
 and pp_print_expr cx ff e =
   Fu.pp_print_minimal ff (fmt_expr cx e)
@@ -461,63 +452,45 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         pp_print_newline ff ();
         spin ncx hs
 
-    | Some ({ core = Fresh (nm, _, _, _) }, hs) ->
-        let ins, out =
-          if has nm Props.type_prop then
-            ([], get nm Props.type_prop)
-          else if has nm Props.tsch_prop then
-            match get nm Props.tsch_prop with
-            | TSch ([], targs, ty) ->
-                let ins =
-                  List.map begin function
-                    | TRg ty -> ty
-                    | TOp _ -> error ~at:nm "Backend.Smtlib.pp_print_obligation: \
-                                             Unsupported second-order declaration"
-                  end targs
-                in
-                (ins, ty)
-            | _ -> error ~at:nm "Backend.Smtlib.pp_print_obligation: \
-                                 Polymorphic type scheme on declaration"
+    | Some ({ core = Fresh (nm, _, _, _) }, hs)
+    | Some ({ core = Defn ({ core = Operator (nm, _) }, _, _, _) }, hs)
+    | Some ({ core = Defn ({ core = Instance (nm, _) }, _, _, _) }, hs)
+    | Some ({ core = Defn ({ core = Recursive (nm, _) }, _, _, _) }, hs)
+    | Some ({ core = Defn ({ core = Bpragma (nm, _, _) }, _, _, _) }, hs) ->
+        (* The only part of the definition that matters is the declaration.
+         * The 'hidden' flag only applies to the definition, so here it does not
+         * matter.  Bounds to fresh variables have been removed beforehand. *)
+        if not (has nm Props.type_prop) && not (has nm Props.tsch_prop) then
+          let ncx = bump cx in
+          fprintf ff "; omitted declaration (missing type)@.";
+          pp_print_newline ff ();
+          spin ncx hs
+        else if has nm Props.type_prop then
+          let ins = [] in
+          let out = get nm Props.type_prop in
+          let ncx, nm = adj cx nm in
+          pp_print_declarefun ff nm ins out;
+          pp_print_newline ff ();
+          spin ncx hs
+        else
+          let TSch (vs, targs, ty) = get nm Props.tsch_prop in
+          if vs <> [] then
+            let ncx = bump cx in
+            fprintf ff "; omitted declaration (polymorphic type)@.";
+            pp_print_newline ff ();
+            spin ncx hs
+          else if List.exists (function TOp _ -> true | TRg _ -> false) targs then
+            let ncx = bump cx in
+            fprintf ff "; omitted declaration (second-order type)@.";
+            pp_print_newline ff ();
+            spin ncx hs
           else
-            error ~at:nm ("Backend.Smtlib.pp_print_obligation: \
-                          Missing type annotation on declaration '"
-                          ^ nm.core ^ "'")
-        in
-        let ncx, nm = adj cx nm in
-        pp_print_declarefun ff nm ins out;
-        pp_print_newline ff ();
-        spin ncx hs
-
-    (* NOTE Hidden defns are still printed because the symbols
-     * may be used in the sequent. *)
-    | Some ({ core = Defn ({ core = Operator (nm, _) }, _, vis, _) }, hs)
-    | Some ({ core = Defn ({ core = Instance (nm, _) }, _, vis, _) }, hs)
-    | Some ({ core = Defn ({ core = Recursive (nm, _) }, _, vis, _) }, hs)
-    | Some ({ core = Defn ({ core = Bpragma (nm, _, _) }, _, vis, _) }, hs) ->
-        let ins, out =
-          if has nm Props.type_prop then
-            ([], get nm Props.type_prop)
-          else if has nm Props.tsch_prop then
-            match get nm Props.tsch_prop with
-            | TSch ([], targs, ty) ->
-                let ins =
-                  List.map begin function
-                    | TRg ty -> ty
-                    | TOp _ -> error ~at:nm "Backend.Smtlib.pp_print_obligation: \
-                                             Unsupported second-order declaration"
-                  end targs
-                in
-                (ins, ty)
-            | _ -> error ~at:nm "Backend.Smtlib.pp_print_obligation: \
-                                 Polymorphic type scheme on declaration"
-          else
-            error ~at:nm "Backend.Smtlib.pp_print_obligation: \
-                          Missing type annotation on declaration"
-        in
-        let ncx, nm = adj cx nm in
-        pp_print_declarefun ff nm ins out;
-        pp_print_newline ff ();
-        spin ncx hs
+            let ins = List.map (function TRg ty -> ty | TOp _ -> error "") targs in
+            let out = ty in
+            let ncx, nm = adj cx nm in
+            pp_print_declarefun ff nm ins out;
+            pp_print_newline ff ();
+            spin ncx hs
   in
 
   pp_print_newline ff ();
