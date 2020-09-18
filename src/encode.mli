@@ -19,12 +19,6 @@ module Rewrite : sig
   val elim_tuples : sequent -> sequent
 end
 
-module CollectTypes : sig
-  open Expr.T
-  open Type.T
-  val main : sequent -> Ts.t
-end
-
 module Smb : sig
   open Type.T
   open Property

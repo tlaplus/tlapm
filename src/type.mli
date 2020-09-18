@@ -63,6 +63,12 @@ module T : sig
   val pp_print_atm : Format.formatter -> atm -> unit
 end
 
+module Collect : sig
+  open Expr.T
+  open T
+  val main : sequent -> Ts.t
+end
+
 module Bool : sig
   open Expr.T
   open Ext

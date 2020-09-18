@@ -39,10 +39,10 @@ EXPR_PACK = \
   expr/e_elab expr/e_anon
 
 TYPE_PACK = \
-	type/t_t type/t_bool
+	type/t_t type/t_collect type/t_bool
 
 ENCODE_PACK = \
-  encode/n_hints encode/n_rewrite encode/n_coltypes \
+  encode/n_hints encode/n_rewrite \
   encode/n_smb
 
 TYPESYSTEM_DIR = \

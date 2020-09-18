@@ -449,7 +449,7 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
   (* Print sorts *)
   fprintf ff "%%---- Sorts@.";
   pp_print_newline ff ();
-  let srts = Encode.CollectTypes.main sq in
+  let srts = Type.Collect.main sq in
   let srts = Ts.filter begin function
       TAtm TAIdv | TAtm TABol | TAtm TAInt -> false | _ -> true
   end srts in

@@ -6,7 +6,7 @@
  *)
 
 open Expr.T
-open Type.T
+open T_t
 
 val main : sequent -> Ts.t
 

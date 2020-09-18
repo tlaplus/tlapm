@@ -373,7 +373,7 @@ let preprocess ?solver sq =
 (* {3 Sort Collection} *)
 
 let collect_sorts sq =
-  let srts = Encode.CollectTypes.main sq in
+  let srts = Type.Collect.main sq in
   let srts =
     Ts.fold begin fun srt ->
       Ss.add (ty_to_string srt)
