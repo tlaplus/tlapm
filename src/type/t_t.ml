@@ -87,6 +87,20 @@ let apply_ty_sub2 m ty2 =
       Ty2 (List.map (apply_ty_sub1 m) ty1s, apply_ty_sub m ty)
 
 
+(* {3 Type Erasure} *)
+
+let erase0 ty0 =
+  match ty0 with
+  | TAtm TABol -> TAtm TABol
+  | _ -> TAtm TAIdv
+
+let erase1 (Ty1 (ty0s, ty)) =
+  Ty1 (List.map erase0 ty0s, erase0 ty)
+
+let erase2 (Ty2 (ty1s, ty)) =
+  Ty2 (List.map erase1 ty1s, erase0 ty)
+
+
 (* {3 Type Annotations} *)
 
 module Props = struct

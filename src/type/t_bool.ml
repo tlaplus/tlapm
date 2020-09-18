@@ -431,8 +431,25 @@ and nopats_expr scx oe =
 and earg scx oa =
   match oa.core with
   | Ix n ->
-      let ty1 = lookup_ty1 scx n in
-      (Ix n @@ oa, ty1)
+      let (Ty1 (srts, srt) as ty1) = lookup_ty1 scx n in
+      if !opt_tpred || srt = Idv then
+        (Ix n @@ oa, ty1)
+      else
+        let xs =
+          List.mapi begin fun i srt ->
+            let v = ("x" ^ string_of_int i) %% [] in
+            let v = assign v Props.ty0_prop (to_ty0 srt) in
+            (v, Shape_expr)
+          end srts
+        in
+        let m = List.length srts in
+        let e =
+          Apply (
+            Ix (m + n) @@ oa,
+            List.init m (fun i -> Ix (m - i) %% [])
+          ) %% []
+        in
+        (Lambda (xs, mk_idv srt e) %% [], Ty1 (srts, Idv))
 
   | Lambda (xs, e) ->
       let scx, xs, srts =
@@ -458,6 +475,7 @@ and earg scx oa =
         (Lambda (xs, mk_idv srt e) @@ oa, ty1)
 
   | _ ->
+      (* The argument to application can be a constant expression *)
       let e, srt = expr scx oa in
       (e $$ oa, Ty1 ([], srt))
 

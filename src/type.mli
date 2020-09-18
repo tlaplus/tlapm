@@ -45,6 +45,10 @@ module T : sig
   val apply_ty_sub1 : ty_sub -> ty1 -> ty1
   val apply_ty_sub2 : ty_sub -> ty2 -> ty2
 
+  val erase0 : ty0 -> ty0
+  val erase1 : ty1 -> ty1
+  val erase2 : ty2 -> ty2
+
   module Props : sig
     val ty0_prop : ty0 pfuncs
     val ty1_prop : ty1 pfuncs

@@ -51,6 +51,17 @@ val apply_ty_sub1 : ty_sub -> ty1 -> ty1
 val apply_ty_sub2 : ty_sub -> ty2 -> ty2
 
 
+(* {Type Erasure} *)
+
+(** Type erasure maps each type [t] to a type [t'] with the same structure, but
+    all sorts different than Idv replaced with Idv.  Bool is special, it is
+    preserved by type erasure.
+*)
+val erase0 : ty0 -> ty0
+val erase1 : ty1 -> ty1
+val erase2 : ty2 -> ty2
+
+
 (* {3 Type Annotations} *)
 
 module Props : sig
