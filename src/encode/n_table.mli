@@ -8,6 +8,9 @@
 open Property
 open Type.T
 
+(* TODO replace Encode.Canon, then remove kind in this module *)
+(* TODO think about polymorphism: can we still express dependencies with it? *)
+
 
 (* {3 Symbols of TLA+} *)
 

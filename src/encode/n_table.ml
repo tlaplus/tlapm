@@ -224,7 +224,8 @@ let smbtable_aux = function
   | Ucast (TAtom TInt) ->
       [ Uver Ints
       ; Uver (Mem TUnknown) ],
-      [ A.int_guard ]
+      [ A.inteq_type
+      ; A.int_guard ]
   | _ ->
       raise No_value
 

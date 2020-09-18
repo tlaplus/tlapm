@@ -406,7 +406,6 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
   let sq = preprocess ~solver ob.Proof.T.obl.core in
 
   (* Print preample *)
-  pp_print_newline ff ();
   fprintf ff ";; TLA+ Proof Manager %s@." (Params.rawversion ());
   fprintf ff ";; Proof obligation #%d@." (Option.get ob.id);
   fprintf ff ";; Generated from %s@." (Util.location ~cap:false ob.obl);

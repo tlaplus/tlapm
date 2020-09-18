@@ -85,7 +85,7 @@ let pp_print_sort ff ty =
   pp_print_string ff s
 
 let pp_print_conn s ff () =
-  fprintf ff " %s " s
+  fprintf ff " %s@ " s
 
 let pp_print_tyfunc ff (targs, ty) =
   let pp_print_targ ff = function
@@ -449,7 +449,6 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
   let sq = preprocess ~solver ob.Proof.T.obl.core in
 
   (* Print preample *)
-  pp_print_newline ff ();
   fprintf ff "%%---- TLA+ Proof Manager %s@." (Params.rawversion ());
   fprintf ff "%%---- Proof obligation #%d@." (Option.get ob.id);
   fprintf ff "%%---- Generated from %s@." (Util.location ~cap:false ob.obl);

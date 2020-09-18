@@ -52,6 +52,7 @@ val reals : expr
 
 val int_guard : expr
 
+val inteq_type : expr
 val plus_type : expr
 val times_type : expr
 val uminus_type : expr

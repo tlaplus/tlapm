@@ -761,7 +761,9 @@ let reals =
   Internal B.TRUE %% []
 
 let int_guard =
-  all [ "x" ] (
+  all [ "x" ] ~pats:[ [
+      ifx B.Mem (Ix 1 %% []) (Internal B.Int %% []) %% []
+  ] ] (
     ifx B.Equiv (
       ifx B.Mem (Ix 1 %% []) (Internal B.Int %% []) %% []
     ) (
@@ -775,6 +777,25 @@ let int_guard =
           ) %% []
         ) %% []
       ) %% []
+    ) %% []
+  ) %% []
+
+let inteq_type =
+  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
+    ifx B.Eq (
+      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+    ) %% []
+  ] ] (
+    ifx B.Implies (
+      ifx B.Eq (
+        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+      ) (
+        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+      ) %% []
+    ) (
+      ifx ~tys:[ TAtom TInt ] B.Eq (Ix 2 %% []) (Ix 1 %% []) %% []
     ) %% []
   ) %% []
 
