@@ -100,20 +100,22 @@ let mk_fact e =
   Fact (e, Visible, NotSet) %% []
 
 (* FIXME HACK *)
-let is_arith e =
-  let smb = get e smb_prop in
-  begin match get_defn smb with
-  | Some ( Plus | Uminus | Minus | Times | Lteq ) ->
-      true
+let is_arith_smb smb =
+  match get_defn smb with
+  | Some ( Plus | Uminus | Minus | Times | Lteq ) -> true
   | _ -> false
-  end
+
+let is_arith_op e =
+  match query e smb_prop with
+  | Some smb -> is_arith_smb smb
+  | None -> false
 
 let assemble_visitor decls = object (self : 'self)
   inherit [unit] Expr.Visit.map as super
 
   method expr ((), hx as scx) oe =
     match oe.core with
-    | Opaque _ when has_smb oe && not (is_arith oe) ->
+    | Opaque _ when has_smb oe && not (is_arith_op oe) ->
         let smb = get_smb oe in
         let n =
           match Deque.find ~backwards:true decls ((=) smb) with
@@ -141,6 +143,7 @@ end
 let assemble (decls, axms) sq =
   let decls =
     SmbSet.elements decls
+    |> List.filter (fun smb -> not (is_arith_smb smb)) (* FIXME HACK *)
     |> Deque.of_list
   in
   let scx = ((), Deque.empty) in
