@@ -17,7 +17,7 @@ export PATH=$BASEDIR/lib/tlaps/bin/:$PATH
 
 echo "###### `date '+%Y-%m-%d %H:%M:%S'` $0 $@" >>"$LOGFILE"
 
-find "$1" -name '*.tlaps' -prune -o -name '*_test.tla' -print | (
+find "$1" -name '*.tlaps' -prune -o -name '*_test.tla' -print | sort | (
 
   total=0
   success=0
