@@ -19,23 +19,24 @@ module Rewrite : sig
   val elim_tuples : sequent -> sequent
 end
 
+module Table : sig
+  type tla_smb
+  type tla_axm
+end
+
 module Smb : sig
   open Type.T
   open Property
+  open Table
 
-  type 'a smb
-  val mk_smb : string -> ty2 -> 'a -> 'a smb
-  val get_name : 'a smb -> string
-  val get_ty2  : 'a smb -> ty2
-  val get_ty1  : 'a smb -> ty1
-  val get_ty0  : 'a smb -> ty0
-  val get_ord  : 'a smb -> int
-  val get_defn : 'a smb -> 'a
+  type smb
+  val mk_smb : ?tver:tla_smb -> tla_smb -> smb
+  val get_name : smb -> string
+  val get_ty2  : smb -> ty2
+  val get_ty1  : smb -> ty1
+  val get_ty0  : smb -> ty0
+  val get_ord  : smb -> int
 
-  val fold : ('b -> 'a -> 'b) -> 'b -> 'a smb -> 'b
-  val map  : ('a -> 'b) -> 'a smb -> 'b smb
-  val iter : ('a -> unit) -> 'a smb -> unit
-
-  val pp_print_smb : ?pp_print_defn:(Format.formatter -> 'a -> unit) -> Format.formatter -> 'a smb -> unit
+  val pp_print_smb : Format.formatter -> smb -> unit
 end
 

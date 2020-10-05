@@ -9,26 +9,64 @@ open Type.T
 open Ext
 open Property
 
+open N_table
+open N_data
+
 
 (* {3 Symbols} *)
 
-type 'a smb =
-  { smb_name : string
-  ; smb_ty2  : ty2
-  ; smb_defn : 'a
+type smb_kind = Untyped | Typed | Special
+
+type smb =
+  { smb_name  : string
+  ; smb_ty2   : ty2
+  ; smb_smb   : tla_smb
+  ; smb_kind  : smb_kind
+  ; smb_tver  : tla_smb option
   }
 
-let mk_smb nm ty2 a =
-  { smb_name = nm
-  ; smb_ty2 = ty2
-  ; smb_defn = a
+let smb_prop = make "Encode.Smb.smb_prop"
+
+module SmbOrd = struct
+  type t = smb
+  let compare smb1 smb2 =
+    Pervasives.compare smb1.smb_name smb2.smb_name
+end
+
+module SmbSet = Set.Make (SmbOrd)
+
+let mk_smb ?tver tla_smb =
+  let dat = get_data tla_smb in
+  let tver =
+    match tver, dat.dat_kind with
+    | None, Typed -> raise (Invalid_argument "smb with typed version is already typed")
+    | _, _ -> tver
+  in
+  let kind =
+    match dat.dat_kind with
+    (* Conversion *)
+    | Untyped -> Untyped
+    | Typed -> Typed
+    | Special -> Special
+  in
+  { smb_name = dat.dat_name
+  ; smb_ty2 = dat.dat_ty2
+  ; smb_smb = tla_smb
+  ; smb_kind = kind
+  ; smb_tver = tver
   }
+
+let equal_smb smb1 smb2 =
+  smb1.smb_name = smb2.smb_name
 
 let get_name smb = smb.smb_name
 let get_ty2 smb = smb.smb_ty2
 let get_ty1 smb = downcast_ty1 smb.smb_ty2
 let get_ty0 smb = downcast_ty0 (downcast_ty1 smb.smb_ty2)
-let get_defn smb = smb.smb_defn
+
+let get_defn smb  = smb.smb_smb
+let get_kind smb  = smb.smb_kind
+let get_tdefn smb = Option.get smb.smb_tver
 
 let get_ord smb =
   let ty2 = smb.smb_ty2 in
@@ -40,29 +78,10 @@ let get_ord smb =
       | Some _ -> 0
 
 
-(* {3 Operations} *)
-
-let fold f b smb =
-  f b (get_defn smb)
-
-let map f smb =
-  let nm = get_name smb in
-  let ty = get_ty2 smb in
-  let a = get_defn smb in
-  mk_smb nm ty (f a)
-
-let iter f smb =
-  f (get_defn smb)
-
-
 (* {3 Pretty-printing} *)
 
-let pp_print_smb ?pp_print_defn ff smb =
-  let pp_print_defn ff defn =
-    Option.iter (fun f -> Format.fprintf ff " := %a" f defn) pp_print_defn
-  in
-  Format.fprintf ff "{ %s : %a%a }"
+let pp_print_smb ff smb =
+  Format.fprintf ff "{ %s : %a }"
   (get_name smb)
   pp_print_ty2 (get_ty2 smb)
-  pp_print_defn (get_defn smb)
 

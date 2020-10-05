@@ -8,5 +8,6 @@ Revision.f "$Rev$";;
 
 module Hints = N_hints
 module Rewrite = N_rewrite
+module Table = N_table
 module Smb = N_smb
 

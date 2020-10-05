@@ -17,36 +17,40 @@
     can be represented as an application: [{ x \in a : P }] may also be written
     [setst(a, LAMBDA x : P)] where [setst] is a symbol.
 *)
+
 open Type.T
 open Property
+
+open N_table
 
 
 (* {3 Symbols} *)
 
-(** A symbol is essentially defined by a name and a type.  The implementation
-    is made generic on the type 'a, which may be used to record any additional
-    information that define a symbol.
-*)
-type 'a smb
+type smb_kind = Untyped | Typed | Special
 
-val mk_smb : string -> ty2 -> 'a -> 'a smb
+type smb
 
-val get_name : 'a smb -> string
-val get_ty2  : 'a smb -> ty2
-val get_ty1  : 'a smb -> ty1  (** May raise {!Type.T.Invalid_type_downcast} *)
-val get_ty0  : 'a smb -> ty0  (** May raise {!Type.T.Invalid_type_downcast} *)
-val get_ord  : 'a smb -> int
-val get_defn : 'a smb -> 'a
+val smb_prop : smb pfuncs
 
+module SmbSet : Set.S with type elt = smb
 
-(* {3 Operations} *)
+val mk_smb : ?tver:tla_smb -> tla_smb -> smb
 
-val fold : ('b -> 'a -> 'b) -> 'b -> 'a smb -> 'b
-val map  : ('a -> 'b) -> 'a smb -> 'b smb
-val iter : ('a -> unit) -> 'a smb -> unit
+(** Use this function rather than (=) *)
+val equal_smb : smb -> smb -> bool
+
+val get_name : smb -> string
+val get_ty2  : smb -> ty2
+val get_ty1  : smb -> ty1  (** May raise {!Type.T.Invalid_type_downcast} *)
+val get_ty0  : smb -> ty0  (** May raise {!Type.T.Invalid_type_downcast} *)
+val get_ord  : smb -> int
+
+val get_defn  : smb -> tla_smb
+val get_kind  : smb -> smb_kind
+val get_tdefn : smb -> tla_smb  (** Raise {!Invalid_argument} is {!get_kind} does not return [Untyped] *)
 
 
 (* {3 Pretty-printing} *)
 
-val pp_print_smb : ?pp_print_defn:(Format.formatter -> 'a -> unit) -> Format.formatter -> 'a smb -> unit
+val pp_print_smb : Format.formatter -> smb -> unit
 
