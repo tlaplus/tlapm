@@ -40,3 +40,8 @@ module Smb : sig
   val pp_print_smb : Format.formatter -> smb -> unit
 end
 
+module Standardize : sig
+  open Expr.T
+  val main : sequent -> sequent
+end
+
