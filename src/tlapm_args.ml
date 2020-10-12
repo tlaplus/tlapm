@@ -197,6 +197,8 @@ let init () =
                "<f> load fingerprints from file <f> (save as usual)";
     "--fpp", Arg.Set fp_deb,
              " print the fingerprints of obligations in toolbox messages";
+    "--enc-noarith", Arg.Clear enc_arith,
+                     " disable arithmetic from encodings";
   ]
   in
   let opts = Arg.align opts in

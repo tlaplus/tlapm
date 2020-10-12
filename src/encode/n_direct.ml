@@ -402,14 +402,15 @@ let rec expr cx oe =
       in
       (Bang (e, sels) @@ oe, rt)
 
-  | Num (s, "") ->
-      (* FIXME remove *)
-      (*let smb = T.Uver (T.IntLit (int_of_string s)) in
-      let op = opq_from_smb smb in*)
+  | Num (s, "") when !Params.enc_arith ->
       let smb = T.Ucast (TAtom TInt) in
       let op = opq_from_smb smb in
-      (*(op $$ oe, RSet)*)
       (Apply (op, [ oe ]) %% [], RSet)
+
+  | Num (s, "") ->
+      let smb = T.Uver (T.IntLit (int_of_string s)) in
+      let op = opq_from_smb smb in
+      (op $$ oe, RSet)
 
   | At b ->
       (At b @@ oe, RSet)

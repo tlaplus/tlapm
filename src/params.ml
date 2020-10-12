@@ -484,3 +484,5 @@ let backend_timeout = ref 5.;;
    before sending it to its external prover. This gets multiplied by
    timeout_stretch before use.
 *)
+
+let enc_arith = ref true

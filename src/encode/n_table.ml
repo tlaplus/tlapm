@@ -182,46 +182,46 @@ let smbtable_aux = function
       [ A.fcnisafcn
       ; A.domain None
       ; A.fcnapp None ]
-  | Uver Plus ->
+  | Uver Plus when !Params.enc_arith ->
       [ Ucast (TAtom TInt)
       ; Plus ],
       [ A.plus_type ]
-  | Uver Times ->
+  | Uver Times when !Params.enc_arith ->
       [ Ucast (TAtom TInt)
       ; Times ],
       [ A.times_type ]
-  | Uver Uminus ->
+  | Uver Uminus when !Params.enc_arith ->
       [ Ucast (TAtom TInt)
       ; Uminus ],
       [ A.uminus_type ]
-  | Uver Minus ->
+  | Uver Minus when !Params.enc_arith ->
       [ Ucast (TAtom TInt)
       ; Minus ],
       [ A.minus_type ]
-  | Uver Quotient ->
+  | Uver Quotient when !Params.enc_arith ->
       [ Ucast (TAtom TInt)
       ; Quotient ],
       [ A.quotient_type ]
-  | Uver Remainder ->
+  | Uver Remainder when !Params.enc_arith ->
       [ Ucast (TAtom TInt)
       ; Remainder ],
       [ A.remainder_type ]
-  | Uver Exp ->
+  | Uver Exp when !Params.enc_arith ->
       [ Ucast (TAtom TInt)
       ; Exp ],
       [ A.exp_type ]
-  | Uver Lteq ->
+  | Uver Lteq when !Params.enc_arith ->
       [ Ucast (TAtom TInt)
       ; Lteq ],
       [ A.lteq_type ]
-  | Uver Range ->
+  | Uver Range when !Params.enc_arith ->
       [ Ucast (TAtom TInt)
       ; Range ],
       [ A.range_type ]
   | Ucast (TAtom TBool) ->
       [ Any (TAtom TU) ],
       [ A.boolcast_inj ]
-  | Ucast (TAtom TInt) ->
+  | Ucast (TAtom TInt) when !Params.enc_arith ->
       [ Uver Ints
       ; Uver (Mem TUnknown) ],
       [ A.inteq_type
