@@ -303,6 +303,7 @@ let parse_default_methods s =
     printf "  yices   -- Yices\n";
     printf "  verit   -- VeriT\n";
     printf "  spass   -- SPASS\n";
+    printf "  zipper  -- Zipperposition\n";
     printf "  ls4     -- LS4\n";
     printf "\n" ;
     printf "  fail    -- Dummy method that always fails\n" ;

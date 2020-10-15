@@ -43,6 +43,13 @@ let to_lowercase s =
   else s
 
 
+(* {3 Global Options} *)
+
+let enable_ho = ref true
+
+let enable_arith = ref true
+
+
 (* {3 Context} *)
 
 let init_cx = Ctx.dot
@@ -428,7 +435,20 @@ let pp_print_expr cx ff oe =
 (* This very important function does several transformations on the sequent
  * to shape it into something translatable to THF. *)
 let preprocess ?solver sq =
-  let _ = solver in (* NOTE not used *)
+  let set_true rf = (rf := true) in
+  let set_false rf = (rf := false) in
+  let () =
+    match solver with
+    | Some "Zipperposition" -> begin
+      set_true enable_ho;
+      set_false enable_arith
+      ; set_false Params.enc_arith (* FIXME handle options correctly then remove this line *)
+    end
+    | _ -> begin
+      set_false enable_ho;
+      set_true enable_arith
+    end
+  in
 
   (* FIXME remove *)
   let emp = (Deque.empty, Ctx.dot) in
@@ -494,7 +514,7 @@ let pp_print_thf cx ff ?comment name role form =
   fprintf ff "@[<hov 2>thf(%s, %a,@ %a@]).@."
   name pp_print_role role (pp_print_formula cx) form
 
-let pp_print_obligation ?(solver="CVC4") ff ob =
+let pp_print_obligation ?(solver="Zipperposition") ff ob =
   (* Shape the sequent into a form that can be translated;
    * Append a top context containing additional declarations and axioms *)
   let sq = preprocess ~solver ob.Proof.T.obl.core in
