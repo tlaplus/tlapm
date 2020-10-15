@@ -214,41 +214,89 @@ and pp_print_thf_logic cx ff oe =
       pp_print_delimited ~sep:(pp_print_conn s)
       (pp_print_thf_atomic cx) ff es
 
-  | Sequent sq when Deque.null sq.context ->
-      pp_print_thf_logic cx ff sq.active
-
-  | Sequent sq when not (Deque.null sq.context) ->
-      let h, hs = Option.get (Deque.front sq.context) in
-      let rest = Sequent { sq with context = hs } @@ oe in
-      begin match h.core with
-      | Fact (e, Visible, _) ->
-          let ncx = bump cx in
-          fprintf ff "%a%a%a"
-          (pp_print_thf_atomic cx) e
-          (pp_print_conn "=>") ()
-          (pp_print_thf_atomic ncx) rest
-
-      | Fresh (v, _, _, Unbounded) ->
-          let ncx, nm = adj_l cx v in
-          let v = nm @@ v in
-          fprintf ff "! [ %a ] :@ %a"
-          pp_print_binding v
-          (pp_print_thf_atomic ncx) rest
-
-      | Flex v ->
-          let ncx, nm = adj_l cx v in
-          let v = nm @@ v in
-          let v_primed = primed nm @@ v in
-          fprintf ff "! [ %a ] :@ %a"
-          (pp_print_delimited pp_print_binding) [ v ; v_primed ]
-          (pp_print_thf_atomic ncx) rest
-
-      | _ ->
-          error ~at:oe "Unsupported expression"
-      end
+  | Sequent sq ->
+      pp_print_thf_logic_sq cx ff sq
 
   | _ ->
       pp_print_thf_apply cx ff oe
+
+and pp_print_thf_logic_sq ?status:status ?(factlvl=0) cx ff sq =
+  (* status is true if last hyp was a binding; false if it was a fact; None at the beginning *)
+  let print_first_bind v =
+    fprintf ff "! [ %a" pp_print_binding v
+  in
+  let print_bind v =
+    pp_print_commasp ff ();
+    pp_print_binding ff v
+  in
+  let close_bindings () =
+    fprintf ff " ] :@ "
+  in
+  let print_first_fact cx e =
+    fprintf ff "@[<hov 2>( @[<hov 2>( %a" (pp_print_thf_atomic cx) e
+  in
+  let print_fact cx e =
+    pp_print_conn "&" ff ();
+    pp_print_thf_atomic cx ff e
+  in
+  let close_facts () =
+    fprintf ff " ) ";
+    pp_print_conn "=>" ff ()
+  in
+  let close_factlvls () =
+    let rec spin n =
+      if n = 0 then ()
+      else begin
+        fprintf ff "@] )";
+        spin (n - 1)
+      end
+    in
+    spin factlvl
+  in
+
+  match Deque.front sq.context with
+  | None ->
+      Option.iter begin function
+        | true -> close_bindings ()
+        | false -> close_facts ()
+      end status;
+      pp_print_thf_atomic cx ff sq.active;
+      close_factlvls ()
+
+  | Some ({ core = Fact (e, Visible, _) }, hs) ->
+      let ncx = bump cx in
+      let nfactlvl =
+        match status with
+        | None -> print_first_fact cx e; factlvl + 1
+        | Some false -> print_fact cx e; factlvl
+        | Some true -> close_bindings (); print_first_fact cx e; factlvl + 1
+      in
+      pp_print_thf_logic_sq ~status:false ~factlvl:nfactlvl ncx ff { sq with context = hs }
+
+  | Some ({ core = Fresh (v, _, _, Unbounded) }, hs) ->
+      let ncx, nm = adj_l cx v in
+      let v = nm @@ v in
+      begin match status with
+      | None -> print_first_bind v
+      | Some false -> close_facts (); print_first_bind v
+      | Some true -> print_bind v
+      end;
+      pp_print_thf_logic_sq ~status:true ~factlvl:factlvl ncx ff { sq with context = hs }
+
+  | Some ({ core = Flex v }, hs) ->
+      let ncx, nm = adj_l cx v in
+      let v = nm @@ v in
+      let v_primed = primed nm @@ v in
+      begin match status with
+      | None -> print_first_bind v; print_bind v_primed
+      | Some false -> close_facts (); print_first_bind v; print_bind v_primed
+      | Some true -> print_bind v; print_bind v_primed
+      end;
+      pp_print_thf_logic_sq ~status:true ~factlvl:factlvl cx ff { sq with context = hs }
+
+  | _ ->
+      let h = Option.get (Deque.front sq.context) |> fst in
+      error ~at:h "Unsupported expression"
 
 and pp_print_thf_apply cx ff oe =
   match oe.core with
