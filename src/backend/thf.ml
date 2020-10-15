@@ -230,7 +230,7 @@ and pp_print_thf_logic cx ff oe =
           let v = nm @@ v in
           fprintf ff "! [ %a ] :@ %a"
           pp_print_binding v
-          (pp_print_thf_logic ncx) rest
+          (pp_print_thf_atomic ncx) rest
 
       | Flex v ->
           let ncx, nm = adj_l cx v in
@@ -238,7 +238,7 @@ and pp_print_thf_logic cx ff oe =
           let v_primed = primed nm @@ v in
           fprintf ff "! [ %a ] :@ %a"
           (pp_print_delimited pp_print_binding) [ v ; v_primed ]
-          (pp_print_thf_logic ncx) rest
+          (pp_print_thf_atomic ncx) rest
 
       | _ ->
           error ~at:oe "Unsupported expression"
