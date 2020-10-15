@@ -163,11 +163,13 @@ let smbtable_aux = function
       [ Uver (Mem TUnknown) ],
       [ A.setminus None ]
   | Uver (SetSt _) ->
-      [ Uver (Mem TUnknown) ],
+      [ Any (TAtom TU)
+      ; Uver (Mem TUnknown) ],
       [ A.setst None ]
   | Uver (SetOf (tys, _)) ->
       List.map (fun _ -> Uver (Mem TUnknown)) tys @
-      [ Uver (Mem TUnknown) ],
+      [ Any (TAtom TU)
+      ; Uver (Mem TUnknown) ],
       [ A.setof (List.length tys) None ]
   | Uver (Arrow _) ->
       [ Uver (Mem TUnknown)
@@ -176,11 +178,11 @@ let smbtable_aux = function
       [ A.arrow None ]
   | Uver (Fcn _) ->
       [ Uver (Mem TUnknown)
-      ; IsAFcn
+      (*; IsAFcn*)
       ; Uver (Domain (TUnknown, TUnknown))
       ; Uver (FcnApp (TUnknown, TUnknown)) ],
-      [ A.fcnisafcn
-      ; A.domain None
+      [ (*A.fcnisafcn
+      ;*) A.domain None
       ; A.fcnapp None ]
   | Uver Plus when !Params.enc_arith ->
       [ Ucast (TAtom TInt)
@@ -218,6 +220,9 @@ let smbtable_aux = function
       [ Ucast (TAtom TInt)
       ; Range ],
       [ A.range_type ]
+  | Any (TAtom TU) ->
+      [ Ucast (TAtom TBool) ],
+      []
   | Ucast (TAtom TBool) ->
       [ Any (TAtom TU) ],
       [ A.boolcast_inj ]
@@ -473,7 +478,7 @@ let tuple tys =
   mk_fst_smb Tuples id tys (TProd tys)
 
 let any ty =
-  let id = suffix "Any" [ type_to_string ty ] in
+  let id = suffix "tt" [ type_to_string ty ] in
   mk_cst_smb Special id ty
 
 let ucast ty =
@@ -527,6 +532,8 @@ let std_smb tla_smb =
 let detect = function
   | "IsAFcn" -> Some IsAFcn
   | "tt" -> Some (Any (TAtom TU))
+  | "Cast_Bool" -> Some (Ucast (TAtom TBool))
+  | "Cast_SetBool" -> Some (Ucast (TSet (TAtom TBool)))
   | "Cast_Int" -> Some (Ucast (TAtom TInt))
   | "Cast_SetInt" -> Some (Ucast (TSet (TAtom TInt)))
   | "Plus_Int" -> Some Plus

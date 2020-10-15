@@ -112,7 +112,10 @@ let pp_print_typeof ff v =
     | _ ->
         error ~at:v "Polymorphic type scheme on declaration"
   else
-    error ~at:v "Missing type annotation"
+    let mssg = "Missing type annotation on \
+                '" ^ v.core ^ "'"
+    in
+    error ~at:v mssg
 
 let pp_print_binding ff v =
   fprintf ff "%s: %a" v.core pp_print_typeof v

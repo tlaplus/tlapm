@@ -21,7 +21,6 @@ let mk_special s = assign (Opaque s %% []) special_prop ()
 
 let annot h ty = assign h Props.type_prop ty
 let targs a tys = assign a Props.targs_prop tys
-let cast a = assign a Props.ucast_prop ()
 
 let app ?tys op es =
   let op = Option.fold targs op tys in
@@ -611,7 +610,7 @@ let arrow tys =
         ) %% []
       ] |> fun es ->
         match tys with
-        | None -> Apply (mk_special "IsAFcn", [ Ix 1 %% [] ]) %% [] :: es
+        | None (*-> Apply (mk_special "IsAFcn", [ Ix 1 %% [] ]) %% [] :: es*)
         | Some _ -> es
       ) %% []
     ) %% []
@@ -705,13 +704,19 @@ let boolcast_inj =
     ifx B.Eq (
       mk_special "tt"
     ) (
-      cast (Internal B.TRUE %% [])
+      Apply (
+        mk_special "Cast_Bool",
+        [ Internal B.TRUE %% [] ]
+      ) %% []
     ) %% []
   ) (
     ifx B.Neq (
       mk_special "tt"
     ) (
-      cast (Internal B.FALSE %% [])
+      Apply (
+        mk_special "Cast_Bool",
+        [ Internal B.FALSE %% [] ]
+      ) %% []
     ) %% []
   ) %% []
 
@@ -721,14 +726,20 @@ let booleans =
     ifx B.Mem (
       Ix 1 %% []
     ) (
-      cast (appb B.BOOLEAN [] %% [])
+      Apply (
+        mk_special "Cast_SetBool",
+        [ Internal B.BOOLEAN %% [] ]
+      ) %% []
     ) %% []
   ] ] (
     ifx B.Implies (
       ifx B.Mem (
         Ix 1 %% []
       ) (
-        cast (appb B.BOOLEAN [] %% [])
+        Apply (
+          mk_special "Cast_SetBool",
+          [ Internal B.BOOLEAN %% [] ]
+        ) %% []
       ) %% []
     ) (
       exi [ "y" ] ~tys:[ TAtom TBool ] (
@@ -736,7 +747,10 @@ let booleans =
         B.Eq (
           Ix 2 %% []
         ) (
-          cast (Ix 1 %% [])
+          Apply (
+            mk_special "Cast_Bool",
+            [ Ix 1 %% [] ]
+          ) %% []
         ) %% []
       ) %% []
     ) %% []
