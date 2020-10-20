@@ -54,6 +54,8 @@ type tla_smb =
   | Lteq
   | Range
   | IntLit of int
+  (* Strings *)
+  | StrLit of string
   (* Special *)
   | Any of ty       (** Random element of a type *)
   | Ucast of ty     (** Cast from any type to uninterpreted *)

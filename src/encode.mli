@@ -67,6 +67,8 @@ module Table : sig
     | Lteq
     | Range
     | IntLit of int
+    (* Strings *)
+    | StrLit of string
     (* Special *)
     | Any of ty
     | Ucast of ty

@@ -412,6 +412,11 @@ let rec expr cx oe =
       let op = opq_from_smb smb in
       (op $$ oe, RSet)
 
+  | String s->
+      let smb = T.Uver (T.StrLit s) in
+      let op = opq_from_smb smb in
+      (op $$ oe, RSet)
+
   | At b ->
       (At b @@ oe, RSet)
 

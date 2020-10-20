@@ -53,6 +53,8 @@ type tla_smb =
   | Lteq
   | Range
   | IntLit of int
+  (* Strings *)
+  | StrLit of string
   (* Special *)
   | Any of ty       (** Random element of a type *)
   | Ucast of ty     (** Cast from any type to uninterpreted *)
@@ -78,7 +80,7 @@ let rec get_tlafam = function
       Sets
   | Booleans ->
       Booleans
-  | Strings ->
+  | Strings | StrLit _ ->
       Strings
   | Ints | Nats | Reals
   | Plus | Uminus | Minus | Times | Ratio | Quotient | Exp | Remainder | Lteq
@@ -477,6 +479,10 @@ let tuple tys =
   let id = suffix "Tuple" (List.map type_to_string tys) in
   mk_fst_smb Tuples id tys (TProd tys)
 
+let strlit s =
+  let id = "StrLit_" ^ s in
+  mk_cst_smb Strings id (TAtom TStr)
+
 let any ty =
   let id = suffix "tt" [ type_to_string ty ] in
   mk_cst_smb Special id ty
@@ -520,6 +526,7 @@ let rec std_smb_aux = function
   | Range -> range
   | Lteq -> lteq
   | IntLit n -> intlit n
+  | StrLit s -> strlit s
   | Any ty -> any ty
   | Ucast ty -> ucast ty
   | Uver tla_smb -> u_smb (std_smb_aux tla_smb)
