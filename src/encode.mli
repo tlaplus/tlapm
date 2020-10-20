@@ -17,6 +17,7 @@ module Rewrite : sig
   val elim_compare : sequent -> sequent
   val elim_multiarg : sequent -> sequent
   val elim_tuples : sequent -> sequent
+  val elim_records : sequent -> sequent
 end
 
 module CollectTypes : sig

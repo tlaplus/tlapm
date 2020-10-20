@@ -25,3 +25,6 @@ val elim_multiarg : sequent -> sequent
 (** Reduce tuples to functions *)
 val elim_tuples : sequent -> sequent
 
+(** Reduce records to functions *)
+val elim_records : sequent -> sequent
+

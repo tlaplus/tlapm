@@ -373,12 +373,13 @@ let preprocess ?solver sq =
   let sq = sq
     |> Encode.Hints.main
     |> debug "Start" (* FIXME remove *)
-    (* NOTE eliminating bound notation necessary to make all '\in' visible *)
     |> Encode.Rewrite.elim_notmem
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_tuples
+    |> Encode.Rewrite.elim_records
+    (* NOTE eliminating bound notation necessary to make all '\in' visible *)
     |> Encode.Rewrite.elim_bounds
-    |> debug "Done Simpl. Bounds" (* FIXME remove *)
+    |> debug "Done Simpl." (* FIXME remove *)
     |> Encode.Direct.main
     |> debug "Done Direct"
     |> Encode.Axiomatize.main

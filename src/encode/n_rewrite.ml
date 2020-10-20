@@ -13,7 +13,7 @@ module Subst = Expr.Subst
 module Visit = Expr.Visit
 module B = Builtin
 
-(* TODO Type preservation for elim_bounds, elim_multiarg, elim_tuples *)
+(* TODO Type preservation for elim_bounds, elim_multiarg, elim_tuples, elim_records *)
 
 
 let error ?at mssg =
@@ -149,6 +149,7 @@ let elim_notmem_visitor = object (self : 'self)
         Apply (Internal B.Neg %% [], [
           Apply (Internal B.Mem @@ op, [ e ; f ]) %% []
         ]) @@ oe
+
     | _ -> super#expr scx oe
 end
 
@@ -169,6 +170,7 @@ let elim_compare_visitor = object (self : 'self)
           Apply (Internal B.Lteq @@ op, [ e ; f ]) @@ oe ;
           Apply (Internal B.Neq %% [], [ e ; f ]) %% []
         ]) %% []
+
     | Apply ({ core = Internal B.Gt } as op, [ e ; f ]) ->
         let e = self#expr scx e in
         let f = self#expr scx f in
@@ -176,10 +178,12 @@ let elim_compare_visitor = object (self : 'self)
           Apply (Internal B.Lteq @@ op, [ f ; e ]) @@ oe ;
           Apply (Internal B.Neq %% [], [ f ; e ]) %% []
         ]) %% []
+
     | Apply ({ core = Internal B.Gteq } as op, [ e ; f ]) ->
         let e = self#expr scx e in
         let f = self#expr scx f in
         Apply (Internal B.Lteq @@ op, [ f ; e ]) @@ oe
+
     | _ -> super#expr scx oe
 end
 
@@ -216,11 +220,13 @@ let elim_multiarg_visitor = object (self : 'self)
         in
         let e = Let (dfs, e) %% [] in
         Fcn ([ v, Constant, Domain b ], e) @@ oe
+
     | FcnApp (e1, es) when List.length es > 1 ->
         let e1 = self#expr scx e1 in
         let es = List.map (self#expr scx) es in
         let e2 = Tuple es %% [] in
         FcnApp (e1, [ e2 ]) @@ oe
+
     | _ -> super#expr scx oe
 end
 
@@ -260,7 +266,7 @@ let elim_tuples_visitor = object (self : 'self)
               Internal B.Mem %% [],
               [
                 FcnApp (Ix 1 %% [], [ Num (string_of_int (i + 1), "") %% [] ]) %% [] ;
-                e
+                Subst.app_expr (Subst.shift 1) e
               ]
             ) %% []
           end es
@@ -268,6 +274,7 @@ let elim_tuples_visitor = object (self : 'self)
       in
       let v = "f" %% [] in
       SetSt (v, e1, e2) @@ oe
+
     | Tuple es ->
         let es = List.map (self#expr scx) es in
         let n = List.length es in
@@ -286,17 +293,77 @@ let elim_tuples_visitor = object (self : 'self)
                   [ Ix 1 %% [] ; Num (string_of_int (i + 1), "") %% [] ]
                 ) %% []
               in
-              (p, e)
+              (p, Subst.app_expr (Subst.shift 1) e)
             end es,
             None
           ) %% []
         in
         let v = "i" %% [] in
         Fcn ([ v, Constant, Domain b ], e) @@ oe
+
     | _ -> super#expr scx oe
 end
 
 let elim_tuples sq =
   let cx = ((), Deque.empty) in
-  snd (elim_tuples_visitor #sequent cx sq)
+  snd (elim_tuples_visitor#sequent cx sq)
+
+
+let elim_records_visitor = object (self : 'self)
+  inherit [unit] Visit.map as super
+
+  method expr scx oe =
+    match oe.core with
+    | Rect fs ->
+        let rg = SetEnum (List.map (fun (s, _) -> String s %% []) fs) %% [] in
+        let im = SetEnum (List.map snd fs) %% [] in
+        let e1 = Arrow (rg, Apply (Internal B.UNION %% [], [ im ]) %% []) %% [] in
+        let e2 =
+          List (
+            And,
+            List.map begin fun (s, e) ->
+              Apply (
+                Internal B.Mem %% [],
+                [ FcnApp (Ix 1 %% [], [ String s %% [] ]) %% []
+                ; Subst.app_expr (Subst.shift 1) e ]
+              ) %% []
+            end fs
+          ) %% []
+        in
+        let v = "f" %% [] in
+        SetSt (v, e1, e2) @@ oe
+
+    | Record fs ->
+        let rg = SetEnum (List.map (fun (s, _) -> String s %% []) fs) %% [] in
+        let ps =
+          List.map begin fun (s, e) ->
+            let p =
+              Apply (
+                Internal B.Eq %% [],
+                [ Ix 1 %% [] ; String s %% [] ]) %% []
+            in
+            (p, Subst.app_expr (Subst.shift 1) e)
+          end fs
+        in
+        let e = Case (ps, None) %% [] in
+        let v = "s" %% [] in
+        Fcn ([ v, Constant, Domain rg ], e) @@ oe
+
+    | Dot (e, s) ->
+        FcnApp (e, [ String s %% [] ]) @@ oe
+
+    | _ -> super#expr scx oe
+
+  method exspec scx (trail, res) =
+    let do_trail = function
+      | Except_dot s -> Except_apply (String s %% [])
+      | Except_apply e -> Except_apply (self#expr scx e)
+    in
+    (List.map do_trail trail, self#expr scx res)
+
+end
+
+let elim_records sq =
+  let cx = ((), Deque.empty) in
+  snd (elim_records_visitor#sequent cx sq)
 
