@@ -85,7 +85,7 @@ let fresh ?tsig ?(n=0) x =
 let choose ty =
   Sequent {
     context = [
-      fresh ?tsig:(Option.map (fun ty -> [ ty ], TAtom TBool) ty)
+      fresh ~tsig:(Option.fold (fun _ ty -> [ ty ], TAtom TBool) ([ TAtom TU ], TAtom TBool) ty)
       ~n:1 "P" %% []
     ] |> Deque.of_list ;
     active =
@@ -421,7 +421,7 @@ let setminus ty =
 let setst ty =
   Sequent {
     context = [
-      fresh ?tsig:(Option.map (fun ty -> [ ty ], TAtom TBool) ty)
+      fresh ~tsig:(Option.fold (fun _ ty -> [ ty ], TAtom TBool) ([ TAtom TU ], TAtom TBool) ty)
       ~n:1 "P" %% []
     ] |> Deque.of_list ;
     active =

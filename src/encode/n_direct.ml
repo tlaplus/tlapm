@@ -620,6 +620,17 @@ and defns cx dfs =
 
 and hyp cx h =
   match h.core with
+  | Fresh (v, shp, k, Unbounded) when has v Props.targ_prop ->
+      (* FIXME hack *)
+      let arg = get v Props.targ_prop in
+      let xty =
+        from_arg arg |> function
+          | ASet -> XSet
+          | AOp (n, rt) -> XOp (List.init n (fun _ -> ASet), rt)
+      in
+      let v, cx = adj cx v xty in
+      (cx, Fresh (v, shp, k, Unbounded) @@ h)
+
   | Fresh (v, shp, k, d) ->
       let d =
         match d with
