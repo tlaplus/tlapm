@@ -51,6 +51,9 @@ type tla_smb =
   | Remainder
   | Exp
   | Lteq
+  | Lt
+  | Gteq
+  | Gt
   | Range
   | IntLit of int
   (* Strings *)
@@ -83,7 +86,8 @@ let rec get_tlafam = function
   | Strings | StrLit _ ->
       Strings
   | Ints | Nats | Reals
-  | Plus | Uminus | Minus | Times | Ratio | Quotient | Exp | Remainder | Lteq
+  | Plus | Uminus | Minus | Times | Ratio | Quotient | Exp | Remainder
+  | Lteq | Lt | Gteq | Gt
   | IntLit _ | Range ->
       Arithmetic
   | IsAFcn | Arrow _ | Domain _ | FcnApp _ | Fcn _ | Except _ ->
@@ -218,6 +222,18 @@ let smbtable_aux = function
       [ Ucast (TAtom TInt)
       ; Lteq ],
       [ A.lteq_type ]
+  | Uver Lt when !Params.enc_arith ->
+      [ Ucast (TAtom TInt)
+      ; Lt ],
+      [ A.lt_type ]
+  | Uver Gteq when !Params.enc_arith ->
+      [ Ucast (TAtom TInt)
+      ; Gteq ],
+      [ A.gteq_type ]
+  | Uver Gt when !Params.enc_arith ->
+      [ Ucast (TAtom TInt)
+      ; Gt ],
+      [ A.gt_type ]
   | Uver Range when !Params.enc_arith ->
       [ Ucast (TAtom TInt)
       ; Range ],
@@ -465,6 +481,15 @@ let exp =
 let lteq =
   let id = "Lteq" in
   mk_fst_smb Arithmetic id [ TAtom TInt ; TAtom TInt ] (TAtom TBool)
+let lt =
+  let id = "Lt" in
+  mk_fst_smb Arithmetic id [ TAtom TInt ; TAtom TInt ] (TAtom TBool)
+let gteq =
+  let id = "Gteq" in
+  mk_fst_smb Arithmetic id [ TAtom TInt ; TAtom TInt ] (TAtom TBool)
+let gt =
+  let id = "Gt" in
+  mk_fst_smb Arithmetic id [ TAtom TInt ; TAtom TInt ] (TAtom TBool)
 let range =
   let id = "Range" in
   mk_fst_smb Arithmetic id [ TAtom TInt ; TAtom TInt ] (TSet (TAtom TInt))
@@ -525,6 +550,9 @@ let rec std_smb_aux = function
   | Exp -> exp
   | Range -> range
   | Lteq -> lteq
+  | Lt -> lt
+  | Gteq -> gteq
+  | Gt -> gt
   | IntLit n -> intlit n
   | StrLit s -> strlit s
   | Any ty -> any ty
@@ -551,6 +579,9 @@ let detect = function
   | "Remainder_Int" -> Some Remainder
   | "Exp_Int" -> Some Exp
   | "Lteq_Int" -> Some Lteq
+  | "Lt_Int" -> Some Lt
+  | "Gteq_Int" -> Some Gteq
+  | "Gt_Int" -> Some Gt
   | "Range_Int" -> Some Range
   | _ -> None
 

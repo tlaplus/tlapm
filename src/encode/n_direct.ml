@@ -474,11 +474,11 @@ and eopr cx op =
         | B.Exp       -> T.Uver T.Exp
         | B.Range     -> T.Uver T.Range
         | B.Lteq      -> T.Uver T.Lteq
+        | B.Lt        -> T.Uver T.Lt
+        | B.Gteq      -> T.Uver T.Gteq
+        | B.Gt        -> T.Uver T.Gt
 
         | B.Infinity
-        | B.Lt
-        | B.Gteq
-        | B.Gt
         | B.Divides ->
             error ~at:op "Unexpected arithmetic builtin"
 

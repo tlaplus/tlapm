@@ -133,7 +133,7 @@ let is_arith op =
   match query op smb_prop with
   | Some smb ->
       begin match get_defn smb with
-      | Some ( Plus | Uminus | Minus | Times | Lteq ) ->
+      | Some ( Plus | Uminus | Minus | Times | Lteq | Lt | Gteq | Gt ) ->
           true
       | _ -> false
       end
@@ -418,6 +418,9 @@ and pp_print_thf_arith cx ff oe =
         | Minus -> "minus"
         | Times -> "product"
         | Lteq -> "lesseq"
+        | Lt -> "less"
+        | Gteq -> "greatereq"
+        | Gt -> "greater"
         | _ -> error ~at:op "Expected arithmetic operator"
       in
       fprintf ff "@[<hov 2>$%s(@,%a@])" s

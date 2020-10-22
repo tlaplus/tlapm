@@ -57,7 +57,7 @@ let is_arith op =
   match query op smb_prop with
   | Some smb ->
       begin match get_defn smb with
-      | Some ( Plus | Uminus | Minus | Times | Lteq ) ->
+      | Some ( Plus | Uminus | Minus | Times | Lteq | Lt | Gteq | Gt ) ->
           true
       | _ -> false
       end
@@ -106,6 +106,9 @@ let rec pp_apply cx ff op args =
         | Uminus | Minus -> "-"
         | Times -> "*"
         | Lteq -> "<="
+        | Lt -> "<"
+        | Gteq -> ">="
+        | Gt -> ">"
         | _ -> error ~at:op "Expected arithmetic operator"
       in
       pp_print_sexpr begin fun ff () ->

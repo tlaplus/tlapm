@@ -61,5 +61,8 @@ val quotient_type : expr
 val remainder_type : expr
 val exp_type : expr
 val lteq_type : expr
+val lt_type : expr
+val gteq_type : expr
+val gt_type : expr
 val range_type : expr
 

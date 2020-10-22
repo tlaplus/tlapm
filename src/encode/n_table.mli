@@ -52,6 +52,9 @@ type tla_smb =
   | Remainder
   | Exp
   | Lteq
+  | Lt
+  | Gteq
+  | Gt
   | Range
   | IntLit of int
   (* Strings *)

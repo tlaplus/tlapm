@@ -981,6 +981,66 @@ let lteq_type =
   ) %% []
 
 
+let lt_type =
+  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
+    ifx B.Lt (
+      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+    ) %% []
+  ] ] (
+    ifx B.Equiv (
+      ifx B.Lt (
+        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+      ) (
+        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+      ) %% []
+    ) (
+      Apply (mk_special "Lt_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
+    ) %% []
+  ) %% []
+
+
+let gteq_type =
+  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
+    ifx B.Gteq (
+      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+    ) %% []
+  ] ] (
+    ifx B.Equiv (
+      ifx B.Gteq (
+        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+      ) (
+        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+      ) %% []
+    ) (
+      Apply (mk_special "Gteq_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
+    ) %% []
+  ) %% []
+
+
+let gt_type =
+  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
+    ifx B.Gt (
+      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+    ) (
+      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+    ) %% []
+  ] ] (
+    ifx B.Equiv (
+      ifx B.Gt (
+        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
+      ) (
+        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+      ) %% []
+    ) (
+      Apply (mk_special "Gt_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
+    ) %% []
+  ) %% []
+
+
 let range_type =
   all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
     ifx B.Range (

@@ -66,6 +66,9 @@ module Table : sig
     | Remainder
     | Exp
     | Lteq
+    | Lt
+    | Gteq
+    | Gt
     | Range
     | IntLit of int
     (* Strings *)
