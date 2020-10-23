@@ -1,28 +1,27 @@
 (*  Title:      TLA+/FixedPoints.thy
     Author:     Stephan Merz, LORIA
-    Copyright (C) 2008-2011  INRIA and Microsoft Corporation
+    Copyright (C) 2008-2020  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2011-1
-    Time-stamp: <2011-10-11 17:39:18 merz>
+    Version:    Isabelle2020
 *)
 
-header {* Fixed points for set-theoretical constructions *}
+section \<open>Fixed points for set-theoretical constructions\<close>
 
 theory FixedPoints
 imports SetTheory
 begin
 
-text {*
+text \<open>
   As a test for the encoding of \tlaplus{} set theory, we develop the
   Knaster-Tarski theorems for least and greatest fixed points in the
   subset lattice. Again, the proofs essentially follow Paulson's 
   developments for Isabelle/ZF.
-*}
+\<close>
 
 
-subsection {* Monotonic operators *}
+subsection \<open> Monotonic operators \<close>
 
-definition Monotonic :: "[c, c \<Rightarrow> c] \<Rightarrow> c" -- {* monotonic operator on a domain *}
+definition Monotonic :: "[c, c \<Rightarrow> c] \<Rightarrow> c" \<comment> \<open>monotonic operator on a domain\<close>
 where "Monotonic(D,f) \<equiv> f(D) \<subseteq> D \<and> (\<forall>S,T \<in> SUBSET D : S \<subseteq> T \<Rightarrow> f(S) \<subseteq> f(T))"
 
 lemma monotonicDomain:
@@ -37,10 +36,10 @@ lemma monotonicSubsetDomain:
   "\<lbrakk> Monotonic(D,f); S \<subseteq> D\<rbrakk> \<Longrightarrow> f(S) \<subseteq> D"
 by (unfold Monotonic_def, blast)
 
-lemma monotonicCup:
+lemma monotonicUnion:
   assumes mono: "Monotonic(D,f)" and s: "S \<subseteq> D" and t: "T \<subseteq> D"
   shows "f(S) \<union> f(T) \<subseteq> f(S \<union> T)"
-proof (rule cupLUB)
+proof (rule unionLUB)
   from s t show "f(S) \<subseteq> f(S \<union> T)"
     by (intro monotonicSubset[OF mono], blast+)
 next
@@ -48,10 +47,10 @@ next
     by (intro monotonicSubset[OF mono], blast+)
 qed
 
-lemma monotonicCap:
+lemma monotonicInter:
   assumes mono: "Monotonic(D,f)" and s: "S \<subseteq> D" and t: "T \<subseteq> D"
   shows "f(S \<inter> T) \<subseteq> f(S) \<inter> f(T)"
-proof (rule capGLB)
+proof (rule interGLB)
   from s t show "f(S \<inter> T) \<subseteq> f(S)"
     by (intro monotonicSubset[OF mono], blast+)
   from s t show "f(S \<inter> T) \<subseteq> f(T)"
@@ -59,29 +58,29 @@ proof (rule capGLB)
 qed
 
 
-subsection {* Least fixed point *}
+subsection \<open> Least fixed point \<close>
 
-text {*
+text \<open>
   The least fixed point is defined as the greatest lower bound of
   the set of all pre-fixed points, and the Knaster-Tarski theorem
   is shown for monotonic operators.
-*}
+\<close>
 
-definition lfp :: "[c, c \<Rightarrow> c] \<Rightarrow> c"  -- {* least fixed point as GLB of pre-fp's *}
+definition lfp :: "[c, c \<Rightarrow> c] \<Rightarrow> c"  \<comment> \<open>least fixed point as GLB of pre-fp's\<close>
 where "lfp(D,f) \<equiv> INTER {S \<in> SUBSET D : f(S) \<subseteq> S}"
 
-lemma lfpLB: -- {* The lfp is contained in each pre-fixed point. *}
+lemma lfpLB: \<comment> \<open>The lfp is contained in each pre-fixed point.\<close>
   "\<lbrakk> f(S) \<subseteq> S; S \<subseteq> D \<rbrakk> \<Longrightarrow> lfp(D,f) \<subseteq> S"
 by (auto simp: lfp_def)
 
-lemma lfpGLB: -- {* \ldots{} and it is the GLB of all such sets *}
+lemma lfpGLB: \<comment> \<open> \ldots{} and it is the GLB of all such sets \<close>
   "\<lbrakk>f(D) \<subseteq> D; \<And>S. \<lbrakk>f(S) \<subseteq> S; S \<subseteq> D\<rbrakk> \<Longrightarrow> A \<subseteq> S\<rbrakk> \<Longrightarrow> A \<subseteq> lfp(D,f)"
 by (force simp: lfp_def)
 
 lemma lfpSubsetDomain: "lfp(D,f) \<subseteq> D" (* monotonicity not required *)
 by (auto simp: lfp_def)
 
-lemma lfpPreFP: -- {* @{text lfp} is a pre-fixed point \ldots *}
+lemma lfpPreFP: \<comment> \<open>@{text lfp} is a pre-fixed point \ldots \<close>
   assumes mono: "Monotonic(D,f)"
   shows "f(lfp(D,f)) \<subseteq> lfp(D,f)"
 proof (rule lfpGLB)
@@ -95,7 +94,7 @@ next
   with pfp show "f(?mu) \<subseteq> S" by blast
 qed
 
-lemma lfpPostFP: -- {* \ldots{} and a post-fixed point *}
+lemma lfpPostFP: \<comment> \<open> \ldots{} and a post-fixed point \<close>
   assumes mono: "Monotonic(D,f)"
   shows "lfp(D,f) \<subseteq> f(lfp(D,f))"
 proof -
@@ -120,7 +119,7 @@ lemma lfpLeastFixedPoint:
   shows "lfp(D,f) \<subseteq> S"
 using assms by (intro lfpLB, auto)
 
-lemma lfpMono: -- {* monotonicity of the @{text lfp} operator *}
+lemma lfpMono: \<comment> \<open> monotonicity of the @{text lfp} operator \<close>
   assumes g: "g(D) \<subseteq> D" and f: "\<And>S. S \<subseteq> D \<Longrightarrow> f(S) \<subseteq> g(S)"
   shows "lfp(D,f) \<subseteq> lfp(D,g)"
 using g
@@ -132,29 +131,29 @@ proof (rule lfpGLB)
 qed
 
 
-subsection {* Greatest fixed point *}
+subsection \<open> Greatest fixed point \<close>
 
-text {*
+text \<open>
   Dually, the least fixed point is defined as the least upper bound of
   the set of all post-fixed points, and the Knaster-Tarski theorem
   is again established.
-*}
+\<close>
 
-definition gfp :: "[c, c \<Rightarrow> c] \<Rightarrow> c"  -- {* greatest fixed point as LUB of post-fp's *}
+definition gfp :: "[c, c \<Rightarrow> c] \<Rightarrow> c"  \<comment> \<open> greatest fixed point as LUB of post-fp's \<close>
 where "gfp(D,f) \<equiv> UNION {S \<in> SUBSET D : S \<subseteq> f(S)}"
 
-lemma gfpUB: -- {* The gfp contains each post-fixed point \ldots *}
+lemma gfpUB: \<comment> \<open> The gfp contains each post-fixed point \ldots \<close>
   "\<lbrakk>S \<subseteq> f(S); S \<subseteq> D\<rbrakk> \<Longrightarrow> S \<subseteq> gfp(D,f)"
 by (auto simp: gfp_def)
 
-lemma gfpLUB: -- {* \ldots{} and it is the LUB of all such sets. *}
+lemma gfpLUB: \<comment> \<open> \ldots{} and it is the LUB of all such sets. \<close>
   "\<lbrakk>f(D) \<subseteq> D; \<And>S. \<lbrakk>S \<subseteq> f(S); S \<subseteq> D\<rbrakk> \<Longrightarrow> S \<subseteq> A\<rbrakk> \<Longrightarrow> gfp(D,f) \<subseteq> A"
 by (auto simp: gfp_def)
 
 lemma gfpSubsetDomain: "gfp(D,f) \<subseteq> D"
 by (auto simp: gfp_def)
 
-lemma gfpPostFP: -- {* @text{gfp} is a post-fixed point \ldots *}
+lemma gfpPostFP: \<comment> \<open> @text{gfp} is a post-fixed point \ldots \<close>
   assumes mono: "Monotonic(D,f)"
   shows "gfp(D,f) \<subseteq> f(gfp(D,f))"
 proof (rule gfpLUB)
@@ -168,7 +167,7 @@ next
   with pfp show "S \<subseteq> f(?nu)" by blast
 qed
 
-lemma gfpPreFP: -- {* \ldots{} and a pre-fixed point *}
+lemma gfpPreFP: \<comment> \<open> \ldots{} and a pre-fixed point \<close>
   assumes mono: "Monotonic(D,f)"
   shows "f(gfp(D,f)) \<subseteq> gfp(D,f)"
 proof -
@@ -193,7 +192,7 @@ lemma gfpGreatestFixedPoint:
   shows "S \<subseteq> gfp(D,f)"
 using assms by (intro gfpUB, auto)
 
-lemma gfpMono: -- {* monotonicity of the @{text gfp} operator *}
+lemma gfpMono: \<comment> \<open> monotonicity of the @{text gfp} operator \<close>
   assumes g: "g(D) \<subseteq> D" and f: "\<And>S. S \<subseteq> D \<Longrightarrow> f(S) \<subseteq> g(S)"
   shows "gfp(D,f) \<subseteq> gfp(D,g)"
 proof (rule gfpLUB)

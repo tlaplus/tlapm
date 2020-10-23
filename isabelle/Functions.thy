@@ -1,67 +1,80 @@
 (*  Title:      TLA+/Functions.thy
     Author:     Stephan Merz, LORIA
-    Copyright (C) 2008-2011  INRIA and Microsoft Corporation
+    Copyright (C) 2008-2020  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2011-1
-    Time-stamp: <2011-10-11 17:38:56 merz>
+    Version:    Isabelle2020
 *)
 
-header {* \tlaplus{} Functions *}
+section \<open> \tlaplus{} Functions \<close>
 
 theory Functions
 imports SetTheory
 begin
 
-subsection {* Syntax and axioms for functions *}
+subsection \<open> Syntax and axioms for functions \<close>
 
-text {*
+text \<open>
   Functions in \tlaplus{} are not defined (e.g., as sets of pairs), 
   but axiomatized, and in fact, pairs and tuples will be defined as special
   functions. Incidentally, this approach helps us to identify functional
   values, and to automate the reasoning about them. This theory considers
   only unary functions; functions with multiple arguments are defined
-  as functions over products.
-
-  We follow the development of functions given in Section 16.1 of
-  ``Specifying Systems''. In particular, we define the predicate
-  @{text IsAFcn} that is true precisely of functional values.
-*}
+  as functions over products. We follow the development of functions given 
+  in Section 16.1 of ``Specifying Systems''.
+\<close>
 
 consts
-  isAFcn   :: "c \<Rightarrow> c"           -- {* characteristic predicate *}
-  Fcn      :: "[c, c \<Rightarrow> c] \<Rightarrow> c" -- {* function constructor *}
-  DOMAIN   :: "c \<Rightarrow> c"         ("(DOMAIN _)" [100]90)  -- {* domain of a function *}
-  fapply   :: "[c, c] \<Rightarrow> c"    ("(_[_])" [89,0]90)     -- {* function application *}
-  FuncSet  :: "[c,c] \<Rightarrow> c"     ("([_ -> _])" 900)      -- {* function space *}
+  Fcn      :: "[c, c \<Rightarrow> c] \<Rightarrow> c"                       \<comment> \<open> function constructor \<close>
+  DOMAIN   :: "c \<Rightarrow> c"         ("(DOMAIN _)" [100]90)  \<comment> \<open> domain of a function \<close>
+  fapply   :: "[c, c] \<Rightarrow> c"    ("(_[_])" [89,0]90)     \<comment> \<open> function application \<close>
 
 syntax
+  "@Fcn"   :: "[idt,c,c] \<Rightarrow> c" ("(1[_ \<in> _ \<mapsto> _])" 900)
+syntax (ASCII)
   "@Fcn"   :: "[idt,c,c] \<Rightarrow> c" ("(1[_ \\in _ |-> _])" 900)
-syntax (xsymbols)
-  FuncSet  :: "[c,c] \<Rightarrow> c"     ("([_ \<rightarrow> _])" 900)  
-  "@Fcn"   :: "[idt,c,c] \<Rightarrow> c" ("(1[_ \<in> _ \<mapsto> _])" 900)
-syntax (HTML output)
-  FuncSet  :: "[c,c] \<Rightarrow> c"     ("([_ \<rightarrow> _])" 900)  
-  "@Fcn"   :: "[idt,c,c] \<Rightarrow> c" ("(1[_ \<in> _ \<mapsto> _])" 900)
 translations
   "[x \<in> S \<mapsto> e]"  \<rightleftharpoons>  "CONST Fcn(S, \<lambda>x. e)"
 
 axiomatization where
-  fcnIsAFcn [intro!,simp]: "isAFcn(Fcn(S,e))" and
-  isAFcn_def:     "isAFcn(f) \<equiv> f = [x \<in> DOMAIN f \<mapsto> f[x]]" and
   DOMAIN [simp]:  "DOMAIN Fcn(S,e) = S" and
-  fapply [simp]:  "v \<in> S \<Longrightarrow> Fcn(S,e)[v] = e(v)" and
-  fcnEqual[elim!]: "\<lbrakk>isAFcn(f); isAFcn(g); DOMAIN f = DOMAIN g; \<forall>x \<in> DOMAIN g : f[x]=g[x]\<rbrakk>
-             \<Longrightarrow> f = g" and
+  fapply [simp]:  "v \<in> S \<Longrightarrow> Fcn(S,e)[v] = e(v)"
+
+text \<open>The predicate @{text isAFcn} characterizes functional values.\<close>
+definition isAFcn :: "c \<Rightarrow> c"
+  where "isAFcn(f) \<equiv> f = Fcn(DOMAIN f, \<lambda>x. f[x])"
+
+axiomatization where
+  fcnIsAFcn [intro!, simp]: "isAFcn(Fcn(S,e))"
+
+text \<open>
+  Two functions are equal if they have the same domain and agree on all
+  arguments within the domain.
+\<close>
+axiomatization where fcnEqual[elim!]: 
+  "\<lbrakk>isAFcn(f); isAFcn(g); DOMAIN f = DOMAIN g; \<forall>x \<in> DOMAIN g : f[x]=g[x]\<rbrakk>
+   \<Longrightarrow> f = g"
+
+text \<open>
+  @{text "FuncSet(S,T)"} represents the set of functions with domain @{text S}
+  and co-domain @{text T}. It cannot be defined as a set comprehension because
+  we do not have a bounding set for its elements.
+\<close>
+consts
+  FuncSet  :: "[c,c] \<Rightarrow> c"     ("([_ \<rightarrow> _])" 900)      \<comment> \<open> function space \<close>
+syntax (ASCII)
+  FuncSet  :: "[c,c] \<Rightarrow> c"     ("([_ -> _])" 900)  
+
+axiomatization where
   FuncSet: "f \<in> [S \<rightarrow> T] \<Leftrightarrow> isAFcn(f) \<and> DOMAIN f = S \<and> (\<forall>x\<in>S : f[x] \<in> T)"
 
-lemmas -- {* establish set equality for domains and function spaces *}
-  setEqualI [where A = "DOMAIN f", standard, intro!]
-  setEqualI [where B = "DOMAIN f", standard, intro!]
-  setEqualI [where A = "[S \<rightarrow> T]", standard, intro!]
-  setEqualI [where B = "[S \<rightarrow> T]", standard, intro!]
+lemmas \<comment> \<open> establish set equality for domains and function spaces \<close>
+  setEqualI [where A = "DOMAIN f" for f, intro!]
+  setEqualI [where B = "DOMAIN f" for f, intro!]
+  setEqualI [where A = "[S \<rightarrow> T]" for S T, intro!]
+  setEqualI [where B = "[S \<rightarrow> T]" for S T, intro!]
 
 
-definition except   :: "[c,c,c] \<Rightarrow> c"    -- {* function override *}
+definition except   :: "[c,c,c] \<Rightarrow> c"    \<comment> \<open> function override \<close>
 where "except(f,v,e) \<equiv> [x \<in> DOMAIN f \<mapsto> (IF x=v THEN e ELSE f[x])]"
 
 nonterminal
@@ -74,11 +87,11 @@ translations
   "_except(f, _xcpts(v,e, xcs))"  \<rightleftharpoons>  "_except(CONST except(f,v,e), xcs)"
   "[f EXCEPT ![v] = e]"           \<rightleftharpoons>  "CONST except(f,v,e)"
 
-text {*
+text \<open>
   The following operators are useful for representing functions with
   finite domains by enumeration. They are not part of basic \tlaplus{},
   but they are defined in the TLC module of the standard library.
-*}
+\<close>
 
 definition oneArg :: "[c,c] \<Rightarrow> c"        (infixl ":>" 75)
 where "d :> e  \<equiv>  [x \<in> {d} \<mapsto> e]"
@@ -88,7 +101,7 @@ where "f @@ g  \<equiv>  [x \<in> (DOMAIN f) \<union> (DOMAIN g) \<mapsto>
                    IF x \<in> DOMAIN f THEN f[x] ELSE g[x]]"
 
 
-subsection {* @{text isAFcn}: identifying functional values *}
+subsection \<open> @{text isAFcn}: identifying functional values \<close>
 
 lemma boolifyIsAFcn [simp]: "boolify(isAFcn(f)) = isAFcn(f)"
 by (simp add: isAFcn_def)
@@ -106,17 +119,17 @@ by auto
 lemma [intro!,simp]: "isAFcn([f EXCEPT ![c] = e])"
 by (simp add: except_def)
 
-text {*
+text \<open>
   We derive instances of axiom @{text fcnEqual} that help in automating
   proofs about equality of functions.
-*}
+\<close>
 
 lemma fcnEqual2[elim!]: 
    "\<lbrakk>isAFcn(g); isAFcn(f); DOMAIN f = DOMAIN g; \<forall>x \<in> DOMAIN g : f[x]=g[x]\<rbrakk>
     \<Longrightarrow> f = g"
 by (rule fcnEqual)
 
--- {* possibly useful as a simplification rule, but cannot be active by default *}
+text \<open> possibly useful as a simplification rule, but cannot be active by default \<close>
 lemma fcnEqualIff: 
   assumes "isAFcn(f)" and "isAFcn(g)"
   shows "(f = g) = (DOMAIN f = DOMAIN g \<and> (\<forall>x \<in> DOMAIN g : f[x] = g[x]))"
@@ -137,7 +150,7 @@ lemma [intro!]:
 by (auto simp: except_def)
 
 
-subsection {* Theorems about functions *}
+subsection \<open> Theorems about functions \<close>
 
 lemma fcnCong (*[cong] -- not active by default (??) *):
   assumes "S = T" and "\<And>x. x \<in> T \<Longrightarrow> e(x) = f(x)"
@@ -167,11 +180,11 @@ lemma exceptEqual [simp]:
   shows "([f EXCEPT ![v] = e] = f) = (v \<notin> DOMAIN f \<or> f[v] = e)"
 using assms by (auto simp: fcnEqualIff)
 
-text {*
+text \<open>
   A function can be defined from a predicate. Using the @{text CHOOSE}
   operator, the definition does not require the predicate to be
   functional.
-*}
+\<close>
 
 lemma fcnConstruct:
   assumes hyp: "\<forall>x \<in> S : \<exists>y : P(x,y)"
@@ -190,7 +203,7 @@ proof -
 qed
 
 
-subsection {* Function spaces *}
+subsection \<open> Function spaces \<close>
 
 lemma inFuncSetIff:
   "(f \<in> [S \<rightarrow> T]) = (isAFcn(f) \<and> DOMAIN f = S \<and> (\<forall>x\<in>S : f[x] \<in> T))"
@@ -267,12 +280,12 @@ next
   from assms show "\<forall>x \<in> S : ?exc[x] \<in> T" by auto
 qed (simp)
 
-text {*
+text \<open>
   The following special case is useful for invariant proofs where one
   proves type correctness. The additional hypotheses make the type of $f$
   available and are useful, for example, when the expression $e$ is of the
   form $f[u]$ for some $u \in S$.
-*}
+\<close>
 
 lemma exceptInFuncSetSame:
   assumes "f \<in> [S \<rightarrow> T]" 
@@ -281,7 +294,7 @@ lemma exceptInFuncSetSame:
 using assms by auto
 
 
-subsection {* Finite functions and extension *}
+subsection \<open> Finite functions and extension \<close>
 
 lemma oneArgIsAFcn [simp, intro!]: "isAFcn(d :> e)"
 by (simp add: oneArg_def)
@@ -321,10 +334,10 @@ lemma oneArgEqualIff [simp]:
   "isAFcn(f) \<Longrightarrow> ((d :> e) = f) = ((DOMAIN f = {d}) \<and> f[d] = e)"
 by auto
 
--- {* infer equalities @{text "f = g @@ h"} *}
+text \<open> infer equations @{text "f = g @@ h"} \<close>
 lemmas
-  fcnEqual[where f = "f @@ h", standard, intro!]
-  fcnEqual[where g = "g @@ h", standard, intro!]
+  fcnEqual[where f = "f @@ h" for f h, intro!]
+  fcnEqual[where g = "g @@ h" for g h, intro!]
 
 lemma extendEqualIff [simp]:
   "isAFcn(f) \<Longrightarrow> (f = g @@ h) = 
@@ -352,25 +365,25 @@ by auto
 
 **)
 
-subsection {* Notions about functions *}
+subsection \<open> Notions about functions \<close>
 
-subsubsection {* Image and Range *}
+subsubsection \<open> Image and Range \<close>
 
-text {*
+text \<open>
   Image of a set under a function, and range of a function.
   Because the application of a function to an argument outside of its domain
   usually leads to silliness, we restrict to the domain when defining
   the image.
-*}
+\<close>
 
 definition Image
 where "Image(f,A) \<equiv> { f[x] : x \<in> A \<inter> DOMAIN f }"
 
-text {*
-  The range of a function, introduced as an abbreviation (macro).
+text \<open>
+  The range of a function, introduced as an abbreviation.
   To reason about the range, apply the theorems about @{text Image},
   or simply rewrite with @{text Image_def}.
-*}
+\<close>
 
 abbreviation Range
 where "Range(f) \<equiv> Image(f, DOMAIN f)"
@@ -390,7 +403,7 @@ lemma imageI_exEq [intro]:
   shows "y \<in> Image(f,A)"
 using assms by (auto intro: imageI_eq)
 
-lemma rangeI:  --  {* useful special case *}
+lemma rangeI:  \<comment> \<open> useful special case \<close>
   assumes "\<exists>x \<in> DOMAIN f: y = f[x]"
   shows "y \<in> Range(f)"
 using assms by auto
@@ -416,20 +429,20 @@ lemma imageEmpty [simp]:
   "({} = Image(f,A)) = (A \<inter> DOMAIN f = {})"
 by auto
 
-subsubsection {* Injective functions *}
+subsubsection \<open> Injective functions \<close>
 
 definition InjectiveOn 
 where "InjectiveOn(f,A) \<equiv> \<forall>x,y \<in> A \<inter> DOMAIN f : f[x] = f[y] \<Rightarrow> x = y"
 
-abbreviation Injective   -- {* special case: injective function *}
+abbreviation Injective   \<comment> \<open> special case: injective function \<close>
 where "Injective(f) \<equiv> InjectiveOn(f, DOMAIN f)"
 
 definition Injections
 where "Injections(S,T) \<equiv> { f \<in> [S \<rightarrow> T] : Injective(f) }"
 
 lemmas
-  setEqualI [where A = "Injections(S,T)", standard, intro!]
-  setEqualI [where B = "Injections(S,T)", standard, intro!]
+  setEqualI [where A = "Injections(S,T)" for S T, intro!]
+  setEqualI [where B = "Injections(S,T)" for S T, intro!]
 
 lemma injectiveOnIsBool [intro!,simp]:
   "isBool(InjectiveOn(f,A))"
@@ -439,9 +452,7 @@ lemma boolifyInjectiveOn [simp]:
   "boolify(InjectiveOn(f,A)) = InjectiveOn(f,A)"
 by auto
 
-text {*
-  For the moment, no support by default for automatic reasoning.
-*}
+text \<open> For the moment, no support by default for automatic reasoning. \<close>
 
 lemma injectiveOnI:
   assumes "\<And>x y. \<lbrakk> x \<in> A; x \<in> DOMAIN f; y \<in> A; y \<in> DOMAIN f; f[x] = f[y] \<rbrakk> \<Longrightarrow> x = y"
@@ -460,7 +471,7 @@ lemma injectiveOnE:
   shows "P"
 using assms by (auto simp: InjectiveOn_def)
 
-lemma injectiveOnIff:  -- {* useful for simplification *}
+lemma injectiveOnIff:  \<comment> \<open> useful for simplification \<close>
   assumes "InjectiveOn(f,A)" and "x \<in> A \<inter> DOMAIN f" and "y \<in> A \<inter> DOMAIN f"
   shows "(f[x] = f[y]) = (x = y)"
 using assms injectiveOnD by auto
@@ -470,14 +481,12 @@ lemma injectiveOnSubset:
   shows "InjectiveOn(f,B)"
 using assms by (auto simp: InjectiveOn_def)
 
-lemma injectiveOnDifference:
+lemma injectiveOnSetminus:
   assumes "InjectiveOn(f,A)"
-  shows "InjectiveOn(f, A \\ B)"
+  shows "InjectiveOn(f, A \<setminus> B)"
 using assms by (auto simp: InjectiveOn_def)
 
-text {*
-  The existence of an inverse function implies injectivity.
-*}
+text \<open>The existence of an inverse function implies injectivity.\<close>
 
 lemma inverseThenInjective:
   assumes inv: "\<And>x. \<lbrakk> x \<in> A; x \<in> DOMAIN f \<rbrakk> \<Longrightarrow> g[f[x]] = x"
@@ -492,7 +501,7 @@ proof (rule injectiveOnI)
   from x1 y1 eq show "x = y" by simp
 qed
 
-text {* Trivial cases. *}
+text \<open> Trivial cases. \<close>
 
 lemma injectiveOnEmpty [intro!,simp]:
   "InjectiveOn(f, {})"
@@ -507,7 +516,7 @@ lemma "Injective(d :> e)"
 by simp
 **)
 
-text {* Injectivity for function extensions. *}
+text \<open> Injectivity and EXCEPT. \<close>
 
 lemma injectiveOnExcept:
   assumes 1: "InjectiveOn(f, A \\ {v})" and 2: "isAFcn(f)"
@@ -541,7 +550,7 @@ proof (rule injectiveOnI)
 	with fx eq show "FALSE" by simp
       qed
       with x1 x2 have x3: "x \<in> (A \\ {v})" "x \<in> DOMAIN f" by auto
-      have "y \<noteq> v"  -- {* symmetrical reasoning *}
+      have "y \<noteq> v"  \<comment> \<open>symmetrical reasoning\<close>
       proof
 	assume contr: "y = v"
 	with True have fy: "?exc[y] = e" by auto
@@ -557,7 +566,7 @@ proof (rule injectiveOnI)
 qed
 
 lemma injectiveOnExtend:
-  assumes f: "InjectiveOn(f,A)" and g: "InjectiveOn(g,A \\ DOMAIN f)"
+  assumes f: "InjectiveOn(f,A)" and g: "InjectiveOn(g, A \\ DOMAIN f)"
   and disj: "Image(f, A) \<inter> Image(g, A \\ DOMAIN f) = {}"
   shows "InjectiveOn(f @@ g, A)"
 proof (rule injectiveOnI)
@@ -596,25 +605,25 @@ proof (rule injectiveOnI)
   qed
 qed
 
-lemma injectiveExtend: -- {* special case *}
-  assumes 1: "Injective(f)" and 2: "InjectiveOn(g, DOMAIN g \\ DOMAIN f)"
-  and 3: "Range(f) \<inter> Image(g, DOMAIN g \\ DOMAIN f) = {}"
+lemma injectiveExtend: \<comment> \<open> special case \<close>
+  assumes 1: "Injective(f)" and 2: "InjectiveOn(g, DOMAIN g \<setminus> DOMAIN f)"
+  and 3: "Range(f) \<inter> Image(g, DOMAIN g \<setminus> DOMAIN f) = {}"
   shows "Injective(f @@ g)"
 proof (rule injectiveOnExtend)
   from 1 show "InjectiveOn(f, DOMAIN (f @@ g))"
     by (auto simp: InjectiveOn_def)
 next
-  from 2 show "InjectiveOn(g, DOMAIN (f @@ g) \\ DOMAIN f)"
+  from 2 show "InjectiveOn(g, DOMAIN (f @@ g) \<setminus> DOMAIN f)"
     by (auto simp: InjectiveOn_def)
 next
-  show "Image(f, DOMAIN (f @@ g)) \<inter> Image(g, DOMAIN (f @@ g) \\ DOMAIN f) = {}"
+  show "Image(f, DOMAIN (f @@ g)) \<inter> Image(g, DOMAIN (f @@ g) \<setminus> DOMAIN f) = {}"
   proof (clarify)
     fix x
     assume xf: "x \<in> Image(f, DOMAIN (f @@ g))"
-       and xg: "x \<in> Image(g, DOMAIN (f @@ g) \\ DOMAIN f)"
+       and xg: "x \<in> Image(g, DOMAIN (f @@ g) \<setminus> DOMAIN f)"
     from xf have "x \<in> Range(f)" by auto
     moreover
-    from xg have "x \<in> Image(g, DOMAIN g \\ DOMAIN f)" by auto
+    from xg have "x \<in> Image(g, DOMAIN g \<setminus> DOMAIN f)" by auto
     moreover
     note 3
     ultimately show FALSE by blast
@@ -626,9 +635,9 @@ lemma injectiveOnImageInter:
   shows "Image(f, B \<inter> C) = Image(f,B) \<inter> Image(f,C)"
 using assms by (auto simp: InjectiveOn_def Image_def)
 
-lemma injectiveOnImageDifference:
+lemma injectiveOnImageSetminus:
   assumes "InjectiveOn(f,A)" and "B \<subseteq> A" and "C \<subseteq> A"
-  shows "Image(f, B \\ C) = Image(f,B) \\ Image(f,C)"
+  shows "Image(f, B \<setminus> C) = Image(f,B) \<setminus> Image(f,C)"
 using assms by (auto simp: InjectiveOn_def Image_def)
 
 lemma injectiveImageMember:
@@ -639,14 +648,17 @@ using assms by (auto simp: InjectiveOn_def Image_def)
 lemma injectiveImageSubset:
   assumes f: "Injective(f)"
   shows "(Image(f,A) \<subseteq> Image(f,B)) = (A \<inter> DOMAIN f \<subseteq> B \<inter> DOMAIN f)"
-proof (auto)  -- {* the inclusion ``$\supseteq$'' is solved automatically *}
-  fix x
-  assume ab: "Image(f,A) \<subseteq> Image(f,B)" and x: "x \<in> A" "x \<in> DOMAIN f"
-  from x have "f[x] \<in> Image(f,A)" by (rule imageI)
-  with ab have "f[x] \<in> Image(f,B)" ..
-  then obtain z where z: "z \<in> B \<inter> DOMAIN f" "f[x] = f[z]" by auto
-  from f z x have "x = z" by (auto elim: injectiveOnD)
-  with z show "x \<in> B" by simp
+proof -
+  {
+    fix x
+    assume ab: "Image(f,A) \<subseteq> Image(f,B)" and x: "x \<in> A" "x \<in> DOMAIN f"
+    from x have "f[x] \<in> Image(f,A)" by (rule imageI)
+    with ab have "f[x] \<in> Image(f,B)" ..
+    then obtain z where z: "z \<in> B \<inter> DOMAIN f" "f[x] = f[z]" by auto
+    from f z x have "x = z" by (auto elim: injectiveOnD)
+    with z have "x \<in> B" by simp
+  }
+  thus ?thesis by blast \<comment> \<open>the reverse inclusion is proved automatically\<close>
 qed
 
 lemma injectiveImageEqual:
@@ -674,7 +686,7 @@ lemma injectionsE:
 using assms unfolding Injections_def InjectiveOn_def by blast
 
 
-subsubsection {* Surjective functions *}
+subsubsection \<open> Surjective functions \<close>
 
 definition Surjective
 where "Surjective(f,A) \<equiv> A \<subseteq> Range(f)"
@@ -683,8 +695,8 @@ definition Surjections
 where "Surjections(S,T) \<equiv> { f \<in> [S \<rightarrow> T] : Surjective(f,T) }"
 
 lemmas
-  setEqualI [where A = "Surjections(S,T)", standard, intro!]
-  setEqualI [where B = "Surjections(S,T)", standard, intro!]
+  setEqualI [where A = "Surjections(S,T)" for S T, intro!]
+  setEqualI [where B = "Surjections(S,T)" for S T, intro!]
 
 lemma surjectiveIsBool [intro!,simp]:
   "isBool(Surjective(f,A))"
@@ -704,10 +716,10 @@ lemma surjectiveD:
   shows "\<exists>x \<in> DOMAIN f : y = f[x]"
 using assms by (auto simp: Surjective_def Image_def)
 
-text {* 
+text \<open>
   @{text "\<lbrakk> Surjective(f,A); y \<in> A; \<And>x. \<lbrakk> x \<in> DOMAIN f; y = f[x] \<rbrakk> \<Longrightarrow> P \<rbrakk> \<Longrightarrow> P"}
-*}
-lemmas surjectiveE = surjectiveD[THEN bExE, standard]
+\<close>
+lemmas surjectiveE = surjectiveD[THEN bExE]
 
 lemma surjectiveRange:
   shows "Surjective(f, Range(f))"
@@ -749,20 +761,20 @@ lemma surjectionsRange:
 using assms by (rule surjectionsE, auto)
 
 
-subsubsection {* Bijective functions *}
+subsubsection \<open> Bijective functions \<close>
 
-text {*
+text \<open>
   Here we do not define a predicate @{text Bijective} because it
   would require a set parameter for the codomain and would therefore be
   curiously asymmetrical.
-*}
+\<close>
 
 definition Bijections
 where "Bijections(S,T) \<equiv> Injections(S,T) \<inter> Surjections(S,T)"
 
 lemmas
-  setEqualI [where A = "Bijections(S,T)", standard, intro!]
-  setEqualI [where B = "Bijections(S,T)", standard, intro!]
+  setEqualI [where A = "Bijections(S,T)" for S T, intro!]
+  setEqualI [where B = "Bijections(S,T)" for S T, intro!]
 
 lemma bijectionsI [intro!]:
   assumes "f \<in> [S \<rightarrow> T]" and "Injective(f)" and "Surjective(f,T)"
@@ -786,7 +798,7 @@ lemma bijectionsE:
 using 1 by (intro 2, auto simp: Bijections_def Injections_def Surjections_def)
 
 
-subsubsection {* Inverse of a function *}
+subsubsection \<open> Inverse of a function \<close>
 
 definition Inverse
 where "Inverse(f) \<equiv> [ y \<in> Range(f) \<mapsto> CHOOSE x \<in> DOMAIN f : f[x] = y ]"
@@ -842,9 +854,9 @@ proof (intro injectiveOnI, auto)
   ultimately show "f[x] = f[x']" by simp
 qed
 
-text {*
+text \<open>
   For injective functions, @{text Inverse} really inverts the function.
-*}
+\<close>
 
 lemma injectiveInverse:
   assumes f: "Injective(f)" and x: "x \<in> DOMAIN f"
@@ -879,9 +891,7 @@ proof (rule surjectiveI)
   with x show "\<exists>y \<in> DOMAIN Inverse(f) : x = Inverse(f)[y]" by auto
 qed
 
-text {*
-  The inverse of a bijection is a bijection.
-*}
+text \<open> The inverse of a bijection is a bijection. \<close>
 
 lemma inverseBijections:
   assumes f: "f \<in> Bijections(S,T)"
