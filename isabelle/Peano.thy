@@ -1,30 +1,29 @@
 (*  Title:      TLA+/Peano.thy
     Author:     Stephan Merz, LORIA
-    Copyright (C) 2008-2011  INRIA and Microsoft Corporation
+    Copyright (C) 2008-2020  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2011-1
-    Time-stamp: <2011-10-11 17:39:03 merz>
+    Version:    Isabelle2020
 *)
 
-header {* Peano's axioms and natural numbers *}
+section \<open> Peano's axioms and natural numbers \<close>
 
 theory Peano
 imports FixedPoints Functions
 begin
 
-text {*
+text \<open>
   As a preparation for the definition of numbers and arithmetic
   in \tlaplus{}, we state Peano's axioms for natural numbers and
   prove the existence of a structure satisfying them. The presentation
   of the axioms is somewhat simplified compared to the \tlaplus{} book.
   (Moreover, the existence of such a structure is assumed, but not
   proven in the book.)
-*}
+\<close>
 
-subsection {* The Peano Axioms *}
+subsection \<open> The Peano Axioms \<close>
 
 definition PeanoAxioms :: "[c,c,c] \<Rightarrow> c" where
-  -- {* parameters: the set of natural numbers, zero, and succ function *}
+  \<comment> \<open>parameters: the set of natural numbers, zero, and successor function\<close>
   "PeanoAxioms(N,Z,Sc) \<equiv>
       Z \<in> N
    \<and> Sc \<in> [N \<rightarrow> N]
@@ -32,7 +31,7 @@ definition PeanoAxioms :: "[c,c,c] \<Rightarrow> c" where
    \<and> (\<forall>m,n \<in> N: Sc[m] = Sc[n] \<Rightarrow> m = n)
    \<and> (\<forall>S \<in> SUBSET N : Z \<in> S \<and> (\<forall>n\<in>S : Sc[n] \<in> S) \<Rightarrow> N \<subseteq> S)"
 
-text {*
+text \<open>
   The existence of a structure satisfying Peano's axioms is proven
   following the standard ZF construction where @{text "{}"} is zero,
   @{text "i \<union> {i}"} is taken as the successor of any natural
@@ -42,15 +41,15 @@ text {*
   set theory). In \tlaplus{}, natural numbers are defined by a sequence
   of @{text CHOOSE}'s below, so there is no commitment to that
   particular structure.
-*}
+\<close>
 
 theorem peanoExists: "\<exists>N,Z,Sc : PeanoAxioms(N,Z,Sc)"
 proof -
-  let ?sc = "\<lambda>n. addElt(n,n)"  -- {* successor \emph{operator} *}
-  def expand \<equiv> "\<lambda>S. {{}} \<union> { ?sc(n) : n \<in> S}"
-  def N \<equiv> "lfp(infinity, expand)"
-  def Z \<equiv> "{}"
-  def Sc \<equiv> "[n \<in> N \<mapsto> ?sc(n)]"  -- {* successor \emph{function} *}
+  let ?sc = "\<lambda>n. addElt(n,n)"  \<comment> \<open> successor \emph{operator} \<close>
+  define expand where "expand \<equiv> \<lambda>S. {{}} \<union> { ?sc(n) : n \<in> S}"
+  define N where "N \<equiv> lfp(infinity, expand)"
+  define Z where "Z \<equiv> {}"
+  define Sc where "Sc \<equiv> [n \<in> N \<mapsto> ?sc(n)]"  \<comment> \<open>successor \emph{function}\<close>
   have mono: "Monotonic(infinity, expand)"
     using infinity by (auto simp: Monotonic_def expand_def)
   hence expandN: "expand(N) \<subseteq> N"
@@ -139,12 +138,12 @@ proof -
 qed
 
 
-subsection {* Natural numbers: definition and elementary theorems *}
+subsection \<open> Natural numbers: definition and elementary theorems \<close>
 
-text {*
+text \<open>
   The structure of natural numbers is now defined to be some set,
   zero, and successor satisfying Peano's axioms.
-*}
+\<close>
 
 definition Succ :: "c"
 where "Succ \<equiv> CHOOSE Sc : \<exists>N,Z : PeanoAxioms(N,Z,Sc)"
@@ -203,8 +202,8 @@ proof -
 qed
 
 lemmas
-  setEqualI [where A = "Nat", standard, intro!]
-  setEqualI [where B = "Nat", standard, intro!]
+  setEqualI [where A = "Nat", intro!]
+  setEqualI [where B = "Nat", intro!]
 
 lemma zeroIsNat [intro!,simp]: "0 \<in> Nat"
 using peanoNatZeroSucc by (simp add: PeanoAxioms_def)
@@ -215,9 +214,9 @@ using peanoNatZeroSucc by (simp add: PeanoAxioms_def)
 lemma succIsAFcn [intro!,simp]: "isAFcn(Succ)"
 using succInNatNat by blast
 
--- {* @{text "DOMAIN Succ = Nat"} *}
+\<comment> \<open>@{text "DOMAIN Succ = Nat"}\<close>
 lemmas domainSucc [intro!,simp] = funcSetDomain[OF succInNatNat]
--- {* @{text "n \<in> Nat \<Longrightarrow> Succ[n] \<in> Nat"} *}
+\<comment> \<open>@{text "n \<in> Nat \<Longrightarrow> Succ[n] \<in> Nat"}\<close>
 lemmas succIsNat [intro!,simp] = funcSetValue[OF succInNatNat]
 
 lemma oneIsNat [intro!,simp]: "1 \<in> Nat"
@@ -236,7 +235,7 @@ lemma [simp]:
   shows "(0 = Succ[n]) = FALSE"
 using assms by (auto dest: sym)
 
-lemma succNotZero (*[elim] -- yields "ignoring weak elimination rule" *):
+lemma succNotZero (*[elim] \<comment> don't: produces "ignoring weak elimination rule"*):
   "\<lbrakk>Succ[n] = 0; n \<in> Nat\<rbrakk> \<Longrightarrow> P"
   "\<lbrakk>0 = Succ[n]; n \<in> Nat\<rbrakk> \<Longrightarrow> P"
 by (simp+)
@@ -262,7 +261,7 @@ proof -
   thus ?thesis by auto
 qed
 
--- {* version of above suitable for the inductive reasoning package *}
+\<comment> \<open>version of above suitable for the inductive reasoning package\<close>
 lemma natInductE [case_names 0 Succ, induct set: Nat]:
   assumes "n \<in> Nat" and "P(0)" and "\<And>n. \<lbrakk>n \<in> Nat; P(n)\<rbrakk> \<Longrightarrow> P(Succ[n])"
   shows "P(n)"
@@ -313,7 +312,7 @@ lemma succIrrefl_iff [simp]:
 by (auto dest: succIrrefl)
 
 
--- {* Induction over two parameters along the ``diagonal''. *}
+text \<open>Induction over two parameters along the ``diagonal''.\<close>
 lemma diffInduction:
   assumes b1: "\<forall>m\<in>Nat : P(m,0)" and b2: "\<forall>n\<in>Nat : P(0, Succ[n])"
   and step: "\<forall>m,n\<in>Nat : P(m,n) \<Rightarrow> P(Succ[m], Succ[n])"
@@ -351,23 +350,23 @@ lemma not0_implies_Suc:
   "\<lbrakk>n \<in> Nat; n \<noteq> 0\<rbrakk> \<Longrightarrow> \<exists>m \<in> Nat: n = Succ[m]"
 by(rule natCases, auto)
 
-subsection {* Initial intervals of natural numbers and ``less than'' *}
+subsection \<open> Initial intervals of natural numbers and ``less than'' \<close>
 
-text {*
+text \<open>
   The set of natural numbers up to (and including) a given $n$ is
   inductively defined as the smallest set of natural numbers that
   contains $n$ and that is closed under predecessor.
 
   NB: ``less than'' is not first-order definable from the Peano axioms,
   a set-theoretic definition such as the following seems to be unavoidable.
-*}
+\<close>
 
 definition upto :: "c \<Rightarrow> c"
 where "upto(n) \<equiv> lfp(Nat, \<lambda>S. {n} \<union> { k \<in> Nat : Succ[k] \<in> S })"
 
 lemmas
-  setEqualI [where A = "upto(n)", standard, intro!]
-  setEqualI [where B = "upto(n)", standard, intro!]
+  setEqualI [where A = "upto(n)" for n, intro!]
+  setEqualI [where B = "upto(n)" for n, intro!]
 
 lemma uptoNat: "upto(n) \<subseteq> Nat"
   unfolding upto_def by (rule lfpSubsetDomain)
@@ -399,20 +398,20 @@ lemma uptoSucc:
   assumes n: "n \<in> Nat"
   shows "upto(Succ[n]) = upto(n) \<union> {Succ[n]}" (is "?lhs = ?rhs")
 proof -
-  let "?preds(S)" = "{k \<in> Nat : Succ[k] \<in> S}"
-  let "?f(S,k)" = "{k} \<union> ?preds(S)"
+  let ?preds = "\<lambda>S. {k \<in> Nat : Succ[k] \<in> S}"
+  let ?f = "\<lambda>S k. {k} \<union> ?preds(S)"
   have mono: "\<And>k. k \<in> Nat \<Longrightarrow> Monotonic(Nat, \<lambda>S. ?f(S,k))"
     by (auto simp: Monotonic_def)
-  -- {* ``$\subseteq$'' *}
+  \<comment> \<open>``$\subseteq$''\<close>
   from n have "?preds(?rhs) \<subseteq> ?f(upto(n), n)" by auto
   also have "\<dots> \<subseteq> upto(n)"
     by (unfold upto_def, rule lfpPreFP, rule mono, rule n)
   finally have "?f(?rhs, Succ[n]) \<subseteq> ?rhs" by auto
   moreover from n have "?rhs \<subseteq> Nat"
-    by (intro cupLUB, auto elim: uptoNat[THEN subsetD])
+    by (intro unionLUB, auto elim: uptoNat[THEN subsetD])
   ultimately have 1: "?lhs \<subseteq> ?rhs"
     by (unfold upto_def[where n="Succ[n]"], rule lfpLB)
-  -- {* ``$\supseteq$'' *}
+  \<comment> \<open>``$\supseteq$''\<close>
   from n mono have 2: "?f(?lhs, Succ[n]) \<subseteq> ?lhs"
     unfolding upto_def by (intro lfpPreFP, blast)
   with n have "?f(?lhs, n) \<subseteq> ?lhs" by auto
@@ -496,8 +495,8 @@ proof -
       fix n
       assume "Succ[m] \<in> upto(n)" and "n \<in> upto(m)"
       from this m have "Succ[m] \<in> upto(m)" by (rule uptoTrans)
-      with m show "Succ[m] = n" -- {* contradiction *}
-	by (blast dest: succNotinUpto)
+      with m show "Succ[m] = n" \<comment> \<open>contradiction\<close>
+        by (blast dest: succNotinUpto)
     qed
   qed
   with m n mn nm show ?thesis by blast
@@ -540,13 +539,13 @@ next
 qed
 
 
-subsection {* Primitive Recursive Functions *}
+subsection \<open> Primitive Recursive Functions \<close>
 
-text {* 
+text \<open>
   We axiomatize a primitive recursive scheme for functions 
   with one argument and domain on natural numbers. Later, we 
   use it to define addition, multiplication and difference.
-*}
+\<close>
 
 (** FIXME: replace axiom with proper fixpoint definition **)
 

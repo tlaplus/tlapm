@@ -1,107 +1,92 @@
 (*  Title:      TLA+/SetTheory.thy
     Author:     Stephan Merz, LORIA
-    Copyright (C) 2008-2011  INRIA and Microsoft Corporation
+    Copyright (C) 2008-2020  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2011-1
-    Time-stamp: <2011-10-11 17:38:48 merz>
+    Version:    Isabelle2020
 *)
 
-header {* \tlaplus{} Set Theory *}
+section \<open>\tlaplus{} Set Theory\<close>
 
 theory SetTheory
 imports PredicateLogic
 begin
 
-text {*
-  This theory defines the version of Zermelo-Fr\"ankel set theory
+text \<open>
+  This theory defines the version of Zermelo-Fraenkel set theory
   that underlies \tlaplus{}.
-*}
+\<close>
 
-subsection {* Basic syntax and axiomatic basis of set theory. *}
+subsection \<open>Basic syntax and axiomatic basis of set theory\<close>
 
-text {*
-  We take the set-theoretic constructs of \tlaplus{}, but add generalized
-  intersection for symmetry and convenience. (Note that @{text "INTER {} = {}"}.)
-*}
+text \<open>
+  The following constants are at the basis of our set theory.
+\<close>
 
 consts
-  emptyset  ::  "c"        ("{}" 100)      -- {* empty set *}
-  upair     ::  "[c, c] \<Rightarrow> c"              -- {* unordered pairs *}
-  addElt    ::  "[c, c] \<Rightarrow> c"              -- {* add element to set *}
-  infinity  ::  "c"                        -- {* infinity set *}
-  SUBSET    ::  "c \<Rightarrow> c"   ("SUBSET _" [100]90) -- {* power set *}
-  UNION     ::  "c \<Rightarrow> c"   ("UNION _" [100]90)  -- {* generalized union *}
-  INTER     ::  "c \<Rightarrow> c"   ("INTER _" [100]90)  -- {* generalized intersection *}
-  "cup"     ::  "[c, c] \<Rightarrow> c" (infixl "\\cup" 65)  -- {* binary union *}
-  "cap"     ::  "[c, c] \<Rightarrow> c" (infixl "\\cap" 70)  -- {* binary intersection *}
-  "setminus"::  "[c, c] \<Rightarrow> c" (infixl "\\" 65)  -- {* binary set difference *}
-  "in"      ::  "[c, c] \<Rightarrow> c" (infixl "\\in" 50)  -- {* membership relation *}
-  "subseteq"::  "[c, c] \<Rightarrow> c" (infixl "\\subseteq" 50)  -- {* subset relation *}
-  subsetOf  ::  "[c, c \<Rightarrow> c] \<Rightarrow> c"  -- {*@{text "subsetOf(S,p)"} = $\{x \in S : p\}$*}
-  setOfAll  ::  "[c, c \<Rightarrow> c] \<Rightarrow> c"  -- {*@{text "setOfAll(S,e)"} = $\{e : x \in S\}$*}
-  bChoice   ::  "[c, c \<Rightarrow> c] \<Rightarrow> c"         -- {* bounded choice *}
-  bAll      ::  "[c, c \<Rightarrow> c] \<Rightarrow> c"         -- {* bounded universal quantifier *}
-  bEx       ::  "[c, c \<Rightarrow> c] \<Rightarrow> c"         -- {* bounded existential quantifier *}
+  "in"      ::  "[c, c] \<Rightarrow> c" (infixl "\<in>" 50)   (* set membership *)
+  emptyset  ::  "c"        ("{}" 100)      (* empty set *)
+  SUBSET    ::  "c \<Rightarrow> c"   ("SUBSET _" [100]90) (* power set *)
+  UNION     ::  "c \<Rightarrow> c"   ("UNION _" [100]90)  (* generalized union *)
+  subsetOf  ::  "[c, c \<Rightarrow> c] \<Rightarrow> c"    (* subsetOf(S,p) = {x \in S : p} *)
+  setOfAll  ::  "[c, c \<Rightarrow> c] \<Rightarrow> c"    (* setOfAll(S,e) = {e : x \in S} *)
+  infinity  ::  "c"                   (* infinity set *)
 
-notation (xsymbols)
-  "cup"        (infixl "\<union>" 65)  and
-  "cap"        (infixl "\<inter>" 70)  and
-  "setminus"   (infixl "\<setminus>" 65)  and
-  "in"         (infixl "\<in>" 50)  and
-  "subseteq"   (infixl "\<subseteq>" 50)
+notation (ASCII)
+  "in"         (infixl "\\in" 50)
 
-notation (HTML output)
-  "cup"        (infixl "\<union>" 65)  and
-  "cap"        (infixl "\<inter>" 70)  and
-  "setminus"   (infixl "\<setminus>" 65)  and
-  "in"         (infixl "\<in>" 50)  and
-  "subseteq"   (infixl "\<subseteq>" 50)
+text \<open>Negated set membership\<close>
 
-abbreviation "notin(a, S) \<equiv> \<not>(a \<in> S)"   -- {* negated membership *}
+abbreviation "notin(a, S) \<equiv> \<not>(a \<in> S)"
 
 notation
+  "notin"      (infixl "\<notin>" 50)
+notation (ASCII)
   "notin"      (infixl "\\notin" 50)
-notation (xsymbols)
-  "notin"      (infixl "\<notin>" 50)
-notation (HTML output)
-  "notin"      (infixl "\<notin>" 50)
 
-abbreviation (input) "supseteq(S, T) \<equiv> T \<subseteq> S"
-notation
-  "supseteq"    (infixl "\\supseteq" 50)
-notation (xsymbols)
-  "supseteq"    (infixl "\<supseteq>" 50)
-notation (HTML output)
-  "supseteq"    (infixl "\<supseteq>" 50)
+text \<open>
+  We introduce some more notation and operators before stating the
+  axioms of set theory, in order to make them more readable.
+\<close>
 
-text {* Concrete syntax: proper sub and superset *}
+text \<open> Concrete syntax: set comprehension \<close>
 
-definition "psubset" :: "[c, c] \<Rightarrow> c" (infixl "\\subset" 50)
-where "S \\subset T \<equiv> S \<subseteq> T \<and> S \<noteq> T"
+(*** 
+  We cannot yet allow multiple bindings as in {f(x,y) : x \<in> S, y \<in> T}
+  because logical constants (such as setOfAll) must have fixed arity.
+  Multiple bindings will be introduced as shorthands involving tuples
+  when tuples are available -- fortunately we don't need them earlier!
 
-notation (xsymbols)
-  "psubset"   (infixl "\<subset>" 50)
-notation (HTML output)
-  "psubset"   (infixl "\<subset>" 50)
+  Note that the expression "{x \<in> S : y \<in> T}" is ambiguous
+  (as mentioned in the TLA+ book). In such cases, use logical syntax, e.g.
+  subsetOf(S, \<lambda>x. y \<in> T). See the definition cap_def below.
+***)
+syntax
+  "@setOfAll" :: "[c, idt, c] \<Rightarrow> c"         ("(1{_ : _ \<in> _})")
+  "@subsetOf" :: "[idt, c, c] \<Rightarrow> c"         ("(1{_ \<in> _ : _})")
+syntax (ASCII)
+  "@setOfAll" :: "[c, idt, c] \<Rightarrow> c"         ("(1{_ : _ \\in _})")
+  "@subsetOf" :: "[idt, c, c] \<Rightarrow> c"         ("(1{_ \\in _ : _})")
+translations
+  "{e : x \<in> S}"  \<rightleftharpoons>  "CONST setOfAll(S, \<lambda>x. e)"
+  "{x \<in> S : P}"  \<rightleftharpoons>  "CONST subsetOf(S, \<lambda>x. P)"
 
-abbreviation (input) "psupset(S,T) \<equiv> T \<subset> S"
-notation
-  "psupset"  (infix "\\supset" 50)
-notation (xsymbols)
-  "psupset"  (infix "\<supset>" 50)
-notation (HTML output)
-  "psupset"  (infix "\<supset>" 50)
+text \<open>Unordered pairs\<close>
 
-lemma psubset_intro [intro!]:
-  "\<lbrakk> S \<subseteq> T ; S \<noteq> T \<rbrakk> \<Longrightarrow> S \<subset> T"
-unfolding psubset_def by safe
+definition upair :: "[c, c] \<Rightarrow> c"
+  where "upair(a,b)  \<equiv>  { IF x={} THEN a ELSE b : x \<in> SUBSET (SUBSET {}) }"
 
-lemma psubset_elim [elim!]:
-  "\<lbrakk> S \<subset> T ; \<lbrakk> S \<subseteq> T ; S \<noteq> T \<rbrakk> \<Longrightarrow> C \<rbrakk> \<Longrightarrow> C"
-unfolding psubset_def by safe
+text \<open>Binary set union\<close>
 
+definition union :: "[c, c] \<Rightarrow> c" (infixl "\<union>" 65)
+  where "A \<union> B \<equiv> UNION upair(A,B)"
 
-text {* Concrete syntax: set enumerations *}
+notation (ASCII)
+  union      (infixl "\\union" 65)
+
+definition addElt :: "[c, c] \<Rightarrow> c"
+  where "addElt(a, A)  \<equiv>  upair(a,a) \<union> A"
+
+text \<open> Concrete syntax: set enumerations \<close>
 
 nonterminal cs
 
@@ -117,7 +102,18 @@ translations
 abbreviation BOOLEAN :: "c" where
   "BOOLEAN \<equiv> {TRUE, FALSE}"
 
-text {* Concrete syntax: bounded quantification *}
+text \<open>Bounded quantification\<close>
+
+definition bChoose :: "[c, c \<Rightarrow> c] \<Rightarrow> c"
+  where "bChoose(A,P)  \<equiv>  CHOOSE x : x \<in> A \<and> P(x)"
+
+definition bEx :: "[c, c \<Rightarrow> c] \<Rightarrow> c"
+  where "bEx(A, P)  \<equiv>  \<exists>x : x \<in> A \<and> P(x)"
+
+definition bAll :: "[c, c \<Rightarrow> c] \<Rightarrow> c"
+  where "bAll(A, P) \<equiv>  \<forall>x : x \<in> A \<Rightarrow> P(x)"
+
+text \<open> Concrete syntax: bounded quantification \<close>
 
 (*** FIXME: allow multiple bindings as in "ALL x:S, y:T. P(x,y)".
   The following was a valiant attempt to define appropriate syntax
@@ -127,23 +123,23 @@ text {* Concrete syntax: bounded quantification *}
 nonterminal sbinds
 
 syntax
-  "@sbind"    ::  "[idt,c] \<Rightarrow> sbinds"         ("_ \\in _")
-  "@sbinds"   ::  "[idt,c,sbinds] \<Rightarrow> sbinds"   ("_ \\in _,/ _")
+  "@sbind"    ::  "[idt,c] \<Rightarrow> sbinds"         ("_ \\in _" [100, 10] 100)
+  "@sbinds"   ::  "[idt,c,sbinds] \<Rightarrow> sbinds"   ("_ \\in _,/ _" [100, 10, 100] 100)
 syntax (xsymbols)
-  "@sbind"    ::  "[idt,c] \<Rightarrow> sbinds"         ("_ \<in> _")
-  "@sbinds"   ::  "[idt,c, sbinds] \<Rightarrow> sbinds"  ("_ \<in> _,/ _")
+  "@sbind"    ::  "[idt,c] \<Rightarrow> sbinds"         ("_ \<in> _"  [100, 10] 100)
+  "@sbinds"   ::  "[idt,c, sbinds] \<Rightarrow> sbinds"  ("_ \<in> _,/ _" [100, 10, 100] 100)
 
 syntax
   "@bChoice" ::  "[sbinds, c] \<Rightarrow> c"          ("(3CHOOSE _ :/ _)" 10)
-  "@bEx"     ::  "[sbinds, c] \<Rightarrow> c"          ("(3\\E _ :/ _)" 10)
-  "@bAll"    ::  "[sbinds, c] \<Rightarrow> c"          ("(3\\A _ :/ _)" 10)
+  "@bEx"     ::  "[sbinds, c] \<Rightarrow> c"          ("(3\\E _ :/ _)" [100, 10] 10)
+  "@bAll"    ::  "[sbinds, c] \<Rightarrow> c"          ("(3\\A _ :/ _)" [100, 10] 10)
 syntax (xsymbols)
-  "@bEx"     ::  "[sbinds, c] \<Rightarrow> c"          ("(3\<exists>_ :/ _)" 10)
-  "@bAll"    ::  "[sbinds, c] \<Rightarrow> c"          ("(3\<forall>_ :/ _)" 10)
+  "@bEx"     ::  "[sbinds, c] \<Rightarrow> c"          ("(3\<exists>_ :/ _)" [100,10] 10)
+  "@bAll"    ::  "[sbinds, c] \<Rightarrow> c"          ("(3\<forall>_ :/ _)" [100,10] 10)
 
 translations
-  "ALL x:S, sbs. P"  \<rightleftharpoons>  "bAll(S, (ALL sbs. (\<lambda>x. P)))"
-  "ALL x:S. P"       \<rightleftharpoons>  "bAll(S, \<lambda>x. P)"
+  "\<forall>x \<in> S, bds : P"  \<rightleftharpoons>  "CONST bAll(S, \<lambda>x. \<forall>bds : P)"
+  "\<forall>x \<in> S : P"       \<rightleftharpoons>  "CONST bAll(S, \<lambda>x. P)"
 ***)
 
 (*** TEMPORARY FIX:
@@ -152,16 +148,16 @@ translations
 ***)
 
 syntax
-  (* Again, only single variable for bounded choice. *)
-  "@bChoice" ::  "[idt, c, c] \<Rightarrow> c"       ("(3CHOOSE _ \\in _ :/ _)" [100,0,0] 10)
-  "@bEx"     ::  "[cidts, c, c] \<Rightarrow> c"     ("(3EX _ in _ :/ _)" [100,0,0] 10)
-  "@bAll"    ::  "[cidts, c, c] \<Rightarrow> c"     ("(3ALL _ in _ :/ _)" [100,0,0] 10)
-syntax (xsymbols)
   "@bChoice" ::  "[idt, c, c] \<Rightarrow> c"       ("(3CHOOSE _ \<in> _ :/ _)" [100,0,0]10)
   "@bEx"     ::  "[cidts, c, c] \<Rightarrow> c"     ("(3\<exists>_ \<in> _ :/ _)" [100,0,0] 10)
   "@bAll"    ::  "[cidts, c, c] \<Rightarrow> c"     ("(3\<forall>_ \<in> _ :/ _)" [100,0,0] 10)
+syntax (ASCII)
+  (* Again, only single variable for bounded choice. *)
+  "@bChoice" ::  "[idt, c, c] \<Rightarrow> c"       ("(3CHOOSE _ in _ :/ _)" [100,0,0] 10)
+  "@bEx"     ::  "[cidts, c, c] \<Rightarrow> c"     ("(3EX _ in _ :/ _)" [100,0,0] 10)
+  "@bAll"    ::  "[cidts, c, c] \<Rightarrow> c"     ("(3ALL _ in _ :/ _)" [100,0,0] 10)
 translations
-  "CHOOSE x \<in> S : P"      \<rightleftharpoons>  "CONST bChoice(S, \<lambda>x. P)"
+  "CHOOSE x \<in> S : P"      \<rightleftharpoons>  "CONST bChoose(S, \<lambda>x. P)"
   (* the following cannot be a print macro because the RHS is non-linear
      -- need a print translation for display *)
   "\<exists>x, xs \<in> S : P"        \<rightharpoonup>  "CONST bEx(S, \<lambda>x. \<exists>xs \<in> S : P)"
@@ -169,7 +165,7 @@ translations
   "\<forall>x, xs \<in> S : P"        \<rightharpoonup>  "CONST bAll(S, \<lambda>x. \<forall>xs \<in> S : P)"
   "\<forall>x \<in> S : P"            \<rightharpoonup>  "CONST bAll(S, \<lambda>x. P)"
 
-print_translation {*
+print_translation \<open>
   let
       fun bEx_tr' [S, Abs(x, T, P as (Const (@{const_syntax "bEx"},_) $ S' $ Q))] =
           (* bEx(S, bEx(S', Q)) => \\E x,y \\in S : Q if S = S' *)
@@ -201,9 +197,10 @@ print_translation {*
 	    in  (Syntax.const "@bAll") $ x' $ S $ P'
 	    end
 	| bAll_tr' _ = raise Match;
-  in  [(@{const_syntax "bEx"}, bEx_tr'), (@{const_syntax "bAll"}, bAll_tr')]
+  in  [(@{const_syntax "bEx"}, (fn _ => bEx_tr')), 
+       (@{const_syntax "bAll"}, (fn _ => bAll_tr'))]
   end
-*}
+\<close>
 
 (*** TEST DATA for parse and print translations ***
 lemma "\<exists>x,y,z \<in> S : x = y \<or> y = z"
@@ -222,90 +219,86 @@ lemma "\<forall>x,y \<in> S : \<forall>z \<in> T : x=y \<and> y \<noteq> z"
 oops
 *** END TEST DATA ***)
 
-text {* Concrete syntax: set comprehension *}
-
-(*** 
-  We cannot yet allow multiple bindings as in {f(x,y) : x \<in> S, y \<in> T}
-  because logical constants (such as setOfAll) must have fixed arity.
-  Multiple bindings will be introduced as shorthands involving tuples
-  when tuples are available -- fortunately we don't need them earlier!
-
-  Note that the expression "{x \<in> S : y \<in> T}" is ambiguous
-  (as mentioned in the TLA+ book). In such cases, use logical syntax, e.g.
-  subsetOf(S, \<lambda>x. y \<in> T). See the definition cap_def below.
-***)
-syntax
-  "@setOfAll" :: "[c, idt, c] \<Rightarrow> c"         ("(1{_ : _ \\in _})")
-  "@subsetOf" :: "[idt, c, c] \<Rightarrow> c"         ("(1{_ \\in _ : _})")
-syntax (xsymbols)
-  "@setOfAll" :: "[c, idt, c] \<Rightarrow> c"         ("(1{_ : _ \<in> _})")
-  "@subsetOf" :: "[idt, c, c] \<Rightarrow> c"         ("(1{_ \<in> _ : _})")
-translations
-  "{e : x \<in> S}"  \<rightleftharpoons>  "CONST setOfAll(S, \<lambda>x. e)"
-  "{x \<in> S : P}"  \<rightleftharpoons>  "CONST subsetOf(S, \<lambda>x. P)"
-
-text {* 
-  The following definitions make the axioms of set theory more readable.
-  Observe that @{text \<in>} is treated as an uninterpreted predicate symbol.
-*}
-
-defs
-  bChoose_def:  "bChoice(A,P)  \<equiv>  CHOOSE x : x \<in> A \<and> P(x)"
-  bEx_def:      "bEx(A, P)  \<equiv>  \<exists>x : x \<in> A \<and> P(x)"
-  bAll_def:     "bAll(A, P) \<equiv>  \<forall>x : x \<in> A \<Rightarrow> P(x)"
-  subset_def:   "A \<subseteq> B     \<equiv>  \<forall>x \<in> A : x \<in> B"
-
-text {*
-  We now state a first batch of axioms of set theory: extensionality
+text \<open>
+  We now state the axioms of set theory: extensionality
   and the definitions of @{text UNION}, @{text SUBSET}, and @{text setOfAll}.
   Membership is also asserted to be produce Boolean values---in traditional
   presentations of ZF set theory this is ensured by distinguishing sorts of
-  terms and formulas.
-*}
-
+  terms and formulas. @{term infinity} is some infinite set, but it is not
+  uniquely defined. The foundation axiom rules out sets that are ``too big''.
+\<close>
 axiomatization where
   inIsBool [intro!,simp]: "isBool(x \<in> A)"
 and
-  extension:    "(A = B) \<Leftrightarrow> (A \<subseteq> B) \<and> (B \<subseteq> A)"
+  extension:    "(A = B) \<Leftrightarrow> (\<forall>x : x \<in> A \<Leftrightarrow> x \<in> B)"
 and
-  UNION:        "(A \<in> UNION S) \<Leftrightarrow> (\<exists>B\<in>S : A \<in> B)"
+  UNION:        "(A \<in> UNION S) \<Leftrightarrow> (\<exists>B \<in> S : A \<in> B)"
 and
-  SUBSET:       "(A \<in> SUBSET S) \<Leftrightarrow> (A \<subseteq> S)"
+  SUBSET:       "(A \<in> SUBSET S) \<Leftrightarrow> (\<forall>x \<in> A : x \<in> S)"
 and
-  setOfAll:     "(y \<in> { e(x) : x \<in> S }) \<Leftrightarrow> (\<exists>x\<in>S : y = e(x))"
+  setOfAll:     "(y \<in> setOfAll(S, e)) \<Leftrightarrow> (\<exists>x : x \<in> S \<and> y = e(x))"
 and
-  subsetOf:     "(y \<in> { x \<in> S : P(x) }) \<Leftrightarrow> (y \<in> S \<and> P(y))"
-
-text {*
-  Armed with this understanding, we can now define the remaining operators
-  of set theory.
-*}
-
-defs
-  upair_def:    "upair(a,b)  \<equiv>  { IF x={} THEN a ELSE b : x \<in> SUBSET (SUBSET {}) }"
-  cup_def:      "A \<union> B  \<equiv>  UNION upair(A,B)"
-  addElt_def:   "addElt(a, A)  \<equiv>  upair(a,a) \<union> A"
-  cap_def:      "A \<inter> B  \<equiv>  subsetOf(A, \<lambda>x. x \<in> B)"
-  diff_def:     "A \<setminus> B  \<equiv>  {x \<in> A : x \<notin> B}"
-  INTER_def:    "INTER A \<equiv> { x \<in> UNION A : \<forall>B \<in> A : x \<in> B }"
-
-text {*
-  The following two axioms complete our presentation of set theory.
-*}
-
-axiomatization where
-  -- {* @{term infinity} is some infinite set, but it is not uniquely defined. *}
+  subsetOf:     "(y \<in> subsetOf(S, P)) \<Leftrightarrow> (y \<in> S \<and> P(y))"
+and
   infinity:     "({} \<in> infinity) \<and> (\<forall>x \<in> infinity : {x} \<union> x \<in> infinity)"
 and
-  -- {* The foundation axiom rules out sets that are ``too big''. *}
   foundation:   "(A = {}) \<or> (\<exists>x \<in> A : \<forall>y \<in> x : y \<notin> A)"
 
-subsection {* Boolean operators *}
 
-text {*
+text \<open>More set operations\<close>
+
+definition subset :: "[c, c] \<Rightarrow> c" (infixl "\<subseteq>" 50)
+  where "A \<subseteq> B \<equiv> \<forall>x \<in> A : x \<in> B"
+
+definition inter ::  "[c, c] \<Rightarrow> c" (infixl "\<inter>" 70)  (* binary intersection *)
+  where "A \<inter> B \<equiv>  subsetOf(A, \<lambda>x. x \<in> B)"
+
+definition setminus ::  "[c, c] \<Rightarrow> c" (infixl "\<setminus>" 65)     (* set difference *)
+  where "A \<setminus> B \<equiv> {x \<in> A : x \<notin> B}"
+
+definition INTER ::  "c \<Rightarrow> c"   ("INTER _" [100]90)  (* generalized intersection *)
+  where "INTER A \<equiv> { x \<in> UNION A : \<forall>B \<in> A : x \<in> B }"
+
+text \<open>Note that @{text "INTER {}"} is @{text "{}"}.}\<close>
+
+notation (ASCII)
+  "inter"      (infixl "\\inter" 70)  and
+  "setminus"   (infixl "\\" 65)  and
+  "subset"     (infixl "\\subseteq" 50)
+
+abbreviation (input) "supset(S, T) \<equiv> T \<subseteq> S"
+notation
+  "supset"    (infixl "\<supseteq>" 50)
+notation (ASCII)
+  "supset"    (infixl "\\supseteq" 50)
+
+definition "psubset" :: "[c, c] \<Rightarrow> c" (infixl "\<subset>" 50)
+where "S \<subset> T \<equiv> S \<subseteq> T \<and> S \<noteq> T"
+
+notation (ASCII)
+  "psubset"   (infixl "\\subset" 50)
+
+abbreviation (input) "psupset(S,T) \<equiv> T \<subset> S"
+notation
+  "psupset"  (infix "\<supset>" 50)
+notation (ASCII)
+  "psupset"  (infix "\\supset" 50)
+
+lemma psubset_intro [intro!]:
+  "\<lbrakk> S \<subseteq> T ; S \<noteq> T \<rbrakk> \<Longrightarrow> S \<subset> T"
+unfolding psubset_def by safe
+
+lemma psubset_elim [elim!]:
+  "\<lbrakk> S \<subset> T ; \<lbrakk> S \<subseteq> T ; S \<noteq> T \<rbrakk> \<Longrightarrow> C \<rbrakk> \<Longrightarrow> C"
+unfolding psubset_def by safe
+
+
+subsection \<open> Boolean operators \<close>
+
+text \<open>
   The following lemmas assert that certain operators always return
   Boolean values; these are helpful for the automated reasoning methods.
-*}
+\<close>
 
 lemma boolifyIn [simp]: "boolify(x \<in> A) = (x \<in> A)"
 by (rule inIsBool[unfolded isBool_def])
@@ -331,6 +324,12 @@ by (simp add: subset_def)
 lemma subsetIsBool [intro!,simp]: "isBool(A \<subseteq> B)"
 by (unfold isBool_def, rule boolifySubset)
 
+lemma boolifypSubset [simp]: "boolify(A \<subset> B) = (A \<subset> B)"
+by (simp add: psubset_def)
+
+lemma psubsetIsBool [intro!,simp]: "isBool(A \<subset> B)"
+by (unfold isBool_def, rule boolifypSubset)
+
 lemma [intro!]:
   "\<lbrakk>isBool(P); x\<in>S \<Leftrightarrow> P\<rbrakk> \<Longrightarrow> (x\<in>S) = P"
   "\<lbrakk>isBool(P); P \<Leftrightarrow> x\<in>S\<rbrakk> \<Longrightarrow> P = (x\<in>S)"
@@ -343,7 +342,7 @@ lemma [intro!]:
 by auto
 
 
-subsection {* Substitution rules *}
+subsection \<open> Substitution rules \<close>
 
 lemma subst_elem [trans]:
   assumes "b \<in> A" and "a=b"
@@ -366,7 +365,7 @@ lemma subst_set_rev [trans]:
 using assms by simp
 
 
-subsection {* Bounded quantification *}
+subsection \<open> Bounded quantification \<close>
 
 lemma bAllI [intro!]:
   assumes "\<And>x. x \<in> A \<Longrightarrow> P(x)"
@@ -379,8 +378,8 @@ lemma bspec [dest?]:
 using assms unfolding bAll_def by blast
 
 (*** currently inactive -- causes several obscure warnings about renamed
-     variables and seems to slow down large examples such as AtomicBakery
-ML {*
+     variables and seems to slow down large examples such as AtomicBakery ***)
+ML \<open>
   structure Simpdata =
   struct
 
@@ -391,12 +390,15 @@ ML {*
   end;
 
   open Simpdata;
-*}
+\<close>
 
-declaration {* fn _ =>
-  Simplifier.map_ss (fn ss => ss setmksimps (mksimps mksimps_pairs))
-*}
-***)
+declaration \<open>
+  fn _ => Simplifier.map_ss (fn ss => ss
+    |> Simplifier.set_mksimps (fn ctxt =>
+        Simpdata.mksimps Simpdata.mksimps_pairs ctxt))
+\<close>
+
+(***)
 
 lemma bAllE [elim]:
   assumes "\<forall>x\<in>A : P(x)" and "x \<notin> A \<Longrightarrow> Q" and "P(x) \<Longrightarrow> Q"
@@ -416,7 +418,7 @@ lemma bExI [intro]:
   shows "\<exists>x\<in>A : P(x)"
 using assms unfolding bEx_def by blast
 
-lemma bExCI:  -- {* implicit proof by contradiction *}
+lemma bExCI:  (* proof by contradiction *)
   assumes "(\<forall>x\<in>A : \<not>P(x)) \<Longrightarrow> P(a)" and "a \<in> A"
   shows "\<exists>x\<in>A : P(x)"
 using assms by blast
@@ -499,9 +501,9 @@ qed
   TODO: investigate the issue and find out what is really needed about
   type checking.
 
-subsubsection {* Setting up type checking for \tlaplus{}. *}
+subsubsection \<open> Setting up type checking for \tlaplus{}. \<close>
 
-text {*
+text \<open>
   Type checking is intended to solve simple goals, for example showing
   that conjunctions are Boolean, and that the result of a conditional
   expression is a natural number if both branches yield naturals. Unlike
@@ -512,7 +514,7 @@ text {*
   unknowns.
 
   The code is essentially taken from Isabelle/ZF.
-*}
+\<close>
 
 use "typecheck.ML"
 setup TypeCheck.setup
@@ -538,7 +540,7 @@ by typecheck
 ***)
 
 
-subsection {* Simplification of conditional expressions *}
+subsection \<open> Simplification of conditional expressions \<close>
 
 lemma inCond [simp]: "(a \<in> (IF P THEN S ELSE T)) = ((P \<and> a \<in> S) \<or> (\<not>P \<and> a \<in> T))"
 by (force intro: condI elim: condE)
@@ -583,7 +585,7 @@ by (force intro: condI elim: condE)
 **)
 
 
-subsection {* Rules for subsets and set equality *}
+subsection \<open> Rules for subsets and set equality \<close>
 
 lemma subsetI [intro!]:
   assumes "\<And>x. x \<in> A \<Longrightarrow> x \<in> B"
@@ -599,7 +601,7 @@ lemma rev_subsetD [trans]:
   "\<lbrakk> c \<in> A; A \<subseteq> B \<rbrakk> \<Longrightarrow> c \<in> B"
 by (rule subsetD)
 
-lemma subsetCE [elim]: -- {* elimination rule for classical logic *}
+lemma subsetCE [elim]:
   assumes "A \<subseteq> B" and "c \<notin> A \<Longrightarrow> P" and "c \<in> B \<Longrightarrow> P"
   shows "P"
 using assms unfolding subset_def by blast
@@ -630,7 +632,7 @@ lemma notSubsetE (*[elim!]*):
   shows "P"
 using assms by blast
 
-text {* The subset relation is a partial order. *}
+text \<open> The subset relation is a partial order. \<close>
 
 lemma subsetRefl [simp,intro!]: "A \<subseteq> A"
 by blast
@@ -650,45 +652,48 @@ lemma setEqualI:
   shows "A = B"
 by (rule setEqual, (blast intro: assms)+)
 
-text {*
+text \<open>
   The rule @{text setEqualI} is too general for use as a default
   introduction rule: we don't want to apply it for Booleans, for
   example. However, instances where at least one term results from
   a set constructor are useful.
-*}
+\<close>
 
 lemmas
 (** the instances for the empty set are superseded by rules below
-  setEqualI [where A = "{}", standard, intro!]
-  setEqualI [where B = "{}", standard, intro!]
+  setEqualI [where A = "{}", intro!]
+  setEqualI [where B = "{}", intro!]
 **)
-  setEqualI [where A = "addElt(a,C)", standard, intro!]
-  setEqualI [where B = "addElt(a,C)", standard, intro!]
-  setEqualI [where A = "SUBSET C", standard, intro!]
-  setEqualI [where B = "SUBSET C", standard, intro!]
-  setEqualI [where A = "UNION C", standard, intro!]
-  setEqualI [where B = "UNION C", standard, intro!]
-  setEqualI [where A = "INTER C", standard, intro!]
-  setEqualI [where B = "INTER C", standard, intro!]
-  setEqualI [where A = "C \<union> D", standard, intro!]
-  setEqualI [where B = "C \<union> D", standard, intro!]
-  setEqualI [where A = "C \<inter> D", standard, intro!]
-  setEqualI [where B = "C \<inter> D", standard, intro!]
-  setEqualI [where A = "C \<setminus> D", standard, intro!]
-  setEqualI [where B = "C \<setminus> D", standard, intro!]
-  setEqualI [where A = "subsetOf(S,P)", standard, intro!]
-  setEqualI [where B = "subsetOf(S,P)", standard, intro!]
-  setEqualI [where A = "setOfAll(S,e)", standard, intro!]
-  setEqualI [where B = "setOfAll(S,e)", standard, intro!]
+  setEqualI [where A = "addElt(a,C)" for a C, intro!]
+  setEqualI [where B = "addElt(a,C)" for a C, intro!]
+  setEqualI [where A = "SUBSET C" for C, intro!]
+  setEqualI [where B = "SUBSET C" for C, intro!]
+  setEqualI [where A = "UNION C" for C, intro!]
+  setEqualI [where B = "UNION C" for C, intro!]
+  setEqualI [where A = "INTER C" for C, intro!]
+  setEqualI [where B = "INTER C" for C, intro!]
+  setEqualI [where A = "C \<union> D" for C D, intro!]
+  setEqualI [where B = "C \<union> D" for C D, intro!]
+  setEqualI [where A = "C \<inter> D" for C D, intro!]
+  setEqualI [where B = "C \<inter> D" for C D, intro!]
+  setEqualI [where A = "C \<setminus> D" for C D, intro!]
+  setEqualI [where B = "C \<setminus> D" for C D, intro!]
+  setEqualI [where A = "subsetOf(S,P)" for S P, intro!]
+  setEqualI [where B = "subsetOf(S,P)" for S P, intro!]
+  setEqualI [where A = "setOfAll(S,e)" for S e, intro!]
+  setEqualI [where B = "setOfAll(S,e)" for S e, intro!]
 
-lemmas setEqualD1 = extension[THEN iffD1, THEN conjD1, standard] -- {* @{text "A = B \<Longrightarrow> A \<subseteq> B"} *}
-lemmas setEqualD2 = extension[THEN iffD1, THEN conjD2, standard] -- {* @{text "A = B \<Longrightarrow> B \<subseteq> A"} *}
+lemma setEqualD1: "A = B \<Longrightarrow> A \<subseteq> B"
+  by blast
 
-text {*
-  We declare the elimination rule for set equalities as an unsafe
+lemma setEqualD2: "A = B \<Longrightarrow> B \<subseteq> A"
+  by blast
+
+text \<open>
+  We declare the elimination rule for set equations as an unsafe
   rule to use with the classical reasoner, so it will be tried if
   the more obvious uses of equality fail.
-*}
+\<close>
 lemma setEqualE [elim]:
   assumes "A = B"
   and "\<lbrakk> c \<in> A; c \<in> B \<rbrakk> \<Longrightarrow> P" and "\<lbrakk> c \<notin> A; c \<notin> B \<rbrakk> \<Longrightarrow> P"
@@ -696,10 +701,10 @@ lemma setEqualE [elim]:
 using assms by (blast dest: setEqualD1 setEqualD2)
 
 lemma setEqual_iff: "(A = B) = (\<forall>x : x \<in> A \<Leftrightarrow> x \<in> B)"
-by (blast intro: setEqualI (*elim: setEqualE*))
+by (blast intro: setEqualI)
 
 
-subsection {* Set comprehension: @{text setOfAll} and @{text subsetOf} *}
+subsection \<open> Set comprehension: @{text setOfAll} and @{text subsetOf} \<close>
 
 (***
 lemma setOfAllI:
@@ -735,10 +740,10 @@ lemma setOfAll_cong (*[cong]*):
   shows "{ e(x) : x \<in> S } = { f(y) : y \<in> T }"
 using assms by auto
 
-text {*
+text \<open>
   The following rule for showing equality of sets defined by comprehension
   is probably too general to use by default with the automatic proof methods.
-*}
+\<close>
 
 lemma setOfAllEqual:
   assumes "\<And>x. x \<in> S \<Longrightarrow> \<exists>y\<in>T : e(x) = f(y)"
@@ -784,7 +789,7 @@ lemma subsetOfEqual:
 by (safe elim!: assms)
 
 
-subsection {* @{text UNION} -- basic rules for generalized union *}
+subsection \<open> @{text UNION} -- basic rules for generalized union \<close>
 
 lemma UNIONI [intro]:
   assumes "B \<in> C" and "a \<in> B"
@@ -801,14 +806,14 @@ lemma UNION_iff [simp]:
 by blast
 
 
-subsection {* The empty set *}
+subsection \<open> The empty set \<close>
 
-text {*
+text \<open>
   Proving that the empty set has no elements is a bit tricky.
   We first show that the set @{term "{x \<in> {} : FALSE}"} is empty
   and then use the foundation axiom to show that it equals the
   empty set.
-*}
+\<close>
 
 lemma emptysetEmpty: "a \<notin> {}"
 proof
@@ -820,8 +825,8 @@ proof
   thus "FALSE" by blast
 qed
 
-text {* @{text "a \<in> {} \<Longrightarrow> P"} *}
-lemmas emptyE [elim!] = emptysetEmpty[THEN notE, standard]
+text \<open> @{text "a \<in> {} \<Longrightarrow> P"} \<close>
+lemmas emptyE [elim!] = emptysetEmpty[THEN notE]
 
 lemma [simp]: "(a \<in> {}) = FALSE"
 by blast
@@ -844,10 +849,10 @@ lemma nonEmpty [simp]:
   "({} \<noteq> A) = (\<exists>x : x \<in> A)"
 by (blast+)
 
-text {* Complete critical pairs *}
+text \<open> Complete critical pairs \<close>
 lemmas nonEmpty' [simp] = nonEmpty[simplified]
--- {* @{text "((A = {}) = FALSE) = (\<exists>x : x \<in> A)"},
-      @{text "(({} = A) = FALSE) = (\<exists>x : x \<in> A)"} *}
+\<comment> \<open> @{text "((A = {}) = FALSE) = (\<exists>x : x \<in> A)"},
+     @{text "(({} = A) = FALSE) = (\<exists>x : x \<in> A)"} \<close>
 
 lemma emptysetD (*[dest]*):
   assumes "A = {}"
@@ -878,7 +883,7 @@ lemma [simp]:
 by (blast+)
 
 
-subsection {* @{text SUBSET} -- the powerset operator *}
+subsection \<open> @{text SUBSET} -- the powerset operator \<close>
 
 lemma SUBSETI [intro!]:
   assumes "A \<subseteq> B"
@@ -894,18 +899,18 @@ lemma SUBSET_iff [simp]:
   "(A \<in> SUBSET B) = (A \<subseteq> B)"
 by blast
 
-lemmas emptySUBSET = emptySubset[THEN SUBSETI, standard] -- {* @{term "{} \<in> SUBSET A"} *}
-lemmas selfSUBSET = subsetRefl[THEN SUBSETI, standard] -- {* @{term "A \<in> SUBSET A"} *}
+lemmas emptySUBSET = emptySubset[THEN SUBSETI] \<comment> \<open> @{term "{} \<in> SUBSET A"} \<close>
+lemmas selfSUBSET = subsetRefl[THEN SUBSETI]   \<comment> \<open> @{term "A \<in> SUBSET A"} \<close>
 
 
-subsection {* @{text INTER} -- basic rules for generalized intersection *}
+subsection \<open> @{text INTER} -- basic rules for generalized intersection \<close>
 
-text {*
+text \<open>
   Generalized intersection is not officially part of \tlaplus{} but can
   easily be defined as above. Observe that the rules are not exactly
   dual to those for @{text UNION} because the intersection of the
   empty set is defined to be the empty set.
-*}
+\<close>
 
 lemma INTERI [intro]:
   assumes "\<And>B. B \<in> C \<Longrightarrow> a \<in> B" and "\<exists>B : B \<in> C"
@@ -922,41 +927,28 @@ lemma INTER_iff [simp]:
 by blast
 
 
-subsection {* Binary union, intersection, and difference: basic rules *}
+subsection \<open> Binary union, intersection, and difference: basic rules \<close>
 
-text {*
+text \<open>
   We begin by proving some lemmas about the auxiliary pairing operator
   @{text upair}. None of these theorems is active by default, as the
   operator is not part of \tlaplus{} and should not occur in actual reasoning.
   The dependencies between these operators are quite tricky, therefore
   the order of the first few lemmas in this section is tightly constrained.
-*}
+\<close>
 
 lemma upairE:
   assumes "x \<in> upair(a,b)" and "x=a \<Longrightarrow> P" and "x=b \<Longrightarrow> P"
   shows "P"
 using assms by (auto simp: upair_def)
 
-lemma cupE [elim!]:
+lemma unionE [elim!]:
   assumes "x \<in> A \<union> B" and "x \<in> A \<Longrightarrow> P" and "x \<in> B \<Longrightarrow> P"
   shows "P"
-using assms by (auto simp: cup_def elim: upairE)
+using assms by (auto simp: union_def elim: upairE)
 
 lemma upairI1: "a \<in> upair(a,b)"
 by (auto simp: upair_def)
-
-lemma singleton_iff [simp]: "(a \<in> {b}) = (a = b)"
-proof auto
-  assume a: "a \<in> {b}"
-  thus "a = b"
-    by (auto simp: addElt_def elim: upairE)
-next
-  show "b \<in> {b}"
-    by (auto simp: addElt_def cup_def intro: upairI1)
-qed
-
-lemma singletonI (*[intro!]*): "a \<in> {a}"
-by simp
 
 lemma upairI2: "b \<in> upair(a,b)"
 by (auto simp: upair_def)
@@ -964,20 +956,20 @@ by (auto simp: upair_def)
 lemma upair_iff: "(c \<in> upair(a,b)) = (c=a \<or> c=b)"
 by (blast intro: upairI1 upairI2 elim: upairE)
 
-lemma cupI1: 
+lemma unionI1: 
   assumes "a \<in> A"
   shows "a \<in> A \<union> B"
-using assms by (auto simp: cup_def upair_iff)
+using assms by (auto simp: union_def upair_iff)
 
-lemma cupI2:
+lemma unionI2:
   assumes "a \<in> B"
   shows "a \<in> A \<union> B"
-using assms by (auto simp: cup_def upair_iff)
+using assms by (auto simp: union_def upair_iff)
 
-lemma cup_iff [simp]: "(c \<in> A \<union> B) = (c \<in> A \<or> c \<in> B)"
-by (auto simp: cup_def upair_iff)
+lemma union_iff [simp]: "(c \<in> A \<union> B) = (c \<in> A \<or> c \<in> B)"
+by (auto simp: union_def upair_iff)
 
-lemma cupCI [intro!]:
+lemma unionCI [intro!]:
   assumes "c \<notin> B \<Longrightarrow> c \<in> A"
   shows "c \<in> A \<union> B"
 using assms by auto
@@ -996,6 +988,12 @@ lemma addEltE [elim!]:
   shows "P"
 using assms by auto
 
+lemma singleton_iff (*[simp]*): "(a \<in> {b}) = (a = b)"
+  by auto
+
+lemma singletonI (*[intro!]*): "a \<in> {a}"
+by simp
+
 lemma addEltSubsetI:
   assumes "a \<in> B" and "A \<subseteq> B"
   shows "addElt(a,A) \<subseteq> B"
@@ -1009,7 +1007,7 @@ using assms by blast
 lemma addEltSubset_iff: "(addElt(a,A) \<subseteq> B) = (a \<in> B \<and> A \<subseteq> B)"
 by blast
 
--- {* Adding the two following lemmas to the simpset breaks proofs. *}
+text \<open> Adding the two following lemmas to the simpset breaks proofs. \<close>
 lemma addEltEqual_iff: "(addElt(a,A) = S) = (a \<in> S \<and> A \<subseteq> S \<and> S \<subseteq> addElt(a,A))"
 by blast
 
@@ -1021,48 +1019,48 @@ lemma addEltEqualAddElt:
    (a \<in> addElt(b,B) \<and> A \<subseteq> addElt(b,B) \<and> b \<in> addElt(a,A) \<and> B \<subseteq> addElt(a,A))"
 by (auto simp: addEltEqual_iff)
 
-lemma cap_iff [simp]: "(c \<in> A \<inter> B) = (c \<in> A \<and> c \<in> B)"
-by (simp add: cap_def)
+lemma inter_iff [simp]: "(c \<in> A \<inter> B) = (c \<in> A \<and> c \<in> B)"
+by (simp add: inter_def)
 
-lemma capI [intro!]:
+lemma interI [intro!]:
   assumes "c \<in> A" and "c \<in> B"
   shows "c \<in> A \<inter> B"
 using assms by simp
 
-lemma capD1:
+lemma interD1:
   assumes "c \<in> A \<inter> B"
   shows "c \<in> A"
 using assms by simp
 
-lemma capD2:
+lemma interD2:
   assumes "c \<in> A \<inter> B"
   shows "c \<in> B"
 using assms by simp
 
-lemma capE [elim!]:
+lemma interE [elim!]:
   assumes "c \<in> A \<inter> B" and "\<lbrakk> c \<in> A; c \<in> B \<rbrakk> \<Longrightarrow> P"
   shows "P"
 using assms by simp
 
-lemma diff_iff [simp]: "(c \<in> A \<setminus> B) = (c \<in> A \<and> c \<notin> B)"
-by (simp add: diff_def)
+lemma setminus_iff [simp]: "(c \<in> A \<setminus> B) = (c \<in> A \<and> c \<notin> B)"
+by (simp add: setminus_def)
 
-lemma diffI [intro!]:
+lemma setminusI [intro!]:
   assumes "c \<in> A" and "c \<notin> B"
   shows "c \<in> A \<setminus> B"
 using assms by simp
 
-lemma diffD1:
+lemma setminusD1:
   assumes "c \<in> A \<setminus> B"
   shows "c \<in> A"
 using assms by simp
 
-lemma diffD2:
+lemma setminusD2:
   assumes "c \<in> A \<setminus> B"
   shows "c \<notin> B"
 using assms by simp
 
-lemma diffE [elim!]:
+lemma setminusE [elim!]:
   assumes "c \<in> A \<setminus> B" and "\<lbrakk> c \<in> A; c \<notin> B \<rbrakk> \<Longrightarrow> P"
   shows "P"
 using assms by simp
@@ -1097,7 +1095,7 @@ lemma subsetAddEltE [elim]:
 using assms by (auto simp: subsetAddElt_iff)
 
 
-subsection {* Consequences of the foundation axiom *}
+subsection \<open> Consequences of the foundation axiom \<close>
 
 lemma inAsym:
   assumes hyps: "a \<in> b" "\<not>P \<Longrightarrow> b \<in> a"
@@ -1123,7 +1121,7 @@ lemma equalNotIn:
 using assms by (blast elim: inIrrefl)
 
 
-subsection {* Miniscoping of bounded quantifiers *}
+subsection \<open> Miniscoping of bounded quantifiers \<close>
 
 lemma miniscope_bAll [simp]:
   "\<And>P Q. (\<forall>x\<in>A : P(x) \<and> Q) = ((\<forall>x\<in>A : P(x)) \<and> (A = {} \<or> Q))"
@@ -1139,11 +1137,11 @@ lemma miniscope_bAll [simp]:
   "\<And>P Q. (\<forall>x \<in> {y \<in> A : P(y)} : Q(x)) = (\<forall>y\<in>A: P(y) \<Rightarrow> Q(y))"
 by (blast+)
 
-lemma bAllCup [simp]:
+lemma bAllUnion [simp]:
   "(\<forall>x \<in> A \<union> B : P(x)) = ((\<forall>x\<in>A : P(x)) \<and> (\<forall>x\<in>B : P(x)))"
 by blast
 
-lemma bAllCap [simp]:
+lemma bAllInter [simp]:
   "(\<forall>x \<in> A \<inter> B : P(x)) = (\<forall>x\<in>A : x \<in> B \<Rightarrow> P(x))"
 by blast
 
@@ -1161,21 +1159,21 @@ lemma miniscope_bEx [simp]:
   "\<And>P Q. (\<exists>x \<in> {y \<in> S : P(y)} : Q(x)) = (\<exists>y\<in>S : P(y) \<and> Q(y))"
 by (blast+)
 
--- {* completing critical pairs for negated assumption *}
+text \<open> completing critical pairs for negated assumption \<close>
 lemma notbQuant' [simp]:
   "\<And>P. ((\<forall>x\<in>A : P(x)) = FALSE) = (\<exists>x\<in>A : \<not>P(x))"
   "\<And>P. ((\<exists>x\<in>A : P(x)) = FALSE) = (\<forall>x\<in>A : \<not>P(x))"
 by (auto simp: miniscope_bAll[simplified] miniscope_bEx[simplified])
 
-lemma bExistsCup [simp]:
+lemma bExistsUnion [simp]:
   "(\<exists>x \<in> A \<union> B : P(x)) = ((\<exists>x\<in>A : P(x)) \<or> (\<exists>x\<in>B : P(x)))"
 by blast
 
-lemma bExistsCap [simp]:
+lemma bExistsInter [simp]:
   "(\<exists>x \<in> A \<inter> B : P(x)) = (\<exists>x\<in>A : x \<in> B \<and> P(x))"
 by blast
 
-lemma bQuant_distribs: -- {* not active by default *}
+lemma bQuant_distribs: \<comment> \<open> not active by default \<close>
   "(\<forall>x\<in>A : P(x) \<and> Q(x)) = ((\<forall>x\<in>A : P(x)) \<and> (\<forall>x\<in>A : Q(x)))"
   "(\<exists>x\<in>A : P(x) \<or> Q(x)) = ((\<exists>x\<in>A : P(x)) \<or> (\<exists>x\<in>A : Q(x)))"
 by (blast+)
@@ -1190,7 +1188,7 @@ lemma bQuantOnePoint [simp]:
 by (blast+)
 
 
-subsection {* Simplification of set comprehensions *}
+subsection \<open> Simplification of set comprehensions \<close>
 
 lemma comprehensionSimps [simp]:
   "\<And>e. setOfAll({}, e) = {}"
@@ -1206,24 +1204,24 @@ lemma comprehensionSimps [simp]:
   "\<And>A e. setOfAll(A, \<lambda>x. e) = (IF A = {} THEN {} ELSE {e})"
 by auto
 
-text {* The following are not active by default. *}
+text \<open> The following are not active by default. \<close>
 
 lemma comprehensionDistribs:
   "\<And>e. { e(x) : x \<in> A \<union> B } = {e(x) : x\<in>A} \<union> {e(x) : x\<in>B}"
   "\<And>P. { x \<in> A \<union> B : P(x) } = {x\<in>A : P(x)} \<union> {x\<in>B : P(x)}"
-  -- {* @{text setOfAll} and intersection or difference do not distribute *}
+  \<comment> \<open> @{text setOfAll} and intersection or difference do not distribute \<close>
   "\<And>P. { x \<in> A \<inter> B : P(x) } = {x\<in>A : P(x)} \<inter> {x\<in>B : P(x)}"
   "\<And>P. { x \<in> A \<setminus> B : P(x) } = {x\<in>A : P(x)} \<setminus> {x\<in>B : P(x)}"
 by (blast+)
 
 
-subsection {* Binary union, intersection, and difference: inclusions and equalities *}
+subsection \<open> Binary union, intersection, and difference: inclusions and equations \<close>
 
-text {*
+text \<open>
   The following list contains many simple facts about set theory.
   Only the most trivial of these are included in the default set
   of rewriting rules.
-*}
+\<close>
 
 lemma addEltCommute: "addElt(a, addElt(b, C)) = addElt(b, addElt(a, C))"
 by blast
@@ -1234,59 +1232,59 @@ by blast
 lemma addEltTwice: "addElt(a, addElt(a, A)) = addElt(a, A)"
 by blast
 
-lemma capAddEltLeft: "addElt(a,B) \<inter> C = (IF a \<in> C THEN addElt(a, B \<inter> C) ELSE B \<inter> C)"
+lemma interAddEltLeft: "addElt(a,B) \<inter> C = (IF a \<in> C THEN addElt(a, B \<inter> C) ELSE B \<inter> C)"
 by (blast intro: condI elim: condE)
 
-lemma capAddEltRight: "C \<inter> addElt(a,B) = (IF a \<in> C THEN addElt(a, C \<inter> B) ELSE C \<inter> B)"
+lemma interAddEltRight: "C \<inter> addElt(a,B) = (IF a \<in> C THEN addElt(a, C \<inter> B) ELSE C \<inter> B)"
 by (blast intro: condI elim: condE)
 
-lemma addEltCap: "addElt(a, B \<inter> C) = addElt(a,B) \<inter> addElt(a,C)"
+lemma addEltInter: "addElt(a, B \<inter> C) = addElt(a,B) \<inter> addElt(a,C)"
 by blast
 
-lemma diffAddEltLeft: "addElt(a,B) \<setminus> C = (IF a \<in> C THEN B \<setminus> C ELSE addElt(a, B \<setminus> C))"
+lemma setminusAddEltLeft: "addElt(a,B) \<setminus> C = (IF a \<in> C THEN B \<setminus> C ELSE addElt(a, B \<setminus> C))"
 by (blast intro: condI elim: condE)
 
-lemma capSubset: "(C \<subseteq> A \<inter> B) = (C \<subseteq> A \<and> C \<subseteq> B)"
+lemma interSubset: "(C \<subseteq> A \<inter> B) = (C \<subseteq> A \<and> C \<subseteq> B)"
 by blast
 
-lemma capLB1: "A \<inter> B \<subseteq> A"
+lemma interLB1: "A \<inter> B \<subseteq> A"
 by blast
 
-lemma capLB2: "A \<inter> B \<subseteq> B"
+lemma interLB2: "A \<inter> B \<subseteq> B"
 by blast
 
-lemma capGLB:
+lemma interGLB:
   assumes "C \<subseteq> A" and "C \<subseteq> B"
   shows "C \<subseteq> A \<inter> B"
 using assms by blast
 
-lemma capEmpty [simp]:
+lemma interEmpty [simp]:
   "A \<inter> {} = {}"
   "{} \<inter> A = {}"
 by blast+
 
-lemma capAbsorb [simp]: "A \<inter> A = A"
+lemma interAbsorb [simp]: "A \<inter> A = A"
 by blast
 
-lemma capLeftAbsorb: "A \<inter> (A \<inter> B) = A \<inter> B"
+lemma interLeftAbsorb: "A \<inter> (A \<inter> B) = A \<inter> B"
 by blast
 
-lemma capCommute: "A \<inter> B = B \<inter> A"
+lemma interCommute: "A \<inter> B = B \<inter> A"
 by blast
 
-lemma capLeftCommute: "A \<inter> (B \<inter> C) = B \<inter> (A \<inter> C)"
+lemma interLeftCommute: "A \<inter> (B \<inter> C) = B \<inter> (A \<inter> C)"
 by blast
 
-lemma capAssoc: "(A \<inter> B) \<inter> C = A \<inter> (B \<inter> C)"
+lemma interAssoc: "(A \<inter> B) \<inter> C = A \<inter> (B \<inter> C)"
 by blast
 
-text {* Intersection is an AC operator: can be added to simp where appropriate *}
-lemmas capAC = capAssoc capCommute capLeftCommute capLeftAbsorb
+text \<open> Intersection is an AC operator: can be added to simp where appropriate \<close>
+lemmas interAC = interAssoc interCommute interLeftCommute interLeftAbsorb
 
-lemma subsetOfCap: "{x\<in>A : P(x)} \<inter> B = {x \<in> A \<inter> B : P(x)}"
+lemma subsetOfInter: "{x\<in>A : P(x)} \<inter> B = {x \<in> A \<inter> B : P(x)}"
 by blast
 
-lemma capSubsetOf:
+lemma interSubsetOf:
   "B \<inter> {x\<in>A : P(x)} = {x \<in> B\<inter>A : P(x)}"
 by blast
 
@@ -1298,113 +1296,115 @@ lemma subsetOfConj:
   "{x\<in>A : P(x) \<and> Q(x)} = {x\<in>A : P(x)} \<inter> {x\<in>A : Q(x)}"
 by blast
 
-lemma subsetCup: "(A \<union> B \<subseteq> C) = (A \<subseteq> C \<and> B \<subseteq> C)"
+lemma subsetUnion: "(A \<union> B \<subseteq> C) = (A \<subseteq> C \<and> B \<subseteq> C)"
 by blast
 
-lemma cupUB1: "A \<subseteq> A \<union> B"
+lemma unionUB1: "A \<subseteq> A \<union> B"
 by blast
 
-lemma cupUB2: "B \<subseteq> A \<union> B"
+lemma unionUB2: "B \<subseteq> A \<union> B"
 by blast
 
-lemma cupLUB:
+lemma unionLUB:
   assumes "A \<subseteq> C" and "B \<subseteq> C"
   shows "A \<union> B \<subseteq> C"
 using assms by blast
 
-lemma cupEmpty [simp]:
+lemma unionEmpty [simp]:
   "A \<union> {} = A"
   "{} \<union> A = A"
 by blast+
 
-lemma cupAddEltLeft: "addElt(a,B) \<union> C = addElt(a, B \<union> C)"
+lemma unionAddEltLeft: "addElt(a,B) \<union> C = addElt(a, B \<union> C)"
 by blast
 
-lemma cupAddEltRight: "C \<union> addElt(a,B) = addElt(a, C \<union> B)"
+lemma unionAddEltRight: "C \<union> addElt(a,B) = addElt(a, C \<union> B)"
 by blast
 
-lemma addEltCup: "addElt(a, B \<union> C) = addElt(a,B) \<union> addElt(a,C)"
+lemma addEltUnion: "addElt(a, B \<union> C) = addElt(a,B) \<union> addElt(a,C)"
 by blast
 
-lemma cupAbsorb [simp]: "A \<union> A = A"
+lemma unionAbsorb [simp]: "A \<union> A = A"
 by blast
 
-lemma cupLeftAbsorb: "A \<union> (A \<union> B) = A \<union> B"
+lemma unionLeftAbsorb: "A \<union> (A \<union> B) = A \<union> B"
 by blast
 
-lemma cupCommute: "A \<union> B = B \<union> A"
+lemma unionCommute: "A \<union> B = B \<union> A"
 by blast
 
-lemma cupLeftCommute: "A \<union> (B \<union> C) = B \<union> (A \<union> C)"
+lemma unionLeftCommute: "A \<union> (B \<union> C) = B \<union> (A \<union> C)"
 by blast
 
-lemma cupAssoc: "(A \<union> B) \<union> C = A \<union> (B \<union> C)"
+lemma unionAssoc: "(A \<union> B) \<union> C = A \<union> (B \<union> C)"
 by blast
 
-text {* Union is an AC operator: can be added to simp where appropriate *}
-lemmas cupAC = cupAssoc cupCommute cupLeftCommute cupLeftAbsorb
+text \<open> Union is an AC operator: can be added to simp where appropriate \<close>
+lemmas unionAC = unionAssoc unionCommute unionLeftCommute unionLeftAbsorb
 
-text {* Lemmas useful for simplifying enumerated sets are active by default *}
+text \<open> Lemmas useful for simplifying enumerated sets are active by default \<close>
 lemmas enumeratedSetSimps [simp] = 
   addEltSubset_iff addEltEqualAddElt addEltCommute addEltTwice 
-  capAddEltLeft capAddEltRight cupAddEltLeft cupAddEltRight diffAddEltLeft
+  interAddEltLeft interAddEltRight unionAddEltLeft unionAddEltRight setminusAddEltLeft
 
-lemma cupEqualEmpty [simp]: "(A \<union> B = {}) = (A = {} \<and> B = {})"
+(* included below
+lemma unionEqualEmpty [simp]: "(A \<union> B = {}) = (A = {} \<and> B = {})"
+by blast
+*)
+
+lemma interUnionDistrib: "A \<inter> (B \<union> C) = (A \<inter> B) \<union> (A \<inter> C)"
 by blast
 
-lemma capCupDistrib: "A \<inter> (B \<union> C) = (A \<inter> B) \<union> (A \<inter> C)"
+lemma unionInterDistrib: "A \<union> (B \<inter> C) = (A \<union> B) \<inter> (A \<union> C)"
 by blast
 
-lemma cupCapDistrib: "A \<union> (B \<inter> C) = (A \<union> B) \<inter> (A \<union> C)"
+lemma setminusSubset: "A \<setminus> B \<subseteq> A"
 by blast
 
-lemma diffSubset: "A \<setminus> B \<subseteq> A"
-by blast
-
-lemma subsetDiff:
+lemma subsetSetminus:
   assumes "C \<subseteq> A" and "C \<inter> B = {}"
   shows "C \<subseteq> A \<setminus> B"
 using assms by blast
 
-lemma diffSelf [simp]: "A \<setminus> A = {}"
+lemma setminusSelf [simp]: "A \<setminus> A = {}"
 by blast
 
-lemma diffDisjoint:
+lemma setminusDisjoint:
   assumes "A \<inter> B = {}"
   shows "A \<setminus> B = A"
 using assms by blast
 
-lemma emptyDiff [simp]: "{} \<setminus> A = {}"
+lemma emptySetminus [simp]: "{} \<setminus> A = {}"
 by blast
 
-lemma diffAddElt: "A \<setminus> addElt(a,B) = (A \<setminus> B) \<setminus> {a}"
+lemma setminusAddElt: "A \<setminus> addElt(a,B) = (A \<setminus> B) \<setminus> {a}"
 by blast
 
-lemma cupDiffSelf: "A \<union> (B \<setminus> A) = A \<union> B"
+lemma unionSetminusSelf: "A \<union> (B \<setminus> A) = A \<union> B"
 by blast
 
-lemma diffCupLeft: "(A \<union> B) \<setminus> C = (A \<setminus> C) \<union> (B \<setminus> C)"
+lemma setminusUnionLeft: "(A \<union> B) \<setminus> C = (A \<setminus> C) \<union> (B \<setminus> C)"
 by blast
 
-lemma diffCupRight: "A \<setminus> (B \<union> C) = (A \<setminus> B) \<inter> (A \<setminus> C)"
+lemma setminusUnionRight: "A \<setminus> (B \<union> C) = (A \<setminus> B) \<inter> (A \<setminus> C)"
 by blast
 
-lemma cupDiffLeft: "(A \<setminus> B) \<union> C = (A \<union> C) \<setminus> (A \<inter> (B \<setminus> C))"
+lemma unionSetminusLeft: "(A \<setminus> B) \<union> C = (A \<union> C) \<setminus> (A \<inter> (B \<setminus> C))"
 by blast
 
-lemma cupDiffRight: "C \<union> (A \<setminus> B) = (C \<union> A) \<setminus> (A \<inter> (B \<setminus> C))"
+lemma unionSetminusRight: "C \<union> (A \<setminus> B) = (C \<union> A) \<setminus> (A \<inter> (B \<setminus> C))"
 by blast
 
-lemma diffCapLeft: "(A \<inter> B) \<setminus> C = A \<inter> (B \<setminus> C)"
+lemma setminusInterLeft: "(A \<inter> B) \<setminus> C = A \<inter> (B \<setminus> C)"
 by blast
 
-lemma diffCapRight: "A \<setminus> (B \<inter> C) = (A \<setminus> B) \<union> (A \<setminus> C)"
+lemma setminusInterRight: "A \<setminus> (B \<inter> C) = (A \<setminus> B) \<union> (A \<setminus> C)"
 by blast
 
-lemma capDiffLeft: "(A \<setminus> B) \<inter> C = (A \<inter> C) \<setminus> B"
+lemma interSetminusLeft: "(A \<setminus> B) \<inter> C = (A \<inter> C) \<setminus> B"
 by blast
 
-lemma capDiffRight: "C \<inter> (A \<setminus> B) = (C \<inter> A) \<setminus> B"
+lemma interSetminusRight: "C \<inter> (A \<setminus> B) = (C \<inter> A) \<setminus> B"
 by blast
 
 lemma isEmptySimps [simp]:
@@ -1425,7 +1425,7 @@ lemma isEmptySimps [simp]:
 by (blast+)
 
 
-subsection {* Generalized union: inclusions and equalities *}
+subsection \<open> Generalized union: inclusions and equalities \<close>
 
 lemma UNIONSimps [simp]:
   "UNION {} = {}"
@@ -1446,19 +1446,19 @@ lemma UNION_LUB:
   shows "UNION A \<subseteq> C"
 using assms by blast
 
-lemma UNIONCupDistrib: "UNION (A \<union> B) = UNION A \<union> UNION B"
+lemma UNIONunionDistrib: "UNION (A \<union> B) = UNION A \<union> UNION B"
 by blast
 
-lemma UNIONCap: "UNION (A \<inter> B) \<subseteq> UNION A \<inter> UNION B"
+lemma UNIONinter: "UNION (A \<inter> B) \<subseteq> UNION A \<inter> UNION B"
 by blast
 
 lemma UNIONDisjoint: "((UNION A) \<inter> C = {}) = (\<forall>B\<in>A : B \<inter> C = {})"
 by blast
 
-lemma capUNION: "(UNION A) \<inter> B = UNION { C \<inter> B : C \<in> A }"
+lemma interUNION: "(UNION A) \<inter> B = UNION { C \<inter> B : C \<in> A }"
 by blast
 
-lemma diffUNIONLeft: "(UNION A) \<setminus> B = UNION { C \<setminus> B : C \<in> A }"
+lemma setminusUNIONLeft: "(UNION A) \<setminus> B = UNION { C \<setminus> B : C \<in> A }"
 by blast
 
 lemma UNION_mono:
@@ -1467,7 +1467,7 @@ lemma UNION_mono:
 using assms by blast
 
 
-subsection {* Generalized intersection: inclusions and equalities *}
+subsection \<open> Generalized intersection: inclusions and equations \<close>
 
 
 lemma INTERSimps [simp]:
@@ -1491,23 +1491,23 @@ lemma INTER_GLB:
   shows "C \<subseteq> INTER A"
 using assms by blast
 
-lemma INTERCupDistrib:
+lemma INTERunionDistrib:
   assumes "A \<noteq> {}" and "B \<noteq> {}"
   shows "INTER (A \<union> B) = INTER A \<inter> INTER B"
 using assms by auto
 
-lemma capINTER: "(INTER A) \<inter> B \<subseteq> INTER {C \<inter> B : C \<in> A}"
+lemma interINTER: "(INTER A) \<inter> B \<subseteq> INTER {C \<inter> B : C \<in> A}"
 by blast
 
-lemma cupINTER:
+lemma unionINTER:
   assumes "A \<noteq> {}"
   shows "(INTER A) \<union> B = INTER {C \<union> B : C \<in> A}"
 using assms by auto
 
-lemma diffINTERLeft: "(INTER A) \<setminus> B = INTER {C \<setminus> B : C \<in> A}"
+lemma setminusINTERLeft: "(INTER A) \<setminus> B = INTER {C \<setminus> B : C \<in> A}"
 by auto
 
-lemma diffINTERRight:
+lemma setminusINTERRight:
   assumes "A \<noteq> {}"
   shows "B \<setminus> (INTER A) = UNION {B \<setminus> C : C \<in> A}"
 using assms by auto
@@ -1523,16 +1523,16 @@ lemma INTER_anti_mono:
 using assms by (auto simp: INTER_def)
 
 
-subsection {* Powerset: inclusions and equalities *}
+subsection \<open> Powerset: inclusions and equations \<close>
 
 lemma SUBSETEmpty [simp]: "SUBSET {} = { {} }"
 by blast
 
-lemma SUBSETAddElt:
+lemma SUBSETaddElt:
   "SUBSET addElt(a,A) = SUBSET A \<union> {addElt(a,X) : X \<in> SUBSET A}"
 by (rule setEqualI, auto)
 
-lemma cupSUBSET: "(SUBSET A) \<union> (SUBSET B) \<subseteq> SUBSET (A \<union> B)"
+lemma unionSUBSET: "(SUBSET A) \<union> (SUBSET B) \<subseteq> SUBSET (A \<union> B)"
 by blast
 
 lemma UNION_SUBSET [simp]: "UNION (SUBSET A) = A"
@@ -1544,7 +1544,7 @@ by blast
 lemma UNION_in_SUBSET: "(UNION A \<in> SUBSET B) = (A \<in> SUBSET (SUBSET B))"
 by blast
 
-lemma SUBSETcap: "SUBSET (A \<inter> B) = SUBSET A \<inter> SUBSET B"
+lemma SUBSETinter: "SUBSET (A \<inter> B) = SUBSET A \<inter> SUBSET B"
 by blast
 
 end
