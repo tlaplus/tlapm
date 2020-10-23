@@ -63,6 +63,7 @@ type tla_smb =
   | Any of ty       (** Random element of a type *)
   | Ucast of ty     (** Cast from any type to uninterpreted *)
   | Uver of tla_smb (** Uninterpreted VERsion of a symbol *)
+  | Error           (** Uninterpreted value *)
 
 type family =
   | Logic

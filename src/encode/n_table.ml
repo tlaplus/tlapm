@@ -62,6 +62,7 @@ type tla_smb =
   | Any of ty       (** Random element of a type *)
   | Ucast of ty     (** Cast from any type to uninterpreted *)
   | Uver of tla_smb (** Uninterpreted VERsion of a symbol *)
+  | Error           (** Uninterpreted value *)
 
 type family =
   | Logic
@@ -94,7 +95,7 @@ let rec get_tlafam = function
       Functions
   | Uver smb ->
       get_tlafam smb
-  | Any _ | Ucast _ ->
+  | Any _ | Ucast _ | Error ->
       Special
 
 
@@ -516,6 +517,10 @@ let ucast ty =
   let id = suffix "Cast" [ type_to_string ty ] in
   mk_fst_smb Special id [ ty ] (TAtom TU)
 
+let error =
+  let id = "err" in
+  mk_cst_smb Special id (TAtom TU)
+
 
 let rec std_smb_aux = function
   | Choose ty -> choose ty
@@ -558,6 +563,7 @@ let rec std_smb_aux = function
   | Any ty -> any ty
   | Ucast ty -> ucast ty
   | Uver tla_smb -> u_smb (std_smb_aux tla_smb)
+  | Error -> error
 
 
 let std_smb tla_smb =

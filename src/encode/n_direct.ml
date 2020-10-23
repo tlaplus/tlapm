@@ -223,7 +223,8 @@ let rec expr cx oe =
           (maybe_proj rt1 p, maybe_cast rt2 e)
         end ps
       in
-      (Case (ps, None) @@ oe, RSet)
+      let o = opq_from_smb Error in
+      (Case (ps, Some o) @@ oe, RSet)
 
   | Case (ps, Some o) ->
       (* Return type is form if all cases are form; otherwise set *)

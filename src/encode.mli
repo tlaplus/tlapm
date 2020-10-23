@@ -78,6 +78,7 @@ module Table : sig
     | Any of ty
     | Ucast of ty
     | Uver of tla_smb
+    | Error
 
   type family =
     | Logic
