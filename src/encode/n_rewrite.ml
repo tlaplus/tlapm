@@ -235,6 +235,40 @@ let elim_multiarg sq =
   snd (elim_multiarg_visitor #sequent cx sq)
 
 
+let elim_except_visitor = object (self : 'self)
+  inherit [unit] Visit.map as super
+
+  method expr scx oe =
+    match oe.core with
+    (* NOTE Except-expressions are normalized in {!Expr.Elab} *)
+    | Except (e1, [ xp ]) ->
+        let e1 = self#expr scx e1 in
+        let xps, e3 = self#exspec scx xp in
+        let e2 =
+          match xps with
+          | [ Except_apply e2 ] -> e2
+          | [ Except_dot s ] -> String s %% []
+          | _ -> error ~at:oe "Unsupported EXCEPT"
+        in
+        let b = Apply (Internal B.DOMAIN %% [], [ e1 ]) %% [] in
+        let e =
+          If (
+            Apply (Internal B.Eq %% [], [ Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) e2 ]) %% [],
+            Subst.app_expr (Subst.shift 1) e3,
+            FcnApp (Subst.app_expr (Subst.shift 1) e1, [ Ix 1 %% [] ]) %% []
+          ) %% []
+        in
+        let v = "x" %% [] in
+        Fcn ([ v, Constant, Domain b ], e) @@ oe
+
+    | _ -> super#expr scx oe
+end
+
+let elim_except sq =
+  let cx = ((), Deque.empty) in
+  snd (elim_except_visitor #sequent cx sq)
+
+
 let elim_tuples_visitor = object (self : 'self)
   inherit [unit] Visit.map as super
 

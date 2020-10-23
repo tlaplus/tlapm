@@ -20,7 +20,10 @@ val elim_compare : sequent -> sequent
 
 (** Reduce functions to one-argument functions (using tuples) *)
 val elim_multiarg : sequent -> sequent
-(** NOTE: Better call before {!elim_tuples}, since this introduces new tuples *)
+(** NOTE: Call before {!elim_tuples}, since this introduces new tuples *)
+
+(** Reduce except-constructs to regular functions *)
+val elim_except : sequent -> sequent
 
 (** Reduce tuples to functions *)
 val elim_tuples : sequent -> sequent

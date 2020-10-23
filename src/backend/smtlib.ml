@@ -380,6 +380,7 @@ let preprocess ?solver sq =
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_tuples
     |> Encode.Rewrite.elim_records
+    |> Encode.Rewrite.elim_except
     (* NOTE eliminating bound notation necessary to make all '\in' visible *)
     |> Encode.Rewrite.elim_bounds
     |> debug "Done Simpl." (* FIXME remove *)
