@@ -40,8 +40,8 @@ PROOF
             BY <3>1 DEF P
         (* If x reaches n then it remains n or increases by 1. *)
         <3>2. Spec => [] \/ ~ (x = n)
-                         \/ <> \/ [] (x = n)
-                               \/ (x = n + 1)
+                         \/ [] (x = n)
+                         \/ <> (x = n + 1)
             <4>1. ASSUME Inv /\ [Next]_x
                   PROVE  \/ ~ (x = n)
                          \/ (x = n)'
@@ -60,7 +60,7 @@ PROOF
                   PROVE WF_x(Next) => []<><<Next>>_x
                 BY <4>1, <4>2, PTL
             <4> QED
-                BY <1>1, <4>1, <4>2 DEF Spec
+                BY <1>1, <4>2 DEF Spec
         (* Any <<Next>>_x step when x = n changes x so that ~(x = n)'. *)
         <3>4. ASSUME Inv /\ (x = n) /\ <<Next>>_x
               PROVE ~(x = n)'

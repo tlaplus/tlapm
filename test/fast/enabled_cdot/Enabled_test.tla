@@ -62,7 +62,7 @@ PROOF
 Yunprimed == y
 F == ENABLED (z' /\ Yunprimed)
 G == /\ Yunprimed
-     /\ \E zprime, yprime:  zprime /\ yprime
+     /\ \E zprime:  zprime
 
 
 THEOREM EnabledEliminationWithUnexpanded ==
@@ -75,7 +75,7 @@ PROOF
 THEOREM
     F = G
 PROOF
-    BY ExpandENABLED, AutoUSE DEF F, G
+    BY ExpandENABLED DEF F, G
 
 
 --------------------------------------------------------------------------------
@@ -136,9 +136,9 @@ D == ENABLED C
 
 
 THEOREM
-    C => D
+    D
 PROOF
-    BY ExpandENABLED DEF C, D
+    BY ExpandENABLED, AutoUSE DEF D
 
 
 --------------------------------------------------------------------------------
