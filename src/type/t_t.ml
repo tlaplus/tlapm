@@ -188,9 +188,11 @@ let pp_print_targ ff targ =
   | TRg ty | TOp ([], ty) ->
       pp_print_type ff ty
   | TOp (tys, ty) ->
-      fprintf ff "%a@ -> %a"
-      (pp_print_delimited ~sep:pp_print_times pp_print_type) tys
-      pp_print_type ty
+      if List.length tys > 0 then begin
+        fprintf ff "%a ->@ "
+        (pp_print_delimited ~sep:pp_print_times pp_print_type) tys
+      end;
+      pp_print_type ff ty
 
 let pp_print_tsch ff (TSch (vs, targs, ty)) =
   let pp_print_targ ff targ =
@@ -200,10 +202,15 @@ let pp_print_tsch ff (TSch (vs, targs, ty)) =
     | _ ->
         pp_print_targ ff targ
   in
-  fprintf ff "(%a).@ %a@ -> %a"
-  (pp_print_delimited ~sep:pp_print_space pp_print_string) vs
-  (pp_print_delimited ~sep:pp_print_times pp_print_targ) targs
-  pp_print_type ty
+  if List.length vs > 0 then begin
+    fprintf ff "(%a).@ "
+    (pp_print_delimited ~sep:pp_print_space pp_print_string) vs
+  end;
+  if List.length targs > 0 then begin
+    fprintf ff "%a ->@ "
+    (pp_print_delimited ~sep:pp_print_times pp_print_targ) targs
+  end;
+  pp_print_type ff ty
 
 let rec pp_print_kind ff (TKind (ks, ty)) =
   fprintf ff "@[[%a@]]%a"
