@@ -95,6 +95,18 @@ val query_sort : 'a wrapped -> ty_atom option
 val query_kind : 'a wrapped -> ty_kind option
 
 
+(* {3 Exceptions} *)
+
+(** First argument is the expected type; second is the found type *)
+exception Typechecking_ty of Loc.locus * ty * ty
+exception Typechecking_ty_arg of Loc.locus * ty_arg * ty_arg
+exception Typechecking_ty_sch of Loc.locus * ty_sch * ty_sch
+
+val check_ty0_eq : ?at:('a wrapped) -> ty -> ty -> unit
+val check_ty1_eq : ?at:('a wrapped) -> ty_arg -> ty_arg -> unit
+val check_ty2_eq : ?at:('a wrapped) -> ty_sch -> ty_sch -> unit
+
+
 (* {3 Pretty-printing} *)
 
 val pp_print_type : Format.formatter -> ty -> unit

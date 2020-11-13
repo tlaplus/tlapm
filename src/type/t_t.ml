@@ -136,6 +136,32 @@ let query_sort h = query h Props.atom_prop
 let query_kind h = query h Props.kind_prop
 
 
+(* {3 Exceptions} *)
+
+exception Typechecking_ty of Loc.locus * ty * ty
+exception Typechecking_ty_arg of Loc.locus * ty_arg * ty_arg
+exception Typechecking_ty_sch of Loc.locus * ty_sch * ty_sch
+
+let query_locus = function
+  | Some at -> Option.default Loc.unknown (Util.query_locus at)
+  | None -> Loc.unknown
+
+let check_ty0_eq ?at ty1 ty2 =
+  let loc = query_locus at in
+  if ty1 <> ty2 then
+    raise (Typechecking_ty (loc, ty1, ty2))
+
+let check_ty1_eq ?at ty1 ty2 =
+  let loc = query_locus at in
+  if ty1 <> ty2 then
+    raise (Typechecking_ty_arg (loc, ty1, ty2))
+
+let check_ty2_eq ?at ty1 ty2 =
+  let loc = query_locus at in
+  if ty1 <> ty2 then
+    raise (Typechecking_ty_sch (loc, ty1, ty2))
+
+
 (* {3 Pretty-printing} *)
 
 let rec pp_print_type ff ty =

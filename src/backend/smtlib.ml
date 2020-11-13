@@ -364,7 +364,7 @@ let preprocess ?solver sq =
   let pp_print_sequent ff sq = ignore (Expr.Fmt.pp_print_sequent emp ff sq) in
 
   let pp_debug mssg sq =
-    fprintf err_formatter "  [DEBUG] %s@.%a@.@." mssg
+    eprintf "  [DEBUG] %s@.%a@.@." mssg
     pp_print_sequent sq
   in
   let debug mssg sq =
@@ -436,7 +436,25 @@ let pp_print_declarefun ff nm ins out =
 let pp_print_obligation ?(solver="CVC4") ff ob =
   (* Shape the sequent into a form that can be translated;
    * Append a top context containing additional declarations and axioms *)
-  let sq = preprocess ~solver ob.Proof.T.obl.core in
+  let sq =
+    try preprocess ~solver ob.Proof.T.obl.core
+    with
+    | Typechecking_ty (loc, ty0_1, ty0_2) ->
+        let loc = Loc.string_of_locus ~cap:true loc in
+        eprintf "%s: Typechecking error (0), expected `%a`, found `%a`@."
+        loc pp_print_type ty0_1 pp_print_type ty0_2;
+        failwith "Typechecking error"
+    | Typechecking_ty_arg (loc, ty1_1, ty1_2) ->
+        let loc = Loc.string_of_locus ~cap:true loc in
+        eprintf "%s: Typechecking error (1), expected `%a`, found `%a`@."
+        loc pp_print_targ ty1_1 pp_print_targ ty1_2;
+        failwith "Typechecking error"
+    | Typechecking_ty_sch (loc, ty2_1, ty2_2) ->
+        let loc = Loc.string_of_locus ~cap:true loc in
+        eprintf "%s: Typechecking error (2), expected `%a`, found `%a`@."
+        loc pp_print_tsch ty2_1 pp_print_tsch ty2_2;
+        failwith "Typechecking error"
+  in
 
   (* Print preample *)
   fprintf ff ";; TLA+ Proof Manager %s@." (Params.rawversion ());
