@@ -774,7 +774,7 @@ let shift_indices_after_lambdify (e: expr): expr =
     visitor#expr s e
 
 
-let normalize_lambda_signature signature =
+let normalize_lambda_signature signature keep_same_names =
     let n = List.length signature in
     assert (n >= 1);
     let names = List.init n (fun i -> param_name ^ string_of_int i) in
@@ -785,7 +785,10 @@ let normalize_lambda_signature signature =
         let h = assign h variable_name flex_name in
         let shp = Shape_expr in
         (h, shp) in
-    List.map2 mk_parameter names params
+    if keep_same_names then
+        List.map2 mk_parameter params params
+    else
+        List.map2 mk_parameter names params
 
 
 class normalize_lambda_param_names =
@@ -802,6 +805,11 @@ class normalize_lambda_param_names =
     object (self: 'self)
     inherit [unit] Visit.map_visible_hyp as super
 
+    val mutable _keep_same_names: bool = true
+
+    method config keep_same_names =
+        _keep_same_names <- keep_same_names
+
     method expr
             (((), (cx: T.ctx)) as scx)
             (e: expr):
@@ -812,7 +820,8 @@ class normalize_lambda_param_names =
             let (fst, _) = List.hd signature in
             assert (fst.core <> temp_bound);
             let expr_ = self#expr scx expr in
-            let signature = normalize_lambda_signature signature in
+            let signature = normalize_lambda_signature
+                signature _keep_same_names in
             let lambda = Lambda (signature, expr_) in
             let expr_ = noprops lambda in
             (* without renaming, even without coalescing,
@@ -933,7 +942,8 @@ class lambdify_action_operators =
             (cx: T.ctx)
             (e: expr)
             ~(lambdify_enabled: bool)
-            ~(lambdify_cdot: bool):
+            ~(lambdify_cdot: bool)
+            ~(keep_same_names: bool):
                 expr =
         _lambdify_enabled <- lambdify_enabled;
         _lambdify_cdot <- lambdify_cdot;
@@ -944,6 +954,7 @@ class lambdify_action_operators =
         let e_ = E_anon.anon#expr ([], cx) e_ in
         let e_ =
             let visitor = new normalize_lambda_param_names in
+            visitor#config keep_same_names;
             visitor#expr ((), cx) e_ in
         e_
 
@@ -1641,7 +1652,8 @@ let lambdify cx e
     let visitor = new lambdify_action_operators in
     let e = visitor#expand cx e
         ~lambdify_enabled:lambdify_enabled
-        ~lambdify_cdot:lambdify_cdot in
+        ~lambdify_cdot:lambdify_cdot
+        ~keep_same_names:false in
     let visitor = new check_arity in
     visitor#expr ((), cx) e;
     e
@@ -1689,7 +1701,8 @@ let expand_action_operators
     *)
     let e_ = visitor#expand cx e_
         ~lambdify_enabled:expand_enabled
-        ~lambdify_cdot:expand_cdot in
+        ~lambdify_cdot:expand_cdot
+        ~keep_same_names:true in
     let visitor = new replace_action_operators_with_quantifiers in
     let e_ = visitor#replace cx e_
         ~expand_enabled:expand_enabled
