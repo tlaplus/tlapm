@@ -18,6 +18,9 @@ let digest l =
 let digestv l =
   List.fold_right (fun (v, t) m -> StringMap.add v.core t m) l StringMap.empty
 
+type kind = Kconstant | Kstate | Kaction | Ktemporal | Kunknown |
+            Kvariable | Kdefinition
+
 
 (* The level comparison algorithm works by comparing the sequents and
 expressions found in the hypotheses of a proof obligation to the goal of
@@ -94,19 +97,19 @@ class level_comparison = object (self : 'self)
                 | Fresh (nm, shp, kind, dom) ->
                     let name = nm.core in
                     begin match kind with
-                    | Constant -> (name, "CONSTANT", 0)
-                    | State -> (name, "STATE", 1)
-                    | Action -> (name, "ACTION", 2)
-                    | Temporal -> (name, "TEMPORAL", 3)
-                    | Unknown -> (name, "Unknown", -1)
+                    | Constant -> (name, Kconstant, 0)
+                    | State -> (name, Kstate, 1)
+                    | Action -> (name, Kaction, 2)
+                    | Temporal -> (name, Ktemporal, 3)
+                    | Unknown -> (name, Kunknown, -1)
                     end
                 | Flex nm ->
-                    (nm.core, "VARIABLE", 1)
+                    (nm.core, Kvariable, 1)
                 | Defn ({core=Operator (nm, expr)}, wd, vsb, _) ->
                     let cx_ = E_t.cx_front cx n in
                     let expr = E_levels.compute_level cx_ expr in
                     let level = E_levels.get_level expr in
-                    (nm.core, "DEFINITION", level)
+                    (nm.core, Kdefinition, level)
                 | Fact _ -> assert false
                 | _ -> assert false
                     (* Defn ( Recursive | Instance | Bpragrama ) *)
@@ -114,56 +117,55 @@ class level_comparison = object (self : 'self)
             let (name1, kind1, level1) = get_hyp cx1 m in
             let (name2, kind2, level2) = get_hyp cx2 n in
             begin match kind1 with
-            | "CONSTANT" ->
-                ((kind2 = "CONSTANT")
-                || (kind2 = "DEFINITION" &&
+            | Kconstant ->
+                ((kind2 = Kconstant)
+                || (kind2 = Kdefinition &&
                     level2 = 0)) &&
                 if StringMap.mem name1 op_mapping then
                     (StringMap.find name1 op_mapping) = name2
                 else begin
                     op_mapping <- StringMap.add name1 name2 op_mapping;
                     true end
-            | "STATE" ->
-                ((kind2 = "CONSTANT")
-                || (kind2 = "STATE")
-                || (kind2 = "DEFINITION" &&
+            | Kstate ->
+                ((kind2 = Kconstant)
+                || (kind2 = Kstate)
+                || (kind2 = Kdefinition &&
                     level2 <= 1)) &&
                 if StringMap.mem name1 op_mapping then
                     (StringMap.find name1 op_mapping) = name2
                 else begin
                     op_mapping <- StringMap.add name1 name2 op_mapping;
                     true end
-            | "ACTION" ->
-                ((kind2 = "CONSTANT")
-                || (kind2 = "STATE")
-                || (kind2 = "ACTION")
-                || (kind2 = "DEFINITION" &&
+            | Kaction ->
+                ((kind2 = Kconstant)
+                || (kind2 = Kstate)
+                || (kind2 = Kaction)
+                || (kind2 = Kdefinition &&
                     level2 <= 2)) &&
                 if StringMap.mem name1 op_mapping then
                     (StringMap.find name1 op_mapping) = name2
                 else begin
                     op_mapping <- StringMap.add name1 name2 op_mapping;
                     true end
-            | "TEMPORAL" ->
-                ((kind2 = "CONSTANT")
-                || (kind2 = "STATE")
-                || (kind2 = "ACTION")
-                || (kind2 = "TEMPORAL")
-                || (kind2 = "DEFINITION" &&
+            | Ktemporal ->
+                ((kind2 = Kconstant)
+                || (kind2 = Kstate)
+                || (kind2 = Kaction)
+                || (kind2 = Ktemporal)
+                || (kind2 = Kdefinition &&
                     level2 <= 3)) &&
                 if StringMap.mem name1 op_mapping then
                     (StringMap.find name1 op_mapping) = name2
                 else begin
                     op_mapping <- StringMap.add name1 name2 op_mapping;
                     true end
-            | "Unknown" -> n = m
-            | "VARIABLE" ->
+            | Kunknown -> n = m
+            | Kvariable ->
                 name1 = name2
-                && kind2 = "VARIABLE"
-            | "DEFINITION" ->
+                && kind2 = Kvariable
+            | Kdefinition ->
                 name1 = name2
-                && kind2 = "DEFINITION"
-            | _ -> assert false
+                && kind2 = Kdefinition
             end
         | Opaque p, Opaque q ->
             p = q
