@@ -324,7 +324,6 @@ let isabelle_prove ob org_ob tmo tac res_cont =
 (****************************************************************************)
 
 let print_obligation ob =
-    if ((Internal TRUE) <> ob.obl.core.active.core) then begin
     let msg = Printf.sprintf "Proof obligation %d :\n" (Option.get ob.id) in
     let pr_obl fmt = ignore (
         let print = Expr.Fmt.pp_print_sequent in
@@ -334,10 +333,9 @@ let print_obligation ob =
     Util.printf
         ~at:ob.obl
         ~prefix:"[INFO]: "
-        "%s@\n  @[<b0>%t@]@." msg pr_obl ;
+        "%s@\n  @[<b0>%t@]@." msg pr_obl
     (* TODO: conditional printing in more verbose mode of `tlapm`. *)
     (* ignore (sequent_stats ob.obl.core) *)
-    end
 
 
 let log_info (msg: string) =
