@@ -453,7 +453,7 @@ and fp_sequent stack buf sq =
              ignore (Stack.pop stack)
           | Defn ({core = Instance _}, _, Hidden, _) -> assert false
           | Fact (_, Hidden, _) ->
-              (* These are pragmas mentioned in the `BY` and made hidden
+              (* These include pragmas mentioned in the `BY` and made hidden
               by the function `Backend.Prep.find_meth`. The function
               `Backend.Prep.find_meth` has been changed to keep these facts
               visible, so that proofs with identical assertions and different
