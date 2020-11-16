@@ -464,7 +464,7 @@ class level_comparison = object (self : 'self)
           && self#exprs cx1 cx2 es fs
       | _ -> false
 
-    method bounds_cx cx bs = (* TODO *)
+    method bounds_cx cx bs =
         let f (v, k, _) = Fresh (v, Shape_expr, k, Unbounded) @@ v in
         let hs = List.map f bs in
         let cx_ = Deque.append_list cx hs in
