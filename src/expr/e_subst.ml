@@ -391,7 +391,6 @@ class map = object (self : 'self)
         (s, df :: dfs)
 
   method bounds s bs =
-    (* TODO: need to update `s` from bound to bound ? *)
     let bs = List.map (self#bound s) bs in
     let n = List.length bs in
     let s = bumpn n s in
@@ -400,8 +399,6 @@ class map = object (self : 'self)
   method bound s b =
     let (v, k, dom) = b in
     let dom = match dom with
-        (* TODO: need to bump by 1 incrementally
-        in each consecutive domain bound ? *)
         | Domain d -> Domain (self#expr s d)
         | _ -> dom
         in
