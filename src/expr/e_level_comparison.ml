@@ -12,13 +12,11 @@ open E_t
 
 module StringMap = Util.Coll.Sm
 
-module M = Map.Make (String)
-
 let digest l =
-  List.fold_right (fun (v, t) m -> M.add v t m) l M.empty
+  List.fold_right (fun (v, t) m -> StringMap.add v t m) l StringMap.empty
 
 let digestv l =
-  List.fold_right (fun (v, t) m -> M.add v.core t m) l M.empty
+  List.fold_right (fun (v, t) m -> StringMap.add v.core t m) l StringMap.empty
 
 
 (* The level comparison algorithm works by comparing the sequents and
@@ -365,7 +363,7 @@ class level_comparison = object (self : 'self)
         | Rect fs, Rect gs ->
             let fmap = digest fs in
             let gmap = digest gs in
-              M.equal (self#expr cx1 cx2) fmap gmap
+              StringMap.equal (self#expr cx1 cx2) fmap gmap
         (*
         | Rect fs ->
             Rect (List.map (fun (s, e) -> (s, self#expr scx e)) fs) @@ oe
@@ -373,7 +371,7 @@ class level_comparison = object (self : 'self)
         | Record fs, Record gs ->
             let fmap = digest fs in
             let gmap = digest gs in
-              M.equal (self#expr cx1 cx2) fmap gmap
+              StringMap.equal (self#expr cx1 cx2) fmap gmap
         (*
         | Record fs ->
             Record (List.map (fun (s, e) -> (s, self#expr scx e)) fs) @@ oe
@@ -665,7 +663,7 @@ class level_comparison = object (self : 'self)
     method sub cx1 cx2 ss tt =
       let umap = digestv ss in
       let tmap = digestv tt in
-        M.equal (self#expr cx1 cx2) umap tmap
+        StringMap.equal (self#expr cx1 cx2) umap tmap
 
     method sel cx1 cx2 s t = match s, t with
         | Sel_down, Sel_down -> true
