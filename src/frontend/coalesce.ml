@@ -119,6 +119,10 @@ let level_to_kind level =
     | _ -> assert false
 
 
+(* If the constant `with_unique_identifiers` is `true`,
+then include in the coalesced identifiers the location
+of their definition in source code.
+*)
 let with_unique_identifiers: bool = false
 
 
