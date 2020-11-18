@@ -2221,9 +2221,9 @@ let add_v12l fp stil =
   in
   let rec tr_method m =
     match m with
-    | V12.Isabelle {V12.isabelle_timeout = tmo; V12.isabelle_tactic = tac} ->
+    | V12.(Isabelle {isabelle_timeout = tmo; isabelle_tactic = tac}) ->
       Isabelle {isabelle_timeout = tr_floatomega tmo; isabelle_tactic = tac}
-    | V12.Zenon {V12.zenon_timeout = t; V12.zenon_fallback = mm} ->
+    | V12.(Zenon {zenon_timeout = t; zenon_fallback = mm}) ->
       Zenon {zenon_timeout = t; zenon_fallback = tr_method mm}
     | V12.Smt -> SmtT (F infinity)
     | V12.SmtT tmo -> SmtT (tr_floatomega tmo)

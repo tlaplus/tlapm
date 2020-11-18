@@ -325,9 +325,7 @@ let isabelle_prove ob org_ob tmo tac res_cont =
 
 let print_obligation ob =
     if ((Internal TRUE) <> ob.obl.core.active.core) then begin
-    let msg = (
-        "Proof obligation " ^ (string_of_int (Option.get ob.id)) ^
-        " :\n") in
+    let msg = Printf.sprintf "Proof obligation %d :\n" (Option.get ob.id) in
     let pr_obl fmt = ignore (
         let print = Expr.Fmt.pp_print_sequent in
         let cx = (Deque.empty, Ctx.dot) in
@@ -1388,12 +1386,12 @@ let ship ob fpout thyout record =
     in
     let p = lazy (normalize_expand (Lazy.force const_fp_ob)
             fpout thyout record
-            ~expand_enabled:expand_enabled
-            ~expand_cdot:expand_cdot
-            ~autouse:autouse
-            ~apply_lambdify:apply_lambdify
-            ~enabled_axioms:enabled_axioms
-            ~level_comparison:level_comparison)
+            ~expand_enabled
+            ~expand_cdot
+            ~autouse
+            ~apply_lambdify
+            ~enabled_axioms
+            ~level_comparison)
     in
     let prep_meth m =
       let ob = Lazy.force const_fp_ob in

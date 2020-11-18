@@ -488,8 +488,7 @@ and fp_sequent stack buf sq =
              spin stack cx;
              ignore (Stack.pop stack)
           | Defn ({core = Instance _}, _, Visible, _) -> assert false
-          | Fact (e, visibility, tm) ->
-              assert (visibility = Visible);  (* see pattern case above *)
+          | Fact (e, Visible, tm) ->
                Stack.push stack (Identhyp ("HYP", "None"), ref false);
               spin stack cx;
               ignore (Stack.pop stack);

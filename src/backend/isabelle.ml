@@ -171,8 +171,8 @@ let rec pp_apply sd cx ff op args = match op.core with
         | B.Int, [] -> atomic "Int"
         | B.Real, [] -> atomic (cook "Real")
         | B.Plus, [e ; f] -> nonfix "arith_add" [e ; f]
-        | B.Minus, [e ; f] -> nonfix "arith_add"
-            [e ; Apply (Internal B.Uminus @@ f, [f]) @@ f]
+        | B.Minus, [e ; f] ->
+            nonfix "arith_add" [e ; Apply (Internal B.Uminus @@ f, [f]) @@ f]
         | B.Uminus, [e] -> nonfix "minus" [e]
         | B.Times, [e ; f] -> nonfix "mult" [e ; f]
         | B.Ratio, [e ; f] -> nonfix (cook "/") [e ; f]

@@ -112,13 +112,9 @@ let rec nth ?(backwards=false) q n =
 let rec first_n q n =
     (* Return the first `n` elements of the queue `q`. *)
     if (n < 0) then
-        failwith ("Deque.first_n:  n = " ^
-            (string_of_int n)
-            ^ " < 0");
+        failwith (Printf.sprintf "Deque.first_n:  n = %d < 0" n);
     if (n > (size q)) then
-        failwith ("Deque.first_n:  n = " ^
-            (string_of_int n) ^ " > size q = " ^
-            (string_of_int (size q)) );
+        failwith (Printf.sprintf "Deque.first_n:  n = %d > size q = %d" n (size q));
     let rec f q n =
         assert (n <= size q);
         assert (n >= 0);

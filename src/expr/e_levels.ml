@@ -733,7 +733,7 @@ class virtual ['s] level_computation = object (self : 'self)
             assign new_e exprlevel level_info
         | FcnApp (f, es) ->  (* f[x] *)
                 (* function `f` *)
-            let fes = List.append [f] es in
+            let fes = f :: es in
             let (level_info, fes_) = level_info_from_args scx fes in
             let f_ = List.hd fes_ in
             let es_ = List.tl fes_ in
@@ -743,6 +743,7 @@ class virtual ['s] level_computation = object (self : 'self)
         | Arrow (a, b) ->
             let args = [a; b] in
             let (level_info, args_) = level_info_from_args scx args in
+            assert (List.length args_ = 2);
             let a_ = List.hd args_ in
             let b_ = List.nth args_ 1 in
             let new_arrow = Arrow (a_, b_) in

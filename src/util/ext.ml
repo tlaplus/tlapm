@@ -138,7 +138,7 @@ module Std = struct
       let rec loop () =
         let hmany = Pervasives.input ch str 0 64 in
         if hmany > 0 then begin
-          Buffer.add_substring buf (Bytes.to_string str) 0 hmany ;
+          Buffer.add_subbytes buf str 0 hmany ;
           loop ()
         end
       in

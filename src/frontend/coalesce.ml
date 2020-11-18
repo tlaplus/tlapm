@@ -37,7 +37,7 @@ let crypthash scx cx e =
         Format.pp_print_flush fmt () ;
         Buffer.contents b
     in
-    "h" ^ String.sub (string_to_hex s) 0 5
+    "h" ^ shorter_string_to_hex s
 
 (* for using it with PLTL it is enough to have a trivial coalescing returning a
  * unique constant depending on all symbols in it, TODO make a smarter (according
@@ -57,7 +57,7 @@ let indexed_args args =
     `[(n, args[0]); (n - 1, args[1]); ..; (1, args[n - 1])]`
     *)
     let n = List.length args in
-    List.combine (int_compr [] n) args
+    List.mapi (fun i x -> (n - i, x))
 
 
 let coalesce_operator cx op args =

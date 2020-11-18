@@ -435,7 +435,7 @@ class virtual ['s] map_visible_hyp = object (self : 'self)
       | Defn (df, wd, Visible, ex) ->
           let h = Defn (self#defn scx df, wd, Visible, ex) @@ h in
           (adj scx h, h)
-      | Fact (e, vis, tm) ->
+      | Fact (e, Visible, tm) ->
           let h = Fact (self#expr scx e, Visible, tm) @@ h in
           (adj scx h, h)
 end
@@ -482,16 +482,13 @@ let collect_unprimed_vars cx e =
             | Apply ({core=Internal Prime}, _) ->
                 assert (not prime_scope)
             | Ix n ->
-                begin
                 assert (n >= 1);
                 assert (not prime_scope);
                 let hyp = E_t.get_val_from_id cx n in
-                match hyp.core with
+                begin match hyp.core with
                     | Flex name ->
                         let var_name = name.core in
-                        if (not (Hashtbl.mem
-                                unprimed_vars var_name)) then
-                            Hashtbl.add unprimed_vars var_name ()
+                        Hashtbl.replace unprimed_vars var_name ()
                     | _ -> ()
                 end
             | Apply ({core=Internal ENABLED}, _) ->
