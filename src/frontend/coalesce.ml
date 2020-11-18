@@ -57,7 +57,7 @@ let indexed_args args =
     `[(n, args[0]); (n - 1, args[1]); ..; (1, args[n - 1])]`
     *)
     let n = List.length args in
-    List.mapi (fun i x -> (n - i, x))
+    List.mapi (fun i x -> (n - i, x)) args
 
 
 let coalesce_operator cx op args =
