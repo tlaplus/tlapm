@@ -14,7 +14,7 @@
  * this will be done only after we integrate the SANY parser to TLAPM as we dont
  * have the leibnizicy information right now in TLAPM.
 
- * Copyright (C) 2013  INRIA and Microsoft Corporation
+ * Copyright (C) 2013-2019 INRIA and Microsoft Corporation
  *)
 
 Revision.f "$Rev$";;
@@ -76,7 +76,7 @@ let prime_replace str = Opaque (str ^ "#prime")
 
 let eliminate_primes =
   let visitor = object (self : 'self)
-    inherit [unit] Expr.Visit.map as super
+    inherit [unit] Expr.Visit.map_visible_hyp as super
     method expr scx e = match e.core with
       | Apply ({ core = (Internal B.Prime | Internal B.StrongPrime) }, args) ->
           let e2 = List.hd args in begin
@@ -137,7 +137,7 @@ let coalesce_non_leibniz ob = ob
 let prime_commuter =
   let prime e = Apply (Internal Builtin.Prime @@ e, [e]) @@ e in
   object (self)
-    inherit [unit] Expr.Visit.map as super
+    inherit [unit] Expr.Visit.map_visible_hyp as super
 (*    method expr scx e =
       (* all constant expression cancel the modality *)
       if (Expr.Constness.is_const e) then e
@@ -156,11 +156,17 @@ let prime_commuter =
              match (get_val_from_id (snd scx) n).core with
              | Fresh (_, _, Constant, _) -> e
              | Defn ({core = Operator (_,op)}, _, _, _) when
-             (Expr.Constness.is_const op) -> e
+             ((Expr.Levels.get_level op) = 0) -> e
              | _ -> prime e
            end
-         |  Opaque _ | Sequent _ | Let _ | Tquant _ | Tsub _ |
-           Fair _  -> prime e
+         | Apply ({core=Internal ENABLED; _}, _)
+         | Opaque _ | Sequent _ | Let _ ->
+            prime e
+         | Apply ({core=Internal
+                (UNCHANGED | Cdot |
+                 Leadsto | Actplus | Box _ | Diamond); _}, _)
+         | Tquant _ | Sub _ | Tsub _ | Fair _ ->
+            assert false
          | _ -> super#expr scx e
   end
 
@@ -171,10 +177,10 @@ let prime_commuter =
 let box_commuter =
   let box e = Apply (Internal (Builtin.Box true) @@ e, [e]) @@ e in
   object (self)
-    inherit [unit] Expr.Visit.map as super
+    inherit [unit] Expr.Visit.map_visible_hyp as super
     method expr scx e =
       (* all constant expression cancel the modality *)
-      if (Expr.Constness.is_const e) then e
+      if ((Expr.Levels.get_level e) = 0) then e
       else match e.core with
       (* Conjunctions *)
       | Apply ({core = Internal Builtin.Conj}, _)
@@ -192,10 +198,10 @@ let box_commuter =
 let dia_commuter =
   let dia e = Apply (Internal Builtin.Diamond @@ e, [e]) @@ e in
   object (self)
-    inherit [unit] Expr.Visit.map as super
+    inherit [unit] Expr.Visit.map_visible_hyp as super
     method expr scx e =
       (* all constant expression cancel the modality *)
-      if (Expr.Constness.is_const e) then e
+      if ((Expr.Levels.get_level e) = 0) then e
       else match e.core with
       (* Disjunctions *)
       | Apply ({core = Internal Builtin.Disj}, _)
@@ -212,6 +218,7 @@ let apply_stripper = function
   | {core = Apply(_,[e])} -> e
   | _ -> failwith "apply_stripper can be applied only to mondaic applications"
 
+
 let mymap =
   let m = SymbolMap.empty in
   let m = SymbolMap.add (noprops (Apply (noprops (Internal Builtin.Prime), [])))
@@ -227,18 +234,12 @@ let mymap =
 
 let process_eob ob =
   let cx = Deque.empty in
-  let scx = ((),cx) in
-  let visitor = object (self: 'self)
-    inherit Expr.Constness.const_visitor
-  end in
-  let visitor2 = object (self: 'self)
-    inherit Expr.Leibniz.leibniz_visitor
-  end in
-  let ob =  visitor#expr scx ob in
-  let ob =  visitor2#expr scx ob in
+  let scx = ((), cx) in
+  let ob = Expr.Levels.compute_level cx ob in
+  let ob = Expr.SubstOp.compute_subst cx ob in
   let ob = expand_prime_defs scx ob in
   let ob = symbol_commute mymap ob in
-  let ob = coalesce_modal ob in
+  let ob = coalesce_modal cx ob in
   ob
 
 let process_obligation ob =

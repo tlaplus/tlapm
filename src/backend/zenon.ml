@@ -33,6 +33,7 @@ include (Isabelle : sig
 
 exception Unsupported of string;;
 let unsupp o = raise (Unsupported o);;
+let failwith_unsupp op = failwith ("Unsupported operator `" ^ op ^ "`.\n")
 
 let rec pp_apply sd cx ff op args = match op.core with
   | Ix n ->
@@ -66,6 +67,7 @@ let rec pp_apply sd cx ff op args = match op.core with
         doit () ;
         pp_print_string ff ")"
       in match b, args with
+      (* Logic operators *)
       | B.TRUE, [] -> atomic "T."
       | B.FALSE, [] -> atomic "F."
       | B.Implies, [e ; f] -> nonatomic "=>" [e ; f]
@@ -75,18 +77,21 @@ let rec pp_apply sd cx ff op args = match op.core with
       | B.Neg, [e] -> nonatomic "-." [e]
       | B.Eq, [e ; f] -> nonatomic "=" [e ; f]
       | B.Neq, [e ; f] -> negate (fun () -> nonatomic "=" [e ; f])
-
+      (* Function operators *)
+      | B.DOMAIN, [e] -> nonatomic "TLA.DOMAIN" [e]
+      (* Set operators *)
       | B.STRING, [] -> atomic "TLA.STRING"
       | B.BOOLEAN, [] -> atomic "(TLA.set T. F.)"  (* abbrev *)
+      (* Set theory operators *)
       | B.SUBSET, [e] -> nonatomic "TLA.SUBSET" [e]
       | B.UNION, [e] -> nonatomic "TLA.UNION" [e]
-      | B.DOMAIN, [e] -> nonatomic "TLA.DOMAIN" [e]
       | B.Subseteq, [e ; f] -> nonatomic "TLA.subseteq" [e ; f]
       | B.Mem, [e ; f] -> nonatomic "TLA.in" [e ; f]
       | B.Notmem, [e ; f] -> negate (fun () -> nonatomic "TLA.in" [e ; f])
       | B.Setminus, [e ; f] -> nonatomic "TLA.setminus" [e ; f]
       | B.Cap, [e ; f] -> nonatomic "TLA.cap" [e ; f]
       | B.Cup, [e ; f] -> nonatomic "TLA.cup" [e ; f]
+      (* Modal operators *)
       | (B.Prime | B.StrongPrime), [e] -> assert false
          (* prime handling was moved from the backends and TLAPM to action frontends *)
          (* begin match e.core  with
@@ -95,20 +100,34 @@ let rec pp_apply sd cx ff op args = match op.core with
                                       else  atomic (crypthash cx e) end
             | _ ->  atomic (crypthash cx e)
           end*)
-
-      | B.Leadsto, [e ; f] -> unsupp "Leadsto"
-      | B.ENABLED, [e] -> unsupp "ENABLED"
+      | B.Leadsto, [e ; f] ->
+            failwith_unsupp "Leadsto"
+            (* unsupp "Leadsto" *)
+      | B.ENABLED, [e] ->
+            failwith_unsupp "ENABLED"
+            (* unsupp "ENABLED" *)
+            (* nonatomic (cook "ENABLED") [e] *)
       | B.UNCHANGED, [e] -> assert false
           (* UNCHANGED handling was moved to the front-end *)
           (*pp_print_expr sd cx ff
             (Apply (Internal B.Eq @@ e,
                     [ Apply (Internal B.StrongPrime @@ e, [e]) @@ e ; e ]) @@ e)
-*)
-      | B.Cdot, [e ; f] -> nonatomic (cook "\\cdot") [e ; f]
-      | B.Actplus, [e ; f] -> nonatomic (cook "-+->") [e ; f]
-      | B.Box _, [e] -> unsupp "[]"
-      | B.Diamond, [e] -> unsupp "<>"
-
+           *)
+      | B.Cdot, [e ; f] ->
+            failwith_unsupp "\\cdot"
+            (* unsupp "\\cdot" *)
+            (* nonatomic (cook "\\cdot") [e ; f] *)
+      | B.Actplus, [e ; f] ->
+            failwith_unsupp "-+->"
+            (* unsupp "-+->" *)
+            (* nonatomic (cook "-+->") [e ; f] *)
+      | B.Box _, [e] ->
+            failwith_unsupp "[]"
+            (* unsupp "[]" *)
+      | B.Diamond, [e] ->
+            failwith_unsupp "<>"
+            (* unsupp "<>" *)
+      (* Arithmetic operators *)
       | B.Nat, [] -> atomic "arith.N"
       | B.Int, [] -> atomic "arith.Z"
       | B.Real, [] -> atomic "arith.R"
@@ -128,7 +147,7 @@ let rec pp_apply sd cx ff op args = match op.core with
       | B.Gteq, [e ; f] -> nonatomic "arith.le" [f ; e]  (* abbrev *)
       | B.Gt, [e ; f] -> nonatomic "arith.lt" [f ; e]    (* abbrev *)
       | B.Range, [e ; f] -> nonatomic "arith.intrange" [e ; f]
-
+      (* Sequence operators *)
       | B.Seq, [e] -> nonatomic "TLA.Seq" [e]
       | B.Len, [e] -> nonatomic "TLA.Len" [e]
       | B.BSeq, [e] -> nonatomic "TLA.BSeq" [e]
@@ -138,7 +157,7 @@ let rec pp_apply sd cx ff op args = match op.core with
       | B.Tail, [e] -> nonatomic "TLA.Tail" [e]
       | B.SubSeq, [e ; m ; n] -> nonatomic "TLA.SubSeq" [e ; m ; n]
       | B.SelectSeq, [e ; f] -> nonatomic "TLA.SelectSeq" [e ; f]
-
+      (* TLC operators *)
       | B.OneArg, [e ; f] -> nonatomic "TLA.oneArg" [e ; f]
       | B.Extend, [e ; f] -> nonatomic "TLA.extend" [e ; f]
       | B.Print, [e ; v] -> nonatomic "TLA.Print" [e ; v]
@@ -152,7 +171,7 @@ let rec pp_apply sd cx ff op args = match op.core with
       | B.RandomElement, [s] -> nonatomic "TLA.RandomElement" [s]
       | B.Any, [] -> atomic "TLA.Any"
       | B.ToString, [v] -> nonatomic "TLA.ToString" [v]
-
+      (* Internal operators *)
       | B.Unprimable, [e] -> pp_print_expr sd cx ff e
       | B.Irregular,[e] -> atomic (crypthash cx e)
 

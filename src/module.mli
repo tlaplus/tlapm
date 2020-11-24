@@ -1,5 +1,5 @@
 (*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
+ * Copyright (C) 2011-2019  INRIA and Microsoft Corporation
  *)
 
 module T : sig
@@ -94,15 +94,21 @@ module Flatten : sig
 end;;
 
 module Elab : sig
-  open Proof.T
+  open Deque
+  open Expr.T
+
   open T
+
   val normalize :
     modctx -> Expr.T.hyp Deque.dq -> mule -> modctx * mule * summary
   ;;
 end;;
 
 module Dep : sig
-  val external_deps : T.mule_ Property.wrapped -> Util.Coll.Hs.t;;
+  open Util.Coll
+
+  val external_deps : T.mule_ Property.wrapped ->
+    Hs.t * Hs.t * T.mule Sm.t;;
   val schedule : T.modctx -> T.modctx * T.mule list;;
 end;;
 
@@ -123,4 +129,48 @@ module Globalness : sig
   open T
   val is_global : 'a Property.wrapped -> bool
   val globalness : mule -> mule
+end;;
+
+module Subst : sig
+    open Expr.Subst
+
+    open T
+
+    val app_modunits: sub -> modunit list -> sub * modunit list
+    val app_modunit: sub -> modunit -> sub * modunit
+    val app_mule: sub -> mule -> mule
+end;;
+
+module Visit : sig
+    open Expr.T
+    open Proof.T
+    open Util
+
+    open T
+
+    class map : object
+        method module_units: Expr.T.ctx -> M_t.modunit list ->
+            ctx * M_t.modunit list
+        method module_unit: ctx -> M_t.modunit ->
+            ctx * modunit
+        method constants: ctx -> (hint * shape) list ->
+            ctx * modunit_
+        method variables: ctx -> hint list ->
+            ctx * modunit_
+        method recursives: ctx -> (hint * shape) list ->
+            ctx * modunit_
+        method definition: ctx -> defn -> wheredef -> visibility -> export ->
+            ctx * modunit_
+        method axiom: ctx -> hint option -> expr ->
+            ctx * modunit_
+        method theorem:
+            ctx -> hint option -> sequent -> int -> proof -> proof -> summary ->
+            ctx * modunit_
+        method submod: ctx -> mule ->
+            ctx * modunit_
+        method mutate: ctx -> [`Use of bool | `Hide] -> usable ->
+            ctx * modunit_
+        method anoninst: ctx -> Expr.T.instance -> export ->
+            ctx * modunit_
+    end
 end;;

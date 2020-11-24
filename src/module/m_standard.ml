@@ -25,16 +25,20 @@ let stm x = Util.locate x stloc
 let st = stm ()
 
 let nullary what op =
-  Definition (Operator (what @@ st, Apply (Internal op @@ st, []) @@ st) @@ st, Builtin, Visible, Export) @@ st
+    let name = what @@ st in
+    let op = Internal op @@ st in
+    let df = Operator (name, op) @@ st in
+    Definition (df, Builtin, Visible, Export) @@ st
 
 let lambda arity name fn =
+  assert (arity >= 1);
   let vars = List.init arity (fun n -> ("x" ^ string_of_int (n + 1)) @@ st, Shape_expr) in
   let lambda = Lambda (vars, fn vars) @@ st in
   Definition (Operator (name @@ st, lambda) @@ st, Builtin, Visible, Export) @@ st
 
 let operator arity name op =
   lambda arity name begin
-    fun _ ->
+    fun _ -> assert (arity >= 1);
       Apply (Internal op @@ st,
              List.init arity (fun n -> Ix (arity - n) @@ st)) @@ st
   end
@@ -218,7 +222,7 @@ let tlapm =
         (* sequences *)
         unary   "Builtins!Seq"           B.Seq ;
         unary   "Builtins!Len"           B.Len ;
-        unary   "Builtins!Bounded"       B.BSeq ;
+        binary  "Builtins!Bounded"       B.BSeq ;
         binary  "Builtins!Cat"           B.Cat ;
         binary  "Builtins!Append"        B.Append ;
         unary   "Builtins!Head"          B.Head ;

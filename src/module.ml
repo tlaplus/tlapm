@@ -14,3 +14,5 @@ module Dep = M_dep;;
 module Parser = M_parser;;
 module Save = M_save;;
 module Globalness = M_globalness;;
+module Subst = M_subst;;
+module Visit = M_visit;;

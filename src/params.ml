@@ -86,7 +86,7 @@ let get_exec e =
     let r = 10000 + (Random.int 10000) in
      let stat = sprintf "echo path prefix: \"%s\" ; %s stat `which %s` >/tmp/stat-%d-%d.txt"
                 path_prefix path_prefix exec tod r in
-     
+
      ignore (Sys.command stat);
      let check = sprintf "%s type %s >/tmp/check-%d-%d.txt" path_prefix exec tod r in
        *)
@@ -204,6 +204,8 @@ let eprover = make_exec "eprover" "eprover --auto --tstp-format --silent \"$file
 
 let ls4 = make_exec "ls4" "ptl_to_trp -i $file | ls4" "echo unknown";;
 
+let smt_logic = ref "UFNIA"
+
 (* The default SMT solver is now Z3. The user can override it with:
    - environment variable TLAPM_SMT_SOLVER
    - command-line option --solver
@@ -218,6 +220,9 @@ let smt =
     (* Yices does not handle SMTLIB version 2 yet *)
 
 let set_smt_solver slv = smt := User slv;;
+
+let set_smt_logic logic = smt_logic := logic
+
 
 let max_threads = ref nprocs
 

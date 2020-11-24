@@ -2,7 +2,7 @@
  * deque.ml --- Persistent functional double-ended queues
  *
  *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+ * Copyright (C) 2008-2019  INRIA and Microsoft Corporation
  *)
 
 type 'a dq
@@ -16,6 +16,7 @@ val rear  : 'a dq -> ('a dq * 'a) option
 val rev   : 'a dq -> 'a dq
 val null  : 'a dq -> bool
 val nth   : ?backwards:bool -> 'a dq -> int -> 'a option
+val first_n : 'a dq -> int -> 'a dq
 val map   : (int -> 'a -> 'b) -> 'a dq -> 'b dq
 val iter  : (int -> 'a -> unit) -> 'a dq -> unit
 

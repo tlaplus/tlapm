@@ -1016,7 +1016,7 @@ module V11 = struct
 
   (* File format:
      - magic number as a marshalled integer = 20101013
-     - Fpver10 of tbl
+     - Fpver11 of tbl
      - any number of (Digest.t, sti list) pairs
   *)
 
@@ -1117,11 +1117,125 @@ module V12 = struct
 
   (* File format:
      - magic number as a marshalled integer = 20101013
-     - Fpver10 of tbl
+     - Fpver12 of tbl
      - any number of (Digest.t, sti list) pairs
   *)
 
   let version = 12;;
+
+end;;
+
+module V13 = struct
+
+  (* introduced on 2019- in revision *)
+  (* Adds the cases "ExpandENABLED", "ExpandCdot", "AutoUSE", "Lambdify",
+     "ENABLEDaxioms", "LevelComparison"
+     to type meth.
+   *)
+
+  type floatomega = F of float | Omega;;
+
+  type meth =
+  | Isabelle of isabelle
+  | Zenon of zenon
+  | Smt
+  | SmtT of floatomega
+  | Yices
+  | YicesT of floatomega
+  | Z3
+  | Z3T of floatomega
+  | Cooper
+  | Sorry
+  | Fail
+  | Cvc3T of floatomega
+  | Smt2lib of floatomega
+  | Smt2z3 of floatomega
+  | Smt3 of floatomega
+  | Z33 of floatomega
+  | Cvc33 of floatomega
+  | Yices3 of floatomega
+  | Verit of floatomega
+  | Spass of floatomega
+  | Tptp of floatomega
+  | LS4 of floatomega
+  | ExpandENABLED
+  | AutoUSE  (* as needed for expanding `ENABLED` and `\cdot` *)
+  | ExpandCdot
+  | Lambdify
+  | ENABLEDaxioms
+  | LevelComparison
+  | Trivial
+
+  and zenon = {
+    zenon_timeout : float;
+    zenon_fallback : meth;
+  }
+
+  and isabelle = {
+    isabelle_timeout : floatomega;
+    isabelle_tactic : string;
+  }
+  ;;
+
+  type reason =
+  | False
+  | Timeout
+  | Cantwork of string
+  ;;
+
+  type status_type_aux =
+  | RSucc
+  | RFail of reason option
+  | RInt
+  ;;
+
+  type status_type =
+  | Triv
+  | NTriv of status_type_aux * meth
+  ;;
+
+  type date = int * int * int * int * int * int;;
+  (* year, month-1, day, hour, minute, second *)
+
+  type sti = status_type * date * string * string * string;;
+             (* status, date, pm version, zenon version, isabelle version *)
+
+  type str = {
+    tres : sti option;
+    zres : sti option;
+    ires : sti option;
+    smtres : sti option;
+    cooperres : sti option;
+    yres : sti option;
+    z3res : sti option;
+    cvc3res : sti option;
+    smt2libres : sti option;
+    smt2z3res : sti option;
+    smt3res : sti option;
+    z33res : sti option;
+    cvc33res : sti option;
+    yices3res : sti option;
+    veritres : sti option;
+    spassres : sti option;
+    tptpres : sti option;
+    ls4res : sti option;
+    expandenabledres : sti option;
+    expandcdotres : sti option;
+    lambdifyres: sti option;
+    enabledaxiomsres: sti option;
+    levelcomparisonres: sti option;
+  };;
+
+  type tbl = (string, str) Hashtbl.t;;
+  (* The key is the MD5 converted to hex. *)
+
+  (* File format:
+     - magic number as a marshalled integer = 20101013
+     - Fpver13 of tbl
+     - any number of (Digest.t, sti list) pairs
+  *)
+
+  let version = 13;;
 
 end;;
 
@@ -1138,6 +1252,7 @@ type fp =
   | FP10 of V10.tbl
   | FP11 of V11.tbl
   | FP12 of V12.tbl
+  | FP13 of V13.tbl
   | FPunknown of unit
 ;;
 
@@ -1152,15 +1267,15 @@ type fp =
 let myrevision = "$Rev$";;
 
 open Printf;;
-open V12;;
+open V13;;
 
-let fptbl = ref (Hashtbl.create 500 : V12.tbl);;
+let fptbl = ref (Hashtbl.create 500 : V13.tbl);;
 
 let magic_number = 20101013;;
 
 let write_fp_table oc =
   output_value oc magic_number;
-  output_value oc (FP12 !fptbl);
+  output_value oc (FP13 !fptbl);
 ;;
 
 let get_date month_offset =
@@ -1200,7 +1315,7 @@ let fp_init fp_file sources =
 module T = Types;;
 module M = Method;;
 
-(* Vx means the latest version, currently V12 *)
+(* Vx means the latest version, currently V13 *)
 
 let rec st6_to_Vx st =
   match st with
@@ -1241,17 +1356,24 @@ and meth_to_Vx m =
   | M.Spass tmo -> Spass (floatomega_to_Vx tmo)
   | M.Tptp tmo -> Tptp (floatomega_to_Vx tmo)
   | M.LS4 tmo -> LS4 (floatomega_to_Vx tmo)
+  | M.ExpandENABLED -> ExpandENABLED
+  | M.AutoUSE -> AutoUSE
+  | M.ExpandCdot -> ExpandCdot
+  | M.Lambdify -> Lambdify
+  | M.ENABLEDaxioms -> ENABLEDaxioms
+  | M.LevelComparison -> LevelComparison
+  | M.Trivial -> Trivial
 
 and floatomega_to_Vx f = F f;;
 
 let fp_to_Vx fp = fp;;
-(* V12 fingerprints are hex-encoded digests, as are external fingerprints.
+(* V13 fingerprints are hex-encoded digests, as are external fingerprints.
    Future versions will use raw digests, hence the need for this translation
    function.
 *)
 
 let date_to_Vx d = d;;
-(* V12 dates use month-1, as do external dates.  Future versions will use
+(* V13 dates use month-1, as do external dates.  Future versions will use
    month, hence the need for this translation function. *)
 
 type prover =
@@ -1274,6 +1396,13 @@ type prover =
   | Pspass
   | Ptptp
   | Pls4
+  | Pexpandenabled
+  | Pautouse
+  | Pexpandcdot
+  | Plambdify
+  | Penabledaxioms
+  | Plevelcomparison
+  | Ptrivial
 ;;
 
 let prover_of_method m =
@@ -1297,6 +1426,13 @@ let prover_of_method m =
   | Spass _ -> Pspass
   | Tptp _ -> Ptptp
   | LS4 _ -> Pls4
+  | ExpandENABLED -> Pexpandenabled
+  | ExpandCdot -> Pexpandcdot
+  | AutoUSE -> Pautouse
+  | Lambdify -> Plambdify
+  | ENABLEDaxioms -> Penabledaxioms
+  | LevelComparison -> Plevelcomparison
+  | Trivial -> Ptrivial
 ;;
 
 let normalize m =
@@ -1419,6 +1555,11 @@ let empty = {
   spassres = None;
   tptpres = None;
   ls4res = None;
+  expandenabledres = None;
+  expandcdotres = None;
+  lambdifyres = None;
+  enabledaxiomsres = None;
+  levelcomparisonres = None;
 };;
 
 let add_to_record r st =
@@ -1442,6 +1583,11 @@ let add_to_record r st =
   | NTriv (_, Spass _) -> {r with spassres = Some st}
   | NTriv (_, Tptp _) -> {r with tptpres = Some st}
   | NTriv (_, LS4 _) -> {r with ls4res = Some st}
+  | NTriv (_, ExpandENABLED) -> {r with expandenabledres = Some st}
+  | NTriv (_, ExpandCdot) -> {r with expandcdotres = Some st}
+  | NTriv (_, Lambdify) -> {r with lambdifyres = Some st}
+  | NTriv (_, ENABLEDaxioms) -> {r with enabledaxiomsres = Some st}
+  | NTriv (_, LevelComparison) -> {r with levelcomparisonres = Some st}
   | _ -> r
 ;;
 
@@ -1454,12 +1600,24 @@ let add_to_table fp l1 =
   Hashtbl.replace !fptbl fp (list_to_record l)
 ;;
 
-let fp_writes oc fp results =
-  let fp = fp_to_Vx fp in
+let fp_writes
+        (oc: out_channel)
+        (fp: string)
+        (results: Types.status_type6 list):
+            unit =
+  let fp: string = fp_to_Vx fp in
   let date = get_date (-1) in
   let zv = Params.get_zenon_verfp () in
   let iv = Params.get_isabelle_version () in
-  let f r = (st6_to_Vx r, date_to_Vx date, Params.rawversion (), zv, iv) in
+  let f (result: Types.status_type6) =
+      (
+          st6_to_Vx result,  (* : status_type6 *)
+          date_to_Vx date,  (* = date *)
+          Params.rawversion (),  (* : string = `tlapm` version *)
+          zv,  (* : string = `zenon` version *)
+          iv  (* : string = `isabelle` version *)
+      )
+    in
   let l = List.map f results in
   (* FIXME Triv results should not be sent back to server.ml, instead
      of propagating them all the way and then eliminating them here. *)
@@ -2054,7 +2212,94 @@ let add_v11r fp str =
   add_v11l (tr_fp fp) (str_to_list str)
 ;;
 
-let add_v12l fp stl = add_to_table fp stl;;
+let add_v12l fp stil =
+  let tr_fp x = x in
+  let tr_floatomega x =
+    match x with
+    | V12.F f -> F f
+    | V12.Omega -> F infinity
+  in
+  let rec tr_method m =
+    match m with
+    | V12.(Isabelle {isabelle_timeout = tmo; isabelle_tactic = tac}) ->
+      Isabelle {isabelle_timeout = tr_floatomega tmo; isabelle_tactic = tac}
+    | V12.(Zenon {zenon_timeout = t; zenon_fallback = mm}) ->
+      Zenon {zenon_timeout = t; zenon_fallback = tr_method mm}
+    | V12.Smt -> SmtT (F infinity)
+    | V12.SmtT tmo -> SmtT (tr_floatomega tmo)
+    | V12.Yices -> YicesT (F infinity)
+    | V12.YicesT tmo -> YicesT (tr_floatomega tmo)
+    | V12.Z3 -> Z3T (F infinity)
+    | V12.Z3T tmo -> Z3T (tr_floatomega tmo)
+    | V12.Cooper -> Cooper
+    | V12.Sorry -> Sorry
+    | V12.Fail -> Fail
+    | V12.Cvc3T tmo -> Cvc3T (tr_floatomega tmo)
+    | V12.Smt2lib tmo -> Smt2lib (tr_floatomega tmo)
+    | V12.Smt2z3 tmo -> Smt2z3 (tr_floatomega tmo)
+    | V12.Smt3 tmo -> Smt2z3 (tr_floatomega tmo)
+    | V12.Z33 tmo -> Z33 (tr_floatomega tmo)
+    | V12.Cvc33 tmo -> Cvc33 (tr_floatomega tmo)
+    | V12.Yices3 tmo -> Yices3 (tr_floatomega tmo)
+    | V12.Verit tmo -> Verit (tr_floatomega tmo)
+    | V12.Spass tmo -> Spass (tr_floatomega tmo)
+    | V12.Tptp tmo -> Tptp (tr_floatomega tmo)
+    | V12.LS4 tmo -> LS4 (tr_floatomega tmo)
+  in
+  let tr_reason_option x =
+    match x with
+    | None -> None
+    | Some V12.False -> Some False
+    | Some V12.Timeout -> Some Timeout
+    | Some (V12.Cantwork s) -> Some (Cantwork s)
+  in
+  let tr_st st =
+    match st with
+    | V12.Triv -> Triv
+    | V12.NTriv (V12.RSucc, m) -> NTriv (RSucc, tr_method m)
+    | V12.NTriv (V12.RFail r, m) ->
+      NTriv (RFail (tr_reason_option r), tr_method m)
+    | V12.NTriv (V12.RInt, m) -> NTriv (RInt, tr_method m)
+  in
+  let tr_sti (st, dt, pmv, zv, iv) =
+    try [(tr_st st, dt, pmv, zv, iv)]
+    with Failure _ -> []
+  in
+  add_to_table (tr_fp fp) (List.flatten (List.map tr_sti stil))
+;;
+
+let add_v12r fp str =
+  let tr_fp x = x in
+  let option_to_list x =
+    match x with
+    | None -> []
+    | Some x -> [x]
+  in
+  let str_to_list r =
+    List.flatten [
+      option_to_list r.V12.tres;
+      option_to_list r.V12.zres;
+      option_to_list r.V12.ires;
+      option_to_list r.V12.smtres;
+      option_to_list r.V12.cooperres;
+      option_to_list r.V12.yres;
+      option_to_list r.V12.z3res;
+      option_to_list r.V12.cvc3res;
+      option_to_list r.V12.smt2libres;
+      option_to_list r.V12.smt2z3res;
+      option_to_list r.V12.smt3res;
+      option_to_list r.V12.z33res;
+      option_to_list r.V12.cvc33res;
+      option_to_list r.V12.yices3res;
+      option_to_list r.V12.veritres;
+      option_to_list r.V12.spassres;
+      option_to_list r.V12.tptpres;
+    ]
+  in
+  add_v12l (tr_fp fp) (str_to_list str)
+;;
+
+let add_v13l fp stl = add_to_table fp stl;;
 
 let iter_tbl vnum f fps =
   Errors.err "Translating fingerprints from version %d to version %d"
@@ -2084,7 +2329,8 @@ let translate v ic =
   | FP9 fps -> iter_tbl 9 add_v9r fps; iter_file add_v9l ic;
   | FP10 fps -> iter_tbl 10 add_v10r fps; iter_file add_v10l ic;
   | FP11 fps -> iter_tbl 11 add_v11r fps; iter_file add_v11l ic;
-  | FP12 fps -> fptbl := fps; iter_file add_v12l ic;
+  | FP12 fps -> iter_tbl 12 add_v12r fps; iter_file add_v12l ic;
+  | FP13 fps -> fptbl := fps; iter_file add_v13l ic;
   | _ -> assert false
 ;;
 
@@ -3132,6 +3378,177 @@ let print_fp_line_12l fp stil =
   List.iter print_sti_12 stil;
 ;;
 
+let print_sti_13 (st, d, pv, zv, iv) =
+    let print_floatomega x =
+        match x with
+        | V13.F f -> printf "%g" f;
+        | V13.Omega -> printf "infinity";
+    in
+    let rec print_meth m =
+        match m with
+        | V13.Isabelle {
+                V13.isabelle_timeout = tmo;
+                V13.isabelle_tactic = s} ->
+            printf "Isabelle {timeout = ";
+            print_floatomega tmo;
+            printf "; tactic = %S}" s;
+        | V13.Zenon {
+                V13.zenon_timeout = t;
+                V13.zenon_fallback = m2} ->
+            printf "Zenon {timeout = %g; fallback = " t;
+            print_meth m2;
+            printf "}";
+        | V13.Smt -> printf "Smt";
+        | V13.SmtT tmo ->
+            printf "SmtT (";
+            print_floatomega tmo;
+            printf ")";
+        | V13.Yices -> printf "Yices";
+        | V13.YicesT tmo ->
+            printf "YicesT (";
+            print_floatomega tmo;
+            printf ")";
+        | V13.Z3 -> printf "Z3";
+        | V13.Z3T tmo ->
+            printf "Z3T";
+            print_floatomega tmo;
+            printf ")";
+        | V13.Cooper -> printf "Cooper";
+        | V13.Sorry -> printf "Sorry";
+        | V13.Fail -> printf "Fail";
+        | V13.Cvc3T tmo ->
+            printf "Cvc3T (";
+            print_floatomega tmo;
+            printf ")";
+        | V13.Smt2lib tmo ->
+            printf "Smt2lib (";
+            print_floatomega tmo;
+            printf ")";
+        | V13.Smt2z3 tmo ->
+            printf "Smt2z3 (";
+            print_floatomega tmo;
+            printf ")";
+        | V13.Smt3 tmo ->
+            printf "Smt3 (";
+            print_floatomega tmo;
+            printf ")";
+        | V13.Z33 tmo ->
+            printf "Z33 (";
+            print_floatomega tmo;
+            printf ")";
+        | V13.Cvc33 tmo ->
+            printf "Cvc33 (";
+            print_floatomega tmo;
+            printf ")";
+        | V13.Yices3 tmo ->
+            printf "Yices3 (";
+            print_floatomega tmo;
+            printf ")";
+        | V13.Verit tmo ->
+            printf "Verit (";
+            print_floatomega tmo;
+            printf ")";
+        | V13.Spass tmo ->
+            printf "Spass (";
+            print_floatomega tmo;
+            printf ")";
+        | V13.Tptp tmo ->
+            printf "Tptp (";
+            print_floatomega tmo;
+            printf ")";
+        | V13.LS4 tmo ->
+            printf "LS4 (";
+            print_floatomega tmo;
+            printf ")";
+        | V13.ExpandENABLED ->
+            printf "ExpandENABLED";
+        | V13.ExpandCdot ->
+            printf "ExpandCdot";
+        | V13.AutoUSE ->
+            printf "Auto-expand definitions";
+        | V13.Lambdify ->
+            printf "Lambdify definitions";
+        | V13.ENABLEDaxioms ->
+            printf "ENABLED axioms";
+        | V13.LevelComparison ->
+            printf "Level Comparison";
+        | V13.Trivial ->
+            printf "Trivial backend";
+    in
+    let print_reason r =
+        match r with
+        | None -> printf "No reason";
+        | Some V13.False -> printf "False";
+        | Some V13.Timeout -> printf "Timeout";
+        | Some V13.Cantwork s -> printf "Cantwork (%S)" s;
+    in
+    let print_stat s =
+        match s with
+        | V13.Triv -> printf "Trivial";
+        | V13.NTriv (V13.RSucc, m) ->
+            printf "RSucc (";
+            print_meth m;
+            printf ")";
+        | V13.NTriv (V13.RFail r, m) ->
+            printf "Fail (";
+            print_reason r;
+            printf ", ";
+            print_meth m;
+            printf ")";
+        | V13.NTriv (V13.RInt, m) ->
+            printf "RInt (";
+            print_meth m;
+            printf ")";
+    in
+    let print_date (y, m, d, hr, mn, sc) =
+        printf "%04d-%02d-%02dT%02d:%02d:%02d" y (m+1) d hr mn sc
+    in
+    printf "    status = "; print_stat st; printf "\n";
+    printf "    date = "; print_date d; printf "\n";
+    printf "    tlapm version = %S\n" pv;
+    printf "    zenon version = %S\n" zv;
+    printf "    isabelle version = %S\n" iv;
+;;
+
+let print_fp_line_13r fp str =
+  let print_sti_opt lbl o =
+    match o with
+    | None -> ()
+    | Some sti ->
+      printf "    %s:\n" lbl;
+      print_sti_13 sti;
+  in
+  printf "  %s :\n" fp;
+  print_sti_opt "Trivial" str.V13.tres;
+  print_sti_opt "Zenon" str.V13.zres;
+  print_sti_opt "Isabelle" str.V13.ires;
+  print_sti_opt "SMT" str.V13.smtres;
+  print_sti_opt "Cooper" str.V13.cooperres;
+  print_sti_opt "Yices" str.V13.yres;
+  print_sti_opt "Z3" str.V13.z3res;
+  print_sti_opt "CVC3" str.V13.cvc3res;
+  print_sti_opt "Smt2lib" str.V13.smt2libres;
+  print_sti_opt "Smt2z3" str.V13.smt2z3res;
+  print_sti_opt "Smt3" str.V13.smt3res;
+  print_sti_opt "Z33" str.V13.z33res;
+  print_sti_opt "Cvc33" str.V13.cvc33res;
+  print_sti_opt "Yices3" str.V13.yices3res;
+  print_sti_opt "Verit" str.V13.veritres;
+  print_sti_opt "Spass" str.V13.spassres;
+  print_sti_opt "Tptp" str.V13.tptpres;
+  print_sti_opt "LS4" str.V13.ls4res;
+  print_sti_opt "ExpandENABLED" str.V13.expandenabledres;
+  print_sti_opt "ExpandCdot" str.V13.expandcdotres;
+  print_sti_opt "Lambdify" str.V13.lambdifyres;
+  print_sti_opt "ENABLED axioms" str.V13.enabledaxiomsres;
+  print_sti_opt "LevelComparison" str.V13.levelcomparisonres;
+;;
+
+let print_fp_line_13l fp stil =
+  printf "  %s :\n" fp;
+  List.iter print_sti_13 stil;
+;;
+
 let iter_file f ic =
   try while true do
     let (fp, stil) = Marshal.from_channel ic in
@@ -3220,6 +3637,12 @@ let print file =
        Hashtbl.iter print_fp_line_12r tbl;
        printf "=========== Incremental lines\n";
        iter_file print_fp_line_12l ic;
+    | FP13 tbl ->
+       printf "Fingerprints version = 13\n";
+       printf "=========== Hashtable\n";
+       Hashtbl.iter print_fp_line_13r tbl;
+       printf "=========== Incremental lines\n";
+       iter_file print_fp_line_13l ic;
     | _ -> assert false
     end;
     stop ();
@@ -3294,6 +3717,13 @@ and vx_to_meth m =
   | Spass tmo -> Some (M.Spass (vx_to_floatomega tmo))
   | Tptp tmo -> Some (M.Tptp (vx_to_floatomega tmo))
   | LS4 tmo -> Some (M.LS4 (vx_to_floatomega tmo))
+  | ExpandENABLED -> Some M.ExpandENABLED
+  | ExpandCdot -> Some M.ExpandCdot
+  | AutoUSE -> Some M.AutoUSE
+  | Lambdify -> Some M.Lambdify
+  | ENABLEDaxioms -> Some M.ENABLEDaxioms
+  | LevelComparison -> Some M.LevelComparison
+  | Trivial -> Some M.Trivial
 
 and vx_to_floatomega f =
   match f with

@@ -124,8 +124,9 @@ f == 42
 THEOREM f' = f
 OBVIOUS
 ================================================
-command: rm -rf load_v8old_test.tlaps
-command: cp -r load_v8old_test.tlaps.testbase load_v8old_test.tlaps
+command: rm -rf __tlacache__
+command: mkdir __tlacache__
+command: cp -r load_v8old_test.tlaps.testbase __tlacache__/load_v8old_test.tlaps
 command: ${TLAPM} --toolbox 0 0 --isaprove ${FILE}
 stdout: fingerprints written
 stderr: Translating fingerprints from version 8

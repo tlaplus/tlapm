@@ -147,6 +147,7 @@ and backend_action =
   | All | Once
 
 (** Antecedents of a sequent *)
+and ctx = hyp Deque.dq
 and hyp = hyp_ wrapped
 and hyp_ =
   | Fresh of hint * shape * kind * hdom
@@ -170,5 +171,19 @@ val get_val_from_id : 'hyp Deque.dq -> int -> 'hyp;;
 (* fmt.ml *)
 val hyp_name : hyp_ Property.wrapped -> string;;
 
+val print_cx: ctx -> unit
+
+val find_hyp_named : ctx -> string -> int * hyp
+val cx_front : ctx -> int -> ctx
+val scx_front : 'a * ctx -> int -> 'a * ctx
+val format_locus : 'a wrapped -> string
+val shape_to_arity : shape -> int
+
 (* anon.ml *)
 val exprify_sequent : sequent -> expr_;;
+
+val sequent_stats : sequent -> int
+
+val enabledaxioms : bool pfuncs
+val has_enabledaxioms : 'a Property.wrapped -> bool
+val get_enabledaxioms : 'a Property.wrapped -> bool

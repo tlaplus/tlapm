@@ -132,6 +132,7 @@ if not really then ob else
 
 
 let print_old_res ob st really_print =
+  if !Params.toolbox then
   let really_print = !Params.printallobs || really_print in
    print_res_aux (normalize really_print ob) st (Some true) really_print ""
                  None

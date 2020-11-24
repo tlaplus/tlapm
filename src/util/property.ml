@@ -32,6 +32,7 @@ type pid =
 
 type prop = pid * Obj.t
 
+(* [(Pid(7), Obj.t); ...]  *)
 type props = prop list
 
 type 'a pfuncs = {
@@ -137,4 +138,3 @@ let print_prop = function
 
 let print_all_props = function
   | {props = ls} -> List.iter print_prop ls
-

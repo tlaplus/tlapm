@@ -1,5 +1,5 @@
 (*
- * Copyright (C) 2008-2012  INRIA and Microsoft Corporation
+ * Copyright (C) 2008-2019  INRIA and Microsoft Corporation
  *)
 
 Revision.f "$Rev$";;
@@ -35,6 +35,13 @@ type t =
   | Verit of float
   | Spass of float
   | Tptp of float
+  | ExpandENABLED
+  | ExpandCdot
+  | AutoUSE
+  | Lambdify
+  | ENABLEDaxioms
+  | LevelComparison
+  | Trivial
 ;;
 
 let timeout m =
@@ -56,6 +63,13 @@ let timeout m =
   | Verit f -> f
   | Spass f -> f
   | Tptp f -> f
+  | ExpandENABLED -> infinity
+  | ExpandCdot -> infinity
+  | AutoUSE -> infinity
+  | Lambdify -> infinity
+  | ENABLEDaxioms -> infinity
+  | LevelComparison -> infinity
+  | Trivial -> infinity
 
 let is_temporal m =
   match m with
@@ -82,6 +96,13 @@ let scale_time m s =
   | Verit f -> Verit (f *. s)
   | Spass f -> Spass (f *. s)
   | Tptp f -> Tptp (f *. s)
+  | ExpandENABLED -> ExpandENABLED
+  | ExpandCdot -> ExpandCdot
+  | AutoUSE -> AutoUSE
+  | Lambdify -> Lambdify
+  | ENABLEDaxioms -> ENABLEDaxioms
+  | LevelComparison -> LevelComparison
+  | Trivial -> Trivial
 ;;
 
 open Format
@@ -108,6 +129,13 @@ let pp_print_tactic ff m =
   | Tptp f -> fprintf ff "(tptp %g s)" f
   | Cooper -> fprintf ff "(cooper)"
   | Fail -> fprintf ff "(fail)"
+  | ExpandENABLED -> fprintf ff "(expandenabled)"
+  | ExpandCdot -> fprintf ff "(expandcdot)"
+  | AutoUSE -> fprintf ff "(autouse)"
+  | Lambdify -> fprintf ff "(lambdify)"
+  | ENABLEDaxioms -> fprintf ff "(enabledaxioms)"
+  | LevelComparison -> fprintf ff "(levelcomparison)"
+  | Trivial -> fprintf ff "(trivial)"
 ;;
 
 let pp_print_method ff meth =
@@ -134,6 +162,13 @@ let prover_meth_of_tac tac =
     | Tptp f -> (Some "tptp", None)
     | Cooper -> (Some "cooper", None)
     | Fail -> (Some "fail", None)
+    | ExpandENABLED -> (Some "expandenabled", None)
+    | ExpandCdot -> (Some "expandcdot", None)
+    | AutoUSE -> (Some "autouse", None)
+    | Lambdify -> (Some "lambdify", None)
+    | ENABLEDaxioms -> (Some "enabledaxioms", None)
+    | LevelComparison -> (Some "levelcomparison", None)
+    | Trivial -> (Some "trivial", None)
 
 type result =
   | Proved of string

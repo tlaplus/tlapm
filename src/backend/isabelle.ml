@@ -67,6 +67,8 @@ let print_shape ff shp =
 ;;
 
 exception Unsupported of string;;
+let failwith_unsupp op = failwith ("Unsupported operator `" ^ op ^ "`.\n")
+
 
 let rec pp_apply sd cx ff op args = match op.core with
   | Ix n ->
@@ -102,6 +104,7 @@ let rec pp_apply sd cx ff op args = match op.core with
           (pp_print_delimited (pp_print_expr sd cx)) args
       in
       match b, args with
+        (* Logic operators *)
         | B.TRUE, [] -> atomic "TRUE"
         | B.FALSE, [] -> atomic "FALSE"
         | B.Implies, [e ; f] -> binary "\\<Rightarrow>" e f
@@ -111,18 +114,21 @@ let rec pp_apply sd cx ff op args = match op.core with
         | B.Neg, [e] -> unary "~" e
         | B.Eq, [e ; f] -> binary "=" e f
         | B.Neq, [e ; f] -> binary "\\<noteq>" e f
-
+        (* Function operators *)
+        | B.DOMAIN, [e] -> unary "DOMAIN" e
+        (* Set operators *)
         | B.STRING, [] -> atomic "STRING"
         | B.BOOLEAN, [] -> atomic "BOOLEAN"
+        (* Set theory operators *)
         | B.SUBSET, [e] -> unary "SUBSET" e
         | B.UNION, [e] -> unary "UNION" e
-        | B.DOMAIN, [e] -> unary "DOMAIN" e
         | B.Subseteq, [e ; f] -> binary "\\<subseteq>" e f
         | B.Mem, [e ; f] -> binary "\\<in>" e f
         | B.Notmem, [e ; f] -> binary "\\<notin>" e f
         | B.Setminus, [e ; f] -> binary "\\\\" e f
         | B.Cap, [e ; f] -> binary "\\<inter>" e f
         | B.Cup, [e ; f] -> binary "\\<union>" e f
+        (* Modal operators *)
         | (B.Prime | B.StrongPrime), [e] -> assert false
          (* prime handling was moved from the backends and TLAPM to action frontends *)
          (*  begin match e.core  with
@@ -133,8 +139,13 @@ let rec pp_apply sd cx ff op args = match op.core with
                 else atomic (crypthash cx e)
              | _ ->  atomic (crypthash cx e)
            end *)
-        | B.Leadsto, [e; f] -> raise (Unsupported "Leadsto")
-        | B.ENABLED, _ -> raise (Unsupported "ENABLED")
+        | B.Leadsto, [e; f] ->
+            failwith_unsupp "Leadsto"
+            (* raise (Unsupported "Leadsto") *)
+        | B.ENABLED, [e] ->
+            failwith_unsupp "ENABLED"
+            (* raise (Unsupported "ENABLED") *)
+            (* unary (cook "ENABLED") e *)
         | B.UNCHANGED, [e] -> assert false
             (* UNCHANGED is now handled by the action front-end *)
             (* pp_print_expr sd cx ff
@@ -142,16 +153,26 @@ let rec pp_apply sd cx ff op args = match op.core with
                       [ Apply (Internal B.StrongPrime @@ e, [e]) @@ e ; e ]) @@
                       e) *)
         | B.Cdot, [e ; f] ->
-            binary (cook "\\cdot") e f
+            failwith_unsupp "\\cdot"
+            (* TODO: failwith, raise Unsupported, or cook ? *)
+            (* raise (Unsupported "\\cdot" *)
+            (* binary (cook "\\cdot") e f *)
         | B.Actplus, [e ; f] ->
-            binary (cook "-+->") e f
-        | B.Box _, [e] -> raise (Unsupported "Box")
-        | B.Diamond, [e] -> raise (Unsupported "Diamond")
+            failwith_unsupp "-+->"
+            (* binary (cook "-+->") e f *)
+        | B.Box _, [e] ->
+            failwith_unsupp "[]"
+            (* raise (Unsupported "Box") *)
+        | B.Diamond, [e] ->
+            failwith_unsupp "<>"
+            (* raise (Unsupported "Diamond") *)
+        (* Arithmetic operators *)
         | B.Nat, [] -> atomic "Nat"
         | B.Int, [] -> atomic "Int"
         | B.Real, [] -> atomic (cook "Real")
         | B.Plus, [e ; f] -> nonfix "arith_add" [e ; f]
-        | B.Minus, [e ; f] -> nonfix "arith_add" [e ; Apply (Internal B.Uminus @@ f, [f]) @@ f]
+        | B.Minus, [e ; f] ->
+            nonfix "arith_add" [e ; Apply (Internal B.Uminus @@ f, [f]) @@ f]
         | B.Uminus, [e] -> nonfix "minus" [e]
         | B.Times, [e ; f] -> nonfix "mult" [e ; f]
         | B.Ratio, [e ; f] -> nonfix (cook "/") [e ; f]
@@ -164,7 +185,7 @@ let rec pp_apply sd cx ff op args = match op.core with
         | B.Gteq, [e ; f] -> nonfix "geq" [e ; f]
         | B.Gt, [e ; f] -> nonfix "greater" [e ; f]
         | B.Range, [e ; f] -> nonfix (cook "..") [e ; f]
-
+        (* Sequence operators *)
         | B.Seq, [e] -> nonfix "Seq" [e]
         | B.Len, [e] -> nonfix "Len" [e]
         | B.BSeq, [e] -> nonfix "BSeq" [e]
@@ -174,7 +195,7 @@ let rec pp_apply sd cx ff op args = match op.core with
         | B.Tail, [e] -> nonfix "Tail" [e]
         | B.SubSeq, [e ; m ; n] -> nonfix "SubSeq" [e ; m ; n]
         | B.SelectSeq, [e ; f] -> nonfix "SelectSeq" [e ; f]
-
+        (* TLC operators *)
         | B.OneArg, [e ; f] -> binary ":>" e f
         | B.Extend, [e ; f] -> binary "@@" e f
         | B.Print, [e ; v] -> nonfix "Print" [e ; v]
@@ -188,13 +209,13 @@ let rec pp_apply sd cx ff op args = match op.core with
         | B.RandomElement, [s] -> nonfix "RandomElement" [s]
         | B.Any, [] -> atomic "Any"
         | B.ToString, [v] -> nonfix "ToString" [v]
-
+        (* Internal operators *)
         | B.Unprimable, [e] ->
             pp_print_expr sd cx ff e
         | B.Irregular, [e] ->
             atomic (crypthash cx e)
         | _ ->
-            Util.eprintf ~at:op "arity mismatch@\n%a"
+            Util.eprintf ~at:op "isabelle.ml: arity mismatch@\n%a"
                          (Expr.Fmt.pp_print_expr (Deque.empty, cx))
                          (Tuple (op :: args) @@ op) ;
             failwith "Backend.Isabelle.pp_apply"

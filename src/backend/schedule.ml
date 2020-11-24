@@ -48,10 +48,10 @@ type process = {
 let temp_buf = Bytes.create 4096;;
 let read_to_stdout fd =
   try
-    let r = Unix.read fd temp_buf 0 (String.length temp_buf) in
+    let r = Unix.read fd temp_buf 0 (Bytes.length temp_buf) in
     if r = 0 then raise End_of_file;
-    output Pervasives.stdout temp_buf 0 r;
-    flush Pervasives.stdout;
+    output Stdlib.stdout temp_buf 0 r;
+    flush Stdlib.stdout;
   with Unix_error _ -> raise End_of_file
 ;;
 
@@ -61,7 +61,7 @@ let launch refid cmd t =
   System.harvest_zombies ();
   if !Params.verbose then begin
     Printf.eprintf "launching process: \"%s\"\n" cmd.line;
-    flush Pervasives.stderr;
+    flush Stdlib.stderr;
   end;
   let (pid, out_read) = System.launch_process cmd.line in
   let start_time = gettimeofday () in

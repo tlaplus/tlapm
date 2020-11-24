@@ -112,7 +112,7 @@ let rec expr e f = match e.core, f.core with
   | String x, String y -> x = y
   | Num (i, j), Num (k, l) ->
       i = k && j = l
-  | At b, At c -> b = c 
+  | At b, At c -> b = c
   | ec, fc ->
       false
 

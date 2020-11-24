@@ -417,7 +417,19 @@ and fp_sequent stack buf sq =
         bprintf buf "$Goal(%a)" (fp_expr counthyp countvar stack) sq.active
     | Some (h, cx) ->
          match h.core with
-          | Fresh (hint, _, _, Unbounded)
+          | Fresh (hint, _, kind, Unbounded)
+          ->
+              let kind_str = match kind with
+                | Constant -> "CONSTANT"
+                | State -> "STATE"
+                | Action -> "ACTION"
+                | Temporal -> "TEMPORAL"
+                | Unknown -> "Unknown" in
+              Stack.push stack (Identhyp (kind_str, hint.core), ref false);
+              spin stack cx;
+              let (v, r) = Stack.pop stack in
+              if !r then
+                bprintf buf "%s" (kind_str ^ hint.core)
           | Fresh (hint, _, _, Bounded (_, Hidden))
           | Defn ({core = Recursive (hint, _)}, _, _, _)
           ->  Stack.push stack (Identhyp ("CON", hint.core), ref false);
@@ -441,6 +453,13 @@ and fp_sequent stack buf sq =
              ignore (Stack.pop stack)
           | Defn ({core = Instance _}, _, Hidden, _) -> assert false
           | Fact (_, Hidden, _) ->
+              (* These include pragmas mentioned in the `BY` and made hidden
+              by the function `Backend.Prep.find_meth`. The function
+              `Backend.Prep.find_meth` has been changed to keep these facts
+              visible, so that proofs with identical assertions and different
+              `BY` statements would correspond to different fingerprints.
+              *)
+              (* Util.printf ~prefix:"[DEBUG]: " "Hidden `Fact`"; *)
               Stack.push stack (No(*Identvar "HIDDENFACT"*), ref false);
               spin stack cx ;
               ignore (Stack.pop stack)
@@ -469,10 +488,21 @@ and fp_sequent stack buf sq =
              spin stack cx;
              ignore (Stack.pop stack)
           | Defn ({core = Instance _}, _, Visible, _) -> assert false
-          | Fact (e, _, tm) ->
+          | Fact (e, Visible, tm) ->
                Stack.push stack (Identhyp ("HYP", "None"), ref false);
               spin stack cx;
               ignore (Stack.pop stack);
+              (*
+              Util.printf ~prefix:"[DEBUG]: " "Visible `Fact` ";
+              let msg = "expr:\n" in
+              let pr_obl fmt = ignore (
+                  let print = Expr.Fmt.pp_print_expr in
+                  let cx = (Deque.empty, Ctx.dot) in
+                  let fmt = Format.std_formatter in
+                  print cx fmt e)
+              in Util.printf ~at:e ~prefix:"[DEBUG]: "
+                "%s@\n  @[<b0>%t@]@." msg pr_obl;
+              *)
               bprintf buf "$Fact(%a,%s)" (fp_expr counthyp countvar stack) e
                       (time_to_string tm);
   in

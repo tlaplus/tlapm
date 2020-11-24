@@ -18,7 +18,9 @@ open M_t
 
 let external_deps m =
   let deps = ref Hs.empty in
+  let instances = ref Hs.empty in
   let locals = ref Hs.empty in
+  let submodules = ref Sm.empty in
   let mapper = object (self : 'self)
     inherit [unit] Proof.Visit.iter as super
     method defn scx df = begin match df.core with
@@ -29,14 +31,17 @@ let external_deps m =
           self#expr scx e;
       | Instance (_, ins) ->
           deps := Hs.add (ins.inst_mod @@ df) !deps ;
+          instances := Hs.add (ins.inst_mod @@ df) !instances;
           List.iter begin
             fun (_, e) -> self#expr scx e
           end ins.inst_sub
     end ; super#defn scx df
   end in
   let rec visit mu = match mu.core with
-    | Submod {core = m} ->
+    | Submod subm ->
+        let m = subm.core in
         locals := Hs.add m.name !locals ;
+        submodules := Sm.add m.name.core subm !submodules;
         List.iter visit m.body
     | Anoninst (ins, _) ->
         ignore (mapper#defn ((), Deque.empty)
@@ -49,7 +54,7 @@ let external_deps m =
   List.iter visit m.core.body ;
   deps := Hs.diff !deps !locals ;
   List.iter (fun s -> deps := Hs.add s !deps) m.core.extendees ;
-  !deps
+  !deps, !locals, !submodules
 
 (**
  @param mcx Sm (StringMap) of mule_ wrapped *)
@@ -58,7 +63,7 @@ let schedule mcx =
   (* computes the dependency order between modules*)
   let moddeps = Sm.fold begin
     fun key modul accum ->
-      Sm.add key (external_deps modul) accum
+      Sm.add key (let (e, _, _) = (external_deps modul) in e) accum
   end mcx Sm.empty in
   let seen = ref Hs.empty in
   let order = ref [] in

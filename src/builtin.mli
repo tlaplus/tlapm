@@ -20,19 +20,19 @@ type builtin =
   | UNION
   | DOMAIN
   | Subseteq
-  | Mem
-  | Notmem
+  | Mem  (* \in *)
+  | Notmem  (* \notin *)
   | Setminus
   | Cap
   | Cup
     (* modal *)
   | Prime
   | StrongPrime
-  | Leadsto
+  | Leadsto  (* ~> *)
   | ENABLED
   | UNCHANGED
   | Cdot
-  | Actplus
+  | Actplus  (* -+-> *)
   | Box of bool
   | Diamond
     (* arithmetic *)

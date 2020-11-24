@@ -36,3 +36,24 @@ val app_spine : sub -> expr list -> expr list
 val extract : sequent -> int -> (sequent * expr) option
 
 val pp_print_sub : E_fmt.ctx -> Format.formatter -> sub -> unit
+
+class map : object
+    method expr     : sub -> expr -> expr
+    method exprs    : sub -> expr list -> expr list
+    method pform    : sub -> pform -> pform
+    method sels     : sub -> sel list -> sel list
+    method sel      : sub -> sel -> sel
+    method sequent  : sub -> sequent -> sub * sequent
+    method defn     : sub -> defn -> sub * defn
+    method defns    : sub -> defn list -> sub * defn list
+    method bounds   : sub -> bound list -> sub * bound list
+    (* TODO: method bound    : sub -> bound -> sub * bound *)
+    method bound    : sub -> bound -> bound
+    method exspec   : sub -> exspec -> exspec
+    method instance : sub -> instance -> instance
+    method hyp      : sub -> hyp -> sub * hyp
+    method hyps     : sub -> hyp Deque.dq -> sub * hyp Deque.dq
+    method normalize : ?cx:hyp Deque.dq -> expr -> expr list -> expr_
+end
+
+class map_visible_hyp : map

@@ -8,9 +8,10 @@
 (** Source locations *)
 
 (** A location represents a col in a source file *)
-type pt_ = { line : int ;
-              bol : int ;
-              col : int ;
+type pt_ = { line : int ;  (* line number *)
+              bol : int ;  (* beginning of line *)
+              col : int ;  (* column number relative to beginning of line,
+                see the implementation of the function `locus_of_position`. *)
             }
 
 type pt = Actual of pt_ | Dummy

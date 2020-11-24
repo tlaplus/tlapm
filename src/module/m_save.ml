@@ -138,17 +138,31 @@ let parse_file ?clock gfn =
   end ()
 
 let complete_load ?clock ?root:(r="") mcx =
-  clocking clock begin fun () ->
+  clocking clock
+  begin fun () ->
+    let requested = ref Hs.empty in
+    (* suffices to compare to found modules by name.
+    `Module.Elab` will add submodules of extended modules to the
+    module context, before those are instantiated.
+    *)
+    let found = ref Hs.empty in
     let mods = ref Deque.empty in
     Sm.iter (fun _ mule -> mods := Deque.snoc !mods mule) mcx ;
     let rec spin mcx = match Deque.front !mods with
       | None -> mcx
       | Some (mule, rest) ->
           mods := rest ;
-          let eds = M_dep.external_deps mule in
+          let (eds, submodule_names, submodules) = M_dep.external_deps mule in
+          found := Hs.union submodule_names !found;
+          let mcx = Sm.merge (fun k v1 v2 -> if v1 = None then v2 else v1) mcx submodules in
+          (*
+          print_string "\n--------\n";
+          Hs.iter (fun x -> print_string (x.core ^ "\n")) eds;
+          print_string "\n--------\n";
+          *)
           let mcx = Hs.fold begin
             fun ed mcx ->
-              let mn = ed in
+              (* let mn = ed in *)
               (* if module name is also a name of a standrd module, try to load it anyway *)
               if (Sm.mem ed.core M_standard.initctx) then
                 try
@@ -162,17 +176,28 @@ let complete_load ?clock ?root:(r="") mcx =
                     Util.eprintf ~at:fnx
                     "%S not loadable\nNo corresponding source found either!" fnx.core  ;
                     failwith "Module.Parser.load_module"
-              (* else load it only if it was not loaded already *)
+              (* else load it only if it is not already defined
+              (either because a file already loaded, or because a submodule of
+              the current module, or a submodule of a module already loaded)
+              *)
               else if (Sm.mem ed.core mcx) then mcx
               else try
                 let emule = load_module ~root:r ed in
                 mods := Deque.snoc !mods emule ;
                 Sm.add ed.core emule mcx
               with Unknown_module_exception ->
+                   (* Modules from `INSTANCE` and `EXTENDS` statements could be
+                   submodules of a module that the module extends, and is
+                   itself another file.
+                   *)
+                   requested := Hs.add ed !requested;
+                   mcx
+                   (*
                    Util.eprintf ~at:mn
                    "Unknown module %S" mn.core ;
                    Errors.set mn (Printf.sprintf  "Unknown module %S" mn.core);
                    failwith "Module.Parser.load_module"
+                   *)
               | Not_loadable_exception fnx ->
                   Util.eprintf ~at:fnx
                   "%S not loadable\nNo corresponding source found either!" fnx.core  ;
@@ -180,7 +205,34 @@ let complete_load ?clock ?root:(r="") mcx =
           end eds mcx in
           spin mcx
     in
-    spin mcx
+    let res = spin mcx in
+
+    (*
+    print_int (Sm.cardinal res);
+    print_int (Hs.cardinal !found);
+    print_int (Hs.cardinal !requested);
+
+    print_string "\nResult:\n";
+    Sm.iter (fun x y -> print_string (y.core.name.core ^ "\n")) res;
+
+    print_string "\nFound modules:\n";
+    Hs.iter (fun x -> print_string (x.core ^ "\n")) !found;
+
+    print_string "\nRequested modules:\n";
+    Hs.iter (fun x -> print_string (x.core ^ "\n")) !requested;
+    *)
+
+    if not (Hs.subset !requested !found) then begin
+        let not_found = Hs.diff !requested !found in
+        Hs.iter (fun mn ->
+            Util.eprintf ~at:mn
+                "Unknown module %S" mn.core ;
+            Errors.set mn (Printf.sprintf  "Unknown module %S" mn.core)
+            )
+            not_found;
+        failwith "Module.Parser.load_module"
+    end;
+    res
   end ()
 
 let store_module ?clock mule =

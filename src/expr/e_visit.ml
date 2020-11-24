@@ -54,7 +54,10 @@ class virtual ['s] map = object (self : 'self)
     | Bang (e, sels) ->
         Bang (self#expr scx e, List.map (self#sel scx) sels) @@ oe
     | Lambda (vs, e) ->
-        let scx = adjs scx (List.map (fun (v, shp) -> Fresh (v, shp, Unknown, Unbounded) @@ v) vs) in
+        let scx = self#adjs scx
+            (List.map
+                (fun (v, shp) -> Fresh (v, shp, Unknown, Unbounded) @@ v)
+                vs) in
         Lambda (vs, self#expr scx e) @@ oe
     | String s ->
         String s @@ oe
@@ -78,7 +81,7 @@ class virtual ['s] map = object (self : 'self)
         let (scx, bs) = self#bounds scx bs in
         Quant (q, bs, self#expr scx e) @@ oe
     | Tquant (q, vs, e) ->
-        let scx = adjs scx (List.map (fun v -> Flex v @@ v) vs) in
+        let scx = self#adjs scx (List.map (fun v -> Flex v @@ v) vs) in
         Tquant (q, vs, self#expr scx e) @@ oe
     | Choose (v, optdom, e) ->
         let optdom = Option.map (self#expr scx) optdom in
@@ -86,12 +89,12 @@ class virtual ['s] map = object (self : 'self)
           | None -> Fresh (v, Shape_expr, Constant, Unbounded) @@ v
           | Some dom -> Fresh (v, Shape_expr, Constant, Bounded (dom, Visible)) @@ v
         in
-        let scx = adj scx h in
+        let scx = self#adj scx h in
         let e = self#expr scx e in
         Choose (v, optdom, e) @@ oe
     | SetSt (v, dom, e) ->
         let dom = self#expr scx dom in
-        let scx = adj scx (Fresh (v, Shape_expr, Constant, Bounded (dom, Visible)) @@ v) in
+        let scx = self#adj scx (Fresh (v, Shape_expr, Constant, Bounded (dom, Visible)) @@ v) in
         let e = self#expr scx e in
         SetSt (v, dom, e) @@ oe
     | SetOf (e, bs) ->
@@ -161,7 +164,7 @@ class virtual ['s] map = object (self : 'self)
     | [] -> (scx, [])
     | df :: dfs ->
         let df = self#defn scx df in
-        let scx = adj scx (Defn (df, User, Visible, Local) @@ df) in
+        let scx = self#adj scx (Defn (df, User, Visible, Local) @@ df) in
         let (scx, dfs) = self#defns scx dfs in
         (scx, df :: dfs)
 
@@ -174,7 +177,7 @@ class virtual ['s] map = object (self : 'self)
     let hs = List.map begin
       fun (v, k, _) -> Fresh (v, Shape_expr, k, Unbounded) @@ v
     end bs in
-    let scx = adjs scx hs in
+    let scx = self#adjs scx hs in
     (scx, bs)
 
   method bound scx b =
@@ -192,7 +195,7 @@ class virtual ['s] map = object (self : 'self)
   method instance scx i =
     let scx = List.fold_left begin
       fun scx v ->
-        adj scx (Fresh (v, Shape_expr, Unknown, Unbounded) @@ v)
+        self#adj scx (Fresh (v, Shape_expr, Unknown, Unbounded) @@ v)
     end scx i.inst_args in
     { i with inst_sub = List.map (fun (v, e) -> (v, self#expr scx e)) i.inst_sub }
 
@@ -203,17 +206,17 @@ class virtual ['s] map = object (self : 'self)
           | Bounded (r, rvis) -> Bounded (self#expr scx r, rvis)
         in
         let h = Fresh (nm, shp, lc, dom) @@ h in
-        (adj scx h, h)
+        (self#adj scx h, h)
     | Flex s ->
         let h = Flex s @@ h in
-        (adj scx h, h)
+        (self#adj scx h, h)
     | Defn (df, wd, vis, ex) ->
         let df = self#defn scx df in
         let h = Defn (df, wd, vis, ex) @@ h in
-        (adj scx h, h)
+        (self#adj scx h, h)
     | Fact (e, vis, tm) ->
         let h = Fact (self#expr scx e, vis, tm) @@ h in
-        (adj scx h, h)
+        (self#adj scx h, h)
 
   method hyps scx hs = match Dq.front hs with
     | None -> (scx, Dq.empty)
@@ -221,6 +224,14 @@ class virtual ['s] map = object (self : 'self)
         let (scx, h) = self#hyp scx h in
         let (scx, hs) = self#hyps scx hs in
         (scx, Dq.cons h hs)
+
+  method adj (s, cx) h =
+    (s, Dq.snoc cx h)
+
+  method adjs scx = function
+    | [] -> scx
+    | h :: hs ->
+        self#adjs (self#adj scx h) hs
 
 end
 
@@ -238,7 +249,8 @@ class virtual ['s] iter = object (self : 'self)
         self#expr scx e ;
         List.iter (self#sel scx) sels
     | Lambda (vs, e) ->
-        let scx = adjs scx (List.map (fun (v, shp) -> Fresh (v, shp, Unknown, Unbounded) @@ v) vs) in
+        let scx = adjs scx (List.map (fun (v, shp) ->
+            Fresh (v, shp, Unknown, Unbounded) @@ v) vs) in
         self#expr scx e
     | Apply (op, es) ->
         self#expr scx op ;
@@ -398,5 +410,283 @@ class virtual ['s] iter = object (self : 'self)
         let scx = self#hyp scx h in
         let scx = self#hyps scx hs in
         scx
+
+end
+
+class virtual ['s] map_visible_hyp = object (self : 'self)
+    (* Map expressions, visiting only visible hypotheses. *)
+    inherit ['s] map as super
+
+    method hyp scx h = match h.core with
+      | Fresh (nm, shp, lc, dom) ->
+          let dom = match dom with
+            | Unbounded -> Unbounded
+            | Bounded (r, rvis) -> Bounded (self#expr scx r, rvis)
+          in
+          let h = Fresh (nm, shp, lc, dom) @@ h in
+          (adj scx h, h)
+      | Flex s ->
+          let h = Flex s @@ h in
+          (adj scx h, h)
+      | Defn (_, _, Hidden, _)
+      | Fact (_, Hidden, _) ->
+        (* TODO: what about mutable properties of `h` ? *)
+        (adj scx h, h)
+      | Defn (df, wd, Visible, ex) ->
+          let h = Defn (self#defn scx df, wd, Visible, ex) @@ h in
+          (adj scx h, h)
+      | Fact (e, Visible, tm) ->
+          let h = Fact (self#expr scx e, Visible, tm) @@ h in
+          (adj scx h, h)
+end
+
+class virtual ['s] iter_visible_hyp = object (self : 'self)
+    (* Iterate on expressions, visiting only visible hypotheses. *)
+    inherit ['s] iter as super
+
+    method hyp scx h =
+      begin
+        match h.core with
+          | Fresh (nm, _, lc, e) -> begin
+              match e with
+                | Bounded (dom, _) -> self#expr scx dom
+                | Unbounded -> ()
+            end
+          | Flex s ->
+              ()
+          | Defn (_, _, Hidden, _)
+          | Fact (_, Hidden, _) ->
+              ()
+          | Defn (df, _, Visible, _) ->
+              ignore (self#defn scx df)
+          | Fact (e, Visible, _) ->
+              self#expr scx e
+      end ; adj scx h
+end
+
+
+let set_to_list table =
+        (* `Hashtbl` keys to `List`. *)
+    let seq = Hashtbl.to_seq_keys table in
+    Stdlib.List.of_seq seq
+
+
+let collect_unprimed_vars cx e =
+    let unprimed_vars = Hashtbl.create 16 in
+    let visitor =
+        object (self: 'self)
+        inherit [bool] iter_visible_hyp as super
+
+        method expr (((prime_scope: bool), cx) as scx) e =
+            match e.core with
+            | Apply ({core=Internal Prime}, _) ->
+                assert (not prime_scope)
+            | Ix n ->
+                assert (n >= 1);
+                assert (not prime_scope);
+                let hyp = E_t.get_val_from_id cx n in
+                begin match hyp.core with
+                    | Flex name ->
+                        let var_name = name.core in
+                        Hashtbl.replace unprimed_vars var_name ()
+                    | _ -> ()
+                end
+            | Apply ({core=Internal ENABLED}, _) ->
+                if (not prime_scope) then
+                    self#expr scx e
+            | Apply ({core=Internal Cdot}, [arg1; _]) ->
+                assert (not prime_scope);
+                self#expr scx arg1
+            | Apply ({core=Internal UNCHANGED}, [arg]) ->
+                assert (not prime_scope);
+                self#expr scx arg
+            | Sub (_, action, subscript) ->
+                assert (not prime_scope);
+                self#expr scx action;
+                self#expr scx subscript
+            | _ -> super#expr scx e
+    end
+    in
+    let prime_scope = false in
+    let scx = (prime_scope, cx) in
+    visitor#expr scx e;
+    set_to_list unprimed_vars
+
+
+let collect_primed_vars cx e =
+    let primed_vars = Hashtbl.create 16 in
+    let visitor =
+        object (self: 'self)
+        inherit [bool] iter_visible_hyp as super
+
+        method expr (((prime_scope: bool), cx) as scx) e =
+            match e.core with
+            | Apply ({core=Internal Prime}, [arg]) ->
+                assert (not prime_scope);
+                self#expr (true, cx) arg
+            | Ix n ->
+                begin
+                assert (n >= 1);
+                let hyp = E_t.get_val_from_id cx n in
+                match hyp.core with
+                    | Flex name ->
+                        let var_name = name.core in
+                        if (prime_scope &&
+                                not (Hashtbl.mem primed_vars var_name)) then
+                            Hashtbl.add primed_vars var_name ()
+                    | _ -> ()
+                end
+            | Apply ({core=Internal ENABLED}, _) ->
+                assert (not prime_scope)
+            | Apply ({core=Internal Cdot}, [_; arg2]) ->
+                assert (not prime_scope);
+                self#expr scx arg2
+            | Apply ({core=Internal UNCHANGED}, [arg]) ->
+                assert (not prime_scope);
+                let prime_scope_ = true in
+                let scx_ = (prime_scope_, cx) in
+                self#expr scx_ arg
+            | Sub (_, action, subscript) ->
+                assert (not prime_scope);
+                self#expr scx action;
+                let prime_scope_ = true in
+                let scx_ = (prime_scope_, cx) in
+                self#expr scx_ subscript
+            | _ -> super#expr scx e
+    end
+    in
+    let prime_scope = false in
+    let scx = (prime_scope, cx) in
+    visitor#expr scx e;
+    set_to_list primed_vars
+
+
+class virtual ['s] map_rename = object (self : 'self)
+  (* Rename hypotheses. The renaming of identifiers is implemented in the
+  method `rename`.
+  *)
+  inherit ['s] map as super
+
+  method expr (scx : 's scx) oe =
+    let cx = snd scx in
+    match oe.core with
+    | Lambda (signature, e) ->
+        let hyps = (List.map
+            (fun (v, shp) -> Fresh (v, shp, Unknown, Unbounded) @@ v)
+            signature) in
+        let names = List.map (fun (v, _) -> v) signature in
+        let (hyps, names) = self#renames cx hyps names in
+        let signature = List.map2
+            (fun (_, shp) name -> (name, shp))
+            signature names in
+        let scx = self#adjs scx hyps in
+        Lambda (signature, self#expr scx e) @@ oe
+    | Tquant (q, names, e) ->
+        let hyps = List.map (fun v -> Flex v @@ v) names in
+        let (hyps, names) = self#renames cx hyps names in
+        let scx = self#adjs scx hyps in
+        Tquant (q, names, self#expr scx e) @@ oe
+    | Choose (v, optdom, e) ->
+        let optdom = Option.map (self#expr scx) optdom in
+        let h = match optdom with
+          | None -> Fresh (v, Shape_expr, Constant, Unbounded) @@ v
+          | Some dom -> Fresh (v, Shape_expr, Constant, Bounded (dom, Visible)) @@ v
+        in
+        let (h, v) = self#rename cx h v in
+        let scx = self#adj scx h in
+        let e = self#expr scx e in
+        Choose (v, optdom, e) @@ oe
+    | SetSt (v, dom, e) ->
+        let dom = self#expr scx dom in
+        let hyp = Fresh (v, Shape_expr, Constant, Bounded (dom, Visible)) @@ v in
+        let (hyp, v) = self#rename cx hyp v in
+        let scx = self#adj scx hyp in
+        let e = self#expr scx e in
+        SetSt (v, dom, e) @@ oe
+    | _ -> super#expr scx oe
+
+  method defn scx df =
+    let df = match df.core with
+      | Recursive (nm, shp) -> df
+      | Operator (nm, e) ->
+          { df with core = Operator (nm, self#expr scx e) }
+      | Instance (nm, i) ->
+          { df with core = Instance (nm, self#instance scx i) }
+      | Bpragma(nm,e,l) ->
+          { df with core = Bpragma (nm, self#expr scx e, l) }
+    in
+    df
+
+  method defns scx = function
+    | [] -> (scx, [])
+    | df :: dfs ->
+        let df = self#defn scx df in
+        let hyp = Defn (df, User, Visible, Local) @@ df in
+        let (hyp, _) = self#rename (snd scx) hyp (noprops "") in
+        let df = match hyp.core with
+            | Defn (df, _, _, _) -> df
+            | _ -> assert false in
+        let scx = self#adj scx hyp in
+        let (scx, dfs) = self#defns scx dfs in
+        (scx, df :: dfs)
+
+  method bounds scx bs =
+    let cx = snd scx in
+    let bs = List.map begin
+      fun (v, k, dom) -> match dom with
+        | Domain d -> (v, k, Domain (self#expr scx d))
+        | _ -> (v, k, dom)
+    end bs in
+    let hs = List.map begin
+      fun (v, k, _) -> Fresh (v, Shape_expr, k, Unbounded) @@ v
+    end bs in
+    let names = List.map (fun (v, _, _) -> v) bs in
+    let (hs, names) = self#renames cx hs names in
+    let bs = List.map2 (fun (v, k, dom) name -> (name, k, dom))
+        bs names in
+    let scx = self#adjs scx hs in
+    (scx, bs)
+
+  method instance scx i =
+    assert false  (* `INSTANCE` statements assumed to have been expanded *)
+    (* TODO: call `self#rename` *)
+    (*
+    let scx = List.fold_left begin
+      fun scx v ->
+        self#adj scx (Fresh (v, Shape_expr, Unknown, Unbounded) @@ v)
+    end scx i.inst_args in
+    { i with inst_sub = List.map (fun (v, e) -> (v, self#expr scx e)) i.inst_sub }
+    *)
+
+  method hyp scx h =
+    let cx = snd scx in
+    match h.core with
+    | Fresh (nm, shp, lc, dom) ->
+        let dom = match dom with
+          | Unbounded -> Unbounded
+          | Bounded (r, rvis) -> Bounded (self#expr scx r, rvis)
+        in
+        let h = Fresh (nm, shp, lc, dom) @@ h in
+        let (h, _) = self#rename cx h nm in
+        (self#adj scx h, h)
+    | Flex s ->
+        let h = Flex s @@ h in
+        let (h, _) = self#rename cx h s in
+        (self#adj scx h, h)
+    | Defn (df, wd, vis, ex) ->
+            (* call `self#defns` to ensure calling `self#rename` *)
+        let (_, dfs) = self#defns scx [df] in
+        assert ((List.length dfs) = 1);
+        let df = List.hd dfs in
+        let h = Defn (df, wd, vis, ex) @@ h in
+        (self#adj scx h, h)
+    | Fact (e, vis, tm) ->
+        let h = Fact (self#expr scx e, vis, tm) @@ h in
+        (self#adj scx h, h)
+
+  method renames cx hyps names =
+    List.split (List.map2 (self#rename cx) hyps names)
+
+  method rename cx hyp name = (hyp, name)
 
 end

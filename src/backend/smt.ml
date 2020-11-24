@@ -233,8 +233,8 @@ and fmt_expr (ecx:Ectx.t) e =
     | Tquant _ | Sub _ | Tsub _ | Fair _ ->
         unsupp "temporal logic"
     | _ ->
-        Errors.set e "Expression no supported yet";
-        Util.eprintf ~at:e "Expression no supported yet" ;
+        Errors.set e "Expression not supported yet";
+        Util.eprintf ~at:e "Expression not supported yet" ;
         failwith "Backend.SMT.fmt_expr"
 
 and pp_print_boundvar cx ff (v, _, _) = pp_print_string ff v
@@ -581,7 +581,8 @@ let encode_smtlib ?solver:(mode="SMTLIB") ff ob =
   fprintf ff ";;   generated from %s\n" (Util.location ~cap:false ob.obl);
   fprintf ff "\n";
 
-  fprintf ff "(set-logic UFNIA)\n"; (* This was formerly AUFNIRA. Arrays and real arithmetic are unimportant, but some obligations might be non-linear.  *)
+  fprintf ff "%s" ("(set-logic " ^ !Params.smt_logic ^ ")\n");
+    (* This was formerly AUFNIRA. *)
   List.iter (fprintf ff "(declare-sort %s 0)\n") sorts;
 
   fprintf ff ";; Standard TLA+ operators\n";

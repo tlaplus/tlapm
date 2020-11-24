@@ -1,7 +1,7 @@
 (* method_prs.ml --- parse method pragmas
  *
  *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+ * Copyright (C) 2008-2019  INRIA and Microsoft Corporation
  *)
 
 Revision.f "$Rev$";;
@@ -44,6 +44,13 @@ and isa_method = lazy begin
              isa_spass;
              isa_tptp;
              isa_ls4;
+             isa_enabled;
+             isa_cdot;
+             isa_autouse;
+             isa_lambdify;
+             isa_enabledaxioms;
+             isa_levelcomparison;
+             isa_trivial;
            ]
   <<< punct ")"
 end
@@ -106,3 +113,17 @@ and isa_verit = ident "verit" <!> Verit default_smt2_timeout
 and isa_spass = ident "spass" <!> Spass default_spass_timeout
 
 and isa_tptp = ident "tptp" <!> Tptp default_tptp_timeout
+
+and isa_enabled = ident "expandenabled" <!> ExpandENABLED
+
+and isa_cdot = ident "expandcdot" <!> ExpandCdot
+
+and isa_autouse = ident "autouse" <!> AutoUSE
+
+and isa_lambdify = ident "lambdify" <!> Lambdify
+
+and isa_enabledaxioms = ident "enabledaxioms" <!> ENABLEDaxioms
+
+and isa_levelcomparison = ident "levelcomparison" <!> LevelComparison
+
+and isa_trivial = ident "trivial" <!> Trivial

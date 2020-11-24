@@ -2,7 +2,7 @@
  * deque.ml --- Persistent functional double-ended queues
  *
  *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+ * Copyright (C) 2008-2019  INRIA and Microsoft Corporation
  *)
 
 Revision.f "$Rev$";;
@@ -105,9 +105,32 @@ let rec nth ?(backwards=false) q n =
         | Some (x, q) ->
             if n = 0 then Some x else git q (n - 1)
         | None ->
-            failwith "Queue.nth: internal error"
+            failwith "Deque.nth: internal error"
     in
     git q n
+
+let rec first_n q n =
+    (* Return the first `n` elements of the queue `q`. *)
+    if (n < 0) then
+        failwith (Printf.sprintf "Deque.first_n:  n = %d < 0" n);
+    if (n > (size q)) then
+        failwith (Printf.sprintf "Deque.first_n:  n = %d > size q = %d" n (size q));
+    let rec f q n =
+        assert (n <= size q);
+        assert (n >= 0);
+        match n with
+        | 0 -> empty
+        | _ -> begin match front q with
+            | None -> assert false
+            | Some (x, q) ->
+                let r = f q (n - 1) in
+                cons x r
+            end
+    in
+    (* TODO: move this unit test *)
+    (* assert ((size (f empty 0)) == 0); *)
+    f q n
+
 
 let map f q =
   let rec go n q r = match front q with
@@ -171,4 +194,3 @@ let alter ?(backwards=false) q n alt_fn =
         end
   in
   spin 0 q
-

@@ -1,8 +1,8 @@
 Action Items:
 =============
-- Respond to Tom Rodeheffer's 24 September 2013 bug report about 
-  USE/HIDE DEF.  
-  Damen will Look at the code and see how much work it would be to 
+- Respond to Tom Rodeheffer's 24 September 2013 bug report about
+  USE/HIDE DEF.
+  Damen will Look at the code and see how much work it would be to
   implement the missing features.
 
 * Investigate Dan's report of a self-test failing when installing
@@ -21,7 +21,7 @@ Action Items:
   change should usually be made as a Preference.
   Changes made, review in progress.
 
-- Fix TLA and TLAPS web pages. 
+- Fix TLA and TLAPS web pages.
   Jael will identify problems, Tomer will fix Inria site and Leslie will
   fix Microsoft site.
 
@@ -42,17 +42,15 @@ v0.3.x (development branch)
 
 - Handle non-Leibniz user-defined operators.
 
-- ENABLED
-
 - Named Subexpressions
 
-- Module Instantiation
+- Module Instantiation (implemented)
 
-- Implement BY/USE/HIDE MODULE Foo  
+- Implement BY/USE/HIDE MODULE Foo
   (so it importd unnamed theorems from the module as well as named ones)
   and BY/USE/HIDE DEFS MODULE Foo.
-  The requires deciding what USE Foo means if Foo is the 
-  current module.  In particular, does a global USE mark as used 
+  The requires deciding what USE Foo means if Foo is the
+  current module.  In particular, does a global USE mark as used
   only the theorems encountered so far or all later theorems as well.
 
 ==================================================================
@@ -63,7 +61,7 @@ Isabelle / Zenon
   - Integers
   - Sequences
   - FiniteSets
-  - TLC: @@ and :> 
+  - TLC: @@ and :>
     => Isabelle supports these, but I doubt that the PM does (SM 2013-11-07)
   - Reals
 
@@ -73,17 +71,17 @@ Isabelle / Zenon
 
 Misc
 -------------
-- Change documentation and PM so definition in named 
+- Change documentation and PM so definition in named
   THEOREM/ASSUMPTION is by default USEd.
 
   - done on PM side
 
 - There is now no way to use an unnamed theorem or assumption.  This
-  should be fixed.  
+  should be fixed.
   It will be handled by the USE/BY MODULE Foo construct, which
   will use the unnamed as well as the named theoresm of Foo.
 
-- PM/Zenon/Isabelle does not yet handle expressions 
+- PM/Zenon/Isabelle does not yet handle expressions
       {e : x_1 \in S_1, ... , x_n \in S_n}
   for n > 1.
 
@@ -134,8 +132,8 @@ THEOREM BoundedChooseIntro ==
 OBVIOUS
 
 -------------------------------------------------------
-SETS 
-- expressions of the form {e : x_1 \in S_1, ...  , x_n \in S_n} 
+SETS
+- expressions of the form {e : x_1 \in S_1, ...  , x_n \in S_n}
   for n > 1
 PM: waiting for backend support
 Zenon: 1 week after Isabelle encodes it
@@ -165,14 +163,14 @@ Isabelle: to be done
     [f EXCEPT ![u][v] = x]         (* multiple arguments to exception *)
     [f EXCEPT ![u] = @ + 1]        (* @ expressions *)
 
-PM: simplifies into basic EXCEPT forms using rules on 
+PM: simplifies into basic EXCEPT forms using rules on
     page 304 of TLA+ book. This is suboptimal in the long
     run because this simplification is not checked by
     Isabelle/TLA+.
     2013-11-07 (SM): I believe EXCEPT forms are now fully supported, please check
     and either delete item or explain what should be done.
 Zenon: nothing to do (depend on PM)?
-Isabelle: nothing to do (depend on PM)?    
+Isabelle: nothing to do (depend on PM)?
 
 -------------------------------------------------------
 NUMBERS
@@ -186,7 +184,7 @@ Isabelle: not supported
 MISCELLANEOUS CONSTRUCTS
 
 - INSTANCE
-PM: in progress
+PM: (implemented a version)
 Zenon & Isabelle: no plans (rely on PM)
 
 - RECURSIVE operator definitions
@@ -194,7 +192,7 @@ Zenon & Isabelle: no plans (rely on PM)
 -------------------------------------------------------
 PROOF CONSTRUCTS
 
--  Operators like NEW P(_) in an ASSUME/PROVE 
+-  Operators like NEW P(_) in an ASSUME/PROVE
 PM:
   The following ALREADY works fine.
 
@@ -231,23 +229,14 @@ Zenon: rely on PM
 Isabelle: rely on PM
 
 - STATE, ACTION, TEMPORAL declarations in ASSUME/PROVEs
-   Currently, the PM declares an error if it finds such a 
-   declaration.
 PM: To be done by appropriate front ends.
 Zenon: rely on PM?
 Isabelle: Extension to temporal logic will handle temporal formulas.
 
-- USE/HIDE MODULE 
+- USE/HIDE MODULE
 PM:       in progress
 Zenon:    Nothing to do?
 Isabelle: Nothing to do (rely on PM)
--------------------------------------------------------
-ACTION OPERATORS
-- ENABLED
-  To be handled by specific front end.
-
-\cdot (action composition)
-  To be handled by specific front end?
 -------------------------------------------------------
 TEMPORAL OPERATORS
   To be handled by specific front end(s)
@@ -296,7 +285,7 @@ MODULE RealTime
 
 -------------------------------------------------------
 ERRORS
-  Currently, error reporting is pretty bad.  
+  Currently, error reporting is pretty bad.
 PM: in progress
 Zenon: not sure how and what to improve
 Isabelle: Nothing much can be done?

@@ -12,11 +12,12 @@ open Proof.T;;
 type mule = mule_ wrapped
 and mule_ = {
   name              : hint ;
-  extendees         : hint list ;
-  instancees        : hint list ;
-    (* only external instancees *)
+  extendees         : hint list ;  (* module names from `EXTENDS` statements *)
+  instancees        : hint list ;  (* module names from `INSTANCE` statements,
+                                      only external instancees *)
   body              : modunit list ;
-  defdepth          : int ;
+  defdepth          : int ;  (* context depth:
+      number of declarations and definitions (TODO: confirm) *)
   mutable stage     : stage ;
   mutable important : bool
 }

@@ -47,6 +47,9 @@ val noproving : bool ref;;
 val max_threads : int ref;;
 val path_prefix : string;;
 
+(* backend/smt.ml *)
+val smt_logic : string ref
+
 (* backend/fingerprints.ml *)
 val rawversion : unit -> string;;
 val get_zenon_verfp : unit -> string;;
@@ -82,6 +85,7 @@ val stats : bool ref;;
 val add_search_dir : string -> unit;;
 val keep_going : bool ref;;   (* FIXME check still used ? *)
 val suppress_all : bool ref;;
+val set_smt_logic : string -> unit;;
 val set_smt_solver : string -> unit;;
 val printconfig : bool -> string;;
 val print_config_toolbox : bool -> string;;

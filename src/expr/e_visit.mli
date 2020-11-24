@@ -27,6 +27,8 @@ class virtual ['s] map : object
   method instance : 's scx -> instance -> instance
   method hyp      : 's scx -> hyp -> 's scx * hyp
   method hyps     : 's scx -> hyp Deque.dq -> 's scx * hyp Deque.dq
+  method adj      : 's scx -> hyp -> 's scx
+  method adjs     : 's scx -> hyp list -> 's scx
 end
 
 class virtual ['s] iter : object
@@ -43,3 +45,29 @@ class virtual ['s] iter : object
   method hyp      : 's scx -> hyp -> 's scx
   method hyps     : 's scx -> hyp Deque.dq -> 's scx
 end
+
+class virtual ['s] map_visible_hyp : ['s] map
+class virtual ['s] iter_visible_hyp : ['s] iter
+
+class virtual ['s] map_rename : object
+  method expr     : 's scx -> expr -> expr
+  method pform    : 's scx -> pform -> pform
+  method sel      : 's scx -> sel -> sel
+  method sequent  : 's scx -> sequent -> 's scx * sequent
+  method defn     : 's scx -> defn -> defn
+  method defns    : 's scx -> defn list -> 's scx * defn list
+  method bounds   : 's scx -> bound list -> 's scx * bound list
+  method bound    : 's scx -> bound -> 's scx * bound
+  method exspec   : 's scx -> exspec -> exspec
+  method instance : 's scx -> instance -> instance
+  method hyp      : 's scx -> hyp -> 's scx * hyp
+  method hyps     : 's scx -> hyp Deque.dq -> 's scx * hyp Deque.dq
+  method adj      : 's scx -> hyp -> 's scx
+  method adjs     : 's scx -> hyp list -> 's scx
+  method rename : ctx -> hyp -> Util.hint -> hyp * Util.hint
+  method renames : ctx -> hyp list -> Util.hint list -> hyp list * Util.hint list
+end
+
+val set_to_list: ('a, 'b) Hashtbl.t -> 'a list
+val collect_unprimed_vars: ctx -> expr -> string list
+val collect_primed_vars: ctx -> expr -> string list

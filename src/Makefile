@@ -22,7 +22,8 @@ BACKEND_PACK = \
   backend/smt backend/prep
 
 MODULE_PACK = \
-  module/m_t module/m_fmt module/m_globalness module/m_gen module/m_elab \
+  module/m_t module/m_visit module/m_subst \
+  module/m_fmt module/m_globalness module/m_gen module/m_elab \
   module/m_standard \
   module/m_flatten module/m_dep module/m_parser module/m_save
 
@@ -34,9 +35,11 @@ PARS_PACK = \
   pars/error pars/intf pars/lazyList pars/pco
 
 EXPR_PACK = \
-  expr/e_t expr/e_visit expr/e_constness expr/e_fmt expr/e_subst expr/e_eq expr/e_deref \
+  expr/e_t expr/e_visit expr/e_fmt expr/e_levels expr/e_constness \
+  expr/e_substitutive expr/e_subst expr/e_eq expr/e_deref \
   expr/e_leibniz expr/e_parser expr/e_tla_norm expr/e_temporal_props \
-  expr/e_elab expr/e_anon
+  expr/e_elab expr/e_anon \
+  expr/e_action expr/e_level_comparison
 
 TYPESYSTEM_DIR = \
   typesystem/typ_t typesystem/typ_e typesystem/typ_c \
@@ -52,9 +55,11 @@ MODULES = revision sysconf \
   params ${PARS_PACK} pars util/property \
   util/util ctx errors optable util/fmtutil \
   isabelle_keywords tla_parser util/deque alexer ${EXPR_PACK} expr \
-  method_prs ${PROOF_PACK} proof ${SMT_DIR} util/timing \
-	${MODULE_PACK} module ${FRONTEND_PACK} \
+  method_prs \
+  ${PROOF_PACK} proof ${SMT_DIR} util/timing \
+	${FRONTEND_PACK} \
   backend/toolbox backend/schedule ${BACKEND_PACK} backend \
+  ${MODULE_PACK} module \
   tlapm_args tlapm
 
 INC0 = -I ../backend -I ../frontend -I ../expr -I ../module -I ../proof \

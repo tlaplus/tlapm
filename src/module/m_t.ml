@@ -41,7 +41,7 @@ and modunit_ =
   | Theorem    of hint option * sequent * int * proof * proof * summary
   | Submod     of mule
   | Mutate     of [`Use of bool | `Hide] * usable
-  | Anoninst   of instance * export
+  | Anoninst   of Expr.T.instance * export
 
 and named = Named | Anonymous
 
@@ -96,6 +96,7 @@ let hyps_of_modunit (mu : modunit) = match mu.core with
   | Variables vs ->
       List.map (fun nm -> Flex nm @@ mu) vs
   | Definition (df, wd, vis, ex) ->
+      (* defined instances are assumed to have been expanded *)
       [ Defn (df, wd, vis, ex) @@ mu ]
   | Axiom (None, e) ->
       [ Fact (e, Hidden, Always) @@ mu ]

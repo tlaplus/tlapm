@@ -2,7 +2,7 @@
  * expr/subst.ml --- expressions (substitution)
  *
  *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+ * Copyright (C) 2008-2019  INRIA and Microsoft Corporation
  *)
 
 Revision.f "$Rev$";;
@@ -11,6 +11,7 @@ open Ext
 open Property
 open E_t
 
+module Dq = Deque
 module Fmt = E_fmt;;
 
 type sub =
@@ -51,7 +52,7 @@ let rec app_expr s oe = match oe.core with
   | If (e, f, g) ->
       If (app_expr s e, app_expr s f, app_expr s g) @@ oe
   | List (q, es) ->
-      List (q, List.map (app_expr s) es) @@ oe
+      List (q, app_exprs s es) @@ oe
   | Quant (q, bs, e) ->
       let (s, bs) = app_bounds s bs in
       Quant (q, bs, app_expr s e) @@ oe
@@ -66,18 +67,18 @@ let rec app_expr s oe = match oe.core with
       let (s, bs) = app_bounds s bs in
       SetOf (app_expr s e, bs) @@ oe
   | SetEnum es ->
-      SetEnum (List.map (app_expr s) es) @@ oe
+      SetEnum (app_exprs s es) @@ oe
   | Arrow (a, b) ->
       Arrow (app_expr s a, app_expr s b) @@ oe
   | Fcn (bs, e) ->
       let (s, bs) = app_bounds s bs in
       Fcn (bs, app_expr s e) @@ oe
   | FcnApp (f, es) ->
-      FcnApp (app_expr s f, List.map (app_expr s) es) @@ oe
+      FcnApp (app_expr s f, app_exprs s es) @@ oe
   | Product es ->
-      Product (List.map (app_expr s) es) @@ oe
+      Product (app_exprs s es) @@ oe
   | Tuple es ->
-      Tuple (List.map (app_expr s) es) @@ oe
+      Tuple (app_exprs s es) @@ oe
   | Rect fs ->
       Rect (List.map (fun (v, e) -> (v, app_expr s e)) fs) @@ oe
   | Record fs ->
@@ -157,11 +158,14 @@ and app_x s (trail, res) =
 (* [PERF] this is the hottest function in the PM (ignoring GC) *)
 and app_ix s n = match s with
   | Shift m -> Ix (m + n.core) @@ n
-  | Cons (op, _) when n.core = 1 -> op.core @@ n
-  | Cons (_, s) -> app_ix s (n.core - 1 @@ n)
+  | Cons (op, _) when n.core = 1 -> op.core @@ n  (* app_ix Cons(op, s) (1 @@ oe) = op.core @@ oe *)
+  | Cons (_, s) -> app_ix s (n.core - 1 @@ n)  (* app_ix Cons(op, s) (i @@ oe) = app_ix s ((i - 1) @@ oe) *)
   | Compose (ss, tt) -> app_expr ss (app_ix tt n)
+    (* `app_ix` returns `Ix` so could call `app_ix` directly,
+    instead of `app_expr` *)
   | Bump (k, ss) when n.core <= k -> Ix n.core @@ n
   | Bump (k, ss) -> app_expr (Shift k) (app_ix ss (n.core - k @@ n))
+    (* could call `app_ix` directly, instead of `app_expr` *)
 
 and app_defn s d =
   { d with core = app_defn_ s d.core }
@@ -251,3 +255,229 @@ let extract sq k =
     } in
     Some (sq, e)
   end with _ -> None
+
+
+let bump s = bumpn 1 s  (* distinguish from `E_fmt.bump` *)
+
+
+class map = object (self : 'self)
+    (* Apply a substitution to an expression.
+
+    This class is equivalent to the recursive functions defined above.
+    It allows subclassing to modify methods for those pattern cases needed.
+    *)
+
+  method expr (s: sub) (oe: E_t.expr): expr = match oe.core with
+    | Ix n ->
+        app_ix s (n @@ oe)
+    | Internal b ->
+        Internal b @@ oe
+    | Opaque o ->
+        Opaque o @@ oe
+    | Bang (e, sels) ->
+        Bang (self#expr s e, self#sels s sels) @@ oe
+    | Lambda (vs, e) ->
+        let s = (bumpn (List.length vs) s) in
+        Lambda (vs, self#expr s e) @@ oe
+    | String t ->
+        String t @@ oe
+    | Num (m, n) ->
+        Num (m, n) @@ oe
+    | Apply (op, es) ->
+        self#normalize (self#expr s op) (self#exprs s es) @@ oe
+    | Sequent sq ->
+        let (_, sq) = self#sequent s sq in
+        Sequent sq @@ oe
+    | With (e, m) ->
+        With (self#expr s e, m) @@ oe
+    | Let (ds, e) ->
+        let (s, ds) = self#defns s ds in
+        Let (ds, self#expr s e) @@ oe
+    | If (e, f, g) ->
+        If (self#expr s e, self#expr s f, self#expr s g) @@ oe
+    | List (q, es) ->
+        List (q, self#exprs s es) @@ oe
+    | Quant (q, bs, e) ->
+        let (s, bs) = self#bounds s bs in
+        Quant (q, bs, self#expr s e) @@ oe
+    | Tquant (q, vs, e) ->
+        let s = bumpn (List.length vs) s in
+        Tquant (q, vs, self#expr s e) @@ oe
+    | Choose (v, optdom, e) ->
+        let optdom = Option.map (self#expr s) optdom in
+        let s = bump s in
+        let e = self#expr s e in
+        Choose (v, optdom, e) @@ oe
+    | SetSt (v, dom, expr) ->
+        let dom = self#expr s dom in
+        let s = bump s in
+        let e = self#expr s expr in
+        SetSt (v, dom, e) @@ oe
+    | SetOf (e, bs) ->
+        let (s, bs) = self#bounds s bs in
+        SetOf (self#expr s e, bs) @@ oe
+    | SetEnum es ->
+        SetEnum (self#exprs s es) @@ oe
+    | Fcn (bs, e) ->
+        let (s, bs) = self#bounds s bs in
+        Fcn (bs, self#expr s e) @@ oe
+    | FcnApp (f, es) ->
+        FcnApp (self#expr s f, self#exprs s es) @@ oe
+    | Arrow (a, b) ->
+        Arrow (self#expr s a, self#expr s b) @@ oe
+    | Product es ->
+        Product (self#exprs s es) @@ oe
+    | Tuple es ->
+        Tuple (self#exprs s es) @@ oe
+    | Rect fs ->
+        Rect (List.map (fun (v, e) -> (v, self#expr s e)) fs) @@ oe
+    | Record fs ->
+        Record (List.map (fun (v, e) -> (v, self#expr s e)) fs) @@ oe
+    | Except (e, xs) ->
+        Except (self#expr s e, List.map (self#exspec s) xs) @@ oe
+    | Dot (e, f) ->
+        Dot (self#expr s e, f) @@ oe
+    | Sub (modal_op, e, f) ->
+        Sub (modal_op, self#expr s e, self#expr s f) @@ oe
+    | Tsub (modal_op, e, f) ->
+        Tsub (modal_op, self#expr s e, self#expr s f) @@ oe
+    | Fair (fop, e, f) ->
+        Fair (fop, self#expr s e, self#expr s f) @@ oe
+    | Case (arms, oth) ->
+        Case (List.map (fun (e, f) -> (self#expr s e, self#expr s f)) arms,
+              Option.map (self#expr s) oth) @@ oe
+    | At b ->
+        At b @@ oe
+    | Parens (e, pf) ->
+        Parens (self#expr s e, self#pform s pf) @@ oe
+
+  method exprs s es = List.map (self#expr s) es
+
+  method pform s pf = pf
+
+  method sels s sels = List.map (self#sel s) sels
+
+  method sel s sel = match sel with
+    | Sel_inst args ->
+        Sel_inst (self#exprs s args)
+    | Sel_lab (l, args) ->
+        Sel_lab (l, self#exprs s args)
+    | _ -> sel
+
+  method sequent s sq =
+    let (s, hyps) = self#hyps s sq.context in
+    (s, { context = hyps;
+          active = self#expr s sq.active })
+
+  method defn s df =
+    let df = match df.core with
+      | Recursive (nm, shp) -> df
+      | Operator (nm, e) ->
+          { df with core = Operator (nm, self#expr s e) }
+      | Instance (nm, i) ->
+          { df with core = Instance (nm, self#instance s i) }
+      | Bpragma(nm, e, l) ->
+          { df with core = Bpragma (nm, self#expr s e, l) }
+    in
+    (* incremental bumping *)
+    (bump s, df)
+
+  method defns s dfs =
+    match dfs with
+    | [] -> (s, [])
+    | df :: dfs ->
+        let (s, df) = self#defn s df in
+        let (s, dfs) = self#defns s dfs in
+        (s, df :: dfs)
+
+  method bounds s bs =
+    let bs = List.map (self#bound s) bs in
+    let n = List.length bs in
+    let s = bumpn n s in
+    (s, bs)
+
+  method bound s b =
+    let (v, k, dom) = b in
+    let dom = match dom with
+        | Domain d -> Domain (self#expr s d)
+        | _ -> dom
+        in
+    (v, k, dom)
+
+  method exspec s (trail, res) =
+    let do_trail = function
+      | Except_dot s -> Except_dot s
+      | Except_apply e -> Except_apply (self#expr s e)
+    in
+    (List.map do_trail trail, self#expr s res)
+
+  method instance s i =
+    let s = bumpn (List.length i.inst_args) s in
+    { i with inst_sub =
+        List.map (fun (v, e) -> (v, self#expr s e))
+            i.inst_sub }
+
+  method hyp s h =
+    let h = begin match h.core with
+    | Fresh (nm, shp, lc, dom) ->
+        let dom = match dom with
+          | Unbounded -> Unbounded
+          | Bounded (r, rvis) -> Bounded (self#expr s r, rvis)
+        in
+        Fresh (nm, shp, lc, dom) @@ h
+    | Flex v -> Flex v @@ h
+    | Defn (df, wd, vis, ex) ->
+        let (s, df) = self#defn s df in
+        assert (s = bump s);
+        Defn (df, wd, vis, ex) @@ h
+    | Fact (e, vis, tm) ->
+        Fact (self#expr s e, vis, tm) @@ h
+    end in
+    (* incremental bumping, as in `self#defn` *)
+    (bump s, h)
+
+  method hyps s hs = match Dq.front hs with
+    | None -> (s, Dq.empty)
+    | Some (h, hs) ->
+        let (s, h) = self#hyp s h in
+        let (s, hs) = self#hyps s hs in
+        (s, Dq.cons h hs)
+
+  method normalize ?(cx = Deque.empty) op args = match op.core with
+    | Lambda (vs, e) ->
+      if List.length vs <> List.length args then begin
+        Util.eprintf ~at:op
+          "@[<v0>Arity mismatch:@,op =@,  %a@,args =@,  @[<v0>%a@]@]@."
+          (Fmt.pp_print_expr (cx, Ctx.dot)) op
+          (Fmtutil.pp_print_delimited
+             (Fmt.pp_print_expr (cx, Ctx.dot))) args ;
+        failwith "Expr.Subst.map#normalize"
+      end else begin
+        let sub = List.fold_left ssnoc (shift 0) args in
+        (self#expr sub e).core
+      end
+    | Apply (op, oargs) ->
+      Apply (op, oargs @ args)
+    | _ -> begin
+      match args with
+        | [] -> op.core
+        | _ -> Apply (op, args)
+    end
+
+end
+
+
+class map_visible_hyp = object (self: 'self)
+    inherit map as super
+    (* Apply a substitution to an expression,
+    visiting only visible hypotheses in a sequent's context.
+    *)
+
+    method hyp s h =
+      begin match h.core with
+      | Fresh _ | Flex _ -> super#hyp s h
+      | Defn (_, _, Hidden, _)
+      | Fact (_, Hidden, _) -> (bump s, h)
+      | Defn _ | Fact _ -> super#hyp s h
+      end
+end
