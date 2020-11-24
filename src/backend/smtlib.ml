@@ -478,6 +478,22 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
   (* Print hypotheses *)
   fprintf ff ";; Hypotheses@.";
 
+  let is_sndord_fact e =
+    match e.core with
+    | Sequent sq ->
+        Option.is_some begin
+          Deque.find sq.context begin fun h ->
+            let v = hyp_hint h in
+            match query v Props.tsch_prop with
+            | Some (TSch ([], tys, _)) when List.length tys > 0 ->
+                true
+            | _ -> false
+          end
+        end
+    | _ ->
+        false
+  in
+
   let rec spin cx hs =
     match Deque.front hs with
     | None ->
@@ -485,10 +501,12 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
 
     | Some ({ core = Fact (e, vis, _) }, hs) ->
         let ncx = bump cx in
-        begin if vis = Visible then
-          pp_print_assert cx ff e
-        else
+        begin if vis = Hidden then
           fprintf ff "; hidden fact@."
+        else if is_sndord_fact e then
+          fprintf ff "; omitted fact (second-order)@."
+        else
+          pp_print_assert cx ff e
         end;
         pp_print_newline ff ();
         spin ncx hs
@@ -554,7 +572,10 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
 
   (* Print goal *)
   fprintf ff ";; Goal@.";
-  pp_print_assert cx ff (Apply (Internal B.Neg %% [], [sq.active]) %% []);
+  if is_sndord_fact sq.active then
+    eprintf "; omitted goal (second-order)@."
+  else
+    pp_print_assert cx ff (Apply (Internal B.Neg %% [], [sq.active]) %% []);
   pp_print_newline ff ();
 
   fprintf ff "(check-sat)@.";
