@@ -1,5 +1,5 @@
 name: Build and Package TLA Proof Manager
-on: [push]  #[pull_request]
+on: [pull_request]
 
 jobs:
   test:
