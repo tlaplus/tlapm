@@ -10,7 +10,7 @@ if [ "$1" = "smt_tests" ]
   then export ARGS="$ARGS --method smt"
 fi
 
-export TLAPM="$BASEDIR/bin/tlapm"
+export TLAPM="$BASEDIR/../tlapm -I $ARGS"
 export STRETCH=${STRETCH:-5}
 export LOGFILE="$BASEDIR/tests.log"
 
