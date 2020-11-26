@@ -219,7 +219,7 @@ echo "   [x] Built"
 
 ################################################################################
 
-Z3_VERS=4.8.6
+Z3_VERS=4.8.9
 Z3=Z3-$Z3_VERS
 banner "Downloading and packaging $Z3"
 
