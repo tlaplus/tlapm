@@ -128,6 +128,11 @@ let assemble_visitor decls = object (self : 'self)
         let ix = 1 + Deque.size hx + n in
         remove (Ix ix @@ oe) smb_prop
 
+    | Opaque _ when has_smb oe && is_arith_op oe ->
+        let smb = get_smb oe in
+        let tsch = get_sch smb in
+        assign oe Type.T.Props.tsch_prop tsch
+
     | _ -> super#expr scx oe
 
   method hyp scx h =

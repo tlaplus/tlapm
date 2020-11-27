@@ -418,7 +418,11 @@ class virtual ['s, 'a] foldmap = object (self : 'self)
         let tsch = lookup_ty_sch scx n in
         (a, Ix n @@ ep, tsch)
     | Opaque o ->
-        let tsch = get ep Props.tsch_prop in
+        let tsch =
+          try get ep Props.tsch_prop
+          with _ ->
+            error ~at:ep ("No annotation on Opaque '" ^ o ^ "'")
+        in
         (a, Opaque o @@ ep, tsch)
     | Lambda (vs, e) ->
         let scx = adjs scx (List.map begin fun (v, shp) ->

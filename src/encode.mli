@@ -161,6 +161,7 @@ end
 module Reduce : sig
   open Expr.T
 
+  val instantiate : sequent -> int -> expr -> sequent
   val main : sequent -> sequent
 end
 
