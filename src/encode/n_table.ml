@@ -608,9 +608,9 @@ let decode_visitor = object (self : 'self)
     in
     match oe.core with
     | Opaque s when has oe A.special_prop ->
-        Option.fold begin fun _ tla_smb ->
+        Option.fold begin fun oe tla_smb ->
           let smb = std_smb tla_smb in
-          let e = Expr.T.Opaque (get_name smb) %% [] in
+          let e = Expr.T.Opaque (get_name smb) @@ oe in
           assign e smb_prop smb
         end oe (detect s)
     | _ -> super#expr scx oe

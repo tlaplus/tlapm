@@ -149,6 +149,27 @@ let rec expr cx oe =
    * through.  x' is encoded as (Opaque "x#prime") at this point. *)
   | Opaque s ->
       (Opaque s @@ oe, RSet)
+  (* NOTE This was implemented for primed operators. *)
+  | Apply ({ core = Opaque s } as op, args)
+    when not (has op N_axioms.special_prop) ->
+      Format.eprintf "Direct: %s@." s;
+      let n = List.length args in
+      let sch = TSch ([], List.init n (fun _ -> TRg (TAtom TU)), TAtom TU) in
+      let k = TKind (List.init n (fun _ -> TKind ([], TAtom TU)), TAtom TU) in
+      let smb = T.mk_smb T.Special s ~sch:sch k in
+      let op = assign op T.smb_prop smb in
+
+      let args_ats = List.map (earg cx) args in
+      let args =
+        List.map begin fun (arg, at) ->
+          if ASet = at then
+            arg
+          else
+            error~at:arg "Bad argument shape"
+        end args_ats
+      in
+      (Apply (op, args) @@ oe, RSet)
+
 
   (* Propositional connectives treated separately, because the weak type system
    * specific to this module excludes operators that take boolean arguments, or
