@@ -5,19 +5,41 @@
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
 
+open Property
 open Expr.T
 
 open N_table
 
-(** Extended context
-    Adding new hypotheses in the context is tricky because De Bruijn
-    indexes are involved.  The solution adopted here is to add new hypotheses
-    only at the top, following this order:
-        New Declarations, New Axioms, Original Hyps |- Original Goal
+(** This module implements Axiomatization, the process by which every
+    `Opaque s` with a {!smb} attached is replaced by a reference (De Bruijn
+    variable) to a NEW constant declaration.
+    NOTE Opaques without a {!smb} are not affected.
 
-    That way, no complicated shifting is necessary in the original sequent.
+    Additionally, if a {!smb} has dependencies and axioms implemented by
+    {!smbtable}, they are added in the context.
+
+    The layout of the new sequent follows this convention:
+      NEW declarations, NEW axioms, original hyps |- original goal
 *)
-type etx = SmbSet.t * expr Deque.dq
+
+(* {Extended context} *)
+
+(** Extended context; used to store symbols and axioms data in an
+    intermediary form *)
+type etx
+
+val mem : string -> etx -> bool
+val get_smb : string -> etx -> smb
+val get_axms : string -> etx -> expr list
+
+(** Modify the axioms of an etx *)
+val map_etx : (smb -> expr -> expr) -> etx -> etx
+
+(** Attached to a Fresh hypothesis in a sequent, the integers [n1,..,np]
+    indicates that, for all i, the nith next hypothesis is a Fact that is an
+    axiom about the declared constant.
+*)
+val axm_ptrs_prop : (int list) pfuncs
 
 
 (* {3 Main} *)
@@ -25,9 +47,9 @@ type etx = SmbSet.t * expr Deque.dq
 (** Collect relevant symbols and axioms *)
 val collect : sequent -> etx
 
-(** Assemble a sequent with an extended context *)
+(** Assemble a sequent with an extended context; set {!decl_ptr_prop} *)
 val assemble : etx -> sequent -> sequent
 
-(** Collect and assemble *)
+(** Combine collect and assemble *)
 val main : sequent -> sequent
 

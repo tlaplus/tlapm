@@ -149,10 +149,15 @@ module Canon : sig
 end
 
 module Axiomatize : sig
+  open Property
   open Expr.T
   open Table
-  type etx = SmbSet.t * expr Deque.dq
-
+  type etx
+  val mem : string -> etx -> bool
+  val get_smb : string -> etx -> smb
+  val get_axms : string -> etx -> expr list
+  val map_etx : (smb -> expr -> expr) -> etx -> etx
+  val axm_ptrs_prop : (int list) pfuncs
   val collect : sequent -> etx
   val assemble : etx -> sequent -> sequent
   val main : sequent -> sequent
