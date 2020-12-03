@@ -5,9 +5,9 @@
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
 
-open Expr.T
-
+open Ext
 open Property
+open Expr.T
 
 module Subst = Expr.Subst
 module Visit = Expr.Visit
@@ -60,6 +60,13 @@ let elim_bounds_visitor = object (self : 'self)
         let bs = List.rev rbs in
         let hs = List.rev hs in
         let e = self#expr scx e in
+        let e, opats =
+          (* Patterns must be displaced as the body of a quantified expr
+           * is modified. *)
+          match query e pattern_prop with
+          | None -> e, None
+          | Some pats -> remove_pats e, Some pats
+        in
         let e =
           match hs, q with
           | [], _ -> e
@@ -74,6 +81,7 @@ let elim_bounds_visitor = object (self : 'self)
           | _, Exists ->
               List (And, hs @ [ e ]) %% []
         in
+        let e = Option.fold add_pats e opats in
         Quant (q, bs, e) @@ oe
 
     | Choose (v, Some d, e) ->

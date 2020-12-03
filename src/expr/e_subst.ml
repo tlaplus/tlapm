@@ -30,7 +30,7 @@ let bumpn n = function
 
 let bump s = bumpn 1 s
 
-let rec app_expr s oe = match oe.core with
+let rec app_expr s oe = begin match oe.core with
   | ( Internal _ | Opaque _ | String _ | Num _ | At _ ) ->
       oe
   | Ix n ->
@@ -96,6 +96,9 @@ let rec app_expr s oe = match oe.core with
       Case (List.map (fun (e, f) -> (app_expr s e, app_expr s f)) arms,
             Option.map (app_expr s) oth) @@ oe
   | Parens (e, rig) -> Parens (app_expr s e, rig) @@ oe
+
+  (* Added by AD to make patterns (used by SMT-LIB) affected by subst *)
+  end |> map_pats (List.map (app_expr s))
 
 and app_exprs s es =
   List.map (fun e -> app_expr s e) es

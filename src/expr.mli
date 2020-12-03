@@ -165,9 +165,11 @@ module T : sig
 
   and time = Now | Always | NotSet
 
-  val pattern_prop : expr list list pfuncs;;
-  val add_patterns : expr -> expr list list -> expr;;
-  val remove_patterns : expr -> expr;;
+  type pat = expr list;;
+  val pattern_prop : pat list pfuncs;;
+  val add_pats : expr -> pat list -> expr;;
+  val remove_pats : expr -> expr;;
+  val map_pats : (pat -> pat) -> expr -> expr;;
 
   val get_val_from_id : 'hyp Deque.dq -> int -> 'hyp;;
   val hyp_hint : hyp -> hint;;

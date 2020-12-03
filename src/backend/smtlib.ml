@@ -156,7 +156,7 @@ and fmt_expr cx oe =
       in
       pp_print_sexpr begin fun ff () ->
         fprintf ff "! %a@ %a"
-        (pp_print_expr cx) (remove_patterns oe)
+        (pp_print_expr cx) (remove_pats oe)
         (pp_print_delimited ~sep:pp_print_space pp_print_pat) pats
       end ff ())
   else
