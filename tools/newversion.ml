@@ -7,7 +7,7 @@ open Scanf
 
 (* Change the following two lines for a new version *)
 let major = 1
-let minor = 4
+let minor = 5
 
 (* The rest of the file has no magic numbers *)
 
