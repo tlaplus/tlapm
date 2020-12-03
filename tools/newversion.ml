@@ -29,7 +29,8 @@ let () =
   let (oldmajor, oldminor, oldmicro) =
     try
       ignore (input_line f) ;
-      fscanf f
+      let ib = Scanning.from_channel f in
+      bscanf ib
         "let (major,minor,micro) = (%d,%d,%d)"
         (fun oldmajor oldminor oldmicro -> (oldmajor, oldminor, oldmicro))
     with Scan_failure _ ->
@@ -50,7 +51,8 @@ let () =
   let (oldrmajor, oldrminor, oldrmicro) =
     try
       ignore (input_line f) ;
-      fscanf f
+      let ib = Scanning.from_channel f in
+      bscanf ib
         "let (major,minor,micro) = (%d,%d,%d)"
         (fun oldrmajor oldrminor oldrmicro ->
            (oldrmajor, oldrminor, oldrmicro))
