@@ -306,7 +306,7 @@ class virtual ['s] level_computation = object (self : 'self)
                 make_level_info_arity 0 2
             (* Modal *)
             | Builtin.Actplus ->
-                make_level_info_arity 0 1
+                make_level_info_arity 3 2
             | Builtin.Box _ | Builtin.Diamond ->
                 make_level_info_arity 3 1
                 (* The operators:
