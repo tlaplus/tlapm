@@ -5,12 +5,12 @@ jobs:
   test:
     name: Build and Test
     runs-on: ${{ matrix.operating-system }}
-    strategy: 
+    strategy:
       fail-fast: false
       matrix:
         operating-system: [macos-latest, ubuntu-latest]
         ocaml-version: [ '4.08.1' ]
-        include: 
+        include:
         - operating-system: macos-latest
           INSTALLER: tlaps-1.4.5-i386-darwin-inst.bin
           DOWNLOADS: tlaps-1.4.5-i386-darwin-inst
@@ -49,4 +49,3 @@ jobs:
       - name: Print Test Results
         if: matrix.operating-system == 'ubuntu-latest'
         run: cat test/tests.log
-
