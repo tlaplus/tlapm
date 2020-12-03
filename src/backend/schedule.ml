@@ -4,8 +4,6 @@
 
 (* scheduler for back-end provers *)
 
-Revision.f "$Rev$";;
-
 open Unix;;
 
 type task = int * (unit -> computation) list

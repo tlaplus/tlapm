@@ -7,8 +7,6 @@
 
 (** Property lists implemented using unsafe ocaml features *)
 
-Revision.f "$Rev$";;
-
 open Ext
 
 type uuid = Int64.t * Int64.t

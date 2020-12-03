@@ -2,8 +2,6 @@
  * Copyright (C) 2008-2019  INRIA and Microsoft Corporation
  *)
 
-Revision.f "$Rev$";;
-
 let default_zenon_timeout = 10.
 let default_ls4_timeout = 10.
 let default_isabelle_timeout = 30.

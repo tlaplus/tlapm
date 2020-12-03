@@ -12,8 +12,6 @@
  *
  * END dflags *)
 
-Revision.f "$Rev$";;
-
 (* FIXME remove all non-ASCII characters from this source file *)
 
 open Ext

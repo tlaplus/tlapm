@@ -5,8 +5,6 @@
  * Copyright (C) 2008-2019  INRIA and Microsoft Corporation
  *)
 
-Revision.f "$Rev$";;
-
 open Ext
 open Property
 open E_t

@@ -8,8 +8,6 @@
     2. to use Isabelle to check proofs output by TLAPM and Zenon.
 *)
 
-Revision.f "$Rev$";;
-
 open Ext
 open Property
 

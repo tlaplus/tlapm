@@ -3,8 +3,6 @@
  * Copyright (C) 2013  INRIA and Microsoft Corporation
  *)
 
-Revision.f "$Rev: 33173 $";;
-
 open Property
 open Ext
 open E_t

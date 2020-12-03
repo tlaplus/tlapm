@@ -6,8 +6,6 @@
 
 (* ocamlc -g unix.cma schedule.mli schedule.ml test_schedule.ml *)
 
-Revision.f "$Rev$";;
-
 open Printf;;
 
 open Schedule;;

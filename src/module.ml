@@ -2,8 +2,6 @@
  * Copyright (C) 2011  INRIA and Microsoft Corporation
  *)
 
-Revision.f "$Rev$";;
-
 module T = M_t;;
 module Fmt = M_fmt;;
 module Gen = M_gen;;

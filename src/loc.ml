@@ -5,8 +5,6 @@
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
 
-Revision.f "$Rev$";;
-
 type pt_ = { line : int ;
               bol : int ;
               col : int ;

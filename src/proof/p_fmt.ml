@@ -11,8 +11,6 @@
  *
  * END dflags *)
 
-Revision.f "$Rev$";;
-
 open Ext
 
 open Property

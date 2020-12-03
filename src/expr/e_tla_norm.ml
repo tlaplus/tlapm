@@ -2,8 +2,6 @@
  * Copyright (C) 2013  INRIA and Microsoft Corporation
  *)
 
-Revision.f "$Rev$";;
-
 open Ext
 open Format
 open Tla_parser

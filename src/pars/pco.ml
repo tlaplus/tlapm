@@ -7,8 +7,6 @@
 
 (** Parsers implementation *)
 
-Revision.f "$Rev$";;
-
 module LL = LazyList
 
 module type Make_sig = sig
