@@ -670,6 +670,158 @@ let rec hyps_level hs =
         max h_level hs_level
 
 
+(*
+The entry point below is a call `map_proof(proof, mapping, cx)` with `proof`
+the proof of a theorem, `mapping = [x \in {} |-> x]` and `cx` the theorem's
+context augmented with the hypotheses from the theorem's sequent.
+
+
+HypsLevel(sequent) ==
+    LET S == {LevelOf(hyp):  hyp \in sequent.hypotheses}
+    IN Maximum(S)
+
+
+procedure map_step(step, mapping, cx) {
+    (* Transform a step. *)
+    if IsAssertion(step) {
+        step, level, mapping, cx := map_assertion(step, mapping, cx)
+    } elif IsSUFFICES(step) {
+        step, level, mapping, cx := map_suffices(step, mapping, cx)
+    } elif ... ;
+        (* The other cases are mainly Use, Hide,
+        because the tlapm function `Proof.Simplify.simplify`
+        has transformed the proof steps. *)
+    return <<step, level, mapping, cx>>
+}
+
+
+procedure map_assertion(step, mapping, cx) {
+    (* Transform step that is an assertion. *)
+    sequent := step.sequent ;  (* get step's sequent *)
+    proof := step.proof ;  (* get step's proof *)
+    (* compute the level of the sequent,
+    where a sequent has expression level equal to the maximum
+    expression level over hypotheses and consequent *)
+    sequent_level := LevelOf(sequent) ;
+    (* compute the maximum level over hypotheses *)
+    hyps_level := HypsLevel(sequent) ;
+    (* assign to the step the level of its hypotheses
+    when computing the step's proof level *)
+    mapping := [mapping EXCEPT ![step.name] = hyps_level] ;
+    (* compute the level of the step's proof *)
+    pf_cx := ... ;  (* update the context *)
+    proof, proof_level := map_proof(proof, mapping, pf_cx) ;
+    (* assign to the step a level for use outside the step's proof *)
+    level := IF proof_level < 2
+                THEN proof_level  (* actions can be proved
+                    from state-level or constant-level facts *)
+                ELSE LET S == {sequent_level, proof_level}
+                     IN Minimum(S);
+                    (* constants or state predicates can be proved
+                    from action-level or temporal-level facts *)
+    mapping := [mapping EXCEPT ![step.name] = level] ;
+    step := [
+        name |-> step.name,
+        sequent |-> sequent,
+        proof |-> proof] ;
+    cx := ... ;  (* update the context *)
+    return <<step, level, mapping, cx>>
+}
+
+
+procedure map_suffices(step, mapping, cx) {
+    (* Transform steps that are SUFFICES. *)
+    sequent = step.sequent ;  (* get step's sequent *)
+    proof = step.proof ;  (* get step's proof *)
+    (* compute the level of the sequent and of its hypotheses *)
+    sequent_level := LevelOf(sequent) ;
+    hyps_level := HypsLevel(sequent) ;
+    (* assign to the step its level
+    when computing the step's proof level *)
+    mapping := [mapping EXCEPT ![step.name] = sequent_level] ;
+    pf_cx := ... ;  (* update the context *)
+    proof, proof_level := map_proof(proof, mapping, pf_cx) ;
+    (* assign to the step the level of its hypotheses
+    for use outside the step's proof *)
+    mapping := [mapping EXCEPT ![step.name] = hyps_level] ;
+    step := [
+        name |-> step.name,
+        sequent |-> sequent,
+        proof |-> proof] ;
+    cx := ... ;  (* update the context *)
+    (* return the SUFFICES proof's level as level for
+    the QED of the old goal (enclosing PROOF) *)
+    return <<step, proof_level, mapping, cx>>
+}
+
+
+procedure map_proof(proof, mapping, cx) {
+    (* at the stage in tlapm where this soundness check is run,
+    the proof has been transformed so that all leaf proofs are
+    OBVIOUS, i.e., all BY proofs have been converted to
+    USE, HIDE, and OBVIOUS *)
+    if IsObvious(proof) {
+        proof, proof_level := map_obvious_proof(proof, mapping, cx)
+    } else {
+        proof, proof_level := map_steps_proof(proof, mapping, cx)
+    } ;
+    return <<proof, proof_level>>
+}
+
+
+procedure map_obvious_proof(proof, mapping, cx) {
+    max_level := 0 ;
+    ctx := cx ;
+    while (Len(ctx) > 0) {
+        hyp := Head(ctx) ;
+        ctx := Tail(ctx) ;
+        if IsVisibleFact(hyp) {
+            expr := GetExprOfFact(hyp) ;
+            (* This area is more complex in OCaml,
+            and is implemented using pattern matching.
+            This area contained bugs that have been
+            now corrected (I think). *)
+            expr_level := LevelOf(expr) ;
+            max_level := LET S == {expr_level, max_level}
+                         IN Maximum(S)
+        }
+    } ;
+    (* This annotation is used later, when processing each
+    proof obligation, to decide whether a step that uses
+    `ENABLEDaxioms` depends on a fact of too high level,
+    and fail with a suitable message.
+    *)
+    if (HasENABLEDaxioms(cx) /\ (max_level > 1)) {
+        proof := Annotate(proof, enabledaxioms_property, FALSE)
+    } else {
+        proof := Annotate(proof, enabledaxioms_property, TRUE)
+    } ;
+    return <<proof, max_level>>
+}
+
+
+procedure map_steps_proof(proof, mapping, cx) {
+    remaining_steps := proof ;  (* a tuple of steps *)
+    steps := << >> ;
+    proof_level := None ;
+    while (Len(remaining_steps) > 0) {
+        step := Head(remaining_steps) ;
+        remaining_steps := Tail(remaining_steps) ;
+        step, level, mapping, cx := map_step(step, mapping, cx) ;
+        steps := Append(steps, step) ;
+        (* The level of the entire proof is equal to
+        the level of the proof of the first SUFFICES step or to
+        the level of the QED step *)
+        if  ( (proof_level = None) /\ \/ IsSUFFICES(step)
+                                      \/ IsQED(step) ) {
+            proof_step := level
+        }
+    } ;
+    return <<steps, proof_level>>
+}
+*)
+
+
 let check_enabled_axioms_map = object (self: 'self)
     inherit [int ref * (Proof.T.step * hyp Deque.dq * int) StringMap.t]
         Proof.Visit.map as super
