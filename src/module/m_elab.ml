@@ -660,6 +660,16 @@ let set_expr vis f cx =
     end
 
 
+(* sequent's context level *)
+let rec hyps_level hs =
+    match Deque.front hs with
+    | None -> 0
+    | Some (h, hs) ->
+        let h_level = Expr.Levels.get_level h in
+        let hs_level = hyps_level hs in
+        max h_level hs_level
+
+
 let check_enabled_axioms_map = object (self: 'self)
     inherit [int ref * (Proof.T.step * hyp Deque.dq * int) StringMap.t]
         Proof.Visit.map as super
@@ -669,8 +679,11 @@ let check_enabled_axioms_map = object (self: 'self)
       | Obvious ->
           self#check_usable pf scx {facts=[]; defs=[]} false
       | By (usable, onl) ->
+          assert false  (* after Proof.Simplify.simplify *)
+          (*
           let pf = By (self#usable scx usable, onl) @@ pf in
           self#check_usable pf scx usable onl
+          *)
       | Steps (inits, qed) ->
           let (scx, inits) = self#steps scx inits in
           let qed_prf = self#proof scx (get_qed_proof qed) in
@@ -696,15 +709,6 @@ let check_enabled_axioms_map = object (self: 'self)
                 stepnm @@ st,
                 At false @@ nowhere) @@ st, Proof
           Always, Visible, Local) @@ st) in
-        (* sequent's context level *)
-        let rec hyps_level hs =
-            match Deque.front hs with
-            | None -> 0
-            | Some (h, hs) ->
-                let h_level = Expr.Levels.get_level h in
-                let hs_level = hyps_level hs in
-                max h_level hs_level
-            in
         match st.core with
         | Forget m ->
             let nfacts = Deque.size cx in
@@ -724,8 +728,22 @@ let check_enabled_axioms_map = object (self: 'self)
         | Use ({defs = []; facts = [f]}, only) ->
             let tm = Always in
             let cx = Deque.snoc cx (Fact (f, Visible, tm) @@ f) in
-            (((level, sm), cx),
-                Use ({defs = []; facts = [f]}, only) @@ st)
+            let scx = ((level, sm), cx) in
+            let use = Use ({defs = []; facts = [f]}, only) @@ st in
+            (scx, use)
+        | Use ({facts = []} as usables, only) ->
+            let usables_ = self#usable scx usables in
+            let cx = List.fold_left (set_defn Visible) cx usables.defs in
+            let scx = ((level, sm), cx) in
+            let use = Use (usables_, only) @@ st in
+            (scx, use)
+        | Use (usables, only) ->
+            Util.eprintf ~at:st "%s"
+                ("USE usables with number of facts: " ^
+                (string_of_int (List.length usables.facts)) ^
+                ", and number of DEFS: " ^
+                (string_of_int (List.length usables.defs)));
+            assert false  (* after `Proof.Simplify.simplify` *)
         | Assert (sq, prf) ->
             (* ignore (self#sequent scx sq) ; *)
             let sq_expr = Expr.Levels.compute_level cx (noprops (Sequent sq)) in
@@ -744,9 +762,12 @@ let check_enabled_axioms_map = object (self: 'self)
                 let scx = Proof.Visit.bump scx 1 in
                 let scx = adj_step scx in
                 let scx = Proof.Visit.bump scx 1 in
+                (* visit proof of assertion *)
                 self#proof scx prf in
+            (* context changes *)
             let scx = adj_step scx in
             let scx = Proof.Visit.bump scx 1 in
+            (* retrieve context *)
             let ((_, sm), cx) = scx in
             (* level computation *)
             let sq_level = Expr.Levels.get_level sq_expr in
@@ -766,8 +787,9 @@ let check_enabled_axioms_map = object (self: 'self)
             *)
             (* store (assumption) level of sequent and its proof *)
             let sm = StringMap.add stepnm (st, cx, !level) sm in
-            (((level, sm), cx),
-                Assert (sq, prf) @@ st)
+            let scx = ((level, sm), cx) in
+            let assertion = Assert (sq, prf) @@ st in
+            (scx, assertion)
         | Suffices (sq, prf) ->
             (* ignore (self#sequent scx sq) ; *)
             let sq_expr = Expr.Levels.compute_level cx (noprops (Sequent sq)) in
@@ -781,133 +803,135 @@ let check_enabled_axioms_map = object (self: 'self)
               let scx = Proof.Visit.bump scx 1 in
               let ((_, sm), cx) = scx in
               let sq_level = Expr.Levels.get_level sq_expr in
-              level := sq_level;
-              let sm = StringMap.add stepnm (st, cx, !level) sm in
+              let sm = StringMap.add stepnm (st, cx, sq_level) sm in
               let scx = ((proof_level, sm), cx) in
               self#proof scx prf
             in
+            (* assign to the proof that contains this SUFFICES step
+            (`level := `) the level of the proof of the SUFFICES step,
+            which is equal to `proof_level` *)
+            level := !proof_level;
             let level_hyps = hyps_level sq.context in
             (* store (assumption) level of sequent context *)
             let sm = StringMap.add stepnm (st, cx, level_hyps) sm in
-            let scx = ((proof_level, sm), cx) in
+            (* Provide fresh `remaining_steps_level` as `ref` to
+            the following steps, because the level of the proof that
+            contains this SUFFICES step is equal to the value
+            above of `proof_level`.
+            *)
+            let remaining_steps_level = ref 0 in
+            let scx = ((remaining_steps_level, sm), cx) in
             (* context changes *)
             let scx = Expr.Visit.adjs scx (Deque.to_list sq.context) in
             let scx = Proof.Visit.bump scx 1 in
             let scx = adj_step scx in
             let scx = Proof.Visit.bump scx 1 in
-            (scx,
-                Suffices (sq, prf) @@ st)
+            let suffices = Suffices (sq, prf) @@ st in
+            (scx, suffices)
         | Pcase _
         | Have _
         | Take _
         | Witness _
         | Pick _ ->
             assert false  (* after `Proof.Simplify.simplify` *)
-        | _ ->
-            let sm = StringMap.add stepnm (st, cx, 1) sm in
-            let scx = ((level, sm), cx) in
-            super#step scx st
+        | Define dfs ->
+            let (scx, dfs) = self#defns scx dfs in
+            (scx, Define dfs @@ st)
 
     method check_usable pf ((level, sm), cx) usables only =
+        (* The context `cx` contains all usable facts,
+        because `Proof.Simplify.simplify` has been called.
+        *)
+        assert (usables.facts = []);
+        assert (usables.defs = []);
+        (* Also, `usables` is empty, because `Proof.Simplif.simplify`
+        has been called.
+        *)
+        assert (not only);  (* because this is an `Obvious` proof *)
         (* computation of proof's assumption expression level *)
+        let max_level = ref 0 in
         let check_fact cx fact =
             begin match fact.core with
             | Ix n -> begin
-            let hyp = E_t.get_val_from_id cx n in
-            let cx_ = Expr.T.cx_front cx n in
+                let hyp = E_t.get_val_from_id cx n in
+                let cx_ = Expr.T.cx_front cx n in
                 match hyp.core with
+                (* TODO: what form do references to the theorem's own
+                assumptions have at this point in proof processing ?
+                *)
                 | Fact (expr, Visible, _) ->
                     print_string (Expr.Fmt.string_of_expr cx_ expr);
                     assert false
-                (* checking referenced steps *)
-                | Defn ({core=Operator (name, _)}, _, Visible, _) ->
+                (* checking referenced steps and visible defined operators *)
+                | Defn ({core=Operator (name, e)}, _, Visible, _) ->
                     (*
                     print_string "Step number:\n";
                     print_string name.core;
                     *)
                     let nm = name.core in
-                    if (String.contains_from nm 0 '<') then begin
-                        if (StringMap.mem nm sm) then begin
-                            let (step, cx, step_level) = StringMap.find nm sm in
-                            level := max step_level !level
-                        end end
-                | _ -> ()
-                end
-            (* checking of expressions in the BY statement *)
-            | _ ->
-                let fact = Expr.Levels.compute_level cx fact in
-                let expr_level = Expr.Levels.get_level fact in
-                level := max expr_level !level
-            end
-            in
-        (* checking assumptions in the step's context *)
-        if not only then begin
-        let check_assumptions n hyp =
-            match hyp.core with
-            | Fact ({core=At _}, _, _) -> ()  (* dummy steps *)
-            | Fact (expr, Visible, _) ->
-                let cx_ = Expr.T.cx_front cx ((Deque.size cx) - n) in
-                (*
-                print_string "Fact:\n";
-                print_string (Expr.Fmt.string_of_expr cx_ expr);
-                *)
-                check_fact cx_ expr
-            | _ -> ()
-            in
-        Deque.iter check_assumptions cx
-        end;
-
-        let max_level = ref 0 in
-        let check_step cx fact =
-            begin match fact.core with
-            | Ix n -> begin
-                let hyp = E_t.get_val_from_id cx n in
-                match hyp.core with
-                | Defn ({core=Operator (name, _)}, _, Visible, _) ->
-                    let nm = name.core in
                     (* is this a step number ? *)
                     if (String.contains_from nm 0 '<') then begin
                         if (StringMap.mem nm sm) then begin
-                            (* print_string ("Found stored step " ^ nm ^ "\n"); *)
-                            let (step, cx, step_level) = StringMap.find nm sm in
+                            let (step, cx, step_level) =
+                                    StringMap.find nm sm in
                             max_level := max step_level !max_level
                         end end
-                | _ -> ()
+                    else begin
+                        let e = Expr.Levels.compute_level cx_ e in
+                        let expr_level = Expr.Levels.get_level e in
+                        max_level := max expr_level !max_level
+                    end
+                (* hidden defined operators, which may be used as symbols
+                in assumptions *)
+                | Defn ({core=Operator (name, e)}, _, Hidden, _) ->
+                    let e = Expr.Levels.compute_level cx_ e in
+                    let expr_level = Expr.Levels.get_level e in
+                    max_level := max expr_level !max_level
+                | Defn ({core=Recursive _}, _, _, _) ->
+                    assert false  (* not implemented *)
+                | Defn ({core=Instance _}, _, _, _) ->
+                    assert false  (* INSTANCE expanded
+                        at this point. *)
+                | Defn ({core=Bpragma _}, _, _, _) ->
+                    ()  (* Backend pragmas do not contribute
+                        to the proof level, because they are
+                        defined as `TRUE`. *)
+                | Fact (_, Hidden, _) ->
+                    ()  (* Hidden facts are not usable in
+                        the proof, so they do not contribute to
+                        the proof level. *)
+                | Fresh _ | Flex _ ->
+                    ()  (* Declarations of operators do not have
+                        a notion of being usable in the proof,
+                        so they do not contribute to the
+                        proof level. *)
                 end
+            (* checking of expressions in the BY statement *)
             | _ ->
                 let fact = Expr.Levels.compute_level cx fact in
                 let expr_level = Expr.Levels.get_level fact in
                 max_level := max expr_level !max_level
             end
             in
-        let check_steps n hyp =
+        (* checking assumptions in the step's context *)
+        let check_assumptions n hyp =
             match hyp.core with
-            (*
-            | Defn ({core=Operator (name, _)}, _, Visible, _) ->
-                let nm = name.core in
-                (* is this a step number ? *)
-                if (String.contains_from nm 0 '<') then begin
-                    if (StringMap.mem nm sm) then begin
-                        (* print_string ("Found stored step " ^ nm ^ "\n"); *)
-                        let (step, cx, step_level) = StringMap.find nm sm in
-                        (*
-                        if (step_level > 1) && (!max_level <= 1) then
-                            print_string nm;
-                        *)
-                        max_level := max step_level !max_level;
-                    end end
-            *)
             | Fact ({core=At _}, _, _) -> ()  (* dummy steps *)
+            (* theorems, expressions from assumptions *)
             | Fact (expr, Visible, _) ->
                 let cx_ = Expr.T.cx_front cx ((Deque.size cx) - n) in
                 (*
+                print_string "Fact:\n";
                 print_string (Expr.Fmt.string_of_expr cx_ expr);
                 print_string "\n";
                 *)
-                check_step cx_ expr
+                check_fact cx_ expr
             | _ -> ()
             in
-        (* find proof directive in the context *)
+        Deque.iter check_assumptions cx;
+        level := !max_level;
+
+        (* search for proof directive `ENABLEDaxioms` in the context *)
         let found = ref false in
         let find_proof_directive n hyp =
             match hyp.core with
@@ -918,7 +942,8 @@ let check_enabled_axioms_map = object (self: 'self)
                     let hyp = E_t.get_val_from_id cx_ n in
                     match hyp.core with
                     | Defn ({core=Bpragma (name, _, _)}, _, _, _) ->
-                        found := !found || (name.core = "ENABLEDaxioms")
+                        if (name.core = "ENABLEDaxioms") then
+                            found := true
                     | _ -> ()
                     end
                 | _ -> ()
@@ -927,21 +952,18 @@ let check_enabled_axioms_map = object (self: 'self)
             in
         Deque.iter find_proof_directive cx;
 
-        if !found then begin
-            (* print_string "Found ENABLEDaxioms\n"; *)
-            Deque.iter check_steps cx;
-            if (!max_level > 1) then
-                begin
-                Util.eprintf ~at:pf "%s"
-                    ("ENABLEDaxioms depends on assumption of expression " ^
-                    "level > 1");
-                (*
-                Util.eprintf "%a@" (Proof.Fmt.pp_print_proof (cx, Ctx.dot)) pf
-                *)
-                assign pf enabledaxioms false
-                end
-            else
-                assign pf enabledaxioms true
+        if !found then
+            print_string "Found ENABLEDaxioms\n";
+
+        if (!found && (!max_level > 1)) then
+            begin
+            Util.eprintf ~at:pf "%s"
+                ("ENABLEDaxioms depends on assumption of expression " ^
+                "level > 1");
+            (*
+            Util.eprintf "%a@" (Proof.Fmt.pp_print_proof (cx, Ctx.dot)) pf
+            *)
+            assign pf enabledaxioms false
             end
         else
             assign pf enabledaxioms true
@@ -1117,6 +1139,12 @@ let rec normalize mcx cx m =
                     | None ->
                         (cx, sq)
                     in
+            (* compute level of sequent *)
+            let sq_expr = Expr.Levels.compute_level cx (noprops (Sequent sq)) in
+            let sq = match sq_expr.core with
+                | Sequent sq -> sq
+                | _ -> assert false
+                in
             (* add the theorem's hypotheses to the context `cx` within
             the theorem's proof
             *)
@@ -1147,8 +1175,10 @@ let rec normalize mcx cx m =
                     (* ((ref 0, StringMap.empty), cx) pf; *)
                 let has = check_enabled_axioms_usage#find_enabled_axioms
                     cx pf in
-                let pf = if has then check_enabled_axioms_map#proof
-                    ((ref 0, StringMap.empty), cx) pf else pf in
+                let pf = if has then begin
+                    check_enabled_axioms_map#proof
+                        ((ref 0, StringMap.empty), cx) pf
+                    end else pf in
                 pf
                 end
             else
