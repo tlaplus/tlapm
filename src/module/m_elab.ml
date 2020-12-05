@@ -223,10 +223,13 @@ let lambdify_expr cx expr =
     let lambdify_enabled = true in
     let lambdify_cdot = true in
     let autouse = true in
+    let used_identifiers = Expr.Visit.collect_identifiers
+        cx expr in
     let expr = Expr.Action.lambdify cx expr
             ~lambdify_enabled:lambdify_enabled
             ~lambdify_cdot:lambdify_cdot
-            ~autouse:autouse in
+            ~autouse:autouse
+            ~used_identifiers:used_identifiers in
         expr
 
 
@@ -788,10 +791,10 @@ procedure map_obvious_proof(proof, mapping, cx) {
     } ;
     (* This annotation is used later, when processing each
     proof obligation, to decide whether a step that uses
-    `ENABLEDaxioms` depends on a fact of too high level,
+    `ENABLEDrules` depends on a fact of too high level,
     and fail with a suitable message.
     *)
-    if (HasENABLEDaxioms(cx) /\ (max_level > 1)) {
+    if (HasENABLEDrules(cx) /\ (max_level > 1)) {
         proof := Annotate(proof, enabledaxioms_property, FALSE)
     } else {
         proof := Annotate(proof, enabledaxioms_property, TRUE)
@@ -1083,7 +1086,7 @@ let check_enabled_axioms_map = object (self: 'self)
         Deque.iter check_assumptions cx;
         level := !max_level;
 
-        (* search for proof directive `ENABLEDaxioms` in the context *)
+        (* search for proof directive `ENABLEDrules` in the context *)
         let found = ref false in
         let find_proof_directive n hyp =
             match hyp.core with
@@ -1094,7 +1097,7 @@ let check_enabled_axioms_map = object (self: 'self)
                     let hyp = E_t.get_val_from_id cx_ n in
                     match hyp.core with
                     | Defn ({core=Bpragma (name, _, _)}, _, _, _) ->
-                        if (name.core = "ENABLEDaxioms") then
+                        if (name.core = "ENABLEDrules") then
                             found := true
                     | _ -> ()
                     end
@@ -1103,14 +1106,14 @@ let check_enabled_axioms_map = object (self: 'self)
             | _ -> ()
             in
         Deque.iter find_proof_directive cx;
-
+        (*
         if !found then
-            print_string "Found ENABLEDaxioms\n";
-
+            print_string "Found ENABLEDrules\n";
+        *)
         if (!found && (!max_level > 1)) then
             begin
             Util.eprintf ~at:pf "%s"
-                ("ENABLEDaxioms depends on assumption of expression " ^
+                ("ENABLEDrules depends on assumption of expression " ^
                 "level > 1");
             (*
             Util.eprintf "%a@" (Proof.Fmt.pp_print_proof (cx, Ctx.dot)) pf
@@ -1216,7 +1219,7 @@ let check_enabled_axioms_usage = object (self: 'self)
                     let hyp = E_t.get_val_from_id cx_ n in
                     match hyp.core with
                     | Defn ({core=Bpragma (name, _, _)}, _, _, _) ->
-                        found := !found || (name.core = "ENABLEDaxioms")
+                        found := !found || (name.core = "ENABLEDrules")
                     | _ -> ()
                     end
                 | _ -> ()

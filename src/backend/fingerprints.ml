@@ -16,7 +16,7 @@ type ident =
   | Identhypi of int
   | Identvar of string
   | Identhyp of string * string
-  | IdentBPragma
+  | IdentBPragma of string
 ;;
 
 (************************)
@@ -86,7 +86,7 @@ let print_stack h =
     | Identhypi i -> Printf.sprintf " @%d@ Identhypi [%d]" (l-n) i
     | Identhyp (kind, s) -> Printf.sprintf " @%d@ Identhyp [%s,%s]" (l-n) kind s
     | Identvar s -> Printf.sprintf " @%d@ Identvar [%s]" (l-n) s
-    | IdentBPragma -> "Identpragma"
+    | IdentBPragma s -> Printf.sprintf "Identpragma [%s]" s
     | No -> Printf.sprintf " @%d@ [NO]" (l-n) end in
     Array.iteri (fun i (v,r) -> Printf.printf "%s (%s);" (to_st v i) (string_of_bool !r)) h.Stack.stack;
     Printf.printf "\n%!"
@@ -250,7 +250,7 @@ let rec fp_expr counthyp countvar stack buf e =
            incr countvar
        | Identhypi i -> bprintf buf "$HYP(%d)" i
        | Identvari i -> bprintf buf "$PRM(%d)" i
-       | IdentBPragma -> ()
+       | IdentBPragma s -> bprintf buf "$BPragma(%s)" s
        end
     | Opaque s -> Buffer.add_string buf s
     | Internal bin -> fp_bin buf bin
@@ -276,7 +276,7 @@ let rec fp_expr counthyp countvar stack buf e =
             | Ix n ->
                 begin
                   match Stack.get stack n with
-                    | IdentBPragma,_ -> ()
+                    | IdentBPragma s, _ -> bprintf buf "$BPragma(%s)" s
                     | _ -> bprintf buf "$OpApp(%a;%a)" fps o (list fps) es
                 end
             |  _ ->  bprintf buf "$OpApp(%a;%a)" fps o (list fps) es
@@ -444,9 +444,9 @@ and fp_sequent stack buf sq =
              if !r then
                bprintf buf "$Def(%d,%d)"
                        (match v with Identhypi i -> i | _ -> assert false)
-                       (if Expr.Constness.is_const e then 0 else 3)
-          | Defn ({core = Bpragma _}, _, Hidden, _) ->
-             Stack.push stack (IdentBPragma, ref false);
+                       (Expr.Levels.get_level e)
+          | Defn ({core = Bpragma (nm, _, _)}, _, Hidden, _) ->
+             Stack.push stack (IdentBPragma nm.core, ref false);
              spin stack cx;
              ignore (Stack.pop stack)
           | Defn ({core = Instance _}, _, Hidden, _) -> assert false
@@ -481,8 +481,8 @@ and fp_sequent stack buf sq =
                   bprintf buf "$Def(%d;%a)"
                           (match v with Identhypi i -> i | _ -> assert false)
                           (fp_expr counthyp countvar stack) e
-          | Defn ({core = Bpragma _}, _, Visible, _) ->
-             Stack.push stack (IdentBPragma, ref false);
+          | Defn ({core = Bpragma (nm, _, _)}, _, Visible, _) ->
+             Stack.push stack (IdentBPragma nm.core, ref false);
              spin stack cx;
              ignore (Stack.pop stack)
           | Defn ({core = Instance _}, _, Visible, _) -> assert false
@@ -575,7 +575,16 @@ let fp_sequent sq =
 
 
 let fingerprint ob =
- to_string (fp_sequent ob.Proof.T.obl.core)
+    let enabledrules = if Expr.T.has_enabledaxioms ob.obl then
+        begin if Expr.T.get_enabledaxioms ob.obl then
+            "Level<=1"
+        else
+            "Level>1"
+        end else "" in
+    let buf = fp_sequent ob.Proof.T.obl.core in
+    bprintf buf "%s" enabledrules;
+    (* Buffer.output_buffer stdout buf; *)
+    to_string buf
 
 (* adds its fingerprint to an obligation *)
 let write_fingerprint ob =
