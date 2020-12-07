@@ -237,14 +237,16 @@ let lambdify_definition cx df =
         | _ -> assert false in
     let expr = match expr.core with
         | Lambda _ -> expr  (* arity < _, ... > *)
-        | _ ->  lambdify_expr cx expr (* arity _ *)
+        | _ ->  (* arity _ *)
+            let expr = lambdify_expr cx expr in
+            Expr.Levels.rm_expr_level cx expr
         in
     let core = match df.core with
         | Operator (name, _) -> Operator (name, expr)
         | Bpragma (name, _, backend_args) -> Bpragma (name, expr, backend_args)
         | _ -> assert false in
     let df = core @@ df in
-    df
+    Expr.Levels.rm_level df
 
 
 let get_sequent expr = match expr.core with
@@ -255,7 +257,7 @@ let get_sequent expr = match expr.core with
 let lambdify_sequent cx (sq: Expr.T.sequent) =
     let sq_expr = noprops (Sequent sq) in
     let expr = lambdify_expr cx sq_expr in
-    (* let expr = sq in *)
+    let expr = Expr.Levels.rm_expr_level cx expr in
     get_sequent expr
 
 
@@ -377,7 +379,7 @@ let resub_for n niargs iargs inst =
 
 let lambdify e inst niargs =
     (* Add additional lambdas if needed. *)
-    match e.core with
+    Expr.Levels.rm_level begin match e.core with
     | Lambda (vs, le) ->
         let ivs = List.map
                     (fun v -> (v, Shape_expr))
@@ -392,6 +394,7 @@ let lambdify e inst niargs =
                         inst.core.inst_args in
             Lambda (ivs, e) @@ e
         end
+    end
 
 
 let rec localize body body_len iname niargs iargs not_complained inst local =
