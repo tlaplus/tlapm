@@ -59,7 +59,7 @@ end
 
 
 let mkdir_tlaps t =
-    let cachedir = "__tlacache__" in
+    let cachedir = ".tlacache" in
     let tlapsdir = cachedir ^ "/" ^ t.core.name.core ^ ".tlaps" in
     if not (Sys.file_exists cachedir) then Unix.mkdir cachedir 0o777;
     if not (Sys.file_exists tlapsdir) then Unix.mkdir tlapsdir 0o777;
