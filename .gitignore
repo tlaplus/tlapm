@@ -19,6 +19,9 @@
 # directories created when building the installer
 /tlaps-*-x86_64-linux-gnu/
 /tlaps-*-i386-darwin/
+# generated installer files
+/tools/installer/tlaps-*-x86_64-linux-gnu-inst.bin
+/tools/installer/tlaps-*-i386-darwin-inst.bin
 # generated release scripts
 /tools/installer/tlaps-release.sh
 /tools/installer/tlaps-source-release.sh
