@@ -246,10 +246,10 @@ let rec fp_expr counthyp countvar stack buf e =
            incr counthyp
        | Identvar s ->
            Stack.set stack n (Identvari !countvar,r);
-           bprintf buf "$VAR(%d)" !countvar;
+           bprintf buf "$PRM(%d)" !countvar;
            incr countvar
        | Identhypi i -> bprintf buf "$HYP(%d)" i
-       | Identvari i -> bprintf buf "$VAR(%d)" i
+       | Identvari i -> bprintf buf "$PRM(%d)" i
        | IdentBPragma -> ()
        end
     | Opaque s -> Buffer.add_string buf s
