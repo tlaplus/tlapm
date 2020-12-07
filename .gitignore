@@ -16,11 +16,15 @@
 /src/config.ml
 /src/load.ml
 /src/tlapm.native
+# directories created when building the installer
 /tlaps-*-x86_64-linux-gnu/
 /tlaps-*-i386-darwin/
+# generated release scripts
 /tools/installer/tlaps-release.sh
 /tools/installer/tlaps-source-release.sh
+# `tlapm` binary
 tlapm
-
+# installation for testing,
+# created by the installer
 /test/bin/
 /test/lib/
