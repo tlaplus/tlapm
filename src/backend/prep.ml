@@ -1377,18 +1377,35 @@ let ship ob fpout thyout record =
         The fingerprints include both the assertion and `BY` statement
         proof directives.
         *)
-    let const_fp_ob =
-      lazy (Fingerprints.write_fingerprint (add_constness ob))
-    in
-    let p = lazy (normalize_expand (Lazy.force const_fp_ob)
-            fpout thyout record
-            ~expand_enabled
-            ~expand_cdot
-            ~autouse
-            ~apply_lambdify
-            ~enabled_axioms
-            ~level_comparison)
-    in
+    let (const_fp_ob, p) = if autouse then begin
+            let p =
+                lazy (normalize_expand (add_constness ob)
+                    fpout thyout record
+                    ~expand_enabled
+                    ~expand_cdot
+                    ~autouse
+                    ~apply_lambdify
+                    ~enabled_axioms
+                    ~level_comparison) in
+            let (p1, expand_success) = Lazy.force p in
+            let fp_ob = Fingerprints.write_fingerprint p1 in
+            let p = lazy (fp_ob, expand_success) in
+            (lazy fp_ob, p)
+        end else begin
+            let const_fp_ob =
+              lazy (Fingerprints.write_fingerprint (add_constness ob))
+            in
+            let p = lazy (normalize_expand (Lazy.force const_fp_ob)
+                    fpout thyout record
+                    ~expand_enabled
+                    ~expand_cdot
+                    ~autouse
+                    ~apply_lambdify
+                    ~enabled_axioms
+                    ~level_comparison)
+            in
+            (const_fp_ob, p)
+        end in
     let prep_meth m =
       let ob = Lazy.force const_fp_ob in
       let m = Method.scale_time m !Params.timeout_stretch in
