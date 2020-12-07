@@ -553,9 +553,21 @@ and fp_expoint counthyp countvar stack buf = function
 and fp_arm counthyp countvar stack buf (p, e) =
   bprintf buf "(%a,%a)" (fp_expr counthyp countvar stack) p (fp_expr counthyp countvar stack) e
 
+let print_fp sq buf =
+    (* Print the buffer contents, which are the string from which the
+    fingerprint is computed.
+    *)
+    print_string "\nExpression:\n";
+    let cx = Deque.empty in
+    print_string (Expr.Fmt.string_of_expr cx (noprops (Sequent sq)) );
+    print_string "\nString used to create fingerprint:\n";
+    Buffer.output_buffer stdout buf;
+    print_string "\nEnd of string used to create fingerprint\n\n"
+
 let fp_sequent sq =
   let buf = Buffer.create 17 in
   fp_sequent (Stack.create 5 (No, ref false)) buf sq ;
+  (* print_fp sq buf; *)
   buf
 
 
