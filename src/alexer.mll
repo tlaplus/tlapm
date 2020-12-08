@@ -39,6 +39,16 @@ let namechar = (letter | numeral | '_')
 
 let name     = namechar* letter namechar*
 
+let keyword = (
+  "ASSUME"|"ASSUMPTION"|"AXIOM"|"BOOLEAN"|"CASE"|"CHOOSE"|"CONSTANT"
+  |"CONSTANTS"|"BY"|"DEF"|"DEFINE"|"DEFS"|"LAMBDA"|"OBVIOUS"|"ELSE"
+  |"EXCEPT"|"EXTENDS"|"IF"|"IN"|"INSTANCE"|"LET"|"HAVE"|"TRUE"|"FALSE"
+  |"HIDE"|"PROOF"|"PROVE"|"STATE"|"OMITTED"|"LOCAL"|"MODULE"|"OTHER"
+  |"THEN"|"THEOREM"|"UNCHANGED"|"QED"|"RECURSIVE"|"WITNESS"|"STRING"
+  |"SUFFICES"|"ACTION"|"LEMMA"|"COROLLARY"|"VARIABLE"|"VARIABLES"|"WITH"
+  |"TAKE"
+  |"USE"|"PICK"|"NEW"|"TEMPORAL"|"PROPOSITION"|"ONLY")
+
 rule modfile = parse
   | "----" '-'* ' '* "MODULE"
       { [ PUNCT "----"; KWD "MODULE" ] }
@@ -135,19 +145,14 @@ and token = parse
   (* names and reserved words *)
 
   (* WF_ and WF_ are treated as punctuation *)
+  | ("WF_" | "SF_" as f) (keyword as kwd)
+      { [ PUNCT f ; KWD kwd ] }
   | ("WF_" | "SF_" as f) (name as rest)
       { [ PUNCT f ; ID rest ] }
   | ("WF_"|"SF_" as f)
       { [ PUNCT f ] }
 
-  | ("ASSUME"|"ASSUMPTION"|"AXIOM"|"BOOLEAN"|"CASE"|"CHOOSE"|"CONSTANT"
-    |"CONSTANTS"|"BY"|"DEF"|"DEFINE"|"DEFS"|"LAMBDA"|"OBVIOUS"|"ELSE"
-    |"EXCEPT"|"EXTENDS"|"IF"|"IN"|"INSTANCE"|"LET"|"HAVE"|"TRUE"|"FALSE"
-    |"HIDE"|"PROOF"|"PROVE"|"STATE"|"OMITTED"|"LOCAL"|"MODULE"|"OTHER"
-    |"THEN"|"THEOREM"|"UNCHANGED"|"QED"|"RECURSIVE"|"WITNESS"|"STRING"
-    |"SUFFICES"|"ACTION"|"LEMMA"|"COROLLARY"|"VARIABLE"|"VARIABLES"|"WITH"
-    |"TAKE"
-    |"USE"|"PICK"|"NEW"|"TEMPORAL"|"PROPOSITION"|"ONLY" as kwd)
+  | (keyword as kwd)
       { [ KWD kwd ] }
 
   | (name as nm)
