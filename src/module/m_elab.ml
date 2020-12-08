@@ -236,7 +236,7 @@ let lambdify_definition cx df =
         | Bpragma (_, expr, _) -> expr
         | _ -> assert false in
     let expr = match expr.core with
-        | Lambda _ -> expr  (* arity < _, ... > *)
+        | Lambda _  (* arity < _, ... > *)
         | _ ->  (* arity _ *)
             let expr = lambdify_expr cx expr in
             Expr.Levels.rm_expr_level cx expr
