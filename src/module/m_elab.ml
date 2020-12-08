@@ -580,9 +580,18 @@ let anon = object (self : 'self)
           | mu :: mus ->
               begin match mu.core with
               | Definition (df, _, _, _) -> make_defs (df :: sofar) mus
-              | _ ->
-                  let (_, mus) = M_subst.app_modunits (shift (-1)) mus in
-                  make_defs sofar mus
+              | Constants _
+              | Recursives _
+              | Variables _
+              | Axiom _
+              | Theorem _
+              | Submod _
+              | Mutate _
+              | Anoninst _ ->
+                let mu_hyps = M_t.hyps_of_modunit mu in
+                let n_hyps = List.length mu_hyps in
+                let (_, mus) = M_subst.app_modunits (shift (-n_hyps)) mus in
+                make_defs sofar mus
               end
         in
         self#defns scx (make_defs [] submus @ dfs)
