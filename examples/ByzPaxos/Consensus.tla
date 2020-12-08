@@ -4,7 +4,7 @@
 (* value.  This module specifies the problem by specifying exactly what    *)
 (* the requirements are for choosing a value.                              *)
 (***************************************************************************)
-EXTENDS Naturals, FiniteSets, TLAPS
+EXTENDS Naturals, FiniteSets, FiniteSetTheorems, TLAPS
 
 (***************************************************************************)
 (* We let the constant parameter Value be the set of all values that can   *)
@@ -109,23 +109,6 @@ Inv == /\ TypeOK
        /\ Cardinality(chosen) \leq 1
 
 (***************************************************************************)
-(* To prove our theorem, we need the following simple results about the    *)
-(* cardinality of finite sets.                                             *)
-(***************************************************************************)
-AXIOM EmptySetCardinality == IsFiniteSet({}) /\ Cardinality({}) = 0
-AXIOM SingletonCardinality == 
-          \A e : IsFiniteSet({e}) /\ (Cardinality({e}) = 1)
-
-(***************************************************************************)
-(* Whenever we add an axiom, we should check it with TLC to make sure we   *)
-(* haven't made any errors.  To check axiom SingletonCardinality, we must  *)
-(* replace the unbounded quantification with a bounded one.  We therefore  *)
-(* let TLC check that the following formula is true.                       *)
-(***************************************************************************)
-SingleCardinalityTest == 
-  \A e \in SUBSET {"a", "b", "c"} : IsFiniteSet({e}) /\ (Cardinality({e}) = 1)
-
-(***************************************************************************)
 (* We now prove that Inv is an invariant, meaning that it is true in every *)
 (* state in every behavior.  Before trying to prove it, we should first    *)
 (* use TLC to check that it is true.  It's hardly worth bothering to       *)
@@ -153,46 +136,26 @@ SingleCardinalityTest ==
 (***************************************************************************)
 
 (***************************************************************************)
-(* By default, a definition is not usable in a proof.  If the a definition *)
-(* should be usable in the proof of a step, meaning that the prover can    *)
-(* expand the definition, then that must be explicitly indicated--usually  *)
-(* in the DEF clause of a BY statement.  A DEF clause of a USE statement   *)
-(* makes the definitions in it usable in the scope of that statement.  The *)
-(* following USE statement makes the definition of lbl usable everywhere   *)
-(* in the rest of the module.  (There is a corresponding HIDE statement    *)
-(* that makes definitions unusable in its scope.)                          *)
-(***************************************************************************)
-\* USE DEF lbl
-
-(***************************************************************************)
 (* The following lemma asserts that Inv is an inductive invariant of the   *)
 (* next-state action Next.  It is the key step in proving that Inv is an   *)
 (* invariant of (true in every behavior allowed by) specification Spec.    *)
 (***************************************************************************)
 LEMMA InductiveInvariance ==
            Inv /\ [Next]_vars => Inv'
-<1>1. SUFFICES ASSUME Inv, [Next]_vars
-               PROVE  Inv'
+<1>. SUFFICES ASSUME Inv, [Next]_vars
+              PROVE  Inv'
   OBVIOUS
-<1>2. CASE Next 
-  <2>1. PICK v \in Value : chosen' = {v}
-    \* In the following BY proof, <1>2 denotes the case assumption Next 
-    BY <1>2 DEF Next
-  <2>2. QED
-    \* In the following BY proof, <1>1 refers to the assumptions
-    \* Inv and [Next]_vars
-    BY <1>1, <2>1, SingletonCardinality, 1 \leq 1 DEF Inv, TypeOK, Next, vars
-<1>4. CASE vars' = vars
-  BY <1>1, <1>4 DEF Inv, TypeOK, Next, vars  
-<1>5. QED
-  BY <1>1, <1>2, <1>4 DEF Next
+<1>1. CASE Next 
+  \* In the following BY proof, <1>1 denotes the case assumption Next 
+  BY <1>1, FS_EmptySet, FS_AddElement DEF Inv, TypeOK, Next
+<1>2. CASE vars' = vars
+  BY <1>2 DEF Inv, TypeOK, vars  
+<1>3. QED
+  BY <1>1, <1>2 DEF Next
 
 THEOREM Invariance == Spec => []Inv 
 <1>1.  Init => Inv
-  \* We usually have to use SimpleArithmetic to prove facts about numbers,
-  \* but 0 \leq 1 is simple enough that Isabelle can prove it by itself.
-  BY EmptySetCardinality, 0 \leq 1 DEF Init, Inv, TypeOK
-
+  BY FS_EmptySet DEF Init, Inv, TypeOK
 <1>2.  QED
  BY PTL, <1>1, InductiveInvariance DEF Spec
 
@@ -244,14 +207,13 @@ LEMMA EnabledDef ==
   PROOF OMITTED
 <1>2. SUFFICES ASSUME TypeOK
                PROVE  E = (chosen = {})
-\*  BY <1>1
-  PROOF OMITTED
+  BY <1>1, Zenon
 <1>3. E = \E chosenp : E!(chosenp)!1
-  BY <1>2  DEF TypeOK
+  BY <1>2, Isa  DEF TypeOK
 <1>4. @ = (chosen = {})
- BY <1>2, ValueNonempty DEF TypeOK
+ BY <1>2, ValueNonempty, Zenon DEF TypeOK
 <1>5. QED
- BY <1>3, <1>4
+ BY <1>3, <1>4, Zenon
 
 (***************************************************************************)
 (* Here is our proof that Livespec implies Success.  It uses the standard  *)
@@ -273,25 +235,24 @@ LEMMA EnabledDef ==
 (***************************************************************************)
 THEOREM LiveSpec => Success
 <1>1. []Inv /\ [][Next]_vars /\ WF_vars(Next) => (chosen = {} ~> chosen # {})
-  <2>1. SUFFICES [][Next]_vars /\ WF_vars(Next) => ((Inv /\ chosen = {}) ~> chosen # {})
-    \* OBVIOUS (* PTL *)
-    PROOF OMITTED
-  <2>2. (Inv /\ (chosen = {})) /\ [Next]_vars => ((Inv' /\ (chosen' = {})) \/ chosen' # {})
+  <2>. DEFINE P == chosen = {}
+              Q == chosen # {}
+  <2>1. SUFFICES [][Next]_vars /\ WF_vars(Next) => ((Inv /\ P) ~> Q)
+    BY PTL
+  <2>2. (Inv /\ P) /\ [Next]_vars => ((Inv' /\ P') \/ Q')
     BY InductiveInvariance
-  <2>3. (Inv /\ (chosen = {})) /\ <<Next>>_vars => (chosen' # {})
+  <2>3. (Inv /\ P) /\ <<Next>>_vars => Q'
     BY DEF Inv, Next, vars
-  <2>4. (Inv /\ (chosen = {})) => ENABLED <<Next>>_vars
-\*     BY EnabledDef DEF Inv
-    PROOF OMITTED
-  <2>5. QED
-\*     BY <2>2, <2>3, <2>4, RuleWF1
-    PROOF OMITTED
+  <2>4. (Inv /\ P) => ENABLED <<Next>>_vars
+    BY EnabledDef DEF Inv
+  <2>. HIDE DEF P,Q
+  <2>. QED
+    BY <2>2, <2>3, <2>4, PTL
 <1>2. (chosen = {} ~> chosen # {}) => ((chosen = {}) => <>(chosen # {}))
-\*   OBVIOUS (* PTL *)
-  PROOF OMITTED
+  BY PTL
 <1>3. QED
-\*   BY Invariance, <1>1, <1>2 DEF LiveSpec, Spec, Init, Success (* PTL *)
-  PROOF OMITTED
+  BY Invariance, <1>1, <1>2, PTL DEF LiveSpec, Spec, Init, Success
+
 -----------------------------------------------------------------------------
 (***************************************************************************)
 (* The following theorem is used in the refinement proof in module         *)
@@ -301,20 +262,16 @@ THEOREM LiveSpecEquals ==
           LiveSpec <=> Spec /\ ([]<><<Next>>_vars \/ []<>(chosen # {}))
 <1>1. /\ Spec <=> Spec /\ []TypeOK
       /\ LiveSpec <=> LiveSpec /\ []TypeOK
-\*  BY Invariance DEF LiveSpec, Inv (* PTL *)
-  PROOF OMITTED
-<1>2. []TypeOK => (([]<>~ENABLED <<Next>>_vars) <=> []<>(chosen # {}))
-  <2>1. []TypeOK => []((~ENABLED <<Next>>_vars) <=> (chosen # {}))
-\*    BY EnabledDef (* PTL *)
-    PROOF OMITTED
-  <2>2. QED
-\*    BY <2>1 (* PTL *)
-    PROOF OMITTED
-<1>3. QED
-\*  BY <1>1, <1>2 DEF LiveSpec (* and definition of WF *)
-  PROOF OMITTED
+  BY Invariance, PTL DEF LiveSpec, Inv
+<1>2. (chosen # {}) <=> ~(chosen = {})
+  OBVIOUS
+<1>3. []TypeOK => (([]<>~ENABLED <<Next>>_vars) <=> []<>(chosen # {}))
+  BY <1>2, EnabledDef, PTL
+<1>4. QED
+  BY <1>1, <1>3, PTL DEF LiveSpec
 =============================================================================
 \* Modification History
+\* Last modified Mon May 11 18:36:27 CEST 2020 by merz
 \* Last modified Mon Aug 18 15:00:45 CEST 2014 by tomer
 \* Last modified Mon Aug 18 14:58:57 CEST 2014 by tomer
 \* Last modified Tue Feb 14 13:35:49 PST 2012 by lamport

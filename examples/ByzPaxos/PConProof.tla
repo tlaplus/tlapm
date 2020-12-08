@@ -433,7 +433,7 @@ THEOREM NextDef == (Next <=> TLANext)
   BY <1>2, BallotAssump DEF acceptor, ProcSet, Phase1b, Phase2b
 <1>3. ASSUME NEW self \in Ballot
       PROVE  leader(self) <=> TLANext!2!(self) 
-  BY <1>3, BallotAssump DEF leader, ProcSet, Phase1a, Phase1c, Phase2a
+  BY <1>3, BallotAssump, Zenon DEF leader, ProcSet, Phase1a, Phase1c, Phase2a
 <1>4. QED
   BY <1>2, <1>3 DEF Next, TLANext
 -----------------------------------------------------------------------------
@@ -536,6 +536,7 @@ THEOREM Spec => [](chosen = V!chosen)
 (***************************************************************************)
 =============================================================================
 \* Modification History
+\* Last modified Fri May 22 09:20:18 CEST 2020 by merz
 \* Last modified Fri Jul 15 11:31:15 PDT 2011 by lamport
 
 -----------------------------------------------------------------------------

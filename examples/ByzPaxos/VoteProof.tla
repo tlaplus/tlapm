@@ -10,18 +10,9 @@
 (* Ballots are not executed in order.  Different acceptors may be          *)
 (* concurrently performing actions for different ballots.                  *)
 (***************************************************************************)
-EXTENDS Integers , FiniteSets, TLC, TLAPS
+EXTENDS Integers, NaturalsInduction, FiniteSets, FiniteSetTheorems, 
+        WellFoundedInduction, TLC, TLAPS
 
-THEOREM Z32 == TRUE (*{ by (smt2z3) }*)
-Z32T(X) == TRUE (*{ by (prover:"smt2z3"; timeout:@) }*)
-
-THEOREM SMT2 == TRUE (*{ by (smt2lib) }*)
-SMT2T(X) == TRUE (*{ by (prover:"smt2lib"; timeout:@) }*)
-
-
-
-\* THEOREM SMT == TRUE (*{ by (smt) }*)
------------------------------------------------------------------------------
 CONSTANT Value,     \* As in module Consensus, the set of choosable values.
          Acceptor,  \* The set of all acceptors.
          Quorum     \* The set of all quorums.
@@ -273,19 +264,7 @@ Spec == Init /\ [][Next]_vars
 (*   Silly[42] = CHOOSE v : v # Silly[42]                                  *)
 (*                                                                         *)
 (* (From that, we could easily deduce Silly[42] # Silly[42].)              *)
-(*                                                                         *)
-(* To prove the desired property of SafeAt, we use the following proof     *)
-(* rule.  It will eventually be in a standard module--probably in TLAPS.   *)
-(* However, for now, we put it here.                                       *)
 (***************************************************************************)
-
-THEOREM RecursiveFcnOfNat ==
-          ASSUME NEW Def(_,_), 
-                 \A n \in Nat : 
-                    \A g, h : (\A i \in 0..(n-1) : g[i] = h[i]) => (Def(g, n) = Def(h, n))
-          PROVE  LET f[n \in Nat] == Def(f, n)
-                 IN  f = [n \in Nat |-> Def(f, n)]
-PROOF OMITTED
 
 (***************************************************************************)
 (* Here is the theorem that essentially asserts that SafeAt(b, v) equals   *)
@@ -293,7 +272,7 @@ PROOF OMITTED
 (***************************************************************************)
 THEOREM SafeAtProp ==
   \A b \in Ballot, v \in Value :
-    SafeAt(b, v) =
+    SafeAt(b, v) <=>
       \/ b = 0
       \/ \E Q \in Quorum :
            /\ \A a \in Q : maxBal[a] \geq b
@@ -305,7 +284,7 @@ THEOREM SafeAtProp ==
                 /\ \A d \in (c+1)..(b-1), a \in Q : DidNotVoteIn(a, d)
 <1>1. SUFFICES ASSUME NEW v \in Value
                PROVE  \A b \in Ballot : SafeAtProp!(b, v)
-  OBVIOUS
+  BY Zenon
 <1> USE DEF Ballot
 <1> DEFINE Def(SA, bb) ==
         \/ bb = 0
@@ -320,38 +299,20 @@ THEOREM SafeAtProp ==
       SA[bb \in Ballot] == Def(SA, bb)
 <1>2. \A b : SafeAt(b, v) = SA[b]
   BY DEF SafeAt
-<1>3. \A n \in Nat : 
-         \A g, h : (\A i \in 0..(n-1) : g[i] = h[i]) => (Def(g, n) = Def(h, n))
-  <2>1. SUFFICES ASSUME NEW n \in Nat, NEW g, NEW h,
-                        \A i \in 0..(n-1) : g[i] = h[i]
-                 PROVE  Def(g, n) = Def(h, n)
-    OBVIOUS
-  <2>2. Def(g, n)!2 = Def(h, n)!2  
-   <3>1.  ASSUME NEW Q \in Quorum,
-                 NEW c \in -1..(n-1),
-                 c # -1
-          PROVE  Def(g, n)!2!(Q)!2!(c)!1!2 = Def(h, n)!2!(Q)!2!(c)!1!2
-
-     <4>1. SUFFICES g[c] = h[c]
-       OBVIOUS
-     <4>2. c \in 0..(n-1)
-       BY <3>1, SMT
-     <4>3. QED
-       BY <4>2, <2>1 
-   <3>2. QED
-     BY <3>1
-  <2>3. QED
-    BY <2>1, <2>2
+<1>3. ASSUME NEW n \in Nat, NEW g, NEW h,
+             \A i \in 0..(n-1) : g[i] = h[i]
+      PROVE  Def(g, n) = Def(h, n)
+  BY <1>3
 <1>4. SA = [b \in Ballot |-> Def(SA, b)]
   <2> HIDE DEF Def
   <2> QED
-    BY ONLY <1>3, RecursiveFcnOfNat    
+    BY <1>3, RecursiveFcnOfNat, Isa  
 <1>5. \A b \in Ballot : SA[b] = Def(SA, b)
   <2> HIDE DEF Def
   <2> QED
-    BY <1>4
+    BY <1>4, Zenon
 <1>6. QED
-  BY <1>2, <1>5 DEF SafeAt
+  BY <1>2, <1>5, Zenon DEF SafeAt
 -----------------------------------------------------------------------------
 
 (***************************************************************************)
@@ -375,68 +336,8 @@ ChosenIn(b, v) == \E Q \in Quorum : \A a \in Q : VotedFor(a, b, v)
 chosen == {v \in Value : \E b \in Ballot : ChosenIn(b, v)}
 -----------------------------------------------------------------------------
 (***************************************************************************)
-(*                         Mathematical Induction                          *)
-(*                                                                         *)
-(* The following axiom asserts the validity of a standard proof by         *)
-(* mathematical induction.  Some such axiom should be included in the      *)
-(* standard TLAPS module.  However, instead of a rule expressed it in      *)
-(* terms of a function f, it would be more convenient to use one expressed *)
-(* as follows in terms of an operator f:                                   *)
-(*                                                                         *)
-(*    AXIOM ASSUME NEW f(_), f(0), \A n \in Nat : f(n) => f(n+1)           *)
-(*          PROVE  \A n \in Nat : f(n)                                     *)
-(*                                                                         *)
-(* However, the TLAPS proof system cannot yet handle proofs that use this  *)
-(* rule.  So, for now we use this axiom.                                   *)
-(***************************************************************************)
-AXIOM SimpleNatInduction == \A f : /\ f[0]
-                                   /\ \A n \in Nat : f[n] => f[n+1]
-                                   => \A n \in Nat : f[n]
-
-(***************************************************************************)
-(* We use the SimpleNatInduction rule to prove the following rule, which   *)
-(* expresses the soundness of what I believe is sometimes called "General  *)
-(* Induction" or "Strong Induction".                                       *)
-(***************************************************************************)                                
-THEOREM GeneralNatInduction == 
-         \A f : /\ f[0]
-                /\ \A n \in Nat : (\A j \in 0..n : f[j]) => f[n+1]
-                => \A n \in Nat : f[n]
-<1>1. SUFFICES ASSUME NEW f,
-                      f[0],
-                      \A m \in Nat : (\A j \in 0..m : f[j]) => f[m+1],
-                      NEW n \in Nat
-               PROVE  f[n]
-  OBVIOUS
-<1> DEFINE g == [m \in Nat |-> \A j \in 0..m : f[j]]
-<1>2. g[0]
-  <2>1. \A x \in 0..0 : x = 0
-    BY SMT
-  <2> QED
-    BY <1>1, <2>1
-<1>3. ASSUME NEW k \in Nat,  g[k]
-      PROVE  g[k+1]
-  <2>1. /\ k \in 0..k
-        /\ k+1 \in Nat
-        /\ \A x \in 0..(k+1) : (x \in 0..k) \/ (x = k+1)
-    BY SMT
-  <2>2. \A j \in 0..k : f[j]
-    BY <1>3, <2>1
-  <2>3. f[k+1]
-    BY <1>1, <2>1, <2>2
-  <2>4. QED
-    BY <2>1, <2>2, <2>3
-<1>4. \A k \in Nat : g[k]
-  BY <1>2, <1>3, SimpleNatInduction
-<1>5. QED  
-  <2>1. n \in 0..n
-    BY SMT
-  <2>2. QED
-    BY <2>1, <1>4                            
------------------------------------------------------------------------------
-(***************************************************************************)
 (* The following lemma is used for reasoning about the operator SafeAt.    *)
-(* It is proved from SafeAtProp by GeneralNatInduction.                    *)
+(* It is proved from SafeAtProp by induction.                              *)
 (***************************************************************************)
 LEMMA SafeLemma == 
        TypeOK => 
@@ -451,33 +352,17 @@ LEMMA SafeLemma ==
 <1> SUFFICES ASSUME TypeOK
              PROVE  SafeLemma!2
   OBVIOUS
-<1> DEFINE P[b \in Ballot] == \A c \in 0..b : SafeLemma!2!(c)
-<1>1. P[0]
-\*  BY SMT2 DEF Ballot  (* This works *)
-  <2>1. SUFFICES ASSUME NEW c \in 0..0
-                 PROVE  SafeLemma!2!(c)
-    BY DEF Ballot
-  <2>2. c = 0 
-    BY SMT DEF Ballot
-  <2>3. 0..(0-1) = {}
-    <3>1. \A x \in 0..(0-1) : FALSE
-      BY SMT
-    <3>2. QED
-      BY <3>1 
-  <2>4. QED
-    BY <2>2, <2>3
-<1>2. ASSUME NEW b \in Ballot, P[b]
-      PROVE  P[b+1]
-  <2>1. /\ b+1 \in Ballot 
+<1> DEFINE P(b) == \A c \in 0..b : SafeLemma!2!(c)
+<1> USE DEF Ballot
+<1>1. P(0)
+  OBVIOUS
+<1>2. ASSUME NEW b \in Ballot, P(b)
+      PROVE  P(b+1)
+  <2>1. /\ b+1 \in Ballot \ {0}
         /\ (b+1) - 1 = b
-    BY SMT DEF Ballot
+    OBVIOUS
   <2>2. 0..(b+1) = (0..b) \cup {b+1}
-    <3>1. \A x \in 0..(b+1) : x \in 0..b \/ x = b+1
-      BY SMT DEF Ballot
-    <3>2. b+1 \in 0..(b+1) /\ \A x \in 0..b : x \in 0..(b+1)
-      BY SMT DEF Ballot
-    <3>3. QED
-      BY <3>1, <3>2
+    OBVIOUS
   <2>3. SUFFICES ASSUME NEW v \in Value,
                         SafeAt(b+1, v),
                         NEW c \in 0..b
@@ -485,7 +370,7 @@ LEMMA SafeLemma ==
                            \A a \in Q : /\ maxBal[a] >= c
                                         /\ \/ DidNotVoteIn(a, c)
                                            \/ VotedFor(a, c, v)
-    BY <1>2, <2>1, <2>2  
+    BY <1>2
   <2>4. PICK Q \in Quorum : 
                /\ \A a \in Q : maxBal[a] \geq (b+1)
                /\ \E cc \in -1..b :
@@ -494,24 +379,7 @@ LEMMA SafeLemma ==
                                          \A w \in Value :
                                             VotedFor(a, cc, w) => (w = v)
                     /\ \A d \in (cc+1)..b, a \in Q : DidNotVoteIn(a, d)
-\*   BY SafeAtProp, <2>1, <2>3, SMT2 DEF Ballot  (* This works. *)
-    <3>1. b+1 # 0
-      BY SMT DEF Ballot
-    <3>2. SafeAt(b+1,v) = SafeAtProp!(b+1,v)!2
-       BY SafeAtProp, <2>1
-    <3>3. @ = SafeAtProp!(b+1,v)!2!2
-      BY <3>1
-    <3>4. @ = \E Q \in Quorum : 
-               /\ \A a \in Q : maxBal[a] \geq (b+1)
-               /\ \E cc \in -1..b :
-                    /\ (cc # -1) => /\ SafeAt(cc, v)
-                                    /\ \A a \in Q :
-                                         \A w \in Value :
-                                            VotedFor(a, cc, w) => (w = v)
-                    /\ \A d \in (cc+1)..b, a \in Q : DidNotVoteIn(a, d)
-      BY <2>1
-    <3>5. QED
-      BY <3>2, <3>3, <3>4, <2>3 
+    BY SafeAtProp, <2>3, <2>1, Zenon
   <2>5. PICK cc \in -1..b : 
                /\ (cc # -1) => /\ SafeAt(cc, v)
                                /\ \A a \in Q :
@@ -520,79 +388,25 @@ LEMMA SafeLemma ==
                /\ \A d \in (cc+1)..b, a \in Q : DidNotVoteIn(a, d)
     BY <2>4
   <2>6. CASE c > cc
-\*    SMT2 Did not work on this.
-    <3>1. c \in (cc+1)..b
-      BY <2>6, SMT DEF Ballot
-    <3>2. \A a \in Q : DidNotVoteIn(a, c)
-      BY <3>1, <2>5
-    <3>3. \A a \in Q : maxBal[a] >= c
-      <4> SUFFICES ASSUME NEW a \in Q
-                   PROVE  maxBal[a] >= c
-        OBVIOUS
-      <4>1. \A mbal \in Ballot \cup {-1} : 
-               (mbal \geq b+1) => (mbal \geq c)
-        BY <3>1, SMT DEF Ballot
-      <4>2. maxBal[a] \geq b+1
-        BY <2>4
-      <4>3. QED 
-        BY QA, a \in Acceptor, <4>1, <4>2 DEF TypeOK
-    <3>4. QED
-      BY <3>2, <3>3
-  <2>7. CASE c =< cc
-    <3>1. /\ cc \in 0..b
-          /\ cc # -1
-      BY <2>7, SMT DEF Ballot
-    <3>2. SafeLemma!2!(cc)!(v)
-      BY <1>2, <3>1
-    <3>3. SafeAt(cc, v)
-      BY <2>5, <3>1
-    <3>4. CASE c = cc
-      <4>1. \A mb \in Ballot \cup {-1} : (mb >= b+1) => (mb >= c)
-        BY <3>4, <3>1, SMT DEF Ballot
-      <4>2. \A a \in Q : maxBal[a] \in Ballot \cup {-1}
-        BY QA DEF TypeOK
-      <4>3. \A a \in Q : maxBal[a] \geq c
-        BY <2>4, <4>1, <4>2
-      <4>4. \A a \in Q : \/ DidNotVoteIn(a, c)
-                         \/ VotedFor(a, c, v)
-        <5> SUFFICES ASSUME NEW a \in Q,
-                            ~ DidNotVoteIn(a, c)
-                     PROVE  VotedFor(a, c, v)
-          OBVIOUS
-        <5>1. PICK w \in Value : VotedFor(a, c, w)
-          BY DEF DidNotVoteIn
-        <5>2. w = v
-          BY <3>4, <5>1,  <2>5, <3>1
-        <5>3. QED
-          BY <5>1, <5>2          
-      <4>5. QED
-        BY <4>3, <4>4      
-    <3>5. CASE c < cc
-      <4>1. c \in 0..(cc-1)
-        BY <3>1, <3>5, SMT
-      <4>2. SafeLemma!2!(cc)
-        BY <3>1, <1>2
-      <4>3. QED
-        BY <4>1,<4>2, <4>2, <3>3
-    <3>6. QED
-      <4>1. (c < cc) \/ (c = cc)
-        BY <2>7, SMT DEF Ballot
-      <4>2. QED
-        BY <3>4, <3>5, <4>1
-  <2>8. QED
-    <3>1. c \in Int /\ cc \in Int
-      BY SMT DEF Ballot
-    <3>2. (c > cc) \/ (c =< cc)
-      BY SMT 
-    <3>3. QED
-      BY <2>6, <2>7, <3>2
-<1>3. \A b \in Ballot : P[b]
-  BY <1>1, <1>2, SimpleNatInduction DEF Ballot
+    BY <2>4, <2>5, <2>6, QA DEF TypeOK
+  <2>7. CASE c = cc
+    <3>2. \A a \in Q : maxBal[a] \in Ballot \cup {-1}
+      BY QA DEF TypeOK
+    <3>3. \A a \in Q : maxBal[a] \geq c
+      BY <2>4, <2>7, <3>2
+    <3>4. \A a \in Q : \/ DidNotVoteIn(a, c)
+                       \/ VotedFor(a, c, v)
+      BY <2>7, <2>5 DEF DidNotVoteIn
+    <3>5. QED
+      BY <3>3, <3>4      
+  <2>8. CASE c < cc
+    BY <2>8, <1>2, <2>5
+  <2>9. QED
+    BY <2>6, <2>7, <2>8
+<1>3. \A b \in Ballot : P(b)
+  BY <1>1, <1>2, NatInduction, Isa
 <1>4. QED
-  <2>1. \A b \in Ballot : b \in 0..b
-    BY SMT DEF Ballot
-  <2>2. QED
-    BY <1>3, <2>1
+  BY <1>3
 -----------------------------------------------------------------------------
 (***************************************************************************)
 (* We now define the invariant that is used to prove the correctness of    *)
@@ -650,76 +464,44 @@ LEMMA VT0 == /\ TypeOK
              PROVE  \A b, c \in Ballot : 
                       (b > c) /\ SafeAt(b, v) /\ ChosenIn(c, w) => (v = w)
   OBVIOUS
-<1> P == [b \in Ballot |-> 
-            \A c \in Ballot : 
-            (b > c) /\ SafeAt(b, v) /\ ChosenIn(c, w) => (v = w)]
+<1> P(b) == \A c \in Ballot : 
+               (b > c) /\ SafeAt(b, v) /\ ChosenIn(c, w) => (v = w)
+<1> USE DEF Ballot
 
-<1>1. P[0]
-\*  BY SMT2 DEF Ballot (* This works *)
-  <2>1. /\ 0 \in Ballot 
-        /\ \A c \in Ballot : ~(0 > c)
-    BY SMT DEF Ballot
-  <2>2. QED
+<1>1. P(0)
+  OBVIOUS
+<1>2. ASSUME NEW b \in Ballot, \A i \in 0..(b-1) : P(i)
+      PROVE  P(b)
+  <2>1. CASE b = 0
     BY <2>1
-<1>2. ASSUME NEW b \in Ballot, \A i \in 0..b : P[i]
-      PROVE  P[b+1]
-  <2>1. b+1 \in Ballot
-    BY SMT DEF Ballot
-  <2>2. SUFFICES ASSUME NEW c \in Ballot, b+1 > c, SafeAt(b+1, v), ChosenIn(c, w)
-                 PROVE  v=w
-    BY <2>1
-  <2>3. PICK Q \in Quorum : \A a \in Q : VotedFor(a, c, w)
-    BY <2>2 DEF ChosenIn
-  <2>4. b+1 # 0 /\ ((b+1)-1 = b) 
-    BY SMT DEF Ballot
-  <2>5. PICK QQ \in Quorum, 
-              d \in -1..((b+1)-1) :
-                /\ (d # -1) => /\ SafeAt(d, v)
-                               /\ \A a \in QQ :
-                                    \A x \in Value :
-                                        VotedFor(a, d, x) => (x = v)
-                /\ \A e \in (d+1)..((b+1)-1), a \in QQ : DidNotVoteIn(a, e)
-   BY <2>1, <2>2, <2>4, SafeAtProp
-  <2> PICK aa \in QQ \cap Q : TRUE
-    BY QA
-  <2>6. c \leq d 
-\*    BY <2>2, <2>3, <2>5, SMT2 DEF DidNotVoteIn, Ballot (* This works *)
-    <3>1. SUFFICES ASSUME ~(c \leq d)
-                 PROVE  FALSE
+  <2>2. CASE b # 0
+    <3>1. SUFFICES ASSUME NEW c \in Ballot, b > c, SafeAt(b, v), ChosenIn(c, w)
+                   PROVE  v=w
       OBVIOUS
-    <3>2. c \in (d+1)..((b+1)-1)
-      BY <2>2, <3>1, SMT DEF Ballot
-    <3>3. VotedFor(aa, c, w)
-      BY <2>3
-    <3>4. DidNotVoteIn(aa, c)
-      BY <2>5, <3>1, <3>2
-    <3>5. QED
-      BY <3>3, <3>4 DEF DidNotVoteIn
-  <2>7. d # -1
-    BY <2>6, SMT DEF Ballot
-  <2>8. CASE c = d
-    BY <2>3, <2>5, <2>7, <2>8
-  <2>9. CASE d > c
-    \* SMT2 fails on this.
-    <3>1. SafeAt(d, v)
-      BY <2>5, <2>7
-    <3>2. d \in Ballot /\ d \in 0..b 
-      BY <2>6, SMT DEF Ballot
-    <3>3. P[d]
-      BY <1>2, <3>2
-    <3>4. QED
-      BY <2>2, <2>9, <3>1,  <3>2, <3>3
-  <2>10. QED
-\*    BY <2>3, <2>6, <2>8, <2>9, SMT2 DEF Ballot (* This works *)
-    <3>1. (c = d) \/ (d > c)
-      BY <2>6, SMT DEF Ballot
-    <3>2. QED
-      BY <2>8, <2>9, <3>1
-\*  PICK QQ \in Quorum  : VotedFor(ac, c, w)
-\*  BY QuorumNonEmpty, QA DEF ChosenIn
-<1>3. \A b \in Ballot : P[b]
-  BY <1>1, <1>2, GeneralNatInduction DEF Ballot
-
+    <3>2. PICK Q \in Quorum : \A a \in Q : VotedFor(a, c, w)
+      BY <3>1 DEF ChosenIn
+    <3>3. PICK QQ \in Quorum, 
+                d \in -1..(b-1) :
+                  /\ (d # -1) => /\ SafeAt(d, v)
+                                 /\ \A a \in QQ :
+                                      \A x \in Value :
+                                          VotedFor(a, d, x) => (x = v)
+                  /\ \A e \in (d+1)..(b-1), a \in QQ : DidNotVoteIn(a, e)
+      BY <2>2, <3>1, SafeAtProp, Zenon
+    <3> PICK aa \in QQ \cap Q : TRUE
+      BY QA
+    <3>4. c \leq d
+      BY <3>1, <3>2, <3>3 DEF DidNotVoteIn
+    <3>5. CASE c = d
+      BY <3>2, <3>3, <3>4, <3>5
+    <3>6. CASE d > c
+      BY <1>2, <3>1, <3>3, <3>4, <3>6
+    <3>7. QED
+      BY <3>4, <3>5, <3>6
+  <2>. QED  BY <2>1, <2>2
+<1>3. \A b \in Ballot : P(b)
+  <2>. HIDE DEF P
+  <2>. QED  BY <1>2, GeneralNatInduction, Isa
 <1>4. QED
   BY <1>3
  
@@ -763,42 +545,23 @@ THEOREM VT1 == /\ TypeOK
   <2>2. QED
     BY <1>1, <1>2, <1>7, <2>1, QA DEF VInv1
 <1>8. CASE b > c
-  BY <1>1, <1>6, <1>3, <1>8, VT0, <1>2 \* <2>1
+  BY <1>1, <1>6, <1>3, <1>8, VT0, <1>2
 <1>9. CASE c > b
-    BY <1>1, <1>6, <1>3, <1>9, VT0, <1>2 \* <2>1
+    BY <1>1, <1>6, <1>3, <1>9, VT0, <1>2
 <1>10. QED
-  <2>1. (b = c) \/ (b > c) \/ (c > b)
-    BY SMT DEF Ballot
-  <2>2. QED
-    BY <1>7, <1>8, <1>9, <2>1
+  BY <1>7, <1>8, <1>9 DEF Ballot
 
 (***************************************************************************)
 (* The rest of the proof uses only the primed version of VT1--that is, the *)
 (* theorem whose statement is VT1'.  (Remember that VT1 names the formula  *)
 (* being asserted by the theorem we call VT1.) The formula VT1' asserts    *)
 (* that VT1 is true in the second state of any transition (pair of         *)
-(* states).  Since the proof of theorem VT1 shows that VT1 is true in any  *)
-(* state, formula VT1' is obviously true for any transition.  However,     *)
-(* proving this requires a kind of reasoning that distinguishes between    *)
-(* inference and implication.  If the difference between inference and     *)
-(* implication means nothing to you, it is because that difference does    *)
-(* not arise in ordinary logic; it becomes important only in modal logics. *)
-(* (Temporal logic is one example of modal logic.) Because TLAPS does not  *)
-(* yet handle any modal-logic reasoning, it is yet able to deduce VT1'     *)
-(* from VT1.  This ability will be added when TLAPS is enhanced to do      *)
-(* temporal-logic reasoning.  For now, we have write a separate theorem,   *)
-(* whose proof is obtained from that of VT1 by priming everything.  We     *)
-(* also need the primed versions of SafeAtProp and VT0, which are used in  *)
-(* its proof.                                                              *)
-(*                                                                         *)
-(* The proof of the primed version of a theorem is obtained by simply      *)
-(* priming all the steps in the proof of the original theorem (replacing   *)
-(* references to lemmas by references to their primed versions).  Since we *)
-(* did not prove SafeAtProp, we cannot prove its primed version either.    *)
+(* states). We derive that theorem from VT1 by simple temporal logic, and  *)
+(* similarly for VT0 and SafeAtProp.                                       *)
 (***************************************************************************)
 THEOREM SafeAtPropPrime ==
   \A b \in Ballot, v \in Value :
-    SafeAt(b, v)' =
+    SafeAt(b, v)' <=>
       \/ b = 0
       \/ \E Q \in Quorum :
            /\ \A a \in Q : maxBal'[a] \geq b
@@ -808,87 +571,17 @@ THEOREM SafeAtPropPrime ==
                                     \A w \in Value :
                                         VotedFor(a, c, w)' => (w = v)
                 /\ \A d \in (c+1)..(b-1), a \in Q : DidNotVoteIn(a, d)'
-PROOF OMITTED
+<1>1. SafeAtProp'   BY SafeAtProp, PTL
+<1>. QED            BY <1>1
 
-LEMMA VT0Prime ==
-             /\ TypeOK'
-             /\ VInv1'
-             /\ VInv2'
-             => \A v, w \in Value, b, c \in Ballot : 
-                   (b > c) /\ SafeAt(b, v)' /\ ChosenIn(c, w)' => (v = w)
-<1> SUFFICES ASSUME TypeOK', VInv1', VInv2',
-                    NEW v \in Value, NEW w \in Value 
-             PROVE  \A b, c \in Ballot : 
-                      (b > c) /\ SafeAt(b, v)' /\ ChosenIn(c, w)' => (v = w)
-  OBVIOUS
-<1> P == [b \in Ballot |-> 
-            \A c \in Ballot : 
-            (b > c) /\ SafeAt(b, v)' /\ ChosenIn(c, w)' => (v = w)]
-
-<1>1. P[0]
-  <2>1. /\ 0 \in Ballot 
-        /\ \A c \in Ballot : ~(0 > c)
-    BY SMT DEF Ballot
-  <2>2. QED
-    BY <2>1
-<1>2. ASSUME NEW b \in Ballot, \A i \in 0..b : P[i]
-      PROVE  P[b+1]
-  <2>1. b+1 \in Ballot
-    BY SMT DEF Ballot
-  <2>2. SUFFICES ASSUME NEW c \in Ballot, b+1 > c, SafeAt(b+1, v)', ChosenIn(c, w)'
-                 PROVE  v=w
-    BY <2>1
-  <2>3. PICK Q \in Quorum : \A a \in Q : VotedFor(a, c, w)'
-    BY <2>2 DEF ChosenIn
-  <2>4. b+1 # 0 /\ ((b+1)-1 = b) 
-    BY SMT DEF Ballot
-  <2>5. PICK QQ \in Quorum, 
-              d \in -1..((b+1)-1) :
-                /\ (d # -1) => /\ SafeAt(d, v)'
-                               /\ \A a \in QQ :
-                                    \A x \in Value :
-                                        VotedFor(a, d, x)' => (x = v)
-                /\ \A e \in (d+1)..((b+1)-1), a \in QQ : DidNotVoteIn(a, e)'
-   BY <2>1, <2>2, <2>4, SafeAtPropPrime
-  <2> PICK aa \in QQ \cap Q : TRUE
-    BY QA
-  <2>6. c \leq d 
-    <3>1. SUFFICES ASSUME ~(c \leq d)
-                 PROVE  FALSE
-      OBVIOUS
-    <3>2. c \in (d+1)..((b+1)-1)
-      BY <2>2, <3>1, SMT DEF Ballot
-    <3>3. VotedFor(aa, c, w)'
-      BY <2>3
-    <3>4. DidNotVoteIn(aa, c)'
-      BY <2>5, <3>1, <3>2
-    <3>5. QED
-      BY <3>3, <3>4 DEF DidNotVoteIn
-  <2>7. d # -1
-    BY <2>6, SMT DEF Ballot
-  <2>8. CASE c = d
-    BY <2>3, <2>5, <2>7, <2>8
-  <2>9. CASE d > c
-    <3>1. SafeAt(d, v)'
-      BY <2>5, <2>7
-    <3>2. d \in Ballot /\ d \in 0..b 
-      BY <2>6, SMT DEF Ballot
-    <3>3. P[d]
-      BY <1>2, <3>2
-    <3>4. QED
-      BY <2>2, <2>9, <3>1,  <3>2, <3>3
-  <2>10. QED
-    <3>1. (c = d) \/ (d > c)
-      BY <2>6, SMT DEF Ballot
-    <3>2. QED
-      BY <2>8, <2>9, <3>1
-\*  PICK QQ \in Quorum  : VotedFor(ac, c, w)
-\*  BY QuorumNonEmpty, QA DEF ChosenIn
-<1>3. \A b \in Ballot : P[b]
-  BY <1>1, <1>2, GeneralNatInduction DEF Ballot
-
-<1>4. QED
-  BY <1>3
+LEMMA VT0Prime == 
+  /\ TypeOK'
+  /\ VInv1'
+  /\ VInv2'
+  => \A v, w \in Value, b, c \in Ballot : 
+        (b > c) /\ SafeAt(b, v)' /\ ChosenIn(c, w)' => (v = w)
+<1>1. VT0'   BY VT0, PTL
+<1>. QED     BY <1>1
 
 THEOREM VT1Prime == 
                /\ TypeOK' 
@@ -896,41 +589,9 @@ THEOREM VT1Prime ==
                /\ VInv2'
                => \A v, w : 
                     (v \in chosen') /\ (w \in chosen') => (v = w)
-<1>1. SUFFICES ASSUME TypeOK', VInv1', VInv2',
-                      NEW v, NEW w, 
-                      v \in chosen', w \in chosen'
-               PROVE  v = w
-  OBVIOUS
-<1>2. v \in Value /\ w \in Value
-  BY <1>1 DEF chosen
-<1>3. PICK b \in Ballot, c \in Ballot : ChosenIn(b, v)' /\ ChosenIn(c, w)'
-  BY <1>1 DEF chosen
-<1>4. PICK Q \in Quorum, R \in Quorum : 
-         /\ \A a \in Q : VotedFor(a, b, v)'
-         /\ \A a \in R : VotedFor(a, c, w)'
-  BY <1>3 DEF ChosenIn
-<1>5. PICK av \in Q, aw \in R: /\ VotedFor(av, b, v)'
-                               /\ VotedFor(aw, c, w)'
-  BY <1>4, QuorumNonEmpty
-<1>6. SafeAt(b, v)' /\ SafeAt(c, w)'
-  BY <1>1, <1>2, <1>5, QA DEF VInv2
-<1>7. CASE b = c
-  <2> PICK a \in Q \cap R : TRUE
-    BY QA
-  <2>1. /\ VotedFor(a, b, v)'
-        /\ VotedFor(a, c, w)'
-    BY <1>4
-  <2>2. QED
-    BY <1>1, <1>2, <1>7, <2>1, QA DEF VInv1
-<1>8. CASE b > c
-  BY <1>1, <1>6, <1>3, <1>8, VT0Prime, <1>2 \* <2>1
-<1>9. CASE c > b
-    BY <1>1, <1>6, <1>3, <1>9, VT0Prime, <1>2 \* <2>1
-<1>10. QED
-  <2>1. (b = c) \/ (b > c) \/ (c > b)
-    BY SMT DEF Ballot
-  <2>2. QED
-    BY <1>7, <1>8, <1>9, <2>1
+<1>1. VT1'   BY VT1, PTL
+<1>. QED     BY <1>1
+
 -----------------------------------------------------------------------------
 (***************************************************************************)
 (* The invariance of VInv2 depends on SafeAt(b, v) being stable, meaning   *)
@@ -1005,23 +666,8 @@ LEMMA NextDef ==
 (***************************************************************************)
 THEOREM InductiveInvariance == VInv /\ [Next]_vars => VInv'
 <1>1. VInv /\ (vars' = vars) => VInv'
-  \* SMT2 can't do this because it requires the definition of SafeAt,
-  \* which uses a recursive function definition.
-  <2> SUFFICES ASSUME VInv, vars' = vars
-               PROVE  VInv'
-    OBVIOUS
-  <2> USE DEF vars, VInv
-  <2>1. TypeOK'
-    BY DEF TypeOK
-  <2>2. VInv2'
-    BY DEF VInv2, VotedFor, SafeAt, DidNotVoteIn
-  <2>3. VInv3'
-    BY DEF VInv3, VotedFor
-  <2>4. VInv4'
-    BY DEF VInv4, DidNotVoteIn, VotedFor
-  <2>5. QED
-    BY <2>1, <2>2, <2>3, <2>4 
-
+  BY Isa 
+     DEF VInv, vars, TypeOK, VInv2, VotedFor, SafeAt, DidNotVoteIn, VInv3, VInv4
 <1> SUFFICES ASSUME VInv, 
                     NEW self \in Acceptor,
                     NEW b \in Ballot, 
@@ -1069,13 +715,7 @@ THEOREM InductiveInvariance == VInv /\ [Next]_vars => VInv'
     <3>1. PICK v \in Value : VoteFor(self, b, v)
       BY <2>2
     <3>2. a = self
-      <4> SUFFICES ASSUME a # self
-                   PROVE  FALSE
-        OBVIOUS
-      <4>1. votes'[a] = votes[a]
-        BY <3>1 DEF VoteFor, VInv, TypeOK
-      <4>2. QED
-        BY <4>1, <1>4 DEF VotedFor 
+      BY <3>1, <1>4 DEF VoteFor, VInv, TypeOK, VotedFor
     <3>3. votes'[a] = votes[a] \cup {<<b, v>>}
       BY <3>1, <3>2 DEF VoteFor, VInv, TypeOK
     <3>4. c = b /\ v = w
@@ -1089,59 +729,30 @@ THEOREM InductiveInvariance == VInv /\ [Next]_vars => VInv'
       PROVE  /\ maxBal[a] \in Ballot \cup {-1}
              /\ maxBal'[a] \in Ballot \cup {-1}
              /\ maxBal'[a] >= maxBal[a]
-\*  BY SMT2 DEF VInv, TypeOK, IncreaseMaxBal, VInv, VoteFor, BallotAction, DidNotVoteIn,
-\*              VotedFor, Ballot  (* this works *)
-  <2>1. /\ maxBal[a] \in Ballot \cup {-1}
-        /\ maxBal'[a] \in Ballot \cup {-1}
-    BY <1>2 DEF VInv, TypeOK
-  <2>2. /\ (a = self) => /\ maxBal'[a] = b 
-                         /\ \/ b > maxBal[a]
-                            \/ maxBal[a] \leq b
-        /\ (a # self) => (maxBal'[a] = maxBal[a])
-    <3>1. CASE IncreaseMaxBal(self, b)
-      BY <3>1 DEF IncreaseMaxBal, VInv, TypeOK
-    <3>2. CASE \E v \in Value : VoteFor(self, b, v)
-      BY <3>2 DEF VoteFor, VInv, TypeOK
-    <3>3. QED
-      BY <3>1, <3>2 DEF BallotAction
-  <2>3. \A mb \in Ballot \cup {-1} : /\ (b > mb) => (b >= mb)
-                                     /\ mb >= mb
-    BY SMT DEF Ballot
-  <2>4. QED
-    BY <2>1, <2>2, <2>3
-    
+  BY DEF VInv, TypeOK, IncreaseMaxBal, VInv, VoteFor, BallotAction, DidNotVoteIn,
+         VotedFor, Ballot
+
 <1>6. ASSUME NEW c \in Ballot, NEW w \in Value,
              SafeAt(c, w)
       PROVE  SafeAt(c, w)'
-  <2> DEFINE P[i \in Ballot] == \A j \in 0..i : SafeAt(j, w) => SafeAt(j, w)'
-  <2>1. P[0]
-    <3>1. 0 \in Ballot /\ \A i \in 0..0 : i = 0
-      BY SMT DEF Ballot
-    <3>2. QED
-      BY SafeAtPropPrime, <3>1
-  <2>2. ASSUME NEW d \in Ballot, P[d]
-        PROVE  P[d+1]
-    <3>1. d+1 \in Ballot /\ d+1 # 0
-      BY SMT DEF Ballot
-    <3>2. SUFFICES ASSUME NEW e \in 0..(d+1), SafeAt(e, w)
+  <2> USE DEF Ballot
+  <2> DEFINE P(i) == \A j \in 0..i : SafeAt(j, w) => SafeAt(j, w)'
+  <2>1. P(0)
+    BY SafeAtPropPrime, 0 .. 0 = {0}, Zenon
+  <2>2. ASSUME NEW d \in Ballot, P(d)
+        PROVE  P(d+1)
+    <3>1. SUFFICES ASSUME NEW e \in 0..(d+1), SafeAt(e, w)
                    PROVE  SafeAt(e, w)'
-      BY <3>1
-    <3>3. e \in 0..d \/ e = d+1
-      BY SMT DEF Ballot
-    <3>4. CASE e \in 0..d
-      BY <2>2, <3>2, <3>4
-    <3>5. CASE e = d+1
+      OBVIOUS
+    <3>2. CASE e \in 0..d
+      BY <2>2, <3>1, <3>2
+    <3>3. CASE e = d+1
+      <4>. e \in Ballot \ {0}
+        BY <3>3
       <4>1. PICK Q \in Quorum : SafeAtProp!(e, w)!2!2!(Q)
-        BY <3>1, <3>2, <3>5, SafeAtProp
+        BY <3>1, SafeAtProp, Zenon
       <4>2. \A aa \in Q : maxBal'[aa] \geq e
-        <5>1. SUFFICES ASSUME NEW aa \in Q
-                       PROVE  maxBal'[aa] \geq e
-          OBVIOUS
-        <5>2. \A mbp, mb \in Ballot \cup {-1} : 
-                 mbp >= mb /\ mb >= e => mbp >= e
-          BY SMT DEF Ballot
-        <5>3. QED
-          BY <5>2, <1>5, <4>1, QA
+        BY <1>5, <4>1, QA
       <4>3. \E cc \in -1..(e-1) : 
                /\ (cc # -1) => /\ SafeAt(cc, w)'
                                /\ \A ax \in Q :
@@ -1152,65 +763,38 @@ THEOREM InductiveInvariance == VInv /\ [Next]_vars => VInv'
                      NEW ax \in Q, NEW z \in Value, 
                      VotedFor(ax, cc, z)', ~ VotedFor(ax, cc, z)
               PROVE  FALSE
-          <6>1. cc \in Ballot
-            BY <5>1, <3>5, SMT DEF Ballot
-          <6>2. (ax = self) /\ (cc = b) /\ VoteFor(self, b, z)
-            BY <5>1, <6>1, <1>4, QA
-          <6>3. maxBal[ax] \geq e
-            BY <4>1 
-          <6>4. maxBal[self] \leq b
-            BY <6>2 DEF VoteFor
-          <6>5. \A mb \in Ballot \cup {-1} : ~ (mb \geq e /\ mb \leq b)
-            BY <3>5, <6>2, SMT DEF Ballot
-          <6>6. QED
-            BY <6>2, <6>3, <6>4, <6>5 DEF VInv, TypeOK
+          <6>1. (ax = self) /\ (cc = b) /\ VoteFor(self, b, z)
+            BY <5>1, <1>4, QA
+          <6>2. /\ maxBal[ax] \geq e
+                /\ maxBal[self] \leq b
+            BY <4>1, <6>1 DEF VoteFor
+          <6>. QED  BY <3>3, <6>1, <6>2 DEF VInv, TypeOK
         <5>2. PICK cc \in -1..(e-1) : SafeAtProp!(e, w)!2!2!(Q)!2!(cc)
           BY <4>1
-        <5>3. (cc # -1) => /\ SafeAt(cc, w)'
-                           /\ \A ax \in Q :
-                                    \A z \in Value :
-                                        VotedFor(ax, cc, z)' => (z = w)
-          <6>1. SUFFICES ASSUME cc # -1
-                         PROVE  /\ SafeAt(cc, w)'
-                                /\ \A ax \in Q :
-                                     \A z \in Value :
-                                        VotedFor(ax, cc, z)' => (z = w)
-            OBVIOUS
-          <6>2. /\ SafeAt(cc, w)
+        <5>3. ASSUME cc # -1
+              PROVE  /\ SafeAt(cc, w)'
+                     /\ \A ax \in Q : \A z \in Value :
+                           VotedFor(ax, cc, z)' => (z = w)
+          <6>1. /\ SafeAt(cc, w)
                 /\ \A ax \in Q :
                      \A z \in Value : VotedFor(ax, cc, z) => (z = w)
-            BY <5>2, <6>1
-          <6>3. SafeAt(cc, w)'
-            <7>1. cc \in 0..d /\ cc \in Ballot
-              BY <6>1, <3>5, SMT DEF Ballot
-            <7>2. QED
-              BY <2>2, <6>2, <7>1
-          <6>4. ASSUME NEW ax \in Q, NEW z \in Value, VotedFor(ax, cc, z)'
+            BY <5>2, <5>3
+          <6>2. SafeAt(cc, w)'
+            BY <6>1, <5>3, <3>3, <2>2
+          <6>3. ASSUME NEW ax \in Q, NEW z \in Value, VotedFor(ax, cc, z)'
                 PROVE  z = w
             <7>1. CASE VotedFor(ax, cc, z)
-              BY <6>2, <7>1
+              BY <6>1, <7>1
             <7>2. CASE ~ VotedFor(ax, cc, z)
-              <8>1. cc \in 0..(e-1)
-                BY <6>1, SMT DEF Ballot
-              <8>2 QED
-                BY <8>1, <7>2, <6>4, <5>1               
+              BY <7>2, <6>3, <5>1, <5>3
             <7>3. QED
               BY <7>1, <7>2
-          <6>5. QED
-            BY <6>3, <6>4
-        <5>4. \A dd \in (cc+1)..(e-1), ax \in Q : DidNotVoteIn(ax, dd)'
-          <6>1. SUFFICES ASSUME NEW dd \in (cc+1)..(e-1), NEW ax \in Q,
-                                ~ DidNotVoteIn(ax, dd)'
-                         PROVE  FALSE
-            OBVIOUS
-          <6>2. DidNotVoteIn(ax, dd)
-            BY <5>2
-          <6>3. PICK v \in Value : VotedFor(ax, dd, v)'
-            BY <6>1 DEF DidNotVoteIn
-          <6>4. dd \in 0..(e-1)
-            BY SMT DEF Ballot
-          <6>5. QED
-            BY <6>2, <6>3, <6>4, <5>1 DEF DidNotVoteIn
+          <6>4. QED
+            BY <6>2, <6>3
+        <5>4. ASSUME NEW dd \in (cc+1)..(e-1), NEW ax \in Q,
+                     ~ DidNotVoteIn(ax, dd)'
+              PROVE  FALSE
+          BY <5>2, <5>1, <5>4 DEF DidNotVoteIn
         <5>5. QED
           BY <5>3, <5>4
       <4>4.  \/ e = 0
@@ -1224,22 +808,17 @@ THEOREM InductiveInvariance == VInv /\ [Next]_vars => VInv'
                                          VotedFor(aa, c_1, w_1)' => w_1 = w)
                          /\ \A d_1 \in c_1 + 1..e - 1, aa \in Q_1 :
                                DidNotVoteIn(aa, d_1)'
-         BY <4>2, <4>3, <3>1, <3>5
-      <4>5. e \in Ballot
-        BY <3>1, <3>5
-      <4>6. SafeAt(e, w)' = <4>4
-        BY SafeAtPropPrime, <4>5
+         BY <4>2, <4>3, <3>3
+      <4>6. SafeAt(e, w)' <=> <4>4
+        BY SafeAtPropPrime, <3>3, Zenon
       <4>7. QED
         BY <4>2, <4>3, <4>6 
-    <3>6. QED
-      BY <3>3, <3>4, <3>5
-  <2>3. \A d \in Ballot : P[d]
-    BY <2>1, <2>2, SimpleNatInduction DEF Ballot
+    <3>4. QED
+      BY <3>2, <3>3
+  <2>3. \A d \in Ballot : P(d)
+    BY <2>1, <2>2, NatInduction, Isa
   <2>4. QED
-    <3>1. c \in 0..c
-      BY SMT DEF Ballot
-    <3>2. QED
-      BY <2>3, <3>1, <1>6
+    BY <2>3, <1>6
 
 <1>7. VInv2'
   <2>1. SUFFICES ASSUME NEW a \in Acceptor, NEW c \in Ballot, NEW v \in Value,
@@ -1249,12 +828,7 @@ THEOREM InductiveInvariance == VInv /\ [Next]_vars => VInv'
   <2>2. CASE VotedFor(a, c, v)
     BY <1>6, <2>2 DEF VInv, VInv2
   <2>3. CASE ~VotedFor(a, c, v)
-    <3>1. (a = self) /\ (c = b) /\ VoteFor(self, b, v)
-      BY <2>1, <2>3, <1>4
-    <3>2. SafeAt(c, v)
-      BY <3>1 DEF VoteFor
-    <3>3. QED
-      BY <3>2, <1>6
+    BY <1>6, <2>1, <2>3, <1>4 DEF VoteFor
   <2>4. QED
     BY <2>2, <2>3
 
@@ -1280,24 +854,9 @@ THEOREM InductiveInvariance == VInv /\ [Next]_vars => VInv'
         BY <3>1 DEF VoteFor, DidNotVoteIn
       <4>2. VoteFor(self, b, v2)
         BY <2>2, <3>1, <3>2, <4>1,  <1>4
-      <4>3. votes'[self] = votes[self] \cup {<<b, v1>>}
-        BY <3>1 DEF VoteFor, VInv, TypeOK
-      <4>4. votes'[self] = votes[self] \cup {<<b, v2>>}
-        BY <4>2 DEF VoteFor, VInv, TypeOK
-      <4>5. <<b, v1>> \notin votes[self]
-        BY <2>2, <3>1 DEF VotedFor
-      <4>6. QED
-        <5>1. <<b, v1>> \in votes[self] \cup {<<b, v2>>}
-          BY <4>3, <4>4
-        <5>2. QED
-        BY <5>1, <4>5
+      <4>. QED  BY <3>1, <4>2, <2>2 DEF VotedFor, VoteFor, VInv, TypeOK
     <3>3. CASE a2 # self
-      <4>1. votes'[a2] = votes[a2]
-        BY <3>1, <3>3 DEF VoteFor, VInv, TypeOK
-      <4>2. VotedFor(a2, b, v2)
-        BY <2>2, <3>1, <4>1 DEF VotedFor
-      <4>3. QED
-        BY <3>1, <3>3, <4>2 DEF VoteFor \* SMT fails
+      BY <3>1, <3>3, <2>2 DEF VotedFor, VoteFor, VInv, TypeOK
     <3>4. QED
       BY <3>2, <3>3
   <2>3. QED
@@ -1310,10 +869,7 @@ THEOREM InductiveInvariance == VInv /\ [Next]_vars => VInv'
                  PROVE  FALSE
     BY DEF VInv4
   <2>2. maxBal[a] < c
-    <3>1. \A x, xp \in Ballot \cup {-1} : xp < c /\ xp >= x => x < c
-      BY SMT DEF Ballot \* SMT fails
-    <3>2. QED
-      BY <1>5, <2>1,  <3>1  \* SMT fails 
+    BY <1>5, <2>1 DEF Ballot
   <2>3. DidNotVoteIn(a, c)
     BY <2>2 DEF VInv, VInv4
   <2>4. PICK v \in Value : VotedFor(a, c, v)'
@@ -1323,10 +879,7 @@ THEOREM InductiveInvariance == VInv /\ [Next]_vars => VInv'
   <2>6. maxBal'[a] = c
     BY <2>5 DEF VoteFor, VInv, TypeOK
   <2>7. QED
-    <3>1. ~(c < c)
-      BY  SMT DEF Ballot \* SMT fails
-    <3>2. QED
-      BY <2>1, <2>6, <3>1 \* SMT fails  
+    BY <2>1, <2>6 DEF Ballot
 
 <1>10. QED
   BY <1>2, <1>7, <1>8, <1>9 DEF VInv
@@ -1336,36 +889,14 @@ THEOREM InductiveInvariance == VInv /\ [Next]_vars => VInv'
 (* and the following result, which is easy to prove with TLAPS.            *)
 (***************************************************************************)
 THEOREM InitImpliesInv == Init => VInv
-<1> SUFFICES ASSUME Init PROVE VInv
-  OBVIOUS
-<1> USE DEF Init
-<1>1. TypeOK
-  BY DEF TypeOK, ProcSet
-<1>2. VInv2
-  BY  DEF VInv2, VotedFor
-<1>3. VInv3
-  BY DEF VInv3, VotedFor
-<1>4. VInv4
-  BY DEF VInv4, DidNotVoteIn, VotedFor
-<1>5. QED
-  BY <1>1, <1>2, <1>3, <1>4 DEF VInv
+BY DEF Init, VInv, TypeOK, ProcSet, VInv2, VInv3, VInv4, VotedFor, DidNotVoteIn
 
 (***************************************************************************)
 (* The following theorem asserts that VInv is an invariant of Spec.        *)
-(* Because TLAPS does not yet do any temporal reasoning, we have to omit   *)
-(* the proof of all steps that assert temporal logic formulas.  Both the   *)
-(* steps of this trivial proof are therefore omitted.  However, for all    *)
-(* such omitted proofs, we give the proof that we expect to be             *)
-(* approximately a proof that TLAPS will accept once it does handle        *)
-(* temporal logic reasoning.                                               *)
 (***************************************************************************)
 THEOREM VT2 == Spec => []VInv
-<1>1. VInv /\ [][Next]_vars => []VInv
-\*  BY InductiveInvariance, RuleINV1
-  PROOF OMITTED
-<1>2. QED
-\*  BY InitImpliesInv, <1>1
-  PROOF OMITTED
+BY InitImpliesInv, InductiveInvariance, PTL DEF Spec
+
 -----------------------------------------------------------------------------
 (***************************************************************************)
 (* The following INSTANCE statement instantiates module Consensus with the *)
@@ -1396,30 +927,27 @@ THEOREM VT3 == Spec => C!Spec
   <2> SUFFICES ASSUME Init
                PROVE  C!Init
     OBVIOUS
-  <2>1. SUFFICES ASSUME chosen # {}
+  <2>1. SUFFICES ASSUME NEW v \in chosen
                  PROVE  FALSE
     BY DEF C!Init
-  <2>2. PICK v \in chosen : TRUE
-    BY <2>1
-  <2>3. PICK b \in Ballot : ChosenIn(b, v)
-    BY <2>2 DEF chosen
-  <2>4. PICK Q \in Quorum : \A a \in Q : VotedFor(a, b, v)
-    BY <2>3 DEF ChosenIn
-  <2>5. PICK a \in Q : <<b, v>> \in votes[a] \* VotedFor(a, b, v)
-    BY QuorumNonEmpty, <2>4 DEF VotedFor
-  <2>6. QED
-    BY <2>5, QA DEF Init 
+  <2>2. PICK b \in Ballot, Q \in Quorum : \A a \in Q : VotedFor(a, b, v)
+    BY <2>1 DEF chosen, ChosenIn
+  <2>3. PICK a \in Q : <<b, v>> \in votes[a]
+    BY QuorumNonEmpty, <2>2 DEF VotedFor
+  <2>4. QED
+    BY <2>3, QA DEF Init 
 
-<1>2. ASSUME VInv, VInv', [Next]_vars
-      PROVE  [C!Next]_C!vars
-  <2> USE VInv
+<1>2. VInv /\ VInv'/\ [Next]_vars => [C!Next]_C!vars
+  <2>. SUFFICES ASSUME VInv, VInv', [Next]_vars
+                PROVE  [C!Next]_C!vars
+    OBVIOUS
   <2>1. CASE vars' = vars
     BY <2>1 DEF vars, C!vars, chosen, ChosenIn, VotedFor
   <2>2. SUFFICES ASSUME NEW self \in Acceptor,
                         NEW b \in Ballot, 
                         BallotAction(self, b)
                  PROVE  [C!Next]_C!vars
-    BY <1>2, <2>1, NextDef DEF VInv 
+    BY <2>1, NextDef DEF VInv 
   <2>3. ASSUME IncreaseMaxBal(self, b)
         PROVE  C!vars' = C!vars
     BY <2>3 DEF IncreaseMaxBal, C!vars, chosen, ChosenIn, VotedFor
@@ -1428,74 +956,40 @@ THEOREM VT3 == Spec => C!Spec
         PROVE  [C!Next]_C!vars
     <3>3. ASSUME NEW w \in chosen
           PROVE  w \in chosen'
-      <4>1. PICK c \in Ballot : ChosenIn(c, w)
-        BY <3>3 DEF chosen
-      <4>2. PICK Q \in Quorum : \A a \in Q : <<c, w>> \in votes[a] 
-        BY <4>1 DEF ChosenIn, VotedFor
-      <4>3. SUFFICES ASSUME NEW a \in Q
+      <4>1. PICK c \in Ballot, Q \in Quorum : \A a \in Q : <<c, w>> \in votes[a] 
+        BY <3>3 DEF chosen, ChosenIn, VotedFor
+      <4>2. SUFFICES ASSUME NEW a \in Q
                      PROVE  <<c, w>> \in votes'[a] 
         BY DEF chosen, ChosenIn, VotedFor
-      <4>4. CASE a = self
-        <6>1. votes'[self] = votes[self] \cup {<<b, v>>}
-          BY <2>4, <1>2 DEF VoteFor, VInv, TypeOK
-        <6>2. QED
-          BY <4>2, <4>4, <6>1
-      <4>5. CASE a # self
-          BY <2>4, <1>2, <4>2, <4>5, QA DEF VoteFor, VInv, TypeOK
-      <4>6. QED
-        BY <4>4, <4>5
+      <4>3. CASE a = self
+        BY <2>4, <4>1, <4>3 DEF VoteFor, VInv, TypeOK
+      <4>4. CASE a # self
+          BY <2>4, <4>1, <4>4, QA DEF VoteFor, VInv, TypeOK
+      <4>5. QED
+        BY <4>3, <4>4
     <3>1. ASSUME NEW w \in chosen,
                      v \in chosen'
           PROVE  w = v
-      <4>1. w \in chosen'
-        BY <3>3
-      <4>2. VInv1'
-        BY <1>2 DEF VInv, VInv1, VInv3
-      <4>3. QED
-        BY <1>2, <3>1, <4>1, <4>2,  VT1Prime DEF VInv
+      BY <3>3, <3>1, VT1Prime DEF VInv, VInv1, VInv3
     <3>2. ASSUME NEW w, w \notin chosen, w \in chosen'
           PROVE  w = v
-      <4>1. PICK c \in Ballot : ChosenIn(c, w)'
-        BY <3>2 DEF chosen
-      <4>2. PICK Q \in Quorum : \A a \in Q : <<c, w>> \in votes'[a]
-        BY <4>1 DEF ChosenIn, VotedFor
+      <4>2. PICK c \in Ballot, Q \in Quorum : \A a \in Q : <<c, w>> \in votes'[a]
+        BY <3>2 DEF chosen, ChosenIn, VotedFor
       <4>3. PICK a \in Q : <<c, w>> \notin votes[a]
         BY <3>2 DEF chosen, ChosenIn, VotedFor
       <4>4. CASE a = self
-        <5>1. votes'[self] = votes[self] \cup {<<b, v>>}
-            BY <2>4, <1>2 DEF VoteFor, VInv, TypeOK
-        <5>2. QED
-          BY <4>4, <5>1, <4>2, <4>3
+        BY <2>4, <4>4, <4>2, <4>3 DEF VoteFor, VInv, TypeOK
       <4>5. CASE a # self
-        BY <2>4, <1>2, <4>2, <4>3, <4>5, QA DEF VoteFor, VInv, TypeOK
+        BY <2>4, <4>2, <4>3, <4>5, QA DEF VoteFor, VInv, TypeOK
       <4>6. QED
         BY <4>4, <4>5
-    <3>4. CASE chosen' = chosen
-      BY <3>4 DEF C!vars
-    <3>5. CASE chosen' # chosen
-      <4>1. chosen \subseteq chosen'
-        BY <3>3
-      <4>2. PICK w \in chosen' : w \notin chosen
-        BY <3>5, <4>1
-      <4>3. w = v
-        BY <4>2, <3>2
-      <4>4. chosen' = chosen \cup {v}
-        BY <3>2, <4>1, <4>3
-      <4>5. chosen = {}
-        BY <4>4, <3>1, <3>5
-      <4>6. QED
-        BY <4>4, <4>5 DEF C!Next
-    <3>6. QED
-      BY <3>4, <3>5
+    <3>. QED
+      BY <3>3, <3>1, <3>2 DEF C!Next, C!vars
   <2>5. QED
     BY <2>2, <2>3, <2>4 DEF BallotAction
 <1>3. QED
-  <2>1. []VInv /\ [][Next]_vars => [][C!Next]_C!vars
-\*    BY <1>2, RuleTLA2
-    PROOF OMITTED
-  <2>2. QED
-\*    BY <1>1, <2>1, VT2 DEF Spec, C!Spec
-    PROOF OMITTED
+  BY <1>1, <1>2, VT2, PTL DEF Spec, C!Spec
+
 -----------------------------------------------------------------------------
 (***************************************************************************)
 (*                                Liveness                                 *)
@@ -1517,33 +1011,21 @@ ASSUME AcceptorFinite == IsFiniteSet(Acceptor)
 
 ASSUME ValueNonempty == Value # {}
 -----------------------------------------------------------------------------
-(***************************************************************************)
-(* We need the following simple results about sets and sets of numbers.    *)
-(* The first belongs in a library of theorems about finite sets and        *)
-(* cardinality.  Perhaps such a library will eventually be added to the    *)
-(* FiniteSets module.                                                      *)
-(***************************************************************************)
-AXIOM SubsetOfFiniteSetFinite == 
-        \A S, T : IsFiniteSet(T) /\ (S \subseteq T) => IsFiniteSet(S)
 
-(***************************************************************************)
-(* The next result can be proved from simple facts about finite sets and   *)
-(* cardinality by induction on the cardinality of S.                       *)
-(***************************************************************************)
-AXIOM FiniteSetHasMax == 
-        \A S \in SUBSET Int :
-          IsFiniteSet(S) /\ (S # {}) => \E max \in S : \A x \in S : max >= x
+LEMMA FiniteSetHasMax ==
+  ASSUME NEW S \in SUBSET Int, IsFiniteSet(S), S # {}
+  PROVE  \E max \in S : \A x \in S : max >= x
+<1>. DEFINE P(T) == T \in SUBSET Int /\ T # {} => \E max \in T : \A x \in T : max >= x
+<1>1. P({})
+  OBVIOUS
+<1>2. ASSUME NEW T, NEW x, P(T), x \notin T
+      PROVE  P(T \cup {x})
+  BY <1>2
+<1>3. \A T : IsFiniteSet(T) => P(T)
+  <2>. HIDE DEF P
+  <2>. QED  BY <1>1, <1>2, FS_Induction, IsaM("blast")
+<1>. QED  BY <1>3, Zenon
 
-(***************************************************************************)
-(* The next result can be proved from the following facts about sets       *)
-(*                                                                         *)
-(*   - The empty set is finite.                                            *)
-(*   - A singleton set is finite.                                          *)
-(*   - The union of two finite sets is finite                              *)
-(*                                                                         *)
-(* by induction on j-i.                                                    *)
-(***************************************************************************)
-AXIOM IntervalFinite == \A i, j \in Int : IsFiniteSet(i..j)
 -----------------------------------------------------------------------------
 (***************************************************************************)
 (* The following theorem implies that it is always possible to find a      *)
@@ -1556,44 +1038,25 @@ THEOREM VT4 == TypeOK /\ VInv2 /\ VInv3  =>
                 \A Q \in Quorum, b \in Ballot :
                    (\A a \in Q : (maxBal[a] >= b)) => \E v \in Value : SafeAt(b,v)
 \* Checked as an invariant by TLC with 3 acceptors, 3 ballots, 2 values
-  <1>0. /\ \A b \in Ballot, v \in Value : SafeAt(b, v) \in BOOLEAN
-        /\ \A a \in Acceptor, d \in Ballot : DidNotVoteIn(a, d) \in BOOLEAN
-
+<1>. USE DEF Ballot
 <1>1. SUFFICES ASSUME TypeOK, VInv2, VInv3,
                       NEW Q \in Quorum, NEW b \in Ballot,
                       (\A a \in Q : (maxBal[a] >= b))
                PROVE  \E v \in Value : SafeAt(b, v)
   OBVIOUS
 <1>2. CASE b = 0
-  BY ValueNonempty, <1>1, SafeAtProp, <1>2
-<1>3. SUFFICES ASSUME b # 0
-               PROVE  \E v \in Value : SafeAt(b, v)
-  BY <1>2
-<1>4. SUFFICES \E v \in Value : 
+  BY ValueNonempty, <1>1, SafeAtProp, <1>2, Zenon
+<1>4. SUFFICES ASSUME b # 0
+      PROVE    \E v \in Value : 
                  \E c \in -1..(b-1) :
                    /\ (c # -1) => /\ SafeAt(c, v)
                                   /\ \A a \in Q :
                                        \A w \in Value :
                                            VotedFor(a, c, w) => (w = v)
                    /\ \A d \in (c+1)..(b-1), a \in Q : DidNotVoteIn(a, d)
-\*  BY <1>1, <1>3, <1>0, SafeAtProp, SMT2 DEF  Ballot (* this works *)
-  <2>1. SUFFICES ASSUME NEW v \in Value,
-                        <1>4!1!(v)
-                 PROVE  SafeAt(b, v)
-    OBVIOUS
-  <2>2. SafeAtProp!(b, v)
-    BY SafeAtProp
-  <2>3. QED
-    BY <2>1, <2>2, <1>1, <1>3
+  BY <1>1, <1>2, SafeAtProp
 <1>5. CASE \A a \in Q, c \in 0..(b-1) : DidNotVoteIn(a, c)
-  <2>1. PICK v \in Value : TRUE
-    BY ValueNonempty
-  <2> -1 \in -1..(b-1)
-    BY SMT DEF Ballot
-  <2>2. WITNESS v \in Value
-  <2>3. WITNESS -1 \in -1..(b-1)
-  <2>4. QED
-    BY <1>5
+  BY <1>5, ValueNonempty
 <1>6. CASE \E a \in Q, c \in 0..(b-1) : ~DidNotVoteIn(a, c)
   <2>1. PICK c \in 0..(b-1) : 
                /\ \E a \in Q : ~DidNotVoteIn(a, c)
@@ -1602,44 +1065,21 @@ THEOREM VT4 == TypeOK /\ VInv2 /\ VInv3  =>
     <3>1. S # {}
         BY <1>6
     <3>2. PICK c \in S : \A d \in S : c >= d
-      <4>1. (0 \in Int) /\ (b-1 \in Int)  /\ (\A x \in 0..(b-1) : x \in Int)
-        BY <1>3, SMT2 DEF Ballot
-      <4>2. (S \in SUBSET Int) 
-        BY <4>1
-      <4>3. IsFiniteSet(S)
-        BY <4>1, IntervalFinite, SubsetOfFiniteSetFinite
-      <4>4. QED
-        BY <3>1,  <4>2, <4>3, FiniteSetHasMax
-    <3>3. c \in 0..(b-1)
-      OBVIOUS
-    <3>4. \A d \in (c+1)..(b-1) : d \in 0..(b-1) /\ ~(c >= d)
-\*      BY <3>3, SMT2 DEF Ballot  (* This works *)
-      <4>1. \A bb \in Nat : 
-              \A cc \in 0..(bb-1) : 
-                 \A d \in (cc+1)..(bb-1) : d \in 0..(bb-1) /\ ~(cc >= d)
-        BY SMT
-      <4>2. QED
-       BY <3>3, <4>1  DEF Ballot
-    <3>5. \A d \in (c+1)..(b-1), a \in Q : DidNotVoteIn(a, d)
-      BY <3>2, <3>4
-    <3>6. \E a \in Q : ~DidNotVoteIn(a, c)
-      BY <3>1
-    <3>7. QED
-      BY  <3>3, <3>5, <3>6
-  <2>2. (c \in -1..(b-1)) /\ (c # -1) /\ (c \in Ballot)
-    BY SMT DEF Ballot
-  <2>3. PICK a0 \in Q : ~DidNotVoteIn(a0, c)
-    BY <2>1
-  <2>4. PICK v \in Value : VotedFor(a0, c, v)
-    BY <2>3 DEF DidNotVoteIn
+      <4>2. IsFiniteSet(S)
+        BY FS_Interval, FS_Subset, 0 \in Int, b-1 \in Int, Zenon
+      <4>3. QED
+        BY <3>1, <4>2, FiniteSetHasMax
+    <3>. QED
+      BY <3>2 DEF Ballot
+  <2>4. PICK a0 \in Q, v \in Value : VotedFor(a0, c, v)
+    BY <2>1 DEF DidNotVoteIn
   <2>5. \A a \in Q : \A w \in Value :
            VotedFor(a, c, w) => (w = v)
-    BY <2>2, <2>4, QA, <1>1 DEF VInv3
+    BY <2>4, QA, <1>1 DEF VInv3
   <2>6. SafeAt(c, v)
-    BY <1>1, <2>4, QA, <2>2 DEF VInv2
+    BY <1>1, <2>4, QA DEF VInv2
   <2>7. QED
-    BY <2>1, <2>2, <2>5, <2>6 
-
+    BY <2>1, <2>5, <2>6
 <1>7. QED
   BY <1>5, <1>6
 -------------------------------------------------------------------------------
@@ -1661,9 +1101,9 @@ THEOREM VT4 == TypeOK /\ VInv2 /\ VInv3  =>
 (***************************************************************************)
 LiveAssumption ==
   \E Q \in Quorum, b \in Ballot :
-     \A self \in Q :
-       /\ WF_vars(BallotAction(self, b))
-       /\ [] [\A c \in Ballot : (c > b) => ~ BallotAction(self, c)]_vars
+     /\ \A self \in Q : WF_vars(BallotAction(self, b))
+     /\ [] [\A self \in Q : \A c \in Ballot : 
+               (c > b) => ~ BallotAction(self, c)]_vars
      
 LiveSpec == Spec /\ LiveAssumption  
 (***************************************************************************)
@@ -1695,125 +1135,48 @@ LiveSpec == Spec /\ LiveAssumption
 (***************************************************************************)
 -----------------------------------------------------------------------------
 (***************************************************************************)
-(*                       Some Temporal Logic Proof Rules                   *)
-(*                                                                         *)
-(* We now state some temporal logic proof rules that are used in the       *)
-(* liveness proof.  Some version of these rules will eventually be added   *)
-(* to the TLAPS module.                                                    *)
-(*                                                                         *)
-(* The first rule is the lattice rule.  To state it, we define             *)
-(* WellFounded(S, LT) to assert that the relation LT is a well-founded     *)
-(* "less-than" relation on the set S.  This means that there is no         *)
-(* infinite sequence of elements of S, each of which is less than the      *)
-(* previous one.  We represent a relation the way mathematicians generally *)
-(* do, as a set of ordered pairs.  In this case <<s, t>> \in LT means that *)
-(* s is less than t.                                                       *)
-(***************************************************************************)
-WellFounded(S, LT) == ~ \E f \in [Nat -> S] : 
-                           \A i \in Nat : <<f[i+1], f[i]>> \in LT
-
-(***************************************************************************)
-(* We now define ProperSubsetRel(S) to be the relation on a set S such     *)
-(* that <<U, V>> \in S if and only if U and V are subsets of S with U a    *)
-(* proper subset of V.  We then state without proof the result that, if S  *)
-(* is a finite set, then ProperSubsetRel(S) is a well-founded relation on  *)
-(* S.                                                                      *)
-(***************************************************************************)
-ProperSubsetRel(S) == 
-  {r \in (SUBSET S) \X (SUBSET S) : /\ r[1] \subseteq r[2]
-                                    /\ r[1] # r[2] }     
-
-
-                                                     
-THEOREM SubsetWellFounded ==
-           \A S : IsFiniteSet(S) => WellFounded(SUBSET S, ProperSubsetRel(S))
-PROOF OMITTED
-
-(***************************************************************************)
-(* Here is our statement of the Lattice Rule, which is discussed in        *)
-(*                                                                         *)
-(*    AUTHOR = "Leslie Lamport",                                           *)
-(*    TITLE = "The Temporal Logic of Actions",                             *)
-(*    JOURNAL = toplas,                                                    *)
-(*    volume = 16,                                                         *)
-(*    number = 3,                                                          *)
-(*    YEAR = 1994,                                                         *)
-(*    month = may,                                                         *)
-(*    PAGES = "872--923"                                                   *)
-(***************************************************************************)
-THEOREM LatticeRule ==  ASSUME NEW S, NEW LT, WellFounded(S, LT),
-                               NEW TEMPORAL P(_), NEW TEMPORAL Q
-                        PROVE  /\ Q \/ (\E i \in S : P(i))
-                               /\ \A i \in S : 
-                                     P(i) ~> (Q \/ \E j \in S : (<<j, i>> \in LT) /\ P(j))
-                               => ((\E i \in S : P(i)) ~> Q)
-PROOF OMITTED
-
-(***************************************************************************)
-(* Here are two more temporal-logic proof rules.  Their validity is        *)
-(* obvious when you understand what they mean.  We present a proof of the  *)
-(* second, mostly to show how temporal logic proofs look in TLA+.  Since   *)
-(* almost all the steps are temporal formulas, we don't bother trying to   *)
-(* check any of them.                                                      *)
+(* Here are two temporal-logic proof rules.  Their validity is obvious     *)
+(* when you understand what they mean.                                     *)
 (***************************************************************************)
 THEOREM AlwaysForall ==
            ASSUME NEW CONSTANT S, NEW TEMPORAL P(_)
            PROVE  (\A s \in S : []P(s)) <=> [](\A s \in S : P(s))
+OBVIOUS
 
 LEMMA EventuallyAlwaysForall == 
         ASSUME NEW CONSTANT S, IsFiniteSet(S),
                NEW TEMPORAL P(_)
         PROVE  (\A s \in S : <>[]P(s)) => <>[](\A s \in S : P(s))
-(*******
-<1> DEFINE Hyp == \A s \in S : <>[]P(s)
-           Q(T) == \A s \in S \ T : []P(s)
-           LT  == ProperSubsetRel(S)
-<1>1. Hyp => \E T \in SUBSET S : Q(T)
-  <2>1. Hyp => Q(S)
-  <2>2. QED
-    BY <2>1
-<1>2. Hyp => \A T \in SUBSET S : 
-                Q(T) ~> (Q({}) \/ \E R \in SUBSET S : <<R, T>> \in LT /\ Q(R))
-  <2>1 SUFFICES ASSUME NEW T \in SUBSET S
-                PROVE  Hyp => 
-                         (Q(T) ~> (Q({}) \/ 
-                                     \E R \in SUBSET S : <<R, T>> \in LT /\ Q(R)))
+<1>. DEFINE A(x) == <>[]P(x)
+            L(T) == \A s \in T : A(s)
+            R(T) == \A s \in T : P(s)
+            Q(T) == L(T) => <>[]R(T)
+<1>1. Q({})
+  <2>1. R({})       OBVIOUS
+  <2>2. <>[]R({})   BY <2>1, PTL
+  <2>. QED          BY <2>2
+<1>2. ASSUME NEW T, NEW x
+      PROVE  Q(T) => Q(T \cup {x})
+  <2>1. L(T \cup {x}) => A(x)
+    <3>. HIDE DEF A
+    <3>. QED  OBVIOUS
+  <2>2. L(T \cup {x}) /\ Q(T) => <>[]R(T)
     OBVIOUS
-  <2>2. CASE T # {}
-    <3>1. PICK s \in T : TRUE
-      BY <2>2
-    <3>1a. s \in S
-      OBVIOUS
-    <3> DEFINE R == T \ {s}
-    <3>2. (<<R, T>> \in LT) /\ (S \ R = (S \ T) \cup {s})
-      BY DEF ProperSubsetRel
-    <3>3. Hyp => <>[]P(s)
-      BY s \in S
-    <3>4. Q(T) <=> []Q(T)
-      BY AlwaysForall (* PTL *)
-    <3>5. <>[]P(s) => [](Q(T) => <>(Q(T) /\ []P(s)))
-      BY <3>4 (* PTL *)
-    <3>6. Q(T) /\ []P(s) <=> Q(R)
-      BY <3>2
-    <3>7. Hyp => (Q(T) ~> Q(R))
-      BY <3>3, <3>5, <3>6 (* PTL *)
-    <3>8. QED
-      BY <3>7, <3>2 (* PTL *)
-  <2>3. CASE T = {}   
-    OBVIOUS (* PTL, which implies A ~> A *)
-  <2>4. QED
-    BY <2>2, <2>3
-<1>3. (\A s \in S : <>[]P(s)) => (\E T \in SUBSET S : Q(T)) ~> Q({})
-  BY <1>2, SubsetWellFounded, LatticeRule 
-<1>4. <> Q({})
-  BY <1>1, <1>3 (* PTL *)
-<1>5. QED
-  <2>1. Q({}) <=> [](\A s \in S : P(s))
-    BY AlwaysForall
-  <2>2. QED
-    BY <1>4, <2>1
-*****)
-PROOF OMITTED
+  <2>3. <>[]R(T) /\ A(x) => <>[](R(T) /\ P(x))
+    BY PTL
+  <2>4. R(T) /\ P(x) => R(T \cup {x})
+    OBVIOUS
+  <2>5. <>[](R(T) /\ P(x)) => <>[]R(T \cup {x})
+    BY <2>4, PTL
+  <2>. QED
+    BY <2>1, <2>2, <2>3, <2>5
+<1>. HIDE DEF Q
+<1>3. \A T : IsFiniteSet(T) => Q(T)
+  BY <1>1, <1>2, FS_Induction, IsaM("blast")
+<1>4. Q(S)
+  BY <1>3
+<1>. QED
+  BY <1>4 DEF Q
 -----------------------------------------------------------------------------
 (***************************************************************************)
 (* Here is our proof that LiveSpec implements the specification LiveSpec   *)
@@ -1822,12 +1185,13 @@ PROOF OMITTED
 THEOREM Liveness == LiveSpec => C!LiveSpec
 <1> SUFFICES ASSUME NEW Q \in Quorum, NEW b \in Ballot
              PROVE  Spec /\ LiveAssumption!(Q, b) => C!LiveSpec
-\*  BY DEF LiveSpec, LiveAssumption
-  PROOF OMITTED
-  
+  BY Isa DEF LiveSpec, LiveAssumption
+
+<1>a. IsFiniteSet(Q)
+  BY QA, AcceptorFinite, FS_Subset
+
 <1>1. C!LiveSpec <=> C!Spec /\ ([]<><<C!Next>>_C!vars \/ []<>(chosen # {}))
-\*  BY ValueNonempty, C!LiveSpecEquals (* which implies C!ValueNonempty *)
-  PROOF OMITTED
+  BY ValueNonempty, C!LiveSpecEquals
 
 <1> DEFINE LNext == \E self \in Acceptor, c \in Ballot :
                          /\ BallotAction(self, c)
@@ -1836,58 +1200,16 @@ THEOREM Liveness == LiveSpec => C!LiveSpec
 <1>2. Spec /\ LiveAssumption!(Q, b) => [][LNext]_vars
   <2>1. /\ TypeOK
         /\ [Next]_vars 
-        /\ \A self \in Q : 
-             [\A c \in Ballot : (c > b) => ~ BallotAction(self, c)]_vars
+        /\ [\A self \in Q : \A c \in Ballot : (c > b) => ~ BallotAction(self, c)]_vars
         => [LNext]_vars
-    <3> SUFFICES ASSUME <2>1!1
-                 PROVE  [LNext]_vars
-      OBVIOUS
-    <3>1. [/\ \E self \in Acceptor :
-                 \E c \in Ballot : BallotAction(self, c)]_vars
-      BY NextDef
-    <3>2.[\A self \in Q,  c \in Ballot : 
-            (c > b) => ~ BallotAction(self, c)]_vars
-      OBVIOUS
-    <3>3. [ /\ \E self \in Acceptor :
-                 \E c \in Ballot : BallotAction(self, c)
-            /\ \A self \in Q,  c \in Ballot : 
-                  (c > b) => ~ BallotAction(self, c)]_vars
-      BY <3>1, <3>2
-    <3>4. /\ \E self \in Acceptor :
-                 \E c \in Ballot : BallotAction(self, c)
-          /\ \A self \in Q,  c \in Ballot : 
-                  (c > b) => ~ BallotAction(self, c)
-          => \E self \in Acceptor, c \in Ballot :
-                /\ BallotAction(self, c)
-                /\ (self \in Q) => (c =< b)
-      <4> SUFFICES ASSUME <3>4!1
-                   PROVE  <3>4!2
-        OBVIOUS
-      <4>1. PICK self \in Acceptor : \E c \in Ballot : BallotAction(self, c)
-        OBVIOUS
-      <4>2. PICK c \in Ballot : BallotAction(self, c)
-        BY <4>1
-      <4>3. (c > b) <=> ~(c =< b)
-        BY SMT DEF Ballot
-      <4>99. QED
-        BY <4>2, <4>3
-    <3>5. QED
-      BY <3>3, <3>4 DEF LNext         
+    BY NextDef DEF LNext, Ballot
   <2>2. /\ []TypeOK 
         /\ [][Next]_vars 
-        /\ \A self \in Q : 
-             [][\A c \in Ballot : (c > b) => ~ BallotAction(self, c)]_vars
+        /\ [][\A self \in Q : \A c \in Ballot : (c > b) => ~ BallotAction(self, c)]_vars
         => [][LNext]_vars
-\*    BY <2>1 (* PTL *)
-  PROOF OMITTED
-  <2>3. LiveAssumption!(Q, b) => 
-          \A self \in Q : 
-             [][\A c \in Ballot : (c > b) => ~ BallotAction(self, c)]_vars
-\*    OBVIOUS    
-    PROOF OMITTED
-  <2>4. QED
-\*    BY <2>2, <2>3, VT2 DEF Spec
-    PROOF OMITTED
+    BY <2>1, PTL
+  <2>3. QED
+    BY <2>2, VT2, Isa DEF Spec, VInv
   
 <1> DEFINE LNInv1 == \A a \in Q : maxBal[a] =< b
            LInv1  == VInv /\ LNInv1
@@ -1897,118 +1219,32 @@ THEOREM Liveness == LiveSpec => C!LiveSpec
                  PROVE  LInv1'
     OBVIOUS
   <2>2. VInv'
-    <3>1. [LNext]_vars => 
-          [/\ \E self \in Acceptor :
-                 \E c \in Ballot : BallotAction(self, c)]_vars
-      OBVIOUS 
-    <3>2. [Next]_vars = 
-          [\E self \in Acceptor :
-                 \E c \in Ballot : BallotAction(self, c)]_vars
-      BY <2>1, NextDef DEF LInv1, VInv      
-    <3>3. QED
-      BY <2>1, <3>1, <3>2, InductiveInvariance DEF LInv1
+    BY <2>1, NextDef, InductiveInvariance DEF LInv1, VInv
   <2>3. LNInv1'
-    <3>1. CASE vars' = vars
-      BY <2>1, <3>1 DEF vars, LNInv1
-    <3>2. SUFFICES ASSUME NEW self \in Acceptor, 
-                          NEW c \in Ballot,
-                          BallotAction(self, c),
-                          (self \in Q) => (c =< b),
-                          NEW a \in Q
-                   PROVE  maxBal'[a] =< b
-      BY <2>1, <3>1 DEF LNInv1
-    <3> a \in Acceptor
-      BY QA
-    <3>3. CASE self = a
-      <4>1. c =< b
-        BY <3>2, <3>3
-      <4>2. maxBal'[self] = c
-        BY <3>2, <3>3, <2>1 
-           DEF BallotAction, IncreaseMaxBal, VoteFor, VInv, TypeOK
-      <4>3. QED
-        BY <4>1, <4>2, <3>3
-    <3>4. CASE self # a \* \notin Q
-      <4>1. CASE IncreaseMaxBal(self, c)
-        BY <4>1, <3>4, <2>1 DEF LInv1, LNInv1, IncreaseMaxBal, VInv, TypeOK
-      <4>2. CASE \E v \in Value : VoteFor(self, c, v)
-        BY <4>2, <3>4, <2>1 DEF LInv1, LNInv1, VoteFor, VInv, TypeOK
-      <4>3. QED
-        BY <3>2, <4>1, <4>2 DEF BallotAction
-    <3>5. QED
-      BY <3>3, <3>4                          
-  <2>4. QED
-    BY <2>2, <2>3 DEF LInv1
+    BY <2>1, QA DEF BallotAction, IncreaseMaxBal, VoteFor, VInv, TypeOK, vars
+  <2>. QED
+    BY <2>2, <2>3
 
 <1>4. \A a \in Q : 
           VInv /\ (maxBal[a] = b) /\ [LNext]_vars => VInv' /\ (maxBal'[a] = b)
-  \* Much of this proof copied from proof for LInv1, without
-  \* checking how much of it was needed.            
   <2>1. SUFFICES ASSUME NEW a \in Q,
                         VInv, maxBal[a] = b, [LNext]_vars
                  PROVE  VInv' /\ (maxBal'[a] = b)
     OBVIOUS
   <2>2. VInv'
-    <3>1. [LNext]_vars => 
-          [/\ \E self \in Acceptor :
-                 \E c \in Ballot : BallotAction(self, c)]_vars
-      OBVIOUS 
-    <3>2. [Next]_vars = 
-          [\E self \in Acceptor :
-                 \E c \in Ballot : BallotAction(self, c)]_vars
-      BY <2>1, NextDef DEF VInv      
-    <3>3. QED
-      BY <2>1, <3>1, <3>2, InductiveInvariance 
+    BY <2>1, NextDef, InductiveInvariance DEF VInv
   <2>3. maxBal'[a] = b
-    <3>1. CASE vars' = vars
-      BY <2>1, <3>1 DEF vars
-
-    <3>2. SUFFICES ASSUME NEW self \in Acceptor, 
-                          NEW c \in Ballot,
-                          BallotAction(self, c),
-                          (self \in Q) => (c =< b)
-                   PROVE  maxBal'[a] = b
-      BY <2>1, <3>1 
-    <3> a \in Acceptor
-      BY QA
-    <3>3. CASE self = a
-      <4>1. c =< b
-        BY <3>2, <3>3
-      <4>2. CASE IncreaseMaxBal(self, c)
-        <5>1. c > b
-          BY <4>2, <3>3, <2>1 DEF IncreaseMaxBal
-        <5>2. ~(c > b)
-          BY <4>1, SMT DEF Ballot
-        <5>3. QED BY <5>1, <5>2
-      <4>3. CASE \E v \in Value : VoteFor(self, c, v)
-        <5>1. PICK v \in Value : VoteFor(self, c, v)
-          BY <4>3
-        <5>2. b \leq c
-          BY <3>3, <5>1, <2>1 DEF VoteFor
-        <5>3. b = c
-          BY <4>1, <5>2, SMT DEF Ballot
-        <5>4. QED
-          BY <2>1, <5>1, <5>3 DEF VoteFor, VInv, TypeOK
-      <4>4. QED
-        BY <4>2, <4>3, <3>2 DEF BallotAction
-    <3>4. CASE self # a \* \notin Q
-      <4>1. CASE IncreaseMaxBal(self, c)
-        BY <4>1, <3>4, <2>1 DEF IncreaseMaxBal, VInv, TypeOK
-      <4>2. CASE \E v \in Value : VoteFor(self, c, v)
-        BY <4>2, <3>4, <2>1 DEF VoteFor, VInv, TypeOK
-      <4>3. QED
-        BY <3>2, <4>1, <4>2 DEF BallotAction
-    <3>5. QED
-      BY <3>3, <3>4
-  <2>99. QED
+    BY <2>1, QA DEF BallotAction, IncreaseMaxBal, VoteFor, VInv, TypeOK, Ballot, vars
+  <2>. QED
     BY <2>2, <2>3
     
 <1>5. Spec /\ LiveAssumption!(Q, b) => 
          <>[](\A self \in Q : maxBal[self] = b)
   <2>1. SUFFICES ASSUME NEW self \in Q
                  PROVE  Spec /\ LiveAssumption!(Q, b) => <>[](maxBal[self] = b)
-\*    BY EventuallyAlwaysForall
+\*    BY <1>a, EventuallyAlwaysForall   \* doesn't check, even when introducing definitions
     PROOF OMITTED
-  <2> DEFINE P ==  LInv1 /\ (maxBal[self] # b)
+  <2> DEFINE P ==  LInv1 /\ ~(maxBal[self] = b)
              QQ == LInv1 /\ (maxBal[self] = b)
              A == BallotAction(self, b)
   <2>2. [][LNext]_vars /\ WF_vars(A) => (LInv1 ~> QQ) 
@@ -2021,21 +1257,13 @@ THEOREM Liveness == LiveSpec => C!LiveSpec
       <4>2. LInv1'
         BY <4>1, <1>3
       <4>3. CASE IncreaseMaxBal(self, b)
-        <5>1. maxBal'[self] = b
-          BY <4>1, <4>3, QA DEF IncreaseMaxBal, VInv, TypeOK
-        <5>2. QED
-          BY <4>2, <5>1
+        BY <4>1, <4>2, <4>3, QA DEF IncreaseMaxBal, VInv, TypeOK
       <4>4. CASE \E v \in Value : VoteFor(self, b, v)
-        <5>1. PICK v \in Value : VoteFor(self, b, v)
-          BY <4>4
-        <5>2. maxBal'[self] = b
-          BY <4>1, <5>1, QA DEF VoteFor, VInv, TypeOK
-        <5>3. QED
-          BY <4>2, <5>2        
+        BY <4>1, <4>2, <4>4, QA DEF VoteFor, VInv, TypeOK
       <4>5. QED
         BY <4>1, <4>3, <4>4 DEF BallotAction
     <3>3. P => ENABLED <<A>>_vars
-      <4>1. (ENABLED <<A>>_vars) = 
+      <4>1. (ENABLED <<A>>_vars) <=>
               \E votesp, maxBalp:
                  /\ \/ /\ b > maxBal[self]
                        /\ maxBalp = [maxBal EXCEPT ![self] = b]
@@ -2049,117 +1277,71 @@ THEOREM Liveness == LiveSpec => C!LiveSpec
                           /\ votesp = [votes EXCEPT ![self] = votes[self] 
                                                                 \cup {<<b, v>>}]
                           /\ maxBalp = [maxBal EXCEPT ![self] = b]
-                 /\ <<votesp, maxBalp>> #  <<votes, maxBal>>  
+                 /\ <<votesp, maxBalp>> # <<votes, maxBal>>  
 \*        BY DEF BallotAction, IncreaseMaxBal, VoteFor, vars, SafeAt, 
 \*               DidNotVoteIn, VotedFor
         PROOF OMITTED
-      <4>2. SUFFICES ASSUME P
-                     PROVE <4>1!2
-\*        BY <4>1
-        PROOF OMITTED
-      <4>3. SUFFICES \E votesp, maxBalp:
-                        /\ /\ b > maxBal[self]
-                           /\ maxBalp = [maxBal EXCEPT ![self] = b]
-                           /\ votesp = votes
-                        /\ <<votesp, maxBalp>> #  <<votes, maxBal>>
-        OBVIOUS
+      <4>. SUFFICES ASSUME P
+                    PROVE \E votesp, maxBalp:
+                              /\ b > maxBal[self]
+                              /\ maxBalp = [maxBal EXCEPT ![self] = b]
+                              /\ votesp = votes
+                              /\ <<votesp, maxBalp>> # <<votes, maxBal>>
+        BY <4>1
       <4> WITNESS votes, [maxBal EXCEPT ![self] = b]
-      <4>4. b > maxBal[self]
-        <5>1. \A mbs \in Ballot \cup {-1} : mbs =< b /\ mbs # b => b > mbs
-          BY SMT DEF Ballot
-        <5>2. maxBal[self] \in Ballot \cup {-1}
-          BY <4>2, QA DEF LInv1, VInv, TypeOK
-        <5>3. QED
-          BY <5>1, <5>2, <4>2 DEF LInv1, LNInv1
-      <4>5. [maxBal EXCEPT ![self] = b][self] = b
-        BY <4>2, QA DEF LInv1, VInv, TypeOK
-      <4>6. b # maxBal[self]
-        <5>1. \A mbs \in Ballot \cup {-1} : b > mbs => b # mbs
-          BY SMT DEF Ballot
-        <5>2. QED
-          BY <4>4, <4>2, QA DEF LInv1, VInv, TypeOK
-      <4>7. QED  
-        BY <4>4, <4>5, <4>6     
-    <3>4. QED
-\*      BY <3>1, <3>2, <3>3, RuleWF1
-      PROOF OMITTED
+      <4>. QED  BY QA DEF VInv, TypeOK, Ballot
+    <3>. QED  BY <3>1, <3>2, <3>3, PTL
   <2>3. QQ /\ [][LNext]_vars => []QQ
     <3>1. QQ /\ [LNext]_vars => QQ'
       BY <1>3, <1>4
-    <3>2. QED
-\*      BY <3>1, RuleINV1
-      PROOF OMITTED
+    <3>. QED  BY <3>1, PTL
   <2>4. []QQ => [](maxBal[self] = b)
-    <3>1. QQ => (maxBal[self] = b)
-      OBVIOUS
-    <3>2. QED 
-\*      OBVIOUS (* PTL *)
-      PROOF OMITTED
-  <2>5. QED
-\*    BY <2>2, <2>3, <2>4, <1>2 (* PTL *)
-    PROOF OMITTED
+    BY PTL
+  <2>5. LiveAssumption!(Q,b) => WF_vars(A)
+    BY Isa
+  <2>6. Spec => LInv1
+    <3>1. Init => VInv
+      BY InitImpliesInv
+    <3>2. Init => LNInv1
+      BY QA DEF Init, Ballot
+    <3>. QED  BY <3>1, <3>2 DEF Spec
+  <2>. QED
+    BY <2>2, <2>3, <2>4, <2>5, <2>6, <1>2, PTL
 
 <1> DEFINE LNInv2 == \A a \in Q : maxBal[a] = b
            LInv2  == VInv /\ LNInv2
 
 <1>6. LInv2 /\ [LNext]_vars => LInv2'
-  <2>1. SUFFICES ASSUME VInv, \A a \in Q : maxBal[a] = b,
-                        [LNext]_vars
-                 PROVE  VInv' /\ (\A a \in Q : maxBal'[a] = b)
-    OBVIOUS
-  <2>2. VInv'
-    <3>1. PICK a \in Q : maxBal[a] = b
-      BY <2>1, QuorumNonEmpty
-    <3>2. QED
-      BY <2>1, <3>1, <1>4
-  <2>3. ASSUME NEW a \in Q
-        PROVE  maxBal'[a] = b
-    BY <2>1, <2>3, <1>4
-  <2>4. QED
-    BY <2>2, <2>3
+  BY <1>4, QuorumNonEmpty
 
-<1>7. Spec /\ LiveAssumption!(Q, b) => <>(chosen # {})
+<1>7. Spec /\ LiveAssumption!(Q, b) => <>[](chosen # {})
   <2> DEFINE Voted(a) == \E v \in Value : VotedFor(a, b, v)
-  <2>1. LInv2 /\ (\A a \in Q : Voted(a)) => (chosen # {})
+  <2>1. Spec /\ LiveAssumption!(Q, b) => <>[]LInv2
+    <3>1. Spec /\ LiveAssumption!(Q,b) => <>[]LNInv2
+\*      BY <1>5  \* doesn't check
+      PROOF OMITTED
+    <3>. QED  BY <3>1, VT2, PTL
+  <2>2. LInv2 /\ (\A a \in Q : Voted(a)) => (chosen # {})
     <3>1. SUFFICES ASSUME LInv2,
                           \A a \in Q : Voted(a)
                    PROVE  chosen # {}
      OBVIOUS
     <3>2. \E v \in Value : \A a \in Q :  VotedFor(a, b, v)
-      <4>1. PICK a0 \in Q : Voted(a0)
+      <4>2. PICK a0 \in Q, v \in Value : VotedFor(a0, b, v)
         BY <3>1, QuorumNonEmpty
-      <4>2. PICK v \in Value : VotedFor(a0, b, v)
-        BY <4>1
       <4>3. ASSUME NEW a \in Q
             PROVE  VotedFor(a, b, v)
-        <5>1. PICK w \in Value : VotedFor(a, b, w)
-          BY <3>1
-        <5>2. a0 \in Acceptor /\ a \in Acceptor
-          BY QA
-        <5>3. w = v
-          BY <4>2, <5>1, <5>2, <3>1 DEF LInv2, VInv, VInv3
-        <5>4. QED
-          BY <5>1, <5>3
+        BY <3>1, <4>2, QA DEF VInv, VInv3
       <4>4. QED
         BY <4>3
     <3>3. QED
       BY <3>2 DEF chosen, ChosenIn
-  <2>2. Spec /\ LiveAssumption!(Q, b) => (\A a \in Q : <>[]Voted(a))
+  <2>3. Spec /\ LiveAssumption!(Q, b) => (\A a \in Q : <>[]Voted(a))
     <3>1. SUFFICES ASSUME NEW self \in Q
                    PROVE  Spec /\ LiveAssumption!(Q, b) => <>[]Voted(self)
-\*      OBVIOUS
+\*    OBVIOUS   \* doesn't check?!
     PROOF OMITTED
     <3>2. Spec /\ LiveAssumption!(Q, b) => <>Voted(self)
-      <4>1. Spec /\ LiveAssumption!(Q, b) => <>[]LInv2
-        <5>1. Spec => []VInv
-\*          BY VT2
-          PROOF OMITTED
-        <5>2. Spec /\ LiveAssumption!(Q, b) => <>[]LNInv2
-\*          BY <1>5
-          PROOF OMITTED
-        <5>3. QED
-\*          BY <5>1, <5>2 (* PTL *)
-          PROOF OMITTED
       <4>2. [][LNext]_vars /\ WF_vars(BallotAction(self, b))
                => ((LInv2 /\ ~Voted(self)) ~> LInv2 /\ Voted(self))
         <5> DEFINE P == LInv2 /\ ~Voted(self)
@@ -2174,27 +1356,16 @@ THEOREM Liveness == LiveSpec => C!LiveSpec
                          PROVE QQ'
             OBVIOUS
           <6>2. CASE \E v \in Value : VoteFor(self, b, v)
-            <7>2. PICK v \in Value : VoteFor(self, b, v)
-              BY <6>2
-            <7>3. LInv2'
-              BY <5>1, <6>1
-            <7>4. Voted(self)'
-              BY <6>1, <7>2, QA DEF VoteFor, Voted, VotedFor, LInv2, VInv, TypeOK
-            <7>5. QED
-              BY <7>3, <7>4
+            BY <6>1, <6>2, <5>1, QA, Zenon DEF VoteFor, Voted, VotedFor, LInv2, VInv, TypeOK
           <6>3. CASE IncreaseMaxBal(self, b)
-            <7>1. ~ (b > b)
-              BY SMT DEF Ballot 
-            <7>2. QED
-              BY <7>1, <6>1, <6>3 DEF IncreaseMaxBal              
+            BY <6>1, <6>3 DEF IncreaseMaxBal, Ballot
           <6>4. QED
             BY <6>1, <6>2, <6>3 DEF BallotAction
         <5>3. P => ENABLED <<A>>_vars
           <6>1. SUFFICES ASSUME P
                          PROVE  ENABLED <<A>>_vars
-\*            OBVIOUS
-            PROOF OMITTED
-          <6>2. (ENABLED <<A>>_vars) = 
+            OBVIOUS
+          <6>2. (ENABLED <<A>>_vars) <=>
                   \E votesp, maxBalp :
                      /\ \/ /\ b > maxBal[self]
                            /\ maxBalp = [maxBal EXCEPT ![self] = b]
@@ -2212,9 +1383,6 @@ THEOREM Liveness == LiveSpec => C!LiveSpec
 \*        BY DEF BallotAction, IncreaseMaxBal, VoteFor, vars, SafeAt, 
 \*               DidNotVoteIn, VotedFor
         PROOF OMITTED        
-          <6> SUFFICES <6>2!2
-\*            BY <6>2
-            PROOF OMITTED
           <6> SUFFICES
                   \E votesp, maxBalp:
                      /\ \E v \in Value :
@@ -2227,7 +1395,7 @@ THEOREM Liveness == LiveSpec => C!LiveSpec
                                                                 \cup {<<b, v>>}]
                            /\ maxBalp = [maxBal EXCEPT ![self] = b]
                      /\ <<votesp, maxBalp>> #  <<votes, maxBal>>  
-            OBVIOUS
+            BY <6>2
           <6> DEFINE someVoted == \E p \in Acceptor \ {self} :
                                    \E w \in Value : VotedFor(p, b, w)
                      vp == CHOOSE p \in Acceptor \ {self} :
@@ -2236,19 +1404,11 @@ THEOREM Liveness == LiveSpec => C!LiveSpec
           <6>3. someVoted => /\ vp \in Acceptor
                              /\ vpval \in Value
                              /\ VotedFor(vp, b, vpval)
-            OBVIOUS
+            BY Zenon
           <6> DEFINE v == IF someVoted THEN vpval
                                        ELSE CHOOSE v \in Value : SafeAt(b, v)
           <6>4. (v \in Value) /\ SafeAt(b, v)
-            <7>1. CASE someVoted
-              BY <6>3, <6>1, <7>1 DEF LInv2, VInv, VInv2
-            <7>2. CASE ~ someVoted
-              <8>1. b >= b
-                BY SMT DEF Ballot
-              <8>2. QED
-                BY <6>1, <7>2, <8>1, VT4 DEF LInv2, VInv
-            <7>3. QED
-              BY <7>1, <7>2
+            BY <6>1, <6>3, VT4 DEF VInv, VInv2, Ballot
           <6> DEFINE votesp == [votes EXCEPT ![self] = votes[self] \cup {<<b, v>>}]
                      maxBalp == [maxBal EXCEPT ![self] = b]
           <6> WITNESS votesp, maxBalp
@@ -2257,40 +1417,34 @@ THEOREM Liveness == LiveSpec => C!LiveSpec
                        /\ \A p \in Acceptor \ {self} :
                                 \A w \in Value : VotedFor(p, b, w) => (w = v)
                        /\ votesp # votes
-            BY <6>4
+            BY <6>4, Zenon
           <6>5. maxBal[self] \leq b
-            <7>1. b \leq b
-              BY SMT DEF Ballot
-            <7>2. QED
-              BY <7>1, <6>1
+            BY <6>1 DEF Ballot
           <6>6. DidNotVoteIn(self, b)
             BY <6>1 DEF Voted, DidNotVoteIn
           <6>7. ASSUME NEW p \in Acceptor \ {self},
                        NEW w \in Value, 
                        VotedFor(p, b, w) 
                 PROVE  w = v
-            BY <6>7, <6>3, <6>1 DEF LInv2, VInv, VInv3
+            BY <6>7, <6>3, <6>1 DEF VInv, VInv3
           <6>8. votesp # votes
             <7>1. votesp[self] = votes[self] \cup {<<b, v>>}
               BY <6>1, QA DEF LInv2, VInv, TypeOK
-            <7>2. <<b, v>> \in votesp[self]
-              BY <7>1
-            <7>3. \A w \in Value : <<b, w>> \notin votes[self]
+            <7>2. \A w \in Value : <<b, w>> \notin votes[self]
               BY <6>6 DEF DidNotVoteIn, VotedFor
-            <7>4. QED 
-              BY <7>2, <7>3, <6>4
+            <7>3. QED 
+              BY <7>1, <7>2, <6>4, Zenon
           <6>9. QED
-            BY <6>5, <6>6, <6>7, <6>8
+            BY <6>5, <6>6, <6>7, <6>8, Zenon
         <5>4. QED
-\*          BY <5>1, <5>2, <5>3, RuleWF1
-          PROOF OMITTED
+          BY <5>1, <5>2, <5>3, PTL
       <4>3. []LInv2 /\ ((LInv2 /\ ~Voted(self)) ~> LInv2 /\ Voted(self))
               => <>Voted(self)
-\*        OBVIOUS (* PTL *)
-          PROOF OMITTED
-      <4>4. QED
-\*        BY <1>2, <4>1, <4>2, <4>3  (* And Def LiveAssumption *)
-          PROOF OMITTED
+        BY PTL
+      <4>4. LiveAssumption!(Q, b) => WF_vars(BallotAction(self,b))
+        BY Isa
+      <4>. QED
+        BY <1>2, <2>1, <4>2, <4>3, <4>4, PTL
     <3>3. Spec => [](Voted(self) => []Voted(self))
       <4>1. (VInv /\ Voted(self)) /\ [Next]_vars => (VInv /\ Voted(self))'
         <5> SUFFICES ASSUME VInv, Voted(self), [Next]_vars
@@ -2302,152 +1456,40 @@ THEOREM Liveness == LiveSpec => C!LiveSpec
           <6> CASE vars' = vars
             BY DEF vars, Voted, VotedFor
           <6> CASE Next
-            <7>1. \E a \in Acceptor :
-                    \E c \in Ballot : BallotAction(a, c)
-              BY NextDef DEF VInv
             <7>2. PICK a \in Acceptor, c \in Ballot : BallotAction(a, c)
-              BY <7>1
+              BY NextDef DEF VInv
             <7>3. CASE IncreaseMaxBal(a, c)
               BY <7>3 DEF IncreaseMaxBal, Voted, VotedFor
             <7>4. CASE \E v \in Value : VoteFor(a, c, v)
-              <8>1. PICK v \in Value : VoteFor(a, c, v)
-                BY <7>4
-              <8>2. votes' = [votes EXCEPT ![a] = votes[a] \cup {<<c, v>>}]
-                BY <8>1 DEF VoteFor
-              <8>3. CASE a = self
-                <9>1. votes'[self] = votes[self] \cup {<<c, v>>}
-                  BY <8>2, <8>3 DEF VInv, TypeOK
-                <9>2. PICK w \in Value : <<b, w>> \in votes[self]
-                  BY DEF Voted, VotedFor
-                <9>3. <<b, w>> \in votes'[self]
-                  BY <9>1, <9>2
-                <9>4. QED
-                  BY <9>3 DEF Voted, VotedFor
-              <8>4. CASE a # self
-                <9>1. votes'[self] = votes[self]
-                  BY <8>2, <8>4, QA DEF VInv, TypeOK
-                <9>2. QED
-                  BY <9>1 DEF Voted, VotedFor
-              <8>5. QED
-                BY <8>3, <8>4
+              BY <7>4, QA DEF VInv, TypeOK, VoteFor, Voted, VotedFor
             <7>5. QED
               BY <7>2, <7>3, <7>4 DEF BallotAction
           <6> QED
             OBVIOUS
         <5>3. QED
           BY <5>1, <5>2
-        
-      <4>2. (VInv /\ Voted(self)) /\ [][Next]_vars => [](VInv /\ Voted(self))
-\*        BY <4>1, RuleINV1
-        PROOF OMITTED
       <4>3. QED
-        <5>1. VInv /\ [][Next]_vars => (Voted(self) => []Voted(self))
-\*          BY <4>2 (* PTL *)
-          PROOF OMITTED
-        <5>2. []VInv /\ [][Next]_vars => [](Voted(self) => []Voted(self))
-\*          BY <5>1 (* PTL *)
-          PROOF OMITTED
-        <5>3. QED
-\*          BY <5>2, VT2 DEF Spec
-          PROOF OMITTED
+        BY <4>1, VT2, PTL DEF Spec
     <3>4. QED
-\*      BY <3>2, <3>3 (* PTL *) 
-          PROOF OMITTED
-  <2>3. (\A a \in Q : <> []Voted(a)) => <> [](\A a \in Q : Voted(a))
-    <3>1. IsFiniteSet(Q)
-      BY AcceptorFinite, QA, SubsetOfFiniteSetFinite
-    <3>2. QED
-\*      BY <3>1, EventuallyAlwaysForall
-      PROOF OMITTED
-  <2>4. <> [](\A a \in Q : Voted(a)) => <> (\A a \in Q : Voted(a))
-\*    OBVIOUS (* PTL *)
+      BY <3>2, <3>3, PTL 
+  <2>4. (\A a \in Q : <>[]Voted(a)) => <>[](\A a \in Q : Voted(a))
+\*    BY <1>a, EventuallyAlwaysForall   \* doesn't check
     PROOF OMITTED
-  <2>5. <>(\A a \in Q : Voted(a))=> <>(chosen # {})
-\*    BY <2>1 (* PTL *)
-    PROOF OMITTED
-  <2>6. QED
-\*    BY <2>2, <2>3, <2>4, <2>5
-    PROOF OMITTED
+  <2>. QED
+    BY <2>1, VT2, <2>2, <2>3, <2>4, PTL
 
-<1>8. []VInv /\ [][Next]_vars /\ <>(chosen # {}) => <>[](chosen # {})
-  <2>1. []VInv /\ (chosen # {}) /\  [][Next]_vars  => [](chosen # {})
-    <3>1. (chosen # {}) /\ [Next /\ VInv /\ VInv']_vars => (chosen' # {})
-      <4> SUFFICES ASSUME chosen # {}, [Next /\ VInv /\ VInv']_vars
-                   PROVE  chosen' # {}
-        OBVIOUS
-      <4> CASE vars' = vars
-        BY DEF vars, chosen, ChosenIn, VotedFor
-      <4> CASE Next /\ VInv /\ VInv'
-        <5>1. PICK self \in Acceptor, c \in Ballot : BallotAction(self, c)
-          BY NextDef DEF VInv
-        <5>2. CASE IncreaseMaxBal(self, c)
-          BY <5>2 DEF IncreaseMaxBal, chosen, ChosenIn, VotedFor
-        <5>3. CASE \E v \in Value : VoteFor(self, c, v)
-          <6>1. PICK v \in Value : VoteFor(self, c, v)
-            BY <5>3
-          <6>2. votes' = [votes EXCEPT ![self] = votes[self] \cup {<<c, v>>}]
-            BY <6>1 DEF VoteFor, VInv, TypeOK
-          <6>3. \A a \in Acceptor : votes[a] \subseteq votes'[a]
-            <7> SUFFICES ASSUME NEW a \in Acceptor
-                         PROVE  votes[a] \subseteq votes'[a]
-              OBVIOUS
-            <7> QED
-              BY <6>2 DEF VInv, TypeOK 
-          <6>4. \A a \in Acceptor, d \in Ballot, w \in Value : 
-                    VotedFor(a, d, w) => VotedFor(a, d, w)'
-            BY <6>3 DEF VotedFor
-          <6>5. ASSUME NEW d \in Ballot, NEW w \in Value, ChosenIn(d, w)
-                PROVE  ChosenIn(d, w)'
-            <7>1. PICK QQ \in Quorum : \A a \in QQ : VotedFor(a, d, w)
-              BY <6>5 DEF ChosenIn
-            <7>2. \A a \in QQ : VotedFor(a, d, w)'
-              BY QA, <6>4, <7>1
-            <7>3. QED
-              BY <7>2 DEF ChosenIn
-          <6>6. QED
-            BY <6>5 DEF  chosen
-        <5>4. QED
-          BY <5>1, <5>2, <5>3 DEF BallotAction
-      <4> QED
-        OBVIOUS
-    <3>2. (chosen # {}) /\ [][Next /\ VInv /\ VInv']_vars => [](chosen # {})
-\*      BY <3>1, RuleINV1
-      PROOF OMITTED
-    <3>3. []VInv /\ [][Next]_vars => [][Next /\ VInv /\ VInv']_vars
-\*      BY RuleINV2
-      PROOF OMITTED
-    <3>4. QED
-\*      BY <3>2, <3>3
-    PROOF OMITTED
-  <2>2. QED
-\*    BY <2>1 \* and PTL
-    PROOF OMITTED
-
-<1>9 Spec /\ LiveAssumption!(Q, b) => <>[](chosen # {})
-  <2>1. Spec => []VInv /\ [][Next]_vars
-\*    BY VT2 DEF Spec
-    PROOF OMITTED
-  <2>2. Spec /\ LiveAssumption!(Q, b) => 
-           []VInv /\ [][Next]_vars /\ <>(chosen # {})
-\*    BY <2>1, <1>7
-    PROOF OMITTED
-  <2>3. QED
-\*   BY <1>8, <2>2
-    PROOF OMITTED
-
-<1>10. QED
+<1>. QED
   <2>1. Spec /\ LiveAssumption!(Q, b) => C!Spec /\ <>[](chosen # {})
-\*    BY VT3, <1>9
-    PROOF OMITTED
+    BY VT3, <1>7, Isa
   <2>2. Spec /\ LiveAssumption!(Q, b) => C!Spec /\ []<>(chosen # {})
-\*    BY <2>1 (* And PTL (<>[] => []<>) *)
-    PROOF OMITTED
-  <2>3. QED
-\*    BY <2>2, <1>1 
-    PROOF OMITTED 
+    BY <2>1, PTL
+  <2>. QED
+    BY <2>2, <1>1, Isa
 
 ===============================================================================
 \* Modification History
+\* Last modified Fri Jul 24 18:20:31 CEST 2020 by merz
+\* Last modified Wed Apr 29 12:24:23 CEST 2020 by merz
 \* Last modified Mon May 28 08:53:38 PDT 2012 by lamport
 
 
