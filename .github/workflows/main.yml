@@ -81,7 +81,7 @@ jobs:
       - uses: avsm/setup-ocaml@master
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
-      ## The TLAPM test suite requries the kaputt package.
+      ## The TLAPM test suite requires the kaputt package.
       - name: Install OCaml dependencies
         run: opam install kaputt
       - uses: actions/cache@v1
