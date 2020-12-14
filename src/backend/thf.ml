@@ -163,7 +163,7 @@ let rec pp_print_thf_atomic cx ff oe =
       pp_print_string ff "$false"
 
   | Internal _ ->
-      error ~at:oe "Unsupported expression"
+      error ~at:oe "Unsupported expression (TLA+ builtin)"
 
   | Apply (e, []) ->
       pp_print_thf_atomic cx ff e
@@ -303,7 +303,7 @@ and pp_print_thf_logic_sq ?status:status ?(factlvl=0) cx ff sq =
 
   | _ ->
       let h = Option.get (Deque.front sq.context) |> fst in
-      error ~at:h "Unsupported expression"
+      error ~at:h "Unsupported expression (internal sequent)"
 
 and pp_print_thf_apply cx ff oe =
   match oe.core with

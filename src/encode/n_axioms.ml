@@ -610,7 +610,7 @@ let arrow tys =
         ) %% []
       ] |> fun es ->
         match tys with
-        | None (*-> Apply (mk_special "IsAFcn", [ Ix 1 %% [] ]) %% [] :: es*)
+        | None -> Apply (mk_special "IsAFcn", [ Ix 1 %% [] ]) %% [] :: es
         | Some _ -> es
       ) %% []
     ) %% []

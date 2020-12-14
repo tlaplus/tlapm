@@ -193,14 +193,23 @@ let rec expr cx oe =
 
   (* FIXME HACK! *)
   (* Make Encode.Direct ignore already processed expressions *)
-  | Apply (op, _) when has op T.smb_prop ->
-      let smb = get op T.smb_prop in
-      let rt =
-        match T.get_sch smb with
-        | TSch (_, _, TAtom at) -> from_at at
-        | _ -> failwith "Bad result type"
-      in
-      (oe, rt)
+  | Apply (op, es) when has op T.smb_prop ->
+      begin match op.core, es with
+      (* FIXME HACK COMBO x2
+       * I cannot remember why the first hack was necessary, but this will
+       * disable it for `IsAFcn(e)` so that `e` is parsed normally. *)
+      | Opaque "IsAFcn", [e] ->
+          let e, rt = expr cx e in
+          (Apply (op, [ maybe_cast rt e ]) @@ oe, RForm)
+      | _, _ ->
+          let smb = get op T.smb_prop in
+          let rt =
+            match T.get_sch smb with
+            | TSch (_, _, TAtom at) -> from_at at
+            | _ -> failwith "Bad result type"
+          in
+          (oe, rt)
+      end
 
   | Internal _ ->
       expr cx (Apply (oe, []) %% [])

@@ -180,16 +180,17 @@ let smbtable_aux = function
       [ A.setof (List.length tys) None ]
   | Uver (Arrow _) ->
       [ Uver (Mem TUnknown)
+      ; IsAFcn
       ; Uver (Domain (TUnknown, TUnknown))
       ; Uver (FcnApp (TUnknown, TUnknown)) ],
       [ A.arrow None ]
   | Uver (Fcn _) ->
       [ Uver (Mem TUnknown)
-      (*; IsAFcn*)
+      ; IsAFcn
       ; Uver (Domain (TUnknown, TUnknown))
       ; Uver (FcnApp (TUnknown, TUnknown)) ],
-      [ (*A.fcnisafcn
-      ;*) A.domain None
+      [ A.fcnisafcn
+      ; A.domain None
       ; A.fcnapp None ]
   | Uver Plus when !Params.enc_arith ->
       [ Ucast (TAtom TInt)
@@ -438,7 +439,7 @@ let set_real =
 
 let isafcn =
   let id = "IsAFcn" in
-  mk_fst_smb Functions id [ TAtom TU ; TAtom TU ] (TAtom TBool)
+  mk_fst_smb Functions id [ TAtom TU ] (TAtom TBool)
 let arrow ty1 ty2 =
   let id = suffix "Arrow" [ type_to_string ty1 ; type_to_string ty2 ] in
   mk_fst_smb Functions id [ TSet ty1 ; TSet ty2 ] (TSet (TArrow (ty1, ty2)))
