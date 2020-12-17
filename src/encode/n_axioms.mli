@@ -66,3 +66,10 @@ val gteq_type : expr
 val gt_type : expr
 val range_type : expr
 
+(* {3 Schema Instances} *)
+
+(* FIXME See in reduce how the param is set *)
+val inst_choose : (ty * ty list) option -> int -> expr -> expr
+val inst_setst : (ty * ty list) option -> int -> expr -> expr
+val inst_setof : int -> (ty list * ty * ty list) option -> int -> expr -> expr
+

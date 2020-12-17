@@ -14,6 +14,7 @@ open Expr.T
 open Type.T
 
 open N_table
+open N_direct
 
 module A = N_axioms
 module Is = Util.Coll.Is
@@ -65,8 +66,51 @@ let instantiate_expr oe i e =
 
 type ctx = int Expr.Visit.scx
 
-(* NOTE This is the complicated part *)
-let do_reduce (k, hx) op ty2 es =
+let get_smb (_, hx) op =
+  begin match op.core with
+  | Ix n ->
+      let h = Option.get (Deque.nth ~backwards:true hx (n - 1)) in
+      query h smb_prop
+  | Opaque _ ->
+      query op smb_prop
+  | _ -> None
+  end |> Option.fold (fun _ -> get_defn) None
+
+(* FIXME remove *)
+(*let get_axms (_, hx) op =
+  match op.core with
+  | Ix n ->
+      let h = Option.get (Deque.nth ~backwards:true hx (n - 1)) in
+      begin match query h N_axiomatize.axm_ptrs_prop with
+      | None -> []
+      | Some is ->
+          List.filter_map begin fun i ->
+            let k = n - i in
+            match Deque.nth ~backwards:true hx (k - 1) with
+            | Some ({ core = Fact (e, Visible, _) }) ->
+                Some e
+            | _ -> None
+          end is
+      end
+  | _ -> []*)
+
+(* FIXME ugh *)
+let fix_assemble = object (self : 'self)
+  inherit [unit] Expr.Visit.map as super
+  method expr ((), hx as scx) oe =
+    match oe.core with
+    | Opaque s ->
+        let f = fun h ->
+          s = hyp_name h
+        in
+        begin match Deque.find ~backwards:true hx f with
+        | None -> oe
+        | Some (n, _) -> Ix (n + 1) @@ oe
+        end
+    | _ -> super#expr scx oe
+end
+
+let do_reduce (k, hx as ctx) op ty2 es =
   match ty2 with
   | TSch ([], ty1s_1, ty0)
     when List.length es = List.length ty1s_1 ->
@@ -142,7 +186,7 @@ let do_reduce (k, hx) op ty2 es =
        * The definition is `RR(xs, ys) == Op(es')` where:
        * - `xs` and `ys` correspond resp. to FO and HO arguments;
        * - `es'` is obtained from the original `es` by mapping FO args to the
-       *    correct `xs`, and HO args to themselves but carefully renaming so
+       *    correct `xs`, and HO args to themselves but carefully renamed so
        *    that variables are adjusted to `ys`;
        * - `Op` is just `op` adjusted to the top context. *)
 
@@ -200,11 +244,113 @@ let do_reduce (k, hx) op ty2 es =
 
       let df = Operator (v, e') %% [] in
       let h = Defn (df, User, Visible, Local) %% [] in
-      (h, es'')
+
+      let hs =
+        let ps =
+          List.combine ho_filt es' |>
+          List.filter_map begin fun (b, e) ->
+            if b then Some e else None
+          end |>
+          List.map begin fun e ->
+            (* Shift only global vars by 1 to account for new decl. *)
+            let sub = Expr.Subst.bumpn (List.length ys) (Expr.Subst.shift 1) in
+            Expr.Subst.app_expr sub e
+            (* NOTE This is enough if there is one axiom scheme; for more,
+             * need to shift by 1 each time *)
+          end
+        in
+        (* NOTE Dirty hack: the local variables in HO params are not touched,
+         * but the axioms in {!Encode.Axioms} must quantify on the same
+         * sequence of variables (in the same order).  Basic shifts correct
+         * global variables and additional quantifiers in the axioms. *)
+        match get_smb ctx op with
+        | Some (Uver (Choose _)) ->
+            let p = match ps with [p] -> p | _ -> error "internal error" in
+            [ A.inst_choose None n_hos p ]
+        | Some (Uver (SetSt _)) ->
+            let p = match ps with [p] -> p | _ -> error "internal error" in
+            [ A.inst_setst None n_hos p ]
+        | Some (Uver (SetOf (tys, _))) ->
+            let n = List.length tys in
+            let p = match ps with [p] -> p | _ -> error "internal error" in
+            [ A.inst_setof n None n_hos p ]
+        | _ -> []
+      in
+      let cx =
+        (* FIXME ugh *)
+        let from_at = function
+          | TU -> RSet
+          | TInt -> RSet
+          | TBool -> RForm
+          | _ -> raise (Invalid_argument "from_at: bad conversion")
+        in
+        let from_arg = function
+          | TRg (TAtom TU)
+          | TOp ([], TAtom TU) -> ASet
+          | TOp (tys, TAtom at) ->
+              List.iter begin function
+                | TAtom TU -> ()
+                | _ -> raise (Invalid_argument "from_arg: bad conversion")
+              end tys;
+              AOp (List.length tys, from_at at)
+          | _ -> raise (Invalid_argument "from_arg: bad conversion")
+        in
+        let from_sch = function
+          | TSch ([], [], TAtom TU) ->
+              XSet
+          | TSch ([], targs, TAtom at) ->
+              XOp (List.map from_arg targs, from_at at)
+          | _ -> raise (Invalid_argument "from_sch: bad conversion")
+        in
+        let gx =
+          let rec spin gx i hx =
+            if i > 0 then
+              let h, hx = Option.get (Deque.front hx) in
+              spin (Deque.snoc gx h) (i - 1) hx
+            else
+              gx
+          in
+          spin Deque.empty k hx
+        in
+        Deque.fold_left begin fun cx h ->
+          let v = hyp_hint h in
+          try
+            begin match query v Props.tsch_prop with
+            | Some tsch ->
+                Ctx.adj cx v.core (from_sch tsch)
+            | None ->
+                begin match query v Props.type_prop with
+                | Some (TAtom at) ->
+                    Ctx.adj cx v.core (XOp ([], from_at at))
+                | _ ->
+                    Ctx.bump cx
+                end
+            end
+          with _ ->
+            Ctx.bump cx
+        end Ctx.dot gx |>
+        Ctx.bump
+      in
+      let hs =
+        (*List.map (N_direct.expr cx) hs |> List.map fst |>
+        List.map (fix_assemble#expr ((), hx)) |>*)
+        let _ = cx in hs |>
+        List.map (fun e -> Fact (e, Visible, NotSet) %% []) |>
+        Deque.of_list
+      in
+
+      (h, hs, es'')
 
   | _ ->
       raise (Invalid_argument "do_reduce")
 
+(* TODO Use a special term other than `Ix 0`.
+ * Issue: with subst t[x -> Ix 0], the ix is shifted up below
+ * quantifiers, capturing the `Ix 0`.
+ * eg.: (LAMBDA x : x = (\A y : x)) (Ix 0)
+ *      --> (Ix 0) = (\A y : Ix 1)
+ * `Ix 1` refer to `y`.
+ *)
 let set_ix = object (self : 'self)
   inherit [int] Expr.Visit.map as super
   (** [expr scx oe] replaces occurrences of [Ix 0] with [Ix n] where
@@ -213,31 +359,18 @@ let set_ix = object (self : 'self)
       is an offset to account for absent hypotheses in [scx].
   *)
   method expr scx oe =
-    match oe.core with
+    begin match oe.core with
     | Ix 0 ->
         let n = 1 + Deque.size (snd scx) + (fst scx) in
         Ix n @@ oe
     | _ ->
         super#expr scx oe
+    end |>
+    map_pats (List.map (self#expr scx))
 end
 
 
 (* {3 Main} *)
-
-let get_axms (_, hx) op =
-  match op.core with
-  | Ix n ->
-      let h = Option.get (Deque.nth ~backwards:true hx (n - 1)) in
-      begin match query h N_axiomatize.axm_ptrs_prop with
-      | None -> []
-      | Some is ->
-          List.filter_map begin fun i ->
-            match Deque.nth ~backwards:true hx (n - 1 - i) with
-            | Some ({ core = Fact (e, Visible, _) }) -> Some e
-            | _ -> None
-          end is
-      end
-  | _ -> []
 
 let visitor = object (self : 'self)
   inherit [int, (hyp Deque.dq) option] Type.Visit.foldmap as super
@@ -282,13 +415,11 @@ let visitor = object (self : 'self)
         | None, false ->
             (a, Apply (op, es) @@ oe, ty0)
         | None, true ->
-            let h, es = do_reduce scx op ty2_1 es in
-            (* TODO *)
-            let _ = get_axms scx op in
-            let hs = Deque.of_list [h] in
+            let h, hs, es = do_reduce scx op ty2_1 es in
             (* Setting new op to special value `Ix 0`
-             * Will be corrected when [h] has been inserted *)
-            (Some hs, Apply (Ix 0 %% [], es) @@ oe, ty0)
+             * Will be corrected when [h] has been inserted;
+             * `hs` may already contain `Ix 0` too. *)
+            (Some (Deque.cons h hs), Apply (Ix 0 %% [], es) @@ oe, ty0)
         end
 
     | _ ->
@@ -323,10 +454,17 @@ let visitor = object (self : 'self)
             | None, e, _ ->
                 (scx, e, hs)
             | Some hs', e, _ ->
+                let hs' =
+                  let h', hs' = Option.get (Deque.front hs') in
+                  let hs' = Deque.map begin fun i h ->
+                    set_ix#hyp (i, Deque.empty) h |> snd
+                  end hs' in
+                  Deque.cons h' hs'
+                in
                 (* putting new hyps in scx to make as if they were visited *)
                 let scx = Deque.fold_left Expr.Visit.adj scx hs' in
                 let sub = Expr.Subst.shift (Deque.size hs') in
-                let e = Expr.Subst.app_expr sub e in
+                let e = Expr.Subst.app_expr sub e in (* `Ix 0` not affected *)
                 let e = set_ix#expr (Deque.size hs' - 1, Deque.empty) e in
                 let _, hs = Expr.Subst.app_hyps sub hs in
                 do_spin scx (e, hs)

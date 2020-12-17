@@ -12,9 +12,9 @@ open Type.T
     implementation support expressions in standardized form, for which most
     constructs are reduced to applications.
 
-    The effect of reduction is to transform application with HO arguments to
-    new applications with only FO arguments.  This is done by defining new
-    instances of the operators, specialized with the relevant HO arguments.
+    The effect of reduction is to transform applications with HO arguments to
+    new applications with only FO arguments.  This is done by defining
+    instances of the operators specialized with the relevant HO arguments.
     Some adjustments are needed to account for local variables present inside
     the HO arguments--they become new FO arguments.
 
@@ -49,8 +49,8 @@ open Type.T
  * Use {!main} only. *)
 
 (** A context partitioned into a global and a local part.  The [int] parameter
-    is always set as the depth of the local context.  A value of [0] means that
-    the context is only global.
+    is set as the size of the global part.  The depth of the local part is thus
+    [total_size - int parameter].
 *)
 type ctx = int Expr.Visit.scx
 
@@ -61,6 +61,7 @@ type ctx = int Expr.Visit.scx
     @param ty2 is the type of the operator
     @param es are the arguments
     @return h the declaration of a new operator [op']
+    @return hs additional axioms
     @return es' the new arguments for [op']
 
     This function will be called when encountering an application
@@ -77,7 +78,7 @@ type ctx = int Expr.Visit.scx
     inserted in place of the fact the original expression was found, while
     the rest of the sequent is shifted.
 *)
-val do_reduce : ctx -> expr -> ty_sch -> expr list -> hyp * expr list
+val do_reduce : ctx -> expr -> ty_sch -> expr list -> hyp * hyp Deque.dq * expr list
 
 (** [instantiate sq i e] returns a sequent obtained from [sq] by instantiating
     the ith quantifier with [e].  This is especially intended for higher-order

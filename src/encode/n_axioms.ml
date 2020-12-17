@@ -1062,3 +1062,110 @@ let range_type =
     ) %% []
   ) %% []
 
+
+(* {3 Schema Instance} *)
+
+let inst_choose ty m p =
+  let sub = Expr.Subst.shift 1 in (* skip x *)
+  all (gen "c" m @ [ "x" ]) ?tys:(Option.map (fun (ty, tys) -> tys @ [ ty ]) ty) ~pats:[ [
+    app (Expr.Subst.app_expr sub p) [ Ix 1 %% [] ] %% []
+    |> Expr.Subst.app_expr (Expr.Subst.shift 0) (* force normalize *)
+  ] ] (
+    ifx B.Implies (
+      app (Expr.Subst.app_expr sub p) [ Ix 1 %% [] ] %% []
+      |> Expr.Subst.app_expr (Expr.Subst.shift 0) (* force normalize *)
+    ) (
+      app (Expr.Subst.app_expr sub p) [
+        app (Ix 0 %% []) (ixi ~shift:1 m) %% []
+      ] %% []
+      |> Expr.Subst.app_expr (Expr.Subst.shift 0) (* force normalize *)
+    ) %% []
+  ) %% []
+
+let inst_setst ty m p =
+  all ([ "a" ] @ gen "c" m @ [ "x" ])
+  ?tys:(Option.map (fun (ty, tys) -> [ TSet ty ] @ tys @ [ ty ]) ty)
+  ~pats:[ [
+    ifx ?tys:(Option.map (fun (ty, _) -> [ ty ]) ty)
+    B.Mem (
+      Ix 1 %% []
+    ) (
+      app (
+        Ix 0 %% []
+      ) (ixi ~shift:1 (1 + m)) %% []
+    ) %% []
+  ] ] (
+    ifx B.Equiv (
+      ifx ?tys:(Option.map (fun (ty, _) -> [ ty ]) ty)
+      B.Mem (
+        Ix 1 %% []
+      ) (
+        app (
+          Ix 0 %% []
+        ) (ixi ~shift:1 (1 + m)) %% []
+      ) %% []
+    ) (
+      ifx B.Conj (
+        ifx ?tys:(Option.map (fun (ty, _) -> [ ty ]) ty)
+        B.Mem (
+          Ix 1 %% []
+        ) (
+          Ix (m + 2) %% []
+        ) %% []
+      ) (
+        (* skip x *)
+        let sub = Expr.Subst.shift 1 in
+        app (Expr.Subst.app_expr sub p) [ Ix 1 %% [] ] %% []
+        |> Expr.Subst.app_expr (Expr.Subst.shift 0) (* force normalize *)
+      ) %% []
+    ) %% []
+  ) %% []
+
+let inst_setof n ttys m p =
+  let tys, ty, ty2s =
+    match ttys with
+    | None -> (List.init n (fun _ -> None), None, List.init m (fun _ -> None))
+    | Some (tys, ty, ty2s) -> (List.map (fun ty -> Some ty) tys, Some ty, List.map (fun ty -> Some ty) ty2s)
+  in
+  all (gen "a" n @ gen "c" m @ [ "x" ])
+  ?tys:(Option.map (fun (tys, ty, ty2s) -> List.map (fun ty -> TSet ty) tys @ ty2s @ [ ty ]) ttys) ~pats:[ [
+    ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+    B.Mem (
+      Ix 1 %% []
+    ) (
+      app (
+        Ix 0 %% []
+      ) (ixi ~shift:1 (n + m)) %% []
+    ) %% []
+  ] ] (
+    ifx B.Equiv (
+      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+      B.Mem (
+        Ix 1 %% []
+      ) (
+        app (
+          Ix 0 %% []
+        ) (ixi ~shift:1 (n + m)) %% []
+      ) %% []
+    ) (
+      exi (gen "y" n)
+      ?tys:(Option.map (fun (x, _, _) -> x) ttys) (
+        List (And, List.map2 begin fun e1 (e2, ty) ->
+          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+          B.Mem e1 e2 %% []
+        end (ixi n) (List.combine (ixi ~shift:(n + 1) n) tys)
+        @ [
+          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
+          B.Eq (
+            Ix (n + 1) %% []
+          ) (
+            let sub = Expr.Subst.shift (1 + n) in (* skip x and ys *)
+            app (Expr.Subst.app_expr sub p) (ixi n) %% []
+            |> Expr.Subst.app_expr (Expr.Subst.shift 0) (* force normalize *)
+          ) %% []
+        ]
+        ) %% []
+      ) %% []
+    ) %% []
+  ) %% []
+

@@ -135,6 +135,11 @@ let rec expr cx oe =
   in
 
   match oe.core with
+  (* FIXME To make reduce work *)
+  | Ix 0
+  | Apply ({ core = Ix 0 }, _) ->
+      (oe, RSet)
+
   | Ix n ->
       let xt = lookup_id cx n in
       let rt =
@@ -169,7 +174,6 @@ let rec expr cx oe =
         end args_ats
       in
       (Apply (op, args) @@ oe, RSet)
-
 
   (* Propositional connectives treated separately, because the weak type system
    * specific to this module excludes operators that take boolean arguments, or
@@ -574,7 +578,8 @@ and earg cx oa =
       let xt = lookup_id cx n in
       let at =
         match xt with
-        | XSet -> ASet
+        | XSet
+        | XOp ([], RSet) -> ASet
         | XOp (ats, rt) ->
             List.iter begin function
               | AOp _ -> error ~at:oa "Second-order operator cannot be an argument"
