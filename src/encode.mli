@@ -74,6 +74,9 @@ module Table : sig
     | IntLit of int
     (* Strings *)
     | StrLit of string
+    (* Tuples *)
+    | Product of ty list * int
+    | Tuple of ty list * int
     (* Special *)
     | Any of ty
     | Ucast of ty

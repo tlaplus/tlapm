@@ -131,7 +131,8 @@ let mk_decl smb =
   let sch = get_sch smb in
   let v = assign v Type.T.Props.tsch_prop sch in
   let shp = Shape_op 0 in (* special *)
-  Fresh (v, shp, Constant, Unbounded) %% []
+  let h = Fresh (v, shp, Constant, Unbounded) %% [] in
+  assign h smb_prop smb
 
 let mk_fact e =
   Fact (e, Visible, NotSet) %% []

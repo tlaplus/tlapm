@@ -58,6 +58,9 @@ type tla_smb =
   | IntLit of int
   (* Strings *)
   | StrLit of string
+  (* Tuples *)
+  | Product of ty list * int
+  | Tuple of ty list * int
   (* Special *)
   | Any of ty       (** Random element of a type *)
   | Ucast of ty     (** Cast from any type to uninterpreted *)
@@ -93,6 +96,8 @@ let rec get_tlafam = function
       Arithmetic
   | IsAFcn | Arrow _ | Domain _ | FcnApp _ | Fcn _ | Except _ ->
       Functions
+  | Product _ | Tuple _ ->
+      Tuples
   | Uver smb ->
       get_tlafam smb
   | Any _ | Ucast _ | Error ->
@@ -240,6 +245,20 @@ let smbtable_aux = function
       [ Ucast (TAtom TInt)
       ; Range ],
       [ A.range_type ]
+  | Uver (Product (_, n)) ->
+      [ Uver (Mem TUnknown)
+      ; IsAFcn
+      ; Uver (Domain (TUnknown, TUnknown))
+      ; Uver (FcnApp (TUnknown, TUnknown)) ],
+      [ A.product n None ]
+  | Uver (Tuple (_, n)) ->
+      [ Uver (Mem TUnknown)
+      ; IsAFcn
+      ; Uver (Domain (TUnknown, TUnknown))
+      ; Uver (FcnApp (TUnknown, TUnknown)) ],
+      [ A.tupisafcn n
+      ; A.tupdomain n None
+      ; A.tupapp n None ]
   | Any (TAtom TU) ->
       [ Ucast (TAtom TBool) ],
       []
@@ -499,11 +518,11 @@ let intlit n =
   let id = "IntLit_" ^ string_of_int n in
   mk_cst_smb Arithmetic id (TAtom TInt)
 
-let product tys =
-  let id = suffix "Product" (List.map type_to_string tys) in
+let product tys n =
+  let id = suffix "Product" (string_of_int n :: List.map type_to_string tys) in
   mk_fst_smb Tuples id tys (TSet (TProd tys))
-let tuple tys =
-  let id = suffix "Tuple" (List.map type_to_string tys) in
+let tuple tys n =
+  let id = suffix "Tuple" (string_of_int n :: List.map type_to_string tys) in
   mk_fst_smb Tuples id tys (TProd tys)
 
 let strlit s =
@@ -561,6 +580,8 @@ let rec std_smb_aux = function
   | Gt -> gt
   | IntLit n -> intlit n
   | StrLit s -> strlit s
+  | Product (tys, n) -> product tys n
+  | Tuple (tys, n) -> tuple tys n
   | Any ty -> any ty
   | Ucast ty -> ucast ty
   | Uver tla_smb -> u_smb (std_smb_aux tla_smb)

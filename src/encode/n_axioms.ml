@@ -1063,6 +1063,92 @@ let range_type =
   ) %% []
 
 
+(* {3 Tuples} *)
+
+let tupisafcn n =
+  all (gen "x" n) (
+    Apply (
+      mk_special "IsAFcn",
+      [ Tuple (ixi n) %% [] ]
+    ) %% []
+  ) %% []
+
+let product n tys =
+  all (gen "a" n @ [ "t" ]) ~pats:[ [
+    ifx B.Mem (
+      Ix 1 %% []
+    ) (
+      Product (ixi ~shift:1 n) %% []
+    ) %% []
+  ] ] (
+    ifx B.Equiv (
+      ifx B.Mem (
+        Ix 1 %% []
+      ) (
+        Product (ixi ~shift:1 n) %% []
+      ) %% []
+    ) (
+      List (And, [
+        Apply (mk_special "IsAFcn", [ Ix 1 %% [] ]) %% [] ;
+        ifx B.Eq (
+          una B.DOMAIN (
+            Ix 1 %% []
+          ) %% []
+        ) (
+          ifx B.Range (
+            Num (string_of_int 1, "") %% []
+          ) (
+            Num (string_of_int n, "") %% []
+          ) %% []
+        ) %% []
+      ] @ List.init n begin fun i ->
+        ifx B.Mem (
+          FcnApp (
+            Ix 1 %% [],
+            [ Num (string_of_int (i + 1), "") %% [] ]
+          ) %% []
+        ) (
+          Ix (i + 2) %% []
+        ) %% []
+      end) %% []
+    ) %% []
+  ) %% []
+
+let tupdomain n tys =
+  all (gen "x" n) ~pats:[ [
+    una B.DOMAIN (
+      Tuple (ixi n) %% []
+    ) %% []
+  ] ] (
+    ifx B.Mem (
+      una B.DOMAIN (
+        Tuple (ixi n) %% []
+      ) %% []
+    ) (
+      ifx B.Range (
+        Num (string_of_int 1, "") %% []
+      ) (
+        Num (string_of_int n, "") %% []
+      ) %% []
+    ) %% []
+  ) %% []
+
+let tupapp n tys =
+  all (gen "x" n) ~pats:[ [
+  ] ] (
+    List (And, List.init n begin fun i ->
+      ifx B.Mem (
+        FcnApp (
+          Tuple (ixi n) %% [],
+          [ Num (string_of_int (i + 1), "") %% [] ]
+        ) %% []
+      ) (
+        Ix (n - i) %% []
+      ) %% []
+    end) %% []
+  ) %% []
+
+
 (* {3 Schema Instance} *)
 
 let inst_choose ty m p =

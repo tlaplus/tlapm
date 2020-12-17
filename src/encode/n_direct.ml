@@ -379,8 +379,27 @@ let rec expr cx oe =
       let op = opq_from_smb (T.Uver (T.SetEnum (n, TUnknown))) in
       (Apply (op, es) @@ oe, RSet)
 
-  (* Ignoring Product, Tuple, and Fcn with more than one arg.
-   * These should be encoded away *)
+  | Product es ->
+      let es =
+        List.map begin fun e ->
+          let e, rt = expr cx e in
+          maybe_cast rt e
+        end es
+      in
+      let n = List.length es in
+      let op = opq_from_smb (T.Uver (T.Product (List.init n (fun _ -> TUnknown), n))) in
+      (Apply (op, es) @@ oe, RSet)
+
+  | Tuple es ->
+      let es =
+        List.map begin fun e ->
+          let e, rt = expr cx e in
+          maybe_cast rt e
+        end es
+      in
+      let n = List.length es in
+      let op = opq_from_smb (T.Uver (T.Tuple (List.init n (fun _ -> TUnknown), n))) in
+      (Apply (op, es) @@ oe, RSet)
 
   | Fcn ([ v, _, Domain e1 ], e2) ->
       let e1, rt1 = expr cx e1 in

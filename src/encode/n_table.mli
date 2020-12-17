@@ -59,6 +59,9 @@ type tla_smb =
   | IntLit of int
   (* Strings *)
   | StrLit of string
+  (* Tuples *)
+  | Product of ty list * int
+  | Tuple of ty list * int
   (* Special *)
   | Any of ty       (** Random element of a type *)
   | Ucast of ty     (** Cast from any type to uninterpreted *)

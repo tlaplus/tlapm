@@ -66,6 +66,13 @@ val gteq_type : expr
 val gt_type : expr
 val range_type : expr
 
+(* {3 Tuples} *)
+
+val tupisafcn :  int -> expr
+val product : int -> (ty list option) -> expr
+val tupdomain : int -> (ty list option) -> expr
+val tupapp : int -> (ty list option) -> expr
+
 (* {3 Schema Instances} *)
 
 (* FIXME See in reduce how the param is set *)
