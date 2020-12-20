@@ -30,17 +30,17 @@ translations
 (* lemma eq_imp_negeq: "n = m \<Longrightarrow> -.n = -.m" by simp *)
 
 axiomatization where
-  neg0 [simp]: "-.0 = 0" 
+  neg0 [simp]: "-.0 = 0"
 and
   neg_neg [simp]: "-.-.n = n"
 and
   negNotInNat [simp]: "-.(Succ[n]) \<notin> Nat"
 
-lemma negNat_noteq_Nat [simp]: 
+lemma negNat_noteq_Nat [simp]:
   "\<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> (-. Succ[m] = Succ[n]) = FALSE"
 proof (rule contradiction)
   assume "(-. Succ[m] = Succ[n]) \<noteq> FALSE"
-    and m: "m \<in> Nat" and n: "n \<in> Nat" 
+    and m: "m \<in> Nat" and n: "n \<in> Nat"
   hence "-. Succ[m] = Succ[n]" by auto
   hence "-. Succ[m] \<in> Nat" using n by auto
   with negNotInNat[of m] show FALSE by simp
@@ -58,7 +58,7 @@ qed
 lemma nat_not_eq_inv: "n \<in> Nat \<Longrightarrow> n = 0 \<or> -.n \<noteq> n"
   using not0_implies_Suc[of n] by auto
 
-lemma minusInj [dest]: 
+lemma minusInj [dest]:
   assumes hyp: "-.n = -.m"
   shows "n = m"
 proof -
@@ -66,8 +66,8 @@ proof -
   thus ?thesis by simp
 qed
 
-lemma minusInj_iff [simp]: 
-  "-.x = -.y = (x = y)" 
+lemma minusInj_iff [simp]:
+  "-.x = -.y = (x = y)"
 by auto
 
 lemma neg0_imp_0 [simp]: "-.n = 0 = (n = 0)"
@@ -77,7 +77,7 @@ proof auto
   thus "n = 0" by simp
 qed
 
-lemma neg0_eq_0 [dest]: "-.n = 0 \<Longrightarrow> (n = 0)" 
+lemma neg0_eq_0 [dest]: "-.n = 0 \<Longrightarrow> (n = 0)"
 by simp
 
 lemma notneg0_imp_not0 [dest]: "-.n \<noteq> 0 \<Longrightarrow> n \<noteq> 0"
@@ -113,7 +113,7 @@ by auto
 lemma negNat_exists: "-.n \<in> Nat \<Longrightarrow> \<exists>k \<in> Nat: n = -.k"
 by force
 
-lemma nat_eq_negnat_is_0 [simp]: 
+lemma nat_eq_negnat_is_0 [simp]:
   assumes "n \<in> Nat"
   shows "(n = -.n) = (n = 0)"
 using assms by (cases "n", auto)
@@ -147,10 +147,10 @@ using assms unfolding Int_def by auto
 -- {* Integer cases over two parameters *}
 lemma intCases2:
   assumes m: "m \<in> Int" and n: "n \<in> Int"
-    and pp: "\<And>m n. \<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> P(m,n)" 
-    and pn: "\<And>m n. \<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> P(m,-.n)" 
-    and np: "\<And>m n. \<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> P(-.m,n)" 
-    and nn: "\<And>m n. \<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> P(-.m,-.n)" 
+    and pp: "\<And>m n. \<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> P(m,n)"
+    and pn: "\<And>m n. \<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> P(m,-.n)"
+    and np: "\<And>m n. \<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> P(-.m,n)"
+    and nn: "\<And>m n. \<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> P(-.m,-.n)"
   shows "P(m,n)"
 using m proof (cases "m")
   assume "m \<in> Nat"
@@ -163,14 +163,14 @@ qed
 
 lemma intCases3:
   assumes m: "m \<in> Int" and n: "n \<in> Int" and p: "p \<in> Int"
-    and ppp: "\<And>m n p. \<lbrakk>m \<in> Nat; n \<in> Nat; p \<in> Nat\<rbrakk> \<Longrightarrow> P(m,n,p)" 
-    and ppn: "\<And>m n p. \<lbrakk>m \<in> Nat; n \<in> Nat; p \<in> Nat\<rbrakk> \<Longrightarrow> P(m,n,-.p)" 
-    and pnp: "\<And>m n p. \<lbrakk>m \<in> Nat; n \<in> Nat; p \<in> Nat\<rbrakk> \<Longrightarrow> P(m,-.n,p)" 
-    and pnn: "\<And>m n p. \<lbrakk>m \<in> Nat; n \<in> Nat; p \<in> Nat\<rbrakk> \<Longrightarrow> P(m,-.n,-.p)" 
-    and npp: "\<And>m n p. \<lbrakk>m \<in> Nat; n \<in> Nat; p \<in> Nat\<rbrakk> \<Longrightarrow> P(-.m,n,p)" 
-    and npn: "\<And>m n p. \<lbrakk>m \<in> Nat; n \<in> Nat; p \<in> Nat\<rbrakk> \<Longrightarrow> P(-.m,n,-.p)" 
-    and nnp: "\<And>m n p. \<lbrakk>m \<in> Nat; n \<in> Nat; p \<in> Nat\<rbrakk> \<Longrightarrow> P(-.m,-.n,p)" 
-    and nnn: "\<And>m n p. \<lbrakk>m \<in> Nat; n \<in> Nat; p \<in> Nat\<rbrakk> \<Longrightarrow> P(-.m,-.n,-.p)" 
+    and ppp: "\<And>m n p. \<lbrakk>m \<in> Nat; n \<in> Nat; p \<in> Nat\<rbrakk> \<Longrightarrow> P(m,n,p)"
+    and ppn: "\<And>m n p. \<lbrakk>m \<in> Nat; n \<in> Nat; p \<in> Nat\<rbrakk> \<Longrightarrow> P(m,n,-.p)"
+    and pnp: "\<And>m n p. \<lbrakk>m \<in> Nat; n \<in> Nat; p \<in> Nat\<rbrakk> \<Longrightarrow> P(m,-.n,p)"
+    and pnn: "\<And>m n p. \<lbrakk>m \<in> Nat; n \<in> Nat; p \<in> Nat\<rbrakk> \<Longrightarrow> P(m,-.n,-.p)"
+    and npp: "\<And>m n p. \<lbrakk>m \<in> Nat; n \<in> Nat; p \<in> Nat\<rbrakk> \<Longrightarrow> P(-.m,n,p)"
+    and npn: "\<And>m n p. \<lbrakk>m \<in> Nat; n \<in> Nat; p \<in> Nat\<rbrakk> \<Longrightarrow> P(-.m,n,-.p)"
+    and nnp: "\<And>m n p. \<lbrakk>m \<in> Nat; n \<in> Nat; p \<in> Nat\<rbrakk> \<Longrightarrow> P(-.m,-.n,p)"
+    and nnn: "\<And>m n p. \<lbrakk>m \<in> Nat; n \<in> Nat; p \<in> Nat\<rbrakk> \<Longrightarrow> P(-.m,-.n,-.p)"
   shows "P(m,n,p)"
 proof (rule intCases2[OF m n])
   fix m n
@@ -235,11 +235,11 @@ by(simp add: isPos_def)
 lemma isPos_eq_inNat1: "isPos(n) = (n \<in> Nat \<and> n \<noteq> 0)"
 unfolding isPos_def using not0_implies_Suc[of n] by auto
 
-(*lemma isNeg_eq_inNegNat: 
+(*lemma isNeg_eq_inNegNat:
   "isNeg(n) = (n \<in> {-.n : n \<in> Nat } \\ {0})"
   unfolding isNeg_def by force*)
 
-lemma isNeg_eq_inNegNat: 
+lemma isNeg_eq_inNegNat:
   "isNeg(n) = (n \<in> {-.n : n \<in> Nat } \<and> n \<noteq> 0)"
 unfolding isNeg_def by force
 
@@ -250,7 +250,7 @@ lemma negNotNat_isNat:
   assumes n: "n \<in> Int" shows "(-.n \<in> Nat) = FALSE \<Longrightarrow> n \<in> Nat"
 using n by (cases, auto)
 
-lemma noNatisNeg [simp]: 
+lemma noNatisNeg [simp]:
   "n \<in> Nat \<Longrightarrow> isNeg(n) = FALSE" -- {* No natural number is negative *}
 unfolding isNeg_def using negNotInNat by blast
 
@@ -270,11 +270,11 @@ lemma isPos_isNeg_false [simp]: "n \<in> Int \<Longrightarrow> isPos(n) \<Longri
   "n \<in> Int \\ {0} \<Longrightarrow> \<not> isPos(n) \<Longrightarrow> isPos(-.n)"
 unfolding isPos_eq_inNat1 using intNotNatIsNegNat by auto*)
 
-lemma isPos_neg_isNeg [simp]: 
+lemma isPos_neg_isNeg [simp]:
   assumes n: "n \<in> Int" shows "isPos(-.n) = isNeg(n)"
 by (auto simp: minus_sym isPos_def isNeg_def)
 
-lemma notIsNeg0_isPos: 
+lemma notIsNeg0_isPos:
   assumes n: "n \<in> Int"
   shows "\<lbrakk>\<not> isNeg(n); n \<noteq> 0\<rbrakk> \<Longrightarrow> isPos(n)"
 using n by (cases, auto simp: isPos_eq_inNat1 dest: negNat_isNeg)
@@ -317,7 +317,7 @@ by (auto simp: sgn_def)
 lemma sgn1_imp_pos (*[simp]*): "sgn(n) = 1 \<Longrightarrow> n \<in> Nat \<and> n \<noteq> 0"
 unfolding sgn_def isPos_eq_inNat1 by auto
 
-(*lemma neg_imp_negSuc (*[simp]*): 
+(*lemma neg_imp_negSuc (*[simp]*):
   assumes h:"n \<in> {-.n : n \<in> Nat } \\ {0}" shows "isNeg(n)"
 unfolding isNeg_def
 proof -
@@ -328,7 +328,7 @@ proof -
   with 3 show "\<exists>k \<in> Nat : n = -.(Succ[k])" by auto
 qed*)
 
-lemma sgnm1_imp_neg: 
+lemma sgnm1_imp_neg:
   assumes n:"n \<in> Int" shows "sgn(n) = -.1 \<Longrightarrow> isNeg(n)"
 unfolding sgn_def using intThenPosZeroNeg[OF n] by auto
 
@@ -347,7 +347,7 @@ lemma sgnNat_not1:
   "\<lbrakk>n \<in> Nat; sgn(n) \<noteq> 1\<rbrakk> \<Longrightarrow> n = 0"
 using sgnNat_is_0or1[of n] by auto
 
-lemma sgnNat_not_neg [simp]: 
+lemma sgnNat_not_neg [simp]:
   "n \<in> Nat \<Longrightarrow> sgn(n) = -.1 = FALSE"
 unfolding sgn_def isPos_eq_inNat1 by auto
 
@@ -378,7 +378,7 @@ by (auto simp: sgn_eq_neg1_is_not_nat)
 lemma sgn_neg_eq_1_false: "\<lbrakk>sgn(-.m) = 1; m \<in> Nat\<rbrakk> \<Longrightarrow> P"
 unfolding sgn_def by auto
 
-lemma sgn_minus [simp]: 
+lemma sgn_minus [simp]:
   assumes n: "n \<in> Int"
   shows "sgn(-.n) = -.sgn(n)"
 unfolding sgn_def using n by (cases, auto)
@@ -400,22 +400,22 @@ lemma absn0 [simp]: "abs(-.0) = 0"
 by simp
 **)
 
-lemma abs_negNat [simp]: "n \<in> Nat \<Longrightarrow> abs(-.n) = n" 
+lemma abs_negNat [simp]: "n \<in> Nat \<Longrightarrow> abs(-.n) = n"
 unfolding abs_def by (auto dest: sgnNat_not1)
 
-lemma abs_neg [simp]: 
+lemma abs_neg [simp]:
   assumes n: "n \<in> Int" shows "abs(-.n) = abs(n)"
 unfolding abs_def using n by (auto dest: sgnNat_not1)
 
 
-subsection {* Orders on integers *} 
+subsection {* Orders on integers *}
 
-text {* 
+text {*
   We distinguish four cases, depending on the arguments being in
   Nat or negative.
 *}
 
-lemmas int_leq_pp_def = nat_leq_def 
+lemmas int_leq_pp_def = nat_leq_def
   -- {* 'positive-positive' case, ie: both arguments are naturals *}
 
 axiomatization where
@@ -427,11 +427,11 @@ and
 
 (* theorems int_leq_def = int_leq_pn_def int_leq_np_def int_leq_nn_def *)
 
-lemma int_boolify_leq [simp]: 
+lemma int_boolify_leq [simp]:
   "\<lbrakk>a \<in> Int; b \<in> Int\<rbrakk> \<Longrightarrow> boolify(a \<le> b) = (a \<le> b)"
 by(rule intCases2[of a b], simp_all)
 
-lemma int_leq_isBool [intro!,simp]: 
+lemma int_leq_isBool [intro!,simp]:
   "\<lbrakk>a \<in> Int; b \<in> Int\<rbrakk> \<Longrightarrow> isBool(a \<le> b)"
 unfolding isBool_def by auto
 
@@ -450,7 +450,7 @@ by(rule intCases2[of m n], simp_all)
 
 subsection {* Addition of integers *}
 
-text {* 
+text {*
   Again, we distinguish four cases in the definition of @{text "a + b"},
   according to each argument being positive or negative.
 *}
@@ -483,14 +483,14 @@ by (auto simp: int_add_pn_def dest: nat_leq_antisym)
 
 text {* Closure *}
 
-lemma addIsInt [simp]: "\<lbrakk>m \<in> Int; n \<in> Int\<rbrakk> \<Longrightarrow> m + n \<in> Int" 
+lemma addIsInt [simp]: "\<lbrakk>m \<in> Int; n \<in> Int\<rbrakk> \<Longrightarrow> m + n \<in> Int"
 by (rule intCases2[of m n], auto simp: int_add_def)
 
 text {* Neutral element *}
 
-lemma add_0_right_int [simp]: "n \<in> Int \<Longrightarrow> n + 0 = n" 
+lemma add_0_right_int [simp]: "n \<in> Int \<Longrightarrow> n + 0 = n"
 by(rule intCases, auto simp add: int_add_np_def)
-lemma add_0_left_int [simp]: "n \<in> Int \<Longrightarrow> 0 + n = n" 
+lemma add_0_left_int [simp]: "n \<in> Int \<Longrightarrow> 0 + n = n"
 by(rule intCases, auto simp add: int_add_pn_def)
 
 text {* Additive inverse element *}
@@ -509,7 +509,7 @@ by (rule intCases, auto simp: int_add_def)
 
 text {* Commutativity *}
 
-lemma add_commute_pn_nat: "\<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> m + -.n = -.n + m" 
+lemma add_commute_pn_nat: "\<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> m + -.n = -.n + m"
 by(simp add: int_add_def)
 
 lemma add_commute_int: "\<lbrakk>m \<in> Int; n \<in> Int\<rbrakk> \<Longrightarrow> m + n = n + m"
@@ -548,7 +548,7 @@ by(rule adiff_adiff_left_nat[OF m n p])
 
 declare leq_neq_iff_less [simplified,simp]
 
-lemma int_add_assoc1: 
+lemma int_add_assoc1:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and p: "p \<in> Nat"
   shows "m + (n + -.p) = (m + n) + -.p"
 apply(rule nat_leq_cases[OF p n])
@@ -601,7 +601,7 @@ apply(rule nat_leq_cases[of "n + p" m])
       using adiff_add_assoc2[OF _ p n m, symmetric] apply (simp add: adiff_is_0_eq')
   apply(rule nat_leq_cases[OF n m], simp_all)
     apply(rule nat_leq_cases[of p "m -- n"], simp_all)
-    using adiff_add_assoc5[symmetric] add_commute_nat[OF n p] apply simp 
+    using adiff_add_assoc5[symmetric] add_commute_nat[OF n p] apply simp
     using adiff_add_assoc3[symmetric] add_commute_nat[OF n p] apply simp
     using adiff_add_assoc2[symmetric] add_commute_nat[OF n p] apply simp
 done
@@ -667,7 +667,7 @@ lemma int_add_assoc6:
   shows "-.m + (-.n + p) = -.(m + n) + p"
 using assms
   add_commute_int[of "-.n" p]
-  add_commute_int[of "-.m" "p + -.n"] 
+  add_commute_int[of "-.m" "p + -.n"]
   add_commute_int[of "-.(m + n)" p] apply simp
 apply(rule nat_leq_cases[OF n p], simp_all)
   apply(rule nat_leq_cases[of m "p -- n"], simp+)
@@ -687,11 +687,11 @@ apply(rule nat_leq_cases[OF n p], simp_all)
       apply(rule adiff_add_assoc[symmetric], simp+)
 done
 
-lemma add_assoc_int: 
+lemma add_assoc_int:
   assumes m: "m \<in> Int" and n: "n \<in> Int" and p: "p \<in> Int"
   shows "m + (n + p) = (m + n) + p"
-using m n p 
-by (rule intCases3, 
+using m n p
+by (rule intCases3,
     auto simp: add_assoc_nat int_add_assoc1 int_add_assoc2 int_add_assoc3
                int_add_assoc4 int_add_assoc5 int_add_assoc6)
 
@@ -785,10 +785,10 @@ apply(rule nat_leq_cases[OF p n])
     apply (auto simp: adiff_mult_distrib2_nat int_mult_def dest: nat_leq_antisym)
 done
 
-lemma distrib_left_int: 
+lemma distrib_left_int:
   assumes m: "m \<in> Int" and n: "n \<in> Int" and p: "p \<in> Int"
   shows "m * (n + p) = (m * n + m * p)"
-apply(rule intCases3[OF m n p], 
+apply(rule intCases3[OF m n p],
   simp_all only: int_mult_def int_add_nn_def int_mult_nn_def addIsNat)
       apply(rule add_mult_distrib_left_nat, assumption+)
       apply(rule ppn_distrib_left_nat, assumption+)
@@ -828,7 +828,7 @@ done
 lemma distrib_right_int:
   assumes m: "m \<in> Int" and n: "n \<in> Int" and p: "p \<in> Int"
   shows "(m + n) * p = (m * p + n * p)"
-apply(rule intCases3[OF m n p], 
+apply(rule intCases3[OF m n p],
   simp_all only: int_mult_def int_add_nn_def int_mult_nn_def addIsNat)
       apply(rule add_mult_distrib_right_nat, assumption+)
       apply(simp only: int_add_nn_def multIsNat add_mult_distrib_right_nat)
@@ -866,7 +866,7 @@ definition diff          (infixl "-" 65)
 where int_diff_def: "\<lbrakk>m \<in> Int; n \<in> Int\<rbrakk> \<Longrightarrow> m - n = m + -.n"
 
 lemma diffIsInt [simp]: -- {* Closure *}
-  "\<lbrakk>m \<in> Int; n \<in> Int\<rbrakk> \<Longrightarrow> m - n \<in> Int" 
+  "\<lbrakk>m \<in> Int; n \<in> Int\<rbrakk> \<Longrightarrow> m - n \<in> Int"
 by (simp add: int_diff_def)
 
 lemma diff_neg_is_add [simp]: "\<lbrakk>m \<in> Int; n \<in> Int\<rbrakk> \<Longrightarrow> m - -.n = m + n"

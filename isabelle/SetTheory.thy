@@ -50,7 +50,7 @@ text \<open>
 
 text \<open> Concrete syntax: set comprehension \<close>
 
-(*** 
+(***
   We cannot yet allow multiple bindings as in {f(x,y) : x \<in> S, y \<in> T}
   because logical constants (such as setOfAll) must have fixed arity.
   Multiple bindings will be introduced as shorthands involving tuples
@@ -197,7 +197,7 @@ print_translation \<open>
 	    in  (Syntax.const "@bAll") $ x' $ S $ P'
 	    end
 	| bAll_tr' _ = raise Match;
-  in  [(@{const_syntax "bEx"}, (fn _ => bEx_tr')), 
+  in  [(@{const_syntax "bEx"}, (fn _ => bEx_tr')),
        (@{const_syntax "bAll"}, (fn _ => bAll_tr'))]
   end
 \<close>
@@ -443,7 +443,7 @@ proof -
   let ?ch = "CHOOSE x \<in> A : P(x)"
   from 1 2 have "t \<in> A \<and> P(t)" ..
   hence "?ch \<in> A \<and> P(?ch)"
-    by (unfold bChoose_def, rule chooseI)  
+    by (unfold bChoose_def, rule chooseI)
   thus ?thesis ..
 qed
 
@@ -454,7 +454,7 @@ proof -
   let ?ch = "CHOOSE x \<in> A : P(x)"
   from 1 2 have "t \<in> A \<and> P(t)" ..
   hence "?ch \<in> A \<and> P(?ch)"
-    by (unfold bChoose_def, rule chooseI)  
+    by (unfold bChoose_def, rule chooseI)
   thus ?thesis ..
 qed
 
@@ -548,13 +548,13 @@ by (force intro: condI elim: condE)
 lemma condIn [simp]: "((IF P THEN a ELSE b) \<in> S) = ((P \<and> a \<in> S) \<or> (\<not>P \<and> b \<in> S))"
 by (force intro: condI elim: condE)
 
-lemma inCondI (*[TC]*): 
+lemma inCondI (*[TC]*):
   (* adding this as (unsafe) introduction rule cripples blast & co -- why? *)
   assumes "P \<Longrightarrow> c \<in> A" and "\<not>P \<Longrightarrow> c \<in> B"
   shows "c \<in> (IF P THEN A ELSE B)"
 using assms by auto
 
-lemma condInI (*[TC]*): 
+lemma condInI (*[TC]*):
   (* too general to add as introduction rule? *)
   assumes "P \<Longrightarrow> a \<in> S" and "\<not>P \<Longrightarrow> b \<in> S"
   shows "(IF P THEN a ELSE b) \<in> S"
@@ -572,7 +572,7 @@ lemma condInE: (* too general to add as elimination rule? *)
   shows "Q"
 using assms by auto
 
-lemma subsetCond [simp]: 
+lemma subsetCond [simp]:
   "(A \<subseteq> (IF P THEN S ELSE T)) = ((P \<and> A \<subseteq> S) \<or> (\<not>P \<and> A \<subseteq> T))"
 by (blast intro: condI elim: condE)
 
@@ -956,7 +956,7 @@ by (auto simp: upair_def)
 lemma upair_iff: "(c \<in> upair(a,b)) = (c=a \<or> c=b)"
 by (blast intro: upairI1 upairI2 elim: upairE)
 
-lemma unionI1: 
+lemma unionI1:
   assumes "a \<in> A"
   shows "a \<in> A \<union> B"
 using assms by (auto simp: union_def upair_iff)
@@ -1015,7 +1015,7 @@ lemma equalAddElt_iff: "(S = addElt(a,A)) = (a \<in> S \<and> A \<subseteq> S \<
 by blast
 
 lemma addEltEqualAddElt:
-  "(addElt(a,A) = addElt(b,B)) = 
+  "(addElt(a,A) = addElt(b,B)) =
    (a \<in> addElt(b,B) \<and> A \<subseteq> addElt(b,B) \<and> b \<in> addElt(a,A) \<and> B \<subseteq> addElt(a,A))"
 by (auto simp: addEltEqual_iff)
 
@@ -1073,7 +1073,7 @@ proof -
   proof
     assume 1: "?lhs" show ?rhs
     proof (cases "a \<in> B")
-      case True 
+      case True
       from 1 have "B \<setminus> {a} \<in> SUBSET A" by blast
       moreover
       from True 1 have "B = addElt(a, B \<setminus> {a})" by blast
@@ -1343,8 +1343,8 @@ text \<open> Union is an AC operator: can be added to simp where appropriate \<c
 lemmas unionAC = unionAssoc unionCommute unionLeftCommute unionLeftAbsorb
 
 text \<open> Lemmas useful for simplifying enumerated sets are active by default \<close>
-lemmas enumeratedSetSimps [simp] = 
-  addEltSubset_iff addEltEqualAddElt addEltCommute addEltTwice 
+lemmas enumeratedSetSimps [simp] =
+  addEltSubset_iff addEltEqualAddElt addEltCommute addEltTwice
   interAddEltLeft interAddEltRight unionAddEltLeft unionAddEltRight setminusAddEltLeft
 
 (* included below

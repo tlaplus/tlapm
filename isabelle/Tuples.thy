@@ -100,7 +100,7 @@ using assms by auto
 lemmas DomainSeqLen' (*[simp,elim!]*) = SeqIsASeq[THEN DomainSeqLen, standard]
 
 lemma seqEqualI:
-  assumes "isASeq(s)" and "isASeq(t)" 
+  assumes "isASeq(s)" and "isASeq(t)"
       and "Len(s) = Len(t)" and "\<forall>k \<in> 1 .. Len(t) : s[k] = t[k]"
   shows "s = t"
 using assms by (intro fcnEqual[of s t], auto)
@@ -160,7 +160,7 @@ by (auto elim: seqInSeqRange)
 subsection {* Sequences via @{text emptySeq} and @{text Append} *}
 
 text {*
-  Sequences can be built from the constructors @{text emptySeq} 
+  Sequences can be built from the constructors @{text emptySeq}
   (written @{text "\<langle>\<rangle>"}) and Append.
 *}
 
@@ -264,7 +264,7 @@ lemma appendElt2 (*[simp]*):
   assumes "isASeq(s)"
   shows "Append(s,e)[Succ[Len(s)]] = e"
 using assms by (auto simp: Append_def)
-  
+
 lemmas appendElt2' (*[simp]*) = SeqIsASeq[THEN appendElt2, standard]
 
 lemma isAppend [intro!]:
@@ -343,7 +343,7 @@ by (simp add: emptySeq_def)
 
 lemma imageAppend [simp]:
   assumes s: "isASeq(s)"
-  shows "Image(Append(s,e), A) = 
+  shows "Image(Append(s,e), A) =
          (IF Succ[Len(s)] \<in> A THEN addElt(e, Image(s,A)) ELSE Image(s,A))"
 unfolding appendExtend[OF s]
 using assms by (auto elim!: inNatIntervalE, force+)
@@ -451,7 +451,7 @@ lemma "\<langle>0,1\<rangle> \<noteq> \<langle>1,2,3\<rangle>" by simp
 lemma "(\<langle>a,b\<rangle> = \<langle>c,d\<rangle>) = (a=c \<and> b=d)" by simp
 ***)
 
-text {* 
+text {*
   \tlaplus{} has a form of quantification over tuples written
   $\exists \langle x,y,z \rangle \in S: P(x,y,z)$. We cannot give a generic
   definition of this form for arbitrary tuples, but introduce input syntax
@@ -496,7 +496,7 @@ text {*
   @{text x}, @{text y}) such that @{text "f[x] \<in> S"} and @{text "f[y] \<in> T"}.
   Typically, elements of such a function set will be constructed as
   @{text "(x :> s)@@(y :> t)"}.
-  This notation for sets of finite functions generalizes similar 
+  This notation for sets of finite functions generalizes similar
   \tlaplus{} notation for records.
 
   Internally, the set is represented as @{text "EnumFuncSet(\<langle>x,y\<rangle>, \<langle>S,T\<rangle>)"},
@@ -528,7 +528,7 @@ qed
 
 lemma EnumFuncSetE [elim!]:
   assumes "f \<in> EnumFuncSet(doms, rngs)"
-      and "\<lbrakk>f \<in> [Range(doms) \<rightarrow> UNION Range(rngs)]; 
+      and "\<lbrakk>f \<in> [Range(doms) \<rightarrow> UNION Range(rngs)];
               \<forall>i \<in> DOMAIN doms : f[doms[i]] \<in> rngs[i] \<rbrakk> \<Longrightarrow> P"
   shows "P"
 using assms by (auto simp: EnumFuncSet_def)
@@ -550,11 +550,11 @@ parse_ast_translation {*
     (* get_doms_ranges extracts the lists of arguments and ranges
        from the arms of a "domrngs" expression.
        The order of the ASTs is reversed. *)
-    fun get_doms_ranges (Ast.Appl[Ast.Constant "@domrng", d, r]) = 
+    fun get_doms_ranges (Ast.Appl[Ast.Constant "@domrng", d, r]) =
             (* base case: one domain, one range *)
             ([d], [r])
-      | get_doms_ranges (Ast.Appl[Ast.Constant "@domrngs", 
-                                    Ast.Appl[Ast.Constant "@domrng", d, r], 
+      | get_doms_ranges (Ast.Appl[Ast.Constant "@domrngs",
+                                    Ast.Appl[Ast.Constant "@domrng", d, r],
                                     pairs]) =
             (* one domrng, followed by remaining doms and ranges *)
             let val (ds, rs) = get_doms_ranges pairs
@@ -645,7 +645,7 @@ text {*
 *}
 
 definition Product
-where "Product(s) \<equiv> { f \<in> [1 .. Len(s) \<rightarrow> UNION Range(s)] : 
+where "Product(s) \<equiv> { f \<in> [1 .. Len(s) \<rightarrow> UNION Range(s)] :
                       \<forall>i \<in> 1 .. Len(s) : f[i] \<in> s[i] }"
 
 lemma inProductI [intro!]:
@@ -666,7 +666,7 @@ using assms by (auto simp add: Product_def)
 
 lemma inProductE [elim!]:
   assumes "p \<in> Product(s)" and "isASeq(s)"
-  and "\<lbrakk>isASeq(p); Len(p) = Len(s); p \<in> [1 .. Len(s) \<rightarrow> UNION Range(s)]; 
+  and "\<lbrakk>isASeq(p); Len(p) = Len(s); p \<in> [1 .. Len(s) \<rightarrow> UNION Range(s)];
         \<forall>k \<in> 1 .. Len(s) : p[k] \<in> s[k] \<rbrakk> \<Longrightarrow> P"
   shows "P"
 using assms by (auto simp add: Product_def)
@@ -836,7 +836,7 @@ lemma inSetOfPairsI [intro]:
 using assms by (auto simp: setOfPairs_def)
 
 lemma inSetOfPairsE [elim!]: -- {* converse true only if $R$ is a relation *}
-  assumes 1: "z \<in> setOfPairs(R, e)" 
+  assumes 1: "z \<in> setOfPairs(R, e)"
       and 2: "R \<subseteq> A \<times> B" and 3: "\<And>x y. \<lbrakk> \<langle>x,y\<rangle> \<in> R; z = e(x,y) \<rbrakk> \<Longrightarrow> P"
   shows "P"
 proof -
@@ -846,12 +846,12 @@ proof -
   with pR pz show "P" by (intro 3, auto)
 qed
 
-lemmas setOfPairsEqualI = 
+lemmas setOfPairsEqualI =
   setEqualI [where A = "setOfPairs(R,f)", standard,intro!]
   setEqualI [where B = "setOfPairs(R,f)", standard,intro!]
 
-lemma setOfPairs_triv [simp]: 
-  assumes s: "R \<subseteq> A \<times> B" 
+lemma setOfPairs_triv [simp]:
+  assumes s: "R \<subseteq> A \<times> B"
   shows "{ \<langle>x,y\<rangle> : \<langle>x,y\<rangle> \<in> R } = R"
 using assms by auto
 
@@ -886,7 +886,7 @@ definition converse :: "c => c" ("(_^-1)" [1000] 999)
 where "r^-1 \<equiv> { \<langle>p[2],p[1]\<rangle> : p \<in> r}"
 
 definition rel_comp :: "[c,c] => c" (infixr "\<circ>" 75) -- {* binary relation composition *}
-where "r \<circ> s \<equiv> { p \<in> rel_domain(s) \<times> rel_range(r) : 
+where "r \<circ> s \<equiv> { p \<in> rel_domain(s) \<times> rel_range(r) :
                  \<exists>x,z : p = \<langle>x,z\<rangle> \<and> (\<exists>y: \<langle>x,y\<rangle> \<in> s \<and> \<langle>y,z\<rangle> \<in> r) }"
 
 definition rel_image :: "[c,c] => c" (infixl "``" 90)
@@ -1018,20 +1018,20 @@ by force
 
 subsubsection {* Converse relation *}
 
-lemmas converseEqualI = 
+lemmas converseEqualI =
   setEqualI [where A = "r^-1", standard, intro!]
   setEqualI [where B = "r^-1", standard, intro!]
 
-lemma converse_iff [iff]: 
+lemma converse_iff [iff]:
   assumes r: "r \<subseteq> A \<times> B"
   shows "(\<langle>a,b\<rangle> \<in> r^-1) = (\<langle>b,a\<rangle> \<in> r)"
 using r prodProj by (auto simp: converse_def)
 
-lemma converseI [intro!]: 
+lemma converseI [intro!]:
   shows "\<langle>a,b\<rangle> \<in> r \<Longrightarrow> \<langle>b,a\<rangle> \<in> r^-1"
 unfolding converse_def by auto
 
-lemma converseD [sym]: 
+lemma converseD [sym]:
   assumes r: "r \<subseteq> A \<times> B"
   shows "\<langle>a,b\<rangle> \<in> r^-1 \<Longrightarrow> \<langle>b,a\<rangle> \<in> r"
 using converse_iff[OF r] by simp
@@ -1053,7 +1053,7 @@ proof -
   show P by simp
 qed
 
-lemma converse_converse [simp]: 
+lemma converse_converse [simp]:
   assumes r: "r \<subseteq> A \<times> B"
   shows "(r^-1)^-1 = r"
 using assms prodProj by (auto elim!: converseE)
@@ -1081,18 +1081,18 @@ lemma converse_mono_2:
 using assms prodProj by auto
 
 lemma converse_mono:
-  assumes r:"r \<subseteq> A \<times> B" and s:"s \<subseteq> A \<times> B" 
+  assumes r:"r \<subseteq> A \<times> B" and s:"s \<subseteq> A \<times> B"
   shows "r^-1 \<subseteq> s^-1 = (r \<subseteq> s)"
 using converse_mono_1[OF r s] converse_mono_2[OF r s]
 by blast
 
 (* from HOL *)
 
-lemma reflexive_converse [simp]: 
+lemma reflexive_converse [simp]:
   "r \<subseteq> A \<times> B \<Longrightarrow> reflexive(A, r^-1) = reflexive(A,r)"
   unfolding reflexive_def by auto
 
-lemma symmetric_converse [simp]: 
+lemma symmetric_converse [simp]:
   "r \<subseteq> A \<times> B \<Longrightarrow> symmetric(r^-1) = symmetric(r)"
   unfolding symmetric_def by auto
 
@@ -1100,11 +1100,11 @@ lemma antisymmetric_converse [simp]:
   "r \<subseteq> A \<times> B \<Longrightarrow> antisymmetric(r^-1) = antisymmetric(r)"
   unfolding antisymmetric_def by auto
 
-lemma transitive_converse [simp]: 
+lemma transitive_converse [simp]:
   "r \<subseteq> A \<times> B \<Longrightarrow> transitive(r^-1) = transitive(r)"
   unfolding transitive_def by auto
 
-lemma symmetric_iff_converse_eq: 
+lemma symmetric_iff_converse_eq:
   assumes r:"r \<subseteq> A \<times> B"
   shows "symmetric(r) = (r^-1 = r)"
 proof auto
@@ -1125,7 +1125,7 @@ qed
 
 subsubsection {* Identity relation over a set *}
 
-lemmas idEqualI = 
+lemmas idEqualI =
   setEqualI [where A = "Id(S)", standard, intro!]
   setEqualI [where B = "Id(S)", standard, intro!]
 
@@ -1175,11 +1175,11 @@ unfolding rel_range_def Id_def by auto
 
 subsubsection {* Composition of relations *}
 
-lemmas compEqualI = 
+lemmas compEqualI =
   setEqualI [where A = "r \<circ> s", standard, intro!]
   setEqualI [where B = "r \<circ> s", standard, intro!]
 
-lemma compI [intro]: 
+lemma compI [intro]:
   assumes r: "r \<subseteq> B \<times> C" and s: "s \<subseteq> A \<times> B"
   shows "\<lbrakk> \<langle>a,b\<rangle> \<in> s; \<langle>b,c\<rangle> \<in> r \<rbrakk> \<Longrightarrow> \<langle>a,c\<rangle> \<in> r \<circ> s"
 using assms unfolding rel_comp_def by auto
@@ -1189,7 +1189,7 @@ lemma compE [elim!]:
   shows "(\<And>x y z. xz = \<langle>x,z\<rangle> \<Longrightarrow> \<langle>x,y\<rangle> \<in> s \<Longrightarrow> \<langle>y,z\<rangle> \<in> r \<Longrightarrow> P) \<Longrightarrow> P"
 using assms unfolding rel_comp_def by auto
 
-lemma compEpair: 
+lemma compEpair:
   assumes "\<langle>a,c\<rangle> \<in> r \<circ> s" and "r \<subseteq> B \<times> C" and s: "s \<subseteq> A \<times> B"
   shows "\<lbrakk>\<And>b. \<lbrakk> \<langle>a,b\<rangle> \<in> s; \<langle>b,c\<rangle> \<in> r \<rbrakk> \<Longrightarrow> P \<rbrakk> \<Longrightarrow> P"
 using assms by auto
@@ -1204,7 +1204,7 @@ lemma rel_comp_in_prodE (*[elim]*):
   shows "p \<in> A \<times> C"
 using assms by force
 
-lemma converse_comp: 
+lemma converse_comp:
   assumes r: "r \<subseteq> B \<times> C" and s: "s \<subseteq> A \<times> B"
   shows "((r \<circ> s)^-1) = (s^-1 \<circ> r^-1)"  (is "?lhs = ?rhs")
 proof
@@ -1227,7 +1227,7 @@ next
   with r s show "x \<in> ?lhs" by (auto dest: converseSubset)
 qed
 
-lemma R_comp_Id [simp]: 
+lemma R_comp_Id [simp]:
   assumes r: "R \<subseteq> B \<times> C"
   shows "R \<circ> Id(B) = R"
 using r proof auto
@@ -1239,7 +1239,7 @@ using r proof auto
   with 1 show "p \<in> R \<circ> Id(B)" by simp
 qed
 
-lemma Id_comp_R [simp]: 
+lemma Id_comp_R [simp]:
   assumes r: "R \<subseteq> A \<times> B"
   shows "Id(B) \<circ> R = R"
 using r proof auto
@@ -1257,7 +1257,7 @@ unfolding rel_comp_def by auto
 lemma rel_comp_empty2 [simp]: "R \<circ> {} = {}"
 unfolding rel_comp_def by auto
 
-lemma comp_assoc: 
+lemma comp_assoc:
   assumes t: "T \<subseteq> A \<times> B" and s: "S \<subseteq> B \<times> C" and r: "R \<subseteq> C \<times> D"
   shows "(R \<circ> S) \<circ> T = R \<circ> (S \<circ> T)"
 proof
@@ -1296,7 +1296,7 @@ next
   qed
 qed
 
-lemma rel_comp_mono: 
+lemma rel_comp_mono:
   assumes hr': "r' \<subseteq> r" and hs': "s' \<subseteq> s"
   shows "(r' \<circ> s') \<subseteq> (r \<circ> s)"
 unfolding rel_comp_def using subrel_dom[OF hs'] subrel_ran[OF hr']
@@ -1358,7 +1358,7 @@ by (blast intro: symmetricI dest: symmetricE)
 
 text {* Antisymmetry *}
 
-lemma antisymmetricI [intro]: 
+lemma antisymmetricI [intro]:
   "\<lbrakk> \<And>x y. \<lbrakk> \<langle>x,y\<rangle> \<in> r; \<langle>y,x\<rangle> \<in> r \<rbrakk> \<Longrightarrow> x = y \<rbrakk> \<Longrightarrow> antisymmetric(r)"
 unfolding antisymmetric_def by blast
 

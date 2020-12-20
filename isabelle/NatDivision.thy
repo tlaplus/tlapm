@@ -32,18 +32,18 @@ lemma [intro!]:
   "\<lbrakk>isBool(P); isBool(a dvd b); P \<Leftrightarrow> (a dvd b)\<rbrakk> \<Longrightarrow> P = (a dvd b)"
 by auto
 
-lemma dvdI [intro]: 
+lemma dvdI [intro]:
   assumes a: "a \<in> Nat" and b: "b \<in> Nat" and k: "k \<in> Nat"
   shows "a = b * k \<Longrightarrow> b dvd a"
 unfolding dvd_def[OF a b] using k by blast
 
-lemma dvdE [elim]: 
+lemma dvdE [elim]:
   assumes "b dvd a" and "a \<in> Nat" and "b \<in> Nat"
   shows "(\<And>k. \<lbrakk>k \<in> Nat; a = b * k\<rbrakk> \<Longrightarrow> P) \<Longrightarrow> P"
 using assms by (auto simp add: dvd_def)
 
-lemma dvd_refl [iff]: 
-  assumes a: "a \<in> Nat" 
+lemma dvd_refl [iff]:
+  assumes a: "a \<in> Nat"
   shows "a dvd a"
 proof -
   from a have "a = a*1" by simp
@@ -64,21 +64,21 @@ proof -
 qed
 
 lemma dvd_0_left_iff [simp]:
-  assumes "a \<in> Nat" 
+  assumes "a \<in> Nat"
   shows "(0 dvd a) = (a = 0)"
 using assms by force
 
-lemma dvd_0_right [iff]: 
+lemma dvd_0_right [iff]:
   assumes a: "a \<in> Nat" shows "a dvd 0"
 using assms by force
 
-lemma one_dvd [iff]: 
-  assumes a: "a \<in> Nat" 
+lemma one_dvd [iff]:
+  assumes a: "a \<in> Nat"
   shows "1 dvd a"
 using assms by force
 
 lemma dvd_mult (*[simp]*):
-  assumes dvd: "a dvd c" and a: "a \<in> Nat" and b: "b \<in> Nat" and c: "c \<in> Nat" 
+  assumes dvd: "a dvd c" and a: "a \<in> Nat" and b: "b \<in> Nat" and c: "c \<in> Nat"
   shows "a dvd (b * c)"
 proof -
   from dvd a c obtain k where k: "k \<in> Nat" and "c = a*k" by blast
@@ -87,16 +87,16 @@ proof -
 qed
 
 lemma dvd_mult2 (*[simp]*):
-  assumes dvd: "a dvd b" and a: "a \<in> Nat" and b: "b \<in> Nat" and c: "c \<in> Nat" 
+  assumes dvd: "a dvd b" and a: "a \<in> Nat" and b: "b \<in> Nat" and c: "c \<in> Nat"
   shows "a dvd (b * c)"
 using mult_commute_nat[OF b c] dvd_mult[OF dvd a c b] by simp
 
-lemma dvd_triv_right [iff]: 
+lemma dvd_triv_right [iff]:
   assumes a: "a \<in> Nat" and b: "b \<in> Nat"
   shows "a dvd (b * a)"
 using assms by (intro dvd_mult, simp+)
 
-lemma dvd_triv_left [iff]: 
+lemma dvd_triv_left [iff]:
   assumes a: "a \<in> Nat" and b: "b \<in> Nat"
   shows "a dvd a * b"
 using assms by (intro dvd_mult2, simp+)
@@ -116,17 +116,17 @@ proof -
   with a c b' d' show ?thesis by blast
 qed
 
-lemma dvd_mult_left: 
-  assumes a: "a \<in> Nat" and b: "b \<in> Nat" and c: "c \<in> Nat" 
+lemma dvd_mult_left:
+  assumes a: "a \<in> Nat" and b: "b \<in> Nat" and c: "c \<in> Nat"
     and h: "a * b dvd c"
   shows "a dvd c"
 proof -
-  from h a b c obtain k where k: "k \<in> Nat" "c = a*(b*k)" 
+  from h a b c obtain k where k: "k \<in> Nat" "c = a*(b*k)"
     by (auto simp add: mult_assoc_nat)
   with a b c show ?thesis by blast
 qed
 
-lemma dvd_mult_right: 
+lemma dvd_mult_right:
   assumes a: "a \<in> Nat" and b: "b \<in> Nat" and c: "c \<in> Nat" and h: "a*b dvd c"
   shows "b dvd c"
 proof -
@@ -134,14 +134,14 @@ proof -
   with b a c show ?thesis by (rule dvd_mult_left)
 qed
 
-lemma dvd_0_left: 
+lemma dvd_0_left:
   assumes "a \<in> Nat"
   shows "0 dvd a \<Longrightarrow> a = 0"
 using assms by simp
 
 lemma dvd_add [iff]:
   assumes a: "a \<in> Nat" and b: "b \<in> Nat" and c: "c \<in> Nat"
-    and 1: "a dvd b" and 2: "a dvd c" 
+    and 1: "a dvd b" and 2: "a dvd c"
   shows "a dvd (b + c)"
 proof -
   from a b 1 obtain b' where b': "b' \<in> Nat" "b = a * b'" by blast
@@ -165,7 +165,7 @@ text {*
 *}
 
 definition divmod_rel where
-  "divmod_rel(m,n,q,r) \<equiv> m = q * n + r 
+  "divmod_rel(m,n,q,r) \<equiv> m = q * n + r
                        \<and> ((0 < n \<and> 0 \<le> r \<and> r < n) \<or> (n < 0 \<and> r \<le> 0 \<and> n < r))"
 
 text {* @{const divmod_rel} is total if $n$ is non-zero. *}
@@ -183,7 +183,7 @@ proof -
     fix m'
     assume m': "m' \<in> Nat" and ih: "\<exists>q, r \<in> Nat : m' = q*n + r \<and> r < n"
     from ih obtain q' r'
-      where h1: "m' = q' * n + r'" and h2: "r' < n" 
+      where h1: "m' = q' * n + r'" and h2: "r' < n"
       and q': "q' \<in> Nat" and r': "r' \<in> Nat" by blast
     show "\<exists>q, r \<in> Nat : Succ[m'] = q * n + r \<and> r < n"
     proof (cases "Succ[r'] < n")
@@ -204,7 +204,7 @@ qed
 text {* @{const divmod_rel} has unique solutions in the natural numbers. *}
 lemma divmod_rel_unique_div:
   assumes 1: "divmod_rel(m,n,q,r)" and 2: "divmod_rel(m,n,q',r')"
-    and m: "m \<in> Nat" and n: "n \<in> Nat" 
+    and m: "m \<in> Nat" and n: "n \<in> Nat"
     and q: "q \<in> Nat" and r: "r \<in> Nat" and q': "q' \<in> Nat" and r': "r' \<in> Nat"
   shows "q = q'"
 proof -
@@ -270,7 +270,7 @@ lemma divmodNat_divmod_rel [rule_format]:
 unfolding divmodNat_def by (rule bChooseI2[OF divmodNatPairEx[OF assms]], auto)
 
 lemma divmodNat_unique:
-  assumes h: "divmod_rel(m,n,q,r)" 
+  assumes h: "divmod_rel(m,n,q,r)"
       and m: "m \<in> Nat" and n: "n \<in> Nat" and pos: "0 < n"
       and q: "q \<in> Nat" and r: "r \<in> Nat"
   shows "divmodNat(m,n) = \<langle>q,r\<rangle>"
@@ -297,7 +297,7 @@ lemma divIsNat [iff]:
   assumes "m \<in> Nat" and "n \<in> Nat" and "0 < n"
   shows "m div n \<in> Nat"
 using divmodNatInNatNat[OF assms] assms by (auto simp: div_nat_def)
-  
+
 lemma modIsNat [iff]:
   assumes "m \<in> Nat" and "n \<in> Nat" and "0 < n"
   shows "m mod n \<in> Nat"
@@ -431,23 +431,23 @@ lemma mod_div_nat_equality2 [simp]:
   shows "n * (m div n) + m mod n = m"
 using assms mult_commute_nat[of "n" "m div n"] by simp
 
-lemma mod_div_nat_equality3 [simp]: 
+lemma mod_div_nat_equality3 [simp]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and "0 < n"
   shows "m mod n + (m div n) * n = m"
 using assms add_commute_nat[of "m mod n"] by simp
 
-lemma mod_div_nat_equality4 [simp]: 
+lemma mod_div_nat_equality4 [simp]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and "0 < n"
   shows "m mod n + n * (m div n) = m"
 using assms mult_commute_nat[of "n" "m div n"] by simp
 
 (** immediate consequence of above
-lemma div_mod_nat_equality: 
+lemma div_mod_nat_equality:
   assumes "m \<in> Nat" and "n \<in> Nat" and "0 < n"
   shows "((m div n) * n + m mod n) + k = m + k"
 using assms by simp
 
-lemma div_mod_nat_equality2: 
+lemma div_mod_nat_equality2:
   assumes "m \<in> Nat" and "n \<in> Nat" and "0 < n"
   shows "(n * (m div n) + m mod n) + k = m + k"
 using assms by simp
@@ -487,12 +487,12 @@ lemma div_nat_0:
   shows "0 div n = 0"
 using assms by simp
 
-lemma mod_0: 
+lemma mod_0:
   assumes "n \<in> Nat" and "0 < n"
   shows "0 mod n = 0"
 using assms by simp
 
-lemma mod_nat_mult_self1 [simp]: 
+lemma mod_nat_mult_self1 [simp]:
   assumes q: "q \<in> Nat" and m: "m \<in> Nat" and n: "n \<in> Nat" and pos: "0 < n"
   shows "(q + m * n) mod n = q mod n"
 proof -
@@ -511,57 +511,57 @@ proof -
   with assms show ?thesis by (simp del: mod_div_nat_equality)
 qed
 
-lemma mod_nat_mult_self2 [simp]: 
+lemma mod_nat_mult_self2 [simp]:
   assumes "q \<in> Nat" and "m \<in> Nat" and "n \<in> Nat" and "0 < n"
   shows "(q + n * m) mod n = q mod n"
 using assms by (simp add: mult_commute_nat)
 
-lemma mod_nat_mult_self3 [simp]: 
+lemma mod_nat_mult_self3 [simp]:
   assumes "q \<in> Nat" and "m \<in> Nat" and "n \<in> Nat" and "0 < n"
   shows "(m * n + q) mod n = q mod n"
 using assms by (simp add: add_commute_nat)
 
-lemma mod_nat_mult_self4 [simp]: 
+lemma mod_nat_mult_self4 [simp]:
   assumes "q \<in> Nat" and "m \<in> Nat" and "n \<in> Nat" and "0 < n"
   shows "(n * m + q) mod n = q mod n"
 using assms by (simp add: add_commute_nat)
 
-lemma div_nat_mult_self1_is_id [simp]: 
+lemma div_nat_mult_self1_is_id [simp]:
   assumes "m \<in> Nat" and "n \<in> Nat" and "0 < n"
   shows "(m * n) div n = m"
 using assms div_nat_mult_self1 [of 0 m n] by simp
 
-lemma div_nat_mult_self2_is_id [simp]: 
+lemma div_nat_mult_self2_is_id [simp]:
   assumes "m \<in> Nat" and "n \<in> Nat" and "0 < n"
   shows "(n * m) div n = m"
 using assms div_nat_mult_self2[of 0 n m] by simp
 
-lemma mod_nat_mult_self1_is_0 [simp]: 
+lemma mod_nat_mult_self1_is_0 [simp]:
   assumes "m \<in> Nat" and "n \<in> Nat" and "0 < n"
   shows "(m * n) mod n = 0"
 using assms mod_nat_mult_self1 [of 0 m n] by simp
 
-lemma mod_nat_mult_self2_is_0 [simp]: 
+lemma mod_nat_mult_self2_is_0 [simp]:
   assumes "m \<in> Nat" and "n \<in> Nat" and "0 < n"
   shows "(n * m) mod n = 0"
 using assms mod_nat_mult_self2 [of 0 m n] by simp
 
-lemma div_nat_by_1 [simp]: 
+lemma div_nat_by_1 [simp]:
   assumes "m \<in> Nat"
   shows "m div 1 = m"
 using assms div_nat_mult_self1_is_id [of m 1] by simp
 
-lemma mod_nat_by_1 [simp]: 
+lemma mod_nat_by_1 [simp]:
   assumes "m \<in> Nat"
   shows "m mod 1 = 0"
 using assms mod_nat_mult_self1_is_0[of m 1] by simp
 
-lemma mod_nat_self [simp]: 
+lemma mod_nat_self [simp]:
   assumes "n \<in> Nat" and "0 < n"
   shows "n mod n = 0"
 using assms mod_nat_mult_self1_is_0[of 1] by simp
 
-lemma div_nat_self [simp]: 
+lemma div_nat_self [simp]:
   assumes "n \<in> Nat" and "0 < n"
   shows "n div n = 1"
 using assms div_nat_mult_self1_is_id [of 1 n] by simp
@@ -610,7 +610,7 @@ proof -
   from 1 2 assms show ?thesis by blast
 qed
 
-lemma mod_div_nat_trivial [simp]: 
+lemma mod_div_nat_trivial [simp]:
   assumes "m \<in> Nat" and "n \<in> Nat" and "0 < n"
   shows "(m mod n) div n = 0"
 proof -
@@ -622,7 +622,7 @@ proof -
     using assms by simp
 qed
 
-lemma mod_mod_nat_trivial [simp]: 
+lemma mod_mod_nat_trivial [simp]:
   assumes "m \<in> Nat" and "n \<in> Nat" and "0 < n"
   shows "(m mod n) mod n = m mod n"
 proof -
@@ -632,12 +632,12 @@ proof -
   finally show ?thesis .
 qed
 
-lemma dvd_nat_imp_mod_0: 
+lemma dvd_nat_imp_mod_0:
   assumes "n dvd m" and "m \<in> Nat" and "n \<in> Nat" and "0 < n"
   shows "m mod n = 0"
 using assms by (simp add: dvd_nat_eq_mod_eq_0)
 
-lemma dvd_nat_div_mult_self: 
+lemma dvd_nat_div_mult_self:
   assumes dvd: "n dvd m" and m: "m \<in> Nat" and n: "n \<in> Nat" and pos: "0 < n"
   shows "(m div n) * n = m"
 using assms
@@ -645,7 +645,7 @@ using assms
   mod_div_nat_equality[OF m n pos]
 by simp
 
-lemma dvd_nat_div_mult: 
+lemma dvd_nat_div_mult:
   assumes dvd: "n dvd m" and m: "m \<in> Nat" and n: "n \<in> Nat" and pos: "0 < n"
       and k: "k \<in> Nat"
   shows "(m div n) * k = (m * k) div n"
@@ -680,7 +680,7 @@ next
   with 3 4 show "(b div a) dvd (c div a)" by simp
 qed (auto simp: assms)
 
-lemma dvd_mod_nat_imp_dvd: 
+lemma dvd_mod_nat_imp_dvd:
   assumes 1: "k dvd (m mod n)" and 2: "k dvd n"
       and k: "k \<in> Nat" and m: "m \<in> Nat" and n: "n \<in> Nat" and pos: "0 < n"
   shows "k dvd m"
@@ -690,7 +690,7 @@ proof -
   with m n pos show ?thesis by simp
 qed
 
-(*** TODO 
+(*** TODO
 text {* Addition respects modular equivalence. *}
 
 text {* Multiplication respects modular equivalence. *}

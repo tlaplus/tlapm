@@ -21,8 +21,8 @@ struct
   fun mk_eq th = case Thm.concl_of th of
       Const(@{const_name \<open>Pure.eq\<close>},_) $ _ $ _  => th
     | _ $ (Const(@{const_name \<open>PredicateLogic.eq\<close>},_) $ _ $ _)    => th RS @{thm eq_reflection}
-    | _ $ (Const(@{const_name \<open>PredicateLogic.not\<close>},_) $ 
-              (Const(@{const_name \<open>PredicateLogic.eq\<close>},_) $ _ $ _)) => 
+    | _ $ (Const(@{const_name \<open>PredicateLogic.not\<close>},_) $
+              (Const(@{const_name \<open>PredicateLogic.eq\<close>},_) $ _ $ _)) =>
         th RS (@{thm neq_conv_eq_False} RS @{thm eq_reflection})
     | _ => (th RS @{thm eqTrueI}) RS @{thm eq_reflection}
 
@@ -35,7 +35,7 @@ struct
   *)
   fun lift_meta_to_obj_eq ctxt i st =
     let
-      fun count_imp (Const (@{const_name \<open>PredicateLogic.simp_implies\<close>}, _) $ _ $ Q) = 
+      fun count_imp (Const (@{const_name \<open>PredicateLogic.simp_implies\<close>}, _) $ _ $ Q) =
           1 + count_imp Q
         | count_imp _ = 0;
       val j = count_imp (Logic.strip_assums_concl (Thm.term_of (Thm.cprem_of st i)))
@@ -59,7 +59,7 @@ struct
 
   (* Congruence rules expecting = instead of == *)
   fun mk_meta_cong ctxt rl =
-      let val rl' = Seq.hd (TRYALL (fn i => fn st => 
+      let val rl' = Seq.hd (TRYALL (fn i => fn st =>
         resolve_tac ctxt [lift_meta_to_obj_eq ctxt i st] i st) rl)
       in (rl' RS @{thm eq_reflection})
           handle THM _ =>
@@ -76,10 +76,10 @@ struct
      allows us to discard "type-correctness" hypotheses in conditional
      rewrite rules that are added later on. *)
   val mksimps_pairs =
-  [(@{const_name \<open>imp\<close>}, ([@{thm mp}], false)), 
+  [(@{const_name \<open>imp\<close>}, ([@{thm mp}], false)),
    (@{const_name \<open>conj\<close>}, ([@{thm conjD1}, @{thm conjD2}], false)),
-   (@{const_name \<open>All\<close>}, ([@{thm spec}], false)), 
-   (@{const_name \<open>TRUE\<close>}, ([], false)), 
+   (@{const_name \<open>All\<close>}, ([@{thm spec}], false)),
+   (@{const_name \<open>TRUE\<close>}, ([], false)),
    (@{const_name \<open>FALSE\<close>}, ([], false)),
    (@{const_name \<open>cond\<close>}, ([@{thm if_bool_equiv_conj} RS @{thm iffD1}], false))
   ];
@@ -100,7 +100,7 @@ struct
                (case head_of p of
                   Const(a,_) =>
                     (case AList.lookup (op =) pairs a of
-                        SOME (rls, b) => 
+                        SOME (rls, b) =>
                           let
                              val rrls = maps atoms (res_fixed rls) handle THM _ => [thm]
                           in
@@ -113,10 +113,10 @@ struct
         end;
     in atoms end
 
-  fun mksimps pairs ctxt = 
+  fun mksimps pairs ctxt =
     map_filter (try mk_eq) o mk_atomize ctxt pairs o Variable.gen_all ctxt
 
-  fun unsafe_solver_tac ctxt = 
+  fun unsafe_solver_tac ctxt =
   let
     val sol_thms =
       reflexive_thm :: @{thm trueI} :: @{thm refl} :: @{thm iff_refl} :: @{thm notFalseI}:: Simplifier.prems_of ctxt;
@@ -141,7 +141,7 @@ struct
   val safe_solver = mk_solver "PredicateLogic safe" safe_solver_tac;
 
   (* Basic infrastructure for simplification *)
-  val PL_basic_ss = 
+  val PL_basic_ss =
     empty_simpset @{context}
     setSSolver safe_solver
     setSolver unsafe_solver

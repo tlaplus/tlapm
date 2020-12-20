@@ -48,7 +48,7 @@ setup \<open> Intuitionistic.method_setup @{binding iprover} \<close>
 typedecl c
 
 text \<open>
-  The following (implicit) lifting from the object to the Isabelle 
+  The following (implicit) lifting from the object to the Isabelle
   meta level is always needed when formalizing a logic. It corresponds
   to judgments @{text \<open>\<turnstile> F\<close>} or @{text \<open>\<Turnstile> F\<close>} in textbook presentations,
   asserting that a formula is considered true (either because
@@ -145,8 +145,8 @@ text \<open>
   Propositional logic is introduced in a rather non-standard way
   by declaring constants @{text TRUE} and @{text FALSE} as well as
   conditional expressions. The ordinary Boolean connectives
-  are defined in terms of these basic operators in such a way 
-  that they always return either @{text TRUE} or @{text FALSE}, 
+  are defined in terms of these basic operators in such a way
+  that they always return either @{text TRUE} or @{text FALSE},
   irrespectively of their arguments. We also require that equality
   returns a Boolean value. In this way, we can prove standard
   equational laws of propositional logic, which is useful for
@@ -736,7 +736,7 @@ proof (rule r)
 qed
 
 theorem iffCE [Pure.elim!]:
-  assumes ab: "A \<Leftrightarrow> B" 
+  assumes ab: "A \<Leftrightarrow> B"
   and pos: "\<lbrakk>A; B\<rbrakk> \<Longrightarrow> C" and neg: "\<lbrakk>\<not> A; \<not> B\<rbrakk> \<Longrightarrow> C"
   shows "C"
 proof (rule case_split[of A])
@@ -827,7 +827,7 @@ syntax (ASCII)
   "@Ex"     :: "[cidts, c] \<Rightarrow> c"       ("(3\\E _ :/ _)" [100, 10] 10)
   "@All"    :: "[cidts, c] \<Rightarrow> c"       ("(3\\A _ :/ _)" [100, 10] 10)
 translations
-  (* separate parse and print translations for nested quantifiers because 
+  (* separate parse and print translations for nested quantifiers because
      they operate in opposite directions *)
   "\<exists>x,xs : P"        \<rightharpoonup>  "CONST Ex(\<lambda>x. \<exists>xs : P)"
   "\<exists>x,xs : P"        \<leftharpoondown>  "\<exists>x : CONST Ex(\<lambda>xs. P)"
@@ -900,14 +900,14 @@ qed (rule hyp)
 lemma chooseI_ex: "\<exists>x : P(x) \<Longrightarrow> P(CHOOSE x : P(x))"
 by (elim exE chooseI)
 
-lemma chooseI2: 
+lemma chooseI2:
   assumes p: "P(a)" and q:"\<And>x. P(x) \<Longrightarrow> Q(x)"
   shows "Q(CHOOSE x : P(x))"
 proof (rule q)
   from p show "P(CHOOSE x : P(x))" by (rule chooseI)
 qed
 
-lemma chooseI2_ex: 
+lemma chooseI2_ex:
   assumes p: "\<exists>x : P(x)" and q:"\<And>x. P(x) \<Longrightarrow> Q(x)"
   shows "Q(CHOOSE x : P(x))"
 proof (rule q)
@@ -997,7 +997,7 @@ proof
     from conj show "B" by (rule conjunctionD2)
   qed
 next
-  assume conj: "A \<and> B" 
+  assume conj: "A \<and> B"
   show "A &&& B"
   proof -
     from conj show A ..
@@ -1177,7 +1177,7 @@ lemma
   shows "Q(n)"
 using assms by blast
 
-lemma 
+lemma
   assumes "\<And>P. P(n)"
   shows "Q(n)"
 using assms by fast
@@ -1321,7 +1321,7 @@ qed
 
 lemma trueprop_true_eq: "Trueprop(TRUE = A) \<equiv> Trueprop(A)"
 proof
-  assume "TRUE = A" 
+  assume "TRUE = A"
   hence "A = TRUE" by (rule sym)
   thus "A" by (rule eqTrueD)
 next
@@ -1344,7 +1344,7 @@ lemmas [simp] =
   trueprop_eq_true  trueprop_true_eq
   TrueAssumption implies_true_equals false_implies_equals
   refl[THEN eqTrueI]   (* (x = x) = TRUE *)
-  condT (*condThen*)      notTrue 
+  condT (*condThen*)      notTrue
   condF (*condElse*)      notFalse
   cond_id cond_cancel
   false_neq_true[THEN neq_conv_eq_False] (* (FALSE = TRUE) = FALSE *)
@@ -1358,13 +1358,13 @@ subsubsection \<open> Reasoning by cases \<close>
 
 text \<open>
   The next bit of code sets up reasoning by cases as a proper Isar
-  method, so we can write ``proof cases'' etc. Following the 
+  method, so we can write ``proof cases'' etc. Following the
   development of FOL, we introduce a set of ``shadow connectives''
   that will only be used for this purpose.
 \<close>
 
 (* lemmas cases = case_split [case_names True False] *)
-context 
+context
 begin
 
 qualified definition cases_equal where "cases_equal \<equiv> eq"
@@ -1393,7 +1393,7 @@ lemmas cases_atomize' = cases_implies_eq cases_conj_eq cases_forall_eq
 lemmas cases_atomize  = cases_atomize' cases_equal_eq
 lemmas cases_rulify' [symmetric] = cases_atomize'
 lemmas cases_rulify  [symmetric] = cases_atomize
-lemmas cases_rulify_fallback = 
+lemmas cases_rulify_fallback =
   cases_equal_def cases_implies_def cases_conj_def cases_forall_def
   cases_true_def cases_false_def
 
@@ -1534,7 +1534,7 @@ text \<open>
   Such equations are valid only if
   the connectives are applied to Boolean operands. For automatic
   reasoning, we are interested in equations that can be used by
-  Isabelle's simplifier. We therefore introduce an auxiliary 
+  Isabelle's simplifier. We therefore introduce an auxiliary
   predicate that is true precisely of Boolean arguments, and an
   operation that converts arbitrary arguments to an equivalent
   (in the sense of @{text "\<Leftrightarrow>"}) Boolean expression.
@@ -1634,7 +1634,7 @@ lemma isBoolTrueFalse:
 proof -
   from hyp have "boolify(x) = x" by (unfold isBool_def)
   hence bx: "boolify(x) \<equiv> x" by (rule eq_reflection)
-  from boolifyTrueFalse[of x] 
+  from boolifyTrueFalse[of x]
   show ?thesis by (unfold bx)
 qed
 
@@ -1739,7 +1739,7 @@ ML \<open>
   struct
     open Simpdata;
     val mksimps_pairs = [(@{const_name not}, (@{thms boolifyFalseI}, true)),
-                         (@{const_name iff}, (@{thms iffThenBoolifyEqual}, true))] 
+                         (@{const_name iff}, (@{thms iffThenBoolifyEqual}, true))]
                         @ mksimps_pairs;
   end;
 
@@ -1768,8 +1768,8 @@ using assms by simp
 
 text \<open>
   The following code rewrites @{text "x = y"} to @{text "FALSE"} in the
-  presence of a premise @{text "y \<noteq> x"} or @{text "(y = x) = FALSE"}. 
-  The simplifier is set up so that @{text "y = x"} is already simplified 
+  presence of a premise @{text "y \<noteq> x"} or @{text "(y = x) = FALSE"}.
+  The simplifier is set up so that @{text "y = x"} is already simplified
   to @{text "FALSE"}, this code adds symmetry of disequality to simplification.
 \<close>
 
@@ -1785,7 +1785,7 @@ simproc_setup neq ("x = y") = \<open>fn _ =>
         _ $ (Not $ (eq' $ l' $ r')) =>
           Not = @{const \<open>not\<close>} andalso eq' = eq andalso
           r' aconv lhs andalso l' aconv rhs
-    | _ $ (eq' $ (eq'' $ l' $ r') $ f') => 
+    | _ $ (eq' $ (eq'' $ l' $ r') $ f') =>
         eq' = @{const \<open>eq\<close>} andalso eq'' = @{const \<open>eq\<close>} andalso
         f' = @{const \<open>FALSE\<close>} andalso r' aconv lhs andalso l' aconv rhs
       | _ => false);
@@ -1980,7 +1980,7 @@ next
 qed
 
 text \<open>useful with conditionals in hypotheses\<close>
-lemma splitCondAsm: 
+lemma splitCondAsm:
   assumes "\<And>x. isBool(Q(x))"
   shows "Q(IF P THEN t ELSE e) = (\<not>((P \<and> \<not>Q(t)) \<or> (\<not>P \<and> \<not>Q(e))))"
 using assms by (simp only: splitCond, blast)
@@ -1990,7 +1990,7 @@ lemma condCong (*[cong]*):  (* strangely, seems to simplify less when active ?! 
 by simp
 
 text \<open>not active by default, because too expensive\<close>
-lemma condFullCong: 
+lemma condFullCong:
   "\<lbrakk>P = Q; Q \<Longrightarrow> t=t'; \<not>Q \<Longrightarrow> e=e'\<rbrakk> \<Longrightarrow> (IF P THEN t ELSE e) = (IF Q THEN t' ELSE e')"
 by auto
 
@@ -2036,7 +2036,7 @@ using assms by auto
 
 text \<open>Commutativity laws are not active by default\<close>
 
-lemma conj_comms: 
+lemma conj_comms:
   "(P \<and> Q) = (Q \<and> P)"
   "(P \<and> Q \<and> R) = (Q \<and> P \<and> R)"
 by auto
@@ -2067,7 +2067,7 @@ using assms by auto
 
 text \<open>Commutativity laws are not active by default\<close>
 
-lemma disj_comms: 
+lemma disj_comms:
   "(P \<or> Q) = (Q \<or> P)"
   "(P \<or> Q \<or> R) = (Q \<or> P \<or> R)"
 by auto
@@ -2109,7 +2109,7 @@ lemma imp_simps [simp]:
   "(P \<Rightarrow> \<not>P) = (\<not>P)"
 by auto
 
-lemma imp_cong [cong]: 
+lemma imp_cong [cong]:
   "(P = P') \<Longrightarrow> (P' \<Longrightarrow> (Q = Q')) \<Longrightarrow> ((P \<Rightarrow> Q) = (P' \<Rightarrow> Q'))"
 by auto
 

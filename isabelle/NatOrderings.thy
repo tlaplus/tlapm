@@ -13,7 +13,7 @@ imports Peano
 begin
 
 text \<open>
-  Using the sets @{text upto} we can now define the standard ordering on 
+  Using the sets @{text upto} we can now define the standard ordering on
   natural numbers. The constant @{text "\<le>"} is defined over the naturals
   by the axiom (conditional definition) @{text "nat_leq_def"} below; it
   should be defined over other domains as appropriate later on.
@@ -119,12 +119,12 @@ lemma nat_leq_limit:
   shows "m=n"
 using assms by (auto simp: nat_leq_def intro: uptoLimit)
 
-lemma nat_leq_trans [trans]: 
+lemma nat_leq_trans [trans]:
   assumes "k \<le> m" and "m \<le> n" (*and "k \<in> Nat" and "m \<in> Nat"*) and "n \<in> Nat"
   shows "k \<le> n"
 using assms by (auto simp: nat_leq_def elim: uptoTrans)
 
-lemma nat_leq_antisym: 
+lemma nat_leq_antisym:
   assumes "m \<le> n" and "n \<le> m" (*and "m \<in> Nat" and "n \<in> Nat"*)
   shows "m = n"
 using assms by (auto simp add: nat_leq_def elim: uptoAntisym)
@@ -139,7 +139,7 @@ lemma nat_Succ_leqI:
   shows "Succ[m] \<le> n"
 using assms by (auto dest: nat_leq_limit)
 
-lemma nat_Succ_leqD [elim]: 
+lemma nat_Succ_leqD [elim]:
   assumes leq: "Succ[m] \<le> n" and m: "m \<in> Nat" and n: "n \<in> Nat"
   shows "m \<le> n"
 proof -
@@ -253,7 +253,7 @@ lemma nat_Succ_less_SuccE:
   shows "P"
 using assms by simp
 
-lemma nat_not_less0 [simp]: 
+lemma nat_not_less0 [simp]:
   assumes "n \<in> Nat"
   shows "(n < 0) = FALSE"
 using assms by auto
@@ -263,12 +263,12 @@ lemma nat_less0E (*[elim!]*):
   shows "P"
 using assms by simp
 
-lemma nat_less_SuccI: 
+lemma nat_less_SuccI:
   assumes "m < n" and "m \<in> Nat" and "n \<in> Nat"
   shows "m < Succ[n]"
 using assms by auto
 
-lemma nat_Succ_lessD: 
+lemma nat_Succ_lessD:
   assumes 1: "Succ[m] < n" and 2: "m \<in> Nat" and 3: "n \<in> Nat"
   shows "m < n"
 using assms by auto
@@ -300,19 +300,19 @@ lemma nat_leq_less_trans [trans]:
   shows "k < n"
 using assms by (auto simp: less_def dest: nat_leq_trans nat_leq_antisym)
 
-lemma nat_less_leq_trans [trans]: 
+lemma nat_less_leq_trans [trans]:
   assumes "k < m" and "m \<le> n" and "k \<in> Nat" and "m \<in> Nat" and "n \<in> Nat"
   shows "k < n"
 using assms by (auto simp: less_def dest: nat_leq_trans nat_leq_antisym)
 
 text \<open> Asymmetry. \<close>
 
-lemma nat_less_not_sym: 
+lemma nat_less_not_sym:
   assumes "m < n" and "m \<in> Nat" and "n \<in> Nat"
   shows "(n < m) = FALSE"
 using assms by auto
-  
-lemma nat_less_asym: 
+
+lemma nat_less_asym:
   assumes "m < n" and "m \<in> Nat" and "n \<in> Nat" and "\<not>P \<Longrightarrow> n < m"
   shows "P"
 proof (rule contradiction)
@@ -322,12 +322,12 @@ qed
 
 text \<open> Linearity (totality). \<close>
 
-lemma nat_less_linear: 
+lemma nat_less_linear:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
   shows "m < n \<or> m = n \<or> n < m"
 unfolding less_def using nat_leq_linear[OF m n] by blast
 
-lemma nat_leq_less_linear: 
+lemma nat_leq_less_linear:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
   shows "m \<le> n \<or> n < m"
 using assms nat_less_linear[OF m n] by (auto simp: less_def)
@@ -347,7 +347,7 @@ lemma nat_not_less_iff_gr_or_eq:
   shows "(\<not> m < n) = (m > n \<or> m = n)"
 unfolding nat_not_less[OF m n] using assms by (auto simp: less_def)
 
-lemma nat_not_less_eq: 
+lemma nat_not_less_eq:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
   shows "(\<not> m < n) = (n < Succ[m])"
 unfolding nat_not_less[OF m n] using assms by simp
@@ -360,12 +360,12 @@ using assms by simp
 text \<open>often useful, but not active by default\<close>
 lemmas nat_not_order_simps[simplified] = nat_not_less nat_not_leq
 
-lemma nat_not_leq_eq: 
+lemma nat_not_leq_eq:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
   shows "(\<not> m \<le> n) = (Succ[n] \<le> m)"
 unfolding nat_not_leq[OF m n] using assms by simp
 
-lemma nat_neq_iff: 
+lemma nat_neq_iff:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
   shows "m \<noteq> n = (m < n \<or> n < m)"
 using assms nat_less_linear[OF m n] by auto
@@ -375,22 +375,22 @@ lemma nat_neq_lessE:
   shows "(m < n \<Longrightarrow> R) \<Longrightarrow> (n < m \<Longrightarrow> R) \<Longrightarrow> R"
 using assms by (auto simp: nat_neq_iff[simplified])
 
-lemma nat_antisym_conv1: 
+lemma nat_antisym_conv1:
   assumes "\<not>(m < n)" and "m \<in> Nat" and "n \<in> Nat"
   shows "(m \<le> n) = (m = n)"
 using assms by (auto simp: nat_leq_less)
 
-lemma nat_antisym_conv2: 
+lemma nat_antisym_conv2:
   assumes "m \<le> n" and "m \<in> Nat" and "n \<in> Nat"
   shows "(\<not> m < n) = (m = n)"
 using assms by (auto simp: nat_not_order_simps elim: nat_leq_antisym)
 
-lemma nat_antisym_conv3: 
+lemma nat_antisym_conv3:
   assumes "\<not> n < m" and "m \<in> Nat" and "n \<in> Nat"
   shows "(\<not> m < n) = (m = n)"
 using assms by (auto simp: nat_not_order_simps elim: nat_leq_antisym)
 
-lemma nat_not_lessD: 
+lemma nat_not_lessD:
   assumes "\<not>(m < n)" and "m \<in> Nat" and "n \<in> Nat"
   shows "n \<le> m"
 using assms by (simp add: nat_not_order_simps)
@@ -439,7 +439,7 @@ using assms by simp
 
 text \<open> "Less than" is antisymmetric, sort of \<close>
 
-lemma nat_less_antisym: 
+lemma nat_less_antisym:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
   shows "\<lbrakk> \<not>(n < m); n < Succ[m] \<rbrakk> \<Longrightarrow> m = n"
 using assms by (auto simp: nat_not_order_simps elim: nat_leq_antisym)
@@ -450,7 +450,7 @@ lemma less_mono_imp_leq_mono:
   and ij: "i \<le> j" and mono: "\<And>i j. \<lbrakk>i \<in> Nat; j \<in> Nat; i<j\<rbrakk> \<Longrightarrow> f(i) < f(j)"
   shows "f(i) \<le> f(j)"
 using ij proof (auto simp: nat_leq_less[OF j])
-  assume "i < j" 
+  assume "i < j"
   with i j have "f(i) < f(j)" by (rule mono)
   thus "f(i) \<le> f(j)" by (simp add: less_imp_leq)
 next
@@ -497,7 +497,7 @@ lemma nat_Succ_lessE:
 proof -
   from i have "Succ[i] \<in> Nat" ..
   from major this k obtain j where "j \<in> Nat" "Succ[i] \<le> j" "k = Succ[j]"
-    by (rule nat_lessE) 
+    by (rule nat_lessE)
   with i that show ?thesis by simp
 qed
 
@@ -518,7 +518,7 @@ lemma nat_gt0_iff_Succ:
 using n by (auto dest: nat_ge1_implies_Succ)
 
 (*
-lemma nat_less_Succ_eq_0_disj: 
+lemma nat_less_Succ_eq_0_disj:
   assumes "m \<in> Nat" and "n \<in> Nat"
   shows "(m < Succ[n]) = (m = 0 \<or> (\<exists>j\<in>Nat: m = Succ[j] \<and> j < n))"
 using assms by (induct m, auto)

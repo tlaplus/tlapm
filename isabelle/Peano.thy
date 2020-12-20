@@ -295,7 +295,7 @@ proof -
     thus "P" by (rule sc)
   qed
 qed
-    
+
 lemma succIrrefl:
   assumes n: "n \<in> Nat"
   shows "Succ[n] \<noteq> n"
@@ -346,7 +346,7 @@ proof -
   with n m show ?thesis by blast
 qed
 
-lemma not0_implies_Suc: 
+lemma not0_implies_Suc:
   "\<lbrakk>n \<in> Nat; n \<noteq> 0\<rbrakk> \<Longrightarrow> \<exists>m \<in> Nat: n = Succ[m]"
 by(rule natCases, auto)
 
@@ -542,8 +542,8 @@ qed
 subsection \<open> Primitive Recursive Functions \<close>
 
 text \<open>
-  We axiomatize a primitive recursive scheme for functions 
-  with one argument and domain on natural numbers. Later, we 
+  We axiomatize a primitive recursive scheme for functions
+  with one argument and domain on natural numbers. Later, we
   use it to define addition, multiplication and difference.
 \<close>
 
@@ -553,7 +553,7 @@ axiomatization where
   primrec_nat: "\<exists>f : isAFcn(f) \<and> DOMAIN f = Nat
                    \<and> f[0] = e \<and> (\<forall>n \<in> Nat : f[Succ[n]] = h(n,f[n]))"
 
-lemma bprimrec_nat: 
+lemma bprimrec_nat:
   assumes e: "e \<in> S" and suc: "\<forall>n \<in> Nat : \<forall>x \<in> S : h(n,x) \<in> S"
   shows "\<exists>f \<in> [Nat \<rightarrow> S] : f[0] = e \<and> (\<forall>n \<in> Nat: f[Succ[n]] = h(n,f[n]))"
 proof -
@@ -589,7 +589,7 @@ qed
 
 lemma bprimrecType_nat:
   assumes "e \<in> S" and "\<forall>n \<in> Nat : \<forall>x \<in> S : h(n,x) \<in> S"
-  shows "(CHOOSE f \<in> [Nat \<rightarrow> S] : f[0] = e \<and> 
+  shows "(CHOOSE f \<in> [Nat \<rightarrow> S] : f[0] = e \<and>
                                  (\<forall>n \<in> Nat: f[Succ[n]] = h(n,f[n])))
          \<in> [Nat \<rightarrow> S]"
 by (rule primrec_natE[OF assms], auto)
