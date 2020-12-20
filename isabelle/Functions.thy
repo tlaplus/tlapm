@@ -14,12 +14,12 @@ begin
 subsection \<open> Syntax and axioms for functions \<close>
 
 text \<open>
-  Functions in \tlaplus{} are not defined (e.g., as sets of pairs), 
+  Functions in \tlaplus{} are not defined (e.g., as sets of pairs),
   but axiomatized, and in fact, pairs and tuples will be defined as special
   functions. Incidentally, this approach helps us to identify functional
   values, and to automate the reasoning about them. This theory considers
   only unary functions; functions with multiple arguments are defined
-  as functions over products. We follow the development of functions given 
+  as functions over products. We follow the development of functions given
   in Section 16.1 of ``Specifying Systems''.
 \<close>
 
@@ -50,7 +50,7 @@ text \<open>
   Two functions are equal if they have the same domain and agree on all
   arguments within the domain.
 \<close>
-axiomatization where fcnEqual[elim!]: 
+axiomatization where fcnEqual[elim!]:
   "\<lbrakk>isAFcn(f); isAFcn(g); DOMAIN f = DOMAIN g; \<forall>x \<in> DOMAIN g : f[x]=g[x]\<rbrakk>
    \<Longrightarrow> f = g"
 
@@ -62,7 +62,7 @@ text \<open>
 consts
   FuncSet  :: "[c,c] \<Rightarrow> c"     ("([_ \<rightarrow> _])" 900)      \<comment> \<open> function space \<close>
 syntax (ASCII)
-  FuncSet  :: "[c,c] \<Rightarrow> c"     ("([_ -> _])" 900)  
+  FuncSet  :: "[c,c] \<Rightarrow> c"     ("([_ -> _])" 900)
 
 axiomatization where
   FuncSet: "f \<in> [S \<rightarrow> T] \<Leftrightarrow> isAFcn(f) \<and> DOMAIN f = S \<and> (\<forall>x\<in>S : f[x] \<in> T)"
@@ -124,13 +124,13 @@ text \<open>
   proofs about equality of functions.
 \<close>
 
-lemma fcnEqual2[elim!]: 
+lemma fcnEqual2[elim!]:
    "\<lbrakk>isAFcn(g); isAFcn(f); DOMAIN f = DOMAIN g; \<forall>x \<in> DOMAIN g : f[x]=g[x]\<rbrakk>
     \<Longrightarrow> f = g"
 by (rule fcnEqual)
 
 text \<open> possibly useful as a simplification rule, but cannot be active by default \<close>
-lemma fcnEqualIff: 
+lemma fcnEqualIff:
   assumes "isAFcn(f)" and "isAFcn(g)"
   shows "(f = g) = (DOMAIN f = DOMAIN g \<and> (\<forall>x \<in> DOMAIN g : f[x] = g[x]))"
 using assms by auto
@@ -141,7 +141,7 @@ lemma [intro!]:
 by auto
 
 lemma [intro!]:
-  "\<lbrakk>isAFcn(f); DOMAIN f = DOMAIN g; v \<in> DOMAIN g \<Longrightarrow> f[v] = w; 
+  "\<lbrakk>isAFcn(f); DOMAIN f = DOMAIN g; v \<in> DOMAIN g \<Longrightarrow> f[v] = w;
     \<forall>y \<in> DOMAIN g : y \<noteq> v \<Rightarrow> f[y] = g[y]\<rbrakk>
    \<Longrightarrow> [g EXCEPT ![v] = w] = f"
   "\<lbrakk>isAFcn(f); DOMAIN f = DOMAIN g; v \<in> DOMAIN g \<Longrightarrow> f[v] = w;
@@ -271,7 +271,7 @@ lemma functionInFuncSet:
 using assms by auto
 
 lemma exceptInFuncSet[elim!]:
-  assumes 1: "f \<in> [S \<rightarrow> U]" and 2: "U \<subseteq> T" 
+  assumes 1: "f \<in> [S \<rightarrow> U]" and 2: "U \<subseteq> T"
       and 3: "\<lbrakk>v \<in> S; isAFcn(f); DOMAIN f = S; \<forall>x \<in> S : f[x] \<in> U\<rbrakk> \<Longrightarrow> e \<in> T"
   shows "[f EXCEPT ![v]=e] \<in> [S \<rightarrow> T]" (is "?exc \<in> [S \<rightarrow> T]")
 proof
@@ -288,7 +288,7 @@ text \<open>
 \<close>
 
 lemma exceptInFuncSetSame:
-  assumes "f \<in> [S \<rightarrow> T]" 
+  assumes "f \<in> [S \<rightarrow> T]"
   and "\<lbrakk>v \<in> S; isAFcn(f); DOMAIN f = S; \<forall>x \<in> S : f[x] \<in> T\<rbrakk> \<Longrightarrow> e \<in> T"
   shows "[f EXCEPT ![v]=e] \<in> [S \<rightarrow> T]"
 using assms by auto
@@ -340,13 +340,13 @@ lemmas
   fcnEqual[where g = "g @@ h" for g h, intro!]
 
 lemma extendEqualIff [simp]:
-  "isAFcn(f) \<Longrightarrow> (f = g @@ h) = 
-                (DOMAIN f = (DOMAIN g) \<union> (DOMAIN h) \<and> 
-                (\<forall>x \<in> DOMAIN g : f[x] = g[x]) \<and> 
+  "isAFcn(f) \<Longrightarrow> (f = g @@ h) =
+                (DOMAIN f = (DOMAIN g) \<union> (DOMAIN h) \<and>
+                (\<forall>x \<in> DOMAIN g : f[x] = g[x]) \<and>
                 (\<forall>x \<in> DOMAIN h \\ DOMAIN g : f[x] = h[x]))"
-  "isAFcn(f) \<Longrightarrow> (g @@ h = f) = 
-                (DOMAIN f = (DOMAIN g) \<union> (DOMAIN h) \<and> 
-                (\<forall>x \<in> DOMAIN g : g[x] = f[x]) \<and> 
+  "isAFcn(f) \<Longrightarrow> (g @@ h = f) =
+                (DOMAIN f = (DOMAIN g) \<union> (DOMAIN h) \<and>
+                (\<forall>x \<in> DOMAIN g : g[x] = f[x]) \<and>
                 (\<forall>x \<in> DOMAIN h \\ DOMAIN g : h[x] = f[x]))"
 by auto
 
@@ -431,7 +431,7 @@ by auto
 
 subsubsection \<open> Injective functions \<close>
 
-definition InjectiveOn 
+definition InjectiveOn
 where "InjectiveOn(f,A) \<equiv> \<forall>x,y \<in> A \<inter> DOMAIN f : f[x] = f[y] \<Rightarrow> x = y"
 
 abbreviation Injective   \<comment> \<open> special case: injective function \<close>
@@ -460,7 +460,7 @@ lemma injectiveOnI:
 using assms by (auto simp: InjectiveOn_def)
 
 lemma injectiveOnD:
-  assumes "f[x] = f[y]" and "InjectiveOn(f,A)" 
+  assumes "f[x] = f[y]" and "InjectiveOn(f,A)"
   and "x \<in> A" and "x \<in> DOMAIN f" and "y \<in> A" and "y \<in> DOMAIN f"
   shows "x = y"
 using assms by (auto simp: InjectiveOn_def)
@@ -493,7 +493,7 @@ lemma inverseThenInjective:
   shows "InjectiveOn(f,A)"
 proof (rule injectiveOnI)
   fix x y
-  assume x: "x \<in> A" "x \<in> DOMAIN f" 
+  assume x: "x \<in> A" "x \<in> DOMAIN f"
      and y: "y \<in> A" "y \<in> DOMAIN f"
      and eq: "f[x] = f[y]"
   from x have x1: "x = g[f[x]]" by (rule sym[OF inv])
@@ -673,7 +673,7 @@ proof -
     by auto
   finally show ?thesis .
 qed
-  
+
 lemma injectionsI:
   assumes "f \<in> [S \<rightarrow> T]" and "\<And>x y. \<lbrakk> x \<in> S; y \<in> S; f[x] = f[y] \<rbrakk> \<Longrightarrow> x = y"
   shows "f \<in> Injections(S,T)"

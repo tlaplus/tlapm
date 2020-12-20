@@ -347,7 +347,7 @@ by blast
 lemma zenon_notin_cup_0 :
   "x \\notin A \\cup B ==> x \\notin A"
 by blast
-  
+
 lemma zenon_notin_cup_1 :
   "x \\notin A \\cup B ==> x \\notin B"
 by blast
@@ -542,7 +542,7 @@ proof -
       have h10: "x = v | x ~= v" by (rule excluded_middle)
       show "except (f, v, e)[x] \\in B"
       using h4 h9 h5 except_def by auto
-    qed  
+    qed
     show "except (f, v, e) \\in FuncSet (A, B)"
     using h6 h7 h8 FuncSet by blast
   qed
@@ -2689,7 +2689,7 @@ proof -
       using h0 h1 by auto
 
     from hf
-    have hh0: "?gxx" 
+    have hh0: "?gxx"
       by (rule zenon_disjE1 [OF _ hg1x])
     have hi: "cas \\in UNION {CaseArm (<<>>[i], <<>>[i])
                                  : i \\in DOMAIN <<>>}"
@@ -2795,7 +2795,7 @@ proof -
       using h0 h1 by auto
 
     from hf
-    have hh0: "?gxx" 
+    have hh0: "?gxx"
       by (rule zenon_disjE1 [OF _ hg1x])
     have hi: "cas \\in UNION {CaseArm (<<>>[i], <<>>[i])
                                  : i \\in DOMAIN <<>>}"

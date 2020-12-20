@@ -51,7 +51,7 @@ syntax
 
 text {*
   The following parse and print translations convert between the internal
-  and external representations of strings. Strings are written using 
+  and external representations of strings. Strings are written using
   two single quotes in Isabelle, such as \verb|''abc''|. Note that the
   empty string is just the empty sequence in \tlaplus{}, so \verb|''''| gets
   printed as @{term "\<langle>\<rangle>"}. Single characters are printed in the form
@@ -70,7 +70,7 @@ parse_ast_translation {*
     (* convert an ML character to a TLA+ Char *)
     fun mkChar c =
       if Symbol.is_ascii c
-      then Ast.Appl [Ast.Constant "Strings.char", 
+      then Ast.Appl [Ast.Constant "Strings.char",
                         mkNibble (ord c div 16), mkNibble (ord c mod 16)]
       else error ("Non-ASCII symbol: " ^ quote c);
 
@@ -87,7 +87,7 @@ parse_ast_translation {*
       | char_ast_tr asts = raise Ast.AST ("char_ast_tr", asts);
 
     (* parse AST translation for strings *)
-    fun string_ast_tr [Ast.Variable xstr] = 
+    fun string_ast_tr [Ast.Variable xstr] =
           list2TupleReverse (rev (Lexicon.explode_xstr xstr))
       | string_ast_tr asts = raise Ast.AST ("string_ast_tr", asts);
   in
@@ -110,7 +110,7 @@ oops
 
 print_ast_translation {*
   let
-    (* convert a nibble to an ML integer -- because translation macros have 
+    (* convert a nibble to an ML integer -- because translation macros have
        already been applied, we see constants "0" through "15", not Succ[...] terms! *)
     fun destNibble (Ast.Constant @{const_syntax "zero"}) = 0
       | destNibble (Ast.Constant @{const_syntax "one"}) = 1
@@ -134,7 +134,7 @@ print_ast_translation {*
     fun destNbls nb1 nb2 =
         let val specials = raw_explode "\"\\`'"
             val c = chr (destNibble nb1 * 16 + destNibble nb2)
-        in  if not (member (op =) specials c) andalso Symbol.is_ascii c 
+        in  if not (member (op =) specials c) andalso Symbol.is_ascii c
                andalso Symbol.is_printable c
             then c else raise Match
         end;
@@ -155,7 +155,7 @@ print_ast_translation {*
 
     (* print AST translation for single characters that do not occur in a string *)
     fun char_ast_tr' [nb1, nb2] =
-          Ast.Appl [Ast.Constant @{syntax_const "_Char"}, 
+          Ast.Appl [Ast.Constant @{syntax_const "_Char"},
                        list2String [destNbls nb1 nb2]]
       | char_ast_tr' _ = raise Match;
 

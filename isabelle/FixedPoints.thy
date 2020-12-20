@@ -14,7 +14,7 @@ begin
 text \<open>
   As a test for the encoding of \tlaplus{} set theory, we develop the
   Knaster-Tarski theorems for least and greatest fixed points in the
-  subset lattice. Again, the proofs essentially follow Paulson's 
+  subset lattice. Again, the proofs essentially follow Paulson's
   developments for Isabelle/ZF.
 \<close>
 

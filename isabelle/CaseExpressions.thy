@@ -41,7 +41,7 @@ definition Case where
   "Case(ps, es) \<equiv> CHOOSE x : x \<in> (UNION { CaseArm(ps[i], es[i]) : i \<in> DOMAIN ps })"
 
 definition CaseOther where
-  "CaseOther(ps, es, oth) \<equiv> 
+  "CaseOther(ps, es, oth) \<equiv>
    CHOOSE x : x \<in> (UNION { CaseArm(ps[i], es[i]) : i \<in> DOMAIN ps })
                   \<union> CaseArm((\<forall>i \<in> DOMAIN ps : \<not>ps[i]), oth)"
 
@@ -73,14 +73,14 @@ parse_ast_translation {*
     (* get_case_constituents extracts the lists of predicates, terms, and
        default value from the arms of a case expression.
        The order of the ASTs is reversed. *)
-    fun get_case_constituents (Ast.Appl[Ast.Constant "_other", t]) = 
+    fun get_case_constituents (Ast.Appl[Ast.Constant "_other", t]) =
             (* 1st case: single "OTHER" arm *)
             ([], [], SOME t)
-      | get_case_constituents (Ast.Appl[Ast.Constant "_case1", p, t]) = 
+      | get_case_constituents (Ast.Appl[Ast.Constant "_case1", p, t]) =
             (* 2nd case: a single arm, no "OTHER" branch *)
             ([p], [t], NONE)
-      | get_case_constituents (Ast.Appl[Ast.Constant "_case2", 
-                                    Ast.Appl[Ast.Constant "_case1", p, t], 
+      | get_case_constituents (Ast.Appl[Ast.Constant "_case2",
+                                    Ast.Appl[Ast.Constant "_case1", p, t],
                                     arms]) =
             (* 3rd case: one arm, followed by remaining arms *)
             let val (ps, ts, oth) = get_case_constituents arms
@@ -125,8 +125,8 @@ print_ast_translation {*
               | list_from_tp t = [t]
         in  list_from_tp tp
         end
-    (* make_case_arms constructs an AST representing the arms of the 
-       CASE expression. The result is an AST of "type" case_arms. 
+    (* make_case_arms constructs an AST representing the arms of the
+       CASE expression. The result is an AST of "type" case_arms.
        The lists of predicates and terms are of equal length,
        oth is optional. The lists can be empty only if "oth" is present,
        corresponding to a degenerated expression "CASE OTHER -> e". *)
@@ -138,7 +138,7 @@ print_ast_translation {*
             in  (* last arm: check if OTHER defaults *)
                 if oth = NONE
                 then arm
-                else Ast.Appl[Ast.Constant @{syntax_const "_case2"}, arm, 
+                else Ast.Appl[Ast.Constant @{syntax_const "_case2"}, arm,
                        Ast.Appl[Ast.Constant @{syntax_const "_other"}, the oth]]
             end
       | make_case_arms (p::ps) (t::ts) oth =
@@ -164,13 +164,13 @@ print_ast_translation {*
             val trms = list_from_tuple tTuple
         in  (* make sure that tuples are of equal length, otherwise give up *)
             if length prds = length trms
-            then Ast.Appl[Ast.Constant @{syntax_const "_case_syntax"}, 
+            then Ast.Appl[Ast.Constant @{syntax_const "_case_syntax"},
                              make_case_arms prds trms (SOME oth)]
             else Ast.Appl[Ast.Constant "CaseOther", pTuple, tTuple, oth]
         end
       | caseother_tr' _ = raise Match
   in
-    [(@{const_syntax "Case"}, case_syntax_tr'), 
+    [(@{const_syntax "Case"}, case_syntax_tr'),
      (@{const_syntax "CaseOther"}, caseother_tr')]
   end
 *}
