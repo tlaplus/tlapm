@@ -207,6 +207,8 @@ using assms by (auto simp: less_def dest: nat_Succ_leqD nat_leq_limit)
 text \<open> Reduce @{text "\<le>"} to @{text "<"}. \<close>
 
 lemma nat_leq_less:
+  fixes "m" :: "c"
+  fixes "n" :: "c"
   assumes (*"m \<in> Nat" and*) "n \<in> Nat"
   shows "m \<le> n = (m < n \<or> m = n)"
   using assms by (auto simp: less_def)
@@ -296,6 +298,9 @@ proof -
 qed
 
 lemma nat_leq_less_trans [trans]:
+  fixes "k" :: "c"
+  fixes "m" :: "c"
+  fixes "n" :: "c"
   assumes "k \<le> m" and "m < n" and "k \<in> Nat" and "m \<in> Nat" and "n \<in> Nat"
   shows "k < n"
 using assms by (auto simp: less_def dest: nat_leq_trans nat_leq_antisym)

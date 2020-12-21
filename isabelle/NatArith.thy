@@ -2,25 +2,29 @@
     Author:     Hernan Vanzetto, LORIA
     Copyright (C) 2009-2011  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2011-1
+    Version:    Isabelle2020
     Time-stamp: <2011-10-11 17:39:37 merz>
 *)
 
-header {* Arithmetic (except division) over natural numbers *}
+section \<open> Arithmetic (except division) over natural numbers \<close>
 
 theory NatArith
 imports NatOrderings
 begin
 
-ML{*
+named_theorems algebra_simps "algebra simplification rules"
+
+(*
+ML \<open>
 structure AlgebraSimps =
   Named_Thms(val name = "algebra_simps"
                val description = "algebra simplification rules");
-*}
+\<close>
 
 setup AlgebraSimps.setup
+*)
 
-text{*
+text \<open>
   The rewrites accumulated in @{text algebra_simps} deal with the
   classical algebraic structures of groups, rings and family. They simplify
   terms by multiplying everything out (in case of a ring) and bringing sums and
@@ -29,10 +33,10 @@ text{*
 
   Of course it also works for fields, but it knows nothing about multiplicative
   inverses or division. This should be catered for by @{text field_simps}.
-*}
+\<close>
 
 
-subsection {* Addition of natural numbers *}
+subsection \<open> Addition of natural numbers \<close>
 
 definition addnat
 where "addnat(m) \<equiv> CHOOSE g \<in> [Nat \<rightarrow> Nat] : g[0] = m \<and> (\<forall>x \<in> Nat : g[Succ[x]] = Succ[g[x]])"
@@ -40,7 +44,7 @@ where "addnat(m) \<equiv> CHOOSE g \<in> [Nat \<rightarrow> Nat] : g[0] = m \<an
 definition arith_add  :: "[c,c] \<Rightarrow> c"         (infixl "+" 65)
 where nat_add_def: "\<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> (m + n) \<equiv> addnat(m)[n]"
 
-text {* Closure *}
+text \<open> Closure \<close>
 
 lemma addnatType:
   assumes "m \<in> Nat" shows "addnat(m) \<in> [Nat \<rightarrow> Nat]"
@@ -50,7 +54,7 @@ lemma addIsNat [intro!,simp]:
   assumes "m \<in> Nat" and "n \<in> Nat" shows "m + n \<in> Nat"
 unfolding nat_add_def[OF assms] using assms addnatType by blast
 
-text {* Base case and Inductive case *}
+text \<open> Base case and Inductive case \<close>
 
 lemma addnat_0:
   assumes "m \<in> Nat" shows "addnat(m)[0] = m"
@@ -92,7 +96,7 @@ lemma add_Succ_shift_nat:
   shows "Succ[m] + n = m + Succ[n]"
 using assms by simp
 
-text {* Commutativity *}
+text \<open> Commutativity \<close>
 
 lemma add_commute_nat [algebra_simps]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
@@ -100,14 +104,14 @@ lemma add_commute_nat [algebra_simps]:
 using n apply induct
 using assms by auto
 
-text {* Associativity *}
+text \<open> Associativity \<close>
 
 lemma add_assoc_nat [algebra_simps]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and p: "p \<in> Nat"
   shows "m + (n + p) = (m + n) + p"
 using assms by (induct, simp_all)
 
-text {* Cancellation rules *}
+text \<open> Cancellation rules \<close>
 
 lemma add_left_cancel_nat [simp]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and p: "p \<in> Nat"
@@ -126,9 +130,9 @@ lemma add_left_commute_nat [algebra_simps]:
 using assms by(simp only: add_assoc_nat add_commute_nat)
 
 (* from HOL/OrderedGroups.thy *)
-theorems add_ac_nat = add_assoc_nat add_commute_nat add_left_commute_nat
+lemmas add_ac_nat = add_assoc_nat add_commute_nat add_left_commute_nat
 
-text {* Reasoning about @{text "m + n = 0"}, etc. *}
+text \<open> Reasoning about @{text "m + n = 0"}, etc. \<close>
 
 lemma add_is_0_nat [iff]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
@@ -157,7 +161,7 @@ using n apply (rule natCases)
 done
 
 
-subsection {* Multiplication of natural numbers *}
+subsection \<open> Multiplication of natural numbers \<close>
 
 definition multnat
 where "multnat(m) \<equiv> CHOOSE g \<in> [Nat \<rightarrow> Nat] : g[0] = 0 \<and> (\<forall>x \<in> Nat : g[Succ[x]] = g[x] + m)"
@@ -165,7 +169,7 @@ where "multnat(m) \<equiv> CHOOSE g \<in> [Nat \<rightarrow> Nat] : g[0] = 0 \<a
 definition mult :: "[c,c] \<Rightarrow> c"       (infixl "*" 70)
 where nat_mult_def: "\<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> m * n \<equiv> multnat(m)[n]"
 
-text {* Closure *}
+text \<open> Closure \<close>
 
 lemma multnatType:
   assumes "m \<in> Nat" shows "multnat(m) \<in> [Nat \<rightarrow> Nat]"
@@ -176,15 +180,16 @@ lemma multIsNat [intro!, simp]:
   shows "m * n \<in> Nat"
 unfolding nat_mult_def[OF assms] using assms multnatType by blast
 
-text {* Base case and Inductive step *}
+text \<open> Base case and Inductive step \<close>
 
 lemma multnat_0:
   assumes "m \<in> Nat" shows "multnat(m)[0] = 0"
 unfolding multnat_def by (rule primrec_natE, auto simp: assms)
 
-lemma mult_0_nat [simp]: -- {* neutral element *}
+lemma mult_0_nat [simp]:  (* -- "neutral element" *)
   assumes n: "n \<in> Nat" shows "n * 0 = 0"
 by (simp add: nat_mult_def[OF assms] multnat_0[OF assms])
+
 
 lemma multnat_Succ:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
@@ -213,14 +218,14 @@ lemma mult_Succ_left_nat [simp]:
 using n apply induct
 using m by (simp_all add: add_ac_nat)
 
-text {* Commutativity *}
+text \<open> Commutativity \<close>
 
 lemma mult_commute_nat [algebra_simps]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
   shows "m * n = n * m"
 using assms by (induct, simp_all)
 
-text {* Distributivity *}
+text \<open> Distributivity \<close>
 
 lemma add_mult_distrib_left_nat [algebra_simps]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and p: "p \<in> Nat"
@@ -257,13 +262,13 @@ proof -
     by simp
 qed
 
-text {* Identity element *}
+text \<open> Identity element \<close>
 
 (* used for arithmetic simplification setup *)
 lemma mult_1_right_nat: "a \<in> Nat \<Longrightarrow> a * 1 = a" by simp
 lemma mult_1_left_nat: "a \<in> Nat \<Longrightarrow> 1 * a = a" by simp
 
-text {* Associativity *}
+text \<open> Associativity \<close>
 
 lemma mult_assoc_nat[algebra_simps]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and p: "p \<in> Nat"
@@ -271,7 +276,7 @@ lemma mult_assoc_nat[algebra_simps]:
 using m apply induct
 using assms by (auto simp add: add_mult_distrib_right_nat)
 
-text {* Reasoning about @{text "m * n = 0"}, etc. *}
+text \<open> Reasoning about @{text "m * n = 0"}, etc. \<close>
 
 lemma mult_is_0_nat [simp]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
@@ -294,7 +299,7 @@ proof -
   finally show ?thesis .
 qed
 
-text {* Cancellation rules *}
+text \<open> Cancellation rules \<close>
 
 lemma mult_cancel1_nat [simp]:
   assumes k: "k \<in> Nat" and m: "m \<in> Nat" and n: "n \<in> Nat"
@@ -346,10 +351,10 @@ lemma mult_left_commute_nat[algebra_simps]:
 using assms by(simp only: mult_commute_nat mult_assoc_nat)
 
 (* from HOL/OrderedGroups.thy *)
-theorems mult_ac_nat = mult_assoc_nat mult_commute_nat mult_left_commute_nat
+lemmas mult_ac_nat = mult_assoc_nat mult_commute_nat mult_left_commute_nat
 
 
-subsection {* Predecessor *}
+subsection \<open> Predecessor \<close>
 
 definition Pred
 where "Pred \<equiv> [n \<in> Nat \<mapsto> IF n=0 THEN 0 ELSE CHOOSE x \<in> Nat : n=Succ[x]]"
@@ -369,13 +374,13 @@ lemma Pred_in_nat [intro!, simp]:
   assumes "n \<in> Nat" shows "Pred[n] \<in> Nat"
 using assms by (cases "n", auto)
 
-subsection {* Difference of natural numbers *}
+subsection \<open> Difference of natural numbers \<close>
 
-text {*
+text \<open>
   We define a form of difference @{text "--"} of natural numbers that cuts off
   at $0$, that is @{text "m -- n = 0"} if @{text "m < n"}. This is sometimes
   called ``arithmetic difference''.
-*}
+\<close>
 
 definition adiffnat
 where "adiffnat(m) \<equiv> CHOOSE g \<in> [Nat \<rightarrow> Nat] : g[0] = m \<and> (\<forall>x \<in> Nat : g[Succ[x]] = Pred[g[x]])"
@@ -383,7 +388,7 @@ where "adiffnat(m) \<equiv> CHOOSE g \<in> [Nat \<rightarrow> Nat] : g[0] = m \<
 definition adiff        (infixl "--" 65)
 where nat_adiff_def: "\<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> (m -- n) \<equiv> adiffnat(m)[n]"
 
-text {* Closure *}
+text \<open> Closure \<close>
 
 lemma adiffnatType:
   assumes "m \<in> Nat" shows "adiffnat(m) \<in> [Nat \<rightarrow> Nat]"
@@ -393,7 +398,7 @@ lemma adiffIsNat [intro!, simp]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" shows "m -- n \<in> Nat"
 unfolding nat_adiff_def[OF assms] using assms adiffnatType by blast
 
-text {* Neutral element and Inductive step *}
+text \<open> Neutral element and Inductive step \<close>
 
 lemma adiffnat_0:
   assumes "m \<in> Nat" shows "adiffnat(m)[0] = m"
@@ -424,7 +429,7 @@ lemma adiff_0_eq_0_nat [simp]:
   shows "0 -- n = 0"
 using n apply induct by (simp_all add: adiff_Succ_nat)
 
-text {* Reasoning about @{text "m -- m = 0"}, etc. *}
+text \<open> Reasoning about @{text "m -- m = 0"}, etc. \<close>
 
 lemma adiff_Succ_Succ_nat [simp]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
@@ -437,7 +442,7 @@ lemma adiff_self_eq_0_nat [simp]:
   shows  "m -- m = 0"
 using m apply induct by auto
 
-text {* Associativity *}
+text \<open> Associativity \<close>
 
 lemma adiff_adiff_left_nat:
   assumes i: "i \<in> Nat" and j: "j \<in> Nat" and k: "k \<in> Nat"
@@ -450,14 +455,14 @@ lemma Succ_adiff_adiff_nat [simp]:
   shows "(Succ[m] -- n) -- Succ[k] = (m -- n) -- k"
 using assms by (simp add: adiff_adiff_left_nat)
 
-text {* Commutativity *}
+text \<open> Commutativity \<close>
 
 lemma adiff_commute_nat:
   assumes i: "i \<in> Nat" and j: "j \<in> Nat" and k: "k \<in> Nat"
   shows "i -- j -- k = i -- k -- j"
 using assms by (simp add: adiff_adiff_left_nat add_commute_nat)
 
-text {* Cancellation rules *}
+text \<open> Cancellation rules \<close>
 
 lemma adiff_add_inverse_nat [simp]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
@@ -487,7 +492,7 @@ lemma adiff_add_0_nat [simp]:
 using n apply induct
 using assms by simp_all
 
-text {* Difference distributes over multiplication *}
+text \<open> Difference distributes over multiplication \<close>
 
 lemma adiff_mult_distrib_nat [algebra_simps]:
   assumes k: "k \<in> Nat" and m: "m \<in> Nat" and n: "n \<in> Nat"
@@ -500,15 +505,15 @@ lemma adiff_mult_distrib2_nat [algebra_simps]:
   shows "k * (m -- n) = (k * m) -- (k * n)"
 using assms by (simp add: adiff_mult_distrib_nat mult_commute_nat [of k])
 
--- {* NOT added as rewrites, since sometimes they are used from right-to-left *}
+(* -- "NOT added as rewrites, since sometimes they are used from right-to-left" *)
 lemmas nat_distrib =
   add_mult_distrib_right_nat add_mult_distrib_left_nat
   adiff_mult_distrib_nat adiff_mult_distrib2_nat
 
 
-subsection {* Additional arithmetic theorems *}
+subsection \<open> Additional arithmetic theorems \<close>
 
-subsubsection {* Monotonicity of Addition *}
+subsubsection \<open> Monotonicity of Addition \<close>
 
 lemma Succ_pred [simp]:
   assumes n: "n \<in> Nat"
@@ -539,9 +544,118 @@ using k apply induct
 using assms by simp_all
 
 lemma add_gr_0 [simp]:
-  assumes "n \<in> Nat" and "m \<in> Nat"
-  shows "(m + n > 0) = (m > 0 \<or> n > 0)"
-using assms by (auto dest: nat_gt0_implies_Succ nat_not_lessD)
+    assumes ndom: "n \<in> Nat" and mdom: "m \<in> Nat"
+    shows "(m + n > 0) = (m > 0 \<or> n > 0)"
+    proof -
+    have s1_1: "m + n > 0 ==> m > 0 \<or> n > 0"
+        proof -
+        assume s1_1_asm: "m + n > 0"
+        have s2_1: "m \<noteq> 0 \<or> n \<noteq> 0"
+            proof -
+            have s3_1: "m = 0 \<and> n = 0 ==> FALSE"
+                proof -
+                assume s3_1_asm: "m = 0 \<and> n = 0"
+                have s4_1: "m + n = 0"
+                    using s3_1_asm ndom mdom add_is_0_nat by auto
+                have s4_2: "m + n \<noteq> 0"
+                    unfolding less_def using s1_1_asm by auto
+                show "FALSE"
+                    using s4_1 s4_2 by auto
+                qed
+            show ?thesis
+                using s3_1 by auto
+            qed
+        show "m > 0 \<or> n > 0"
+            using s2_1 ndom mdom nat_gt0_not0 by auto
+        qed
+    have s1_2: "m > 0 \<or> n > 0 ==> m + n > 0"
+        proof -
+        assume s1_2_asm: "m > 0 \<or> n > 0"
+        have s2_1: "m > 0 ==> m + n > 0"
+            proof -
+            assume s2_1_asm: "m > 0"
+            have s3_1: "m + n > 0 + n"
+                proof -
+                have s4_1: "0 < m"
+                    using s2_1_asm by auto
+                have s4_2: "(0 + n < m + n) = (0 < m)"
+                    using ndom mdom zeroIsNat nat_add_right_cancel_less
+                        by blast
+                have s4_3: "0 + n < m + n"
+                    using s4_1 s4_2 by auto
+                show ?thesis
+                    using s4_3 by auto
+                qed
+            have s3_2: "0 + n = n"
+                using ndom add_0_nat add_commute_nat zeroIsNat
+                    by auto
+            have s3_3: "n >= 0"
+                using ndom nat_zero_leq by auto
+            have s3_4: "m + n >= 0 + n"
+                using s3_1 by (auto simp: less_def)
+            have s3_5: "m + n >= n"
+                using s3_4 s3_2 by auto
+            have s3_6: "m + n >= 0"
+                using s3_5 s3_3 nat_leq_trans
+                    zeroIsNat ndom mdom addIsNat by auto
+            have s3_7: "m + n = 0 ==> FALSE"
+                proof -
+                assume s3_7_asm: "m + n = 0"
+                have s4_1: "m = 0 \<and> n = 0"
+                    using s3_7_asm mdom ndom add_is_0_nat
+                        by auto
+                show "FALSE"
+                    using s4_1 s2_1_asm by (auto simp: less_def)
+                qed
+            show "m + n > 0"
+                unfolding less_def
+                using s3_6 s3_7 by auto
+            qed
+        have s2_2: "n > 0 ==> m + n > 0"
+            proof -
+            assume s2_2_asm: "n > 0"
+            have s3_1: "m + n > m + 0"
+                proof -
+                have s4_1: "0 < n"
+                    using s2_2_asm by auto
+                have s4_2: "(m + 0 < m + n) = (0 < n)"
+                    using ndom mdom zeroIsNat nat_add_left_cancel_less
+                        by blast
+                have s4_3: "m + 0 < m + n"
+                    using s4_1 s4_2 by auto
+                show ?thesis
+                    using s4_3 by auto
+                qed
+            have s3_2: "m + 0 = m"
+                using mdom add_0_nat by auto
+            have s3_3: "m >= 0"
+                using mdom nat_zero_leq by auto
+            have s3_4: "m + n >= m + 0"
+                using s3_1 by (auto simp: less_def)
+            have s3_5: "m + n >= m"
+                using s3_4 s3_2 by auto
+            have s3_6: "m + n >= 0"
+                using s3_5 s3_3 nat_leq_trans
+                    zeroIsNat ndom mdom addIsNat by auto
+            have s3_7: "m + n = 0 ==> FALSE"
+                proof -
+                assume s3_7_asm: "m + n = 0"
+                have s4_1: "m = 0 \<and> n = 0"
+                    using s3_7_asm mdom ndom add_is_0_nat
+                        by auto
+                show "FALSE"
+                    using s4_1 s2_2_asm by (auto simp: less_def)
+                qed
+            show "m + n > 0"
+                unfolding less_def
+                using s3_6 s3_7 by auto
+            qed
+        show "m + n > 0"
+            using s1_2_asm s2_1 s2_2 by auto
+        qed
+    show ?thesis
+        using s1_1 s1_2 by auto
+    qed
 
 lemma less_imp_Succ_add:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
@@ -571,11 +685,11 @@ apply (induct n p rule: diffInduct)
 using assms by simp_all
 
 
-subsubsection {* (Partially) Ordered Groups *}
+subsubsection \<open> (Partially) Ordered Groups \<close>
 
--- {* The two following lemmas are just ``one half'' of
+(* -- "The two following lemmas are just ``one half'' of
       @{text nat_add_left_cancel_leq} and @{text nat_add_right_cancel_leq}
-      proved above. *}
+      proved above." *)
 lemma add_leq_left_mono:
   assumes a: "a \<in> Nat" and b: "b \<in> Nat" and c: "c \<in> Nat"
   shows "a \<le> b \<Longrightarrow> c + a \<le> c + b"
@@ -586,7 +700,7 @@ lemma add_leq_right_mono:
   shows "a \<le> b \<Longrightarrow> a + c \<le> b + c"
 using assms by simp
 
-text {* non-strict, in both arguments *}
+text \<open> non-strict, in both arguments \<close>
 lemma add_leq_mono:
   assumes a: "a \<in> Nat" and b: "b \<in> Nat" and c: "c \<in> Nat" and d: "d \<in> Nat"
   shows "a \<le> b \<Longrightarrow> c \<le> d \<Longrightarrow> a + c \<le> b + d"
@@ -596,18 +710,43 @@ using assms
   nat_leq_trans[of "a + c" "b + c" "b + d"]
 by simp
 
--- {* Similar for strict less than. *}
+(* -- "Similar for strict less than." *)
 lemma add_less_left_mono:
   assumes a: "a \<in> Nat" and b: "b \<in> Nat" and c: "c \<in> Nat"
   shows "a < b \<Longrightarrow> c + a < c + b"
-using assms by simp
+    proof -
+    have s1_1: "a <= b ==> c + a <= c + b"
+        using a b c add_leq_left_mono by auto
+    have s1_2: "a \<noteq> b ==> (c + a) \<noteq> (c + b)"
+        using a b c add_left_cancel_nat by auto
+    have s1_3: "a < b ==> c + a < c + b"
+        proof -
+        assume s1_3_asm: "a < b"
+        have s2_1: "a <= b"
+            using s1_3_asm by (auto simp: less_def)
+        have s2_2: "a \<noteq> b"
+            using s1_3_asm by (auto simp: less_def)
+        have s2_3: "c + a <= c + b"
+            using s1_1 s2_1 by auto
+        have s2_4: "(c + a) \<noteq> (c + b)"
+            using s1_2 s2_2 by auto
+        show "c + a < c + b"
+            using s2_3 s2_4 by (auto simp: less_def)
+        qed
+    show "a < b \<Longrightarrow> c + a < c + b"
+        using a b c s1_3 by auto
+    qed
+(*
+using assms add_leq_left_mono[OF "a" "b" "c"] add_left_cancel_nat[OF "c" "b" "a"]
+    by (auto simp: nat_less_Succ_iff_leq nat_gt0_not0)
+*)
 
 lemma add_less_right_mono:
   assumes a: "a \<in> Nat" and b: "b \<in> Nat" and c: "c \<in> Nat"
   shows "a < b \<Longrightarrow> a + c < b + c"
-using assms by simp
+using assms add_less_left_mono add_commute_nat by auto
 
-text{* Strict monotonicity in both arguments *}
+text \<open> Strict monotonicity in both arguments \<close>
 lemma add_less_mono:
   assumes a: "a \<in> Nat" and b: "b \<in> Nat" and c: "c \<in> Nat" and d: "d \<in> Nat"
   shows "a < b \<Longrightarrow> c < d \<Longrightarrow> a + c < b + d"
@@ -671,14 +810,36 @@ lemma trans_leq_add2:
 using assms by (auto elim: nat_leq_trans)
 
 lemma trans_less_add1:
-  assumes "i < j" and "i \<in> Nat" and "j \<in> Nat" and "m \<in> Nat"
+  assumes ij: "i < j" and idom: "i \<in> Nat" and
+    jdom: "j \<in> Nat" and mdom: "m \<in> Nat"
   shows "i < j + m"
-using assms by (auto elim: nat_less_leq_trans)
+    proof -
+    have s1_1: "i <= i + m"
+        proof -
+        have s2_1: "0 <= m"
+            using mdom nat_zero_leq by auto
+        have s2_2: "i + 0 <= i + m"
+            using idom zeroIsNat mdom s2_1 nat_add_left_cancel_leq by auto
+        have s2_3: "i + 0 = i"
+            using idom add_0_nat by auto
+        show ?thesis
+            using s2_2 s2_3 by auto
+        qed
+    have s1_2: "i + m < j + m"
+        using ij idom jdom mdom add_less_right_mono by auto
+    have s1_3: "i + m \<in> Nat"
+        using idom mdom addIsNat by auto
+    have s1_4: "j + m \<in> Nat"
+        using jdom mdom addIsNat by auto
+    show ?thesis
+        using s1_1 s1_2 idom s1_3 s1_4 nat_leq_less_trans
+            by auto
+    qed
 
 lemma trans_less_add2:
   assumes "i < j" and "i \<in> Nat" and "j \<in> Nat" and "m \<in> Nat"
   shows "i < m + j"
-using assms by (auto elim: nat_less_leq_trans)
+using assms trans_less_add1 add_commute_nat by auto
 
 lemma add_lessD1:
   assumes "i+j < k" and "i \<in> Nat" and "j \<in> Nat" and "k \<in> Nat"
@@ -711,15 +872,32 @@ lemma add_leqE:
 using assms by (blast dest: add_leqD1 add_leqD2)
 
 lemma leq_add_left_false [simp]:
-  assumes m: "m \<in> Nat" and n: "n \<in> Nat" and "n \<noteq> 0"
+  assumes mdom: "m \<in> Nat" and ndom: "n \<in> Nat" and n0: "n \<noteq> 0"
   shows "m + n \<le> m = FALSE"
-using assms nat_leq_less[of "m + n" m] add_eq_self_zero_nat[OF m n] by auto
+    proof -
+    have s1_1: "m + n \<le> m = (m + n < m \<or> m + n = m)"
+        proof -
+        define p where "p \<equiv> m + n"
+        have s2_1: "p \<le> m = (p < m \<or> p = m)"
+            using mdom nat_leq_less by auto
+        show ?thesis
+            using s2_1 by (auto simp: p_def)
+        qed
+    have s1_2: "(m + n = m) = (n = 0)"
+        using mdom ndom add_eq_self_zero_nat[of "m" "n"] by auto
+    have s1_3: "(m + n <= m) = (m + n < m)"
+        using n0 s1_1 s1_2 by auto
+    have s1_4: "(m + n < m) = FALSE"
+        using mdom ndom not_add_less1[of "m" "n"] by auto
+    show ?thesis
+        using s1_3 s1_4 by auto
+    qed
 
 
-subsubsection {* More results about arithmetic difference *}
+subsubsection \<open> More results about arithmetic difference \<close>
 
-text {* Addition is the inverse of subtraction:
-  if @{term "n \<le> m"} then @{term "n + (m -- n) = m"}. *}
+text \<open> Addition is the inverse of subtraction:
+  if @{term "n \<le> m"} then @{term "n + (m -- n) = m"}. \<close>
 lemma add_adiff_inverse:
   assumes "m \<in> Nat" and "n \<in> Nat"
   shows "\<not>(m < n) \<Longrightarrow> n + (m -- n) = m"
@@ -752,7 +930,7 @@ lemma adiff_leq_self [simp]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
   shows "m -- n \<le> m"
 apply (induct m n rule: diffInduct)
-using assms by simp_all
+using assms by auto
 
 lemma leq_iff_add:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
@@ -771,10 +949,14 @@ qed
 lemma less_imp_adiff_less:
   assumes jk: "j < k" and j: "j \<in> Nat" and k: "k \<in> Nat" and n: "n \<in> Nat"
   shows "j -- n < k"
-proof -
-  from j n have "j -- n \<in> Nat" "j -- n \<le> j" by simp+
-  with j k jk show ?thesis by (auto elim: nat_leq_less_trans)
-qed
+    proof -
+    have s1_1: "j -- n \<in> Nat"
+        using j n by simp+
+    have s1_2: "j -- n \<le> j"
+        using j n by simp+
+    show ?thesis
+        using j k jk s1_1 s1_2 nat_leq_less_trans by auto
+    qed
 
 lemma adiff_Succ_less (*[simp]*):
   assumes i: "i \<in> Nat" and n: "n \<in> Nat"
@@ -827,15 +1009,17 @@ lemma zero_less_adiff [simp]:
 by (induct m n rule: diffInduct, simp_all add: assms)
 
 lemma less_imp_add_positive:
-  assumes "i < j" and i: "i \<in> Nat" and j: "j \<in> Nat"
+  assumes ij: "i < j" and i: "i \<in> Nat" and j: "j \<in> Nat"
   shows "\<exists>k \<in> Nat: 0 < k \<and> i + k = j"
 proof -
-  from assms have "i \<le> j" by auto
-  with i j have "i + (j -- i) = j" by simp
-  moreover
-  from assms have "j -- i \<in> Nat" "0 < j -- i" by simp+
-  ultimately
-  show ?thesis by blast
+  have s1_1: "i + (j -- i) = j"
+    using i j ij le_add_adiff_inverse by (auto simp: less_def)
+  have s1_2: "j -- i \<in> Nat"
+    using assms by simp+
+  have s1_3: "0 < j -- i"
+    using assms zero_less_adiff by auto
+  show ?thesis
+    using s1_1 s1_2 s1_3 by blast
 qed
 
 lemma leq_adiff_right_add_left:
@@ -866,7 +1050,7 @@ using p h apply (induct)
 using n by auto
 
 
-subsubsection {* Monotonicity of Multiplication *}
+subsubsection \<open> Monotonicity of Multiplication \<close>
 
 (* from HOL/Ring_and_Field.thy *)
 
@@ -882,7 +1066,7 @@ lemma mult_leq_right_mono:
 using c apply induct
 using 1 a b by (simp_all add: add_leq_mono add_commute_nat)
 
-text {* @{text "\<le>"} monotonicity, BOTH arguments *}
+text \<open> @{text "\<le>"} monotonicity, BOTH arguments \<close>
 
 lemma mult_leq_mono:
   assumes 1: "i \<le> j" "k \<le> l"
@@ -894,29 +1078,95 @@ using assms
   nat_leq_trans[of "i * k" "j * k" "j * l"]
 by simp
 
-text {* strict, in 1st argument *}
+text \<open> strict, in 1st argument \<close>
 
 lemma mult_less_left_mono:
-  assumes 1: "i < j" "0 < k" and i: "i \<in> Nat" and j: "j \<in> Nat" and k: "k \<in> Nat"
+  assumes ij: "i < j" and k0: "0 < k" and
+    idom: "i \<in> Nat" and jdom: "j \<in> Nat" and kdom: "k \<in> Nat"
   shows "k * i < k * j"
-using 1
-proof (auto simp: nat_gt0_iff_Succ[OF k])
-  fix m
-  assume m: "m \<in> Nat" and "i < j"
-  with m i j show "Succ[m] * i < Succ[m] * j"
-    by (induct m, simp_all add: add_less_mono)
-qed
+    proof -
+    have s1_1: "Succ[0] * i < Succ[0] * j"
+        using mult_1_left_nat ij idom jdom by auto
+    have s1_2: "\<And> n.  \<lbrakk>
+            n \<in> Nat;
+            Succ[n] * i < Succ[n] * j
+        \<rbrakk> \<Longrightarrow>
+            Succ[Succ[n]] * i < Succ[Succ[n]] * j"
+        proof -
+        fix "n" :: "c"
+        assume s1_2_ndom: "n \<in> Nat"
+        assume s1_2_induct: "Succ[n] * i < Succ[n] * j"
+        have s2_1: "Succ[n] * i + i < Succ[n] * j + j"
+            proof -
+            have s3_1: "Succ[n] \<in> Nat"
+                using s1_2_ndom succIsNat by auto
+            have s3_2: "Succ[n] * i \<in> Nat"
+                using s3_1 idom multIsNat by auto
+            have s3_3: "Succ[n] * j \<in> Nat"
+                using s3_1 jdom multIsNat by auto
+            show ?thesis
+                using s3_2 s3_3 idom jdom s1_2_induct ij
+                    add_less_mono by auto
+            qed
+        have s2_2: "i * Succ[n] + i < j * Succ[n] + j"
+            proof -
+            have s3_1: "Succ[n] \<in> Nat"
+                using s1_2_ndom succIsNat by auto
+            have s3_2: "Succ[n] * i = i * Succ[n]"
+                using s3_1 idom mult_commute_nat by auto
+            have s3_3: "Succ[n] * j = j * Succ[n]"
+                using s3_1 jdom mult_commute_nat by auto
+            show ?thesis
+                using s2_1 s3_2 s3_3 by auto
+            qed
+        have s2_3: "i * Succ[Succ[n]] < j * Succ[Succ[n]]"
+            proof -
+            have s3_1: "Succ[n] \<in> Nat"
+                using s1_2_ndom succIsNat by auto
+            have s3_2: "i * Succ[Succ[n]] = i * Succ[n] + i"
+                using idom s3_1 multnat_Succ by (auto simp: nat_mult_def)
+            have s3_3: "j * Succ[Succ[n]] = j * Succ[n] + j"
+                using jdom s3_1 multnat_Succ by (auto simp: nat_mult_def)
+            show ?thesis
+                using s2_2 s3_2 s3_3 by auto
+            qed
+        have s2_4: "i * Succ[Succ[n]] = Succ[Succ[n]] * i"
+            proof -
+            have s3_1: "Succ[Succ[n]] \<in> Nat"
+                using s1_2_ndom succIsNat by auto
+            show ?thesis
+                using s3_1 idom mult_commute_nat by auto
+            qed
+        have s2_5: "j * Succ[Succ[n]] = Succ[Succ[n]] * j"
+            proof -
+            have s3_1: "Succ[Succ[n]] \<in> Nat"
+                using s1_2_ndom succIsNat by auto
+            show ?thesis
+                using s3_1 jdom mult_commute_nat by auto
+            qed
+        show "Succ[Succ[n]] * i < Succ[Succ[n]] * j"
+            using s2_3 s2_4 s2_5 by auto
+        qed
+    have s1_3: "\<forall> n \<in> Nat:  Succ[n] * i < Succ[n] * j"
+        using s1_1 s1_2
+            natInduct[of "\<lambda> q.  Succ[q] * i < Succ[q] * j"] by auto
+    show ?thesis
+        using s1_3 nat_gt0_iff_Succ[of "k"] k0 kdom by auto
+    qed
 
 lemma mult_less_right_mono:
   assumes 1: "i < j" "0 < k" and i: "i \<in> Nat" and j: "j \<in> Nat" and k: "k \<in> Nat"
   shows "i * k < j * k"
-using 1
-proof (auto simp: nat_gt0_iff_Succ[OF k])
-  fix m
-  assume m: "m \<in> Nat" and "i < j"
-  with m i j show "i * Succ[m] < j * Succ[m]"
-    by (induct m, simp_all add: add_less_mono)
-qed
+    proof -
+    have s1_1: "k * i < k * j"
+        using 1 i j k mult_less_left_mono by auto
+    have s1_2: "k * i = i * k"
+        using i k mult_commute_nat by auto
+    have s1_3: "k * j = j * k"
+        using j k mult_commute_nat by auto
+    show ?thesis
+        using s1_1 s1_2 s1_3 by auto
+    qed
 
 lemma nat_0_less_mult_iff [simp]:
   assumes i: "i \<in> Nat" and j: "j \<in> Nat"
@@ -929,7 +1179,7 @@ done
 lemma one_leq_mult_iff (*[simp]*):
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
   shows "(1 \<le> m * n) = (1 \<le> m \<and> 1 \<le> n)"
-using assms by simp
+using assms nat_gt0_not0 by simp
 
 lemma mult_less_cancel_left [simp]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and k: "k \<in> Nat"
@@ -966,47 +1216,140 @@ next
 qed
 
 lemma mult_less_self_left [dest]:
-  assumes less: "n*k < n" and n: "n \<in> Nat" and k: "k \<in> Nat"
+  assumes less: "n * k < n" and n: "n \<in> Nat" and k: "k \<in> Nat"
   shows "k=0"
-using k assms by (cases, auto)
+    proof -
+    have s1_1: "1 \<le> k ==> FALSE"
+        proof -
+        assume s1_1_asm: "1 \<le> k"
+        have s2_1: "n * 1 \<le> n * k"
+            using n k oneIsNat s1_1_asm mult_leq_left_mono[of "1" "k" "n"]
+                by auto
+        have s2_2: "n \<le> n * k"
+            proof -
+            have s3_1: "n * 1 = n"
+                using n mult_1_right_nat by auto
+            show ?thesis
+                using s2_1 s3_1 by auto
+            qed
+        define p where "p \<equiv> n"
+        define q where "q \<equiv> n * k"
+        have s2_3: "q < p"
+            unfolding p_def q_def using less by auto
+        have s2_4: "n < p"
+            proof -
+            have s3_1: "q \<in> Nat"
+                unfolding q_def using n k multIsNat by auto
+            have s3_2: "p \<in> Nat"
+                unfolding p_def using n by auto
+            have s3_3: "n \<le> q"
+                unfolding q_def using s2_2 by auto
+            show ?thesis
+                using s3_1 s3_2 n s3_3 s2_3
+                    nat_leq_less_trans[of "n" "q" "p"]
+                    by auto
+            qed
+        have s2_5: "n \<noteq> n"
+            using s2_4 by (auto simp: less_def p_def)
+        show "FALSE"
+            using s2_5 by auto
+        qed
+    have s1_2: "\<not> (1 \<le> k)"
+        using s1_1 by auto
+    show ?thesis
+        using s1_2 k nat_not_leq_one[of "k"] by auto
+    qed
 
 lemma mult_less_self_right [dest]:
   assumes less: "k*n < n" and n: "n \<in> Nat" and k: "k \<in> Nat"
   shows "k=0"
-using k assms by (cases, auto)
+    proof -
+    have s1_1: "n * k < n"
+        proof -
+        have s2_1: "k * n = n * k"
+            using n k mult_commute_nat by auto
+        show ?thesis
+            using less s2_1 by auto
+        qed
+    show ?thesis
+        using s1_1 n k mult_less_self_left by auto
+    qed
 
 lemma mult_leq_cancel_left [simp]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and k: "k \<in> Nat"
   shows "(k * m \<le> k * n) = (k = 0 \<or> m \<le> n)"
-using assms proof (auto simp: mult_leq_left_mono nat_neq0_conv[simplified])
-  assume 1: "k*m \<le> k*n" and 2: "0 < k"
-  show "m \<le> n"
-  proof (rule contradiction)
-    assume "\<not>(m \<le> n)"
-    with 2 m n k have "k*n < k*m" by (simp add: nat_not_order_simps mult_less_left_mono)
-    with m n k have "\<not>(k*m \<le> k*n)" by (simp add: nat_not_order_simps)
-    with 1 show "FALSE" by simp
-  qed
-qed
+    proof -
+    have s1_1: "(k * m \<le> k * n) ==> (k = 0 \<or> m \<le> n)"
+        proof -
+        assume s1_1_asm: "k * m \<le> k * n"
+        have s2_1: "\<not> (k = 0) ==> m \<le> n"
+            proof -
+            assume s2_1_asm: "\<not> (k = 0)"
+            have s3_1: "k > 0"
+                using k nat_gt0_not0 s2_1_asm by auto
+            have s3_2: "\<not>(m \<le> n) ==> FALSE"
+                proof -
+                assume s3_2_asm: "\<not>(m \<le> n)"
+                have s2_1: "n < m"
+                    using s3_2_asm m n nat_not_leq[of "m" "n"] by auto
+                have s2_2: "k * n < k * m"
+                    using s3_1 s2_1 m n k mult_less_left_mono[of "n" "m" "k"] by auto
+                with m n k have s2_3: "\<not> (k * m \<le> k * n)"
+                    by (simp add: nat_not_order_simps)
+                show "FALSE"
+                    using s2_2 s2_3 s1_1_asm by auto
+                qed
+            show "m \<le> n"
+                using s3_2 by auto
+            qed
+        show "k = 0 \<or> m \<le> n"
+            using s2_1 by auto
+        qed
+    have s1_2: "(k = 0 \<or> m \<le> n) ==> (k * m \<le> k * n)"
+        proof -
+        assume s1_2_asm: "k = 0 \<or> m \<le> n"
+        have s2_1: "k = 0 ==> k * m \<le> k * n"
+            proof -
+            assume s2_1_asm: "k = 0"
+            have s3_1: "k * m = 0"
+                using s2_1_asm m mult_0_left_nat by auto
+            have s3_2: "k * n = 0"
+                using s2_1_asm n mult_0_left_nat by auto
+            show "k * m \<le> k * n"
+                using s3_1 s3_2 by auto
+            qed
+        have s2_2: "m \<le> n ==> k * m \<le> k * n"
+            proof -
+            assume s2_2_asm: "m \<le> n"
+            show "k * m \<le> k * n"
+                using s2_2_asm m n k mult_leq_left_mono by auto
+            qed
+        show "k * m \<le> k * n"
+            using s1_2_asm s2_1 s2_2 by auto
+        qed
+    show ?thesis
+        using s1_1 s1_2 by auto
+    qed
 
 lemma mult_leq_cancel_right [simp]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and k: "k \<in> Nat"
   shows "(m * k \<le> n * k) = (k = 0 \<or> m \<le> n)"
-using assms proof (auto simp: mult_leq_right_mono nat_neq0_conv[simplified])
-  assume 1: "m*k \<le> n*k" and 2: "0 < k"
-  show "m \<le> n"
-  proof (rule contradiction)
-    assume "\<not>(m \<le> n)"
-    with 2 m n k have "n*k < m*k" by (simp add: nat_not_order_simps mult_less_right_mono)
-    with m n k have "\<not>(m*k \<le> n*k)" by (simp add: nat_not_order_simps)
-    with 1 show "FALSE" by simp
-  qed
-qed
+    proof -
+    have s1_1: "(k * m \<le> k * n) = (k = 0 \<or> m \<le> n)"
+        using m n k mult_leq_cancel_left by auto
+    have s1_2: "k * m = m * k"
+        using k m mult_commute_nat by auto
+    have s1_3: "k * n = n * k"
+        using k n mult_commute_nat by auto
+    show ?thesis
+        using s1_1 s1_2 s1_3 by auto
+    qed
 
 lemma Suc_mult_less_cancel1:
   assumes "m \<in> Nat" and "n \<in> Nat" and "k \<in> Nat"
   shows "(Succ[k] * m < Succ[k] * n) = (m < n)"
-using assms by (simp del: mult_Succ_left_nat)
+using assms mult_less_cancel_left[of "m" "n" "Succ[k]"]
+    nat_zero_less_Succ[of "k"] by auto
 
 lemma Suc_mult_leq_cancel1:
   assumes "m \<in> Nat" and "n \<in> Nat" and "k \<in> Nat"
@@ -1023,7 +1366,7 @@ lemma nat_leq_cube:
   shows "m \<le> m * (m * m)"
 using m by (cases, auto)
 
-text {* Lemma for @{text gcd} *}
+text \<open> Lemma for @{text gcd} \<close>
 lemma mult_eq_self_implies_10:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
   shows "(m * n = m) = (n = 1 \<or> m = 0)" (is "?lhs = ?rhs")
@@ -1032,6 +1375,5 @@ proof -
   also have "... = ?rhs" by (rule mult_cancel1_nat[OF m n oneIsNat])
   finally show ?thesis .
 qed
-
 
 end
