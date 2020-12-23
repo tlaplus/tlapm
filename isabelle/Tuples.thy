@@ -541,6 +541,7 @@ syntax
   "@domrngs"    :: "[domrng, domrngs] \<Rightarrow> domrngs" ("_,/ _")
   "@EnumFuncSet":: "domrngs \<Rightarrow> c"                 ("[_]")
 
+(*
 parse_ast_translation \<open>
   let
     (* make_tuple converts a list of ASTs to a tuple formed from these ASTs.
@@ -603,6 +604,7 @@ print_ast_translation \<open>
     [(@{const_syntax "EnumFuncSet"}, enum_funcset_tr')]
   end
 \<close>
+*)
 (*** Examples ***
 
 lemma "(1 :> TRUE) \<in> [1 : BOOLEAN]"
