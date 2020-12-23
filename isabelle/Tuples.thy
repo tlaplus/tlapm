@@ -31,13 +31,13 @@ text \<open>
   on sequences require arithmetic and will be introduced in a separate theory.
 \<close>
 
-definition Seq  -- {* set of finite sequences with elements from $S$ *}
+definition Seq  (* -- \<open> set of finite sequences with elements from $S$ \<close> *)
 where "Seq(S) \<equiv> UNION { [ 1 .. n \<rightarrow> S] : n \<in> Nat }"
 
-definition isASeq  -- {* characteristic predicate for sequences or tuples *}
+definition isASeq  (* -- \<open> characteristic predicate for sequences or tuples \close> *)
 where "isASeq(s) \<equiv> isAFcn(s) \<and> (\<exists>n \<in> Nat : DOMAIN s = 1 .. n)"
 
-definition Len  -- {* length of a sequence *}
+definition Len  (* -- \<open> length of a sequence \<close> *)
 where "Len(s) \<equiv> CHOOSE n \<in> Nat : DOMAIN s = 1 .. n"
 
 lemma isASeqIsBool [intro!,simp]:
@@ -80,7 +80,7 @@ lemma SeqIsAFcn (*[elim!]*):
   shows "isAFcn(s)"
 using assms by auto
 
--- {* @{text "s \<in> Seq(S) \<Longrightarrow> isAFcn(s)"} *}
+(* -- \<open> @{text "s \<in> Seq(S) \<Longrightarrow> isAFcn(s)"} \<close> *)
 lemmas SeqIsAFcn' (*[elim!]*) = SeqIsASeq[THEN SeqIsAFcn, standard]
 
 lemma LenInNat [simp]:
@@ -88,7 +88,7 @@ lemma LenInNat [simp]:
   shows "Len(s) \<in> Nat"
 using assms by auto
 
--- {* @{text "s \<in> Seq(S) \<Longrightarrow> Len(s) \<in> Nat"} *}
+(* -- \<open> @{text "s \<in> Seq(S) \<Longrightarrow> Len(s) \<in> Nat"} \<close> *)
 lemmas LenInNat' [simp] = SeqIsASeq[THEN LenInNat, standard]
 
 lemma DomainSeqLen [simp]:
@@ -96,7 +96,7 @@ lemma DomainSeqLen [simp]:
   shows "DOMAIN s = 1 .. Len(s)"
 using assms by auto
 
--- {* @{text "s \<in> Seq(S) \<Longrightarrow> DOMAIN s = 1 .. Len(s)"} *}
+(* -- \<open> @{text "s \<in> Seq(S) \<Longrightarrow> DOMAIN s = 1 .. Len(s)"} \<close> *)
 lemmas DomainSeqLen' (*[simp,elim!]*) = SeqIsASeq[THEN DomainSeqLen, standard]
 
 lemma seqEqualI:
@@ -121,7 +121,7 @@ lemma SeqI [intro!]:
   shows "s \<in> Seq(S)"
 using assms by (auto simp: Seq_def)
 
-lemma SeqI':  -- {* closer to the definition but probably less useful *}
+lemma SeqI':  (* -- \<open> closer to the definition but probably less useful \<close> *)
   assumes "s \<in> [1 .. n \<rightarrow> S]" and "n \<in> Nat"
   shows "s \<in> Seq(S)"
 using assms by (auto simp: Seq_def)
@@ -179,7 +179,7 @@ where "Append(s,e) \<equiv> [k \<in> 1 .. Succ[Len(s)] \<mapsto> IF k = Succ[Len
 lemma emptySeqIsASeq [simp,intro!]: "isASeq(\<langle>\<rangle>)"
 by (auto simp: emptySeq_def isASeq_def)
 
--- {* @{text "isAFcn(\<langle>\<rangle>)"} *}
+(* -- \<open> @{text "isAFcn(\<langle>\<rangle>)"} \<close> *)
 lemmas emptySeqIsAFcn [simp,intro!] = emptySeqIsASeq[THEN SeqIsAFcn]
 
 lemma lenEmptySeq [simp]: "Len(\<langle>\<rangle>) = 0"
@@ -199,7 +199,7 @@ lemma appendIsASeq [simp,intro!]:
 using s unfolding Append_def
 by (rule isASeqE, intro isASeqI, auto simp del: natIntervalSucc)
 
--- {* @{text "isASeq(s) \<Longrightarrow> isAFcn(Append(s,e))"}  *}
+(* -- \<open> @{text "isASeq(s) \<Longrightarrow> isAFcn(Append(s,e))"} \<close> *)
 lemmas appendIsAFcn [simp,intro!] = appendIsASeq[THEN SeqIsAFcn, standard]
 
 lemma domainEmptySeq [simp]: "DOMAIN \<langle>\<rangle> = {}"
@@ -213,11 +213,11 @@ lemma isEmptySeq [intro!]:
   "\<lbrakk>isAFcn(f); DOMAIN f = {}\<rbrakk> \<Longrightarrow> \<langle>\<rangle> = f"
 by auto
 
--- {* immediate consequence of @{text isEmptySeq} *}
+(* -- \<open> immediate consequence of @{text isEmptySeq} \<close> *)
 lemma emptySeqEmptyFcn: "\<langle>\<rangle> = [x \<in> {} \<mapsto> y]"
 by auto
 
--- {* Symmetric equation could be a useful rewrite rule (it is applied by TLC) *}
+(* -- \<open> Symmetric equation could be a useful rewrite rule (it is applied by TLC) \<close> *)
 lemmas emptyFcnEmptySeq = sym[OF emptySeqEmptyFcn, standard]
 
 lemma emptyDomainIsEmptySeq [simp]: "(f \<in> [{} \<rightarrow> S]) = (f = \<langle>\<rangle>)"
@@ -243,7 +243,7 @@ lemma lenAppend [simp]:
   shows "Len(Append(s,e)) = Succ[Len(s)]"
 using assms by (intro LenI, auto simp: Append_def)
 
--- {* @{text "s \<in> Seq(S) \<Longrightarrow> Len(Append(s,e)) = Succ[Len(s)]"} *}
+(* -- \<open> @{text "s \<in> Seq(S) \<Longrightarrow> Len(Append(s,e)) = Succ[Len(s)]"} \<close> *)
 lemmas lenAppend' [simp] = SeqIsASeq[THEN lenAppend, standard]
 
 lemma appendElt [simp]:
@@ -398,7 +398,7 @@ proof -
   with s show ?thesis unfolding Seq_def by auto
 qed
 
--- {* example of an inductive proof about sequences *}
+(* -- \<open> example of an inductive proof about sequences \<close> *)
 lemma seqEmptyOrAppend:
   assumes "s \<in> Seq(S)"
   shows "s = \<langle>\<rangle> \<or> (\<exists>s' \<in> Seq(S): \<exists>e \<in> S : s = Append(s',e))"
@@ -508,7 +508,7 @@ definition EnumFuncSet :: "c \<Rightarrow> c \<Rightarrow> c"
 where "EnumFuncSet(doms, rngs) \<equiv> { f \<in> [Range(doms) \<rightarrow> UNION Range(rngs)] :
                                      \<forall>i \<in> DOMAIN doms : f[doms[i]] \<in> rngs[i] }"
 
-lemmas -- {* establish set equality for sets of enumerated functions *}
+lemmas (* -- \<open> establish set equality for sets of enumerated functions \<close> *)
   setEqualI [where A = "EnumFuncSet(doms, rngs)", standard, intro!]
   setEqualI [where B = "EnumFuncSet(doms, rngs)", standard, intro!]
 
@@ -835,7 +835,7 @@ lemma inSetOfPairsI [intro]:
   shows "a \<in> setOfPairs(R, e)"
 using assms by (auto simp: setOfPairs_def)
 
-lemma inSetOfPairsE [elim!]: -- {* converse true only if $R$ is a relation *}
+lemma inSetOfPairsE [elim!]: (* -- \<open> converse true only if $R$ is a relation \<close> *)
   assumes 1: "z \<in> setOfPairs(R, e)"
       and 2: "R \<subseteq> A \<times> B" and 3: "\<And>x y. \<lbrakk> \<langle>x,y\<rangle> \<in> R; z = e(x,y) \<rbrakk> \<Longrightarrow> P"
   shows "P"
@@ -885,20 +885,20 @@ where "rel_range(r) \<equiv> { p[2] : p \<in> r }"
 definition converse :: "c => c" ("(_^-1)" [1000] 999)
 where "r^-1 \<equiv> { \<langle>p[2],p[1]\<rangle> : p \<in> r}"
 
-definition rel_comp :: "[c,c] => c" (infixr "\<circ>" 75) -- {* binary relation composition *}
+definition rel_comp :: "[c,c] => c" (infixr "\<circ>" 75) (* -- \<open> binary relation composition \<close> *)
 where "r \<circ> s \<equiv> { p \<in> rel_domain(s) \<times> rel_range(r) :
                  \<exists>x,z : p = \<langle>x,z\<rangle> \<and> (\<exists>y: \<langle>x,y\<rangle> \<in> s \<and> \<langle>y,z\<rangle> \<in> r) }"
 
 definition rel_image :: "[c,c] => c" (infixl "``" 90)
 where "r `` A  \<equiv> {y \<in> rel_range(r) : \<exists>x \<in> A: \<langle>x,y\<rangle> \<in> r}"
 
-definition Id :: "c \<Rightarrow> c"    -- {* diagonal: identity over a set *}
+definition Id :: "c \<Rightarrow> c"    (* -- \<open> diagonal: identity over a set \<close> *)
 where "Id(A) \<equiv> { \<langle>x,x\<rangle> : x \<in> A }"
 
 
 text \<open> Properties of relations \<close>
 
-definition reflexive   -- {* reflexivity over a set *}
+definition reflexive   (* -- \<open> reflexivity over a set \<close> *)
 where "reflexive(A,r) \<equiv> \<forall>x \<in> A: \<langle>x,x\<rangle> \<in> r"
 
 lemma boolifyReflexive [simp]: "boolify(reflexive(A,r)) = reflexive(A,r)"
@@ -907,7 +907,7 @@ unfolding reflexive_def by simp
 lemma reflexiveIsBool[intro!,simp]: "isBool(reflexive(A,r))"
 unfolding isBool_def by (rule boolifyReflexive)
 
-definition symmetric   -- {* symmetric relation *}
+definition symmetric   (* -- \<open> symmetric relation \<close> *)
 where "symmetric(r) \<equiv> \<forall>x,y: \<langle>x,y\<rangle> \<in> r \<Rightarrow> \<langle>y,x\<rangle> \<in> r"
 
 lemma boolifySymmetric [simp]: "boolify(symmetric(r)) = symmetric(r)"
@@ -916,7 +916,7 @@ unfolding symmetric_def by simp
 lemma symmetricIsBool[intro!,simp]: "isBool(symmetric(r))"
 unfolding isBool_def by (rule boolifySymmetric)
 
-definition antisymmetric   -- {* antisymmetric relation *}
+definition antisymmetric   (* -- \<open> antisymmetric relation \<close> *)
 where "antisymmetric(r) \<equiv> \<forall>x,y: \<langle>x,y\<rangle> \<in> r \<and> \<langle>y,x\<rangle> \<in> r \<Rightarrow> x = y"
 
 lemma boolifyAntisymmetric [simp]: "boolify(antisymmetric(r)) = antisymmetric(r)"
@@ -925,7 +925,7 @@ unfolding antisymmetric_def by simp
 lemma antisymmetricIsBool[intro!,simp]: "isBool(antisymmetric(r))"
 unfolding isBool_def by (rule boolifyAntisymmetric)
 
-definition transitive   -- {* transitivity predicate *}
+definition transitive   (* -- \<open> transitivity predicate \<close> *)
 where "transitive(r) \<equiv> \<forall>x,y,z: \<langle>x,y\<rangle> \<in> r \<and> \<langle>y,z\<rangle> \<in> r \<Rightarrow> \<langle>x,z\<rangle> \<in> r"
 
 lemma boolifyTransitive [simp]: "boolify(transitive(r)) = transitive(r)"
@@ -934,7 +934,7 @@ unfolding transitive_def by simp
 lemma transitiveIsBool[intro!,simp]: "isBool(transitive(r))"
 unfolding isBool_def by (rule boolifyTransitive)
 
-definition irreflexive   -- {* irreflexivity predicate *}
+definition irreflexive   (* -- \<open> irreflexivity predicate \<close> *)
 where "irreflexive(A,r) \<equiv> \<forall>x \<in> A: \<langle>x,x\<rangle> \<notin> r"
 
 lemma boolifyIrreflexive [simp]: "boolify(irreflexive(A,r)) = irreflexive(A,r)"
@@ -943,7 +943,7 @@ unfolding irreflexive_def by simp
 lemma irreflexiveIsBool[intro!,simp]: "isBool(irreflexive(A,r))"
 unfolding isBool_def by (rule boolifyIrreflexive)
 
-definition equivalence  :: "[c,c] \<Rightarrow> c"   -- {* (partial) equivalence relation *}
+definition equivalence  :: "[c,c] \<Rightarrow> c"   (* -- \<open> (partial) equivalence relation \<close> *)
 where "equivalence(A,r) \<equiv> reflexive(A,r) \<and> symmetric(r) \<and> transitive(r)"
 
 lemma boolifyEquivalence [simp]: "boolify(equivalence(A,r)) = equivalence(A,r)"
@@ -1043,7 +1043,7 @@ lemma converseE [elim]:  (** consider [elim!] ?? **)
   assumes yx: "yx \<in> r^-1" and r: "r \<subseteq> A \<times> B"
       and p: "\<And>x y. yx = \<langle>y,x\<rangle> \<Longrightarrow> \<langle>x,y\<rangle> \<in> r \<Longrightarrow> P"
   shows "P"
-    -- {* More general than @{text converseD}, as it ``splits'' the member of the relation. *}
+    (* -- \<open> More general than @{text converseD}, as it ``splits'' the member of the relation. \<close> *)
 proof -
   from prodProj[OF subsetD[OF converseSubset[OF r] yx]] have 2: "yx = \<langle>yx[1], yx[2]\<rangle>" .
   with yx have 3: "\<langle>yx[2], yx[1]\<rangle> \<in> r"
@@ -1419,7 +1419,7 @@ abbreviation
 abbreviation
   RESPECTS2 ::"[c \<Rightarrow> c \<Rightarrow> c, c] \<Rightarrow> c"  (infixr "respects2 " 80) where
   "f respects2 r \<equiv> congruent2(r,r,f)"
-  --{* Abbreviation for the common case where the relations are identical *}
+  (* -- \<open> Abbreviation for the common case where the relations are identical \<close> *)
 ***************************************************************************)
 
 text \<open> @{term r} is an equivalence relation iff @{term "converse(r) \<circ> r = r"} \<close>
