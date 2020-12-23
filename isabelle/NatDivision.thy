@@ -6,13 +6,13 @@
     Time-stamp: <2011-10-11 17:39:56 merz>
 *)
 
-header {* The division operators div and mod on Naturals *}
+section \<open> The division operators div and mod on Naturals \<close>
 
 theory NatDivision
 imports NatArith Tuples
 begin
 
-subsection {* The divisibility relation *}
+subsection \<open> The divisibility relation \<close>
 
 definition dvd          (infixl "dvd" 50)
 where "a \<in> Nat \<Longrightarrow> b \<in> Nat \<Longrightarrow> b dvd a \<equiv> (\<exists>k \<in> Nat : a = b * k)"
@@ -151,9 +151,9 @@ proof -
   with a b' c' show ?thesis by blast
 qed
 
-subsection {* Division on @{const Nat} *}
+subsection \<open> Division on @{const Nat} \<close>
 
-text {*
+text \<open>
   We define division and modulo over @{const Nat} by means
   of a characteristic relation with two input arguments
   @{term "m"}, @{term "n"} and two output arguments
@@ -162,13 +162,13 @@ text {*
   The following definition works for natural numbers, but also for
   possibly negative integers. Obviously, the second disjunct cannot
   hold for natural numbers.
-*}
+\<close>
 
 definition divmod_rel where
   "divmod_rel(m,n,q,r) \<equiv> m = q * n + r
                        \<and> ((0 < n \<and> 0 \<le> r \<and> r < n) \<or> (n < 0 \<and> r \<le> 0 \<and> n < r))"
 
-text {* @{const divmod_rel} is total if $n$ is non-zero. *}
+text \<open> @{const divmod_rel} is total if $n$ is non-zero. \<close>
 
 lemma divmod_rel_ex:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and pos: "0 < n"
@@ -201,7 +201,7 @@ proof -
   with pos that show ?thesis by (auto simp: divmod_rel_def)
 qed
 
-text {* @{const divmod_rel} has unique solutions in the natural numbers. *}
+text \<open> @{const divmod_rel} has unique solutions in the natural numbers. \<close>
 lemma divmod_rel_unique_div:
   assumes 1: "divmod_rel(m,n,q,r)" and 2: "divmod_rel(m,n,q',r')"
     and m: "m \<in> Nat" and n: "n \<in> Nat"
@@ -242,10 +242,10 @@ proof -
   with assms show ?thesis by (auto simp: divmod_rel_def)
 qed
 
-text {*
+text \<open>
   We instantiate divisibility on the natural numbers by
   means of @{const divmod_rel}:
-*}
+\<close>
 
 definition divmodNat
 where "divmodNat(m,n) \<equiv> CHOOSE z \<in> Nat \<times> Nat : divmod_rel(m,n,z[1],z[2])"
@@ -282,9 +282,9 @@ proof (rule bChooseI2[OF divmodNatPairEx[OF m n pos]])
     by (auto elim!: inProdE elim: divmod_rel_unique_div divmod_rel_unique_mod)
 qed
 
-text {*
+text \<open>
   We now define division and modulus over natural numbers.
-*}
+\<close>
 
 definition div       (infixr "div" 70)
 where div_nat_def: "\<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> m div n \<equiv> divmodNat(m,n)[1]"
@@ -331,7 +331,7 @@ lemma mod_nat_less_divisor:
   shows "m mod n < n"
 using assms divmod_rel_div_mod_nat[OF assms] by (simp add: divmod_rel_def)
 
-text {* ``Recursive'' computation of @{text div} and @{text mod}. *}
+text \<open> ``Recursive'' computation of @{text div} and @{text mod}. \<close>
 
 lemma divmodNat_base:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and less: "m < n"
@@ -386,7 +386,7 @@ proof -
 qed
 
 
-text {* The ''recursion'' equations for @{text div} and @{text mod} *}
+text \<open> The ''recursion'' equations for @{text div} and @{text mod} \<close>
 
 lemma div_nat_less [simp]:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and less: "m < n"
@@ -419,7 +419,7 @@ using divmodNat_step[OF assms] divmodNat_div_mod[OF m n pos]
 by simp
 
 
-subsection {* Facts about @{const div} and @{const mod} *}
+subsection \<open> Facts about @{const div} and @{const mod} \<close>
 
 lemma mod_div_nat_equality [simp]:
   assumes "m \<in> Nat" and "n \<in> Nat" and "0 < n"
@@ -691,13 +691,13 @@ proof -
 qed
 
 (*** TODO
-text {* Addition respects modular equivalence. *}
+text \<open> Addition respects modular equivalence. \<close>
 
-text {* Multiplication respects modular equivalence. *}
+text \<open> Multiplication respects modular equivalence. \<close>
 
-text {* Negation respects modular equivalence. *}
+text \<open> Negation respects modular equivalence. \<close>
 
-text {* Subtraction respects modular equivalence. *}
+text \<open> Subtraction respects modular equivalence. \<close>
 *)
 
 end
