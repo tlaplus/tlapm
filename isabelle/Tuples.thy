@@ -848,8 +848,8 @@ proof -
 qed
 
 lemmas setOfPairsEqualI =
-  setEqualI [where A = "setOfPairs(R,f)",intro!]
-  setEqualI [where B = "setOfPairs(R,f)",intro!]
+  setEqualI [where A = "setOfPairs(R,f)" for R f, intro!]
+  setEqualI [where B = "setOfPairs(R,f)" for R f, intro!]
 
 lemma setOfPairs_triv [simp]:
   assumes s: "R \<subseteq> A \<times> B"
@@ -1020,8 +1020,8 @@ by force
 subsubsection \<open> Converse relation \<close>
 
 lemmas converseEqualI =
-  setEqualI [where A = "r^-1", intro!]
-  setEqualI [where B = "r^-1", intro!]
+  setEqualI [where A = "r^-1" for r, intro!]
+  setEqualI [where B = "r^-1" for r, intro!]
 
 lemma converse_iff [iff]:
   assumes r: "r \<subseteq> A \<times> B"
@@ -1127,8 +1127,8 @@ qed
 subsubsection \<open> Identity relation over a set \<close>
 
 lemmas idEqualI =
-  setEqualI [where A = "Id(S)", intro!]
-  setEqualI [where B = "Id(S)", intro!]
+  setEqualI [where A = "Id(S)" for S, intro!]
+  setEqualI [where B = "Id(S)" for S, intro!]
 
 lemma IdI [iff]: "x \<in> S \<Longrightarrow> \<langle>x,x\<rangle> \<in> Id(S)"
 unfolding Id_def by auto
@@ -1177,8 +1177,8 @@ unfolding rel_range_def Id_def by auto
 subsubsection \<open> Composition of relations \<close>
 
 lemmas compEqualI =
-  setEqualI [where A = "r \<circ> s", intro!]
-  setEqualI [where B = "r \<circ> s", intro!]
+  setEqualI [where A = "r \<circ> s" for r s, intro!]
+  setEqualI [where B = "r \<circ> s" for r s, intro!]
 
 lemma compI [intro]:
   assumes r: "r \<subseteq> B \<times> C" and s: "s \<subseteq> A \<times> B"
