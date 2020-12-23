@@ -81,7 +81,7 @@ lemma SeqIsAFcn (*[elim!]*):
 using assms by auto
 
 (* -- \<open> @{text "s \<in> Seq(S) \<Longrightarrow> isAFcn(s)"} \<close> *)
-lemmas SeqIsAFcn' (*[elim!]*) = SeqIsASeq[THEN SeqIsAFcn, standard]
+lemmas SeqIsAFcn' (*[elim!]*) = SeqIsASeq[THEN SeqIsAFcn]
 
 lemma LenInNat [simp]:
   assumes "isASeq(s)"
@@ -89,7 +89,7 @@ lemma LenInNat [simp]:
 using assms by auto
 
 (* -- \<open> @{text "s \<in> Seq(S) \<Longrightarrow> Len(s) \<in> Nat"} \<close> *)
-lemmas LenInNat' [simp] = SeqIsASeq[THEN LenInNat, standard]
+lemmas LenInNat' [simp] = SeqIsASeq[THEN LenInNat]
 
 lemma DomainSeqLen [simp]:
   assumes "isASeq(s)"
@@ -97,7 +97,7 @@ lemma DomainSeqLen [simp]:
 using assms by auto
 
 (* -- \<open> @{text "s \<in> Seq(S) \<Longrightarrow> DOMAIN s = 1 .. Len(s)"} \<close> *)
-lemmas DomainSeqLen' (*[simp,elim!]*) = SeqIsASeq[THEN DomainSeqLen, standard]
+lemmas DomainSeqLen' (*[simp,elim!]*) = SeqIsASeq[THEN DomainSeqLen]
 
 lemma seqEqualI:
   assumes "isASeq(s)" and "isASeq(t)"
@@ -200,7 +200,7 @@ using s unfolding Append_def
 by (rule isASeqE, intro isASeqI, auto simp del: natIntervalSucc)
 
 (* -- \<open> @{text "isASeq(s) \<Longrightarrow> isAFcn(Append(s,e))"} \<close> *)
-lemmas appendIsAFcn [simp,intro!] = appendIsASeq[THEN SeqIsAFcn, standard]
+lemmas appendIsAFcn [simp,intro!] = appendIsASeq[THEN SeqIsAFcn]
 
 lemma domainEmptySeq [simp]: "DOMAIN \<langle>\<rangle> = {}"
 by (simp add: emptySeq_def)
@@ -218,7 +218,7 @@ lemma emptySeqEmptyFcn: "\<langle>\<rangle> = [x \<in> {} \<mapsto> y]"
 by auto
 
 (* -- \<open> Symmetric equation could be a useful rewrite rule (it is applied by TLC) \<close> *)
-lemmas emptyFcnEmptySeq = sym[OF emptySeqEmptyFcn, standard]
+lemmas emptyFcnEmptySeq = sym[OF emptySeqEmptyFcn]
 
 lemma emptyDomainIsEmptySeq [simp]: "(f \<in> [{} \<rightarrow> S]) = (f = \<langle>\<rangle>)"
 by auto
@@ -244,28 +244,28 @@ lemma lenAppend [simp]:
 using assms by (intro LenI, auto simp: Append_def)
 
 (* -- \<open> @{text "s \<in> Seq(S) \<Longrightarrow> Len(Append(s,e)) = Succ[Len(s)]"} \<close> *)
-lemmas lenAppend' [simp] = SeqIsASeq[THEN lenAppend, standard]
+lemmas lenAppend' [simp] = SeqIsASeq[THEN lenAppend]
 
 lemma appendElt [simp]:
   assumes "isASeq(s)" and "k \<in> Nat" and "0 < k" and "k \<le> Succ[Len(s)]"
   shows "Append(s,e)[k] = (IF k = Succ[Len(s)] THEN e ELSE s[k])"
 using assms by (auto simp: Append_def)
 
-lemmas appendElt' [simp] = SeqIsASeq[THEN appendElt, standard]
+lemmas appendElt' [simp] = SeqIsASeq[THEN appendElt]
 
 lemma appendElt1 (*[simp]*):
   assumes "isASeq(s)" and "k \<in> Nat" and "0 < k" and "k \<le> Len(s)"
   shows "Append(s,e)[k] = s[k]"
 using assms by (auto simp: Append_def)
 
-lemmas appendElt1' (*[simp]*) = SeqIsASeq[THEN appendElt1, standard]
+lemmas appendElt1' (*[simp]*) = SeqIsASeq[THEN appendElt1]
 
 lemma appendElt2 (*[simp]*):
   assumes "isASeq(s)"
   shows "Append(s,e)[Succ[Len(s)]] = e"
 using assms by (auto simp: Append_def)
 
-lemmas appendElt2' (*[simp]*) = SeqIsASeq[THEN appendElt2, standard]
+lemmas appendElt2' (*[simp]*) = SeqIsASeq[THEN appendElt2]
 
 lemma isAppend [intro!]:
   assumes f: "isAFcn(f)" and dom: "DOMAIN f = 1 .. Succ[Len(s)]" and s: "isASeq(s)"
@@ -280,7 +280,7 @@ next
     by (auto simp: Append_def)
 qed
 
-lemmas isAppend' [intro!] = isAppend[symmetric, standard]
+lemmas isAppend' [intro!] = isAppend[symmetric]
 
 lemma appendInSeq [simp]:
   assumes s: "s \<in> Seq(S)" and e: "e \<in> S"
@@ -509,8 +509,8 @@ where "EnumFuncSet(doms, rngs) \<equiv> { f \<in> [Range(doms) \<rightarrow> UNI
                                      \<forall>i \<in> DOMAIN doms : f[doms[i]] \<in> rngs[i] }"
 
 lemmas (* -- \<open> establish set equality for sets of enumerated functions \<close> *)
-  setEqualI [where A = "EnumFuncSet(doms, rngs)", standard, intro!]
-  setEqualI [where B = "EnumFuncSet(doms, rngs)", standard, intro!]
+  setEqualI [where A = "EnumFuncSet(doms, rngs)", intro!]
+  setEqualI [where B = "EnumFuncSet(doms, rngs)", intro!]
 
 lemma EnumFuncSetI [intro!,simp]:
   assumes 1: "isAFcn(f)" and 2: "DOMAIN f = Range(doms)"
@@ -847,8 +847,8 @@ proof -
 qed
 
 lemmas setOfPairsEqualI =
-  setEqualI [where A = "setOfPairs(R,f)", standard,intro!]
-  setEqualI [where B = "setOfPairs(R,f)", standard,intro!]
+  setEqualI [where A = "setOfPairs(R,f)",intro!]
+  setEqualI [where B = "setOfPairs(R,f)",intro!]
 
 lemma setOfPairs_triv [simp]:
   assumes s: "R \<subseteq> A \<times> B"
@@ -1019,8 +1019,8 @@ by force
 subsubsection \<open> Converse relation \<close>
 
 lemmas converseEqualI =
-  setEqualI [where A = "r^-1", standard, intro!]
-  setEqualI [where B = "r^-1", standard, intro!]
+  setEqualI [where A = "r^-1", intro!]
+  setEqualI [where B = "r^-1", intro!]
 
 lemma converse_iff [iff]:
   assumes r: "r \<subseteq> A \<times> B"
@@ -1126,8 +1126,8 @@ qed
 subsubsection \<open> Identity relation over a set \<close>
 
 lemmas idEqualI =
-  setEqualI [where A = "Id(S)", standard, intro!]
-  setEqualI [where B = "Id(S)", standard, intro!]
+  setEqualI [where A = "Id(S)", intro!]
+  setEqualI [where B = "Id(S)", intro!]
 
 lemma IdI [iff]: "x \<in> S \<Longrightarrow> \<langle>x,x\<rangle> \<in> Id(S)"
 unfolding Id_def by auto
@@ -1176,8 +1176,8 @@ unfolding rel_range_def Id_def by auto
 subsubsection \<open> Composition of relations \<close>
 
 lemmas compEqualI =
-  setEqualI [where A = "r \<circ> s", standard, intro!]
-  setEqualI [where B = "r \<circ> s", standard, intro!]
+  setEqualI [where A = "r \<circ> s", intro!]
+  setEqualI [where B = "r \<circ> s", intro!]
 
 lemma compI [intro]:
   assumes r: "r \<subseteq> B \<times> C" and s: "s \<subseteq> A \<times> B"
