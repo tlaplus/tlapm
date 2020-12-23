@@ -155,6 +155,38 @@ definition zero :: "c"                ("0")
 where "0 \<equiv> CHOOSE Z : PeanoAxioms(Nat, Z, Succ)"
 
 abbreviation "one \<equiv> Succ[0]"
+    notation "one" ("1")
+definition two :: "c" ("2")
+    where "2 \<equiv> Succ[1]"
+definition three :: "c" ("3")
+    where "3 \<equiv> Succ[2]"
+definition four :: "c" ("4")
+    where "4 \<equiv> Succ[3]"
+definition five :: "c" ("5")
+    where "five \<equiv> Succ[4]"
+definition six :: "c" ("6")
+    where "six \<equiv> Succ[5]"
+definition seven :: "c" ("7")
+    where "seven \<equiv> Succ[6]"
+definition eight :: "c" ("8")
+    where "eight \<equiv> Succ[7]"
+definition nine :: "c" ("9")
+    where "nine \<equiv> Succ[8]"
+definition ten :: "c" ("10")
+    where "ten \<equiv> Succ[9]"
+definition eleven :: "c" ("11")
+    where "eleven \<equiv> Succ[10]"
+definition twelve :: "c" ("12")
+    where "twelve \<equiv> Succ[11]"
+definition thirteen :: "c" ("13")
+    where "thirteen \<equiv> Succ[12]"
+definition fourteen :: "c" ("14")
+    where "fourteen \<equiv> Succ[13]"
+definition fifteen :: "c" ("15")
+    where "fifteen \<equiv> Succ[14]"
+
+(*
+abbreviation "one \<equiv> Succ[0]"
 notation "one"                        ("1")
 abbreviation "two \<equiv> Succ[1]"
 notation "two"                        ("2")
@@ -184,7 +216,7 @@ abbreviation "fourteen \<equiv> Succ[13]"
 notation "fourteen"                  ("14")
 abbreviation "fifteen \<equiv> Succ[14]"
 notation "fifteen"                   ("15")
-
+*)
 
 lemma peanoNatZeroSucc: "PeanoAxioms(Nat, 0, Succ)"
 proof -
@@ -223,7 +255,7 @@ lemma oneIsNat [intro!,simp]: "1 \<in> Nat"
 by simp
 
 lemma twoIsNat [intro!,simp]: "2 \<in> Nat"
-by simp
+unfolding two_def by simp
 
 lemma [simp]:
   assumes "n \<in> Nat"
