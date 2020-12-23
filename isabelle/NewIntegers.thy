@@ -2190,7 +2190,7 @@ theorem nat_add_in_nat:
             using s2_1 s2_2 s2_3 by auto
         qed
     have s1_3: "\<forall> k \<in> Nat:  m + k \\in Nat"
-        using s1_1 s1_2 natInduct by auto
+        using s1_1 s1_2 natInduct[of "\<lambda> k.  m + k \\in Nat"] by auto
     show ?thesis
         using s1_3 ndom spec by auto
     qed
@@ -2213,8 +2213,9 @@ theorem nat_add_0:
         assume s2_1: "n \<noteq> 0"
         have s2_2: "\<exists> k:  k \\in Nat \<and> n = Succ[k]"
             using ndom s2_1 nat_0_succ by auto
-        def P \<equiv> "\<lambda> x.  x \\in Nat \<and> n = Succ[x]"
-        def r \<equiv> "CHOOSE x:  P(x)"
+        define P where "P \<equiv>
+            \<lambda> x.  x \\in Nat \<and> n = Succ[x]"
+        define r where "r \<equiv> CHOOSE x:  P(x)"
         have s2_3: "r \\in Nat \<and> n = Succ[r]"
             proof -
             have s3_1: "\<exists> x:  P(x)"
@@ -2468,7 +2469,7 @@ theorem nat_mult_in_nat:
             using s2_1 s2_2 by auto
         qed
     have s1_3: "\<forall> k \<in> Nat:  m * k \\in Nat"
-        using s1_1 s1_2 natInduct by auto
+        using s1_1 s1_2 natInduct[of "\<lambda> k.  m * k \\in Nat"] by auto
     show ?thesis
         using s1_3 ndom spec by auto
     qed
@@ -3443,7 +3444,7 @@ theorem AddCommutative:
                 show ?thesis
                     using s4_1 s4_2
                         natInduct[of "\<lambda> i.  0 + i = i + 0"]
-                    by auto
+                    by blast
                 qed
             have s3_2: "\<And> j.  \<lbrakk>
                 j \<in> Nat;
@@ -3584,11 +3585,15 @@ theorem AddCommutative:
                         using s5_1 s5_2 by auto
                     qed
                 show "\<forall> i \<in> Nat:  Succ[j] + i = i + Succ[j]"
-                    using s4_1 s4_2 natInduct
-                    by auto
+                    using s4_1 s4_2
+                        natInduct[of "\<lambda> i.  Succ[j] + i = i + Succ[j]"]
+                        by auto
                 qed
             show ?thesis
-                using s3_1 s3_2 natInduct by auto
+                using s3_1 s3_2
+                    natInduct[of "\<lambda> j.
+                        \<forall> i \<in> Nat:  j + i = i + j"]
+                    by auto
             qed
         have s2_2: "\<forall> j \<in> Nat:
             \<forall> i \<in> negNat:  j + i = i + j"
@@ -3663,7 +3668,9 @@ theorem AddCommutative:
                         by auto
                     qed
                 show ?thesis
-                    using s4_1 s4_2 neg_nat_induction by auto
+                    using s4_1 s4_2
+                        neg_nat_induction[of "\<lambda> i.  0 + i = i + 0"]
+                        by blast
                 qed
             have s3_2: "\<And> j.  \<lbrakk>
                 j \<in> Nat;
@@ -3844,11 +3851,16 @@ theorem AddCommutative:
                         using s5_1 s5_2 by auto
                     qed
                 show "\<forall> i \<in> negNat:  Succ[j] + i = i + Succ[j]"
-                    using s4_1 s4_2 neg_nat_induction
-                    by auto
+                    using s4_1 s4_2
+                        neg_nat_induction[of
+                            "\<lambda> i. Succ[j] + i = i + Succ[j]"]
+                        by auto
                 qed
             show ?thesis
-                using s3_1 s3_2 natInduct by auto
+                using s3_1 s3_2
+                    natInduct[of "\<lambda> j.
+                        \<forall> i \<in> negNat:  j + i = i + j"]
+                    by auto
             qed
         show ?thesis
             proof -
@@ -3944,7 +3956,9 @@ theorem AddCommutative:
                         using s5_1 s5_2 s5_3 s5_4 s5_5 by auto
                     qed
                 show ?thesis
-                    using s4_1 s4_2 natInduct by auto
+                    using s4_1 s4_2
+                        natInduct[of "\<lambda> i.  0 + i = i + 0"]
+                        by blast
                 qed
             have s3_2: "\<And> j.  \<lbrakk>
             j \<in> negNat;
@@ -4146,10 +4160,16 @@ theorem AddCommutative:
                     qed
                 show "\<forall> i \<in> Nat:
                         -.Succ[-.j] + i = i + -.Succ[-.j]"
-                    using s4_1 s4_2 natInduct by auto
+                    using s4_1 s4_2
+                        natInduct[of "\<lambda> i.
+                            -.Succ[-.j] + i = i + -.Succ[-.j]"]
+                        by auto
                 qed
             show ?thesis
-                using s3_1 s3_2 neg_nat_induction by auto
+                using s3_1 s3_2
+                    neg_nat_induction[of "\<lambda> j.
+                        \<forall> i \<in> Nat:  j + i = i + j"]
+                    by auto
             qed
         have s2_2: "\<forall> j \<in> negNat:  \<forall> i \<in> negNat:
             j + i = i + j"
@@ -4233,7 +4253,9 @@ theorem AddCommutative:
                         using s5_1 s5_2 by auto
                     qed
                 show ?thesis
-                    using s4_1 s4_2 neg_nat_induction by auto
+                    using s4_1 s4_2
+                        neg_nat_induction[of "\<lambda> i.  0 + i = i + 0"]
+                        by blast
                 qed
             have s3_2: "\<And> j.  \<lbrakk>
                     j \<in> negNat;
@@ -4492,10 +4514,16 @@ theorem AddCommutative:
                     qed
                 show "\<forall> i \<in> negNat:
                         -.Succ[-.j] + i = i + -.Succ[-.j]"
-                    using s4_1 s4_2 neg_nat_induction by auto
+                    using s4_1 s4_2
+                        neg_nat_induction[of "\<lambda> i.
+                            -.Succ[-.j] + i = i + -.Succ[-.j]"]
+                        by auto
                 qed
             show ?thesis
-                using s3_1 s3_2 neg_nat_induction by auto
+                using s3_1 s3_2
+                    neg_nat_induction[of "\<lambda> j.
+                        \<forall> i \<in> negNat:  j + i = i + j"]
+                    by auto
             qed
         show ?thesis
             proof -
@@ -5125,7 +5153,10 @@ theorem iSuccRightDistributesAdd:
                 using s3_3 s3_4 by blast
             qed
         show ?thesis
-            using s2_1 s2_2 neg_nat_induction by auto
+            using s2_1 s2_2
+                neg_nat_induction[of "\<lambda> b.
+                    iSucc[a + b] = a + iSucc[b]"]
+                by auto
         qed
     have s1_3: "\<forall> b \<in> Int:  iSucc[a + b] = a + iSucc[b]"
         using s1_1 s1_2 int_union_nat_negnat by auto
@@ -5346,7 +5377,10 @@ theorem iPredRightDistributesAdd:
             finally show "iPred[a + Succ[b]] = a + iPred[Succ[b]]" .
             qed
         show ?thesis
-            using s1_1 s2_1 natInduct by auto
+            using s1_1 s2_1
+                natInduct[of "\<lambda> b.
+                    iPred[a + b] = a + iPred[b]"]
+                by auto
         qed
     have s1_3: "\<forall> b \<in> negNat \<setminus> {0}:
         iPred[a + b] = a + iPred[b]"
@@ -5718,10 +5752,14 @@ theorem AddAssociative:
         qed
     have s1_5: "\<forall> c \<in> Nat:
                     (a + b) + c = a + (b + c)"
-        using s1_2 s1_3 natInduct by auto
+        using s1_2 s1_3 natInduct[of "\<lambda> c.
+            (a + b) + c = a + (b + c)"]
+            by auto
     have s1_6: "\<forall> c \<in> negNat:
                     (a + b) + c = a + (b + c)"
-        using s1_2 s1_4 neg_nat_induction by auto
+        using s1_2 s1_4 neg_nat_induction[of "\<lambda> c.
+            (a + b) + c = a + (b + c)"]
+            by auto
     have "\<forall> c \<in> Int:
             (a + b) + c = a + (b + c)"
         using s1_5 s1_6 int_union_nat_negnat by auto
@@ -5750,7 +5788,7 @@ theorem AddLeftCommutativity:
     qed
 
 
-theorems add_ac_int[algebra_simps] =
+lemmas add_ac_int[algebra_simps] =
     AddCommutative_sequent AddAssociative_sequent
     AddLeftCommutativity add_0 add_0_left
 
@@ -6192,9 +6230,13 @@ theorem AddNegCancels:
         finally show "-.Succ[-.i] + -.-.Succ[-.i] = 0" .
         qed
     have s1_4: "\<forall> i \<in> Nat:  i + -.i = 0"
-        using s1_1 s1_2 natInduct by auto
+        using s1_1 s1_2 natInduct[of "\<lambda> i.
+            i + -.i = 0"]
+            by auto
     have s1_5: "\<forall> i \<in> negNat:  i + -.i = 0"
-        using s1_1 s1_3 neg_nat_induction by auto
+        using s1_1 s1_3 neg_nat_induction[of "\<lambda> i.
+            i + -.i = 0"]
+            by auto
     show ?thesis
         using s1_4 s1_5 int_union_nat_negnat by auto
     qed
@@ -6726,9 +6768,13 @@ theorem MinusDistributesAdd:
         finally show "-.(a + -.Succ[-.b]) = (-.a) + (-.-.Succ[-.b])" .
         qed
     have s1_5: "\<forall> b \<in> Nat:  -.(a + b) = (-.a) + (-.b)"
-        using s1_2 s1_3 natInduct by auto
+        using s1_2 s1_3 natInduct[of "\<lambda> b.
+            -.(a + b) = (-.a) + (-.b)"]
+            by auto
     have s1_6: "\<forall> b \<in> negNat:  -.(a + b) = (-.a) + (-.b)"
-        using s1_2 s1_4 neg_nat_induction by auto
+        using s1_2 s1_4 neg_nat_induction[of "\<lambda> b.
+            -.(a + b) = (-.a) + (-.b)"]
+            by auto
     have s1_7: "\<forall> b \<in> Int:  -.(a + b) = (-.a) + (-.b)"
         using s1_5 s1_6 int_union_nat_negnat by auto
     }
@@ -7760,9 +7806,13 @@ theorem MultCommutative:
                 using s3_1 s3_2 by auto
             qed
         have s2_4: "\<forall> i \<in> Nat:  i * 0 = 0 * i"
-            using s2_1 s2_2 natInduct by auto
+            using s2_1 s2_2 natInduct[of "\<lambda> i.
+                i * 0 = 0 * i"]
+                by blast
         have s2_5: "\<forall> i \<in> negNat:  i * 0 = 0 * i"
-            using s2_1 s2_3 neg_nat_induction by auto
+            using s2_1 s2_3 neg_nat_induction[of "\<lambda> i.
+                i * 0 = 0 * i"]
+                by blast
         show ?thesis
             using s2_4 s2_5 int_union_nat_negnat by auto
         qed
@@ -8222,9 +8272,13 @@ theorem MultCommutative:
                 using s3_1 s3_2 by auto
             qed
         have s2_4: "\<forall> i \<in> Nat:  i * Succ[j] = Succ[j] * i"
-            using s2_1 s2_2 natInduct by auto
+            using s2_1 s2_2 natInduct[of "\<lambda> i.
+                i * Succ[j] = Succ[j] * i"]
+                by auto
         have s2_5: "\<forall> i \<in> negNat:  i * Succ[j] = Succ[j] * i"
-            using s2_1 s2_3 neg_nat_induction by auto
+            using s2_1 s2_3 neg_nat_induction[of "\<lambda> i.
+                i * Succ[j] = Succ[j] * i"]
+                by auto
         show "\<forall> i \<in> Int:  i * Succ[j] = Succ[j] * i"
             using s2_4 s2_5 int_union_nat_negnat by auto
         qed
@@ -8759,19 +8813,27 @@ theorem MultCommutative:
             qed
         have s2_4: "\<forall> i \<in> Nat:
                         i * -.Succ[-.j] = -.Succ[-.j] * i"
-            using s2_1 s2_2 natInduct by auto
+            using s2_1 s2_2 natInduct[of "\<lambda> i.
+                i * -.Succ[-.j] = -.Succ[-.j] * i"]
+                by auto
         have s2_5: "\<forall> i \<in> negNat:
                         i * -.Succ[-.j] = -.Succ[-.j] * i"
-            using s2_1 s2_3 neg_nat_induction by auto
+            using s2_1 s2_3 neg_nat_induction[of "\<lambda> i.
+                i * -.Succ[-.j] = -.Succ[-.j] * i"]
+                by auto
         show "\<forall> i \<in> Int:  i * -.Succ[-.j] = -.Succ[-.j] * i"
             using s2_4 s2_5 int_union_nat_negnat by auto
         qed
     have s1_4: "\<forall> j \<in> Nat:  \<forall> i \<in> Int:
         i * j = j * i"
-        using s1_1 s1_2 natInduct by auto
+        using s1_1 s1_2 natInduct[of "\<lambda> j.
+            \<forall> i \<in> Int:  i * j = j * i"]
+            by blast
     have s1_5: "\<forall> j \<in> negNat:  \<forall> i \<in> Int:
         i * j = j * i"
-        using s1_1 s1_3 neg_nat_induction by auto
+        using s1_1 s1_3 neg_nat_induction[of "\<lambda> j.
+            \<forall> i \<in> Int:  i * j = j * i"]
+            by blast
     show ?thesis
         using s1_4 s1_5 int_union_nat_negnat by auto
     qed
@@ -9637,10 +9699,14 @@ theorem MultLeftDistributesAdd_forall:
         qed
     have s1_5: "\<forall> a \<in> Nat:
                     a * (b + c) = a * b + a * c"
-        using s1_2 s1_3 natInduct by auto
+        using s1_2 s1_3 natInduct[of "\<lambda> a.
+            a * (b + c) = a * b + a * c"]
+            by auto
     have s1_6: "\<forall> a \<in> negNat:
                     a * (b + c) = a * b + a * c"
-        using s1_2 s1_4 neg_nat_induction by auto
+        using s1_2 s1_4 neg_nat_induction[of "\<lambda> a.
+            a * (b + c) = a * b + a * c"]
+            by auto
     have s1_7: "\<forall> a \<in> Int:
                     a * (b + c) = a * b + a * c"
         using s1_5 s1_6 int_union_nat_negnat by auto
@@ -9675,7 +9741,7 @@ theorem MultRightDistributesAdd:
     qed
 
 
-theorems mult_distributes[algebra_simps] =
+lemmas mult_distributes[algebra_simps] =
     MultLeftDistributesAdd MultRightDistributesAdd
 
 
@@ -9918,10 +9984,14 @@ theorem MinusCommutesRightMult:
         qed
     have s1_5: "\<forall> b \<in> Nat:
                     -.(a * b) = a * -.b"
-        using s1_2 s1_3 natInduct by auto
+        using s1_2 s1_3 natInduct[of "\<lambda> b.
+            -.(a * b) = a * -.b"]
+            by auto
     have s1_6: "\<forall> b \<in> negNat:
                     -.(a * b) = a * -.b"
-        using s1_2 s1_4 neg_nat_induction by auto
+        using s1_2 s1_4 neg_nat_induction[of "\<lambda> b.
+            -.(a * b) = a * -.b"]
+            by auto
     have s1_7: "\<forall> b \<in> Int:
                     -.(a * b) = a * -.b"
         using s1_5 s1_6 int_union_nat_negnat by auto
@@ -10243,10 +10313,14 @@ theorem MultAssociative:
         qed
     have s1_5: "\<forall> c \<in> Nat:
                     (a * b) * c = a * (b * c)"
-        using s1_2 s1_3 natInduct by auto
+        using s1_2 s1_3 natInduct[of "\<lambda> c.
+            (a * b) * c = a * (b * c)"]
+            by auto
     have s1_6: "\<forall> c \<in> negNat:
                     (a * b) * c = a * (b * c)"
-        using s1_2 s1_4 neg_nat_induction by auto
+        using s1_2 s1_4 neg_nat_induction[of "\<lambda> c.
+            (a * b) * c = a * (b * c)"]
+            by auto
     have s1_7: "\<forall> c \<in> Int:
                     (a * b) * c = a * (b * c)"
         using s1_5 s1_6 int_union_nat_negnat by auto
@@ -10288,8 +10362,8 @@ theorem LeqTransitive:
     shows "m <= k"
     proof -
     (* PICK r \in Nat:  m + r = n *)
-    def P \<equiv> "\<lambda> x.  x \\in Nat \<and> m + x = n"
-    def r \<equiv> "CHOOSE x:  P(x)"
+    define P where "P \<equiv> \<lambda> x.  x \\in Nat \<and> m + x = n"
+    define r where "r \<equiv> CHOOSE x:  P(x)"
     have s1_1: "r \\in Nat \<and> m + r = n"
         proof -
         have s2_1: "\\E x:  P(x)"
@@ -10301,8 +10375,8 @@ theorem LeqTransitive:
             using s2_2 by (auto simp: P_def)
         qed
     (* PICK t \in Nat:  n + t = k *)
-    def Q \<equiv> "\<lambda> x.  x \\in Nat \<and> n + x = k"
-    def t \<equiv> "CHOOSE x:  Q(x)"
+    define Q where "Q \<equiv> \<lambda> x.  x \\in Nat \<and> n + x = k"
+    define t where "t \<equiv> CHOOSE x:  Q(x)"
     have s1_2: "t \\in Nat \<and> n + t = k"
         proof -
         have s2_1: "\\E x:  Q(x)"
@@ -10356,8 +10430,8 @@ theorem leq_0:
     have s1_2: "0 <= n ==> n \\in Nat"
         proof -
         assume s1_2_leq: "0 <= n"
-        def P \<equiv> "\<lambda> x.  x \\in Nat \<and> 0 + x = n"
-        def r \<equiv> "CHOOSE x:  P(x)"
+        define P where "P \<equiv> \<lambda> x.  x \\in Nat \<and> 0 + x = n"
+        define r where "r \<equiv> CHOOSE x:  P(x)"
         have s2_1: "r \\in Nat \<and> 0 + r = n"
             proof -
             have s3_1: "\\E x:  P(x)"
@@ -10433,10 +10507,10 @@ theorem leq_both_eq:
         mn: "m <= n" and nm: "n <= m"
     shows "m = n"
     proof -
-    def P \<equiv> "\<lambda> x.  x \\in Nat \<and> m + x = n"
-    def p \<equiv> "CHOOSE x:  P(x)"
-    def Q \<equiv> "\<lambda> x.  x \\in Nat \<and> n + x = m"
-    def q \<equiv> "CHOOSE x:  Q(x)"
+    define P where "P \<equiv> \<lambda> x.  x \\in Nat \<and> m + x = n"
+    define p where "p \<equiv> CHOOSE x:  P(x)"
+    define Q where "Q \<equiv> \<lambda> x.  x \\in Nat \<and> n + x = m"
+    define q where "q \<equiv> CHOOSE x:  Q(x)"
     have s1_1: "p \\in Nat \<and> m + p = n"
         proof -
         have s2_1: "\<exists> x:  P(x)"
@@ -10754,8 +10828,8 @@ theorem leq_mult_monotonic:
         kdom: "k \\in Nat" and mn: "m <= n"
     shows "k * m <= k * n"
     proof -
-    def P \<equiv> "\<lambda> x.  x \\in Nat \<and> m + x = n"
-    def r \<equiv> "CHOOSE x:  P(x)"
+    define P where "P \<equiv> \<lambda> x.  x \\in Nat \<and> m + x = n"
+    define r where "r \<equiv> CHOOSE x:  P(x)"
     have s1_2: "r \\in Nat \<and> m + r = n"
         proof -
         have s2_1: "\\E x:  P(x)"
@@ -10890,8 +10964,8 @@ theorem leq_mult_monotonic_neg:
     shows "k * n <= k * m"
     proof -
     (* PICK r \in Nat:  m + r = n *)
-    def P \<equiv> "\<lambda> x.  x \\in Nat \<and> m + x = n"
-    def r \<equiv> "CHOOSE x:  P(x)"
+    define P where "P \<equiv> \<lambda> x.  x \\in Nat \<and> m + x = n"
+    define r where "r \<equiv> CHOOSE x:  P(x)"
     have s1_2: "r \\in Nat \<and> m + r = n"
         proof -
         have s2_1: "\\E x:  P(x)"
@@ -11019,7 +11093,7 @@ theorem leq_add_monotonic_right:
     proof -
     have s1_1: "\<exists> r:  r \<in> Nat \<and> m + r = n"
         using mn by (auto simp: leq_def)
-    def r \<equiv> "CHOOSE r:  r \<in> Nat \<and> m + r = n"
+    define r where "r \<equiv> CHOOSE r:  r \<in> Nat \<and> m + r = n"
     have s1_2: "r \<in> Nat \<and> m + r = n"
         unfolding r_def
         by (rule chooseI_ex, rule s1_1)
@@ -11231,8 +11305,8 @@ theorem leq_diff_add:
         kdom: "k \<in> Int" and nmk: "n - m <= k"
     shows "n <= k + m"
     proof -
-    def P \<equiv> "\<lambda> x.  x \\in Nat \<and> (n - m) + x = k"
-    def r \<equiv> "CHOOSE x:  P(x)"
+    define P where "P \<equiv> \<lambda> x.  x \\in Nat \<and> (n - m) + x = k"
+    define r where "r \<equiv> CHOOSE x:  P(x)"
     have s1_1: "r \\in Nat \<and> (n - m) + r = k"
         proof -
         have s2_1: "\\E x:  P(x)"
@@ -11556,8 +11630,8 @@ theorem less_is_leq_plus_one:
     shows "m + 1 <= n"
     proof -
     (* PICK r \in Nat:  m + r = n *)
-    def P \<equiv> "\<lambda> x.  x \\in Nat \<and> m + x = n"
-    def r \<equiv> "CHOOSE x:  P(x)"
+    define P where "P \<equiv> \<lambda> x.  x \\in Nat \<and> m + x = n"
+    define r where "r \<equiv> CHOOSE x:  P(x)"
     have s1_1: "r \\in Nat \<and> m + r = n"
         proof -
         have s2_1: "\\E x:  P(x)"
@@ -11569,8 +11643,8 @@ theorem less_is_leq_plus_one:
             using s2_2 by (auto simp: P_def)
         qed
     (* PICK k \in Nat:  r = Succ[k] *)
-    def Q \<equiv> "\<lambda> x.  x \\in Nat \<and> r = Succ[x]"
-    def k \<equiv> "CHOOSE x:  Q(x)"
+    define Q where "Q \<equiv> \<lambda> x.  x \\in Nat \<and> r = Succ[x]"
+    define k where "k \<equiv> CHOOSE x:  Q(x)"
     have s1_2: "k \\in Nat \<and> r = Succ[k]"
         proof -
         have s2_1: "r = 0 \<or>
@@ -11888,8 +11962,9 @@ theorem SplitNat0:
                 have s4_3: "\\E m:  m \\in Nat \<and> y = Succ[m]"
                     using s4_2 by (auto simp: bEx_def)
                 (* PICK r \in Nat:  y = Succ[r] *)
-                def P \<equiv> "\<lambda> x.  x \\in Nat \<and> y = Succ[x]"
-                def r \<equiv> "CHOOSE x:  P(x)"
+                define P where "P \<equiv>
+                    \<lambda> x.  x \\in Nat \<and> y = Succ[x]"
+                define r where "r \<equiv> CHOOSE x:  P(x)"
                 have s4_4: "r \\in Nat \<and> y = Succ[r]"
                     proof -
                     have s5_1: "\\E x:  P(x)"
@@ -11928,8 +12003,9 @@ theorem SplitNat0:
                 have s4_3: "\\E m:  m \\in Nat \<and> y = m + 1"
                     using s4_2 by (auto simp: bEx_def)
                 (* PICK r \in Nat:  y = r + 1 *)
-                def P \<equiv> "\<lambda> x.  x \\in Nat \<and> y = x + 1"
-                def r \<equiv> "CHOOSE x:  P(x)"
+                define P where "P \<equiv>
+                    \<lambda> x.  x \\in Nat \<and> y = x + 1"
+                define r where "r \<equiv> CHOOSE x:  P(x)"
                 have s4_4: "r \\in Nat \<and> y = r + 1"
                     proof -
                     have s5_1: "\\E x:  P(x)"
@@ -11988,8 +12064,9 @@ theorem SplitNat0:
             have s3_2: "\\E k:  k \\in Nat \<and> n = k + 1"
                 using s3_1 by auto
             (* PICK k \in Nat:  n = k + 1 *)
-            def P \<equiv> "\<lambda> x.  x \\in Nat \<and> n = x + 1"
-            def k \<equiv> "CHOOSE x:  P(x)"
+            define P where "P \<equiv>
+                \<lambda> x.  x \\in Nat \<and> n = x + 1"
+            define k where "k \<equiv> CHOOSE x:  P(x)"
             have s3_3: "k \\in Nat \<and> n = k + 1"
                 proof -
                 have s4_1: "\\E x:  P(x)"
@@ -12013,7 +12090,7 @@ theorem SplitNat0:
         qed
     show ?thesis
         using s1_1 s1_2 extension
-        by (auto simp: subset_def)
+        by blast
     qed
 
 
@@ -12192,8 +12269,8 @@ theorem LeqNatOpenInterval:
         jdom: "j \\in {k + Succ[i]:  k \\in Nat}"
     shows "~ (j <= i)"
     proof -
-    def P \<equiv> "\<lambda> x.  x \\in Nat \<and> j = x + Succ[i]"
-    def k \<equiv> "CHOOSE x:  P(x)"
+    define P where "P \<equiv> \<lambda> x.  x \\in Nat \<and> j = x + Succ[i]"
+    define k where "k \<equiv> CHOOSE x:  P(x)"
     have s1_1: "k \\in Nat \<and> j = k + Succ[i]"
         proof -
         have s2_1: "\\E x:  P(x)"
@@ -12354,9 +12431,9 @@ theorem negNatSplitAddi:
                 \\E q \\in Nat:  n = -.q + -.Succ[i]"
                 proof -
                 assume s3_1_asm: "\\E q \\in Nat:  n = -.(q + 1) + -.i"
-                def P \<equiv> "\<lambda> x.  x \\in Nat \<and>
+                define P where "P \<equiv> \<lambda> x.  x \\in Nat \<and>
                     n = -.(x + 1) + -.i"
-                def r \<equiv> "CHOOSE x:  P(x)"
+                define r where "r \<equiv> CHOOSE x:  P(x)"
                 have s4_1: "r \\in Nat \<and> n = -.(r + 1) + -.i"
                     proof -
                     have s5_1: "\\E x:  P(x)"
@@ -12390,9 +12467,9 @@ theorem negNatSplitAddi:
                 \\E q \\in Nat:  n = -.(q + 1) + -.i"
                 proof -
                 assume s3_2_asm: "\\E q \\in Nat:  n = -.q + -.Succ[i]"
-                def P \<equiv> "\<lambda> x.  x \\in Nat \<and>
+                define P where "P \<equiv> \<lambda> x.  x \\in Nat \<and>
                     n = -.x + -.Succ[i]"
-                def r \<equiv> "CHOOSE x:  P(x)"
+                define r where "r \<equiv> CHOOSE x:  P(x)"
                 have s4_1: "r \\in Nat \<and> n = -.r + -.Succ[i]"
                     proof -
                     have s5_1: "\\E x:  P(x)"
@@ -12452,8 +12529,9 @@ theorem LeqnegNatOpenInterval:
         jdom: "j \\in {-.k + -.Succ[i]:  k \\in Nat}"
     shows "~ (-.i <= j)"
     proof -
-    def P \<equiv> "\<lambda> x.  x \\in Nat \<and> j = -.x + -.Succ[i]"
-    def k \<equiv> "CHOOSE x:  P(x)"
+    define P where "P \<equiv>
+        \<lambda> x.  x \\in Nat \<and> j = -.x + -.Succ[i]"
+    define k where "k \<equiv> CHOOSE x:  P(x)"
     have s1_1: "k \\in Nat \<and> j = -.k + -.Succ[i]"
         proof -
         have s2_1: "\\E x:  P(x)"
