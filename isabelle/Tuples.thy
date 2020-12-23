@@ -541,7 +541,7 @@ syntax
   "@domrngs"    :: "[domrng, domrngs] \<Rightarrow> domrngs" ("_,/ _")
   "@EnumFuncSet":: "domrngs \<Rightarrow> c"                 ("[_]")
 
-parse_ast_translation {*
+parse_ast_translation \<open>
   let
     (* make_tuple converts a list of ASTs to a tuple formed from these ASTs.
        The order of elements is reversed. *)
@@ -571,9 +571,9 @@ parse_ast_translation {*
   in
     [("@EnumFuncSet", enum_funcset_tr)]
   end
-*}
+\<close>
 
-print_ast_translation {*
+print_ast_translation \<open>
   let
     fun list_from_tuple (Ast.Constant @{const_syntax "emptySeq"}) = []
       | list_from_tuple (Ast.Appl[Ast.Constant "@tuple", tp]) =
@@ -602,8 +602,7 @@ print_ast_translation {*
   in
     [(@{const_syntax "EnumFuncSet"}, enum_funcset_tr')]
   end
-*}
-
+\<close>
 (*** Examples ***
 
 lemma "(1 :> TRUE) \<in> [1 : BOOLEAN]"
