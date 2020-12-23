@@ -369,8 +369,8 @@ proof -
     proof
       fix sn
       assume sn: "sn \<in> [1 .. Succ[n] \<rightarrow> S]"
-      def so \<equiv> "[k \<in> 1 .. n \<mapsto> sn[k]]"
-      def lst \<equiv> "sn[Succ[n]]"
+      define so where "so \<equiv> [k \<in> 1 .. n \<mapsto> sn[k]]"
+      define lst where "lst \<equiv> sn[Succ[n]]"
       have 1: "sn = Append(so, lst)"
       proof
 	from sn show "isAFcn(sn)" by simp
