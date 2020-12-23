@@ -6,13 +6,13 @@
     Time-stamp: <2011-10-11 17:39:46 merz>
 *)
 
-header {* Tuples and Relations in \tlaplus{} *}
+section \<open> Tuples and Relations in \tlaplus{} \<close>
 
 theory Tuples
 imports NatOrderings
 begin
 
-text {*
+text \<open>
   We develop a theory of tuples and relations in \tlaplus{}. Tuples are
   functions whose domains are intervals of the form $1 .. n$, for some
   natural number $n$, and relations are sets of tuples. In particular,
@@ -21,15 +21,15 @@ text {*
   when defining functions recursively, as we have a fixed point theorem
   on sets but not on functions.) We also introduce standard notions for
   binary relations, such as orderings, equivalence relations and so on.
-*}
+\<close>
 
-subsection {* Sequences and Tuples *}
+subsection \<open> Sequences and Tuples \<close>
 
-text {*
+text \<open>
   Tuples and sequences are the same mathematical objects in \tlaplus{}, so
   we give elementary definitions for sequences here. Further operations
   on sequences require arithmetic and will be introduced in a separate theory.
-*}
+\<close>
 
 definition Seq  -- {* set of finite sequences with elements from $S$ *}
 where "Seq(S) \<equiv> UNION { [ 1 .. n \<rightarrow> S] : n \<in> Nat }"
@@ -157,12 +157,12 @@ lemma isASeqInSeq: "isASeq(s) = (\<exists>S: s \<in> Seq(S))"
 by (auto elim: seqInSeqRange)
 
 
-subsection {* Sequences via @{text emptySeq} and @{text Append} *}
+subsection \<open> Sequences via @{text emptySeq} and @{text Append} \<close>
 
-text {*
+text \<open>
   Sequences can be built from the constructors @{text emptySeq}
   (written @{text "\<langle>\<rangle>"}) and Append.
-*}
+\<close>
 
 definition emptySeq ("(<< >>)")
 where "<< >> \<equiv> [x \<in> 1 .. 0 \<mapsto> {}]"
@@ -328,10 +328,10 @@ lemma appendEqualIff [simp]:
   shows "(Append(s,e) = Append(t,f)) = (s = t \<and> e = f)"
 using appendD1[OF s t] appendD2[OF s t] by auto
 
-text {*
+text \<open>
   The following lemma gives a possible alternative definition of
   @{text Append}.
-*}
+\<close>
 
 lemma appendExtend:
   assumes "isASeq(s)"
@@ -348,10 +348,10 @@ lemma imageAppend [simp]:
 unfolding appendExtend[OF s]
 using assms by (auto elim!: inNatIntervalE, force+)
 
-text {*
+text \<open>
   Inductive reasoning about sequences, based on @{term "\<langle>\<rangle>"} and
   @{text Append}.
-*}
+\<close>
 
 lemma seqInduct [case_names empty append, induct set: Seq]:
   assumes s: "s \<in> Seq(S)"
@@ -411,12 +411,12 @@ lemma seqCases [case_names Empty Append, cases set: Seq]:
 using assms by (auto dest: seqEmptyOrAppend)
 
 
-subsection {* Enumerated sequences *}
+subsection \<open> Enumerated sequences \<close>
 
-text {*
+text \<open>
   We introduce the conventional syntax @{text "\<langle>a,b,c\<rangle>"} for tuples
   and enumerated sequences, based on the above constructors.
-*}
+\<close>
 
 nonterminal tpl
 
@@ -451,12 +451,12 @@ lemma "\<langle>0,1\<rangle> \<noteq> \<langle>1,2,3\<rangle>" by simp
 lemma "(\<langle>a,b\<rangle> = \<langle>c,d\<rangle>) = (a=c \<and> b=d)" by simp
 ***)
 
-text {*
+text \<open>
   \tlaplus{} has a form of quantification over tuples written
   $\exists \langle x,y,z \rangle \in S: P(x,y,z)$. We cannot give a generic
   definition of this form for arbitrary tuples, but introduce input syntax
   for tuples of length up to $5$.
-*}
+\<close>
 
 syntax
   "@bEx2"  ::  "[idt,idt,c,c] \<Rightarrow> c"  ("(3EX <<_,_>> in _ :/ _)" [100,100,0,0] 10)
@@ -488,9 +488,9 @@ translations
   "\<forall>\<langle>x,y,z,u\<rangle> \<in> S : P"    \<rightharpoonup>  "\<forall>x,y,z,u : \<langle>x,y,z,u\<rangle> \<in> S \<Rightarrow> P"
   "\<forall>\<langle>x,y,z,u,v\<rangle> \<in> S : P"  \<rightharpoonup>  "\<forall>x,y,z,u,v : \<langle>x,y,z,u,v\<rangle> \<in> S \<Rightarrow> P"
 
-subsection {* Sets of finite functions *}
+subsection \<open> Sets of finite functions \<close>
 
-text {*
+text \<open>
   We introduce notation such as @{text "[x: S, y: T]"} to designate the
   set of finite functions @{text f} with domain @{text "{x,y}"} (for constants
   @{text x}, @{text y}) such that @{text "f[x] \<in> S"} and @{text "f[y] \<in> T"}.
@@ -502,7 +502,7 @@ text {*
   Internally, the set is represented as @{text "EnumFuncSet(\<langle>x,y\<rangle>, \<langle>S,T\<rangle>)"},
   using appropriate translation functions between the internal and external
   representations.
-*}
+\<close>
 
 definition EnumFuncSet :: "c \<Rightarrow> c \<Rightarrow> c"
 where "EnumFuncSet(doms, rngs) \<equiv> { f \<in> [Range(doms) \<rightarrow> UNION Range(rngs)] :
@@ -635,14 +635,14 @@ by auto
 
 ***)
 
-subsection {* Set product *}
+subsection \<open> Set product \<close>
 
-text {*
+text \<open>
   The cartesian product of two sets $A$ and $B$ is the set of pairs
   whose first component is in $A$ and whose second component is in $B$.
   We generalize the definition of products to an arbitrary number of sets:
   $Product(\langle A_1,\ldots,A_n \rangle) = A_1 \times\cdots\times A_n$.
-*}
+\<close>
 
 definition Product
 where "Product(s) \<equiv> { f \<in> [1 .. Len(s) \<rightarrow> UNION Range(s)] :
@@ -707,7 +707,7 @@ lemma "\<langle>a\<rangle> \<notin> Product(\<langle>A,B\<rangle>)" by auto
 
 ***)
 
-text {* Special case: binary product *}
+text \<open> Special case: binary product \<close>
 
 definition
   prod :: "c \<Rightarrow> c \<Rightarrow> c"     (infixr "\\X" 100) where
@@ -813,7 +813,7 @@ unfolding prod_def Product_def
 using assms by auto
 
 
-subsection {* Syntax for setOfPairs: @{text "{e : \<langle>x,y\<rangle> \<in> R}"} *}
+subsection \<open> Syntax for setOfPairs: @{text "{e : \<langle>x,y\<rangle> \<in> R}"} \<close>
 
 definition setOfPairs :: "[c, [c,c]\<Rightarrow>c] \<Rightarrow> c"
 where "setOfPairs(R, f) \<equiv> { f(p[1], p[2]) : p \<in> R }"
@@ -874,7 +874,7 @@ lemma setOfPairsEqual:
 using assms by (auto, blast+)
 
 
-subsection {* Basic notions about binary relations *}
+subsection \<open> Basic notions about binary relations \<close>
 
 definition rel_domain :: "c => c"
 where "rel_domain(r) \<equiv> { p[1] : p \<in> r }"
@@ -896,7 +896,7 @@ definition Id :: "c \<Rightarrow> c"    -- {* diagonal: identity over a set *}
 where "Id(A) \<equiv> { \<langle>x,x\<rangle> : x \<in> A }"
 
 
-text {* Properties of relations *}
+text \<open> Properties of relations \<close>
 
 definition reflexive   -- {* reflexivity over a set *}
 where "reflexive(A,r) \<equiv> \<forall>x \<in> A: \<langle>x,x\<rangle> \<in> r"
@@ -953,7 +953,7 @@ lemma equivalenceIsBool[intro!,simp]: "isBool(equivalence(A,r))"
 unfolding isBool_def by (rule boolifyEquivalence)
 
 
-subsubsection {* Domain and Range *}
+subsubsection \<open> Domain and Range \<close>
 
 lemma prod_in_dom_x_ran:
   assumes "r \<subseteq> A \<times> B" and "p \<in> r"
@@ -1016,7 +1016,7 @@ lemma in_ran_imp_in_B: "r \<subseteq> A \<times> B \<Longrightarrow> p \<in> rel
 by force
 
 
-subsubsection {* Converse relation *}
+subsubsection \<open> Converse relation \<close>
 
 lemmas converseEqualI =
   setEqualI [where A = "r^-1", standard, intro!]
@@ -1123,7 +1123,7 @@ next
 qed
 
 
-subsubsection {* Identity relation over a set *}
+subsubsection \<open> Identity relation over a set \<close>
 
 lemmas idEqualI =
   setEqualI [where A = "Id(S)", standard, intro!]
@@ -1173,7 +1173,7 @@ lemma ran_Id [simp]: "rel_range(Id(A)) = A"
 unfolding rel_range_def Id_def by auto
 
 
-subsubsection {* Composition of relations *}
+subsubsection \<open> Composition of relations \<close>
 
 lemmas compEqualI =
   setEqualI [where A = "r \<circ> s", standard, intro!]
@@ -1330,9 +1330,9 @@ unfolding rel_comp_def proof auto
 qed
 
 
-subsubsection {* Properties of relations *}
+subsubsection \<open> Properties of relations \<close>
 
-text {* Reflexivity *}
+text \<open> Reflexivity \<close>
 
 lemma reflI [intro]: "(\<And>x. x \<in> A \<Longrightarrow> \<langle>x,x\<rangle> \<in> r) \<Longrightarrow> reflexive(A,r)"
 unfolding reflexive_def by blast
@@ -1344,7 +1344,7 @@ lemma reflexive_empty (*[simp]*): "reflexive({}, {})"
 by auto
 
 
-text {* Symmetry *}
+text \<open> Symmetry \<close>
 
 lemma symmetricI: "\<lbrakk> \<And>x y. \<langle>x,y\<rangle> \<in> r \<Longrightarrow> \<langle>y,x\<rangle> \<in> r \<rbrakk> \<Longrightarrow> symmetric(r)"
 unfolding symmetric_def by blast
@@ -1356,7 +1356,7 @@ lemma symmetric_Int: "\<lbrakk> symmetric(r); symmetric(s) \<rbrakk> \<Longright
 by (blast intro: symmetricI dest: symmetricE)
 
 
-text {* Antisymmetry *}
+text \<open> Antisymmetry \<close>
 
 lemma antisymmetricI [intro]:
   "\<lbrakk> \<And>x y. \<lbrakk> \<langle>x,y\<rangle> \<in> r; \<langle>y,x\<rangle> \<in> r \<rbrakk> \<Longrightarrow> x = y \<rbrakk> \<Longrightarrow> antisymmetric(r)"
@@ -1372,7 +1372,7 @@ lemma antisym_empty (*[simp]*): "antisymmetric({})"
 by blast
 
 
-text {* Transitivity *}
+text \<open> Transitivity \<close>
 
 lemma transitiveI [intro]:
   "(\<And>x y z. \<langle>x,y\<rangle> \<in> r \<Longrightarrow> \<langle>y,z\<rangle> \<in> r \<Longrightarrow> \<langle>x,z\<rangle> \<in> r) \<Longrightarrow> transitive(r)"
@@ -1388,7 +1388,7 @@ lemma transitive_iff_comp_subset: "transitive(r) = (r \<circ> r \<subseteq> r)"
 unfolding transitive_def rel_comp_def by (auto elim!: subsetD)
 
 
-text {* Irreflexivity *}
+text \<open> Irreflexivity \<close>
 
 lemma irreflexiveI [intro]: "\<lbrakk> \<And>x. x \<in> A \<Longrightarrow> \<langle>x,x\<rangle> \<notin> r \<rbrakk> \<Longrightarrow> irreflexive(A,r)"
 unfolding irreflexive_def by blast
@@ -1397,7 +1397,7 @@ lemma irreflexiveE [dest]: "\<lbrakk> irreflexive(A,r); x \<in> A \<rbrakk> \<Lo
 unfolding irreflexive_def by blast
 
 
-subsubsection {* Equivalence Relations *}
+subsubsection \<open> Equivalence Relations \<close>
 
 (**************** NOT USED ANYWHERE ************************************
 definition
@@ -1422,11 +1422,11 @@ abbreviation
   --{* Abbreviation for the common case where the relations are identical *}
 ***************************************************************************)
 
-text{* @{term r} is an equivalence relation iff @{term "converse(r) \<circ> r = r"} *}
+text \<open> @{term r} is an equivalence relation iff @{term "converse(r) \<circ> r = r"} \<close>
 
 (* from Suppes, Theorem 70 *)
 
-text {* First half: ``only if'' part *}
+text \<open> First half: ``only if'' part \<close>
 
 lemma sym_trans_comp_subset:
   assumes "r \<subseteq> A \<times> A" and "symmetric(r)" and "transitive(r)"
@@ -1460,7 +1460,7 @@ using eq sym_trans_comp_subset[OF r] refl_comp_subset[OF r]
 unfolding equivalence_def
 by (intro setEqual, simp+)
 
-text {* Second half: ``if'' part, needs totality of relation $r$ *}
+text \<open> Second half: ``if'' part, needs totality of relation $r$ \<close>
 
 lemma comp_equivI:
   assumes dom: "rel_domain(r) = A" and r: "r \<subseteq> A \<times> A" and comp: "r^-1 \<circ> r = r"
