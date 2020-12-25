@@ -1070,8 +1070,13 @@ definition converse :: "c => c" ("(_^-1)" [1000] 999)
 where "r^-1 \<equiv> { \<langle>p[2],p[1]\<rangle> : p \<in> r}"
 
 definition rel_comp :: "[c,c] => c" (infixr "\<circ>" 75) (* -- \<open> binary relation composition \<close> *)
-where "r \<circ> s \<equiv> { p \<in> rel_domain(s) \<times> rel_range(r) :
-                 \<exists>x,z : p = \<langle>x,z\<rangle> \<and> (\<exists>y: \<langle>x,y\<rangle> \<in> s \<and> \<langle>y,z\<rangle> \<in> r) }"
+where "r \<circ> s \<equiv>
+    { p \<in> rel_domain(s) \<times> rel_range(r) :
+        \<exists> x, z :
+            p = \<langle>x, z\<rangle> \<and>
+            (\<exists> y:
+                \<langle>x, y\<rangle> \<in> s \<and>
+                \<langle>y, z\<rangle> \<in> r) }"
 
 definition rel_image :: "[c,c] => c" (infixl "``" 90)
 where "r `` A  \<equiv> {y \<in> rel_range(r) : \<exists>x \<in> A: \<langle>x,y\<rangle> \<in> r}"
