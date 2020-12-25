@@ -336,7 +336,28 @@ text \<open>
 lemma appendExtend:
   assumes "isASeq(s)"
   shows "Append(s,e) = s @@ (Succ[Len(s)] :> e)"
-using assms by force
+    proof -
+    have s1_1: "Append(s, e) =
+        [k \<in> 1 .. Succ[Len(s)] \<mapsto>
+            IF k = Succ[Len(s)] THEN e ELSE s[k]]"
+        unfolding Append_def by auto
+    have s1_2: "(Succ[Len(s)] :> e) =
+        [x \<in> {Succ[Len(s)]} \<mapsto> e]"
+        unfolding oneArg_def by auto
+    define p where "p \<equiv> s @@ (Succ[Len(s)] :> e)"
+    have s1_3: "p =
+        [x \<in> (DOMAIN s) \<union> {Succ[Len(s)]}
+        \<mapsto> IF x \<in> DOMAIN s THEN s[x] ELSE e]"
+        unfolding p_def extend_def using s1_2 by auto
+    have s1_4: "(DOMAIN s) \<union> {Succ[Len(s)]}
+        = 1 .. Succ[Len(s)]"
+        using assms by auto
+    have s1_5: "p = [x \<in> 1..Succ[Len(s)] \<mapsto>
+        IF x \<in> DOMAIN s THEN s[x] ELSE e]"
+        using s1_3 s1_4 by auto
+    show ?thesis
+        using s1_1 s1_5 assms by (auto simp: p_def)
+    qed
 
 lemma imageEmptySeq [simp]: "Image(\<langle>\<rangle>, A) = {}"
 by (simp add: emptySeq_def)
@@ -725,6 +746,7 @@ by (auto simp add: prod_def)
 lemma prodProj:
   assumes p: "p \<in> A \<times> B"
   shows "p = \<langle>p[1], p[2]\<rangle>"
+unfolding two_def
 using assms by (auto simp add: prod_def)
 
 lemma inProd':
@@ -750,7 +772,7 @@ proof
 next
   show "\<langle>a,b\<rangle>[1] = a" by simp
 next
-  show "\<langle>a,b\<rangle>[2] = b" by simp
+  show "\<langle>a,b\<rangle>[2] = b" unfolding two_def by simp
 qed
 
 lemma inProdE [elim]:
@@ -829,12 +851,13 @@ translations
 lemma inSetOfPairsI_ex:
   assumes "\<exists>\<langle>x,y\<rangle> \<in> R : a = e(x,y)"
   shows "a \<in> { e(x,y) : \<langle>x,y\<rangle> \<in> R }"
-using assms by (auto simp: setOfPairs_def)
+using assms by (auto simp: setOfPairs_def two_def)
 
 lemma inSetOfPairsI [intro]:
   assumes "a = e(x,y)" and "\<langle>x,y\<rangle> \<in> R"
   shows "a \<in> setOfPairs(R, e)"
-using assms by (auto simp: setOfPairs_def)
+unfolding two_def
+using assms by (auto simp: setOfPairs_def two_def)
 
 lemma inSetOfPairsE [elim!]: (* -- \<open> converse true only if $R$ is a relation \<close> *)
   assumes 1: "z \<in> setOfPairs(R, e)"
@@ -853,27 +876,187 @@ lemmas setOfPairsEqualI =
 
 lemma setOfPairs_triv [simp]:
   assumes s: "R \<subseteq> A \<times> B"
-  shows "{ \<langle>x,y\<rangle> : \<langle>x,y\<rangle> \<in> R } = R"
-using assms by auto
+  shows "{ \<langle>x, y\<rangle> : \<langle>x, y\<rangle> \<in> R } = R"
+    proof -
+    define Q where "Q \<equiv>
+        { \<langle>x, y\<rangle> : \<langle>x, y\<rangle> \<in> R }"
+    have s1_1: "Q = {<<p[1], p[2]>>:  p \<in> R}"
+        unfolding Q_def setOfPairs_def by auto
+    have s1_2: "\<And> p.  p \<in> R ==> p \<in> A \<times> B"
+        using s by auto
+    have s1_3: "\<And> p.  p \<in> R ==> p = <<p[1], p[2]>>"
+        proof -
+        fix "p" :: "c"
+        assume s1_3_asm: "p \\in R"
+        have s2_1: "p \<in> A \<times> B"
+            using s1_3_asm s by auto
+        show "p = <<p[1], p[2]>>"
+            using s2_1 prodProj by auto
+        qed
+    define e :: "[c] => c" where "e \<equiv> \<lambda> x.  x"
+    define f :: "[c] => c" where "f \<equiv> \<lambda> x.  <<x[1], x[2]>>"
+    have s1_4: "\<And> x.  x \<in> R ==> e(x) = f(x)"
+        unfolding e_def f_def using s1_3 by auto
+    have s1_5: "{e(x):  x \<in> R} = {f(y):  y \<in> R}"
+        apply (rule setOfAll_cong[of "R" "R" "e" "f"])
+        apply (simp)
+        by (rule s1_4)
+    show ?thesis
+        using s1_1 s1_5 by (auto simp: Q_def e_def f_def)
+    qed
 
 lemma setOfPairs_cong (*[cong]*):
-  assumes 1: "R = S" and 2: "S \<subseteq> A \<times> B" and 3: "\<And>x y. \<langle>x,y\<rangle> \<in> S \<Longrightarrow> e(x,y) = f(x,y)"
-  shows "{ e(x,y) : \<langle>x,y\<rangle> \<in> R } = { f(u,v) : \<langle>u,v\<rangle> \<in> S }"
-using assms proof (auto)
-  fix u v
-  let ?p = "\<langle>u,v\<rangle>"
-  assume uv: "?p \<in> S"
-  with 3 have "f(u,v) = e(?p[1], ?p[2])" by simp
-  with uv show "f(u,v) \<in> setOfPairs(S, e)" by auto
-qed
+  assumes 1: "R = S" and
+    2: "S \<subseteq> A \<times> B" and
+    3: "\<And>x y. \<langle>x, y\<rangle> \<in> S
+        \<Longrightarrow>
+        e(x, y) = f(x, y)"
+  shows "{ e(x, y) : \<langle>x, y\<rangle> \<in> R } =
+         { f(u, v) : \<langle>u, v\<rangle> \<in> S }"
+    proof -
+    have s1_1: "{ e(x, y) : \<langle>x, y\<rangle> \<in> R } =
+        { e(x, y) : \<langle>x, y\<rangle> \<in> S }"
+        using 1 by auto
+    have s1_2: "{ e(x, y) : \<langle>x, y\<rangle> \<in> S } =
+        { e(p[1], p[2]) : p \<in> S }"
+        by (auto simp: setOfPairs_def)
+    have s1_3: "{ f(u, v) : \<langle>u, v\<rangle> \<in> S } =
+        { f(p[1], p[2]) : p \<in> S }"
+        by (auto simp: setOfPairs_def)
+    define P where "P \<equiv> { e(p[1], p[2]):  p \<in> S }"
+    define Q where "Q \<equiv> { f(p[1], p[2]):  p \<in> S }"
+    have s1_4: "P = Q"
+        proof -
+        have s2_1: "\<And> x.  x \<in> P <=> x \<in> Q"
+            proof -
+            fix "x" :: "c"
+            have s3_1: "x \\in P ==> x \\in Q"
+                proof -
+                assume s3_1_asm: "x \\in P"
+                have s4_1: "x \<in> { e(p[1], p[2]):  p \<in> S }"
+                    using s3_1_asm by (auto simp: P_def)
+                have s4_2: "\\E p:  p \\in S \<and> x = e(p[1], p[2])"
+                    using s4_1 setOfAll by auto
+                have s4_3: "\\E p:  p \\in S \<and> x = f(p[1], p[2])"
+                    using s4_2 2 3 pairProj_in_rel by (auto simp: two_def)
+                have s4_4: "x \<in> { f(p[1], p[2]):  p \<in> S }"
+                    using s4_3 setOfAll by auto
+                show "x \\in Q"
+                    unfolding Q_def using s4_4 by auto
+                qed
+            have s3_2: "x \\in Q ==> x \\in P"
+                proof -
+                assume s3_2_asm: "x \\in Q"
+                have s4_1: "x \<in> { f(p[1], p[2]):  p \<in> S}"
+                    using s3_2_asm by (auto simp: Q_def)
+                have s4_2: "\\E p:  p \\in S \<and> x = f(p[1], p[2])"
+                    using s4_1 setOfAll by auto
+                have s4_3: "\\E p:  p \\in S \<and> x = e(p[1], p[2])"
+                    using s4_2 2 3 pairProj_in_rel by (auto simp: two_def)
+                have s4_4: "x \<in> { e(p[1], p[2]):  p \<in> S }"
+                    using s4_3 setOfAll by auto
+                show "x \\in P"
+                    unfolding P_def using s4_4 by auto
+                qed
+            show "x \<in> P <=> x \<in> Q"
+                using s3_1 s3_2 by auto
+            qed
+        have s2_2: "\<forall> x:  x \<in> P <=> x \<in> Q"
+            using s2_1 allI by auto
+        show ?thesis
+            using s2_2 extension by auto
+        qed
+    show ?thesis
+        using s1_1 s1_2 s1_3 s1_4
+            by (auto simp: P_def Q_def)
+    qed
 
 lemma setOfPairsEqual:
-  assumes 1: "\<And>x y. \<langle>x,y\<rangle> \<in> S \<Longrightarrow> \<exists>\<langle>x',y'\<rangle> \<in> T : e(x,y) = f(x',y')"
-  and 2: "\<And>x' y'. \<langle>x',y'\<rangle> \<in> T \<Longrightarrow> \<exists>\<langle>x,y\<rangle>\<in>S : f(x',y') = e(x,y)"
-  and 3: "S \<subseteq> A \<times> B" and 4: "T \<subseteq> C \<times> D"
-  shows "{ e(x,y) : \<langle>x,y\<rangle> \<in> S } = { f(x,y) : \<langle>x,y\<rangle> \<in> T }"
-using assms by (auto, blast+)
-
+  assumes 1: "\<And>x y.
+    \<langle>x, y\<rangle> \<in> S
+        \<Longrightarrow> \<exists>\<langle>x', y'\<rangle> \<in> T :
+            e(x, y) = f(x', y')"
+  and 2: "\<And>x' y'.
+    \<langle>x', y'\<rangle> \<in> T
+        \<Longrightarrow> \<exists>\<langle>x, y\<rangle> \<in> S :
+            f(x', y') = e(x, y)"
+  and 3: "S \<subseteq> A \<times> B" and
+      4: "T \<subseteq> C \<times> D"
+  shows "{ e(x, y) : \<langle>x, y\<rangle> \<in> S } =
+         { f(x, y) : \<langle>x, y\<rangle> \<in> T }"
+    proof -
+    have s1_1: "{ e(x, y) : \<langle>x, y\<rangle> \<in> S } =
+        { e(p[1], p[2]):  p \<in> S }"
+        by (auto simp: setOfPairs_def)
+    have s1_2: "{ f(x, y) : \<langle>x, y\<rangle> \<in> T } =
+        { f(p[1], p[2]):  p \<in> T }"
+        by (auto simp: setOfPairs_def)
+    define P where "P \<equiv> { e(p[1], p[2]):  p \<in> S }"
+    define Q where "Q \<equiv> { f(p[1], p[2]):  p \<in> T }"
+    have s1_3: "P = Q"
+        proof -
+        have s2_1: "\<And> x.  x \<in> P <=> x \<in> Q"
+            proof -
+            fix "x" :: "c"
+            have s3_1: "x \\in P ==> x \\in Q"
+                proof -
+                assume s3_1_asm: "x \\in P"
+                have s4_1: "\\E p:  p \\in S \<and> x = e(p[1], p[2])"
+                    using s3_1_asm setOfAll by (auto simp: P_def)
+                have s4_2: "\\E p:  p \\in S \<and>
+                    \<langle>p[1], p[2]\<rangle> \<in> S \<and>
+                    x = e(p[1], p[2])"
+                    using s4_1 pairProj_in_rel 3 by auto
+                have s4_3: "\\E p:  p \\in S \<and>
+                    x = e(p[1], p[2]) \<and>
+                    (\<exists>\<langle>u, v\<rangle> \<in> T:
+                        e(p[1], p[2]) = f(u, v))"
+                    using s4_2 1 by auto
+                have s4_4: "\<exists>\<langle>u, v\<rangle> \<in> T:
+                    x = f(u, v)"
+                    using s4_3 by auto
+                have s4_5: "\\E u, v:  <<u, v>> \\in T \<and> x = f(u, v)"
+                    using s4_4 by auto
+                have s4_6: "\\E p:  p \\in T \<and> x = f(p[1], p[2])"
+                    using s4_5 4 pairProj_in_rel by (auto simp: two_def)
+                show "x \\in Q"
+                    using s4_6 setOfAll by (auto simp: Q_def)
+                qed
+            have s3_2: "x \\in Q ==> x \\in P"
+                proof -
+                assume s3_2_asm: "x \\in Q"
+                have s4_1: "\\E p:  p \\in T \<and> x = f(p[1], p[2])"
+                    using s3_2_asm setOfAll by (auto simp: Q_def)
+                have s4_2: "\\E p:  p \\in T \<and>
+                    <<p[1], p[2]>> \\in T \<and>
+                    x = f(p[1], p[2])"
+                    using s4_1 pairProj_in_rel 4 by auto
+                have s4_3: "\\E p:  p \\in T \<and>
+                    x = f(p[1], p[2]) \<and>
+                    (\<exists>\<langle>u, v\<rangle> \<in> S:
+                            f(p[1], p[2]) = e(u, v))"
+                    using s4_2 2 by auto
+                have s4_4: "\<exists>\<langle>u, v\<rangle> \<in> S:
+                    x = e(u, v)"
+                    using s4_3 by auto
+                have s4_5: "\\E u, v:  <<u, v>> \\in S \<and> x = e(u, v)"
+                    using s4_4 by auto
+                have s4_6: "\\E p:  p \\in S \<and> x = e(p[1], p[2])"
+                    using s4_5 3 pairProj_in_rel by (auto simp: two_def)
+                show "x \\in P"
+                    using s4_6 setOfAll by (auto simp: P_def)
+                qed
+            show "x \\in P <=> x \\in Q"
+                using s3_1 s3_2 by auto
+            qed
+        have s2_2: "\<forall> x:  x \<in> P <=> x \<in> Q"
+            using s2_1 allI by auto
+        show ?thesis
+            using s2_2 extension by auto
+        qed
+    show ?thesis
+        using s1_1 s1_2 s1_3 by (auto simp: P_def Q_def)
+    qed
 
 subsection \<open> Basic notions about binary relations \<close>
 
@@ -986,7 +1169,7 @@ unfolding rel_range_def using pairProj_in_prod by auto
 lemma in_rel_rangeI [iff]:
   assumes "\<langle>x,y\<rangle> \<in> r"
   shows "y \<in> rel_range(r)"
-unfolding rel_range_def using assms by auto
+unfolding rel_range_def two_def using assms by auto
 
 lemma in_rel_rangeE [elim]:
   assumes y: "y \<in> rel_range(r)" and r: "r \<subseteq> A \<times> B" and p: "\<And>x. \<langle>x,y\<rangle> \<in> r \<Longrightarrow> P"
@@ -1026,11 +1209,11 @@ lemmas converseEqualI =
 lemma converse_iff [iff]:
   assumes r: "r \<subseteq> A \<times> B"
   shows "(\<langle>a,b\<rangle> \<in> r^-1) = (\<langle>b,a\<rangle> \<in> r)"
-using r prodProj by (auto simp: converse_def)
+using r prodProj by (auto simp: converse_def two_def)
 
 lemma converseI [intro!]:
   shows "\<langle>a,b\<rangle> \<in> r \<Longrightarrow> \<langle>b,a\<rangle> \<in> r^-1"
-unfolding converse_def by auto
+unfolding converse_def two_def by auto
 
 lemma converseD [sym]:
   assumes r: "r \<subseteq> A \<times> B"
@@ -1057,10 +1240,52 @@ qed
 lemma converse_converse [simp]:
   assumes r: "r \<subseteq> A \<times> B"
   shows "(r^-1)^-1 = r"
-using assms prodProj by (auto elim!: converseE)
+    proof -
+    have s1_1: "\<And> x.  x \\in A \<times> B ==> x = <<x[1], x[2]>>"
+        using prodProj by (auto simp: two_def)
+    have s1_2: "\<And> x.  x \\in r ==> x \\in A \<times> B"
+        using s1_1 r by auto
+    have s1_3: "\<And> x.  x \\in r ==> x = <<x[1], x[2]>>"
+        using s1_1 s1_2 by auto
+    show ?thesis
+        using s1_3 assms prodProj pairProj_in_rel
+            by (auto simp: converse_def two_def)
+    qed
 
 lemma converse_prod [simp]: "(A \<times> B)^-1 = B \<times> A"
-using prodProj by auto
+    proof -
+    have s1_1: "(A \<times> B)^-1 =
+        {<<p[2], p[1]>>:  p \<in> A \<times> B}"
+        unfolding converse_def by auto
+    have s1_2: "B \<times> A =
+        {<<p[1], p[2]>>:  p \<in> B \<times> A}"
+        using setOfPairs_triv prodProj by auto
+    have s1_3: "\<And> x.  x \\in B \\X A ==>
+                            \\E p \\in A \\X B:  x = <<p[2], p[1]>>"
+        proof -
+        fix "x" :: "c"
+        assume s1_5_asm: "x \\in B \\X A"
+        have s2_1: "<<x[2], x[1]>> \\in A \\X B"
+            using s1_5_asm by (auto simp: two_def)
+        define q where "q \<equiv> <<x[2], x[1]>>"
+        have s2_2: "q \\in A \\X B \<and> q = <<x[2], x[1]>>"
+            using s2_1 by (auto simp: q_def)
+        have s2_3: "x = <<x[1], x[2]>>"
+            using s1_5_asm prodProj by auto
+        have s2_4: "q[1] = x[2] \<and> q[2] = x[1]"
+            using s2_2 by (auto simp: two_def)
+        have s2_5: "x = <<q[2], q[1]>>"
+            using s2_3 s2_4 by auto
+        show "\\E p \\in A \\X B:  x = <<p[2], p[1]>>"
+            using s2_2 s2_5 by auto
+        qed
+    have s1_4: "\<And> p.  p \\in A \\X B ==>
+                            p[1] \\in A \<and> p[2] \\in B"
+        using pairProj_in_rel inProd prodProj
+        by (auto simp: two_def)
+    show ?thesis
+        using s1_1 s1_2 s1_3 s1_4 by auto
+    qed
 
 lemma converse_empty [simp]: "converse({}) = {}"
 by auto
@@ -1106,23 +1331,44 @@ lemma transitive_converse [simp]:
   unfolding transitive_def by auto
 
 lemma symmetric_iff_converse_eq:
-  assumes r:"r \<subseteq> A \<times> B"
+  assumes r: "r \<subseteq> A \<times> B"
   shows "symmetric(r) = (r^-1 = r)"
-proof auto
-  fix p
-  assume "symmetric(r)" and "p \<in> r^-1"
-  with r show "p \<in> r" by (auto elim!: converseE simp add: symmetric_def)
-next
-  fix p
-  assume 1: "symmetric(r)" and 2: "p \<in> r"
-  from r 2 have 3: "p = \<langle>p[1],p[2]\<rangle>" by (intro prodProj, auto)
-  with 1 2 have "\<langle>p[2],p[1]\<rangle> \<in> r" by (force simp add: symmetric_def)
-  with 3 show "p \<in> r^-1" by (auto dest: converseI)
-next
-  assume "r^-1 = r" thus "symmetric(r)"
-    by (auto simp add: symmetric_def)
-qed
-
+    proof -
+    have s1_1: "symmetric(r) ==> r^-1 = r"
+        proof -
+        assume s1_1_asm: "symmetric(r)"
+        have s2_1: "\<And> p.  p \\in r^-1 ==> p \\in r"
+            proof -
+            fix "p" :: "c"
+            assume s2_1_asm: "p \\in r^-1"
+            show "p \\in r"
+                using r s1_1_asm s2_1_asm
+                by (auto elim!: converseE simp: symmetric_def)
+            qed
+        have s2_2: "\<And> p.  p \\in r ==> p \\in r^-1"
+            proof -
+            fix "p" :: "c"
+            assume s2_2_asm: "p \\in r"
+            have s3_1: "p = <<p[1], p[2]>>"
+                using s2_2_asm r by (intro prodProj, auto)
+            have s3_2: "<<p[2], p[1]>> \\in r"
+                using s1_1_asm s2_2_asm s3_1 by (auto simp: symmetric_def)
+            show "p \\in r^-1"
+                using s3_1 s3_2 by (auto dest: converseI)
+            qed
+        show "r^-1 = r"
+            using s2_1 s2_2 setEqualI[of "r^-1" "r"]
+            by blast
+        qed
+    have s1_2: "r^-1 = r ==> symmetric(r)"
+        proof -
+        assume s1_2_asm: "r^-1 = r"
+        show "symmetric(r)"
+            using s1_2_asm by (auto simp: symmetric_def)
+        qed
+    show ?thesis
+        using s1_1 s1_2 by auto
+    qed
 
 subsubsection \<open> Identity relation over a set \<close>
 
@@ -1165,13 +1411,14 @@ lemma Id_eqI: "a = b \<Longrightarrow> a \<in> A \<Longrightarrow> \<langle>a,b\
 by simp
 
 lemma converse_Id [simp]: "Id(A)^-1 = Id(A)"
-by auto
+by (auto simp: Id_def two_def)
+
 
 lemma dom_Id [simp]: "rel_domain(Id(A)) = A"
 unfolding rel_domain_def Id_def by auto
 
 lemma ran_Id [simp]: "rel_range(Id(A)) = A"
-unfolding rel_range_def Id_def by auto
+unfolding rel_range_def Id_def two_def by auto
 
 
 subsubsection \<open> Composition of relations \<close>
@@ -1208,7 +1455,7 @@ using assms by force
 lemma converse_comp:
   assumes r: "r \<subseteq> B \<times> C" and s: "s \<subseteq> A \<times> B"
   shows "((r \<circ> s)^-1) = (s^-1 \<circ> r^-1)"  (is "?lhs = ?rhs")
-proof
+proof (rule setEqualI)
   fix x
   assume x: "x \<in> ?lhs"
   from s r have "r \<circ> s \<subseteq> A \<times> C" by (rule rel_comp_in_prod)
@@ -1231,26 +1478,53 @@ qed
 lemma R_comp_Id [simp]:
   assumes r: "R \<subseteq> B \<times> C"
   shows "R \<circ> Id(B) = R"
-using r proof auto
-  fix p
-  assume p: "p \<in> R"
-  with r have 1: "p = \<langle>p[1], p[2]\<rangle>" (is "p = ?pp") by (intro prodProj, auto)
-  from p r have "p[1] \<in> B" by (auto dest: pairProj_in_prod)
-  with 1 p r have "?pp \<in> R \<circ> Id(B)" by (intro compI, auto)
-  with 1 show "p \<in> R \<circ> Id(B)" by simp
-qed
+    using r
+    proof -
+    have s1_1: "\<And> p.  p \\in R ==> p \\in R \<circ> Id(B)"
+        proof -
+        fix "p" :: "c"
+        assume p: "p \<in> R"
+        with r have 1: "p = \<langle>p[1], p[2]\<rangle>" (is "p = ?pp") by (intro prodProj, auto)
+        from p r have "p[1] \<in> B" by (auto dest: pairProj_in_prod)
+        with 1 p r have "?pp \<in> R \<circ> Id(B)" by (intro compI, auto)
+        with 1 show "p \<in> R \<circ> Id(B)" by simp
+        qed
+    have s1_2: "\<And> p.  p \\in R \<circ> Id(B) ==> p \\in R"
+        proof -
+        fix "p" :: "c"
+        assume s1_2_asm: "p \\in R \<circ> Id(B)"
+        show "p \\in R"
+            using r s1_2_asm by auto
+        qed
+    show ?thesis
+        using s1_1 s1_2 setEqualI[of "R \<circ> Id(B)" "R"] by blast
+    qed
+
 
 lemma Id_comp_R [simp]:
   assumes r: "R \<subseteq> A \<times> B"
   shows "Id(B) \<circ> R = R"
-using r proof auto
-  fix p
-  assume p: "p \<in> R"
-  with r have 1: "p = \<langle>p[1], p[2]\<rangle>" (is "p = ?pp") by (intro prodProj, auto)
-  from p r have "p[2] \<in> B" by (auto dest: pairProj_in_prod)
-  with 1 p r have "?pp \<in> Id(B) \<circ> R" by (intro compI, auto)
-  with 1 show "p \<in> Id(B) \<circ> R" by simp
-qed
+    using r
+    proof -
+    have s1_1: "\<And> p.  p \\in R ==> p \\in Id(B) \<circ> R"
+        proof -
+        fix "p" :: "c"
+        assume p: "p \<in> R"
+        with r have 1: "p = \<langle>p[1], p[2]\<rangle>" (is "p = ?pp") by (intro prodProj, auto)
+        from p r have "p[2] \<in> B" by (auto dest: pairProj_in_prod)
+        with 1 p r have "?pp \<in> Id(B) \<circ> R" by (intro compI, auto)
+        with 1 show "p \<in> Id(B) \<circ> R" by simp
+        qed
+    have s1_2: "\<And> p.  p \\in Id(B) \<circ> R ==> p \\in R"
+        proof -
+        fix "p" :: "c"
+        assume s1_2_asm: "p \\in Id(B) \<circ> R"
+        show "p \\in R"
+            using r s1_2_asm by auto
+        qed
+    show ?thesis
+        using s1_1 s1_2 setEqualI[of "Id(B) \<circ> R" "R"] by blast
+    qed
 
 lemma rel_comp_empty1 [simp]: "{} \<circ> R = {}"
 unfolding rel_comp_def by auto
@@ -1261,7 +1535,7 @@ unfolding rel_comp_def by auto
 lemma comp_assoc:
   assumes t: "T \<subseteq> A \<times> B" and s: "S \<subseteq> B \<times> C" and r: "R \<subseteq> C \<times> D"
   shows "(R \<circ> S) \<circ> T = R \<circ> (S \<circ> T)"
-proof
+proof (rule setEqualI)
   fix p
   assume p: "p \<in> (R \<circ> S) \<circ> T"
   from r s have "R \<circ> S \<subseteq> B \<times> D" by simp
