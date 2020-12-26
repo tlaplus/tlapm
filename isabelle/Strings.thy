@@ -59,6 +59,7 @@ text \<open>
   lexicon.
 \<close>
 
+(* TODO
 parse_ast_translation \<open>
   let
     (* convert an ML integer to a nibble *)
@@ -94,6 +95,7 @@ parse_ast_translation \<open>
     [("_Char", char_ast_tr), ("_String", string_ast_tr)]
   end
 \<close>
+*)
 
 
 (** debug **)
@@ -108,6 +110,7 @@ oops
 (*ML \<open> reset Syntax.trace_ast; \<close>*)
 (**)
 
+(* TODO
 print_ast_translation \<open>
   let
     (* convert a nibble to an ML integer -- because translation macros have
@@ -168,6 +171,7 @@ print_ast_translation \<open>
     [(@{const_syntax "char"}, char_ast_tr'), ("@tuple", string_ast_tr')]
   end
 \<close>
+*)
 
 (*** examples **
 (* not sure if the following is the way to set tracing? *)
