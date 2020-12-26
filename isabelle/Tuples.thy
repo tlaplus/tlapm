@@ -1429,8 +1429,8 @@ unfolding rel_range_def Id_def two_def by auto
 subsubsection \<open> Composition of relations \<close>
 
 lemmas compEqualI =
-  setEqualI [where A = "r \<circ> s" for r s, intro!]
-  setEqualI [where B = "r \<circ> s" for r s, intro!]
+  setEqualI [where A = "r \<circ> s" for r s]  (* , intro!] *)
+  setEqualI [where B = "r \<circ> s" for r s]  (* , intro!] *)
 
 lemma compI [intro]:
   assumes r: "r \<subseteq> B \<times> C" and s: "s \<subseteq> A \<times> B"
