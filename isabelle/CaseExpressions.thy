@@ -34,7 +34,7 @@ text \<open>
   twice (and will be simplified twice) in a @{text CaseOther} expression.
 \<close>
 
-definition CaseArm  -- {* preliminary construct to convert case arm into set *}
+definition CaseArm  (* -- preliminary construct to convert case arm into set *)
 where "CaseArm(p,e) \<equiv> IF p THEN {e} ELSE {}"
 
 definition Case where
