@@ -22,7 +22,7 @@ text \<open>
 definition Nibble
 where "Nibble \<equiv> {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}"
 
-definition char   -- {* @{text char} is intended to be applied to nibbles *}
+definition char   (* -- @{text char} is intended to be applied to nibbles *)
 where "char(a,b) \<equiv> \<langle>a,b\<rangle>"
 
 lemma charInj [simp]: "(char(a,b) = char(c,d)) = (a=c \<and> b=d)"
