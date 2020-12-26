@@ -6,13 +6,13 @@
     Time-stamp: <2011-10-11 17:40:22 merz>
 *)
 
-header {* Case expressions *}
+section \<open> Case expressions \<close>
 
 theory CaseExpressions
 imports Tuples
 begin
 
-text {*
+text \<open>
   A \textsc{case} expression in \tlaplus{} has the form
   \[
     \textsc{case } p_1 \rightarrow e_1
@@ -32,7 +32,7 @@ text {*
   guard of the \textsc{other}-branch, when present, is the conjunction
   of the negated guards of all other branches, so every guard appears
   twice (and will be simplified twice) in a @{text CaseOther} expression.
-*}
+\<close>
 
 definition CaseArm  -- {* preliminary construct to convert case arm into set *}
 where "CaseArm(p,e) \<equiv> IF p THEN {e} ELSE {}"
@@ -64,7 +64,7 @@ syntax (HTML output)
   "_other"      :: "c \<Rightarrow> case_arms"               ("OTHER \<rightarrow> _")
   "_case2"      :: "[case_arm, case_arms] \<Rightarrow> case_arms"  ("_/ \<box> _")
 
-parse_ast_translation {*
+parse_ast_translation \<open>
   let
     (* make_tuple converts a list of ASTs to a tuple formed from these ASTs.
        The order of elements is reversed. *)
@@ -99,10 +99,10 @@ parse_ast_translation {*
   in
     [("_case_syntax", case_syntax_tr)]
   end
-*}
+\<close>
 
 (** debugging **
-(*ML {* set Syntax.trace_ast; *}*)
+(*ML \<open> set Syntax.trace_ast; \<close>*)
 
 lemma "CASE a \<rightarrow> b [] c \<rightarrow> d [] e \<rightarrow> f [] OTHER \<rightarrow> g"
 oops
@@ -113,10 +113,10 @@ oops
 lemma "CASE OTHER \<rightarrow> g"  (* degenerated case *)
 oops
 
-(*ML {* reset Syntax.trace_ast; *}*)
+(*ML \<open> reset Syntax.trace_ast; \<close>*)
 **)
 
-print_ast_translation {*
+print_ast_translation \<open>
   let
     fun list_from_tuple (Ast.Constant @{const_syntax "emptySeq"}) = []
       | list_from_tuple (Ast.Appl[Ast.Constant "@tuple", tp]) =
@@ -173,10 +173,10 @@ print_ast_translation {*
     [(@{const_syntax "Case"}, case_syntax_tr'),
      (@{const_syntax "CaseOther"}, caseother_tr')]
   end
-*}
+\<close>
 
 (** debugging **
-(*ML {* set Syntax.trace_ast; *}*)
+(*ML \<open> set Syntax.trace_ast; \<close>*)
 
 lemma "CASE a \<rightarrow> b [] c \<rightarrow> d [] e \<rightarrow> f [] OTHER \<rightarrow> g"
 oops
@@ -187,7 +187,7 @@ oops
 lemma "CASE OTHER \<rightarrow> g"  (* degenerated case *)
 oops
 
-(*ML {* reset Syntax.trace_ast; *}*)
+(*ML \<open> reset Syntax.trace_ast; \<close>*)
 **)
 
 lemmas Case_simps [simp] = CaseArm_def Case_def CaseOther_def
