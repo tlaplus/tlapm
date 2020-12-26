@@ -256,7 +256,7 @@ lemma divmodNatPairEx:
 proof -
   from assms obtain q r where "q \<in> Nat" "r \<in> Nat" "divmod_rel(m,n,q,r)"
     by (rule divmod_rel_ex)
-  thus ?thesis by force
+  thus ?thesis unfolding two_def by force
 qed
 
 lemma divmodNatInNatNat:
@@ -279,6 +279,7 @@ proof (rule bChooseI2[OF divmodNatPairEx[OF m n pos]])
   fix z
   assume "z \<in> Nat \<times> Nat" and "divmod_rel(m,n,z[1],z[2])"
   with m n q r h show "z = \<langle>q,r\<rangle>"
+    unfolding two_def
     by (auto elim!: inProdE elim: divmod_rel_unique_div divmod_rel_unique_mod)
 qed
 
@@ -301,18 +302,20 @@ using divmodNatInNatNat[OF assms] assms by (auto simp: div_nat_def)
 lemma modIsNat [iff]:
   assumes "m \<in> Nat" and "n \<in> Nat" and "0 < n"
   shows "m mod n \<in> Nat"
-using divmodNatInNatNat[OF assms] assms by (auto simp: mod_nat_def)
+using divmodNatInNatNat[OF assms] assms by (auto simp: mod_nat_def two_def)
 
 lemma divmodNat_div_mod:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and pos: "0 < n"
   shows "divmodNat(m,n) = \<langle>m div n, m mod n\<rangle>"
-unfolding div_nat_def[OF m n] mod_nat_def[OF m n] using divmodNatInNatNat[OF assms]
+unfolding div_nat_def[OF m n] mod_nat_def[OF m n] two_def
+using divmodNatInNatNat[OF assms]
 by force
 
 lemma divmod_rel_div_mod_nat:
   assumes "m \<in> Nat" and "n \<in> Nat" and "0 < n"
   shows "divmod_rel(m, n, m div n, m mod n)"
-using divmodNat_divmod_rel[OF assms sym[OF divmodNat_div_mod[OF assms]]] by simp
+using divmodNat_divmod_rel[OF assms sym[OF divmodNat_div_mod[OF assms]]]
+by (auto simp: two_def)
 
 lemma div_nat_unique:
   assumes h: "divmod_rel(m,n,q,r)"
@@ -324,7 +327,7 @@ lemma mod_nat_unique:
   assumes h: "divmod_rel(m,n,q,r)"
     and m: "m \<in> Nat" and n: "n \<in> Nat" and pos: "0 < n" and q: "q \<in> Nat" and r: "r \<in> Nat"
   shows "m mod n = r"
-unfolding mod_nat_def[OF m n] using divmodNat_unique[OF assms] by simp
+unfolding mod_nat_def[OF m n] two_def using divmodNat_unique[OF assms] by simp
 
 lemma mod_nat_less_divisor:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and pos: "0 < n"
@@ -342,10 +345,12 @@ proof -
   from m n pos have 1: "divmod_rel(m,n,?dm[1],?dm[2])"
     by (simp add: divmodNat_divmod_rel)
   from m n pos have 2: "?dm \<in> Nat \<times> Nat" by (rule divmodNatInNatNat)
-  with 1 2 less n have "?dm[1] * n < n" by (auto simp: divmod_rel_def elim!: add_lessD1)
+  with 1 2 less n have "?dm[1] * n < n"
+    unfolding two_def
+    by (auto simp: divmod_rel_def elim!: add_lessD1)
   with 2 n have 3: "?dm[1] = 0" by (intro mult_less_self_right, auto)
 
-  with 1 2 m n have "?dm[2] = m" by (auto simp: divmod_rel_def)
+  with 1 2 m n have "?dm[2] = m" by (auto simp: divmod_rel_def two_def)
 
   with 3 prodProj[OF 2] show ?thesis by simp
 qed
