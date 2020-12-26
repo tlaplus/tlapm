@@ -165,8 +165,11 @@ text \<open>
 \<close>
 
 definition divmod_rel where
-  "divmod_rel(m,n,q,r) \<equiv> m = q * n + r
-                       \<and> ((0 < n \<and> 0 \<le> r \<and> r < n) \<or> (n < 0 \<and> r \<le> 0 \<and> n < r))"
+  "divmod_rel(m,n,q,r) \<equiv>
+    m = q * n + r
+    \<and>
+    ((0 < n \<and> 0 \<le> r \<and> r < n) \<or>
+     (n < 0 \<and> r \<le> 0 \<and> n < r))"
 
 text \<open> @{const divmod_rel} is total if $n$ is non-zero. \<close>
 
