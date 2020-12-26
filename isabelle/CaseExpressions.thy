@@ -64,6 +64,7 @@ syntax (HTML output)
   "_other"      :: "c \<Rightarrow> case_arms"               ("OTHER \<rightarrow> _")
   "_case2"      :: "[case_arm, case_arms] \<Rightarrow> case_arms"  ("_/ \<box> _")
 
+(* TODO
 parse_ast_translation \<open>
   let
     (* make_tuple converts a list of ASTs to a tuple formed from these ASTs.
@@ -100,6 +101,7 @@ parse_ast_translation \<open>
     [("_case_syntax", case_syntax_tr)]
   end
 \<close>
+*)
 
 (** debugging **
 (*ML \<open> set Syntax.trace_ast; \<close>*)
@@ -116,6 +118,7 @@ oops
 (*ML \<open> reset Syntax.trace_ast; \<close>*)
 **)
 
+(* TODO
 print_ast_translation \<open>
   let
     fun list_from_tuple (Ast.Constant @{const_syntax "emptySeq"}) = []
@@ -174,6 +177,7 @@ print_ast_translation \<open>
      (@{const_syntax "CaseOther"}, caseother_tr')]
   end
 \<close>
+*)
 
 (** debugging **
 (*ML \<open> set Syntax.trace_ast; \<close>*)
