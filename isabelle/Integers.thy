@@ -18,7 +18,7 @@ subsection \<open> The minus sign \<close>
 consts
   "minus" :: "c \<Rightarrow> c"                ("-._" [75] 75)
 
-syntax  -- {* syntax for negative naturals *}
+syntax  (* -- syntax for negative naturals *)
    "-.0"  :: "c"   ("-.0")
    "-.1"  :: "c"   ("-.1")
    "-.2"  :: "c"   ("-.2")
@@ -144,7 +144,7 @@ lemma intCases [case_names Positive Negative, cases set: Int]:
   shows "P"
 using assms unfolding Int_def by auto
 
--- {* Integer cases over two parameters *}
+(* -- Integer cases over two parameters *)
 lemma intCases2:
   assumes m: "m \<in> Int" and n: "n \<in> Int"
     and pp: "\<And>m n. \<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> P(m,n)"
@@ -202,10 +202,10 @@ unfolding Int_def by auto
 
 subsection \<open> Predicates ''is positive'' and 'is negative' \<close>
 
-definition isPos       -- {* Predicate ''is positive'' *}
+definition isPos       (* -- Predicate ''is positive'' *)
 where "isPos(n) \<equiv> \<exists>k \<in> Nat: n = Succ[k]"
 
-definition isNeg       -- {* Predicate ''is negative'' *}
+definition isNeg       (* -- Predicate ''is negative'' *)
 where "isNeg(n) \<equiv> \<exists>k \<in> Nat: n = -.Succ[k]"
 
 lemma boolify_isPos [simp]: "boolify(isPos(n)) = (isPos(n))"
@@ -251,7 +251,7 @@ lemma negNotNat_isNat:
 using n by (cases, auto)
 
 lemma noNatisNeg [simp]:
-  "n \<in> Nat \<Longrightarrow> isNeg(n) = FALSE" -- {* No natural number is negative *}
+  "n \<in> Nat \<Longrightarrow> isNeg(n) = FALSE" (* -- No natural number is negative *)
 unfolding isNeg_def using negNotInNat by blast
 
 lemma negNat_isNeg [intro]: "\<lbrakk>m \<in> Nat; m \<noteq> 0\<rbrakk> \<Longrightarrow> isNeg(-.m)"
@@ -290,10 +290,10 @@ by (auto elim: notIsNeg0_isPos[OF n])
 
 subsection \<open> Signum function and absolute value \<close>
 
-definition sgn                 -- {* signum function *}
+definition sgn                 (* -- signum function *)
 where "sgn(n) \<equiv> IF n = 0 THEN 0 ELSE (IF isPos(n) THEN 1 ELSE -.1)"
 
-definition abs                 -- {* absolute value *}
+definition abs                 (* -- absolute value *)
 where "abs(n) \<equiv> IF sgn(n) = -.1 THEN -.n ELSE n"
 
 lemma sgnInInt [simp]: "n \<in> Int \<Longrightarrow> sgn(n) \<in> Int"
@@ -416,7 +416,7 @@ text \<open>
 \<close>
 
 lemmas int_leq_pp_def = nat_leq_def
-  -- {* 'positive-positive' case, ie: both arguments are naturals *}
+  (* -- 'positive-positive' case, ie: both arguments are naturals *)
 
 axiomatization where
   int_leq_pn_def [simp]: "\<lbrakk>a \<in> Nat; b \<in> Nat\<rbrakk> \<Longrightarrow> a \<le> -.b = FALSE"
@@ -438,7 +438,7 @@ unfolding isBool_def by auto
 lemma int_leq_refl [iff]: "n \<in> Int \<Longrightarrow> n \<le> n"
 by(rule intCases, auto)
 
-lemma eq_leq_bothE: -- {* reduce equality over integers to double inequality *}
+lemma eq_leq_bothE: (* -- reduce equality over integers to double inequality *)
   assumes "m \<in> Int" and "n \<in> Int" and "m = n" and "\<lbrakk>m \<le> n; n \<le> m\<rbrakk> \<Longrightarrow> P"
   shows "P"
 using assms by simp
@@ -467,7 +467,7 @@ defs (unchecked overloaded)
 **)
 
 lemmas
-  int_add_pp_def = nat_add_def -- {* both numbers are positive, ie. naturals *}
+  int_add_pp_def = nat_add_def  (* -- both numbers are positive, ie. naturals *)
 
 axiomatization where
 int_add_pn_def: "\<lbrakk>a \<in> Nat; b \<in> Nat\<rbrakk> \<Longrightarrow> a + (-.b) \<equiv> IF a \<le> b THEN -.(b -- a) ELSE a -- b"
@@ -477,7 +477,7 @@ and
 int_add_nn_def [simp]: "\<lbrakk>a \<in> Nat; b \<in> Nat\<rbrakk> \<Longrightarrow> (-.a) + (-.b) = -.(a + b)"
 
 theorems int_add_def = int_add_pn_def int_add_np_def (*int_add_nn_def*)
-  --{* When we use these definitions, we don't want to unfold the 'pp' case *}
+  (* -- When we use these definitions, we don't want to unfold the 'pp' case *)
 
 lemma int_add_neg_eq_natDiff [simp]: "\<lbrakk>n \<le> m; m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> m + (-.n) = m -- n"
 by (auto simp: int_add_pn_def dest: nat_leq_antisym)
@@ -866,7 +866,7 @@ text \<open>
 definition diff          (infixl "-" 65)
 where int_diff_def: "\<lbrakk>m \<in> Int; n \<in> Int\<rbrakk> \<Longrightarrow> m - n = m + -.n"
 
-lemma diffIsInt [simp]: -- {* Closure *}
+lemma diffIsInt [simp]:  (* -- Closure *)
   "\<lbrakk>m \<in> Int; n \<in> Int\<rbrakk> \<Longrightarrow> m - n \<in> Int"
 by (simp add: int_diff_def)
 
