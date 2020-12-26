@@ -221,12 +221,18 @@ proof -
       assume "\<not>(x \<le> x')"
       with nat have "x' < x" by (simp add: nat_not_leq[simplified])
       with nat obtain k where k: "k \<in> Nat" "x = Succ[x'+k]"
-        by (auto simp: less_iff_Succ_add)
+        using less_iff_Succ_add by auto
       with eq nat n have "x'*n + (k*n + n + y) = x'*n + y'"
         by (simp add: add_mult_distrib_right_nat add_assoc_nat)
       with nat k n have "k*n + n + y = y'" by simp
-      with less k n nat have "(k*n + y) + n < n" by (simp add: add_ac_nat)
-      with k n nat show "FALSE" by simp
+      with less k n nat have s3_1: "(k*n + y) + n < n" by (simp add: add_ac_nat)
+      define j where "j \<equiv> k * n + y"
+      have s3_2: "j + n < n"
+        unfolding j_def using s3_1 by auto
+      have s3_3: "j \\in Nat"
+        unfolding j_def using multIsNat addIsNat k n nat by auto
+      show "FALSE"
+        using s3_2 s3_3 n not_add_less2[of "n" "j"] by auto
     qed
   }
   from this[OF q r q' r'] this[OF q' r' q r] q q' mqr mqr' rn rn'
@@ -345,9 +351,19 @@ proof -
   from m n pos have 1: "divmod_rel(m,n,?dm[1],?dm[2])"
     by (simp add: divmodNat_divmod_rel)
   from m n pos have 2: "?dm \<in> Nat \<times> Nat" by (rule divmodNatInNatNat)
-  with 1 2 less n have "?dm[1] * n < n"
-    unfolding two_def
-    by (auto simp: divmod_rel_def elim!: add_lessD1)
+  have "?dm[1] * n < n"
+    proof -
+    have s2_1: "m = ?dm[1] * n + ?dm[2]"
+        using 1 by (auto simp: divmod_rel_def)
+    have s2_2: "?dm[1] * n + ?dm[2] < n"
+        using less s2_1 by auto
+    have s2_3: "?dm[1] \\in Nat"
+        using 2 by auto
+    have s2_4: "?dm[2] \\in Nat"
+        using 2 by (auto simp: two_def)
+    show ?thesis
+        using s2_2 s2_3 s2_4 multIsNat n add_lessD1 by auto
+    qed
   with 2 n have 3: "?dm[1] = 0" by (intro mult_less_self_right, auto)
 
   with 1 2 m n have "?dm[2] = m" by (auto simp: divmod_rel_def two_def)
@@ -364,8 +380,11 @@ proof -
   have 2: "m div n \<noteq> 0"
   proof
     assume "m div n = 0"
-    with 1 m n pos have "m < n" by (auto simp: divmod_rel_def)
-    with geq m n show "FALSE" by (auto simp: nat_less_leq_not_leq)
+    with 1 m n pos have s2_1: "m < n" by (auto simp: divmod_rel_def)
+    have s2_2: "\<not> (n \<le> m)"
+        using s2_1 n m nat_not_leq by auto
+    show "FALSE"
+        using geq s2_2 by auto
   qed
   with m n pos obtain k where k1: "k \<in> Nat" and k2: "m div n = Succ[k]"
     using not0_implies_Suc[of "m div n"] by auto
@@ -621,7 +640,8 @@ lemma mod_div_nat_trivial [simp]:
 proof -
   from assms
   have "m div n + (m mod n) div n = (m mod n + (m div n) * n) div n"
-    by (simp add: mod_nat_less_divisor)
+    using div_nat_mult_self1[of "m mod n" "m div n" "n"]
+    by (auto simp: mod_nat_less_divisor)
   also from assms have "... = m div n + 0" by simp
   finally show ?thesis
     using assms by simp
