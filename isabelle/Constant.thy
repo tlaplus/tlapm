@@ -6,15 +6,15 @@
     Time-stamp: <2011-10-11 17:40:28 merz>
 *)
 
-header {* Main theory for constant-level Isabelle/\tlaplus{} *}
+section \<open> Main theory for constant-level Isabelle/\tlaplus{} \<close>
 
 theory Constant
 imports NatDivision CaseExpressions Strings Integers
 begin
 
-text {*
+text \<open>
   This is just an umbrella for the component theories.
-*}
+\<close>
 
 
 end
