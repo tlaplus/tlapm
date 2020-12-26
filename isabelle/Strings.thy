@@ -46,8 +46,8 @@ definition String
 where "String \<equiv> Seq(Char)"
 
 syntax
-  "_Char"   :: "xstr \<Rightarrow> c"    ("CHAR _")
-  "_String" :: "xstr \<Rightarrow> c"    ("_")
+  "_Char"   :: "str_token \<Rightarrow> c"    ("CHAR _")
+  "_String" :: "str_token \<Rightarrow> c"    ("_")
 
 text \<open>
   The following parse and print translations convert between the internal
