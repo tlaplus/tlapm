@@ -425,7 +425,7 @@ and
 and
   int_leq_nn_def [simp]: "\<lbrakk>a \<in> Nat; b \<in> Nat\<rbrakk> \<Longrightarrow> -.a \<le> -.b = (b \<le> a)"
 
-(* theorems int_leq_def = int_leq_pn_def int_leq_np_def int_leq_nn_def *)
+(* lemmas int_leq_def = int_leq_pn_def int_leq_np_def int_leq_nn_def *)
 
 lemma int_boolify_leq [simp]:
   "\<lbrakk>a \<in> Int; b \<in> Int\<rbrakk> \<Longrightarrow> boolify(a \<le> b) = (a \<le> b)"
@@ -476,7 +476,7 @@ int_add_np_def: "\<lbrakk>a \<in> Nat; b \<in> Nat\<rbrakk> \<Longrightarrow> (-
 and
 int_add_nn_def [simp]: "\<lbrakk>a \<in> Nat; b \<in> Nat\<rbrakk> \<Longrightarrow> (-.a) + (-.b) = -.(a + b)"
 
-theorems int_add_def = int_add_pn_def int_add_np_def (*int_add_nn_def*)
+lemmas int_add_def = int_add_pn_def int_add_np_def (*int_add_nn_def*)
   (* -- When we use these definitions, we don't want to unfold the 'pp' case *)
 
 lemma int_add_neg_eq_natDiff [simp]: "\<lbrakk>n \<le> m; m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> m + (-.n) = m -- n"
@@ -723,7 +723,7 @@ and
 and
   int_mult_nn_def [simp]: "\<lbrakk>a \<in> Nat; b \<in> Nat\<rbrakk> \<Longrightarrow> -.a * -.b = a * b"
 
-theorems int_mult_def = int_mult_pn_def int_mult_np_def (*int_mult_nn_def*)
+lemmas int_mult_def = int_mult_pn_def int_mult_np_def (*int_mult_nn_def*)
 
 text \<open> Closure \<close>
 
