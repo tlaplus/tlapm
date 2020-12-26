@@ -6,18 +6,18 @@
     Time-stamp: <2011-10-11 17:40:15 merz>
 *)
 
-header {* Characters and strings *}
+section \<open> Characters and strings \<close>
 
 theory Strings
 imports Tuples
 begin
 
-subsection {* Characters *}
+subsection \<open> Characters \<close>
 
-text {*
+text \<open>
   Characters are represented as pairs of hexadecimal digits (also called
   \emph{nibbles}).
-*}
+\<close>
 
 definition Nibble
 where "Nibble \<equiv> {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}"
@@ -40,7 +40,7 @@ lemma isChar [simp]: "(c \<in> Char) = (\<exists>a,b \<in> Nibble : c = char(a,b
 unfolding Char_def by auto
 
 
-subsection {* Strings *}
+subsection \<open> Strings \<close>
 
 definition String
 where "String \<equiv> Seq(Char)"
@@ -49,7 +49,7 @@ syntax
   "_Char"   :: "xstr \<Rightarrow> c"    ("CHAR _")
   "_String" :: "xstr \<Rightarrow> c"    ("_")
 
-text {*
+text \<open>
   The following parse and print translations convert between the internal
   and external representations of strings. Strings are written using
   two single quotes in Isabelle, such as \verb|''abc''|. Note that the
@@ -57,9 +57,9 @@ text {*
   printed as @{term "\<langle>\<rangle>"}. Single characters are printed in the form
   \verb|CHAR ''a''|: Isabelle doesn't provide single characters in its
   lexicon.
-*}
+\<close>
 
-parse_ast_translation {*
+parse_ast_translation \<open>
   let
     (* convert an ML integer to a nibble *)
     fun mkNibble n =
@@ -93,11 +93,11 @@ parse_ast_translation {*
   in
     [("_Char", char_ast_tr), ("_String", string_ast_tr)]
   end
-*}
+\<close>
 
 
 (** debug **)
-(*ML {* set Syntax.trace_ast; *}*)
+(*ML \<open> set Syntax.trace_ast; \<close>*)
 
 lemma "''a''"
 oops
@@ -105,10 +105,10 @@ oops
 lemma "CHAR ''a''"
 oops
 
-(*ML {* reset Syntax.trace_ast; *}*)
+(*ML \<open> reset Syntax.trace_ast; \<close>*)
 (**)
 
-print_ast_translation {*
+print_ast_translation \<open>
   let
     (* convert a nibble to an ML integer -- because translation macros have
        already been applied, we see constants "0" through "15", not Succ[...] terms! *)
@@ -167,11 +167,11 @@ print_ast_translation {*
   in
     [(@{const_syntax "char"}, char_ast_tr'), ("@tuple", string_ast_tr')]
   end
-*}
+\<close>
 
 (*** examples **
 (* not sure if the following is the way to set tracing? *)
-(* ML {* val _ = Config.put Ast.trace true @{context} *} *)
+(* ML \<open> val _ = Config.put Ast.trace true @{context} \<close> *)
 
 lemma "CHAR ''a'' \<noteq> CHAR ''b''"
 by simp
@@ -191,13 +191,13 @@ by simp
 lemma "''abc''[2] \<noteq> CHAR ''a''"
 by simp
 
-(* ML {* val _ = Config.put Ast.trace false @{context} *} *)
+(* ML \<open> val _ = Config.put Ast.trace false @{context} \<close> *)
 **)
 
 
-subsection {* Records and sets of records *}
+subsection \<open> Records and sets of records \<close>
 
-text {*
+text \<open>
   Records are simply represented as enumerated functions with string arguments,
   such as @{text "(''foo'' :> 1) @ (''bar'' :> TRUE)"}. Similarly, there is no
   specific @{text "EXCEPT"} construct for records; use the standard one for
@@ -207,7 +207,7 @@ text {*
   record syntax in Isabelle seems difficult, because the Isabelle lexer
   distinguishes between identifiers and strings: the latter must be surrounded
   by two single quotes.
-*}
+\<close>
 
 (** Examples **
 
