@@ -883,7 +883,7 @@ lemma diff_self_eq_0_int [simp]: "m \<in> Int \<Longrightarrow> m - m = 0"
 by (simp add: int_diff_def)
 
 lemma neg_diff_is_diff [simp]: "\<lbrakk>m \<in> Int; n \<in> Int\<rbrakk> \<Longrightarrow> -.(m - n) = n - m"
-using assms by (simp add: int_diff_def add_commute_int)
+by (simp add: int_diff_def add_commute_int)
 
 lemma diff_nat_is_add_neg: "\<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> m - n = m + -.n"
 by (simp add: int_diff_def)
