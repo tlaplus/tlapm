@@ -98,7 +98,7 @@ parse_ast_translation \<open>
 *)
 
 
-(** debug **)
+(** debug **
 (*ML \<open> set Syntax.trace_ast; \<close>*)
 
 lemma "''a''"
@@ -108,7 +108,7 @@ lemma "CHAR ''a''"
 oops
 
 (*ML \<open> reset Syntax.trace_ast; \<close>*)
-(**)
+**)
 
 (* TODO
 print_ast_translation \<open>
