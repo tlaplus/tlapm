@@ -7,13 +7,13 @@
 
 *)
 
-header {* The Integers as a superset of natural numbers *}
+section \<open> The Integers as a superset of natural numbers \<close>
 
 theory Integers
 imports Tuples NatArith
 begin
 
-subsection {* The minus sign *}
+subsection \<open> The minus sign \<close>
 
 consts
   "minus" :: "c \<Rightarrow> c"                ("-._" [75] 75)
@@ -123,7 +123,7 @@ lemma (*[simp]*) "\<exists>x \<in> Nat : -.1 = -.x" by auto
 lemma (*[simp]*) "x \<in> Nat \<Longrightarrow> (1 = -.x) = FALSE" by (auto simp: sym[OF minus_sym])
 
 
-subsection {* The set of Integers *}
+subsection \<open> The set of Integers \<close>
 
 definition Int
 where "Int \<equiv> Nat \<union> {-.n : n \<in> Nat}"
@@ -200,7 +200,7 @@ lemma intNotNatIsNegNat: "\<lbrakk>n \<notin> Nat; n \<in> Int\<rbrakk> \<Longri
 unfolding Int_def by auto
 
 
-subsection {* Predicates ''is positive'' and 'is negative' *}
+subsection \<open> Predicates ''is positive'' and 'is negative' \<close>
 
 definition isPos       -- {* Predicate ''is positive'' *}
 where "isPos(n) \<equiv> \<exists>k \<in> Nat: n = Succ[k]"
@@ -288,7 +288,7 @@ lemma intThenPosZeroNeg:
 by (auto elim: notIsNeg0_isPos[OF n])
 
 
-subsection {* Signum function and absolute value *}
+subsection \<open> Signum function and absolute value \<close>
 
 definition sgn                 -- {* signum function *}
 where "sgn(n) \<equiv> IF n = 0 THEN 0 ELSE (IF isPos(n) THEN 1 ELSE -.1)"
@@ -383,7 +383,7 @@ lemma sgn_minus [simp]:
   shows "sgn(-.n) = -.sgn(n)"
 unfolding sgn_def using n by (cases, auto)
 
-text {* Absolute value *}
+text \<open> Absolute value \<close>
 
 lemma absIsNat [simp]:
   assumes n: "n \<in> Int" shows "abs(n) \<in> Nat"
@@ -408,12 +408,12 @@ lemma abs_neg [simp]:
 unfolding abs_def using n by (auto dest: sgnNat_not1)
 
 
-subsection {* Orders on integers *}
+subsection \<open> Orders on integers \<close>
 
-text {*
+text \<open>
   We distinguish four cases, depending on the arguments being in
   Nat or negative.
-*}
+\<close>
 
 lemmas int_leq_pp_def = nat_leq_def
   -- {* 'positive-positive' case, ie: both arguments are naturals *}
@@ -448,18 +448,19 @@ lemma neg_le_iff_le [simp]:
 by(rule intCases2[of m n], simp_all)
 
 
-subsection {* Addition of integers *}
+subsection \<open> Addition of integers \<close>
 
-text {*
+text \<open>
   Again, we distinguish four cases in the definition of @{text "a + b"},
   according to each argument being positive or negative.
-*}
+\<close>
 
+(* cf. NatArith *)
 (** The following is rejected by Isabelle because the two definitions
     are not distinguishable by argument types.
 defs (unchecked overloaded)
   int_add_def: "\<lbrakk>a \<in> Int; b \<in> Int \<rbrakk> \<Longrightarrow> a + b \<equiv>
-    IF a \<in> Nat \<and> b \<in> Nat THEN addnat(a)[b]   (* cf. NatArith *)
+    IF a \<in> Nat \<and> b \<in> Nat THEN addnat(a)[b]
     ELSE IF isNeg(a) \<and> isNeg(b) THEN -.(addnat(-.a)[-.b])
     ELSE IF isNeg(a) THEN IF -.a \<le> b THEN b -- a ELSE -.(a -- b)
     ELSE IF a \<le> -.b THEN -.(b -- a) ELSE a -- b"
@@ -481,19 +482,19 @@ theorems int_add_def = int_add_pn_def int_add_np_def (*int_add_nn_def*)
 lemma int_add_neg_eq_natDiff [simp]: "\<lbrakk>n \<le> m; m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> m + (-.n) = m -- n"
 by (auto simp: int_add_pn_def dest: nat_leq_antisym)
 
-text {* Closure *}
+text \<open> Closure \<close>
 
 lemma addIsInt [simp]: "\<lbrakk>m \<in> Int; n \<in> Int\<rbrakk> \<Longrightarrow> m + n \<in> Int"
 by (rule intCases2[of m n], auto simp: int_add_def)
 
-text {* Neutral element *}
+text \<open> Neutral element \<close>
 
 lemma add_0_right_int [simp]: "n \<in> Int \<Longrightarrow> n + 0 = n"
 by(rule intCases, auto simp add: int_add_np_def)
 lemma add_0_left_int [simp]: "n \<in> Int \<Longrightarrow> 0 + n = n"
 by(rule intCases, auto simp add: int_add_pn_def)
 
-text {* Additive inverse element *}
+text \<open> Additive inverse element \<close>
 
 lemma add_inverse_nat [simp]: "n \<in> Nat \<Longrightarrow> n + -.n = 0"
 by(simp add: int_add_pn_def)
@@ -507,7 +508,7 @@ by (rule intCases, auto simp: int_add_def)
 lemma add_inverse2_int [simp]: "n \<in> Int \<Longrightarrow> -.n + n = 0"
 by (rule intCases, auto simp: int_add_def)
 
-text {* Commutativity *}
+text \<open> Commutativity \<close>
 
 lemma add_commute_pn_nat: "\<lbrakk>m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> m + -.n = -.n + m"
 by(simp add: int_add_def)
@@ -515,7 +516,7 @@ by(simp add: int_add_def)
 lemma add_commute_int: "\<lbrakk>m \<in> Int; n \<in> Int\<rbrakk> \<Longrightarrow> m + n = n + m"
   by(rule intCases2[of m n], auto simp add: int_add_def add_commute_nat)
 
-text {* Associativity *}
+text \<open> Associativity \<close>
 
 lemma add_pn_eq_adiff [simp]:
   "\<lbrakk>m \<le> n; m \<in> Nat; n \<in> Nat\<rbrakk> \<Longrightarrow> m + -.n = -.(n -- m)"
@@ -695,7 +696,7 @@ by (rule intCases3,
     auto simp: add_assoc_nat int_add_assoc1 int_add_assoc2 int_add_assoc3
                int_add_assoc4 int_add_assoc5 int_add_assoc6)
 
-text {* Minus sign distributes over addition *}
+text \<open> Minus sign distributes over addition \<close>
 
 lemma minus_distrib_pn_int [simp]:
   "m \<in> Nat \<Longrightarrow> n \<in> Nat \<Longrightarrow> -.(m + -.n) = -.m + n"
@@ -713,7 +714,7 @@ lemma int_add_minus_distrib [simp]:
 by (rule intCases2[OF m n], simp_all)
 
 
-subsection {* Multiplication of integers *}
+subsection \<open> Multiplication of integers \<close>
 
 axiomatization where
   int_mult_pn_def: "\<lbrakk>a \<in> Nat; b \<in> Nat\<rbrakk> \<Longrightarrow> a * -.b = -.(a * b)"
@@ -724,12 +725,12 @@ and
 
 theorems int_mult_def = int_mult_pn_def int_mult_np_def (*int_mult_nn_def*)
 
-text {* Closure *}
+text \<open> Closure \<close>
 
 lemma multIsInt [simp]: "\<lbrakk>a \<in> Int; b \<in> Int\<rbrakk> \<Longrightarrow> a * b \<in> Int"
 by (rule intCases2[of a b], simp_all add: int_mult_def)
 
-text {* Neutral element *}
+text \<open> Neutral element \<close>
 
 lemma mult_0_right_int [simp]: "a \<in> Int \<Longrightarrow> a * 0 = 0"
 by (rule intCases[of a], simp_all add: int_mult_np_def)
@@ -737,12 +738,12 @@ by (rule intCases[of a], simp_all add: int_mult_np_def)
 lemma mult_0_left_int [simp]: "a \<in> Int \<Longrightarrow> 0 * a = 0"
 by (rule intCases[of a], simp_all add: int_mult_pn_def)
 
-text {* Commutativity *}
+text \<open> Commutativity \<close>
 
 lemma mult_commute_int: "\<lbrakk>a \<in> Int; b \<in> Int\<rbrakk> \<Longrightarrow> a * b = b * a"
 by (rule intCases2[of a b], simp_all add: int_mult_def mult_commute_nat)
 
-text {* Identity element *}
+text \<open> Identity element \<close>
 
 lemma mult_1_right_int [simp]: "a \<in> Int \<Longrightarrow> a * 1 = a"
 by (rule intCases[of a], simp_all add: int_mult_def)
@@ -750,14 +751,14 @@ by (rule intCases[of a], simp_all add: int_mult_def)
 lemma mult_1_left_int [simp]: "a \<in> Int \<Longrightarrow> 1 * a = a"
 by (rule intCases[of a], simp_all add: int_mult_def)
 
-text {* Associativity *}
+text \<open> Associativity \<close>
 
 lemma mult_assoc_int:
   assumes m: "m \<in> Int" and n: "n \<in> Int" and p: "p \<in> Int"
   shows "m * (n * p) = (m * n) * p"
 by(rule intCases3[OF m n p], simp_all add: mult_assoc_nat int_mult_def)
 
-text {* Distributivity *}
+text \<open> Distributivity \<close>
 
 lemma ppn_distrib_left_nat: (* ppn stands for m=positive, n=positive, p=negative *)
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and p: "p \<in> Nat"
@@ -840,7 +841,7 @@ apply(rule intCases3[OF m n p],
       apply(simp only: add_mult_distrib_right_nat)
 done
 
-text {* Minus sign distributes over multiplication *}
+text \<open> Minus sign distributes over multiplication \<close>
 
 lemma minus_mult_left_int:
   assumes m: "m \<in> Int" and n: "n \<in> Int"
@@ -853,14 +854,14 @@ lemma minus_mult_right_int:
 by (rule intCases2[OF m n], simp_all add: int_mult_def)
 
 
-subsection {* Difference of integers *}
+subsection \<open> Difference of integers \<close>
 
-text {*
+text \<open>
   Difference over integers is simply defined as addition of the complement.
   Note that this difference, noted @{text "-"}, is different from the
   difference over natural numbers, noted @{text "--"}, even for two natural
   numbers, because the latter cuts off at $0$.
-*}
+\<close>
 
 definition diff          (infixl "-" 65)
 where int_diff_def: "\<lbrakk>m \<in> Int; n \<in> Int\<rbrakk> \<Longrightarrow> m - n = m + -.n"
