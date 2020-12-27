@@ -28,7 +28,4 @@
 /tools/installer/tlaps-source-release.sh
 # `tlapm` binary
 tlapm
-# installation for testing,
-# created by the installer
-/test/bin/
-/test/lib/
+/isabelle/output/
