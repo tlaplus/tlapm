@@ -1027,6 +1027,11 @@ lemma leq_adiff_right_add_left:
   shows "m \<le> n -- k = (m + k \<le> n)"
 using assms by (induct n k rule: diffInduct, simp+)
 
+lemma leq_adiff_left_add_right_equiv:
+  assumes "k \<le> n" and "m \<in> Nat" and "n \<in> Nat" and "k \<in> Nat"
+  shows "(n -- k \<le> m) = (n \<le> m + k)"
+using assms by (induct n k rule: diffInduct, simp+)
+
 lemma leq_adiff_left_add_right:
   assumes 1: "n -- p \<le> m" and m: "m \<in> Nat" and n: "n \<in> Nat" and p: "p \<in> Nat"
   shows "n \<le> m + p"
