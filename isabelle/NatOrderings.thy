@@ -162,7 +162,10 @@ unfolding nat_leq_def using uptoLinear .
 
 lemma nat_leq_cases:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat"
-  and leq: "m \<le> n \<Longrightarrow> P" and geq: "\<lbrakk>n \<le> m; n \<noteq> m\<rbrakk> \<Longrightarrow> P"
+  and leq: "m \<le> n \<Longrightarrow> P" and
+      geq: "\<lbrakk>n \<le> m;
+                     n \<noteq> m
+            \<rbrakk> \<Longrightarrow> P"
   shows "P"
 proof (cases "m \<le> n")
   case True thus "P" by (rule leq)
