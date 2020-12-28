@@ -725,24 +725,280 @@ qed
 lemma int_add_assoc2:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and p: "p \<in> Nat"
   shows "m + (-.p + n) = (m + -.p) + n"
-using assms apply (simp add: add_commute_int[of "-.p" n])
-  using int_add_assoc1[OF m n p] apply simp
-  apply(rule nat_leq_cases[of p "m + n"], simp_all)
-    apply(rule nat_leq_cases[OF p m], simp_all)
-      apply(rule adiff_add_assoc2, simp_all)
-      apply (simp add: add_commute_int[of "-.(p -- m)" n])
-      apply(simp only: add_commute_nat[OF m n])
-      apply(rule nat_leq_cases[of "p -- m" n], simp_all)
-	apply(rule adiff_add_assoc3[symmetric], simp+)
-	apply(rule adiff_add_assoc5[symmetric], simp+)
-  apply(rule nat_leq_cases[OF p m], simp_all)
-    apply (simp add: add_commute_nat[OF m n])
-    apply (simp add: add_commute_int[of "-.(p -- m)" n])
-    apply(rule nat_leq_cases[of "p -- m" n], simp_all)
-      apply(simp add: add_commute_nat[OF m n])
-      apply(rule adiff_add_assoc6[symmetric], simp+)
-      apply(rule adiff_adiff_left_nat[symmetric], simp+)
-done
+proof -
+have s1_1: "(m + n) + -.p = (m + -.p) + n"
+    proof -
+    have s2_1: "m + n \<le> p ==>
+        (m + n) + -.p = (m + -.p) + n"
+        proof -
+        assume s2_1_asm: "m + n \<le> p"
+        have s3_1: "(m + n) + -.p = -.(p -- (m + n))"
+            proof -
+            have s4_1: "\<lbrakk>m + n \<in> Nat; p \<in> Nat\<rbrakk>
+                \<Longrightarrow> ((m + n) + (-.p)) \<equiv>
+                    IF m + n \<le> p THEN
+                        -.(p -- (m + n)) ELSE
+                        (m + n) -- p"
+                using int_add_pn_def[of "m + n" "p"] by auto
+            have s4_2: "(m + n) + -.p \<equiv> -.(p -- (m + n))"
+                using s4_1 s2_1_asm m n p addIsNat by auto
+            show ?thesis
+                using s4_2 by auto
+            qed
+        have s3_2: "m \<le> p"
+            using s2_1_asm add_leqD1 m n p by auto
+        have s3_3: "(m + -.p) + n = -.(p -- m) + n"
+            proof -
+            have s4_1: "m + -.p = -.(p -- m)"
+                proof -
+                have s5_1: "\<lbrakk>m \<in> Nat; p \<in> Nat\<rbrakk>
+                    \<Longrightarrow> (m + (-.p)) \<equiv>
+                        IF m \<le> p THEN
+                            -.(p -- m) ELSE
+                            m -- p"
+                    using int_add_pn_def[of "m" "p"] by auto
+                have s5_2: "m + -.p \<equiv> -.(p -- m)"
+                    using s5_1 m p s3_2 by auto
+                show ?thesis
+                    using s5_2 by auto
+                qed
+            show ?thesis
+                using s4_1 by auto
+            qed
+        have s3_4: "n \<le> p -- m ==>
+                    (m + n) + -.p = (m + -.p) + n"
+            proof -
+            assume s3_4_asm: "n \<le> p -- m"
+            have s4_1: "(m + -.p) + n = -.((p -- m) -- n)"
+                proof -
+                have s5_1: "-.(p -- m) + n = n + -.(p -- m)"
+                    using p n m adiffIsNat add_commute_pn_nat by auto
+                have s5_2: "n + -.(p -- m) = -.((p -- m) -- n)"
+                    proof -
+                    have s6_1: "\<lbrakk>n \<in> Nat; p -- m \<in> Nat\<rbrakk>
+                        \<Longrightarrow> (n + (-.(p -- m))) \<equiv>
+                            IF n \<le> p -- m THEN
+                                -.((p -- m) -- n) ELSE
+                                n -- (p -- m)"
+                        using int_add_pn_def[of "n" "p -- m"] by auto
+                    have s6_2: "n + -.(p -- m) \<equiv> -.((p -- m) -- n)"
+                        using s6_1 n m p adiffIsNat s3_4_asm by auto
+                    show ?thesis
+                        using s6_2 by auto
+                    qed
+                show ?thesis
+                    using s3_3 s5_1 s5_2 by auto
+                qed
+            have s4_2: "(p -- m) -- n = p -- (m + n)"
+                using p n m adiff_adiff_left_nat by auto
+            show "(m + n) + -.p = (m + -.p) + n"
+                using s3_1 s4_1 s4_2 by auto
+            qed
+        have s3_5: "\<not> (n \<le> p -- m) ==>
+                    (m + n) + -.p = (m + -.p) + n"
+            proof -
+            assume s3_5_asm: "\<not> (n \<le> p -- m)"
+            have s4_1: "p -- m \<le> n"
+                proof -
+                have s5_1: "p -- m < n"
+                    using s3_5_asm nat_not_leq p n m adiffIsNat by auto
+                show ?thesis
+                    using s5_1 by (auto simp: less_def)
+                qed
+            have s4_2: "-.(p -- m) + n = n -- (p -- m)"
+                proof -
+                have s5_1: "-.(p -- m) + n = n + -.(p -- m)"
+                    using p n m add_commute_pn_nat adiffIsNat by auto
+                have s5_2: "n + -.(p -- m) = n -- (p -- m)"
+                    proof -
+                    have s6_1: "\<lbrakk>n \<in> Nat; p -- m \<in> Nat\<rbrakk>
+                        \<Longrightarrow> (n + (-.(p -- m))) \<equiv>
+                            IF n \<le> p -- m THEN
+                                -.((p -- m) -- n) ELSE
+                                n -- (p -- m)"
+                        using int_add_pn_def[of "n" "p -- m"] by auto
+                    have s6_2: "n + -.(p -- m) \<equiv> n -- (p -- m)"
+                        using s6_1 s3_5_asm p n m adiffIsNat by auto
+                    show ?thesis
+                        using s6_2 by auto
+                    qed
+                show ?thesis
+                    using s5_1 s5_2 by auto
+                qed
+            have s4_3: "n -- (p -- m) = -.(p -- (m + n))"
+                using adiff_add_assoc6 m n p s3_2 s2_1_asm
+                    s4_1 add_commute_nat by auto
+            show "(m + n) + -.p = (m + -.p) + n"
+                using s3_1 s3_3 s4_2 s4_3[symmetric] by auto
+            qed
+        show ?thesis
+            using s3_4 s3_5 nat_leq_isBool[of "n" "p -- m"]
+                isBoolTrueFalse[of "n \<le> p -- m"] by auto
+        qed
+    have s2_2: "\<not> (m + n \<le> p) ==>
+        (m + n) + -.p = (m + -.p) + n"
+        proof -
+        assume s2_2_asm: "\<not> (m + n \<le> p)"
+        have s3_1: "(m + n) + -.p = (m + n) -- p"
+            proof -
+            have s4_1: "\<lbrakk>(m + n) \<in> Nat; p \<in> Nat\<rbrakk>
+                \<Longrightarrow> ((m + n) + (-.p)) \<equiv>
+                    IF m + n \<le> p THEN
+                        -.(p -- (m + n)) ELSE
+                        (m + n) -- p"
+                using int_add_pn_def[of "m + n" "p"] by auto
+            have s4_2: "((m + n) + (-.p)) \<equiv> ((m + n) -- p)"
+                proof -
+                have s5_1: "m + n \\in Nat"
+                    using m n addIsNat by auto
+                show "((m + n) + (-.p)) \<equiv> ((m + n) -- p)"
+                    using s2_2_asm s4_1[OF s5_1 p] by auto
+                qed
+            show ?thesis
+                using s4_2 by auto
+            qed
+        have s3_2: "m \<le> p ==>
+                (m + n) + -.p = (m + -.p) + n"
+            proof -
+            assume s3_2_asm: "m \<le> p"
+            have s4_1: "m + -.p = -.(p -- m)"
+                proof -
+                have s5_1: "\<lbrakk>m \<in> Nat; p \<in> Nat\<rbrakk>
+                    \<Longrightarrow> (m + (-.p)) \<equiv>
+                        IF m \<le> p THEN
+                            -.(p -- m) ELSE
+                            m -- p"
+                    using int_add_pn_def[of "m" "p"] by auto
+                have s5_2: "m + -.p \<equiv> -.(p -- m)"
+                    using s5_1 m p s3_2_asm by auto
+                show ?thesis
+                    using s5_2 by auto
+                qed
+            have s4_4: "p \<le> m + n"
+                proof -
+                have s5_1: "p < m + n"
+                    using s2_2_asm p m n addIsNat nat_not_leq by auto
+                show ?thesis
+                    using s5_1 by (auto simp: less_def)
+                qed
+            have s4_2: "n \<le> p -- m ==>
+                (m + n) + -.p = (m + -.p) + n"
+                proof -
+                assume s4_2_asm: "n \<le> p -- m"
+                have s5_1: "(m + -.p) + n = -.((p -- m) -- n)"
+                    proof -
+                    have s6_1: "(m + -.p) + n = -.(p -- m) + n"
+                        using s4_1 by auto
+                    have s6_2: "-.(p -- m) + n = n + -.(p -- m)"
+                        using p m n adiffIsNat add_commute_pn_nat by auto
+                    have s6_3: "n + -.(p -- m) = -.((p -- m) -- n)"
+                        proof -
+                        have s7_1: "\<lbrakk>n \<in> Nat; p -- m \<in> Nat
+                            \<rbrakk>
+                            \<Longrightarrow> (n + (-.(p -- m))) \<equiv>
+                                IF n \<le> p -- m THEN
+                                    -.((p -- m) -- n) ELSE
+                                    n -- (p -- m)"
+                            using int_add_pn_def[of "n" "p -- m"] by auto
+                        have s7_2: "n + -.(p -- m) \<equiv> -.((p -- m) -- n)"
+                            using s7_1 p n m adiffIsNat s4_2_asm by auto
+                        show ?thesis
+                            using s7_2 by auto
+                        qed
+                    show ?thesis
+                        using s6_1 s6_2 s6_3 by auto
+                    qed
+                have s5_2: "-.((p -- m) -- n) = (m + n) -- p"
+                    using adiff_add_assoc5 s4_4 s4_2_asm s3_2_asm
+                        add_commute_nat
+                        m n p by auto
+                show "(m + n) + -.p = (m + -.p) + n"
+                    using s5_1 s5_2 s3_1 by auto
+                qed
+            have s4_3: "\<not> (n \<le> p -- m) ==>
+                (m + n) + -.p = (m + -.p) + n"
+                proof -
+                assume s4_3_asm: "\<not> (n \<le> p -- m)"
+                have s5_1: "(m + n) -- p = n -- (p -- m)"
+                    using m n p adiff_add_assoc3[of "m" "p" "n"]
+                        s3_2_asm s4_4 add_commute_nat
+                        by auto
+                have s5_2: "(m + -.p) + n = n -- (p -- m)"
+                    proof -
+                    have s6_1: "(m + -.p) + n = -.(p -- m) + n"
+                        using s4_1 by auto
+                    have s6_2: "-.(p -- m) + n = n + -.(p -- m)"
+                        using s6_1 n p m adiffIsNat
+                            add_commute_pn_nat by auto
+                    have s6_3: "n + -.(p -- m) = n -- (p -- m)"
+                        proof -
+                        have s7_1: "\<lbrakk>n \<in> Nat; p -- m \<in> Nat
+                            \<rbrakk>
+                            \<Longrightarrow> (n + (-.(p -- m))) \<equiv>
+                                IF n \<le> p -- m THEN
+                                    -.((p -- m) -- n) ELSE
+                                    n -- (p -- m)"
+                            using int_add_pn_def[of "n" "p -- m"] by auto
+                        have s7_2: "n + -.(p -- m) \<equiv> n -- (p -- m)"
+                            using s7_1 s4_3_asm n p m adiffIsNat
+                                by auto
+                        show ?thesis
+                            using s7_2 by auto
+                        qed
+                    show ?thesis
+                        using s6_1 s6_2 s6_3 by auto
+                    qed
+                show "(m + n) + -.p = (m + -.p) + n"
+                    using s5_1 s3_1 s5_2 by auto
+                qed
+            show "(m + n) + -.p = (m + -.p) + n"
+                using s4_2 s4_3 nat_leq_isBool[of "n" "p -- m"]
+                    isBoolTrueFalse[of "n \<le> p -- m"] by auto
+            qed
+        have s3_3: "\<not> (m \<le> p) ==>
+                (m + n) + -.p = (m + -.p) + n"
+            proof -
+            assume s3_3_asm: "\<not> (m \<le> p)"
+            have s4_1: "p \<le> m"
+                proof -
+                have s5_1: "p < m"
+                    using s3_3_asm p m nat_not_leq by auto
+                show ?thesis
+                    using s5_1 by (auto simp: less_def)
+                qed
+            have s4_2: "(m + n) -- p = (m -- p) + n"
+                using adiff_add_assoc2 s4_1 p n m by auto
+            have s4_3: "m + -.p = m -- p"
+                proof -
+                have s5_1: "\<lbrakk>m \<in> Nat; p \<in> Nat\<rbrakk>
+                    \<Longrightarrow> (m + (-.p)) \<equiv>
+                        IF m \<le> p THEN
+                            -.(p -- m) ELSE
+                            m -- p"
+                    using int_add_pn_def[of "m" "p"] by auto
+                have s5_2: "m + -.p \<equiv> m -- p"
+                    using s5_1 m p s3_3_asm by auto
+                show ?thesis
+                    using s5_2 by auto
+                qed
+            show "(m + n) + -.p = (m + -.p) + n"
+                using s4_2 s3_1 s4_3 by auto
+            qed
+        show ?thesis
+            using s3_2 s3_3 nat_leq_isBool[of "m" "p"]
+                isBoolTrueFalse[of "m \<le> p"] by auto
+        qed
+    show ?thesis
+        using s2_1 s2_2 nat_leq_isBool[of "m + n" "p"]
+            isBoolTrueFalse[of "m + n \<le> p"] by auto
+    qed
+have s1_2: "m + (n + -.p) = (m + -.p) + n"
+    using s1_1 int_add_assoc1[OF m n p] by auto
+have s1_3: "n + -.p = -.p + n"
+    using n p add_commute_pn_nat[of "n" "p"] by auto
+show ?thesis
+    using s1_2 s1_3 by auto
+qed
 
 declare leq_neq_iff_less [simplified,simp del]
 
