@@ -11,7 +11,7 @@ theory Zenon
 imports Constant
 begin
 
-text {* The following lemmas make a cleaner meta-object reification *}
+text \<open> The following lemmas make a cleaner meta-object reification \<close>
 lemma atomize_meta_bAll [atomize]:
   "(\<And>x. (x \<in> S \<Longrightarrow> P(x)))
               \<equiv> Trueprop (\<forall> x \<in> S : P(x))"
