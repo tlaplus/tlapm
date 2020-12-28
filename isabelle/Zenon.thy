@@ -1263,7 +1263,9 @@ lemma zenon_inrecordsetI1 :
   assumes hfcn: "isAFcn (r)"
   assumes hdom: "DOMAIN r = {l1x}"
   assumes h1: "r[l1x] \\in s1x"
-  shows "r \\in [l1x : s1x]"
+  (* TODO
+  shows "r \\in [l1x : s1x]" *)
+  shows "r \\in EnumFuncSet(<<l1x>>, <<s1x>>)"
 proof -
   let ?doms = "<<l1x>>"
   let ?domset = "{l1x}"
@@ -1324,7 +1326,9 @@ lemma zenon_inrecordsetI2 :
   assumes hdom: "DOMAIN r = {l1x, l2x}"
   assumes h1: "r[l1x] \\in s1x"
   assumes h2: "r[l2x] \\in s2x"
-  shows "r \\in [l1x : s1x, l2x : s2x]"
+  (* TODO
+  shows "r \\in [l1x : s1x, l2x : s2x]" *)
+  shows "r \\in EnumFuncSet(<<l1x, l2x>>, <<s1x, s2x>>)"
 proof -
   let ?doms = "<<l1x, l2x>>"
   let ?domset = "{l1x, l2x}"
@@ -1404,7 +1408,9 @@ lemma zenon_inrecordsetI3 :
   assumes h1: "r[l1x] \\in s1x"
   assumes h2: "r[l2x] \\in s2x"
   assumes h3: "r[l3x] \\in s3x"
-  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x]"
+  (* TODO
+  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x]" *)
+  shows "r \\in EnumFuncSet(<<l1x, l2x, l3x>>, <<s1x, s2x, s3x>>)"
 proof -
   let ?doms = "<<l1x, l2x, l3x>>"
   let ?domset = "{l1x, l2x, l3x}"
@@ -1503,7 +1509,11 @@ lemma zenon_inrecordsetI4 :
   assumes h2: "r[l2x] \\in s2x"
   assumes h3: "r[l3x] \\in s3x"
   assumes h4: "r[l4x] \\in s4x"
-  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x, l4x : s4x]"
+  (* TODO
+  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x, l4x : s4x]" *)
+  shows "r \\in EnumFuncSet(
+        <<l1x, l2x, l3x, l4x>>,
+        <<s1x, s2x, s3x, s4x>>)"
 proof -
   let ?doms = "<<l1x, l2x, l3x, l4x>>"
   let ?domset = "{l1x, l2x, l3x, l4x}"
@@ -1621,7 +1631,11 @@ lemma zenon_inrecordsetI5 :
   assumes h3: "r[l3x] \\in s3x"
   assumes h4: "r[l4x] \\in s4x"
   assumes h5: "r[l5x] \\in s5x"
-  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x, l4x : s4x, l5x : s5x]"
+  (* TODO
+  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x, l4x : s4x, l5x : s5x]" *)
+  shows "r \\in EnumFuncSet(
+        <<l1x, l2x, l3x, l4x, l5x>>,
+        <<s1x, s2x, s3x, s4x, s5x>>)"
 proof -
   let ?doms = "<<l1x, l2x, l3x, l4x, l5x>>"
   let ?domset = "{l1x, l2x, l3x, l4x, l5x}"
@@ -1758,7 +1772,11 @@ lemma zenon_inrecordsetI6 :
   assumes h4: "r[l4x] \\in s4x"
   assumes h5: "r[l5x] \\in s5x"
   assumes h6: "r[l6x] \\in s6x"
-  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x, l4x : s4x, l5x : s5x, l6x : s6x]"
+  (* TODO
+  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x, l4x : s4x, l5x : s5x, l6x : s6x]" *)
+  shows "r \\in EnumFuncSet(
+        <<l1x, l2x, l3x, l4x, l5x, l6x>>,
+        <<s1x, s2x, s3x, s4x, s5x, s6x>>)"
 proof -
   let ?doms = "<<l1x, l2x, l3x, l4x, l5x, l6x>>"
   let ?domset = "{l1x, l2x, l3x, l4x, l5x, l6x}"
@@ -1914,7 +1932,11 @@ lemma zenon_inrecordsetI7 :
   assumes h5: "r[l5x] \\in s5x"
   assumes h6: "r[l6x] \\in s6x"
   assumes h7: "r[l7x] \\in s7x"
-  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x, l4x : s4x, l5x : s5x, l6x : s6x, l7x : s7x]"
+  (* TODO
+  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x, l4x : s4x, l5x : s5x, l6x : s6x, l7x : s7x]" *)
+  shows "r \\in EnumFuncSet(
+        <<l1x, l2x, l3x, l4x, l5x, l6x, l7x>>,
+        <<s1x, s2x, s3x, s4x, s5x, s6x, s7x>>)"
 proof -
   let ?doms = "<<l1x, l2x, l3x, l4x, l5x, l6x, l7x>>"
   let ?domset = "{l1x, l2x, l3x, l4x, l5x, l6x, l7x}"
