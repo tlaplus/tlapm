@@ -336,6 +336,14 @@ by blast
 
 (* INTER -- needed ? *)
 
+abbreviation
+    cup :: "[c, c] \<Rightarrow> c" (infixl "\\cup" 65)
+    where "a \\cup b \<equiv> a \<union> b"
+
+abbreviation
+    cap :: "[c, c] \<Rightarrow> c" (infixl "\\cap" 70)
+    where "a \\cap b \<equiv> a \<inter> b"
+
 lemma zenon_in_cup :
   "x \\in A \\cup B ==> (x \\in A ==> FALSE) ==> (x \\in B ==> FALSE) ==> FALSE"
 by blast
