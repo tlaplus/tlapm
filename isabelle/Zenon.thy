@@ -2108,7 +2108,7 @@ lemma zenon_caseother0 :
 proof -
   fix P e0
   assume h: "P (CASE OTHER -> e0)"
-  def cas == "CASE OTHER -> e0"
+  define cas where "cas \<equiv> CASE OTHER -> e0"
   have hh: "P (cas)" using h by (fold cas_def)
   assume hoth: "P (e0) ==> FALSE"
   have hb: "(\<forall> i \<in> DOMAIN <<>> : ~<<>>[i]) = TRUE" by auto
@@ -2666,13 +2666,14 @@ lemma zenon_case1 :
   assumes hoth: "~c1x & TRUE ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x>>" (is "?cs")
-  def es == "<<e1x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+  define cs where "cs \<equiv> <<c1x>>" (is "?cs")
+  define es where "es \<equiv> <<e1x>>" (is "?es")
+  define arms where "arms \<equiv>
+    UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
               (is "?arms")
-  def cas == "?cas"
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c1x" (is "?dcs")
+  define dcs where "dcs \<equiv> c1x" (is "?dcs")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
     assume ha: "~(?dcs)"
@@ -2682,10 +2683,10 @@ proof -
       using hoth hh1 by blast
   next
     assume ha: "?dcs"
-    def scs == "zenon_seqify (zenon_appseq (
+    define scs where "scs \<equiv> zenon_seqify (zenon_appseq (
                                <<>>, c1x))"
                (is "?scs")
-    def ses == "zenon_seqify (zenon_appseq (
+    define ses where "ses \<equiv> zenon_seqify (zenon_appseq (
                                <<>>, e1x))"
                (is "?ses")
     have ha1: "\<exists> i \<in> DOMAIN ?scs : ?scs[i]"
@@ -2740,26 +2741,28 @@ lemma zenon_caseother1 :
   assumes hoth: "~c1x & TRUE ==> P (oth) ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x>>" (is "?cs")
-  def es == "<<e1x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+  define cs where "cs \<equiv> <<c1x>>" (is "?cs")
+  define es where "es \<equiv> <<e1x>>" (is "?es")
+  define arms where "arms \<equiv>
+    UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
               (is "?arms")
-  def cas == "?cas"
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c1x | FALSE" (is "?dcs")
-  def scs == "zenon_seqify (zenon_appseq (
+  define dcs where "dcs \<equiv> c1x | FALSE" (is "?dcs")
+  define scs where "scs \<equiv> zenon_seqify (zenon_appseq (
                              <<>>, c1x))"
              (is "?scs")
   have hscs : "?cs = ?scs"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
-  def ses == "zenon_seqify (zenon_appseq (
+  define ses where "ses \<equiv> zenon_seqify (zenon_appseq (
                              <<>>, e1x))"
              (is "?ses")
   have hses : "?es = ?ses"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
   have hlen: "Len (?scs) = Len (?ses)" (is "?hlen")
     by (simp only: zenon_case_len_simpl)
-  def armoth == "CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
+  define armoth where "armoth \<equiv>
+        CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
                 (is "?armoth")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
@@ -2845,13 +2848,14 @@ lemma zenon_case2 :
   assumes hoth: "~c2x & ~c1x & TRUE ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x, c2x>>" (is "?cs")
-  def es == "<<e1x, e2x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+  define cs where "cs \<equiv> <<c1x, c2x>>" (is "?cs")
+  define es where "es \<equiv> <<e1x, e2x>>" (is "?es")
+  define arms where "arms \<equiv>
+    UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
               (is "?arms")
-  def cas == "?cas"
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c2x | c1x" (is "?dcs")
+  define dcs where "dcs \<equiv> c2x | c1x" (is "?dcs")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
     assume ha: "~(?dcs)"
@@ -2861,10 +2865,10 @@ proof -
       using hoth hh1 hh2 by blast
   next
     assume ha: "?dcs"
-    def scs == "zenon_seqify (zenon_appseq (zenon_appseq (
+    define scs where "scs \<equiv> zenon_seqify (zenon_appseq (zenon_appseq (
                                <<>>, c1x), c2x))"
                (is "?scs")
-    def ses == "zenon_seqify (zenon_appseq (zenon_appseq (
+    define ses where "ses \<equiv> zenon_seqify (zenon_appseq (zenon_appseq (
                                <<>>, e1x), e2x))"
                (is "?ses")
     have ha1: "\<exists> i \<in> DOMAIN ?scs : ?scs[i]"
@@ -2923,26 +2927,28 @@ lemma zenon_caseother2 :
   assumes hoth: "~c2x & ~c1x & TRUE ==> P (oth) ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x, c2x>>" (is "?cs")
-  def es == "<<e1x, e2x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+  define cs where "cs \<equiv> <<c1x, c2x>>" (is "?cs")
+  define es where "es \<equiv> <<e1x, e2x>>" (is "?es")
+  define arms where "arms \<equiv>
+    UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
               (is "?arms")
-  def cas == "?cas"
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c2x | c1x | FALSE" (is "?dcs")
-  def scs == "zenon_seqify (zenon_appseq (zenon_appseq (
+  define dcs where "dcs \<equiv> c2x | c1x | FALSE" (is "?dcs")
+  define scs where "scs \<equiv> zenon_seqify (zenon_appseq (zenon_appseq (
                              <<>>, c1x), c2x))"
              (is "?scs")
   have hscs : "?cs = ?scs"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
-  def ses == "zenon_seqify (zenon_appseq (zenon_appseq (
+  define ses where "ses \<equiv> zenon_seqify (zenon_appseq (zenon_appseq (
                              <<>>, e1x), e2x))"
              (is "?ses")
   have hses : "?es = ?ses"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
   have hlen: "Len (?scs) = Len (?ses)" (is "?hlen")
     by (simp only: zenon_case_len_simpl)
-  def armoth == "CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
+  define armoth where "armoth \<equiv>
+            CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
                 (is "?armoth")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
@@ -3033,13 +3039,14 @@ lemma zenon_case3 :
   assumes hoth: "~c3x & ~c2x & ~c1x & TRUE ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x, c2x, c3x>>" (is "?cs")
-  def es == "<<e1x, e2x, e3x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+  define cs where "cs \<equiv> <<c1x, c2x, c3x>>" (is "?cs")
+  define es where "es \<equiv> <<e1x, e2x, e3x>>" (is "?es")
+  define arms where "arms \<equiv>
+        UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
               (is "?arms")
-  def cas == "?cas"
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c3x | c2x | c1x" (is "?dcs")
+  define dcs where "dcs \<equiv> c3x | c2x | c1x" (is "?dcs")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
     assume ha: "~(?dcs)"
@@ -3050,10 +3057,12 @@ proof -
       using hoth hh1 hh2 hh3 by blast
   next
     assume ha: "?dcs"
-    def scs == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (
+    define scs where "scs \<equiv>
+        zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (
                                <<>>, c1x), c2x), c3x))"
                (is "?scs")
-    def ses == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (
+    define ses where "ses \<equiv>
+        zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (
                                <<>>, e1x), e2x), e3x))"
                (is "?ses")
     have ha1: "\<exists> i \<in> DOMAIN ?scs : ?scs[i]"
@@ -3118,26 +3127,29 @@ lemma zenon_caseother3 :
   assumes hoth: "~c3x & ~c2x & ~c1x & TRUE ==> P (oth) ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x, c2x, c3x>>" (is "?cs")
-  def es == "<<e1x, e2x, e3x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+  define cs where "cs \<equiv> <<c1x, c2x, c3x>>" (is "?cs")
+  define es where "es \<equiv> <<e1x, e2x, e3x>>" (is "?es")
+  define arms where "arms \<equiv>
+    UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
               (is "?arms")
-  def cas == "?cas"
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c3x | c2x | c1x | FALSE" (is "?dcs")
-  def scs == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (
+  define dcs where "dcs \<equiv> c3x | c2x | c1x | FALSE" (is "?dcs")
+  define scs where "scs \<equiv> zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (
                              <<>>, c1x), c2x), c3x))"
              (is "?scs")
   have hscs : "?cs = ?scs"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
-  def ses == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (
+  define ses where "ses \<equiv>
+            zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (
                              <<>>, e1x), e2x), e3x))"
              (is "?ses")
   have hses : "?es = ?ses"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
   have hlen: "Len (?scs) = Len (?ses)" (is "?hlen")
     by (simp only: zenon_case_len_simpl)
-  def armoth == "CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
+  define armoth where "armoth \<equiv>
+            CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
                 (is "?armoth")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
@@ -3235,13 +3247,14 @@ lemma zenon_case4 :
   assumes hoth: "~c4x & ~c3x & ~c2x & ~c1x & TRUE ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x, c2x, c3x, c4x>>" (is "?cs")
-  def es == "<<e1x, e2x, e3x, e4x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+  define cs where "cs \<equiv> <<c1x, c2x, c3x, c4x>>" (is "?cs")
+  define es where "es \<equiv> <<e1x, e2x, e3x, e4x>>" (is "?es")
+  define arms where "arms \<equiv>
+            UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
               (is "?arms")
-  def cas == "?cas"
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c4x | c3x | c2x | c1x" (is "?dcs")
+  define dcs where "dcs \<equiv> c4x | c3x | c2x | c1x" (is "?dcs")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
     assume ha: "~(?dcs)"
@@ -3253,10 +3266,12 @@ proof -
       using hoth hh1 hh2 hh3 hh4 by blast
   next
     assume ha: "?dcs"
-    def scs == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
+    define scs where "scs \<equiv>
+        zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
                                <<>>, c1x), c2x), c3x), c4x))"
                (is "?scs")
-    def ses == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
+    define ses where "ses \<equiv>
+        zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
                                <<>>, e1x), e2x), e3x), e4x))"
                (is "?ses")
     have ha1: "\<exists> i \<in> DOMAIN ?scs : ?scs[i]"
@@ -3327,26 +3342,30 @@ lemma zenon_caseother4 :
   assumes hoth: "~c4x & ~c3x & ~c2x & ~c1x & TRUE ==> P (oth) ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x, c2x, c3x, c4x>>" (is "?cs")
-  def es == "<<e1x, e2x, e3x, e4x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+  define cs where "cs \<equiv> <<c1x, c2x, c3x, c4x>>" (is "?cs")
+  define es where "es \<equiv> <<e1x, e2x, e3x, e4x>>" (is "?es")
+  define arms where "arms \<equiv>
+    UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
               (is "?arms")
-  def cas == "?cas"
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c4x | c3x | c2x | c1x | FALSE" (is "?dcs")
-  def scs == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
+  define dcs where "dcs \<equiv> c4x | c3x | c2x | c1x | FALSE" (is "?dcs")
+  define scs where "scs \<equiv>
+    zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
                              <<>>, c1x), c2x), c3x), c4x))"
              (is "?scs")
   have hscs : "?cs = ?scs"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
-  def ses == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
+  define ses where "ses \<equiv>
+    zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
                              <<>>, e1x), e2x), e3x), e4x))"
              (is "?ses")
   have hses : "?es = ?ses"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
   have hlen: "Len (?scs) = Len (?ses)" (is "?hlen")
     by (simp only: zenon_case_len_simpl)
-  def armoth == "CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
+  define armoth where "armoth \<equiv>
+        CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
                 (is "?armoth")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
@@ -3451,13 +3470,14 @@ lemma zenon_case5 :
   assumes hoth: "~c5x & ~c4x & ~c3x & ~c2x & ~c1x & TRUE ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x, c2x, c3x, c4x, c5x>>" (is "?cs")
-  def es == "<<e1x, e2x, e3x, e4x, e5x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+  define cs where "cs \<equiv> <<c1x, c2x, c3x, c4x, c5x>>" (is "?cs")
+  define es where "es \<equiv> <<e1x, e2x, e3x, e4x, e5x>>" (is "?es")
+  define arms where "arms \<equiv>
+        UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
               (is "?arms")
-  def cas == "?cas"
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c5x | c4x | c3x | c2x | c1x" (is "?dcs")
+  define dcs where "dcs \<equiv> c5x | c4x | c3x | c2x | c1x" (is "?dcs")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
     assume ha: "~(?dcs)"
@@ -3470,10 +3490,12 @@ proof -
       using hoth hh1 hh2 hh3 hh4 hh5 by blast
   next
     assume ha: "?dcs"
-    def scs == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
+    define scs where "scs \<equiv>
+        zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
                                <<>>, c1x), c2x), c3x), c4x), c5x))"
                (is "?scs")
-    def ses == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
+    define ses where "ses \<equiv>
+        zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
                                <<>>, e1x), e2x), e3x), e4x), e5x))"
                (is "?ses")
     have ha1: "\<exists> i \<in> DOMAIN ?scs : ?scs[i]"
@@ -3550,26 +3572,31 @@ lemma zenon_caseother5 :
   assumes hoth: "~c5x & ~c4x & ~c3x & ~c2x & ~c1x & TRUE ==> P (oth) ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x, c2x, c3x, c4x, c5x>>" (is "?cs")
-  def es == "<<e1x, e2x, e3x, e4x, e5x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+  define cs where "cs \<equiv> <<c1x, c2x, c3x, c4x, c5x>>" (is "?cs")
+  define es where "es \<equiv> <<e1x, e2x, e3x, e4x, e5x>>" (is "?es")
+  define arms where "arms \<equiv>
+        UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
               (is "?arms")
-  def cas == "?cas"
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c5x | c4x | c3x | c2x | c1x | FALSE" (is "?dcs")
-  def scs == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
+  define dcs where "dcs \<equiv>
+        c5x | c4x | c3x | c2x | c1x | FALSE" (is "?dcs")
+  define scs where "scs \<equiv>
+    zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
                              <<>>, c1x), c2x), c3x), c4x), c5x))"
              (is "?scs")
   have hscs : "?cs = ?scs"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
-  def ses == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
+  define ses where "ses \<equiv>
+    zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
                              <<>>, e1x), e2x), e3x), e4x), e5x))"
              (is "?ses")
   have hses : "?es = ?ses"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
   have hlen: "Len (?scs) = Len (?ses)" (is "?hlen")
     by (simp only: zenon_case_len_simpl)
-  def armoth == "CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
+  define armoth where "armoth \<equiv>
+    CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
                 (is "?armoth")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
