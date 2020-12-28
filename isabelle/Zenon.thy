@@ -944,7 +944,8 @@ proof -
   assume h2: "~c ==> P(b) ==> FALSE"
   have h2x: "~c ==> ~P(b)" using h2 by auto
   have h3: "~P (IF c THEN a ELSE b)"
-  by (rule condI [of c "\<lambda> x . ~P (x)", OF h1x h2x])
+  using atomize_not condI[of c "\<lambda> x . ~P (x)", OF h1x h2x]
+    by (auto)
   show FALSE
   by (rule notE [OF h3 main])
 qed
@@ -1211,7 +1212,7 @@ lemma zenon_tuple_acc_1 :
 lemma zenon_tuple_acc_2 :
   "isASeq (r) ==> k \\in Nat ==> 0 < k ==> k \<le> Len (r) ==>
    x = r[k] ==> x = Append (r, e) [k]"
-by auto
+using appendElt1 by auto
 
 definition zenon_ss :: "c \<Rightarrow> c"
 where "zenon_ss (n) \<equiv> IF n \\in Nat THEN Succ[n] ELSE 1"
