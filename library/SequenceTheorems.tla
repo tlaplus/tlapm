@@ -1,9 +1,10 @@
 -------------------------- MODULE SequenceTheorems --------------------------
 (***************************************************************************)
-(* This module contains the proofs for theorems about sequences and the    *)
-(* corresponding operations.                                               *)
+(* This module contains theorems about operations on sequences.            *)
 (***************************************************************************)
-EXTENDS Sequences, Integers, Functions
+EXTENDS Sequences, Functions
+LOCAL INSTANCE NaturalsInduction
+LOCAL INSTANCE TLAPS
 
 
 (***************************************************************************)
@@ -76,6 +77,10 @@ THEOREM ConcatAssociative ==
   ASSUME NEW S, NEW s \in Seq(S), NEW t \in Seq(S), NEW u \in Seq(S)
   PROVE  (s \o t) \o u = s \o (t \o u)
 
+(****************************************************************************)
+(* Intentionally not written as an ASSUME ... PROVE such that the conjuncts *)
+(* can be named individually.                                               *)
+(****************************************************************************)
 THEOREM ConcatSimplifications ==
   /\ idRight:: \A S : \A s,t \in Seq(S) : s \o t = s => t = <<>>
   /\ idLeft:: \A S : \A s,t \in Seq(S) : s \o t = t => s = <<>>
@@ -98,13 +103,19 @@ THEOREM SubSeqEmpty ==
   ASSUME NEW s, NEW m \in Int, NEW n \in Int, n < m
   PROVE  SubSeq(s,m,n) = << >>
 
+THEOREM SubSeqRange ==
+  ASSUME NEW S, NEW s \in Seq(S), NEW m \in 1 .. Len(s), NEW n \in 1 .. Len(s)
+  PROVE  Range(SubSeq(s,m,n)) \subseteq Range(s)
+
 THEOREM HeadTailProperties ==
    ASSUME NEW S,
           NEW s \in Seq(S), s # << >>
    PROVE  /\ Head(s) \in S
+          /\ Head(s) \in Range(s)
           /\ Tail(s) \in Seq(S)
           /\ Len(Tail(s)) = Len(s)-1
           /\ \A i \in 1 .. Len(Tail(s)) : Tail(s)[i] = s[i+1]
+          /\ Range(Tail(s)) \subseteq Range(s)
 
 THEOREM TailIsSubSeq ==
   ASSUME NEW S,
@@ -121,19 +132,11 @@ THEOREM HeadTailOfSubSeq ==
   PROVE  /\ Head(SubSeq(seq,m,n)) = seq[m]
          /\ Tail(SubSeq(seq,m,n)) = SubSeq(seq, m+1, n)
 
-THEOREM SubSeqRecursiveFirst ==
+THEOREM SubSeqRecursive ==
   ASSUME NEW S, NEW seq \in Seq(S),
          NEW m \in 1 .. Len(seq), NEW n \in m .. Len(seq)
-  PROVE  SubSeq(seq, m, n) = << seq[m] >> \o SubSeq(seq, m+1, n)
-
-THEOREM SubSeqRecursiveSecond ==
-  ASSUME NEW S, NEW seq \in Seq(S),
-         NEW m \in 1 .. Len(seq), NEW n \in m .. Len(seq)
-  PROVE  SubSeq(seq, m, n) = SubSeq(seq, m, n-1) \o << seq[n] >>
-
-THEOREM SubSeqFull ==
-  ASSUME NEW S, NEW seq \in Seq(S)
-  PROVE  SubSeq(seq, 1, Len(seq)) = seq
+  PROVE  /\ SubSeq(seq, m, n) = << seq[m] >> \o SubSeq(seq, m+1, n)
+         /\ SubSeq(seq, m, n) = SubSeq(seq, m, n-1) \o << seq[n] >>
 
 (***************************************************************************)
 (* Subsequences of subsequences.                                           *)
@@ -178,6 +181,7 @@ THEOREM AppendProperties ==
          /\ Len(Append(seq, elt)) = Len(seq)+1
          /\ \A i \in 1.. Len(seq) : Append(seq, elt)[i] = seq[i]
          /\ Append(seq, elt)[Len(seq)+1] = elt
+         /\ Range(Append(seq, elt)) = Range(seq) \cup {elt}
 
 THEOREM AppendIsConcat ==
   ASSUME NEW S, NEW seq \in Seq(S), NEW elt \in S
@@ -233,5 +237,27 @@ THEOREM SeqOfRange ==
 THEOREM RangeConcatenation == 
   ASSUME NEW S, NEW s1 \in Seq(S), NEW s2 \in Seq(S)
   PROVE  Range(s1 \o s2) = Range(s1) \cup Range(s2)
+
+(***************************************************************************)
+(* Theorems about injective sequences, i.e. sequences without duplicates.  *)
+(***************************************************************************)
+
+LEMMA EmptySingletonIsInjective ==
+  /\ IsInjective(<< >>)
+  /\ \A e : IsInjective(<< e >>)
+
+LEMMA ConcatInjectiveSeq ==
+  ASSUME NEW S, NEW s \in Seq(S), NEW t \in Seq(S)
+  PROVE  IsInjective(s \o t) <=> 
+         IsInjective(s) /\ IsInjective(t) /\ Range(s) \cap Range(t) = {}
+
+LEMMA AppendInjectiveSeq ==
+  ASSUME NEW S, NEW seq \in Seq(S), NEW e \in S
+  PROVE  IsInjective(Append(seq,e)) <=> IsInjective(seq) /\ e \notin Range(seq)
+
+LEMMA TailInjectiveSeq ==
+  ASSUME NEW S, NEW seq \in Seq(S), IsInjective(seq), seq # << >>
+  PROVE  /\ IsInjective(Tail(seq))
+         /\ Range(Tail(seq)) = Range(seq) \ {Head(seq)}
 
 =============================================================================
