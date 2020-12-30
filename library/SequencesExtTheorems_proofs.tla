@@ -174,7 +174,11 @@ LEMMA FrontInjectiveSeq ==
   BY DEF Range, IsInjective, Front, Last
 <1>3. ASSUME NEW e \in Range(seq) \ {Last(seq)}
       PROVE  e \in Range(ft)
-  BY DEF Range, Front, Last
+\* the following doesn't seem to work everywhere ...
+\*  BY DEF Range, Front, Last
+   <2>1. e \in {seq[x]:  x \in 1..(Len(seq) - 1)}
+    BY <1>3 DEF Range, Last
+  <2> QED  BY <2>1 DEF Range, Front
 <1>. QED  BY <1>1, <1>2, <1>3
 
 THEOREM SequencesInductionFront ==
@@ -326,7 +330,14 @@ THEOREM IsStrictPrefixProperties ==
 <1>2. IsStrictPrefix(s,t) <=> \E u \in Seq(S) : u # << >> /\ t = s \o u
   <2>1. ASSUME IsStrictPrefix(s,t)
         PROVE  \E u \in Seq(S) : u # << >> /\ t = s \o u
-    BY <2>1, IsPrefixProperties DEF IsStrictPrefix
+    \* the following doesn't seem to work everywhere
+    \* BY <2>1, IsPrefixProperties DEF IsStrictPrefix
+    <3>1. IsPrefix(s,t) /\ s # t
+      BY <2>1 DEF IsStrictPrefix
+    <3>2. PICK u \in Seq(S):  t = s \o u
+      BY <3>1, IsPrefixProperties
+    <3>. QED  BY <3>1, <3>2
+    
   <2>2. ASSUME NEW u \in Seq(S), u # << >>, t = s \o u
         PROVE  IsStrictPrefix(s,t)
     <3>1. IsPrefix(s,t)
@@ -443,7 +454,20 @@ THEOREM IsStrictPrefixStrictPartialOrder ==
   PROVE  /\ \A s \in Seq(S) : ~ IsStrictPrefix(s,s)
          /\ \A s,t \in Seq(S) : IsStrictPrefix(s,t) => ~ IsStrictPrefix(t,s)
          /\ \A s,t,u \in Seq(S) : IsStrictPrefix(s,t) /\ IsStrictPrefix(t,u) => IsStrictPrefix(s,u)
-BY IsStrictPrefixProperties
+\* the following doesn't seem to work everywhere
+\* BY IsStrictPrefixProperties
+<1>1. ASSUME NEW s \in Seq(S)
+      PROVE  ~ IsStrictPrefix(s,s)
+  BY <1>1, IsStrictPrefixProperties
+<1>2. ASSUME NEW s \in Seq(S), NEW t \in Seq(S), IsStrictPrefix(s,t), IsStrictPrefix(t,s)
+      PROVE  FALSE
+  BY <1>2, IsStrictPrefixProperties
+<1>3. ASSUME NEW s \in Seq(S), NEW t \in Seq(S), NEW u \in Seq(S),
+             IsStrictPrefix(s,t), IsStrictPrefix(t,u)
+      PROVE  IsStrictPrefix(s,u)
+  BY <1>3, IsStrictPrefixProperties
+<1> QED  BY <1>1, <1>2, <1>3
+
 
 THEOREM IsStrictPrefixWellFounded ==
   ASSUME NEW S
