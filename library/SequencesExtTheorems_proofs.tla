@@ -402,7 +402,7 @@ THEOREM ConcatIsPrefixCancel ==
   ASSUME NEW S, NEW s \in Seq(S), NEW t \in Seq(S), NEW u \in Seq(S)
   PROVE  /\ IsPrefix(s \o t, s \o u) <=> IsPrefix(t, u)
 <1>1. ASSUME IsPrefix(t,u) PROVE IsPrefix(s \o t, s \o u)
-  <2>1. PICK v \in Seq(S) : u = t \o v  BY <1>1, IsPrefixProperties, Zenon
+  <2>1. PICK v \in Seq(S) : u = t \o v  BY <1>1, IsPrefixProperties, Isa
   <2>2. s \o u = (s \o t) \o v  BY <2>1
   <2>. QED  BY <2>2, IsPrefixProperties, s \o u \in Seq(S), s \o t \in Seq(S), Zenon
 <1>2. ASSUME IsPrefix(s \o t, s \o u) PROVE IsPrefix(t,u)
@@ -479,7 +479,7 @@ THEOREM IsSuffixProperties ==
   <2>1. ASSUME IsSuffix(s,t)
         PROVE  \E u \in Seq(S) : t = u \o s
     <3>1. PICK u \in Seq(S) : Reverse(t) = Reverse(s) \o u
-      BY <2>1, IsPrefixProperties, Zenon DEF IsSuffix
+      BY <2>1, IsPrefixProperties, Isa DEF IsSuffix
     <3>2. Reverse(u) \in Seq(S)
       BY DEF Reverse
     <3>3. Reverse(Reverse(t)) = Reverse(u) \o Reverse(Reverse(s))

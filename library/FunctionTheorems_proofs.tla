@@ -196,7 +196,7 @@ BY Fun_SurjTransitive, Fun_InjTransitive, Zenon DEF Bijection
 THEOREM Fun_SurjInverse ==
   ASSUME NEW S, NEW T, NEW f \in Surjection(S,T)
   PROVE  Inverse(f,S,T) \in Injection(T,S)
-BY Zenon DEF Inverse, Surjection, Injection, IsInjective, Range
+BY DEF Inverse, Surjection, Injection, IsInjective, Range
 
 
 THEOREM Fun_InjInverse ==
@@ -271,7 +271,7 @@ THEOREM Fun_BijRestrict ==
   ASSUME NEW S, NEW T, NEW F \in Bijection(S,T),
          NEW R \in SUBSET S
   PROVE  Restrict(F, R) \in Bijection(R, Range(Restrict(F, R)))
-BY Zenon DEF Bijection, Injection, IsInjective, Surjection, Range, Restrict
+BY DEF Bijection, Injection, IsInjective, Surjection, Range, Restrict
 
 
 
@@ -964,7 +964,7 @@ THEOREM Fun_NatBijSubElem ==
 
 =============================================================================
 \* Modification History
-\* Last modified Tue Dec 29 08:32:31 CET 2020 by merz
+\* Last modified Wed Dec 30 08:28:26 CET 2020 by merz
 \* Last modified Tue Jun 11 12:30:05 CEST 2013 by bhargav
 \* Last modified Fri May 31 15:27:41 CEST 2013 by bhargav
 \* Last modified Fri May 03 12:55:32 PDT 2013 by tomr
