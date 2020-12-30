@@ -1,9 +1,13 @@
-------------------------- MODULE SequenceOpTheorems -------------------------
-(***************************************************************************)
-(* This module contains theorems about the operators on sequences defined  *)
-(* in module SequenceOps.                                                  *)
-(***************************************************************************)
-EXTENDS SequenceOps, Integers, WellFoundedInduction
+----------------------- MODULE SequencesExtTheorems ------------------------
+(**************************************************************************)
+(* This module contains theorems about the operators on sequences defined *)
+(* in module SequencesExt.                                                *)
+(**************************************************************************)
+EXTENDS Sequences, SequencesExt, Functions, Integers
+LOCAL INSTANCE SequenceTheorems
+LOCAL INSTANCE NaturalsInduction
+LOCAL INSTANCE WellFoundedInduction
+LOCAL INSTANCE TLAPS
 
 (***************************************************************************)
 (* Theorems about Cons.                                                    *)
@@ -95,6 +99,11 @@ THEOREM FrontLastAppend ==
   PROVE  /\ Front(Append(seq, e)) = seq
          /\ Last(Append(seq, e)) = e
 
+LEMMA FrontInjectiveSeq ==
+  ASSUME NEW S, NEW seq \in Seq(S), IsInjective(seq), seq # << >>
+  PROVE  /\ IsInjective(Front(seq))
+         /\ Range(Front(seq)) = Range(seq) \ {Last(seq)}
+
 THEOREM SequencesInductionFront ==
   ASSUME NEW S,  NEW P(_),
          P(<< >>), 
@@ -157,15 +166,8 @@ THEOREM ReverseFrontEqualsTailReverse ==
 (* The range of the reverse sequence equals that of the original one. *)
 THEOREM RangeReverse == 
   ASSUME NEW S, NEW seq \in Seq(S)
-  PROVE Range(Reverse(seq)) = Range(seq)
-
-(***************************************************************************)
-(* Theorems about prefixes and suffixes of sequences.                      *)
-(* IsPrefix(s,t) == \E u \in Seq(Range(t)) : t = s \o u                    *)
-(* IsStrictPrefix(s,t) == IsPrefix(s,t) /\ s # t                           *)
-(* IsSuffix(s,t) == \E u \in Seq(Range(t)) : t = u \o s                    *)
-(* IsStrictSuffix(s,t) == IsSuffix(s,t) /\ s # t                           *)
-(***************************************************************************)
+  PROVE /\ DOMAIN Reverse(seq) = DOMAIN seq
+        /\ Range(Reverse(seq)) = Range(seq)
 
 (***************************************************************************)
 (* The following theorem gives three alternative characterizations of      *)
@@ -262,7 +264,6 @@ THEOREM IsSuffixProperties ==
   ASSUME NEW S, NEW s \in Seq(S), NEW t \in Seq(S)
   PROVE  /\ IsSuffix(s,t) <=> \E u \in Seq(S) : t = u \o s
          /\ IsSuffix(s,t) <=> Len(s) <= Len(t) /\ s = SubSeq(t, Len(t)-Len(s)+1, Len(t))
-         /\ IsSuffix(s,t) <=> IsPrefix(Reverse(s), Reverse(t))
 
 THEOREM IsStrictSuffixProperties ==
   ASSUME NEW S, NEW s \in Seq(S), NEW t \in Seq(S)
@@ -292,9 +293,8 @@ THEOREM IsStrictSuffixCons ==
   PROVE  IsStrictSuffix(s, Cons(e,s))
 
 THEOREM TailIsSuffix ==
-  ASSUME NEW S, NEW s \in Seq(S)
-  PROVE  /\ IsSuffix(Tail(s), s)
-         /\ s # <<>> => IsStrictSuffix(Tail(s), s)
+  ASSUME NEW S, NEW s \in Seq(S), s # << >>
+  PROVE  IsStrictSuffix(Tail(s), s)
 
 THEOREM IsSuffixPartialOrder ==
   ASSUME NEW S

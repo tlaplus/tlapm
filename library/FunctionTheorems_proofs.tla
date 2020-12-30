@@ -6,12 +6,7 @@
 (*  \vspace{12pt}}^'                                                       *)
 (***************************************************************************)
 
-EXTENDS
-  Functions,
-  Integers,
-  NaturalsInduction,
-  WellFoundedInduction,
-  TLAPS
+EXTENDS Functions, Integers, NaturalsInduction, WellFoundedInduction, TLAPS
 
 (***************************************************************************)
 (* `.  .'                                                                  *)
@@ -66,7 +61,7 @@ THEOREM Fun_IsInj ==
   ASSUME NEW S, NEW T, NEW F \in [S -> T],
          \A a,b \in S : F[a] = F[b] => a = b 
   PROVE  F \in Injection(S,T)
-BY DEF Injection
+BY DEF Injection, IsInjective
 
 
 THEOREM Fun_IsSurj ==
@@ -84,7 +79,7 @@ THEOREM Fun_IsBij ==
          \/ F \in Surjection(S,T)
          \/ (F \in [S -> T] /\ \A t \in T : \E s \in S : F[s] = t)
   PROVE  F \in Bijection(S,T)
-BY DEF Bijection, Injection, Surjection
+BY DEF Bijection, Injection, IsInjective, Surjection
 
 
 
@@ -100,7 +95,7 @@ THEOREM Fun_InjectionProperties ==
   ASSUME NEW S, NEW T, NEW F \in Injection(S,T)
   PROVE  /\ F \in [S -> T]
          /\ \A a,b \in S : F[a] = F[b] => a = b
-BY DEF Injection
+BY DEF Injection, IsInjective
 
 
 THEOREM Fun_SurjectionProperties ==
@@ -118,7 +113,7 @@ THEOREM Fun_BijectionProperties ==
          /\ F \in Surjection(S,T)
          /\ \A a,b \in S : F[a] = F[b] => a = b
          /\ \A t \in T : \E s \in S : F[s] = t
-BY DEF Bijection, Injection, Surjection
+BY DEF Bijection, Injection, IsInjective, Surjection
 
 
 
@@ -171,7 +166,7 @@ THEOREM Fun_InjTransitive ==
          NEW F \in Injection(S,T),
          NEW G \in Injection(T,U)
   PROVE  [s \in S |-> G[F[s]]] \in Injection(S,U)
-BY DEF Injection
+BY DEF Injection, IsInjective
 
 
 THEOREM Fun_SurjTransitive ==
@@ -201,17 +196,17 @@ BY Fun_SurjTransitive, Fun_InjTransitive, Zenon DEF Bijection
 THEOREM Fun_SurjInverse ==
   ASSUME NEW S, NEW T, NEW f \in Surjection(S,T)
   PROVE  Inverse(f,S,T) \in Injection(T,S)
-BY Zenon DEF Inverse, Surjection, Injection, Range
+BY DEF Inverse, Surjection, Injection, IsInjective, Range
 
 
 THEOREM Fun_InjInverse ==
   ASSUME NEW S, NEW T, NEW f \in Injection(S,T), S = {} => T = {}
   PROVE  Inverse(f,S,T) \in Surjection(T,S)
 <1>. DEFINE g == Inverse(f,S,T)
-<1>1. f \in [S -> T]  BY DEF Injection
+<1>1. f \in [S -> T]  BY DEF Injection, IsInjective
 <1>2. g \in [T -> S]  BY <1>1, Fun_InverseProperties, Zenon
 <1>3. ASSUME NEW s \in S  PROVE \E t \in T : g[t] = s
-  <2>10. g[f[s]] = s  BY DEF Inverse, Range, Injection
+  <2>10. g[f[s]] = s  BY DEF Inverse, Range, Injection, IsInjective
   <2>. QED  BY <2>10, <1>1
 <1>. QED  BY <1>2, <1>3 DEF Surjection
 
@@ -232,7 +227,7 @@ THEOREM Fun_BijInverse ==
 <1>. DEFINE g == Inverse(f,S,T)
 <1>1. f \in [S -> T]  BY DEF Bijection, Injection
 <1>2. f \in Surjection(S,T)  BY DEF Bijection
-<1>3. \A a,b \in S : f[a] = f[b] => a = b  BY DEF Bijection, Injection
+<1>3. \A a,b \in S : f[a] = f[b] => a = b  BY DEF Bijection, Injection, IsInjective
 <1>4. g \in Injection(T,S)  BY <1>2, Fun_SurjInverse
 
 <1>5. \A t \in T : f[g[t]] = t  BY <1>2 DEF Surjection, Inverse, Range
@@ -276,7 +271,7 @@ THEOREM Fun_BijRestrict ==
   ASSUME NEW S, NEW T, NEW F \in Bijection(S,T),
          NEW R \in SUBSET S
   PROVE  Restrict(F, R) \in Bijection(R, Range(Restrict(F, R)))
-BY Zenon DEF Bijection, Injection, Surjection, Range, Restrict
+BY DEF Bijection, Injection, IsInjective, Surjection, Range, Restrict
 
 
 
@@ -290,7 +285,7 @@ BY Zenon DEF Bijection, Injection, Surjection, Range, Restrict
 THEOREM Fun_InjMeansBijImage ==
   ASSUME NEW S, NEW T, NEW F \in Injection(S,T)
   PROVE  F \in Bijection(S, Range(F))
-BY DEF Bijection, Injection, Surjection, Range
+BY DEF Bijection, Injection, IsInjective, Surjection, Range
 
 
 
@@ -372,7 +367,7 @@ BY Fun_SurjInverse DEF ExistsSurjection, ExistsInjection
 THEOREM Fun_ExistsBijReflexive ==
   ASSUME NEW S
   PROVE  ExistsBijection(S,S)
-<1>. [s \in S |-> s] \in Bijection(S,S)  BY DEF Bijection, Injection, Surjection
+<1>. [s \in S |-> s] \in Bijection(S,S)  BY DEF Bijection, Injection, IsInjective, Surjection
 <1>. QED  BY DEF ExistsBijection
 
 
@@ -627,7 +622,7 @@ THEOREM Fun_CantorBernsteinSchroeder ==
 <1>2. PICK G : G \in Injection(T,S)  BY DEF ExistsInjection
 <1>. DEFINE GF == [s \in S |-> G[F[s]]]
 <1>3. Range(G) \subseteq S  BY <1>2, Fun_RangeProperties DEF Injection
-<1>4. GF \in Injection(S, Range(G))  BY <1>1, <1>2 DEF Injection, Range
+<1>4. GF \in Injection(S, Range(G))  BY <1>1, <1>2 DEF Injection, IsInjective, Range
 <1>5. ExistsBijection(S, Range(G))
   BY <1>3, <1>4, Fun_CantorBernsteinSchroeder_Lemma DEF ExistsInjection
 <1>6. ExistsBijection(T, Range(G))
@@ -714,7 +709,7 @@ THEOREM Fun_ExistsBijInterval ==
 
 <1>. DEFINE f == [i \in 1 .. b-a+1 |-> i+a-1]
 <1>1. f \in [1 .. b-a+1 -> a .. b]  BY SMT
-<1>2. f \in Injection(1 .. b-a+1, a .. b) BY DEF Injection
+<1>2. f \in Injection(1 .. b-a+1, a .. b) BY DEF Injection, IsInjective
 (** old proof fails:
 <1>3. f \in Surjection(1 .. b-a+1, a .. b) BY Z3 DEF Surjection
 **)
@@ -741,7 +736,7 @@ THEOREM Fun_NatInjLeq ==
 (* n \leq m means Injection exists.  This part is easy.                  *)
 (*************************************************************************)
 <1>1. ASSUME n \leq m PROVE [i \in 1..n |-> i] \in Injection(1..n, 1..m)
-  BY <1>1 DEF Injection
+  BY <1>1 DEF Injection, IsInjective
 
 (*************************************************************************)
 (* Injection exists means n \leq m.  This part is harder.                *)
@@ -758,7 +753,7 @@ THEOREM Fun_NatInjLeq ==
     <3>2. ASSUME NEW i \in 1..nn, f[i] = mm+1 PROVE FALSE
       <4>. DEFINE g == [j \in 1..nn-1 |-> IF j<i THEN f[j] ELSE f[j+1]]
       <4>1. nn-1 \in Nat /\ nn-1 > mm  BY <3>1
-      <4>2. g \in Injection(1..nn-1, 1..mm)  BY <3>2 DEF Injection
+      <4>2. g \in Injection(1..nn-1, 1..mm)  BY <3>2 DEF Injection, IsInjective
       <4>. QED  BY <4>1, <4>2, P(mm), Zenon DEF Injection
     <3>3. ASSUME ~\E i \in 1..nn : f[i] = mm+1  PROVE FALSE
       <4>. f \in Injection(1..nn, 1..mm)  BY <3>3 DEF Injection
@@ -807,7 +802,7 @@ THEOREM Fun_NatSurjImpliesNatBij ==
   <2>1. f \in [1..m -> S]  BY <1>3 DEF Surjection
   <2>2. PICK i,j \in 1..m : i < j /\ f[i] = f[j]
     <3>1. PICK ii,jj \in 1..m : ii # jj /\ f[ii] = f[jj]
-      BY <2>1, <1>4 DEF Injection
+      BY <2>1, <1>4 DEF Injection, IsInjective
     <3>2. CASE ii < jj  BY <3>1, <3>2
     <3>3. CASE jj < ii  BY <3>1, <3>3
     <3>. QED  BY SMT, <3>1, <3>2, <3>3
@@ -884,7 +879,7 @@ THEOREM Fun_NatBijSingleton ==
 <1>1. ASSUME NEW f \in Bijection(1..1, S)  PROVE \E s : S = {s}
   BY DEF Bijection, Injection, Surjection
 <1>2. ASSUME NEW s, S = {s}  PROVE [i \in 1..1 |-> s] \in Bijection(1..1, S)
-  BY <1>2 DEF Bijection, Injection, Surjection
+  BY <1>2 DEF Bijection, Injection, IsInjective, Surjection
 <1>. QED  BY <1>1, <1>2 DEF ExistsBijection
 
 
@@ -930,7 +925,7 @@ THEOREM Fun_NatBijAddElem ==
 <1>1. PICK F \in Bijection(1..m, S) : TRUE  BY DEF ExistsBijection
 <1>2. F \in [1..m -> S]  BY <1>1 DEF Bijection, Injection
 <1>3. \A s \in S : \E i \in 1..m : F[i] = s  BY <1>1 DEF Bijection, Surjection
-<1>4. \A i,j \in 1..m : F[i] = F[j] => i = j  BY <1>1 DEF Bijection, Injection
+<1>4. \A i,j \in 1..m : F[i] = F[j] => i = j  BY <1>1 DEF Bijection, Injection, IsInjective
 
 <1>. DEFINE G == [i \in 1..m+1 |-> IF i <= m THEN F[i] ELSE x]
 <1>10. G \in [1..m+1 -> S \cup {x}]  BY SMT, <1>2
@@ -939,7 +934,7 @@ THEOREM Fun_NatBijAddElem ==
 <1>30. ASSUME NEW i \in 1..m+1, NEW j \in 1..m+1, G[i] = G[j]  PROVE i = j
   BY <1>2, <1>4, <1>30
 <1>40. G \in Bijection(1..m+1, S \cup {x})
-  BY <1>10, <1>20, <1>30, Zenon DEF Bijection, Injection, Surjection  
+  BY <1>10, <1>20, <1>30, Zenon DEF Bijection, Injection, IsInjective, Surjection  
 <1>. QED  BY <1>40, Zenon DEF ExistsBijection
 
 
@@ -969,7 +964,7 @@ THEOREM Fun_NatBijSubElem ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Dec 20 13:52:16 CET 2019 by merz
+\* Last modified Wed Dec 30 08:28:26 CET 2020 by merz
 \* Last modified Tue Jun 11 12:30:05 CEST 2013 by bhargav
 \* Last modified Fri May 31 15:27:41 CEST 2013 by bhargav
 \* Last modified Fri May 03 12:55:32 PDT 2013 by tomr

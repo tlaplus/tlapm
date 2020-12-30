@@ -27,10 +27,15 @@ Inverse(f,S,T) == [t \in T |-> CHOOSE s \in S : t \in Range(f) => f[s] = t]
 
 
 (***************************************************************************)
-(* A map is an injection iff each element in the domain maps to a distinct *)
-(* element in the range.                                                   *)
+(* A function is injective iff it maps each element in the domain to a     *)
+(* distinct element.                                                       *)
 (***************************************************************************)
-Injection(S,T) == { M \in [S -> T] : \A a,b \in S : M[a] = M[b] => a = b }
+IsInjective(f) == \A a,b \in DOMAIN f : f[a] = f[b] => a = b
+
+(***************************************************************************)
+(* Set of injections between sets S and T.                                 *)
+(***************************************************************************)
+Injection(S,T) == { M \in [S -> T] : IsInjective(M) }
 
 
 (***************************************************************************)
@@ -57,7 +62,7 @@ ExistsBijection(S,T)  == Bijection(S,T) # {}
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Jul 10 20:32:37 CEST 2013 by merz
+\* Last modified Sun Dec 27 09:49:02 CET 2020 by merz
 \* Last modified Wed Jun 05 12:14:19 CEST 2013 by bhargav
 \* Last modified Fri May 03 12:55:35 PDT 2013 by tomr
 \* Created Thu Apr 11 10:30:48 PDT 2013 by tomr

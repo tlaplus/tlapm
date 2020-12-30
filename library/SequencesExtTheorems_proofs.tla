@@ -1,10 +1,13 @@
---------------------- MODULE SequenceOpTheorems_proofs ---------------------
+-------------------- MODULE SequencesExtTheorems_proofs --------------------
 (**************************************************************************)
 (* This module contains theorems about the operators on sequences defined *)
-(* in module SequenceOps.                                                 *)
+(* in module SequencesExt.                                                *)
 (**************************************************************************)
-EXTENDS SequenceOps, SequenceTheorems, Integers, NaturalsInduction, 
-        WellFoundedInduction, TLAPS
+EXTENDS Sequences, SequencesExt, Functions, Integers
+LOCAL INSTANCE SequenceTheorems
+LOCAL INSTANCE NaturalsInduction
+LOCAL INSTANCE WellFoundedInduction
+LOCAL INSTANCE TLAPS
 
 (***************************************************************************)
 (* Theorems about Cons.                                                    *)
@@ -159,6 +162,25 @@ THEOREM FrontLastAppend ==
          /\ Last(Append(seq, e)) = e
 BY DEF Front, Last
 
+LEMMA FrontInjectiveSeq ==
+  ASSUME NEW S, NEW seq \in Seq(S), IsInjective(seq), seq # << >>
+  PROVE  /\ IsInjective(Front(seq))
+         /\ Range(Front(seq)) = Range(seq) \ {Last(seq)}
+<1>. DEFINE ft == Front(seq)
+<1>1. IsInjective(ft)
+  BY DEF IsInjective, Front
+<1>2. ASSUME NEW e \in Range(ft)
+      PROVE  e \in Range(seq) \ {Last(seq)}
+  BY DEF Range, IsInjective, Front, Last
+<1>3. ASSUME NEW e \in Range(seq) \ {Last(seq)}
+      PROVE  e \in Range(ft)
+\* the following doesn't seem to work everywhere ...
+\*  BY DEF Range, Front, Last
+   <2>1. e \in {seq[x]:  x \in 1..(Len(seq) - 1)}
+    BY <1>3 DEF Range, Last
+  <2> QED  BY <2>1 DEF Range, Front
+<1>. QED  BY <1>1, <1>2, <1>3
+
 THEOREM SequencesInductionFront ==
   ASSUME NEW S,  NEW P(_),
          P(<< >>), 
@@ -283,26 +305,18 @@ THEOREM IsPrefixProperties ==
          /\ IsPrefix(s,t) <=> Len(s) <= Len(t) /\ s = SubSeq(t, 1, Len(s))
          /\ IsPrefix(s,t) <=> Len(s) <= Len(t) /\ s = Restrict(t, DOMAIN s)
 <1>1. IsPrefix(s,t) <=> \E u \in Seq(S) : t = s \o u
-  <2>1. ASSUME NEW u \in Seq(Range(t)), t = s \o u
-        PROVE  u \in Seq(S)
-    BY DEF Range
-  <2>2. ASSUME NEW u \in Seq(S), t = s \o u
-        PROVE  u \in Seq(Range(t))
-    BY <2>2, RangeConcatenation, SeqOfRange
-  <2>. QED  BY <2>1, <2>2 DEF IsPrefix
-<1>2. IsPrefix(s,t) <=> Len(s) <= Len(t) /\ s = SubSeq(t, 1, Len(s))
-  <2>1. ASSUME IsPrefix(s,t) 
-        PROVE Len(s) <= Len(t) /\ s = SubSeq(t, 1, Len(s))
-    BY <2>1 DEF IsPrefix
-  <2>2. ASSUME Len(s) <= Len(t), s = SubSeq(t, 1, Len(s))
-        PROVE IsPrefix(s,t)
-    <3>1. t = s \o SubSeq(t, Len(s)+1, Len(t))
-      BY <2>2
-    <3>2. SubSeq(t, Len(s)+1, Len(t)) \in Seq(S)  OBVIOUS
-    <3>. QED  BY <3>1, <3>2, <1>1, Zenon
+  <2>1. ASSUME IsPrefix(s,t)  PROVE  \E u \in Seq(S) : t = s \o u
+    <3>. DEFINE u == SubSeq(t, Len(s)+1, Len(t))
+    <3>. t = s \o u
+      BY <2>1 DEF IsPrefix
+    <3>. QED  BY u \in Seq(S), Zenon
+  <2>2. ASSUME NEW u \in Seq(S), t = s \o u  PROVE  IsPrefix(s,t)
+    BY <2>2 DEF IsPrefix
   <2>. QED  BY <2>1, <2>2
+<1>2. IsPrefix(s,t) <=> Len(s) <= Len(t) /\ s = SubSeq(t, 1, Len(s))
+  BY DEF IsPrefix
 <1>3. IsPrefix(s,t) <=> Len(s) <= Len(t) /\ s = Restrict(t, DOMAIN s)
-  BY <1>2 DEF Restrict
+  BY DEF IsPrefix, Restrict
 <1>. QED  BY <1>1, <1>2, <1>3
 
 THEOREM IsStrictPrefixProperties ==
@@ -316,11 +330,14 @@ THEOREM IsStrictPrefixProperties ==
 <1>2. IsStrictPrefix(s,t) <=> \E u \in Seq(S) : u # << >> /\ t = s \o u
   <2>1. ASSUME IsStrictPrefix(s,t)
         PROVE  \E u \in Seq(S) : u # << >> /\ t = s \o u
-    <3>1. PICK u \in Seq(S) : t = s \o u
-      BY <2>1, IsPrefixProperties, Isa DEF IsStrictPrefix
-    <3>2. u # << >>
-      BY <2>1, <3>1 DEF IsStrictPrefix
+    \* the following doesn't seem to work everywhere
+    \* BY <2>1, IsPrefixProperties DEF IsStrictPrefix
+    <3>1. IsPrefix(s,t) /\ s # t
+      BY <2>1 DEF IsStrictPrefix
+    <3>2. PICK u \in Seq(S):  t = s \o u
+      BY <3>1, IsPrefixProperties
     <3>. QED  BY <3>1, <3>2
+    
   <2>2. ASSUME NEW u \in Seq(S), u # << >>, t = s \o u
         PROVE  IsStrictPrefix(s,t)
     <3>1. IsPrefix(s,t)
@@ -384,16 +401,13 @@ THEOREM IsPrefixPartialOrder ==
   PROVE  /\ \A s \in Seq(S) : IsPrefix(s,s)
          /\ \A s,t \in Seq(S) : IsPrefix(s,t) /\ IsPrefix(t,s) => s = t
          /\ \A s,t,u \in Seq(S) : IsPrefix(s,t) /\ IsPrefix(t,u) => IsPrefix(s,u)
-BY IsPrefixProperties
+BY DEF IsPrefix
 
 THEOREM ConcatIsPrefix ==
   ASSUME NEW S, NEW s \in Seq(S), NEW t \in Seq(S), NEW u \in Seq(S),
          IsPrefix(s \o t, u)
   PROVE  IsPrefix(s, u)
-<1>1. /\ s \o t \in Seq(S)
-      /\ IsPrefix(s, s \o t)
-  BY IsPrefixConcat
-<1>. QED  BY <1>1, IsPrefixPartialOrder, Zenon
+BY DEF IsPrefix
 
 THEOREM ConcatIsPrefixCancel ==
   ASSUME NEW S, NEW s \in Seq(S), NEW t \in Seq(S), NEW u \in Seq(S)
@@ -431,7 +445,7 @@ THEOREM ConsIsPrefix ==
 <1>3. /\ e = Head(u)
       /\ v = Tail(u)
       /\ IsPrefix(Cons(e,s), Cons(e, Tail(u)))
-  BY <1>2, ConsProperties, Isa
+  BY <1>2, ConsProperties, Zenon
 <1>. QED
   BY <1>3, ConsIsPrefixCancel, Zenon
 
@@ -440,14 +454,20 @@ THEOREM IsStrictPrefixStrictPartialOrder ==
   PROVE  /\ \A s \in Seq(S) : ~ IsStrictPrefix(s,s)
          /\ \A s,t \in Seq(S) : IsStrictPrefix(s,t) => ~ IsStrictPrefix(t,s)
          /\ \A s,t,u \in Seq(S) : IsStrictPrefix(s,t) /\ IsStrictPrefix(t,u) => IsStrictPrefix(s,u)
-\* FIXME: although Z3 proves each conjunct separately, it doesn't prove the conjunction (anymore)
-<1>1. \A s \in Seq(S) : ~ IsStrictPrefix(s,s)
-  BY IsStrictPrefixProperties
-<1>2. \A s,t \in Seq(S) : IsStrictPrefix(s,t) => ~ IsStrictPrefix(t,s)
-  BY IsStrictPrefixProperties
-<1>3. \A s,t,u \in Seq(S) : IsStrictPrefix(s,t) /\ IsStrictPrefix(t,u) => IsStrictPrefix(s,u)
-  BY IsStrictPrefixProperties
-<1>. QED  BY <1>1, <1>2, <1>3
+\* the following doesn't seem to work everywhere
+\* BY IsStrictPrefixProperties
+<1>1. ASSUME NEW s \in Seq(S)
+      PROVE  ~ IsStrictPrefix(s,s)
+  BY <1>1, IsStrictPrefixProperties
+<1>2. ASSUME NEW s \in Seq(S), NEW t \in Seq(S), IsStrictPrefix(s,t), IsStrictPrefix(t,s)
+      PROVE  FALSE
+  BY <1>2, IsStrictPrefixProperties
+<1>3. ASSUME NEW s \in Seq(S), NEW t \in Seq(S), NEW u \in Seq(S),
+             IsStrictPrefix(s,t), IsStrictPrefix(t,u)
+      PROVE  IsStrictPrefix(s,u)
+  BY <1>3, IsStrictPrefixProperties
+<1> QED  BY <1>1, <1>2, <1>3
+
 
 THEOREM IsStrictPrefixWellFounded ==
   ASSUME NEW S
@@ -477,48 +497,45 @@ THEOREM IsSuffixProperties ==
   ASSUME NEW S, NEW s \in Seq(S), NEW t \in Seq(S)
   PROVE  /\ IsSuffix(s,t) <=> \E u \in Seq(S) : t = u \o s
          /\ IsSuffix(s,t) <=> Len(s) <= Len(t) /\ s = SubSeq(t, Len(t)-Len(s)+1, Len(t))
-         /\ IsSuffix(s,t) <=> IsPrefix(Reverse(s), Reverse(t))
+<1>. Reverse(s) \in Seq(S) /\ Reverse(t) \in Seq(S)
+  BY DEF Reverse
 <1>1. IsSuffix(s,t) <=> \E u \in Seq(S) : t = u \o s
-  <2>1. ASSUME NEW u \in Seq(Range(t)), t = u \o s
-        PROVE  u \in Seq(S)
-    BY DEF Range
+  <2>1. ASSUME IsSuffix(s,t)
+        PROVE  \E u \in Seq(S) : t = u \o s
+    <3>1. PICK u \in Seq(S) : Reverse(t) = Reverse(s) \o u
+      BY <2>1, IsPrefixProperties, Isa DEF IsSuffix
+    <3>2. Reverse(u) \in Seq(S)
+      BY DEF Reverse
+    <3>3. Reverse(Reverse(t)) = Reverse(u) \o Reverse(Reverse(s))
+      BY <3>1, ReverseConcat
+    <3>4. t = Reverse(u) \o s
+      BY <3>3, ReverseProperties
+    <3>. QED  BY <3>2, <3>4 DEF Reverse
   <2>2. ASSUME NEW u \in Seq(S), t = u \o s
-        PROVE  u \in Seq(Range(t))
-    BY <2>2, RangeConcatenation, SeqOfRange
-  <2>. QED  BY <2>1, <2>2, Zenon DEF IsSuffix
+        PROVE  IsSuffix(s,t)
+    <3>. Reverse(u) \in Seq(S)
+      BY ReverseProperties
+    <3>1. Reverse(t) = Reverse(s) \o Reverse(u)
+      BY <2>2, ReverseConcat
+    <3>2. IsPrefix(Reverse(s), Reverse(t))
+      BY <3>1, IsPrefixProperties, Zenon
+    <3>. QED  BY <3>2 DEF IsSuffix
+  <2>. QED  BY <2>1, <2>2, Zenon
 <1>2. IsSuffix(s,t) <=> Len(s) <= Len(t) /\ s = SubSeq(t, Len(t)-Len(s)+1, Len(t))
   <2>1. ASSUME IsSuffix(s,t)
         PROVE  Len(s) <= Len(t) /\ s = SubSeq(t, Len(t)-Len(s)+1, Len(t))
-    BY <2>1 DEF IsSuffix
+    <3>1. PICK u \in Seq(S) : t = u \o s
+      BY <1>1, <2>1
+    <3>. QED  BY <3>1
   <2>2. ASSUME Len(s) <= Len(t), s = SubSeq(t, Len(t)-Len(s)+1, Len(t))
         PROVE  IsSuffix(s,t)
     <3>2. t = SubSeq(t, 1, Len(t) - Len(s)) \o s
-      BY <2>2, Z3
-    <3>3. SubSeq(t, 1, Len(t) - Len(s)) \in Seq(S)  OBVIOUS
+      BY <2>2
+    <3>3. SubSeq(t, 1, Len(t) - Len(s)) \in Seq(S)
+      OBVIOUS
     <3>. QED  BY <3>2, <3>3, <1>1, Zenon
   <2>. QED  BY <2>1, <2>2
-<1>3. IsSuffix(s,t) <=> IsPrefix(Reverse(s), Reverse(t))
-  <2>. /\ Reverse(s) \in Seq(S)
-       /\ Reverse(t) \in Seq(S)
-    BY ReverseProperties
-  <2>1. ASSUME IsSuffix(s,t)
-        PROVE  IsPrefix(Reverse(s), Reverse(t))
-    <3>1. PICK u \in Seq(S) : t = u \o s
-      BY <2>1, <1>1
-    <3>2. /\ Reverse(u) \in Seq(S)
-          /\ Reverse(t) = Reverse(s) \o Reverse(u)
-      BY <3>1, ReverseProperties, ReverseConcat, Zenon
-    <3>. QED  BY <3>2, IsPrefixProperties, Zenon
-  <2>2. ASSUME IsPrefix(Reverse(s), Reverse(t))
-        PROVE  IsSuffix(s,t)
-    <3>1. PICK u \in Seq(S) : Reverse(t) = Reverse(s) \o u
-      BY <2>2, IsPrefixProperties, Isa
-    <3>2. /\ Reverse(u) \in Seq(S)
-          /\ Reverse(Reverse(t)) = Reverse(u) \o Reverse(Reverse(s))
-      BY <3>1, ReverseProperties, ReverseConcat, Zenon
-    <3>. QED  BY <3>2, <1>1, ReverseProperties, Zenon
-  <2>. QED  BY <2>1, <2>2
-<1>. QED  BY <1>1, <1>2, <1>3
+<1>. QED  BY <1>1, <1>2, Zenon
 
 THEOREM IsStrictSuffixProperties ==
   ASSUME NEW S, NEW s \in Seq(S), NEW t \in Seq(S)
@@ -526,13 +543,15 @@ THEOREM IsStrictSuffixProperties ==
          /\ IsStrictSuffix(s,t) <=> Len(s) < Len(t) /\ IsSuffix(s,t)
          /\ IsStrictSuffix(s,t) <=> Len(s) < Len(t) /\ s = SubSeq(t, Len(t)-Len(s)+1, Len(t))
          /\ IsStrictSuffix(s,t) <=> IsStrictPrefix(Reverse(s), Reverse(t))
-<1>1. IsStrictSuffix(s,t) => Len(s) < Len(t)
-  BY DEF IsStrictSuffix, IsSuffix
-<1>2. IsStrictSuffix(s,t) <=> \E u \in Seq(S) : u # << >> /\ t = u \o s
+<1>1. IsStrictSuffix(s,t) <=> IsStrictPrefix(Reverse(s), Reverse(t))
+  BY ReverseEqual DEF IsStrictSuffix, IsSuffix, IsStrictPrefix
+<1>2. IsStrictSuffix(s,t) => Len(s) < Len(t)
+  BY <1>1, IsStrictPrefixProperties, ReverseProperties, Zenon
+<1>3. IsStrictSuffix(s,t) <=> \E u \in Seq(S) : u # << >> /\ t = u \o s
   <2>1. ASSUME IsStrictSuffix(s,t)
         PROVE  \E u \in Seq(S) : u # << >> /\ t = u \o s
     <3>1. PICK u \in Seq(S) : t = u \o s
-      BY <2>1, IsSuffixProperties, Isa DEF IsStrictSuffix
+      BY <2>1, IsSuffixProperties DEF IsStrictSuffix
     <3>2. u # << >>
       BY <2>1, <3>1 DEF IsStrictSuffix
     <3>. QED  BY <3>1, <3>2
@@ -544,11 +563,11 @@ THEOREM IsStrictSuffixProperties ==
       BY <2>2
     <3>. QED  BY <3>1, <3>2 DEF IsStrictSuffix
   <2>. QED  BY <2>1, <2>2, Zenon
-<1>3. /\ IsStrictSuffix(s,t) <=> Len(s) < Len(t) /\ IsSuffix(s,t)
-      /\ IsStrictSuffix(s,t) <=> Len(s) < Len(t) /\ s = SubSeq(t, Len(t)-Len(s)+1, Len(t))
-      /\ IsStrictSuffix(s,t) <=> IsStrictPrefix(Reverse(s), Reverse(t))
-  BY <1>1, IsSuffixProperties DEF IsStrictPrefix, IsStrictSuffix
-<1>. QED  BY <1>1, <1>2, <1>3, Zenon
+<1>4. IsStrictSuffix(s,t) <=> Len(s) < Len(t) /\ IsSuffix(s,t)
+  BY <1>2, IsSuffixProperties DEF IsStrictSuffix
+<1>5. IsStrictSuffix(s,t) <=> Len(s) < Len(t) /\ s = SubSeq(t, Len(t)-Len(s)+1, Len(t))
+  BY <1>2, IsSuffixProperties DEF IsStrictSuffix
+<1>. QED  BY <1>1, <1>3, <1>4, <1>5, Zenon
 
 THEOREM IsSuffixElts ==
   ASSUME NEW S, NEW s \in Seq(S), NEW t \in Seq(S), NEW i \in 1 .. Len(s),
@@ -591,22 +610,11 @@ THEOREM IsSuffixPartialOrder ==
   BY IsSuffixProperties
 <1>2. ASSUME NEW s \in Seq(S), NEW t \in Seq(S), IsSuffix(s,t), IsSuffix(t,s)
       PROVE  s = t
-  <2>1. PICK v \in Seq(S) : t = v \o s
-    BY <1>2, IsSuffixProperties, Zenon
-  <2>2. PICK w \in Seq(S) : s = w \o t
-    BY <1>2, IsSuffixProperties, Zenon
-  <2>. QED  BY <2>1, <2>2, Z3
+  BY <1>2, IsPrefixPartialOrder, ReverseProperties, ReverseEqual DEF IsSuffix
 <1>3. ASSUME NEW s \in Seq(S), NEW t \in Seq(S), NEW u \in Seq(S),
              IsSuffix(s,t), IsSuffix(t,u)
       PROVE  IsSuffix(s,u)
-  <2>1. PICK v \in Seq(S) : t = v \o s
-    BY <1>3, IsSuffixProperties, Zenon
-  <2>2. PICK w \in Seq(S) : u = w \o t
-    BY <1>3, IsSuffixProperties, Zenon
-  <2>3. /\ w \o v \in Seq(S)
-        /\ u = (w \o v) \o s
-    BY <2>1, <2>2
-  <2>. QED  BY <2>3, IsSuffixProperties, Zenon
+  BY <1>3, IsPrefixPartialOrder, ReverseProperties DEF IsSuffix
 <1>. QED  BY <1>1, <1>2, <1>3
 
 THEOREM ConcatIsSuffix ==
@@ -624,14 +632,14 @@ THEOREM ConcatIsSuffixCancel ==
 <1>1. ASSUME IsSuffix(s, u) PROVE IsSuffix(s \o t, u \o t)
   <2>1. PICK v \in Seq(S) : u = v \o s  BY <1>1, IsSuffixProperties, Zenon
   <2>2. u \o t = v \o (s \o t)  BY <2>1
-  <2>. QED  BY s \o t \in Seq(S), u \o t \in Seq(S), <2>2, IsSuffixProperties, IsaM("blast")
+  <2>. QED  BY s \o t \in Seq(S), u \o t \in Seq(S), <2>2, IsSuffixProperties, Zenon
 <1>2. ASSUME IsSuffix(s \o t, u \o t) PROVE IsSuffix(s, u)
   <2>1. PICK v \in Seq(S) : u \o t = v \o (s \o t)
-    BY <1>2, s \o t \in Seq(S), u \o t \in Seq(S), IsSuffixProperties, Isa
+    BY <1>2, s \o t \in Seq(S), u \o t \in Seq(S), IsSuffixProperties, Zenon
   <2>2. u \o t = (v \o s) \o t
     BY <2>1
   <2>3. u = v \o s
-    BY <2>2, ConcatSimplifications!cancelRight, v \o s \in Seq(S), Zenon
+    BY <2>2, ConcatSimplifications(*!cancelRight*), v \o s \in Seq(S), Zenon
   <2>. QED  BY <2>3, IsSuffixProperties, Zenon
 <1>. QED  BY <1>1, <1>2
 
@@ -648,7 +656,7 @@ THEOREM AppendIsSuffix ==
 <1>. <<e>> \in Seq(S)
   OBVIOUS
 <1>1. IsSuffix(<<e>>, u)
-  BY ConcatIsSuffix, AppendIsConcat, Isa
+  BY ConcatIsSuffix, AppendIsConcat, Zenon
 <1>2. PICK v \in Seq(S) : u = Append(v,e)
   BY <1>1, IsSuffixProperties, AppendIsConcat, Isa
 <1>3. /\ e = Last(u)
@@ -705,14 +713,14 @@ BY Isa DEF StrictPrefixesDetermineDef, WFDefOn, OpToRel, SetLessThan
 THEOREM PrefixRecursiveSequenceFunctionUnique ==
   ASSUME NEW S, NEW Def(_,_), StrictPrefixesDetermineDef(S, Def)
   PROVE  WFInductiveUnique(Seq(S), Def)
-BY StrictPrefixesDetermineDef_WFDefOn, IsStrictPrefixWellFounded, WFDefOnUnique
+BY StrictPrefixesDetermineDef_WFDefOn, IsStrictPrefixWellFounded, WFDefOnUnique, Zenon
 
 THEOREM PrefixRecursiveSequenceFunctionDef ==
   ASSUME NEW S, NEW Def(_,_), NEW f,
          StrictPrefixesDetermineDef(S, Def),
          OpDefinesFcn(f, Seq(S), Def)
   PROVE  WFInductiveDefines(f, Seq(S), Def)
-BY StrictPrefixesDetermineDef_WFDefOn, IsStrictPrefixWellFounded, WFInductiveDef
+BY StrictPrefixesDetermineDef_WFDefOn, IsStrictPrefixWellFounded, WFInductiveDef, Zenon
 
 THEOREM PrefixRecursiveSequenceFunctionType ==
   ASSUME NEW S, NEW T, NEW Def(_,_), NEW f,
@@ -860,7 +868,7 @@ THEOREM FrontInductiveDefType ==
   <2>1. /\ Append(seq, e) \in Seq(S)
         /\ Append(seq, e) # <<>>
         /\ Front(Append(seq, e)) = seq
-    BY AppendProperties, FrontLastAppend, Isa
+    BY AppendProperties, FrontLastAppend
   <2>2. f[Append(seq, e)] = Def(f[seq], Append(seq, e))
     BY <2>1, Zenon DEF FrontInductiveDefConclusion
   <2>. QED  BY <1>2, <2>1, <2>2, Zenon
