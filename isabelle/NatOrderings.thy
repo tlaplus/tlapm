@@ -1,6 +1,6 @@
 (*  Title:      TLA+/NatOrderings.thy
     Author:     Hernan Vanzetto and Stephan Merz, LORIA
-    Copyright (C) 2008-2020  INRIA and Microsoft Corporation
+    Copyright (C) 2008-2021  INRIA and Microsoft Corporation
     License:    BSD
     Version:    Isabelle2020
 *)
@@ -34,6 +34,11 @@ notation (ASCII)
   leq   (infixl "<=" 50)  and
   geq   (infixl ">=" 50)
 
+lemma eq_leq_trans [trans]: "\<lbrakk>m = n; n \<le> p\<rbrakk> \<Longrightarrow> m \<le> p"
+by (rule ssubst)
+
+lemma leq_eq_trans [trans]: "\<lbrakk>m \<le> n; n = p\<rbrakk> \<Longrightarrow> m \<le> p"
+by (rule subst)
 
 subsection \<open> Operator definitions and generic facts about @{text "<"} \<close>
 
@@ -49,6 +54,12 @@ by (simp add: less_def)
 
 lemma less_isBool [intro!,simp]: "isBool(a<b)"
 by (simp add: less_def)
+
+lemma eq_less_trans [trans]: "\<lbrakk>m = n; n < p\<rbrakk> \<Longrightarrow> m < p"
+by (rule ssubst)
+
+lemma less_eq_trans [trans]: "\<lbrakk>m < n; n = p\<rbrakk> \<Longrightarrow> m < p"
+by (rule subst)
 
 lemma less_imp_leq [elim!]: "a < b \<Longrightarrow> a \<le> b"
 unfolding less_def by simp
@@ -98,15 +109,21 @@ unfolding nat_leq_def by (rule zeroInUpto)
 lemma nat_leq_zero [simp]: "n \<in> Nat \<Longrightarrow> (n \<le> 0) = (n = 0)"
 by (simp add: nat_leq_def uptoZero)
 
-lemma nat_leq_SuccI [elim!(*,simp*)]:
+lemma nat_leq_SuccI [(*elim!,*)intro]:
   assumes "m \<le> n" (*and "m \<in> Nat"*) and "n \<in> Nat"
   shows "m \<le> Succ[n]"
 using assms by (auto simp: nat_leq_def uptoSucc)
 
+(* Do not make this "simp": interferes with other rules, e.g. simplifying "Succ[m] \<le> Succ[n]" *)
 lemma nat_leq_Succ:
   assumes (*"m \<in> Nat" and*) "n \<in> Nat"
   shows "(m \<le> Succ[n]) = (m \<le> n \<or> m = Succ[n])"
 using assms by (auto simp: nat_leq_def uptoSucc)
+
+lemma nat_is_leq_Succ [simp]:
+  assumes "n \<in> Nat"
+  shows "n \<le> Succ[n]"
+using assms by (simp add: nat_leq_Succ)
 
 lemma nat_leq_SuccE [elim]:
   assumes "m \<le> Succ[n]" and (*"m \<in> Nat" and*) "n \<in> Nat"
@@ -189,7 +206,7 @@ lemma nat_leq_induct:  \<comment> \<open>sometimes called ``complete induction''
   shows "\<forall>n\<in>Nat : P(n)"
 proof -
   from assms have "\<forall>n\<in>Nat : \<forall>m\<in>Nat : m \<le> n \<Rightarrow> P(m)"
-    by (intro natInduct, auto simp add: nat_leq_Succ)
+    by (intro natInduct, auto simp: nat_leq_Succ)
   thus ?thesis by (blast dest: nat_leq_refl)
 qed
 
@@ -210,8 +227,6 @@ using assms by (auto simp: less_def dest: nat_Succ_leqD nat_leq_limit)
 text \<open> Reduce @{text "\<le>"} to @{text "<"}. \<close>
 
 lemma nat_leq_less:
-  fixes "m" :: "c"
-  fixes "n" :: "c"
   assumes (*"m \<in> Nat" and*) "n \<in> Nat"
   shows "m \<le> n = (m < n \<or> m = n)"
   using assms by (auto simp: less_def)
@@ -301,9 +316,6 @@ proof -
 qed
 
 lemma nat_leq_less_trans [trans]:
-  fixes "k" :: "c"
-  fixes "m" :: "c"
-  fixes "n" :: "c"
   assumes "k \<le> m" and "m < n" and "k \<in> Nat" and "m \<in> Nat" and "n \<in> Nat"
   shows "k < n"
 using assms by (auto simp: less_def dest: nat_leq_trans nat_leq_antisym)
@@ -522,7 +534,7 @@ lemma nat_ge1_implies_Succ:
 
 lemma nat_gt0_iff_Succ:
   assumes n: "n \<in> Nat"
-  shows "(0 < n) = (\<exists>m \<in> Nat: n = Succ[m])"
+  shows "(1 \<le> n) = (\<exists>m \<in> Nat: n = Succ[m])"
 using n by (auto dest: nat_ge1_implies_Succ)
 
 (*

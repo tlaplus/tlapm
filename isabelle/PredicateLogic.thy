@@ -1,8 +1,8 @@
 (*  Title:      TLA+/PredicateLogic.thy
     Author:     Stephan Merz, LORIA
-    Copyright (C) 2008-2011  INRIA and Microsoft Corporation
+    Copyright (C) 2008-2021  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2017
+    Version:    Isabelle2020
 *)
 
 section \<open>First-Order Logic for TLA+\<close>
@@ -1079,11 +1079,6 @@ ML \<open>
 
 \<close>
 
-(*
-setup hypsubst_setup
-setup Classical.setup
-*)
-
 declare refl [intro!]
   and trueI [intro!]
   and conjI [intro!]
@@ -1123,8 +1118,6 @@ ML \<open>
     val hyp_subst_tac = Hypsubst.blast_hyp_subst_tac
   );
 \<close>
-
-(* setup Blast.setup *)
 
 (*** TEST DATA ***
 
@@ -1615,7 +1608,7 @@ text \<open>
 lemma boolifyFalseI [intro]: "\<not> A \<Longrightarrow> boolify(A) = FALSE"
 by (auto simp add: boolify_def)
 
-text \<open> idempotence of @{text boolify} \<close>
+\<comment> \<open> idempotency of @{text boolify} \<close>
 lemma boolifyBoolify [simp]: "boolify(boolify(x)) = boolify(x)"
 by (auto simp add: boolify_def)
 

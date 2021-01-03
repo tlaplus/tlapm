@@ -1,6 +1,6 @@
 (*  Title:      TLA+/SetTheory.thy
     Author:     Stephan Merz, LORIA
-    Copyright (C) 2008-2020  INRIA and Microsoft Corporation
+    Copyright (C) 2008-2021  INRIA and Microsoft Corporation
     License:    BSD
     Version:    Isabelle2020
 *)
@@ -151,13 +151,11 @@ syntax
   "@bChoice" ::  "[idt, c, c] \<Rightarrow> c"       ("(3CHOOSE _ \<in> _ :/ _)" [100,0,0]10)
   "@bEx"     ::  "[cidts, c, c] \<Rightarrow> c"     ("(3\<exists>_ \<in> _ :/ _)" [100,0,0] 10)
   "@bAll"    ::  "[cidts, c, c] \<Rightarrow> c"     ("(3\<forall>_ \<in> _ :/ _)" [100,0,0] 10)
-  "@bEx"     ::  "[cidts, c, c] \<Rightarrow> c"     ("(3\\E _ \\in _ :/ _)" [100,0,0] 10)
-  "@bAll"    ::  "[cidts, c, c] \<Rightarrow> c"     ("(3\\A _ \\in _ :/ _)" [100,0,0] 10)
 syntax (ASCII)
   (* Again, only single variable for bounded choice. *)
   "@bChoice" ::  "[idt, c, c] \<Rightarrow> c"       ("(3CHOOSE _ in _ :/ _)" [100,0,0] 10)
-  "@bEx"     ::  "[cidts, c, c] \<Rightarrow> c"     ("(3EX _ in _ :/ _)" [100,0,0] 10)
-  "@bAll"    ::  "[cidts, c, c] \<Rightarrow> c"     ("(3ALL _ in _ :/ _)" [100,0,0] 10)
+  "@bEx"     ::  "[cidts, c, c] \<Rightarrow> c"     ("(3\\E _ \\in _ :/ _)" [100,0,0] 10)
+  "@bAll"    ::  "[cidts, c, c] \<Rightarrow> c"     ("(3\\A _ \\in _ :/ _)" [100,0,0] 10)
 translations
   "CHOOSE x \<in> S : P"      \<rightleftharpoons>  "CONST bChoose(S, \<lambda>x. P)"
   (* the following cannot be a print macro because the RHS is non-linear
