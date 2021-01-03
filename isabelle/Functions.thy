@@ -1,6 +1,6 @@
 (*  Title:      TLA+/Functions.thy
     Author:     Stephan Merz, LORIA
-    Copyright (C) 2008-2020  INRIA and Microsoft Corporation
+    Copyright (C) 2008-2021  INRIA and Microsoft Corporation
     License:    BSD
     Version:    Isabelle2020
 *)
