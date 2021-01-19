@@ -15,6 +15,10 @@ partial:
 fast:
 	./TOOLS/do_tests fast
 
+.PHONY: medium
+medium:
+	./TOOLS/do_tests medium
+
 .PHONY: slow
 slow:
 	./TOOLS/do_tests slow
