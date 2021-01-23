@@ -62,6 +62,13 @@ let library_path =
   let d = Filename.concat d "tlaps" in
   d
 
+let isabelle_tla_path =
+    let d = Sys.executable_name in
+    let d = Filename.dirname (Filename.dirname d) in
+    let d = Filename.concat d "lib" in
+    let d = Filename.concat d "isabelle_tla" in
+    d
+
 type executable =
   | Unchecked of string * string * string (* exec, command, version_command *)
   | User of string                        (* command *)
@@ -86,7 +93,7 @@ let get_exec e =
     let r = 10000 + (Random.int 10000) in
      let stat = sprintf "echo path prefix: \"%s\" ; %s stat `which %s` >/tmp/stat-%d-%d.txt"
                 path_prefix path_prefix exec tod r in
-     
+
      ignore (Sys.command stat);
      let check = sprintf "%s type %s >/tmp/check-%d-%d.txt" path_prefix exec tod r in
        *)
@@ -130,11 +137,12 @@ let isabelle_success_string = "((TLAPS SUCCESS))"
 
 let isabelle =
   let cmd =
-    Printf.sprintf "isabelle-process -r -q -e \"(use_thy \\\"$file\\\"; \
-                                                writeln \\\"%s\\\");\" TLA+"
+    Printf.sprintf "isabelle process -e \"(use_thy \\\"$file\\\"; \
+                        writeln \\\"%s\\\");\" -d %s -l TLA+"
                    isabelle_success_string
+                   isabelle_tla_path
   in
-  make_exec "isabelle-process" cmd "isabelle version"
+  make_exec "isabelle process" cmd "isabelle version"
 ;;
 
 let set_fast_isabelle () =

@@ -10,6 +10,7 @@ VPATH           = @srcdir@
 
 bindir          = @bindir@
 LIBPATH		= @libdir@/tlaps
+ISATLAPATH  = @libdir@/isabelle_tla
 
 all: check-configure tlapm@EXE@
 
@@ -101,12 +102,17 @@ install:
 	mkdir -p -m 0755 ${LIBPATH}
 	${INSTALL} -m 0644 library/*.tla ${LIBPATH}
 	@TAR@ -cf - examples | ( cd ${LIBPATH} && @TAR@ -xf - )
+	mkdir -p -m 0755 ${ISATLAPATH}
+	${INSTALL} -m 0644 isabelle/*.thy isabelle/*.ML isabelle/ROOT ${ISATLAPATH}
 
 .PHONY: uninstall
 uninstall:
 	rm -f ${bindir}/tlapm@EXE@
 	if test -n "`ls -A ${LIBPATH}`"; \
 	  then rm -rf ${LIBPATH} ; \
+	fi
+	if test -n "`ls -A ${ISATLAPATH}`"; \
+	  then rm -rf ${ISATLAPATH} ; \
 	fi
 
 .PHONY: newversion
