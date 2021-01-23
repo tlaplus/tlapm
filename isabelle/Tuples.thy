@@ -1,9 +1,8 @@
 (*  Title:      TLA+/Tuples.thy
     Author:     Stephan Merz, LORIA
-    Copyright (C) 2008-2011  INRIA and Microsoft Corporation
+    Copyright (C) 2008-2021  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2011-1
-    Time-stamp: <2011-10-11 17:39:46 merz>
+    Version:    Isabelle2020
 *)
 
 section \<open> Tuples and Relations in \tlaplus{} \<close>
@@ -31,13 +30,13 @@ text \<open>
   on sequences require arithmetic and will be introduced in a separate theory.
 \<close>
 
-definition Seq  (* -- \<open> set of finite sequences with elements from $S$ \<close> *)
+definition Seq  \<comment> \<open> set of finite sequences with elements from $S$ \<close>
 where "Seq(S) \<equiv> UNION { [ 1 .. n \<rightarrow> S] : n \<in> Nat }"
 
-definition isASeq  (* -- \<open> characteristic predicate for sequences or tuples \close> *)
+definition isASeq  \<comment> \<open> characteristic predicate for sequences or tuples \<close>
 where "isASeq(s) \<equiv> isAFcn(s) \<and> (\<exists>n \<in> Nat : DOMAIN s = 1 .. n)"
 
-definition Len  (* -- \<open> length of a sequence \<close> *)
+definition Len  \<comment> \<open> length of a sequence \<close>
 where "Len(s) \<equiv> CHOOSE n \<in> Nat : DOMAIN s = 1 .. n"
 
 lemma isASeqIsBool [intro!,simp]:
@@ -80,15 +79,15 @@ lemma SeqIsAFcn (*[elim!]*):
   shows "isAFcn(s)"
 using assms by auto
 
-(* -- \<open> @{text "s \<in> Seq(S) \<Longrightarrow> isAFcn(s)"} \<close> *)
+\<comment> \<open> @{text "s \<in> Seq(S) \<Longrightarrow> isAFcn(s)"} \<close>
 lemmas SeqIsAFcn' (*[elim!]*) = SeqIsASeq[THEN SeqIsAFcn]
 
 lemma LenInNat [simp]:
   assumes "isASeq(s)"
   shows "Len(s) \<in> Nat"
-using assms by auto
+using assms by (rule isASeqE)
 
-(* -- \<open> @{text "s \<in> Seq(S) \<Longrightarrow> Len(s) \<in> Nat"} \<close> *)
+\<comment> \<open> @{text "s \<in> Seq(S) \<Longrightarrow> Len(s) \<in> Nat"} \<close>
 lemmas LenInNat' [simp] = SeqIsASeq[THEN LenInNat]
 
 lemma DomainSeqLen [simp]:
@@ -96,7 +95,7 @@ lemma DomainSeqLen [simp]:
   shows "DOMAIN s = 1 .. Len(s)"
 using assms by auto
 
-(* -- \<open> @{text "s \<in> Seq(S) \<Longrightarrow> DOMAIN s = 1 .. Len(s)"} \<close> *)
+\<comment> \<open> @{text "s \<in> Seq(S) \<Longrightarrow> DOMAIN s = 1 .. Len(s)"} \<close>
 lemmas DomainSeqLen' (*[simp,elim!]*) = SeqIsASeq[THEN DomainSeqLen]
 
 lemma seqEqualI:
@@ -121,7 +120,7 @@ lemma SeqI [intro!]:
   shows "s \<in> Seq(S)"
 using assms by (auto simp: Seq_def)
 
-lemma SeqI':  (* -- \<open> closer to the definition but probably less useful \<close> *)
+lemma SeqI':  \<comment> \<open> closer to the definition but probably less useful \<close>
   assumes "s \<in> [1 .. n \<rightarrow> S]" and "n \<in> Nat"
   shows "s \<in> Seq(S)"
 using assms by (auto simp: Seq_def)
@@ -141,7 +140,7 @@ qed
 lemma seqFuncSet:
   assumes "s \<in> Seq(S)"
   shows "s \<in> [1 .. Len(s) \<rightarrow> S]"
-using assms by auto
+using assms by (rule SeqE)
 
 lemma seqElt [elim!]:
   assumes "s \<in> Seq(S)" and "n \<in> Nat" and "1 \<le> n" and "n \<le> Len(s)"
@@ -164,14 +163,11 @@ text \<open>
   (written @{text "\<langle>\<rangle>"}) and Append.
 \<close>
 
-definition emptySeq ("(<< >>)")
-where "<< >> \<equiv> [x \<in> 1 .. 0 \<mapsto> {}]"
+definition emptySeq ("(\<langle>\<rangle>)")
+where "\<langle>\<rangle> \<equiv> [x \<in> 1 .. 0 \<mapsto> {}]"
 
-notation (xsymbols)
-  emptySeq   ("(\<langle>\<rangle>)")
-
-notation (HTML output)
-  emptySeq   ("(\<langle>\<rangle>)")
+notation (ASCII)
+  emptySeq   ("(<< >>)")
 
 definition Append :: "[c,c] \<Rightarrow> c"
 where "Append(s,e) \<equiv> [k \<in> 1 .. Succ[Len(s)] \<mapsto> IF k = Succ[Len(s)] THEN e ELSE s[k]]"
@@ -179,7 +175,7 @@ where "Append(s,e) \<equiv> [k \<in> 1 .. Succ[Len(s)] \<mapsto> IF k = Succ[Len
 lemma emptySeqIsASeq [simp,intro!]: "isASeq(\<langle>\<rangle>)"
 by (auto simp: emptySeq_def isASeq_def)
 
-(* -- \<open> @{text "isAFcn(\<langle>\<rangle>)"} \<close> *)
+\<comment> \<open> @{text "isAFcn(\<langle>\<rangle>)"} \<close>
 lemmas emptySeqIsAFcn [simp,intro!] = emptySeqIsASeq[THEN SeqIsAFcn]
 
 lemma lenEmptySeq [simp]: "Len(\<langle>\<rangle>) = 0"
@@ -199,7 +195,7 @@ lemma appendIsASeq [simp,intro!]:
 using s unfolding Append_def
 by (rule isASeqE, intro isASeqI, auto simp del: natIntervalSucc)
 
-(* -- \<open> @{text "isASeq(s) \<Longrightarrow> isAFcn(Append(s,e))"} \<close> *)
+\<comment> \<open> @{text "isASeq(s) \<Longrightarrow> isAFcn(Append(s,e))"} \<close>
 lemmas appendIsAFcn [simp,intro!] = appendIsASeq[THEN SeqIsAFcn]
 
 lemma domainEmptySeq [simp]: "DOMAIN \<langle>\<rangle> = {}"
@@ -213,11 +209,11 @@ lemma isEmptySeq [intro!]:
   "\<lbrakk>isAFcn(f); DOMAIN f = {}\<rbrakk> \<Longrightarrow> \<langle>\<rangle> = f"
 by auto
 
-(* -- \<open> immediate consequence of @{text isEmptySeq} \<close> *)
+\<comment> \<open> immediate consequence of @{text isEmptySeq} \<close>
 lemma emptySeqEmptyFcn: "\<langle>\<rangle> = [x \<in> {} \<mapsto> y]"
 by auto
 
-(* -- \<open> Symmetric equation could be a useful rewrite rule (it is applied by TLC) \<close> *)
+\<comment> \<open> The reverse equation could be a useful rewrite rule (it is applied by TLC) \<close>
 lemmas emptyFcnEmptySeq = sym[OF emptySeqEmptyFcn]
 
 lemma emptyDomainIsEmptySeq [simp]: "(f \<in> [{} \<rightarrow> S]) = (f = \<langle>\<rangle>)"
@@ -243,7 +239,7 @@ lemma lenAppend [simp]:
   shows "Len(Append(s,e)) = Succ[Len(s)]"
 using assms by (intro LenI, auto simp: Append_def)
 
-(* -- \<open> @{text "s \<in> Seq(S) \<Longrightarrow> Len(Append(s,e)) = Succ[Len(s)]"} \<close> *)
+\<comment> \<open> @{text "s \<in> Seq(S) \<Longrightarrow> Len(Append(s,e)) = Succ[Len(s)]"} \<close>
 lemmas lenAppend' [simp] = SeqIsASeq[THEN lenAppend]
 
 lemma appendElt [simp]:
@@ -336,28 +332,7 @@ text \<open>
 lemma appendExtend:
   assumes "isASeq(s)"
   shows "Append(s,e) = s @@ (Succ[Len(s)] :> e)"
-    proof -
-    have s1_1: "Append(s, e) =
-        [k \<in> 1 .. Succ[Len(s)] \<mapsto>
-            IF k = Succ[Len(s)] THEN e ELSE s[k]]"
-        unfolding Append_def by auto
-    have s1_2: "(Succ[Len(s)] :> e) =
-        [x \<in> {Succ[Len(s)]} \<mapsto> e]"
-        unfolding oneArg_def by auto
-    define p where "p \<equiv> s @@ (Succ[Len(s)] :> e)"
-    have s1_3: "p =
-        [x \<in> (DOMAIN s) \<union> {Succ[Len(s)]}
-        \<mapsto> IF x \<in> DOMAIN s THEN s[x] ELSE e]"
-        unfolding p_def extend_def using s1_2 by auto
-    have s1_4: "(DOMAIN s) \<union> {Succ[Len(s)]}
-        = 1 .. Succ[Len(s)]"
-        using assms by auto
-    have s1_5: "p = [x \<in> 1..Succ[Len(s)] \<mapsto>
-        IF x \<in> DOMAIN s THEN s[x] ELSE e]"
-        using s1_3 s1_4 by auto
-    show ?thesis
-        using s1_1 s1_5 assms by (auto simp: p_def)
-    qed
+using assms by (intro isAppend') auto
 
 lemma imageEmptySeq [simp]: "Image(\<langle>\<rangle>, A) = {}"
 by (simp add: emptySeq_def)
@@ -367,7 +342,7 @@ lemma imageAppend [simp]:
   shows "Image(Append(s,e), A) =
          (IF Succ[Len(s)] \<in> A THEN addElt(e, Image(s,A)) ELSE Image(s,A))"
 unfolding appendExtend[OF s]
-using assms by (auto elim!: inNatIntervalE, force+)
+using assms by auto (force+)
 
 text \<open>
   Inductive reasoning about sequences, based on @{term "\<langle>\<rangle>"} and
@@ -419,7 +394,7 @@ proof -
   with s show ?thesis unfolding Seq_def by auto
 qed
 
-(* -- \<open> example of an inductive proof about sequences \<close> *)
+\<comment> \<open> example of an inductive proof about sequences \<close>
 lemma seqEmptyOrAppend:
   assumes "s \<in> Seq(S)"
   shows "s = \<langle>\<rangle> \<or> (\<exists>s' \<in> Seq(S): \<exists>e \<in> S : s = Append(s',e))"
@@ -444,13 +419,10 @@ nonterminal tpl
 syntax
   ""         ::  "c \<Rightarrow> tpl"          ("_")
   "@app"     ::  "[tpl, c] \<Rightarrow> tpl"   ("_,/ _")
+  "@tuple"   ::  "tpl \<Rightarrow> c"          ("\<langle>(_)\<rangle>")
+
+syntax (ASCII)
   "@tuple"   ::  "tpl \<Rightarrow> c"          ("<<(_)>>")
-
-syntax (xsymbols)
-  "@tuple"   ::  "tpl \<Rightarrow> c"          ("\<langle>(_)\<rangle>")
-
-syntax (HTML output)
-  "@tuple"   ::  "tpl \<Rightarrow> c"          ("\<langle>(_)\<rangle>")
 
 translations
   "\<langle> tp, x \<rangle>" \<rightleftharpoons>  "CONST Append(\<langle>tp\<rangle>, x)"
@@ -458,13 +430,13 @@ translations
 
 
 (*** examples ***
-lemma "Len(\<langle>a,b,c\<rangle>) = 3" by simp
+lemma "Len(\<langle>a,b,c\<rangle>) = 3" by (simp add: three_def two_def)
 
 lemma "Append(\<langle>a,b\<rangle>, c) = \<langle>a,b,c\<rangle>" ..
 
 lemma "\<langle>a,b,c\<rangle>[1] = a" by simp
-lemma "\<langle>a,b,c\<rangle>[2] = b" by simp
-lemma "\<langle>a,b,c\<rangle>[3] = c" by simp
+lemma "\<langle>a,b,c\<rangle>[2] = b" by (simp add: two_def)
+lemma "\<langle>a,b,c\<rangle>[3] = c" by (simp add: two_def three_def)
 lemma "\<langle>0,1\<rangle> \<noteq> \<langle>\<rangle>" by simp
 lemma "\<langle>0,1\<rangle> \<noteq> \<langle>1\<rangle>" by simp
 lemma "\<langle>0,1\<rangle> \<noteq> \<langle>1,2\<rangle>" by simp
@@ -480,16 +452,6 @@ text \<open>
 \<close>
 
 syntax
-  "@bEx2"  ::  "[idt,idt,c,c] \<Rightarrow> c"  ("(3EX <<_,_>> in _ :/ _)" [100,100,0,0] 10)
-  "@bEx3"  ::  "[idt,idt,idt,c,c] \<Rightarrow> c"  ("(3EX <<_,_,_>> in _ :/ _)" [100,100,100,0,0] 10)
-  "@bEx4"  ::  "[idt,idt,idt,idt,c,c] \<Rightarrow> c"  ("(3EX <<_,_,_,_>> in _ :/ _)" [100,100,100,100,0,0] 10)
-  "@bEx5"  ::  "[idt,idt,idt,idt,idt,c,c] \<Rightarrow> c"  ("(3EX <<_,_,_,_,_>> in _ :/ _)" [100,100,100,100,100,0,0] 10)
-  "@bAll2" ::  "[idt,idt,c,c] \<Rightarrow> c"  ("(3ALL <<_,_>> in _ :/ _)" [100,100,0,0] 10)
-  "@bAll3" ::  "[idt,idt,idt,c,c] \<Rightarrow> c"  ("(3ALL <<_,_,_>> in _ :/ _)" [100,100,100,0,0] 10)
-  "@bAll4" ::  "[idt,idt,idt,idt,c,c] \<Rightarrow> c"  ("(3ALL <<_,_,_,_>> in _ :/ _)" [100,100,100,100,0,0] 10)
-  "@bAll5" ::  "[idt,idt,idt,idt,idt,c,c] \<Rightarrow> c"  ("(3ALL <<_,_,_,_,_>> in _ :/ _)" [100,100,100,100,100,0,0] 10)
-
-syntax (xsymbols)
   "@bEx2"  :: "[idt,idt,c,c] \<Rightarrow> c"   ("(3\<exists>\<langle>_,_\<rangle> \<in> _ :/ _)" [100,100,0,0] 10)
   "@bEx3"  :: "[idt,idt,idt,c,c] \<Rightarrow> c"   ("(3\<exists>\<langle>_,_,_\<rangle> \<in> _ :/ _)" [100,100,100,0,0] 10)
   "@bEx4"  :: "[idt,idt,idt,idt,c,c] \<Rightarrow> c"   ("(3\<exists>\<langle>_,_,_,_\<rangle> \<in> _ :/ _)" [100,100,100,100,0,0] 10)
@@ -498,6 +460,16 @@ syntax (xsymbols)
   "@bAll3" :: "[idt,idt,idt,c,c] \<Rightarrow> c"   ("(3\<forall>\<langle>_,_,_\<rangle> \<in> _ :/ _)" [100,100,100,0,0] 10)
   "@bAll4" :: "[idt,idt,idt,idt,c,c] \<Rightarrow> c"   ("(3\<forall>\<langle>_,_,_,_\<rangle> \<in> _ :/ _)" [100,100,100,100,0,0] 10)
   "@bAll5" :: "[idt,idt,idt,idt,idt,c,c] \<Rightarrow> c"   ("(3\<forall>\<langle>_,_,_,_,_\<rangle> \<in> _ :/ _)" [100,100,100,100,100,0,0] 10)
+
+syntax (ASCII)
+  "@bEx2"  ::  "[idt,idt,c,c] \<Rightarrow> c"  ("(3EX <<_,_>> in _ :/ _)" [100,100,0,0] 10)
+  "@bEx3"  ::  "[idt,idt,idt,c,c] \<Rightarrow> c"  ("(3EX <<_,_,_>> in _ :/ _)" [100,100,100,0,0] 10)
+  "@bEx4"  ::  "[idt,idt,idt,idt,c,c] \<Rightarrow> c"  ("(3EX <<_,_,_,_>> in _ :/ _)" [100,100,100,100,0,0] 10)
+  "@bEx5"  ::  "[idt,idt,idt,idt,idt,c,c] \<Rightarrow> c"  ("(3EX <<_,_,_,_,_>> in _ :/ _)" [100,100,100,100,100,0,0] 10)
+  "@bAll2" ::  "[idt,idt,c,c] \<Rightarrow> c"  ("(3ALL <<_,_>> in _ :/ _)" [100,100,0,0] 10)
+  "@bAll3" ::  "[idt,idt,idt,c,c] \<Rightarrow> c"  ("(3ALL <<_,_,_>> in _ :/ _)" [100,100,100,0,0] 10)
+  "@bAll4" ::  "[idt,idt,idt,idt,c,c] \<Rightarrow> c"  ("(3ALL <<_,_,_,_>> in _ :/ _)" [100,100,100,100,0,0] 10)
+  "@bAll5" ::  "[idt,idt,idt,idt,idt,c,c] \<Rightarrow> c"  ("(3ALL <<_,_,_,_,_>> in _ :/ _)" [100,100,100,100,100,0,0] 10)
 
 translations
   "\<exists>\<langle>x,y\<rangle> \<in> S : P"        \<rightharpoonup>  "\<exists>x,y : \<langle>x,y\<rangle> \<in> S \<and> P"
@@ -529,9 +501,9 @@ definition EnumFuncSet :: "c \<Rightarrow> c \<Rightarrow> c"
 where "EnumFuncSet(doms, rngs) \<equiv> { f \<in> [Range(doms) \<rightarrow> UNION Range(rngs)] :
                                      \<forall>i \<in> DOMAIN doms : f[doms[i]] \<in> rngs[i] }"
 
-lemmas (* -- \<open> establish set equality for sets of enumerated functions \<close> *)
-  setEqualI [where A = "EnumFuncSet(doms, rngs)", intro!]
-  setEqualI [where B = "EnumFuncSet(doms, rngs)", intro!]
+lemmas \<comment> \<open> establish set equality for sets of enumerated functions \<close>
+  setEqualI [where A = "EnumFuncSet(doms, rngs)" for doms rngs, intro!]
+  setEqualI [where B = "EnumFuncSet(doms, rngs)" for doms rngs, intro!]
 
 lemma EnumFuncSetI [intro!,simp]:
   assumes 1: "isAFcn(f)" and 2: "DOMAIN f = Range(doms)"
@@ -562,7 +534,6 @@ syntax
   "@domrngs"    :: "[domrng, domrngs] \<Rightarrow> domrngs" ("_,/ _")
   "@EnumFuncSet":: "domrngs \<Rightarrow> c"                 ("[_]")
 
-(*
 parse_ast_translation \<open>
   let
     (* make_tuple converts a list of ASTs to a tuple formed from these ASTs.
@@ -591,7 +562,7 @@ parse_ast_translation \<open>
         end
       | enum_funcset_tr _ = raise Match;
   in
-    [("@EnumFuncSet", enum_funcset_tr)]
+    [("@EnumFuncSet", K enum_funcset_tr)]
   end
 \<close>
 
@@ -622,35 +593,35 @@ print_ast_translation \<open>
         end
       | enum_funcset_tr' _ = raise Match
   in
-    [(@{const_syntax "EnumFuncSet"}, enum_funcset_tr')]
+    [(@{const_syntax "EnumFuncSet"}, K enum_funcset_tr')]
   end
 \<close>
-*)
+
 (*** Examples ***
 
 lemma "(1 :> TRUE) \<in> [1 : BOOLEAN]"
 by auto
 
 lemma "(1 :> TRUE) @@ (5 :> 2) \<in> [1 : BOOLEAN, 5 : Nat]"
-by auto
+by (auto simp: two_def three_def four_def five_def)
 
 lemma "(1 :> TRUE @@ 5 :> 2) = (5 :> 2 @@ 1 :> TRUE)"
-by auto
+by (auto simp: two_def three_def four_def five_def)
 
 lemma "(1 :> TRUE) @@ (5 :> 2) @@ (2 :> {}) \<in> [1 : BOOLEAN, 2: SUBSET Nat, 5 : Nat]"
-by auto
+by (auto simp: two_def three_def four_def five_def)
 
 lemma "[((1 :> TRUE) @@ (5 :> 2)) EXCEPT ![1] = FALSE] \<in> [1 : BOOLEAN, 5 : Nat]"
-by auto
+by (auto simp: two_def three_def four_def five_def)
 
 lemma "[((1 :> TRUE) @@ (5 :> 2)) EXCEPT ![5] = {}] \<in> [1 : BOOLEAN, 5 : SUBSET Nat]"
-by auto
+by (auto simp: two_def three_def four_def five_def)
 
 lemma "(1 :> TRUE) @@ (5 :> 2) @@ (1 :> {}) \<in> [1 : BOOLEAN, 5 : Nat]"
-by auto
+by (auto simp: two_def three_def four_def five_def)
 
 lemma "[1 : BOOLEAN, 5 : Nat] = [5 : Nat, 1 : BOOLEAN]"
-by auto
+by (auto simp: two_def three_def four_def five_def)
 
 lemma "\<lbrakk>f \<in> [1 : BOOLEAN, 2: Nat]; g \<in> [2: Nat, 1: BOOLEAN]; f[1] = g[1]; f[2] = g[2]\<rbrakk> \<Longrightarrow> f = g"
 by auto
@@ -732,12 +703,10 @@ lemma "\<langle>a\<rangle> \<notin> Product(\<langle>A,B\<rangle>)" by auto
 text \<open> Special case: binary product \<close>
 
 definition
-  prod :: "c \<Rightarrow> c \<Rightarrow> c"     (infixr "\\X" 100) where
-  "A \\X B \<equiv> Product(\<langle>A,B\<rangle>)"
-notation (xsymbols)
-  prod                     (infixr "\<times>" 100)
-notation (HTML output)
-  prod                     (infixr "\<times>" 100)
+  prod :: "c \<Rightarrow> c \<Rightarrow> c"     (infixr "\<times>" 100) where
+  "A \<times> B \<equiv> Product(\<langle>A,B\<rangle>)"
+notation (ASCII)
+  prod                     (infixr "\\X" 100)
 
 lemma inProd [simp]:
   "(\<langle>a,b\<rangle> \<in> A \<times> B) = (a \<in> A \<and> b \<in> B)"
@@ -746,8 +715,7 @@ by (auto simp add: prod_def)
 lemma prodProj:
   assumes p: "p \<in> A \<times> B"
   shows "p = \<langle>p[1], p[2]\<rangle>"
-unfolding two_def
-using assms by (auto simp add: prod_def)
+using assms by (auto simp: two_def prod_def)
 
 lemma inProd':
   "(p \<in> A \<times> B) = (\<exists>a \<in> A : \<exists> b \<in> B : p = \<langle>a,b\<rangle>)"
@@ -821,13 +789,12 @@ using assms by (auto dest: pairProj_in_prod)
 lemma relProj2 [elim]:  (** consider [elim!] ?? **)
   assumes "\<langle>a,b\<rangle> \<in> r" and "r \<subseteq> A \<times> B"
   shows "b \<in> B"
-using assms by (auto dest: pairProj_in_prod)
+  using assms by (auto dest: pairProj_in_prod)
 
 lemma setOfAllPairs_eq_r (*[simp]*):
   assumes r: "r \<subseteq> A \<times> B"
   shows "{\<langle>p[1], p[2]\<rangle> : p \<in> r} = r"
-apply auto
-using subsetD[OF r, THEN prodProj[of _ A B]] by simp_all
+using subsetD[OF r, THEN prodProj] by force
 
 lemma subsetsInProd:
   assumes "A' \<subseteq> A" and "B' \<subseteq> B"
@@ -842,9 +809,9 @@ definition setOfPairs :: "[c, [c,c]\<Rightarrow>c] \<Rightarrow> c"
 where "setOfPairs(R, f) \<equiv> { f(p[1], p[2]) : p \<in> R }"
 
 syntax
-  "@setOfPairs" :: "[c, idt, idt, c] \<Rightarrow> c"         ("(1{_ : <<_,_>> \\in _})")
-syntax (xsymbols)
   "@setOfPairs" :: "[c, idt, idt, c] \<Rightarrow> c"         ("(1{_ : \<langle>_,_\<rangle> \<in> _})")
+syntax (ASCII)
+  "@setOfPairs" :: "[c, idt, idt, c] \<Rightarrow> c"         ("(1{_ : <<_,_>> \\in _})")
 translations
   "{e : \<langle>x,y\<rangle> \<in> R}" \<rightleftharpoons>  "CONST setOfPairs(R, \<lambda>x y. e)"
 
@@ -859,7 +826,7 @@ lemma inSetOfPairsI [intro]:
 unfolding two_def
 using assms by (auto simp: setOfPairs_def two_def)
 
-lemma inSetOfPairsE [elim!]: (* -- \<open> converse true only if $R$ is a relation \<close> *)
+lemma inSetOfPairsE [elim!]: \<comment> \<open> the converse is true only if $R$ is a relation \<close>
   assumes 1: "z \<in> setOfPairs(R, e)"
       and 2: "R \<subseteq> A \<times> B" and 3: "\<And>x y. \<lbrakk> \<langle>x,y\<rangle> \<in> R; z = e(x,y) \<rbrakk> \<Longrightarrow> P"
   shows "P"
@@ -875,188 +842,27 @@ lemmas setOfPairsEqualI =
   setEqualI [where B = "setOfPairs(R,f)" for R f, intro!]
 
 lemma setOfPairs_triv [simp]:
-  assumes s: "R \<subseteq> A \<times> B"
+  assumes "R \<subseteq> A \<times> B"
   shows "{ \<langle>x, y\<rangle> : \<langle>x, y\<rangle> \<in> R } = R"
-    proof -
-    define Q where "Q \<equiv>
-        { \<langle>x, y\<rangle> : \<langle>x, y\<rangle> \<in> R }"
-    have s1_1: "Q = {<<p[1], p[2]>>:  p \<in> R}"
-        unfolding Q_def setOfPairs_def by auto
-    have s1_2: "\<And> p.  p \<in> R ==> p \<in> A \<times> B"
-        using s by auto
-    have s1_3: "\<And> p.  p \<in> R ==> p = <<p[1], p[2]>>"
-        proof -
-        fix "p" :: "c"
-        assume s1_3_asm: "p \\in R"
-        have s2_1: "p \<in> A \<times> B"
-            using s1_3_asm s by auto
-        show "p = <<p[1], p[2]>>"
-            using s2_1 prodProj by auto
-        qed
-    define e :: "[c] => c" where "e \<equiv> \<lambda> x.  x"
-    define f :: "[c] => c" where "f \<equiv> \<lambda> x.  <<x[1], x[2]>>"
-    have s1_4: "\<And> x.  x \<in> R ==> e(x) = f(x)"
-        unfolding e_def f_def using s1_3 by auto
-    have s1_5: "{e(x):  x \<in> R} = {f(y):  y \<in> R}"
-        apply (rule setOfAll_cong[of "R" "R" "e" "f"])
-        apply (simp)
-        by (rule s1_4)
-    show ?thesis
-        using s1_1 s1_5 by (auto simp: Q_def e_def f_def)
-    qed
+using assms by auto
 
 lemma setOfPairs_cong (*[cong]*):
   assumes 1: "R = S" and
     2: "S \<subseteq> A \<times> B" and
-    3: "\<And>x y. \<langle>x, y\<rangle> \<in> S
-        \<Longrightarrow>
-        e(x, y) = f(x, y)"
+    3: "\<And>x y. \<langle>x, y\<rangle> \<in> S \<Longrightarrow> e(x, y) = f(x, y)"
   shows "{ e(x, y) : \<langle>x, y\<rangle> \<in> R } =
          { f(u, v) : \<langle>u, v\<rangle> \<in> S }"
-    proof -
-    have s1_1: "{ e(x, y) : \<langle>x, y\<rangle> \<in> R } =
-        { e(x, y) : \<langle>x, y\<rangle> \<in> S }"
-        using 1 by auto
-    have s1_2: "{ e(x, y) : \<langle>x, y\<rangle> \<in> S } =
-        { e(p[1], p[2]) : p \<in> S }"
-        by (auto simp: setOfPairs_def)
-    have s1_3: "{ f(u, v) : \<langle>u, v\<rangle> \<in> S } =
-        { f(p[1], p[2]) : p \<in> S }"
-        by (auto simp: setOfPairs_def)
-    define P where "P \<equiv> { e(p[1], p[2]):  p \<in> S }"
-    define Q where "Q \<equiv> { f(p[1], p[2]):  p \<in> S }"
-    have s1_4: "P = Q"
-        proof -
-        have s2_1: "\<And> x.  x \<in> P <=> x \<in> Q"
-            proof -
-            fix "x" :: "c"
-            have s3_1: "x \\in P ==> x \\in Q"
-                proof -
-                assume s3_1_asm: "x \\in P"
-                have s4_1: "x \<in> { e(p[1], p[2]):  p \<in> S }"
-                    using s3_1_asm by (auto simp: P_def)
-                have s4_2: "\\E p:  p \\in S \<and> x = e(p[1], p[2])"
-                    using s4_1 setOfAll by auto
-                have s4_3: "\\E p:  p \\in S \<and> x = f(p[1], p[2])"
-                    using s4_2 2 3 pairProj_in_rel by (auto simp: two_def)
-                have s4_4: "x \<in> { f(p[1], p[2]):  p \<in> S }"
-                    using s4_3 setOfAll by auto
-                show "x \\in Q"
-                    unfolding Q_def using s4_4 by auto
-                qed
-            have s3_2: "x \\in Q ==> x \\in P"
-                proof -
-                assume s3_2_asm: "x \\in Q"
-                have s4_1: "x \<in> { f(p[1], p[2]):  p \<in> S}"
-                    using s3_2_asm by (auto simp: Q_def)
-                have s4_2: "\\E p:  p \\in S \<and> x = f(p[1], p[2])"
-                    using s4_1 setOfAll by auto
-                have s4_3: "\\E p:  p \\in S \<and> x = e(p[1], p[2])"
-                    using s4_2 2 3 pairProj_in_rel by (auto simp: two_def)
-                have s4_4: "x \<in> { e(p[1], p[2]):  p \<in> S }"
-                    using s4_3 setOfAll by auto
-                show "x \\in P"
-                    unfolding P_def using s4_4 by auto
-                qed
-            show "x \<in> P <=> x \<in> Q"
-                using s3_1 s3_2 by auto
-            qed
-        have s2_2: "\<forall> x:  x \<in> P <=> x \<in> Q"
-            using s2_1 allI by auto
-        show ?thesis
-            using s2_2 extension by auto
-        qed
-    show ?thesis
-        using s1_1 s1_2 s1_3 s1_4
-            by (auto simp: P_def Q_def)
-    qed
+using assms by (force intro!: inSetOfPairsI_ex)
 
 lemma setOfPairsEqual:
-  assumes 1: "\<And>x y.
-    \<langle>x, y\<rangle> \<in> S
-        \<Longrightarrow> \<exists>\<langle>x', y'\<rangle> \<in> T :
-            e(x, y) = f(x', y')"
-  and 2: "\<And>x' y'.
-    \<langle>x', y'\<rangle> \<in> T
-        \<Longrightarrow> \<exists>\<langle>x, y\<rangle> \<in> S :
-            f(x', y') = e(x, y)"
-  and 3: "S \<subseteq> A \<times> B" and
-      4: "T \<subseteq> C \<times> D"
+  assumes 1: "\<And>x y. \<langle>x, y\<rangle> \<in> S \<Longrightarrow> \<exists>\<langle>x', y'\<rangle> \<in> T : e(x, y) = f(x', y')"
+      and 2: "\<And>x' y'. \<langle>x', y'\<rangle> \<in> T \<Longrightarrow> \<exists>\<langle>x, y\<rangle> \<in> S : f(x', y') = e(x, y)"
+      and 3: "S \<subseteq> A \<times> B" 
+      and 4: "T \<subseteq> C \<times> D"
   shows "{ e(x, y) : \<langle>x, y\<rangle> \<in> S } =
          { f(x, y) : \<langle>x, y\<rangle> \<in> T }"
-    proof -
-    have s1_1: "{ e(x, y) : \<langle>x, y\<rangle> \<in> S } =
-        { e(p[1], p[2]):  p \<in> S }"
-        by (auto simp: setOfPairs_def)
-    have s1_2: "{ f(x, y) : \<langle>x, y\<rangle> \<in> T } =
-        { f(p[1], p[2]):  p \<in> T }"
-        by (auto simp: setOfPairs_def)
-    define P where "P \<equiv> { e(p[1], p[2]):  p \<in> S }"
-    define Q where "Q \<equiv> { f(p[1], p[2]):  p \<in> T }"
-    have s1_3: "P = Q"
-        proof -
-        have s2_1: "\<And> x.  x \<in> P <=> x \<in> Q"
-            proof -
-            fix "x" :: "c"
-            have s3_1: "x \\in P ==> x \\in Q"
-                proof -
-                assume s3_1_asm: "x \\in P"
-                have s4_1: "\\E p:  p \\in S \<and> x = e(p[1], p[2])"
-                    using s3_1_asm setOfAll by (auto simp: P_def)
-                have s4_2: "\\E p:  p \\in S \<and>
-                    \<langle>p[1], p[2]\<rangle> \<in> S \<and>
-                    x = e(p[1], p[2])"
-                    using s4_1 pairProj_in_rel 3 by auto
-                have s4_3: "\\E p:  p \\in S \<and>
-                    x = e(p[1], p[2]) \<and>
-                    (\<exists>\<langle>u, v\<rangle> \<in> T:
-                        e(p[1], p[2]) = f(u, v))"
-                    using s4_2 1 by auto
-                have s4_4: "\<exists>\<langle>u, v\<rangle> \<in> T:
-                    x = f(u, v)"
-                    using s4_3 by auto
-                have s4_5: "\\E u, v:  <<u, v>> \\in T \<and> x = f(u, v)"
-                    using s4_4 by auto
-                have s4_6: "\\E p:  p \\in T \<and> x = f(p[1], p[2])"
-                    using s4_5 4 pairProj_in_rel by (auto simp: two_def)
-                show "x \\in Q"
-                    using s4_6 setOfAll by (auto simp: Q_def)
-                qed
-            have s3_2: "x \\in Q ==> x \\in P"
-                proof -
-                assume s3_2_asm: "x \\in Q"
-                have s4_1: "\\E p:  p \\in T \<and> x = f(p[1], p[2])"
-                    using s3_2_asm setOfAll by (auto simp: Q_def)
-                have s4_2: "\\E p:  p \\in T \<and>
-                    <<p[1], p[2]>> \\in T \<and>
-                    x = f(p[1], p[2])"
-                    using s4_1 pairProj_in_rel 4 by auto
-                have s4_3: "\\E p:  p \\in T \<and>
-                    x = f(p[1], p[2]) \<and>
-                    (\<exists>\<langle>u, v\<rangle> \<in> S:
-                            f(p[1], p[2]) = e(u, v))"
-                    using s4_2 2 by auto
-                have s4_4: "\<exists>\<langle>u, v\<rangle> \<in> S:
-                    x = e(u, v)"
-                    using s4_3 by auto
-                have s4_5: "\\E u, v:  <<u, v>> \\in S \<and> x = e(u, v)"
-                    using s4_4 by auto
-                have s4_6: "\\E p:  p \\in S \<and> x = e(p[1], p[2])"
-                    using s4_5 3 pairProj_in_rel by (auto simp: two_def)
-                show "x \\in P"
-                    using s4_6 setOfAll by (auto simp: P_def)
-                qed
-            show "x \\in P <=> x \\in Q"
-                using s3_1 s3_2 by auto
-            qed
-        have s2_2: "\<forall> x:  x \<in> P <=> x \<in> Q"
-            using s2_1 allI by auto
-        show ?thesis
-            using s2_2 extension by auto
-        qed
-    show ?thesis
-        using s1_1 s1_2 s1_3 by (auto simp: P_def Q_def)
-    qed
+using assms by (force intro!: inSetOfPairsI_ex)
+
 
 subsection \<open> Basic notions about binary relations \<close>
 
@@ -1069,25 +875,22 @@ where "rel_range(r) \<equiv> { p[2] : p \<in> r }"
 definition converse :: "c => c" ("(_^-1)" [1000] 999)
 where "r^-1 \<equiv> { \<langle>p[2],p[1]\<rangle> : p \<in> r}"
 
-definition rel_comp :: "[c,c] => c" (infixr "\<circ>" 75) (* -- \<open> binary relation composition \<close> *)
+\<comment> \<open> composition of binary relations \<close>
+definition rel_comp :: "[c,c] => c" (infixr "\<circ>" 75)
 where "r \<circ> s \<equiv>
     { p \<in> rel_domain(s) \<times> rel_range(r) :
-        \<exists> x, z :
-            p = \<langle>x, z\<rangle> \<and>
-            (\<exists> y:
-                \<langle>x, y\<rangle> \<in> s \<and>
-                \<langle>y, z\<rangle> \<in> r) }"
+        \<exists> x, z : p = \<langle>x, z\<rangle> \<and> (\<exists> y: \<langle>x, y\<rangle> \<in> s \<and> \<langle>y, z\<rangle> \<in> r) }"
 
 definition rel_image :: "[c,c] => c" (infixl "``" 90)
 where "r `` A  \<equiv> {y \<in> rel_range(r) : \<exists>x \<in> A: \<langle>x,y\<rangle> \<in> r}"
 
-definition Id :: "c \<Rightarrow> c"    (* -- \<open> diagonal: identity over a set \<close> *)
+definition Id :: "c \<Rightarrow> c"    \<comment> \<open> diagonal: identity over a set \<close>
 where "Id(A) \<equiv> { \<langle>x,x\<rangle> : x \<in> A }"
 
 
 text \<open> Properties of relations \<close>
 
-definition reflexive   (* -- \<open> reflexivity over a set \<close> *)
+definition reflexive   \<comment> \<open> reflexivity over a set \<close>
 where "reflexive(A,r) \<equiv> \<forall>x \<in> A: \<langle>x,x\<rangle> \<in> r"
 
 lemma boolifyReflexive [simp]: "boolify(reflexive(A,r)) = reflexive(A,r)"
@@ -1096,7 +899,7 @@ unfolding reflexive_def by simp
 lemma reflexiveIsBool[intro!,simp]: "isBool(reflexive(A,r))"
 unfolding isBool_def by (rule boolifyReflexive)
 
-definition symmetric   (* -- \<open> symmetric relation \<close> *)
+definition symmetric   \<comment> \<open> symmetric relation \<close>
 where "symmetric(r) \<equiv> \<forall>x,y: \<langle>x,y\<rangle> \<in> r \<Rightarrow> \<langle>y,x\<rangle> \<in> r"
 
 lemma boolifySymmetric [simp]: "boolify(symmetric(r)) = symmetric(r)"
@@ -1105,7 +908,7 @@ unfolding symmetric_def by simp
 lemma symmetricIsBool[intro!,simp]: "isBool(symmetric(r))"
 unfolding isBool_def by (rule boolifySymmetric)
 
-definition antisymmetric   (* -- \<open> antisymmetric relation \<close> *)
+definition antisymmetric  \<comment> \<open> antisymmetric relation \<close>
 where "antisymmetric(r) \<equiv> \<forall>x,y: \<langle>x,y\<rangle> \<in> r \<and> \<langle>y,x\<rangle> \<in> r \<Rightarrow> x = y"
 
 lemma boolifyAntisymmetric [simp]: "boolify(antisymmetric(r)) = antisymmetric(r)"
@@ -1114,7 +917,7 @@ unfolding antisymmetric_def by simp
 lemma antisymmetricIsBool[intro!,simp]: "isBool(antisymmetric(r))"
 unfolding isBool_def by (rule boolifyAntisymmetric)
 
-definition transitive   (* -- \<open> transitivity predicate \<close> *)
+definition transitive   \<comment> \<open> transitivity predicate \<close>
 where "transitive(r) \<equiv> \<forall>x,y,z: \<langle>x,y\<rangle> \<in> r \<and> \<langle>y,z\<rangle> \<in> r \<Rightarrow> \<langle>x,z\<rangle> \<in> r"
 
 lemma boolifyTransitive [simp]: "boolify(transitive(r)) = transitive(r)"
@@ -1123,7 +926,7 @@ unfolding transitive_def by simp
 lemma transitiveIsBool[intro!,simp]: "isBool(transitive(r))"
 unfolding isBool_def by (rule boolifyTransitive)
 
-definition irreflexive   (* -- \<open> irreflexivity predicate \<close> *)
+definition irreflexive   \<comment> \<open> irreflexivity predicate \<close>
 where "irreflexive(A,r) \<equiv> \<forall>x \<in> A: \<langle>x,x\<rangle> \<notin> r"
 
 lemma boolifyIrreflexive [simp]: "boolify(irreflexive(A,r)) = irreflexive(A,r)"
@@ -1132,7 +935,7 @@ unfolding irreflexive_def by simp
 lemma irreflexiveIsBool[intro!,simp]: "isBool(irreflexive(A,r))"
 unfolding isBool_def by (rule boolifyIrreflexive)
 
-definition equivalence  :: "[c,c] \<Rightarrow> c"   (* -- \<open> (partial) equivalence relation \<close> *)
+definition equivalence  :: "[c,c] \<Rightarrow> c"   \<comment> \<open> (partial) equivalence relation \<close>
 where "equivalence(A,r) \<equiv> reflexive(A,r) \<and> symmetric(r) \<and> transitive(r)"
 
 lemma boolifyEquivalence [simp]: "boolify(equivalence(A,r)) = equivalence(A,r)"
@@ -1211,7 +1014,7 @@ lemmas converseEqualI =
   setEqualI [where A = "r^-1" for r, intro!]
   setEqualI [where B = "r^-1" for r, intro!]
 
-lemma converse_iff [iff]:
+lemma converse_iff [simp]:
   assumes r: "r \<subseteq> A \<times> B"
   shows "(\<langle>a,b\<rangle> \<in> r^-1) = (\<langle>b,a\<rangle> \<in> r)"
 using r prodProj by (auto simp: converse_def two_def)
@@ -1236,8 +1039,7 @@ lemma converseE [elim]:  (** consider [elim!] ?? **)
 proof -
   from prodProj[OF subsetD[OF converseSubset[OF r] yx]] have 2: "yx = \<langle>yx[1], yx[2]\<rangle>" .
   with yx have 3: "\<langle>yx[2], yx[1]\<rangle> \<in> r"
-    unfolding converse_def apply auto
-    using r prodProj by auto
+    unfolding converse_def using r prodProj by auto
   from p[of "yx[1]" "yx[2]"] 2 3
   show P by simp
 qed
@@ -1245,52 +1047,18 @@ qed
 lemma converse_converse [simp]:
   assumes r: "r \<subseteq> A \<times> B"
   shows "(r^-1)^-1 = r"
-    proof -
-    have s1_1: "\<And> x.  x \\in A \<times> B ==> x = <<x[1], x[2]>>"
-        using prodProj by (auto simp: two_def)
-    have s1_2: "\<And> x.  x \\in r ==> x \\in A \<times> B"
-        using s1_1 r by auto
-    have s1_3: "\<And> x.  x \\in r ==> x = <<x[1], x[2]>>"
-        using s1_1 s1_2 by auto
-    show ?thesis
-        using s1_3 assms prodProj pairProj_in_rel
-            by (auto simp: converse_def two_def)
-    qed
+proof -
+  {
+    fix x
+    assume x: "x \<in> r"
+    have "x = \<langle>x[1], x[2]\<rangle>"
+      using x r by (intro prodProj) auto
+  }
+  then show ?thesis by (force simp: converse_def two_def)
+qed
 
 lemma converse_prod [simp]: "(A \<times> B)^-1 = B \<times> A"
-    proof -
-    have s1_1: "(A \<times> B)^-1 =
-        {<<p[2], p[1]>>:  p \<in> A \<times> B}"
-        unfolding converse_def by auto
-    have s1_2: "B \<times> A =
-        {<<p[1], p[2]>>:  p \<in> B \<times> A}"
-        using setOfPairs_triv prodProj by auto
-    have s1_3: "\<And> x.  x \\in B \\X A ==>
-                            \\E p \\in A \\X B:  x = <<p[2], p[1]>>"
-        proof -
-        fix "x" :: "c"
-        assume s1_5_asm: "x \\in B \\X A"
-        have s2_1: "<<x[2], x[1]>> \\in A \\X B"
-            using s1_5_asm by (auto simp: two_def)
-        define q where "q \<equiv> <<x[2], x[1]>>"
-        have s2_2: "q \\in A \\X B \<and> q = <<x[2], x[1]>>"
-            using s2_1 by (auto simp: q_def)
-        have s2_3: "x = <<x[1], x[2]>>"
-            using s1_5_asm prodProj by auto
-        have s2_4: "q[1] = x[2] \<and> q[2] = x[1]"
-            using s2_2 by (auto simp: two_def)
-        have s2_5: "x = <<q[2], q[1]>>"
-            using s2_3 s2_4 by auto
-        show "\\E p \\in A \\X B:  x = <<p[2], p[1]>>"
-            using s2_2 s2_5 by auto
-        qed
-    have s1_4: "\<And> p.  p \\in A \\X B ==>
-                            p[1] \\in A \<and> p[2] \\in B"
-        using pairProj_in_rel inProd prodProj
-        by (auto simp: two_def)
-    show ?thesis
-        using s1_1 s1_2 s1_3 s1_4 by auto
-    qed
+by auto
 
 lemma converse_empty [simp]: "converse({}) = {}"
 by auto
@@ -1338,42 +1106,8 @@ lemma transitive_converse [simp]:
 lemma symmetric_iff_converse_eq:
   assumes r: "r \<subseteq> A \<times> B"
   shows "symmetric(r) = (r^-1 = r)"
-    proof -
-    have s1_1: "symmetric(r) ==> r^-1 = r"
-        proof -
-        assume s1_1_asm: "symmetric(r)"
-        have s2_1: "\<And> p.  p \\in r^-1 ==> p \\in r"
-            proof -
-            fix "p" :: "c"
-            assume s2_1_asm: "p \\in r^-1"
-            show "p \\in r"
-                using r s1_1_asm s2_1_asm
-                by (auto elim!: converseE simp: symmetric_def)
-            qed
-        have s2_2: "\<And> p.  p \\in r ==> p \\in r^-1"
-            proof -
-            fix "p" :: "c"
-            assume s2_2_asm: "p \\in r"
-            have s3_1: "p = <<p[1], p[2]>>"
-                using s2_2_asm r by (intro prodProj, auto)
-            have s3_2: "<<p[2], p[1]>> \\in r"
-                using s1_1_asm s2_2_asm s3_1 by (auto simp: symmetric_def)
-            show "p \\in r^-1"
-                using s3_1 s3_2 by (auto dest: converseI)
-            qed
-        show "r^-1 = r"
-            using s2_1 s2_2 setEqualI[of "r^-1" "r"]
-            by blast
-        qed
-    have s1_2: "r^-1 = r ==> symmetric(r)"
-        proof -
-        assume s1_2_asm: "r^-1 = r"
-        show "symmetric(r)"
-            using s1_2_asm by (auto simp: symmetric_def)
-        qed
-    show ?thesis
-        using s1_1 s1_2 by auto
-    qed
+using assms by (auto simp: symmetric_def)
+
 
 subsubsection \<open> Identity relation over a set \<close>
 
@@ -1483,53 +1217,30 @@ qed
 lemma R_comp_Id [simp]:
   assumes r: "R \<subseteq> B \<times> C"
   shows "R \<circ> Id(B) = R"
-    using r
-    proof -
-    have s1_1: "\<And> p.  p \\in R ==> p \\in R \<circ> Id(B)"
-        proof -
-        fix "p" :: "c"
-        assume p: "p \<in> R"
-        with r have 1: "p = \<langle>p[1], p[2]\<rangle>" (is "p = ?pp") by (intro prodProj, auto)
-        from p r have "p[1] \<in> B" by (auto dest: pairProj_in_prod)
-        with 1 p r have "?pp \<in> R \<circ> Id(B)" by (intro compI, auto)
-        with 1 show "p \<in> R \<circ> Id(B)" by simp
-        qed
-    have s1_2: "\<And> p.  p \\in R \<circ> Id(B) ==> p \\in R"
-        proof -
-        fix "p" :: "c"
-        assume s1_2_asm: "p \\in R \<circ> Id(B)"
-        show "p \\in R"
-            using r s1_2_asm by auto
-        qed
-    show ?thesis
-        using s1_1 s1_2 setEqualI[of "R \<circ> Id(B)" "R"] by blast
-    qed
-
+proof (rule setEqualI)
+  fix x
+  assume "x \<in> R \<circ> Id(B)"
+  with r show "x \<in> R" by auto
+next
+  fix x
+  assume x: "x \<in> R"
+  with r obtain b c where "b \<in> B" "c \<in> C" "x = \<langle>b,c\<rangle>" by force
+  with x r show "x \<in> R \<circ> Id(B)" by auto
+qed
 
 lemma Id_comp_R [simp]:
   assumes r: "R \<subseteq> A \<times> B"
   shows "Id(B) \<circ> R = R"
-    using r
-    proof -
-    have s1_1: "\<And> p.  p \\in R ==> p \\in Id(B) \<circ> R"
-        proof -
-        fix "p" :: "c"
-        assume p: "p \<in> R"
-        with r have 1: "p = \<langle>p[1], p[2]\<rangle>" (is "p = ?pp") by (intro prodProj, auto)
-        from p r have "p[2] \<in> B" by (auto dest: pairProj_in_prod)
-        with 1 p r have "?pp \<in> Id(B) \<circ> R" by (intro compI, auto)
-        with 1 show "p \<in> Id(B) \<circ> R" by simp
-        qed
-    have s1_2: "\<And> p.  p \\in Id(B) \<circ> R ==> p \\in R"
-        proof -
-        fix "p" :: "c"
-        assume s1_2_asm: "p \\in Id(B) \<circ> R"
-        show "p \\in R"
-            using r s1_2_asm by auto
-        qed
-    show ?thesis
-        using s1_1 s1_2 setEqualI[of "Id(B) \<circ> R" "R"] by blast
-    qed
+proof (rule setEqualI)
+  fix x
+  assume "x \<in> Id(B) \<circ> R"
+  with r show "x \<in> R" by auto
+next
+  fix x
+  assume x: "x \<in> R"
+  with r obtain a b where "a \<in> A" "b \<in> B" "x = \<langle>a,b\<rangle>" by force
+  with x r show "x \<in> Id(B) \<circ> R" by auto
+qed
 
 lemma rel_comp_empty1 [simp]: "{} \<circ> R = {}"
 unfolding rel_comp_def by auto
@@ -1553,7 +1264,7 @@ proof (rule setEqualI)
       fix u
       assume "\<langle>y,u\<rangle> \<in> S" and "\<langle>u,z\<rangle> \<in> R"
       with r s t 2 have "\<langle>x,z\<rangle> \<in> R \<circ> (S \<circ> T)"
-        by (intro compI, auto elim!: relProj1 relProj2)
+        by (intro compI) (auto elim!: relProj1 relProj2)
       with 1 show ?thesis by simp
     qed
   qed
@@ -1570,7 +1281,7 @@ next
       fix u
       assume "\<langle>x,u\<rangle> \<in> T" and "\<langle>u,y\<rangle> \<in> S"
       with r s t 3 have "\<langle>x,z\<rangle> \<in> (R \<circ> S) \<circ> T"
-        by (intro compI, auto elim!: relProj1 relProj2)
+        by (intro compI) (auto elim!: relProj1 relProj2)
       with 1 show ?thesis by simp
     qed
   qed
@@ -1759,7 +1470,7 @@ proof -
   have sym: "symmetric(r)"
   proof -
     from comp have "r^-1 = (r^-1 \<circ> r)^-1" by simp
-    also from r r1 have "... = r^-1 \<circ> r" by (simp add: converse_comp)
+    also from r r1 have "\<dots> = r^-1 \<circ> r" by (simp add: converse_comp)
     finally have "r^-1 = r" by (simp add: comp)
     with r show ?thesis by (simp add: symmetric_iff_converse_eq)
   qed
