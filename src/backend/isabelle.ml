@@ -29,6 +29,7 @@ let bump : ctx -> ctx = Ctx.bump
 let length : ctx -> int = Ctx.length
 
 
+let emitted_assumptions = ref false
 
 let cook x = "is" ^ pickle x
 
@@ -484,6 +485,7 @@ and pp_print_sequent_outer cx ff sq = match Deque.front sq.context with
             pp_print_sequent_outer ncx ff { sq with context = hs }
         | Fresh (nm, _, _, Bounded (b, Visible)) ->
             let (ncx, nm) = adj cx nm in
+            emitted_assumptions := true;
             fprintf ff "fixes %s@,assumes %s_in : @[<h>\"(%s \\<in> %a)\"@]@,"
               nm nm nm (pp_print_expr false cx) b ;
             pp_print_sequent_outer ncx ff { sq with context = hs }
@@ -496,6 +498,7 @@ and pp_print_sequent_outer cx ff sq = match Deque.front sq.context with
             begin try
               let null = make_formatter (fun _ _ _ -> ()) (fun () -> ()) in
               pp_print_expr false cx null e;  (* may raise Unsupported *)
+              emitted_assumptions := true;
               fprintf ff "assumes v'%d: \"%a\"@,"
                 (Ctx.length cx) (pp_print_expr false cx) e
             with Unsupported msg ->
@@ -644,6 +647,7 @@ let thy_temp ob tac tempname thyout =
   Printf.fprintf thyout "lemma ob'%d: (* %s *)\n" obid obfp;
   let ff = Format.formatter_of_out_channel thyout in
   begin try
+    emitted_assumptions := false;
     pp_print_expr true Ctx.dot ff (Sequent ob.obl.core @@ nowhere);
   with Unsupported msg ->
     failwith ("isabelle : unsupported operator " ^ msg)
@@ -652,7 +656,10 @@ let thy_temp ob tac tempname thyout =
   Printf.fprintf thyout "(is \"PROP ?ob'%d\")\n" obid;
   Printf.fprintf thyout "proof -\n";
   Printf.fprintf thyout "show \"PROP ?ob'%d\"\n" obid;
-  Printf.fprintf thyout "using assms by %s\n" tac;
+  if !emitted_assumptions then
+    Printf.fprintf thyout "using assms by %s\n" tac
+  else
+    Printf.fprintf thyout "by %s\n" tac;
   Printf.fprintf thyout "qed\n";
   Printf.fprintf thyout "end\n";
 ;;
