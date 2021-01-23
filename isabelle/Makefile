@@ -10,4 +10,4 @@ rebuild:
 	isabelle usedir -b -i true -d pdf Pure TLA+
 
 heap-only:
-	isabelle usedir -b Pure TLA+
+	isabelle build -v -d . -b TLA+
