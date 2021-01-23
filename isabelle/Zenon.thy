@@ -1047,7 +1047,7 @@ proof (rule inProductE [OF a b])
   assume h1: "isASeq(p)"
   assume h2: "Len(p) = Len(s)"
   assume h3: "p \\in [1 .. Len (s) -> UNION Range (s)]"
-  assume h4: "ALL k in 1 .. Len (s) : p[k] \\in s[k]"
+  assume h4: "\\A k \\in 1 .. Len (s) : p[k] \\in s[k]"
   show "p[i] \\in s[i]" (is "?c")
   proof (rule bAllE [where x = i, OF h4])
     assume h5: "i \\notin 1 .. Len(s)"
@@ -1137,7 +1137,7 @@ lemma zenon_in_recordset_field :
   shows "r[doms[i]] \\in rngs[i]"
 proof (rule EnumFuncSetE [OF a])
   assume h1: "r \\in [Range(doms) -> UNION Range(rngs)]"
-  assume h2: "ALL i in DOMAIN doms : r[doms[i]] \\in rngs[i]"
+  assume h2: "\\A i \\in DOMAIN doms : r[doms[i]] \\in rngs[i]"
   show "r[doms[i]] \\in rngs[i]" (is "?c")
   proof (rule bAllE [where x = i, OF h2])
     assume h3: "i \\notin DOMAIN doms"
@@ -1198,12 +1198,12 @@ lemma zenon_tuple_dom_3 :
   "isASeq (s) & isASeq (t) & DOMAIN s = DOMAIN t ==> DOMAIN s = DOMAIN t"
 by auto
 
-lemma zenon_all_rec_1 : "ALL i in {} : r[doms[i]] \\in rngs[i]" by auto
+lemma zenon_all_rec_1 : "\\A i \\in {} : r[doms[i]] \\in rngs[i]" by auto
 
 lemma zenon_all_rec_2 :
-  "ALL i in s : r[doms[i]] \\in rngs[i] ==>
+  "\\A i \\in s : r[doms[i]] \\in rngs[i] ==>
    r[doms[j]] \\in rngs[j] ==>
-   ALL i in addElt (j, s) : r[doms[i]] \\in rngs[i]"
+   \\A i \\in addElt (j, s) : r[doms[i]] \\in rngs[i]"
 by auto
 
 lemma zenon_tuple_acc_1 :
@@ -1296,7 +1296,7 @@ proof -
     by (simp only: DomainSeqLen [OF hdomseq], (rule zenon_dom_app_2)+,
         rule zenon_dom_app_1)
     have hind: "?indices = DOMAIN ?doms" by (rule conjE [OF hindx], elim conjE)
-    show "ALL i in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
+    show "\\A i \\in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
@@ -1360,7 +1360,7 @@ proof -
     by (simp only: DomainSeqLen [OF hdomseq], (rule zenon_dom_app_2)+,
         rule zenon_dom_app_1)
     have hind: "?indices = DOMAIN ?doms" by (rule conjE [OF hindx], elim conjE)
-    show "ALL i in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
+    show "\\A i \\in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
@@ -1443,7 +1443,7 @@ proof -
     by (simp only: DomainSeqLen [OF hdomseq], (rule zenon_dom_app_2)+,
         rule zenon_dom_app_1)
     have hind: "?indices = DOMAIN ?doms" by (rule conjE [OF hindx], elim conjE)
-    show "ALL i in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
+    show "\\A i \\in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
@@ -1547,7 +1547,7 @@ proof -
     by (simp only: DomainSeqLen [OF hdomseq], (rule zenon_dom_app_2)+,
         rule zenon_dom_app_1)
     have hind: "?indices = DOMAIN ?doms" by (rule conjE [OF hindx], elim conjE)
-    show "ALL i in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
+    show "\\A i \\in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
@@ -1670,7 +1670,7 @@ proof -
     by (simp only: DomainSeqLen [OF hdomseq], (rule zenon_dom_app_2)+,
         rule zenon_dom_app_1)
     have hind: "?indices = DOMAIN ?doms" by (rule conjE [OF hindx], elim conjE)
-    show "ALL i in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
+    show "\\A i \\in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
@@ -1812,7 +1812,7 @@ proof -
     by (simp only: DomainSeqLen [OF hdomseq], (rule zenon_dom_app_2)+,
         rule zenon_dom_app_1)
     have hind: "?indices = DOMAIN ?doms" by (rule conjE [OF hindx], elim conjE)
-    show "ALL i in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
+    show "\\A i \\in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
@@ -1973,7 +1973,7 @@ proof -
     by (simp only: DomainSeqLen [OF hdomseq], (rule zenon_dom_app_2)+,
         rule zenon_dom_app_1)
     have hind: "?indices = DOMAIN ?doms" by (rule conjE [OF hindx], elim conjE)
-    show "ALL i in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
+    show "\\A i \\in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
