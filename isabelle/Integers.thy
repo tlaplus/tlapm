@@ -1044,6 +1044,12 @@ apply(rule nat_leq_cases[of m "n + p" ], simp_all)
 	apply(rule adiff_adiff_left_nat[symmetric], simp+)
 done
 
+lemma leq_adiff_right_imp_0:
+  assumes h:"n \<le> n -- p" "p \<le> n" and n: "n \<in> Nat" and p: "p \<in> Nat"
+  shows "p = 0"
+using p h apply (induct)
+using n by auto
+
 lemma int_add_assoc5:
   assumes m: "m \<in> Nat" and n: "n \<in> Nat" and p: "p \<in> Nat"
   shows "-.m + (n + -.p) = -.m + n + -.p"
