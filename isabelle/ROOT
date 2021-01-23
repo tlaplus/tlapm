@@ -2,6 +2,7 @@
 session "TLA+" = "Pure" +
   options [document = pdf, document_output = "output", document_variants="document:outline=/proof"]
   theories
-    Peano
+    Constant (global)
+    Zenon (global)
   document_files
     "root.tex"
