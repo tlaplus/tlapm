@@ -1,8 +1,12 @@
 (* build the session using "isabelle build -D ." *)
 session "TLA+" = "Pure" +
+  (*
   options [document = pdf, document_output = "output", document_variants="document:outline=/proof"]
+  *)
   theories
     Constant (global)
     Zenon (global)
+  (*
   document_files
     "root.tex"
+  *)
