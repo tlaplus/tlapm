@@ -1,4 +1,17 @@
 // DESCRIPTION: print outer syntax keywords of specified theory
+//
+// INSTALLATION:
+// Place this Scala script in the directory $ISABELLE_HOME_USER/Tools
+// and to the file $ISABELLE_HOME_USER/etc/settings the line
+// ISABELLE_TOOLS="$ISABELLE_TOOLS:$ISABELLE_HOME_USER/Tools"
+// To find the path ISABELLE_HOME_USER the tool `isabelle getenv` can be used
+// by invoking:
+//     isabelle getenv ISABELLE_HOME_USER
+// For example, when this script was first used for `tlapm`, this path was
+//     $HOME/.isabelle/Isabelle2021-RC2
+//
+// Invoke the script with:
+//     isabelle outer_keywords Pure
 
 object Tool extends isabelle.Isabelle_Tool.Body {
   import isabelle._
