@@ -2100,7 +2100,7 @@ proof -
 qed
 
 (*** END AUTO_GENERATED STUFF ***)
-
+(*
 (* ------------- Proof rules for CASE expressions ------ *)
 
 lemma zenon_caseother0 :
@@ -3694,7 +3694,7 @@ proof -
       by (rule zenon_case_empty_union [OF hi])
   qed
 qed
-
+*)
 (*** END AUTO_GENERATED STUFF ***)
 
 end
