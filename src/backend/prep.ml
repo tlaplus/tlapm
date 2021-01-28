@@ -457,47 +457,46 @@ let gen_smt_solve suffix exec desc fmt_expr meth ob org_ob f res_cont comm =
     Schedule.Immediate (res_cont w (Method.NotTried msg) None)
 ;;
 
-(* NOTE
- * This part redirects to the new SMT encoding
- * Comment out this module definition to get Hernan Vanzetto's encoding *)
-module Smt = struct
-  let encode_smtlib = Smtlib.pp_print_obligation
-  let encode_fof = Smtlib.pp_print_obligation
-end
-(* *)
+let get_encode_smtlib () =
+  if not !Params.enc_enablesmt then Smt.encode_smtlib
+  else Smtlib.pp_print_obligation
+
+let get_encode_fof () =
+  if not !Params.enc_enablesmt then Smt.encode_fof
+  else Smtlib.pp_print_obligation ~solver:"fof"
 
 let smt_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt" Params.smt "default SMT solver" Smt.encode_smtlib
+  gen_smt_solve ".smt" Params.smt "default SMT solver" (get_encode_smtlib ())
                 (Method.Smt3 f) ob org_ob f res_cont ";;"
 ;;
 
 let cvc3_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt" Params.cvc4 "CVC4" Smt.encode_smtlib
+  gen_smt_solve ".smt" Params.cvc4 "CVC4" (get_encode_smtlib ())
                 (Method.Cvc33 f) ob org_ob f res_cont ";;"
 ;;
 
 let yices_solve ob org_ob f res_cont =
-  gen_smt_solve ".ys" Params.yices "Yices" Smt.encode_smtlib
+  gen_smt_solve ".ys" Params.yices "Yices" (get_encode_smtlib ())
                 (Method.Yices3 f) ob org_ob f res_cont ";;"
 ;;
 
 let z3_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt2" Params.z3 "Z3" (Smt.encode_smtlib ~solver:"Z3")
+  gen_smt_solve ".smt2" Params.z3 "Z3" ((get_encode_smtlib ()) ~solver:"Z3")
                 (Method.Z33 f) ob org_ob f res_cont ";;"
 ;;
 
 let verit_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt2" Params.verit "veriT" Smt.encode_smtlib
+  gen_smt_solve ".smt2" Params.verit "veriT" (get_encode_smtlib ())
                 (Method.Verit f) ob org_ob f res_cont ";;"
 ;;
 
 let spass_solve ob org_ob f res_cont =
-  gen_smt_solve ".tptp" Params.spass_tptp "Spass" Smt.encode_fof
+  gen_smt_solve ".tptp" Params.spass_tptp "Spass" (get_encode_fof ())
                 (Method.Spass f) ob org_ob f res_cont "%%"
 ;;
 
 let tptp_solve ob org_ob f res_cont =
-  gen_smt_solve ".tptp" Params.eprover "Tptp" Smt.encode_fof
+  gen_smt_solve ".tptp" Params.eprover "Tptp" (get_encode_fof ())
                 (Method.Tptp f) ob org_ob f res_cont "% "
 ;;
 
