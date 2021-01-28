@@ -26,34 +26,61 @@ let error ?at mssg =
 (* FIXME remove *)
 let primed s = s ^ "__prime"
 
-let to_uppercase s =
-  if String.length s > 0 then
-    let c = String.get s 0 in
-    if 'a' <= c && c <= 'z' then
-      "Z__" ^ s
-    else s
-  else s
-
-let to_lowercase s =
-  if String.length s > 0 then
-    let c = String.get s 0 in
-    if 'A' <= c && c <= 'Z' then
-      "z__" ^ s
-    else s
-  else s
-
 
 (* {3 Context} *)
 
 let init_cx = Ctx.dot
 
+(* NOTE Global variables must be uncapitalized, local variables must be
+ * capitalized.  All variables get a prefix to ensure that. *)
+
+let repls =
+  [ '\\', "backslash_"
+  ; '+',  "plussign_"
+  ; '-',  "hyphen_"
+  ; '*',  "asterisk_"
+  ; '/',  "slash_"
+  ; '%',  "percentsign_"
+  ; '^', "circumflexaccent_"
+  ; '&',  "ampersand_"
+  ; '@',  "atsign"
+  ; '#',  "pound_"
+  ; '$',  "dollarsign_"
+  ; '(',  "leftparenthesis_"
+  ; ')',  "rightparenthesis_"
+  ; '|',  "verticalbar_"
+  ; '.',  "period_"
+  ; ':',  "colon_"
+  ; '?',  "questionmark_"
+  ; '!',  "exclamationmark_"
+  ; '<',  "lessthansign_"
+  ; '>',  "greaterthansign_"
+  ; '=',  "equalsign_"
+  ]
+
+let escaped =
+  List.fold_right begin fun (c, repl) ->
+    let rgx = Str.regexp (Str.quote (String.make 1 c)) in
+    Str.global_replace rgx repl
+  end repls
+
+let format_l s =
+  if String.length s > 0 then
+    "THF__" ^ escaped s
+  else s
+
+let format_g s =
+  if String.length s > 0 then
+    "thf__" ^ escaped s
+  else s
+
 let adj_l cx v =
-  let nm = to_uppercase v.core in
+  let nm = format_l v.core in
   let cx = Ctx.push cx nm in
   (cx, Ctx.string_of_ident (Ctx.front cx))
 
 let adj_g cx v =
-  let nm = to_lowercase v.core in
+  let nm = format_g v.core in
   let cx = Ctx.push cx nm in
   (cx, Ctx.string_of_ident (Ctx.front cx))
 
@@ -368,7 +395,7 @@ let pp_print_expr cx ff oe =
 (* This very important function does several transformations on the sequent
  * to shape it into something translatable to THF. *)
 let preprocess ?solver sq =
-  let _ = solver in (* NOTE not used *)
+  let _ = solver in (* not used *)
 
   let cx = (Deque.empty, Ctx.dot) in
   let pp_print_sequent ff sq = ignore (Expr.Fmt.pp_print_sequent cx ff sq) in
@@ -383,11 +410,10 @@ let preprocess ?solver sq =
 
   let sq = sq
     |> debug "Original Obligation:"
-    (* NOTE eliminating bound notation necessary to make all '\in' visible *)
     |> Encode.Rewrite.elim_notmem
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_tuples
-    |> Encode.Rewrite.elim_bounds
+    |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
     |> debug "Simplify:"
     (*|> Encode.Direct.main*)
     |> debug "Direct:"
@@ -431,8 +457,8 @@ let pp_print_thf cx ff ?comment name role form =
   fprintf ff "@[<hov 2>thf(%s, %a,@ %a@]).@."
   name pp_print_role role (pp_print_formula cx) form
 
-let pp_print_obligation ?(solver="CVC4") ff ob =
-  (* Shape the sequent into a form that can be translated;
+let pp_print_obligation ?(solver="Zipperposition") ff ob =
+  (* Shape the sequent into a form that can be translated
    * Append a top context containing additional declarations and axioms *)
   let sq = preprocess ~solver ob.Proof.T.obl.core in
 
@@ -444,20 +470,20 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
   pp_print_newline ff ();
 
   (* Print sorts *)
-  fprintf ff "%%---- Sorts@.";
-  pp_print_newline ff ();
   let srts = Type.Collect.main sq in
   let srts = Ts.filter begin function
       TAtm TAIdv | TAtm TABol | TAtm TAInt -> false | _ -> true
   end srts in
-  List.iteri begin fun i ty ->
-    pp_print_thf Ctx.dot ff ("type" ^ string_of_int i) Type (Sort ty)
-  end (Ts.elements srts);
-  pp_print_newline ff ();
+  if not (Ts.is_empty srts) then begin
+    fprintf ff "%%---- Sorts@.";
+    pp_print_newline ff ();
+    List.iteri begin fun i ty ->
+      pp_print_thf Ctx.dot ff ("type" ^ string_of_int i) Type (Sort ty)
+    end (Ts.elements srts);
+    pp_print_newline ff ()
+  end;
 
   (* Print hypotheses *)
-  fprintf ff "%%---- Hypotheses@.";
-
   let rec spin cx hs =
     match Deque.front hs with
     | None ->
@@ -501,13 +527,14 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         spin ncx hs
   in
 
-  pp_print_newline ff ();
   let cx =
     if Deque.size sq.context = 0 then begin
-      pp_print_newline ff ();
       Ctx.dot
-    end else
+    end else begin
+      fprintf ff "%%---- Hypotheses@.";
+      pp_print_newline ff ();
       spin Ctx.dot sq.context
+    end
   in
 
   (* Print goal *)
