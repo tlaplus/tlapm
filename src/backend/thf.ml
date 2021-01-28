@@ -410,14 +410,16 @@ let preprocess ?solver sq =
 
   let sq = sq
     |> debug "Original Obligation:"
+    |> Type.Reconstruct.main
     |> Encode.Rewrite.elim_notmem
+    |> Encode.Rewrite.elim_compare
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_tuples
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
-    |> debug "Simplify:"
-    (*|> Encode.Direct.main*)
-    |> debug "Direct:"
-    (*|> Encode.Axiomatize.main*)
+    |> debug "Type Reconstruction and Simplify:"
+    |> Encode.Standardize.main
+    |> debug "Standardize:"
+    |> Encode.Axiomatize.main
     |> debug "Axiomatize:"
   in
   sq

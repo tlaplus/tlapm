@@ -9,7 +9,9 @@ open Ext
 open Property
 open Expr.T
 
-open N_table
+(* TODO update *)
+
+(*open N_table
 
 
 (* {3 Contexts} *)
@@ -160,5 +162,8 @@ let main sq =
   let enc e = N_direct.expr Ctx.dot e |> fst in
   let axms = Deque.map (fun _ -> enc) axms in
   let sq = assemble (decls, axms) sq in
+  sq*)
+
+let main sq =
   sq
 

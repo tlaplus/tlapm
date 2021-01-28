@@ -7,7 +7,9 @@
 
 open Expr.T
 
-open N_table
+(* TODO update *)
+
+(*open N_table
 
 (** Extended context
     Adding new hypotheses in the context is tricky because De Bruijn
@@ -26,7 +28,7 @@ type etx = SmbSet.t * expr Deque.dq
 val collect : sequent -> etx
 
 (** Assemble a sequent with an extended context *)
-val assemble : etx -> sequent -> sequent
+val assemble : etx -> sequent -> sequent*)
 
 (** Collect and assemble *)
 val main : sequent -> sequent

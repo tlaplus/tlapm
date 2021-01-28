@@ -39,12 +39,12 @@ EXPR_PACK = \
   expr/e_elab expr/e_anon
 
 TYPE_PACK = \
-	type/t_t type/t_collect type/t_bool
+	type/t_t type/t_collect type/t_bool type/t_recon
 
 ENCODE_PACK = \
   encode/n_hints encode/n_rewrite \
   encode/n_table encode/n_data encode/n_smb \
-	encode/n_standardize
+	encode/n_standardize encode/n_axiomatize
 
 TYPESYSTEM_DIR = \
   typesystem/typ_t typesystem/typ_e typesystem/typ_c \

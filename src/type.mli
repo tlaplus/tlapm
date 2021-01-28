@@ -118,3 +118,8 @@ module Bool : sig
   val main : ?hidden:bool -> ?bunify:bool -> ?ccast:bool -> ?tpred:bool -> sequent -> sequent
 end
 
+module Reconstruct : sig
+  open Expr.T
+  val main : sequent -> sequent
+end
+

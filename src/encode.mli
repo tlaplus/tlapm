@@ -45,3 +45,8 @@ module Standardize : sig
   val main : sequent -> sequent
 end
 
+module Axiomatize : sig
+  open Expr.T
+  val main : sequent -> sequent
+end
+
