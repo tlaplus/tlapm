@@ -197,6 +197,7 @@ let init () =
                "<f> load fingerprints from file <f> (save as usual)";
     "--fpp", Arg.Set fp_deb,
              " print the fingerprints of obligations in toolbox messages";
+    "--enc-verbose", Arg.Set enc_verbose, " print obligation at different encoding stages";
   ]
   in
   let opts = Arg.align opts in

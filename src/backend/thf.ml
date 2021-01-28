@@ -370,32 +370,29 @@ let pp_print_expr cx ff oe =
 let preprocess ?solver sq =
   let _ = solver in (* NOTE not used *)
 
-  (* FIXME remove *)
-  let emp = (Deque.empty, Ctx.dot) in
-  let pp_print_sequent ff sq = ignore (Expr.Fmt.pp_print_sequent emp ff sq) in
+  let cx = (Deque.empty, Ctx.dot) in
+  let pp_print_sequent ff sq = ignore (Expr.Fmt.pp_print_sequent cx ff sq) in
 
-  let pp_debug mssg sq =
-    fprintf err_formatter "  [DEBUG] %s@.%a@.@." mssg
-    pp_print_sequent sq
-  in
   let debug mssg sq =
-    pp_debug mssg sq;
+    if !Params.enc_verbose then begin
+      fprintf err_formatter "  [DEBUG] %s@.%a@.@." mssg
+      pp_print_sequent sq
+    end;
     sq
   in
-  (* FIXME end remove *)
 
   let sq = sq
-    |> debug "Start" (* FIXME remove *)
+    |> debug "Original Obligation:"
     (* NOTE eliminating bound notation necessary to make all '\in' visible *)
     |> Encode.Rewrite.elim_notmem
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_tuples
     |> Encode.Rewrite.elim_bounds
-    |> debug "Done Simpl. Bounds" (* FIXME remove *)
+    |> debug "Simplify:"
     (*|> Encode.Direct.main*)
-    |> debug "Done Direct"
+    |> debug "Direct:"
     (*|> Encode.Axiomatize.main*)
-    |> debug "Done Axiomatize" (* FIXME remove *)
+    |> debug "Axiomatize:"
   in
   sq
 
