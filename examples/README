@@ -51,4 +51,7 @@ consensus/PaxosProof.tla
 data/*.tla
    various theorems on sets, sequences and graphs (incomplete)
 
-
+Dekker/Dekker.tla
+   TLA+ specification of Dekker's algorithm for mutual exclusion
+   between two processes using shared memory,
+   and a proof of its correctness (including liveness)
