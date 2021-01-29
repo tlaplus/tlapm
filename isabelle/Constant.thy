@@ -1,9 +1,8 @@
 (*  Title:      TLA+/Constant.thy
     Author:     Stephan Merz, LORIA
-    Copyright (C) 2008-2011  INRIA and Microsoft Corporation
+    Copyright (C) 2008-2021  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2011-1
-    Time-stamp: <2011-10-11 17:40:28 merz>
+    Version:    Isabelle2020
 *)
 
 section \<open> Main theory for constant-level Isabelle/\tlaplus{} \<close>
