@@ -485,6 +485,10 @@ let backend_timeout = ref 5.;;
    timeout_stretch before use.
 *)
 
+let enc_typelvl = ref 0
+
+let enc_typepreds = ref false
+
 let enc_enablesmt = ref false
 
 let enc_verbose = ref false
