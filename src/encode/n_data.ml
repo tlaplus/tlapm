@@ -21,6 +21,8 @@ let t_bol = TAtm TABol
 let t_int = TAtm TAInt
 let t_str = TAtm TAStr
 
+let t_iob () = if !Params.enc_typepreds then t_bol else t_idv
+
 let t_cst ty = Ty1 ([], ty)
 let t_una ty1 ty2 = Ty1 ([ ty1 ], ty2)
 let t_bin ty1 ty2 ty3 = Ty1 ([ ty1 ; ty2 ], ty3)
@@ -42,14 +44,14 @@ let untyped_data tla_smb =
   match tla_smb with
   (* Logic *)
   | Choose ->
-      ("Choose",        [ t_una t_idv t_bol ],                t_idv,
+      ("Choose",        [ t_una t_idv (t_iob ()) ],           t_idv,
       [], [ ChooseDef ; ChooseExt ])
   (* Set Theory *)
   | Mem ->
-      ("Mem",           [ t_cst t_idv ; t_cst t_idv ],        t_bol,
+      ("Mem",           [ t_cst t_idv ; t_cst t_idv ],        t_iob (),
       [], [ SetExt ])
   | SubsetEq ->
-      ("SubsetEq",      [ t_cst t_idv ; t_cst t_idv ],        t_bol,
+      ("SubsetEq",      [ t_cst t_idv ; t_cst t_idv ],        t_iob (),
       [ Mem ], [ SubsetEqDef ])
   | SetEnum n ->
       ("SetEnum_" ^ string_of_int n,
@@ -71,7 +73,8 @@ let untyped_data tla_smb =
       ("SetMinus",      [ t_cst t_idv ; t_cst t_idv ],        t_idv,
       [ Mem ], [ SetMinusDef ])
   | SetSt ->
-      ("SetSt",         [ t_cst t_idv ; t_una t_idv t_bol ],  t_idv,
+      ("SetSt",         [ t_cst t_idv ; t_una t_idv (t_iob ()) ],
+                                                              t_idv,
       [ Mem ], [ SetStDef ])
   | SetOf n ->
       ("SetOf_" ^ string_of_int n,
@@ -120,16 +123,16 @@ let untyped_data tla_smb =
       ("Exp",        [ t_cst t_idv ; t_cst t_idv ],        t_idv,
       [ TIntExp ; Cast t_int ], [ Typing TIntExp ])
   | IntLteq ->
-      ("Lteq",       [ t_cst t_idv ; t_cst t_idv ],        t_bol,
+      ("Lteq",       [ t_cst t_idv ; t_cst t_idv ],        t_iob (),
       [ TIntLteq ; Cast t_int ], [ Typing TIntLteq ])
   | IntLt ->
-      ("Lt",         [ t_cst t_idv ; t_cst t_idv ],        t_bol,
+      ("Lt",         [ t_cst t_idv ; t_cst t_idv ],        t_iob (),
       [ TIntLt ; Cast t_int ], [ Typing TIntLt ])
   | IntGteq ->
-      ("Gteq",       [ t_cst t_idv ; t_cst t_idv ],        t_bol,
+      ("Gteq",       [ t_cst t_idv ; t_cst t_idv ],        t_iob (),
       [ TIntGteq ; Cast t_int ], [ Typing TIntGteq ])
   | IntGt ->
-      ("Gt",         [ t_cst t_idv ; t_cst t_idv ],        t_bol,
+      ("Gt",         [ t_cst t_idv ; t_cst t_idv ],        t_iob (),
       [ TIntGt ; Cast t_int ], [ Typing TIntGt ])
   | IntRange ->
       ("Range",      [ t_cst t_idv ; t_cst t_idv ],        t_idv,
