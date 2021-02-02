@@ -94,6 +94,7 @@ val timeout_stretch : float ref;;
 (* encode/ *)
 val enc_typelvl : int ref;;
 val enc_typepreds : bool ref;;
+val enc_noarith : bool ref;;
 val enc_enablesmt : bool ref;;
 val enc_verbose : bool ref;;
 

@@ -489,6 +489,8 @@ let enc_typelvl = ref 0
 
 let enc_typepreds = ref false
 
+let enc_noarith = ref false
+
 let enc_enablesmt = ref false
 
 let enc_verbose = ref false
