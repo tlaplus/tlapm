@@ -6,6 +6,5 @@ Revision.f "$Rev$"
 
 module T = T_t
 module Collect = T_collect
-module Bool = T_bool
 module Reconstruct = T_recon
 

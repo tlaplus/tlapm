@@ -82,42 +82,6 @@ module Collect : sig
   val main : sequent -> Ts.t
 end
 
-module Bool : sig
-  open Expr.T
-  open Ext
-  open Util
-
-  type srt = Idv | Bool
-  type ty1 = Ty1 of srt list * srt
-  type ty2 = Ty2 of ty1 list * srt
-
-  type scx
-  val init : scx
-  val adj_srt : scx -> hint -> srt -> hint * scx
-  val adj_ty1 : scx -> hint -> ty1 -> hint * scx
-  val adj_ty2 : scx -> hint -> ty2 -> hint * scx
-  val bump : scx -> scx
-  val lookup_srt : scx -> int -> srt
-  val lookup_ty1 : scx -> int -> ty1
-  val lookup_ty2 : scx -> int -> ty2
-
-  val mk_idv : srt -> expr -> expr
-  val mk_bool : srt -> expr -> expr
-
-  val expr : scx -> expr -> expr * srt
-  val earg : scx -> expr -> expr * ty1
-  val eopr : scx -> expr -> expr * ty2
-  val bound  : scx -> bound -> bound
-  val bounds : scx -> bound list -> scx * bound list
-  val defn  : scx -> defn -> scx * defn
-  val defns : scx -> defn list -> scx * defn list
-  val hyp  : scx -> hyp -> scx * hyp
-  val hyps : scx -> hyp Deque.dq -> scx * hyp Deque.dq
-  val sequent : scx -> sequent -> scx * sequent
-
-  val main : ?hidden:bool -> ?bunify:bool -> ?ccast:bool -> ?tpred:bool -> sequent -> sequent
-end
-
 module Reconstruct : sig
   open Expr.T
   val main : sequent -> sequent
