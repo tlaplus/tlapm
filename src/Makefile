@@ -39,7 +39,7 @@ EXPR_PACK = \
   expr/e_elab expr/e_anon
 
 TYPE_PACK = \
-	type/t_t type/t_collect type/t_recon
+	type/t_t type/t_visit type/t_collect type/t_recon
 
 ENCODE_PACK = \
   encode/n_hints encode/n_rewrite \
