@@ -194,3 +194,35 @@ let pp_print_ty2 ff ty2 =
       (Fmtutil.pp_print_delimited ~sep:pp_print_times pp_print_ty1_parens) ty1s
       pp_print_ty0 ty
 
+
+(* {3 Typechecking} *)
+
+exception Typechecking_error of ty0 * ty0
+exception Typechecking_op_error of ty2 * ty2
+
+let typecheck ~expected:ty01 ~actual:ty02 =
+  if ty01 <> ty02 then begin
+    raise (Typechecking_error (ty01, ty02))
+  end
+
+let typecheck_op ~expected:ty21 ~actual:ty22 =
+  if ty21 <> ty22 then begin
+    raise (Typechecking_op_error (ty21, ty22))
+  end
+
+let typecheck_error_mssg ~expected:ty01 ~actual:ty02 =
+    Format.fprintf Format.str_formatter
+    "expression is of type %a, expected type %a"
+    pp_print_ty0 ty02
+    pp_print_ty0 ty01;
+    let mssg = Format.flush_str_formatter () in
+    mssg
+
+let typecheck_op_error_mssg ~expected:ty21 ~actual:ty22 =
+    Format.fprintf Format.str_formatter
+    "operator expression is of type %a, expected type %a"
+    pp_print_ty2 ty22
+    pp_print_ty2 ty21;
+    let mssg = Format.flush_str_formatter () in
+    mssg
+

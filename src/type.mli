@@ -45,6 +45,15 @@ module T : sig
   val apply_ty_sub1 : ty_sub -> ty1 -> ty1
   val apply_ty_sub2 : ty_sub -> ty2 -> ty2
 
+  exception Typechecking_error of ty0 * ty0
+  exception Typechecking_op_error of ty2 * ty2
+
+  val typecheck : expected:ty0 -> actual:ty0 -> unit
+  val typecheck_op : expected:ty2 -> actual:ty2 -> unit
+
+  val typecheck_error_mssg : expected:ty0 -> actual:ty0 -> string
+  val typecheck_op_error_mssg : expected:ty2 -> actual:ty2 -> string
+
   val erase0 : ty0 -> ty0
   val erase1 : ty1 -> ty1
   val erase2 : ty2 -> ty2

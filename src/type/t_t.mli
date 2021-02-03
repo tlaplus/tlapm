@@ -51,6 +51,18 @@ val apply_ty_sub1 : ty_sub -> ty1 -> ty1
 val apply_ty_sub2 : ty_sub -> ty2 -> ty2
 
 
+(* {3 Typechecking} *)
+
+exception Typechecking_error of ty0 * ty0
+exception Typechecking_op_error of ty2 * ty2
+
+val typecheck : expected:ty0 -> actual:ty0 -> unit
+val typecheck_op : expected:ty2 -> actual:ty2 -> unit
+
+val typecheck_error_mssg : expected:ty0 -> actual:ty0 -> string
+val typecheck_op_error_mssg : expected:ty2 -> actual:ty2 -> string
+
+
 (* {Type Erasure} *)
 
 (** Type erasure maps each type [t] to a type [t'] with the same structure, but
