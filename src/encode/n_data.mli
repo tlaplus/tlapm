@@ -20,7 +20,14 @@ type data =
   ; dat_kind  : smb_kind
   }
 
-val get_data : tla_smb -> data
+type s
+(** Data for a symbol sometimes depends on the data previously obtained.
+    Examples: generating axioms to state for all declared strings are
+    distinct from each other.
+*)
+
+val init : s
+val get_data : s -> tla_smb -> s * data
 
 (** Return the actual formula for an axiom.
     The result is a closed formula in standardized form (see

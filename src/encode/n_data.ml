@@ -6,6 +6,7 @@
  *)
 
 open Type.T
+open Util.Coll
 
 open N_table
 
@@ -40,8 +41,26 @@ type data =
   ; dat_kind  : smb_kind
   }
 
-let untyped_data tla_smb =
-  match tla_smb with
+type s =
+  { declared_strlits : Ss.t
+  ; declared_intlits : Is.t
+  }
+
+let init =
+  { declared_strlits = Ss.empty
+  ; declared_intlits = Is.empty
+  }
+
+let untyped_data s tla_smb =
+  let s' =
+    match tla_smb with
+    | StrLit str ->
+        { s with declared_strlits = Ss.add str s.declared_strlits }
+    | IntLit n ->
+        { s with declared_intlits = Is.add n s.declared_intlits }
+    | _ -> s
+  in
+  begin match tla_smb with
   (* Logic *)
   | Choose ->
       ("Choose",        [ t_una t_idv (t_iob ()) ],           t_idv,
@@ -90,10 +109,10 @@ let untyped_data tla_smb =
   | StrSet ->
       ("StrSet",        [],                                   t_idv,
       [ Cast t_str ], [ StrSetDef ])
-  | StrLit s ->
-      ("StrLit_" ^ s,
+  | StrLit str ->
+      ("StrLit_" ^ str,
                         [],                                   t_idv,
-      [ Cast t_str ], []) (* FIXME str distinct *)
+      [ Cast t_str ],   Ss.fold (fun str' -> List.cons (StrLitDistinct (str, str'))) s.declared_strlits [])
   (* Arithmetic *)
   | IntSet ->
       ("IntSet",        [],                                   t_idv,
@@ -101,6 +120,10 @@ let untyped_data tla_smb =
   | NatSet ->
       ("NatSet",        [],                                   t_idv,
       [ Cast t_int ], [ NatSetDef ])
+  | IntLit n ->
+      ("IntLit_" ^ string_of_int n,
+                        [],                       t_idv,
+      [],               Is.fold (fun n' -> List.cons (IntLitDistinct (n, n'))) s.declared_intlits [])
   | IntPlus ->
       ("Plus",       [ t_cst t_idv ; t_cst t_idv ],        t_idv,
       [ TIntPlus ; Cast t_int ], [ Typing TIntPlus ])
@@ -155,9 +178,15 @@ let untyped_data tla_smb =
       [ FunConstr ], [ FunAppDef ])
   | _ ->
       Errors.bug "Bad argument"
+  end |>
+  fun x -> (s', x)
 
-let typed_data tla_smb =
-  match tla_smb with
+let typed_data s tla_smb =
+  let s' =
+    match tla_smb with
+    | _ -> s
+  in
+  begin match tla_smb with
   | TIntPlus ->
       ("Plus_" ^ ty_to_string t_int,
                         [ t_cst t_int ; t_cst t_int ],        t_int,
@@ -208,9 +237,15 @@ let typed_data tla_smb =
       [], [])
   | _ ->
       Errors.bug "Bad argument"
+  end |>
+  fun x -> (s', x)
 
-let special_data tla_smb =
-  match tla_smb with
+let special_data s tla_smb =
+  let s' =
+    match tla_smb with
+    | _ -> s
+  in
+  begin match tla_smb with
   | Cast ty ->
       ("Cast_" ^ ty_to_string ty,
                         [ t_cst ty ],                         t_idv,
@@ -221,8 +256,10 @@ let special_data tla_smb =
       [], [])
   | _ ->
       Errors.bug "Bad argument"
+  end |>
+  fun x -> (s', x)
 
-let get_data tla_smb =
+let get_data s tla_smb =
   match tla_smb with
   | Choose
   | Mem
@@ -240,6 +277,7 @@ let get_data tla_smb =
   | StrLit _
   | IntSet
   | NatSet
+  | IntLit _
   | IntPlus
   | IntUminus
   | IntMinus
@@ -257,7 +295,8 @@ let get_data tla_smb =
   | FunConstr
   | FunDom
   | FunApp ->
-      let nm, tins, tout, deps, axms = untyped_data tla_smb in
+      let s, (nm, tins, tout, deps, axms) = untyped_data s tla_smb in
+      s,
       { dat_name = nm
       ; dat_ty2 = Ty2 (tins, tout)
       ; dat_deps = deps
@@ -276,7 +315,8 @@ let get_data tla_smb =
   | TIntGteq
   | TIntGt
   | TIntRange ->
-      let nm, tins, tout, deps, axms = special_data tla_smb in
+      let s, (nm, tins, tout, deps, axms) = special_data s tla_smb in
+      s,
       { dat_name = nm
       ; dat_ty2 = Ty2 (tins, tout)
       ; dat_deps = deps
@@ -285,7 +325,8 @@ let get_data tla_smb =
       }
   | Cast _
   | True _ ->
-      let nm, tins, tout, deps, axms = special_data tla_smb in
+      let s, (nm, tins, tout, deps, axms) = special_data s tla_smb in
+      s,
       { dat_name = nm
       ; dat_ty2 = Ty2 (tins, tout)
       ; dat_deps = deps

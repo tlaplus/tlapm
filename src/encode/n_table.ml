@@ -31,6 +31,7 @@ type tla_smb =
   (* Arithmetic *)
   | IntSet
   | NatSet
+  | IntLit of int
   | IntPlus
   | IntUminus
   | IntMinus
@@ -93,6 +94,7 @@ type tla_axm =
   (* Arithmetic *)
   | IntSetDef
   | NatSetDef
+  | IntLitDistinct of int * int
   | IntUminus
   | IntMinus
   | IntTimes
@@ -115,5 +117,6 @@ type tla_axm =
   (* TODO *)
 
     (* SPECIAL *)
+  | IntGuard
   | Typing of tla_smb
 
