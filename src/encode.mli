@@ -19,6 +19,7 @@ module Rewrite : sig
   val elim_except : sequent -> sequent
   val elim_tuples : sequent -> sequent
   val elim_records : sequent -> sequent
+  val apply_ext : sequent -> sequent
 end
 
 module CollectTypes : sig

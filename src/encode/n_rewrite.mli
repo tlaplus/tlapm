@@ -31,3 +31,6 @@ val elim_tuples : sequent -> sequent
 (** Reduce records to functions *)
 val elim_records : sequent -> sequent
 
+(** Apply extensionnality axioms to equalities *)
+val apply_ext : sequent -> sequent
+

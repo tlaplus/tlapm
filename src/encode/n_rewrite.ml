@@ -8,6 +8,7 @@
 open Ext
 open Property
 open Expr.T
+open Type.T
 
 module Subst = Expr.Subst
 module Visit = Expr.Visit
@@ -20,6 +21,8 @@ let error ?at mssg =
   let mssg = "Encode.Rewrite: " ^ mssg in
   Errors.bug ?at mssg
 
+
+(* {3 Bounds Elimination} *)
 
 let elim_bounds_visitor = object (self : 'self)
   inherit [unit] Visit.map as super
@@ -146,6 +149,8 @@ let elim_bounds sq =
   snd (elim_bounds_visitor#sequent cx sq)
 
 
+(* {3 NotMem Elimination} *)
+
 let elim_notmem_visitor = object (self : 'self)
   inherit [unit] Visit.map as super
 
@@ -165,6 +170,8 @@ let elim_notmem sq =
   let cx = ((), Deque.empty) in
   snd (elim_notmem_visitor #sequent cx sq)
 
+
+(* {3 Comparisons Simplification} *)
 
 let elim_compare_visitor = object (self : 'self)
   inherit [unit] Visit.map as super
@@ -199,6 +206,8 @@ let elim_compare sq =
   let cx = ((), Deque.empty) in
   snd (elim_compare_visitor #sequent cx sq)
 
+
+(* {3 Multi-arguments Functions Elimination} *)
 
 let elim_multiarg_visitor = object (self : 'self)
   inherit [unit] Visit.map as super
@@ -243,6 +252,8 @@ let elim_multiarg sq =
   snd (elim_multiarg_visitor #sequent cx sq)
 
 
+(* {3 Except Elimination} *)
+
 let elim_except_visitor = object (self : 'self)
   inherit [unit] Visit.map as super
 
@@ -276,6 +287,8 @@ let elim_except sq =
   let cx = ((), Deque.empty) in
   snd (elim_except_visitor #sequent cx sq)
 
+
+(* {3 Tuples Elimination} *)
 
 let elim_tuples_visitor = object (self : 'self)
   inherit [unit] Visit.map as super
@@ -351,6 +364,8 @@ let elim_tuples sq =
   snd (elim_tuples_visitor#sequent cx sq)
 
 
+(* {3 Records Elimination} *)
+
 let elim_records_visitor = object (self : 'self)
   inherit [unit] Visit.map as super
 
@@ -408,4 +423,69 @@ end
 let elim_records sq =
   let cx = ((), Deque.empty) in
   snd (elim_records_visitor#sequent cx sq)
+
+
+(* {3 Apply Extensionnality} *)
+
+let is_set e =
+  match e.core with
+  | SetEnum _
+  | SetSt _
+  | SetOf _
+  | Apply ({ core = Internal (B.Cap | B.Cup | B.Setminus) }, [ _ ; _ ])
+  | Product _
+  | Arrow _
+  | Rect _
+  | Internal (B.STRING | B.BOOLEAN | B.Nat | B.Int) ->
+          true
+  | _ ->
+          false
+
+let eq_pol b = function
+  | B.Eq -> b
+  | B.Neq -> not b
+  | _ -> failwith "eq_pol"
+
+let apply_ext_visitor = object (self : 'self)
+  inherit [bool] Expr.Visit.map as super
+
+  method expr scx oe =
+    match oe.core with
+    | Apply ({ core = Internal (B.Eq | B.Neq as b) } as op, [ e ; f ])
+      when eq_pol (fst scx) b && (is_set e || is_set f) ->
+        let e = self#expr scx e in
+        let f = self#expr scx f in
+        let oty =
+          query op Props.targs_prop |>
+          Option.map begin function [ty] -> ty | _ -> error ~at:op "Bad type annotation" end
+        in
+        let q =
+          match b with
+          | B.Eq -> Forall
+          | B.Neq -> Exists
+          | _ -> failwith ""
+        in
+        let v = Option.fold (fun v -> assign v Props.type_prop) ("x" %% []) oty in
+        let mem_op = Option.fold (fun e ty -> assign e Props.targs_prop [ ty ]) (Internal B.Mem %% []) oty in
+        Quant (
+          q, [ v, Constant, No_domain ],
+          Apply (
+            Internal B.Equiv %% [],
+            [ Apply (mem_op, [ Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) e ]) %% []
+            ; Apply (mem_op, [ Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) f ]) %% []
+            ]
+          ) %% []
+          |> fun e ->
+              match b with
+              | B.Eq -> e
+              | B.Neq ->
+                  Apply (Internal B.Neg %% [], [e]) %% []
+              | _ -> failwith ""
+        ) @@ oe
+    | _ -> super#expr scx oe
+end
+
+let apply_ext sq =
+  let cx = (true, Deque.empty) in
+  snd (apply_ext_visitor#sequent cx sq)
 
