@@ -157,10 +157,10 @@ text \<open>
 
   The following axioms govern propositional logic:
   \begin{enumerate}
-  \item @{term TRUE} is valid, and @{term FALSE} implies anything},
-  \item @{text A} is a theorem if and only if it equals @{term TRUE},
+  \item @{text TRUE} is valid, and @{text FALSE} implies anything,
+  \item @{text A} is a theorem if and only if it equals @{text TRUE},
   \item conditionals are reasoned about by case distinction,
-  \item equations evaluate to @{term TRUE} or @{term FALSE}.
+  \item equations evaluate to @{text TRUE} or @{text FALSE}.
   \end{enumerate}
 \<close>
 
