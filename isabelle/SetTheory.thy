@@ -259,7 +259,7 @@ definition setminus ::  "[c, c] \<Rightarrow> c" (infixl "\<setminus>" 65)     (
 definition INTER ::  "c \<Rightarrow> c"   ("INTER _" [100]90)  (* generalized intersection *)
   where "INTER A \<equiv> { x \<in> UNION A : \<forall>B \<in> A : x \<in> B }"
 
-text \<open>Note that @{text "INTER {}"} is @{text "{}"}.}\<close>
+text \<open>Note that @{text "INTER {}"} is @{text "{}"}.\<close>
 
 notation (ASCII)
   "inter"      (infixl "\\inter" 70)  and
