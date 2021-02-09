@@ -146,6 +146,9 @@ let rec pp_print_thf_atomic cx ff oe =
       let id = lookup_id cx n in
       pp_print_string ff id
 
+  | Apply ({ core = Internal (B.Unprimable | B.Irregular) }, [ e ]) ->
+      pp_print_thf_atomic cx ff e
+
   | Opaque s ->
       (* FIXME Ad hoc trick that formats primed variables.
        * Would be cleaner to eliminate these beforehand *)

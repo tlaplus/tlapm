@@ -150,6 +150,10 @@ let rec expr cx oe =
       in
       (Ix n @@ oe, rt)
 
+  | Apply ({ core = Internal (B.Unprimable | B.Irregular) } as op, [ e ]) ->
+      let e, rt = expr cx e in
+      (Apply (op, [e]) @@ oe, rt)
+
   (* NOTE It seems the only use for this case is to let primed variables pass
    * through.  x' is encoded as (Opaque "x#prime") at this point. *)
   | Opaque s ->
