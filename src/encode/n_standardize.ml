@@ -21,192 +21,248 @@ let error ?at mssg =
   Errors.bug ?at mssg
 
 
-(* {3 Context} *)
-
-type cx = ty2 Ctx.t
-
-let adj cx v =
-  let ty2 =
-    if has v Props.ty2_prop then
-      get v Props.ty2_prop
-    else if has v Props.ty1_prop then
-      upcast_ty2 (get v Props.ty1_prop)
-    else if has v Props.ty0_prop then
-      upcast_ty2 (upcast_ty1 (get v Props.ty0_prop))
-    else
-      error ~at:v "Missing type annotation"
-  in
-  Ctx.adj cx v.core ty2
-
-let bump cx =
-  Ctx.bump cx
-
-let lookup_ty2 cx n =
-  Option.get (snd (Ctx.index cx n))
-
-let lookup_ty1 cx n =
-  downcast_ty1 (lookup_ty2 cx n)
-
-let lookup_ty0 cx n =
-  downcast_ty0 (downcast_ty1 (lookup_ty2 cx n))
-
-
 (* {3 Helpers} *)
+
+let adj scx h =
+  Type.Visit.adj scx h
 
 let mk_opq smb =
   let op = Opaque (get_name smb) %% [] in
   let op = assign op smb_prop smb in
   op
 
-let t_bol = TAtm TABol
-
-let typecheck ?at ty01 ty02 =
-  try
-    typecheck ~expected:ty01 ~actual:ty02
-  with Typechecking_error (ty01, ty02) ->
-    let mssg = typecheck_error_mssg ~expected:ty01 ~actual:ty02 in
-    error ?at mssg
-
-let typecheck1 ?at ty01 ty02 =
-  match ty01, ty02 with
-  | Ty1 (ty01s, ty01), Ty1 (ty02s, ty02) ->
-      List.iter2 (typecheck ?at) ty01s ty02s;
-      typecheck ?at ty01 ty02
-
-let typecheck2 ?at ty21 ty22 =
-  match ty21, ty22 with
-  | Ty2 (ty11s, ty01), Ty2 (ty12s, ty02) ->
-      List.iter2 (typecheck1 ?at) ty11s ty12s;
-      typecheck ?at ty01 ty02
-
 
 (* {3 Main} *)
 
-let rec expr cx oe =
-  match oe.core with
-  | Ix n ->
-      let ty0 = lookup_ty0 cx n in
-      (Ix n @@ oe, ty0)
+(* TODO Implement typelvl=1 *)
 
-  | _ ->
-      error ~at:oe "Not implemented"
+(* NOTE This module does not perform type inference, it only works
+ * from the type annotations it can find. *)
 
-and eopr cx op =
-  match op.core with
-  | Ix n ->
-      let ty2 = lookup_ty2 cx n in
-      (Ix n @@ op, ty2)
+let visitor = object (self : 'self)
+  inherit [unit, s] Expr.Visit.foldmap as super
 
-  | Lambda (xs, e) ->
-      let cx, ty1s =
-        List.fold_left begin fun (cx, rty1s) (v, shp) ->
-          let cx = adj cx v in
-          let ty1 = lookup_ty1 cx 1 in
-          (cx, ty1 :: rty1s)
-        end (cx, []) xs
-        |> fun (cx, rty1s) ->
-            (cx, List.rev rty1s)
-      in
-      let e, ty0 = expr cx e in
-      let ty2 = Ty2 (ty1s, ty0) in
-      (Lambda (xs, e) @@ op, ty2)
+  method expr scx s oe =
+    if has oe Props.icast_prop then
+      let ty0 = get oe Props.icast_prop in
+      let s, oe = self#expr scx s (remove oe Props.icast_prop) in
+      let s, smb = mk_smb s (Cast ty0) in
+      let opq = mk_opq smb in
+      (s, Apply (opq, [ oe ]) %% [])
 
-  | _ ->
-      error ~at:op "Not implemented"
+    else if has oe Props.bproj_prop then
+      let ty0 = get oe Props.bproj_prop in
+      let s, oe = self#expr scx s (remove oe Props.bproj_prop) in
+      let s, smb = mk_smb s (True ty0) in
+      let opq = mk_opq smb in
+      let op = assign (Internal B.Eq %% []) Props.tpars_prop [ ty0 ] in
+      (s, Apply (op, [ oe ; opq ]) %% [])
+    else
 
-and earg cx oa =
-  match oa.core with
-  | Ix n ->
-      let ty1 = lookup_ty1 cx n in
-      (Ix n @@ oa, ty1)
+    begin match oe.core with
 
-  | Lambda (xs, e) ->
-      let cx, ty0s =
-        List.fold_left begin fun (cx, rty0s) (v, shp) ->
-          let cx = adj cx v in
-          let ty0 = lookup_ty0 cx 1 in
-          (cx, ty0 :: rty0s)
-        end (cx, []) xs
-        |> fun (cx, rty0s) ->
-            (cx, List.rev rty0s)
-      in
-      let e, ty0 = expr cx e in
-      let ty1 = Ty1 (ty0s, ty0) in
-      (Lambda (xs, e) @@ oa, ty1)
+    | Internal (B.TRUE | B.FALSE
+               | B.Implies | B.Equiv | B.Conj | B.Disj
+               | B.Neg | B.Eq | B.Neq
+               | B.Unprimable | B.Irregular) ->
+        (* Ignored builtins *)
+        (s, oe)
 
-  | _ ->
-      let e, ty0 = expr cx oa in
-      (e, upcast_ty1 ty0)
+    | Internal b ->
+        let tla_smb =
+          match b, query oe Props.tpars_prop with
+          | Mem,        None      -> Mem
+          | Subseteq,   None      -> SubsetEq
+          | UNION,      None      -> Union
+          | SUBSET,     None      -> Subset
+          | Cup,        None      -> Cup
+          | Cap,        None      -> Cap
+          | Setminus,   None      -> SetMinus
+          | BOOLEAN,    None      -> BoolSet
+          | STRING,     None      -> StrSet
+          | Int,        None      -> IntSet
+          | Nat,        None      -> NatSet
+          | Plus,       None      -> IntPlus
+          | Uminus,     None      -> IntUminus
+          | Minus,      None      -> IntMinus
+          | Times,      None      -> IntTimes
+          | Exp,        None      -> IntExp
+          | Quotient,   None      -> IntQuotient
+          | Remainder,  None      -> IntRemainder
+          | Lteq,       None      -> IntLteq
+          | Lt,         None      -> IntLt
+          | Gteq,       None      -> IntGteq
+          | Gt,         None      -> IntGt
+          | Range,      None      -> IntRange
+          | DOMAIN,     None      -> FunDom
 
-and bound cx (v, k, d) =
-  (* FIXME Ditto? *)
-  let d =
-    match d with
-    | Domain d ->
-        let ty01 = get v Props.ty0_prop in
-        let d, ty02 = expr cx d in
-        begin match ty02 with
-        | TSet ty02' ->
-            typecheck ~at:v ty01 ty02'
-        | _ ->
-            typecheck ~at:v ty01 ty02
-        end;
-        Domain d
-    | _ -> d
-  in
-  (v, k, d)
+          | Plus,       Some [ TAtm TAInt ]   -> TIntPlus
+          | Uminus,     Some [ TAtm TAInt ]   -> TIntUminus
+          | Minus,      Some [ TAtm TAInt ]   -> TIntMinus
+          | Times,      Some [ TAtm TAInt ]   -> TIntTimes
+          | Exp,        Some [ TAtm TAInt ]   -> TIntExp
+          | Quotient,   Some [ ]              -> TIntQuotient
+          | Remainder,  Some [ ]              -> TIntRemainder
+          | Lteq,       Some [ ]              -> TIntLt
+          | Lt,         Some [ ]              -> TIntLteq
+          | Gteq,       Some [ ]              -> TIntGt
+          | Gt,         Some [ ]              -> TIntGteq
+          | Range,      Some [ ]              -> TIntRange
 
-and bounds cx bs =
-  List.fold_left begin fun (cx, rbs) b ->
-    let (v, _, _ as b) = bound cx b in
-    let cx = adj cx v in
-    (cx, b :: rbs)
-  end (cx, []) bs
-  |> fun (cx, rbs) ->
-      (cx, List.rev rbs)
+          | _,      Some _      ->
+              error ~at:oe "Typelvl=1 not implemented"
+          | _, _ ->
+              error ~at:oe "Unexpected builtin"
+        in
+        let s, smb = mk_smb s tla_smb in
+        (s, mk_opq smb)
 
-and defn cx df =
-  match df.core with
-  | Operator (v, e) ->
-      let ty01 = get v Props.ty2_prop in
-      let e, ty02 = eopr cx e in
-      typecheck2 ~at:v ty01 ty02;
-      let cx = adj cx v in
-      (cx, Operator (v, e) @@ df)
+    | Choose (v, Some dom, e) ->
+        error ~at:oe "Unsupported bounded choose-expression"
+    | Choose (v, None, e) ->
+        let h = Fresh (v, Shape_expr, Constant, Unbounded) %% [] in
+        let scx = adj scx h in
+        let s, e = self#expr scx s e in
+        if has oe Props.tpars_prop then
+          error ~at:oe "Typelvl=1 not implemented"
+        else
+          let s, smb = mk_smb s Choose in
+          let opq = mk_opq smb in
+          (s, Apply (opq, [ Lambda ([ v, Shape_expr ], e) %% [] ]) @@ oe)
 
-  | _ ->
-      error ~at:df "Not implemented"
+    | SetEnum es ->
+        let s, es =
+          List.fold_left begin fun (s, r_es) e ->
+            let s, e = self#expr scx s e in
+            (s, e :: r_es)
+          end (s, []) es |>
+          fun (s, r_es) -> (s, List.rev r_es)
+        in
+        if has oe Props.tpars_prop then
+          error ~at:oe "Typelvl=1 not implemented"
+        else
+          let n = List.length es in
+          let s, smb = mk_smb s (SetEnum n) in
+          let opq = mk_opq smb in
+          (s, Apply (opq, es) @@ oe)
 
-and defns cx dfs =
-  List.fold_left begin fun (cx, rdfs) df ->
-    let cx, df = defn cx df in
-    (cx, df :: rdfs)
-  end (cx, []) dfs
-  |> fun (cx, rdfs) ->
-      (cx, List.rev rdfs)
+    | SetSt (v, e1, e2) ->
+        let s, e1 = self#expr scx s e1 in
+        let h = Fresh (v, Shape_expr, Constant, Bounded (e1, Visible)) %% [] in
+        let scx = adj scx h in
+        let s, e2 = self#expr scx s e2 in
+        if has oe Props.tpars_prop then
+          error ~at:oe "Typelvl=1 not implemented"
+        else
+          let s, smb = mk_smb s SetSt in
+          let opq = mk_opq smb in
+          (s, Apply (opq, [ e1 ; Lambda ([ v, Shape_expr ], e2) %% [] ]) %% [])
 
-and hyp cx h =
-  match h.core with
-  | _ ->
-      error ~at:h "Not implemented"
+    | SetOf (e, bs) ->
+        let scx, s, bs = self#bounds scx s bs in
+        let s, e = self#expr scx s e in
+        if has oe Props.tpars_prop then
+          error ~at:oe "Typelvl=1 not implemented"
+        else
+          let n = List.length bs in
+          let s, smb = mk_smb s (SetOf n) in
+          let opq = mk_opq smb in
+          let ds, bs =
+            List.fold_left begin fun (r_ds, r_bs, last) (v, _, dom) ->
+              match dom, last with
+              | Domain d, _
+              | Ditto, Some d ->
+                  (d :: r_ds, (v, Shape_expr) :: r_bs, Some d)
+              | _, _ ->
+                  error ~at:v "Missing domain on bound"
+            end ([], [], None) bs |>
+            fun (r_ds, r_bs, _) ->
+              (List.rev r_ds, List.rev r_bs)
+          in
+          (s, Apply (opq, (ds @ [ Lambda (bs, e) %% [] ])) %% [])
 
-and hyps cx hs =
-  match Deque.front hs with
-  | None ->
-      (cx, Deque.empty)
-  | Some (h, hs) ->
-      let cx, h = hyp cx h in
-      let cx, hs = hyps cx hs in
-      (cx, Deque.cons h hs)
+    | String str ->
+        if has oe Props.tpars_prop then
+          error ~at:oe "Typelvl=1 not implemented"
+        else
+          let s, smb = mk_smb s (StrLit str) in
+          let opq = mk_opq smb in
+          (s, opq)
 
-and sequent cx sq =
-  let cx, hs = hyps cx sq.context in
-  let e, ty = expr cx sq.active in
-  typecheck ~at:e t_bol ty;
-  { context = hs; active = e }
+    | Num (m, "") ->
+        if has oe Props.tpars_prop then
+          error ~at:oe "Literal numbers not implemented"
+        else
+          let n = int_of_string m in
+          let s, smb = mk_smb s (IntLit n) in
+          let opq = mk_opq smb in
+          (s, opq)
+
+    | Arrow (e1, e2) ->
+        let s, e1 = self#expr scx s e1 in
+        let s, e2 = self#expr scx s e2 in
+        if has oe Props.tpars_prop then
+          error ~at:oe "Typelvl=1 not implemented"
+        else
+          let s, smb = mk_smb s FunSet in
+          let opq = mk_opq smb in
+          (s, Apply (opq, [ e1 ; e2 ]) %% [])
+
+    | Fcn (bs, _) when List.length bs <> 1 ->
+        error ~at:oe "Unsupported multi-arguments function"
+    | Fcn ([ v, Constant, Domain (e1) ], e2) ->
+        let s, e1 = self#expr scx s e1 in
+        let h = Fresh (v, Shape_expr, Constant, Bounded (e1, Visible)) %% [] in
+        let scx = adj scx h in
+        let s, e2 = self#expr scx s e2 in
+        if has oe Props.tpars_prop then
+          error ~at:oe "Typelvl=1 not implemented"
+        else
+          let s, smb = mk_smb s FunConstr in
+          let opq = mk_opq smb in
+          (s, Apply (opq, [ e1 ; Lambda ([ v, Shape_expr ], e2) %% [] ]) %% [])
+
+    | FcnApp (_, es) when List.length es <> 1 ->
+        error ~at:oe "Unsupported multi-arguments application"
+    | FcnApp (e1, [ e2 ]) ->
+        let s, e1 = self#expr scx s e1 in
+        let s, e2 = self#expr scx s e2 in
+        if has oe Props.tpars_prop then
+          error ~at:oe "Typelvl=1 not implemented"
+        else
+          let s, smb = mk_smb s FunApp in
+          let opq = mk_opq smb in
+          (s, Apply (opq, [ e1 ; e2 ]) %% [])
+
+    | _ -> super#expr scx s oe
+
+    end |>
+    fun (s, e) ->
+      if has e pattern_prop then begin
+        let pats = get e pattern_prop in
+        let s, pats =
+          List.fold_left begin fun (s, r_pats) pat ->
+            let s, pat =
+              List.fold_left begin fun (s, r_es) e ->
+                let s, e = self#expr scx s e in
+                (s, e :: r_es)
+              end (s, []) pat |>
+              fun (s, r_es) -> (s, List.rev r_es)
+            in
+            (s, pat :: r_pats)
+          end (s, []) pats |>
+          fun (s, r_pats) -> (s, List.rev r_pats)
+        in
+        (s, add_patterns (remove_patterns e) pats)
+      end else
+        (s, e)
+
+end
 
 
 let main sq =
-  let cx = Ctx.dot in
-  sequent cx sq
+  let cx = ((), Deque.empty) in
+  let s = init in
+  let _, _, sq = visitor#sequent cx s sq in
+  sq
 

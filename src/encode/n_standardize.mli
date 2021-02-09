@@ -8,28 +8,35 @@
 open Expr.T
 open Type.T
 
+(** This module removes all builtins and other TLA+ primitives from
+    expressions.  All primitives are replaced by constants or operators
+    with special annotations on them.
 
-(* {3 Context} *)
+    For instance, the arithmetic expression:
+      [m + n]
+    put in standard form becomes:
+      [plus(m, n)]
 
-type cx = ty2 Ctx.t
+    The new constants are opaque expressions with {!Smb.smb_prop} annotations
+    on them.  Type annotations are interpreted to disambiguate expressions.
+    For instance, the [plus] operator will be addition on [int] only if a [int]
+    annotation was attached to [+].  If not, it will be uninterpreted addition.
+    This module is intended to be used after {!Type.Reconstruct}.
+
+    Using second-order applications, all primitives can be put in standard
+    form.  For instance, set comprehension:
+      [{ x \in s : p }]
+    becomes:
+      [setst(s, LAMBDA x : p)]
+
+    The primitives that are ignored by this module are: all boolean primitives
+    (in the liberal interpretation, they will always be interpreted in the
+    traditional way); temporal logic operators; builtins Unprimable and
+    Irregular.
+*)
 
 
 (* {3 Main} *)
-
-val expr : cx -> expr -> expr * ty0
-val eopr : cx -> expr -> expr * ty2
-val earg : cx -> expr -> expr * ty1
-
-val bound : cx -> bound -> bound
-val bounds : cx -> bound list -> cx * bound list
-
-val defn : cx -> defn -> cx * defn
-val defns : cx -> defn list -> cx * defn list
-
-val hyp : cx -> hyp -> cx * hyp
-val hyps : cx -> hyp Deque.dq -> cx * hyp Deque.dq
-
-val sequent : cx -> sequent -> sequent
 
 val main : sequent -> sequent
 
