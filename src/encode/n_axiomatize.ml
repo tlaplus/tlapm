@@ -9,66 +9,60 @@ open Ext
 open Property
 open Expr.T
 
-(* TODO update *)
-
-(*open N_table
+open N_smb
+open N_data
 
 
 (* {3 Contexts} *)
 
-type etx = SmbSet.t * expr Deque.dq
+type etx = s * SmbSet.t * expr Deque.dq
 
-let init_etx = (SmbSet.empty, Deque.empty)
+let init_etx = (init, SmbSet.empty, Deque.empty)
 
 
 (* {3 Helpers} *)
 
 let error ?at mssg =
-  Errors.bug ?at ("Encode.Axiomatize: " ^ mssg)
+  let mssg = "Encode.Axiomatize: " ^ mssg in
+  Errors.bug ?at mssg
 
 
 (* {3 Collection} *)
 
 (* NOTE Important function
  * Add symbol to extended context, along with all depending
- * symbols and axioms
- * NOTE Axioms left unencoded because all declarations must
- * be collected beforehand *)
-let add_smb smb (smbs, facts) =
-  let rec more acc_smbs acc_facts work_smbs =
+ * symbols and axioms *)
+let add_smb smb (s, smbs, facts) =
+  let rec more s acc_smbs acc_facts work_smbs =
     try
       let smb = SmbSet.choose work_smbs in
       if SmbSet.mem smb acc_smbs then
         let work_smbs = SmbSet.remove smb work_smbs in
-        more acc_smbs acc_facts work_smbs
+        more s acc_smbs acc_facts work_smbs
       else
-        let deps, axms =
-          match get_defn smb with
-          | None -> ([], [])
-          | Some defn -> begin
-            match smbtable defn with
-            | None -> ([], [])
-            | Some (tla_smbs, axms) ->
-                (List.map std_smb tla_smbs, axms)
-          end
-        in
+        let s, data = get_data s (get_defn smb) in
+        let s, deps = List.fold_left begin fun (s, deps) tla_smb ->
+          let s, smb = mk_smb s tla_smb in
+          (s, smb :: deps)
+        end (s, []) data.dat_deps in
+        let axms = List.map get_axm data.dat_axms in
         let acc_smbs = SmbSet.add smb acc_smbs in
         let acc_facts = List.fold_left Deque.snoc acc_facts axms in
         let work_smbs = SmbSet.remove smb work_smbs in
         let work_smbs = List.fold_right SmbSet.add deps work_smbs in
-        more acc_smbs acc_facts work_smbs
+        more s acc_smbs acc_facts work_smbs
     with Not_found ->
-      (acc_smbs, acc_facts)
+      (s, acc_smbs, acc_facts)
   in
-  more smbs facts (SmbSet.singleton smb)
+  more s smbs facts (SmbSet.singleton smb)
 
 let collect_visitor = object (self : 'self)
   inherit [unit, etx] Expr.Visit.fold as super
 
   method expr scx ecx oe =
     match oe.core with
-    | Opaque _ when has_smb oe ->
-        let smb = get_smb oe in
+    | Opaque _ when has oe smb_prop ->
+        let smb = get oe smb_prop in
         add_smb smb ecx
 
     | _ -> super#expr scx ecx oe
@@ -92,33 +86,24 @@ let collect sq =
 (* {3 Assembly} *)
 
 let mk_decl smb =
-  let nm = get_name smb %% [] in
-  let sch = get_sch smb in
-  let nm = assign nm Type.T.Props.tsch_prop sch in
+  let v = get_name smb %% [] in
+  let ty2 = get_ty2 smb in
+  let v = assign v Type.T.Props.ty2_prop ty2 in
   let shp = Shape_op 0 in (* special *)
-  Fresh (nm, shp, Constant, Unbounded) %% []
+  Fresh (v, shp, Constant, Unbounded) %% []
 
 let mk_fact e =
   Fact (e, Visible, NotSet) %% []
-
-(* FIXME HACK *)
-let is_arith e =
-  let smb = get e smb_prop in
-  begin match get_defn smb with
-  | Some ( Plus | Uminus | Minus | Times | Lteq ) ->
-      true
-  | _ -> false
-  end
 
 let assemble_visitor decls = object (self : 'self)
   inherit [unit] Expr.Visit.map as super
 
   method expr ((), hx as scx) oe =
     match oe.core with
-    | Opaque _ when has_smb oe && not (is_arith oe) ->
-        let smb = get_smb oe in
+    | Opaque _ when has oe smb_prop ->
+        let smb = get oe smb_prop in
         let n =
-          match Deque.find ~backwards:true decls ((=) smb) with
+          match Deque.find ~backwards:true decls (equal_smb smb) with
           | Some (n, _) -> n
           | None ->
               let mssg = "cannot find symbol '"
@@ -140,7 +125,7 @@ let assemble_visitor decls = object (self : 'self)
         super#hyp scx h
 end
 
-let assemble (decls, axms) sq =
+let assemble (_, decls, axms) sq =
   let decls =
     SmbSet.elements decls
     |> Deque.of_list
@@ -158,12 +143,7 @@ let assemble (decls, axms) sq =
 (* {3 Main} *)
 
 let main sq =
-  let decls, axms = collect sq in
-  let enc e = N_direct.expr Ctx.dot e |> fst in
-  let axms = Deque.map (fun _ -> enc) axms in
-  let sq = assemble (decls, axms) sq in
-  sq*)
-
-let main sq =
+  let ecx = collect sq in
+  let sq = assemble ecx sq in
   sq
 

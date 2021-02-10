@@ -7,9 +7,7 @@
 
 open Expr.T
 
-(* TODO update *)
-
-(*open N_table
+open N_smb
 
 (** Extended context
     Adding new hypotheses in the context is tricky because De Bruijn
@@ -19,7 +17,7 @@ open Expr.T
 
     That way, no complicated shifting is necessary in the original sequent.
 *)
-type etx = SmbSet.t * expr Deque.dq
+type etx = s * SmbSet.t * expr Deque.dq
 
 
 (* {3 Main} *)
@@ -28,7 +26,7 @@ type etx = SmbSet.t * expr Deque.dq
 val collect : sequent -> etx
 
 (** Assemble a sequent with an extended context *)
-val assemble : etx -> sequent -> sequent*)
+val assemble : etx -> sequent -> sequent
 
 (** Collect and assemble *)
 val main : sequent -> sequent
