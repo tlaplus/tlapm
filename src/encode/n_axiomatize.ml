@@ -40,16 +40,16 @@ let add_smb smb (s, smbs, facts) =
         let work_smbs = SmbSet.remove smb work_smbs in
         more s acc_smbs acc_facts work_smbs
       else
-        let s, data = get_data s (get_defn smb) in
-        let s, deps = List.fold_left begin fun (s, deps) tla_smb ->
-          let s, smb = mk_smb s tla_smb in
-          (s, smb :: deps)
-        end (s, []) data.dat_deps in
-        let axms = List.map get_axm data.dat_axms in
+        let s, deps = get_deps (get_defn smb) s in
+        let smb_deps = List.fold_left begin fun smbs tla_smb ->
+          let smb = mk_smb tla_smb in
+          smb :: smbs
+        end [] deps.dat_deps in
+        let axms = List.map get_axm deps.dat_axms in
         let acc_smbs = SmbSet.add smb acc_smbs in
         let acc_facts = List.fold_left Deque.snoc acc_facts axms in
         let work_smbs = SmbSet.remove smb work_smbs in
-        let work_smbs = List.fold_right SmbSet.add deps work_smbs in
+        let work_smbs = List.fold_right SmbSet.add smb_deps work_smbs in
         more s acc_smbs acc_facts work_smbs
     with Not_found ->
       (s, acc_smbs, acc_facts)

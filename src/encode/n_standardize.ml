@@ -40,23 +40,23 @@ let mk_opq smb =
  * from the type annotations it can find. *)
 
 let visitor = object (self : 'self)
-  inherit [unit, s] Expr.Visit.foldmap as super
+  inherit [unit] Expr.Visit.map as super
 
-  method expr scx s oe =
+  method expr scx oe =
     if has oe Props.icast_prop then
       let ty0 = get oe Props.icast_prop in
-      let s, oe = self#expr scx s (remove oe Props.icast_prop) in
-      let s, smb = mk_smb s (Cast ty0) in
+      let oe = self#expr scx (remove oe Props.icast_prop) in
+      let smb = mk_smb (Cast ty0) in
       let opq = mk_opq smb in
-      (s, Apply (opq, [ oe ]) %% [])
+      Apply (opq, [ oe ]) %% []
 
     else if has oe Props.bproj_prop then
       let ty0 = get oe Props.bproj_prop in
-      let s, oe = self#expr scx s (remove oe Props.bproj_prop) in
-      let s, smb = mk_smb s (True ty0) in
+      let oe = self#expr scx (remove oe Props.bproj_prop) in
+      let smb = mk_smb (True ty0) in
       let opq = mk_opq smb in
       let op = assign (Internal B.Eq %% []) Props.tpars_prop [ ty0 ] in
-      (s, Apply (op, [ oe ; opq ]) %% [])
+      Apply (op, [ oe ; opq ]) %% []
     else
 
     begin match oe.core with
@@ -66,7 +66,7 @@ let visitor = object (self : 'self)
                | B.Neg | B.Eq | B.Neq
                | B.Unprimable | B.Irregular) ->
         (* Ignored builtins *)
-        (s, oe)
+        oe
 
     | Internal b ->
         let tla_smb =
@@ -114,58 +114,58 @@ let visitor = object (self : 'self)
           | _, _ ->
               error ~at:oe "Unexpected builtin"
         in
-        let s, smb = mk_smb s tla_smb in
-        (s, mk_opq smb)
+        let smb = mk_smb tla_smb in
+        mk_opq smb
 
     | Choose (v, Some dom, e) ->
         error ~at:oe "Unsupported bounded choose-expression"
     | Choose (v, None, e) ->
         let h = Fresh (v, Shape_expr, Constant, Unbounded) %% [] in
         let scx = adj scx h in
-        let s, e = self#expr scx s e in
+        let e = self#expr scx e in
         if has oe Props.tpars_prop then
           error ~at:oe "Typelvl=1 not implemented"
         else
-          let s, smb = mk_smb s Choose in
+          let smb = mk_smb Choose in
           let opq = mk_opq smb in
-          (s, Apply (opq, [ Lambda ([ v, Shape_expr ], e) %% [] ]) @@ oe)
+          Apply (opq, [ Lambda ([ v, Shape_expr ], e) %% [] ]) @@ oe
 
     | SetEnum es ->
-        let s, es =
-          List.fold_left begin fun (s, r_es) e ->
-            let s, e = self#expr scx s e in
-            (s, e :: r_es)
-          end (s, []) es |>
-          fun (s, r_es) -> (s, List.rev r_es)
+        let es =
+          List.fold_left begin fun (r_es) e ->
+            let e = self#expr scx e in
+            (e :: r_es)
+          end ([]) es |>
+          fun (r_es) -> (List.rev r_es)
         in
         if has oe Props.tpars_prop then
           error ~at:oe "Typelvl=1 not implemented"
         else
           let n = List.length es in
-          let s, smb = mk_smb s (SetEnum n) in
+          let smb = mk_smb (SetEnum n) in
           let opq = mk_opq smb in
-          (s, Apply (opq, es) @@ oe)
+          Apply (opq, es) @@ oe
 
     | SetSt (v, e1, e2) ->
-        let s, e1 = self#expr scx s e1 in
+        let e1 = self#expr scx e1 in
         let h = Fresh (v, Shape_expr, Constant, Bounded (e1, Visible)) %% [] in
         let scx = adj scx h in
-        let s, e2 = self#expr scx s e2 in
+        let e2 = self#expr scx e2 in
         if has oe Props.tpars_prop then
           error ~at:oe "Typelvl=1 not implemented"
         else
-          let s, smb = mk_smb s SetSt in
+          let smb = mk_smb SetSt in
           let opq = mk_opq smb in
-          (s, Apply (opq, [ e1 ; Lambda ([ v, Shape_expr ], e2) %% [] ]) %% [])
+          Apply (opq, [ e1 ; Lambda ([ v, Shape_expr ], e2) %% [] ]) %% []
 
     | SetOf (e, bs) ->
-        let scx, s, bs = self#bounds scx s bs in
-        let s, e = self#expr scx s e in
+        let scx, bs = self#bounds scx bs in
+        let e = self#expr scx e in
         if has oe Props.tpars_prop then
           error ~at:oe "Typelvl=1 not implemented"
         else
           let n = List.length bs in
-          let s, smb = mk_smb s (SetOf n) in
+          let smb = mk_smb (SetOf n) in
           let opq = mk_opq smb in
           let ds, bs =
             List.fold_left begin fun (r_ds, r_bs, last) (v, _, dom) ->
@@ -179,90 +179,89 @@ let visitor = object (self : 'self)
             fun (r_ds, r_bs, _) ->
               (List.rev r_ds, List.rev r_bs)
           in
-          (s, Apply (opq, (ds @ [ Lambda (bs, e) %% [] ])) %% [])
+          Apply (opq, (ds @ [ Lambda (bs, e) %% [] ])) %% []
 
     | String str ->
         if has oe Props.tpars_prop then
           error ~at:oe "Typelvl=1 not implemented"
         else
-          let s, smb = mk_smb s (StrLit str) in
+          let smb = mk_smb (StrLit str) in
           let opq = mk_opq smb in
-          (s, opq)
+          opq
 
     | Num (m, "") ->
         if has oe Props.tpars_prop then
           error ~at:oe "Literal numbers not implemented"
         else
           let n = int_of_string m in
-          let s, smb = mk_smb s (IntLit n) in
+          let smb = mk_smb (IntLit n) in
           let opq = mk_opq smb in
-          (s, opq)
+          opq
 
     | Arrow (e1, e2) ->
-        let s, e1 = self#expr scx s e1 in
-        let s, e2 = self#expr scx s e2 in
+        let e1 = self#expr scx e1 in
+        let e2 = self#expr scx e2 in
         if has oe Props.tpars_prop then
           error ~at:oe "Typelvl=1 not implemented"
         else
-          let s, smb = mk_smb s FunSet in
+          let smb = mk_smb FunSet in
           let opq = mk_opq smb in
-          (s, Apply (opq, [ e1 ; e2 ]) %% [])
+          Apply (opq, [ e1 ; e2 ]) %% []
 
     | Fcn (bs, _) when List.length bs <> 1 ->
         error ~at:oe "Unsupported multi-arguments function"
     | Fcn ([ v, Constant, Domain (e1) ], e2) ->
-        let s, e1 = self#expr scx s e1 in
+        let e1 = self#expr scx e1 in
         let h = Fresh (v, Shape_expr, Constant, Bounded (e1, Visible)) %% [] in
         let scx = adj scx h in
-        let s, e2 = self#expr scx s e2 in
+        let e2 = self#expr scx e2 in
         if has oe Props.tpars_prop then
           error ~at:oe "Typelvl=1 not implemented"
         else
-          let s, smb = mk_smb s FunConstr in
+          let smb = mk_smb FunConstr in
           let opq = mk_opq smb in
-          (s, Apply (opq, [ e1 ; Lambda ([ v, Shape_expr ], e2) %% [] ]) %% [])
+          Apply (opq, [ e1 ; Lambda ([ v, Shape_expr ], e2) %% [] ]) %% []
 
     | FcnApp (_, es) when List.length es <> 1 ->
         error ~at:oe "Unsupported multi-arguments application"
     | FcnApp (e1, [ e2 ]) ->
-        let s, e1 = self#expr scx s e1 in
-        let s, e2 = self#expr scx s e2 in
+        let e1 = self#expr scx e1 in
+        let e2 = self#expr scx e2 in
         if has oe Props.tpars_prop then
           error ~at:oe "Typelvl=1 not implemented"
         else
-          let s, smb = mk_smb s FunApp in
+          let smb = mk_smb FunApp in
           let opq = mk_opq smb in
-          (s, Apply (opq, [ e1 ; e2 ]) %% [])
+          Apply (opq, [ e1 ; e2 ]) %% []
 
-    | _ -> super#expr scx s oe
+    | _ -> super#expr scx oe
 
     end |>
-    fun (s, e) ->
+    fun (e) ->
       if has e pattern_prop then begin
         let pats = get e pattern_prop in
-        let s, pats =
-          List.fold_left begin fun (s, r_pats) pat ->
-            let s, pat =
-              List.fold_left begin fun (s, r_es) e ->
-                let s, e = self#expr scx s e in
-                (s, e :: r_es)
-              end (s, []) pat |>
-              fun (s, r_es) -> (s, List.rev r_es)
+        let pats =
+          List.fold_left begin fun (r_pats) pat ->
+            let pat =
+              List.fold_left begin fun (r_es) e ->
+                let e = self#expr scx e in
+                (e :: r_es)
+              end ([]) pat |>
+              fun (r_es) -> (List.rev r_es)
             in
-            (s, pat :: r_pats)
-          end (s, []) pats |>
-          fun (s, r_pats) -> (s, List.rev r_pats)
+            (pat :: r_pats)
+          end ([]) pats |>
+          fun (r_pats) -> (List.rev r_pats)
         in
-        (s, add_patterns (remove_patterns e) pats)
+        add_patterns (remove_patterns e) pats
       end else
-        (s, e)
+        e
 
 end
 
 
 let main sq =
   let cx = ((), Deque.empty) in
-  let s = init in
-  let _, _, sq = visitor#sequent cx s sq in
+  let _, sq = visitor#sequent cx sq in
   sq
 

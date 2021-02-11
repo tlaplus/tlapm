@@ -34,10 +34,7 @@ val smb_prop : smb pfuncs
 
 module SmbSet : Set.S with type elt = smb
 
-type s = N_data.s
-val init : s
-
-val mk_smb : s -> ?tver:tla_smb -> tla_smb -> s * smb
+val mk_smb : ?tver:tla_smb -> tla_smb -> smb
 
 (** Use this function rather than (=) *)
 val equal_smb : smb -> smb -> bool

@@ -35,11 +35,8 @@ end
 
 module SmbSet = Set.Make (SmbOrd)
 
-type s = N_data.s
-let init = N_data.init
-
-let mk_smb s ?tver tla_smb =
-  let s, dat = get_data s tla_smb in
+let mk_smb ?tver tla_smb =
+  let dat = get_data tla_smb in
   let tver =
     match tver, dat.dat_kind with
     | None, Typed -> raise (Invalid_argument "smb with typed version is already typed")
@@ -52,7 +49,6 @@ let mk_smb s ?tver tla_smb =
     | Typed -> Typed
     | Special -> Special
   in
-  s,
   { smb_name = dat.dat_name
   ; smb_ty2 = dat.dat_ty2
   ; smb_smb = tla_smb

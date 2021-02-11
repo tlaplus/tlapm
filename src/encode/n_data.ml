@@ -29,17 +29,193 @@ let t_una ty1 ty2 = Ty1 ([ ty1 ], ty2)
 let t_bin ty1 ty2 ty3 = Ty1 ([ ty1 ; ty2 ], ty3)
 
 
-(* {3 Main} *)
+(* {3 Types} *)
 
 type smb_kind = Untyped | Typed | Special
 
 type data =
   { dat_name  : string
   ; dat_ty2   : Type.T.ty2
-  ; dat_deps  : tla_smb list
-  ; dat_axms  : tla_axm list
   ; dat_kind  : smb_kind
   }
+
+type dep_data =
+  { dat_deps  : tla_smb list
+  ; dat_axms  : tla_axm list
+  }
+
+
+(* {3 Data} *)
+
+let untyped_data tla_smb =
+  begin match tla_smb with
+  (* Logic *)
+  | Choose ->
+      ("Choose",        [ t_una t_idv (t_iob ()) ],           t_idv)
+  (* Set Theory *)
+  | Mem ->
+      ("Mem",           [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
+  | SubsetEq ->
+      ("SubsetEq",      [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
+  | SetEnum n ->
+      ("SetEnum_" ^ string_of_int n,
+                        List.init n (fun _ -> t_cst t_idv),   t_idv)
+  | Union ->
+      ("Union",         [ t_cst t_idv ],                      t_idv)
+  | Subset ->
+      ("Subset",        [ t_cst t_idv ],                      t_idv)
+  | Cup ->
+      ("Cup",           [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+  | Cap ->
+      ("Cap",           [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+  | SetMinus ->
+      ("SetMinus",      [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+  | SetSt ->
+      ("SetSt",         [ t_cst t_idv ; t_una t_idv (t_iob ()) ],
+                                                              t_idv)
+  | SetOf n ->
+      ("SetOf_" ^ string_of_int n,
+                        List.init n (fun _ -> t_cst t_idv)
+                        @ [ Ty1 (List.init n (fun _ -> t_idv), t_idv) ],
+                                                              t_idv)
+  (* Booleans *)
+  | BoolSet ->
+      ("BoolSet",       [],                                   t_idv)
+  (* Strings *)
+  | StrSet ->
+      ("StrSet",        [],                                   t_idv)
+  | StrLit str ->
+      ("StrLit_" ^ str,
+                        [],                                   t_idv)
+  (* Arithmetic *)
+  | IntSet ->
+      ("IntSet",        [],                                   t_idv)
+  | NatSet ->
+      ("NatSet",        [],                                   t_idv)
+  | IntLit n ->
+      ("IntLit_" ^ string_of_int n,
+                        [],                                   t_idv)
+  | IntPlus ->
+      ("Plus",       [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+  | IntUminus ->
+      ("Uminus",     [ t_cst t_idv ],                      t_idv)
+  | IntMinus ->
+      ("Minus",      [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+  | IntTimes ->
+      ("Times",      [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+  | IntQuotient ->
+      ("Quotient",   [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+  | IntRemainder ->
+      ("Remainder",  [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+  | IntExp ->
+      ("Exp",        [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+  | IntLteq ->
+      ("Lteq",       [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
+  | IntLt ->
+      ("Lt",         [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
+  | IntGteq ->
+      ("Gteq",       [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
+  | IntGt ->
+      ("Gt",         [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
+  | IntRange ->
+      ("Range",      [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+  (* Functions *)
+  | FunIsafcn ->
+      ("FunIsafcn",     [ t_cst t_idv ],                      t_bol)
+  | FunSet ->
+      ("FunSet",        [],                                   t_idv)
+  | FunConstr ->
+      ("FunFcn",        [ t_cst t_idv ; t_una t_idv t_idv ],  t_idv)
+  | FunDom ->
+      ("FunDom",        [ t_cst t_idv ],                      t_idv)
+  | FunApp ->
+      ("FunApp",        [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+  | _ ->
+      Errors.bug "Bad argument"
+  end
+
+let typed_data tla_smb =
+  begin match tla_smb with
+  | TIntPlus ->
+      ("Plus_" ^ ty_to_string t_int,
+                        [ t_cst t_int ; t_cst t_int ],        t_int)
+  | TIntUminus ->
+      ("Uminus_" ^ ty_to_string t_int,
+                        [ t_cst t_int ],                      t_int)
+  | TIntMinus ->
+      ("Minus_" ^ ty_to_string t_int,
+                        [ t_cst t_int ; t_cst t_int ],        t_int)
+  | TIntTimes ->
+      ("Times_" ^ ty_to_string t_int,
+                        [ t_cst t_int ; t_cst t_int ],        t_int)
+  | TIntQuotient ->
+      ("Quotient_" ^ ty_to_string t_int,
+                        [ t_cst t_int ; t_cst t_int ],        t_int)
+  | TIntRemainder ->
+      ("Remainder_" ^ ty_to_string t_int,
+                        [ t_cst t_int ; t_cst t_int ],        t_int)
+  | TIntExp ->
+      ("Exp_" ^ ty_to_string t_int,
+                        [ t_cst t_int ; t_cst t_int ],        t_int)
+  | TIntLteq ->
+      ("Lteq_" ^ ty_to_string t_int,
+                        [ t_cst t_int ; t_cst t_int ],        t_bol)
+  | TIntLt ->
+      ("Lt_" ^ ty_to_string t_int,
+                        [ t_cst t_int ; t_cst t_int ],        t_bol)
+  | TIntGteq ->
+      ("Gteq_" ^ ty_to_string t_int,
+                        [ t_cst t_int ; t_cst t_int ],        t_bol)
+  | TIntGt ->
+      ("Gt_" ^ ty_to_string t_int,
+                        [ t_cst t_int ; t_cst t_int ],        t_bol)
+  | TIntRange ->
+      ("Range_" ^ ty_to_string t_int,
+                        [ t_cst t_int ; t_cst t_int ],        t_idv)
+  | _ ->
+      Errors.bug "Bad argument"
+  end
+
+let special_data tla_smb =
+  begin match tla_smb with
+  | Cast ty ->
+      ("Cast_" ^ ty_to_string ty,
+                        [ t_cst ty ],                         t_idv)
+  | True ty ->
+      ("Tt_" ^ ty_to_string ty,
+                        [],                                   ty)
+  | _ ->
+      Errors.bug "Bad argument"
+  end
+
+let get_data tla_smb =
+  match tla_smb with
+  | Choose | Mem | SubsetEq | SetEnum _ | Union | Subset | Cup | Cap | SetMinus
+  | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet | NatSet | IntLit _
+  | IntPlus | IntUminus | IntMinus | IntTimes | IntQuotient | IntRemainder
+  | IntExp | IntLteq | IntLt | IntGteq | IntGt | IntRange | FunIsafcn | FunSet
+  | FunConstr | FunDom | FunApp ->
+      let (nm, tins, tout) = untyped_data tla_smb in
+      { dat_name = nm
+      ; dat_ty2 = Ty2 (tins, tout)
+      ; dat_kind = Untyped
+      }
+  | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient | TIntRemainder
+  | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt | TIntRange ->
+      let (nm, tins, tout) = typed_data tla_smb in
+      { dat_name = nm
+      ; dat_ty2 = Ty2 (tins, tout)
+      ; dat_kind = Typed
+      }
+  | Cast _ | True _ ->
+      let (nm, tins, tout) = special_data tla_smb in
+      { dat_name = nm
+      ; dat_ty2 = Ty2 (tins, tout)
+      ; dat_kind = Special
+      }
+
+
+(* {3 Dependencies} *)
 
 type s =
   { declared_strlits : Ss.t
@@ -51,290 +227,162 @@ let init =
   ; declared_intlits = Is.empty
   }
 
-let untyped_data s tla_smb =
+let untyped_deps tla_smb s =
   let s' =
     match tla_smb with
-    | StrLit str ->
-        { s with declared_strlits = Ss.add str s.declared_strlits }
-    | IntLit n ->
-        { s with declared_intlits = Is.add n s.declared_intlits }
     | _ -> s
   in
   begin match tla_smb with
   (* Logic *)
   | Choose ->
-      ("Choose",        [ t_una t_idv (t_iob ()) ],           t_idv,
-      [], [ ChooseDef ; ChooseExt ])
+      ([], [ ChooseDef ; ChooseExt ])
   (* Set Theory *)
   | Mem ->
-      ("Mem",           [ t_cst t_idv ; t_cst t_idv ],        t_iob (),
-      [], [ SetExt ])
+      ([], [ SetExt ])
   | SubsetEq ->
-      ("SubsetEq",      [ t_cst t_idv ; t_cst t_idv ],        t_iob (),
-      [ Mem ], [ SubsetEqDef ])
+      ([ Mem ], [ SubsetEqDef ])
   | SetEnum n ->
-      ("SetEnum_" ^ string_of_int n,
-                        List.init n (fun _ -> t_cst t_idv),   t_idv,
-      [ Mem ], [ EnumDef n ])
+      ([ Mem ], [ EnumDef n ])
   | Union ->
-      ("Union",         [ t_cst t_idv ],                      t_idv,
-      [ Mem ], [ UnionDef ])
+      ([ Mem ], [ UnionDef ])
   | Subset ->
-      ("Subset",        [ t_cst t_idv ],                      t_idv,
-      [ Mem ], [ SubsetDef ])
+      ([ Mem ], [ SubsetDef ])
   | Cup ->
-      ("Cup",           [ t_cst t_idv ; t_cst t_idv ],        t_idv,
-      [ Mem ], [ CupDef ])
+      ([ Mem ], [ CupDef ])
   | Cap ->
-      ("Cap",           [ t_cst t_idv ; t_cst t_idv ],        t_idv,
-      [ Mem ], [ CapDef ])
+      ([ Mem ], [ CapDef ])
   | SetMinus ->
-      ("SetMinus",      [ t_cst t_idv ; t_cst t_idv ],        t_idv,
-      [ Mem ], [ SetMinusDef ])
+      ([ Mem ], [ SetMinusDef ])
   | SetSt ->
-      ("SetSt",         [ t_cst t_idv ; t_una t_idv (t_iob ()) ],
-                                                              t_idv,
-      [ Mem ], [ SetStDef ])
+      ([ Mem ], [ SetStDef ])
   | SetOf n ->
-      ("SetOf_" ^ string_of_int n,
-                        List.init n (fun _ -> t_cst t_idv)
-                        @ [ Ty1 (List.init n (fun _ -> t_idv), t_idv) ],
-                                                              t_idv,
-      [ Mem ], [ SetOfDef n ])
+      ([ Mem ], [ SetOfDef n ])
   (* Booleans *)
   | BoolSet ->
-      ("BoolSet",       [],                                   t_idv,
-      [ Cast t_bol ], [ BoolSetDef ])
+      ([ Cast t_bol ], [ BoolSetDef ])
   (* Strings *)
   | StrSet ->
-      ("StrSet",        [],                                   t_idv,
-      [ Cast t_str ], [ StrSetDef ])
+      ([ Cast t_str ], [ StrSetDef ])
   | StrLit str ->
-      ("StrLit_" ^ str,
-                        [],                                   t_idv,
-      [ Cast t_str ],   Ss.fold (fun str' -> List.cons (StrLitDistinct (str, str'))) s.declared_strlits [])
+      ([ Cast t_str ],   Ss.fold (fun str' -> List.cons (StrLitDistinct (str, str'))) s.declared_strlits [])
   (* Arithmetic *)
   | IntSet ->
-      ("IntSet",        [],                                   t_idv,
-      [ Cast t_int ], [ IntSetDef ])
+      ([ Cast t_int ], [ IntSetDef ])
   | NatSet ->
-      ("NatSet",        [],                                   t_idv,
-      [ Cast t_int ], [ NatSetDef ])
+      ([ Cast t_int ], [ NatSetDef ])
   | IntLit n ->
-      ("IntLit_" ^ string_of_int n,
-                        [],                       t_idv,
-      [],               Is.fold (fun n' -> List.cons (IntLitDistinct (n, n'))) s.declared_intlits [])
+      ([],               Is.fold (fun n' -> List.cons (IntLitDistinct (n, n'))) s.declared_intlits [])
   | IntPlus ->
-      ("Plus",       [ t_cst t_idv ; t_cst t_idv ],        t_idv,
-      [ TIntPlus ; Cast t_int ], [ Typing TIntPlus ])
+      ([ TIntPlus ; Cast t_int ], [ Typing TIntPlus ])
   | IntUminus ->
-      ("Uminus",     [ t_cst t_idv ],                      t_idv,
-      [ TIntUminus ; Cast t_int ], [ Typing TIntUminus ])
+      ([ TIntUminus ; Cast t_int ], [ Typing TIntUminus ])
   | IntMinus ->
-      ("Minus",      [ t_cst t_idv ; t_cst t_idv ],        t_idv,
-      [ TIntMinus ; Cast t_int ], [ Typing TIntMinus ])
+      ([ TIntMinus ; Cast t_int ], [ Typing TIntMinus ])
   | IntTimes ->
-      ("Times",      [ t_cst t_idv ; t_cst t_idv ],        t_idv,
-      [ TIntTimes ; Cast t_int ], [ Typing TIntTimes ])
+      ([ TIntTimes ; Cast t_int ], [ Typing TIntTimes ])
   | IntQuotient ->
-      ("Quotient",   [ t_cst t_idv ; t_cst t_idv ],        t_idv,
-      [ TIntQuotient ; Cast t_int ], [ Typing TIntQuotient ])
+      ([ TIntQuotient ; Cast t_int ], [ Typing TIntQuotient ])
   | IntRemainder ->
-      ("Remainder",  [ t_cst t_idv ; t_cst t_idv ],        t_idv,
-      [ TIntRemainder ; Cast t_int ], [ Typing TIntRemainder ])
+      ([ TIntRemainder ; Cast t_int ], [ Typing TIntRemainder ])
   | IntExp ->
-      ("Exp",        [ t_cst t_idv ; t_cst t_idv ],        t_idv,
-      [ TIntExp ; Cast t_int ], [ Typing TIntExp ])
+      ([ TIntExp ; Cast t_int ], [ Typing TIntExp ])
   | IntLteq ->
-      ("Lteq",       [ t_cst t_idv ; t_cst t_idv ],        t_iob (),
-      [ TIntLteq ; Cast t_int ], [ Typing TIntLteq ])
+      ([ TIntLteq ; Cast t_int ], [ Typing TIntLteq ])
   | IntLt ->
-      ("Lt",         [ t_cst t_idv ; t_cst t_idv ],        t_iob (),
-      [ TIntLt ; Cast t_int ], [ Typing TIntLt ])
+      ([ TIntLt ; Cast t_int ], [ Typing TIntLt ])
   | IntGteq ->
-      ("Gteq",       [ t_cst t_idv ; t_cst t_idv ],        t_iob (),
-      [ TIntGteq ; Cast t_int ], [ Typing TIntGteq ])
+      ([ TIntGteq ; Cast t_int ], [ Typing TIntGteq ])
   | IntGt ->
-      ("Gt",         [ t_cst t_idv ; t_cst t_idv ],        t_iob (),
-      [ TIntGt ; Cast t_int ], [ Typing TIntGt ])
+      ([ TIntGt ; Cast t_int ], [ Typing TIntGt ])
   | IntRange ->
-      ("Range",      [ t_cst t_idv ; t_cst t_idv ],        t_idv,
-      [ TIntRange ; Cast t_int ], [ Typing TIntRange ])
+      ([ TIntRange ; Cast t_int ], [ Typing TIntRange ])
   (* Functions *)
   | FunIsafcn ->
-      ("FunIsafcn",     [ t_cst t_idv ],                      t_bol,
-      [], [ FunExt ])
+      ([], [ FunExt ])
   | FunSet ->
-      ("FunSet",        [],                                   t_idv,
-      [ Mem ; FunIsafcn ; FunDom ; FunApp ], [ FunSetDef ])
+      ([ Mem ; FunIsafcn ; FunDom ; FunApp ], [ FunSetDef ])
   | FunConstr ->
-      ("FunFcn",        [ t_cst t_idv ; t_una t_idv t_idv ],  t_idv,
-      [ FunIsafcn ], [ FunConstrIsafcn ])
+      ([ FunIsafcn ], [ FunConstrIsafcn ])
   | FunDom ->
-      ("FunDom",        [ t_cst t_idv ],                      t_idv,
-      [ FunConstr ], [ FunDomDef ])
+      ([ FunConstr ], [ FunDomDef ])
   | FunApp ->
-      ("FunApp",        [ t_cst t_idv ; t_cst t_idv ],        t_idv,
-      [ FunConstr ], [ FunAppDef ])
+      ([ FunConstr ], [ FunAppDef ])
   | _ ->
       Errors.bug "Bad argument"
   end |>
   fun x -> (s', x)
 
-let typed_data s tla_smb =
-  let s' =
-    match tla_smb with
-    | _ -> s
-  in
+let typed_deps tla_smb =
   begin match tla_smb with
   | TIntPlus ->
-      ("Plus_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int,
-      [], [])
+      ([], [])
   | TIntUminus ->
-      ("Uminus_" ^ ty_to_string t_int,
-                        [ t_cst t_int ],                      t_int,
-      [], [])
+      ([], [])
   | TIntMinus ->
-      ("Minus_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int,
-      [], [])
+      ([], [])
   | TIntTimes ->
-      ("Times_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int,
-      [], [])
+      ([], [])
   | TIntQuotient ->
-      ("Quotient_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int,
-      [], [])
+      ([], [])
   | TIntRemainder ->
-      ("Remainder_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int,
-      [], [])
+      ([], [])
   | TIntExp ->
-      ("Exp_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int,
-      [], [])
+      ([], [])
   | TIntLteq ->
-      ("Lteq_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_bol,
-      [], [])
+      ([], [])
   | TIntLt ->
-      ("Lt_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_bol,
-      [], [])
+      ([], [])
   | TIntGteq ->
-      ("Gteq_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_bol,
-      [], [])
+      ([], [])
   | TIntGt ->
-      ("Gt_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_bol,
-      [], [])
+      ([], [])
   | TIntRange ->
-      ("Range_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_idv,
-      [], [])
+      ([], [])
   | _ ->
       Errors.bug "Bad argument"
   end |>
-  fun x -> (s', x)
+  fun x -> (fun s -> (s, x))
 
-let special_data s tla_smb =
-  let s' =
-    match tla_smb with
-    | _ -> s
-  in
+let special_deps tla_smb =
   begin match tla_smb with
   | Cast ty ->
-      ("Cast_" ^ ty_to_string ty,
-                        [ t_cst ty ],                         t_idv,
-      [], [])
+      ([], [])
   | True ty ->
-      ("Tt_" ^ ty_to_string ty,
-                        [],                                   ty,
-      [], [])
+      ([], [])
   | _ ->
       Errors.bug "Bad argument"
   end |>
-  fun x -> (s', x)
+  fun x -> (fun s -> (s, x))
 
-let get_data s tla_smb =
+let get_deps tla_smb s =
   match tla_smb with
-  | Choose
-  | Mem
-  | SubsetEq
-  | SetEnum _
-  | Union
-  | Subset
-  | Cup
-  | Cap
-  | SetMinus
-  | SetSt
-  | SetOf _
-  | BoolSet
-  | StrSet
-  | StrLit _
-  | IntSet
-  | NatSet
-  | IntLit _
-  | IntPlus
-  | IntUminus
-  | IntMinus
-  | IntTimes
-  | IntQuotient
-  | IntRemainder
-  | IntExp
-  | IntLteq
-  | IntLt
-  | IntGteq
-  | IntGt
-  | IntRange
-  | FunIsafcn
-  | FunSet
-  | FunConstr
-  | FunDom
-  | FunApp ->
-      let s, (nm, tins, tout, deps, axms) = untyped_data s tla_smb in
+  | Choose | Mem | SubsetEq | SetEnum _ | Union | Subset | Cup | Cap | SetMinus
+  | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet | NatSet | IntLit _
+  | IntPlus | IntUminus | IntMinus | IntTimes | IntQuotient | IntRemainder
+  | IntExp | IntLteq | IntLt | IntGteq | IntGt | IntRange | FunIsafcn | FunSet
+  | FunConstr | FunDom | FunApp ->
+      let s, (smbs, axms) = untyped_deps tla_smb s in
       s,
-      { dat_name = nm
-      ; dat_ty2 = Ty2 (tins, tout)
-      ; dat_deps = deps
+      { dat_deps = smbs
       ; dat_axms = axms
-      ; dat_kind = Untyped
       }
-  | TIntPlus
-  | TIntUminus
-  | TIntMinus
-  | TIntTimes
-  | TIntQuotient
-  | TIntRemainder
-  | TIntExp
-  | TIntLteq
-  | TIntLt
-  | TIntGteq
-  | TIntGt
-  | TIntRange ->
-      let s, (nm, tins, tout, deps, axms) = special_data s tla_smb in
+  | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient | TIntRemainder
+  | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt | TIntRange ->
+      let s, (smbs, axms) = typed_deps tla_smb s in
       s,
-      { dat_name = nm
-      ; dat_ty2 = Ty2 (tins, tout)
-      ; dat_deps = deps
+      { dat_deps = smbs
       ; dat_axms = axms
-      ; dat_kind = Typed
       }
-  | Cast _
-  | True _ ->
-      let s, (nm, tins, tout, deps, axms) = special_data s tla_smb in
+  | Cast _ | True _ ->
+      let s, (smbs, axms) = special_deps tla_smb s in
       s,
-      { dat_name = nm
-      ; dat_ty2 = Ty2 (tins, tout)
-      ; dat_deps = deps
+      { dat_deps = smbs
       ; dat_axms = axms
-      ; dat_kind = Special
       }
 
+
+(* {3 Axioms} *)
 
 let get_axm = function
-  | _ -> error "Not implemented"
+  | _ -> Property.(%%) (Expr.T.Internal Builtin.TRUE) [] (* FIXME *)
 

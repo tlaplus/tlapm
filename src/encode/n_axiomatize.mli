@@ -17,7 +17,7 @@ open N_smb
 
     That way, no complicated shifting is necessary in the original sequent.
 *)
-type etx = s * SmbSet.t * expr Deque.dq
+type etx
 
 
 (* {3 Main} *)

@@ -30,9 +30,7 @@ module Smb : sig
   open Table
 
   type smb
-  type s
-  val init : s
-  val mk_smb : s -> ?tver:tla_smb -> tla_smb -> s * smb
+  val mk_smb : ?tver:tla_smb -> tla_smb -> smb
   val get_name : smb -> string
   val get_ty2  : smb -> ty2
   val get_ty1  : smb -> ty1
