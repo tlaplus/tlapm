@@ -15,7 +15,7 @@ open N_data
 
 (* {3 Symbols} *)
 
-type smb_kind = Untyped | Typed | Special
+type smb_kind = N_data.smb_kind
 
 type smb =
   { smb_name  : string
@@ -35,25 +35,13 @@ end
 
 module SmbSet = Set.Make (SmbOrd)
 
-let mk_smb ?tver tla_smb =
+let mk_smb tla_smb =
   let dat = get_data tla_smb in
-  let tver =
-    match tver, dat.dat_kind with
-    | None, Typed -> raise (Invalid_argument "smb with typed version is already typed")
-    | _, _ -> tver
-  in
-  let kind =
-    match dat.dat_kind with
-    (* Conversion *)
-    | Untyped -> Untyped
-    | Typed -> Typed
-    | Special -> Special
-  in
   { smb_name = dat.dat_name
   ; smb_ty2 = dat.dat_ty2
   ; smb_smb = tla_smb
-  ; smb_kind = kind
-  ; smb_tver = tver
+  ; smb_kind = dat.dat_kind
+  ; smb_tver = dat.dat_tver
   }
 
 let equal_smb smb1 smb2 =

@@ -16,6 +16,7 @@ type data =
   { dat_name  : string
   ; dat_ty2   : ty2
   ; dat_kind  : smb_kind
+  ; dat_tver  : tla_smb option
   }
 
 type dep_data =

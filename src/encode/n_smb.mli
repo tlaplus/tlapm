@@ -26,7 +26,7 @@ open N_table
 
 (* {3 Symbols} *)
 
-type smb_kind = Untyped | Typed | Special
+type smb_kind = N_data.smb_kind
 
 type smb
 
@@ -34,7 +34,7 @@ val smb_prop : smb pfuncs
 
 module SmbSet : Set.S with type elt = smb
 
-val mk_smb : ?tver:tla_smb -> tla_smb -> smb
+val mk_smb : tla_smb -> smb
 
 (** Use this function rather than (=) *)
 val equal_smb : smb -> smb -> bool

@@ -37,6 +37,7 @@ type data =
   { dat_name  : string
   ; dat_ty2   : Type.T.ty2
   ; dat_kind  : smb_kind
+  ; dat_tver  : tla_smb option
   }
 
 type dep_data =
@@ -138,40 +139,52 @@ let typed_data tla_smb =
   begin match tla_smb with
   | TIntPlus ->
       ("Plus_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int)
+                        [ t_cst t_int ; t_cst t_int ],        t_int,
+      IntPlus)
   | TIntUminus ->
       ("Uminus_" ^ ty_to_string t_int,
-                        [ t_cst t_int ],                      t_int)
+                        [ t_cst t_int ],                      t_int,
+      IntUminus)
   | TIntMinus ->
       ("Minus_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int)
+                        [ t_cst t_int ; t_cst t_int ],        t_int,
+      IntMinus)
   | TIntTimes ->
       ("Times_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int)
+                        [ t_cst t_int ; t_cst t_int ],        t_int,
+      IntTimes)
   | TIntQuotient ->
       ("Quotient_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int)
+                        [ t_cst t_int ; t_cst t_int ],        t_int,
+      IntQuotient)
   | TIntRemainder ->
       ("Remainder_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int)
+                        [ t_cst t_int ; t_cst t_int ],        t_int,
+      IntRemainder)
   | TIntExp ->
       ("Exp_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int)
+                        [ t_cst t_int ; t_cst t_int ],        t_int,
+      IntExp)
   | TIntLteq ->
       ("Lteq_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_bol)
+                        [ t_cst t_int ; t_cst t_int ],        t_bol,
+      IntLteq)
   | TIntLt ->
       ("Lt_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_bol)
+                        [ t_cst t_int ; t_cst t_int ],        t_bol,
+      IntLt)
   | TIntGteq ->
       ("Gteq_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_bol)
+                        [ t_cst t_int ; t_cst t_int ],        t_bol,
+      IntGteq)
   | TIntGt ->
       ("Gt_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_bol)
+                        [ t_cst t_int ; t_cst t_int ],        t_bol,
+      IntGt)
   | TIntRange ->
       ("Range_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_idv)
+                        [ t_cst t_int ; t_cst t_int ],        t_idv,
+      IntRange)
   | _ ->
       Errors.bug "Bad argument"
   end
@@ -197,21 +210,24 @@ let get_data tla_smb =
   | FunConstr | FunDom | FunApp ->
       let (nm, tins, tout) = untyped_data tla_smb in
       { dat_name = nm
-      ; dat_ty2 = Ty2 (tins, tout)
+      ; dat_ty2  = Ty2 (tins, tout)
       ; dat_kind = Untyped
+      ; dat_tver = None
       }
   | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient | TIntRemainder
   | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt | TIntRange ->
-      let (nm, tins, tout) = typed_data tla_smb in
+      let (nm, tins, tout, tver) = typed_data tla_smb in
       { dat_name = nm
-      ; dat_ty2 = Ty2 (tins, tout)
+      ; dat_ty2  = Ty2 (tins, tout)
       ; dat_kind = Typed
+      ; dat_tver = Some tver
       }
   | Cast _ | True _ ->
       let (nm, tins, tout) = special_data tla_smb in
       { dat_name = nm
-      ; dat_ty2 = Ty2 (tins, tout)
+      ; dat_ty2  = Ty2 (tins, tout)
       ; dat_kind = Special
+      ; dat_tver = None
       }
 
 
