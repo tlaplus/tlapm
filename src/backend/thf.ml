@@ -112,9 +112,9 @@ let pp_print_sort ff ty =
   pp_print_string ff s
 
 let pp_print_conn s ff () =
-  fprintf ff " %s " s
+  fprintf ff " %s@ " s
 
-let pp_print_tyfunc ff (ty1s, ty) =
+let pp_print_tyfunc ff (Ty2 (ty1s, ty)) =
   let pp_print_ty1 ff = function
     | Ty1 ([], ty) ->
         pp_print_sort ff ty
@@ -133,9 +133,10 @@ let pp_print_typeof ff v =
     pp_print_sort ff ty
   else if has v Props.ty2_prop then
     let ty2 = get v Props.ty2_prop in
-    match ty2 with
-    | Ty2 (ty1s, ty) ->
-        pp_print_tyfunc ff (ty1s, ty)
+    pp_print_tyfunc ff ty2
+  else if has v Props.ty1_prop then
+    let ty1 = get v Props.ty1_prop in
+    pp_print_tyfunc ff (upcast_ty2 ty1)
   else
     error ~at:v "Missing type annotation"
 
