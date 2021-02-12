@@ -357,7 +357,7 @@ and pp_print_thf_ite cx ff oe =
   | Case ((e1, e2) :: ps, Some o) ->
       pp_print_thf_ite cx ff (If (e1, e2, Case (ps, Some o) %% []) @@ oe)
 
-  | Bang _ | With _
+  | Bang _ | With _ | Tquant _
   | Choose _ | SetSt _ | SetOf _ | Product _ | Tuple _
   | Fcn _ | FcnApp _ | Arrow _ | Rect _ | Record _
   | Except _ | Dot _ | Sub _ | Tsub _ | Fair _ | String _
@@ -506,9 +506,11 @@ let pp_print_obligation ?(solver="Zipperposition") ff ob =
     | Some ({ core = Flex v }, hs) ->
         let ncx, nm = adj_g cx v in
         let v = nm @@ v in
+        let nm_primed = primed nm in
+        let v_primed = nm_primed @@ v in
         pp_print_thf cx ff ("flex_" ^ nm) Type (Opr v);
         pp_print_newline ff ();
-        pp_print_thf cx ff ("flex_" ^ primed nm) Type (Opr v);
+        pp_print_thf cx ff ("flex_" ^ nm_primed) Type (Opr v_primed);
         pp_print_newline ff ();
         spin ncx hs
 
