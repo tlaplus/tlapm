@@ -12,10 +12,10 @@ open Expr.T
 *)
 val elim_bounds : sequent -> sequent
 
-(** Eliminate NotMem *)
+(** Simplify NotMem *)
 val elim_notmem : sequent -> sequent
 
-(** Eliminate Lt, Gteq and Gt *)
+(** Simplify Lt, Gteq and Gt *)
 val elim_compare : sequent -> sequent
 
 (** Reduce functions to one-argument functions (using tuples) *)

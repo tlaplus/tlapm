@@ -5,7 +5,7 @@
 BASEDIR="`pwd`"
 TOOLDIR="$BASEDIR/TOOLS"
 
-export ARGS="-I $BASEDIR/../library --toolbox 0 0 --nofp --method smt"
+export ARGS="-I $BASEDIR/../library --toolbox 0 0 --nofp"
 
 export TLAPM="$BASEDIR/../tlapm"
 export LOGFILE="$BASEDIR/tests.log"
