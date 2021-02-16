@@ -4,8 +4,6 @@
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
 
-Revision.f "$Rev$";;
-
 open Ext
 open Printf;;
 
@@ -14,8 +12,7 @@ let self_sum = Digest.file Sys.executable_name
 (* must be a function because it must not be computed before all the
    modules are loaded. *)
 let rawversion () =
-  sprintf "%d.%d.%d (build %s)" Version.major Version.minor Version.micro
-          (Revision.get ())
+  sprintf "%d.%d.%d" Version.major Version.minor Version.micro
 ;;
 
 let debug_flags : (string, unit) Hashtbl.t = Hashtbl.create 3

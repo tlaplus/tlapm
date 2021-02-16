@@ -6,8 +6,6 @@
 
 (** LS4 backend *)
 
-Revision.f "$Rev: 32466 $";;
-
 open Ext
 open Format
 open Fmtutil

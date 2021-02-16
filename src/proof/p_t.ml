@@ -7,8 +7,6 @@
 
 (** Proofs *)
 
-Revision.f "$Rev$";;
-
 open Property
 
 open Expr.T

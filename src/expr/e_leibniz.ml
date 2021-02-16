@@ -7,8 +7,6 @@
  * Copyright (C) 2008-2014  INRIA and Microsoft Corporation
  *)
 
-Revision.f "$Rev: 33173 $";;
-
 open Ext
 open Property
 

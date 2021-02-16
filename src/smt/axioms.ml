@@ -4,8 +4,6 @@
  * Copyright (C) 2010-2013  INRIA and Microsoft Corporation
  *)
 
-Revision.f "$Rev: 33173 $";;
-
 open Ext
 open Format
 open Fmtutil

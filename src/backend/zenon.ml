@@ -6,8 +6,6 @@
 
 (** Zenon backend *)
 
-Revision.f "$Rev$";;
-
 open Ext
 open Format
 open Fmtutil

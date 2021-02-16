@@ -5,8 +5,6 @@
 (* This module handles the output of messages to the Toolbox. *)
 (* It depends only on Ext and Loc. *)
 
-Revision.f "$Rev$";;
-
 open Printf;;
 
 let delim = "@!!";;

@@ -11,8 +11,6 @@
     {- {!Proof.Parser}}
     {- {!Module.Parser}}} *)
 
-Revision.f "$Rev$";;
-
 open Ext
 
 (** TLA+ tokens *)

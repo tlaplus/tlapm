@@ -8,8 +8,6 @@
  * Copyright (C) 2013-2019  INRIA and Microsoft Corporation
  *)
 
-Revision.f "$Rev: 32093 $";;
-
 open Ext
 open Format
 open Tla_parser

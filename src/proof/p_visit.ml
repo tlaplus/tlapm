@@ -7,8 +7,6 @@
 
 (** default visitors for proofs *)
 
-Revision.f "$Rev$";;
-
 open Ext
 
 open Property

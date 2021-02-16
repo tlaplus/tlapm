@@ -5,8 +5,6 @@
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
 
-Revision.f "$Rev$";;
-
 exception Fatal;;
 
 let loc_to_string at =

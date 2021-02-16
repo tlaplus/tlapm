@@ -4,8 +4,6 @@
  * Copyright (C) 2008-2019  INRIA and Microsoft Corporation
  *)
 
-Revision.f "$Rev$";;
-
 (* FIXME we should remove this way of specifying methods and instead use
    the new (*{ by (prover: "foo"; timeout: x) }*) syntax. *)
 

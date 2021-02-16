@@ -50,7 +50,7 @@ SMT_DIR = \
   smt/preprocess smt/axioms
 
 # FIXME remove useless files: dumpfp abstractor method_old backend/cooper
-MODULES = revision sysconf \
+MODULES = sysconf \
   util/ext system builtin config method version loc toolbox_msg \
   params ${PARS_PACK} pars util/property \
   util/util ctx errors optable util/fmtutil \

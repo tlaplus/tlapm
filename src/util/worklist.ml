@@ -5,8 +5,6 @@
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
 
-Revision.f "$Rev$";;
-
 module Dq = Deque
 
 type 'a wl = { add : 'a -> unit ;

@@ -32,7 +32,6 @@ level numbers:
 
 A relevant computation is in the module `e_constness.ml`.
 *)
-Revision.f "$Rev$"
 
 open Ext
 open Property

@@ -7,8 +7,6 @@
    module for each new format.
 *)
 
-Revision.f "$Rev$";;
-
 open Ext;;
 
 module V1 = struct

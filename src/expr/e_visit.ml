@@ -7,8 +7,6 @@
 
 (** default visitors *)
 
-Revision.f "$Rev$";;
-
 open Ext
 open Property
 

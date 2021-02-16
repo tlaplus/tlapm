@@ -4,8 +4,6 @@
 
 (* Packaging module for the modules that work on expressions *)
 
-Revision.f "$Rev$";;
-
 module T = E_t;;
 module Fmt = E_fmt;;
 module Subst = E_subst;;
