@@ -31,9 +31,3 @@ val init : s
 
 val get_deps : tla_smb -> s -> s * dep_data
 
-(** Return the actual formula for an axiom.
-    The result is a closed formula in standardized form (see
-    {!Encode.Standardize}).
-*)
-val get_axm : tla_axm -> expr
-

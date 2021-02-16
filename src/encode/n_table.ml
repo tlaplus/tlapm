@@ -10,6 +10,7 @@ open Type.T
 
 type tla_smb =
     (* UNTYPED *)
+
   (* Logic *)
   | Choose
   (* Set Theory *)
@@ -52,6 +53,10 @@ type tla_smb =
   | FunApp
 
     (* TYPED *)
+
+  (* Strings *)
+  | TStrLit of string
+  (* Arithmetic *)
   | TIntPlus
   | TIntUminus
   | TIntMinus
@@ -64,14 +69,15 @@ type tla_smb =
   | TIntGteq
   | TIntGt
   | TIntRange
-  (* TODO *)
 
     (* SPECIAL *)
+
   | Cast of ty
   | True of ty
 
 type tla_axm =
     (* UNTYPED *)
+
   (* Logic *)
   | ChooseDef
   | ChooseExt
@@ -86,26 +92,21 @@ type tla_axm =
   | SetMinusDef
   | SetStDef
   | SetOfDef of int
-  (* Booleans *)
-  | BoolSetDef
   (* Strings *)
-  | StrSetDef
+  | StrLitIsstr of string
   | StrLitDistinct of string * string
   (* Arithmetic *)
-  | IntSetDef
-  | NatSetDef
+  | IntLitIsint of int
   | IntLitDistinct of int * int
-  | IntUminus
-  | IntMinus
-  | IntTimes
-  | IntQuotient
-  | IntRemainder
-  | IntExp
-  | IntLteq
-  | IntLt
-  | IntGteq
-  | IntGt
-  | IntRange
+  | NatSetDef
+  | IntPlusTyping
+  | IntUminusTyping
+  | IntMinusTyping
+  | IntTimesTyping
+  | IntQuotientTyping
+  | IntRemainderTyping
+  | IntExpTyping
+  | IntRangeDef
   (* Functions *)
   | FunExt
   | FunConstrIsafcn
@@ -114,9 +115,13 @@ type tla_axm =
   | FunAppDef
 
     (* TYPED *)
-  (* TODO *)
+
+  (* Strings *)
+  | TStrLitDistinct of string * string
 
     (* SPECIAL *)
-  | IntGuard
-  | Typing of tla_smb
+
+  | CastInj of ty0
+  | TypeGuard of ty0
+  | Typing of tla_smb (** Only for typed symbols *)
 

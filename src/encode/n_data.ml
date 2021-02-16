@@ -86,8 +86,7 @@ let untyped_data tla_smb =
   | StrSet ->
       ("StrSet",        [],                                   t_idv)
   | StrLit str ->
-      ("StrLit_" ^ str,
-                        [],                                   t_idv)
+      ("StrLit_" ^ str, [],                                   t_idv)
   (* Arithmetic *)
   | IntSet ->
       ("IntSet",        [],                                   t_idv)
@@ -124,7 +123,7 @@ let untyped_data tla_smb =
   | FunIsafcn ->
       ("FunIsafcn",     [ t_cst t_idv ],                      t_bol)
   | FunSet ->
-      ("FunSet",        [],                                   t_idv)
+      ("FunSet",        [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   | FunConstr ->
       ("FunFcn",        [ t_cst t_idv ; t_una t_idv t_idv ],  t_idv)
   | FunDom ->
@@ -137,6 +136,12 @@ let untyped_data tla_smb =
 
 let typed_data tla_smb =
   begin match tla_smb with
+  (* Strings *)
+  | TStrLit str ->
+      ("TStrLit_" ^ str,
+                        [],                                   t_str,
+      StrLit str)
+  (* Arithmetic *)
   | TIntPlus ->
       ("Plus_" ^ ty_to_string t_int,
                         [ t_cst t_int ; t_cst t_int ],        t_int,
@@ -214,8 +219,8 @@ let get_data tla_smb =
       ; dat_kind = Untyped
       ; dat_tver = None
       }
-  | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient | TIntRemainder
-  | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt | TIntRange ->
+  | TStrLit _ | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient
+  | TIntRemainder | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt | TIntRange ->
       let (nm, tins, tout, tver) = typed_data tla_smb in
       { dat_name = nm
       ; dat_ty2  = Ty2 (tins, tout)
@@ -234,136 +239,179 @@ let get_data tla_smb =
 (* {3 Dependencies} *)
 
 type s =
-  { declared_strlits : Ss.t
-  ; declared_intlits : Is.t
+  { strlits : Ss.t
+  ; intlits : Is.t
+  ; t_strlits : Ss.t
   }
 
 let init =
-  { declared_strlits = Ss.empty
-  ; declared_intlits = Is.empty
+  { strlits = Ss.empty
+  ; intlits = Is.empty
+  ; t_strlits = Ss.empty
   }
 
 let untyped_deps tla_smb s =
   let s' =
     match tla_smb with
+    | StrLit str ->
+        { s with strlits = Ss.add str s.strlits }
+    | IntLit n ->
+        { s with intlits = Is.add n s.intlits }
     | _ -> s
   in
   begin match tla_smb with
   (* Logic *)
   | Choose ->
-      ([], [ ChooseDef ; ChooseExt ])
+      ([], [ ChooseDef (*; ChooseExt*) ])
   (* Set Theory *)
   | Mem ->
-      ([], [ SetExt ])
+      ([],        [ (*SetExt*) ])
   | SubsetEq ->
-      ([ Mem ], [ SubsetEqDef ])
+      ([ Mem ],   [ SubsetEqDef ])
   | SetEnum n ->
-      ([ Mem ], [ EnumDef n ])
+      ([ Mem ],   [ EnumDef n ])
   | Union ->
-      ([ Mem ], [ UnionDef ])
+      ([ Mem ],   [ UnionDef ])
   | Subset ->
-      ([ Mem ], [ SubsetDef ])
+      ([ Mem ],   [ SubsetDef ])
   | Cup ->
-      ([ Mem ], [ CupDef ])
+      ([ Mem ],   [ CupDef ])
   | Cap ->
-      ([ Mem ], [ CapDef ])
+      ([ Mem ],   [ CapDef ])
   | SetMinus ->
-      ([ Mem ], [ SetMinusDef ])
+      ([ Mem ],   [ SetMinusDef ])
   | SetSt ->
-      ([ Mem ], [ SetStDef ])
+      ([ Mem ],   [ SetStDef ])
   | SetOf n ->
-      ([ Mem ], [ SetOfDef n ])
+      ([ Mem ],   [ SetOfDef n ])
   (* Booleans *)
   | BoolSet ->
-      ([ Cast t_bol ], [ BoolSetDef ])
+      ([], [])
   (* Strings *)
   | StrSet ->
-      ([ Cast t_str ], [ StrSetDef ])
+      ([], [])
   | StrLit str ->
-      ([ Cast t_str ],   Ss.fold (fun str' -> List.cons (StrLitDistinct (str, str'))) s.declared_strlits [])
+      let distincts =
+        Ss.fold (fun str2 -> List.cons (StrLitDistinct (str, str2))) s.strlits []
+      in
+      ([ Mem ; StrSet ],                      [ StrLitIsstr str ] @ distincts)
   (* Arithmetic *)
   | IntSet ->
-      ([ Cast t_int ], [ IntSetDef ])
+      ([], [])
   | NatSet ->
-      ([ Cast t_int ], [ NatSetDef ])
+      ([ IntSet ; IntLit 0 ; IntLteq ],       [ NatSetDef ])
   | IntLit n ->
-      ([],               Is.fold (fun n' -> List.cons (IntLitDistinct (n, n'))) s.declared_intlits [])
+      let distincts =
+        Is.fold (fun m -> List.cons (IntLitDistinct (m, n))) s.intlits []
+      in
+      ([ Mem ; IntSet ],                      [ IntLitIsint n ] @ distincts)
+  | IntPlus when !Params.enc_noarith ->
+      ([ Mem ; IntSet ],                      [ IntPlusTyping ])
+  | IntUminus when !Params.enc_noarith ->
+      ([ Mem ; IntSet ],                      [ IntUminusTyping ])
+  | IntMinus when !Params.enc_noarith ->
+      ([ Mem ; IntSet ],                      [ IntMinusTyping ])
+  | IntTimes when !Params.enc_noarith ->
+      ([ Mem ; IntSet ],                      [ IntTimesTyping ])
+  | IntQuotient when !Params.enc_noarith ->
+      ([ Mem ; IntSet ; IntLteq ; IntLit 0 ], [ IntQuotientTyping ])
+  | IntRemainder when !Params.enc_noarith ->
+      ([ Mem ; IntSet ; IntLteq ; IntLit 0 ; IntLit 1 ;
+          IntRange ; IntMinus ],              [ IntRemainderTyping ])
+  | IntExp when !Params.enc_noarith ->
+      ([ Mem ; IntSet ; IntLit 0 ],           [ IntExpTyping ])
+  | IntLteq | IntLt | IntGteq | IntGt when !Params.enc_noarith ->
+      ([], [])
   | IntPlus ->
-      ([ TIntPlus ; Cast t_int ], [ Typing TIntPlus ])
+      ([ Cast (TAtm TAInt) ; TIntPlus ],      [ Typing TIntPlus ])
   | IntUminus ->
-      ([ TIntUminus ; Cast t_int ], [ Typing TIntUminus ])
+      ([ Cast (TAtm TAInt) ; TIntUminus ],    [ Typing TIntUminus ])
   | IntMinus ->
-      ([ TIntMinus ; Cast t_int ], [ Typing TIntMinus ])
+      ([ Cast (TAtm TAInt) ; TIntMinus ],     [ Typing TIntMinus ])
   | IntTimes ->
-      ([ TIntTimes ; Cast t_int ], [ Typing TIntTimes ])
+      ([ Cast (TAtm TAInt) ; TIntTimes ],     [ Typing TIntTimes ])
   | IntQuotient ->
-      ([ TIntQuotient ; Cast t_int ], [ Typing TIntQuotient ])
+      ([ Cast (TAtm TAInt) ; TIntQuotient ],  [ Typing TIntQuotient ])
   | IntRemainder ->
-      ([ TIntRemainder ; Cast t_int ], [ Typing TIntRemainder ])
+      ([ Cast (TAtm TAInt) ; TIntRemainder ], [ Typing TIntRemainder ])
   | IntExp ->
-      ([ TIntExp ; Cast t_int ], [ Typing TIntExp ])
+      ([ Cast (TAtm TAInt) ; TIntExp ],       [ Typing TIntExp ])
   | IntLteq ->
-      ([ TIntLteq ; Cast t_int ], [ Typing TIntLteq ])
+      ([ Cast (TAtm TAInt) ; TIntLteq ],      [ Typing TIntLteq ])
   | IntLt ->
-      ([ TIntLt ; Cast t_int ], [ Typing TIntLt ])
+      ([ Cast (TAtm TAInt) ; TIntLt ],        [ Typing TIntLt ])
   | IntGteq ->
-      ([ TIntGteq ; Cast t_int ], [ Typing TIntGteq ])
+      ([ Cast (TAtm TAInt) ; TIntGteq ],      [ Typing TIntGteq ])
   | IntGt ->
-      ([ TIntGt ; Cast t_int ], [ Typing TIntGt ])
+      ([ Cast (TAtm TAInt) ; TIntGt ],        [ Typing TIntGt ])
   | IntRange ->
-      ([ TIntRange ; Cast t_int ], [ Typing TIntRange ])
+      ([ Mem ; IntSet ; IntLteq ],            [ IntRangeDef ])
   (* Functions *)
   | FunIsafcn ->
-      ([], [ FunExt ])
+      ([ (*FunDom ; FunConstr ; FunApp*) ],
+                                  [ (*FunExt*) ])
   | FunSet ->
-      ([ Mem ; FunIsafcn ; FunDom ; FunApp ], [ FunSetDef ])
+      ([ Mem ; FunIsafcn ; FunDom ; FunApp ],
+                                  [ FunSetDef ])
   | FunConstr ->
-      ([ FunIsafcn ], [ FunConstrIsafcn ])
+      ([ FunIsafcn ],             [ FunConstrIsafcn ])
   | FunDom ->
-      ([ FunConstr ], [ FunDomDef ])
+      ([ FunConstr ],             [ FunDomDef ])
   | FunApp ->
-      ([ FunConstr ], [ FunAppDef ])
+      ([ FunConstr ],             [ FunAppDef ])
   | _ ->
       Errors.bug "Bad argument"
   end |>
   fun x -> (s', x)
 
-let typed_deps tla_smb =
+let typed_deps tla_smb s =
+  let s' =
+    match tla_smb with
+    | TStrLit str ->
+        { s with t_strlits = Ss.add str s.t_strlits }
+    | _ -> s
+  in
   begin match tla_smb with
-  | TIntPlus ->
-      ([], [])
-  | TIntUminus ->
-      ([], [])
-  | TIntMinus ->
-      ([], [])
-  | TIntTimes ->
-      ([], [])
-  | TIntQuotient ->
-      ([], [])
-  | TIntRemainder ->
-      ([], [])
-  | TIntExp ->
-      ([], [])
-  | TIntLteq ->
-      ([], [])
-  | TIntLt ->
-      ([], [])
-  | TIntGteq ->
-      ([], [])
+  (* Strings *)
+  | TStrLit str ->
+      let distincts =
+        Ss.fold (fun str2 -> List.cons (TStrLitDistinct (str, str2))) s.t_strlits []
+      in
+      ([], distincts)
+  (* Arithmetic *)
+  | TIntPlus
+  | TIntUminus
+  | TIntMinus
+  | TIntTimes
+  | TIntQuotient
+  | TIntRemainder
+  | TIntExp
+  | TIntLteq
+  | TIntLt
+  | TIntGteq
   | TIntGt ->
+      (* Implemented natively in most solvers *)
       ([], [])
   | TIntRange ->
       ([], [])
   | _ ->
       Errors.bug "Bad argument"
   end |>
-  fun x -> (fun s -> (s, x))
+  fun x -> (s', x)
 
 let special_deps tla_smb =
   begin match tla_smb with
-  | Cast ty ->
-      ([], [])
-  | True ty ->
+  | Cast ty0 ->
+      let tla_smbs =
+        match ty0 with
+        | TAtm TAIdv -> []
+        | TAtm TABol -> [ Mem ; BoolSet ; True (TAtm TAIdv) ]
+        | TAtm TAInt -> [ Mem ; IntSet ]
+        | TAtm TAStr -> [ Mem ; StrSet ]
+        | _ -> []
+      in
+      (tla_smbs, [ CastInj ty0 ; TypeGuard ty0 ])
+  | True ty0 ->
       ([], [])
   | _ ->
       Errors.bug "Bad argument"
@@ -382,8 +430,9 @@ let get_deps tla_smb s =
       { dat_deps = smbs
       ; dat_axms = axms
       }
-  | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient | TIntRemainder
-  | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt | TIntRange ->
+  | TStrLit _ | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient
+  | TIntRemainder | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt
+  | TIntRange ->
       let s, (smbs, axms) = typed_deps tla_smb s in
       s,
       { dat_deps = smbs
@@ -395,10 +444,4 @@ let get_deps tla_smb s =
       { dat_deps = smbs
       ; dat_axms = axms
       }
-
-
-(* {3 Axioms} *)
-
-let get_axm = function
-  | _ -> Property.(%%) (Expr.T.Internal Builtin.TRUE) [] (* FIXME *)
 

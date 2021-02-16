@@ -11,13 +11,25 @@ open Expr.T
 
 open N_smb
 open N_data
+open N_axioms
 
 
 (* {3 Contexts} *)
 
 type etx = s * SmbSet.t * expr Deque.dq
 
-let init_etx = (init, SmbSet.empty, Deque.empty)
+let init_etx =
+  let init_smbs =
+    begin if !Params.enc_typepreds then
+      []
+    else
+      (* Always declared because it appears in a lot of axioms *)
+      [ N_table.True (TAtm TAIdv) ]
+    end |>
+    List.map mk_smb |>
+    SmbSet.of_list
+  in
+  (init, init_smbs, Deque.empty)
 
 
 (* {3 Helpers} *)
