@@ -92,14 +92,14 @@ and token = parse
       { [ NUM (ch, man) ] }
   | (numeral+ as i)
       { [ NUM (i, "") ] }
-  | ("\\b" ['0' '1']+ as b)
-      { let b = "0" ^ (String.sub b 1 ((String.length b) - 1)) in
+  | "\\b" (['0' '1']+ as b)
+      { let b = "0b" ^ b in
         [ NUM (string_of_int (int_of_string b), "") ] }
-  | ("\\o" ['0'-'7']+ as o)
-      { let o = "0" ^ (String.sub o 1 ((String.length o) - 1)) in
+  | "\\o" (['0'-'7']+ as o)
+      { let o = "0o" ^ o in
         [ NUM (string_of_int (int_of_string o), "") ] }
-  | ("\\h" (numeral | ['a'-'f' 'A'-'F'])+ as h)
-      { let h = "0x" ^ (String.sub h 2 ((String.length h) - 2)) in
+  | "\\h" ((numeral | ['a'-'f' 'A'-'F'])+ as h)
+      { let h = "0x" ^ h in
         [ NUM (string_of_int (int_of_string h), "") ] }
 
   (* strings *)
