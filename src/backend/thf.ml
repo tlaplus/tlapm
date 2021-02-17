@@ -170,8 +170,9 @@ let rec pp_print_thf_atomic cx ff oe =
   | Internal B.FALSE ->
       pp_print_string ff "$false"
 
-  | Internal _ ->
-      error ~at:oe "Unsupported expression"
+  | Internal b ->
+      let mssg = "Unsupported builtin '" ^ B.builtin_to_string b ^ "'" in
+      error ~at:oe mssg
 
   | Apply (e, []) ->
       pp_print_thf_atomic cx ff e
