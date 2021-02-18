@@ -4,10 +4,11 @@ EXTENDS TLAPS
 
 THEOREM ASSUME NEW A,
                NEW B,
-               NEW f
-        PROVE f \in [ A -> B ] <=> /\ f = [ x \in A |-> f[x] ]
-                                   /\ DOMAIN f = A
-                                   /\ \A x \in A : f[x] \in B
+               NEW C,
+               NEW F(_)
+        PROVE [ x \in C |-> F(x) ] \in [ A -> B ] <=>
+                      /\ A = C
+                      /\ \A x \in A : F(x) \in B
     OBVIOUS
 
 ====
