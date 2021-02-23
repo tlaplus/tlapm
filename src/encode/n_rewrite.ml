@@ -57,7 +57,7 @@ let elim_bounds_visitor = object (self : 'self)
                   ]) %% []
                 in
                 let h =
-                  if has d Props.tpars_prop || !Params.enc_typepreds then h
+                  if has d Props.tpars_prop || not !Params.enc_nobool then h
                   else assign h Props.bproj_prop (TAtm TAIdv)
                 in
                 (nscx, b :: r_bs, h :: r_hs, Some d, i - 1)
@@ -65,7 +65,7 @@ let elim_bounds_visitor = object (self : 'self)
                 let op = maybe_assign Props.tpars_prop (Internal B.Mem %% []) (query d Props.tpars_prop) in
                 let h = Apply (op, [ Ix i %% [] ; d ]) %% [] in
                 let h =
-                  if has d Props.tpars_prop || !Params.enc_typepreds then h
+                  if has d Props.tpars_prop || not !Params.enc_nobool then h
                   else assign h Props.bproj_prop (TAtm TAIdv)
                 in
                 (nscx, b :: r_bs, h :: r_hs, Some d, i - 1)
@@ -104,11 +104,11 @@ let elim_bounds_visitor = object (self : 'self)
           ]) %% []
         in
         let h =
-          if has d Props.tpars_prop || !Params.enc_typepreds then h
+          if has d Props.tpars_prop || not !Params.enc_nobool then h
           else assign h Props.bproj_prop (TAtm TAIdv)
         in
         let e =
-          if has oe Props.tpars_prop || !Params.enc_typepreds then
+          if has oe Props.tpars_prop || not !Params.enc_nobool then
             Apply (Internal B.Conj %% [], [ h ; e ]) %% []
           else if has e Props.icast_prop && get e Props.icast_prop = TAtm TABol then
             (* Optimization:
@@ -146,7 +146,7 @@ let elim_bounds_visitor = object (self : 'self)
             ]) %% []
           in
           let e =
-            if has d Props.tpars_prop || !Params.enc_typepreds then e
+            if has d Props.tpars_prop || not !Params.enc_nobool then e
             else assign e Props.bproj_prop (TAtm TAIdv)
           in
           let hh = Fact (e, vis, NotSet) %% [] in
@@ -185,7 +185,7 @@ let elim_notmem_visitor = object (self : 'self)
     | Apply ({ core = Internal B.Notmem } as op, [ e ; f ]) ->
         let e = self#expr scx e in
         let f = self#expr scx f in
-        if has op Props.tpars_prop || !Params.enc_typepreds then
+        if has op Props.tpars_prop || not !Params.enc_nobool then
           Apply (Internal B.Neg %% [], [
             Apply (Internal B.Mem @@ op, [ e ; f ]) %% []
           ]) @@ oe

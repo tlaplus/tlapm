@@ -22,7 +22,7 @@ let t_bol = TAtm TABol
 let t_int = TAtm TAInt
 let t_str = TAtm TAStr
 
-let t_iob () = if !Params.enc_typepreds then t_bol else t_idv
+let t_iob () = if !Params.enc_nobool then t_idv else t_bol
 
 let t_cst ty = Ty1 ([], ty)
 let t_una ty1 ty2 = Ty1 ([ ty1 ], ty2)

@@ -264,7 +264,7 @@ and expr_aux scx oe =
       | _ ->
           let v, scx = adj_ty0 scx v (TAtm TAIdv) in
           let e, ty03 = expr scx e in
-          let force = if !Params.enc_typepreds then force_bool else force_idv in
+          let force = if !Params.enc_nobool then force_idv else force_bool in
           let ret = Choose (v, Some (force_idv ty01 d), force ty03 e) @@ oe in
           (ret, TAtm TAIdv)
       end
@@ -272,7 +272,7 @@ and expr_aux scx oe =
   | Choose (v, None, e) ->
       let v, scx = adj_ty0 scx v (TAtm TAIdv) in
       let e, ty0 = expr scx e in
-      let force = if !Params.enc_typepreds then force_bool else force_idv in
+      let force = if !Params.enc_nobool then force_idv else force_bool in
       let ret = Choose (v, None, force ty0 e) @@ oe in
       (ret, TAtm TAIdv)
 
@@ -286,7 +286,7 @@ and expr_aux scx oe =
           (ret, TAtm TABol)
       | _, _ ->
           let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
-          let ty05 = if !Params.enc_typepreds then TAtm TABol else TAtm TAIdv in
+          let ty05 = if !Params.enc_nobool then TAtm TAIdv else TAtm TABol in
           (ret, ty05)
       end
 
@@ -300,7 +300,7 @@ and expr_aux scx oe =
           (ret, TAtm TABol)
       | _, _ ->
           let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
-          let ty05 = if !Params.enc_typepreds then TAtm TABol else TAtm TAIdv in
+          let ty05 = if !Params.enc_nobool then TAtm TAIdv else TAtm TABol in
           (ret, ty05)
       end
 
@@ -360,7 +360,7 @@ and expr_aux scx oe =
       | _ ->
           let v, scx = adj_ty0 scx v (TAtm TAIdv) in
           let f, ty03 = expr scx f in
-          let force = if !Params.enc_typepreds then force_bool else force_idv in
+          let force = if !Params.enc_nobool then force_idv else force_bool in
           let ret = SetSt (v, force_idv ty01 e, force ty03 f) @@ oe in
           (ret, TAtm TAIdv)
       end
@@ -808,7 +808,7 @@ and expr_aux scx oe =
           (ret, TAtm TABol)
       | _, _ ->
           let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
-          let ty03 = if !Params.enc_typepreds then TAtm TABol else TAtm TAIdv in
+          let ty03 = if !Params.enc_nobool then TAtm TAIdv else TAtm TABol in
           (ret, ty03)
       end
 

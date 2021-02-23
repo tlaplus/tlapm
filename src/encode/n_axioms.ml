@@ -83,12 +83,13 @@ let seq xs ty1s e =
   Sequent { context = Deque.of_list hs ; active = e }
 
 let maybe_cast ty0 e =
-  if !Params.enc_typepreds then e
-  else
+  if !Params.enc_nobool then
     appb ~tys:[ ty0 ] B.Eq
     [ e
     ; apps (T.True ty0) [] %% []
     ] %% []
+  else
+    e
 
 
 (* {3 Untyped/Monosorted Variants} *)
@@ -211,7 +212,7 @@ let op_typing t_smb =
 let choose_def () =
   seq
   [ "P" ]
-  [ Ty1 ([ t_idv ], if !Params.enc_typepreds then t_bol else t_idv) ]
+  [ Ty1 ([ t_idv ], if !Params.enc_nobool then t_idv else t_bol) ]
   ( quant Forall
     [ "x" ] [ t_idv ]
     ~pats:[ [
@@ -235,7 +236,7 @@ let choose_def () =
 let choose_ext () =
   seq
   [ "P" ; "Q" ]
-  (dupl (Ty1 ([ t_idv ], if !Params.enc_typepreds then t_bol else t_idv)) 2)
+  (dupl (Ty1 ([ t_idv ], if !Params.enc_nobool then t_idv else t_bol)) 2)
   ( appb B.Implies
     [ quant Forall
       [ "x" ] [ t_idv ]
@@ -522,7 +523,7 @@ let setminus_def () =
 let setst_def () =
   seq
   [ "P" ]
-  [ Ty1 ([ t_idv ], if !Params.enc_typepreds then t_bol else t_idv) ]
+  [ Ty1 ([ t_idv ], if !Params.enc_nobool then t_idv else t_bol) ]
   ( quant Forall
     [ "a" ; "x" ] [ t_idv ; t_idv ]
     ~pats:[ [

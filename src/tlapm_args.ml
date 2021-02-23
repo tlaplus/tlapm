@@ -201,7 +201,7 @@ let init () =
     title "(encoding options)";
     blank;
     "--enc-typelvl", Arg.Set_int enc_typelvl, " set level of type reconstruction (0 or 1)";
-    "--enc-typepreds", Arg.Set enc_typepreds, " treat operators like \\in as predicates";
+    "--enc-nobool", Arg.Set enc_nobool, " disable sort 'bool' for primitives such as '\\in'";
     "--enc-noarith", Arg.Set enc_noarith, " disable usage of the sort 'int'";
     "--enc-enablesmt", Arg.Set enc_enablesmt, " use the Zipperposition encoding for SMT";
     "--enc-verbose", Arg.Set enc_verbose, " print obligation at different encoding stages";

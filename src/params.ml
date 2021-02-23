@@ -487,7 +487,7 @@ let backend_timeout = ref 5.;;
 
 let enc_typelvl = ref 0
 
-let enc_typepreds = ref false
+let enc_nobool = ref false
 
 let enc_noarith = ref false
 
