@@ -15,6 +15,7 @@ module Rewrite : sig
   val elim_bounds : sequent -> sequent
   val elim_notmem : sequent -> sequent
   val elim_compare : sequent -> sequent
+  val elim_except : sequent -> sequent
   val elim_multiarg : sequent -> sequent
   val elim_tuples : sequent -> sequent
 end

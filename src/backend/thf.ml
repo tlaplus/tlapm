@@ -415,6 +415,7 @@ let preprocess ?solver sq =
     |> Type.Reconstruct.main
     |> Encode.Rewrite.elim_notmem
     |> Encode.Rewrite.elim_compare
+    |> Encode.Rewrite.elim_except
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_tuples
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)

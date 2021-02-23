@@ -241,6 +241,62 @@ let elim_compare sq =
   snd (elim_compare_visitor #sequent cx sq)
 
 
+(* {3 EXCEPT Elimination} *)
+
+(* FIXME not type preserving *)
+
+let elim_except_visitor = object (self : 'self)
+  inherit [unit] Visit.map as super
+
+  method expr scx oe =
+    match oe.core with
+    | Except (e, [ ([d], a as exp) ]) ->
+        let e = self#expr scx e in
+        let exp = self#exspec scx exp in
+        let d, a =
+          match exp with
+          | [Except_dot s], a -> String s %% [], a
+          | [Except_apply d], a -> d, a
+          | _ -> failwith ""
+        in
+        let b = Apply (Internal B.DOMAIN %% [], [ e ]) %% [] in
+        let v = assign ("x" %% []) Props.ty0_prop (TAtm TAIdv) in
+        Fcn (
+          [ v, Constant, Domain b ],
+          If (
+            Apply (Internal B.Eq %% [], [ Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) d ]) %% [],
+            Subst.app_expr (Subst.shift 1) a,
+            FcnApp (Subst.app_expr (Subst.shift 1) e, [ Ix 1 %% [] ]) %% []
+          ) %% []
+        ) %% []
+
+    (* FIXME Cases below  are likely to be preprocessed away *)
+
+    | Except (e, [ d :: ds, a ]) ->
+        Except (e, [ [d], begin
+          let app =
+            match d with
+            | Except_dot s -> Dot (e, s) %% []
+            | Except_apply d -> FcnApp (e, [d]) %% []
+          in
+          Except (app, [ ds, a ]) %% []
+        end ]) %% [] |>
+        self#expr scx
+
+    | Except (e, exs) (* when List.length exs > 1 *) ->
+        List.fold_left begin fun e exp ->
+          Except (e, [ exp ]) %% []
+        end e exs |>
+        self#expr scx
+
+    | _ -> super#expr scx oe
+end
+
+let elim_except sq =
+  let cx = ((), Deque.empty) in
+  snd (elim_except_visitor #sequent cx sq)
+
+
 (* {3 Multi-arguments Functions Elimination} *)
 
 let elim_multiarg_visitor = object (self : 'self)
