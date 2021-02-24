@@ -37,20 +37,8 @@ open T_t
       booleans.  The annotation {!Type.T.bproj_prop} with parameter [ty]
       decorates these expressions.
 
-    Some flags affect type reconstruction.
-    - {!Params.enc_typelvl} determines how much of the type system is used.
-      - If typelvl=0 then [idv] is used for most expressions; [int] is used for
-        arithmetic expressions; [bool] is used for formulas, but be aware that
-        most TLA+ operators are not interpreted as predicates, for instance \in
-        is not guaranteed to return a boolean, therefore it is not encoded as a
-        predicate.
-      - If typelvl=1 then set-types, function-types, etc. may be used.
-        TODO actually implement
-    - {!Params.enc_typepreds} allows \in to be encoded as a predicate.  Another
-      example is the SetSt constructor, which will expect a predicate argument
-      if the flag is set.  This flag is independent of the typelvl flag.
-
-  NOTE This module is based on the liberal interpretation of TLA+ for formulas!
+    NOTE This module is based on the liberal interpretation of TLA+ for
+    boolean operators.
 *)
 
 
@@ -86,5 +74,16 @@ val hyps : scx -> hyp Deque.dq -> scx * hyp Deque.dq
 
 val sequent : scx -> sequent -> scx * sequent
 
-val main : sequent -> sequent
+(** Main function, only use this one.
+    @param typelvl set the level of typing.
+        typelvl=0: no types, except bool, int, string
+        typelvl=1: use types for sets, functions, tuples, records TODO
+    @param noarith disable the type int (intended for Zipperposition)
+    @param nobool disable the type bool for some operators (like \\in)
+*)
+val main :
+  ?typelvl:int ->
+  ?noarith:bool ->
+  ?nobool:bool ->
+  sequent -> sequent
 

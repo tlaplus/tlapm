@@ -413,7 +413,7 @@ let preprocess ?solver sq =
 
   let sq = sq
     |> debug "Original Obligation:"
-    |> Type.Reconstruct.main
+    |> Type.Reconstruct.main ~typelvl:!Params.enc_typelvl ~noarith:true ~nobool:!Params.enc_nobool
     |> Encode.Rewrite.elim_notmem
     |> Encode.Rewrite.elim_compare
     |> Encode.Rewrite.elim_except

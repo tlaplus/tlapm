@@ -115,6 +115,6 @@ end
 
 module Reconstruct : sig
   open Expr.T
-  val main : sequent -> sequent
+  val main : ?typelvl:int -> ?noarith:bool -> ?nobool:bool -> sequent -> sequent
 end
 
