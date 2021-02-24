@@ -489,7 +489,7 @@ let enc_typelvl = ref 0
 
 let enc_nobool = ref false
 
-let enc_noarith = ref false
+let enc_noarith = ref true (* FIXME false by default *)
 
 let enc_enablesmt = ref false
 
