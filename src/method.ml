@@ -13,7 +13,7 @@ let default_z3_timeout = 5.
 let default_cvc3_timeout = 5.
 let default_smt_timeout = 5.
 let default_smt2_timeout = 5.
-let default_zipper_timeout = 5.
+let default_zipper_timeout = 10.
 let default_spass_timeout = 5.
 let default_tptp_timeout = 5.
 

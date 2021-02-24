@@ -247,6 +247,7 @@ let default_method =
     Method.Zenon Method.default_zenon_timeout;
     Method.Isabelle (Method.default_isabelle_timeout,
                      Method.default_isabelle_tactic);
+    Method.Zipper Method.default_zipper_timeout;
   ]
 ;;
 
