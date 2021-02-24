@@ -18,7 +18,8 @@ module B = Builtin
 
 let error ?at mssg =
   let mssg = "Encode.Standardize: " ^ mssg in
-  Errors.bug ?at mssg
+  (*Errors.bug ?at mssg*)
+  failwith mssg
 
 
 (* {3 Helpers} *)

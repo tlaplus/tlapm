@@ -24,7 +24,8 @@ module B = Builtin
 
 let error ?at mssg =
   let mssg = "Encode.Rewrite: " ^ mssg in
-  Errors.bug ?at mssg
+  (*Errors.bug ?at mssg*)
+  failwith mssg
 
 let maybe_assign prop =
   Option.fold (fun x -> assign x prop)

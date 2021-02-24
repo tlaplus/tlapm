@@ -36,7 +36,8 @@ let init_etx =
 
 let error ?at mssg =
   let mssg = "Encode.Axiomatize: " ^ mssg in
-  Errors.bug ?at mssg
+  (*Errors.bug ?at mssg*)
+  failwith mssg
 
 
 (* {3 Collection} *)

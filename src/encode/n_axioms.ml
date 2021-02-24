@@ -18,6 +18,11 @@ module T = N_table
 
 (* {3 Helpers} *)
 
+let error ?at mssg =
+  let mssg = "Encode.Axioms: " ^ mssg in
+  (*Errors.bug ?at mssg*)
+  failwith mssg
+
 let t_idv = TAtm TAIdv
 let t_bol = TAtm TABol
 let t_int = TAtm TAInt
@@ -163,7 +168,7 @@ let type_guard ty0 =
         [ Ix 1 %% []
         ; apps T.StrSet [] %% []
         ] %% [] |> maybe_cast t_idv
-    | _ -> Errors.bug "Not implemented"
+    | _ -> error "Not implemented"
     end
     ; quant Exists
       [ "y" ] [ ty0 ]
@@ -183,7 +188,7 @@ let op_typing t_smb =
   let ty2 = dat.dat_ty2 in
   let Ty1 (ty0s, ty0) =
     try downcast_ty1 ty2
-    with _ -> Errors.bug "Not implemented" (* TODO *)
+    with _ -> error "Not implemented" (* TODO *)
   in
   let n = List.length ty0s in
   quant Forall

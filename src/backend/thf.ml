@@ -21,7 +21,8 @@ module B = Builtin
 
 let error ?at mssg =
   let mssg = "Backend.Thf: " ^ mssg in
-  Errors.bug ?at mssg
+  (*Errors.bug ?at mssg*)
+  failwith mssg
 
 (* FIXME remove *)
 let primed s = s ^ "__prime"

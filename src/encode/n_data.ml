@@ -15,7 +15,8 @@ open N_table
 
 let error ?at mssg =
   let mssg = "Encode.Data: " ^ mssg in
-  Errors.bug ?at mssg
+  (*Errors.bug ?at mssg*)
+  failwith mssg
 
 let t_idv = TAtm TAIdv
 let t_bol = TAtm TABol
@@ -131,7 +132,7 @@ let untyped_data tla_smb =
   | FunApp ->
       ("FunApp",        [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   | _ ->
-      Errors.bug "Bad argument"
+      error "Bad argument"
   end
 
 let typed_data tla_smb =
@@ -191,7 +192,7 @@ let typed_data tla_smb =
                         [ t_cst t_int ; t_cst t_int ],        t_idv,
       IntRange)
   | _ ->
-      Errors.bug "Bad argument"
+      error "Bad argument"
   end
 
 let special_data tla_smb =
@@ -203,7 +204,7 @@ let special_data tla_smb =
       ("Tt_" ^ ty_to_string ty,
                         [],                                   ty)
   | _ ->
-      Errors.bug "Bad argument"
+      error "Bad argument"
   end
 
 let get_data tla_smb =
@@ -360,7 +361,7 @@ let untyped_deps tla_smb s =
   | FunApp ->
       ([ FunConstr ],             [ FunAppDef ])
   | _ ->
-      Errors.bug "Bad argument"
+      error "Bad argument"
   end |>
   fun x -> (s', x)
 
@@ -395,7 +396,7 @@ let typed_deps tla_smb s =
   | TIntRange ->
       ([], [])
   | _ ->
-      Errors.bug "Bad argument"
+      error "Bad argument"
   end |>
   fun x -> (s', x)
 
@@ -414,7 +415,7 @@ let special_deps tla_smb =
   | True ty0 ->
       ([], [])
   | _ ->
-      Errors.bug "Bad argument"
+      error "Bad argument"
   end |>
   fun x -> (fun s -> (s, x))
 
