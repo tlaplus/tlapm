@@ -8,7 +8,7 @@
 open Property
 open Expr.T
 
-open N_table
+open N_smb
 
 (** This module implements Axiomatization, the process by which every
     `Opaque s` with a {!smb} attached is replaced by a reference (De Bruijn
@@ -22,24 +22,11 @@ open N_table
       NEW declarations, NEW axioms, original hyps |- original goal
 *)
 
-(* {Extended context} *)
+(* {3 Extended context} *)
 
 (** Extended context; used to store symbols and axioms data in an
     intermediary form *)
 type etx
-
-val mem : string -> etx -> bool
-val get_smb : string -> etx -> smb
-val get_axms : string -> etx -> expr list
-
-(** Modify the axioms of an etx *)
-val map_etx : (smb -> expr -> expr) -> etx -> etx
-
-(** Attached to a Fresh hypothesis in a sequent, the integers [n1,..,np]
-    indicates that, for all i, the nith next hypothesis is a Fact that is an
-    axiom about the declared constant.
-*)
-val axm_ptrs_prop : (int list) pfuncs
 
 
 (* {3 Main} *)

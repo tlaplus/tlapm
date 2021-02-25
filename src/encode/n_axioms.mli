@@ -8,63 +8,82 @@
 open Expr.T
 open Type.T
 
-(** Mark some opaques as special. *)
-val special_prop : unit Property.pfuncs
-(* FIXME Better architecture for Table and Axioms *)
+(** Axioms used in the encoding, all in standard form (see
+    {!Encode.Standardize}).
 
-(* {3 Logic} *)
+    Axioms are generated lazily because some parameters may affect their
+    statements (eg. {!Params.enc_typepreds}).
+*)
 
-val choose : ty option -> expr
+val get_axm : N_table.tla_axm -> expr
 
-(* {3 Sets} *)
+(* {3 Special} *)
 
-val subseteq : ty option -> expr
-val setenum : int -> ty option -> expr
-val union : ty option -> expr
-val subset : ty option -> expr
-val cup : ty option -> expr
-val cap : ty option -> expr
-val setminus : ty option -> expr
-val setst : ty option -> expr
-val setof : int -> (ty list * ty) option -> expr
+val cast_inj : ty0 -> expr
+val type_guard : ty0 -> expr
+val op_typing : N_table.tla_smb -> expr
 
-(* {3 Functions} *)
 
-val fcnisafcn : expr
-val arrow : (ty * ty) option -> expr
-val domain : (ty * ty) option -> expr
-val fcnapp : (ty * ty) option -> expr
+(* {3 Untyped/Monosorted Variants} *)
 
-(* {3 Booleans} *)
+(* {4 Logic} *)
 
-val boolcast_inj : expr
-val booleans : expr
+val choose_def : unit -> expr
+val choose_ext : unit -> expr
 
-(* {3 Strings} *)
+(* {4 Sets} *)
 
-val strings : expr
+val set_ext : unit -> expr
+val subseteq_def : unit -> expr
+val setenum_def : int -> expr
+val union_def : unit -> expr
+val subset_def : unit -> expr
+val cup_def : unit -> expr
+val cap_def : unit -> expr
+val setminus_def : unit -> expr
+val setst_def : unit -> expr
+val setof_def : int -> expr
 
-(* {3 Arithmetic} *)
+(* {4 Functions} *)
 
-val ints : expr
-val nats : expr
-val reals : expr
+val fcn_ext : unit -> expr
+val fcnconstr_isafcn : unit -> expr
+val fcnset_def : unit -> expr
+val fcndom_def : unit -> expr
+val fcnapp_def : unit -> expr
 
-val int_guard : expr
+(* {4 Strings} *)
 
-val inteq_type : expr
-val plus_type : expr
-val times_type : expr
-val uminus_type : expr
-val minus_type : expr
-val quotient_type : expr
-val remainder_type : expr
-val exp_type : expr
-val lteq_type : expr
-val lt_type : expr
-val gteq_type : expr
-val gt_type : expr
-val range_type : expr
+val strlit_isstr : string -> expr
+val strlit_distinct : string -> string -> expr
+
+(* {4 Arithmetic} *)
+
+val intlit_isint : int -> expr
+val intlit_distinct : int -> int -> expr
+val natset_def : unit -> expr
+val intplus_typing : unit -> expr
+val intuminus_typing : unit -> expr
+val intminus_typing : unit -> expr
+val inttimes_typing : unit -> expr
+val intquotient_typing : unit -> expr
+val intremainder_typing : unit -> expr
+val intexp_typing : unit -> expr
+val intrange_def : unit -> expr
+
+(* {4 Tuples} *)
+
+(* TODO *)
+
+
+(* {3 Typed Variants} *)
+
+(* {4 Strings} *)
+
+val t_strlit_distinct : string -> string -> expr
+
+(* FIXME adapt *)
+(*
 
 (* {3 Tuples} *)
 
@@ -80,3 +99,4 @@ val inst_choose : (ty * ty list) option -> int -> expr -> expr
 val inst_setst : (ty * ty list) option -> int -> expr -> expr
 val inst_setof : int -> (ty list * ty * ty list) option -> int -> expr -> expr
 
+*)

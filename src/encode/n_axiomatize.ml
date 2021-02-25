@@ -9,111 +9,85 @@ open Ext
 open Property
 open Expr.T
 
-open N_table
+open N_smb
+open N_data
+open N_axioms
 
-module Sm = Util.Coll.Sm
+
+(* {3 Contexts} *)
+
+type etx = s * SmbSet.t * expr Deque.dq
+
+let init_etx =
+  let init_smbs =
+    begin if !Params.enc_nobool then
+      (* Always declared because it appears in a lot of axioms *)
+      [ N_table.True (TAtm TAIdv) ]
+    else
+      []
+    end |>
+    List.map mk_smb |>
+    SmbSet.of_list
+  in
+  (init, init_smbs, Deque.empty)
 
 
 (* {3 Helpers} *)
 
 let error ?at mssg =
-  Errors.bug ?at ("Encode.Axiomatize: " ^ mssg)
-
-
-(* {3 Contexts} *)
-
-(** Extended context type
-    Set of new symbols with axioms attached.  The index of a symbol is always
-    its name (obtained by {!get_name}).
-    Axioms are expressions in standard form that may only reference the
-    operators in the [etx] object, using opaque expressions.
-*)
-type etx = data Sm.t
-and data = smb * expr list
-
-let init_etx = Sm.empty
-
-let mem s etx = Sm.mem s etx
-
-let get_smb s etx = fst (Sm.find s etx)
-
-let get_axms s etx = snd (Sm.find s etx)
-
-let map_etx f etx =
-  Sm.map begin fun (smb, es) ->
-    let es = List.map (fun e -> f smb e) es in
-    (smb, es)
-  end etx
-
-(* NOTE Important function! *)
-(* Add symbol to extended context, along with all depending symbols and axioms
- * NOTE If a symbol is encountered, but a different symbol with the same name
- * was already treated, the new one will be ignored. *)
-let add_smb smb etx =
-  let rec spin (acc : etx) (ws : smb Sm.t) =
-    if Sm.is_empty ws then
-      (* Done *)
-      acc
-    else
-      let k, smb = Sm.choose ws in
-      if Sm.mem k acc then
-        (* Smb already treated; skip *)
-        let ws = Sm.remove k ws in
-        spin acc ws
-      else
-        (* New smb; add it to acc with axioms;
-         * add symbol dependencies to ws; continue *)
-        let deps, axms =
-          match get_defn smb with
-          | None -> (Sm.empty, [])
-          | Some df -> begin
-            match smbtable df with
-            | None -> (Sm.empty, [])
-            | Some (deps, axms) ->
-                let deps =
-                  List.fold_left begin fun deps smb ->
-                    let smb = std_smb smb in
-                    Sm.add (get_name smb) smb deps
-                  end Sm.empty deps
-                in
-                (deps, axms)
-          end
-        in
-        let ws =
-          Sm.union (fun _ _ smb -> Some smb) deps ws |>
-          Sm.remove k (* redundant with skip phase *)
-        in
-        let acc =
-          Sm.add k (smb, axms) acc
-        in
-        spin acc ws
-  in
-
-  let init = Sm.singleton (get_name smb) smb in
-  spin etx init
+  let mssg = "Encode.Axiomatize: " ^ mssg in
+  (*Errors.bug ?at mssg*)
+  failwith mssg
 
 
 (* {3 Collection} *)
 
+(* NOTE Important function
+ * Add symbol to extended context, along with all depending
+ * symbols and axioms *)
+let add_smb smb (s, smbs, facts) =
+  let rec more s acc_smbs acc_facts work_smbs =
+    try
+      let smb = SmbSet.choose work_smbs in
+      if SmbSet.mem smb acc_smbs then
+        let work_smbs = SmbSet.remove smb work_smbs in
+        more s acc_smbs acc_facts work_smbs
+      else
+        let s, deps = get_deps (get_defn smb) s in
+        let smb_deps = List.fold_left begin fun smbs tla_smb ->
+          let smb = mk_smb tla_smb in
+          smb :: smbs
+        end [] deps.dat_deps in
+        let axms = List.map get_axm deps.dat_axms in
+        let acc_smbs = SmbSet.add smb acc_smbs in
+        let acc_facts = List.fold_left Deque.snoc acc_facts axms in
+        let work_smbs = SmbSet.remove smb work_smbs in
+        let work_smbs = List.fold_right SmbSet.add smb_deps work_smbs in
+        more s acc_smbs acc_facts work_smbs
+    with Not_found ->
+      (s, acc_smbs, acc_facts)
+  in
+  more s smbs facts (SmbSet.singleton smb)
+
 let collect_visitor = object (self : 'self)
   inherit [unit, etx] Expr.Visit.fold as super
 
-  method expr scx etx oe =
+  method expr scx ecx oe =
     match oe.core with
-    | Opaque _ when has_smb oe ->
+    | Opaque _ when has oe smb_prop ->
         let smb = get oe smb_prop in
-        add_smb smb etx
+        add_smb smb ecx
 
-    | _ -> super#expr scx etx oe
+    | _ -> super#expr scx ecx oe
 
-  method hyp scx etx h =
+  method hyp scx ecx h =
     match h.core with
     | Defn (_, _, Hidden, _)
     | Fact (_, Hidden, _) ->
         let scx = Expr.Visit.adj scx h in
-        (scx, etx)
+        (scx, ecx)
     | _ ->
-        super#hyp scx etx h
+        super#hyp scx ecx h
 end
 
 let collect sq =
@@ -128,32 +102,20 @@ let axm_ptrs_prop = make "Encode.Axiomatization.axm_ptrs_prop"
 
 let mk_decl smb =
   let v = get_name smb %% [] in
-  let sch = get_sch smb in
-  let v = assign v Type.T.Props.tsch_prop sch in
+  let ty2 = get_ty2 smb in
+  let v = assign v Type.T.Props.ty2_prop ty2 in
   let shp = Shape_op 0 in (* special *)
-  let h = Fresh (v, shp, Constant, Unbounded) %% [] in
-  assign h smb_prop smb
+  Fresh (v, shp, Constant, Unbounded) %% []
 
 let mk_fact e =
   Fact (e, Visible, NotSet) %% []
-
-(* FIXME remove *)
-let is_arith_smb smb =
-  match get_defn smb with
-  | Some ( Plus | Uminus | Minus | Times | Lteq ) -> true
-  | _ -> false
-
-let is_arith_op e =
-  match query e smb_prop with
-  | Some smb -> is_arith_smb smb
-  | None -> false
 
 let assemble_visitor = object (self : 'self)
   inherit [unit] Expr.Visit.map as super
 
   method expr ((), hx as scx) oe =
     match oe.core with
-    | Opaque _ when has_smb oe && not (is_arith_op oe) ->
+    | Opaque _ when has oe smb_prop ->
         let smb = get oe smb_prop in
         let s = get_name smb in
         let is_fresh_s = fun h ->
@@ -172,12 +134,6 @@ let assemble_visitor = object (self : 'self)
         remove (Ix ix @@ oe) smb_prop
         with _ -> oe end
 
-        (* FIXME remove *)
-    | Opaque _ when has_smb oe && is_arith_op oe ->
-        let smb = get oe smb_prop in
-        let tsch = get_sch smb in
-        assign oe Type.T.Props.tsch_prop tsch
-
     | _ -> super#expr scx oe
 
   method hyp scx h =
@@ -190,32 +146,10 @@ let assemble_visitor = object (self : 'self)
         super#hyp scx h
 end
 
-let assemble etx sq =
-  let top_hx =
-    (* For each declaration, we want to attach pointers to the relevant axioms
-     * that come next.  The trick is to build the context in two opposite
-     * directions, one for declarations and the other for axioms:
-     *
-     *    .. <-- NEW declarations, NEW axioms --> ..
-     *
-     * That way, we don't insert new hypothesis in the middle of the already-
-     * built context, and the process is accumulative. *)
-    let new_decls, new_axms =
-      Sm.fold begin fun _ (smb, axms) (new_decls, new_axms) ->
-        if is_arith_smb smb then (* FIXME remove *)
-          (new_decls, new_axms)
-        else
-          let decl = mk_decl smb in
-          let ptrs = List.init (List.length axms) (fun i -> 1 + i + Deque.size new_decls + Deque.size new_axms) in
-          let decl = assign decl axm_ptrs_prop ptrs in
-          let new_decls = Deque.cons decl new_decls in
-          let axms = List.map mk_fact axms in
-          let new_axms = Deque.append_list new_axms axms in
-          (new_decls, new_axms)
-      end etx (Deque.empty, Deque.empty)
-    in
-    Deque.append new_decls new_axms
-  in
+let assemble (_, decls, axms) sq =
+  let decls = Deque.map (fun _ -> mk_decl) (SmbSet.elements decls |> Deque.of_list) in
+  let axms = Deque.map (fun _ -> mk_fact) axms in
+  let top_hx = Deque.append decls axms in
 
   let sq = { sq with context = Deque.append top_hx sq.context } in
   let scx = ((), Deque.empty) in
@@ -226,9 +160,7 @@ let assemble etx sq =
 (* {3 Main} *)
 
 let main sq =
-  let etx = collect sq in
-  let enc e = N_direct.expr Ctx.dot e |> fst in (* FIXME encode sooner *)
-  let etx = map_etx (fun _ -> enc) etx in
-  let sq = assemble etx sq in
+  let ecx = collect sq in
+  let sq = assemble ecx sq in
   sq
 

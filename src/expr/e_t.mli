@@ -165,12 +165,14 @@ and visibility = Visible | Hidden
 and time = Now | Always | NotSet
 ;;
 
-(* SMT-LIB pattern attached to the body of a quantified expr *)
 type pat = expr list;;
+
+(* SMT-LIB pattern attached to the body of a quantified expr *)
 val pattern_prop : pat list pfuncs;;
 
 val add_pats : expr -> pat list -> expr;;
 val remove_pats : expr -> expr;;
+
 val map_pats : (pat -> pat) -> expr -> expr;;
 
 val get_val_from_id : 'hyp Deque.dq -> int -> 'hyp;;

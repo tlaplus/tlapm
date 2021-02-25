@@ -92,7 +92,11 @@ val fp_loaded : bool ref;;
 val timeout_stretch : float ref;;
 
 (* encode/ *)
-val enc_arith : bool ref;;
+val enc_typelvl : int ref;;
+val enc_nobool : bool ref;;
+val enc_noarith : bool ref;;
+val enc_enablesmt : bool ref;;
+val enc_verbose : bool ref;;
 
 
 

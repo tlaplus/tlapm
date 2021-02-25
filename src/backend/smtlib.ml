@@ -5,6 +5,8 @@
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
 
+(* FIXME a lot of this must be out of date *)
+
 Revision.f "$Rev$";;
 
 open Format
@@ -17,6 +19,8 @@ open Tla_parser
 open Expr.T
 open Type.T
 open Util.Coll
+
+open Encode.Smb
 
 module B = Builtin
 
@@ -52,16 +56,7 @@ let pp_print_binding ff (nm, ty) =
   fprintf ff "(%s %a)" nm pp_print_sort ty
 
 
-open Encode.Table
-let is_arith op =
-  match query op smb_prop with
-  | Some smb ->
-      begin match get_defn smb with
-      | Some ( Plus | Uminus | Minus | Times | Lteq | Lt | Gteq | Gt ) ->
-          true
-      | _ -> false
-      end
-  | None -> false
+let is_arith _ = false (* FIXME remove *)
 
 
 let rec pp_apply cx ff op args =
@@ -101,14 +96,14 @@ let rec pp_apply cx ff op args =
   | Opaque _ when is_arith op ->
       let smb = get op smb_prop in
       let s =
-        match Option.get (get_defn smb) with
-        | Plus -> "+"
-        | Uminus | Minus -> "-"
-        | Times -> "*"
-        | Lteq -> "<="
-        | Lt -> "<"
-        | Gteq -> ">="
-        | Gt -> ">"
+        match get_defn smb with
+        (*| TIntPlus -> "+"
+        | TIntUminus | Minus -> "-"
+        | TIntTimes -> "*"
+        | TIntLteq -> "<="
+        | TIntLt -> "<"
+        | TIntGteq -> ">="
+        | TIntGt -> ">"*)
         | _ -> error ~at:op "Expected arithmetic operator"
       in
       pp_print_sexpr begin fun ff () ->
@@ -189,7 +184,7 @@ and fmt_expr cx oe =
           fmt_expr ncx (Sequent { sq with context = hs } @@ oe)
 
       | Some ({ core = Flex nm }, hs) ->
-          let ty = get_type nm in
+          let ty = get nm Props.ty0_prop in
           let ncx, nm = adj cx nm in
           Fu.Atm begin fun ff ->
             pp_print_sexpr begin fun ff (nm, ty, e) ->
@@ -205,7 +200,7 @@ and fmt_expr cx oe =
 
       | Some ({ core = Fresh (nm, _, _, _) }, hs) ->
           (* NOTE Second-order quantification rejected *)
-          let ty = get_type nm in
+          let ty = get nm Props.ty0_prop in
           let ncx, nm = adj cx nm in
           Fu.Atm begin fun ff ->
             pp_print_sexpr begin fun ff (nm, ty, e) ->
@@ -291,7 +286,7 @@ and fmt_expr cx oe =
           match bs with
           | [] -> (acc_cx, acc_bs)
           | (nm, _, _) :: bs ->
-              let ty = get_type nm in
+              let ty = get nm Props.ty0_prop in
               let acc_cx, nm = adj acc_cx nm in
               let acc_bs = (nm, ty) :: acc_bs in
               spin acc_cx acc_bs bs
@@ -383,12 +378,12 @@ let preprocess ?solver sq =
     |> Encode.Rewrite.elim_except
     (* NOTE eliminating bound notation necessary to make all '\in' visible *)
     |> Encode.Rewrite.elim_bounds
-    |> debug "Done Simpl." (* FIXME remove *)
-    |> Encode.Direct.main
+    |> debug "Done Simpl. Bounds" (* FIXME remove *)
+    (*|> Encode.Direct.main*)
     |> debug "Done Direct"
-    |> Encode.Axiomatize.main
+    (*|> Encode.Axiomatize.main*)
     |> debug "Done Axiomatize" (* FIXME remove *)
-    |> Encode.Reduce.main
+    (*|> Encode.Reduce.main*)
     |> debug "Done Reduce" (* FIXME remove *)
   in
   sq
@@ -397,7 +392,7 @@ let preprocess ?solver sq =
 (* {3 Sort Collection} *)
 
 let collect_sorts sq =
-  let srts = Encode.CollectTypes.main sq in
+  let srts = Type.Collect.main sq in
   let srts =
     Ts.fold begin fun srt ->
       Ss.add (ty_to_string srt)
@@ -436,25 +431,7 @@ let pp_print_declarefun ff nm ins out =
 let pp_print_obligation ?(solver="CVC4") ff ob =
   (* Shape the sequent into a form that can be translated;
    * Append a top context containing additional declarations and axioms *)
-  let sq =
-    try preprocess ~solver ob.Proof.T.obl.core
-    with
-    | Typechecking_ty (loc, ty0_1, ty0_2) ->
-        let loc = Loc.string_of_locus ~cap:true loc in
-        eprintf "%s: Typechecking error (0), expected `%a`, found `%a`@."
-        loc pp_print_type ty0_1 pp_print_type ty0_2;
-        failwith "Typechecking error"
-    | Typechecking_ty_arg (loc, ty1_1, ty1_2) ->
-        let loc = Loc.string_of_locus ~cap:true loc in
-        eprintf "%s: Typechecking error (1), expected `%a`, found `%a`@."
-        loc pp_print_targ ty1_1 pp_print_targ ty1_2;
-        failwith "Typechecking error"
-    | Typechecking_ty_sch (loc, ty2_1, ty2_2) ->
-        let loc = Loc.string_of_locus ~cap:true loc in
-        eprintf "%s: Typechecking error (2), expected `%a`, found `%a`@."
-        loc pp_print_tsch ty2_1 pp_print_tsch ty2_2;
-        failwith "Typechecking error"
-  in
+  let sq = preprocess ~solver ob.Proof.T.obl.core in
 
   (* Print preample *)
   fprintf ff ";; TLA+ Proof Manager %s@." (Params.rawversion ());
@@ -484,8 +461,8 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         Option.is_some begin
           Deque.find sq.context begin fun h ->
             let v = hyp_hint h in
-            match query v Props.tsch_prop with
-            | Some (TSch ([], tys, _)) when List.length tys > 0 ->
+            match query v Props.ty2_prop with
+            | Some (Ty2 (ty1s, _)) when List.length ty1s > 0 ->
                 true
             | _ -> false
           end
@@ -512,7 +489,7 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         spin ncx hs
 
     | Some ({ core = Flex nm }, hs) ->
-        let ty = get nm Props.type_prop in
+        let ty = get nm Props.ty0_prop in
         let ncx, nm = adj cx nm in
         pp_print_declarefun ff nm [] ty;
         pp_print_newline ff ();
@@ -528,37 +505,32 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         (* The only part of the definition that matters is the declaration.
          * The 'hidden' flag only applies to the definition, so here it does not
          * matter.  Bounds to fresh variables have been removed beforehand. *)
-        if not (has nm Props.type_prop) && not (has nm Props.tsch_prop) then
+        if not (has nm Props.ty0_prop) && not (has nm Props.ty2_prop) then
           let ncx = bump cx in
           fprintf ff "; omitted declaration (missing type)@.";
           pp_print_newline ff ();
           spin ncx hs
-        else if has nm Props.type_prop then
+        else if has nm Props.ty0_prop then
           let ins = [] in
-          let out = get nm Props.type_prop in
+          let out = get nm Props.ty0_prop in
           let ncx, nm = adj cx nm in
           pp_print_declarefun ff nm ins out;
           pp_print_newline ff ();
           spin ncx hs
         else
-          let TSch (vs, targs, ty) = get nm Props.tsch_prop in
-          if vs <> [] then
-            let ncx = bump cx in
-            fprintf ff "; omitted declaration (polymorphic type)@.";
-            pp_print_newline ff ();
-            spin ncx hs
-          else if List.exists (function TOp _ -> true | TRg _ -> false) targs then
-            let ncx = bump cx in
-            fprintf ff "; omitted declaration (second-order type)@.";
-            pp_print_newline ff ();
-            spin ncx hs
-          else
-            let ins = List.map (function TRg ty -> ty | TOp _ -> error "") targs in
-            let out = ty in
-            let ncx, nm = adj cx nm in
-            pp_print_declarefun ff nm ins out;
-            pp_print_newline ff ();
-            spin ncx hs
+          let ty2 = get nm Props.ty2_prop in
+          begin match safe_downcast_ty1 ty2 with
+          | None ->
+              let ncx = bump cx in
+              fprintf ff "; omitted declaration (second-order type)@.";
+              pp_print_newline ff ();
+              spin ncx hs
+          | Some (Ty1 (ins, out)) ->
+              let ncx, nm = adj cx nm in
+              pp_print_declarefun ff nm ins out;
+              pp_print_newline ff ();
+              spin ncx hs
+          end
   in
 
   pp_print_newline ff ();

@@ -175,12 +175,10 @@ type pat = expr list
 
 let pattern_prop = make "Expr.T.pattern_prop"
 
-let add_pats oe sqs =
+let add_pats oe pats =
   match query oe pattern_prop with
-  | Some pats ->
-      assign oe pattern_prop (sqs @ pats)
-  | None ->
-      assign oe pattern_prop sqs
+  | Some pats' -> assign oe pattern_prop (pats @ pats')
+  | None -> assign oe pattern_prop pats
 
 let remove_pats oe =
   remove oe pattern_prop
@@ -188,9 +186,7 @@ let remove_pats oe =
 let map_pats f oe =
   match query oe pattern_prop with
   | None -> oe
-  | Some pats ->
-      let pats = List.map f pats in
-      assign oe pattern_prop pats
+  | Some pats -> assign oe pattern_prop (List.map f pats)
 
 (* context helper function *)
 let get_val_from_id cx n = match Deque.nth ~backwards:true cx (n - 1) with

@@ -10,48 +10,58 @@ open Property
 open Expr.T
 open Type.T
 
+open N_smb
+
 module B = Builtin
+module T = N_table
 
 
 (* {3 Helpers} *)
 
-let special_prop = Property.make "Encode.Axioms.special_prop"
+let error ?at mssg =
+  let mssg = "Encode.Axioms: " ^ mssg in
+  (*Errors.bug ?at mssg*)
+  failwith mssg
 
-let mk_special s = assign (Opaque s %% []) special_prop ()
+let t_idv = TAtm TAIdv
+let t_bol = TAtm TABol
+let t_int = TAtm TAInt
+let t_str = TAtm TAStr
 
-let annot h ty = assign h Props.type_prop ty
-let targs a tys = assign a Props.targs_prop tys
+let maybe_assign prop =
+  Option.fold (fun x -> assign x prop)
 
 let app ?tys op es =
-  let op = Option.fold targs op tys in
+  let op = maybe_assign Props.tpars_prop op tys in
   match es with
-  | [] -> Apply (op, []) (* previously just op.core, but loss of properties *)
+  | [] -> Apply (op, []) (* Don't loose op properties *)
   | _ -> Apply (op, es)
 
 let appb ?tys b es =
   app ?tys (Internal b %% []) es
 
-let una ?tys b e1    = appb ?tys b [ e1 ]
-let ifx ?tys b e1 e2 = appb ?tys b [ e1 ; e2 ]
+let apps tla_smb es =
+  let smb = mk_smb tla_smb in
+  let opq = Opaque (get_name smb) %% [] in
+  let opq = assign opq smb_prop smb in
+  app opq es
 
-let quant q xs ?tys ?pats e =
+let quant q xs ty0s ?pats e =
   let xs =
-    match tys with
-    | None ->
-        List.map (fun x -> (x %% [], Constant, No_domain)) xs
-    | Some tys ->
-        List.map2 (fun x ty -> (annot (x %% []) ty, Constant, No_domain)) xs tys
+    List.map2 begin fun x ty0 ->
+      (assign (x %% []) Props.ty0_prop ty0, Constant, No_domain)
+    end xs ty0s
   in
-  let e =
-    match pats with
-    | None -> e
-    | Some pats ->
-        assign e pattern_prop pats
-  in
+  let e = maybe_assign pattern_prop e pats in
   Quant (q, xs, e)
 
-let all xs ?tys ?pats e = quant Forall xs ?tys ?pats e
-let exi xs ?tys ?pats e = quant Exists xs ?tys ?pats e
+let lam xs ty0s e =
+  let xs =
+    List.map2 begin fun x ty0 ->
+      (assign (x %% []) Props.ty0_prop ty0, Shape_expr)
+    end xs ty0s
+  in
+  Lambda (xs, e)
 
 let dupl a n = List.init n (fun _ -> a)
 
@@ -63,1005 +73,1038 @@ let ixi ?(shift=0) n = List.init n (fun i -> Ix (shift + n - i) %% [])
     [ixi ~shift:s n] = [ Ix (s+n) ; .. ; Ix (s+2) ; Ix (s+1) ]
 *)
 
-let fresh ?tsig ?(n=0) x =
+let fresh x ty1 =
   let shp =
-    if n = 0 then Shape_expr
-    else Shape_op n
+    match ty1 with
+    | Ty1 ([], _) -> Shape_expr
+    | Ty1 (ty0s, _) -> Shape_op (List.length ty0s)
   in
-  let h =
-    Option.fold begin fun h (tys, ty) ->
-      let targ =
-        if List.length tys = 0 then TRg ty
-        else TOp (tys, ty)
-      in
-      assign h Props.targ_prop targ
-    end (x %% []) tsig
+  let v = assign (x %% []) Props.ty2_prop (upcast_ty2 ty1) in
+  Fresh (v, shp, Constant, Unbounded)
+
+let seq xs ty1s e =
+  let hs = List.map2 fresh xs ty1s in
+  let hs = List.map noprops hs in
+  Sequent { context = Deque.of_list hs ; active = e }
+
+let maybe_cast ty0 e =
+  if !Params.enc_nobool then
+    appb ~tys:[ ty0 ] B.Eq
+    [ e
+    ; apps (T.True ty0) [] %% []
+    ] %% []
+  else
+    e
+
+
+(* {3 Untyped/Monosorted Variants} *)
+
+(* {4 Special} *)
+
+let cast_inj ty0 =
+  if ty0 = t_bol then
+    appb B.Conj
+    [ appb ~tys:[ t_idv ] B.Eq
+      [ apps (T.Cast t_bol)
+        [ appb B.TRUE [] %% []
+        ] %% []
+      ; apps (T.True t_idv) [] %% []
+      ] %% []
+    ; appb ~tys:[ t_idv ] B.Neq
+      [ apps (T.Cast t_bol)
+        [ appb B.FALSE [] %% []
+        ] %% []
+      ; apps (T.True t_idv) [] %% []
+      ] %% []
+    ] %% []
+  else
+    quant Forall
+    [ "x" ; "y" ] [ ty0 ; ty0 ]
+    ~pats:[ [
+      appb ~tys:[ t_idv ] B.Eq
+      [ apps (T.Cast ty0)
+        [ Ix 2 %% []
+        ] %% []
+      ; apps (T.Cast ty0)
+        [ Ix 1 %% []
+        ] %% []
+      ] %% []
+    ] ]
+    ( appb B.Implies
+      [ appb ~tys:[ t_idv ] B.Eq
+        [ apps (T.Cast ty0)
+          [ Ix 2 %% []
+          ] %% []
+        ; apps (T.Cast ty0)
+          [ Ix 1 %% []
+          ] %% []
+        ] %% []
+      ; appb ~tys:[ ty0 ] B.Eq
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ] %% []
+    ) %% []
+
+let type_guard ty0 =
+  quant Forall
+  [ "x" ] [ t_idv ]
+  ( appb B.Equiv
+    [ begin match ty0 with
+    | TAtm TAIdv ->
+        appb B.TRUE [] %% []
+    | TAtm TABol ->
+        apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.BoolSet [] %% []
+        ] %% [] |> maybe_cast t_idv
+    | TAtm TAInt ->
+        apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntSet [] %% []
+        ] %% [] |> maybe_cast t_idv
+    | TAtm TAStr ->
+        apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.StrSet [] %% []
+        ] %% [] |> maybe_cast t_idv
+    | _ -> error "Not implemented"
+    end
+    ; quant Exists
+      [ "y" ] [ ty0 ]
+      ( appb ~tys:[ t_idv ] B.Eq
+        [ Ix 2 %% []
+        ; apps (T.Cast ty0)
+          [ Ix 1 %% []
+          ] %% []
+        ] %% []
+      ) %% []
+    ] %% []
+  ) %% []
+
+let op_typing t_smb =
+  let dat = N_data.get_data t_smb in
+  let i_smb = Option.get (dat.dat_tver) in
+  let ty2 = dat.dat_ty2 in
+  let Ty1 (ty0s, ty0) =
+    try downcast_ty1 ty2
+    with _ -> error "Not implemented" (* TODO *)
   in
-  Fresh (h, shp, Constant, Unbounded)
+  let n = List.length ty0s in
+  quant Forall
+  (gen "x" n) ty0s
+  ~pats:[ [
+    apps i_smb
+    (List.map2 begin fun e ty0 ->
+      apps (T.Cast ty0) [ e ] %% []
+    end (ixi n) ty0s) %% []
+  ] ]
+  ( appb ~tys:[ t_idv ] B.Eq
+    [ apps i_smb
+      (List.map2 begin fun e ty0 ->
+        apps (T.Cast ty0) [ e ] %% []
+      end (ixi n) ty0s) %% []
+    ; apps (T.Cast ty0)
+      [ apps t_smb
+        (ixi n) %% []
+      ] %% []
+    ] %% []
+  ) %% []
 
 
-(* {3 Logic} *)
+(* {4 Logic} *)
 
-let choose ty =
-  Sequent {
-    context = [
-      fresh ~tsig:(Option.fold (fun _ ty -> [ ty ], TAtom TBool) ([ TAtom TU ], TAtom TBool) ty)
-      ~n:1 "P" %% []
-    ] |> Deque.of_list ;
-    active =
-      all [ "x" ] ?tys:(Option.map (fun ty -> [ ty ]) ty) ~pats:[ [
-        app (Ix 2 %% []) [ Ix 1 %% [] ] %% []
-      ] ] (
-        ifx B.Implies (
-          app (Ix 2 %% []) [ Ix 1 %% [] ] %% []
-        ) (
-          app (Ix 2 %% []) [
-            Choose (Option.fold annot ("y" %% []) ty, None,
-            app (Ix 3 %% []) [ Ix 1 %% [] ] %% []) %% []
+let choose_def () =
+  seq
+  [ "P" ]
+  [ Ty1 ([ t_idv ], if !Params.enc_nobool then t_idv else t_bol) ]
+  ( quant Forall
+    [ "x" ] [ t_idv ]
+    ~pats:[ [
+      app (Ix 2 %% [])
+      [ Ix 1 %% []
+      ] %% [] |> maybe_cast t_idv
+    ] ]
+    ( appb B.Implies
+      [ app (Ix 2 %% [])
+        [ Ix 1 %% []
+        ] %% [] |> maybe_cast t_idv
+      ; app (Ix 2 %% [])
+        [ apps T.Choose
+          [ Ix 2 %% []
+          ] %% []
+        ] %% [] |> maybe_cast t_idv
+      ] %% []
+    ) %% []
+  ) %% []
+
+let choose_ext () =
+  seq
+  [ "P" ; "Q" ]
+  (dupl (Ty1 ([ t_idv ], if !Params.enc_nobool then t_idv else t_bol)) 2)
+  ( appb B.Implies
+    [ quant Forall
+      [ "x" ] [ t_idv ]
+      ( appb B.Equiv
+        [ app (Ix 3 %% [])
+          [ Ix 1 %% []
+          ] %% [] |> maybe_cast t_idv
+        ; app (Ix 2 %% [])
+          [ Ix 1 %% []
+          ] %% [] |> maybe_cast t_idv
+        ] %% []
+      ) %% []
+    ; appb ~tys:[ t_idv ] B.Eq
+      [ apps T.Choose
+        [ Ix 2 %% []
+        ] %% []
+      ; apps T.Choose
+        [ Ix 1 %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+(* {4 Sets} *)
+
+let set_ext () =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ( appb B.Implies
+    [ quant Forall
+      [ "z" ] [ t_idv ]
+      ( appb B.Equiv
+        [ apps T.Mem
+          [ Ix 1 %% []
+          ; Ix 3 %% []
+          ] %% [] |> maybe_cast t_idv
+        ; apps T.Mem
+          [ Ix 1 %% []
+          ; Ix 2 %% []
+          ] %% [] |> maybe_cast t_idv
+        ] %% []
+      ) %% []
+    ; appb ~tys:[ t_idv ] B.Eq
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let subseteq_def () =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.SubsetEq
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% [] |> maybe_cast t_idv
+  ] ]
+  ( appb B.Equiv
+    [ apps T.SubsetEq
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% [] |> maybe_cast t_idv
+    ; quant Forall
+      [ "z" ] [ t_idv ]
+      ( appb B.Implies
+        [ apps T.Mem
+          [ Ix 1 %% []
+          ; Ix 3 %% []
+          ] %% [] |> maybe_cast t_idv
+        ; apps T.Mem
+          [ Ix 1 %% []
+          ; Ix 2 %% []
+          ] %% [] |> maybe_cast t_idv
+        ] %% []
+      ) %% []
+    ] %% []
+  ) %% []
+
+let setenum_def n =
+  quant Forall
+  (gen "a" n @ [ "x" ]) (dupl t_idv (n+1))
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps (T.SetEnum n) [] %% []
+    ] %% [] |> maybe_cast t_idv
+  ] ]
+  begin if (n = 0) then
+    appb B.Neg
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps (T.SetEnum 0) [] %% []
+      ] %% [] |> maybe_cast t_idv
+    ] %% []
+  else
+    appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps (T.SetEnum n)
+        (ixi ~shift:1 n) %% []
+      ] %% [] |> maybe_cast t_idv
+    ; List.init n begin fun i ->
+        appb ~tys:[ t_idv ] B.Eq
+        [ Ix 1 %% []
+        ; Ix (n-i+1) %% []
+        ] %% []
+      end |>
+      function
+        | [e] -> e
+        | es -> List (Or, es) %% []
+    ] %% []
+  end %% []
+
+let union_def () =
+  quant Forall
+  [ "a" ; "x" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps T.Union
+      [ Ix 2 %% []
+      ] %% []
+    ] %% [] |> maybe_cast t_idv
+  ] ]
+  ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.Union
+        [ Ix 2 %% []
+        ] %% []
+      ] %% [] |> maybe_cast t_idv
+    ; quant Exists
+      [ "y" ] [ t_idv ]
+      ( appb B.Conj
+        [ apps T.Mem
+          [ Ix 1 %% []
+          ; Ix 3 %% []
+          ] %% [] |> maybe_cast t_idv
+        ; apps T.Mem
+          [ Ix 2 %% []
+          ; Ix 1 %% []
+          ] %% [] |> maybe_cast t_idv
+        ] %% []
+      ) %% []
+    ] %% []
+  ) %% []
+
+let subset_def () =
+  quant Forall
+  [ "a" ; "x" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps T.Subset
+      [ Ix 2 %% []
+      ] %% []
+    ] %% [] |> maybe_cast t_idv
+  ] ]
+  ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.Subset
+        [ Ix 2 %% []
+        ] %% []
+      ] %% [] |> maybe_cast t_idv
+    ; quant Forall
+      [ "y" ] [ t_idv ]
+      ( appb B.Implies
+        [ apps T.Mem
+          [ Ix 1 %% []
+          ; Ix 2 %% []
+          ] %% [] |> maybe_cast t_idv
+        ; apps T.Mem
+          [ Ix 1 %% []
+          ; Ix 3 %% []
+          ] %% [] |> maybe_cast t_idv
+        ] %% []
+      ) %% []
+    ] %% []
+  ) %% []
+
+let cup_def () =
+  quant Forall
+  [ "a" ; "b" ; "x" ] [ t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps T.Cup
+      [ Ix 3 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ] %% [] |> maybe_cast t_idv
+  ] ]
+  ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.Cup
+        [ Ix 3 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ] %% [] |> maybe_cast t_idv
+    ; appb B.Disj
+      [ apps T.Mem
+        [ Ix 1 %% []
+        ; Ix 3 %% []
+        ] %% [] |> maybe_cast t_idv
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; Ix 2 %% []
+        ] %% [] |> maybe_cast t_idv
+      ] %% []
+    ] %% []
+  ) %% []
+
+let cap_def () =
+  quant Forall
+  [ "a" ; "b" ; "x" ] [ t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps T.Cap
+      [ Ix 3 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ] %% [] |> maybe_cast t_idv
+  ] ]
+  ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.Cap
+        [ Ix 3 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ] %% [] |> maybe_cast t_idv
+    ; appb B.Conj
+      [ apps T.Mem
+        [ Ix 1 %% []
+        ; Ix 3 %% []
+        ] %% [] |> maybe_cast t_idv
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; Ix 2 %% []
+        ] %% [] |> maybe_cast t_idv
+      ] %% []
+    ] %% []
+  ) %% []
+
+let setminus_def () =
+  quant Forall
+  [ "a" ; "b" ; "x" ] [ t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps T.SetMinus
+      [ Ix 3 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ] %% [] |> maybe_cast t_idv
+  ] ]
+  ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.SetMinus
+        [ Ix 3 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ] %% [] |> maybe_cast t_idv
+    ; appb B.Conj
+      [ apps T.Mem
+        [ Ix 1 %% []
+        ; Ix 3 %% []
+        ] %% [] |> maybe_cast t_idv
+      ; appb B.Neg
+        [ apps T.Mem
+          [ Ix 1 %% []
+          ; Ix 2 %% []
+          ] %% [] |> maybe_cast t_idv
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let setst_def () =
+  seq
+  [ "P" ]
+  [ Ty1 ([ t_idv ], if !Params.enc_nobool then t_idv else t_bol) ]
+  ( quant Forall
+    [ "a" ; "x" ] [ t_idv ; t_idv ]
+    ~pats:[ [
+      apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.SetSt
+        [ Ix 2 %% []
+        ; Ix 3 %% []
+        ] %% []
+      ] %% [] |> maybe_cast t_idv
+    ] ]
+    ( appb B.Equiv
+      [ apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.SetSt
+          [ Ix 2 %% []
+          ; Ix 3 %% []
+          ] %% []
+        ] %% [] |> maybe_cast t_idv
+      ; appb B.Conj
+        [ apps T.Mem
+          [ Ix 1 %% []
+          ; Ix 2 %% []
+          ] %% [] |> maybe_cast t_idv
+        ; app (Ix 3 %% [])
+          [ Ix 1 %% []
+          ] %% [] |> maybe_cast t_idv
+        ] %% []
+      ] %% []
+    ) %% []
+  ) %% []
+
+let setof_def n =
+  seq
+  [ "F" ]
+  [ Ty1 (dupl t_idv n, t_idv) ]
+  ( quant Forall
+    (gen "a" n @ [ "x" ]) (dupl t_idv (n+1))
+    ~pats:[ [
+      apps T.Mem
+      [ Ix 1 %% []
+      ; apps (T.SetOf n)
+        (List.init n begin fun i ->
+          Ix (n-i+1) %% []
+        end @
+        [ Ix (n+2) %% []
+        ]) %% []
+      ] %% [] |> maybe_cast t_idv
+    ] ]
+    ( appb B.Equiv
+      [ apps T.Mem
+        [ Ix 1 %% []
+        ; apps (T.SetOf n)
+          (List.init n begin fun i ->
+            Ix (n-i+1) %% []
+          end @
+          [ Ix (n+2) %% []
+          ]) %% []
+        ] %% [] |> maybe_cast t_idv
+      ; quant Exists
+        (gen "y" n) (dupl t_idv n)
+        ( List (And,
+            List.init n begin fun i ->
+              apps T.Mem
+              [ Ix (n-i) %% []
+              ; Ix (2*n-i+1) %% []
+              ] %% [] |> maybe_cast t_idv
+            end @
+            [ appb ~tys:[ t_idv ] B.Eq
+              [ Ix (n+1) %% []
+              ; app (Ix (2*n+2) %% [])
+                (ixi n) %% []
+              ] %% []
+            ]
+          ) %% []
+        ) %% []
+      ] %% []
+    ) %% []
+  ) %% []
+
+
+(* {4 Functions} *)
+
+let fcn_ext () =
+  quant Forall
+  [ "f" ] [ t_idv ]
+  ~pats:[ [
+    apps T.FunIsafcn
+    [ Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ apps T.FunIsafcn
+      [ Ix 1 %% []
+      ] %% []
+    ; appb ~tys:[ t_idv ] B.Eq
+      [ Ix 1 %% []
+      ; apps T.FunConstr
+        [ apps T.FunDom
+          [ Ix 1 %% []
+          ] %% []
+        ; lam
+          [ "y" ] [ t_idv ]
+          ( apps T.FunApp
+            [ Ix 2 %% []
+            ; Ix 1 %% []
+            ] %% []
+          ) %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let fcnconstr_isafcn () =
+  seq
+  [ "F" ] [ Ty1 ([ t_idv ], t_idv) ]
+  ( quant Forall
+    [ "a" ] [ t_idv ]
+    ( apps T.FunIsafcn
+      [ apps T.FunConstr
+        [ Ix 1 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ] %% []
+    ) %% []
+  ) %% []
+
+let fcnset_def () =
+  quant Forall
+  [ "a" ; "b" ; "f" ] [ t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps T.FunSet
+      [ Ix 3 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ] %% [] |> maybe_cast t_idv
+  ] ]
+  ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.FunSet
+        [ Ix 3 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ] %% [] |> maybe_cast t_idv
+    ; List (And,
+      [ apps T.FunIsafcn
+        [ Ix 1 %% []
+        ] %% []
+      ; appb ~tys:[ t_idv ] B.Eq
+        [ apps T.FunDom
+          [ Ix 1 %% []
+          ] %% []
+        ; Ix 3 %% []
+        ] %% []
+      ; quant Forall
+        [ "x" ] [ t_idv ]
+        ( appb B.Implies
+          [ apps T.Mem
+            [ Ix 1 %% []
+            ; Ix 4 %% []
+            ] %% [] |> maybe_cast t_idv
+          ; apps T.Mem
+            [ apps T.FunApp
+              [ Ix 2 %% []
+              ; Ix 1 %% []
+              ] %% []
+            ; Ix 3 %% []
+            ] %% [] |> maybe_cast t_idv
           ] %% []
         ) %% []
-      ) %% []
-  } %% []
+      ]) %% []
+    ] %% []
+  ) %% []
 
-
-(* {3 Sets} *)
-
-let subseteq ty =
-  all [ "x" ; "y" ]
-  ?tys:(Option.map (fun ty -> [ TSet ty ; TSet ty ]) ty) ~pats:[ [
-    ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-    B.Subseteq (Ix 2 %% []) (Ix 1 %% []) %% []
-  ] ] (
-    ifx B.Equiv (
-      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-      B.Subseteq (Ix 2 %% []) (Ix 1 %% []) %% []
-    ) (
-      all [ "z" ]
-      ?tys:(Option.map (fun ty -> [ ty ]) ty) (
-        ifx B.Implies (
-          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-          B.Mem (Ix 1 %% []) (Ix 3 %% []) %% []
-        ) (
-          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-          B.Mem (Ix 1 %% []) (Ix 2 %% []) %% []
-        ) %% []
-      ) %% []
+let fcndom_def () =
+  seq
+  [ "F" ] [ Ty1 ([ t_idv ], t_idv) ]
+  ( quant Forall
+    [ "a" ] [ t_idv ]
+    ( appb ~tys:[ t_idv ] B.Eq
+      [ apps T.FunDom
+        [ apps T.FunConstr
+          [ Ix 1 %% []
+          ; Ix 2 %% []
+          ] %% []
+        ] %% []
+      ; Ix 1 %% []
+      ] %% []
     ) %% []
   ) %% []
 
-let setenum n ty =
-  if n = 0 then
-    all [ "x" ]
-    ?tys:(Option.map (fun ty -> [ ty ]) ty) ~pats:[ [
-      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-      B.Mem (
-        Ix 1 %% []
-      ) (
-        app ?tys:(Option.map (fun ty -> [ ty ]) ty) (
-          SetEnum [] %% []
-        ) [] %% []
-      ) %% []
-    ] ] (
-      una B.Neg (
-        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-        B.Mem (
-          Ix 1 %% []
-        ) (
-          app ?tys:(Option.map (fun ty -> [ ty ]) ty) (
-            SetEnum [] %% []
-          ) [] %% []
-        ) %% []
-      ) %% []
-    ) %% []
-  else
-    all (gen "a" n @ [ "x" ])
-    ?tys:(Option.map (fun ty -> dupl ty (n + 1)) ty) ~pats:[ [
-      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-      B.Mem (
-        Ix 1 %% []
-      ) (
-        app ?tys:(Option.map (fun ty -> [ ty ]) ty) (
-          SetEnum (ixi ~shift:1 n) %% []
-        ) [] %% []
-      ) %% []
-    ] ] (
-      ifx B.Equiv (
-        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-        B.Mem (
-          Ix 1 %% []
-        ) (
-          app ?tys:(Option.map (fun ty -> [ ty ]) ty) (
-            SetEnum (ixi ~shift:1 n) %% []
-          ) [] %% []
-        ) %% []
-      ) (
-        if n = 1 then
-          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-          B.Eq (Ix 1 %% []) (Ix 2 %% []) %% []
-        else
-          List (Or, List.map begin fun e ->
-            ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-            B.Eq (Ix 1 %% []) e %% []
-          end (ixi ~shift:1 n)) %% []
-      ) %% []
-    ) %% []
-
-let union ty =
-  all [ "a" ; "x" ]
-  ?tys:(Option.map (fun ty -> [ TSet (TSet ty) ; ty ]) ty) ~pats:[ [
-    ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-    B.Mem (
-      Ix 1 %% []
-    ) (
-      una ?tys:(Option.map (fun ty -> [ ty ]) ty)
-      B.UNION (
-        Ix 2 %% []
-      ) %% []
-    ) %% []
-  ] ] (
-    ifx B.Equiv (
-      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-      B.Mem (
-        Ix 1 %% []
-      ) (
-        una ?tys:(Option.map (fun ty -> [ ty ]) ty)
-        B.UNION (
-          Ix 2 %% []
-        ) %% []
-      ) %% []
-    ) (
-      exi [ "y" ]
-      ?tys:(Option.map (fun ty -> [ TSet ty ]) ty) (
-        ifx B.Conj (
-          ifx ?tys:(Option.map (fun ty -> [ TSet ty ]) ty)
-          B.Mem (
-            Ix 1 %% []
-          ) (
-            Ix 3 %% []
-          ) %% []
-        ) (
-          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-          B.Mem (
-            Ix 2 %% []
-          ) (
-            Ix 1 %% []
-          ) %% []
-        ) %% []
-      ) %% []
-    ) %% []
-  ) %% []
-
-let subset ty =
-  all [ "a" ; "x" ]
-  ?tys:(Option.map (fun ty -> [ TSet ty ; TSet ty ]) ty) ~pats:[ [
-    ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-    B.Mem (
-      Ix 1 %% []
-    ) (
-      una ?tys:(Option.map (fun ty -> [ ty ]) ty)
-      B.SUBSET (
-        Ix 2 %% []
-      ) %% []
-    ) %% []
-  ] ] (
-    ifx B.Equiv (
-      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-      B.Mem (
-        Ix 1 %% []
-      ) (
-        una ?tys:(Option.map (fun ty -> [ ty ]) ty)
-        B.SUBSET (
-          Ix 2 %% []
-        ) %% []
-      ) %% []
-    ) (
-      all [ "y" ]
-      ?tys:(Option.map (fun ty -> [ ty ]) ty) (
-        ifx B.Implies (
-          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-          B.Mem (
-            Ix 1 %% []
-          ) (
-            Ix 2 %% []
-          ) %% []
-        ) (
-          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-          B.Mem (
-            Ix 1 %% []
-          ) (
-            Ix 3 %% []
-          ) %% []
-        ) %% []
-      ) %% []
-    ) %% []
-  ) %% []
-
-let cup ty =
-  all [ "a" ; "b" ; "x" ]
-  ?tys:(Option.map (fun ty -> [ TSet ty ; TSet ty ; ty ]) ty) ~pats:[ [
-    ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-    B.Mem (
-      Ix 1 %% []
-    ) (
-      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-      B.Cup (
-        Ix 3 %% []
-      ) (
-        Ix 2 %% []
-      ) %% []
-    ) %% []
-  ] ] (
-    ifx B.Equiv (
-      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-      B.Mem (
-        Ix 1 %% []
-      ) (
-        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-        B.Cup (
-          Ix 3 %% []
-        ) (
-          Ix 2 %% []
-        ) %% []
-      ) %% []
-    ) (
-      ifx B.Disj (
-        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-        B.Mem (
-          Ix 1 %% []
-        ) (
-          Ix 3 %% []
-        ) %% []
-      ) (
-        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-        B.Mem (
-          Ix 1 %% []
-        ) (
-          Ix 2 %% []
-        ) %% []
-      ) %% []
-    ) %% []
-  ) %% []
-
-let cap ty =
-  all [ "a" ; "b" ; "x" ]
-  ?tys:(Option.map (fun ty -> [ TSet ty ; TSet ty ; ty ]) ty) ~pats:[ [
-    ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-    B.Mem (
-      Ix 1 %% []
-    ) (
-      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-      B.Cap (
-        Ix 3 %% []
-      ) (
-        Ix 2 %% []
-      ) %% []
-    ) %% []
-  ] ] (
-    ifx B.Equiv (
-      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-      B.Mem (
-        Ix 1 %% []
-      ) (
-        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-        B.Cap (
-          Ix 3 %% []
-        ) (
-          Ix 2 %% []
-        ) %% []
-      ) %% []
-    ) (
-      ifx B.Conj (
-        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-        B.Mem (
-          Ix 1 %% []
-        ) (
-          Ix 3 %% []
-        ) %% []
-      ) (
-        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-        B.Mem (
-          Ix 1 %% []
-        ) (
-          Ix 2 %% []
-        ) %% []
-      ) %% []
-    ) %% []
-  ) %% []
-
-let setminus ty =
-  all [ "a" ; "b" ; "x" ]
-  ?tys:(Option.map (fun ty -> [ TSet ty ; TSet ty ; ty ]) ty) ~pats:[ [
-    ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-    B.Mem (
-      Ix 1 %% []
-    ) (
-      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-      B.Setminus (
-        Ix 3 %% []
-      ) (
-        Ix 2 %% []
-      ) %% []
-    ) %% []
-  ] ] (
-    ifx B.Equiv (
-      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-      B.Mem (
-        Ix 1 %% []
-      ) (
-        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-        B.Setminus (
-          Ix 3 %% []
-        ) (
-          Ix 2 %% []
-        ) %% []
-      ) %% []
-    ) (
-      ifx B.Conj (
-        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-        B.Mem (
-          Ix 1 %% []
-        ) (
-          Ix 3 %% []
-        ) %% []
-      ) (
-        una ?tys:(Option.map (fun ty -> [ ty ]) ty)
-        B.Neg (
-          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-          B.Mem (
-            Ix 1 %% []
-          ) (
-            Ix 2 %% []
-          ) %% []
-        ) %% []
-      ) %% []
+let fcnapp_def () =
+  seq
+  [ "F" ] [ Ty1 ([ t_idv ], t_idv) ]
+  ( quant Forall
+    [ "a" ; "x" ] [ t_idv ; t_idv ]
+    ( appb B.Implies
+      [ apps T.Mem
+        [ Ix 1 %% []
+        ; Ix 2 %% []
+        ] %% [] |> maybe_cast t_idv
+      ; appb ~tys:[ t_idv ] B.Eq
+        [ apps T.FunApp
+          [ apps T.FunConstr
+            [ Ix 2 %% []
+            ; Ix 3 %% []
+            ] %% []
+          ; Ix 1 %% []
+          ] %% []
+        ; app (Ix 3 %% [])
+          [ Ix 1 %% []
+          ] %% []
+        ] %% []
+      ] %% []
     ) %% []
   ) %% []
 
 
-let setst ty =
-  Sequent {
-    context = [
-      fresh ~tsig:(Option.fold (fun _ ty -> [ ty ], TAtom TBool) ([ TAtom TU ], TAtom TBool) ty)
-      ~n:1 "P" %% []
-    ] |> Deque.of_list ;
-    active =
-      all [ "a" ; "x" ]
-      ?tys:(Option.map (fun ty -> [ TSet ty ; ty ]) ty) ~pats:[ [
-        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-        B.Mem (
-          Ix 1 %% []
-        ) (
-          app ?tys:(Option.map (fun ty -> [ ty ]) ty) (
-            SetSt (
-              Option.fold annot ("y" %% []) ty,
-              Ix 2 %% [],
-              app (Ix 4 %% []) [ Ix 1 %% [] ] %% []
-            ) %% []
-          ) [] %% []
-        ) %% []
-      ] ] (
-        ifx B.Equiv (
-          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-          B.Mem (
-            Ix 1 %% []
-          ) (
-            app ?tys:(Option.map (fun ty -> [ ty ]) ty) (
-              SetSt (
-                Option.fold annot ("y" %% []) ty,
-                Ix 2 %% [],
-                app (Ix 4 %% []) [ Ix 1 %% [] ] %% []
-              ) %% []
-            ) [] %% []
-          ) %% []
-        ) (
-          ifx B.Conj (
-            ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-            B.Mem (
-              Ix 1 %% []
-            ) (
-              Ix 2 %% []
-            ) %% []
-          ) (
-            app (Ix 3 %% []) [ Ix 1 %% [] ] %% []
-          ) %% []
-        ) %% []
-      ) %% []
-  } %% []
+(* {4 Strings} *)
 
-let setof n ttys =
-  let tys, ty =
-    match ttys with
-    | None -> (List.init n (fun _ -> None), None)
-    | Some (tys, ty) -> (List.map (fun ty -> Some ty) tys, Some ty)
-  in
-  Sequent {
-    context = [
-      fresh ?tsig:ttys ~n:n "F" %% []
-    ] |> Deque.of_list ;
-    active =
-      all (gen "a" n @ [ "x" ])
-      ?tys:(Option.map (fun (tys, ty) -> List.map (fun ty -> TSet ty) tys @ [ ty ]) ttys) ~pats:[ [
-        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-        B.Mem (
-          Ix 1 %% []
-        ) (
-          app ?tys:(Option.map (fun ty -> [ ty ]) ty) (
-            SetOf (
-              app (Ix (2*n + 2) %% []) (ixi n) %% [],
-              List.map2 begin fun e ty ->
-                let h = Option.fold annot ("y" %% []) ty in
-                (h, Constant, Domain e)
-              end (ixi ~shift:1 n) tys
-            ) %% []
-          ) [] %% []
-        ) %% []
-      ] ] (
-        ifx B.Equiv (
-          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-          B.Mem (
-            Ix 1 %% []
-          ) (
-            app ?tys:(Option.map (fun ty -> [ ty ]) ty) (
-              SetOf (
-                app (Ix (2*n + 2) %% []) (ixi n) %% [],
-                List.map2 begin fun e ty ->
-                  let h = Option.fold annot ("y" %% []) ty in
-                  (h, Constant, Domain e)
-                end (ixi ~shift:1 n) tys
-              ) %% []
-            ) [] %% []
-          ) %% []
-        ) (
-          exi (gen "y" n)
-          ?tys:(Option.map fst ttys) (
-            List (And, List.map2 begin fun e1 (e2, ty) ->
-              ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-              B.Mem e1 e2 %% []
-            end (ixi n) (List.combine (ixi ~shift:(n + 1) n) tys)
-            @ [
-              ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-              B.Eq (
-                Ix (n + 1) %% []
-              ) (
-                app (Ix (2*n + 2) %% []) (ixi n) %% []
-              ) %% []
-            ]
-            ) %% []
-          ) %% []
-        ) %% []
-      ) %% []
-  } %% []
+let strlit_isstr s =
+  apps T.Mem
+  [ apps (T.StrLit s) [] %% []
+  ; apps T.StrSet [] %% []
+  ] %% [] |> maybe_cast t_idv
+
+let strlit_distinct s1 s2 =
+  appb ~tys:[ t_idv ] B.Neq
+  [ apps (T.StrLit s1) [] %% []
+  ; apps (T.StrLit s2) [] %% []
+  ] %% []
 
 
-(* {3 Functions} *)
+(* {4 Arithmetic} *)
 
-let fcnisafcn =
-  Sequent {
-    context = [
-      fresh ~n:1 "F" %% []
-    ] |> Deque.of_list ;
-    active =
-      all [ "a" ] (
-        Apply (mk_special "IsAFcn", [
-          Fcn (
-            [ "x" %% [], Constant, Domain (Ix 1 %% []) ],
-            Apply (Ix 3 %% [], [ Ix 1 %% [] ]) %% []
-          ) %% []
-        ]) %% []
-      ) %% []
-  } %% []
+let intlit_isint n =
+  apps T.Mem
+  [ apps (T.IntLit n) [] %% []
+  ; apps T.IntSet [] %% []
+  ] %% [] |> maybe_cast t_idv
 
-let arrow tys =
-  let ty1, ty2 =
-    match tys with
-    | None -> (None, None)
-    | Some (ty1, ty2) -> (Some ty1, Some ty2)
-  in
-  all [ "a" ; "b" ; "f" ]
-  ?tys:(Option.map (fun (ty1, ty2) -> [ TSet ty1 ; TSet ty2 ; TArrow (ty1, ty2) ]) tys)
+let intlit_distinct m n =
+  appb ~tys:[ t_idv ] B.Neq
+  [ apps (T.IntLit m) [] %% []
+  ; apps (T.IntLit n) [] %% []
+  ] %% []
+
+let natset_def () =
+  quant Forall
+  [ "x" ] [ t_idv ]
   ~pats:[ [
-    ifx ?tys:(Option.map (fun (ty1, ty2) -> [ TArrow (ty1, ty2) ]) tys)
-    B.Mem (
-      Ix 1 %% []
-    ) (
-      app ?tys:(Option.map (fun (ty1, ty2) -> [ ty1 ; ty2 ]) tys)
-      (Arrow (Ix 3 %% [], Ix 2 %% []) %% []) [] %% []
-    ) %% []
-  ] ] (
-    ifx B.Equiv (
-      ifx ?tys:(Option.map (fun (ty1, ty2) -> [ TArrow (ty1, ty2) ]) tys)
-      B.Mem (
-        Ix 1 %% []
-      ) (
-        app ?tys:(Option.map (fun (ty1, ty2) -> [ ty1 ; ty2 ]) tys)
-        (Arrow (Ix 3 %% [], Ix 2 %% []) %% []) [] %% []
-      ) %% []
-    ) (
-      List (And, [
-        ifx ?tys:(Option.map (fun ty -> [ TSet ty ]) ty1)
-        B.Eq (
-          una ?tys:(Option.map (fun ty -> [ ty ]) ty1)
-          B.DOMAIN (
-            Ix 1 %% []
-          ) %% []
-        ) (
-          Ix 3 %% []
-        ) %% [] ;
-        all [ "x" ] ?tys:(Option.map (fun ty -> [ ty ]) ty1) (
-          ifx B.Implies (
-            ifx ?tys:(Option.map (fun ty -> [ ty ]) ty1)
-            B.Mem (
-              Ix 1 %% []
-            ) (
-              Ix 4 %% []
-            ) %% []
-          ) (
-            ifx ?tys:(Option.map (fun ty -> [ ty ]) ty2)
-            B.Mem (
-              app ?tys:(Option.map (fun (ty1, ty2) -> [ ty1 ; ty2 ]) tys)
-              (FcnApp (
-                Ix 2 %% [],
-                [ Ix 1 %% [] ]
-              ) %% []) [] %% []
-            ) (
-              Ix 3 %% []
-            ) %% []
-          ) %% []
-        ) %% []
-      ] |> fun es ->
-        match tys with
-        | None -> Apply (mk_special "IsAFcn", [ Ix 1 %% [] ]) %% [] :: es
-        | Some _ -> es
-      ) %% []
-    ) %% []
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps T.NatSet [] %% []
+    ] %% [] |> maybe_cast t_idv
+  ] ]
+  ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.NatSet [] %% []
+      ] %% [] |> maybe_cast t_idv
+    ; appb B.Conj
+      [ apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntSet [] %% []
+        ] %% [] |> maybe_cast t_idv
+      ; apps T.IntLteq
+        [ apps (T.IntLit 0) [] %% []
+        ; Ix 1 %% []
+        ] %% [] |> maybe_cast t_idv
+      ] %% []
+    ] %% []
   ) %% []
 
-let domain tys =
-  let ty1 = Option.map fst tys in
-  Sequent {
-    context = [
-      fresh ?tsig:(Option.map (fun (ty1, ty2) -> ([ ty1 ], ty2)) tys)
-      ~n:1 "F" %% []
-    ] |> Deque.of_list ;
-    active =
-      all [ "a" ]
-      ?tys:(Option.map (fun ty -> [ TSet ty ]) ty1) ~pats:[ [
-        una ?tys:(Option.map (fun ty -> [ ty ]) ty1)
-        B.DOMAIN (
-          Fcn (
-            [ Option.fold annot ("x" %% []) ty1, Constant, Domain (Ix 1 %% []) ],
-            app (Ix 3 %% []) [ Ix 1 %% [] ] %% []
-          ) %% []
-        ) %% []
-      ] ] (
-        ifx ?tys:(Option.map (fun ty -> [ TSet ty ]) ty1)
-        B.Eq (
-          una ?tys:(Option.map (fun ty -> [ ty ]) ty1)
-          B.DOMAIN (
-            Fcn (
-              [ Option.fold annot ("x" %% []) ty1, Constant, Domain (Ix 1 %% []) ],
-              app (Ix 3 %% []) [ Ix 1 %% [] ] %% []
-            ) %% []
-          ) %% []
-        ) (
-          Ix 1 %% []
-        ) %% []
-      ) %% []
-  } %% []
-
-let fcnapp tys =
-  let ty1, ty2 =
-    match tys with
-    | None -> (None, None)
-    | Some (ty1, ty2) -> (Some ty1, Some ty2)
-  in
-  Sequent {
-    context = [
-      fresh ?tsig:(Option.map (fun (ty1, ty2) -> ([ ty1 ], ty2)) tys)
-      ~n:1 "F" %% []
-    ] |> Deque.of_list ;
-    active =
-      all [ "a" ; "x" ]
-      ?tys:(Option.map (fun ty -> [ TSet ty ; ty ]) ty1) ~pats:[ [
-        ifx ?tys:(Option.map (fun ty -> [ ty ]) ty1)
-        B.Mem (
-          Ix 1 %% []
-        ) (
-          Ix 2 %% []
-        ) %% []
-      ] ] (
-        ifx B.Implies (
-          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty1)
-          B.Mem (
-            Ix 1 %% []
-          ) (
-            Ix 2 %% []
-          ) %% []
-        ) (
-          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty2)
-          B.Eq (
-            app ?tys:(Option.map (fun (ty1, ty2) -> [ ty1 ; ty2 ]) tys) (
-              FcnApp (
-                Fcn (
-                  [ Option.fold annot ("y" %% []) ty1, Constant, Domain (Ix 2 %% []) ],
-                  app (Ix 4 %% []) [ Ix 1 %% [] ] %% []
-                ) %% [],
-                [ Ix 1 %% [] ]
-              ) %% []
-            ) [] %% []
-          ) (
-            app (Ix 3 %% []) [ Ix 1 %% [] ] %% []
-          ) %% []
-        ) %% []
-      ) %% []
-  } %% []
-
-
-(* {3 Booleans} *)
-
-let boolcast_inj =
-  ifx B.Conj (
-    ifx B.Eq (
-      mk_special "tt"
-    ) (
-      Apply (
-        mk_special "Cast_Bool",
-        [ Internal B.TRUE %% [] ]
-      ) %% []
-    ) %% []
-  ) (
-    ifx B.Neq (
-      mk_special "tt"
-    ) (
-      Apply (
-        mk_special "Cast_Bool",
-        [ Internal B.FALSE %% [] ]
-      ) %% []
-    ) %% []
+let intplus_typing () =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.Mem
+        [ Ix 2 %% []
+        ; apps T.IntSet [] %% []
+        ] %% [] |> maybe_cast t_idv
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntSet [] %% []
+        ] %% [] |> maybe_cast t_idv
+      ] %% []
+    ; apps T.Mem
+      [ apps T.IntPlus
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ; apps T.IntSet [] %% []
+      ] %% [] |> maybe_cast t_idv
+    ] %% []
   ) %% []
 
-let booleans =
-  all [ "x" ]
-  ~tys:[ TAtom TU ] ~pats:[ [
-    ifx B.Mem (
-      Ix 1 %% []
-    ) (
-      Apply (
-        mk_special "Cast_SetBool",
-        [ Internal B.BOOLEAN %% [] ]
-      ) %% []
-    ) %% []
-  ] ] (
-    ifx B.Implies (
-      ifx B.Mem (
-        Ix 1 %% []
-      ) (
-        Apply (
-          mk_special "Cast_SetBool",
-          [ Internal B.BOOLEAN %% [] ]
-        ) %% []
-      ) %% []
-    ) (
-      exi [ "y" ] ~tys:[ TAtom TBool ] (
-        ifx ~tys:[ TAtom TU ]
-        B.Eq (
-          Ix 2 %% []
-        ) (
-          Apply (
-            mk_special "Cast_Bool",
-            [ Ix 1 %% [] ]
-          ) %% []
-        ) %% []
-      ) %% []
-    ) %% []
+let intuminus_typing () =
+  quant Forall
+  [ "x" ] [ t_idv ]
+  ( appb B.Implies
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.IntSet [] %% []
+      ] %% [] |> maybe_cast t_idv
+    ; apps T.Mem
+      [ apps T.IntUminus
+        [ Ix 1 %% []
+        ] %% []
+      ; apps T.IntSet [] %% []
+      ] %% [] |> maybe_cast t_idv
+    ] %% []
   ) %% []
 
-
-(* {3 Strings} *)
-
-let strings =
-  Internal B.TRUE %% []
-
-
-(* {3 Arithmetic} *)
-
-let ints =
-  Internal B.TRUE %% []
-
-let nats =
-  Internal B.TRUE %% []
-
-let reals =
-  Internal B.TRUE %% []
-
-let int_guard =
-  all [ "x" ] ~pats:[ [
-      ifx B.Mem (Ix 1 %% []) (Internal B.Int %% []) %% []
-  ] ] (
-    ifx B.Equiv (
-      ifx B.Mem (Ix 1 %% []) (Internal B.Int %% []) %% []
-    ) (
-      exi [ "n" ] ~tys:[ TAtom TInt ] (
-        ifx B.Eq (
-          Ix 2 %% []
-        ) (
-          Apply (
-            mk_special "Cast_Int",
-            [ Ix 1 %% [] ]
-          ) %% []
-        ) %% []
-      ) %% []
-    ) %% []
+let intminus_typing () =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.Mem
+        [ Ix 2 %% []
+        ; apps T.IntSet [] %% []
+        ] %% [] |> maybe_cast t_idv
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntSet [] %% []
+        ] %% [] |> maybe_cast t_idv
+      ] %% []
+    ; apps T.Mem
+      [ apps T.IntMinus
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ; apps T.IntSet [] %% []
+      ] %% [] |> maybe_cast t_idv
+    ] %% []
   ) %% []
 
-let inteq_type =
-  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
-    ifx B.Eq (
-      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-    ) %% []
-  ] ] (
-    ifx B.Implies (
-      ifx B.Eq (
-        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-      ) (
-        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-      ) %% []
-    ) (
-      ifx ~tys:[ TAtom TInt ] B.Eq (Ix 2 %% []) (Ix 1 %% []) %% []
-    ) %% []
+let inttimes_typing () =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.Mem
+        [ Ix 2 %% []
+        ; apps T.IntSet [] %% []
+        ] %% [] |> maybe_cast t_idv
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntSet [] %% []
+        ] %% [] |> maybe_cast t_idv
+      ] %% []
+    ; apps T.Mem
+      [ apps T.IntTimes
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ; apps T.IntSet [] %% []
+      ] %% [] |> maybe_cast t_idv
+    ] %% []
   ) %% []
 
-let plus_type =
-  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
-    ifx B.Plus (
-      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-    ) %% []
-  ] ] (
-    ifx B.Eq (
-      ifx B.Plus (
-        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-      ) (
-        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-      ) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [
-        Apply (mk_special "Plus_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
+let intexp_typing () =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ( appb B.Implies
+    [ List (And,
+      [ apps T.Mem
+        [ Ix 2 %% []
+        ; apps T.IntSet [] %% []
+        ] %% [] |> maybe_cast t_idv
+      ; appb ~tys:[ t_idv ] B.Neq
+        [ Ix 2 %% []
+        ; apps (T.IntLit 0) [] %% []
+        ] %% []
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntSet [] %% []
+        ] %% [] |> maybe_cast t_idv
       ]) %% []
-    ) %% []
+    ; apps T.Mem
+      [ apps T.IntExp
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ; apps T.IntSet [] %% []
+      ] %% [] |> maybe_cast t_idv
+    ] %% []
   ) %% []
 
-let times_type =
-  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
-    ifx B.Times (
-      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-    ) %% []
-  ] ] (
-    ifx B.Eq (
-      ifx B.Times (
-        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-      ) (
-        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-      ) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [
-        Apply (mk_special "Times_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
+let intquotient_typing () =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ( appb B.Implies
+    [ List (And,
+      [ apps T.Mem
+        [ Ix 2 %% []
+        ; apps T.IntSet [] %% []
+        ] %% [] |> maybe_cast t_idv
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntSet [] %% []
+        ] %% [] |> maybe_cast t_idv
+      ; apps T.IntLteq
+        [ apps (T.IntLit 0) [] %% []
+        ; Ix 1 %% []
+        ] %% [] |> maybe_cast t_idv
       ]) %% []
-    ) %% []
+    ; apps T.Mem
+      [ apps T.IntQuotient
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ; apps T.IntSet [] %% []
+      ] %% [] |> maybe_cast t_idv
+    ] %% []
   ) %% []
 
-let uminus_type =
-  all [ "n" ] ~tys:[ TAtom TInt ] ~pats:[ [
-    una B.Uminus (
-      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-    ) %% []
-  ] ] (
-    ifx B.Eq (
-      una B.Uminus (
-        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-      ) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [
-        Apply (mk_special "Uminus_Int", [ Ix 1 %% [] ]) %% []
+let intremainder_typing () =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ( appb B.Implies
+    [ List (And,
+      [ apps T.Mem
+        [ Ix 2 %% []
+        ; apps T.IntSet [] %% []
+        ] %% [] |> maybe_cast t_idv
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntSet [] %% []
+        ] %% [] |> maybe_cast t_idv
+      ; apps T.IntLteq
+        [ apps (T.IntLit 0) [] %% []
+        ; Ix 1 %% []
+        ] %% [] |> maybe_cast t_idv
       ]) %% []
-    ) %% []
+    ; apps T.Mem
+      [ apps T.IntRemainder
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ; apps T.IntRange
+        [ apps (T.IntLit 0) [] %% []
+        ; apps T.IntMinus
+          [ Ix 1 %% []
+          ; apps (T.IntLit 1) [] %% []
+          ] %% []
+        ] %% []
+      ] %% [] |> maybe_cast t_idv
+    ] %% []
   ) %% []
 
-
-let minus_type =
-  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
-    ifx B.Minus (
-      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-    ) %% []
-  ] ] (
-    ifx B.Eq (
-      ifx B.Minus (
-        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-      ) (
-        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
+let intrange_def () =
+  quant Forall
+  [ "a" ; "b" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 2 %% []
+    ; apps T.IntSet [] %% []
+    ] %% [] |> maybe_cast t_idv
+  ; apps T.Mem
+    [ Ix 1 %% []
+    ; apps T.IntSet [] %% []
+    ] %% [] |> maybe_cast t_idv
+  ] ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.Mem
+        [ Ix 2 %% []
+        ; apps T.IntSet [] %% []
+        ] %% [] |> maybe_cast t_idv
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntSet [] %% []
+        ] %% [] |> maybe_cast t_idv
+      ] %% []
+    ; quant Forall
+      [ "x" ] [ t_idv ]
+      ~pats:[ [
+        apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntRange
+          [ Ix 3 %% []
+          ; Ix 2 %% []
+          ] %% []
+        ] %% [] |> maybe_cast t_idv
+      ] ]
+      ( appb B.Equiv
+        [ apps T.Mem
+          [ Ix 1 %% []
+          ; apps T.IntRange
+            [ Ix 3 %% []
+            ; Ix 2 %% []
+            ] %% []
+          ] %% [] |> maybe_cast t_idv
+        ; List (And,
+          [ apps T.Mem
+            [ Ix 1 %% []
+            ; apps T.IntSet [] %% []
+            ] %% [] |> maybe_cast t_idv
+          ; apps T.IntLteq
+            [ Ix 3 %% []
+            ; Ix 1 %% []
+            ] %% [] |> maybe_cast t_idv
+          ; apps T.IntLteq
+            [ Ix 1 %% []
+            ; Ix 2 %% []
+            ] %% [] |> maybe_cast t_idv
+          ]) %% []
+        ] %% []
       ) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [
-        Apply (mk_special "Minus_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
-      ]) %% []
-    ) %% []
+    ] %% []
   ) %% []
 
 
-let quotient_type =
-  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
-    ifx B.Quotient (
-      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-    ) %% []
-  ] ] (
-    ifx B.Eq (
-      ifx B.Quotient (
-        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-      ) (
-        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-      ) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [
-        Apply (mk_special "Quotient_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
-      ]) %% []
-    ) %% []
-  ) %% []
+(* {4 Tuples} *)
+
+(* TODO *)
 
 
-let remainder_type =
-  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
-    ifx B.Remainder (
-      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-    ) %% []
-  ] ] (
-    ifx B.Eq (
-      ifx B.Remainder (
-        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-      ) (
-        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-      ) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [
-        Apply (mk_special "Remainder_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
-      ]) %% []
-    ) %% []
-  ) %% []
+(* {3 Typed Variants} *)
+
+(* {4 Strings} *)
+
+let t_strlit_distinct s1 s2 =
+  appb ~tys:[ t_str ] B.Neq
+  [ apps (T.TStrLit s1) [] %% []
+  ; apps (T.TStrLit s2) [] %% []
+  ] %% []
 
 
-let exp_type =
-  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
-    ifx B.Exp (
-      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-    ) %% []
-  ] ] (
-    ifx B.Eq (
-      ifx B.Exp (
-        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-      ) (
-        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-      ) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [
-        Apply (mk_special "Exp_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
-      ]) %% []
-    ) %% []
-  ) %% []
+(* {3 Get Axiom} *)
+
+let get_axm = function
+  | T.ChooseDef -> choose_def ()
+  | T.ChooseExt -> choose_ext ()
+  | T.SetExt -> set_ext ()
+  | T.SubsetEqDef -> subseteq_def ()
+  | T.EnumDef n -> setenum_def n
+  | T.UnionDef -> union_def ()
+  | T.SubsetDef -> subset_def ()
+  | T.CupDef -> cup_def ()
+  | T.CapDef -> cap_def ()
+  | T.SetMinusDef -> setminus_def ()
+  | T.SetStDef -> setst_def ()
+  | T.SetOfDef n -> setof_def n
+  | T.StrLitIsstr s -> strlit_isstr s
+  | T.StrLitDistinct (s1, s2) -> strlit_distinct s1 s2
+  | T.IntLitIsint n -> intlit_isint n
+  | T.IntLitDistinct (m, n) -> intlit_distinct m n
+  | T.NatSetDef -> natset_def ()
+  | T.IntPlusTyping -> intplus_typing ()
+  | T.IntUminusTyping -> intuminus_typing ()
+  | T.IntMinusTyping -> intminus_typing ()
+  | T.IntTimesTyping -> inttimes_typing ()
+  | T.IntQuotientTyping -> intquotient_typing ()
+  | T.IntRemainderTyping -> intremainder_typing ()
+  | T.IntExpTyping -> intexp_typing ()
+  | T.IntRangeDef -> intrange_def ()
+  | T.FunExt -> fcn_ext ()
+  | T.FunConstrIsafcn -> fcnconstr_isafcn ()
+  | T.FunSetDef -> fcnset_def ()
+  | T.FunDomDef -> fcndom_def ()
+  | T.FunAppDef -> fcnapp_def ()
+  | T.TStrLitDistinct (s1, s2) -> t_strlit_distinct s1 s2
+  | T.CastInj ty0 -> cast_inj ty0
+  | T.TypeGuard ty0 -> type_guard ty0
+  | T.Typing tla_smb -> op_typing tla_smb
 
 
-let lteq_type =
-  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
-    ifx B.Lteq (
-      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-    ) %% []
-  ] ] (
-    ifx B.Equiv (
-      ifx B.Lteq (
-        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-      ) (
-        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-      ) %% []
-    ) (
-      Apply (mk_special "Lteq_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
-    ) %% []
-  ) %% []
-
-
-let lt_type =
-  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
-    ifx B.Lt (
-      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-    ) %% []
-  ] ] (
-    ifx B.Equiv (
-      ifx B.Lt (
-        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-      ) (
-        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-      ) %% []
-    ) (
-      Apply (mk_special "Lt_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
-    ) %% []
-  ) %% []
-
-
-let gteq_type =
-  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
-    ifx B.Gteq (
-      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-    ) %% []
-  ] ] (
-    ifx B.Equiv (
-      ifx B.Gteq (
-        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-      ) (
-        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-      ) %% []
-    ) (
-      Apply (mk_special "Gteq_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
-    ) %% []
-  ) %% []
-
-
-let gt_type =
-  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
-    ifx B.Gt (
-      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-    ) %% []
-  ] ] (
-    ifx B.Equiv (
-      ifx B.Gt (
-        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-      ) (
-        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-      ) %% []
-    ) (
-      Apply (mk_special "Gt_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
-    ) %% []
-  ) %% []
-
-
-let range_type =
-  all [ "m" ; "n" ] ~tys:[ TAtom TInt ; TAtom TInt ] ~pats:[ [
-    ifx B.Range (
-      Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-    ) (
-      Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-    ) %% []
-  ] ] (
-    ifx B.Eq (
-      ifx B.Range (
-        Apply (mk_special "Cast_Int", [ Ix 2 %% [] ]) %% []
-      ) (
-        Apply (mk_special "Cast_Int", [ Ix 1 %% [] ]) %% []
-      ) %% []
-    ) (
-      Apply (mk_special "Cast_SetInt", [
-        Apply (mk_special "Range_Int", [ Ix 2 %% [] ; Ix 1 %% [] ]) %% []
-      ]) %% []
-    ) %% []
-  ) %% []
-
+(* FIXME adapt *)
+  (*
 
 (* {3 Tuples} *)
 
@@ -1255,3 +1298,4 @@ let inst_setof n ttys m p =
     ) %% []
   ) %% []
 
+  *)

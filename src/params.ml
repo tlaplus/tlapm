@@ -487,4 +487,12 @@ let backend_timeout = ref 5.;;
    timeout_stretch before use.
 *)
 
-let enc_arith = ref true
+let enc_typelvl = ref 0
+
+let enc_nobool = ref false
+
+let enc_noarith = ref true (* FIXME false by default *)
+
+let enc_enablesmt = ref false
+
+let enc_verbose = ref false

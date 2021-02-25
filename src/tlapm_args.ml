@@ -197,8 +197,15 @@ let init () =
                "<f> load fingerprints from file <f> (save as usual)";
     "--fpp", Arg.Set fp_deb,
              " print the fingerprints of obligations in toolbox messages";
-    "--enc-noarith", Arg.Clear enc_arith,
-                     " disable arithmetic from encodings";
+    blank;
+    title "(encoding options)";
+    blank;
+    (* FIXME Implement these *)
+    (*"--enc-typelvl", Arg.Set_int enc_typelvl, " set level of type reconstruction (0 or 1)";*)
+    (*"--enc-nobool", Arg.Set enc_nobool, " disable sort 'bool' for primitives such as '\\in'";*)
+    (*"--enc-noarith", Arg.Set enc_noarith, " disable usage of the sort 'int'";*)
+    (*"--enc-enablesmt", Arg.Set enc_enablesmt, " use the Zipperposition encoding for SMT";*)
+    "--enc-verbose", Arg.Set enc_verbose, " print obligation at different encoding stages";
   ]
   in
   let opts = Arg.align opts in
@@ -239,5 +246,9 @@ let init () =
     Printf.printf " with command line:\n\\*";
     Array.iter (fun s -> Printf.printf " %s" (quote_if_needed s)) Sys.argv;
     Printf.printf "\n\n%!"
+  end;
+  if !Params.enc_typelvl < 0 || !Params.enc_typelvl > 1 then begin
+    Printf.eprintf "Bad type level: %d\nType level set to 0" !Params.enc_typelvl;
+    Params.enc_typelvl := 0
   end;
   !mods

@@ -21,46 +21,67 @@ module B = Builtin
 
 let error ?at mssg =
   let mssg = "Backend.Thf: " ^ mssg in
-  Errors.bug ?at mssg
+  (*Errors.bug ?at mssg*)
+  failwith mssg
 
 (* FIXME remove *)
 let primed s = s ^ "__prime"
-
-let to_uppercase s =
-  if String.length s > 0 then
-    let c = String.get s 0 in
-    if 'a' <= c && c <= 'z' then
-      "Z__" ^ s
-    else s
-  else s
-
-let to_lowercase s =
-  if String.length s > 0 then
-    let c = String.get s 0 in
-    if 'A' <= c && c <= 'Z' then
-      "z__" ^ s
-    else s
-  else s
-
-
-(* {3 Global Options} *)
-
-let enable_ho = ref true
-
-let enable_arith = ref true
 
 
 (* {3 Context} *)
 
 let init_cx = Ctx.dot
 
+(* NOTE Global variables must be uncapitalized, local variables must be
+ * capitalized.  All variables get a prefix to ensure that. *)
+
+let repls =
+  [ '\\', "backslash_"
+  ; '+',  "plussign_"
+  ; '-',  "hyphen_"
+  ; '*',  "asterisk_"
+  ; '/',  "slash_"
+  ; '%',  "percentsign_"
+  ; '^', "circumflexaccent_"
+  ; '&',  "ampersand_"
+  ; '@',  "atsign"
+  ; '#',  "pound_"
+  ; '$',  "dollarsign_"
+  ; '(',  "leftparenthesis_"
+  ; ')',  "rightparenthesis_"
+  ; '|',  "verticalbar_"
+  ; '.',  "period_"
+  ; ':',  "colon_"
+  ; '?',  "questionmark_"
+  ; '!',  "exclamationmark_"
+  ; '<',  "lessthansign_"
+  ; '>',  "greaterthansign_"
+  ; '=',  "equalsign_"
+  ]
+
+let escaped =
+  List.fold_right begin fun (c, repl) ->
+    let rgx = Str.regexp (Str.quote (String.make 1 c)) in
+    Str.global_replace rgx repl
+  end repls
+
+let format_l s =
+  if String.length s > 0 then
+    "THF__" ^ escaped s
+  else s
+
+let format_g s =
+  if String.length s > 0 then
+    "thf__" ^ escaped s
+  else s
+
 let adj_l cx v =
-  let nm = to_uppercase v.core in
+  let nm = format_l v.core in
   let cx = Ctx.push cx nm in
   (cx, Ctx.string_of_ident (Ctx.front cx))
 
 let adj_g cx v =
-  let nm = to_lowercase v.core in
+  let nm = format_g v.core in
   let cx = Ctx.push cx nm in
   (cx, Ctx.string_of_ident (Ctx.front cx))
 
@@ -84,9 +105,9 @@ let pp_print_delimited ?(sep=pp_print_commasp) =
 let pp_print_sort ff ty =
   let s =
     match ty with
-    | TAtom TU -> "$i"
-    | TAtom TBool -> "$o"
-    | TAtom TInt -> "$int"
+    | TAtm TAIdv -> "$i"
+    | TAtm TABol -> "$o"
+    | TAtm TAInt -> "$int"
     | _ -> ty_to_string ty
   in
   pp_print_string ff s
@@ -94,30 +115,29 @@ let pp_print_sort ff ty =
 let pp_print_conn s ff () =
   fprintf ff " %s@ " s
 
-let pp_print_tyfunc ff (targs, ty) =
-  let pp_print_targ ff = function
-    | TRg ty ->
+let pp_print_tyfunc ff (Ty2 (ty1s, ty)) =
+  let pp_print_ty1 ff = function
+    | Ty1 ([], ty) ->
         pp_print_sort ff ty
-    | TOp (tys, ty) ->
+    | Ty1 (ty0s, ty) ->
         fprintf ff "( %a )"
         (pp_print_delimited ~sep:(pp_print_conn ">") pp_print_sort)
-        (tys @ [ ty ])
+        (ty0s @ [ ty ])
   in
   pp_print_delimited ~sep:(pp_print_conn ">")
-  pp_print_targ ff (targs @ [ TRg ty ])
+  pp_print_ty1 ff (ty1s @ [ Ty1 ([], ty) ])
 
 (* Print type attached to hint, not the hint itself *)
 let pp_print_typeof ff v =
-  if has v Props.type_prop then
-    let ty = get v Props.type_prop in
+  if has v Props.ty0_prop then
+    let ty = get v Props.ty0_prop in
     pp_print_sort ff ty
-  else if has v Props.tsch_prop then
-    let sch = get v Props.tsch_prop in
-    match sch with
-    | TSch ([], targs, ty) ->
-        pp_print_tyfunc ff (targs, ty)
-    | _ ->
-        error ~at:v "Polymorphic type scheme on declaration"
+  else if has v Props.ty2_prop then
+    let ty2 = get v Props.ty2_prop in
+    pp_print_tyfunc ff ty2
+  else if has v Props.ty1_prop then
+    let ty1 = get v Props.ty1_prop in
+    pp_print_tyfunc ff (upcast_ty2 ty1)
   else
     let mssg = "Missing type annotation on \
                 '" ^ v.core ^ "'"
@@ -128,16 +148,8 @@ let pp_print_binding ff v =
   fprintf ff "%s: %a" v.core pp_print_typeof v
 
 
-open Encode.Table
 let is_arith op =
-  match query op smb_prop with
-  | Some smb ->
-      begin match get_defn smb with
-      | Some ( Plus | Uminus | Minus | Times | Lteq | Lt | Gteq | Gt ) ->
-          true
-      | _ -> false
-      end
-  | None -> false
+  false (* FIXME *)
 
 
 let rec pp_print_thf_atomic cx ff oe =
@@ -165,8 +177,9 @@ let rec pp_print_thf_atomic cx ff oe =
   | Internal B.FALSE ->
       pp_print_string ff "$false"
 
-  | Internal _ ->
-      error ~at:oe "Unsupported expression (TLA+ builtin)"
+  | Internal b ->
+      let mssg = "Unsupported builtin '" ^ B.builtin_to_string b ^ "'" in
+      error ~at:oe mssg
 
   | Apply (e, []) ->
       pp_print_thf_atomic cx ff e
@@ -400,7 +413,7 @@ and pp_print_thf_ite cx ff oe =
   | Case ((e1, e2) :: ps, Some o) ->
       pp_print_thf_ite cx ff (If (e1, e2, Case (ps, Some o) %% []) @@ oe)
 
-  | Bang _ | With _
+  | Bang _ | With _ | Tquant _
   | Choose _ | SetSt _ | SetOf _ | Product _ | Tuple _
   | Fcn _ | FcnApp _ | Arrow _ | Rect _ | Record _
   | Except _ | Dot _ | Sub _ | Tsub _ | Fair _ | String _
@@ -413,7 +426,8 @@ and pp_print_thf_ite cx ff oe =
 and pp_print_thf_arith cx ff oe =
   match oe.core with
   | Apply (op, es) when is_arith op ->
-      let smb = get op smb_prop in
+      error ~at:oe "Not implemented" (* FIXME *)
+      (*let smb = get op smb_prop in
       let s =
         match Option.get (get_defn smb) with
         | Plus -> "sum"
@@ -427,7 +441,7 @@ and pp_print_thf_arith cx ff oe =
         | _ -> error ~at:op "Expected arithmetic operator"
       in
       fprintf ff "@[<hov 2>$%s(@,%a@])" s
-      (pp_print_delimited (pp_print_thf_atomic cx)) es
+      (pp_print_delimited (pp_print_thf_atomic cx)) es*)
 
   | _ ->
       pp_print_thf_atomic cx ff oe
@@ -441,49 +455,33 @@ let pp_print_expr cx ff oe =
 (* This very important function does several transformations on the sequent
  * to shape it into something translatable to THF. *)
 let preprocess ?solver sq =
-  let set_true rf = (rf := true) in
-  let set_false rf = (rf := false) in
-  let () =
-    match solver with
-    | Some "Zipperposition" -> begin
-      set_true enable_ho;
-      set_false enable_arith
-      ; set_false Params.enc_arith (* FIXME handle options correctly then remove this line *)
-    end
-    | _ -> begin
-      set_false enable_ho;
-      set_true enable_arith
-    end
-  in
+  let _ = solver in (* not used *)
 
-  (* FIXME remove *)
-  let emp = (Deque.empty, Ctx.dot) in
-  let pp_print_sequent ff sq = ignore (Expr.Fmt.pp_print_sequent emp ff sq) in
+  let cx = (Deque.empty, Ctx.dot) in
+  let pp_print_sequent ff sq = ignore (Expr.Fmt.pp_print_sequent cx ff sq) in
 
-  let pp_debug mssg sq =
-    fprintf err_formatter "  [DEBUG] %s@.%a@.@." mssg
-    pp_print_sequent sq
-  in
   let debug mssg sq =
-    pp_debug mssg sq;
+    if !Params.enc_verbose then begin
+      fprintf err_formatter "  [DEBUG] %s@.%a@.@." mssg
+      pp_print_sequent sq
+    end;
     sq
   in
-  (* FIXME end remove *)
 
   let sq = sq
-    |> debug "Start" (* FIXME remove *)
+    |> debug "Original Obligation:"
+    |> Type.Reconstruct.main ~typelvl:!Params.enc_typelvl ~noarith:true ~nobool:!Params.enc_nobool
     |> Encode.Rewrite.elim_notmem
-    |> Encode.Rewrite.elim_multiarg
-    (*|> Encode.Rewrite.elim_tuples*)
-    |> Encode.Rewrite.elim_records
+    |> Encode.Rewrite.elim_compare
     |> Encode.Rewrite.elim_except
-    (* NOTE eliminating bound notation necessary to make all '\in' visible *)
-    |> Encode.Rewrite.elim_bounds
-    |> debug "Done Simpl." (* FIXME remove *)
-    |> Encode.Direct.main
-    |> debug "Done Direct"
+    |> Encode.Rewrite.elim_multiarg
+    |> Encode.Rewrite.elim_tuples
+    |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
+    |> debug "Type Reconstruction and Simplify:"
+    |> Encode.Standardize.main
+    |> debug "Standardize:"
     |> Encode.Axiomatize.main
-    |> debug "Done Axiomatize" (* FIXME remove *)
+    |> debug "Axiomatize:"
   in
   sq
 
@@ -523,7 +521,7 @@ let pp_print_thf cx ff ?comment name role form =
   name pp_print_role role (pp_print_formula cx) form
 
 let pp_print_obligation ?(solver="Zipperposition") ff ob =
-  (* Shape the sequent into a form that can be translated;
+  (* Shape the sequent into a form that can be translated
    * Append a top context containing additional declarations and axioms *)
   let sq = preprocess ~solver ob.Proof.T.obl.core in
 
@@ -534,20 +532,20 @@ let pp_print_obligation ?(solver="Zipperposition") ff ob =
   pp_print_newline ff ();
 
   (* Print sorts *)
-  fprintf ff "%%---- Sorts@.";
-  pp_print_newline ff ();
-  let srts = Encode.CollectTypes.main sq in
+  let srts = Type.Collect.main sq in
   let srts = Ts.filter begin function
-      TAtom TU | TAtom TBool | TAtom TInt -> false | _ -> true
+      TAtm TAIdv | TAtm TABol | TAtm TAInt -> false | _ -> true
   end srts in
-  List.iteri begin fun i ty ->
-    pp_print_thf Ctx.dot ff ("type" ^ string_of_int i) Type (Sort ty)
-  end (Ts.elements srts);
-  pp_print_newline ff ();
+  if not (Ts.is_empty srts) then begin
+    fprintf ff "%%---- Sorts@.";
+    pp_print_newline ff ();
+    List.iteri begin fun i ty ->
+      pp_print_thf Ctx.dot ff ("type" ^ string_of_int i) Type (Sort ty)
+    end (Ts.elements srts);
+    pp_print_newline ff ()
+  end;
 
   (* Print hypotheses *)
-  fprintf ff "%%---- Hypotheses@.";
-
   let rec spin cx hs =
     match Deque.front hs with
     | None ->
@@ -567,9 +565,11 @@ let pp_print_obligation ?(solver="Zipperposition") ff ob =
     | Some ({ core = Flex v }, hs) ->
         let ncx, nm = adj_g cx v in
         let v = nm @@ v in
+        let nm_primed = primed nm in
+        let v_primed = nm_primed @@ v in
         pp_print_thf cx ff ("flex_" ^ nm) Type (Opr v);
         pp_print_newline ff ();
-        pp_print_thf cx ff ("flex_" ^ primed nm) Type (Opr v);
+        pp_print_thf cx ff ("flex_" ^ nm_primed) Type (Opr v_primed);
         pp_print_newline ff ();
         spin ncx hs
 
@@ -591,13 +591,14 @@ let pp_print_obligation ?(solver="Zipperposition") ff ob =
         spin ncx hs
   in
 
-  pp_print_newline ff ();
   let cx =
     if Deque.size sq.context = 0 then begin
-      pp_print_newline ff ();
       Ctx.dot
-    end else
+    end else begin
+      fprintf ff "%%---- Hypotheses@.";
+      pp_print_newline ff ();
       spin Ctx.dot sq.context
+    end
   in
 
   (* Print goal *)

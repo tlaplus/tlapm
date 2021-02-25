@@ -5,6 +5,9 @@
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
 
+open Expr.T
+open Type.T
+
 open Ext
 open Property
 open Expr.T
@@ -14,12 +17,20 @@ module Subst = Expr.Subst
 module Visit = Expr.Visit
 module B = Builtin
 
-(* TODO Type preservation for elim_bounds, elim_multiarg, elim_tuples, elim_records *)
+(* TODO Type preservation for elim_multiarg, elim_tuples *)
+(* Need to think about a different use of type annotations for tuples
+ * before that. *)
 
+
+(* {3 Helpers} *)
 
 let error ?at mssg =
   let mssg = "Encode.Rewrite: " ^ mssg in
-  Errors.bug ?at mssg
+  (*Errors.bug ?at mssg*)
+  failwith mssg
+
+let maybe_assign prop =
+  Option.fold (fun x -> assign x prop)
 
 
 (* {3 Bounds Elimination} *)
@@ -32,36 +43,41 @@ let elim_bounds_visitor = object (self : 'self)
 
     | Quant (q, bs, e) ->
         let n = List.length bs in
-        let scx, rbs, hs, dit, _ =
-          List.fold_left begin fun (nscx, rbs, hs, dit, i) (v, k, d) ->
+        let scx, bs, hs, _, _ =
+          List.fold_left begin fun (nscx, r_bs, r_hs, dit, i) (v, k, d) ->
             let h = Fresh (v, Shape_expr, k, Unbounded) %% [] in
             let nscx = Visit.adj scx h in
             let b = (v, k, No_domain) in
             match d, dit with
             | No_domain, _ ->
-                (nscx, b :: rbs, hs, None, i - 1)
+                (nscx, b :: r_bs, r_hs, None, i - 1)
             | Domain d, _ ->
                 let d = self#expr scx d in
-                let d = Subst.app_expr (Subst.shift n) d in
+                let op = maybe_assign Props.tpars_prop (Internal B.Mem %% []) (query d Props.tpars_prop) in
                 let h =
-                  Apply (Internal B.Mem %% [], [
-                    Ix i %% [] ; d
+                  Apply (op, [
+                    Ix i %% [] ; Subst.app_expr (Subst.shift n) d
                   ]) %% []
                 in
-                (nscx, b :: rbs, h :: hs, Some d, i - 1)
+                let h =
+                  if has d Props.tpars_prop || not !Params.enc_nobool then h
+                  else assign h Props.bproj_prop (TAtm TAIdv)
+                in
+                (nscx, b :: r_bs, h :: r_hs, Some d, i - 1)
             | Ditto, Some d ->
+                let op = maybe_assign Props.tpars_prop (Internal B.Mem %% []) (query d Props.tpars_prop) in
+                let h = Apply (op, [ Ix i %% [] ; d ]) %% [] in
                 let h =
-                  Apply (Internal B.Mem %% [], [
-                    Ix i %% [] ; d
-                  ]) %% []
+                  if has d Props.tpars_prop || not !Params.enc_nobool then h
+                  else assign h Props.bproj_prop (TAtm TAIdv)
                 in
-                (nscx, b :: rbs, h :: hs, Some d, i - 1)
+                (nscx, b :: r_bs, h :: r_hs, Some d, i - 1)
             | _, _ ->
                 error ~at:oe "Missing bound"
-          end (scx, [], [], None, n) bs
+          end (scx, [], [], None, n) bs |>
+          fun (nscx, r_bs, r_hs, dit, i) ->
+            (nscx, List.rev r_bs, List.rev r_hs, dit, i)
         in
-        let bs = List.rev rbs in
-        let hs = List.rev hs in
         let e = self#expr scx e in
         let e, opats =
           (* Patterns must be displaced as the body of a quantified expr
@@ -92,13 +108,31 @@ let elim_bounds_visitor = object (self : 'self)
         let h = Fresh (v, Shape_expr, Constant, Unbounded) %% [] in
         let scx = Visit.adj scx h in
         let e = self#expr scx e in
-        let e =
-          Apply (Internal B.Conj %% [], [
-            Apply (Internal B.Mem %% [], [
-              Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) d
-            ]) %% [] ;
-            e
+        let op = maybe_assign Props.tpars_prop (Internal B.Mem %% []) (query d Props.tpars_prop) in
+        let h =
+          Apply (op, [
+            Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) d
           ]) %% []
+        in
+        let h =
+          if has d Props.tpars_prop || not !Params.enc_nobool then h
+          else assign h Props.bproj_prop (TAtm TAIdv)
+        in
+        let e =
+          if has oe Props.tpars_prop || not !Params.enc_nobool then
+            Apply (Internal B.Conj %% [], [ h ; e ]) %% []
+          else if has e Props.icast_prop && get e Props.icast_prop = TAtm TABol then
+            (* Optimization:
+              * `to_idv(e) = true_idv`  -->  `e` *)
+            let e = remove e Props.icast_prop in
+            assign (
+              Apply (Internal B.Conj %% [], [ h ; e ]) %% []
+            ) Props.icast_prop (TAtm TABol)
+          else
+            let e = assign e Props.bproj_prop (TAtm TAIdv) in
+            assign (
+              Apply (Internal B.Conj %% [], [ h ; e ]) %% []
+            ) Props.icast_prop (TAtm TABol)
         in
         Choose (v, None, e) @@ oe
 
@@ -116,14 +150,17 @@ let elim_bounds_visitor = object (self : 'self)
           let d = Subst.app_expr sub d in
           let d = self#expr scx d in
           let h = Fresh (v, shp, k, Unbounded) @@ h in
-          let hh =
-            Fact (
-              Apply (Internal B.Mem %% [], [
-                Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) d
-              ]) %% [],
-              vis, NotSet
-            ) %% []
+          let op = maybe_assign Props.tpars_prop (Internal B.Mem %% []) (query d Props.tpars_prop) in
+          let e =
+            Apply (op, [
+              Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) d
+            ]) %% []
           in
+          let e =
+            if has d Props.tpars_prop || not !Params.enc_nobool then e
+            else assign e Props.bproj_prop (TAtm TAIdv)
+          in
+          let hh = Fact (e, vis, NotSet) %% [] in
           let scx = Visit.adj scx h in
           let sub = Subst.bump sub in
           let scx = Visit.adj scx hh in
@@ -149,7 +186,7 @@ let elim_bounds sq =
   snd (elim_bounds_visitor#sequent cx sq)
 
 
-(* {3 NotMem Elimination} *)
+(* {3 NotMem Simplification} *)
 
 let elim_notmem_visitor = object (self : 'self)
   inherit [unit] Visit.map as super
@@ -159,10 +196,19 @@ let elim_notmem_visitor = object (self : 'self)
     | Apply ({ core = Internal B.Notmem } as op, [ e ; f ]) ->
         let e = self#expr scx e in
         let f = self#expr scx f in
-        Apply (Internal B.Neg %% [], [
-          Apply (Internal B.Mem @@ op, [ e ; f ]) %% []
-        ]) @@ oe
-
+        if has op Props.tpars_prop || not !Params.enc_nobool then
+          Apply (Internal B.Neg %% [], [
+            Apply (Internal B.Mem @@ op, [ e ; f ]) %% []
+          ]) @@ oe
+        else
+          (* Not sure this is the best way to preserve properties *)
+          remove (
+            Apply (Internal B.Neg %% [], [
+              assign (
+                Apply (Internal B.Mem @@ op, [ e ; f ]) %% []
+              ) Props.bproj_prop (TAtm TAIdv)
+            ]) @@ oe
+          ) Props.bproj_prop
     | _ -> super#expr scx oe
 end
 
@@ -181,17 +227,19 @@ let elim_compare_visitor = object (self : 'self)
     | Apply ({ core = Internal B.Lt } as op, [ e ; f ]) ->
         let e = self#expr scx e in
         let f = self#expr scx f in
+        let neq_op = maybe_assign Props.tpars_prop (Internal B.Neq %% []) (query op Props.tpars_prop) in
         Apply (Internal B.Conj %% [], [
           Apply (Internal B.Lteq @@ op, [ e ; f ]) @@ oe ;
-          Apply (Internal B.Neq %% [], [ e ; f ]) %% []
+          Apply (neq_op, [ e ; f ]) %% []
         ]) %% []
 
     | Apply ({ core = Internal B.Gt } as op, [ e ; f ]) ->
         let e = self#expr scx e in
         let f = self#expr scx f in
+        let neq_op = maybe_assign Props.tpars_prop (Internal B.Neq %% []) (query op Props.tpars_prop) in
         Apply (Internal B.Conj %% [], [
           Apply (Internal B.Lteq @@ op, [ f ; e ]) @@ oe ;
-          Apply (Internal B.Neq %% [], [ f ; e ]) %% []
+          Apply (neq_op, [ f ; e ]) %% []
         ]) %% []
 
     | Apply ({ core = Internal B.Gteq } as op, [ e ; f ]) ->
@@ -207,6 +255,62 @@ let elim_compare sq =
   snd (elim_compare_visitor #sequent cx sq)
 
 
+(* {3 EXCEPT Elimination} *)
+
+(* FIXME not type preserving *)
+
+let elim_except_visitor = object (self : 'self)
+  inherit [unit] Visit.map as super
+
+  method expr scx oe =
+    match oe.core with
+    | Except (e, [ ([d], a as exp) ]) ->
+        let e = self#expr scx e in
+        let exp = self#exspec scx exp in
+        let d, a =
+          match exp with
+          | [Except_dot s], a -> String s %% [], a
+          | [Except_apply d], a -> d, a
+          | _ -> failwith ""
+        in
+        let b = Apply (Internal B.DOMAIN %% [], [ e ]) %% [] in
+        let v = assign ("x" %% []) Props.ty0_prop (TAtm TAIdv) in
+        Fcn (
+          [ v, Constant, Domain b ],
+          If (
+            Apply (Internal B.Eq %% [], [ Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) d ]) %% [],
+            Subst.app_expr (Subst.shift 1) a,
+            FcnApp (Subst.app_expr (Subst.shift 1) e, [ Ix 1 %% [] ]) %% []
+          ) %% []
+        ) %% []
+
+    (* FIXME Cases below  are preprocessed away in {!Expr.Elab} *)
+
+    | Except (e, [ d :: ds, a ]) ->
+        Except (e, [ [d], begin
+          let app =
+            match d with
+            | Except_dot s -> Dot (e, s) %% []
+            | Except_apply d -> FcnApp (e, [d]) %% []
+          in
+          Except (app, [ ds, a ]) %% []
+        end ]) %% [] |>
+        self#expr scx
+
+    | Except (e, exs) (* when List.length exs > 1 *) ->
+        List.fold_left begin fun e exp ->
+          Except (e, [ exp ]) %% []
+        end e exs |>
+        self#expr scx
+
+    | _ -> super#expr scx oe
+end
+
+let elim_except sq =
+  let cx = ((), Deque.empty) in
+  snd (elim_except_visitor #sequent cx sq)
+
+
 (* {3 Multi-arguments Functions Elimination} *)
 
 let elim_multiarg_visitor = object (self : 'self)
@@ -216,24 +320,26 @@ let elim_multiarg_visitor = object (self : 'self)
     match oe.core with
     | Fcn (bs, e) when List.length bs > 1 ->
         let scx, bs = self#bounds scx bs in
-        let rvs, rbs, _ =
-          List.fold_left begin fun (rvs, rbs, dit) (v, _, d) ->
+        let vs, bs, _ =
+          List.fold_left begin fun (r_vs, r_bs, dit) (v, _, d) ->
             match d, dit with
             | Domain b, _
             | Ditto, Some b ->
-                (v :: rvs, b :: rbs, Some b)
+                (v :: r_vs, b :: r_bs, Some b)
             | _, _ -> error ~at:oe "Missing bound on Fcn"
-          end ([], [], None) bs
+          end ([], [], None) bs |>
+          fun (r_vs, r_bs, dit) ->
+            (List.rev r_vs, List.rev r_bs, dit)
         in
         let v = "t" %% [] in
-        let b = Product (List.rev rbs) %% [] in
+        let b = Product bs %% [] in
         let e = self#expr scx e in
         let dfs =
           List.mapi begin fun i v ->
             Operator (v, FcnApp (
               Ix 1 %% [], [ Num (string_of_int (i + 1), "") %% [] ]
             ) %% []) %% []
-          end (List.rev rvs)
+          end vs
         in
         let e = Let (dfs, e) %% [] in
         Fcn ([ v, Constant, Domain b ], e) @@ oe
@@ -250,42 +356,6 @@ end
 let elim_multiarg sq =
   let cx = ((), Deque.empty) in
   snd (elim_multiarg_visitor #sequent cx sq)
-
-
-(* {3 Except Elimination} *)
-
-let elim_except_visitor = object (self : 'self)
-  inherit [unit] Visit.map as super
-
-  method expr scx oe =
-    match oe.core with
-    (* NOTE Except-expressions are normalized in {!Expr.Elab} *)
-    | Except (e1, [ xp ]) ->
-        let e1 = self#expr scx e1 in
-        let xps, e3 = self#exspec scx xp in
-        let e2 =
-          match xps with
-          | [ Except_apply e2 ] -> e2
-          | [ Except_dot s ] -> String s %% []
-          | _ -> error ~at:oe "Unsupported EXCEPT"
-        in
-        let b = Apply (Internal B.DOMAIN %% [], [ e1 ]) %% [] in
-        let e =
-          If (
-            Apply (Internal B.Eq %% [], [ Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) e2 ]) %% [],
-            Subst.app_expr (Subst.shift 1) e3,
-            FcnApp (Subst.app_expr (Subst.shift 1) e1, [ Ix 1 %% [] ]) %% []
-          ) %% []
-        in
-        let v = "x" %% [] in
-        Fcn ([ v, Constant, Domain b ], e) @@ oe
-
-    | _ -> super#expr scx oe
-end
-
-let elim_except sq =
-  let cx = ((), Deque.empty) in
-  snd (elim_except_visitor #sequent cx sq)
 
 
 (* {3 Tuples Elimination} *)
@@ -456,7 +526,7 @@ let apply_ext_visitor = object (self : 'self)
         let e = self#expr scx e in
         let f = self#expr scx f in
         let oty =
-          query op Props.targs_prop |>
+          query op Props.tpars_prop |>
           Option.map begin function [ty] -> ty | _ -> error ~at:op "Bad type annotation" end
         in
         let q =
@@ -465,8 +535,8 @@ let apply_ext_visitor = object (self : 'self)
           | B.Neq -> Exists
           | _ -> failwith ""
         in
-        let v = Option.fold (fun v -> assign v Props.type_prop) ("x" %% []) oty in
-        let mem_op = Option.fold (fun e ty -> assign e Props.targs_prop [ ty ]) (Internal B.Mem %% []) oty in
+        let v = Option.fold (fun v -> assign v Props.ty0_prop) ("x" %% []) oty in
+        let mem_op = Option.fold (fun e ty -> assign e Props.tpars_prop [ ty ]) (Internal B.Mem %% []) oty in
         Quant (
           q, [ v, Constant, No_domain ],
           Apply (
