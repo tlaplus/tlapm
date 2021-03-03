@@ -31,13 +31,9 @@ junit:
 unit:
 	./TOOLS/do_tests unit
 
-.PHONY: constant
-constant:
-	./TOOLS/do_tests constant
-
-.PHONY: silly
-silly:
-	./TOOLS/do_tests silly
+.PHONY: bugs
+bugs:
+	./TOOLS/do_tests bugs
 
 clean:
 	@find . \( -name '*.tlaps' -o -name '*.tla.out' -o -name '*.tla.err' \) \
