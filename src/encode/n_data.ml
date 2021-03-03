@@ -349,8 +349,8 @@ let untyped_deps tla_smb s =
       ([ Mem ; IntSet ; IntLteq ],            [ IntRangeDef ])
   (* Functions *)
   | FunIsafcn ->
-      ([ (*FunDom ; FunConstr ; FunApp*) ],
-                                  [ (*FunExt*) ])
+      ([ FunDom ; FunConstr ; FunApp ],
+                                  [ FunExt ])
   | FunSet ->
       ([ Mem ; FunIsafcn ; FunDom ; FunApp ],
                                   [ FunSetDef ])

@@ -614,30 +614,56 @@ let setof_def n =
 
 let fcn_ext () =
   quant Forall
-  [ "f" ] [ t_idv ]
+  [ "f" ; "g" ] [ t_idv ; t_idv ]
   ~pats:[ [
     apps T.FunIsafcn
+    [ Ix 2 %% []
+    ] %% []
+  ; apps T.FunIsafcn
     [ Ix 1 %% []
     ] %% []
   ] ]
   ( appb B.Implies
-    [ apps T.FunIsafcn
-      [ Ix 1 %% []
-      ] %% []
-    ; appb ~tys:[ t_idv ] B.Eq
-      [ Ix 1 %% []
-      ; apps T.FunConstr
+    [ List (And,
+      [ apps T.FunIsafcn
+        [ Ix 2 %% []
+        ] %% []
+      ; apps T.FunIsafcn
+        [ Ix 1 %% []
+        ] %% []
+      ; appb ~tys:[ t_idv ] B.Eq
         [ apps T.FunDom
+          [ Ix 2 %% []
+          ] %% []
+        ; apps T.FunDom
           [ Ix 1 %% []
           ] %% []
-        ; lam
-          [ "y" ] [ t_idv ]
-          ( apps T.FunApp
-            [ Ix 2 %% []
-            ; Ix 1 %% []
-            ] %% []
-          ) %% []
         ] %% []
+      ; quant Forall
+        [ "x" ] [ t_idv ]
+        ( appb B.Implies
+          [ apps T.Mem
+            [ Ix 1 %% []
+            ; apps T.FunDom
+              [ Ix 3 %% []
+              ] %% []
+            ] %% []
+          ; appb ~tys:[ t_idv ] B.Eq
+            [ apps T.FunApp
+              [ Ix 3 %% []
+              ; Ix 1 %% []
+              ] %% []
+            ; apps T.FunApp
+              [ Ix 2 %% []
+              ; Ix 1 %% []
+              ] %% []
+            ] %% []
+          ] %% []
+        ) %% []
+      ]) %% []
+    ; appb ~tys:[ t_idv ] B.Eq
+      [ Ix 2 %% []
+      ; Ix 1 %% []
       ] %% []
     ] %% []
   ) %% []
