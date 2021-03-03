@@ -25,7 +25,7 @@ let error ?at mssg =
 (* {3 Helpers} *)
 
 let adj scx h =
-  Type.Visit.adj scx h
+  Expr.Visit.adj scx h
 
 let mk_opq smb =
   let op = Opaque (get_name smb) %% [] in
@@ -113,7 +113,10 @@ let visitor = object (self : 'self)
           | _,      Some _      ->
               error ~at:oe "Typelvl=1 not implemented"
           | _, _ ->
-              error ~at:oe "Unexpected builtin"
+              let mssg = "Unexpected builtin '" ^
+                         B.builtin_to_string b ^ "'"
+              in
+              error ~at:oe mssg
         in
         let smb = mk_smb tla_smb in
         mk_opq smb
@@ -239,6 +242,14 @@ let visitor = object (self : 'self)
 
     end |>
     map_pats (List.map (self#expr scx))
+
+  method hyp scx h =
+    match h.core with
+    | Defn (_, _, Hidden, _)
+    | Fact (_, Hidden, _) ->
+        let scx = adj scx h in
+        (scx, h)
+    | _ -> super#hyp scx h
 
 end
 

@@ -782,6 +782,10 @@ class virtual ['s, 'a] foldmap = object (self : 'self)
         let h = Flex s @@ h in
         let scx = adj scx h in
         (scx, a, h)
+    | Defn (_, _, Hidden, _)
+    | Fact (_, Hidden, _) ->
+        let scx = adj scx h in
+        (scx, a, h)
     | Defn (df, wd, vis, ex) ->
         let a, df = self#defn scx a df in
         let h = Defn (df, wd, vis, ex) @@ h in

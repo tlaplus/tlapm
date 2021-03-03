@@ -17,7 +17,7 @@ module Subst = Expr.Subst
 module Visit = Expr.Visit
 module B = Builtin
 
-(* TODO Type preservation for elim_multiarg, elim_tuples *)
+(* TODO Type preservation for elim_except, elim_multiarg, elim_tuples *)
 (* Need to think about a different use of type annotations for tuples
  * before that. *)
 
@@ -257,14 +257,12 @@ let elim_compare sq =
 
 (* {3 EXCEPT Elimination} *)
 
-(* FIXME not type preserving *)
-
 let elim_except_visitor = object (self : 'self)
   inherit [unit] Visit.map as super
 
   method expr scx oe =
     match oe.core with
-    | Except (e, [ ([d], a as exp) ]) ->
+    | Except (e, [ ([d], a as exp) ]) when not (has oe Props.tpars_prop) ->
         let e = self#expr scx e in
         let exp = self#exspec scx exp in
         let d, a =
@@ -318,7 +316,7 @@ let elim_multiarg_visitor = object (self : 'self)
 
   method expr scx oe =
     match oe.core with
-    | Fcn (bs, e) when List.length bs > 1 ->
+    | Fcn (bs, e) when List.length bs > 1 && not (has oe Props.tpars_prop) ->
         let scx, bs = self#bounds scx bs in
         let vs, bs, _ =
           List.fold_left begin fun (r_vs, r_bs, dit) (v, _, d) ->
@@ -331,7 +329,7 @@ let elim_multiarg_visitor = object (self : 'self)
           fun (r_vs, r_bs, dit) ->
             (List.rev r_vs, List.rev r_bs, dit)
         in
-        let v = "t" %% [] in
+        let v = assign ("t" %% []) Props.ty0_prop (TAtm TAIdv) in
         let b = Product bs %% [] in
         let e = self#expr scx e in
         let dfs =
@@ -344,7 +342,7 @@ let elim_multiarg_visitor = object (self : 'self)
         let e = Let (dfs, e) %% [] in
         Fcn ([ v, Constant, Domain b ], e) @@ oe
 
-    | FcnApp (e1, es) when List.length es > 1 ->
+    | FcnApp (e1, es) when List.length es > 1 && not (has oe Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
         let es = List.map (self#expr scx) es in
         let e2 = Tuple es %% [] in
@@ -365,7 +363,7 @@ let elim_tuples_visitor = object (self : 'self)
 
   method expr scx oe =
     match oe.core with
-    | Product es ->
+    | Product es when not (has oe Props.tpars_prop) ->
       let es = List.map (self#expr scx) es in
       let n = List.length es in
       let rg =
@@ -397,10 +395,10 @@ let elim_tuples_visitor = object (self : 'self)
           end es
         ) %% []
       in
-      let v = "f" %% [] in
+      let v = assign ("f" %% []) Props.ty0_prop (TAtm TAIdv) in
       SetSt (v, e1, e2) @@ oe
 
-    | Tuple es ->
+    | Tuple es when not (has oe Props.tpars_prop) ->
         let es = List.map (self#expr scx) es in
         let n = List.length es in
         let b =
@@ -423,7 +421,7 @@ let elim_tuples_visitor = object (self : 'self)
             None
           ) %% []
         in
-        let v = "i" %% [] in
+        let v = assign ("i" %% []) Props.ty0_prop (TAtm TAIdv) in
         Fcn ([ v, Constant, Domain b ], e) @@ oe
 
     | _ -> super#expr scx oe
@@ -441,7 +439,7 @@ let elim_records_visitor = object (self : 'self)
 
   method expr scx oe =
     match oe.core with
-    | Rect fs ->
+    | Rect fs when not (has oe Props.tpars_prop) ->
         let rg = SetEnum (List.map (fun (s, _) -> String s %% []) fs) %% [] in
         let im = SetEnum (List.map snd fs) %% [] in
         let e1 = Arrow (rg, Apply (Internal B.UNION %% [], [ im ]) %% []) %% [] in
@@ -457,10 +455,10 @@ let elim_records_visitor = object (self : 'self)
             end fs
           ) %% []
         in
-        let v = "f" %% [] in
+        let v = assign ("f" %% []) Props.ty0_prop (TAtm TAIdv) in
         SetSt (v, e1, e2) @@ oe
 
-    | Record fs ->
+    | Record fs when not (has oe Props.tpars_prop) ->
         let rg = SetEnum (List.map (fun (s, _) -> String s %% []) fs) %% [] in
         let ps =
           List.map begin fun (s, e) ->
@@ -473,10 +471,10 @@ let elim_records_visitor = object (self : 'self)
           end fs
         in
         let e = Case (ps, None) %% [] in
-        let v = "s" %% [] in
+        let v = assign ("s" %% []) Props.ty0_prop (TAtm TAIdv) in
         Fcn ([ v, Constant, Domain rg ], e) @@ oe
 
-    | Dot (e, s) ->
+    | Dot (e, s) when not (has oe Props.tpars_prop) ->
         FcnApp (e, [ String s %% [] ]) @@ oe
 
     | _ -> super#expr scx oe

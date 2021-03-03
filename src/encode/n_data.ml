@@ -215,7 +215,7 @@ let get_data tla_smb =
   | IntExp | IntLteq | IntLt | IntGteq | IntGt | IntRange | FunIsafcn | FunSet
   | FunConstr | FunDom | FunApp ->
       let (nm, tins, tout) = untyped_data tla_smb in
-      { dat_name = nm
+      { dat_name = "TLA__" ^ nm
       ; dat_ty2  = Ty2 (tins, tout)
       ; dat_kind = Untyped
       ; dat_tver = None
@@ -223,14 +223,14 @@ let get_data tla_smb =
   | TStrLit _ | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient
   | TIntRemainder | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt | TIntRange ->
       let (nm, tins, tout, tver) = typed_data tla_smb in
-      { dat_name = nm
+      { dat_name = "TLA__" ^ nm
       ; dat_ty2  = Ty2 (tins, tout)
       ; dat_kind = Typed
       ; dat_tver = Some tver
       }
   | Cast _ | True _ ->
       let (nm, tins, tout) = special_data tla_smb in
-      { dat_name = nm
+      { dat_name = "TLA__" ^ nm
       ; dat_ty2  = Ty2 (tins, tout)
       ; dat_kind = Special
       ; dat_tver = None
