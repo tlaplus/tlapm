@@ -150,6 +150,15 @@ and expr_aux scx oe =
   | Opaque s ->
       (Opaque s @@ oe, TAtm TAIdv)
 
+  | Apply ({ core = Opaque s } as op, es) ->
+      let es, ty0s = List.map (expr scx) es |> List.split in
+      let es =
+        List.map2 begin fun e ty0 ->
+          force_idv ty0 e
+        end es ty0s
+      in
+      (Apply (op, es) @@ oe, TAtm TAIdv)
+
   | Internal (B.TRUE | B.FALSE as b) ->
       (Internal b @@ oe, TAtm TABol)
 

@@ -74,6 +74,7 @@ type tla_smb =
 
   | Cast of ty
   | True of ty
+  | Anon of string * ty2
 
 type tla_axm =
     (* UNTYPED *)

@@ -203,6 +203,8 @@ let special_data tla_smb =
   | True ty ->
       ("Tt_" ^ ty_to_string ty,
                         [],                                   ty)
+  | Anon (s, Ty2 (ty1s, ty0)) ->
+      ("Anon_" ^ s,     ty1s,                                 ty0)
   | _ ->
       error "Bad argument"
   end
@@ -228,7 +230,7 @@ let get_data tla_smb =
       ; dat_kind = Typed
       ; dat_tver = Some tver
       }
-  | Cast _ | True _ ->
+  | Cast _ | True _ | Anon _ ->
       let (nm, tins, tout) = special_data tla_smb in
       { dat_name = "TLA__" ^ nm
       ; dat_ty2  = Ty2 (tins, tout)
@@ -414,6 +416,8 @@ let special_deps tla_smb =
       (tla_smbs, [ CastInj ty0 ; TypeGuard ty0 ])
   | True ty0 ->
       ([], [])
+  | Anon _ ->
+      ([], [])
   | _ ->
       error "Bad argument"
   end |>
@@ -439,7 +443,7 @@ let get_deps tla_smb s =
       { dat_deps = smbs
       ; dat_axms = axms
       }
-  | Cast _ | True _ ->
+  | Cast _ | True _ | Anon _ ->
       let s, (smbs, axms) = special_deps tla_smb s in
       s,
       { dat_deps = smbs
