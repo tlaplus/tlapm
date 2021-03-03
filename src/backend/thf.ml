@@ -477,6 +477,7 @@ let preprocess ?solver sq =
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_tuples
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
+    |> Encode.Rewrite.apply_ext
     |> debug "Type Reconstruction and Simplify:"
     |> Encode.Standardize.main
     |> debug "Standardize:"

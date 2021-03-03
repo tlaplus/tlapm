@@ -522,21 +522,21 @@ let apply_ext_visitor = object (self : 'self)
   method expr scx oe =
     match oe.core with
     | Apply ({ core = Internal (B.Eq | B.Neq as b) } as op, [ e ; f ])
-      when eq_pol (fst scx) b && (is_set e || is_set f) ->
+      when eq_pol (fst scx) b
+      && (is_set e || is_set f)
+      && (match query op Props.tpars_prop with
+          Some [TAtm TAIdv] -> true | _ -> false) ->
+        (* TODO Typelvl=1 *)
         let e = self#expr scx e in
         let f = self#expr scx f in
-        let oty =
-          query op Props.tpars_prop |>
-          Option.map begin function [ty] -> ty | _ -> error ~at:op "Bad type annotation" end
-        in
         let q =
           match b with
           | B.Eq -> Forall
           | B.Neq -> Exists
           | _ -> failwith ""
         in
-        let v = Option.fold (fun v -> assign v Props.ty0_prop) ("x" %% []) oty in
-        let mem_op = Option.fold (fun e ty -> assign e Props.tpars_prop [ ty ]) (Internal B.Mem %% []) oty in
+        let v = assign ("x" %% []) Props.ty0_prop (TAtm TAIdv) in
+        let mem_op = Internal B.Mem %% [] in
         Quant (
           q, [ v, Constant, No_domain ],
           Apply (
