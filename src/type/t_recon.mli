@@ -21,13 +21,21 @@ open T_t
       {!Type.T.ty2_prop} annotation.  The last two are reserved for operator
       variables (on fresh variables, defined operators, arguments to second-
       order lambda-terms).
-    - Many TLA+ builtins exist in an untyped version (actually a typed version
-      that used the idv sort exclusively), and a number of typed version.
+    - Many TLA+ builtins exist in an untyped version, and a number of
+      typed versions.
       Expressions built from the constructor {!Expr.T.Internal} may receive the
       annotation {!Type.T.tpars_prop} to indicate which type version is the
       correct one.  No annotation means untyped version.
     - For TLA+ primitives that do not have a builtin, like {!Expr.T.SetSt}, the
       annotation is placed on the expression itself.
+    - Some operators are overloaded and follow special conventions.
+      * Operators that are overloaded for functions, tuples or records can have
+        one type annotation.  That annotation should be either a function-type,
+        tuple-type or record-type, depending on the right version.
+        Functional application is overloaded for functions and tuples.  For
+        tuples, the right operand must be a literal integer.
+        Dot application is overloaded for functions and records.
+        The domain operator is overloaded for functions, tuples, and records.
     - Bounds imply a hidden [\in].  The optional annotation for it may be found
       on the domain of the bound.
     - Some expressions must be cast from some type [ty] to the domain of
@@ -36,9 +44,8 @@ open T_t
     - Some expressions must be projected from some type [ty] into the domain of
       booleans.  The annotation {!Type.T.bproj_prop} with parameter [ty]
       decorates these expressions.
-
-    NOTE This module is based on the liberal interpretation of TLA+ for
-    boolean operators.
+      NOTE This effectively makes TLAPS conform with the so-called liberal
+      interpretation for TLA+ boolean operators.
 *)
 
 

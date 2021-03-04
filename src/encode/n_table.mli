@@ -51,6 +51,9 @@ type tla_smb =
   | FunConstr
   | FunDom
   | FunApp
+  (* Tuples *)
+  | Tuple of int
+  | Product of int
 
     (* TYPED *)
 
@@ -114,6 +117,11 @@ type tla_axm =
   | FunSetDef
   | FunDomDef
   | FunAppDef
+  (* Tuples *)
+  | TupIsafcn of int
+  | ProductDef of int
+  | TupDomDef of int
+  | TupAppDef of int * int
 
     (* TYPED *)
 

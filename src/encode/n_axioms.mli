@@ -73,7 +73,10 @@ val intrange_def : unit -> expr
 
 (* {4 Tuples} *)
 
-(* TODO *)
+val tuple_isafcn : int -> expr
+val productset_def : int -> expr
+val tupdom_def : int -> expr
+val tupapp_def : int -> int -> expr
 
 
 (* {3 Typed Variants} *)
@@ -84,13 +87,6 @@ val t_strlit_distinct : string -> string -> expr
 
 (* FIXME adapt *)
 (*
-
-(* {3 Tuples} *)
-
-val tupisafcn :  int -> expr
-val product : int -> (ty list option) -> expr
-val tupdomain : int -> (ty list option) -> expr
-val tupapp : int -> (ty list option) -> expr
 
 (* {3 Schema Instances} *)
 

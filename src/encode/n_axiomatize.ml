@@ -21,8 +21,9 @@ type etx = s * SmbSet.t * expr Deque.dq
 let init_etx =
   let init_smbs =
     begin if !Params.enc_nobool then
-      (* Always declared because it appears in a lot of axioms *)
-      [ N_table.True (TAtm TAIdv) ]
+      [ N_table.True (TAtm TAIdv) (* Occurs in a lot of axioms *)
+      (*; N_table.Cast (TAtm TABol)*)
+      ]
     else
       []
     end |>

@@ -97,29 +97,29 @@ let untyped_data tla_smb =
       ("IntLit_" ^ string_of_int n,
                         [],                                   t_idv)
   | IntPlus ->
-      ("Plus",       [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+      ("Plus",          [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   | IntUminus ->
-      ("Uminus",     [ t_cst t_idv ],                      t_idv)
+      ("Uminus",        [ t_cst t_idv ],                      t_idv)
   | IntMinus ->
-      ("Minus",      [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+      ("Minus",         [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   | IntTimes ->
-      ("Times",      [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+      ("Times",         [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   | IntQuotient ->
-      ("Quotient",   [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+      ("Quotient",      [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   | IntRemainder ->
-      ("Remainder",  [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+      ("Remainder",     [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   | IntExp ->
-      ("Exp",        [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+      ("Exp",           [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   | IntLteq ->
-      ("Lteq",       [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
+      ("Lteq",          [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
   | IntLt ->
-      ("Lt",         [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
+      ("Lt",            [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
   | IntGteq ->
-      ("Gteq",       [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
+      ("Gteq",          [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
   | IntGt ->
-      ("Gt",         [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
+      ("Gt",            [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
   | IntRange ->
-      ("Range",      [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+      ("Range",         [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   (* Functions *)
   | FunIsafcn ->
       ("FunIsafcn",     [ t_cst t_idv ],                      t_bol)
@@ -131,6 +131,14 @@ let untyped_data tla_smb =
       ("FunDom",        [ t_cst t_idv ],                      t_idv)
   | FunApp ->
       ("FunApp",        [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+  (* Tuples *)
+  | Tuple n ->
+      ("Tuple_" ^ string_of_int n,
+                        List.init n (fun _ -> t_cst t_idv),   t_idv)
+  | Product n ->
+      ("Product_" ^ string_of_int n,
+                        List.init n (fun _ -> t_cst t_idv),   t_idv)
+
   | _ ->
       error "Bad argument"
   end
@@ -191,6 +199,7 @@ let typed_data tla_smb =
       ("Range_" ^ ty_to_string t_int,
                         [ t_cst t_int ; t_cst t_int ],        t_idv,
       IntRange)
+
   | _ ->
       error "Bad argument"
   end
@@ -205,6 +214,7 @@ let special_data tla_smb =
                         [],                                   ty)
   | Anon (s, Ty2 (ty1s, ty0)) ->
       ("Anon_" ^ s,     ty1s,                                 ty0)
+
   | _ ->
       error "Bad argument"
   end
@@ -215,7 +225,7 @@ let get_data tla_smb =
   | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet | NatSet | IntLit _
   | IntPlus | IntUminus | IntMinus | IntTimes | IntQuotient | IntRemainder
   | IntExp | IntLteq | IntLt | IntGteq | IntGt | IntRange | FunIsafcn | FunSet
-  | FunConstr | FunDom | FunApp ->
+  | FunConstr | FunDom | FunApp | Tuple _ | Product _ ->
       let (nm, tins, tout) = untyped_data tla_smb in
       { dat_name = "TLA__" ^ nm
       ; dat_ty2  = Ty2 (tins, tout)
@@ -362,6 +372,17 @@ let untyped_deps tla_smb s =
       ([ FunConstr ],             [ FunDomDef ])
   | FunApp ->
       ([ FunConstr ],             [ FunAppDef ])
+  (* Tuples *)
+  | Tuple n ->
+      ([ FunIsafcn ; FunDom ; FunApp ; IntRange ]
+       @ List.init n (fun i -> IntLit (i+1)),
+                                  [ TupIsafcn n ; TupDomDef n ;]
+                                  @ List.init n (fun i -> TupAppDef (n, i+1)))
+  | Product n ->
+      (*([ Mem ; Tuple n ],         [ ProductDef n ])*)
+      ([ Mem ; FunIsafcn ; FunDom ; FunApp ; IntRange ; IntLit 1 ; IntLit n ],
+                                  [ ProductDef n ])
+
   | _ ->
       error "Bad argument"
   end |>
@@ -429,7 +450,7 @@ let get_deps tla_smb s =
   | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet | NatSet | IntLit _
   | IntPlus | IntUminus | IntMinus | IntTimes | IntQuotient | IntRemainder
   | IntExp | IntLteq | IntLt | IntGteq | IntGt | IntRange | FunIsafcn | FunSet
-  | FunConstr | FunDom | FunApp ->
+  | FunConstr | FunDom | FunApp | Tuple _ | Product _ ->
       let s, (smbs, axms) = untyped_deps tla_smb s in
       s,
       { dat_deps = smbs

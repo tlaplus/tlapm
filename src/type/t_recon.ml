@@ -201,10 +201,12 @@ and expr_aux scx oe =
       let g, ty03 = expr scx g in
       if ty02 = ty03 then
         let ret = If (force_bool ty01 e, f, g) @@ oe in
-        (assign ret Props.tpars_prop [ ty02 ], ty02)
+        let ret = assign ret Props.tpars_prop [ ty02 ] in
+        (ret, ty02)
       else
         let ret = If (force_bool ty01 e, force_idv ty02 f, force_idv ty03 g) @@ oe in
-        (assign ret Props.tpars_prop [ TAtm TAIdv ], TAtm TAIdv)
+        let ret = assign ret Props.tpars_prop [ TAtm TAIdv ] in
+        (ret, TAtm TAIdv)
 
   | Case (ps, Some o) ->
       let ps, ty01s =
@@ -218,7 +220,8 @@ and expr_aux scx oe =
       let o, ty02 = expr scx o in
       if List.for_all ((=) ty02) ty01s then
         let ret = Case (ps, Some o) @@ oe in
-        (assign ret Props.tpars_prop [ ty02 ], ty02)
+        let ret = assign ret Props.tpars_prop [ ty02 ] in
+        (ret, ty02)
       else
         let ps =
           List.map2 begin fun (p, e) ty0 ->
@@ -227,7 +230,8 @@ and expr_aux scx oe =
         in
         let o = force_idv ty02 o in
         let ret = Case (ps, Some o) @@ oe in
-        (assign ret Props.tpars_prop [ TAtm TAIdv ], TAtm TAIdv)
+        let ret = assign ret Props.tpars_prop [ TAtm TAIdv ] in
+        (ret, TAtm TAIdv)
 
   | Case (ps, None) ->
       let ps =
@@ -238,7 +242,8 @@ and expr_aux scx oe =
         end ps
       in
       let ret = Case (ps, None) @@ oe in
-      (assign ret Props.tpars_prop [ TAtm TAIdv ], TAtm TAIdv)
+      let ret = assign ret Props.tpars_prop [ TAtm TAIdv ] in
+      (ret, TAtm TAIdv)
 
   | Quant (q, bs, e) ->
       let scx, bs, _ =
@@ -285,7 +290,8 @@ and expr_aux scx oe =
           let v, scx = adj_ty0 scx v ty02 in
           let e, ty03 = expr scx e in
           let ret = Choose (v, Some d, force_bool ty03 e) @@ oe in
-          (assign ret Props.tpars_prop [ ty02 ], TAtm TAIdv)
+          let ret = assign ret Props.tpars_prop [ ty02 ] in
+          (ret, TAtm TAIdv)
       | _ ->
           let v, scx = adj_ty0 scx v (TAtm TAIdv) in
           let e, ty03 = expr scx e in
@@ -334,7 +340,6 @@ and expr_aux scx oe =
       let oty02 =
         match ty01s with
         | [] when typelvl scx <> 0 ->
-            (* NOTE {} : set(idv) *)
             Some (TAtm TAIdv)
         | ty03 :: ty04s when typelvl scx <> 0 && List.for_all ((=) ty03) ty04s ->
             Some ty03
@@ -344,7 +349,8 @@ and expr_aux scx oe =
       begin match oty02 with
       | Some ty03 ->
           let ret = SetEnum es @@ oe in
-          (assign ret Props.tpars_prop [ ty03 ], TSet ty03)
+          let ret = assign ret Props.tpars_prop [ ty03 ] in
+          (ret, TSet ty03)
       | None ->
           let ret = SetEnum es @@ oe in
           (ret, TAtm TAIdv)
@@ -381,7 +387,8 @@ and expr_aux scx oe =
           let v, scx = adj_ty0 scx v ty02 in
           let f, ty03 = expr scx f in
           let ret = SetSt (v, e, force_bool ty03 f) @@ oe in
-          (assign ret Props.tpars_prop [ ty02 ], TSet ty02)
+          let ret = assign ret Props.tpars_prop [ ty02 ] in
+          (ret, TSet ty02)
       | _ ->
           let v, scx = adj_ty0 scx v (TAtm TAIdv) in
           let f, ty03 = expr scx f in
@@ -429,7 +436,8 @@ and expr_aux scx oe =
           in
           let e, ty04 = expr scx e in
           let ret = SetOf (e, bs) @@ oe in
-          (assign ret Props.tpars_prop (ty04 :: ty03s), TSet ty04)
+          let ret = assign ret Props.tpars_prop (ty04 :: ty03s) in
+          (ret, TSet ty04)
       | None ->
           let scx, bs =
             fold_left3 begin fun (scx, r_bs) (v, k, _) dom ty03 ->
@@ -464,7 +472,8 @@ and expr_aux scx oe =
   | Internal B.BOOLEAN ->
       if typelvl scx <> 0 then
         let ret = Internal B.BOOLEAN @@ oe in
-        (assign ret Props.tpars_prop [ ], TSet (TAtm TABol))
+        let ret = assign ret Props.tpars_prop [ ] in
+        (ret, TSet (TAtm TABol))
       else
         let ret = Internal B.BOOLEAN @@ oe in
         (ret, TAtm TAIdv)
@@ -472,7 +481,8 @@ and expr_aux scx oe =
   | Internal B.STRING ->
       if typelvl scx <> 0 then
         let ret = Internal B.STRING @@ oe in
-        (assign ret Props.tpars_prop [ ], TSet (TAtm TAStr))
+        let ret = assign ret Props.tpars_prop [ ] in
+        (ret, TSet (TAtm TAStr))
       else
         let ret = Internal B.STRING @@ oe in
         (ret, TAtm TAIdv)
@@ -480,7 +490,8 @@ and expr_aux scx oe =
   | String s ->
       if typelvl scx <> 0 then
         let ret = String s @@ oe in
-        (assign ret Props.tpars_prop [ ], TAtm TAStr)
+        let ret = assign ret Props.tpars_prop [ ] in
+        (ret, TAtm TAStr)
       else
         let ret = String s @@ oe in
         (ret, TAtm TAIdv)
@@ -528,7 +539,8 @@ and expr_aux scx oe =
             | [ ty05 ] -> TFun (ty05, ty04)
             | _ -> TFun (TPrd ty03s, ty04)
           in
-          (assign ret Props.tpars_prop (ty03s @ [ ty04 ]), ty0)
+          let ret = assign ret Props.tpars_prop (ty03s @ [ ty04 ]) in
+          (ret, ty0)
       | None ->
           let scx, bs =
             fold_left3 begin fun (scx, r_bs) (v, k, _) dom ty03 ->
@@ -551,12 +563,29 @@ and expr_aux scx oe =
       let e, ty01 = expr scx e in
       begin match ty01 with
       | TFun (ty02, ty03) when typelvl scx <> 0 ->
-          let op = assign op Props.tpars_prop [ ty02 ; ty03 ] in
+          let op = assign op Props.tpars_prop [ ty01 ] in
           let ret = Apply (op, [ e ]) @@ oe in
           (ret, TSet ty02)
+      | TPrd ty02s when typelvl scx <> 0 ->
+          let op = assign op Props.tpars_prop [ ty01 ] in
+          let ret = Apply (op, [ e ]) @@ oe in
+          (ret, TSet (TAtm TAInt))
       | _ ->
           let ret = Apply (op, [ force_idv ty01 e ]) @@ oe in
           (ret, TAtm TAIdv)
+      end
+
+  | FcnApp (e1, [{ core = Num (n, "") } as e2]) ->
+      let e1, ty01 = expr scx e1 in
+      let n = int_of_string n in
+      begin match ty01 with
+      | TPrd ty03s when typelvl scx <> 0 && List.length ty03s >= n ->
+          let ret = FcnApp (e1, [ e2 ]) @@ oe in
+          let ret = assign ret Props.tpars_prop [ ty01 ] in
+          (ret, List.nth ty03s (n-1))
+      | _ ->
+          let oe = FcnApp (e1, [ Apply (e2, []) %% [] ]) @@ oe in
+          expr scx oe
       end
 
   | FcnApp (e, es) ->
@@ -565,10 +594,12 @@ and expr_aux scx oe =
       begin match ty01 with
       | TFun (TPrd ty03s, ty04) when typelvl scx <> 0 && List.for_all2 (=) ty02s ty03s ->
           let ret = FcnApp (e, es) @@ oe in
-          (assign ret Props.tpars_prop (ty03s @ [ ty04 ]), ty04)
+          let ret = assign ret Props.tpars_prop [ ty01 ] in
+          (ret, ty04)
       | TFun (ty03, ty04) when typelvl scx <> 0 && List.length es = 1 && List.hd ty02s = ty03 ->
           let ret = FcnApp (e, es) @@ oe in
-          (assign ret Props.tpars_prop [ ty03 ; ty04 ], ty04)
+          let ret = assign ret Props.tpars_prop [ ty01 ] in
+          (ret, ty04)
       | _ ->
           let ret = FcnApp (force_idv ty01 e, List.map2 force_idv ty02s es) @@ oe in
           (ret, TAtm TAIdv)
@@ -579,7 +610,8 @@ and expr_aux scx oe =
       begin match ty01 with
       | TFun (TAtm TAStr, ty02) when typelvl scx <> 0 ->
           let ret = Dot (e, s) @@ oe in
-          (assign ret Props.tpars_prop [ ty02 ], ty02)
+          let ret = assign ret Props.tpars_prop [ ty01 ] in
+          (ret, ty02)
       | _ ->
           let ret = Dot (force_idv ty01 e, s) @@ oe in
           (ret, TAtm TAIdv)
@@ -596,7 +628,8 @@ and expr_aux scx oe =
       begin match oty02s with
       | Some ty02s ->
           let ret = Product es @@ oe in
-          (assign ret Props.tpars_prop ty02s, TSet (TPrd ty02s))
+          let ret = assign ret Props.tpars_prop ty02s in
+          (ret, TSet (TPrd ty02s))
       | None ->
           let ret = Product (List.map2 force_idv ty01s es) @@ oe in
           (ret, TAtm TAIdv)
@@ -606,7 +639,8 @@ and expr_aux scx oe =
       let es, ty0s = List.map (expr scx) es |> List.split in
       if typelvl scx <> 0 then
         let ret = Tuple es @@ oe in
-        (assign ret Props.tpars_prop ty0s, TPrd ty0s)
+        let ret = assign ret Props.tpars_prop ty0s in
+        (ret, TPrd ty0s)
       else
         let ret = Tuple (List.map2 force_idv ty0s es) @@ oe in
         (ret, TAtm TAIdv)
@@ -617,7 +651,8 @@ and expr_aux scx oe =
       begin match ty01, ty02 with
       | TSet ty03, TSet ty04 when typelvl scx <> 0 ->
           let ret = Arrow (e, f) @@ oe in
-          (assign ret Props.tpars_prop [ ty03 ; ty04 ], TSet (TFun (ty03, ty04)))
+          let ret = assign ret Props.tpars_prop [ ty03 ; ty04 ] in
+          (ret, TSet (TFun (ty03, ty04)))
       | _, _ ->
           let ret = Arrow (force_idv ty01 e, force_idv ty02 f) @@ oe in
           (ret, TAtm TAIdv)
@@ -691,7 +726,8 @@ and expr_aux scx oe =
       begin match oty04s with
       | Some ty04s ->
           let ret = Except (e, exps) @@ oe in
-          (assign ret Props.tpars_prop ty04s, ty01)
+          let ret = assign ret Props.tpars_prop ty04s in
+          (ret, ty01)
       | None ->
           let e = force_idv ty01 e in
           let exps =
@@ -714,7 +750,8 @@ and expr_aux scx oe =
   | Internal B.Nat ->
       if typelvl scx <> 0 && not (noarith scx) then
         let ret = Internal B.Nat @@ oe in
-        (assign ret Props.tpars_prop [ ], TSet (TAtm TAInt))
+        let ret = assign ret Props.tpars_prop [ ] in
+        (ret, TSet (TAtm TAInt))
       else
         let ret = Internal B.Nat @@ oe in
         (ret, TAtm TAIdv)
@@ -722,7 +759,8 @@ and expr_aux scx oe =
   | Internal B.Int ->
       if typelvl scx <> 0 && not (noarith scx) then
         let ret = Internal B.Int @@ oe in
-        (assign ret Props.tpars_prop [ ], TSet (TAtm TAInt))
+        let ret = assign ret Props.tpars_prop [ ] in
+        (ret, TSet (TAtm TAInt))
       else
         let ret = Internal B.Int @@ oe in
         (ret, TAtm TAIdv)
@@ -730,7 +768,8 @@ and expr_aux scx oe =
   | Internal B.Real ->
       if typelvl scx <> 0 && (noarith scx) then
         let ret = Internal B.Real @@ oe in
-        (assign ret Props.tpars_prop [ ], TSet (TAtm TARel))
+        let ret = assign ret Props.tpars_prop [ ] in
+        (ret, TSet (TAtm TARel))
       else
         let ret = Internal B.Real @@ oe in
         (ret, TAtm TAIdv)
@@ -743,7 +782,8 @@ and expr_aux scx oe =
   | Num (s, "") ->
       if not (noarith scx) then
         let ret = Num (s, "") @@ oe in
-        (assign ret Props.tpars_prop [ ], TAtm TAInt)
+        let ret = assign ret Props.tpars_prop [ ] in
+        (ret, TAtm TAInt)
       else
         let ret = Num (s, "") @@ oe in
         (ret, TAtm TAIdv)
@@ -751,7 +791,8 @@ and expr_aux scx oe =
   | Num (s1, s2) ->
       if not (noarith scx) then
         let ret = Num (s1, s2) @@ oe in
-        (assign ret Props.tpars_prop [ ], TAtm TARel)
+        let ret = assign ret Props.tpars_prop [ ] in
+        (ret, TAtm TARel)
       else
         let ret = Num (s1, s2) @@ oe in
         (ret, TAtm TAIdv)
@@ -759,7 +800,8 @@ and expr_aux scx oe =
   | Internal B.Infinity ->
       if not (noarith scx) then
         let ret = Internal B.Infinity @@ oe in
-        (assign ret Props.tpars_prop [ ], TAtm TARel)
+        let ret = assign ret Props.tpars_prop [ ] in
+        (ret, TAtm TARel)
       else
         let ret = Internal B.Infinity @@ oe in
         (ret, TAtm TAIdv)
@@ -836,6 +878,11 @@ and expr_aux scx oe =
           let ty03 = if nobool scx then TAtm TAIdv else TAtm TABol in
           (ret, ty03)
       end
+
+  (* The code may wrap `e` like this sometimes to prevent infinite loops.
+   * Do not remove! *)
+  | Apply (e, []) ->
+      expr scx e
 
   | Apply (op, es) ->
       (* no reconstruction in this case, only typechecking *)

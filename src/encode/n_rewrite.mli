@@ -25,10 +25,10 @@ val elim_except : sequent -> sequent
 val elim_multiarg : sequent -> sequent
 (** NOTE: Call before {!elim_tuples}, since this introduces new tuples *)
 
-(** Reduce tuples to functions *)
+(** Reduce tuples to functions *) (* FIXME remove *)
 val elim_tuples : sequent -> sequent
 
-(** Reduce records to functions *)
+(** Reduce records to functions *) (* FIXME remove *)
 val elim_records : sequent -> sequent
 
 (** Apply extensionnality axioms to equalities *)

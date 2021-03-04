@@ -1076,7 +1076,131 @@ let intrange_def () =
 
 (* {4 Tuples} *)
 
-(* TODO *)
+let tuple_isafcn n =
+  quant Forall
+  (gen "x" n) (dupl t_idv n)
+  ( apps T.FunIsafcn
+    [ apps (T.Tuple n)
+      (ixi n) %% []
+    ] %% []
+  ) %% []
+
+let productset_def n =
+  quant Forall
+  (gen "s" n @ [ "t" ]) (dupl t_idv (n + 1))
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps (T.Product n)
+      (ixi ~shift:1 n) %% []
+    ] %% []
+  ] ]
+  ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps (T.Product n)
+        (ixi ~shift:1 n) %% []
+      ] %% []
+    ; List (And,
+      [ apps T.FunIsafcn
+        [ Ix 1 %% []
+        ] %% []
+      ; appb ~tys:[ t_idv ] B.Eq
+        [ apps T.FunDom
+          [ Ix 1 %% []
+          ] %% []
+        ; apps T.IntRange
+          [ apps (T.IntLit 1) [] %% []
+          ; apps (T.IntLit n) [] %% []
+          ] %% []
+        ] %% []
+      ] @
+      List.init n begin fun i ->
+        apps T.Mem
+        [ apps T.FunApp
+          [ Ix 1 %% []
+          ; apps (T.IntLit (i + 1)) [] %% []
+          ] %% []
+        ; Ix (n - i + 1) %% []
+        ] %% []
+      end) %% []
+    ] %% []
+  ) %% []
+
+  (*quant Forall
+  (gen "s" n @ [ "t" ]) (dupl t_idv (n + 1))
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps (T.Product n)
+      (ixi ~shift:1 n) %% []
+    ] %% []
+  ] ]
+  ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps (T.Product n)
+        (ixi ~shift:1 n) %% []
+      ] %% []
+    ; quant Exists
+      (gen "x" n) (dupl t_idv n)
+      ( List (And,
+        [ appb ~tys:[ t_idv ] B.Eq
+          [ Ix (n + 1) %% []
+          ; apps (T.Tuple n)
+            (ixi n) %% []
+          ] %% []
+        ] @
+        List.init n begin fun i ->
+          apps T.Mem
+          [ Ix (n - i) %% []
+          ; Ix (2*n - i + 1) %% []
+          ] %% []
+        end) %% []
+      ) %% []
+    ] %% []
+  ) %% []*)
+
+let tupdom_def n =
+  quant Forall
+  (gen "x" n) (dupl t_idv n)
+  ~pats:[ [
+    apps T.FunDom
+    [ apps (T.Tuple n)
+      (ixi n) %% []
+    ] %% []
+  ] ]
+  ( appb ~tys:[ t_idv ] B.Eq
+    [ apps T.FunDom
+      [ apps (T.Tuple n)
+        (ixi n) %% []
+      ] %% []
+    ; apps T.IntRange
+      [ apps (T.IntLit 1) [] %% []
+      ; apps (T.IntLit n) [] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let tupapp_def n i =
+  quant Forall
+  (gen "x" n) (dupl t_idv n)
+  ~pats:[ [
+    apps T.FunApp
+    [ apps (T.Tuple n)
+      (ixi n) %% []
+    ; apps (T.IntLit i) [] %% []
+    ] %% []
+  ] ]
+  ( appb ~tys:[ t_idv ] B.Eq
+    [ apps T.FunApp
+      [ apps (T.Tuple n)
+        (ixi n) %% []
+      ; apps (T.IntLit i) [] %% []
+      ] %% []
+    ; Ix (n - i + 1) %% []
+    ] %% []
+  ) %% []
 
 
 (* {3 Typed Variants} *)
@@ -1124,6 +1248,10 @@ let get_axm = function
   | T.FunDomDef -> fcndom_def ()
   | T.FunAppDef -> fcnapp_def ()
   | T.TStrLitDistinct (s1, s2) -> t_strlit_distinct s1 s2
+  | T.TupIsafcn n -> tuple_isafcn n
+  | T.ProductDef n -> productset_def n
+  | T.TupDomDef n -> tupdom_def n
+  | T.TupAppDef (n, i) -> tupapp_def n i
   | T.CastInj ty0 -> cast_inj ty0
   | T.TypeGuard ty0 -> type_guard ty0
   | T.Typing tla_smb -> op_typing tla_smb
@@ -1131,92 +1259,6 @@ let get_axm = function
 
 (* FIXME adapt *)
   (*
-
-(* {3 Tuples} *)
-
-let tupisafcn n =
-  all (gen "x" n) (
-    Apply (
-      mk_special "IsAFcn",
-      [ Tuple (ixi n) %% [] ]
-    ) %% []
-  ) %% []
-
-let product n tys =
-  all (gen "a" n @ [ "t" ]) ~pats:[ [
-    ifx B.Mem (
-      Ix 1 %% []
-    ) (
-      Product (ixi ~shift:1 n) %% []
-    ) %% []
-  ] ] (
-    ifx B.Equiv (
-      ifx B.Mem (
-        Ix 1 %% []
-      ) (
-        Product (ixi ~shift:1 n) %% []
-      ) %% []
-    ) (
-      List (And, [
-        Apply (mk_special "IsAFcn", [ Ix 1 %% [] ]) %% [] ;
-        ifx B.Eq (
-          una B.DOMAIN (
-            Ix 1 %% []
-          ) %% []
-        ) (
-          ifx B.Range (
-            Num (string_of_int 1, "") %% []
-          ) (
-            Num (string_of_int n, "") %% []
-          ) %% []
-        ) %% []
-      ] @ List.init n begin fun i ->
-        ifx B.Mem (
-          FcnApp (
-            Ix 1 %% [],
-            [ Num (string_of_int (i + 1), "") %% [] ]
-          ) %% []
-        ) (
-          Ix (i + 2) %% []
-        ) %% []
-      end) %% []
-    ) %% []
-  ) %% []
-
-let tupdomain n tys =
-  all (gen "x" n) ~pats:[ [
-    una B.DOMAIN (
-      Tuple (ixi n) %% []
-    ) %% []
-  ] ] (
-    ifx B.Mem (
-      una B.DOMAIN (
-        Tuple (ixi n) %% []
-      ) %% []
-    ) (
-      ifx B.Range (
-        Num (string_of_int 1, "") %% []
-      ) (
-        Num (string_of_int n, "") %% []
-      ) %% []
-    ) %% []
-  ) %% []
-
-let tupapp n tys =
-  all (gen "x" n) ~pats:[ [
-  ] ] (
-    List (And, List.init n begin fun i ->
-      ifx B.Mem (
-        FcnApp (
-          Tuple (ixi n) %% [],
-          [ Num (string_of_int (i + 1), "") %% [] ]
-        ) %% []
-      ) (
-        Ix (n - i) %% []
-      ) %% []
-    end) %% []
-  ) %% []
-
 
 (* {3 Schema Instance} *)
 

@@ -245,6 +245,26 @@ let visitor = object (self : 'self)
           let opq = mk_opq smb in
           Apply (opq, [ e1 ; e2 ]) %% []
 
+    | Tuple es ->
+        let es = List.map (self#expr scx) es in
+        if has oe Props.tpars_prop then
+          error ~at:oe "Typelvl=1 not implemented"
+        else
+          let n = List.length es in
+          let smb = mk_smb (Tuple n) in
+          let opq = mk_opq smb in
+          Apply (opq, es) %% []
+
+    | Product es ->
+        let es = List.map (self#expr scx) es in
+        if has oe Props.tpars_prop then
+          error ~at:oe "Typelvl=1 not implemented"
+        else
+          let n = List.length es in
+          let smb = mk_smb (Product n) in
+          let opq = mk_opq smb in
+          Apply (opq, es) %% []
+
     | _ -> super#expr scx oe
 
     end |>
