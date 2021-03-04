@@ -5,12 +5,12 @@ jobs:
   test:
     name: Build and Test
     runs-on: ${{ matrix.operating-system }}
-    strategy: 
+    strategy:
       fail-fast: false
       matrix:
         operating-system: [macos-latest, ubuntu-latest]
-        ocaml-version: [ '4.08.1' ]
-        include: 
+        ocaml-version: [ '4.08.1', '4.11.0' ]
+        include:
         - operating-system: macos-latest
           INSTALLER: tlaps-1.5.0-i386-darwin-inst.bin
           DOWNLOADS: tlaps-1.5.0-i386-darwin-inst
@@ -25,7 +25,7 @@ jobs:
       - uses: avsm/setup-ocaml@master
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
-      ## The TLAPM test suite requries the kaputt package.
+      ## The TLAPM test suite requires the kaputt package.
       - name: Install OCaml dependencies
         run: opam install kaputt
       - uses: actions/cache@v2
@@ -49,4 +49,3 @@ jobs:
       - name: Print Test Results
         if: matrix.operating-system == 'ubuntu-latest'
         run: cat test/tests.log
-

@@ -23,7 +23,7 @@ end
 module M = EMap (String)
 module IM = EMap (struct
                     type t = ident
-                    let compare = Pervasives.compare
+                    let compare = Stdlib.compare
                   end)
 
 type 'a ctx = {

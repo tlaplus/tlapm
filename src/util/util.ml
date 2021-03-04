@@ -15,7 +15,7 @@ let pp_print_hint ff h = Format.pp_print_string ff h.core
 
 module HC = struct
   type t = hint
-  let compare x y = Pervasives.compare x.core y.core
+  let compare x y = Stdlib.compare x.core y.core
 end
 
 module Coll = struct

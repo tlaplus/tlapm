@@ -16,7 +16,7 @@ case "@EXE@" in
   *) TARGET_FILE="$TLAPSVER-inst@EXE@";;
 esac
 TARGET="$OLDPWD/$TARGET_FILE"
-
+GIT_BRANCH="`git rev-parse --abbrev-ref HEAD`"
 PS_DIR="$(pwd)/../.."
 PM_DIR="$(pwd)/../.."
 
@@ -26,7 +26,7 @@ This script builds a binary distribution of the TLA+ Proof System
 version @VERSION@, compiled with OCaml version @OCAMLCVER@.
 
 Target: ${TARGET}
-SVN branch: ${SVN_PATH}
+Git branch: ${GIT_BRANCH}
 
 EOF
 
@@ -371,13 +371,13 @@ let path ents = match ents with
      List.fold_left Filename.concat head rest
 
 let fatal_error fmt =
-  output_string Pervasives.stderr "FATAL ERROR: " ;
+  output_string Stdlib.stderr "FATAL ERROR: " ;
   kfprintf
     (fun _ ->
-       output_string Pervasives.stderr "\\n\\n    *** ABORT ***.\\n" ;
-       flush Pervasives.stderr ;
-       Pervasives.exit 2)
-    Pervasives.stderr fmt
+       output_string Stdlib.stderr "\\n\\n    *** ABORT ***.\\n" ;
+       flush Stdlib.stderr ;
+       Stdlib.exit 2)
+    Stdlib.stderr fmt
 
 let rm_ifempty path = try begin
   let d = opendir path in
@@ -470,12 +470,12 @@ let input_all ic =
   let rec loop acc total buf ofs =
     let n = input ic buf ofs (buf_len - ofs) in
     if n = 0 then
-      let res = String.create total in
+      let res = Bytes.create total in
       let pos = total - ofs in
-      let _ = String.blit buf 0 res pos ofs in
+      let _ = Bytes.blit buf 0 res pos ofs in
       let coll pos buf =
         let new_pos = pos - buf_len in
-        String.blit buf 0 res new_pos buf_len;
+        Bytes.blit buf 0 res new_pos buf_len;
         new_pos in
       let _ = List.fold_left coll pos acc in
       res
@@ -483,9 +483,9 @@ let input_all ic =
       let new_ofs = ofs + n in
       let new_total = total + n in
       if new_ofs = buf_len then
-        loop (buf :: acc) new_total (String.create buf_len) 0
+        loop (buf :: acc) new_total (Bytes.create buf_len) 0
       else loop acc new_total buf new_ofs in
-  loop [] 0 (String.create buf_len) 0
+  loop [] 0 (Bytes.create buf_len) 0
 
 let input_file ?(bin=false) fname =
   let ch = (if bin then open_in_bin else open_in) fname in
@@ -575,8 +575,8 @@ let () =
     replace_first
       (regexp "^ISABELLE_HOME_USER=.*\$")
       ("ISABELLE_HOME_USER=" ^ path [ !output_dir ; "lib" ; "tlaps" ])
-      isabelle_settings in
-  if isabelle_settings = isabelle_settings_modified then
+      (Bytes.to_string isabelle_settings) in
+  if (Bytes.to_string isabelle_settings) = isabelle_settings_modified then
     fatal_error "Could not modify %s." isabelle_settings_file ;
   let isabelle_settings_modified2 =
     replace_first
@@ -632,7 +632,7 @@ let () =
 
 EOF
 
-ocamlopt -unsafe-string -w -3 -o "$TARGET" unix.cmxa str.cmxa "$SOURCE"
+ocamlopt -w -3 -o "$TARGET" unix.cmxa str.cmxa "$SOURCE"
 strip "$TARGET" || exit 0
 cat "$TLAPSVER.tar.gz" >> "$TARGET"
 rm -f "$TLAPSVER.tar.gz"

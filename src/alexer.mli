@@ -12,7 +12,7 @@ open Tla_parser
 
 (** Lex a channel *)
 val lex_channel :
-  string -> Pervasives.in_channel -> Token.token LazyList.t * Loc.locus
+  string -> Stdlib.in_channel -> Token.token LazyList.t * Loc.locus
 
 (** Main lexing function *)
 val lex : string -> Token.token LazyList.t * Loc.locus

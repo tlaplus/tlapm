@@ -95,7 +95,7 @@ module List = struct
   ;;
   let unique ?(cmp = (=)) xs = rev (rev_unique cmp xs []);;
 
-  let sort ?(cmp = Pervasives.compare) = List.sort cmp
+  let sort ?(cmp = Stdlib.compare) = List.sort cmp
 
   exception Invalid_index
 
@@ -134,7 +134,7 @@ module Std = struct
       let buf = Buffer.create bsize in
       let str = Bytes.create 64 in
       let rec loop () =
-        let hmany = Pervasives.input ch str 0 64 in
+        let hmany = Stdlib.input ch str 0 64 in
         if hmany > 0 then begin
           Buffer.add_subbytes buf str 0 hmany ;
           loop ()
@@ -147,16 +147,16 @@ module Std = struct
     fun ?(bin = false) fname ->
       let fsize = (Unix.stat fname).Unix.st_size in
       let ch =
-        if bin then Pervasives.open_in_bin fname
-        else Pervasives.open_in fname in
+        if bin then Stdlib.open_in_bin fname
+        else Stdlib.open_in fname in
       finally
-        (fun () -> Pervasives.close_in ch)
+        (fun () -> Stdlib.close_in ch)
         (input_all ~bsize:fsize) ch
 
   let input_list ch =
     let accu = ref [] in
     try while true do
-      accu := Pervasives.input_line ch :: !accu;
+      accu := Stdlib.input_line ch :: !accu;
     done; assert false
     with End_of_file -> List.rev !accu
   ;;

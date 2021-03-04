@@ -3,7 +3,7 @@
 #
 
 COMPFLAGS = -annot -g -warn-error +1+2+5+6+8+10..26+29..31+36 \
-            -unsafe-string ${ADDCOMPFLAGS}
+            ${ADDCOMPFLAGS}
 LINKFLAGS = -g ${ADDLINKFLAGS}
 
 OPTTOOLS =

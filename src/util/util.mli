@@ -38,17 +38,17 @@ end
 
 val sprintf :
   ?debug:string -> ?at:('a wrapped) -> ?prefix:string -> ?nonl:unit ->
-  ('r, Format.formatter, unit, string) Pervasives.format4 -> 'r
+  ('r, Format.formatter, unit, string) Stdlib.format4 -> 'r
 val printf  :
   ?debug:string -> ?at:('a wrapped) -> ?prefix:string -> ?nonl:unit ->
-  ('r, Format.formatter, unit) Pervasives.format -> 'r
+  ('r, Format.formatter, unit) Stdlib.format -> 'r
 val eprintf :
   ?debug:string -> ?at:('a wrapped) -> ?prefix:string -> ?nonl:unit ->
-  ('r, Format.formatter, unit) Pervasives.format -> 'r
+  ('r, Format.formatter, unit) Stdlib.format -> 'r
 val fprintf :
   ?debug:string -> ?at:('a wrapped) -> ?prefix:string -> ?nonl:unit ->
   Format.formatter ->
-  ('r, Format.formatter, unit) Pervasives.format -> 'r
+  ('r, Format.formatter, unit) Stdlib.format -> 'r
 
 (** {3 Convenience functions for exceptions} *)
 

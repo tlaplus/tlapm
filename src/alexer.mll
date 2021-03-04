@@ -102,15 +102,14 @@ and token = parse
       { [ NUM (ch, man) ] }
   | (numeral+ as i)
       { [ NUM (i, "") ] }
-  | ("\\b" ['0' '1']+ as b)
-      { Bytes.set b 0 '0' ;
+  | "\\b" (['0' '1']+ as b)
+      { let b = "0b" ^ b in
         [ NUM (string_of_int (int_of_string b), "") ] }
-  | ("\\o" ['0'-'7']+ as o)
-      { Bytes.set o 0 '0' ;
+  | "\\o" (['0'-'7']+ as o)
+      { let o = "0o" ^ o in
         [ NUM (string_of_int (int_of_string o), "") ] }
-  | ("\\h" (numeral | ['a'-'f' 'A'-'F'])+ as h)
-      { Bytes.set h 0 '0' ;
-        Bytes.set h 1 'x' ;
+  | "\\h" ((numeral | ['a'-'f' 'A'-'F'])+ as h)
+      { let h = "0x" ^ h in
         [ NUM (string_of_int (int_of_string h), "") ] }
 
   (* strings *)
@@ -293,7 +292,7 @@ and comment depth = parse
 
   let lex fn =
     let ich =
-      try Pervasives.open_in fn
+      try Stdlib.open_in fn
       with Sys_error msg -> Errors.fatal "Cannot open file: %s" msg
     in
     lex_channel fn ich
