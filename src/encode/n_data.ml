@@ -379,9 +379,9 @@ let untyped_deps tla_smb s =
                                   [ TupIsafcn n ; TupDomDef n ;]
                                   @ List.init n (fun i -> TupAppDef (n, i+1)))
   | Product n ->
-      (*([ Mem ; Tuple n ],         [ ProductDef n ])*)
-      ([ Mem ; FunIsafcn ; FunDom ; FunApp ; IntRange ; IntLit 1 ; IntLit n ],
-                                  [ ProductDef n ])
+      ([ Mem ; Tuple n ],         [ ProductDef n ])
+      (*([ Mem ; FunIsafcn ; FunDom ; FunApp ; IntRange ; IntLit 1 ; IntLit n ],
+                                  [ ProductDef n ])*)
 
   | _ ->
       error "Bad argument"

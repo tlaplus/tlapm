@@ -1127,7 +1127,8 @@ let productset_def n =
     ] %% []
   ) %% []
 
-  (*quant Forall
+let productset_def_alt n =
+  quant Forall
   (gen "s" n @ [ "t" ]) (dupl t_idv (n + 1))
   ~pats:[ [
     apps T.Mem
@@ -1159,7 +1160,7 @@ let productset_def n =
         end) %% []
       ) %% []
     ] %% []
-  ) %% []*)
+  ) %% []
 
 let tupdom_def n =
   quant Forall
@@ -1249,7 +1250,7 @@ let get_axm = function
   | T.FunAppDef -> fcnapp_def ()
   | T.TStrLitDistinct (s1, s2) -> t_strlit_distinct s1 s2
   | T.TupIsafcn n -> tuple_isafcn n
-  | T.ProductDef n -> productset_def n
+  | T.ProductDef n -> productset_def_alt n
   | T.TupDomDef n -> tupdom_def n
   | T.TupAppDef (n, i) -> tupapp_def n i
   | T.CastInj ty0 -> cast_inj ty0

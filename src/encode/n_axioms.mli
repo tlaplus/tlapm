@@ -75,6 +75,7 @@ val intrange_def : unit -> expr
 
 val tuple_isafcn : int -> expr
 val productset_def : int -> expr
+val productset_def_alt : int -> expr
 val tupdom_def : int -> expr
 val tupapp_def : int -> int -> expr
 
