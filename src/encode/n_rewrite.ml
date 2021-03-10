@@ -53,11 +53,10 @@ let elim_bounds_visitor = object (self : 'self)
                 (nscx, b :: r_bs, r_hs, None, i - 1)
             | Domain d, _ ->
                 let d = self#expr scx d in
+                let d = Subst.app_expr (Subst.shift n) d in
                 let op = maybe_assign Props.tpars_prop (Internal B.Mem %% []) (query d Props.tpars_prop) in
                 let h =
-                  Apply (op, [
-                    Ix i %% [] ; Subst.app_expr (Subst.shift n) d
-                  ]) %% []
+                  Apply (op, [ Ix i %% [] ; d ]) %% []
                 in
                 let h =
                   if has d Props.tpars_prop || not !Params.enc_nobool then h
