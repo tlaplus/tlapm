@@ -375,7 +375,13 @@ and atomic_expr b = lazy begin
               star1 begin
                 choice [
                   punct "." >>> anyname <$> (fun x -> Except_dot x) ;
-                  punct "[" >>> use (expr b) <<< punct "]" <$> (fun e -> Except_apply e) ;
+                  punct "[" >>> alt [
+                        (use (expr b)) <<< punct "]";
+                        (sep1 (punct ",") (use (expr b)))
+                            <$> (fun es -> noprops (Tuple es))
+                            <<< punct "]"
+                    ]
+                    <$> (fun e -> Except_apply e) ;
                 ]
               end
             end in
@@ -384,9 +390,18 @@ and atomic_expr b = lazy begin
               <$> (fun (e, xs) -> Except (e, xs))
           end ;
 
-          attempt (use (boundeds b) <<< punct "|->") <**> use (expr b)
+          attempt (use (func_boundeds b) <<< punct "|->") <**> use (expr b)
           <<< punct "]"
-          <$> (fun (bs, e) -> Fcn (bs, e)) ;
+          <$> begin
+            fun ((bs, letin), e) ->
+                if ((List.length letin) = 0) then
+                    Fcn (bs, e)
+                else begin
+                    let e_ = Let (letin, e) in
+                    let e = noprops e_ in
+                    Fcn (bs, e)
+                end
+          end ;
 
           use (expr b) >>= begin fun e ->
             choice [
@@ -592,6 +607,54 @@ and boundeds b = lazy begin
       end bss in
       List.concat vss
   end
+end
+
+and func_boundeds b = lazy begin
+    sep1 (punct ",") (choice [
+        (sep1 (punct ",") hint <*> (infix "\\in" >*> use (expr b)))
+            <$> begin
+                fun (vs, dom) ->
+                    let bounds =
+                        let hd = (List.hd vs, Constant, Domain dom) in
+                        let tl = List.map
+                            (fun v -> (v, Constant, Ditto)) (List.tl vs) in
+                        hd :: tl in
+                    let letin = [] in
+                    (bounds, letin)
+            end;
+        ((punct "<<" >>> (sep (punct ",") hint) <<< punct ">>")
+            <*> (infix "\\in" >*> use (expr b)))
+            <$> begin
+                fun (vs, dom) ->
+                    (* bounds *)
+                    let nms = List.map (fun h -> h.core) vs in
+                    let name = String.concat "" nms in
+                    let v = noprops ("fcnbnd#" ^ name) in
+                    let hd = (v, Constant, Domain dom) in
+                    let bounds = [hd] in
+                    (* `LET...IN` definitions *)
+                    let letin =
+                        List.mapi begin
+                        fun i op ->
+                            let e =
+                                let f = noprops (Opaque v.core) in
+                                let idx =
+                                    let i_str = string_of_int (i + 1) in
+                                    let num = Num (i_str, "") in
+                                    noprops num in
+                                let e_ = FcnApp (f, [idx]) in
+                                noprops e_ in
+                            let defn_ = Operator (op, e) in
+                            noprops defn_
+                        end vs in
+                    (bounds, letin)
+            end
+        ])
+    <$> begin
+      fun bss ->
+        let (bounds, letin) = List.split bss in
+        (List.concat bounds, List.concat letin)
+    end
 end
 
 
