@@ -11,17 +11,18 @@ open Property
 (* {3 Types} *)
 
 type ty =
-  | TVar of string  (** Type variable *)
-  | TAtm of atm     (** Atomic type *)
-  | TSet of ty      (** Set-type *)
-  | TFun of ty * ty (** Function-type *)
-  | TPrd of ty list (** Product-type *)
+  | TVar of string              (** Type variable *)
+  | TAtm of atm                 (** Atomic type *)
+  | TSet of ty                  (** Set-type *)
+  | TFun of ty * ty             (** Function-type *)
+  | TPrd of ty list             (** Product-type *)
+  | TRec of (string * ty) list  (** Record-type *)
 and atm =
-  | TAIdv           (** Individual *)
-  | TABol           (** Boolean *)
-  | TAInt           (** Integer *)
-  | TARel           (** Real *)
-  | TAStr           (** String *)
+  | TAIdv                       (** Individual *)
+  | TABol                       (** Boolean *)
+  | TAInt                       (** Integer *)
+  | TARel                       (** Real *)
+  | TAStr                       (** String *)
 
 and ty0 = ty                    (** Constant type *)
 and ty1 = Ty1 of ty0 list * ty  (** Fst-order operator type *)

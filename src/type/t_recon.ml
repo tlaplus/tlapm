@@ -570,6 +570,10 @@ and expr_aux scx oe =
           let op = assign op Props.tpars_prop [ ty01 ] in
           let ret = Apply (op, [ e ]) @@ oe in
           (ret, TSet (TAtm TAInt))
+      | TRec fty0s when typelvl scx <> 0 ->
+          let op = assign op Props.tpars_prop [ ty01 ] in
+          let ret = Apply (op, [ e ]) @@ oe in
+          (ret, TSet (TAtm TAStr))
       | _ ->
           let ret = Apply (op, [ force_idv ty01 e ]) @@ oe in
           (ret, TAtm TAIdv)
@@ -583,6 +587,19 @@ and expr_aux scx oe =
           let ret = FcnApp (e1, [ e2 ]) @@ oe in
           let ret = assign ret Props.tpars_prop [ ty01 ] in
           (ret, List.nth ty03s (n-1))
+      | _ ->
+          let oe = FcnApp (e1, [ Apply (e2, []) %% [] ]) @@ oe in
+          expr scx oe
+      end
+
+  | FcnApp (e1, [{ core = String s } as e2]) ->
+      let e1, ty01 = expr scx e1 in
+      begin match ty01 with
+      | TRec fty0s when typelvl scx <> 0 && List.exists (fun (f, _) -> f = s) fty0s ->
+          let ret = FcnApp (e1, [ e2 ]) @@ oe in
+          let ret = assign ret Props.tpars_prop [ ty01 ] in
+          let ty02 = List.find (fun (f, _) -> f = s) fty0s |> snd in
+          (ret, ty02)
       | _ ->
           let oe = FcnApp (e1, [ Apply (e2, []) %% [] ]) @@ oe in
           expr scx oe
@@ -611,6 +628,11 @@ and expr_aux scx oe =
       | TFun (TAtm TAStr, ty02) when typelvl scx <> 0 ->
           let ret = Dot (e, s) @@ oe in
           let ret = assign ret Props.tpars_prop [ ty01 ] in
+          (ret, ty02)
+      | TRec fty0s when typelvl scx <> 0 && List.exists (fun (f, _) -> f = s) fty0s ->
+          let ret = Dot (e, s) @@ oe in
+          let ret = assign ret Props.tpars_prop [ ty01 ] in
+          let ty02 = List.find (fun (f, _) -> f = s) fty0s |> snd in
           (ret, ty02)
       | _ ->
           let ret = Dot (force_idv ty01 e, s) @@ oe in
@@ -658,12 +680,52 @@ and expr_aux scx oe =
           (ret, TAtm TAIdv)
       end
 
-  | Rect _ ->
-      error ~at:oe "Not implemented: constructor Rect"
-  | Record _ ->
-      error ~at:oe "Not implemented: constructor Record"
+  | Rect fs ->
+      let fs, ty01s =
+        List.map begin fun (f, e) ->
+          let e, ty0 = expr scx e in
+          (f, e), ty0
+        end fs |>
+        List.split
+      in
+      let oty02s =
+        if typelvl scx <> 0 then try
+          Some (List.map (function TSet ty0 -> ty0 | _ -> failwith "") ty01s)
+        with _ -> None
+        else None
+      in
+      begin match oty02s with
+      | Some ty02s ->
+          let ret = Rect fs @@ oe in
+          let ret = assign ret Props.tpars_prop ty02s in
+          let fty0s = List.map2 (fun (f, _) ty0 -> (f, ty0)) fs ty02s in
+          (ret, TSet (TRec fty0s))
+      | None ->
+          let fs = List.map2 (fun (f, e) ty0 -> (f, force_idv ty0 e)) fs ty01s in
+          let ret = Rect fs @@ oe in
+          (ret, TAtm TAIdv)
+      end
+
+  | Record fs ->
+      let fs, ty0s =
+        List.map begin fun (f, e) ->
+          let e, ty0 = expr scx e in
+          (f, e), ty0
+        end fs |>
+        List.split
+      in
+      if typelvl scx <> 0 then
+        let ret = Record fs @@ oe in
+        let ret = assign ret Props.tpars_prop ty0s in
+        let fty0s = List.map2 (fun (f, _) ty0 -> (f, ty0)) fs ty0s in
+        (ret, TRec fty0s)
+      else
+        let fs = List.map2 (fun (f, e) ty0 -> (f, force_idv ty0 e)) fs ty0s in
+        let ret = Record fs @@ oe in
+        (ret, TAtm TAIdv)
 
   | Except (e, exps) ->
+      (* FIXME implement for the simplest case, overloaded for functions and records *)
       let e, ty01 = expr scx e in
       let exps, exp_ty0s =
         List.map begin fun (expts, a) ->
@@ -898,7 +960,7 @@ and expr_aux scx oe =
                 force_idv ty02 e
             | Ty1 ([], TAtm TABol), Ty1 ([], ty02) ->
                 force_bool ty02 e
-            (* NOTE There may be more complex conversions I need to implement *)
+            (* FIXME convert first-order arguments if possible *)
             | _, _ ->
                 error ~at:oe "Impossible operator conversion"
             end

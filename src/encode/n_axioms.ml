@@ -1204,6 +1204,137 @@ let tupapp_def n i =
   ) %% []
 
 
+(* {4 Records} *)
+
+let record_isafcn fs =
+  let n = List.length fs in
+  quant Forall
+  (gen "x" n) (dupl t_idv n)
+  ( apps T.FunIsafcn
+    [ apps (T.Rec fs)
+      (ixi n) %% []
+    ] %% []
+  ) %% []
+
+let recset_def fs =
+  let n = List.length fs in
+  quant Forall
+  (gen "s" n @ [ "r" ]) (dupl t_idv (n+1))
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps (T.RecSet fs)
+      (ixi ~shift:1 n) %% []
+    ] %% []
+  ] ]
+  ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps (T.RecSet fs)
+        (ixi ~shift:1 n) %% []
+      ] %% []
+    ; List (And,
+      [ apps T.FunIsafcn
+        [ Ix 1 %% []
+        ] %% []
+      ; appb ~tys:[ t_idv ] B.Eq
+        [ apps T.FunDom
+          [ Ix 1 %% []
+          ] %% []
+        ; apps (T.SetEnum n)
+          (List.map begin fun s ->
+            apps (T.StrLit s) [] %% []
+          end fs) %% []
+        ] %% []
+      ] @
+      List.mapi begin fun i s ->
+        apps T.Mem
+        [ apps T.FunApp
+          [ Ix 1 %% []
+          ; apps (T.StrLit s) [] %% []
+          ] %% []
+        ; Ix (n - i + 1) %% []
+        ] %% []
+      end fs) %% []
+    ] %% []
+  ) %% []
+
+let recset_def_alt fs =
+  let n = List.length fs in
+  quant Forall
+  (gen "s" n @ [ "r" ]) (dupl t_idv (n+1))
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps (T.RecSet fs)
+      (ixi ~shift:1 n) %% []
+    ] %% []
+  ] ]
+  ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps (T.RecSet fs)
+        (ixi ~shift:1 n) %% []
+      ] %% []
+    ; quant Exists
+      (gen "x" n) (dupl t_idv n)
+      ( List (And,
+        [ appb ~tys:[ t_idv ] B.Eq
+          [ Ix (n + 1) %% []
+          ; apps (T.Rec fs)
+            (ixi n) %% []
+          ] %% []
+        ] @
+        List.mapi begin fun i s ->
+          apps T.Mem
+          [ Ix (n - i) %% []
+          ; Ix (2*n + 1 - i) %% []
+          ] %% []
+        end fs) %% []
+      ) %% []
+    ] %% []
+  ) %% []
+
+let recdom_def fs =
+  let n = List.length fs in
+  quant Forall
+  (gen "x" n) (dupl t_idv n)
+  ~pats:[ [
+    apps T.FunDom
+    [ apps (T.Rec fs)
+      (ixi n) %% []
+    ] %% []
+  ] ]
+  ( appb ~tys:[ t_idv ] B.Eq
+    [ apps T.FunDom
+      [ apps (T.Rec fs)
+        (ixi n) %% []
+      ] %% []
+    ; apps (T.SetEnum n)
+      (List.map begin fun s ->
+        apps (T.StrLit s) [] %% []
+      end fs) %% []
+    ] %% []
+  ) %% []
+
+let recapp_def fs =
+  let n = List.length fs in
+  quant Forall
+  (gen "x" n) (dupl t_idv n)
+  ( List (And,
+    List.mapi begin fun i s ->
+      appb ~tys:[ t_idv ] B.Eq
+      [ apps T.FunApp
+        [ apps (T.Rec fs)
+          (ixi n) %% []
+        ; apps (T.StrLit s) [] %% []
+        ] %% []
+      ; Ix (n - i) %% []
+      ] %% []
+    end fs) %% []
+  ) %% []
+
+
 (* {3 Typed Variants} *)
 
 (* {4 Strings} *)
@@ -1253,6 +1384,10 @@ let get_axm = function
   | T.ProductDef n -> productset_def_alt n
   | T.TupDomDef n -> tupdom_def n
   | T.TupAppDef (n, i) -> tupapp_def n i
+  | T.RecIsafcn fs -> record_isafcn fs
+  | T.RecSetDef fs -> recset_def_alt fs
+  | T.RecDomDef fs -> recdom_def fs
+  | T.RecAppDef fs -> recapp_def fs
   | T.CastInj ty0 -> cast_inj ty0
   | T.TypeGuard ty0 -> type_guard ty0
   | T.Typing tla_smb -> op_typing tla_smb

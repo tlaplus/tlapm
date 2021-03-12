@@ -54,6 +54,9 @@ type tla_smb =
   (* Tuples *)
   | Tuple of int
   | Product of int
+  (* Records *)
+  | Rec of string list
+  | RecSet of string list
 
     (* TYPED *)
 
@@ -122,6 +125,11 @@ type tla_axm =
   | ProductDef of int
   | TupDomDef of int
   | TupAppDef of int * int
+  (* Records *)
+  | RecIsafcn of string list
+  | RecSetDef of string list
+  | RecDomDef of string list
+  | RecAppDef of string list
 
     (* TYPED *)
 

@@ -32,8 +32,9 @@ open T_t
       * Operators that are overloaded for functions, tuples or records can have
         one type annotation.  That annotation should be either a function-type,
         tuple-type or record-type, depending on the right version.
-        Functional application is overloaded for functions and tuples.  For
-        tuples, the right operand must be a literal integer.
+        Functional application is overloaded for functions, tuples and records.
+        For tuples, the right operand must be a literal integer.  For records,
+        it must be a literal string.
         Dot application is overloaded for functions and records.
         The domain operator is overloaded for functions, tuples, and records.
     - Bounds imply a hidden [\in].  The optional annotation for it may be found

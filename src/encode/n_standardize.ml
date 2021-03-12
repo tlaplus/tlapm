@@ -265,6 +265,37 @@ let visitor = object (self : 'self)
           let opq = mk_opq smb in
           Apply (opq, es) %% []
 
+    | Record fs ->
+        let fs = List.map (fun (f, e) -> (f, self#expr scx e)) fs in
+        if has oe Props.tpars_prop then
+          error ~at:oe "Typelvl=1 not implemented"
+        else
+          let fs, es = List.split fs in
+          let smb = mk_smb (Rec fs) in
+          let opq = mk_opq smb in
+          Apply (opq, es) %% []
+
+    | Rect fs ->
+        let fs = List.map (fun (f, e) -> (f, self#expr scx e)) fs in
+        if has oe Props.tpars_prop then
+          error ~at:oe "Typelvl=1 not implemented"
+        else
+          let fs, es = List.split fs in
+          let smb = mk_smb (RecSet fs) in
+          let opq = mk_opq smb in
+          Apply (opq, es) %% []
+
+    | Dot (e, s) ->
+        let e = self#expr scx e in
+        if has oe Props.tpars_prop then
+          error ~at:oe "Typelvl=1 not implemented"
+        else
+          let smb = mk_smb FunApp in
+          let opq = mk_opq smb in
+          let strlit = mk_smb (StrLit s) in
+          let strlit_opq = mk_opq strlit in
+          Apply (opq, [ e ; strlit_opq ]) %% []
+
     | _ -> super#expr scx oe
 
     end |>

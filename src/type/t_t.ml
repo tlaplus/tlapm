@@ -12,17 +12,18 @@ open Format
 (* {3 Generalities} *)
 
 type ty =
-  | TVar of string  (** Type variable *)
-  | TAtm of atm     (** Atomic type *)
-  | TSet of ty      (** Set-type *)
-  | TFun of ty * ty (** Function-type *)
-  | TPrd of ty list (** Product-type *)
+  | TVar of string              (** Type variable *)
+  | TAtm of atm                 (** Atomic type *)
+  | TSet of ty                  (** Set-type *)
+  | TFun of ty * ty             (** Function-type *)
+  | TPrd of ty list             (** Product-type *)
+  | TRec of (string * ty) list  (** Record-type *)
 and atm =
-  | TAIdv           (** Individual *)
-  | TABol           (** Boolean *)
-  | TAInt           (** Integer *)
-  | TARel           (** Real *)
-  | TAStr           (** String *)
+  | TAIdv                       (** Individual *)
+  | TABol                       (** Boolean *)
+  | TAInt                       (** Integer *)
+  | TARel                       (** Real *)
+  | TAStr                       (** String *)
 
 and ty0 = ty
 and ty1 = Ty1 of ty0 list * ty  (** Fst-order operator type *)
@@ -123,6 +124,7 @@ let rec ty_to_string ty =
   | TSet ty -> "Set" ^ ty_to_string ty
   | TFun (ty1, ty2) -> "Fun" ^ ty_to_string ty1 ^ ty_to_string ty2
   | TPrd tys -> List.fold_left (fun s ty -> s ^ ty_to_string ty) "Prd" tys
+  | TRec ftys -> List.fold_left (fun s (f, ty) -> s ^ f ^ ty_to_string ty) "Rec" ftys
 and tyatom_to_string a =
   match a with
   | TAIdv -> "Idv"
@@ -139,22 +141,32 @@ and pp_print_tyarrow ff ty =
   match ty with
   | TFun (ty1, ty2) ->
       fprintf ff "@[fun(%a,@ %a@])"
-      pp_print_tyset ty1
-      pp_print_tyarrow ty2
+      pp_print_ty0 ty1
+      pp_print_ty0 ty2
   | _ -> pp_print_typrod ff ty
 
 and pp_print_typrod ff ty =
   match ty with
   | TPrd tys ->
       fprintf ff "@[prod(%a@])"
-      (Fmtutil.pp_print_delimited pp_print_tyset) tys
+      (Fmtutil.pp_print_delimited pp_print_ty0) tys
+  | _ -> pp_print_tyrecord ff ty
+
+and pp_print_tyrecord ff ty =
+  match ty with
+  | TRec ftys ->
+      let pp_print_fty ff (f, ty) =
+        fprintf ff "%s:%a" f pp_print_ty0 ty
+      in
+      fprintf ff "@[rec(%a@])"
+      (Fmtutil.pp_print_delimited pp_print_fty) ftys
   | _ -> pp_print_tyset ff ty
 
 and pp_print_tyset ff ty =
   match ty with
   | TSet ty ->
       fprintf ff "@[set(%a@])"
-      pp_print_tyset ty
+      pp_print_ty0 ty
   | _ -> pp_print_tyatom ff ty
 
 and pp_print_tyatom ff ty =

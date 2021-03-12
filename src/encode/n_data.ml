@@ -138,6 +138,15 @@ let untyped_data tla_smb =
   | Product n ->
       ("Product_" ^ string_of_int n,
                         List.init n (fun _ -> t_cst t_idv),   t_idv)
+  (* Records *)
+  | Rec fs ->
+      let n = List.length fs in
+      (List.fold_left (fun s1 s2 -> s1 ^ "_" ^ s2) "Record" fs,
+                        List.init n (fun _ -> t_cst t_idv),   t_idv)
+  | RecSet fs ->
+      let n = List.length fs in
+      (List.fold_left (fun s1 s2 -> s1 ^ "_" ^ s2) "RecordSet" fs,
+                        List.init n (fun _ -> t_cst t_idv),   t_idv)
 
   | _ ->
       error "Bad argument"
@@ -225,7 +234,7 @@ let get_data tla_smb =
   | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet | NatSet | IntLit _
   | IntPlus | IntUminus | IntMinus | IntTimes | IntQuotient | IntRemainder
   | IntExp | IntLteq | IntLt | IntGteq | IntGt | IntRange | FunIsafcn | FunSet
-  | FunConstr | FunDom | FunApp | Tuple _ | Product _ ->
+  | FunConstr | FunDom | FunApp | Tuple _ | Product _ | Rec _ | RecSet _ ->
       let (nm, tins, tout) = untyped_data tla_smb in
       { dat_name = "TLA__" ^ nm
       ; dat_ty2  = Ty2 (tins, tout)
@@ -382,6 +391,14 @@ let untyped_deps tla_smb s =
       ([ Mem ; Tuple n ],         [ ProductDef n ])
       (*([ Mem ; FunIsafcn ; FunDom ; FunApp ; IntRange ; IntLit 1 ; IntLit n ],
                                   [ ProductDef n ])*)
+  (* Records *)
+  | Rec fs ->
+      let n = List.length fs in
+      ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ]
+       @ List.map (fun s -> StrLit s) fs,
+                                  [ RecIsafcn fs ; RecDomDef fs ; RecAppDef fs ])
+  | RecSet fs ->
+      ([ Mem ; Rec fs ], [ RecSetDef fs ])
 
   | _ ->
       error "Bad argument"
@@ -450,7 +467,7 @@ let get_deps tla_smb s =
   | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet | NatSet | IntLit _
   | IntPlus | IntUminus | IntMinus | IntTimes | IntQuotient | IntRemainder
   | IntExp | IntLteq | IntLt | IntGteq | IntGt | IntRange | FunIsafcn | FunSet
-  | FunConstr | FunDom | FunApp | Tuple _ | Product _ ->
+  | FunConstr | FunDom | FunApp | Tuple _ | Product _ | Rec _ | RecSet _ ->
       let s, (smbs, axms) = untyped_deps tla_smb s in
       s,
       { dat_deps = smbs

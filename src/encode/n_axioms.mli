@@ -79,6 +79,14 @@ val productset_def_alt : int -> expr
 val tupdom_def : int -> expr
 val tupapp_def : int -> int -> expr
 
+(* {4 Records} *)
+
+val record_isafcn : string list -> expr
+val recset_def : string list -> expr
+val recset_def_alt : string list -> expr
+val recdom_def : string list -> expr
+val recapp_def : string list -> expr
+
 
 (* {3 Typed Variants} *)
 
