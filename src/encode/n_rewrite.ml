@@ -492,6 +492,150 @@ let elim_records sq =
   snd (elim_records_visitor#sequent cx sq)
 
 
+(* {3 Simplify} *)
+
+(* Some expressions must be annotated so that simplification is not
+ * attempted, to prevent infinite loops *)
+let nosimpl_prop = make "Encode.Rewrite.nosimpl"
+
+let simpl_visitor = object (self : 'self)
+  inherit [unit, bool] Expr.Visit.foldmap as super
+
+  method expr scx b oe =
+    if has oe nosimpl_prop then false, oe else
+    match oe.core with
+    | Apply ({ core = Internal (B.Eq | B.Neq) } as op, [ e ; { core = If (p, f, g) } ])
+    | Apply ({ core = Internal (B.Eq | B.Neq) } as op, [ { core = If (p, f, g) } ; e ]) ->
+        let _, e = self#expr scx false e in
+        let _, f = self#expr scx false f in
+        let _, g = self#expr scx false g in
+        let f = Apply (op, [ e ; f ]) %% [] in
+        let g = Apply (op, [ e ; g ]) %% [] in
+        let ret = If (p, f, g) @@ oe in
+        let ty0 =
+          match query op Props.tpars_prop with
+          | Some [ ty0 ] -> ty0
+          | None -> error ~at:op "Missing type annotation"
+          | _ -> error ~at:op "Bad type annotation"
+        in
+        let ret = assign ret Props.tpars_prop [ ty0 ] in
+        true, ret
+
+    | Apply ({ core = Internal B.Mem } as op,
+      [ e ; { core = SetEnum es } ]) ->
+        let _, e = self#expr scx false e in
+        let _, es = List.map (self#expr scx false) es |> List.split in
+        let ty0 =
+          match query op Props.tpars_prop with
+          | Some [ ty0 ] -> ty0
+          | None -> TAtm TAIdv
+          | _ -> error ~at:op "Bad type annotation"
+        in
+        let eq = assign (Internal B.Eq %% []) Props.tpars_prop [ ty0 ] in
+        let ret =
+          match es with
+          | [] -> Internal B.FALSE %% []
+          | [ f ] ->
+              Apply (eq, [ e ; f ]) %% []
+          | _ ->
+              List (Or,
+              List.map (fun f -> Apply (eq, [ e ; f ]) %% []) es
+              ) %% []
+        in
+        true, ret
+
+    | Apply ({ core = Internal B.Mem } as op,
+      [ e ; { core = Apply ({ core = Internal B.SUBSET }, [ f ]) }]) ->
+        let _, e = self#expr scx false e in
+        let _, f = self#expr scx false f in
+        let ty0 =
+          match query op Props.tpars_prop with
+          | Some [ ty0 ] -> ty0
+          | None -> TAtm TAIdv
+          | _ -> error ~at:op "Bad type annotation"
+        in
+        let ret =
+          let v = assign ("x" %% []) Props.ty0_prop ty0 in
+          Quant (Forall, [ v, Constant, No_domain ],
+          Apply (Internal B.Implies %% [],
+          [ Apply (op, [ Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) e ]) %% []
+          ; Apply (op, [ Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) f ]) %% []
+          ]) %% [] ) %% []
+        in
+        true, ret
+
+    | FcnApp ({ core = Fcn (bs, e) }, es)
+      when not (has oe Props.tpars_prop) ->
+        let scx', _, bs = self#bounds scx false bs in
+        let _, e = self#expr scx' false e in
+        let _, es = List.map (self#expr scx false) es |> List.split in
+        let ps, _ =
+          List.fold_left2 begin fun (r_ps, dit) e (v, _, d) ->
+            match d, dit with
+            | Domain d, _
+            | Ditto, Some d ->
+                let p = Apply (Internal B.Mem %% [], [ e ; d ]) %% [] in
+                (p :: r_ps, Some d)
+            | _, _ ->
+                error ~at:v "Missing bound"
+          end ([], None) es bs |>
+          fun (r_ps, dit) -> List.rev r_ps, dit
+        in
+        let p =
+          match ps with
+          | [p] -> p
+          | ps -> List (And, ps) %% []
+        in
+        let sub = List.fold_left Subst.ssnoc (Subst.shift 0) es in
+        let f = Subst.app_expr sub e in
+        let g = assign oe nosimpl_prop () in
+        true, If (p, f, g) %% []
+
+    | Apply ({ core = Internal B.DOMAIN } as op, [ { core = Fcn (bs, _) } ])
+      when not (has op Props.tpars_prop) ->
+        let _, _, bs = self#bounds scx false bs in
+        let ds, _ =
+          List.fold_left begin fun (r_ds, dit) (v, _, d) ->
+            match d, dit with
+            | Domain d, _
+            | _, Some d ->
+                d :: r_ds, Some d
+            | _, _ ->
+                error ~at:v "Missing bound"
+          end ([], None) bs |>
+          fun (r_ds, dit) -> List.rev r_ds, dit
+        in
+        let e =
+          match ds with
+          | [d] -> d
+          | ds -> Product ds %% []
+        in
+        true, e $$ oe
+
+    | _ -> super#expr scx b oe
+
+  method hyp scx b h =
+    match h.core with
+    | Fact (_, Hidden, _)
+    | Defn (_, _, Hidden, _) ->
+        let scx = Expr.Visit.adj scx h in
+        (scx, b, h)
+    | _ -> super#hyp scx b h
+
+end
+
+let simplify sq =
+  let rec spin n b sq =
+    if (b && n > 0) then
+      let cx = ((), Deque.empty) in
+      let _, b, sq = simpl_visitor#sequent cx false sq in
+      spin (n-1) b sq
+    else
+      sq
+  in
+  spin 50 true sq
+
+
 (* {3 Apply Extensionnality} *)
 
 let is_set e =

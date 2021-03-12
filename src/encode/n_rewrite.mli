@@ -31,6 +31,17 @@ val elim_tuples : sequent -> sequent
 (** Reduce records to functions *) (* FIXME remove *)
 val elim_records : sequent -> sequent
 
+(** Simplify by applying standard axioms *)
+val simplify : sequent -> sequent
+(** This includes:
+    - `x \in {}` --> `FALSE`
+    - `x \in {a, b}` --> `x = a \/ x = b`
+    - `x \in { y \in S : P(y) }` --> `x \in S /\ P(x)`
+    - `[ x \in S |-> F(x) ][z]` --> `IF z \in S THEN F(z) ELSE @`
+      where `@` is the original expression
+    - etc.
+*)
+
 (** Apply extensionnality axioms to equalities *)
 val apply_ext : sequent -> sequent
 

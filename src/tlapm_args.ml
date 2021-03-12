@@ -205,6 +205,7 @@ let init () =
     (*"--enc-nobool", Arg.Set enc_nobool, " disable sort 'bool' for primitives such as '\\in'";*)
     (*"--enc-noarith", Arg.Set enc_noarith, " disable usage of the sort 'int'";*)
     (*"--enc-enablesmt", Arg.Set enc_enablesmt, " use the Zipperposition encoding for SMT";*)
+    (*"--enc-simpl", Arg.Set enc_simplify, " apply easy simplifications to POs";*)
     "--enc-verbose", Arg.Set enc_verbose, " print obligation at different encoding stages";
   ]
   in

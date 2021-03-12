@@ -208,6 +208,7 @@ module Subst : sig
   type sub
   val shift : int -> sub
   val scons : expr -> sub -> sub
+  val ssnoc : sub -> expr -> sub
   val bumpn : int -> sub -> sub
   val bump : sub -> sub
   val compose : sub -> sub -> sub

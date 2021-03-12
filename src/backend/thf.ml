@@ -476,8 +476,9 @@ let preprocess ?solver sq =
     |> Encode.Rewrite.elim_except
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
+    |> (if !Params.enc_simplify then Encode.Rewrite.simplify else fun e -> e)
     |> Encode.Rewrite.apply_ext
-    |> debug "Type Reconstruction and Simplify:"
+    |> debug "Disambiguate and Simplify:"
     |> Encode.Standardize.main
     |> debug "Standardize:"
     |> Encode.Axiomatize.main
