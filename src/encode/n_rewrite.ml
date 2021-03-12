@@ -516,10 +516,10 @@ let eq_pol b = function
 let apply_ext_visitor = object (self : 'self)
   inherit [bool] Expr.Visit.map as super
 
-  method expr scx oe =
+  method expr (b, cx as scx) oe =
     match oe.core with
-    | Apply ({ core = Internal (B.Eq | B.Neq as b) } as op, [ e ; f ])
-      when eq_pol (fst scx) b
+    | Apply ({ core = Internal (B.Eq | B.Neq as blt) } as op, [ e ; f ])
+      when eq_pol b blt
       && (is_set e || is_set f)
       && (match query op Props.tpars_prop with
           Some [TAtm TAIdv] -> true | _ -> false) ->
@@ -527,7 +527,7 @@ let apply_ext_visitor = object (self : 'self)
         let e = self#expr scx e in
         let f = self#expr scx f in
         let q =
-          match b with
+          match blt with
           | B.Eq -> Forall
           | B.Neq -> Exists
           | _ -> failwith ""
@@ -543,13 +543,27 @@ let apply_ext_visitor = object (self : 'self)
             ]
           ) %% []
           |> fun e ->
-              match b with
+              match blt with
               | B.Eq -> e
               | B.Neq ->
                   Apply (Internal B.Neg %% [], [e]) %% []
               | _ -> failwith ""
         ) @@ oe
+
+    | Apply ({ core = Internal B.Implies } as op, [ e ; f ]) ->
+        let e = self#expr (not b, cx) e in
+        let f = self#expr scx f in
+        Apply (op, [ e ; f ]) @@ oe
+    | Apply ({ core = Internal B.Neg } as op, [ e ]) ->
+        let e = self#expr (not b, cx) e in
+        Apply (op, [ e ]) @@ oe
+
     | _ -> super#expr scx oe
+
+  method sequent (b, hx) sq =
+    let (_, hx), hs = self#hyps (not b, hx) sq.context in
+    let e = self#expr (b, hx) sq.active in
+    (b, hx), { context = hs ; active = e }
 end
 
 let apply_ext sq =
