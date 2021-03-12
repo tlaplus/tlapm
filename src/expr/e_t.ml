@@ -80,6 +80,7 @@ and expr_ =
   | Fcn of bounds * expr
     (* `f[x]` *)
   | FcnApp of expr * expr list
+    (* Set of functions `[A -> B]` *)
   | Arrow of expr * expr
   (* [h: S, ...] *)
   | Rect of (string * expr) list

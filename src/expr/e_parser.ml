@@ -357,25 +357,59 @@ and atomic_expr b = lazy begin
     locate begin
       punct "[" >>>
         choice [
+          (* Record constructor:  [name1 |-> e1, ...] *)
           enabled (anyname <<< punct "|->") >*>
             sep1 (punct ",") (anyname <<< punct "|->" <**> use (expr b))
           <<< punct "]"
           <$> (fun fs -> Record fs) ;
 
+          (* Set of records:  [name1: Values1, ...] *)
           enabled (anyname <<< punct ":") >*>
             sep1 (punct ",") (anyname <<< punct ":" <*> use (expr b))
           <<< punct "]"
           <$> (fun fs -> Rect fs) ;
 
+          (* EXCEPT expression, examples:
+
+          [f EXCEPT ![1] = 2]
+          [f EXCEPT ![1] = 3, ![2] = 4]
+          [f EXCEPT ![1, 2] = 3]
+          [f EXCEPT !["a"] = 3, !["b"] = 4]
+          [f EXCEPT !.a = 3, !.b = 4]
+          [f EXCEPT !.a = 3, !["b"] = 4]
+          *)
           begin
             let rec exspec b = lazy begin
-              punct "!" >>> use (trail b) <<< infix "=" <*> (use (expr true)) (* choice [ attempt (punct "@" <!> At true);  use expr ] *)
+              (* except equality, examples:
+
+              ![1] = 2
+              !["a"] = 2
+              !.a = 2
+              ![1, 2] = 3
+              *)
+              punct "!" >>> use (trail b) <<< infix "=" <*> (use (expr true))
+              (* choice [ attempt (punct "@" <!> At true);  use expr ] *)
             end
             and trail b = lazy begin
               star1 begin
                 choice [
+                  (* field reference:  .name *)
                   punct "." >>> anyname <$> (fun x -> Except_dot x) ;
-                  punct "[" >>> use (expr b) <<< punct "]" <$> (fun e -> Except_apply e) ;
+                  (* application, examples:
+
+                  [arg]
+                  [arg1, arg2]
+                  *)
+                  punct "[" >>> alt [
+                        (* single expression within square brackets:  [arg] *)
+                        (use (expr b)) <<< punct "]";
+                        (* comma-separated list of expressions,
+                        within square brackets:  [arg1, ..., argN] *)
+                        (sep1 (punct ",") (use (expr b)))
+                            <$> (fun es -> noprops (Tuple es))
+                            <<< punct "]"
+                    ]
+                    <$> (fun e -> Except_apply e) ;
                 ]
               end
             end in
@@ -384,15 +418,59 @@ and atomic_expr b = lazy begin
               <$> (fun (e, xs) -> Except (e, xs))
           end ;
 
-          attempt (use (boundeds b) <<< punct "|->") <**> use (expr b)
+          (* Function constructor, examples:
+
+          [x \in S |-> e]
+          [<<x, y>> \in S \X R |-> e]
+          [<<x, y>> \in S \X R, z \in Q |-> e]
+          *)
+          attempt (use (func_boundeds b) <<< punct "|->") <**> use (expr b)
           <<< punct "]"
-          <$> (fun (bs, e) -> Fcn (bs, e)) ;
+          <$> begin
+            fun ((bs, letin), e) ->
+                (* decide whether to insert a `LET...IN`
+                for representing bound identifiers described by bounded
+                tuples in the source
+                *)
+                if ((List.length letin) = 0) then
+                    (* no `LET...IN` needed, because no tuple declarations
+                    appear in the function constructor, for example:
+
+                    [x \in S |-> x + 1]
+
+                    is represented with `bs` containing the declaration
+                    `x \in S`, and `e` the expression `x + 1`.
+                    *)
+                    Fcn (bs, e)
+                else begin
+                    (* insert a `LET...IN`, needed to represent tuple
+                    declarations, for example:
+
+                    [<<x, y>> \in S,  r, w \in Q |-> x + y - r - w]
+
+                    is represented with `bs` containing the declarations
+                    `fcnbnd#x \in S`, `r \in Q`, `w \in Ditto`, and
+                    `e` the expression
+
+                        LET
+                            x == fcnbnd#x[1]
+                            y == fcnbnd#x[2]
+                        IN
+                            x + y - r - w
+                    *)
+                    let e_ = Let (letin, e) in
+                    let e = noprops e_ in
+                    Fcn (bs, e)
+                end
+          end ;
 
           use (expr b) >>= begin fun e ->
             choice [
+              (* Set of functions:  [Domain -> Range] *)
               punct "->" >*> use (expr b) <<< punct "]"
               <$> (fun f -> Arrow (e, f)) ;
 
+              (* Box action operator:  [A]_e *)
               punct "]_" >>> use (sub_expr b)
               <$> (fun v -> Sub (Box, e, v)) ;
             ]
@@ -592,6 +670,176 @@ and boundeds b = lazy begin
       end bss in
       List.concat vss
   end
+end
+
+(* comma-separated listed of declarations within function constructor *)
+and func_boundeds b = lazy begin
+    (* comma-separated list of declarations, examples:
+
+    m \in S
+    a, b \in R
+    m \in S,  a, b \in R
+    m \in S,  a, b \in R,  <<x, y>> \in A \X B
+    *)
+    sep1 (punct ",") (choice [
+        (* bounded constants, examples:
+
+        m \in S
+        a, b \in R
+        *)
+        (sep1 (punct ",") hint <*> (infix "\\in" >*> use (expr b)))
+            <$> begin
+                fun (vs, dom) ->
+                    let bounds =
+                        let hd = (List.hd vs, Constant, Domain dom) in
+                        let tl = List.map
+                            (fun v -> (v, Constant, Ditto)) (List.tl vs) in
+                        hd :: tl in
+                    let letin = [] in
+                    (bounds, letin)
+            end;
+        (* bounded tuples of constants, examples:
+
+        <<x, y>> \in S
+        <<a, b, c >> \in A \X B \X C
+
+        A function constructor is represented with `Fcn`,
+        which takes `bounds` as first argument.
+        `bounds` represents a list of bound identifiers (constants here).
+
+        So the tuples need to be converted to individual identifier bounds.
+        This is done by introducing intermediate definitions in a `LET...IN`.
+        Each bounded tuple (like `<<x, y>>` above) is replaced by a fresh
+        identifier of the form:
+
+            fcnbnd#first_name
+
+        where "first_name" results from using the first identifier
+        that occurs within the tuple. For example, `<<x, y>>` is replaced by
+
+            fcnbnd#x
+
+        The fresh identifier is used inside the `LET...IN` for defining each
+        of the identifiers that occurred within the tuple. For example,
+        `[<<x, y>> \in S |-> ...]` becomes:
+
+            [fcnbnd#x \in S:
+                LET
+                    x == fcnbnd#x[1]
+                    y == fcnbnd#x[2]
+                IN
+                    ...]
+
+        The hashmark is used within the identifier fcnbnd#... to ensure that
+        the fresh identifier is different from all other identifiers in the
+        current context, without the need to inspect the context (which is
+        not available while parsing). The syntax of TLA+ ensures this,
+        because no identifier in TLA+ source can contain a hashmark.
+
+        In each function constructor, the first identifier from the tuple
+        (like "x" above) is unique, because the TLA+ syntax ensures that
+        each identifier is unique within its context. Therefore, each bounded
+        tuple within a function constructor will be replaced by a unique
+        fresh identifier (unique within that context and that context's
+        extensions).
+        *)
+        ((punct "<<" >>> (sep (punct ",") hint) <<< punct ">>")
+            <*> (infix "\\in" >*> use (expr b)))
+            <$> begin
+                fun (vs, dom) ->
+                    (* bounds *)
+                    (* name of first identifier that appears within the tuple,
+                    for example "x" from the tuple `<x, y>`.
+                    This name is to be used as suffix of the fresh identifier
+                    that will represent the tuple.
+                    *)
+                    let name = (List.hd vs).core in
+                    (* fresh identifier that will represent the tuple,
+                    for example "fcnbnd#x" from the tuple `<x, y>`
+                    *)
+                    let v = noprops ("fcnbnd#" ^ name) in
+                    (* bounded constant declaration for the fresh identifier,
+                    for example `fcnbnd#x \in S` from `<x, y> \in S`
+                    *)
+                    let hd = (v, Constant, Domain dom) in
+                    (* a list with a single element, in preparation for
+                    later concatenation
+                    *)
+                    let bounds = [hd] in
+                    (* `LET...IN` definitions
+
+                    We now create the definitions of the identifiers that
+                    appeared inside the tuple declaration, using in the
+                    definiens the fresh identifier `v` that has just been
+                    introduced.
+
+                    For example, the tuple declaration `<<x, y>> \in S`
+                    would here result in the creation of two definitions:
+
+                        x == fcnbnd#x[1]
+                        y == fcnbnd#x[2]
+                    *)
+                    let letin =
+                        (* create one definition for each identifier that
+                        appears inside the tuple declaration
+                        *)
+                        List.mapi begin
+                        fun i op ->  (* arguments:
+                            - `i` is the 0-based index of the tuple element
+                            - `op` is the tuple element (an identifier)
+                            *)
+                            let e =
+                                (* tuple identifier, for example "fcnbnd#x" *)
+                                let f = noprops (Opaque v.core) in
+                                (* 1-based index numeral *)
+                                let idx =
+                                    let i_str = string_of_int (i + 1) in
+                                    let num = Num (i_str, "") in
+                                    noprops num in
+                                (* function application on the index,
+                                for example:  fcnbnd#x[1]
+                                *)
+                                let e_ = FcnApp (f, [idx]) in
+                                noprops e_ in
+                            (* definition for `op`, for example:
+
+                            x == fcnbnd#x[1]
+
+                            The result is of type `defn`.
+                            *)
+                            let defn_ = Operator (op, e) in
+                            noprops defn_
+                        end vs in
+                    (* Bundle the constant declarations of fresh
+                    identifiers (in `bounds`) and the definitions (in terms of
+                    these fresh identifiers) of the identifiers that appeared
+                    in the tuple declaration (these definitions are in `letin`).
+
+                    These definitions are used at the call site to construct
+                    a new `LET...IN` expression that wraps the function's
+                    value expression (the `e` in `[... |-> e]`).
+
+                    The declarations are used, together with this `LET...IN`
+                    expression, to populate a function constructor `Fcn`.
+                    *)
+                    (bounds, letin)
+            end
+        ])
+    <$> begin
+      fun bss ->
+        (* Unzip the two lists.
+        `bss` is a list of pairs of lists, so `bounds` is a list of lists
+        and so is `letin`.
+        *)
+        let (bounds, letin) = List.split bss in
+        (* Flatten each list of lists into a list.
+        At this point we return a list of bounds that will be used in a `Fcn`,
+        and a (possibly empty) list of operator definitions that
+        will be used (if nonempty) to form a `Let` that will wrap the
+        expression that defines the value of the function in `Fcn`.
+        *)
+        (List.concat bounds, List.concat letin)
+    end
 end
 
 
