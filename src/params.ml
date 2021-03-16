@@ -203,7 +203,23 @@ let verit =
 
 let zipper =
   make_exec "zipperposition"
-            "zipperposition \"$file\""
+            "zipperposition \"$file\" \
+             -i tptp \
+             -o tptp \
+             --tptp-def-as-rewrite --rewrite-before-cnf=true \
+             --mode=ho-competitive --boolean-reasoning=no-cases \
+             --ext-rules=off   --ho-prim-enum=none   --recognize-injectivity=true  --ho-elim-leibniz=off \
+             --ho-unif-level=full-framework --no-max-vars \
+             -q \"3|const|conjecture-relative-var(1.02,l,f)\" \
+             -q \"1|prefer-ho-steps|conjecture-relative-var(1,s,f)\" \
+             -q \"1|prefer-processed|fifo\" \
+             -q \"3|by-app-var-num|pnrefined(2,1,1,1,2,2,2)\" \
+             --select=ho-selection5 \
+             --sine=50 --sine-tolerance=3 --sine-depth-max=3 --sine-depth-min=1 \
+             --prec-gen-fun=unary_first \
+             --solid-subsumption=false --ignore-orphans=false \
+             --ho-solid-decider=true  --ho-fixpoint-decider=true --ho-pattern-decider=true \
+             --sup-at-vars=false --sup-at-var-headed=false --sup-from-var-headed=false --ho-neg-ext-simpl=true"
             "zipperposition --version"
 
 let spass_dfg = make_exec "SPASS" "SPASS -Auto -PGiven=0 -PProblem=0 -PStatistic=0 \"$file\"" "echo unknown";;
@@ -247,7 +263,6 @@ let default_method =
     Method.Zenon Method.default_zenon_timeout;
     Method.Isabelle (Method.default_isabelle_timeout,
                      Method.default_isabelle_tactic);
-    Method.Zipper Method.default_zipper_timeout;
   ]
 ;;
 
