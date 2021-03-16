@@ -955,12 +955,38 @@ and expr_aux scx oe =
           if ty11 = ty12 then
             e
           else
+            let idv_or_bol = function
+              | TAtm (TAIdv | TABol) -> true
+              | _ -> false
+            in
+            let force = function
+              | TAtm TAIdv -> force_idv
+              | TAtm TABol -> force_bool
+              | _ -> failwith "internal error"
+            in
             begin match ty11, ty12 with
-            | Ty1 ([], TAtm TAIdv), Ty1 ([], ty02) ->
-                force_idv ty02 e
-            | Ty1 ([], TAtm TABol), Ty1 ([], ty02) ->
-                force_bool ty02 e
-            (* FIXME convert first-order arguments if possible *)
+            | Ty1 ([], ty02), Ty1 ([], ty03) when idv_or_bol ty02 ->
+                force ty02 ty03 e
+            | Ty1 (ty02s, ty03), Ty1 (ty04s, ty05)
+              when List.length ty02s = List.length ty04s
+                && idv_or_bol ty03 && List.for_all idv_or_bol ty04s ->
+                let n = List.length ty02s in
+                let vs =
+                  List.mapi begin fun i ty02 ->
+                    let v = ("x" ^ string_of_int (i + 1)) %% [] in
+                    (assign v Props.ty0_prop ty02, Shape_expr)
+                  end ty02s
+                in
+                let e =
+                  Apply (
+                    Expr.Subst.app_expr (Expr.Subst.shift n) e,
+                    List.mapi begin fun i (ty02, ty04) ->
+                      force ty04 ty02 (Ix (i + 1) %% [])
+                    end (List.combine ty02s ty04s)
+                  ) %% [] |>
+                  Expr.Subst.app_expr (Expr.Subst.shift 0) (* force normalize *)
+                in
+                Lambda (vs, force ty03 ty05 e) %% []
             | _, _ ->
                 error ~at:oe "Impossible operator conversion"
             end
