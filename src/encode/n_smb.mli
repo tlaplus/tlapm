@@ -22,6 +22,7 @@ open Type.T
 open Property
 
 open N_table
+open N_data
 
 
 (* {3 Symbols} *)

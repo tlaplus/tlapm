@@ -56,9 +56,6 @@ let pp_print_binding ff (nm, ty) =
   fprintf ff "(%s %a)" nm pp_print_sort ty
 
 
-let is_arith _ = false (* FIXME remove *)
-
-
 let rec pp_apply cx ff op args =
   match op.core with
   | Ix n ->
@@ -75,7 +72,7 @@ let rec pp_apply cx ff op args =
 
   (* TODO display arithmetic *)
 
-  | Opaque s when not (is_arith op) ->
+  | Opaque s ->
       begin match args with
       | [] ->
           (* FIXME Ad hoc trick that formats primed variables.
@@ -92,24 +89,6 @@ let rec pp_apply cx ff op args =
             (pp_print_delimited ~sep:pp_print_space (pp_print_expr cx)) args
           end ff (s, args)
       end
-
-  | Opaque _ when is_arith op ->
-      let smb = get op smb_prop in
-      let s =
-        match get_defn smb with
-        (*| TIntPlus -> "+"
-        | TIntUminus | Minus -> "-"
-        | TIntTimes -> "*"
-        | TIntLteq -> "<="
-        | TIntLt -> "<"
-        | TIntGteq -> ">="
-        | TIntGt -> ">"*)
-        | _ -> error ~at:op "Expected arithmetic operator"
-      in
-      pp_print_sexpr begin fun ff () ->
-        fprintf ff "%s %a" s
-        (pp_print_delimited ~sep:pp_print_space (pp_print_expr cx)) args
-      end ff ()
 
   | Internal b ->
       let kw =

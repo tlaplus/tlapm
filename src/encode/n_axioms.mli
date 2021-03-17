@@ -8,20 +8,24 @@
 open Expr.T
 open Type.T
 
-(** Axioms used in the encoding, all in standard form (see
-    {!Encode.Standardize}).
+open N_table
 
-    Axioms are generated lazily because some parameters may affect their
-    statements (eg. {!Params.enc_typepreds}).
+(** Axioms used in the encoding, all in standard form (see
+    {!Encode.Smb} and {!Encode.Standardize}).
+
+    All axioms are generated lazily because some parameters
+    may affect their statements.
 *)
 
-val get_axm : N_table.tla_axm -> expr
+(** You may use only this function.  Everything below is for documentation. *)
+val get_axm : tla_axm -> expr
+
 
 (* {3 Special} *)
 
 val cast_inj : ty0 -> expr
 val type_guard : ty0 -> expr
-val op_typing : N_table.tla_smb -> expr
+val op_typing : tla_smb -> expr
 
 
 (* {3 Untyped/Monosorted Variants} *)
@@ -94,14 +98,3 @@ val recapp_def : string list -> expr
 
 val t_strlit_distinct : string -> string -> expr
 
-(* FIXME adapt *)
-(*
-
-(* {3 Schema Instances} *)
-
-(* FIXME See in reduce how the param is set *)
-val inst_choose : (ty * ty list) option -> int -> expr -> expr
-val inst_setst : (ty * ty list) option -> int -> expr -> expr
-val inst_setof : int -> (ty list * ty * ty list) option -> int -> expr -> expr
-
-*)

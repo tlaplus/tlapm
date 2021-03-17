@@ -10,7 +10,6 @@ open Type.T
 
 type tla_smb =
     (* UNTYPED *)
-
   (* Logic *)
   | Choose
   (* Set Theory *)
@@ -59,7 +58,6 @@ type tla_smb =
   | RecSet of string list
 
     (* TYPED *)
-
   (* Strings *)
   | TStrLit of string
   (* Arithmetic *)
@@ -77,14 +75,12 @@ type tla_smb =
   | TIntRange
 
     (* SPECIAL *)
-
   | Cast of ty
   | True of ty
   | Anon of string * ty2
 
 type tla_axm =
     (* UNTYPED *)
-
   (* Logic *)
   | ChooseDef
   | ChooseExt
@@ -132,12 +128,10 @@ type tla_axm =
   | RecAppDef of string list
 
     (* TYPED *)
-
   (* Strings *)
   | TStrLitDistinct of string * string
 
     (* SPECIAL *)
-
   | CastInj of ty0
   | TypeGuard of ty0
   | Typing of tla_smb (** Only for typed symbols *)

@@ -8,5 +8,6 @@
 open Expr.T
 open T_t
 
+(** Collect all constant types (also called "sorts") found in an expression *)
 val main : sequent -> Ts.t
 

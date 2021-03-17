@@ -114,7 +114,7 @@ module Collect : sig
   val main : sequent -> Ts.t
 end
 
-module Reconstruct : sig
+module Synthesize : sig
   open Expr.T
   val main : ?typelvl:int -> ?noarith:bool -> ?nobool:bool -> sequent -> sequent
 end

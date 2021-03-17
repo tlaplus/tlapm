@@ -32,6 +32,7 @@ val elim_tuples : sequent -> sequent
 val elim_records : sequent -> sequent
 
 (** Simplify by applying standard axioms *)
+(* TODO *)
 val simplify : sequent -> sequent
 (** This includes:
     - `x \in {}` --> `FALSE`

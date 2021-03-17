@@ -16,26 +16,29 @@ open N_smb
     NOTE Opaques without a {!smb} are not affected.
 
     Additionally, if a {!smb} has dependencies and axioms implemented by
-    {!smbtable}, they are added in the context.
+    {!N_data.get_deps}, they are added in the context.
 
     The layout of the new sequent follows this convention:
-      NEW declarations, NEW axioms, original hyps |- original goal
+      NEW declarations, NEW axioms, original hyps' |- original goal'
 *)
 
 (* {3 Extended context} *)
 
 (** Extended context; used to store symbols and axioms data in an
     intermediary form *)
-type etx
+type ecx
+
+(** The initial context may contain some mandatory new declarations *)
+val init_ecx : ecx
 
 
 (* {3 Main} *)
 
 (** Collect relevant symbols and axioms *)
-val collect : sequent -> etx
+val collect : ecx -> sequent -> ecx
 
-(** Assemble a sequent with an extended context; set {!decl_ptr_prop} *)
-val assemble : etx -> sequent -> sequent
+(** Assemble a sequent with an extended context *)
+val assemble : ecx -> sequent -> sequent
 
 (** Combine collect and assemble *)
 val main : sequent -> sequent

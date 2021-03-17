@@ -16,9 +16,9 @@ open N_axioms
 
 (* {3 Contexts} *)
 
-type etx = s * SmbSet.t * expr Deque.dq
+type ecx = s * SmbSet.t * expr Deque.dq
 
-let init_etx =
+let init_ecx =
   let init_smbs =
     begin if !Params.enc_nobool then
       [ N_table.True (TAtm TAIdv) (* Occurs in a lot of axioms *)
@@ -46,13 +46,13 @@ let error ?at mssg =
 (* NOTE Important function
  * Add symbol to extended context, along with all depending
  * symbols and axioms *)
-let add_smb smb (s, smbs, facts) =
-  let rec more s acc_smbs acc_facts work_smbs =
+let add_smb smb ecx =
+  let rec spin (s, acc_smbs, acc_facts as ecx) work_smbs =
     try
       let smb = SmbSet.choose work_smbs in
       if SmbSet.mem smb acc_smbs then
         let work_smbs = SmbSet.remove smb work_smbs in
-        more s acc_smbs acc_facts work_smbs
+        spin ecx work_smbs
       else
         let s, deps = get_deps (get_defn smb) s in
         let smb_deps = List.fold_left begin fun smbs tla_smb ->
@@ -64,14 +64,14 @@ let add_smb smb (s, smbs, facts) =
         let acc_facts = List.fold_left Deque.snoc acc_facts axms in
         let work_smbs = SmbSet.remove smb work_smbs in
         let work_smbs = List.fold_right SmbSet.add smb_deps work_smbs in
-        more s acc_smbs acc_facts work_smbs
+        spin (s, acc_smbs, acc_facts) work_smbs
     with Not_found ->
-      (s, acc_smbs, acc_facts)
+      ecx
   in
-  more s smbs facts (SmbSet.singleton smb)
+  spin ecx (SmbSet.singleton smb)
 
 let collect_visitor = object (self : 'self)
-  inherit [unit, etx] Expr.Visit.fold as super
+  inherit [unit, ecx] Expr.Visit.fold as super
 
   method expr scx ecx oe =
     match oe.core with
@@ -91,15 +91,12 @@ let collect_visitor = object (self : 'self)
         super#hyp scx ecx h
 end
 
-let collect sq =
+let collect ecx sq =
   let scx = ((), Deque.empty) in
-  let etx = init_etx in
-  snd (collect_visitor#sequent scx etx sq)
+  snd (collect_visitor#sequent scx ecx sq)
 
 
 (* {3 Assembly} *)
-
-let axm_ptrs_prop = make "Encode.Axiomatization.axm_ptrs_prop"
 
 let mk_decl smb =
   let v = get_name smb %% [] in
@@ -161,7 +158,8 @@ let assemble (_, decls, axms) sq =
 (* {3 Main} *)
 
 let main sq =
-  let ecx = collect sq in
+  let ecx = init_ecx in
+  let ecx = collect ecx sq in
   let sq = assemble ecx sq in
   sq
 

@@ -39,7 +39,7 @@ EXPR_PACK = \
   expr/e_elab expr/e_anon
 
 TYPE_PACK = \
-	type/t_t type/t_visit type/t_collect type/t_recon
+	type/t_t type/t_visit type/t_collect type/t_synth
 
 ENCODE_PACK = \
   encode/n_hints encode/n_rewrite \
@@ -59,7 +59,7 @@ MODULES = revision sysconf \
   util/ext system builtin config method version loc toolbox_msg \
   params ${PARS_PACK} pars util/property \
   util/util ctx errors optable util/fmtutil \
-  isabelle_keywords tla_parser util/deque util/deps alexer ${EXPR_PACK} expr axiom \
+  isabelle_keywords tla_parser util/deque util/deps alexer ${EXPR_PACK} expr \
   method_prs ${PROOF_PACK} proof ${TYPE_PACK} type ${ENCODE_PACK} encode ${SMT_DIR} util/timing \
 	${MODULE_PACK} module ${FRONTEND_PACK} \
   backend/toolbox backend/schedule ${BACKEND_PACK} backend \

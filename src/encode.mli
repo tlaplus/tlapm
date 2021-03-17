@@ -24,28 +24,19 @@ module Rewrite : sig
   val apply_ext : sequent -> sequent
 end
 
-module Table : sig
-  type tla_smb
-  type tla_axm
-end
-
 module Smb : sig
   open Type.T
   open Property
-  open Table
 
   type smb
   val smb_prop : smb pfuncs
   module SmbSet : Set.S with type elt = smb
-  val mk_smb : tla_smb -> smb
   val equal_smb : smb -> smb -> bool
   val get_name : smb -> string
   val get_ty2  : smb -> ty2
   val get_ty1  : smb -> ty1
   val get_ty0  : smb -> ty0
   val get_ord  : smb -> int
-  val get_defn  : smb -> tla_smb
-  val get_tdefn : smb -> tla_smb
 
   val pp_print_smb : Format.formatter -> smb -> unit
 end

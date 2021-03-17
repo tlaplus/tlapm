@@ -1,5 +1,5 @@
 (*
- * type/recon.ml --- decorate TLA+ expressions with types
+ * type/synth.ml --- decorate TLA+ expressions with types
  *
  *
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
@@ -15,7 +15,7 @@ open T_t
 module B = Builtin
 
 let error ?at mssg =
-  let mssg = "Type.Reconstruct: " ^ mssg in
+  let mssg = "Type.Synthesize: " ^ mssg in
   (*Errors.bug ?at mssg*)
   failwith mssg
 

@@ -1,5 +1,5 @@
 (*
- * type/recon.mli --- decorate TLA+ expressions with types
+ * type/synth.mli --- decorate TLA+ expressions with types
  *
  *
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
@@ -10,9 +10,9 @@ open Util
 
 open T_t
 
-(** This module implements Type Reconstruction for non-temporal expressions.
+(** This module implements Type Synthesis for non-temporal expressions.
     
-    TR will decorate expressions with type annotations.  The expressions
+    TS will decorate expressions with type annotations.  The expressions
     themselves are not modified.  See {!Type.T} for a presentation of the type
     system and the relevant annotations.
 
@@ -37,7 +37,7 @@ open T_t
         it must be a literal string.
         Dot application is overloaded for functions and records.
         The domain operator is overloaded for functions, tuples, and records.
-    - Bounds imply a hidden [\in].  The optional annotation for it may be found
+    - Bounds imply a hidden [\\in].  The optional annotation for it may be found
       on the domain of the bound.
     - Some expressions must be cast from some type [ty] to the domain of
       individuals.  The annotation {!Type.T.icast_prop} with parameter [ty]

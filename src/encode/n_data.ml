@@ -23,6 +23,7 @@ let t_bol = TAtm TABol
 let t_int = TAtm TAInt
 let t_str = TAtm TAStr
 
+(* FIXME remove *)
 let t_iob () = if !Params.enc_nobool then t_idv else t_bol
 
 let t_cst ty = Ty1 ([], ty)
@@ -149,7 +150,7 @@ let untyped_data tla_smb =
                         List.init n (fun _ -> t_cst t_idv),   t_idv)
 
   | _ ->
-      error "Bad argument"
+      error "internal error"
   end
 
 let typed_data tla_smb =
@@ -210,7 +211,7 @@ let typed_data tla_smb =
       IntRange)
 
   | _ ->
-      error "Bad argument"
+      error "internal error"
   end
 
 let special_data tla_smb =
@@ -225,7 +226,7 @@ let special_data tla_smb =
       ("Anon_" ^ s,     ty1s,                                 ty0)
 
   | _ ->
-      error "Bad argument"
+      error "internal error"
   end
 
 let get_data tla_smb =
@@ -401,7 +402,7 @@ let untyped_deps tla_smb s =
       ([ Mem ; Rec fs ], [ RecSetDef fs ])
 
   | _ ->
-      error "Bad argument"
+      error "internal error"
   end |>
   fun x -> (s', x)
 
@@ -436,7 +437,7 @@ let typed_deps tla_smb s =
   | TIntRange ->
       ([], [])
   | _ ->
-      error "Bad argument"
+      error "internal error"
   end |>
   fun x -> (s', x)
 
@@ -457,7 +458,7 @@ let special_deps tla_smb =
   | Anon _ ->
       ([], [])
   | _ ->
-      error "Bad argument"
+      error "internal error"
   end |>
   fun x -> (fun s -> (s, x))
 
