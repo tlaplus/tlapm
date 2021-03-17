@@ -461,7 +461,7 @@ let preprocess ?solver sq =
   let pp_print_sequent ff sq = ignore (Expr.Fmt.pp_print_sequent cx ff sq) in
 
   let debug mssg sq =
-    if !Params.enc_verbose then begin
+    if (Params.debugging "verbose") then begin
       fprintf err_formatter "  [DEBUG] %s@.%a@.@." mssg
       pp_print_sequent sq
     end;

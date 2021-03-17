@@ -511,5 +511,3 @@ let enc_noarith = ref true (* FIXME false by default *)
 let enc_simplify = ref false
 
 let enc_enablesmt = ref false
-
-let enc_verbose = ref false

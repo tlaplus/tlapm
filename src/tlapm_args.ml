@@ -197,16 +197,6 @@ let init () =
                "<f> load fingerprints from file <f> (save as usual)";
     "--fpp", Arg.Set fp_deb,
              " print the fingerprints of obligations in toolbox messages";
-    blank;
-    title "(encoding options)";
-    blank;
-    (* FIXME Implement these *)
-    (*"--enc-typelvl", Arg.Set_int enc_typelvl, " set level of type reconstruction (0 or 1)";*)
-    (*"--enc-nobool", Arg.Set enc_nobool, " disable sort 'bool' for primitives such as '\\in'";*)
-    (*"--enc-noarith", Arg.Set enc_noarith, " disable usage of the sort 'int'";*)
-    (*"--enc-enablesmt", Arg.Set enc_enablesmt, " use the Zipperposition encoding for SMT";*)
-    (*"--enc-simpl", Arg.Set enc_simplify, " apply easy simplifications to POs";*)
-    "--enc-verbose", Arg.Set enc_verbose, " print obligation at different encoding stages";
   ]
   in
   let opts = Arg.align opts in
