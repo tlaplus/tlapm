@@ -33,8 +33,8 @@ let desugar =
       | Except (f, xs) ->
           let at_save = !current_at in
           let f = self#expr scx f in
-          let xs = List.map begin
-            fun (trail, bod) ->
+          let f = List.fold_left begin
+            fun f (trail, bod) ->
               let (trail, at) = List.fold_left begin
                 fun (trail, f) -> function
                   | Except_dot x -> (Except_dot x :: trail, { f with core = Dot (f, x) })
@@ -46,9 +46,9 @@ let desugar =
               let () = current_at := Some (at, Deque.size (snd scx)) in
               let bod = self#expr scx bod in
               let () = current_at := at_save in
-              (trail, bod)
-          end xs in
-          { e with core = Except (f, xs) }
+              {e with core = Except (f, [(trail, bod)])}
+          end f xs in
+          f
       | _ ->
           super#expr scx e
   end in
