@@ -87,15 +87,6 @@ let seq xs ty1s e =
   let hs = List.map noprops hs in
   Sequent { context = Deque.of_list hs ; active = e }
 
-let maybe_cast ty0 e =
-  if !Params.enc_nobool then
-    appb ~tys:[ ty0 ] B.Eq
-    [ e
-    ; apps (T.True ty0) [] %% []
-    ] %% []
-  else
-    e
-
 
 (* {3 Untyped/Monosorted Variants} *)
 
@@ -157,17 +148,17 @@ let type_guard ty0 =
         apps T.Mem
         [ Ix 1 %% []
         ; apps T.BoolSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
     | TAtm TAInt ->
         apps T.Mem
         [ Ix 1 %% []
         ; apps T.IntSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
     | TAtm TAStr ->
         apps T.Mem
         [ Ix 1 %% []
         ; apps T.StrSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
     | _ -> error "Not implemented"
     end
     ; quant Exists
@@ -217,23 +208,23 @@ let op_typing t_smb =
 let choose_def () =
   seq
   [ "P" ]
-  [ Ty1 ([ t_idv ], if !Params.enc_nobool then t_idv else t_bol) ]
+  [ Ty1 ([ t_idv ], t_bol) ]
   ( quant Forall
     [ "x" ] [ t_idv ]
     ~pats:[ [
       app (Ix 2 %% [])
       [ Ix 1 %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ] ]
     ( appb B.Implies
       [ app (Ix 2 %% [])
         [ Ix 1 %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ; app (Ix 2 %% [])
         [ apps T.Choose
           [ Ix 2 %% []
           ] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ] %% []
     ) %% []
   ) %% []
@@ -241,17 +232,17 @@ let choose_def () =
 let choose_ext () =
   seq
   [ "P" ; "Q" ]
-  (dupl (Ty1 ([ t_idv ], if !Params.enc_nobool then t_idv else t_bol)) 2)
+  (dupl (Ty1 ([ t_idv ], t_bol)) 2)
   ( appb B.Implies
     [ quant Forall
       [ "x" ] [ t_idv ]
       ( appb B.Equiv
         [ app (Ix 3 %% [])
           [ Ix 1 %% []
-          ] %% [] |> maybe_cast t_idv
+          ] %% []
         ; app (Ix 2 %% [])
           [ Ix 1 %% []
-          ] %% [] |> maybe_cast t_idv
+          ] %% []
         ] %% []
       ) %% []
     ; appb ~tys:[ t_idv ] B.Eq
@@ -277,11 +268,11 @@ let set_ext () =
         [ apps T.Mem
           [ Ix 1 %% []
           ; Ix 3 %% []
-          ] %% [] |> maybe_cast t_idv
+          ] %% []
         ; apps T.Mem
           [ Ix 1 %% []
           ; Ix 2 %% []
-          ] %% [] |> maybe_cast t_idv
+          ] %% []
         ] %% []
       ) %% []
     ; appb ~tys:[ t_idv ] B.Eq
@@ -298,24 +289,24 @@ let subseteq_def () =
     apps T.SubsetEq
     [ Ix 2 %% []
     ; Ix 1 %% []
-    ] %% [] |> maybe_cast t_idv
+    ] %% []
   ] ]
   ( appb B.Equiv
     [ apps T.SubsetEq
       [ Ix 2 %% []
       ; Ix 1 %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ; quant Forall
       [ "z" ] [ t_idv ]
       ( appb B.Implies
         [ apps T.Mem
           [ Ix 1 %% []
           ; Ix 3 %% []
-          ] %% [] |> maybe_cast t_idv
+          ] %% []
         ; apps T.Mem
           [ Ix 1 %% []
           ; Ix 2 %% []
-          ] %% [] |> maybe_cast t_idv
+          ] %% []
         ] %% []
       ) %% []
     ] %% []
@@ -328,14 +319,14 @@ let setenum_def n =
     apps T.Mem
     [ Ix 1 %% []
     ; apps (T.SetEnum n) [] %% []
-    ] %% [] |> maybe_cast t_idv
+    ] %% []
   ] ]
   begin if (n = 0) then
     appb B.Neg
     [ apps T.Mem
       [ Ix 1 %% []
       ; apps (T.SetEnum 0) [] %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ] %% []
   else
     appb B.Equiv
@@ -343,7 +334,7 @@ let setenum_def n =
       [ Ix 1 %% []
       ; apps (T.SetEnum n)
         (ixi ~shift:1 n) %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ; List.init n begin fun i ->
         appb ~tys:[ t_idv ] B.Eq
         [ Ix 1 %% []
@@ -365,7 +356,7 @@ let union_def () =
     ; apps T.Union
       [ Ix 2 %% []
       ] %% []
-    ] %% [] |> maybe_cast t_idv
+    ] %% []
   ] ]
   ( appb B.Equiv
     [ apps T.Mem
@@ -373,18 +364,18 @@ let union_def () =
       ; apps T.Union
         [ Ix 2 %% []
         ] %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ; quant Exists
       [ "y" ] [ t_idv ]
       ( appb B.Conj
         [ apps T.Mem
           [ Ix 1 %% []
           ; Ix 3 %% []
-          ] %% [] |> maybe_cast t_idv
+          ] %% []
         ; apps T.Mem
           [ Ix 2 %% []
           ; Ix 1 %% []
-          ] %% [] |> maybe_cast t_idv
+          ] %% []
         ] %% []
       ) %% []
     ] %% []
@@ -399,7 +390,7 @@ let subset_def () =
     ; apps T.Subset
       [ Ix 2 %% []
       ] %% []
-    ] %% [] |> maybe_cast t_idv
+    ] %% []
   ] ]
   ( appb B.Equiv
     [ apps T.Mem
@@ -407,18 +398,18 @@ let subset_def () =
       ; apps T.Subset
         [ Ix 2 %% []
         ] %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ; quant Forall
       [ "y" ] [ t_idv ]
       ( appb B.Implies
         [ apps T.Mem
           [ Ix 1 %% []
           ; Ix 2 %% []
-          ] %% [] |> maybe_cast t_idv
+          ] %% []
         ; apps T.Mem
           [ Ix 1 %% []
           ; Ix 3 %% []
-          ] %% [] |> maybe_cast t_idv
+          ] %% []
         ] %% []
       ) %% []
     ] %% []
@@ -434,7 +425,7 @@ let cup_def () =
       [ Ix 3 %% []
       ; Ix 2 %% []
       ] %% []
-    ] %% [] |> maybe_cast t_idv
+    ] %% []
   ] ]
   ( appb B.Equiv
     [ apps T.Mem
@@ -443,16 +434,16 @@ let cup_def () =
         [ Ix 3 %% []
         ; Ix 2 %% []
         ] %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ; appb B.Disj
       [ apps T.Mem
         [ Ix 1 %% []
         ; Ix 3 %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ; apps T.Mem
         [ Ix 1 %% []
         ; Ix 2 %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ] %% []
     ] %% []
   ) %% []
@@ -467,7 +458,7 @@ let cap_def () =
       [ Ix 3 %% []
       ; Ix 2 %% []
       ] %% []
-    ] %% [] |> maybe_cast t_idv
+    ] %% []
   ] ]
   ( appb B.Equiv
     [ apps T.Mem
@@ -476,16 +467,16 @@ let cap_def () =
         [ Ix 3 %% []
         ; Ix 2 %% []
         ] %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ; appb B.Conj
       [ apps T.Mem
         [ Ix 1 %% []
         ; Ix 3 %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ; apps T.Mem
         [ Ix 1 %% []
         ; Ix 2 %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ] %% []
     ] %% []
   ) %% []
@@ -500,7 +491,7 @@ let setminus_def () =
       [ Ix 3 %% []
       ; Ix 2 %% []
       ] %% []
-    ] %% [] |> maybe_cast t_idv
+    ] %% []
   ] ]
   ( appb B.Equiv
     [ apps T.Mem
@@ -509,17 +500,17 @@ let setminus_def () =
         [ Ix 3 %% []
         ; Ix 2 %% []
         ] %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ; appb B.Conj
       [ apps T.Mem
         [ Ix 1 %% []
         ; Ix 3 %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ; appb B.Neg
         [ apps T.Mem
           [ Ix 1 %% []
           ; Ix 2 %% []
-          ] %% [] |> maybe_cast t_idv
+          ] %% []
         ] %% []
       ] %% []
     ] %% []
@@ -528,7 +519,7 @@ let setminus_def () =
 let setst_def () =
   seq
   [ "P" ]
-  [ Ty1 ([ t_idv ], if !Params.enc_nobool then t_idv else t_bol) ]
+  [ Ty1 ([ t_idv ], t_bol) ]
   ( quant Forall
     [ "a" ; "x" ] [ t_idv ; t_idv ]
     ~pats:[ [
@@ -538,7 +529,7 @@ let setst_def () =
         [ Ix 2 %% []
         ; Ix 3 %% []
         ] %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ] ]
     ( appb B.Equiv
       [ apps T.Mem
@@ -547,15 +538,15 @@ let setst_def () =
           [ Ix 2 %% []
           ; Ix 3 %% []
           ] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ; appb B.Conj
         [ apps T.Mem
           [ Ix 1 %% []
           ; Ix 2 %% []
-          ] %% [] |> maybe_cast t_idv
+          ] %% []
         ; app (Ix 3 %% [])
           [ Ix 1 %% []
-          ] %% [] |> maybe_cast t_idv
+          ] %% []
         ] %% []
       ] %% []
     ) %% []
@@ -576,7 +567,7 @@ let setof_def n =
         end @
         [ Ix (n+2) %% []
         ]) %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ] ]
     ( appb B.Equiv
       [ apps T.Mem
@@ -587,7 +578,7 @@ let setof_def n =
           end @
           [ Ix (n+2) %% []
           ]) %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ; quant Exists
         (gen "y" n) (dupl t_idv n)
         ( List (And,
@@ -595,7 +586,7 @@ let setof_def n =
               apps T.Mem
               [ Ix (n-i) %% []
               ; Ix (2*n-i+1) %% []
-              ] %% [] |> maybe_cast t_idv
+              ] %% []
             end @
             [ appb ~tys:[ t_idv ] B.Eq
               [ Ix (n+1) %% []
@@ -692,7 +683,7 @@ let fcnset_def () =
       [ Ix 3 %% []
       ; Ix 2 %% []
       ] %% []
-    ] %% [] |> maybe_cast t_idv
+    ] %% []
   ] ]
   ( appb B.Equiv
     [ apps T.Mem
@@ -701,7 +692,7 @@ let fcnset_def () =
         [ Ix 3 %% []
         ; Ix 2 %% []
         ] %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ; List (And,
       [ apps T.FunIsafcn
         [ Ix 1 %% []
@@ -718,14 +709,14 @@ let fcnset_def () =
           [ apps T.Mem
             [ Ix 1 %% []
             ; Ix 4 %% []
-            ] %% [] |> maybe_cast t_idv
+            ] %% []
           ; apps T.Mem
             [ apps T.FunApp
               [ Ix 2 %% []
               ; Ix 1 %% []
               ] %% []
             ; Ix 3 %% []
-            ] %% [] |> maybe_cast t_idv
+            ] %% []
           ] %% []
         ) %% []
       ]) %% []
@@ -758,7 +749,7 @@ let fcnapp_def () =
       [ apps T.Mem
         [ Ix 1 %% []
         ; Ix 2 %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ; appb ~tys:[ t_idv ] B.Eq
         [ apps T.FunApp
           [ apps T.FunConstr
@@ -782,7 +773,7 @@ let strlit_isstr s =
   apps T.Mem
   [ apps (T.StrLit s) [] %% []
   ; apps T.StrSet [] %% []
-  ] %% [] |> maybe_cast t_idv
+  ] %% []
 
 let strlit_distinct s1 s2 =
   appb ~tys:[ t_idv ] B.Neq
@@ -797,7 +788,7 @@ let intlit_isint n =
   apps T.Mem
   [ apps (T.IntLit n) [] %% []
   ; apps T.IntSet [] %% []
-  ] %% [] |> maybe_cast t_idv
+  ] %% []
 
 let intlit_distinct m n =
   appb ~tys:[ t_idv ] B.Neq
@@ -812,22 +803,22 @@ let natset_def () =
     apps T.Mem
     [ Ix 1 %% []
     ; apps T.NatSet [] %% []
-    ] %% [] |> maybe_cast t_idv
+    ] %% []
   ] ]
   ( appb B.Equiv
     [ apps T.Mem
       [ Ix 1 %% []
       ; apps T.NatSet [] %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ; appb B.Conj
       [ apps T.Mem
         [ Ix 1 %% []
         ; apps T.IntSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ; apps T.IntLteq
         [ apps (T.IntLit 0) [] %% []
         ; Ix 1 %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ] %% []
     ] %% []
   ) %% []
@@ -840,11 +831,11 @@ let intplus_typing () =
       [ apps T.Mem
         [ Ix 2 %% []
         ; apps T.IntSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ; apps T.Mem
         [ Ix 1 %% []
         ; apps T.IntSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ] %% []
     ; apps T.Mem
       [ apps T.IntPlus
@@ -852,7 +843,7 @@ let intplus_typing () =
         ; Ix 1 %% []
         ] %% []
       ; apps T.IntSet [] %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ] %% []
   ) %% []
 
@@ -863,13 +854,13 @@ let intuminus_typing () =
     [ apps T.Mem
       [ Ix 1 %% []
       ; apps T.IntSet [] %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ; apps T.Mem
       [ apps T.IntUminus
         [ Ix 1 %% []
         ] %% []
       ; apps T.IntSet [] %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ] %% []
   ) %% []
 
@@ -881,11 +872,11 @@ let intminus_typing () =
       [ apps T.Mem
         [ Ix 2 %% []
         ; apps T.IntSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ; apps T.Mem
         [ Ix 1 %% []
         ; apps T.IntSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ] %% []
     ; apps T.Mem
       [ apps T.IntMinus
@@ -893,7 +884,7 @@ let intminus_typing () =
         ; Ix 1 %% []
         ] %% []
       ; apps T.IntSet [] %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ] %% []
   ) %% []
 
@@ -905,11 +896,11 @@ let inttimes_typing () =
       [ apps T.Mem
         [ Ix 2 %% []
         ; apps T.IntSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ; apps T.Mem
         [ Ix 1 %% []
         ; apps T.IntSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ] %% []
     ; apps T.Mem
       [ apps T.IntTimes
@@ -917,7 +908,7 @@ let inttimes_typing () =
         ; Ix 1 %% []
         ] %% []
       ; apps T.IntSet [] %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ] %% []
   ) %% []
 
@@ -929,7 +920,7 @@ let intexp_typing () =
       [ apps T.Mem
         [ Ix 2 %% []
         ; apps T.IntSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ; appb ~tys:[ t_idv ] B.Neq
         [ Ix 2 %% []
         ; apps (T.IntLit 0) [] %% []
@@ -937,7 +928,7 @@ let intexp_typing () =
       ; apps T.Mem
         [ Ix 1 %% []
         ; apps T.IntSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ]) %% []
     ; apps T.Mem
       [ apps T.IntExp
@@ -945,7 +936,7 @@ let intexp_typing () =
         ; Ix 1 %% []
         ] %% []
       ; apps T.IntSet [] %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ] %% []
   ) %% []
 
@@ -957,15 +948,15 @@ let intquotient_typing () =
       [ apps T.Mem
         [ Ix 2 %% []
         ; apps T.IntSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ; apps T.Mem
         [ Ix 1 %% []
         ; apps T.IntSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ; apps T.IntLteq
         [ apps (T.IntLit 0) [] %% []
         ; Ix 1 %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ]) %% []
     ; apps T.Mem
       [ apps T.IntQuotient
@@ -973,7 +964,7 @@ let intquotient_typing () =
         ; Ix 1 %% []
         ] %% []
       ; apps T.IntSet [] %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ] %% []
   ) %% []
 
@@ -985,15 +976,15 @@ let intremainder_typing () =
       [ apps T.Mem
         [ Ix 2 %% []
         ; apps T.IntSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ; apps T.Mem
         [ Ix 1 %% []
         ; apps T.IntSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ; apps T.IntLteq
         [ apps (T.IntLit 0) [] %% []
         ; Ix 1 %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ]) %% []
     ; apps T.Mem
       [ apps T.IntRemainder
@@ -1007,7 +998,7 @@ let intremainder_typing () =
           ; apps (T.IntLit 1) [] %% []
           ] %% []
         ] %% []
-      ] %% [] |> maybe_cast t_idv
+      ] %% []
     ] %% []
   ) %% []
 
@@ -1018,22 +1009,22 @@ let intrange_def () =
     apps T.Mem
     [ Ix 2 %% []
     ; apps T.IntSet [] %% []
-    ] %% [] |> maybe_cast t_idv
+    ] %% []
   ; apps T.Mem
     [ Ix 1 %% []
     ; apps T.IntSet [] %% []
-    ] %% [] |> maybe_cast t_idv
+    ] %% []
   ] ]
   ( appb B.Implies
     [ appb B.Conj
       [ apps T.Mem
         [ Ix 2 %% []
         ; apps T.IntSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ; apps T.Mem
         [ Ix 1 %% []
         ; apps T.IntSet [] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ] %% []
     ; quant Forall
       [ "x" ] [ t_idv ]
@@ -1044,7 +1035,7 @@ let intrange_def () =
           [ Ix 3 %% []
           ; Ix 2 %% []
           ] %% []
-        ] %% [] |> maybe_cast t_idv
+        ] %% []
       ] ]
       ( appb B.Equiv
         [ apps T.Mem
@@ -1053,20 +1044,20 @@ let intrange_def () =
             [ Ix 3 %% []
             ; Ix 2 %% []
             ] %% []
-          ] %% [] |> maybe_cast t_idv
+          ] %% []
         ; List (And,
           [ apps T.Mem
             [ Ix 1 %% []
             ; apps T.IntSet [] %% []
-            ] %% [] |> maybe_cast t_idv
+            ] %% []
           ; apps T.IntLteq
             [ Ix 3 %% []
             ; Ix 1 %% []
-            ] %% [] |> maybe_cast t_idv
+            ] %% []
           ; apps T.IntLteq
             [ Ix 1 %% []
             ; Ix 2 %% []
-            ] %% [] |> maybe_cast t_idv
+            ] %% []
           ]) %% []
         ] %% []
       ) %% []

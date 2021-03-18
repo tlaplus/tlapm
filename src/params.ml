@@ -504,8 +504,6 @@ let backend_timeout = ref 5.;;
 
 let enc_typelvl = ref 0
 
-let enc_nobool = ref false
-
 let enc_noarith = ref true (* FIXME false by default *)
 
 let enc_simplify = ref false

@@ -23,9 +23,6 @@ let t_bol = TAtm TABol
 let t_int = TAtm TAInt
 let t_str = TAtm TAStr
 
-(* FIXME remove *)
-let t_iob () = if !Params.enc_nobool then t_idv else t_bol
-
 let t_cst ty = Ty1 ([], ty)
 let t_una ty1 ty2 = Ty1 ([ ty1 ], ty2)
 let t_bin ty1 ty2 ty3 = Ty1 ([ ty1 ; ty2 ], ty3)
@@ -54,12 +51,12 @@ let untyped_data tla_smb =
   begin match tla_smb with
   (* Logic *)
   | Choose ->
-      ("Choose",        [ t_una t_idv (t_iob ()) ],           t_idv)
+      ("Choose",        [ t_una t_idv t_bol ],                t_idv)
   (* Set Theory *)
   | Mem ->
-      ("Mem",           [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
+      ("Mem",           [ t_cst t_idv ; t_cst t_idv ],        t_bol)
   | SubsetEq ->
-      ("SubsetEq",      [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
+      ("SubsetEq",      [ t_cst t_idv ; t_cst t_idv ],        t_bol)
   | SetEnum n ->
       ("SetEnum_" ^ string_of_int n,
                         List.init n (fun _ -> t_cst t_idv),   t_idv)
@@ -74,7 +71,7 @@ let untyped_data tla_smb =
   | SetMinus ->
       ("SetMinus",      [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   | SetSt ->
-      ("SetSt",         [ t_cst t_idv ; t_una t_idv (t_iob ()) ],
+      ("SetSt",         [ t_cst t_idv ; t_una t_idv t_bol ],
                                                               t_idv)
   | SetOf n ->
       ("SetOf_" ^ string_of_int n,
@@ -112,13 +109,13 @@ let untyped_data tla_smb =
   | IntExp ->
       ("Exp",           [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   | IntLteq ->
-      ("Lteq",          [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
+      ("Lteq",          [ t_cst t_idv ; t_cst t_idv ],        t_bol)
   | IntLt ->
-      ("Lt",            [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
+      ("Lt",            [ t_cst t_idv ; t_cst t_idv ],        t_bol)
   | IntGteq ->
-      ("Gteq",          [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
+      ("Gteq",          [ t_cst t_idv ; t_cst t_idv ],        t_bol)
   | IntGt ->
-      ("Gt",            [ t_cst t_idv ; t_cst t_idv ],        t_iob ())
+      ("Gt",            [ t_cst t_idv ; t_cst t_idv ],        t_bol)
   | IntRange ->
       ("Range",         [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   (* Functions *)

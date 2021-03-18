@@ -93,7 +93,6 @@ val timeout_stretch : float ref;;
 
 (* encode/ *)
 val enc_typelvl : int ref;;
-val enc_nobool : bool ref;;
 val enc_noarith : bool ref;;
 val enc_simplify : bool ref;;
 val enc_enablesmt : bool ref;;

@@ -55,21 +55,11 @@ let elim_bounds_visitor = object (self : 'self)
                 let d = self#expr scx d in
                 let d = Subst.app_expr (Subst.shift n) d in
                 let op = maybe_assign Props.tpars_prop (Internal B.Mem %% []) (query d Props.tpars_prop) in
-                let h =
-                  Apply (op, [ Ix i %% [] ; d ]) %% []
-                in
-                let h =
-                  if has d Props.tpars_prop || not !Params.enc_nobool then h
-                  else assign h Props.bproj_prop (TAtm TAIdv)
-                in
+                let h = Apply (op, [ Ix i %% [] ; d ]) %% [] in
                 (nscx, b :: r_bs, h :: r_hs, Some d, i - 1)
             | Ditto, Some d ->
                 let op = maybe_assign Props.tpars_prop (Internal B.Mem %% []) (query d Props.tpars_prop) in
                 let h = Apply (op, [ Ix i %% [] ; d ]) %% [] in
-                let h =
-                  if has d Props.tpars_prop || not !Params.enc_nobool then h
-                  else assign h Props.bproj_prop (TAtm TAIdv)
-                in
                 (nscx, b :: r_bs, h :: r_hs, Some d, i - 1)
             | _, _ ->
                 error ~at:oe "Missing bound"
@@ -113,26 +103,7 @@ let elim_bounds_visitor = object (self : 'self)
             Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) d
           ]) %% []
         in
-        let h =
-          if has d Props.tpars_prop || not !Params.enc_nobool then h
-          else assign h Props.bproj_prop (TAtm TAIdv)
-        in
-        let e =
-          if has oe Props.tpars_prop || not !Params.enc_nobool then
-            Apply (Internal B.Conj %% [], [ h ; e ]) %% []
-          else if has e Props.icast_prop && get e Props.icast_prop = TAtm TABol then
-            (* Optimization:
-              * `to_idv(e) = true_idv`  -->  `e` *)
-            let e = remove e Props.icast_prop in
-            assign (
-              Apply (Internal B.Conj %% [], [ h ; e ]) %% []
-            ) Props.icast_prop (TAtm TABol)
-          else
-            let e = assign e Props.bproj_prop (TAtm TAIdv) in
-            assign (
-              Apply (Internal B.Conj %% [], [ h ; e ]) %% []
-            ) Props.icast_prop (TAtm TABol)
-        in
+        let e = Apply (Internal B.Conj %% [], [ h ; e ]) %% [] in
         Choose (v, None, e) @@ oe
 
     | _ -> super#expr scx oe
@@ -154,10 +125,6 @@ let elim_bounds_visitor = object (self : 'self)
             Apply (op, [
               Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) d
             ]) %% []
-          in
-          let e =
-            if has d Props.tpars_prop || not !Params.enc_nobool then e
-            else assign e Props.bproj_prop (TAtm TAIdv)
           in
           let hh = Fact (e, vis, NotSet) %% [] in
           let scx = Visit.adj scx h in
@@ -195,19 +162,9 @@ let elim_notmem_visitor = object (self : 'self)
     | Apply ({ core = Internal B.Notmem } as op, [ e ; f ]) ->
         let e = self#expr scx e in
         let f = self#expr scx f in
-        if has op Props.tpars_prop || not !Params.enc_nobool then
-          Apply (Internal B.Neg %% [], [
-            Apply (Internal B.Mem @@ op, [ e ; f ]) %% []
-          ]) @@ oe
-        else
-          (* Not sure this is the best way to preserve properties *)
-          remove (
-            Apply (Internal B.Neg %% [], [
-              assign (
-                Apply (Internal B.Mem @@ op, [ e ; f ]) %% []
-              ) Props.bproj_prop (TAtm TAIdv)
-            ]) @@ oe
-          ) Props.bproj_prop
+        Apply (Internal B.Neg %% [], [
+          Apply (Internal B.Mem @@ op, [ e ; f ]) %% []
+        ]) @@ oe
     | _ -> super#expr scx oe
 end
 

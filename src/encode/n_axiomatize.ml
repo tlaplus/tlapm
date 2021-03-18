@@ -20,13 +20,7 @@ type ecx = s * SmbSet.t * expr Deque.dq
 
 let init_ecx =
   let init_smbs =
-    begin if !Params.enc_nobool then
-      [ N_table.True (TAtm TAIdv) (* Occurs in a lot of axioms *)
-      (*; N_table.Cast (TAtm TABol)*)
-      ]
-    else
-      []
-    end |>
+    [] |>
     List.map mk_smb |>
     SmbSet.of_list
   in

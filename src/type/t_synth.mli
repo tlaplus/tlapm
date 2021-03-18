@@ -87,11 +87,9 @@ val sequent : scx -> sequent -> scx * sequent
         typelvl=0: no types, except bool, int, string
         typelvl=1: use types for sets, functions, tuples, records TODO
     @param noarith disable the type int (intended for Zipperposition)
-    @param nobool disable the type bool for some operators (like \\in)
 *)
 val main :
   ?typelvl:int ->
   ?noarith:bool ->
-  ?nobool:bool ->
   sequent -> sequent
 

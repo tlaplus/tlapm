@@ -25,7 +25,6 @@ let error ?at mssg =
 type options =
   { typelvl : int
   ; noarith : bool
-  ; nobool  : bool
   }
 
 type tty = TTy0 of ty0 | TTy1 of ty1 | TTy2 of ty2
@@ -35,12 +34,10 @@ let init =
   let cx = Ctx.dot in
   { typelvl = 0
   ; noarith = false
-  ; nobool  = false
   }, cx
 
 let typelvl (ops, _) = ops.typelvl
 let noarith (ops, _) = ops.noarith
-let nobool (ops, _) = ops.nobool
 
 let adj_ty0 (ops, cx) v ty0 =
   let cx = Ctx.adj cx v.core (TTy0 ty0) in
@@ -295,16 +292,14 @@ and expr_aux scx oe =
       | _ ->
           let v, scx = adj_ty0 scx v (TAtm TAIdv) in
           let e, ty03 = expr scx e in
-          let force = if nobool scx then force_idv else force_bool in
-          let ret = Choose (v, Some (force_idv ty01 d), force ty03 e) @@ oe in
+          let ret = Choose (v, Some (force_idv ty01 d), force_bool ty03 e) @@ oe in
           (ret, TAtm TAIdv)
       end
 
   | Choose (v, None, e) ->
       let v, scx = adj_ty0 scx v (TAtm TAIdv) in
       let e, ty0 = expr scx e in
-      let force = if nobool scx then force_idv else force_bool in
-      let ret = Choose (v, None, force ty0 e) @@ oe in
+      let ret = Choose (v, None, force_bool ty0 e) @@ oe in
       (ret, TAtm TAIdv)
 
   | Apply ({ core = Internal (B.Mem | B.Notmem) } as op, [ e ; f ]) ->
@@ -317,8 +312,7 @@ and expr_aux scx oe =
           (ret, TAtm TABol)
       | _, _ ->
           let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
-          let ty05 = if nobool scx then TAtm TAIdv else TAtm TABol in
-          (ret, ty05)
+          (ret, TAtm TABol)
       end
 
   | Apply ({ core = Internal B.Subseteq } as op, [ e ; f ]) ->
@@ -331,8 +325,7 @@ and expr_aux scx oe =
           (ret, TAtm TABol)
       | _, _ ->
           let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
-          let ty05 = if nobool scx then TAtm TAIdv else TAtm TABol in
-          (ret, ty05)
+          (ret, TAtm TABol)
       end
 
   | SetEnum es ->
@@ -392,8 +385,7 @@ and expr_aux scx oe =
       | _ ->
           let v, scx = adj_ty0 scx v (TAtm TAIdv) in
           let f, ty03 = expr scx f in
-          let force = if nobool scx then force_idv else force_bool in
-          let ret = SetSt (v, force_idv ty01 e, force ty03 f) @@ oe in
+          let ret = SetSt (v, force_idv ty01 e, force_bool ty03 f) @@ oe in
           (ret, TAtm TAIdv)
       end
 
@@ -937,8 +929,7 @@ and expr_aux scx oe =
           (ret, TAtm TABol)
       | _, _ ->
           let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
-          let ty03 = if nobool scx then TAtm TAIdv else TAtm TABol in
-          (ret, ty03)
+          (ret, TAtm TABol)
       end
 
   (* The code may wrap `e` like this sometimes to prevent infinite loops.
@@ -1259,12 +1250,11 @@ and sequent scx sq =
   (scx, { context = hs ; active = force_bool ty0 e })
 
 
-let main ?(typelvl=0) ?(noarith=false) ?(nobool=false) sq =
+let main ?(typelvl=0) ?(noarith=false) sq =
   let ops, cx = init in
   let ops =
     { typelvl = typelvl
     ; noarith = noarith
-    ; nobool  = nobool
     }
   in
   snd (sequent (ops, cx) sq)
