@@ -180,25 +180,42 @@ let elim_compare_visitor = object (self : 'self)
 
   method expr scx oe =
     match oe.core with
-    | Apply ({ core = Internal B.Lt } as op, [ e ; f ]) ->
+    | Apply ({ core = Internal B.Lt } as op, [ e ; f ])
+      when not (has op Props.tpars_prop) ->
         let e = self#expr scx e in
         let f = self#expr scx f in
-        let neq_op = maybe_assign Props.tpars_prop (Internal B.Neq %% []) (query op Props.tpars_prop) in
-        Apply (Internal B.Conj %% [], [
-          Apply (Internal B.Lteq @@ op, [ e ; f ]) @@ oe ;
-          Apply (neq_op, [ e ; f ]) %% []
-        ]) %% []
+        let neq_op = assign (Internal B.Neq %% []) Props.tpars_prop [ TAtm TAIdv ] in
+        if has oe Props.icast_prop then
+          Apply (Internal B.Conj %% [], [
+            remove (Apply (Internal B.Lteq @@ op, [ e ; f ]) @@ oe) Props.icast_prop ;
+            Apply (neq_op, [ e ; f ]) %% []
+          ]) %% [] |> fun oe ->
+            assign oe Props.icast_prop (TAtm TABol)
+        else
+          Apply (Internal B.Conj %% [], [
+            Apply (Internal B.Lteq @@ op, [ e ; f ]) @@ oe ;
+            Apply (neq_op, [ e ; f ]) %% []
+          ]) %% []
 
-    | Apply ({ core = Internal B.Gt } as op, [ e ; f ]) ->
+    | Apply ({ core = Internal B.Gt } as op, [ e ; f ])
+      when not (has op Props.tpars_prop) ->
         let e = self#expr scx e in
         let f = self#expr scx f in
-        let neq_op = maybe_assign Props.tpars_prop (Internal B.Neq %% []) (query op Props.tpars_prop) in
-        Apply (Internal B.Conj %% [], [
-          Apply (Internal B.Lteq @@ op, [ f ; e ]) @@ oe ;
-          Apply (neq_op, [ f ; e ]) %% []
-        ]) %% []
+        let neq_op = assign (Internal B.Neq %% []) Props.tpars_prop [ TAtm TAIdv ] in
+        if has oe Props.icast_prop then
+          Apply (Internal B.Conj %% [], [
+            remove (Apply (Internal B.Lteq @@ op, [ f ; e ]) @@ oe) Props.icast_prop ;
+            Apply (neq_op, [ f ; e ]) %% []
+          ]) %% [] |> fun oe ->
+            assign oe Props.icast_prop (TAtm TABol)
+        else
+          Apply (Internal B.Conj %% [], [
+            Apply (Internal B.Lteq @@ op, [ f ; e ]) @@ oe ;
+            Apply (neq_op, [ f ; e ]) %% []
+          ]) %% []
 
-    | Apply ({ core = Internal B.Gteq } as op, [ e ; f ]) ->
+    | Apply ({ core = Internal B.Gteq } as op, [ e ; f ])
+      when not (has op Props.tpars_prop) ->
         let e = self#expr scx e in
         let f = self#expr scx f in
         Apply (Internal B.Lteq @@ op, [ f ; e ]) @@ oe
