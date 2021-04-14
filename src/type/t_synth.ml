@@ -191,6 +191,11 @@ and expr_aux scx oe =
       in
       (Apply (op, es) @@ oe, TAtm TAIdv)
 
+  | Apply ({ core = Internal B.Unprimable } as op, [ e ]) ->
+      let e, ty0 = expr scx e in
+      let ret = Apply (op, [ e ]) @@ oe in
+      (ret, ty0)
+
   | Internal (B.TRUE | B.FALSE as b) ->
       (Internal b @@ oe, TAtm TABol)
 
@@ -1126,8 +1131,6 @@ and eopr scx op =
   | Internal B.Divides ->
       error ~at:op "Unsupported builtin Divides"
 
-  | Internal B.Unprimable ->
-      error ~at:op "Unsupported builtin Unprimable"
   | Internal B.Irregular ->
       error ~at:op "Unsupported builtin Irregular"
 
