@@ -59,7 +59,7 @@ MODULES = revision sysconf \
   util/ext system builtin config method version loc toolbox_msg \
   params ${PARS_PACK} pars util/property \
   util/util ctx errors optable util/fmtutil \
-  isabelle_keywords tla_parser util/deque util/deps alexer ${EXPR_PACK} expr \
+  isabelle_keywords tla_parser util/deque alexer ${EXPR_PACK} expr \
   method_prs ${PROOF_PACK} proof ${TYPE_PACK} type ${ENCODE_PACK} encode ${SMT_DIR} util/timing \
 	${MODULE_PACK} module ${FRONTEND_PACK} \
   backend/toolbox backend/schedule ${BACKEND_PACK} backend \
