@@ -145,6 +145,26 @@ let untyped_data tla_smb =
       let n = List.length fs in
       (List.fold_left (fun s1 s2 -> s1 ^ "_" ^ s2) "RecordSet" fs,
                         List.init n (fun _ -> t_cst t_idv),   t_idv)
+  (* Sequences *)
+  | SeqSeq ->
+      ("Seq",           [ t_cst t_idv ],                      t_idv)
+  | SeqLen ->
+      ("Len",           [ t_cst t_idv ],                      t_idv)
+  | SeqBSeq ->
+      ("BSeq",          [ t_cst t_idv ],                      t_idv)
+  | SeqCat ->
+      ("Cat",           [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+  | SeqAppend ->
+      ("Append",        [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+  | SeqHead ->
+      ("Head",          [ t_cst t_idv ],                      t_idv)
+  | SeqTail ->
+      ("Tail",          [ t_cst t_idv ],                      t_idv)
+  | SeqSubSeq ->
+      ("SubSeq",        [ t_cst t_idv ; t_cst t_idv ; t_cst t_idv ],
+                                                              t_idv)
+  | SeqSelectSeq ->
+      ("SelectSeq",     [ t_cst t_idv ; t_una t_idv t_idv ],  t_idv)
 
   | _ ->
       error "internal error"
@@ -232,7 +252,9 @@ let get_data tla_smb =
   | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet | NatSet | IntLit _
   | IntPlus | IntUminus | IntMinus | IntTimes | IntQuotient | IntRemainder
   | IntExp | IntLteq | IntLt | IntGteq | IntGt | IntRange | FunIsafcn | FunSet
-  | FunConstr | FunDom | FunApp | Tuple _ | Product _ | Rec _ | RecSet _ ->
+  | FunConstr | FunDom | FunApp | Tuple _ | Product _ | Rec _ | RecSet _
+  | SeqSeq | SeqLen | SeqBSeq | SeqCat | SeqAppend | SeqHead | SeqTail
+  | SeqSubSeq | SeqSelectSeq ->
       let (nm, tins, tout) = untyped_data tla_smb in
       { dat_name = "TLA__" ^ nm
       ; dat_ty2  = Ty2 (tins, tout)
@@ -397,6 +419,17 @@ let untyped_deps tla_smb s =
                                   [ RecIsafcn fs ; RecDomDef fs ; RecAppDef fs ])
   | RecSet fs ->
       ([ Mem ; Rec fs ], [ RecSetDef fs ])
+  (* Sequences *)
+  | SeqSeq
+  | SeqLen
+  | SeqBSeq
+  | SeqCat
+  | SeqAppend
+  | SeqHead
+  | SeqTail
+  | SeqSubSeq
+  | SeqSelectSeq ->
+      ([], [])
 
   | _ ->
       error "internal error"
@@ -465,7 +498,9 @@ let get_deps tla_smb s =
   | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet | NatSet | IntLit _
   | IntPlus | IntUminus | IntMinus | IntTimes | IntQuotient | IntRemainder
   | IntExp | IntLteq | IntLt | IntGteq | IntGt | IntRange | FunIsafcn | FunSet
-  | FunConstr | FunDom | FunApp | Tuple _ | Product _ | Rec _ | RecSet _ ->
+  | FunConstr | FunDom | FunApp | Tuple _ | Product _ | Rec _ | RecSet _
+  | SeqSeq | SeqLen | SeqBSeq | SeqCat | SeqAppend | SeqHead | SeqTail
+  | SeqSubSeq | SeqSelectSeq ->
       let s, (smbs, axms) = untyped_deps tla_smb s in
       s,
       { dat_deps = smbs

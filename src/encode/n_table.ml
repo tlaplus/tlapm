@@ -56,6 +56,16 @@ type tla_smb =
   (* Records *)
   | Rec of string list
   | RecSet of string list
+  (* Sequences *)
+  | SeqSeq
+  | SeqLen
+  | SeqBSeq
+  | SeqCat
+  | SeqAppend
+  | SeqHead
+  | SeqTail
+  | SeqSubSeq
+  | SeqSelectSeq
 
     (* TYPED *)
   (* Strings *)

@@ -103,6 +103,15 @@ let visitor = object (self : 'self)
           | Gt,         None      -> IntGt
           | Range,      None      -> IntRange
           | DOMAIN,     None      -> FunDom
+          | Seq,        None      -> SeqSeq
+          | Len,        None      -> SeqLen
+          | BSeq,       None      -> SeqBSeq
+          | Cat,        None      -> SeqCat
+          | Append,     None      -> SeqAppend
+          | Head,       None      -> SeqHead
+          | Tail,       None      -> SeqTail
+          | SubSeq,     None      -> SeqSubSeq
+          | SelectSeq,  None      -> SeqSelectSeq
 
           | Plus,       Some [ TAtm TAInt ]   -> TIntPlus
           | Uminus,     Some [ TAtm TAInt ]   -> TIntUminus

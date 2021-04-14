@@ -97,6 +97,41 @@ let force_bool ty0 e =
   | TAtm TABol -> e
   | _ -> assign e Props.bproj_prop ty0
 
+let force = function
+  | TAtm TAIdv -> force_idv
+  | TAtm TABol -> force_bool
+  | _ -> failwith "Bad argument to force"
+
+let idv_or_bol = function TAtm (TAIdv | TABol) -> true | _ -> false
+
+let force_arg ty11 ty12 ea =
+  match ty11, ty12 with
+  | Ty1 ([], ty01), Ty1 ([], ty02)
+    when idv_or_bol ty01 ->
+      force ty01 ty02 ea
+  | Ty1 (ty01s, ty02), Ty1 (ty03s, ty04)
+    when List.length ty01s = List.length ty03s
+      && List.for_all idv_or_bol ty03s && idv_or_bol ty02 ->
+      let n = List.length ty01s in
+      let vs =
+        List.mapi begin fun i ty01 ->
+          let v = ("x" ^ string_of_int (i + 1)) %% [] in
+          (assign v Props.ty0_prop ty01, Shape_expr)
+        end ty01s
+      in
+      let ea =
+        Apply (
+          Expr.Subst.app_expr (Expr.Subst.shift n) ea,
+          List.mapi begin fun i (ty01, ty03) ->
+            force ty03 ty01 (Ix (n - i) %% [])
+          end (List.combine ty01s ty03s)
+        ) %% [] |>
+        Expr.Subst.app_expr (Expr.Subst.shift 0) (* force normalize *)
+      in
+      Lambda (vs, force ty02 ty04 ea) %% []
+  | _ ->
+      error ~at:ea "Impossible operator conversion"
+
 let shp_to_ty1 = function
   | Shape_expr -> Ty1 ([], TAtm TAIdv)
   | Shape_op n -> Ty1 (List.init n (fun _ -> TAtm TAIdv), TAtm TAIdv)
@@ -932,6 +967,32 @@ and expr_aux scx oe =
           (ret, TAtm TABol)
       end
 
+  (* NOTE Sequences implemented as untyped operators only *)
+
+  | Apply ({ core = Internal (B.Seq | B.Len | B.BSeq | B.Head | B.Tail) } as op, [ e ]) ->
+      let e, ty0 = expr scx e in
+      let ret = Apply (op, [ force_idv ty0 e ]) @@ oe in
+      (ret, TAtm TAIdv)
+
+  | Apply ({ core = Internal (B.Cat | B.Append) } as op, [ e ; f ]) ->
+      let e, ty01 = expr scx e in
+      let f, ty02 = expr scx f in
+      let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
+      (ret, TAtm TAIdv)
+
+  | Apply ({ core = Internal B.SubSeq } as op, [ e ; f ; g ]) ->
+      let e, ty01 = expr scx e in
+      let f, ty02 = expr scx f in
+      let g, ty03 = expr scx g in
+      let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ; force_idv ty03 g ]) @@ oe in
+      (ret, TAtm TAIdv)
+
+  | Apply ({ core = Internal B.SelectSeq } as op, [ e ; f ]) ->
+      let e, ty0 = expr scx e in
+      let f, ty1 = earg scx f in
+      let ret = Apply (op, [ force_idv ty0 e ; force_arg (Ty1 ([ TAtm TAIdv ], TAtm TAIdv)) ty1 f ]) @@ oe in
+      (ret, TAtm TAIdv)
+
   (* The code may wrap `e` like this sometimes to prevent infinite loops.
    * Do not remove! *)
   | Apply (e, []) ->
@@ -946,41 +1007,7 @@ and expr_aux scx oe =
           if ty11 = ty12 then
             e
           else
-            let idv_or_bol = function
-              | TAtm (TAIdv | TABol) -> true
-              | _ -> false
-            in
-            let force = function
-              | TAtm TAIdv -> force_idv
-              | TAtm TABol -> force_bool
-              | _ -> failwith "internal error"
-            in
-            begin match ty11, ty12 with
-            | Ty1 ([], ty02), Ty1 ([], ty03) when idv_or_bol ty02 ->
-                force ty02 ty03 e
-            | Ty1 (ty02s, ty03), Ty1 (ty04s, ty05)
-              when List.length ty02s = List.length ty04s
-                && idv_or_bol ty03 && List.for_all idv_or_bol ty04s ->
-                let n = List.length ty02s in
-                let vs =
-                  List.mapi begin fun i ty02 ->
-                    let v = ("x" ^ string_of_int (i + 1)) %% [] in
-                    (assign v Props.ty0_prop ty02, Shape_expr)
-                  end ty02s
-                in
-                let e =
-                  Apply (
-                    Expr.Subst.app_expr (Expr.Subst.shift n) e,
-                    List.mapi begin fun i (ty02, ty04) ->
-                      force ty04 ty02 (Ix (i + 1) %% [])
-                    end (List.combine ty02s ty04s)
-                  ) %% [] |>
-                  Expr.Subst.app_expr (Expr.Subst.shift 0) (* force normalize *)
-                in
-                Lambda (vs, force ty03 ty05 e) %% []
-            | _, _ ->
-                error ~at:oe "Impossible operator conversion"
-            end
+            force_arg ty11 ty12 e
         end es ty11s ty12s
       in
       (Apply (op, es) @@ oe, ty01)
@@ -1098,25 +1125,6 @@ and eopr scx op =
 
   | Internal B.Divides ->
       error ~at:op "Unsupported builtin Divides"
-
-  | Internal B.Seq ->
-      error ~at:op "Unsupported builtin Seq"
-  | Internal B.Len ->
-      error ~at:op "Unsupported builtin Len"
-  | Internal B.BSeq ->
-      error ~at:op "Unsupported builtin BSeq"
-  | Internal B.Cat ->
-      error ~at:op "Unsupported builtin Cat"
-  | Internal B.Append ->
-      error ~at:op "Unsupported builtin Append"
-  | Internal B.Head ->
-      error ~at:op "Unsupported builtin Head"
-  | Internal B.Tail ->
-      error ~at:op "Unsupported builtin Tail"
-  | Internal B.SubSeq ->
-      error ~at:op "Unsupported builtin SubSeq"
-  | Internal B.SelectSeq ->
-      error ~at:op "Unsupported builtin SelectSeq"
 
   | Internal B.Unprimable ->
       error ~at:op "Unsupported builtin Unprimable"
