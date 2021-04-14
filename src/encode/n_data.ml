@@ -402,7 +402,9 @@ let untyped_deps tla_smb s =
   | FunApp ->
       ([ FunConstr ],             [ FunAppDef ])
   (* Tuples *)
-  | Tuple n ->
+  | Tuple 0 ->
+      ([ FunIsafcn ],             [ TupIsafcn 0 ])
+  | Tuple n when n > 0 ->
       ([ FunIsafcn ; FunDom ; FunApp ; IntRange ]
        @ List.init n (fun i -> IntLit (i+1)),
                                   [ TupIsafcn n ; TupDomDef n ;]

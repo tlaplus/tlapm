@@ -1068,13 +1068,18 @@ let intrange_def () =
 (* {4 Tuples} *)
 
 let tuple_isafcn n =
-  quant Forall
-  (gen "x" n) (dupl t_idv n)
-  ( apps T.FunIsafcn
-    [ apps (T.Tuple n)
-      (ixi n) %% []
+  if n = 0 then
+    apps T.FunIsafcn
+    [ apps (T.Tuple 0) [] %% []
     ] %% []
-  ) %% []
+  else
+    quant Forall
+    (gen "x" n) (dupl t_idv n)
+    ( apps T.FunIsafcn
+      [ apps (T.Tuple n)
+        (ixi n) %% []
+      ] %% []
+    ) %% []
 
 let productset_def n =
   quant Forall
