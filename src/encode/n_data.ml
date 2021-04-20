@@ -390,7 +390,7 @@ let untyped_deps tla_smb s =
       ([ Mem ; IntSet ; IntLteq ],            [ IntRangeDef ])
   (* Functions *)
   | FunIsafcn ->
-      ([ FunDom ; FunConstr ; FunApp ],
+      ([ Mem ; FunDom ; FunConstr ; FunApp ],
                                   [ FunExt ])
   | FunSet ->
       ([ Mem ; FunIsafcn ; FunDom ; FunApp ],
@@ -400,7 +400,7 @@ let untyped_deps tla_smb s =
   | FunDom ->
       ([ FunConstr ],             [ FunDomDef ])
   | FunApp ->
-      ([ FunConstr ],             [ FunAppDef ])
+      ([ Mem ; FunConstr ],       [ FunAppDef ])
   (* Tuples *)
   | Tuple 0 ->
       ([ FunIsafcn ],             [ TupIsafcn 0 ])

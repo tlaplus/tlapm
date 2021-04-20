@@ -167,7 +167,11 @@ let rec pp_print_thf_atomic cx ff oe =
       let s =
         match String.split_on_char '#' s with
         | [ s ; "prime" ] -> primed s
-        | _ -> s
+        | _ ->
+            (* Allowing this would make the encoding unsound, as
+             * Zipperposition may just take undeclared identifiers
+             * for variables universally quantified on at top level. *)
+            error ~at:oe ("Undeclared opaque '" ^ s ^ "'")
       in
       pp_print_string ff s
 
