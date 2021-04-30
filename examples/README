@@ -29,6 +29,9 @@ SimpleMutex.tla:
 SumAndMax.tla:
    a simple challenge problem from VSTTE 2010
 
+SimpleEventually.tla:
+   a proof of a simple liveness property
+
 ------------------------------------------------------------
 Sub-directories:
 
