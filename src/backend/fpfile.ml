@@ -144,6 +144,7 @@ open V13;;
 
 let fptbl = ref (Hashtbl.create 500 : V13.tbl);;
 
+let old_magic_number = 20101013;;
 let magic_number = 20210223;;
 
 let write_fp_table oc =
@@ -549,6 +550,8 @@ let load_fingerprints_aux file =
   if Sys.file_exists file then begin
     let ic = open_in_bin file in
     let magic = Marshal.from_channel ic in
+    if magic = old_magic_number then
+        failwith "fingerprint file with an older magic number";
     if magic <> magic_number then failwith "corrupted fingerprint file";
     let v = Marshal.from_channel ic in
     if v >= FPunknown ()
@@ -580,8 +583,27 @@ let previous_fp_file file =
   let histdir = file ^ ".history" in
   let cmd = sprintf "ls -td %s/*/fingerprints" (FN.quote histdir) in
   let ic = Unix.open_process_in cmd in
-  let prev = input_line ic in
-  close_in ic;
+  let prev =
+    try
+        input_line ic
+    with End_of_file ->
+        close_in_noerr ic;
+        failwith ("`ls` returned no stdout " ^
+            " when looking for older fingerprints file, " ^
+            "so it appears that there are no older fingerprints files.")
+  in
+  let proc_st = Unix.close_process_in ic in
+  begin match proc_st with
+  | WEXITED exit_code -> begin
+      match exit_code with
+      | 0 -> ()
+      | _ -> failwith ("`ls` exited with " ^ (string_of_int exit_code) ^
+          " when looking for older fingerprints file, " ^
+          "so it appears that there are no older fingerprints files.")
+      end
+  | _ -> failwith ("`ls` stopped by a signal while " ^
+      "looking for older fingerprints file")
+  end;
   prev
 ;;
 
@@ -589,16 +611,47 @@ let load_fingerprints file =
   try
     load_fingerprints_aux file
   with e1 ->
-    try
-      Sys.rename file (file ^ ".corrupted");
-      let prev = previous_fp_file file in
-      load_fingerprints_aux prev;
-      Errors.err "Cannot load fingerprints file: %s\n\
-                  previous file (%s) loaded\n" (Printexc.to_string e1) prev;
-   with e2 ->
-     Errors.err "Cannot load fingerprints file: %s\n\
-                 Cannot load older file: %s\n" (Printexc.to_string e1)
-                (Printexc.to_string e2);
+    let error_str_1 = (Printexc.to_string e1) in
+    let moved_filename_msg = begin match e1 with
+        | Failure "fingerprint file with an older magic number" ->
+            let renamed_file_name = file ^ ".old" in
+            (* if renaming fails, then the exception is not caught *)
+            Sys.rename file renamed_file_name;
+            Printf.sprintf
+                "so moved fingerprints file by appending `.old` (%s -> %s)"
+                file renamed_file_name
+        | Failure "corrupted fingerprint file" ->
+            let renamed_file_name = file ^ ".corrupted" in
+            (* if renaming fails, then the exception is not caught *)
+            Sys.rename file renamed_file_name;
+            Printf.sprintf
+                "so moved fingerprints file by appending `.corrupted` \
+                (%s -> %s)"
+                file renamed_file_name
+        | End_of_file
+        | Failure _ -> (* raised by `Marshal.from_channel` *)
+            let renamed_file_name = file ^ ".corrupted" in
+            (* if renaming fails, then the exception is not caught *)
+            Sys.rename file renamed_file_name;
+            Printf.sprintf
+                "so moved fingerprints file by appending `.corrupted` \
+                (%s -> %s)"
+                file renamed_file_name
+        | _ -> assert false
+    end in
+  try
+    let prev = previous_fp_file file in
+    load_fingerprints_aux prev;
+    Errors.err "Cannot load fingerprints file: %s, %s\n\
+                previous fingerprints file (%s) loaded \
+                (i.e., one with current magic number)\n"
+            error_str_1 moved_filename_msg prev;
+  with e2 ->
+    Errors.err "Cannot load fingerprints file: %s, %s\n\
+                Cannot load older fingerprints file: %s\n"
+            error_str_1
+            moved_filename_msg
+            (Printexc.to_string e2);
 ;;
 
 let print_sti_13 (st, d, pv, zv, iv) =
