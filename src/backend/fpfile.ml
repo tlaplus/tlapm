@@ -578,7 +578,7 @@ let load_fingerprints_aux file =
 
 let previous_fp_file file =
   let histdir = file ^ ".history" in
-  let cmd = sprintf "ls -td %s/*/*.fp" (FN.quote histdir) in
+  let cmd = sprintf "ls -td %s/*/fingerprints" (FN.quote histdir) in
   let ic = Unix.open_process_in cmd in
   let prev = input_line ic in
   close_in ic;
