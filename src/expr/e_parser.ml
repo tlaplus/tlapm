@@ -449,12 +449,12 @@ and atomic_expr b = lazy begin
                     [<<x, y>> \in S,  r, w \in Q |-> x + y - r - w]
 
                     is represented with `bs` containing the declarations
-                    `fcnbnd#xy \in S`, `r \in Q`, `w \in Ditto`, and
+                    `fcnbnd#x \in S`, `r \in Q`, `w \in Ditto`, and
                     `e` the expression
 
                         LET
-                            x == fcnbnd#xy[1]
-                            y == fcnbnd#xy[2]
+                            x == fcnbnd#x[1]
+                            y == fcnbnd#x[2]
                         IN
                             x + y - r - w
                     *)
@@ -712,21 +712,21 @@ and func_boundeds b = lazy begin
         Each bounded tuple (like `<<x, y>>` above) is replaced by a fresh
         identifier of the form:
 
-            fcnbnd#concatenated_names
+            fcnbnd#first_name
 
-        where "concatenated_names" results from concatenating the identifiers
-        that occur within the tuple. For example, `<<x, y>>` is replaced by
+        where "first_name" results from using the first identifier
+        that occurs within the tuple. For example, `<<x, y>>` is replaced by
 
-            fcnbnd#xy
+            fcnbnd#x
 
         The fresh identifier is used inside the `LET...IN` for defining each
         of the identifiers that occurred within the tuple. For example,
         `[<<x, y>> \in S |-> ...]` becomes:
 
-            [fcnbnd#xy \in S:
+            [fcnbnd#x \in S:
                 LET
-                    x == fcnbnd#xy[1]
-                    y == fcnbnd#xy[2]
+                    x == fcnbnd#x[1]
+                    y == fcnbnd#x[2]
                 IN
                     ...]
 
@@ -736,8 +736,8 @@ and func_boundeds b = lazy begin
         not available while parsing). The syntax of TLA+ ensures this,
         because no identifier in TLA+ source can contain a hashmark.
 
-        In each function constructor, the concatenation of identifiers
-        (like "xy" above) is unique, because the TLA+ syntax ensures that
+        In each function constructor, the first identifier from the tuple
+        (like "x" above) is unique, because the TLA+ syntax ensures that
         each identifier is unique within its context. Therefore, each bounded
         tuple within a function constructor will be replaced by a unique
         fresh identifier (unique within that context and that context's
@@ -748,20 +748,18 @@ and func_boundeds b = lazy begin
             <$> begin
                 fun (vs, dom) ->
                     (* bounds *)
-                    (* names of identifiers that appear within the tuple,
-                    for example "x", "y" from the tuple `<x, y>`
+                    (* name of first identifier that appears within the tuple,
+                    for example "x" from the tuple `<x, y>`.
+                    This name is to be used as suffix of the fresh identifier
+                    that will represent the tuple.
                     *)
-                    let nms = List.map (fun h -> h.core) vs in
-                    (* suffix of fresh identifier that will represent the tuple,
-                    for example "xy" from the tuple `<x, y>`
-                    *)
-                    let name = String.concat "" nms in
+                    let name = (List.hd vs).core in
                     (* fresh identifier that will represent the tuple,
-                    for example "fcnbnd#xy" from the tuple `<x, y>`
+                    for example "fcnbnd#x" from the tuple `<x, y>`
                     *)
                     let v = noprops ("fcnbnd#" ^ name) in
                     (* bounded constant declaration for the fresh identifier,
-                    for example `fcnbnd#xy \in S` from `<x, y> \in S`
+                    for example `fcnbnd#x \in S` from `<x, y> \in S`
                     *)
                     let hd = (v, Constant, Domain dom) in
                     (* a list with a single element, in preparation for
@@ -778,8 +776,8 @@ and func_boundeds b = lazy begin
                     For example, the tuple declaration `<<x, y>> \in S`
                     would here result in the creation of two definitions:
 
-                        x == fcnbnd#xy[1]
-                        y == fcnbnd#xy[2]
+                        x == fcnbnd#x[1]
+                        y == fcnbnd#x[2]
                     *)
                     let letin =
                         (* create one definition for each identifier that
@@ -791,7 +789,7 @@ and func_boundeds b = lazy begin
                             - `op` is the tuple element (an identifier)
                             *)
                             let e =
-                                (* tuple identifier, for example "fcnbnd#xy" *)
+                                (* tuple identifier, for example "fcnbnd#x" *)
                                 let f = noprops (Opaque v.core) in
                                 (* 1-based index numeral *)
                                 let idx =
@@ -799,13 +797,13 @@ and func_boundeds b = lazy begin
                                     let num = Num (i_str, "") in
                                     noprops num in
                                 (* function application on the index,
-                                for example:  fcnbnd#xy[1]
+                                for example:  fcnbnd#x[1]
                                 *)
                                 let e_ = FcnApp (f, [idx]) in
                                 noprops e_ in
                             (* definition for `op`, for example:
 
-                            x == fcnbnd#xy[1]
+                            x == fcnbnd#x[1]
 
                             The result is of type `defn`.
                             *)
