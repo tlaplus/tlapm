@@ -835,7 +835,10 @@ and func_boundeds b = lazy begin
         *)
         let (bounds, letin) = List.split bss in
         (* Flatten each list of lists into a list.
-        At this point we return a list of bounds that
+        At this point we return a list of bounds that will be used in a `Fcn`,
+        and a (possibly empty) list of operator definitions that
+        will be used (if nonempty) to form a `Let` that will wrap the
+        expression that defines the value of the function in `Fcn`.
         *)
         (List.concat bounds, List.concat letin)
     end
