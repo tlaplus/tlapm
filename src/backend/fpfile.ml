@@ -588,9 +588,9 @@ let previous_fp_file file =
         input_line ic
     with End_of_file ->
         close_in_noerr ic;
-        failwith ("`ls` returned no stdout " ^
-            " when looking for older fingerprints file, " ^
-            "so it appears that there are no older fingerprints files.")
+        failwith ("`ls` returned no stdout \
+            when looking for older fingerprints file, \
+            so it appears that there are no older fingerprints files.")
   in
   let proc_st = Unix.close_process_in ic in
   begin match proc_st with
@@ -598,11 +598,11 @@ let previous_fp_file file =
       match exit_code with
       | 0 -> ()
       | _ -> failwith ("`ls` exited with " ^ (string_of_int exit_code) ^
-          " when looking for older fingerprints file, " ^
-          "so it appears that there are no older fingerprints files.")
+          " when looking for older fingerprints file, \
+          so it appears that there are no older fingerprints files.")
       end
-  | _ -> failwith ("`ls` stopped by a signal while " ^
-      "looking for older fingerprints file")
+  | _ -> failwith ("`ls` stopped by a signal while \
+      looking for older fingerprints file")
   end;
   prev
 ;;
