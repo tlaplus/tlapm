@@ -16,4 +16,13 @@ k == [<<m, n>> \in {1} \X {2} |-> m]
 THEOREM k[1, 2] = 1
 BY DEF k
 
+
+g == [<<ab>> \in {<<1>>}, <<a, b>> \in {2} \X {3} |-> ab]
+
+
+(* backends do not not support this expression yet *)
+(*
+THEOREM g[<<1>>, <<2, 3>>] = 1
+BY DEF g
+*)
 ================================================================================
