@@ -1,6 +1,6 @@
 ------------------------- MODULE LevelComparison_test --------------------------
 (* Tests for the proof directive LevelComparison. *)
-EXTENDS TLAPS
+EXTENDS Integers, TLAPS
 
 
 VARIABLE x
@@ -86,5 +86,27 @@ THEOREM
     PROVE
         Prop(P)
 BY TemporalLevel, LevelComparison
+
+--------------------------------------------------------------------------------
+
+THEOREM
+    ASSUME
+        ASSUME CONSTANT n, n \in Nat
+        PROVE n \in Int,
+        CONSTANT n,
+        n \in Nat
+    PROVE n \in Int
+BY LevelComparison
+
+
+THEOREM
+    ASSUME
+        ASSUME STATE P, STATE Q, P = Q
+        PROVE P.a = Q.a
+    PROVE TRUE
+<1>1. ASSUME STATE A, STATE B, A = B
+      PROVE A.a = B.a
+    BY LevelComparison
+<1> QED
 
 ================================================================================
