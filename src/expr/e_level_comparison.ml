@@ -773,9 +773,11 @@ let check_level_change cx expr =
             inner_hyps cx_hyps cx_goal hyp active in
         check_context f hyps;
         let proved = !found in
-        begin if proved then
+        begin if proved then begin
+            if !Params.verbose then
             Util.printf ~at:expr ~prefix:"[INFO]" "%s"
-                ("\nProved level comparison\n")
+                ("Proved level comparison\n")
+            end
         else
             failwith "LevelComparison proof directive did not succeed.\n" end;
         let core = (if proved then Internal TRUE else expr.core) in
