@@ -78,7 +78,7 @@ jobs:
       ## Get TLAPS repository checked out.
       - uses: actions/checkout@master
       ## Setup OCaml environment.
-      - uses: avsm/setup-ocaml@master
+      - uses: ocaml/setup-ocaml@v2
         with:
           ocaml-version: ${{ matrix.ocaml-version }}
       ## The TLAPM test suite requires the kaputt package.
