@@ -66,11 +66,26 @@ and expr_ =
   | Tquant of quantifier * hint list * expr
     (* `CHOOSE` *)
   | Choose of hint * expr option * expr
-    (* `{x \in S:  P(x)}` *)
+    (* `{x \in S:  P(x)}`
+    axiom scheme of separation
+
+    Section 16.1.6 on pages 299--301 of the book "Specifying Systems",
+    specifically page 301
+    *)
   | SetSt of hint * expr * expr
-    (* `{f(x):  x \in S}` *)
+    (* `{f(x):  x \in S}`
+    axiom scheme of replacement
+
+    Section 16.1.6 on pages 299--301 of the book "Specifying Systems",
+    specifically page 301
+    *)
   | SetOf of expr * bounds
-    (* `{1, 2}` *)
+    (* `{1, 2}`
+    set enumeration
+
+    Section 16.1.6 on pages 299--301 of the book "Specifying Systems",
+    specifically page 300
+    *)
   | SetEnum of expr list
     (* Cartesian product *)
   | Product of expr list

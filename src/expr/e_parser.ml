@@ -340,14 +340,33 @@ end
 and atomic_expr b = lazy begin
   choice [
     locate begin
+      (* set constructor *)
       punct "{" >>>
         choice [
+          (* axiom scheme of separation
+          for example:  {x \in S:  x + 1}
+
+          Section 16.1.6 on pages 299--301 of the book "Specifying Systems",
+          specifically page 301
+          *)
           attempt (hint <*> (infix "\\in" >*> use (expr b))) <*> (punct ":" >*> use (expr b))
           <$> (fun ((v, ran), e) -> SetSt (v, ran, e)) ;
 
+          (* axiom scheme of replacement
+          for example:  {x + 1:  x \in S}
+
+          Section 16.1.6 on pages 299--301 of the book "Specifying Systems",
+          specifically page 301
+          *)
           attempt (use (expr b)<<< punct ":") <*> use (boundeds b)
           <$> (fun (e, bs) -> SetOf (e, bs)) ;
 
+          (* set enumeration
+          for example:  {1, 2, 3}
+
+          Section 16.1.6 on pages 299--301 of the book "Specifying Systems",
+          specifically page 300
+          *)
           sep (punct ",") (use (expr b))
           <$> (fun es -> SetEnum es)
         ]
