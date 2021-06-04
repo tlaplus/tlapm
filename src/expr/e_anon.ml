@@ -80,7 +80,11 @@ class anon_sg = object (self : 'self)
                     Errors.set e (Printf.sprintf "Operator \"%s\" not found" pfx);
                     failwith "Expr.Anon: 1"
               end
-            | Some (dep, {core = Defn ({core = Operator (_, op)}, wd, _, _)}) ->
+            | Some (dep,
+                    {core=Defn ({core=(
+                        Operator (_, op)
+                        | Bpragma (_, op, _)
+                    )}, wd, _, _)}) ->
                 begin match sels with
                   | [] when is_inst -> begin
                       let ix = Ix (dep + 1) @@ e in
@@ -103,7 +107,10 @@ class anon_sg = object (self : 'self)
                     end
                 end
             | Some _ ->
-                Util.eprintf ~at:e "invalid subexpression reference" ;
+                let cx = snd scx in
+                let expr_str = E_fmt.string_of_expr cx e in
+                Util.eprintf ~at:e "%s"
+                    ("invalid subexpression reference in:  " ^ expr_str) ;
                  Errors.set e (Printf.sprintf "invalid subexpression reference");
                  failwith "Expr.Anon: 3"
         end in
