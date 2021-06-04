@@ -57,9 +57,25 @@ end
 
 
 let mkdir_tlaps t =
-    let cachedir = ".tlacache" in
+    let cachedir = !Params.cachedir in
     let tlapsdir = cachedir ^ "/" ^ t.core.name.core ^ ".tlaps" in
-    if not (Sys.file_exists cachedir) then Unix.mkdir cachedir 0o777;
+    if not (Sys.file_exists cachedir) then begin
+        try
+            Unix.mkdir cachedir 0o777
+        with error ->
+            let error_msg = Printexc.to_string error in
+            Errors.err "Could not create the \
+                cache directory at the path \
+                `%s`. Please ensure that if \
+                a path is given via the \
+                variable `TLAPM_CACHE_DIR` of \
+                the runtime environment, \
+                that a directory at that path \
+                can be created. \n\
+                The error message from calling \
+                `Unix.mkdir` is:\n%s"
+                    cachedir error_msg
+    end;
     if not (Sys.file_exists tlapsdir) then Unix.mkdir tlapsdir 0o777;
     (cachedir, tlapsdir)
 

@@ -70,6 +70,9 @@ val self_sum : Digest.t;;
 val use_xtla : bool ref;;
 val xtla : bool ref;;
 
+(* tlapm.ml *)
+val cachedir : string ref;;
+
 (* tlapm_args.ml *)
 val rm_debug_flag : string -> unit;;
 val add_debug_flag : string -> unit;;

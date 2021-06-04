@@ -348,6 +348,21 @@ let () =
         use_xtla := false
   with Not_found -> ()
 
+(* The `cachedir` is where `tlapm`
+stores fingerprint and auxiliary
+files. This directory can be defined:
+- via the environment variable
+  that is read below, or
+  `--cache-dir`
+*)
+let cachedir = ref ""
+let () =
+    try
+        cachedir := Sys.getenv "TLAPM_CACHE_DIR";
+    with Not_found ->
+        cachedir := ".tlacache"
+
+
 let keep_going   = ref false
 let suppress_all = ref false
 let check        = ref false
