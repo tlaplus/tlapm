@@ -3,10 +3,12 @@
 Copyright (C) 2011-2019  INRIA and Microsoft Corporation
 *)
 module T = E_t
+module Namespaces = E_namespaces
 module Fmt = E_fmt
 module Subst = E_subst
 module Visit = E_visit
 module Collect = E_collect
+module Tuply_declarations = E_tuply_declarations
 module Eq = E_eq
 module Deref = E_deref
 module Leibniz = E_leibniz
