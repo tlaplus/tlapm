@@ -18,6 +18,12 @@ module B = Builtin
 let tuple_of_names = angle names
 
 
+let make_unboundeds (names: Util.hints): bounds =
+    let make_bound name = (
+        name, Constant, No_domain) in
+    List.map make_bound names
+
+
 (*let b = ref false*)
 
 let fixities =
@@ -298,12 +304,33 @@ and complex_expr b = lazy begin
     (* constant quantification
     for example:
         \E x, y, z:  x = y
+
+    Each constant quantifier can contain either:
+
+    - only unbounded constant declarations, for example:
+      `\E x, y, z:  x = y`, or
+
+    - only bounded constant declarations:
+      `\E x \in S,  y, z \in R:  x = z`,
+
+    but not both bounded and unbounded.
+    Bounded and unbounded declarations can be represented
+    using nested quantifiers, for example:
+
+    `\E x \in S:  \E y, z:  x = z`
+
+    Read Section 16.1.1 on pages 293--294 of the book "Specifying Systems",
+    in particular page 294.
     *)
     locate begin
       choice [ punct "\\A" <!> Forall ;
                punct "\\E" <!> Exists ;
              ]
-      <**> use (bounds b)
+      <**> alt [
+            use (boundeds b);
+            names
+                <$> (fun names -> make_unboundeds names)
+            ]
       <**> (colon_expr b)
     end <$> begin
       fun ({core = ((q, bs), e)} as quant) ->
@@ -677,6 +704,32 @@ and operator b = lazy begin
   ]
 end
 
+
+(* The function `bounds` is currently unused.
+
+The function `bounds` allows including both bounded and unbounded
+declarations in a single constructor.
+
+Including both bounded and unbounded declarations in a single
+quantifier constructor is not allowed in TLA+,
+read Section 16.1.1 on pages 293--294 of the book "Specifying Systems",
+in particular page 294.
+
+Including both bounded and unbounded declarations in a single
+`CHOOSE` constructor is not allowed in TLA+,
+read Section 16.1.2 on pages 294--296 of the book "Specifying Systems",
+in particular page 294.
+
+Including unbounded declarations in a set constructor is
+not allowed in TLA+,
+read Section 16.1.6 on pages 299--301 of the book "Specifying Systems",
+in particular page 301.
+
+Including unbounded declarations in a function constructor or
+function definition is not allowed in TLA+,
+read Section 16.1.7 on pages 301--304 of the book "Specifying Systems",
+in particular pages 303--304.
+*)
 and bounds b = lazy begin
   comma1 (names <*> optional (in_expr b))
   <$> begin
