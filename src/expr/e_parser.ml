@@ -1063,9 +1063,18 @@ and ophead b = lazy begin
                 `Op (op_name, params));
 
         (* function definition
+        for example:
+            f[x \in S, y \in Q] == ...
+
+        Only bounded declarations are allowed in function constructors.
+        Read 16.1.7 on pages 301--304 of the book "Specifying Systems",
+        in particular pages 303--304.
+
+        This is why the function `boundeds` is called,
+        instead of the function `bounds`.
         *)
-        punct "[" >>> use (bounds b) <<< punct "]"
-        <$> (fun args -> `Fun (name_1, args));
+        punct "[" >>> use (boundeds b) <<< punct "]"
+        <$> (fun boundeds -> `Fun (name_1, boundeds));
 
         (* first-order-operator definition *)
         optional (
