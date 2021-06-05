@@ -1697,3 +1697,36 @@ class virtual ['s] map_rename = object (self : 'self)
   method rename cx hyp name = (hyp, name)
 
 end
+
+
+class virtual ['s] opnamer =
+    (* Convert De Bruijn indices to named.
+
+    This class is placed in `E_visit`
+    to be near the root of the
+    module-dependency graph.
+    *)
+    object (self: 'self)
+    inherit ['s] map as super
+
+    method expr (scx: 's scx) oe =
+        let cx = snd scx in
+        match oe.core with
+        | Ix n ->
+            let name = name_of_ix n cx in
+            make_opaque name
+        | _ -> super#expr scx oe
+end
+
+
+let name_operators cx expr =
+    (* Convert De Bruijn indices to named.
+
+    Replaces occurrences of
+    `Ix` with `Opaque`.
+    *)
+    let visitor = object
+        inherit [unit] opnamer
+        end in
+    let scx = ((), cx) in
+    visitor#expr scx expr

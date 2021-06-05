@@ -424,6 +424,20 @@ module T: sig
 end
 
 
+module Namespaces: sig
+    open Util
+
+
+    val mint_from_hint:
+        hint -> hint
+    val mint_by_min_free:
+        string -> int -> string list ->
+            string
+    val mint_by_count:
+        string -> int -> int * string
+end
+
+
 module Fmt: sig
     open T
     open Ctx
@@ -702,6 +716,8 @@ module Visit: sig
       method rename : ctx -> hyp -> Util.hint -> hyp * Util.hint
       method renames : ctx -> hyp list -> Util.hints -> hyp list * Util.hints
   end
+
+  val name_operators: ctx -> expr -> expr
 end
 
 
@@ -725,6 +741,15 @@ module Collect : sig
 end
 
 
+module Tuply_declarations: sig
+    open T
+    val expand_tuply_declarations:
+        expr -> expr
+    val tuplify_functions:
+        expr -> expr
+end
+
+
 module Eq: sig
     open T
     val expr:
@@ -737,7 +762,12 @@ end
 
 
 module Deref: sig
-    val badexp: T.expr
+    open T
+    val resolve_bang:
+        hyp Deque.dq -> expr ->
+        expr list -> sel list -> expr
+    val badexp: expr
+    val is_badexp: expr -> bool
 end
 
 
@@ -809,6 +839,17 @@ end
 module Parser: sig
     open Tla_parser
     open T
+    type boundeds
+    val has_tuply_bounded:
+        boundeds -> bool
+    val tuply_bounds_of_boundeds:
+        boundeds -> tuply_bounds
+    val bounds_of_boundeds:
+        boundeds -> bounds
+    val quantifier_boundeds:
+        bool -> (pcx, boundeds) P.prs
+    val colon_expr:
+        bool -> (pcx, expr) P.prs
     val expr: bool -> T.expr lprs
     val bounds: bool -> T.bound list lprs
     val defn: bool -> T.defn lprs

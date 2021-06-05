@@ -15,13 +15,228 @@ module Op = Optable
 module B = Builtin
 
 
+type boundeds = bounded list
+    (* The `option` is present only to avoid
+    code repetition in the parsing of rigid
+    quantification (\A, \E).
+
+    Specifically, to enable representing in
+    a single type the value returned by the
+    function `func_boundeds`, and the value
+    returned by `names`.
+
+    Apart from this corner, `func_boundeds`
+    itself always returns declarations *with*
+    domain-bounds, *and* all other calls to
+    `func_boundeds` (i.e., except for the call
+    from rigid quantification) involve only
+    boundeds, so `option` is unnecessary there,
+    and complicates the code.
+    *)
+and bounded = declared * (expr option)
+and declared =
+    | Flat of Util.hints
+    | Tuply of Util.hints
+
+
 let tuple_of_names = angle names
 
 
-let make_unboundeds (names: Util.hints): bounds =
+let has_tuply_bounded
+        (boundeds: boundeds):
+            bool =
+    let is_tuply_bounded (names, _) =
+        match names with
+        | Tuply _ -> true
+        | _ -> false in
+    List.exists
+        is_tuply_bounded boundeds
+
+
+let make_dittos
+        (names: Util.hints)
+        (dom: expr)
+        (make_bound:
+                Util.hint ->
+                bound_domain ->
+                    'a):
+            'a list =
+    let name = List.hd names in
+    let head = make_bound
+        name (Domain dom) in
+    let make_ditto name = make_bound
+        name Ditto in
+    let rest = List.tl names in
+    let tail = List.map
+        make_ditto rest in
+    head :: tail
+
+
+let make_unboundeds
+        (names: Util.hints):
+            bounds =
     let make_bound name = (
         name, Constant, No_domain) in
     List.map make_bound names
+
+
+let make_ditto_bounds
+        (names: Util.hints)
+        (dom: expr):
+            bounds =
+    let make_bound name d = (
+        name, Constant, d) in
+    make_dittos names dom make_bound
+
+
+let make_ditto_tuply_bounds
+        (names: Util.hints)
+        (dom: expr):
+            tuply_bounds =
+    let make_bound name d = (
+        Bound_name name, d) in
+    make_dittos names dom make_bound
+
+
+let bounds_of_boundeds
+        (boundeds: boundeds):
+            bounds =
+    (* Return bounds from boundeds.
+
+    Asserts that no item in `boundeds`
+    is tuply.
+    *)
+    assert (not (has_tuply_bounded boundeds));
+    let mapper =
+        function
+        | (Flat names, Some dom) ->
+            make_ditto_bounds names dom
+        | (Flat names, None) ->
+            make_unboundeds names
+        | _ ->
+            assert false in
+    let lists = List.map mapper boundeds in
+    List.concat lists
+
+
+let tuply_bounds_of_boundeds
+        (boundeds: boundeds):
+            tuply_bounds =
+    (* Return tuply bounds from boundeds.
+
+    Asserts that each item in `boundeds`
+    has a domain-bound.
+    Asserts that at least one item in
+    `boundeds` is tuply.
+    *)
+    assert (has_tuply_bounded boundeds);
+    let mapper =
+        function
+        | (Flat names, Some dom) ->
+            make_ditto_tuply_bounds
+                names dom
+        | (Tuply names, Some dom) ->
+            [(Bound_names names,
+              Domain dom)]
+        | (_, None) ->
+            assert false in
+    let lists = List.map
+        mapper boundeds in
+    List.concat lists
+
+
+let make_quantifier_from_boundeds
+        (quantifier: quantifier)
+        (boundeds: boundeds)
+        (predicate: expr):
+            expr_ =
+    if has_tuply_bounded boundeds
+    then
+        let bs = tuply_bounds_of_boundeds
+            boundeds in
+        QuantTuply (
+            quantifier,
+            bs,
+            predicate)
+    else
+        let bs = bounds_of_boundeds
+            boundeds in
+        Quant (
+            quantifier,
+            bs,
+            predicate)
+
+
+let make_choose_from_boundeds
+        (boundeds: boundeds)
+        (predicate: expr):
+            expr_ =
+    match boundeds with
+    | [(Flat [name], Some dom)] ->
+        (* `Some` above works
+        as an assertion. *)
+        Choose (
+            name,
+            Some dom,
+            predicate)
+    | [(Tuply names, Some dom)] ->
+        (* `Some` above works as
+        an assertion. *)
+        ChooseTuply (
+            names,
+            Some dom,
+            predicate)
+    | _ ->
+        assert false
+
+
+let make_setst_from_boundeds
+        (boundeds: boundeds)
+        (predicate: expr):
+            expr_ =
+    match boundeds with
+    | [(Flat [name], Some dom)] ->
+        SetSt (
+            name,
+            dom,
+            predicate)
+    | [(Tuply names, Some dom)] ->
+        SetStTuply (
+            names,
+            dom,
+            predicate)
+    | _ ->
+        assert false
+
+
+let make_setof_from_boundeds
+        (elem: expr)
+        (boundeds: boundeds):
+            expr_ =
+    if has_tuply_bounded boundeds
+    then
+        let bs = tuply_bounds_of_boundeds
+            boundeds in
+        SetOfTuply (elem, bs)
+    else
+        let bs = bounds_of_boundeds
+            boundeds in
+        SetOf (elem, bs)
+
+
+let make_fcn_from_boundeds
+        (boundeds: boundeds)
+        (value: expr):
+            expr_ =
+    if has_tuply_bounded boundeds
+    then
+        let bs = tuply_bounds_of_boundeds
+            boundeds in
+        FcnTuply (bs, value)
+    else
+        let bs = bounds_of_boundeds
+            boundeds in
+        Fcn (bs, value)
 
 
 (*let b = ref false*)
@@ -304,6 +519,7 @@ and complex_expr b = lazy begin
     (* constant quantification
     for example:
         \E x, y, z:  x = y
+        \E x \in S, <<y, z>> \in A \X B:  x = y
 
     Each constant quantifier can contain either:
 
@@ -321,20 +537,30 @@ and complex_expr b = lazy begin
 
     Read Section 16.1.1 on pages 293--294 of the book "Specifying Systems",
     in particular page 294.
+
+    The definitions of (bounded) tuple declarations in quantifiers are:
+
+    \E <x1, ..., xk>> \in S:  p ==
+        \E x1, ..., xk:
+            /\ <<x1, ..., xk>> \in S
+            /\ p
+
+    \A <x1, ..., xk>> \in S:  p ==
+        \A x1, ..., xk:
+            \/ <<x1, ..., xk>> \notin S
+            \/ p
     *)
     locate begin
       choice [ punct "\\A" <!> Forall ;
                punct "\\E" <!> Exists ;
              ]
-      <**> alt [
-            use (boundeds b);
-            names
-                <$> (fun names -> make_unboundeds names)
-            ]
+      <**> (quantifier_boundeds b)
       <**> (colon_expr b)
     end <$> begin
-      fun ({core = ((q, bs), e)} as quant) ->
-        { quant with core = Quant (q, bs, e) }
+      fun ({core = ((q, boundeds), predicate)} as quant) ->
+        let core = make_quantifier_from_boundeds
+            q boundeds predicate in
+        core @@ quant
     end ;
 
     locate begin
@@ -352,14 +578,40 @@ and complex_expr b = lazy begin
     examples:
         CHOOSE x:  TRUE
         CHOOSE x \in S:  TRUE
+        CHOOSE <<x, y>> \in S:  TRUE
+
+    Read Section 16.1.2 on pages 294--296 of the book "Specifying Systems",
+    in particular page 296.
+
+    The definition of a tuple declaration in
+    CHOOSE expressions is:
+
+    CHOOSE <<x1, ..., xn>>:  p ==
+        CHOOSE y:
+            \E x1, ..., xn:
+                /\ y = <<x1, ..., xn>>
+                /\ p
     *)
     locate begin
-      kwd "CHOOSE" >*> hint
-      <*> optional (infix "\\in" >*> use (expr b))
-      <**> (punct ":" >>> use (expr b))
-    end <$> begin
-      fun ({core = ((v, ran), e)} as choose) ->
-        { choose with core = Choose (v, ran, e) }
+      kwd "CHOOSE"
+        >*> alt [
+            (* declared identifier *)
+            hint
+                <*> (colon_expr b)
+                <$> (fun (v, e) -> Choose (v, None, e));
+
+            (* unbounded tuple *)
+            tuple_of_names
+                <*> (colon_expr b)
+                <$> (fun (vs, e) -> ChooseTuply (vs, None, e));
+
+            (* bounded declared identifier or tuple *)
+            use (func_boundeds b)
+                <**> (colon_expr b)
+                <$> (fun (boundeds, predicate) ->
+                        make_choose_from_boundeds
+                            boundeds predicate)
+            ]
     end;
 
     locate begin
@@ -382,25 +634,57 @@ and atomic_expr b = lazy begin
       (* set constructor *)
       punct "{" >>>
         choice [
-          (* axiom scheme of separation
-          for example:
+          (* subset axiom, for example:
               {x \in S:  x + 1}
+              {<<x, y>> \in S:  x = y}
+
+          The definition of a (bounded) tuple declaration in
+          the subset axiom is:
+
+          {<<x1, ..., xn>> \in S:  p} ==
+            {y \in S:
+                \E x1, ..., xn:
+                    /\ y = <<x1, ..., xn>>
+                    /\ p
 
           Section 16.1.6 on pages 299--301 of the book "Specifying Systems",
           specifically page 301
           *)
-          attempt (hint <*> (infix "\\in" >*> use (expr b))) <*> (punct ":" >*> use (expr b))
-          <$> (fun ((v, ran), e) -> SetSt (v, ran, e)) ;
+          attempt (use (func_boundeds b))
+            <*> (punct ":" >*> use (expr b))
+            <$> begin
+                fun (boundeds, predicate) ->
+                    make_setst_from_boundeds
+                        boundeds predicate
+                end
+          ;
 
           (* axiom scheme of replacement
           for example:  {x + 1:  x \in S}
+
+          The definition of (bounded) tuple declarations in
+          the axiom scheme of replacement is:
+
+          {e:  <<x1, ..., xn>> \in S} ==
+            {
+                (LET
+                    z == CHOOSE <<x1, ..., xn>>:  y = <<x1, ..., xn>>
+                    x1 == z[1]
+                    ...
+                    xn == z[n]
+                IN
+                    e):  y \in S}
 
           Section 16.1.6 on pages 299--301 of the book "Specifying Systems",
           specifically page 301
           *)
           attempt (use (expr b) <<< colon)
-            <*> use (boundeds b)
-          <$> (fun (e, bs) -> SetOf (e, bs)) ;
+            <*> use (func_boundeds b)
+            <$> begin
+                fun (elem, boundeds) ->
+                make_setof_from_boundeds elem boundeds
+                end
+          ;
 
           (* set enumeration
           for example:  {1, 2, 3}
@@ -492,43 +776,8 @@ and atomic_expr b = lazy begin
           attempt (use (func_boundeds b) <<< mapsto)
               <**> use (expr b)
               <<< punct "]"
-          <$> begin
-            fun ((bs, letin), e) ->
-                (* decide whether to insert a `LET...IN`
-                for representing bound identifiers described by bounded
-                tuples in the source
-                *)
-                if ((List.length letin) = 0) then
-                    (* no `LET...IN` needed, because no tuple declarations
-                    appear in the function constructor, for example:
-
-                    [x \in S |-> x + 1]
-
-                    is represented with `bs` containing the declaration
-                    `x \in S`, and `e` the expression `x + 1`.
-                    *)
-                    Fcn (bs, e)
-                else begin
-                    (* insert a `LET...IN`, needed to represent tuple
-                    declarations, for example:
-
-                    [<<x, y>> \in S,  r, w \in Q |-> x + y - r - w]
-
-                    is represented with `bs` containing the declarations
-                    `fcnbnd#x \in S`, `r \in Q`, `w \in Ditto`, and
-                    `e` the expression
-
-                        LET
-                            x == fcnbnd#x[1]
-                            y == fcnbnd#x[2]
-                        IN
-                            x + y - r - w
-                    *)
-                    let e_ = Let (letin, e) in
-                    let e = noprops e_ in
-                    Fcn (bs, e)
-                end
-          end ;
+              <$> (fun (boundeds, value) ->
+                    make_fcn_from_boundeds boundeds value);
 
           use (expr b) >>= begin fun e ->
             choice [
@@ -767,6 +1016,18 @@ and boundeds b = lazy begin
 end
 
 
+and quantifier_boundeds b =
+    let wrap_names names =
+        [(Flat names, None)] in
+    let unboundeds =
+        names
+            <$> wrap_names in
+    alt [
+        use (func_boundeds b);
+        unboundeds
+        ]
+
+
 and func_boundeds b = lazy begin
     (* Parse comma-separated bounded declarations.
 
@@ -792,6 +1053,24 @@ and func_boundeds b = lazy begin
     Declarations of (lists of) identifiers
     and tuply declarations can appear in any
     order within the list of declarations.
+
+    This parser returns a list of pairs
+    (2-tuples), each a tuple of the form:
+    `(declared, Some dom)`
+    where:
+
+    - `declared` is either:
+      - `Flat names`, where `names` is
+        a list of hints that appear as
+        identifiers, each of which is
+        bounded by `dom`, or
+      - `Tuply names`, where `names` is
+        a list of hints that appear as
+        identifiers within a tuple that
+        is bounded by `dom`
+
+    - `dom` is an expression (the
+      domain-bound)
     *)
     comma1 (choice [
         (* bounded constants, examples:
@@ -800,159 +1079,15 @@ and func_boundeds b = lazy begin
         a, b \in R
         *)
         (names <*> (in_expr b))
-            <$> begin
-                fun (vs, dom) ->
-                    let bounds =
-                        let name = List.hd vs in
-                        let hd = (name, Constant, Domain dom) in
-                        let tl = List.map
-                            (fun v -> (v, Constant, Ditto))
-                            (List.tl vs) in
-                        hd :: tl in
-                    let letin = [] in
-                    (bounds, letin)
-            end;
+            <$> (fun (names, dom) -> (Flat names, Some dom));
         (* bounded tuples of constants, examples:
 
         <<x, y>> \in S
         <<a, b, c>> \in A \X B \X C
-
-        A function constructor is represented with `Fcn`,
-        which takes `bounds` as first argument.
-        `bounds` represents a list of bound identifiers (constants here).
-
-        So the tuples need to be converted to individual identifier bounds.
-        This is done by introducing intermediate definitions in a `LET...IN`.
-        Each bounded tuple (like `<<x, y>>` above) is replaced by a fresh
-        identifier of the form:
-
-            fcnbnd#first_name
-
-        where "first_name" results from using the first identifier
-        that occurs within the tuple. For example, `<<x, y>>` is replaced by
-
-            fcnbnd#x
-
-        The fresh identifier is used inside the `LET...IN` for defining each
-        of the identifiers that occurred within the tuple. For example,
-        `[<<x, y>> \in S |-> ...]` becomes:
-
-            [fcnbnd#x \in S:
-                LET
-                    x == fcnbnd#x[1]
-                    y == fcnbnd#x[2]
-                IN
-                    ...]
-
-        The hashmark is used within the identifier fcnbnd#... to ensure that
-        the fresh identifier is different from all other identifiers in the
-        current context, without the need to inspect the context (which is
-        not available while parsing). The syntax of TLA+ ensures this,
-        because no identifier in TLA+ source can contain a hashmark.
-
-        In each function constructor, the first identifier from the tuple
-        (like "x" above) is unique, because the TLA+ syntax ensures that
-        each identifier is unique within its context. Therefore, each bounded
-        tuple within a function constructor will be replaced by a unique
-        fresh identifier (unique within that context and that context's
-        extensions).
         *)
         (tuple_of_names <*> (in_expr b))
-            <$> begin
-                fun (vs, dom) ->
-                    (* bounds *)
-                    (* name of first identifier that appears within the tuple,
-                    for example "x" from the tuple `<x, y>`.
-                    This name is to be used as suffix of the fresh identifier
-                    that will represent the tuple.
-                    *)
-                    let name = (List.hd vs).core in
-                    (* fresh identifier that will represent the tuple,
-                    for example "fcnbnd#x" from the tuple `<x, y>`
-                    *)
-                    let v = noprops ("fcnbnd#" ^ name) in
-                    (* bounded constant declaration for the fresh identifier,
-                    for example `fcnbnd#x \in S` from `<x, y> \in S`
-                    *)
-                    let hd = (v, Constant, Domain dom) in
-                    (* a list with a single element, in preparation for
-                    later concatenation
-                    *)
-                    let bounds = [hd] in
-                    (* `LET...IN` definitions
-
-                    We now create the definitions of the identifiers that
-                    appeared inside the tuple declaration, using in the
-                    definiens the fresh identifier `v` that has just been
-                    introduced.
-
-                    For example, the tuple declaration `<<x, y>> \in S`
-                    would here result in the creation of two definitions:
-
-                        x == fcnbnd#x[1]
-                        y == fcnbnd#x[2]
-                    *)
-                    let letin =
-                        (* create one definition for each identifier that
-                        appears inside the tuple declaration
-                        *)
-                        List.mapi begin
-                        fun i op ->  (* arguments:
-                            - `i` is the 0-based index of the tuple element
-                            - `op` is the tuple element (an identifier)
-                            *)
-                            let e =
-                                (* tuple identifier, for example "fcnbnd#x" *)
-                                let f = noprops (Opaque v.core) in
-                                (* 1-based index numeral *)
-                                let idx =
-                                    let i_str = string_of_int (i + 1) in
-                                    let num = Num (i_str, "") in
-                                    noprops num in
-                                (* function application on the index,
-                                for example:  fcnbnd#x[1]
-                                *)
-                                let e_ = FcnApp (f, [idx]) in
-                                noprops e_ in
-                            (* definition for `op`, for example:
-
-                            x == fcnbnd#x[1]
-
-                            The result is of type `defn`.
-                            *)
-                            let defn_ = Operator (op, e) in
-                            noprops defn_
-                        end vs in
-                    (* Bundle the constant declarations of fresh
-                    identifiers (in `bounds`) and the definitions (in terms of
-                    these fresh identifiers) of the identifiers that appeared
-                    in the tuple declaration (these definitions are in `letin`).
-
-                    These definitions are used at the call site to construct
-                    a new `LET...IN` expression that wraps the function's
-                    value expression (the `e` in `[... |-> e]`).
-
-                    The declarations are used, together with this `LET...IN`
-                    expression, to populate a function constructor `Fcn`.
-                    *)
-                    (bounds, letin)
-            end
+            <$> (fun (names, dom) -> (Tuply names, Some dom))
         ])
-    <$> begin
-      fun bss ->
-        (* Unzip the two lists.
-        `bss` is a list of pairs of lists, so `bounds` is a list of lists
-        and so is `letin`.
-        *)
-        let (bounds, letin) = List.split bss in
-        (* Flatten each list of lists into a list.
-        At this point we return a list of bounds that will be used in a `Fcn`,
-        and a (possibly empty) list of operator definitions that
-        will be used (if nonempty) to form a `Let` that will wrap the
-        expression that defines the value of the function in `Fcn`.
-        *)
-        (List.concat bounds, List.concat letin)
-    end
 end
 
 
@@ -1070,7 +1205,8 @@ and defn b = lazy begin
                             end
                         | `Fun (name, boundeds) ->
                             begin
-                            let fcn_ = Fcn (boundeds, e) in
+                            let fcn_ = make_fcn_from_boundeds
+                                boundeds e in
                             let fcn = Util.locate fcn_ loc in
                             Operator (name, fcn)
                             end
@@ -1123,15 +1259,19 @@ and ophead b = lazy begin
         (* function definition
         for example:
             f[x \in S, y \in Q] == ...
+            f[<<x, y>> \in S \X Q, r \in T] == ...
 
         Only bounded declarations are allowed in function constructors.
         Read 16.1.7 on pages 301--304 of the book "Specifying Systems",
         in particular pages 303--304.
 
-        This is why the function `boundeds` is called,
+        This is why the function `func_boundeds` is called,
         instead of the function `bounds`.
+        (Calling  the function `boundeds` would be correct,
+        but would not parse tuple declarations within function
+        definitions.)
         *)
-        punct "[" >>> use (boundeds b) <<< punct "]"
+        punct "[" >>> use (func_boundeds b) <<< punct "]"
         <$> (fun boundeds -> `Fun (name_1, boundeds));
 
         (* first-order-operator definition *)
