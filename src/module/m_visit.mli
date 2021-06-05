@@ -38,3 +38,9 @@ class map: object
     method tla_modules_root:
         mule list -> mule list
 end
+
+
+class deep_map: object
+    inherit map
+    inherit [unit] Proof.Visit.map
+end
