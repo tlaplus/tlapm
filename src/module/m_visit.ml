@@ -191,3 +191,66 @@ class map =
         (cx, mu)
 
 end
+
+
+(* TODO: handle `INSTANCE`
+statements when expanding
+tuply declarations, or
+expand them beforehand.
+*)
+class deep_map =
+    (* Deep mapping of modules.
+
+    The methods of this class
+    traverse expressions.
+    *)
+    object (self: 'self)
+    inherit map as m_super
+    inherit [unit]
+        Proof.Visit.map as p_super
+
+    method definition
+            cx df wd vsbl local =
+        let scx = ((), cx) in
+        let _, dfs = self#defns scx [df] in
+        let df = match dfs with
+            | df :: _ -> df
+            | [] -> failwith "unexpected case"
+            in
+        let mu = Definition (
+            df, wd, vsbl, local) in
+        let cx = update_cx cx mu in
+        (cx, mu)
+
+    method axiom cx name expr =
+        let scx = ((), cx) in
+        let expr = self#expr scx expr in
+        let mu = Axiom (name, expr) in
+        let cx = update_cx cx mu in
+        (cx, mu)
+
+    method theorem
+            cx name sq naxs
+            pf orig_pf summ =
+        let scx = ((), cx) in
+        let scx, sq = self#sequent
+            scx sq in
+        let pf = self#proof scx pf in
+        (* NOTE: `orig_pf` is not mapped *)
+        let mu = Theorem (
+            name, sq, naxs,
+            pf, orig_pf, summ) in
+        let cx = update_cx cx mu in
+        (cx, mu)
+
+    (* TODO: expression references and instantiation
+    method mutate cx change usable =
+        failwith "not implemented"
+
+    method submod cx tla_module =
+        failwith "not implemented"
+
+    method anoninst cx inst local =
+        failwith "not implemented"
+    *)
+end
