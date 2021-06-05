@@ -212,6 +212,16 @@ let init () =
                "<f> load fingerprints from file <f> (save as usual)";
     "--fpp", Arg.Set fp_deb,
              " print the fingerprints of obligations in toolbox messages";
+    "--cache-dir", Arg.String set_tlapm_cache_dir,
+            "<directory> save auxiliary and \
+             temporary files under <directory>. \
+             Alternatively, this directory \
+             can be defined via the variable \
+             `TLAPM_CACHE_DIR` of the runtime \
+             environment. The command-line \
+             parameter takes precedence over \
+             the environment variable. If neither \
+             is specified, the default value is \".tlacache\".";
   ]
   in
   let opts = Arg.align opts in

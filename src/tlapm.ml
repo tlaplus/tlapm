@@ -68,6 +68,8 @@ let mkdir_tlaps t =
                 cache directory at the path \
                 `%s`. Please ensure that if \
                 a path is given via the \
+                command-line parameter \
+                `--cache-dir`, or via the \
                 variable `TLAPM_CACHE_DIR` of \
                 the runtime environment, \
                 that a directory at that path \

@@ -90,6 +90,7 @@ val keep_going : bool ref;;   (* FIXME check still used ? *)
 val suppress_all : bool ref;;
 val set_smt_logic : string -> unit;;
 val set_smt_solver : string -> unit;;
+val set_tlapm_cache_dir : string -> unit;;
 val printconfig : bool -> string;;
 val print_config_toolbox : bool -> string;;
 val check_zenon_ver : unit -> unit;;

@@ -353,6 +353,7 @@ stores fingerprint and auxiliary
 files. This directory can be defined:
 - via the environment variable
   that is read below, or
+- via the command-line option
   `--cache-dir`
 *)
 let cachedir = ref ""
@@ -361,6 +362,7 @@ let () =
         cachedir := Sys.getenv "TLAPM_CACHE_DIR";
     with Not_found ->
         cachedir := ".tlacache"
+let set_tlapm_cache_dir dir = cachedir := dir
 
 
 let keep_going   = ref false
