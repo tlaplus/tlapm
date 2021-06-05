@@ -483,6 +483,11 @@ and atomic_expr b = lazy begin
           [x \in S |-> e]
           [<<x, y>> \in S \X R |-> e]
           [<<x, y>> \in S \X R, z \in Q |-> e]
+
+          Only bounded declarations are allowed in function constructors.
+          Read Section 16.1.7 on pages 301--304 of
+          the book "Specifying Systems",
+          in particular pages 303--304.
           *)
           attempt (use (func_boundeds b) <<< mapsto)
               <**> use (expr b)
