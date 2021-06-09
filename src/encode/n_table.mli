@@ -127,6 +127,7 @@ type tla_axm =
   (* Arithmetic *)
   | IntLitIsint of int
   | IntLitDistinct of int * int
+  | IntLitZeroCmp of int
   | NatSetDef
   | IntPlusTyping
   | IntUminusTyping
@@ -135,7 +136,12 @@ type tla_axm =
   | IntQuotientTyping
   | IntRemainderTyping
   | IntExpTyping
+  | NatPlusTyping
+  | NatTimesTyping
   | IntRangeDef
+  | LteqReflexive
+  | LteqTransitive
+  | LteqAntisym
   (* Functions *)
   | FunExt
   | FunConstrIsafcn
@@ -152,6 +158,8 @@ type tla_axm =
   | RecSetDef of string list
   | RecDomDef of string list
   | RecAppDef of string list
+  (* Sequences *)
+  | SeqTailIsSeq
 
     (* TYPED *)
   (* Strings *)

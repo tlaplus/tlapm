@@ -65,6 +65,7 @@ val strlit_distinct : string -> string -> expr
 
 val intlit_isint : int -> expr
 val intlit_distinct : int -> int -> expr
+val intlit_zerocmp : int -> expr
 val natset_def : unit -> expr
 val intplus_typing : unit -> expr
 val intuminus_typing : unit -> expr
@@ -73,7 +74,12 @@ val inttimes_typing : unit -> expr
 val intquotient_typing : unit -> expr
 val intremainder_typing : unit -> expr
 val intexp_typing : unit -> expr
+val natplus_typing : unit -> expr
+val nattimes_typing : unit -> expr
 val intrange_def : unit -> expr
+val lteq_reflexive : unit -> expr
+val lteq_transitive : unit -> expr
+val lteq_antisym : unit -> expr
 
 (* {4 Tuples} *)
 
@@ -90,6 +96,10 @@ val recset_def : string list -> expr
 val recset_def_alt : string list -> expr
 val recdom_def : string list -> expr
 val recapp_def : string list -> expr
+
+(* {4 Sequences} *)
+
+val tail_isseq : unit -> expr
 
 
 (* {3 Typed Variants} *)

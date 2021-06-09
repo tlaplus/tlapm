@@ -346,15 +346,15 @@ let untyped_deps tla_smb s =
       let distincts =
         Is.fold (fun m -> List.cons (IntLitDistinct (m, n))) s.intlits []
       in
-      ([ Mem ; IntSet ],                      [ IntLitIsint n ] @ distincts)
+      ([ Mem ; IntSet ; IntLit 0 ; IntLteq ], [ IntLitIsint n ; IntLitZeroCmp n ] @ distincts)
   | IntPlus when !Params.enc_noarith ->
-      ([ Mem ; IntSet ],                      [ IntPlusTyping ])
+      ([ Mem ; IntSet ; NatSet ],             [ IntPlusTyping ; NatPlusTyping ])
   | IntUminus when !Params.enc_noarith ->
       ([ Mem ; IntSet ],                      [ IntUminusTyping ])
   | IntMinus when !Params.enc_noarith ->
       ([ Mem ; IntSet ],                      [ IntMinusTyping ])
   | IntTimes when !Params.enc_noarith ->
-      ([ Mem ; IntSet ],                      [ IntTimesTyping ])
+      ([ Mem ; IntSet ; NatSet ],             [ IntTimesTyping ; NatTimesTyping ])
   | IntQuotient when !Params.enc_noarith ->
       ([ Mem ; IntSet ; IntLteq ; IntLit 0 ], [ IntQuotientTyping ])
   | IntRemainder when !Params.enc_noarith ->
@@ -363,7 +363,7 @@ let untyped_deps tla_smb s =
   | IntExp when !Params.enc_noarith ->
       ([ Mem ; IntSet ; IntLit 0 ],           [ IntExpTyping ])
   | IntLteq | IntLt | IntGteq | IntGt when !Params.enc_noarith ->
-      ([], [])
+      ([], [ LteqReflexive ; LteqTransitive ; LteqAntisym ])
   | IntPlus ->
       ([ Cast (TAtm TAInt) ; TIntPlus ],      [ Typing TIntPlus ])
   | IntUminus ->
@@ -422,13 +422,14 @@ let untyped_deps tla_smb s =
   | RecSet fs ->
       ([ Mem ; Rec fs ], [ RecSetDef fs ])
   (* Sequences *)
+  | SeqTail ->
+      ([ Mem ; SeqSeq ],          [ SeqTailIsSeq ])
   | SeqSeq
   | SeqLen
   | SeqBSeq
   | SeqCat
   | SeqAppend
   | SeqHead
-  | SeqTail
   | SeqSubSeq
   | SeqSelectSeq ->
       ([], [])

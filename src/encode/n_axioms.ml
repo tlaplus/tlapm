@@ -318,7 +318,8 @@ let setenum_def n =
   ~pats:[ [
     apps T.Mem
     [ Ix 1 %% []
-    ; apps (T.SetEnum n) [] %% []
+    ; apps (T.SetEnum n)
+      (ixi ~shift:1 n) %% []
     ] %% []
   ] ]
   begin if (n = 0) then
@@ -796,6 +797,18 @@ let intlit_distinct m n =
   ; apps (T.IntLit n) [] %% []
   ] %% []
 
+let intlit_zerocmp n =
+  if n <= 0 then
+    apps T.IntLteq
+    [ apps (T.IntLit n) [] %% []
+    ; apps (T.IntLit 0) [] %% []
+    ] %% []
+  else
+    apps T.IntLteq
+    [ apps (T.IntLit 0) [] %% []
+    ; apps (T.IntLit n) [] %% []
+    ] %% []
+
 let natset_def () =
   quant Forall
   [ "x" ] [ t_idv ]
@@ -1002,6 +1015,54 @@ let intremainder_typing () =
     ] %% []
   ) %% []
 
+let natplus_typing () =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.Mem
+        [ Ix 2 %% []
+        ; apps T.NatSet [] %% []
+        ] %% []
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.NatSet [] %% []
+        ] %% []
+      ] %% []
+    ; apps T.Mem
+      [ apps T.IntPlus
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ; apps T.NatSet [] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let nattimes_typing () =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.Mem
+        [ Ix 2 %% []
+        ; apps T.NatSet [] %% []
+        ] %% []
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.NatSet [] %% []
+        ] %% []
+      ] %% []
+    ; apps T.Mem
+      [ apps T.IntTimes
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ; apps T.NatSet [] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
 let intrange_def () =
   quant Forall
   [ "a" ; "b" ] [ t_idv ; t_idv ]
@@ -1061,6 +1122,57 @@ let intrange_def () =
           ]) %% []
         ] %% []
       ) %% []
+    ] %% []
+  ) %% []
+
+let lteq_reflexive () =
+  quant Forall
+  [ "x" ] [ t_idv ]
+  ( apps T.IntLteq
+    [ Ix 1 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ) %% []
+
+let lteq_transitive () =
+  quant Forall
+  [ "x" ; "y" ; "z" ] [ t_idv ; t_idv ; t_idv ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.IntLteq
+        [ Ix 3 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ; apps T.IntLteq
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ] %% []
+    ; apps T.IntLteq
+      [ Ix 3 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let lteq_antisym () =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.IntLteq
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ; apps T.IntLteq
+        [ Ix 1 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ] %% []
+    ; appb ~tys:[ t_idv ] B.Eq
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
     ] %% []
   ) %% []
 
@@ -1331,6 +1443,30 @@ let recapp_def fs =
   ) %% []
 
 
+(* {4 Sequences} *)
+
+let tail_isseq () =
+  quant Forall
+  [ "s" ; "seq" ] [ t_idv ; t_idv ]
+  ( appb B.Implies
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.SeqSeq
+        [ Ix 2 %% []
+        ] %% []
+      ] %% []
+    ; apps T.Mem
+      [ apps T.SeqTail
+        [ Ix 1 %% []
+        ] %% []
+      ; apps T.SeqSeq
+        [ Ix 2 %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+
 (* {3 Typed Variants} *)
 
 (* {4 Strings} *)
@@ -1361,6 +1497,7 @@ let get_axm = function
   | T.StrLitDistinct (s1, s2) -> strlit_distinct s1 s2
   | T.IntLitIsint n -> intlit_isint n
   | T.IntLitDistinct (m, n) -> intlit_distinct m n
+  | T.IntLitZeroCmp n -> intlit_zerocmp n
   | T.NatSetDef -> natset_def ()
   | T.IntPlusTyping -> intplus_typing ()
   | T.IntUminusTyping -> intuminus_typing ()
@@ -1369,7 +1506,12 @@ let get_axm = function
   | T.IntQuotientTyping -> intquotient_typing ()
   | T.IntRemainderTyping -> intremainder_typing ()
   | T.IntExpTyping -> intexp_typing ()
+  | T.NatPlusTyping -> natplus_typing ()
+  | T.NatTimesTyping -> nattimes_typing ()
   | T.IntRangeDef -> intrange_def ()
+  | T.LteqReflexive -> lteq_reflexive ()
+  | T.LteqTransitive -> lteq_transitive ()
+  | T.LteqAntisym -> lteq_antisym ()
   | T.FunExt -> fcn_ext ()
   | T.FunConstrIsafcn -> fcnconstr_isafcn ()
   | T.FunSetDef -> fcnset_def ()
@@ -1384,118 +1526,8 @@ let get_axm = function
   | T.RecSetDef fs -> recset_def_alt fs
   | T.RecDomDef fs -> recdom_def fs
   | T.RecAppDef fs -> recapp_def fs
+  | T.SeqTailIsSeq -> tail_isseq ()
   | T.CastInj ty0 -> cast_inj ty0
   | T.TypeGuard ty0 -> type_guard ty0
   | T.Typing tla_smb -> op_typing tla_smb
 
-
-(* FIXME adapt *)
-  (*
-
-(* {3 Schema Instance} *)
-
-let inst_choose ty m p =
-  let sub = Expr.Subst.shift 1 in (* skip x *)
-  all (gen "c" m @ [ "x" ]) ?tys:(Option.map (fun (ty, tys) -> tys @ [ ty ]) ty) ~pats:[ [
-    app (Expr.Subst.app_expr sub p) [ Ix 1 %% [] ] %% []
-    |> Expr.Subst.app_expr (Expr.Subst.shift 0) (* force normalize *)
-  ] ] (
-    ifx B.Implies (
-      app (Expr.Subst.app_expr sub p) [ Ix 1 %% [] ] %% []
-      |> Expr.Subst.app_expr (Expr.Subst.shift 0) (* force normalize *)
-    ) (
-      app (Expr.Subst.app_expr sub p) [
-        app (Ix 0 %% []) (ixi ~shift:1 m) %% []
-      ] %% []
-      |> Expr.Subst.app_expr (Expr.Subst.shift 0) (* force normalize *)
-    ) %% []
-  ) %% []
-
-let inst_setst ty m p =
-  all ([ "a" ] @ gen "c" m @ [ "x" ])
-  ?tys:(Option.map (fun (ty, tys) -> [ TSet ty ] @ tys @ [ ty ]) ty)
-  ~pats:[ [
-    ifx ?tys:(Option.map (fun (ty, _) -> [ ty ]) ty)
-    B.Mem (
-      Ix 1 %% []
-    ) (
-      app (
-        Ix 0 %% []
-      ) (ixi ~shift:1 (1 + m)) %% []
-    ) %% []
-  ] ] (
-    ifx B.Equiv (
-      ifx ?tys:(Option.map (fun (ty, _) -> [ ty ]) ty)
-      B.Mem (
-        Ix 1 %% []
-      ) (
-        app (
-          Ix 0 %% []
-        ) (ixi ~shift:1 (1 + m)) %% []
-      ) %% []
-    ) (
-      ifx B.Conj (
-        ifx ?tys:(Option.map (fun (ty, _) -> [ ty ]) ty)
-        B.Mem (
-          Ix 1 %% []
-        ) (
-          Ix (m + 2) %% []
-        ) %% []
-      ) (
-        (* skip x *)
-        let sub = Expr.Subst.shift 1 in
-        app (Expr.Subst.app_expr sub p) [ Ix 1 %% [] ] %% []
-        |> Expr.Subst.app_expr (Expr.Subst.shift 0) (* force normalize *)
-      ) %% []
-    ) %% []
-  ) %% []
-
-let inst_setof n ttys m p =
-  let tys, ty, ty2s =
-    match ttys with
-    | None -> (List.init n (fun _ -> None), None, List.init m (fun _ -> None))
-    | Some (tys, ty, ty2s) -> (List.map (fun ty -> Some ty) tys, Some ty, List.map (fun ty -> Some ty) ty2s)
-  in
-  all (gen "a" n @ gen "c" m @ [ "x" ])
-  ?tys:(Option.map (fun (tys, ty, ty2s) -> List.map (fun ty -> TSet ty) tys @ ty2s @ [ ty ]) ttys) ~pats:[ [
-    ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-    B.Mem (
-      Ix 1 %% []
-    ) (
-      app (
-        Ix 0 %% []
-      ) (ixi ~shift:1 (n + m)) %% []
-    ) %% []
-  ] ] (
-    ifx B.Equiv (
-      ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-      B.Mem (
-        Ix 1 %% []
-      ) (
-        app (
-          Ix 0 %% []
-        ) (ixi ~shift:1 (n + m)) %% []
-      ) %% []
-    ) (
-      exi (gen "y" n)
-      ?tys:(Option.map (fun (x, _, _) -> x) ttys) (
-        List (And, List.map2 begin fun e1 (e2, ty) ->
-          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-          B.Mem e1 e2 %% []
-        end (ixi n) (List.combine (ixi ~shift:(n + 1) n) tys)
-        @ [
-          ifx ?tys:(Option.map (fun ty -> [ ty ]) ty)
-          B.Eq (
-            Ix (n + 1) %% []
-          ) (
-            let sub = Expr.Subst.shift (1 + n) in (* skip x and ys *)
-            app (Expr.Subst.app_expr sub p) (ixi n) %% []
-            |> Expr.Subst.app_expr (Expr.Subst.shift 0) (* force normalize *)
-          ) %% []
-        ]
-        ) %% []
-      ) %% []
-    ) %% []
-  ) %% []
-
-  *)

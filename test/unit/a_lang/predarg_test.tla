@@ -1,4 +1,6 @@
----- MODULE letconstant_test ----
+---- MODULE predarg_test ----
+
+(* NOTE: Requires higher-order unification *)
 
 EXTENDS TLAPS
 

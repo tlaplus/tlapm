@@ -1,5 +1,7 @@
 ---- MODULE sndordthm_test ----
 
+(* NOTE: Requires higher-order unification *)
+
 EXTENDS TLAPS
 
 THEOREM Thm ==
@@ -9,7 +11,7 @@ THEOREM Thm ==
 
 THEOREM ASSUME NEW F(_),
                NEW a
-        PROVE a
+        PROVE F(a)
     BY Thm
 
 ====
