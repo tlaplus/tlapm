@@ -14,7 +14,7 @@ References
 [2] Leslie Lamport, TLA+ Version 2: A Preliminary Guide, 2018
 
 [3] Leslie Lamport, LevelSpec specification, from the repository `tlaplus` at:
-    htpps://github.com/tlaplus/tlatools/src/tla2sany/semantic/LevelNode.java
+    https://github.com/tlaplus/tlatools/src/tla2sany/semantic/LevelNode.java
 
 [4] Leslie Lamport, Proving safety properties, 2019
 
