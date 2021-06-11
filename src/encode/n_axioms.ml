@@ -93,36 +93,28 @@ let seq xs ty1s e =
 (* {4 Special} *)
 
 let cast_inj ty0 =
-  if ty0 = t_bol then
-    appb B.Conj
-    [ appb ~tys:[ t_idv ] B.Eq
-      [ apps (T.Cast t_bol)
-        [ appb B.TRUE [] %% []
-        ] %% []
-      ; apps (T.True t_idv) [] %% []
-      ] %% []
-    ; appb ~tys:[ t_idv ] B.Neq
-      [ apps (T.Cast t_bol)
-        [ appb B.FALSE [] %% []
-        ] %% []
-      ; apps (T.True t_idv) [] %% []
-      ] %% []
-    ] %% []
-  else
-    quant Forall
-    [ "x" ; "y" ] [ ty0 ; ty0 ]
-    ~pats:[ [
-      appb ~tys:[ t_idv ] B.Eq
-      [ apps (T.Cast ty0)
-        [ Ix 2 %% []
-        ] %% []
-      ; apps (T.Cast ty0)
-        [ Ix 1 %% []
-        ] %% []
-      ] %% []
-    ] ]
-    ( appb B.Implies
+  match ty0 with
+  | TAtm TABol ->
+      appb B.Conj
       [ appb ~tys:[ t_idv ] B.Eq
+        [ apps (T.Cast t_bol)
+          [ appb B.TRUE [] %% []
+          ] %% []
+        ; apps (T.True t_idv) [] %% []
+        ] %% []
+      ; appb ~tys:[ t_idv ] B.Neq
+        [ apps (T.Cast t_bol)
+          [ appb B.FALSE [] %% []
+          ] %% []
+        ; apps (T.True t_idv) [] %% []
+        ] %% []
+      ] %% []
+
+  | _ ->
+      quant Forall
+      [ "x" ; "y" ] [ ty0 ; ty0 ]
+      ~pats:[ [
+        appb ~tys:[ t_idv ] B.Eq
         [ apps (T.Cast ty0)
           [ Ix 2 %% []
           ] %% []
@@ -130,12 +122,22 @@ let cast_inj ty0 =
           [ Ix 1 %% []
           ] %% []
         ] %% []
-      ; appb ~tys:[ ty0 ] B.Eq
-        [ Ix 2 %% []
-        ; Ix 1 %% []
+      ] ]
+      ( appb B.Implies
+        [ appb ~tys:[ t_idv ] B.Eq
+          [ apps (T.Cast ty0)
+            [ Ix 2 %% []
+            ] %% []
+          ; apps (T.Cast ty0)
+            [ Ix 1 %% []
+            ] %% []
+          ] %% []
+        ; appb ~tys:[ ty0 ] B.Eq
+          [ Ix 2 %% []
+          ; Ix 1 %% []
+          ] %% []
         ] %% []
-      ] %% []
-    ) %% []
+      ) %% []
 
 let type_guard ty0 =
   quant Forall
@@ -174,31 +176,69 @@ let type_guard ty0 =
   ) %% []
 
 let op_typing t_smb =
-  let dat = N_data.get_data t_smb in
-  let i_smb = Option.get (dat.dat_tver) in
-  let ty2 = dat.dat_ty2 in
-  let Ty1 (ty0s, ty0) =
-    try downcast_ty1 ty2
-    with _ -> error "Not implemented" (* TODO *)
+  let t_dat = N_data.get_data t_smb in
+  let i_smb = Option.get (t_dat.dat_tver) in
+  let i_dat = N_data.get_data i_smb in
+
+  let i_ty2 = i_dat.dat_ty2 in
+  let t_ty2 = t_dat.dat_ty2 in
+
+  (* It is assumed that i_ty2 is obtained from t_ty2 by replacing every sort
+   * other than Bool with Idv, and possibly some occurrences of Bool with Idv
+   * (but not necessarily all). *)
+  (* TODO: Support second-order shapes *)
+
+  let Ty1 (_, i_ty0) =
+    try downcast_ty1 i_ty2
+    with _ -> error "Not implemented"
   in
-  let n = List.length ty0s in
+  let Ty1 (t_ty0s, t_ty0) =
+    try downcast_ty1 t_ty2
+    with _ -> error "Not implemented"
+  in
+
+  let cast ty_from e =
+    if ty_from = t_idv then e
+    else apps (T.Cast ty_from) [ e ] %% []
+  in
+  let proj ty_from e =
+    if ty_from = t_bol then e
+    else
+      appb ~tys:[ ty_from ] B.Eq
+      [ e
+      ; apps (T.True ty_from) [] %% []
+      ] %% []
+  in
+
+  let n = List.length t_ty0s in
+  let is_pred = (t_ty0 = t_bol) in
+
   quant Forall
-  (gen "x" n) ty0s
+  (gen "x" n) t_ty0s
   ~pats:[ [
     apps i_smb
     (List.map2 begin fun e ty0 ->
-      apps (T.Cast ty0) [ e ] %% []
-    end (ixi n) ty0s) %% []
+      cast ty0 e
+    end (ixi n) t_ty0s) %% []
   ] ]
-  ( appb ~tys:[ t_idv ] B.Eq
+  ( begin
+      if is_pred then appb B.Equiv
+      else appb ~tys:[ t_idv ] B.Eq
+    end
     [ apps i_smb
       (List.map2 begin fun e ty0 ->
-        apps (T.Cast ty0) [ e ] %% []
-      end (ixi n) ty0s) %% []
-    ; apps (T.Cast ty0)
-      [ apps t_smb
-        (ixi n) %% []
-      ] %% []
+        cast ty0 e
+      end (ixi n) t_ty0s) %% [] |>
+      begin
+        if is_pred then proj i_ty0
+        else fun e -> e
+      end
+    ; apps t_smb
+      (ixi n) %% [] |>
+      begin
+        if is_pred then fun e -> e
+        else cast t_ty0
+      end
     ] %% []
   ) %% []
 
@@ -785,6 +825,89 @@ let strlit_distinct s1 s2 =
 
 (* {4 Arithmetic} *)
 
+let natset_def ~noarith =
+  quant Forall
+  [ "x" ] [ t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps T.NatSet [] %% []
+    ] %% []
+  ] ]
+  ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.NatSet [] %% []
+      ] %% []
+    ; appb B.Conj
+      [ apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntSet [] %% []
+        ] %% []
+      ; apps T.IntLteq
+        [ begin
+          if noarith then
+            apps (T.IntLit 0) [] %% []
+          else
+            apps (T.Cast t_int)
+            [ apps (T.TIntLit 0) [] %% []
+            ] %% []
+          end
+        ; Ix 1 %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let intrange_def () =
+  quant Forall
+  [ "a" ; "b" ; "x" ] [ t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps T.IntRange
+      [ Ix 3 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.Mem
+        [ Ix 3 %% []
+        ; apps T.IntSet [] %% []
+        ] %% []
+      ; apps T.Mem
+        [ Ix 2 %% []
+        ; apps T.IntSet [] %% []
+        ] %% []
+      ] %% []
+    ; appb B.Equiv
+      [ apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntRange
+          [ Ix 3 %% []
+          ; Ix 2 %% []
+          ] %% []
+        ] %% []
+      ; List (And,
+        [ apps T.Mem
+          [ Ix 1 %% []
+          ; apps T.IntSet [] %% []
+          ] %% []
+        ; apps T.IntLteq
+          [ Ix 3 %% []
+          ; Ix 1 %% []
+          ] %% []
+        ; apps T.IntLteq
+          [ Ix 1 %% []
+          ; Ix 2 %% []
+          ] %% []
+        ]) %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
 let intlit_isint n =
   apps T.Mem
   [ apps (T.IntLit n) [] %% []
@@ -808,33 +931,6 @@ let intlit_zerocmp n =
     [ apps (T.IntLit 0) [] %% []
     ; apps (T.IntLit n) [] %% []
     ] %% []
-
-let natset_def () =
-  quant Forall
-  [ "x" ] [ t_idv ]
-  ~pats:[ [
-    apps T.Mem
-    [ Ix 1 %% []
-    ; apps T.NatSet [] %% []
-    ] %% []
-  ] ]
-  ( appb B.Equiv
-    [ apps T.Mem
-      [ Ix 1 %% []
-      ; apps T.NatSet [] %% []
-      ] %% []
-    ; appb B.Conj
-      [ apps T.Mem
-        [ Ix 1 %% []
-        ; apps T.IntSet [] %% []
-        ] %% []
-      ; apps T.IntLteq
-        [ apps (T.IntLit 0) [] %% []
-        ; Ix 1 %% []
-        ] %% []
-      ] %% []
-    ] %% []
-  ) %% []
 
 let intplus_typing () =
   quant Forall
@@ -1063,74 +1159,18 @@ let nattimes_typing () =
     ] %% []
   ) %% []
 
-let intrange_def () =
-  quant Forall
-  [ "a" ; "b" ] [ t_idv ; t_idv ]
-  ~pats:[ [
-    apps T.Mem
-    [ Ix 2 %% []
-    ; apps T.IntSet [] %% []
-    ] %% []
-  ; apps T.Mem
-    [ Ix 1 %% []
-    ; apps T.IntSet [] %% []
-    ] %% []
-  ] ]
-  ( appb B.Implies
-    [ appb B.Conj
-      [ apps T.Mem
-        [ Ix 2 %% []
-        ; apps T.IntSet [] %% []
-        ] %% []
-      ; apps T.Mem
-        [ Ix 1 %% []
-        ; apps T.IntSet [] %% []
-        ] %% []
-      ] %% []
-    ; quant Forall
-      [ "x" ] [ t_idv ]
-      ~pats:[ [
-        apps T.Mem
-        [ Ix 1 %% []
-        ; apps T.IntRange
-          [ Ix 3 %% []
-          ; Ix 2 %% []
-          ] %% []
-        ] %% []
-      ] ]
-      ( appb B.Equiv
-        [ apps T.Mem
-          [ Ix 1 %% []
-          ; apps T.IntRange
-            [ Ix 3 %% []
-            ; Ix 2 %% []
-            ] %% []
-          ] %% []
-        ; List (And,
-          [ apps T.Mem
-            [ Ix 1 %% []
-            ; apps T.IntSet [] %% []
-            ] %% []
-          ; apps T.IntLteq
-            [ Ix 3 %% []
-            ; Ix 1 %% []
-            ] %% []
-          ; apps T.IntLteq
-            [ Ix 1 %% []
-            ; Ix 2 %% []
-            ] %% []
-          ]) %% []
-        ] %% []
-      ) %% []
-    ] %% []
-  ) %% []
-
 let lteq_reflexive () =
   quant Forall
   [ "x" ] [ t_idv ]
-  ( apps T.IntLteq
-    [ Ix 1 %% []
-    ; Ix 1 %% []
+  ( appb B.Implies
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.IntSet [] %% []
+      ] %% []
+    ; apps T.IntLteq
+      [ Ix 1 %% []
+      ; Ix 1 %% []
+      ] %% []
     ] %% []
   ) %% []
 
@@ -1138,8 +1178,20 @@ let lteq_transitive () =
   quant Forall
   [ "x" ; "y" ; "z" ] [ t_idv ; t_idv ; t_idv ]
   ( appb B.Implies
-    [ appb B.Conj
-      [ apps T.IntLteq
+    [ List (And,
+      [ apps T.Mem
+        [ Ix 3 %% []
+        ; apps T.IntSet [] %% []
+        ] %% []
+      ; apps T.Mem
+        [ Ix 2 %% []
+        ; apps T.IntSet [] %% []
+        ] %% []
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntSet [] %% []
+        ] %% []
+      ; apps T.IntLteq
         [ Ix 3 %% []
         ; Ix 2 %% []
         ] %% []
@@ -1147,7 +1199,7 @@ let lteq_transitive () =
         [ Ix 2 %% []
         ; Ix 1 %% []
         ] %% []
-      ] %% []
+      ]) %% []
     ; apps T.IntLteq
       [ Ix 3 %% []
       ; Ix 1 %% []
@@ -1159,8 +1211,16 @@ let lteq_antisym () =
   quant Forall
   [ "x" ; "y" ] [ t_idv ; t_idv ]
   ( appb B.Implies
-    [ appb B.Conj
-      [ apps T.IntLteq
+    [ List (And,
+      [ apps T.Mem
+        [ Ix 2 %% []
+        ; apps T.IntSet [] %% []
+        ] %% []
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntSet [] %% []
+        ] %% []
+      ; apps T.IntLteq
         [ Ix 2 %% []
         ; Ix 1 %% []
         ] %% []
@@ -1168,7 +1228,7 @@ let lteq_antisym () =
         [ Ix 1 %% []
         ; Ix 2 %% []
         ] %% []
-      ] %% []
+      ]) %% []
     ; appb ~tys:[ t_idv ] B.Eq
       [ Ix 2 %% []
       ; Ix 1 %% []
@@ -1193,7 +1253,7 @@ let tuple_isafcn n =
       ] %% []
     ) %% []
 
-let productset_def n =
+let productset_def ~noarith n =
   quant Forall
   (gen "s" n @ [ "t" ]) (dupl t_idv (n + 1))
   ~pats:[ [
@@ -1218,8 +1278,22 @@ let productset_def n =
           [ Ix 1 %% []
           ] %% []
         ; apps T.IntRange
-          [ apps (T.IntLit 1) [] %% []
-          ; apps (T.IntLit n) [] %% []
+          [ begin
+            if noarith then
+              apps (T.IntLit 1) [] %% []
+            else
+              apps (T.Cast t_int)
+              [ apps (T.TIntLit 1) [] %% []
+              ] %% []
+            end
+          ; begin
+            if noarith then
+              apps (T.IntLit n) [] %% []
+            else
+              apps (T.Cast t_int)
+              [ apps (T.TIntLit n) [] %% []
+              ] %% []
+            end
           ] %% []
         ] %% []
       ] @
@@ -1227,7 +1301,14 @@ let productset_def n =
         apps T.Mem
         [ apps T.FunApp
           [ Ix 1 %% []
-          ; apps (T.IntLit (i + 1)) [] %% []
+          ; begin
+            if noarith then
+              apps (T.IntLit (i + 1)) [] %% []
+            else
+              apps (T.Cast t_int)
+              [ apps (T.TIntLit (i + 1)) [] %% []
+              ] %% []
+            end
           ] %% []
         ; Ix (n - i + 1) %% []
         ] %% []
@@ -1270,7 +1351,7 @@ let productset_def_alt n =
     ] %% []
   ) %% []
 
-let tupdom_def n =
+let tupdom_def ~noarith n =
   quant Forall
   (gen "x" n) (dupl t_idv n)
   ~pats:[ [
@@ -1285,27 +1366,55 @@ let tupdom_def n =
         (ixi n) %% []
       ] %% []
     ; apps T.IntRange
-      [ apps (T.IntLit 1) [] %% []
-      ; apps (T.IntLit n) [] %% []
+      [ begin
+        if noarith then
+          apps (T.IntLit 1) [] %% []
+        else
+          apps (T.Cast t_int)
+          [ apps (T.TIntLit 1) [] %% []
+          ] %% []
+        end
+      ; begin
+        if noarith then
+          apps (T.IntLit n) [] %% []
+        else
+          apps (T.Cast t_int)
+          [ apps (T.TIntLit n) [] %% []
+          ] %% []
+        end
       ] %% []
     ] %% []
   ) %% []
 
-let tupapp_def n i =
+let tupapp_def ~noarith n i =
   quant Forall
   (gen "x" n) (dupl t_idv n)
   ~pats:[ [
     apps T.FunApp
     [ apps (T.Tuple n)
       (ixi n) %% []
-    ; apps (T.IntLit i) [] %% []
+    ; begin
+      if noarith then
+        apps (T.IntLit i) [] %% []
+      else
+        apps (T.Cast t_int)
+        [ apps (T.TIntLit i) [] %% []
+        ] %% []
+      end
     ] %% []
   ] ]
   ( appb ~tys:[ t_idv ] B.Eq
     [ apps T.FunApp
       [ apps (T.Tuple n)
         (ixi n) %% []
-      ; apps (T.IntLit i) [] %% []
+      ; begin
+        if noarith then
+          apps (T.IntLit i) [] %% []
+        else
+          apps (T.Cast t_int)
+          [ apps (T.TIntLit i) [] %% []
+          ] %% []
+        end
       ] %% []
     ; Ix (n - i + 1) %% []
     ] %% []
@@ -1471,6 +1580,21 @@ let tail_isseq () =
 
 (* {4 Strings} *)
 
+let t_strset_def () =
+  quant Forall
+  [ "s" ] [ t_str ]
+  ~pats:[ [
+    apps (T.TMem t_str)
+    [ Ix 1 %% []
+    ; apps T.TStrSet [] %% []
+    ] %% []
+  ] ]
+  ( apps (T.TMem t_str)
+    [ Ix 1 %% []
+    ; apps T.TStrSet [] %% []
+    ] %% []
+  ) %% []
+
 let t_strlit_distinct s1 s2 =
   appb ~tys:[ t_str ] B.Neq
   [ apps (T.TStrLit s1) [] %% []
@@ -1478,9 +1602,87 @@ let t_strlit_distinct s1 s2 =
   ] %% []
 
 
+(* {4 Arithmetic} *)
+
+let t_intset_def () =
+  quant Forall
+  [ "n" ] [ t_int ]
+  ~pats:[ [
+    apps (T.TMem t_int)
+    [ Ix 1 %% []
+    ; apps T.TIntSet [] %% []
+    ] %% []
+  ] ]
+  ( apps (T.TMem t_int)
+    [ Ix 1 %% []
+    ; apps T.TIntSet [] %% []
+    ] %% []
+  ) %% []
+
+let t_natset_def () =
+  quant Forall
+  [ "n" ] [ t_int ]
+  ~pats:[ [
+    apps (T.TMem t_int)
+    [ Ix 1 %% []
+    ; apps T.TNatSet [] %% []
+    ] %% []
+  ] ]
+  ( appb B.Equiv
+    [ apps (T.TMem t_int)
+      [ Ix 1 %% []
+      ; apps T.TNatSet [] %% []
+      ] %% []
+    ; apps T.TIntLteq
+      [ apps (T.TIntLit 0) [] %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let t_intrange_def () =
+  quant Forall
+  [ "m" ; "n" ; "p" ] [ t_int ; t_int ; t_int ]
+  ~pats:[ [
+    apps (T.TMem t_int)
+    [ Ix 1 %% []
+    ; apps T.TIntRange
+      [ Ix 3 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb B.Equiv
+    [ apps (T.TMem t_int)
+      [ Ix 1 %% []
+      ; apps T.TIntRange
+        [ Ix 3 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ] %% []
+    ; appb B.Conj
+      [ apps T.IntLteq
+        [ Ix 3 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ; apps T.IntLteq
+        [ Ix 1 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+
 (* {3 Get Axiom} *)
 
-let get_axm = function
+let get_axm ~solver tla_smb =
+  let noarith =
+    match solver with
+    | "Zipper" -> true
+    | _ -> Params.debugging "noarith"
+  in
+  match tla_smb with
   | T.ChooseDef -> choose_def ()
   | T.ChooseExt -> choose_ext ()
   | T.SetExt -> set_ext ()
@@ -1498,7 +1700,7 @@ let get_axm = function
   | T.IntLitIsint n -> intlit_isint n
   | T.IntLitDistinct (m, n) -> intlit_distinct m n
   | T.IntLitZeroCmp n -> intlit_zerocmp n
-  | T.NatSetDef -> natset_def ()
+  | T.NatSetDef -> natset_def ~noarith
   | T.IntPlusTyping -> intplus_typing ()
   | T.IntUminusTyping -> intuminus_typing ()
   | T.IntMinusTyping -> intminus_typing ()
@@ -1517,16 +1719,22 @@ let get_axm = function
   | T.FunSetDef -> fcnset_def ()
   | T.FunDomDef -> fcndom_def ()
   | T.FunAppDef -> fcnapp_def ()
-  | T.TStrLitDistinct (s1, s2) -> t_strlit_distinct s1 s2
   | T.TupIsafcn n -> tuple_isafcn n
   | T.ProductDef n -> productset_def_alt n
-  | T.TupDomDef n -> tupdom_def n
-  | T.TupAppDef (n, i) -> tupapp_def n i
+  | T.TupDomDef n -> tupdom_def ~noarith n
+  | T.TupAppDef (n, i) -> tupapp_def ~noarith n i
   | T.RecIsafcn fs -> record_isafcn fs
   | T.RecSetDef fs -> recset_def_alt fs
   | T.RecDomDef fs -> recdom_def fs
   | T.RecAppDef fs -> recapp_def fs
   | T.SeqTailIsSeq -> tail_isseq ()
+
+  | T.TStrSetDef -> t_strset_def ()
+  | T.TStrLitDistinct (s1, s2) -> t_strlit_distinct s1 s2
+  | T.TIntSetDef -> t_intset_def ()
+  | T.TNatSetDef -> t_natset_def ()
+  | T.TIntRangeDef -> t_intrange_def ()
+
   | T.CastInj ty0 -> cast_inj ty0
   | T.TypeGuard ty0 -> type_guard ty0
   | T.Typing tla_smb -> op_typing tla_smb

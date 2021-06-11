@@ -1,4 +1,4 @@
----- MODULE recorddom_test ----
+---- MODULE recorddot_test ----
 
 EXTENDS TLAPS
 

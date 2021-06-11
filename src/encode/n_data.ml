@@ -172,12 +172,30 @@ let untyped_data tla_smb =
 
 let typed_data tla_smb =
   begin match tla_smb with
+  (* Set Theory *)
+  | TMem ty ->
+      ("TMem_" ^ ty_to_string ty,
+                        [ t_cst ty ; t_cst (TSet ty) ],       t_bol,
+      Mem)
   (* Strings *)
+  | TStrSet ->
+      ("TStrSet",       [],                                   TSet t_str,
+      StrSet)
   | TStrLit str ->
       ("TStrLit_" ^ str,
                         [],                                   t_str,
       StrLit str)
   (* Arithmetic *)
+  | TIntSet ->
+      ("TInt",          [],                                   TSet t_int,
+      IntSet)
+  | TNatSet ->
+      ("TNat",          [],                                   TSet t_int,
+      NatSet)
+  | TIntLit n ->
+      ("TIntLit_" ^ string_of_int n,
+                        [],                                   t_int,
+      IntLit n)
   | TIntPlus ->
       ("Plus_" ^ ty_to_string t_int,
                         [ t_cst t_int ; t_cst t_int ],        t_int,
@@ -224,7 +242,7 @@ let typed_data tla_smb =
       IntGt)
   | TIntRange ->
       ("Range_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_idv,
+                        [ t_cst t_int ; t_cst t_int ],        TSet t_int,
       IntRange)
 
   | _ ->
@@ -261,8 +279,9 @@ let get_data tla_smb =
       ; dat_kind = Untyped
       ; dat_tver = None
       }
-  | TStrLit _ | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient
-  | TIntRemainder | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt | TIntRange ->
+  | TMem _ | TStrSet | TStrLit _ | TIntSet | TNatSet | TIntLit _ | TIntPlus
+  | TIntUminus | TIntMinus | TIntTimes | TIntQuotient | TIntRemainder | TIntExp
+  | TIntLteq | TIntLt | TIntGteq | TIntGt | TIntRange ->
       let (nm, tins, tout, tver) = typed_data tla_smb in
       { dat_name = "TLA__" ^ nm
       ; dat_ty2  = Ty2 (tins, tout)
@@ -292,7 +311,7 @@ let init =
   ; t_strlits = Ss.empty
   }
 
-let untyped_deps tla_smb s =
+let untyped_deps ~solver tla_smb s =
   let s' =
     match tla_smb with
     | StrLit str ->
@@ -300,6 +319,11 @@ let untyped_deps tla_smb s =
     | IntLit n ->
         { s with intlits = Is.add n s.intlits }
     | _ -> s
+  in
+  let noarith =
+    match solver with
+    | "Zipper" -> true
+    | _ -> Params.debugging "noarith"
   in
   begin match tla_smb with
   (* Logic *)
@@ -340,30 +364,33 @@ let untyped_deps tla_smb s =
   (* Arithmetic *)
   | IntSet ->
       ([], [])
-  | NatSet ->
+  | NatSet when noarith ->
       ([ IntSet ; IntLit 0 ; IntLteq ],       [ NatSetDef ])
+  | NatSet ->
+      ([ IntSet ; TIntLit 0 ; Cast (TAtm TAInt) ; IntLteq ],
+                                              [ NatSetDef ])
   | IntLit n ->
       let distincts =
         Is.fold (fun m -> List.cons (IntLitDistinct (m, n))) s.intlits []
       in
       ([ Mem ; IntSet ; IntLit 0 ; IntLteq ], [ IntLitIsint n ; IntLitZeroCmp n ] @ distincts)
-  | IntPlus when !Params.enc_noarith ->
+  | IntPlus when noarith ->
       ([ Mem ; IntSet ; NatSet ],             [ IntPlusTyping ; NatPlusTyping ])
-  | IntUminus when !Params.enc_noarith ->
+  | IntUminus when noarith ->
       ([ Mem ; IntSet ],                      [ IntUminusTyping ])
-  | IntMinus when !Params.enc_noarith ->
+  | IntMinus when noarith ->
       ([ Mem ; IntSet ],                      [ IntMinusTyping ])
-  | IntTimes when !Params.enc_noarith ->
+  | IntTimes when noarith ->
       ([ Mem ; IntSet ; NatSet ],             [ IntTimesTyping ; NatTimesTyping ])
-  | IntQuotient when !Params.enc_noarith ->
+  | IntQuotient when noarith ->
       ([ Mem ; IntSet ; IntLteq ; IntLit 0 ], [ IntQuotientTyping ])
-  | IntRemainder when !Params.enc_noarith ->
+  | IntRemainder when noarith ->
       ([ Mem ; IntSet ; IntLteq ; IntLit 0 ; IntLit 1 ;
           IntRange ; IntMinus ],              [ IntRemainderTyping ])
-  | IntExp when !Params.enc_noarith ->
+  | IntExp when noarith ->
       ([ Mem ; IntSet ; IntLit 0 ],           [ IntExpTyping ])
-  | IntLteq | IntLt | IntGteq | IntGt when !Params.enc_noarith ->
-      ([], [ LteqReflexive ; LteqTransitive ; LteqAntisym ])
+  | IntLteq | IntLt | IntGteq | IntGt when noarith ->
+      ([ Mem ; IntSet ],                      [ LteqReflexive ; LteqTransitive ; LteqAntisym ])
   | IntPlus ->
       ([ Cast (TAtm TAInt) ; TIntPlus ],      [ Typing TIntPlus ])
   | IntUminus ->
@@ -404,15 +431,17 @@ let untyped_deps tla_smb s =
   (* Tuples *)
   | Tuple 0 ->
       ([ FunIsafcn ],             [ TupIsafcn 0 ])
-  | Tuple n when n > 0 ->
+  | Tuple n when n > 0 && noarith ->
       ([ FunIsafcn ; FunDom ; FunApp ; IntRange ]
        @ List.init n (fun i -> IntLit (i+1)),
                                   [ TupIsafcn n ; TupDomDef n ;]
                                   @ List.init n (fun i -> TupAppDef (n, i+1)))
+  | Tuple n when n > 0 ->
+      ([ FunIsafcn ; FunDom ; FunApp ; IntRange ; Cast (TAtm TAInt) ],
+                                  [ TupIsafcn n ; TupDomDef n ;]
+                                  @ List.init n (fun i -> TupAppDef (n, i+1)))
   | Product n ->
       ([ Mem ; Tuple n ],         [ ProductDef n ])
-      (*([ Mem ; FunIsafcn ; FunDom ; FunApp ; IntRange ; IntLit 1 ; IntLit n ],
-                                  [ ProductDef n ])*)
   (* Records *)
   | Rec fs ->
       let n = List.length fs in
@@ -447,13 +476,23 @@ let typed_deps tla_smb s =
     | _ -> s
   in
   begin match tla_smb with
+  (* Set Theory *)
+  | TMem ty ->
+      ([],                                    [ Typing (TMem ty) ])
   (* Strings *)
+  | TStrSet ->
+      ([ TMem t_str ],                        [ TStrSetDef ])
   | TStrLit str ->
       let distincts =
         Ss.fold (fun str2 -> List.cons (TStrLitDistinct (str, str2))) s.t_strlits []
       in
       ([], distincts)
   (* Arithmetic *)
+  | TIntSet ->
+      ([ TMem t_int ],                        [ TIntSetDef ])
+  | TNatSet ->
+      ([ TMem t_int ; TIntLit 0 ; TIntLteq ], [ TNatSetDef ])
+  | TIntLit _
   | TIntPlus
   | TIntUminus
   | TIntMinus
@@ -465,10 +504,9 @@ let typed_deps tla_smb s =
   | TIntLt
   | TIntGteq
   | TIntGt ->
-      (* Implemented natively in most solvers *)
-      ([], [])
+      ([], []) (* Implemented natively by solvers *)
   | TIntRange ->
-      ([], [])
+      ([ TMem t_int ; TIntLteq ],             [ TIntRangeDef ])
   | _ ->
       error "internal error"
   end |>
@@ -495,7 +533,7 @@ let special_deps tla_smb =
   end |>
   fun x -> (fun s -> (s, x))
 
-let get_deps tla_smb s =
+let get_deps ~solver tla_smb s =
   match tla_smb with
   | Choose | Mem | SubsetEq | SetEnum _ | Union | Subset | Cup | Cap | SetMinus
   | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet | NatSet | IntLit _
@@ -504,14 +542,14 @@ let get_deps tla_smb s =
   | FunConstr | FunDom | FunApp | Tuple _ | Product _ | Rec _ | RecSet _
   | SeqSeq | SeqLen | SeqBSeq | SeqCat | SeqAppend | SeqHead | SeqTail
   | SeqSubSeq | SeqSelectSeq ->
-      let s, (smbs, axms) = untyped_deps tla_smb s in
+      let s, (smbs, axms) = untyped_deps ~solver tla_smb s in
       s,
       { dat_deps = smbs
       ; dat_axms = axms
       }
-  | TStrLit _ | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient
-  | TIntRemainder | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt
-  | TIntRange ->
+  | TMem _ | TStrSet | TStrLit _ | TIntSet | TNatSet | TIntLit _ | TIntPlus
+  | TIntUminus | TIntMinus | TIntTimes | TIntQuotient | TIntRemainder | TIntExp
+  | TIntLteq | TIntLt | TIntGteq | TIntGt | TIntRange ->
       let s, (smbs, axms) = typed_deps tla_smb s in
       s,
       { dat_deps = smbs

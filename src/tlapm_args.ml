@@ -167,6 +167,13 @@ let init () =
                   " do not normalize obligations before printing" ;
     "--debug", Arg.String set_debug_flags,
                "{[-]<flag>} enable/disable debugging flags" ;
+               (* NOTE Available flags are (non-exhaustive list):
+                 * "verbose"    display message between encoding steps
+                 * "t0"         set type level on 0
+                 * "t1"         set type level on 1 (TODO)
+                 * "oldsmt"     use the old version of SMT
+                 * "noarith"    don't use the primitive sort int of SMT-LIB
+                 *)
     deprecated "--paranoid" 0;
     deprecated "--isaprove" 0;
     blank;
@@ -237,9 +244,5 @@ let init () =
     Printf.printf " with command line:\n\\*";
     Array.iter (fun s -> Printf.printf " %s" (quote_if_needed s)) Sys.argv;
     Printf.printf "\n\n%!"
-  end;
-  if !Params.enc_typelvl < 0 || !Params.enc_typelvl > 1 then begin
-    Printf.eprintf "Bad type level: %d\nType level set to 0" !Params.enc_typelvl;
-    Params.enc_typelvl := 0
   end;
   !mods

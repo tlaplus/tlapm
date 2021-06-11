@@ -7,14 +7,18 @@
 
 open Type.T
 
-(** This module is an inventory of every TLA+ builtin symbol that may be used
-    by the Zipperposition encoding.  It is a generalization of {!Builtin} in
-    that it includes second-order operators (set-comprehension,...), and
-    eventual typed variants of operators ('+' as TLA+ uninterpreted addition,
-    or addition between integers, or between reals,...)
+(** Inventory of all special operators that the encodings of TLA+ use to
+    translate expressions.
+    The backends that use the relevant encodings are: SMT, Zipper.
 
-    This representation is abstract, but each symbol has data associated to it,
-    that should be obtained through the function {!N_smb.mk_smb}.
+    This module was created because {!Builtin} doesn't include everthing.
+    Not included in {!Builtin} are:
+      - Second-order operators, like set-comprehension, CHOOSE...
+      - Invisible operators, like isafcn;
+      - Variants of the builtin operators with different types. For instance,
+        the '+' of TLA+ may have to be translated as a '+ : int * int -> int'
+        or a '+ : U * U -> U' (where 'U' is the universe of ZFC), depending
+        on the backend/context.
 *)
 
 
@@ -83,9 +87,15 @@ type tla_smb =
   | SeqSelectSeq
 
     (* TYPED *)
+  (* Set Theory *)
+  | TMem of ty
   (* Strings *)
+  | TStrSet
   | TStrLit of string
   (* Arithmetic *)
+  | TIntSet
+  | TNatSet
+  | TIntLit of int
   | TIntPlus
   | TIntUminus
   | TIntMinus
@@ -163,10 +173,15 @@ type tla_axm =
 
     (* TYPED *)
   (* Strings *)
+  | TStrSetDef
   | TStrLitDistinct of string * string
+  (* Arithmetic *)
+  | TIntSetDef
+  | TNatSetDef
+  | TIntRangeDef
 
     (* SPECIAL *)
-  | CastInj of ty0
-  | TypeGuard of ty0
+  | CastInj of ty
+  | TypeGuard of ty
   | Typing of tla_smb (** Only for typed symbols *)
 

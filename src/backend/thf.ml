@@ -456,10 +456,9 @@ let pp_print_expr cx ff oe =
 
 (* {3 Preprocessing} *)
 
-(* This very important function does several transformations on the sequent
+(* This very important function applies several transformations to the sequent
  * to shape it into something translatable to THF. *)
-let preprocess ?solver sq =
-  let _ = solver in (* not used *)
+let preprocess ~solver sq =
 
   let cx = (Deque.empty, Ctx.dot) in
   let pp_print_sequent ff sq = ignore (Expr.Fmt.pp_print_sequent cx ff sq) in
@@ -472,20 +471,25 @@ let preprocess ?solver sq =
     sq
   in
 
+  let typelvl =
+    if Params.debugging "t0" then 0
+    else if Params.debugging "t1" then 1
+    else 0
+  in
+
   let sq = sq
     |> debug "Original Obligation:"
-    |> Type.Synthesize.main ~typelvl:!Params.enc_typelvl ~noarith:true
+    |> Type.Synthesize.main ~typelvl ~noarith:true
     |> Encode.Rewrite.elim_notmem
     |> Encode.Rewrite.elim_compare
     |> Encode.Rewrite.elim_except
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
-    |> (if !Params.enc_simplify then Encode.Rewrite.simplify else fun e -> e)
     |> Encode.Rewrite.apply_ext
     |> debug "Disambiguate and Simplify:"
     |> Encode.Standardize.main
     |> debug "Standardize:"
-    |> Encode.Axiomatize.main
+    |> Encode.Axiomatize.main ~solver
     |> debug "Axiomatize:"
   in
   sq
@@ -525,7 +529,7 @@ let pp_print_thf cx ff ?comment name role form =
   fprintf ff "@[<hov 2>thf(%s, %a,@ %a@]).@."
   name pp_print_role role (pp_print_formula cx) form
 
-let pp_print_obligation ?(solver="Zipperposition") ff ob =
+let pp_print_obligation ?(solver="Zipper") ff ob =
   (* Shape the sequent into a form that can be translated
    * Append a top context containing additional declarations and axioms *)
   let sq = preprocess ~solver ob.Proof.T.obl.core in

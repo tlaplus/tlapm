@@ -188,6 +188,11 @@ let map_pats f oe =
   | None -> oe
   | Some pats -> assign oe pattern_prop (List.map f pats)
 
+let fold_pats f oe a =
+  match query oe pattern_prop with
+  | None -> a
+  | Some pats -> List.fold_right f pats a
+
 (* context helper function *)
 let get_val_from_id cx n = match Deque.nth ~backwards:true cx (n - 1) with
 | Some e -> e

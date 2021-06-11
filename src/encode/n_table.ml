@@ -68,9 +68,15 @@ type tla_smb =
   | SeqSelectSeq
 
     (* TYPED *)
+  (* Set Theory *)
+  | TMem of ty
   (* Strings *)
+  | TStrSet
   | TStrLit of string
   (* Arithmetic *)
+  | TIntSet
+  | TNatSet
+  | TIntLit of int
   | TIntPlus
   | TIntUminus
   | TIntMinus
@@ -147,10 +153,15 @@ type tla_axm =
 
     (* TYPED *)
   (* Strings *)
+  | TStrSetDef
   | TStrLitDistinct of string * string
+  (* Arithmetic *)
+  | TIntSetDef
+  | TNatSetDef
+  | TIntRangeDef
 
     (* SPECIAL *)
-  | CastInj of ty0
-  | TypeGuard of ty0
+  | CastInj of ty
+  | TypeGuard of ty
   | Typing of tla_smb (** Only for typed symbols *)
 

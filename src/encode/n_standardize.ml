@@ -113,6 +113,9 @@ let visitor = object (self : 'self)
           | SubSeq,     None      -> SeqSubSeq
           | SelectSeq,  None      -> SeqSelectSeq
 
+          | STRING,     Some [ ]              -> TStrSet
+          | Int,        Some [ ]              -> TIntSet
+          | Nat,        Some [ ]              -> TNatSet
           | Plus,       Some [ TAtm TAInt ]   -> TIntPlus
           | Uminus,     Some [ TAtm TAInt ]   -> TIntUminus
           | Minus,      Some [ TAtm TAInt ]   -> TIntMinus
@@ -126,7 +129,7 @@ let visitor = object (self : 'self)
           | Gt,         Some [ ]              -> TIntGteq
           | Range,      Some [ ]              -> TIntRange
 
-          | _,      Some _      ->
+          | _,          Some _      ->
               error ~at:oe "Typelvl=1 not implemented"
           | _, _ ->
               let mssg = "Unexpected builtin '" ^
@@ -203,7 +206,9 @@ let visitor = object (self : 'self)
 
     | String str ->
         if has oe Props.tpars_prop then
-          error ~at:oe "Typelvl=1 not implemented"
+          let smb = mk_smb (TStrLit str) in
+          let opq = mk_opq smb in
+          opq
         else
           let smb = mk_smb (StrLit str) in
           let opq = mk_opq smb in
@@ -211,7 +216,10 @@ let visitor = object (self : 'self)
 
     | Num (m, "") ->
         if has oe Props.tpars_prop then
-          error ~at:oe "Literal numbers not implemented"
+          let n = int_of_string m in
+          let smb = mk_smb (TIntLit n) in
+          let opq = mk_opq smb in
+          opq
         else
           let n = int_of_string m in
           let smb = mk_smb (IntLit n) in

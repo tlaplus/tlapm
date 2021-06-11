@@ -35,11 +35,18 @@ val init_ecx : ecx
 (* {3 Main} *)
 
 (** Collect relevant symbols and axioms *)
-val collect : ecx -> sequent -> ecx
+val collect : solver:string -> ecx -> sequent -> ecx
 
 (** Assemble a sequent with an extended context *)
-val assemble : ecx -> sequent -> sequent
+val assemble : solver:string -> ecx -> sequent -> sequent
 
-(** Combine collect and assemble *)
-val main : sequent -> sequent
+(** Combine collect and assemble
+    @param solver the target backend.
+*)
+val main : solver:string -> sequent -> sequent
+(** If a backend is given, the operators of TLA+ that correspond to builtins
+    of that backend are untouched.
+    Available backends:
+      - SMT
+*)
 

@@ -501,11 +501,3 @@ let backend_timeout = ref 5.;;
    before sending it to its external prover. This gets multiplied by
    timeout_stretch before use.
 *)
-
-let enc_typelvl = ref 0
-
-let enc_noarith = ref true (* FIXME false by default *)
-
-let enc_simplify = ref false
-
-let enc_enablesmt = ref false

@@ -34,13 +34,33 @@ let error ?at mssg =
   (*Errors.bug ?at mssg*)
   failwith mssg
 
+(* Native symbols do not lead to a declaration, they are translated
+ * as builtins of the backends *)
+let is_native ~solver smb =
+  if solver = "SMT" then
+    match get_defn smb with
+    | TIntLit _
+    | TIntPlus
+    | TIntUminus
+    | TIntMinus
+    | TIntTimes
+    | TIntQuotient
+    | TIntRemainder
+    | TIntLteq
+    | TIntLt
+    | TIntGteq
+    | TIntGt -> true
+    | _ -> false
+  else
+    false
+
 
 (* {3 Collection} *)
 
 (* NOTE Important function
  * Add symbol to extended context, along with all depending
  * symbols and axioms *)
-let add_smb smb ecx =
+let add_smb ~solver smb ecx =
   let rec spin (s, acc_smbs, acc_facts as ecx) work_smbs =
     try
       let smb = SmbSet.choose work_smbs in
@@ -48,12 +68,12 @@ let add_smb smb ecx =
         let work_smbs = SmbSet.remove smb work_smbs in
         spin ecx work_smbs
       else
-        let s, deps = get_deps (get_defn smb) s in
+        let s, deps = get_deps ~solver (get_defn smb) s in
         let smb_deps = List.fold_left begin fun smbs tla_smb ->
           let smb = mk_smb tla_smb in
           smb :: smbs
         end [] deps.dat_deps in
-        let axms = List.map get_axm deps.dat_axms in
+        let axms = List.map (get_axm ~solver) deps.dat_axms in
         let acc_smbs = SmbSet.add smb acc_smbs in
         let acc_facts = List.fold_left Deque.snoc acc_facts axms in
         let work_smbs = SmbSet.remove smb work_smbs in
@@ -65,15 +85,19 @@ let add_smb smb ecx =
   spin ecx (SmbSet.singleton smb)
 
 let collect_visitor = object (self : 'self)
-  inherit [unit, ecx] Expr.Visit.fold as super
+  inherit [string, ecx] Expr.Visit.fold as super
 
-  method expr scx ecx oe =
-    match oe.core with
+  method expr (solver, cx as scx) ecx oe =
+    begin match oe.core with
     | Opaque _ when has oe smb_prop ->
         let smb = get oe smb_prop in
-        add_smb smb ecx
+        add_smb ~solver smb ecx
 
     | _ -> super#expr scx ecx oe
+
+    end |>
+    fold_pats (fun es ecx -> List.fold_left (self#expr scx) ecx es) oe
+
 
   method hyp scx ecx h =
     match h.core with
@@ -85,8 +109,8 @@ let collect_visitor = object (self : 'self)
         super#hyp scx ecx h
 end
 
-let collect ecx sq =
-  let scx = ((), Deque.empty) in
+let collect ~solver ecx sq =
+  let scx = (solver, Deque.empty) in
   snd (collect_visitor#sequent scx ecx sq)
 
 
@@ -103,11 +127,11 @@ let mk_fact e =
   Fact (e, Visible, NotSet) %% []
 
 let assemble_visitor = object (self : 'self)
-  inherit [unit] Expr.Visit.map as super
+  inherit [string] Expr.Visit.map as super
 
-  method expr ((), hx as scx) oe =
-    match oe.core with
-    | Opaque _ when has oe smb_prop ->
+  method expr (solver, hx as scx) oe =
+    begin match oe.core with
+    | Opaque _ when has oe smb_prop && not (is_native solver (get oe smb_prop)) ->
         let smb = get oe smb_prop in
         let s = get_name smb in
         let is_fresh_s = fun h ->
@@ -128,6 +152,9 @@ let assemble_visitor = object (self : 'self)
 
     | _ -> super#expr scx oe
 
+    end |>
+    map_pats (List.map (self#expr scx))
+
   method hyp scx h =
     match h.core with
     | Defn (_, _, Hidden, _)
@@ -138,22 +165,23 @@ let assemble_visitor = object (self : 'self)
         super#hyp scx h
 end
 
-let assemble (_, decls, axms) sq =
+let assemble ~solver (_, decls, axms) sq =
+  let decls = SmbSet.filter (fun smb -> not (is_native ~solver smb)) decls in
   let decls = Deque.map (fun _ -> mk_decl) (SmbSet.elements decls |> Deque.of_list) in
   let axms = Deque.map (fun _ -> mk_fact) axms in
   let top_hx = Deque.append decls axms in
 
   let sq = { sq with context = Deque.append top_hx sq.context } in
-  let scx = ((), Deque.empty) in
+  let scx = (solver, Deque.empty) in
   let _, sq = assemble_visitor#sequent scx sq in
   sq
 
 
 (* {3 Main} *)
 
-let main sq =
+let main ~solver sq =
   let ecx = init_ecx in
-  let ecx = collect ecx sq in
-  let sq = assemble ecx sq in
+  let ecx = collect ~solver ecx sq in
+  let sq = assemble ~solver ecx sq in
   sq
 

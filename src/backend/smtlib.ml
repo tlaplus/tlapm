@@ -20,21 +20,56 @@ open Expr.T
 open Type.T
 open Util.Coll
 
-open Encode.Smb
-
+module Smb = Encode.Smb
+module T = Encode.Table
 module B = Builtin
 
 let error ?at mssg =
   let mssg = "Backend.Smtlib: " ^ mssg in
-  Errors.bug ?at mssg
+  (*Errors.bug ?at mssg*)
+  failwith mssg
 
 let primed s = s ^ "__prime"
 
 
 (* {3 Context} *)
 
-let adj cx nm =
-  let cx = Ctx.push cx nm.core in
+let repls =
+  [ '\\', "backslash_"
+  ; '+',  "plussign_"
+  ; '-',  "hyphen_"
+  ; '*',  "asterisk_"
+  ; '/',  "slash_"
+  ; '%',  "percentsign_"
+  ; '^', "circumflexaccent_"
+  ; '&',  "ampersand_"
+  ; '@',  "atsign"
+  ; '#',  "pound_"
+  ; '$',  "dollarsign_"
+  ; '(',  "leftparenthesis_"
+  ; ')',  "rightparenthesis_"
+  ; '|',  "verticalbar_"
+  ; '.',  "period_"
+  ; ':',  "colon_"
+  ; '?',  "questionmark_"
+  ; '!',  "exclamationmark_"
+  ; '<',  "lessthansign_"
+  ; '>',  "greaterthansign_"
+  ; '=',  "equalsign_"
+  ]
+
+let escaped =
+  List.fold_right begin fun (c, repl) ->
+    let rgx = Str.regexp (Str.quote (String.make 1 c)) in
+    Str.global_replace rgx repl
+  end repls
+
+let format_smt s =
+  escaped s
+
+let adj cx v =
+  let nm = format_smt v.core in
+  let cx = Ctx.push cx nm in
   (cx, Ctx.string_of_ident (Ctx.front cx))
 
 let bump cx =
@@ -70,7 +105,76 @@ let rec pp_apply cx ff op args =
           end ff (id, args)
       end
 
-  (* TODO display arithmetic *)
+  | Opaque s when has op Smb.smb_prop ->
+      (* The symbols that are left correspond to native operators of SMB-LIB *)
+      let smb = get op Smb.smb_prop in
+      begin match Smb.get_defn smb, args with
+      | T.TIntLit n,      [] ->
+          pp_print_int ff n
+      | T.TIntPlus,       [ e ; f ] ->
+          pp_print_sexpr begin fun ff (e, f) ->
+            fprintf ff "+ %a %a"
+            (pp_print_expr cx) e
+            (pp_print_expr cx) f
+          end ff (e, f)
+      | T.TIntUminus,     [ e ] ->
+          pp_print_sexpr begin fun ff e ->
+            fprintf ff "- %a"
+            (pp_print_expr cx) e
+          end ff e
+      | T.TIntMinus,      [ e ; f ] ->
+          pp_print_sexpr begin fun ff (e, f) ->
+            fprintf ff "- %a %a"
+            (pp_print_expr cx) e
+            (pp_print_expr cx) f
+          end ff (e, f)
+      | T.TIntTimes,      [ e ; f ] ->
+          pp_print_sexpr begin fun ff (e, f) ->
+            fprintf ff "* %a %a"
+            (pp_print_expr cx) e
+            (pp_print_expr cx) f
+          end ff (e, f)
+      | T.TIntQuotient,   [ e ; f ] ->
+          pp_print_sexpr begin fun ff (e, f) ->
+            fprintf ff "div %a %a"
+            (pp_print_expr cx) e
+            (pp_print_expr cx) f
+          end ff (e, f)
+      | T.TIntRemainder,  [ e ; f ] ->
+          pp_print_sexpr begin fun ff (e, f) ->
+            fprintf ff "mod %a %a"
+            (pp_print_expr cx) e
+            (pp_print_expr cx) f
+          end ff (e, f)
+      | T.TIntLteq,       [ e ; f ] ->
+          pp_print_sexpr begin fun ff (e, f) ->
+            fprintf ff "<= %a %a"
+            (pp_print_expr cx) e
+            (pp_print_expr cx) f
+          end ff (e, f)
+      | T.TIntLt,         [ e ; f ] ->
+          pp_print_sexpr begin fun ff (e, f) ->
+            fprintf ff "< %a %a"
+            (pp_print_expr cx) e
+            (pp_print_expr cx) f
+          end ff (e, f)
+      | T.TIntGteq,       [ e ; f ] ->
+          pp_print_sexpr begin fun ff (e, f) ->
+            fprintf ff ">= %a %a"
+            (pp_print_expr cx) e
+            (pp_print_expr cx) f
+          end ff (e, f)
+      | T.TIntGt,         [ e ; f ] ->
+          pp_print_sexpr begin fun ff (e, f) ->
+            fprintf ff "> %a %a"
+            (pp_print_expr cx) e
+            (pp_print_expr cx) f
+          end ff (e, f)
+      | _, _ ->
+          (* assuming arity is always correct *)
+          let mssg = "unknown native operator '" ^ Smb.get_name smb ^ "'" in
+          error mssg
+      end
 
   | Opaque s ->
       begin match args with
@@ -92,8 +196,7 @@ let rec pp_apply cx ff op args =
 
   | Internal b ->
       let kw =
-        (* NOTE It is expected that all non-boolean builtins
-         * are encoded away at this point *)
+        (* All non-boolean builtins should be encoded away at this point *)
         match b with
         | B.TRUE    -> "true"
         | B.FALSE   -> "false"
@@ -299,16 +402,6 @@ and fmt_expr cx oe =
   | Case ((e1, e2) :: ps, Some o) ->
       fmt_expr cx (If (e1, e2, Case (ps, Some o) %% []) @@ oe)
 
-  | Num (m, "") ->
-      Fu.Atm begin fun ff ->
-        fprintf ff "%s" m
-      end
-
-  | Num (m, n) ->
-      Fu.Atm begin fun ff ->
-        fprintf ff "%s.%s" m n
-      end
-
   | Parens (e, _) ->
       fmt_expr cx e
 
@@ -321,49 +414,47 @@ and pp_print_expr cx ff e =
 
 (* {3 Preprocessing} *)
 
-(* This very important function does several transformations on the sequent
+(* This very important function applies several transformations to the sequent
  * to shape it into something translatable to SMT-LIB. *)
-let preprocess ?solver sq =
-  let _ = solver in (* NOTE not used *)
+let preprocess ~solver sq =
 
-  (*let sq = Type.Disambiguation.min_reconstruct sq in*)
+  let cx = (Deque.empty, Ctx.dot) in
+  let pp_print_sequent ff sq = ignore (Expr.Fmt.pp_print_sequent cx ff sq) in
 
-  (* FIXME remove below *)
-  (*let sq = Reduce.NtCook.cook sq in*)
-  (*let data = Reduce.NtCollect.collect sq in*)
-  (*let sq = Reduce.NtTable.nt_axiomatize data sq in*)
-
-  (* FIXME remove *)
-  let emp = (Deque.empty, Ctx.dot) in
-  let pp_print_sequent ff sq = ignore (Expr.Fmt.pp_print_sequent emp ff sq) in
-
-  let pp_debug mssg sq =
-    eprintf "  [DEBUG] %s@.%a@.@." mssg
-    pp_print_sequent sq
-  in
   let debug mssg sq =
-    pp_debug mssg sq;
+    if (Params.debugging "verbose") then begin
+      eprintf "  [DEBUG] %s@.%a@.@." mssg
+      pp_print_sequent sq
+    end;
     sq
   in
-  (* FIXME end remove *)
+
+  let typelvl =
+    if Params.debugging "t0" then 0
+    else if Params.debugging "t1" then 1
+    else 0
+  in
+  let noarith = Params.debugging "noarith" in
 
   let sq = sq
-    |> Encode.Hints.main
-    |> debug "Start" (* FIXME remove *)
+    (*|> Encode.Hints.main*) (* TODO *)
+    |> debug "Original Obligation:"
+    |> Type.Synthesize.main ~typelvl ~noarith
     |> Encode.Rewrite.elim_notmem
-    |> Encode.Rewrite.elim_multiarg
-    |> Encode.Rewrite.elim_tuples
-    |> Encode.Rewrite.elim_records
+    |> (if noarith then Encode.Rewrite.elim_compare else fun e -> e)
     |> Encode.Rewrite.elim_except
-    (* NOTE eliminating bound notation necessary to make all '\in' visible *)
-    |> Encode.Rewrite.elim_bounds
-    |> debug "Done Simpl. Bounds" (* FIXME remove *)
-    (*|> Encode.Direct.main*)
-    |> debug "Done Direct"
-    (*|> Encode.Axiomatize.main*)
-    |> debug "Done Axiomatize" (* FIXME remove *)
+    |> Encode.Rewrite.elim_multiarg
+    |> Encode.Rewrite.elim_tuples   (* FIXME remove *)
+    |> Encode.Rewrite.elim_records  (* FIXME remove *)
+    |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
+    |> Encode.Rewrite.apply_ext
+    |> debug "Disambiguate and Simplify:"
+    |> Encode.Standardize.main
+    |> debug "Standardize:"
+    |> Encode.Axiomatize.main ~solver
+    |> debug "Axiomatize:"
     (*|> Encode.Reduce.main*)
-    |> debug "Done Reduce" (* FIXME remove *)
+    |> debug "Eliminate Second-order:"
   in
   sq
 
@@ -407,7 +498,7 @@ let pp_print_declarefun ff nm ins out =
   end ff ();
   pp_print_newline ff ()
 
-let pp_print_obligation ?(solver="CVC4") ff ob =
+let pp_print_obligation ?(solver="SMT") ff ob =
   (* Shape the sequent into a form that can be translated;
    * Append a top context containing additional declarations and axioms *)
   let sq = preprocess ~solver ob.Proof.T.obl.core in
@@ -484,19 +575,22 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
         (* The only part of the definition that matters is the declaration.
          * The 'hidden' flag only applies to the definition, so here it does not
          * matter.  Bounds to fresh variables have been removed beforehand. *)
-        if not (has nm Props.ty0_prop) && not (has nm Props.ty2_prop) then
-          let ncx = bump cx in
-          fprintf ff "; omitted declaration (missing type)@.";
-          pp_print_newline ff ();
-          spin ncx hs
-        else if has nm Props.ty0_prop then
+        if has nm Props.ty0_prop then
           let ins = [] in
           let out = get nm Props.ty0_prop in
           let ncx, nm = adj cx nm in
           pp_print_declarefun ff nm ins out;
           pp_print_newline ff ();
           spin ncx hs
-        else
+
+        else if has nm Props.ty1_prop then
+          let Ty1 (ins, out) = get nm Props.ty1_prop in
+          let ncx, nm = adj cx nm in
+          pp_print_declarefun ff nm ins out;
+          pp_print_newline ff ();
+          spin ncx hs
+
+        else if has nm Props.ty2_prop then
           let ty2 = get nm Props.ty2_prop in
           begin match safe_downcast_ty1 ty2 with
           | None ->
@@ -510,6 +604,12 @@ let pp_print_obligation ?(solver="CVC4") ff ob =
               pp_print_newline ff ();
               spin ncx hs
           end
+
+        else
+          let ncx = bump cx in
+          fprintf ff "; omitted declaration (missing type)@.";
+          pp_print_newline ff ();
+          spin ncx hs
   in
 
   pp_print_newline ff ();

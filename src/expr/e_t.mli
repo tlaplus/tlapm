@@ -174,6 +174,7 @@ val add_pats : expr -> pat list -> expr;;
 val remove_pats : expr -> expr;;
 
 val map_pats : (pat -> pat) -> expr -> expr;;
+val fold_pats : (pat -> 'a -> 'a) -> expr -> 'a -> 'a;;
 
 val get_val_from_id : 'hyp Deque.dq -> int -> 'hyp;;
 
