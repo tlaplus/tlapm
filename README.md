@@ -27,3 +27,6 @@ Use
 
 Some user documentation is in the form of HTML files in the directory
 `doc/web`. Start with `doc/web/index.html`.
+
+Tags of the form `vI.J.K` in the `git` repository are releases.
+Other tags may be ephemeral.
