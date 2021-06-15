@@ -1,4 +1,4 @@
----- MODULE universalb_test ----
+---- MODULE universal_bounded_test ----
 
 EXTENDS TLAPS
 

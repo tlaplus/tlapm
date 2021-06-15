@@ -207,7 +207,9 @@ let rec pp_apply cx ff op args =
         | B.Neg     -> "not"
         | B.Eq      -> "="
         | B.Neq     -> "distinct"
-        | _ -> error ~at:op "Unexpected builtin encountered"
+        | _ ->
+            let mssg = "Unexpected builtin encountered '" ^ B.builtin_to_string b ^ "'" in
+            error ~at:op mssg
       in
       begin match args with
       | [] ->
@@ -243,6 +245,9 @@ and fmt_expr cx oe =
 
   | Lambda _ ->
       error ~at:oe "Unexpected lambda-abstraction"
+
+  | Apply ({ core = Internal B.Unprimable }, [ e ]) ->
+      fmt_expr cx e
 
   | Apply (op, args) ->
       Fu.Atm (fun ff -> pp_apply cx ff op args)
