@@ -40,6 +40,8 @@ clean:
 	    -name '*.tlaps' \
 	    -o -name '*.tla.out' \
 	    -o -name '*.tla.err' \
+	    -o -name '.tlacache' \
+	    -o -name '__tlacache__' \
 	    \) \
 	    -prune -exec rm -rf '{}' \;
 	rm -f tests.log
