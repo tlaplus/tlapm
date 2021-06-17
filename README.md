@@ -1,5 +1,5 @@
-The TLA+ Proof Manager (tlapm)
-==============================
+The TLA+ Proof Manager (`tlapm`)
+================================
 
 Copyright (C) 2008-2013  INRIA and Microsoft Corporation
 
@@ -18,11 +18,11 @@ License: 2-clause BSD, portions under LGPL2.1+LE
 1. Installation
 ---------------
 
-For installation instructions, see the file INSTALL in this directory.
+For installation instructions, see the file `INSTALL` in this directory.
 
 
 2. Use
 ------
 
 Some user documentation is in the form of HTML files in the directory
-doc/web. Start with doc/web/index.html.
+`doc/web`. Start with `doc/web/index.html`.
