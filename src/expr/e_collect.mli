@@ -34,7 +34,7 @@ val vs_partition : ctx -> (int -> hyp -> bool) -> var_set -> var_set * var_set
     not the variable at the rear of [ctx], but rather the lowest index that is
     *not* bound in [ctx].
 *)
-val fvs : ?ctx:ctx -> expr -> Is.t
+val fvs : ?ctx:ctx -> expr -> var_set
 
 
 (* {3 Opaques} *)

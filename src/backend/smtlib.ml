@@ -243,8 +243,11 @@ and fmt_expr cx oe =
   | Ix _ | Opaque _ | Internal _ ->
       Fu.Atm (fun ff -> pp_apply cx ff oe [])
 
+  | Lambda ([], e) ->
+      fmt_expr cx e
   | Lambda _ ->
-      error ~at:oe "Unexpected lambda-abstraction"
+      let mssg = "Unexpected lambda-abstraction" in
+      error ~at:oe mssg
 
   | Apply ({ core = Internal B.Unprimable }, [ e ]) ->
       fmt_expr cx e
@@ -458,8 +461,8 @@ let preprocess ~solver sq =
     |> debug "Standardize:"
     |> Encode.Axiomatize.main ~solver
     |> debug "Axiomatize:"
-    (*|> Encode.Reduce.main*)
-    |> debug "Eliminate Second-order:"
+    |> Encode.Flatten.main
+    |> debug "Flatten:"
   in
   sq
 
@@ -535,11 +538,11 @@ let pp_print_obligation ?(solver="SMT") ff ob =
     | Sequent sq ->
         Option.is_some begin
           Deque.find sq.context begin fun h ->
-            let v = hyp_hint h in
-            match query v Props.ty2_prop with
-            | Some (Ty2 (ty1s, _)) when List.length ty1s > 0 ->
+            match h.core with
+            | Fresh (_, Shape_op n, _, _) when n > 0 ->
                 true
-            | _ -> false
+            | _ ->
+                false
           end
         end
     | _ ->
@@ -600,7 +603,7 @@ let pp_print_obligation ?(solver="SMT") ff ob =
           begin match safe_downcast_ty1 ty2 with
           | None ->
               let ncx = bump cx in
-              fprintf ff "; omitted declaration (second-order type)@.";
+              fprintf ff "; omitted declaration (second-order)@.";
               pp_print_newline ff ();
               spin ncx hs
           | Some (Ty1 (ins, out)) ->

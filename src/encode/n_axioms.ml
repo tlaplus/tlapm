@@ -1676,6 +1676,10 @@ let t_intrange_def () =
 
 (* {3 Get Axiom} *)
 
+let mark tla_smb e =
+  let smb = mk_smb tla_smb in
+  assign e smb_prop smb
+
 let get_axm ~solver tla_smb =
   let noarith =
     match solver with
@@ -1683,7 +1687,7 @@ let get_axm ~solver tla_smb =
     | _ -> Params.debugging "noarith"
   in
   match tla_smb with
-  | T.ChooseDef -> choose_def ()
+  | T.ChooseDef -> choose_def () |> mark T.Choose
   | T.ChooseExt -> choose_ext ()
   | T.SetExt -> set_ext ()
   | T.SubsetEqDef -> subseteq_def ()
@@ -1693,8 +1697,8 @@ let get_axm ~solver tla_smb =
   | T.CupDef -> cup_def ()
   | T.CapDef -> cap_def ()
   | T.SetMinusDef -> setminus_def ()
-  | T.SetStDef -> setst_def ()
-  | T.SetOfDef n -> setof_def n
+  | T.SetStDef -> setst_def () |> mark T.SetSt
+  | T.SetOfDef n -> setof_def n |> mark (T.SetOf n)
   | T.StrLitIsstr s -> strlit_isstr s
   | T.StrLitDistinct (s1, s2) -> strlit_distinct s1 s2
   | T.IntLitIsint n -> intlit_isint n
@@ -1715,10 +1719,10 @@ let get_axm ~solver tla_smb =
   | T.LteqTransitive -> lteq_transitive ()
   | T.LteqAntisym -> lteq_antisym ()
   | T.FunExt -> fcn_ext ()
-  | T.FunConstrIsafcn -> fcnconstr_isafcn ()
+  | T.FunConstrIsafcn -> fcnconstr_isafcn () |> mark T.FunConstr
   | T.FunSetDef -> fcnset_def ()
-  | T.FunDomDef -> fcndom_def ()
-  | T.FunAppDef -> fcnapp_def ()
+  | T.FunDomDef -> fcndom_def () |> mark T.FunConstr
+  | T.FunAppDef -> fcnapp_def () |> mark T.FunConstr
   | T.TupIsafcn n -> tuple_isafcn n
   | T.ProductDef n -> productset_def_alt n
   | T.TupDomDef n -> tupdom_def ~noarith n

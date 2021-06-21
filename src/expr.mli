@@ -298,7 +298,7 @@ module Collect : sig
   val get_strings : ctx -> var_set -> Ss.t
   val vs_fold : ctx -> (int -> hyp -> 'a -> 'a) -> var_set -> 'a -> 'a
   val vs_partition : ctx -> (int -> hyp -> bool) -> var_set -> var_set * var_set
-  val fvs : ?ctx:ctx -> expr -> Is.t
+  val fvs : ?ctx:ctx -> expr -> var_set
   val opaques : ?ctx:ctx -> expr -> Hs.t
 end;;
 

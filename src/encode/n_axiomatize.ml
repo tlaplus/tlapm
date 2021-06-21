@@ -121,10 +121,14 @@ let mk_decl smb =
   let ty2 = get_ty2 smb in
   let v = assign v Type.T.Props.ty2_prop ty2 in
   let shp = Shape_op 0 in (* special *)
-  Fresh (v, shp, Constant, Unbounded) %% []
+  let h = Fresh (v, shp, Constant, Unbounded) %% [] in
+  assign h smb_prop smb
 
 let mk_fact e =
-  Fact (e, Visible, NotSet) %% []
+  let h = Fact (e, Visible, NotSet) %% [] in
+  (* The optional smb_prop annotation is used in Flattening
+   * for detecting axiom instances *)
+  Option.fold (fun h -> assign h smb_prop) h (query e smb_prop)
 
 let assemble_visitor = object (self : 'self)
   inherit [string] Expr.Visit.map as super

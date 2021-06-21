@@ -44,7 +44,7 @@ TYPE_PACK = \
 ENCODE_PACK = \
   encode/n_hints encode/n_rewrite \
   encode/n_table encode/n_data encode/n_smb \
-	encode/n_axioms encode/n_standardize encode/n_axiomatize
+	encode/n_axioms encode/n_standardize encode/n_axiomatize encode/n_flatten
 
 TYPESYSTEM_DIR = \
   typesystem/typ_t typesystem/typ_e typesystem/typ_c \

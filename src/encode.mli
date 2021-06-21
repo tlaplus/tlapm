@@ -126,3 +126,8 @@ module Axiomatize : sig
   val main : solver:string -> sequent -> sequent
 end
 
+module Flatten : sig
+  open Expr.T
+  val main : sequent -> sequent
+end
+

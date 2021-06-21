@@ -22,6 +22,7 @@ open N_smb
       NEW declarations, NEW axioms, original hyps' |- original goal'
 *)
 
+
 (* {3 Extended context} *)
 
 (** Extended context; used to store symbols and axioms data in an
