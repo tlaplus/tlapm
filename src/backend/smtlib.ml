@@ -452,8 +452,6 @@ let preprocess ~solver sq =
     |> (if noarith then Encode.Rewrite.elim_compare else fun e -> e)
     |> Encode.Rewrite.elim_except
     |> Encode.Rewrite.elim_multiarg
-    |> Encode.Rewrite.elim_tuples   (* FIXME remove *)
-    |> Encode.Rewrite.elim_records  (* FIXME remove *)
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
     |> Encode.Rewrite.apply_ext
     |> debug "Disambiguate and Simplify:"
