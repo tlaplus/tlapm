@@ -65,7 +65,7 @@ let escaped =
   end repls
 
 let format_smt s =
-  escaped s
+  "smt__" ^ escaped s
 
 let adj cx v =
   let nm = format_smt v.core in
@@ -186,7 +186,7 @@ let rec pp_apply cx ff op args =
             | [ s ; "prime" ] -> primed s
             | _ -> s
           in
-          pp_print_string ff s
+          pp_print_string ff (format_smt s)
       | _ ->
           pp_print_sexpr begin fun ff (op, args) ->
             fprintf ff "%s %a" op
