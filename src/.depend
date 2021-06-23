@@ -246,12 +246,12 @@ encode/n_smb.cmo: encode/n_smb.mlt type.cmi util/property.cmi encode/n_table.cmi
     encode/n_data.cmi util/ext.cmi encode/n_smb.cmi
 encode/n_smb.cmx: encode/n_smb.mlt type.cmx util/property.cmx encode/n_table.cmx \
     encode/n_data.cmx util/ext.cmx encode/n_smb.cmi
-encode/n_axioms.cmo: encode/n_axioms.mlt type.cmi util/property.cmi encode/n_table.cmi \
-    encode/n_smb.cmi encode/n_data.cmi util/ext.cmi expr.cmi util/deque.cmi \
-    builtin.cmi encode/n_axioms.cmi
-encode/n_axioms.cmx: encode/n_axioms.mlt type.cmx util/property.cmx encode/n_table.cmx \
-    encode/n_smb.cmx encode/n_data.cmx util/ext.cmx expr.cmx util/deque.cmx \
-    builtin.cmx encode/n_axioms.cmi
+encode/n_axioms.cmo: encode/n_axioms.mlt type.cmi util/property.cmi params.cmi \
+    encode/n_table.cmi encode/n_smb.cmi encode/n_data.cmi util/ext.cmi \
+    expr.cmi util/deque.cmi builtin.cmi encode/n_axioms.cmi
+encode/n_axioms.cmx: encode/n_axioms.mlt type.cmx util/property.cmx params.cmx \
+    encode/n_table.cmx encode/n_smb.cmx encode/n_data.cmx util/ext.cmx \
+    expr.cmx util/deque.cmx builtin.cmx encode/n_axioms.cmi
 encode/n_standardize.cmo: encode/n_standardize.mlt type.cmi util/property.cmi encode/n_table.cmi \
     encode/n_smb.cmi util/ext.cmi expr.cmi util/deque.cmi builtin.cmi \
     encode/n_standardize.cmi
@@ -264,12 +264,18 @@ encode/n_axiomatize.cmo: encode/n_axiomatize.mlt type.cmi util/property.cmi enco
 encode/n_axiomatize.cmx: encode/n_axiomatize.mlt type.cmx util/property.cmx encode/n_smb.cmx \
     encode/n_data.cmx encode/n_axioms.cmx util/ext.cmx expr.cmx \
     util/deque.cmx encode/n_axiomatize.cmi
-encode.cmo: encode.mlt revision.cmi encode/n_standardize.cmi encode/n_smb.cmi \
-    encode/n_rewrite.cmi encode/n_hints.cmi encode/n_axiomatize.cmi \
-    encode.cmi
-encode.cmx: encode.mlt revision.cmx encode/n_standardize.cmx encode/n_smb.cmx \
-    encode/n_rewrite.cmx encode/n_hints.cmx encode/n_axiomatize.cmx \
-    encode.cmi
+encode/n_flatten.cmo: encode/n_flatten.mlt util/util.cmi type.cmi util/property.cmi \
+    encode/n_smb.cmi util/fmtutil.cmi util/ext.cmi expr.cmi util/deque.cmi \
+    ctx.cmi encode/n_flatten.cmi
+encode/n_flatten.cmx: encode/n_flatten.mlt util/util.cmx type.cmx util/property.cmx \
+    encode/n_smb.cmx util/fmtutil.cmx util/ext.cmx expr.cmx util/deque.cmx \
+    ctx.cmx encode/n_flatten.cmi
+encode.cmo: encode.mlt revision.cmi encode/n_table.cmi encode/n_standardize.cmi \
+    encode/n_smb.cmi encode/n_rewrite.cmi encode/n_hints.cmi \
+    encode/n_flatten.cmi encode/n_axiomatize.cmi encode.cmi
+encode.cmx: encode.mlt revision.cmx encode/n_table.cmx encode/n_standardize.cmx \
+    encode/n_smb.cmx encode/n_rewrite.cmx encode/n_hints.cmx \
+    encode/n_flatten.cmx encode/n_axiomatize.cmx encode.cmi
 smt/smtcommons.cmo: smt/smtcommons.mlt util/util.cmi tla_parser.cmi revision.cmi \
     util/property.cmi params.cmi util/fmtutil.cmi util/ext.cmi expr.cmi \
     util/deque.cmi ctx.cmi builtin.cmi smt/smtcommons.cmi
@@ -536,12 +542,10 @@ backend/smt.cmx: backend/smt.mlt util/util.cmx typesystem/typ_t.cmx \
     builtin.cmx smt/boolify.cmx smt/axioms.cmx backend/smt.cmi
 backend/smtlib.cmo: backend/smtlib.mlt util/util.cmi type.cmi tla_parser.cmi revision.cmi \
     util/property.cmi proof.cmi params.cmi util/fmtutil.cmi util/ext.cmi \
-    expr.cmi errors.cmi encode.cmi util/deque.cmi ctx.cmi builtin.cmi \
-    backend/smtlib.cmi
+    expr.cmi encode.cmi util/deque.cmi ctx.cmi builtin.cmi backend/smtlib.cmi
 backend/smtlib.cmx: backend/smtlib.mlt util/util.cmx type.cmx tla_parser.cmx revision.cmx \
     util/property.cmx proof.cmx params.cmx util/fmtutil.cmx util/ext.cmx \
-    expr.cmx errors.cmx encode.cmx util/deque.cmx ctx.cmx builtin.cmx \
-    backend/smtlib.cmi
+    expr.cmx encode.cmx util/deque.cmx ctx.cmx builtin.cmx backend/smtlib.cmi
 backend/thf.cmo: backend/thf.mlt util/util.cmi type.cmi revision.cmi util/property.cmi \
     proof.cmi params.cmi util/fmtutil.cmi util/ext.cmi expr.cmi encode.cmi \
     util/deque.cmi ctx.cmi builtin.cmi backend/thf.cmi
@@ -658,6 +662,7 @@ encode/n_smb.cmi : type.cmi util/property.cmi encode/n_table.cmi \
 encode/n_axioms.cmi : type.cmi encode/n_table.cmi expr.cmi
 encode/n_standardize.cmi : type.cmi expr.cmi
 encode/n_axiomatize.cmi : util/property.cmi encode/n_smb.cmi expr.cmi
+encode/n_flatten.cmi : expr.cmi
 encode.cmi : type.cmi util/property.cmi expr.cmi
 smt/smtcommons.cmi : util/util.cmi util/property.cmi expr.cmi util/deque.cmi
 typesystem/typ_t.cmi : util/property.cmi expr.cmi util/deque.cmi
