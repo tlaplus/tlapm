@@ -458,8 +458,12 @@ let gen_smt_solve suffix exec desc fmt_expr meth ob org_ob f res_cont comm =
 ;;
 
 let get_encode_smtlib () =
-  if Params.debugging "oldsmt" then Smt.encode_smtlib
-  else Smtlib.pp_print_obligation
+  if Params.debugging "oldsmt" then
+    Smt.encode_smtlib
+  else if Params.debugging "newsmt" then
+    Smtlib.pp_print_obligation
+  else
+    Smt.encode_smtlib
 
 let get_encode_fof () =
   if Params.debugging "oldsmt" then Smt.encode_fof
