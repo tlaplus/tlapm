@@ -62,6 +62,11 @@ let visitor = object (self : 'self)
 
     begin match oe.core with
 
+    | Opaque s ->
+        let ty2 = Ty2 ([], TAtm TAIdv) in
+        let smb = mk_smb (Anon (s, ty2)) in
+        let opq = mk_opq smb $$ oe in
+        opq
     | Apply ({ core = Opaque s } as op, es) ->
         let es = List.map (self#expr scx) es in
         let ty1 = Ty1 (List.map (fun _ -> TAtm TAIdv) es, TAtm TAIdv) in
