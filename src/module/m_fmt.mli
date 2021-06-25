@@ -1,12 +1,7 @@
-(*
- * mod/fmt.ml --- formatting
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Formatting of modules.
 
-(** Formatting modules *)
-
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ctx
 open M_t
 

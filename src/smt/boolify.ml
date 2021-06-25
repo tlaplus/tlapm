@@ -1,13 +1,9 @@
-(************************************************************************
-*
-*  boolify.ml
-*
-*
-*  Created by Hernán Vanzetto on 23 Oct 2013.
-*  Copyright (C) 2013-2014  INRIA and Microsoft Corporation
-*
-************************************************************************)
+(* Boolification of expressions.
 
+Created by Hernán Vanzetto on 23 Oct 2013.
+
+Copyright (C) 2013-2014  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 

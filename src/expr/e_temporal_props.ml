@@ -1,8 +1,7 @@
-(*
- * functions for checking temporal properties
- * Copyright (C) 2013  INRIA and Microsoft Corporation
- *)
+(* Functions for checking temporal properties.
 
+Copyright (C) 2013  INRIA and Microsoft Corporation
+*)
 open Property
 open Ext
 open E_t

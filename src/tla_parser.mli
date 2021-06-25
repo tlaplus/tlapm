@@ -1,6 +1,5 @@
-(*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
- *)
+(* Copyright (C) 2011  INRIA and Microsoft Corporation
+*)
 
 (* expr/fmt.ml *)
 module Prec: Pars.Intf.Prec with

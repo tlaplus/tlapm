@@ -1,11 +1,14 @@
+(* Coalescing of formulas.
 
-(*
- * Coalescing transforms a formula to a satisfying-equivalent formula.
-   *  coalsecing non-leibzniz formulas into leibniz formulas. The resulting
-   * formulas can then be used in first-order theorem provers.
- *
- * Copyright (C) 2013  INRIA and Microsoft Corporation
- *)
+Coalescing transforms a formula to
+a satisfying-equivalent formula.
+Coalescing non-Leibniz formulas into
+Leibniz formulas. The resulting
+formulas can then be used in
+first-order theorem provers.
+
+Copyright (C) 2013  INRIA and Microsoft Corporation
+*)
 open Expr.T
 
 

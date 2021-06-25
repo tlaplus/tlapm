@@ -1,12 +1,7 @@
-(*
- * mod/standard --- standard modules
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Standard TLA+ modules.
 
-(** Standard modules *)
-
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open M_t
 
 

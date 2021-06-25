@@ -1,7 +1,7 @@
-(*
- * Copyright (C) 2011-2019  INRIA and Microsoft Corporation
- *)
+(* Package of modules for working with TLA+ expressions.
 
+Copyright (C) 2011-2019  INRIA and Microsoft Corporation
+*)
 module T: sig
   open Property
   open Util

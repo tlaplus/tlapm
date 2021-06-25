@@ -1,10 +1,7 @@
-(*
- * tlapm.ml --- driver
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Driver.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 open Util.Coll

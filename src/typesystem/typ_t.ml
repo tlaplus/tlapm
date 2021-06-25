@@ -1,12 +1,7 @@
-(************************************************************************
-*
-*  Typ_t.ml -- Types
-*
-*
-*  Created by Hernán Vanzetto on 23 Oct 2013.
-*
-************************************************************************)
+(* Types.
 
+Created by Hernán Vanzetto on 23 Oct 2013.
+*)
 open Ext
 open Property
 

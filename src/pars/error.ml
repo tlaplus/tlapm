@@ -1,10 +1,7 @@
-(*
- * error.ml --- errors
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Parsing errors.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 
 type error_ =

@@ -1,11 +1,9 @@
-(*
- * backend/smt/smtcommons.ml --- SMT backend commons
- *
- * Authors: Hernán Vanzetto <hernan.vanzetto@inria.fr>
- *
- * Copyright (C) 2011-2012  INRIA and Microsoft Corporation
- *)
+(* SMT backend commons.
 
+Authors: Hernán Vanzetto <hernan.vanzetto@inria.fr>
+
+Copyright (C) 2011-2012  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 

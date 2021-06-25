@@ -1,7 +1,7 @@
-(*
- * Copyright (C) 2013  INRIA and Microsoft Corporation
- *)
+(* Normalization of expressions.
 
+Copyright (C) 2013  INRIA and Microsoft Corporation
+*)
 open Ext
 open Format
 open Tla_parser

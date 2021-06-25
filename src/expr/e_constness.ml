@@ -1,10 +1,7 @@
-(*
- * expr/constness.ml --- detect constant operators
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Detect constant operators.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 

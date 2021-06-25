@@ -1,10 +1,11 @@
-(*
- * Copyright (C) 2012  Inria and Microsoft Corporation
- *)
+(* Test harness for `schedule.ml`.
 
-(* Test harness for schedule.ml *)
+```shell
+ocamlc -g unix.cma schedule.mli schedule.ml test_schedule.ml
+```
 
-(* ocamlc -g unix.cma schedule.mli schedule.ml test_schedule.ml *)
+Copyright (C) 2012  Inria and Microsoft Corporation
+*)
 open Printf
 
 open Schedule

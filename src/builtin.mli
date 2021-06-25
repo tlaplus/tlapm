@@ -1,7 +1,7 @@
-(*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
- *)
+(* Builtin ordinary operators of TLA+.
 
+Copyright (C) 2011  INRIA and Microsoft Corporation
+*)
 type builtin =
     (* Logic *)
   | TRUE

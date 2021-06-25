@@ -1,7 +1,7 @@
-(*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
- *)
+(* Backend types.
 
+Copyright (C) 2011  INRIA and Microsoft Corporation
+*)
 type reason =
     | False
     | Timeout

@@ -1,10 +1,7 @@
-(*
- * expr/visit.mli --- default visitor for expressions
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Visitor for expressions.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open E_t
 
 

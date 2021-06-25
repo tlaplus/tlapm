@@ -1,9 +1,7 @@
-(*
- * printing error messages
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Printing of error messages.
+
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 exception Fatal
 
 

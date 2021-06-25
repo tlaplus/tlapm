@@ -1,10 +1,7 @@
-(*
- * expr/deref.ml --- dereferencing subexpression references
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Dereferencing subexpression references.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 

@@ -1,6 +1,4 @@
-(*
-    expr/e_substitutive.mli --- compute substitutivity information
-*)
+(* Compute substitutivity information. *)
 open Property
 
 open E_t

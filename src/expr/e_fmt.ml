@@ -1,9 +1,7 @@
-(*
- * expr/fmt.ml --- expressions (formatting)
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Formatting of expressions.
+
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 
 (* START dflags
  *

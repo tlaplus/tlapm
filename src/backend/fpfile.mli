@@ -1,6 +1,7 @@
-(*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
- *)
+(* Writing and reading fingerprint files.
+
+Copyright (C) 2011  INRIA and Microsoft Corporation
+*)
 
 (* backend/server.ml *)
 

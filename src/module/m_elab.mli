@@ -1,12 +1,9 @@
 (*
- * mod/elab.ml --- elaboration
+ * module/m_elab.mli --- module elaboration
  *
  *
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
-
-(** Elaborate modules *)
-
 open Deque
 open Expr.T
 open Expr.Visit

@@ -1,10 +1,7 @@
-(*
- * module/globalness.ml --- detect global operators
- *
- *
- * Copyright (C) 2008-2013  INRIA and Microsoft Corporation
- *)
+(* Detect global operators.
 
+Copyright (C) 2008-2013  INRIA and Microsoft Corporation
+*)
 open Property
 open M_t
 open Proof.T

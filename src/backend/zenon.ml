@@ -1,8 +1,7 @@
-(*
- * backend/zenon.ml --- Zenon interaction
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Interface to Zenon.
+
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 
 (** Zenon backend *)
 

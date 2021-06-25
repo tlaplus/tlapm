@@ -1,10 +1,7 @@
-(*
- * mod/save.mli --- saving and loading modules
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Writing and loading of modules.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open M_t
 
 

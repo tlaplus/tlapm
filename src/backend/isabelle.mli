@@ -1,6 +1,7 @@
-(*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
- *)
+(* Interface to Isabelle.
+
+Copyright (C) 2011  INRIA and Microsoft Corporation
+*)
 
 (* backend/zenon.ml *)
 type ctx = int Ctx.ctx

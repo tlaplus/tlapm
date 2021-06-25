@@ -1,7 +1,7 @@
-(*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
- *)
+(* Module types and relevant functions.
 
+Copyright (C) 2011  INRIA and Microsoft Corporation
+*)
 open Property
 open Util
 

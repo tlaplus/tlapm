@@ -1,12 +1,11 @@
-(*
- * exp/eq.ml --- equality
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Equality of expressions up to alpha-equivalence.
 
-(** Equality of expressions upto alpha-equivalence *)
+When comparing expressions, this module
+does not take into account any annotations
+of the syntax-tree nodes.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open E_t
 
 

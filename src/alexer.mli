@@ -1,12 +1,7 @@
-(*
- * alexer.mli --- lexer interface
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Lexer interface.
 
-(** The lexer *)
-
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Pars
 open Tla_parser
 

@@ -1,9 +1,8 @@
 (*
- * alexer.mll --- lexer
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+alexer.mll --- lexer
+
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 {
 
   open Lexing

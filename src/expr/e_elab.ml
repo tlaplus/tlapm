@@ -1,10 +1,7 @@
-(*
- * expr/elab.ml --- expression elaborater
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Expression elaborater.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Property
 
 module B = Builtin

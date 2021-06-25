@@ -1,6 +1,7 @@
-(*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
- *)
+(* Dereferencing subexpression references.
+
+Copyright (C) 2011  INRIA and Microsoft Corporation
+*)
 open E_t
 
 

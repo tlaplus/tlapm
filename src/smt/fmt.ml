@@ -1,11 +1,9 @@
-(*
- * backend/smt/lift.ml --- Apply lifting functions (int2u and str2u)
- *
- * Authors: Hernán Vanzetto <hernan.vanzetto@inria.fr>
- *
- * Copyright (C) 2011-2012  INRIA and Microsoft Corporation
- *)
+(* Apply lifting functions (`int2u` and `str2u`).
 
+Authors: Hernán Vanzetto <hernan.vanzetto@inria.fr>
+
+Copyright (C) 2011-2012  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 

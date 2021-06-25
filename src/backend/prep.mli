@@ -1,16 +1,12 @@
-(*
- * prf/prep.ml --- ship obligations
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Preparation of proof obligations, and calls to backends.
 
-(** Ship obligations to the backend *)
-
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Proof.T
 open Types
 
 
+(** Ship proof obligations to the backend *)
 val make_task:
   out_channel ->
   out_channel ->

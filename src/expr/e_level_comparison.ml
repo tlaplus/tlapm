@@ -1,10 +1,7 @@
-(*
- * expr/level_compare.ml --- expression level comparison
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Expression level comparison.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Property
 open E_t
 

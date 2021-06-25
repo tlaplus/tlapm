@@ -1,10 +1,7 @@
-(*
- * ctx.mli --- generic contexts
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Generic contexts.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 type 'a ctx
 type ident = { rep : string ; salt : int }
 

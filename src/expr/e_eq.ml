@@ -1,10 +1,7 @@
-(*
- * expr/eq.ml --- expressions (alpha equivalence)
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Alpha-equivalence of expressions.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Property
 
 open E_t

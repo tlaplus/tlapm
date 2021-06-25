@@ -1,11 +1,9 @@
-(*
- * smt/rewrite.ml --- Rewriting rules.
- *
- * Author: Hern\'an Vanzetto <hernan.vanzetto@inria.fr>
- *
- * Copyright (C) 2011-2012  INRIA and Microsoft Corporation
- *)
+(* Rewriting rules.
 
+Author: Hern\'an Vanzetto <hernan.vanzetto@inria.fr>
+
+Copyright (C) 2011-2012  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 

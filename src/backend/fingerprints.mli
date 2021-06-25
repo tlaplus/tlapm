@@ -1,6 +1,7 @@
-(*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
- *)
+(* Computing fingerprints of proof obligations.
+
+Copyright (C) 2011  INRIA and Microsoft Corporation
+*)
 
 (* tlapm.ml *)
 val write_fingerprint:

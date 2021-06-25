@@ -1,10 +1,7 @@
-(*
- * expr/anon.ml --- expressions (anonymization)
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Conversion of identifiers to De Bruijn indices.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Property
 open E_t
 open E_subst

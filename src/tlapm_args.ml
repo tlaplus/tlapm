@@ -1,10 +1,7 @@
-(*
- * tlapm_args.ml --- arguments for tlapm
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Command-line arguments to `tlapm`.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Params
 

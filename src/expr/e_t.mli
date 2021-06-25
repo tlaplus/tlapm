@@ -1,6 +1,7 @@
-(*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
- *)
+(* Syntax tree for expressions, and relevant functions.
+
+Copyright (C) 2011  INRIA and Microsoft Corporation
+*)
 open Property
 open Util
 

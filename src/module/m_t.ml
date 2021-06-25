@@ -1,12 +1,7 @@
-(*
- * module/t.ml --- modules
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Module types and relevant functions.
 
-(** Modules *)
-
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 open Util

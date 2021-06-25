@@ -1,10 +1,7 @@
-(*
- * expr/subst.ml --- substitutions
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Substitution within expressions.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Property
 open E_t
 

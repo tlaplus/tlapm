@@ -1,10 +1,7 @@
-(*
- * module/flatten.ml --- flatten modules (getting rid of EXTENDS)
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Flatten modules (i.e., remove `EXTENDS` statements).
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 open Util.Coll

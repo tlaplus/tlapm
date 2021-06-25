@@ -1,13 +1,9 @@
-(************************************************************************
-*
-*  typ_impgraph.ml      -- Implication graphs
-*
-*
-*  Created by Hernán Vanzetto on 4 Nov 2013.
-Copyright (c) 2013  INRIA and Microsoft Corporation
-*
-************************************************************************)
+(* Implication graphs.
 
+Created by Hernán Vanzetto on 4 Nov 2013.
+
+Copyright (c) 2013  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 

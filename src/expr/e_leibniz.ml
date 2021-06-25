@@ -1,12 +1,11 @@
-(*
- * expr/leibniz.ml --- detect leibniz positions
- *
- * This info is added as an array to the property of all Operators and
- * applications of operators to arguments.
- *
- * Copyright (C) 2008-2014  INRIA and Microsoft Corporation
- *)
+(* Detect Leibniz positions.
 
+This info is added as an array to
+the property of all Operators and
+applications of operators to arguments.
+
+Copyright (C) 2008-2014  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 

@@ -1,8 +1,4 @@
-(*
- * expr/e_levels.mli --- compute expression levels
- *
- *
- *)
+(* Compute expression levels. *)
 open Property
 
 open E_t

@@ -1,9 +1,7 @@
-(*
- * Copyright (C) 2011-2019  INRIA and Microsoft Corporation
- *)
+(* Packaging module for modules that work on TLA+ expressions.
 
-(* Packaging module for the modules that work on expressions *)
-
+Copyright (C) 2011-2019  INRIA and Microsoft Corporation
+*)
 module T = E_t
 module Fmt = E_fmt
 module Subst = E_subst

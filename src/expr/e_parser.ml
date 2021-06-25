@@ -1,10 +1,7 @@
-(*
- * expr/parser.ml --- expressions (parsing)
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Parser of expressions.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 open E_t

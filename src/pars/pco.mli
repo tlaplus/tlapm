@@ -1,9 +1,7 @@
-(*
- * pars/pco.mli --- Combinator parsing
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Parser combinators (based on lazy lists).
+
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 
 (** The combinator parsing library *)
 

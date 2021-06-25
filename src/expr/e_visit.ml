@@ -1,12 +1,7 @@
-(*
- * expr/visit.ml --- default visitor for expressions
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Visitor for expressions.
 
-(** default visitors *)
-
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 

@@ -1,6 +1,4 @@
-(*
- * Copyright (C) 2011-2014  INRIA and Microsoft Corporation
- *)
+(* Copyright (C) 2011-2014  INRIA and Microsoft Corporation *)
 open Expr.T
 
 type t = hyp Deque.dq * int Ctx.ctx

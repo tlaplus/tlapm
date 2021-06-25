@@ -1,13 +1,9 @@
-(************************************************************************
-*
-*  why3_interface.ml
-*
-*
-*  Created by Hernán Vanzetto on
-Copyright (c) 2013  INRIA and Microsoft Corporation
-*
-************************************************************************)
+(* Interface to Why3.
 
+Created by Hernán Vanzetto on
+
+Copyright (c) 2013  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 

@@ -1,13 +1,12 @@
-(*
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Interface to Isabelle.
 
-(** This file contains functions to handle isabelle theories, which
-    are used in two ways:
-    1. to use Isabelle as a back-end to prove obligations
-    2. to use Isabelle to check proofs output by TLAPM and Zenon.
+This file contains functions to handle isabelle theories, which
+are used in two ways:
+1. to use Isabelle as a back-end to prove obligations
+2. to use Isabelle to check proofs output by TLAPM and Zenon.
+
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
 *)
-
 open Ext
 open Property
 

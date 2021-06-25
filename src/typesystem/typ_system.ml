@@ -1,13 +1,7 @@
-(************************************************************************
-*
-*  types_infer.ml
-*
-*
-*  Created by Hernán Vanzetto on 23 Oct 2013.
+(*
+Created by Hernán Vanzetto on 23 Oct 2013.
 Copyright (c) 2013  INRIA and Microsoft Corporation
-*
-************************************************************************)
-
+*)
 open Ext
 open Property
 

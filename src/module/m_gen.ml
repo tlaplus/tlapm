@@ -1,10 +1,7 @@
-(*
- * module/gen.ml --- generation of obligations
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Generation of proof obligations.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 

@@ -1,7 +1,4 @@
-(*
- * Copyright (C) 2011-2012  INRIA and Microsoft Corporation
- *)
-
+(* Copyright (C) 2011-2012  INRIA and Microsoft Corporation *)
 open Expr.T
 
 val prepreproc : sequent -> sequent

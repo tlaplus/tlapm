@@ -1,11 +1,9 @@
-(*
- * backend/smt/ectx.ml --- Extended context
- *
- * Authors: Hernán Vanzetto <hernan.vanzetto@inria.fr>
- *
- * Copyright (C) 2014-2014  INRIA and Microsoft Corporation
- *)
+(* Extended context.
 
+Authors: Hernán Vanzetto <hernan.vanzetto@inria.fr>
+
+Copyright (C) 2014-2014  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 open Expr.T

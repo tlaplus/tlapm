@@ -1,5 +1,5 @@
 (*
- * module/dep.ml --- modules dependencies
+ * module/m_dep.ml --- module dependencies
  *
  *
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation

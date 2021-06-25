@@ -1,11 +1,9 @@
-(*
- * backend/smt/preprocess.ml --- Skolemize, simplify equalities and abstract.
- *
- * Author: Hernán Vanzetto <hernan.vanzetto@inria.fr>
- *
- * Copyright (C) 2011-2012  INRIA and Microsoft Corporation
- *)
+(* Skolemize, simplify equalities and abstract.
 
+Author: Hernán Vanzetto <hernan.vanzetto@inria.fr>
+
+Copyright (C) 2011-2012  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 

@@ -1,10 +1,7 @@
-(*
- * ctx.ml --- generic contexts
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Generic contexts.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 
 

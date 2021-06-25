@@ -1,10 +1,9 @@
-(*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
- *)
+(* This module handles the output of messages to the Toolbox.
 
-(* This module handles the output of messages to the Toolbox. *)
-(* It depends only on Ext and Loc. *)
+It depends only on modules `Ext` and `Loc`.
 
+Copyright (C) 2011  INRIA and Microsoft Corporation
+*)
 open Printf
 open Ext
 

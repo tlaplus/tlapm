@@ -1,9 +1,7 @@
-(*
- * smt/axioms.ml ---
- *
- * Copyright (C) 2010-2013  INRIA and Microsoft Corporation
- *)
+(* SMT axioms.
 
+Copyright (C) 2010-2013  INRIA and Microsoft Corporation
+*)
 open Ext
 open Format
 open Fmtutil

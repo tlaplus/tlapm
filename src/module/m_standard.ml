@@ -1,10 +1,7 @@
-(*
- * modules/standard.ml --- standard modules
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Standard TLA+ modules.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 open Util.Coll

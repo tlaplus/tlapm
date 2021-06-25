@@ -1,9 +1,7 @@
-(*
- * abstractor.ml --- make an abstract version of an expression
- *
- * Copyright (C) 2010  INRIA and Microsoft Corporation
- *)
+(* Make an abstract version of an expression.
 
+Copyright (C) 2010  INRIA and Microsoft Corporation
+*)
 open Property
 open Expr.T
 

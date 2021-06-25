@@ -1,7 +1,7 @@
-(*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
- *)
+(* Communication to external solvers.
 
+Copyright (C) 2011  INRIA and Microsoft Corporation
+*)
 module Types: sig
     type reason =
         | False

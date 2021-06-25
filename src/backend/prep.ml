@@ -1,6 +1,7 @@
-(*
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Preparation of proof obligations, and calls to backends.
+
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 
 (** Backend preparations *)
 

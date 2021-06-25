@@ -1,7 +1,7 @@
-(*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
- *)
+(* Flatten modules (i.e., remove `EXTENDS` statements).
 
+Copyright (C) 2011  INRIA and Microsoft Corporation
+*)
 open M_t
 
 

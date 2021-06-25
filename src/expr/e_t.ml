@@ -1,10 +1,7 @@
-(*
- * expressions
- *
- *
- * Copyright (C) 2008-2019  INRIA and Microsoft Corporation
- *)
+(* Syntax tree for expressions, and relevant functions.
 
+Copyright (C) 2008-2019  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 open Util

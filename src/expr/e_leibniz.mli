@@ -1,11 +1,7 @@
+(* Detect Leibniz positions in operators.
 
-(*
- * expr/lebniz.ml --- detect leibniz positions in operators
- *
- *
- * Copyright (C) 2008-2014  INRIA and Microsoft Corporation
- *)
-
+Copyright (C) 2008-2014  INRIA and Microsoft Corporation
+*)
 open E_t
 open E_visit
 

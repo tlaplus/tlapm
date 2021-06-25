@@ -1,5 +1,5 @@
 (*
- * module/elab.ml --- modules (elaboration)
+ * module/m_elab.ml --- elaborating modules
  *
  *
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation

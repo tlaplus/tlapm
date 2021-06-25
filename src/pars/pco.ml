@@ -1,9 +1,7 @@
-(*
- * pars/pco.ml --- parsers (based on lazy lists)
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Parser combinators (based on lazy lists).
+
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 
 (** Parsers implementation *)
 

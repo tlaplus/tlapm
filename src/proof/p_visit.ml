@@ -1,12 +1,7 @@
-(*
- * proof/visit.ml --- default visitor for proofs
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Visitor for proofs.
 
-(** default visitors for proofs *)
-
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 module Dq = Deque
