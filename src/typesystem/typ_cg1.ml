@@ -454,7 +454,8 @@ let rec cg_expr (ts:C.cg_mode) (env:E.t) (t:T.t) (scx:unit Expr.Visit.scx) e : E
       Dot (f, h) @@ e,
       CExists ([a], CConj [ cf ; mk_eq (t, Rec_dot (mk_var a, h)) ])
 
-  | Choose _ -> e, mk_eq (t, Top)     (** TODO Big-time *)
+  (* TODO *)
+  | Choose _ -> e, mk_eq (t, Top)
 
   | Parens (ex,_) ->
       cg_expr ts env t scx ex
