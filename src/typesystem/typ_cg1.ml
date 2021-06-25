@@ -73,7 +73,7 @@ let rec cg_expr
     | Apply ({core=Opaque "boolify"}, [{core=Ix n}]) ->
         e, mk_eq_cond (t, Bool)
         (** << G |- f(e1,...,en)^b : t >> ==
-            \E a1...an,a'1...a'n .
+            \E a1...an,a'1...a'n:
                 /\   |- G(f) == (a1 -> (a2 -> (... -> (an -> Bool))))
                 /\ << G |- e_1 : a'1 >>
                 /\ ...
@@ -113,7 +113,7 @@ let rec cg_expr
             mk_eq (E.find id env, Bool)
             :: mk_eq_cond (t, Bool) :: [])
         (** << G |- f(e1,...,en)^b : t >> ==
-            \E a1...an,a'1...a'n .
+            \E a1...an,a'1...a'n:
                 /\   |- G(f) == (a1 -> (a2 -> (... -> (an -> Bool))))
                 /\ << G |- e_1 : a'1 >>
                 /\ ...

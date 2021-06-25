@@ -583,7 +583,7 @@ class rw = object (self : 'self)
                           (lAnd [mem x nats ; eq (domain s) (range one x)])) *)
 
       (** x = Append(s,ex) -->
-            /\ isAFcn x
+            /\ isAFcn(x)
             /\ DOMAIN x = 1 .. Len(s) + 1
             /\ \A z \in 1 .. Len(s) : x[z] = s[z]
             /\ x[Len(s) + 1] = ex *)
@@ -599,7 +599,7 @@ class rw = object (self : 'self)
 
       (** x = Tail(s) -->
             s # <<>> =>
-                /\ isAFcn x
+                /\ isAFcn(x)
                 /\ DOMAIN x = 1 .. Len(s) - 1
                 /\ \A z \in 1 .. Len(s) - 1 : x[z] = s[z + 1] *)
       | _, Apply ({core = Internal B.Tail}, [s]) ->
@@ -615,7 +615,7 @@ class rw = object (self : 'self)
             |> self#expr scx
 
       (** x = Cat(s,t) -->
-            /\ isAFcn x
+            /\ isAFcn(x)
             /\ DOMAIN x = 1 .. Len(s) + Len(t)
             /\ \A z \in 1 .. Len(s) : x[z] = s[z]
             /\ \A z \in 1 .. Len(t) : x[Len(s) + z] = t[z]
@@ -639,7 +639,7 @@ class rw = object (self : 'self)
           ] |> self#expr scx
 
       (** x = SubSeq(s,m,n) -->
-            /\ isAFcn x
+            /\ isAFcn(x)
             /\ DOMAIN x = 1 .. 1 + n - m
             /\ \A z \in m .. n : x[1 + z - m] = s[z] *)
       | _, Apply ({core = Internal B.SubSeq}, [s ; m ; n]) ->

@@ -330,7 +330,7 @@ let rec cg_expr
                         t,
                         Set (Tdom (mk_var af)))])
         (** << env |- x..y : t >> ==
-            \E a1,a2. /\ <<env |- x : a1 >> /\ env |- a1 <? Int
+            \E a1,a2: /\ <<env |- x : a1 >> /\ env |- a1 <? Int
                       /\ <<env |- y : a2 >> /\ env |- a2 <? Int
                       /\ t == Set {z : Int | x <= z /\ z <= y} *)
         | B.Range, [x; y] ->
@@ -400,7 +400,7 @@ let rec cg_expr
                 c;
                 mk_eq_bool t]
         (** << env |- e1 = e2 : t >> ==
-            \E a. /\ << env |- e1 : a >>
+            \E a: /\ << env |- e1 : a >>
                   /\ << env |- e2 : a >>
                   /\ |- t == Bool *)
         | B.Eq, [e1; e2] when mode = TypHyp ->
@@ -412,7 +412,7 @@ let rec cg_expr
             mk_ex op [e1; e2],
             CExists ([a], CConj [ce1; ce2; mk_eq_bool t])
         (** << env |- e1 = e2 : t >> ==
-           \E a1,a2. /\ << env |- e1 : a1 >> /\ env |- a1 <? a1 ++ a2
+           \E a1,a2: /\ << env |- e1 : a1 >> /\ env |- a1 <? a1 ++ a2
                      /\ << env |- e2 : a2 >> /\ env |- a2 <? a1 ++ a2
                      /\ |- t == Bool *)
         | (B.Eq | B.Neq), [e1; e2] ->
@@ -663,7 +663,7 @@ let rec cg_expr
                 (fun a b -> mk_issub (E.empty, a, b))
                 t1s t2s)
             @ [cf; mk_eq (E.empty, t, mk_var ar)]))
-    (** << env |- {} : t >> == \E a. t == {z : a | FALSE} *)
+    (** << env |- {} : t >> == \E a: t == {z : a | FALSE} *)
     | SetEnum [] ->
         let a = fresh_tyvar (E.to_cx env, e) in
         let tt = Ref (
@@ -676,7 +676,7 @@ let rec cg_expr
         CExists (
             [a],
             mk_eq (E.empty, t, Set tt))
-    (** << env |- {ex} : t >> == \E a. <<env |- ex : a >> /\ t == Set a *)
+    (** << env |- {ex} : t >> == \E a: <<env |- ex : a >> /\ t == Set a *)
     | SetEnum [ex] ->
         let a = fresh_tyvar (E.to_cx env, ex) in
         let ex, cex = cg_expr
@@ -691,7 +691,7 @@ let rec cg_expr
                     t,
                     Set (mk_var a))]))
     (** << env |- es : t >> ==
-        \E a{1..n}. /\ <<env |- e_i : a_i >>_{i:1..n}
+        \E a{1..n}: /\ <<env |- e_i : a_i >>_{i:1..n}
                     /\ t == Set (a1 ++ ... ++ an) *)
     | SetEnum es ->
         let a1s, t1s, es, cs = gen_tyvars
@@ -705,7 +705,7 @@ let rec cg_expr
                     t,
                     Set (TyPlus t1s))]))
     (** << env |- {v \in d : ex} : t >> ==
-        \E a1,a2. /\ <<env |- d : Set a2 >>
+        \E a1,a2: /\ <<env |- d : Set a2 >>
                   /\ <<env, x:a1 |- ex : Bool>>
                   /\ env |- a1 <: a2
                   /\ t == Set {x : a1 | ex} *)
@@ -1190,7 +1190,7 @@ let rec cg_expr
 
     (** Typing hypothesis [\A x \in S : op(x) \in T] *)
     (** << env |- (\A x \in S : op(x) \in T) : t >> ==
-        \E a1,a2. /\ << env |- S : Set a1 >>
+        \E a1,a2: /\ << env |- S : Set a1 >>
                   /\ << env |- T : Set a2 >>
                   /\ << env |- op : a1 -> a2 >>
                   (* /\ |- env(op) == a1 -> a2  *)
@@ -1240,7 +1240,7 @@ let rec cg_expr
 
     (** Typing hypothesis [\A x : p(x) => op(x) \in S] *)
     (** << env |- (\A x : p(x) => op(x) \in S) : t >> ==
-        \E a1,a2. /\ << env |- S : Set a2 >>
+        \E a1,a2: /\ << env |- S : Set a2 >>
             /\ env(p) =?= a1 -> Bool
             /\ env(op) == (_ : {x:a1 | p(x)}) -> a2
             (* /\ << env,x:a1 |- p(x) : Bool >>  *)
