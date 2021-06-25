@@ -53,9 +53,12 @@ type isequent = private {
 
 (* There are three kinds of obligations:
 
-   Main -> the main obligation of a BY or OBVIOUS
-   Support -> the obligations for the elements of a BY or USE
-   Error -> a special obligation that carries an error message to the user
+- Main: the main obligation of
+  a `BY` or `OBVIOUS`
+- Support: the obligations for
+  the elements of a `BY` or `USE`
+- Error: a special obligation that
+  carries an error message to the user
 *)
 type obligation_kind =
     | Ob_main

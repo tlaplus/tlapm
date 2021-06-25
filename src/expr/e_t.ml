@@ -19,7 +19,7 @@ that can take 0, 1 or many arguments.
 The 0-argument case is treated as similaar
 (but not identical) to TRUE,
 the 1-argument case as the same as
-no conjunction, and the many argument case
+no conjunction, and the many-argument case
 as similar to [And].
 *)
 type bullet  = And | Or | Refs
@@ -42,8 +42,8 @@ type shape =
 
 (** An "expression" is either
 a TLA+ expression,
-operator or
-sequent *)
+an operator, or
+a sequent *)
 type expr = expr_ wrapped
 and expr_ =
     (* operators *)
@@ -85,7 +85,7 @@ and expr_ =
 
     Section 16.1.6 on pages 299--301 of
     the book "Specifying Systems",
-    specifically page 301
+    specifically page 301.
     *)
   | SetSt of hint * expr * expr
     (* `{f(x):  x \in S}`
@@ -93,7 +93,7 @@ and expr_ =
 
     Section 16.1.6 on pages 299--301 of
     the book "Specifying Systems",
-    specifically page 301
+    specifically page 301.
     *)
   | SetOf of expr * bounds
     (* `{1, 2}`
@@ -101,7 +101,7 @@ and expr_ =
 
     Section 16.1.6 on pages 299--301 of
     the book "Specifying Systems",
-    specifically page 300
+    specifically page 300.
     *)
   | SetEnum of expr list
     (* Cartesian product *)
@@ -132,7 +132,9 @@ and expr_ =
   | Case of (expr * expr) list * expr option
   | String of string
   | Num of string * string
-  | At of bool (* true -> @ from except / false -> @ from proof-step *)
+  | At of bool  (* where:
+      `true` means `@` from `EXCEPT`, and
+      `false` means `@` from a proof step. *)
   | Parens of expr * pform
 
 and pform = pform_ wrapped
@@ -299,7 +301,7 @@ and visibility = Visible | Hidden
 
 and time = Now | Always | NotSet  (* this value
     exists because when we create facts,
-    we need to wait for later normalization
+    we need to wait for later normalization,
     in order to know if the terms are
     constants or not *)
 

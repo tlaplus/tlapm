@@ -215,7 +215,7 @@ let complete_load ?clock ?root:(r="") mcx =
                                 mods := Deque.snoc !mods emule;
                                 Sm.add ed.core emule mcx
                             with Unknown_module_exception ->
-                                (* expected behavior - standard module
+                                (* expected behavior--standard module
                                 will be used
                                 *)
                                 mcx

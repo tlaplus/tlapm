@@ -14,7 +14,7 @@ that can take 0, 1 or many arguments.
 The 0-argument case is treated as
 similar (but not identical) to TRUE,
 the 1-argument case as the same as
-no conjunction, and the many argument
+no conjunction, and the many-argument
 case as similar to [And].
 *)
 type bullet = And | Or | Refs
@@ -81,7 +81,9 @@ and expr_ =
         (expr * expr) list * expr option
   | String of string
   | Num of string * string
-  | At of bool (* true -> @ from except / false -> @ from proof-step *)
+  | At of bool (*
+      true -> @ from except or
+      false -> @ from proof-step *)
   | Parens of expr * pform
 
 and pform = pform_ wrapped

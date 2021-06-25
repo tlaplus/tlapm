@@ -16,7 +16,7 @@ val tlapm: mule
 val naturals: mule
 (* integers *)
 val integers: mule
-(* reals *)
+(* real numbers *)
 val reals: mule
 (* sequences *)
 val sequences: mule

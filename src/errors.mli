@@ -41,7 +41,7 @@ raise Fatal.
 *)
 
 val bug: ?at:('a wrapped) -> string -> 'b
-(* Bug: this is equivalent to assert false
+(* Bug: this is equivalent to assert false,
 but prints the given information
 before raising Assert_failure.
 *)
