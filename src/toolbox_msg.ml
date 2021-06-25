@@ -7,6 +7,7 @@
 
 open Printf
 
+
 let delim = "@!!"
 
 let print_begin typ =
@@ -17,6 +18,7 @@ let print_begin typ =
 let print_string name str = eprintf "%s%s:%s\n" delim name str
 let print_int name n = eprintf "%s%s:%d\n" delim name n
 let print_bool name b = eprintf "%s%s:%b\n" delim name b
+
 
 let print_end () = eprintf "%sEND\n\n%!" delim
 
@@ -39,6 +41,7 @@ let print_obligationsnumber n =
   print_int "count" n;
     print_end ()
 
+
 let line loc = Loc.line loc
 let col loc = Loc.column loc
 
@@ -59,4 +62,3 @@ let print_obligation ~id ~loc ~status ~fp ~prover ~meth ~reason ~already ~obl =
   Option.iter (print_bool "already") already;
   Option.iter (print_string "obl") obl;
     print_end ()
-

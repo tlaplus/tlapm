@@ -8,10 +8,12 @@
 open Ext
 open Params
 
+
 let show_config = ref false
 let show_version () =
   print_endline (rawversion ()) ;
   exit 0
+
 
 let set_debug_flags flgs =
   let flgs = Ext.split flgs ',' in

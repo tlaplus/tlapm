@@ -6,7 +6,6 @@
  *)
 
 open Ext
-
 open Property
 open Util.Coll
 
@@ -16,7 +15,6 @@ open M_t
 
 open Format
 open Fmtutil
-
 open Expr.Fmt
 
 let pp_print_shaped ff (n, shp) =

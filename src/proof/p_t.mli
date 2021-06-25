@@ -1,9 +1,9 @@
 (*
  * Copyright (C) 2011  INRIA and Microsoft Corporation
  *)
-
 open Property
 open Expr.T
+
 
 (* fmt.mli *)
 type omission =
@@ -17,7 +17,6 @@ and proof_ =
   | By      of usable * bool
   | Steps   of step list * qed_step
   | Error   of string
-
 (** Non-terminal proof steps *)
 and step = step_ wrapped
 and step_ =
@@ -32,13 +31,10 @@ and step_ =
   | Take     of bound list
   | Witness  of expr list
   | Forget   of int
-
 (** Terminal proof-step **)
 and qed_step = qed_step_ wrapped
 and qed_step_ =
   | Qed of proof
-
-
 (** Usable elements *)
 and usable = { facts : expr list
              ; defs  : use_def wrapped list }
@@ -47,6 +43,7 @@ and use_def =
   | Dvar of string
   | Dx   of int
 
+
 (*
 type isequent = private {
   isq : sequent;
@@ -54,7 +51,9 @@ type isequent = private {
 }
 *)
 
+
 (* There are three kinds of obligations:
+
    Main -> the main obligation of a BY or OBVIOUS
    Support -> the obligations for the elements of a BY or USE
    Error -> a special obligation that carries an error message to the user
@@ -63,7 +62,6 @@ type obligation_kind =
   | Ob_main
   | Ob_support
   | Ob_error of string
-
 type obligation = {
   id  : int option;
   obl : sequent wrapped;
@@ -74,6 +72,8 @@ type obligation = {
 type stepno =
   | Named   of int * string * bool
   | Unnamed of int * int
+
+
 module Props : sig
   val step : stepno pfuncs
   val goal : sequent pfuncs
@@ -84,12 +84,12 @@ module Props : sig
   val orig_proof : proof pfuncs
   val use_location : Loc.locus pfuncs
 end
+
+
 val string_of_stepno:
     ?anonid:bool -> stepno -> string
-
 (* proof/subst.ml *)
 val get_qed_proof:
     qed_step_ Property.wrapped -> proof
-
 (* proof/simplify.ml *)
 val step_number: stepno -> int

@@ -9,6 +9,7 @@ open Ext
 open Property
 open Util.Coll
 
+
 module P = Tla_parser.P
 
 open Proof.T
@@ -585,10 +586,10 @@ let init () =
        end;
        exit 3
 
+
 exception Stacktrace;;
 
 Sys.set_signal
     Sys.sigusr1
     (Sys.Signal_handle (fun _ -> raise Stacktrace));
-
 init ()

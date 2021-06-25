@@ -12,6 +12,7 @@ open E_t
 module Dq = Deque
 module Fmt = E_fmt
 
+
 type sub =
   | Shift of int
   | Cons of expr * sub

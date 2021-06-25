@@ -1,9 +1,9 @@
 (*
  * Copyright (C) 2011  INRIA and Microsoft Corporation
  *)
-
 open Property
 open Util
+
 
 (** Type of bulleted lists. [And] and [Or] are the standard TLA+
     bulleted lists of 1 or more arguments. [Refs] represents a
@@ -12,11 +12,8 @@ open Util
     TRUE, the 1-argument case as the same as no conjunction, and the
     many argument case as similar to [And]. *)
 type bullet  = And | Or | Refs
-
 type quantifier = Forall | Exists
-
 type modal_op = Box | Dia
-
 type fairness_op  = Weak | Strong
 
 (** Type representing arguments to operators, sometimes conflated with
@@ -114,10 +111,8 @@ and defn_ =
 and instance = {
   (** arguments of the instance *)
   inst_args : hint list ;
-
   (** the instanced module *)
   inst_mod  : string ;
-
   (** substitution *)
   inst_sub  : (hint * expr) list ;
 }
@@ -127,7 +122,6 @@ and instance = {
 and sequent = {
   (** antecedents *)
   context : hyp Deque.dq ;
-
   (** succeedent (always a TLA+ expression) *)
   active  : expr ;
 }

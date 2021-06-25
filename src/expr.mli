@@ -185,6 +185,7 @@ module T : sig
   val get_enabledaxioms : 'a Property.wrapped -> bool
 end
 
+
 module Fmt : sig
   open T
   open Ctx
@@ -209,6 +210,7 @@ module Fmt : sig
   val pp_print_instance : ctx -> Format.formatter -> instance -> unit
   val string_of_expr : hyp Deque.dq  -> expr -> string
 end
+
 
 module Subst : sig
   open Property
@@ -251,6 +253,7 @@ module Subst : sig
 
   class map_visible_hyp : map
 end
+
 
 module Visit : sig
   open T
@@ -317,9 +320,11 @@ module Eq : sig
   val sequent : sequent -> sequent -> bool
 end
 
+
 module Deref: sig
     val badexp: T.expr
 end
+
 
 module Leibniz : sig
   open T
@@ -341,12 +346,14 @@ module Leibniz : sig
   end
 end
 
+
 module Constness : sig
   open T
   val is_const : 'a Property.wrapped -> bool
   val has_const : 'a Property.wrapped -> bool
   class virtual const_visitor : [unit] Visit.map
 end
+
 
 module Tla_norm : sig
   val rewrite_unch : T.expr -> T.expr
@@ -362,6 +369,7 @@ module Temporal_props : sig
   val check_time_change : T.hyp Deque.dq -> T.time -> T.time
 end
 
+
 module Elab : sig
   open T
   (* moved to action frontend *)
@@ -371,12 +379,14 @@ module Elab : sig
   val get_at : expr -> expr
 end
 
+
 module Anon : sig
   open T
   val hyp_is_named : string -> hyp -> bool
   class anon : [string list] Visit.map
   val anon : anon
 end
+
 
 module Parser : sig
   open Tla_parser
@@ -388,6 +398,7 @@ module Parser : sig
   val sequent : bool -> T.sequent lprs
   val opdecl : (Util.hint * shape) lprs
 end
+
 
 module Levels : sig
     open Property

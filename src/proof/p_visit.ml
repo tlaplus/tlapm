@@ -8,14 +8,12 @@
 (** default visitors for proofs *)
 
 open Ext
-
 open Property
-
 module Dq = Deque
-
 open Expr.T
 
 open P_t
+
 
 let dummy = At false @@ nowhere
 let dummy_fact = Fact (dummy, Visible, Always) @@ nowhere

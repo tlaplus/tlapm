@@ -10,6 +10,7 @@ open E_t
 
 module StringMap = Util.Coll.Sm
 
+
 let digest l =
   List.fold_right (fun (v, t) m -> StringMap.add v t m) l StringMap.empty
 

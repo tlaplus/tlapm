@@ -4,15 +4,17 @@
  *
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
-
 open Ext
 open Property
 open Util.Coll
 
 open Expr.T
+
 open M_t
 
+
 (* let debug = Printf.eprintf *)
+
 
 let external_deps m =
   let deps = ref Hs.empty in

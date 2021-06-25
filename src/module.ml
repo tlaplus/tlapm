@@ -1,7 +1,6 @@
 (*
  * Copyright (C) 2011  INRIA and Microsoft Corporation
  *)
-
 module T = M_t
 module Fmt = M_fmt
 module Gen = M_gen

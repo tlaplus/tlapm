@@ -258,4 +258,3 @@ let solve ((env:Typ_e.t),e) =
     r.Call_provers.pr_time ;
 
   Util.sprintf ?nonl:(Some ()) "%a" Call_provers.print_prover_answer r.Call_provers.pr_answer
-  

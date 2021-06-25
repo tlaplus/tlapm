@@ -4,8 +4,8 @@
  *
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
-
 exception Fatal
+
 
 let loc_to_string at =
   match at with
@@ -15,12 +15,17 @@ let loc_to_string at =
      | None -> ""
      | Some loc -> Loc.string_of_locus loc ^ " :\n"
 
+
+
 let info ?at fmt =
   let k s = Printf.eprintf "%s%s\n%!" (loc_to_string at) s in
   Format.ksprintf k fmt
 
+
+
 let warnbuf = Buffer.create 80;;
 Buffer.add_char warnbuf '\n'
+
 
 let warn ?at fmt =
   let k s =
@@ -29,15 +34,18 @@ let warn ?at fmt =
   in
   Format.ksprintf k fmt
 
+
 let get_warnings () =
   let res = Buffer.contents warnbuf in
   Buffer.clear warnbuf;
   Buffer.add_char warnbuf '\n';
   res
 
+
 let set_warnings s =
   Buffer.clear warnbuf;
   Buffer.add_string warnbuf s
+
 
 let aux url ?at msg =
     let locus = loc_to_string at in
@@ -73,10 +81,12 @@ let loc : string option ref = ref None
 let msg : string option ref = ref None
 let warning = ref false
 
+
 let sget v =
   match v with
     | None -> ""
     | Some v -> v
+
 
 let set st mesg =
 loc :=

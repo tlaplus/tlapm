@@ -259,5 +259,3 @@ and lift_bs scx bs =
   (snd scx, bs)
 and lift_sq scx (hs,c) =
   List.map (lift Bool scx) hs, lift Bool scx c
-
-

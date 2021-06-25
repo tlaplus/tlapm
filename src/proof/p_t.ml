@@ -8,15 +8,17 @@
 (** Proofs *)
 
 open Property
-
 open Expr.T
+
 
 type stepno =
   | Named   of int * string * bool
   | Unnamed of int * int
 
+
 let step_number = function
   | Named (n, _, _) | Unnamed (n, _) -> n
+
 
 let string_of_stepno ?(anonid=false) = function
   | Named (sn, sl, _) ->
@@ -27,10 +29,12 @@ let string_of_stepno ?(anonid=false) = function
       else
         Printf.sprintf "<%d>" sn
 
+
 type omission =
   | Implicit
   | Explicit
   | Elsewhere of Loc.locus
+
 
 (** Proofs *)
 type proof = proof_ wrapped
@@ -40,7 +44,6 @@ and proof_ =
   | By      of usable * bool
   | Steps   of step list * qed_step
   | Error   of string
-
 (** Non-terminal proof steps *)
 and step = step_ wrapped
 and step_ =
@@ -55,21 +58,16 @@ and step_ =
   | Take     of bound list
   | Witness  of expr list
   | Forget   of int
-
 (** Terminal proof-step **)
 and qed_step = qed_step_ wrapped
 and qed_step_ =
   | Qed of proof
-
-
 (** Usable elements *)
 and usable = { facts : expr list
              ; defs  : use_def wrapped list }
-
 and use_def =
   | Dvar of string
   | Dx   of int
-
 
 
 let get_qed_proof q =
@@ -79,6 +77,7 @@ type obligation_kind =
   | Ob_main
   | Ob_support
   | Ob_error of string
+
 
 type obligation = {
   id  : int option;

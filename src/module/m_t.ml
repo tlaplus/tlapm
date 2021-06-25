@@ -15,6 +15,7 @@ open Coll
 open Expr.T
 open Proof.T
 
+
 (** module type. Can't use "module" because it's a keyword in OCaml. *)
 type mule = mule_ wrapped
 and mule_ = {
@@ -27,7 +28,6 @@ and mule_ = {
   mutable stage     : stage ;
   mutable important : bool
 }
-
 (** module unit *)
 and modunit = modunit_ wrapped
 and modunit_ =
@@ -40,21 +40,17 @@ and modunit_ =
   | Submod     of mule
   | Mutate     of [`Use of bool | `Hide] * usable
   | Anoninst   of Expr.T.instance * export
-
 and named = Named | Anonymous
-
 and summary = {
   sum_total      : int ;
   sum_absent     : int * Loc.locus list ;
   sum_omitted    : int * Loc.locus list ;
   sum_suppressed : int * Loc.locus list ;
 }
-
 and stage =
   | Special
   | Parsed | Flat
   | Final of final
-
 and final = { final_named  : modunit list
             ; final_obs    : obligation array
             ; final_status : status * summary
@@ -62,7 +58,6 @@ and final = { final_named  : modunit list
 
 and status =
   | Unchecked | Proved | Certified | Incomplete
-
 (** module context *)
 type modctx = mule Sm.t
 
@@ -78,6 +73,7 @@ let cat_summary s t =
   ; sum_omitted = vcat s.sum_omitted t.sum_omitted
   ; sum_suppressed = vcat s.sum_suppressed t.sum_suppressed
   }
+
 
 let salt_prop : unit pfuncs = Property.make "Module.salt_prop"
 
@@ -128,6 +124,7 @@ let hyps_of_modunit (mu : modunit) = match mu.core with
   | Submod _
   | Mutate _
   | Anoninst _ -> []
+
 
 let hyp_size (mu : modunit) = match mu.core with
   | Constants cs -> List.length cs

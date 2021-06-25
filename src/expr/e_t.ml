@@ -270,6 +270,7 @@ let get_val_from_id cx n = match Deque.nth ~backwards:true cx (n - 1) with
 | Some e -> e
 | None -> failwith "unknown bound variable"
 
+
 let hyp_name h = match h.core with
   | Fresh (nm, _, _, _)
   | Flex nm
@@ -492,6 +493,7 @@ let sequent_stats (sq: sequent) =
     print_string "Hidden fact names:\n";
     List.iter print_fact nums.hidden_fact_names; *)
     n_hyp
+
 
 let enabledaxioms : bool pfuncs =
   Property.make "Module.Elab.enabledaxioms"

@@ -127,11 +127,14 @@ let smt_id id =
   |> Tla_parser.pickle
   |> rep "'" "__"
 
+
 let lookup_id (cx:hyp list) n =
   assert (n > 0 && n <= length cx) ;
 	hyp_name (nth cx (n - 1))
 
+
 let fcnapp = "tla__fcnapp"
+
 
 let nonbasic_prefix = "a__"
 let is_nonbasic_var id =
@@ -536,6 +539,7 @@ let get_recid fs =
     let id = unique_id () in
     (* record_ids := SSMap.add fs id !record_ids ; *)
     id
+
 
 (** Two records have the same type iff they have the same fields
 	(ignoring the fields position) *)
@@ -1156,6 +1160,7 @@ let flatten_disj e =
 
 (****************************************************************************)
 
+
 let rec fix ?feq:(xeq=Expr.Eq.expr) c f xs =
   let rec eqq xs ys = match xs, ys with
   | x :: xs, y :: ys -> if xeq x y then eqq xs ys else false
@@ -1165,7 +1170,9 @@ let rec fix ?feq:(xeq=Expr.Eq.expr) c f xs =
   if c = 0 then (failwith "smt/smtcommons.ml: Cannot reach fixed point [fix].\n") else
   (let ys = f xs in if eqq xs ys then xs else fix (c-1) f ys)
 
+
 module Fu = Fmtutil.Minimal (Tla_parser.Prec)
+
 
 let rec fix3 d f (scx,hs,c) =
   let eq (scx,hs,c) (scx',hs',c') =
@@ -1185,6 +1192,7 @@ let rec fix3 d f (scx,hs,c) =
 			 fix3 (d-1) f (scx',hs',c')
   end
 
+
 let rec fix_sq d f sq =
 (* Util.eprintf "[-]%d: %a" (Dq.size hs) Fu.pp_print_minimal (Fu.Big (fun ff -> ignore (Expr.Fmt.pp_print_sequent (hs, Ctx.dot) ff {context=hs;active=c}))); *)
   if d = 0 then (failwith "smt/smtcommons.ml: Cannot reach fixed point [fix_sq].\n") else
@@ -1195,6 +1203,7 @@ let rec fix_sq d f sq =
      else fix_sq (d-1) f sq'
   end
 
+
 let rec fix_sqs d f sqs =
   if d = 0 then (failwith "smt/smtcommons.ml: Cannot reach fixed point [fix_sqs].\n") else
   begin
@@ -1203,6 +1212,7 @@ let rec fix_sqs d f sqs =
      then sqs
      else fix_sqs (d-1) f sqs'
   end
+
 
 (****************************************************************************)
 
@@ -1241,6 +1251,7 @@ let rec is_typhyp ?var (scx:hyp Dq.dq) e =
       true
   | _ -> false
 
+
 (** unbound [bs] *)
 let rec unb bs =
     let mk x = noprops x in
@@ -1261,9 +1272,11 @@ let rec unb bs =
     | [] -> [],[]
     | _ -> assert false
 
+
 let rec_sort rs =
   let compare (h,t) (i,u) = String.compare h i in
   List.sort ~cmp:compare rs
+
 
 (** Keywords *)
 let smt_backend_keys = [
@@ -1282,7 +1295,9 @@ let smt_backend_keys = [
 	"tptp_exp";"tptp_ls";"tptp_le";"tptp_uminus";
   ]
 
+
 let is_smt_kwd x = List.mem x smt_backend_keys
+
 
 let smt_pickle isbounded id =
   if id = "_" then (failwith "SMT bug: identifier \"_\"") else

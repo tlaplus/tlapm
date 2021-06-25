@@ -1,8 +1,8 @@
 (*
  * Copyright (C) 2011  INRIA and Microsoft Corporation
  *)
-
 open Property
+
 
 exception Fatal
 

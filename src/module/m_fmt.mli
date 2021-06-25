@@ -8,7 +8,6 @@
 (** Formatting modules *)
 
 open Ctx
-
 open M_t
 
 val pp_print_modunit : ?force:bool -> Expr.Fmt.ctx -> Format.formatter -> modunit -> Expr.Fmt.ctx

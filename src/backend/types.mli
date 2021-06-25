@@ -13,7 +13,6 @@ type status_type_aux6 =
 type status_type6 =
   | Triv
   | NTriv of status_type_aux6 * Method.t
-
 type package = {
   final_form   : Proof.T.obligation;
 (*  print_form   : Proof.T.obligation; *)

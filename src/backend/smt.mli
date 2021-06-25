@@ -18,4 +18,3 @@ val to_string : smt_logic -> string
 
 val pp_print_obligation : ?solver:string -> ?logic:smt_logic -> Format.formatter -> Proof.T.obligation -> unit
 *)
-

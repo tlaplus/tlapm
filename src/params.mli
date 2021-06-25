@@ -98,6 +98,4 @@ val fpf_out: string option ref
 val fp_loaded: bool ref
 val timeout_stretch: float ref
 
-
-
 val backend_timeout: float ref

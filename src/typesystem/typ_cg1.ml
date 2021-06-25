@@ -100,7 +100,6 @@ let rec cg_expr (ts:C.cg_mode) (env:E.t) (t:T.t) (scx:unit Expr.Visit.scx) e : E
       CExists (ar::a1s @ a2s,
         CConj (cs @ (List.map2 (fun a b -> mk_iseq (a,b)) t1s t2s)
                   @ [ cf ; mk_eq_cond (t, Bool) ])) *)
-
   | Opaque "boolify" ->
       let a = fresh_tyvar (E.to_cx env, e) in
       e, CExists ([a], mk_eq (t, Func ("",mk_var a, Bool)))

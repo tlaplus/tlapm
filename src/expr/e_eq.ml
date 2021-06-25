@@ -11,6 +11,7 @@ open E_t
 
 module M = Map.Make (String)
 
+
 let digest l =
   List.fold_right (fun (v, t) m -> M.add v t m) l M.empty
 

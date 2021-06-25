@@ -4,7 +4,6 @@
  *
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
-
 open Property
 open Util.Coll
 
@@ -14,10 +13,11 @@ open Tla_parser.P
 open M_t
 open M_parser
 
-(* let debug = Printf.eprintf *)
 
+(* let debug = Printf.eprintf *)
 exception Unknown_module_exception
 exception Not_loadable_exception of string wrapped
+
 
 let clocking cl fn x = match cl with
   | Some cl ->
@@ -27,6 +27,7 @@ let clocking cl fn x = match cl with
       ret
   | None ->
       fn x
+
 
 let file_search fh =
   if Filename.is_implicit fh.core then
@@ -38,6 +39,7 @@ let file_search fh =
     in scan ("." :: List.rev !Params.rev_search_path)
   else
     if Sys.file_exists fh.core then Some fh else None
+
 
 let really_parse_file fn =
   match file_search fn with
@@ -68,6 +70,7 @@ let really_parse_file fn =
           end else
             mule
 
+
 let validate mn inch =
   let v : string = Marshal.from_channel inch in
   if v = Params.rawversion () then
@@ -78,6 +81,7 @@ let validate mn inch =
       (close_in inch ; Some (csum, mule))
     else (close_in inch ; None)
   else (close_in inch ; None)
+
 
 let rec really_load_module mn fn fnx = match fn, fnx with
   | Some _, Some _ when not !Params.use_xtla ->
@@ -111,12 +115,14 @@ let rec really_load_module mn fn fnx = match fn, fnx with
       | _ -> really_parse_file fn
     end
 
+
 let load_module ?clock ?root:(r="") mn =
     clocking clock begin fun () ->
       let fn = (Filename.concat r (mn.core ^ ".tla")) @@ mn in
       let fnx = (Filename.concat r (mn.core ^ ".xtla")) @@ mn in
       really_load_module mn (file_search fn) (file_search fnx)
     end ()
+
 
 let parse_file ?clock gfn =
   clocking clock begin fun () ->
@@ -134,6 +140,7 @@ let parse_file ?clock gfn =
       failwith "Module.Parser.parse_file"
     end else really_load_module mn fn fnx
   end ()
+
 
 let complete_load ?clock ?root:(r="") mcx =
   clocking clock
@@ -232,6 +239,7 @@ let complete_load ?clock ?root:(r="") mcx =
     end;
     res
   end ()
+
 
 let store_module ?clock mule =
   if !Params.xtla then

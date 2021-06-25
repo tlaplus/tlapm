@@ -14,7 +14,9 @@ open Proof.T
 
 open M_t
 
+
 (* let debug = Printf.eprintf *)
+
 
 let rec generate cx m =
   let obs : obligation list ref = ref [] in

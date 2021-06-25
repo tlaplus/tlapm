@@ -11,9 +11,12 @@ open Util.Coll
 
 open Expr.T
 open Proof.T
+
 open M_t
 
+
 (* let debug = Printf.eprintf *)
+
 
 let rec exports m =
   let rec spin body = function

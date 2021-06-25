@@ -22,6 +22,7 @@ open Format
 open Fmtutil
 open Tla_parser
 
+
 type ctx = hyp Deque.dq * int Ctx.ctx
 
 let is_letter c =

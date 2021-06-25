@@ -10,6 +10,7 @@
 open Pars
 open Tla_parser
 
+
 (** Lex a channel *)
 val lex_channel :
   string -> Stdlib.in_channel -> Token.token LazyList.t * Loc.locus

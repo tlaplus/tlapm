@@ -34,7 +34,6 @@ let list f l env =
 (* [get_level e 0] returns the minimum index of all free
    variables in [e], or [max_int] if [e] is closed.
 *)
-
 let rec get_level e env =
   match e.core with
   | Ix i -> if i > env then i - env else max_int

@@ -39,14 +39,18 @@ module E = Typ_e
 module C = Typ_c
 let map = List.map
 
+
 (****************************************************************************)
+
 
 let pp_env_c v env c =
   E.tyvar_assignment_pp v ;
   Smt.ifprint v "  @[<hov2>@[%a@]@, ||-  @[<hov>%a@]@]" E.pp env C.pp (env,c)
 
+
 let pp_prop v env cx e =
   Smt.ifprint v "<< %a |- %a : Bool >>" E.pp env (E.pp_print_expr (Smtcommons.to_scx cx, Ctx.dot)) e
+
 
 (****************************************************************************)
 (* Unification of subtype constraints                                       *)
@@ -117,9 +121,11 @@ let rec rewrite_subs (env,vs,(cs:C.t list)) =
 
 let unify_subs (env,c) = C.rw_c rewrite_subs (env,c)
 
+
 (****************************************************************************)
 (* Residual constraints                                                     *)
 (****************************************************************************)
+
 
 let rec rewrite_refl (env,vs,cs) =
   let rec pickone_subst = function
@@ -144,6 +150,7 @@ let rec rewrite_refl (env,vs,cs) =
     let env,vs,cs = C.apply_ss ss (env,vs,cs) in
     rewrite_refl (env,vs,cs)
   end
+
 
 let rec rewrite_constructs (env,vs,cs) =
 (* Util.eprintf "rewrite_constructs %a" C.pp (env,C.mk_ex (vs,cs)) ; *)
@@ -265,9 +272,11 @@ let update_tcc phs (op,env,r1,r2) =
   update_tyvar_assignment phs env;         (** CHECK env *)
   vc
 
+
 (****************************************************************************)
 (** Processing TCCs                                                         *)
 (****************************************************************************)
+
 
 let nontrivial_vc = function
   | _, _, Ex (cx,e), Ex (cx',e')
@@ -331,13 +340,16 @@ let tccs_to_seq (op,env,r1,r2) : Typ_e.t * expr =
   env,e *)
   E.empty, e
 
+
 (****************************************************************************)
 (** Solving procedures                                                      *)
 (****************************************************************************)
 
+
 let remove_repeated_seq sqs =
   let e_mem e es = List.exists (fun (_,e') -> Expr.Eq.expr e e') es in
   List.fold_left (fun r (env,e) -> if e_mem e r then r else (env,e) :: r) [] sqs
+
 
 (** Solve type-correctness conditions *)
 let solve_tccs tccs =
@@ -359,11 +371,13 @@ let solve_tccs tccs =
       (List.length valids) (List.length unknowns)
   end
 
+
 let remove_repeated_tccs tccs =
   let vc_mem (op,env,r1,r2) vs = List.exists
     (function (op',_,r1',r2') -> (* op = op' && *) T.eq_ref r1' r2')
     vs in
   List.fold_left (fun r vc -> if vc_mem vc r then r else vc :: r) [] tccs
+
 
 (** Find solutions to placeholders.
   [init_phs] = initial placeholders
@@ -397,6 +411,7 @@ let solve_phs init_phs tccs n =
 (** Solving procedures (2)                                                  *)
 (****************************************************************************)
 
+
 let _solve_c' (env,c) =
   let _solve_c (env,c) = (env,c)
 (* |> tap (fun (env,c) -> pp_env_c 1 env c) *)
@@ -413,6 +428,7 @@ let _solve_c' (env,c) =
   env,c
 
 (****************************************************************************)
+
 
 let solve (env,c) =
   let solve_c' env c =
@@ -449,9 +465,7 @@ let solve (env,c) =
   Smt.ifprint 2 "\n** Final type assignment and constraint:" ;
   pp_env_c 2 env c ;
   Smt.ifprint 2 "\n" ;
-
   (**************************************************************************)
-
   Smt.ifprint 2 "-- Solving =?= and <? ------------------------------------------------------" ;
   let c = c
     |> C.iseq_to_eq      																											(** replace =?= by == *)
@@ -485,6 +499,7 @@ let solve (env,c) =
 (** Type decoration                                                         *)
 (****************************************************************************)
 
+
 (** In [sq], replace annotations [TyVar a] by the corresponding type from [typesmap] *)
 let decorate typesmap sq =
   let decor_env typesmap = function
@@ -496,7 +511,6 @@ let decorate typesmap sq =
       end
   | t -> t
   in
-
   (* let tvars, env = E.mk (Smt.fv ((),sq.context) sq) in *)
   let env, tvars = E.adj_hyps empty sq.context in
   let env = E.map (decor_env typesmap) env in

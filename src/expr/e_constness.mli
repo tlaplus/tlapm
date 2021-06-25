@@ -8,6 +8,7 @@
 open E_t
 open E_visit
 
+
 (* returns the const value of the term *)
 val is_const : 'a Property.wrapped -> bool
 (* checks if const was already computed for this term *)

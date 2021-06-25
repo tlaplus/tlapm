@@ -30,4 +30,3 @@ let globalness md =
        mu) isglobal ()
     | mu -> mu
   in {md.core with body = (List.map iterfun md.core.body)} @@ md
-

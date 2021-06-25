@@ -21,7 +21,6 @@ and mule_ = {
   mutable stage     : stage ;
   mutable important : bool
 }
-
 (** module unit *)
 and modunit = modunit_ wrapped
 and modunit_ =
@@ -34,36 +33,31 @@ and modunit_ =
   | Submod     of mule
   | Mutate     of [`Use of bool | `Hide] * usable
   | Anoninst   of instance * export
-
 and named = Named | Anonymous
-
 and summary = {
   sum_total      : int ;
   sum_absent     : int * Loc.locus list ;
   sum_omitted    : int * Loc.locus list ;
   sum_suppressed : int * Loc.locus list ;
 }
-
 and stage =
   | Special
   | Parsed | Flat
   | Final of final
-
 and final = { final_named  : modunit list
             ; final_obs    : obligation array
             ; final_status : status * summary
             }
-
 and status =
   | Unchecked | Proved | Certified | Incomplete
 type modctx = mule Coll.Sm.t
+
 
 (* module/gen.ml *)
 val empty_summary: summary
 val cat_summary: summary -> summary -> summary
 val hyps_of_modunit:
     modunit -> Expr.T.hyp_ Property.wrapped list
-
 (* module/elab.ml *)
 val hyp_size: modunit -> int
 val salt_prop: unit Property.pfuncs

@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
-
 external nprocs_internal      : unit -> int = "sysconf_nprocs"
 
 let nprocs ?(default=0) () =

@@ -355,6 +355,7 @@ let rec unify_fails t1 t2 =
   | _ ->
       false
 
+
 let lookup_id cx n =
   assert (n > 0 && n <= length cx) ;
   hyp_name (nth cx (n - 1))
@@ -538,6 +539,7 @@ and ref_to_base_ss ss = map (fun (v,cx,e,t) -> v,cx,e,ref_to_base t) ss
 
 
 (****************************************************************************)
+
 
 (** Typing propositions (only for _ground_ types).
     From assignment [x : t], it constructs the typing proposition [x \in t'].

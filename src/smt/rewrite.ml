@@ -1349,6 +1349,7 @@ class rw = object (self : 'self)
       |> self#expr scx
 
     (* | Internal B.BOOLEAN -> SetEnum [tla_true ; tla_false] |> mk *)
+
     | _ ->
       super#expr scx e
   end

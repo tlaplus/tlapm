@@ -14,7 +14,9 @@ module Visit = E_visit
 module Deref = E_deref
 module Eq = E_eq
 
+
 let ( |> ) x f = f x
+
 
 (* see also `Expr.T.hyp_name` *)
 let hyp_is_named what h = match h.core with
@@ -223,8 +225,8 @@ class anon_sg = object (self : 'self)
         Operator (nm, op) @@ df
     | _ ->
         super#defn scx df
-
 end
+
 
 class anon = object
   inherit anon_sg as super
@@ -233,5 +235,5 @@ class anon = object
     Elab.desugar (super#expr scx e)
 end
 
-let anon = new anon
 
+let anon = new anon

@@ -10,6 +10,7 @@
 open Proof.T
 open Types
 
+
 val make_task :
   out_channel ->
   out_channel ->
@@ -17,6 +18,7 @@ val make_task :
   obligation ->
     Schedule.task
 (** @raise Exit if the toolbox sent the "stop" command. *)
+
 
 val expand_defs : ?what:(Expr.T.wheredef -> bool) -> obligation -> obligation
 

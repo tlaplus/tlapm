@@ -5,7 +5,6 @@
  *
  * Copyright (C) 2011-2014  INRIA and Microsoft Corporation
  *)
-
 open Ext
 open Format
 open Fmtutil
@@ -26,14 +25,18 @@ module E = Typ_e
 
 open Axioms
 
+
 let ( |>> ) = Smt.( |>> )
 let ( ||> ) = Smt.( ||> )
 let map = List.map
+
+
 
 (****************************************************************************)
 (* Translation: mapping from basic TLA+ (purely first-order) to target 	    *)
 (*	 language (defined by [!Smt.mode]).																		  *)
 (****************************************************************************)
+
 
 let set_map () = match !Smt.mode with
   | Smt.Yices -> Axioms.yices_map
@@ -235,7 +238,9 @@ and fmt_expr (ecx:Ectx.t) e =
         Util.eprintf ~at:e "Expression not supported yet" ;
         failwith "Backend.SMT.fmt_expr"
 
+
 and pp_print_boundvar cx ff (v, _, _) = pp_print_string ff v
+
 
 and pp_print_boundset ecx ff b =
   match b.core with
@@ -366,8 +371,10 @@ let collect_data scx (hs,c) =
 (* Rewriting system																												  *)
 (****************************************************************************)
 
+
 (** Rewriter object *)
 let rws = new Rewrite.rw
+
 
 (** Rewrite and simplify hypotheses [hs] + conclusion [c] *)
 let rw_hsc scx (hs,c) =
@@ -412,6 +419,7 @@ let to_basic scx (hs,c) =
   (hs,c)
     |> fix2 99 ((Preprocess.simpl_eq scx) @@@ (fix2 9 (rw_hsc scx)))
     |> fix2 99 ((!abstract_func scx) @@@ (fix2 9 (rw_hsc scx)))
+
 
 (****************************************************************************)
 (* Post-pre-process (after type synthesis)
@@ -650,9 +658,11 @@ open Smtlib.Fmt
 
 module Sm = Util.Coll.Sm
 
+
 type smt_logic =
   | AUFNIRA
   | UFNIA
+
 
 let to_string = function
   | AUFNIRA -> "AUFNIRA"

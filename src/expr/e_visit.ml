@@ -14,6 +14,7 @@ open E_t
 
 module Dq = Deque
 
+
 let hyp_rename v h = begin match h.core with
   | Fresh (_, shp, k, dom) ->
       Fresh (v, shp, k, dom)

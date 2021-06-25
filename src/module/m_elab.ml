@@ -4,7 +4,6 @@
  *
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
-
 open Ext
 open Format
 open Fmtutil
@@ -19,9 +18,12 @@ open Proof.T
 
 open M_t
 
+
 (* let debug = Printf.eprintf *)
 
+
 (******************************************************************************)
+
 
 let localize_axioms body =
   let rec spin prefix = function

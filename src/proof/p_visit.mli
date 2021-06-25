@@ -8,7 +8,6 @@
 (** default visitors for proofs *)
 
 open Deque
-
 open Expr.T
 open P_t
 open Expr.Visit

@@ -5,10 +5,10 @@
 (* Test harness for schedule.ml *)
 
 (* ocamlc -g unix.cma schedule.mli schedule.ml test_schedule.ml *)
-
 open Printf
 
 open Schedule
+
 
 let timeout_cont name () =
   printf ">>> %s: timeout\n%!" name;

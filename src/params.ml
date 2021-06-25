@@ -3,9 +3,9 @@
  *
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
-
 open Ext
 open Printf
+
 
 let self_sum = Digest.file Sys.executable_name
 
@@ -65,6 +65,7 @@ type executable =
   | Checked of string * string list       (* command, version *)
   | NotFound of string
 
+
 type exec = executable ref
 
 let mydir = Filename.dirname Sys.executable_name
@@ -118,6 +119,7 @@ let get_version e =
   match !e with
   | Checked (cmd, vers) -> vers
   | _ -> []
+
 
 let make_exec cmd args version = ref (Unchecked (cmd, args, version))
 
@@ -173,6 +175,7 @@ let cvc4 =
   else
     make_exec "cvc4" "cvc4 --lang=smt2 \"$file\"" "cvc4 --version"
 
+
 let yices = make_exec "yices" "yices -tc \"$file\"" "yices --version"
 let z3 =
   if Sys.os_type = "Cygwin" then
@@ -191,11 +194,17 @@ let verit =
             "veriT --input=smtlib2 --disable-ackermann \
                    --disable-banner --disable-print-success \"$file\""
             "echo unknown"
+
+
 let spass_dfg = make_exec "SPASS" "SPASS -Auto -PGiven=0 -PProblem=0 -PStatistic=0 \"$file\"" "echo unknown"
 let spass_tptp = make_exec "SPASS" "SPASS -Auto -TPTP -PGiven=0 -PProblem=0 -PStatistic=0 \"$file\"" "echo unknown"
+
+
 let eprover = make_exec "eprover" "eprover --auto --tstp-format --silent \"$file\"" "eprover --version"
 
+
 let ls4 = make_exec "ls4" "ptl_to_trp -i $file | ls4" "echo unknown"
+
 
 let smt_logic = ref "UFNIA"
 

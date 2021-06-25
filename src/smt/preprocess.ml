@@ -34,9 +34,11 @@ let ( ||> ) = Smt.( ||> )
 
 let ( $! ) = E.( $! )
 
+
 (****************************************************************************)
 (* Preprocessing functions																								  *)
 (****************************************************************************)
+
 
 (** Compute list of primed variables occuring in the sequent [sq] *)
 let primed_vars sq =
@@ -97,6 +99,7 @@ let opaques sq =
 (* Util.eprintf "opaques = %s" (String.concat "," (Smt.remove_repeated !vars)) ; *)
   Smt.remove_repeated !vars
 
+
 (** Change the operator identifiers in the list [ids] from hidden
 		definitions to new CONSTANTs in the context of sequent [sq] *)
 let make_operators_visible ids sq =
@@ -112,6 +115,7 @@ let make_operators_visible ids sq =
   end in
 	snd (visitor#sequent ((),sq.context) sq)
 
+
 (** Inserts the list [vars] of identifiers as new CONSTANTs in the context of
     sequent [sq] *)
 let insert_vars vars sq =
@@ -121,12 +125,14 @@ let insert_vars vars sq =
 (* Util.eprintf "inserted_vars : %s" (String.concat "," vars) ; *)
   { context = cx ; active = sq.active }
 
+
 (** The type [Ctx.ident] contains a field [salt] that counts the number
 		of occurrences of an identifier symbol. [Ctx.string_of_ident] is the
 		string that will be actually printed, i.e. [i_1].  *)
 let make_salt_explicit sq =
   let visitor = object (self : 'self)
     inherit [unit] Expr.Visit.map as super
+
 	  method bounds scx bs =
 		  let _,cx = Ectx.from_hyps Ectx.dot (snd scx) in
 	    let bs = List.map begin
@@ -137,6 +143,7 @@ let make_salt_explicit sq =
 					(nm @@ v, k, dom)
 	    end bs in
 			super#bounds scx bs
+
     method hyp scx h =
       match h.core with
       | Defn (_, _, Hidden, _)    																						(** ignore these cases *)
@@ -145,6 +152,7 @@ let make_salt_explicit sq =
       | _ -> super#hyp scx h
   end in
 	snd (visitor#sequent ((),sq.context) sq)
+
 
 (****************************************************************************)
 
@@ -495,6 +503,7 @@ let simpl_eq scx (hs,c) =
   in
 (* (iter (fun (x,y) -> Util.eprintf "simpl: %a --> %a" (Typ_e.pp_print_expr (snd scx, Ctx.dot)) x (Expr.Fmt.pp_print_expr (snd scx, Ctx.dot)) y) rwr); *)
   fold_left ff (hs,c) rwr																											(** Apply substitutions [rwr] to the proof obligation [hs,c] *)
+
 
 (****************************************************************************)
 (* From Batteries List                                                      *)
