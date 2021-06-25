@@ -5,7 +5,6 @@ open Property
 open Expr.T
 
 
-(* fmt.mli *)
 type omission =
   | Implicit
   | Explicit
@@ -68,7 +67,7 @@ type obligation = {
   fingerprint : string option;
     kind: obligation_kind}
 
-(* fmt.ml *)
+
 type stepno =
   | Named   of int * string * bool
   | Unnamed of int * int
@@ -88,8 +87,8 @@ end
 
 val string_of_stepno:
     ?anonid:bool -> stepno -> string
-(* proof/subst.ml *)
+(* `proof/p_subst.ml` *)
 val get_qed_proof:
     qed_step_ Property.wrapped -> proof
-(* proof/simplify.ml *)
+(* `proof/p_simplify.ml` *)
 val step_number: stepno -> int

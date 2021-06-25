@@ -8,7 +8,8 @@ open Util
 open Expr.T
 open Proof.T
 
-(* module/fmt.mli *)
+
+(* module/m_fmt.ml *)
 type mule = mule_ wrapped
 and mule_ = {
   name              : hint ;
@@ -53,11 +54,11 @@ and status =
 type modctx = mule Coll.Sm.t
 
 
-(* module/gen.ml *)
+(* module/m_gen.ml *)
 val empty_summary: summary
 val cat_summary: summary -> summary -> summary
 val hyps_of_modunit:
     modunit -> Expr.T.hyp_ Property.wrapped list
-(* module/elab.ml *)
+(* module/m_elab.ml *)
 val hyp_size: modunit -> int
 val salt_prop: unit Property.pfuncs
