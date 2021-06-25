@@ -32,10 +32,10 @@ let map = List.map
 
 
 
-(****************************************************************************)
-(* Translation: mapping from basic TLA+ (purely first-order) to target *)
-(* language (defined by [!Smt.mode]). *)
-(****************************************************************************)
+(* Translation: mapping from basic TLA+
+(purely first-order) to target language
+(defined by [!Smt.mode]).
+*)
 
 
 let set_map () = match !Smt.mode with
@@ -456,9 +456,7 @@ let collect_data scx (hs, c) =
     (!ops, SSet.elements !std, strs, SSet.elements !nums)
 
 
-(****************************************************************************)
 (* Rewriting system *)
-(****************************************************************************)
 
 
 (** Rewriter object *)
@@ -528,7 +526,6 @@ let to_basic scx (hs, c) =
     |> fix2 99 ((!abstract_func scx) @@@ (fix2 9 (rw_hsc scx)))
 
 
-(****************************************************************************)
 (* Post-pre-process (after type synthesis)
     - Rewriting rules to apply:
         [a \div b] --> [IF a \in Int /\ b \in Int /\ 0 < b THEN a \div b ELSE tla__div(a,b)]
@@ -601,7 +598,6 @@ let postpreproc sq =
     *)
     snd (visitor#sequent ((), cx) sq)
 
-(****************************************************************************)
 
 (** Add SMTLIB pattern annotations to definitions of abstracted operators *)
 let add_patterns scx hs =
@@ -624,7 +620,6 @@ let add_patterns scx hs =
         | _ -> e
     end hs
 
-(****************************************************************************)
 
 let process_obligation sq =
     (* Util.eprintf "[0]: %a" Fu.pp_print_minimal

@@ -20,7 +20,6 @@ open List
 module B = Builtin
 module Smt = Smtcommons
 
-(****************************************************************************)
 
 open Format
 open Fmtutil
@@ -28,7 +27,6 @@ open Tla_parser  (** for [fmt_expr] *)
 
 exception Typeinf_failed
 
-(****************************************************************************)
 
 type t =
     | Int
@@ -78,7 +76,7 @@ let mk_ref t = Ref (
     t,
     Ex ([], noprops (Internal B.TRUE)))
 
-(**************************************************************************)
+
 (** Type annotations,
 as properties attached to expressions *)
 
@@ -92,7 +90,6 @@ let optype v =
         None
 let has_type v = Property.has v typeprop
 
-(**************************************************************************)
 
 let is_atomic_type = function
     | Int
@@ -575,7 +572,6 @@ let pp_cx ppf cx =
         cx
 *)
 
-(****************************************************************************)
 
 let is_tyvar = function
       TyVar _ -> true
@@ -997,7 +993,6 @@ and ref_to_base_ss ss = map
     ss
 
 
-(****************************************************************************)
 
 
 (** Typing propositions (only for _ground_ types).
@@ -1192,7 +1187,6 @@ let rec to_predtyp cx (x: expr) t =
         cx,
         Internal B.TRUE |> mk
 
-(****************************************************************************)
 
 let lookup_type scx n =
     match Deque.nth

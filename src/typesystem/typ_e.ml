@@ -24,7 +24,6 @@ open Typ_t
 module T = Typ_t
 module Dq = Deque
 
-(****************************************************************************)
 
 let hyp_optype h =
     match h.core with
@@ -39,9 +38,8 @@ let hyp_optype h =
     | Fact (_, _, _) ->
         None
 
-(****************************************************************************)
-(* Equivalence classes of type variables                                    *)
-(****************************************************************************)
+
+(* Equivalence classes of type variables *)
 
 let type_equiv = ref SMap.empty
 
@@ -80,9 +78,8 @@ let type_equiv_pp v = SMap.iter
     end
     !type_equiv
 
-(****************************************************************************)
-(* Type assignments                                                         *)
-(****************************************************************************)
+
+(* Type assignments *)
 
 (** Mapping
 [TyVar] --> [cx * expr] option *
@@ -110,9 +107,8 @@ let fresh_tyvar ?id (cx, e) =
         !tyvar_assignment;
     a
 
-(****************************************************************************)
-(* Typing contexts                                                          *)
-(****************************************************************************)
+
+(* Typing contexts *)
 
 (* type t = ((string * T.t) option) Dq.dq *)
 type t = (hyp * T.t option) Dq.dq
@@ -328,9 +324,8 @@ let map f env = Dq.map
       end
       env
 
-(****************************************************************************)
-(* Typing contexts                                                          *)
-(****************************************************************************)
+
+(* Typing contexts *)
 
 (* type t = (string * T.t) list
 
@@ -462,7 +457,6 @@ let simplify env = map
 
 
 
-(****************************************************************************)
 
 (* open Format *)
 let fprintf = Format.fprintf
@@ -505,7 +499,6 @@ let pp_cx ppf cx =
         (pp_print_delimited pp_print_string) cx
 *)
 
-(****************************************************************************)
 (** The following functions are an exact copy
 of the corresponding functions in [Expr.Fmt]
 __except__  for
@@ -1535,12 +1528,9 @@ and pp ppf env =
             pp_print_elem xt pp env
 *)
 
-(****************************************************************************)
 
 
-(****************************************************************************)
-(** Type assignments (cont.)                                                *)
-(****************************************************************************)
+(** Type assignments (cont.) *)
 
 let tyvar_assignment_subst a t =
     begin

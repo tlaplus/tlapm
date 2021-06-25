@@ -42,7 +42,6 @@ val timeout: t -> float
 val scale_time: t -> float -> t
 val pp_print_tactic: Format.formatter -> t -> unit
 
-(* *)
 val default_zenon_timeout: float
 val default_ls4_timeout: float
 val default_isabelle_timeout: float

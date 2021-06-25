@@ -202,7 +202,7 @@ and defn_ =
         hint * expr * (
             (hint * backend_args) list list)
 
-(** Instance *)
+(* Instance *)
 and instance = {
   (** arguments of the statement `INSTANCE`,
   for example:
@@ -212,7 +212,7 @@ and instance = {
   *)
   inst_args : hint list ;
 
-  (** name of the instantiated module *)
+  (* name of the instantiated module *)
   inst_mod  : string ;
 
   (** substitution defined by the
@@ -237,7 +237,7 @@ and instance = {
 (a generalisation of) TLA+
 ASSUME/PROVE forms *)
 and sequent = {
-  (** antecedents:
+  (* antecedents:
   These include all definitions from module scope.
   The definitions are annotated as
   `Visible` or `Hidden` (see the component

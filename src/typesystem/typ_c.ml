@@ -21,7 +21,6 @@ open List
 module B = Builtin
 module Smt = Smtcommons
 
-(****************************************************************************)
 
 open Format
 open Fmtutil
@@ -54,14 +53,12 @@ let print_hyp h = match h.core with
         "Fact ..."
 *)
 
-(****************************************************************************)
+
 (** Subst applied during subtype unification *)
-(****************************************************************************)
 type substitutions = (string * T.t) list
 
-(****************************************************************************)
-(** Type Constraints                                                        *)
-(****************************************************************************)
+
+(** Type Constraints *)
 
 type tc =
     (** Atomic constraints *)
@@ -295,9 +292,8 @@ and vsubstc a b = function
             T.vsubst a b t2)
     | c -> c
 
-(****************************************************************************)
-(* Type-Correctness Conditions (TCC)                                        *)
-(****************************************************************************)
+
+(* Type-Correctness Conditions (TCC) *)
 
 type tcc_raw = Builtin.builtin * Typ_e.t * tref * tref
     (** Unprocessed TCAtom *)
@@ -337,10 +333,9 @@ let apply_substs_tccs tccs ss =
         ss  (** FIX: subst exprs *)
 *)
 
-(****************************************************************************)
-(* Atomic constraint simplification                                         *)
-(* Generation of TCCs from Ref <: Ref and Ref == Ref                        *)
-(****************************************************************************)
+
+(* Atomic constraint simplification *)
+(* Generation of TCCs from Ref <: Ref and Ref == Ref *)
 
 let _simp_cc = function
     | CEq (env, t1, t2) ->
@@ -529,9 +524,8 @@ let rec simp_c = function
     | CExists (vs, c) ->
         mk_ex (vs, [simp_c c])
 
-(****************************************************************************)
-(* Equality constraint unification                                          *)
-(****************************************************************************)
+
+(* Equality constraint unification *)
 
 let rec subs_ss a t = function
     | [] -> []
@@ -651,9 +645,8 @@ let rec rewrite_eqs (env, vs, cs) =
             rewrite_eqs (env, vs, cs)
         end
 
-(****************************************************************************)
-(* Constraint simplification                                                *)
-(****************************************************************************)
+
+(* Constraint simplification *)
 
 (** Simplify by applying rewriting function
 [rw_func] to constraint [env, c] *)
@@ -690,7 +683,6 @@ let rec rw_c rw_func (env, c) =
         mk_cs (mk_atoms (simp_ccs [w]))
     end
 
-(****************************************************************************)
 
 (** Apply [f] to [x] until reaching a fixpoint *)
 let rec fix eq f x =
@@ -705,7 +697,6 @@ let fix_env_c f (x: Typ_e.t * t) =
         eq c1 c2 in
     fix eq f x
 
-(****************************************************************************)
 
 (** Flatten constraint, ie pull all quantifiers out *)
 let rec flatten_c c: string list * tc list =
@@ -729,7 +720,7 @@ let simplify (env, c) =
     (* Smt.ifprint 1 "** C.simplify in %5.3fs.%!" (Sys.time() -. tx); *)
     (env, c)
 
-(****************************************************************************)
+(* ---- *)
 
 let map_c f = function
     | CConj cs -> CConj (List.map f cs)
@@ -769,9 +760,7 @@ type cg_mode =
     | TypHyp  (* As a typing hypothesis *)
 
 
-(****************************************************************************)
-(* Placeholders                                                             *)
-(****************************************************************************)
+(* Placeholders *)
 
 module SMap = Typ_e.SMap
 

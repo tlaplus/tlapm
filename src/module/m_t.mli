@@ -24,7 +24,7 @@ and mule_ = {
         definitions (TODO: confirm) *)
     mutable stage: stage;
     mutable important: bool}
-(** module unit *)
+(* module unit *)
 and modunit = modunit_ wrapped
 and modunit_ =
     | Constants of (hint * shape) list

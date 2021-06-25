@@ -10,17 +10,17 @@
 open M_t
 
 
-(** all TLAPM builtin operators, including TLA+ builtins *)
+(* all TLAPM builtin operators, including TLA+ builtins *)
 val tlapm: mule
-(** natural numbers *)
+(* natural numbers *)
 val naturals: mule
-(** integers *)
+(* integers *)
 val integers: mule
-(** reals *)
+(* reals *)
 val reals: mule
-(** sequences *)
+(* sequences *)
 val sequences: mule
-(** TLC *)
+(* TLC *)
 val tlc: mule
-(** the initial module context, constructed at startup *)
+(* the initial module context, constructed at startup *)
 val initctx: modctx

@@ -25,7 +25,6 @@ module B = Builtin
 open Typ_t
 open Typ_e
 
-(****************************************************************************)
 
 let simp_list e =
     match e.core with
@@ -47,7 +46,6 @@ let mk_list = function
     | e ->
         e %% []
 
-(****************************************************************************)
 
 let in_fm = ref SMap.empty
     (** node [i] |->
@@ -67,7 +65,6 @@ let out_ph = ref SMap.empty
         which placeholder [i] points *)
 let plhdrs = ref SMap.empty
 
-(****************************************************************************)
 
 let ( @@ ) m k =
     try
@@ -121,7 +118,6 @@ let mk_imp_graph vcs =
     in
     iter add1 vcs
 
-(****************************************************************************)
 
 (** Print formatted implication graph *)
 let pp_imp b f_ph f_fm p =
@@ -137,7 +133,6 @@ let pp_imp b f_ph f_fm p =
     (String.concat ", " (!f_ph @@ p))
     (String.concat ", " (List.map Smt.pps_ex (!f_fm @@ p)))
 
-(****************************************************************************)
 
 (** Pass the information upwards from fixed formulas.
 1. For each @k --> es

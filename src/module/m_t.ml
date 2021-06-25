@@ -17,7 +17,9 @@ open Expr.T
 open Proof.T
 
 
-(** module type. Can't use "module" because it's a keyword in OCaml. *)
+(* module type. Cannot use "module",
+because it is a keyword in OCaml.
+*)
 type mule = mule_ wrapped
 and mule_ = {
     name: hint;
@@ -28,7 +30,7 @@ and mule_ = {
     defdepth: int;
     mutable stage: stage;
     mutable important: bool}
-(** module unit *)
+(* module unit *)
 and modunit = modunit_ wrapped
 and modunit_ =
     | Constants of (hint * shape) list
@@ -64,7 +66,7 @@ and final = {
 and status =
     | Unchecked | Proved
     | Certified | Incomplete
-(** module context *)
+(* module context *)
 type modctx = mule Sm.t
 let empty_summary = {
     sum_total = 0;

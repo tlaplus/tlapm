@@ -40,7 +40,6 @@ module C = Typ_c
 let map = List.map
 
 
-(****************************************************************************)
 
 
 let pp_env_c v env c =
@@ -60,9 +59,8 @@ let pp_prop v env cx e =
         e
 
 
-(****************************************************************************)
-(* Unification of subtype constraints                                       *)
-(****************************************************************************)
+(* ---- Unification of subtype constraints ---- *)
+
 
 let rec rewrite_subs (env, vs, (cs: C.t list)) =
     (** Collect substitutions from subtype constraints,
@@ -182,9 +180,7 @@ let rec rewrite_subs (env, vs, (cs: C.t list)) =
 let unify_subs (env, c) = C.rw_c rewrite_subs (env, c)
 
 
-(****************************************************************************)
-(* Residual constraints                                                     *)
-(****************************************************************************)
+(* ---- Residual constraints ---- *)
 
 
 let rec rewrite_refl (env, vs, cs) =
@@ -314,10 +310,9 @@ let mdom m =
         (SMap.bindings m) in
     ks
 
-(****************************************************************************)
-(* Update placeholders in constraints, types, etc.                          *)
-(* using assignment [phs] to update                                         *)
-(****************************************************************************)
+
+(* Update placeholders in constraints, types, etc. *)
+(* using assignment [phs] to update *)
 
 let update_r phs env = function
     | Ph (ss, p) ->
@@ -432,9 +427,7 @@ let update_tcc phs (op, env, r1, r2) =
     vc
 
 
-(****************************************************************************)
-(** Processing TCCs                                                         *)
-(****************************************************************************)
+(* ---- Processing TCCs ---- *)
 
 
 let nontrivial_vc = function
@@ -550,9 +543,7 @@ let tccs_to_seq
     E.empty, e
 
 
-(****************************************************************************)
-(** Solving procedures                                                      *)
-(****************************************************************************)
+(* ---- Solving procedures ---- *)
 
 
 let remove_repeated_seq sqs =
@@ -654,10 +645,8 @@ let solve_phs init_phs tccs n =
     solve_tccs tccs;
     phs
 
-(****************************************************************************)
-(** Solving procedures (2)                                                  *)
-(****************************************************************************)
 
+(* ---- Solving procedures (2) ---- *)
 
 let _solve_c' (env, c) =
     let _solve_c (env, c) = (env, c)
@@ -677,8 +666,8 @@ let _solve_c' (env, c) =
         in
     env, c
 
-(****************************************************************************)
 
+(* ---- *)
 
 let solve (env, c) =
     let solve_c' env c =
@@ -728,7 +717,7 @@ let solve (env, c) =
         "\n** Final type assignment and constraint:";
     pp_env_c 2 env c;
     Smt.ifprint 2 "\n";
-    (**************************************************************************)
+    (* ---- *)
     Smt.ifprint 2
         "-- Solving =?= and <? ------------------------------------------------------" ;
     let c = c
@@ -778,10 +767,8 @@ let solve (env, c) =
 
     typesmap, env, c
 
-(****************************************************************************)
-(** Type decoration                                                         *)
-(****************************************************************************)
 
+(* ---- Type decoration ---- *)
 
 (** In [sq], replace annotations [TyVar a]
 by the corresponding type from [typesmap]
@@ -929,7 +916,6 @@ let decorate typesmap sq =
     let _, sq = visitor#sequent ((), sq.context) sq in
     env, sq
 
-(****************************************************************************)
 
 let type_construct sq =
     if !Smt.typesystem_mode = 0

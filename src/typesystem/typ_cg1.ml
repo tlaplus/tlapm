@@ -21,7 +21,6 @@ module B = Builtin
 
 module Fu = Fmtutil.Minimal (Tla_parser.Prec)
 
-(****************************************************************************)
 
 open Typ_t
 open Typ_e
@@ -32,7 +31,7 @@ module C = Typ_c
 
 module Dq = Deque
 
-(****************************************************************************)
+
 (** Type System *)
 
 let mk_eq (t1, t2) = CAtom (CEq (E.empty, t1, t2))

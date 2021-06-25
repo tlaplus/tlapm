@@ -21,7 +21,6 @@ module B = Builtin
 
 module Fu = Fmtutil.Minimal (Tla_parser.Prec)
 
-(****************************************************************************)
 
 open Typ_t
 open Typ_e
@@ -32,7 +31,7 @@ module C = Typ_c
 
 module Dq = Deque
 
-(****************************************************************************)
+
 (** Type System *)
 
 let mk_eq (e, t1, t2) = CAtom (CEq (e, t1, t2))
@@ -56,7 +55,6 @@ let rec pairs = function
     | _ ->
         []
 
-(****************************************************************************)
 
 (** Constraint Generation for  [env] |- [scx e] : [t]
     -- Type system without refinements *)
