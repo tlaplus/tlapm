@@ -511,16 +511,26 @@ let rec number_of_hyp (hyps: ctx) =
         end in
     recurse hyps;
     let r = {
-        n_variables=(!n_variables);
-        n_constants=(!n_constants);
-        n_visible_defs=(!n_visible_defs);
-        n_hidden_defs=(!n_hidden_defs);
-        n_visible_facts=(!n_visible_facts);
-        n_hidden_facts=(!n_hidden_facts);
-        visible_definition_names=(!visible_definition_names);
-        hidden_definition_names=(!hidden_definition_names);
-        visible_fact_names=(!visible_fact_names);
-        hidden_fact_names=(!hidden_fact_names)}
+        n_variables=
+            !n_variables;
+        n_constants=
+            !n_constants;
+        n_visible_defs=
+            !n_visible_defs;
+        n_hidden_defs=
+            !n_hidden_defs;
+        n_visible_facts=
+            !n_visible_facts;
+        n_hidden_facts=
+            !n_hidden_facts;
+        visible_definition_names=
+            !visible_definition_names;
+        hidden_definition_names=
+            !hidden_definition_names;
+        visible_fact_names=
+            !visible_fact_names;
+        hidden_fact_names=
+            !hidden_fact_names}
     in
     r
 
