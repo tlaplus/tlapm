@@ -235,4 +235,3 @@ end
 
 let anon = new anon
 
-let _ = ()
