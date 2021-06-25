@@ -17,12 +17,12 @@ let hyp_rename v h = begin
     | Flex _ ->
         Flex v
     | Defn (df, wd, vis, ex) ->
-      Defn ({ df with core = match df.core with
-                | Recursive (_, shp) -> Recursive (v, shp)
-                | Operator (_, e) -> Operator (v, e)
-                | Instance (_, i) -> Instance (v, i)
-                | Bpragma (_, e, l) -> Bpragma (v, e, l)},
-            wd, vis, ex)
+        let core = match df.core with
+            | Recursive (_, shp) -> Recursive (v, shp)
+            | Operator (_, e) -> Operator (v, e)
+            | Instance (_, i) -> Instance (v, i)
+            | Bpragma (_, e, l) -> Bpragma (v, e, l) in
+        Defn ({df with core}, wd, vis, ex)
     | Fact (e, vis, tm) ->
         Fact (e, vis, tm)
     end @@ h

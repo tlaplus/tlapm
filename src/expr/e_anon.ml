@@ -64,7 +64,11 @@ class anon_sg = object (self: 'self)
                 sels
                 is_inst =
             begin
-          match Deque.find ~backwards:true (snd scx) (hyp_is_named pfx) with
+            let hyp = Deque.find
+                ~backwards:true
+                (snd scx)
+                (hyp_is_named pfx) in
+            match hyp with
             | None -> begin
                 match sels with
                 | Sel_lab (sfx, sargs) :: sels ->

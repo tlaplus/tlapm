@@ -303,7 +303,10 @@ and time = Now | Always | NotSet  (* this value
     constants or not *)
 
 (* context helper function *)
-let get_val_from_id cx n = match Deque.nth ~backwards:true cx (n - 1) with
+let get_val_from_id cx n =
+    let item = Deque.nth
+        ~backwards:true cx (n - 1) in
+    match item with
     | Some e -> e
     | None -> failwith
         "unknown bound variable"
