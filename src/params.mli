@@ -48,7 +48,7 @@ val max_threads: int ref
 val path_prefix: string
 
 (* backend/smt.ml *)
-val smt_logic : string ref
+val smt_logic: string ref
 
 (* backend/fingerprints.ml *)
 val rawversion: unit -> string

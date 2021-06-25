@@ -25,8 +25,8 @@ type status_type6 =
 
 
 type package = {
-  final_form   : obligation;
-  log          : string list;
-  proof        : string;
-  results      : status_type6 list;
+  final_form: obligation;
+  log: string list;
+  proof: string;
+  results: status_type6 list;
 }

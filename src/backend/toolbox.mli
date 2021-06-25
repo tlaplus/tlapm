@@ -12,7 +12,7 @@ val get_kills: unit -> int list
 *)
 
 (* backend/isabelle.ml *)
-val toolbox_print :
+val toolbox_print:
   Proof.T.obligation ->
   ?temp:bool ->
   string ->
@@ -28,7 +28,7 @@ val toolbox_print :
 
 
 (* backend/prep.ml *)
-val print_new_res :
+val print_new_res:
   Proof.T.obligation -> Types.status_type6 ->
   string -> float option -> unit
 val print_message: string -> unit

@@ -35,9 +35,9 @@ and qed_step = qed_step_ wrapped
 and qed_step_ =
     | Qed of proof
 (** Usable elements *)
-and usable = { facts : expr list
-             ; defs  : use_def wrapped list }
-
+and usable = {
+    facts: expr list;
+    defs: use_def wrapped list}
 and use_def =
     | Dvar of string
     | Dx of int
@@ -45,8 +45,8 @@ and use_def =
 
 (*
 type isequent = private {
-  isq : sequent;
-  idx : unit;  (* FIXME add index *)
+  isq: sequent;
+  idx: unit;  (* FIXME add index *)
 }
 *)
 
@@ -62,9 +62,9 @@ type obligation_kind =
     | Ob_support
     | Ob_error of string
 type obligation = {
-  id  : int option;
-  obl : sequent wrapped;
-  fingerprint : string option;
+    id: int option;
+    obl: sequent wrapped;
+    fingerprint: string option;
     kind: obligation_kind}
 
 
@@ -73,15 +73,15 @@ type stepno =
     | Unnamed of int * int
 
 
-module Props : sig
-  val step : stepno pfuncs
-  val goal : sequent pfuncs
-  val supp : unit pfuncs
-  val obs : obligation list pfuncs
-  val meth : Method.t list pfuncs
-  val orig_step : step pfuncs
-  val orig_proof : proof pfuncs
-  val use_location : Loc.locus pfuncs
+module Props: sig
+    val step: stepno pfuncs
+    val goal: sequent pfuncs
+    val supp: unit pfuncs
+    val obs: obligation list pfuncs
+    val meth: Method.t list pfuncs
+    val orig_step: step pfuncs
+    val orig_proof: proof pfuncs
+    val use_location: Loc.locus pfuncs
 end
 
 

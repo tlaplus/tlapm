@@ -16,15 +16,15 @@ val print_error: string -> string -> unit
 val print_obligationsnumber: int -> unit
 (* Send a "type:obligationsnumber" message to the toolbox. *)
 
-val print_obligation :
-  id : int ->
-  loc : Loc.locus ->
-  status : string ->
-  fp : string option ->
-  prover : string option ->
-  meth : string option ->
-  reason : string option ->
-  already : bool option ->
-  obl : string option ->
-    unit
+val print_obligation:
+    id: int ->
+    loc: Loc.locus ->
+    status: string ->
+    fp: string option ->
+    prover: string option ->
+    meth: string option ->
+    reason: string option ->
+    already: bool option ->
+    obl: string option ->
+        unit
 (* Send a "type:obligation" message to the toolbox. *)

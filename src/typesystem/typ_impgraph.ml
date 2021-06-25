@@ -284,10 +284,10 @@ let rule_true i =
     end else ()
 
 
-(** [init_phs] : initial plhdrs
-[vcs] : verification conditions in
+(** [init_phs]: initial plhdrs
+[vcs]: verification conditions in
     the form (env, tref1, tref2)
-[ns] : total number of plhdrs
+[ns]: total number of plhdrs
 Returns: plhdrs derived from the
     implication graph generated from [vcs]
 *)

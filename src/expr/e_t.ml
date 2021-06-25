@@ -564,7 +564,7 @@ let sequent_stats (sq: sequent) =
     n_hyp
 
 
-let enabledaxioms : bool pfuncs =
+let enabledaxioms: bool pfuncs =
   Property.make "Module.Elab.enabledaxioms"
 let has_enabledaxioms x = Property.has
     x enabledaxioms

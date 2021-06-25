@@ -9,7 +9,7 @@
 open Expr.T
 
 
-val coalesce : ctx -> expr -> expr
-val coalesce_modal : ctx -> expr -> expr
+val coalesce: ctx -> expr -> expr
+val coalesce_modal: ctx -> expr -> expr
 val coalesce_apply: ctx -> expr -> expr
 val rename_with_loc: ctx -> expr -> expr

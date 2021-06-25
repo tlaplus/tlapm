@@ -86,12 +86,12 @@ let really_parse_file fn =
 
 
 let validate mn inch =
-    let v : string = Marshal.from_channel inch in
+    let v: string = Marshal.from_channel inch in
     if v = Params.rawversion () then
         let h = Digest.input inch in
         if h = Params.self_sum then
             let csum = Digest.input inch in
-            let mule : mule = Marshal.from_channel inch in
+            let mule: mule = Marshal.from_channel inch in
             (close_in inch;
              Some (csum, mule))
         else

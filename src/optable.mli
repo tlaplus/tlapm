@@ -18,11 +18,11 @@ and dom =
   | User
 type prec = int * int
 type tlaop = {
-  name   : string ;
-  prec   : prec ;
-  fix    : fixity ;
-  dom    : dom ;
-  defn   : Builtin.builtin option ;
+    name: string;
+    prec: prec;
+    fix: fixity;
+    dom: dom;
+    defn: Builtin.builtin option;
 }
 val optable: (string, tlaop) Hashtbl.t
 

@@ -7,8 +7,8 @@
 
 open E_t
 
-val hyp_is_named : string -> hyp -> bool
+val hyp_is_named: string -> hyp -> bool
 
-class anon : [string list] E_visit.map
+class anon: [string list] E_visit.map
 
-val anon : anon
+val anon: anon

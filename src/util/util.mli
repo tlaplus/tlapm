@@ -53,26 +53,26 @@ val fprintf :
 (** {3 Convenience functions for exceptions} *)
 
 exception Bug
-val bug : ?at:('a wrapped) -> string -> 'failure
+val bug: ?at:('a wrapped) -> string -> 'failure
 
 exception Not_implemented
-val not_implemented : ?at:('a wrapped) -> string -> 'failure
+val not_implemented: ?at:('a wrapped) -> string -> 'failure
 
 (** {3 File and object checksumming} *)
 
 type csum
-val checksum : string -> csum
-val pp_print_csum : Format.formatter -> csum -> unit
+val checksum: string -> csum
+val pp_print_csum: Format.formatter -> csum -> unit
 
 (** {3 Text wrangling} *)
 
-val plural : ?ending:string -> int -> string -> string
-val line_wrap : ?cols:int -> string -> string
+val plural: ?ending:string -> int -> string -> string
+val line_wrap: ?cols:int -> string -> string
 
 (** {3 Misc} *)
 
-val heap_stats : unit -> unit
-val temp_file :
+val heap_stats: unit -> unit
+val temp_file:
     (unit -> unit) ref -> string -> string * out_channel
 (** [temp_file clean_hook suffix]
     Create a temporary file, return its name and an output channel to it.
@@ -80,7 +80,7 @@ val temp_file :
     and removes the file.
 *)
 
-val rm_temp_file : string -> unit
+val rm_temp_file: string -> unit
 (** Remove the given temporary file unless debugging "tempfiles" *)
 
 val add_hook: (unit -> unit) ref -> ('a -> unit) -> 'a -> unit

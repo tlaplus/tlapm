@@ -8,4 +8,4 @@ Copyright (c) 2013  INRIA and Microsoft Corporation
 
 open Expr.T
 
-val solve : (Typ_e.t * expr) -> string
+val solve: (Typ_e.t * expr) -> string

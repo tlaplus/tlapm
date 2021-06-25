@@ -8,6 +8,5 @@
 open M_t
 
 
-val is_global : 'a Property.wrapped -> bool
-
-val globalness : mule -> mule
+val is_global: 'a Property.wrapped -> bool
+val globalness: mule -> mule

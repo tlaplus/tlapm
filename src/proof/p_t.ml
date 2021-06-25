@@ -64,8 +64,9 @@ and qed_step = qed_step_ wrapped
 and qed_step_ =
     | Qed of proof
 (** Usable elements *)
-and usable = { facts : expr list
-             ; defs  : use_def wrapped list }
+and usable = {
+    facts: expr list;
+    defs: use_def wrapped list}
 and use_def =
     | Dvar of string
     | Dx of int
@@ -82,42 +83,42 @@ type obligation_kind =
 
 
 type obligation = {
-  id  : int option;
-  obl : sequent wrapped;
-  fingerprint : string option;
+    id: int option;
+    obl: sequent wrapped;
+    fingerprint: string option;
     kind: obligation_kind}
 
 
 module Props = struct
-  let step : stepno Property.pfuncs =
+    let step: stepno Property.pfuncs =
         Property.make
             ~uuid:"bb05cbe0-93a0-4fb7-aef8-55bee144b1e3"
             "Proof.Props.step"
-  let goal : sequent pfuncs =
+    let goal: sequent pfuncs =
         Property.make
             ~uuid:"94caf0e0-64b6-4e79-b479-f958d089f46f"
             "Proof.Props.goal"
-  let supp : unit pfuncs =
+    let supp: unit pfuncs =
         Property.make
             ~uuid:"b6af5d62-bf07-4b79-b489-fbaf3e9cc3ba"
             "Proof.Props.supp"
-  let obs  : obligation list pfuncs =
+    let obs: obligation list pfuncs =
         Property.make
             ~uuid:"6b493e40-a604-4cfa-9a13-a20a6808aea8"
             "Proof.Props.obs"
-  let meth : Method.t list pfuncs =
+    let meth: Method.t list pfuncs =
         Property.make
             ~uuid:"c213e558-b21d-4356-97db-bd15f201510b"
             "Proof.Props.meth"
-  let orig_step : step Property.pfuncs =
+    let orig_step: step Property.pfuncs =
         Property.make
             ~uuid:"557d3bc3-8767-4b4f-96c1-ef90cce34a0c"
             "Proof.Props.orig_step"
-  let orig_proof : proof Property.pfuncs =
+    let orig_proof: proof Property.pfuncs =
         Property.make
             ~uuid:"15890d47-4fae-410a-a2fb-74a885d6f42f"
             "Proof.Props.orig_proof"
-  let use_location : Loc.locus Property.pfuncs =
+    let use_location: Loc.locus Property.pfuncs =
         Property.make
             "Proof.Props.use_location"
 end

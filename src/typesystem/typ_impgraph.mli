@@ -10,7 +10,7 @@ open Expr.T
 open Typ_t
 open Typ_e
 
-val solve :
+val solve:
   (hyp list * expr) SMap.t ->
   (Builtin.builtin * Typ_e.t * tref * tref) list ->
   string list ->

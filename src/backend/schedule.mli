@@ -28,10 +28,10 @@ and computation =
     | Todo of command  (* must launch process *)
 
 and command = {
-  line : string;         (* Shell command line *)
-  timeout : float;       (* delay before running tc *)
-  timec : timeout_cont;  (* function to launch after timeout *)
-  donec : result -> float -> bool;
+  line: string;  (* Shell command line *)
+  timeout: float;  (* delay before running tc *)
+  timec: timeout_cont;  (* function to launch after timeout *)
+  donec: result -> float -> bool;
     (* function to call when finished;
     float is time used; returns success *)
 }

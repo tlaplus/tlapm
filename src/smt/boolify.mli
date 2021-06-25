@@ -4,6 +4,6 @@
 
 open Expr.T
 
-val boolify : sequent -> sequent
-val eboo : expr -> expr
-val mk_bool : expr -> expr
+val boolify: sequent -> sequent
+val eboo: expr -> expr
+val mk_bool: expr -> expr

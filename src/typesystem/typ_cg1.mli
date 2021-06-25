@@ -4,4 +4,5 @@
 open Expr.T
 
 (****************************************************************************)
-val cg : sequent -> sequent * Typ_e.t * Typ_c.t
+val cg:
+    sequent -> sequent * Typ_e.t * Typ_c.t

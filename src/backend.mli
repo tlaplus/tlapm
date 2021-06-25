@@ -2,7 +2,7 @@
  * Copyright (C) 2011  INRIA and Microsoft Corporation
  *)
 
-module Types : sig
+module Types: sig
     type reason =
         | False
         | Timeout
@@ -15,15 +15,15 @@ module Types : sig
         | Triv
         | NTriv of status_type_aux6 * Method.t
     type package = {
-        final_form   : Proof.T.obligation;
-        log          : string list;
-        proof        : string;
-        results      : status_type6 list;
+        final_form: Proof.T.obligation;
+        log: string list;
+        proof: string;
+        results: status_type6 list;
         }
 end
 
 
-module Fingerprints : sig
+module Fingerprints: sig
     val write_fingerprint:
         Proof.T.obligation -> Proof.T.obligation
 end
@@ -48,8 +48,9 @@ module Fpfile: sig
     val get_length: unit -> int
 end
 
-module Toolbox : sig
-  val toolbox_print :
+
+module Toolbox: sig
+    val toolbox_print:
         Proof.T.obligation ->
         ?temp:bool ->
         string ->

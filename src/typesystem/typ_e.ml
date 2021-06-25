@@ -205,7 +205,7 @@ let mk vs =
         empty vs ass in
     (env, ass)
 
-let to_list (env:t) =
+let to_list (env: t) =
     (* List.fold_left
         (fun r -> function
               None -> r
@@ -214,7 +214,7 @@ let to_list (env:t) =
     *)
     (Dq.to_list env)
 
-let _types (env:t) =
+let _types (env: t) =
     List.fold_left
         (fun r -> function
               _, None -> r
@@ -236,8 +236,8 @@ let find x env =
         end
 
 let eq
-        (e1:t)
-        (e2:t) :
+        (e1: t)
+        (e2: t):
             bool =
     let e1 = Dq.to_list e1 in
     let e2 = Dq.to_list e2 in
@@ -256,8 +256,8 @@ let eq
     end
 
 let subst
-        (a:string)
-        (t:T.t) env =
+        (a: string)
+        (t: T.t) env =
     Dq.map
         (fun i -> function
               h, None -> h, None
@@ -265,8 +265,8 @@ let subst
         env
 
 let vsubst
-        (a:string)
-        (b:string)
+        (a: string)
+        (b: string)
         env =
     (*
     Dq.map
@@ -356,7 +356,7 @@ let find x env =
         failwith (
             "Type for "^x^" not found in environment.")
 
-let eq e1 e2 : bool =
+let eq e1 e2: bool =
     begin
     try
         for_all2
@@ -368,14 +368,17 @@ let eq e1 e2 : bool =
         false end
 
 let subst
-        (a:string)
-        (t:T.t)
+        (a: string)
+        (t: T.t)
         env =
     map
         (fun (x, t') -> (x, T.subst a t t'))
         env
 
-let vsubst (a:string) (b:string) env =
+let vsubst
+        (a: string)
+        (b: string)
+        env =
     map
         (fun (x, t) ->
             (if a = x then b else x),
@@ -506,7 +509,7 @@ let pp_cx ppf cx =
 (** The following functions are an exact copy
 of the corresponding functions in [Expr.Fmt]
 __except__  for
-[fmt_expr:SetSt, Choose],
+[fmt_expr: SetSt, Choose],
 [fmt_bounds],
 [pp_print_chunk] and
 [pp_print_hyp]
@@ -559,7 +562,7 @@ let elide h =
 (* let p_boolify cond ff = (if cond then fprintf ff "^bool") *)
       (* (if isboo then "^bool" else "") *)
 
-let rec fmt_expr (cx:Expr.Fmt.ctx) ew = match ew.core with
+let rec fmt_expr (cx: Expr.Fmt.ctx) ew = match ew.core with
   | ( Ix _ | Opaque _ | Internal _ ) ->
       fmt_apply cx ew []
   | Lambda (vss, e) ->

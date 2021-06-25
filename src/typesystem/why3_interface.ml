@@ -40,17 +40,17 @@ module Ty = Why3.Ty
 module Ident = Why3.Ident
 module Number = Why3.Number
 
-let config : Whyconf.config = Whyconf.read_config None
+let config: Whyconf.config = Whyconf.read_config None
 
 (* the [main] section of the config file *)
-let main : Whyconf.main = Whyconf.get_main config
+let main: Whyconf.main = Whyconf.get_main config
 
 (* all the provers detected, from the config file *)
-(* let provers : Whyconf.config_prover Whyconf.Mprover.t =
+(* let provers: Whyconf.config_prover Whyconf.Mprover.t =
 Whyconf.get_provers config in *)
 
 (* One prover named Alt-Ergo in the config file *)
-let alt_ergo : Whyconf.config_prover =
+let alt_ergo: Whyconf.config_prover =
     let fp = Whyconf.parse_filter_prover "Alt-Ergo" in
     (** all provers that have the name "Alt-Ergo" *)
     let provers = Whyconf.filter_provers config fp in
@@ -63,10 +63,11 @@ let alt_ergo : Whyconf.config_prover =
 
 
 (* builds the environment from the [loadpath] *)
-let env : Env.env = Env.create_env (Whyconf.loadpath main)
+let env: Env.env = Env.create_env
+    (Whyconf.loadpath main)
 
 (* loading the Alt-Ergo driver *)
-let alt_ergo_driver : Driver.driver =
+let alt_ergo_driver: Driver.driver =
 try
     Driver.load_driver env alt_ergo.Whyconf.driver []
 with e ->
@@ -76,27 +77,31 @@ with e ->
     exit 1
 
 
-let int_theory : Th.theory = Env.find_theory env ["int"] "Int"
-(* let str_theory : Th.theory = Env.find_theory env ["string"] "String" *)
+let int_theory: Th.theory = Env.find_theory
+    env ["int"] "Int"
+(*
+let str_theory: Th.theory = Env.find_theory
+    env ["string"] "String"
+*)
 
 let th_find_ls = Th.ns_find_ls int_theory.Th.th_export
 
-let plus_symbol : Tm.lsymbol = th_find_ls ["infix +"]
-let minus_symbol : Tm.lsymbol = th_find_ls ["infix -"]
-let mult_symbol : Tm.lsymbol = th_find_ls ["infix *"]
-(* let exp_symbol : Tm.lsymbol   = th_find_ls ["infix ^"] *)
-(* let uminus_symbol : Tm.lsymbol = th_find_ls ["-"] *)
-let lt_symbol : Tm.lsymbol = th_find_ls ["infix <"]
-let lteq_symbol : Tm.lsymbol = th_find_ls ["infix <="]
-let gt_symbol : Tm.lsymbol = th_find_ls ["infix >"]
-let gteq_symbol : Tm.lsymbol = th_find_ls ["infix >="]
+let plus_symbol: Tm.lsymbol = th_find_ls ["infix +"]
+let minus_symbol: Tm.lsymbol = th_find_ls ["infix -"]
+let mult_symbol: Tm.lsymbol = th_find_ls ["infix *"]
+(* let exp_symbol: Tm.lsymbol = th_find_ls ["infix ^"] *)
+(* let uminus_symbol: Tm.lsymbol = th_find_ls ["-"] *)
+let lt_symbol: Tm.lsymbol = th_find_ls ["infix <"]
+let lteq_symbol: Tm.lsymbol = th_find_ls ["infix <="]
+let gt_symbol: Tm.lsymbol = th_find_ls ["infix >"]
+let gteq_symbol: Tm.lsymbol = th_find_ls ["infix >="]
 
 let sort_u = Ty.ty_var
     (Ty.create_tvsymbol (Ident.id_fresh ("u")))
 let sort_str = Ty.ty_var
     (Ty.create_tvsymbol (Ident.id_fresh "str"))
 
-let mem_symbol : Tm.lsymbol = Tm.create_psymbol
+let mem_symbol: Tm.lsymbol = Tm.create_psymbol
     (Ident.id_fresh "mem")
     [sort_u; sort_u]
 
@@ -129,7 +134,7 @@ let create_vars id ts t  (* : Tm.term  *) =
 
 let var_terms = ref SMap.empty
 
-let rec to_why cx e : Tm.term =
+let rec to_why cx e: Tm.term =
     (* Util.eprintf
         "to_why: %a"
         (print_prop ()) (opaque cx e);
@@ -244,7 +249,7 @@ let rec to_why cx e : Tm.term =
         (map (to_why cx) es)
     (* | Quant (q, ((_, _, No_domain) :: _ as bs), ex) -> *)
     (* | Quant (q, ((h, _, No_domain) :: _ as bs), ex) ->
-        let var_x : Tm.vsymbol = Tm.create_vsymbol
+        let var_x: Tm.vsymbol = Tm.create_vsymbol
             (Ident.id_fresh "x")
             Ty.ty_int in
         Tm.t_forall_close
@@ -274,10 +279,10 @@ let rec to_why cx e : Tm.term =
         assert false
 
 
-let new_task fm (vs: Tm.lsymbol list) : Task.task =
+let new_task fm (vs: Tm.lsymbol list): Task.task =
     let t = Task.use_export None int_theory in
     let t = fold_left Task.add_param_decl t vs in
-    let goal_id1 : Decl.prsymbol = Decl.create_prsymbol
+    let goal_id1: Decl.prsymbol = Decl.create_prsymbol
         (Ident.id_fresh "goal1") in
     Task.add_prop_decl
         t Decl.Pgoal goal_id1 fm
@@ -301,7 +306,7 @@ let rec normalize cx e =
     | _ -> map_exp normalize cx e
 
 
-let solve ((env:Typ_e.t), e) =
+let solve ((env: Typ_e.t), e) =
     var_terms := fold_left
         begin fun m (h, ot) ->
             match ot with
@@ -313,7 +318,10 @@ let solve ((env:Typ_e.t), e) =
         end
         SMap.empty
         (Typ_e.to_list env);
-    (* let vs : string list = map (fun (x, _) -> x) env in   *)
+    (*
+    let vs: string list = map
+        (fun (x, _) -> x) env in
+    *)
     (* let vs = map (fun (x, _) -> x) env in   *)
     let vs = map
         (fun (x, (fsym, _, _)) -> fsym)

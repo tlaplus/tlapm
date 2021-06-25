@@ -10,9 +10,9 @@ open E_t
 open E_visit
 
 
-val is_leibniz : 'a Property.wrapped -> int -> bool
+val is_leibniz: 'a Property.wrapped -> int -> bool
 
-class virtual leibniz_visitor : object
+class virtual leibniz_visitor: object
   inherit [unit] E_visit.map
   method expr     : unit scx -> expr -> expr
   method pform    : unit scx -> pform -> pform

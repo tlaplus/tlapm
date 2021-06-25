@@ -10,7 +10,15 @@ open Typ_c
 
 (* val boolify: expr -> expr *)
 
-(* val cg : hyp list -> expr -> (Typ_e.t * Typ_c.t) *)
-(* val solve : hyp list -> expr list -> expr list *)
+(*
+val cg:
+    hyp list -> expr ->
+        (Typ_e.t * Typ_c.t)
+*)
+(*
+val solve:
+    hyp list -> expr list ->
+        expr list
+*)
 
-val type_construct : sequent -> sequent
+val type_construct: sequent -> sequent

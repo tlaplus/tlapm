@@ -57,10 +57,10 @@ let rec pairs = function
 (** Constraint Generation for  [env] |- [scx e] : [t]
     -- Type system without refinements *)
 let rec cg_expr
-        (ts:C.cg_mode)
-        (env:E.t)
-        (t:T.t)
-        (scx:unit Expr.Visit.scx) e :
+        (ts: C.cg_mode)
+        (env: E.t)
+        (t: T.t)
+        (scx:unit Expr.Visit.scx) e:
             Expr.T.expr * C.t =
     (*
     Util.eprintf
@@ -881,7 +881,7 @@ and cg_bounds env scx bs =
     vs,
     env)
 
-and cg_hyp (env:E.t) scx h =
+and cg_hyp (env: E.t) scx h =
 (* let ph cx ff h = ignore (E.pp_print_hyp cx ff h) in *)
     match h.core with
     | Fact (e, Visible, tm) ->

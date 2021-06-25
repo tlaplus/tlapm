@@ -14,6 +14,6 @@ open Expr.Visit
 open M_t
 
 
-val normalize :
+val normalize:
     modctx -> Expr.T.ctx -> mule ->
         modctx * mule * summary

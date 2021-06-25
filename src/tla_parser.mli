@@ -7,7 +7,7 @@ module Prec: Pars.Intf.Prec with
     type prec = int * int
 module Fu: Fmtutil.Minimal_sig with
     module Prec = Prec
-module Token : sig
+module Token: sig
     type token_ =
         | BOF  (* beginning of file *)
         | ID of string  (* identifiers *)
@@ -21,16 +21,17 @@ module Token : sig
             string * int
             (* step token *)
     and token = {
-    form : token_;
-    mutable rep : string;
-    loc : Loc.locus;
-  }
-  (* include Pars.Intf.Tok *)
-  val bof : Loc.locus -> token
-  val rep : token -> string
-  val locus : token -> Loc.locus
-  val eq : token -> token -> bool
-  val pp_print_token : Format.formatter -> token -> unit
+        form: token_;
+        mutable rep: string;
+        loc: Loc.locus;
+    }
+    (* include Pars.Intf.Tok *)
+    val bof: Loc.locus -> token
+    val rep: token -> string
+    val locus: token -> Loc.locus
+    val eq: token -> token -> bool
+    val pp_print_token:
+        Format.formatter -> token -> unit
 end
 
 

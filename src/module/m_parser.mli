@@ -10,5 +10,5 @@
 open Tla_parser
 open M_t
 
-val parse : mule lprs
 
+val parse: mule lprs

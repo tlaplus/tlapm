@@ -11,16 +11,16 @@ open M_t
 
 
 (** all TLAPM builtin operators, including TLA+ builtins *)
-val tlapm       : mule
+val tlapm: mule
 (** natural numbers *)
-val naturals    : mule
+val naturals: mule
 (** integers *)
-val integers    : mule
+val integers: mule
 (** reals *)
-val reals       : mule
+val reals: mule
 (** sequences *)
-val sequences   : mule
+val sequences: mule
 (** TLC *)
-val tlc         : mule
+val tlc: mule
 (** the initial module context, constructed at startup *)
-val initctx  : modctx
+val initctx: modctx

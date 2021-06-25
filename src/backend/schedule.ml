@@ -13,10 +13,10 @@ and computation =
   | Todo of command  (* must launch process *)
 
 and command = {
-  line : string;         (* shell command line *)
-  timeout : float;       (* delay before running timec *)
-  timec : timeout_cont;  (* function to call after timeout *)
-  donec : result -> float -> bool;
+    line: string;  (* shell command line *)
+    timeout: float;  (* delay before running timec *)
+    timec: timeout_cont;  (* function to call after timeout *)
+    donec: result -> float -> bool;
         (* function to call when finished;
         float is time used;
         returns success *)
@@ -35,14 +35,14 @@ and result =
 
 
 type process = {
-  refid : int;
-  pid : int;
-  ofd : file_descr;
-  start_time : float;
-  dl : float;
-  tc : timeout_cont;
-  dc : result -> float -> bool;
-  rest : (unit -> computation) list;
+    refid: int;
+    pid: int;
+    ofd: file_descr;
+    start_time: float;
+    dl: float;
+    tc: timeout_cont;
+    dc: result -> float -> bool;
+    rest: (unit -> computation) list;
 }
 
 let temp_buf = Bytes.create 4096

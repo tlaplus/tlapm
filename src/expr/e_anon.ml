@@ -44,7 +44,7 @@ let standard_form ~cx ~dep ~wd op args = match wd with
         Apply (Ix dep @@ op, args) @@ op
 
 
-class anon_sg = object (self : 'self)
+class anon_sg = object (self: 'self)
   inherit [string list] Visit.map
         as super
 

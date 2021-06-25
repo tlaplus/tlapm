@@ -21,7 +21,7 @@ let update_cx (cx: ctx) mu =
 
 
 class map =
-    object (self : 'self)
+    object (self: 'self)
 
     method module_units cx tla_module =
         (* The context `cx` would be relevant for

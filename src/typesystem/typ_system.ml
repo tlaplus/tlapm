@@ -64,7 +64,7 @@ let pp_prop v env cx e =
 (* Unification of subtype constraints                                       *)
 (****************************************************************************)
 
-let rec rewrite_subs (env, vs, (cs:C.t list)) =
+let rec rewrite_subs (env, vs, (cs: C.t list)) =
     (** Collect substitutions from subtype constraints,
     returns one type assignment [a <- t]. *)
     let rec collect_ss vs = function
@@ -505,7 +505,7 @@ let vc_intro_elim = function
 
 (** Encodes a TCC into a TLA+ proof obligation *)
 let tccs_to_seq
-        (op, env, r1, r2) :
+        (op, env, r1, r2):
             Typ_e.t * expr =
     let app op x y = Apply
         (Internal op |> noprops, [x ; y]) |> noprops in
@@ -823,7 +823,7 @@ let decorate typesmap sq =
     | _ -> z
     in
 
-    let visitor = object (self : 'self)
+    let visitor = object (self: 'self)
         inherit [unit] Expr.Visit.map as super
         method expr scx e =
             match e.core with

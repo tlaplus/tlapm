@@ -77,8 +77,8 @@ let bug ?at msg =
 
 (********** old stuff ********* FIXME convert all uses to new stuff *)
 
-let loc : string option ref = ref None
-let msg : string option ref = ref None
+let loc: string option ref = ref None
+let msg: string option ref = ref None
 let warning = ref false
 
 

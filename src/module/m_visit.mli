@@ -5,7 +5,7 @@ open Util
 open M_t
 
 
-class map : object
+class map: object
     method module_units: Expr.T.ctx -> M_t.modunit list ->
         ctx * M_t.modunit list
     method module_unit: ctx -> M_t.modunit ->

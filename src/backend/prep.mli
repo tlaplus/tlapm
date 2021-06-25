@@ -11,7 +11,7 @@ open Proof.T
 open Types
 
 
-val make_task :
+val make_task:
   out_channel ->
   out_channel ->
   (bool -> obligation -> unit) ->
@@ -20,10 +20,12 @@ val make_task :
   (** @raise Exit if the toolbox sent the "stop" command. *)
 
 
-val expand_defs : ?what:(Expr.T.wheredef -> bool) -> obligation -> obligation
+val expand_defs:
+    ?what:(Expr.T.wheredef -> bool) ->
+    obligation -> obligation
 
 (*
-val normalize :
+val normalize:
     obligation ->
     expand_enabled: bool ->
     expand_cdot: bool ->

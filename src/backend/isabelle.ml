@@ -22,10 +22,9 @@ open Proof.T
 module B = Builtin
 
 type ctx = int Ctx.ctx
-let dot : ctx = Ctx.dot
-let bump : ctx -> ctx = Ctx.bump
-let length : ctx -> int = Ctx.length
-
+let dot: ctx = Ctx.dot
+let bump: ctx -> ctx = Ctx.bump
+let length: ctx -> int = Ctx.length
 
 
 let cook x = "is" ^ pickle x
@@ -46,7 +45,7 @@ let lookup_id cx n =
   let id = Ctx.string_of_ident (fst (Ctx.index cx n)) in
   id
 
-let crypthash (cx : ctx) e =
+let crypthash (cx: ctx) e =
   let s =
     let b = Buffer.create 10 in
     let fmt = Format.formatter_of_buffer b in
@@ -751,7 +750,7 @@ let recheck (modname, nmiss, thy) =
   let failure_line = ref (-1) in
   let inprog = ref IntSet.empty in
   let finished = ref IntSet.empty in
-  let report (errfn : (_, _, _, _, _, _) format6 -> _) msg =
+  let report (errfn: (_, _, _, _, _, _) format6 -> _) msg =
     if IntSet.cardinal !inprog > 0 && !failure_line <= 0 then begin
       let f x accu = (Printf.sprintf "%d" x) :: accu in
       let obls = IntSet.fold f !inprog [] in

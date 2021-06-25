@@ -9,12 +9,13 @@ open Property
 open M_t
 open Proof.T
 
-let isglobal : unit pfuncs =
+
+let isglobal: unit pfuncs =
   Property.make "Module.Globalness.isglobal"
 
 let is_global x = Property.has x isglobal
 
-let globalize = object (self : 'self)
+let globalize = object (self: 'self)
   inherit [unit] Proof.Visit.map as super
   method expr scx e = super#expr scx (assign e isglobal ())
   method hyp scx h = super#hyp scx (assign h isglobal ())

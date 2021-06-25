@@ -217,7 +217,9 @@ and eqc c1 c2 =
         false
 
 (** Apply type variable substitution [a -> t] to a constraint *)
-let rec subst (a:string) (t:T.t) = function
+let rec subst
+        (a: string)
+        (t: T.t) = function
     | CAtom c -> CAtom (substc a t c)
     | CConj cs ->
         CConj (fold_left
@@ -230,7 +232,9 @@ let rec subst (a:string) (t:T.t) = function
         *)
     | CExists (vs, c) ->
         CExists (vs, subst a t c)
-and substc (a:string) (t:T.t) = function
+and substc
+        (a: string)
+        (t: T.t) = function
     | CEq (env, t1, t2) ->
         CEq (
             E.subst a t env,
@@ -254,7 +258,9 @@ and substc (a:string) (t:T.t) = function
     | c -> c
 
 (** Extension of [T.vsubst] for constraints *)
-let rec vsubst (a:string) (b:string) = function
+let rec vsubst
+        (a: string)
+        (b: string) = function
     | CAtom c ->
         CAtom (vsubstc a b c)
     | CConj cs ->
@@ -296,7 +302,7 @@ and vsubstc a b = function
 type tcc_raw = Builtin.builtin * Typ_e.t * tref * tref
     (** Unprocessed TCAtom *)
 
-let tccs : tcc_raw list ref = ref []
+let tccs: tcc_raw list ref = ref []
 
 let pp_tcc ppf (op, env, r1, r2) =
     fprintf
@@ -537,7 +543,7 @@ let rec subs_ss a t = function
 let app_ss f xs ss = fold_left
     (fun xs (a, t) -> List.map (f a t) xs) xs ss
 
-let apply_ss ss (env, vs, (cs:t list)) =
+let apply_ss ss (env, vs, (cs: t list)) =
     (*
     let pp_subst ppf (a, t) = fprintf
         ppf
@@ -693,7 +699,7 @@ let rec fix eq f x =
         then x
         else fix eq f x'
 
-let fix_env_c f (x:Typ_e.t * t) =
+let fix_env_c f (x: Typ_e.t * t) =
     let eq (env1, c1) (env2, c2) =
         E.eq env1 env2 &&
         eq c1 c2 in
@@ -702,7 +708,7 @@ let fix_env_c f (x:Typ_e.t * t) =
 (****************************************************************************)
 
 (** Flatten constraint, ie pull all quantifiers out *)
-let rec flatten_c c : string list * tc list =
+let rec flatten_c c: string list * tc list =
     match c with
     | CAtom c -> [], [c]
     | CExists (vs', c) ->

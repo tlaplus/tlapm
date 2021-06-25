@@ -198,17 +198,22 @@ val hyp_name:
 
 val print_cx: ctx -> unit
 
-val find_hyp_named : ctx -> string -> int * hyp
-val cx_front : ctx -> int -> ctx
-val scx_front : 'a * ctx -> int -> 'a * ctx
-val format_locus : 'a wrapped -> string
-val shape_to_arity : shape -> int
+val find_hyp_named:
+    ctx -> string -> int * hyp
+val cx_front: ctx -> int -> ctx
+val scx_front:
+    'a * ctx -> int -> 'a * ctx
+val format_locus:
+    'a wrapped -> string
+val shape_to_arity: shape -> int
 
 (* anon.ml *)
 val exprify_sequent: sequent -> expr_
 
-val sequent_stats : sequent -> int
+val sequent_stats: sequent -> int
 
-val enabledaxioms : bool pfuncs
-val has_enabledaxioms : 'a Property.wrapped -> bool
-val get_enabledaxioms : 'a Property.wrapped -> bool
+val enabledaxioms: bool pfuncs
+val has_enabledaxioms:
+    'a Property.wrapped -> bool
+val get_enabledaxioms:
+    'a Property.wrapped -> bool

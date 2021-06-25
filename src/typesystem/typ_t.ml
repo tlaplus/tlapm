@@ -82,7 +82,8 @@ let mk_ref t = Ref (
 (** Type annotations,
 as properties attached to expressions *)
 
-let typeprop : t pfuncs = Property.make "Backend.Smt.TLAType"
+let typeprop: t pfuncs = Property.make
+    "Backend.Smt.TLAType"
 let ( <<< ) e t = assign e typeprop t
 let optype v =
     try
@@ -189,7 +190,7 @@ and fv_ss ss =
   flatten (map_subst_t fv ss)
 
 (** Set of free (Expr.T.expr) variable symbols *)
-let rec expr_fv : t -> string list = function
+let rec expr_fv: t -> string list = function
     | Int
     | Str
     | Bool
@@ -242,7 +243,7 @@ let rec expr_fv : t -> string list = function
 and expr_fv_ss ss =
   flatten (map_subst_t expr_fv ss)
 
-let tmap (f:t -> t) t =
+let tmap (f: t -> t) t =
     let fss f ss = map
         (fun (v, cx, e, t) -> v, cx, e, f t)
         ss in
@@ -296,7 +297,7 @@ let rec add_exp_substs cx e = function
 (** Distribute substitution [ss] on type [t],
 and apply it on refinements
 *)
-let rec subst_reduce ss t : t =
+let rec subst_reduce ss t: t =
     (*
     Util.eprintf
         "!! simp : %a"
@@ -1008,7 +1009,7 @@ It returns:
     [cx']
     [x \in t']
 *)
-let rec to_predtyp cx (x:expr) t =
+let rec to_predtyp cx (x: expr) t =
     (*
     Util.eprintf
         "!! to_predtyp %a:%a"
@@ -1240,7 +1241,7 @@ let reduce_func tf ts =
         Top
     end
 
-let rec get_type scx e : t option =
+let rec get_type scx e: t option =
     (*
     Util.eprintf
         "\tget_type \t%a"

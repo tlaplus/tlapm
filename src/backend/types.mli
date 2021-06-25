@@ -15,9 +15,9 @@ type status_type6 =
     | NTriv of
         status_type_aux6 * Method.t
 type package = {
-  final_form   : Proof.T.obligation;
-(*  print_form   : Proof.T.obligation; *)
-  log          : string list;
-  proof        : string;
-  results      : status_type6 list;
+    final_form: Proof.T.obligation;
+    (* print_form: Proof.T.obligation; *)
+    log: string list;
+    proof: string;
+    results: status_type6 list;
 }
