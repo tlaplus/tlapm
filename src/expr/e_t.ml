@@ -75,7 +75,20 @@ and expr_ =
   | Quant of quantifier * bounds * expr
     (* temporal quantification `\EE` or `\AA` *)
   | Tquant of quantifier * hint list * expr
-    (* `CHOOSE` *)
+    (* Two cases (unbounded and bounded `CHOOSE`):
+
+    - `CHOOSE x:  pred`, for example:
+       ```ocaml
+       let x = noprops "x" in
+       Choose (x, None, pred)
+       ```
+
+    - `CHOOSE x \in S:  pred`, for example:
+      ```ocaml
+      let x = noprops "x" in
+      Choose (x, Some S, pred)
+      ```
+    *)
   | Choose of hint * expr option * expr
     (* `{x \in S:  P(x)}`
     axiom scheme of separation
@@ -83,6 +96,12 @@ and expr_ =
     Section 16.1.6 on pages 299--301 of
     the book "Specifying Systems",
     specifically page 301.
+
+    Elements:
+    1. declared identifier (`x` above),
+    2. set (`S` above) that bounds the
+       values of the identifier
+    3. predicate (`P(x)` above)
     *)
   | SetSt of hint * expr * expr
     (* `{f(x):  x \in S}`
@@ -385,14 +404,18 @@ let print_cx cx =
 
 
 let cx_front cx n =
-    (* front of queue `cx` omitting the `n` last elements. *)
+    (* Omit `n` last elements of deque `cx`. *)
     let k = (Deque.size cx) - n in
     let new_cx = Deque.first_n cx k in
     new_cx
 
 
 let scx_front scx n =
-    (* `scx` with `n` last elements omitted from `snd scx`. *)
+    (* Omit `n` last elements from deque `snd scx`.
+
+    Returns `scx` with the `n` last elements
+    omitted from `snd scx`.
+    *)
     let cx = snd scx in
     let new_cx = cx_front cx n in
     let new_scx = (fst scx, new_cx) in
@@ -436,7 +459,10 @@ let exprify_sequent sq =
 
 
 let shape_to_arity (shape: shape): int =
-    (* Return operator arity that corresponds to `shape`. *)
+    (* Return arity that corresponds to `shape`.
+
+    The arity is of an operator.
+    *)
     let arity = match shape with
         | Shape_expr -> 0
         | Shape_op arity ->
@@ -536,7 +562,11 @@ let rec number_of_hyp (hyps: ctx) =
 
 
 let sequent_stats (sq: sequent) =
-    (* Count and print number of each kind of hypothesis. *)
+    (* Count and print numbers of hypotheses.
+
+    Each kind of hypothesis is counted
+    separately.
+    *)
     let n_hyp = Deque.size sq.context in
     let nums = number_of_hyp sq.context in
     let msg = (

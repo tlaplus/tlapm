@@ -15,7 +15,7 @@ When the process terminates or is killed, the function [dc]
 is called with the result of the process. Note that the exit code
 of the process is not recorded because it is  not reliable under
 Windows.  [dc] returns [true] for success (meaning that
-the other commands of the task will not be run.
+the other commands of the task will not be run).
 
 Note that all delays are counted from the launch of the process.
 *)

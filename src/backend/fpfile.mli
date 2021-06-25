@@ -3,7 +3,6 @@
 Copyright (C) 2011  INRIA and Microsoft Corporation
 *)
 
-(* backend/server.ml *)
 
 val fp_init:
     string -> string list -> out_channel
