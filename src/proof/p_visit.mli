@@ -9,9 +9,9 @@
 
 open Deque
 open Expr.T
-open P_t
 open Expr.Visit
 
+open P_t
 
 
 val bump: 's scx -> int -> 's scx

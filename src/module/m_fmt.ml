@@ -6,16 +6,16 @@
  *)
 
 open Ext
+open Fmtutil
+open Format
 open Property
 open Util.Coll
 
+open Expr.Fmt
 open Expr.T
 
 open M_t
 
-open Format
-open Fmtutil
-open Expr.Fmt
 
 let pp_print_shaped ff (n, shp) =
   fprintf ff "%s%a" n pp_print_shape shp
