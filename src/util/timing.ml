@@ -8,11 +8,11 @@
 (**********************************************)
 (* Simple timers *)
 
-type timer = float;;
+type timer = float
 
-let start_timer () = Unix.gettimeofday ();;
+let start_timer () = Unix.gettimeofday ()
 
-let get_timer t = Unix.gettimeofday () -. t;;
+let get_timer t = Unix.gettimeofday () -. t
 
 (**********************************************)
 (* Old clock stuff (remove?) *)

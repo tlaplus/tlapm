@@ -3,4 +3,5 @@
  *)
 
 (* tlapm.ml *)
-val write_fingerprint : Proof.T.obligation -> Proof.T.obligation;;
+val write_fingerprint:
+    Proof.T.obligation -> Proof.T.obligation

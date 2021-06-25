@@ -158,7 +158,7 @@ let smtlib_map : t_map = {
       (if Option.is_some pat then "))" else "")
     end ;
   uminus = fun ff -> fprintf ff "(- %a)";
-} ;;
+}
 
 let yices_map : t_map = {
   op = begin function
@@ -205,7 +205,7 @@ let yices_map : t_map = {
       ppex ex
     end ;
   uminus = fun ff -> fprintf ff "-%a" ;
-} ;;
+}
 
 let dfg_map : t_map = {
   op = begin function
@@ -247,7 +247,7 @@ let dfg_map : t_map = {
       ppex ex
     end ;
   uminus = fun ff -> fprintf ff "-%a" ;
-} ;;
+}
 
 let fof_map : t_map = {
   op = begin function

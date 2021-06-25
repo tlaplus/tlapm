@@ -3,8 +3,8 @@
  *)
 
 module T : sig
-  open Property;;
-  open Util;;
+  open Property
+  open Util
 
   (** Type of bulleted lists. [And] and [Or] are the standard TLA+
       bulleted lists of 1 or more arguments. [Refs] represents a
@@ -166,8 +166,8 @@ module T : sig
 
   and time = Now | Always | NotSet
 
-  val get_val_from_id : 'hyp Deque.dq -> int -> 'hyp;;
-  val hyp_name : hyp -> string;;
+  val get_val_from_id: 'hyp Deque.dq -> int -> 'hyp
+  val hyp_name: hyp -> string
 
   val print_cx: ctx -> unit
   val find_hyp_named : ctx -> string -> int * hyp
@@ -176,14 +176,14 @@ module T : sig
   val format_locus : 'a wrapped -> string
   val shape_to_arity : shape -> int
 
-  val exprify_sequent : sequent -> expr_;;
+  val exprify_sequent : sequent -> expr_
 
   val sequent_stats : sequent -> int
 
   val enabledaxioms : bool pfuncs
   val has_enabledaxioms : 'a Property.wrapped -> bool
   val get_enabledaxioms : 'a Property.wrapped -> bool
-end;;
+end
 
 module Fmt : sig
   open T
@@ -208,7 +208,7 @@ module Fmt : sig
   val pp_print_hyp : ?temp:bool -> ctx -> Format.formatter -> hyp -> ctx
   val pp_print_instance : ctx -> Format.formatter -> instance -> unit
   val string_of_expr : hyp Deque.dq  -> expr -> string
-end;;
+end
 
 module Subst : sig
   open Property
@@ -250,7 +250,7 @@ module Subst : sig
   end
 
   class map_visible_hyp : map
-end;;
+end
 
 module Visit : sig
   open T
@@ -308,18 +308,18 @@ module Visit : sig
       method rename : ctx -> hyp -> Util.hint -> hyp * Util.hint
       method renames : ctx -> hyp list -> Util.hint list -> hyp list * Util.hint list
   end
-end;;
+end
 
 module Eq : sig
   open T
   val expr : expr -> expr -> bool
   val hyp : hyp -> hyp -> bool
   val sequent : sequent -> sequent -> bool
-end;;
+end
 
-module Deref : sig
-  val badexp : T.expr;;
-end;;
+module Deref: sig
+    val badexp: T.expr
+end
 
 module Leibniz : sig
   open T
@@ -339,14 +339,14 @@ module Leibniz : sig
     method hyp      : unit Visit.scx -> hyp -> unit Visit.scx * hyp
     method hyps     : unit Visit.scx -> hyp Deque.dq -> unit Visit.scx * hyp Deque.dq
   end
-end;;
+end
 
 module Constness : sig
   open T
   val is_const : 'a Property.wrapped -> bool
   val has_const : 'a Property.wrapped -> bool
   class virtual const_visitor : [unit] Visit.map
-end;;
+end
 
 module Tla_norm : sig
   val rewrite_unch : T.expr -> T.expr
@@ -354,13 +354,13 @@ module Tla_norm : sig
   val expand_action : unit Visit.scx -> T.expr -> T.expr
   val expand_leadsto : unit Visit.scx -> T.expr -> T.expr
   val expand_fairness : unit Visit.scx -> T.expr -> T.expr
-end;;
+end
 
 
 module Temporal_props : sig
   val compute_time : T.hyp Deque.dq -> T.expr -> T.time
   val check_time_change : T.hyp Deque.dq -> T.time -> T.time
-end;;
+end
 
 module Elab : sig
   open T
@@ -369,14 +369,14 @@ module Elab : sig
   val normalize : hyp Deque.dq -> expr -> expr
   val replace_at : unit Visit.scx -> expr -> expr -> expr
   val get_at : expr -> expr
-end;;
+end
 
 module Anon : sig
   open T
   val hyp_is_named : string -> hyp -> bool
   class anon : [string list] Visit.map
   val anon : anon
-end;;
+end
 
 module Parser : sig
   open Tla_parser
@@ -387,7 +387,7 @@ module Parser : sig
   val instance : bool -> T.instance lprs
   val sequent : bool -> T.sequent lprs
   val opdecl : (Util.hint * shape) lprs
-end;;
+end
 
 module Levels : sig
     open Property
@@ -413,7 +413,7 @@ module Levels : sig
 
     val compute_level: ctx -> expr -> expr
     val rm_expr_level: ctx -> expr -> expr
-end;;
+end
 
 
 module Action : sig
@@ -438,7 +438,7 @@ module Action : sig
         expand_cdot:bool ->
         autouse:bool ->
             expr
-end;;
+end
 
 
 module SubstOp : sig
@@ -453,7 +453,7 @@ module SubstOp : sig
     val get_substitutive_arg: 'a Property.wrapped -> int -> bool
 
     val compute_subst: ctx -> expr -> expr
-end;;
+end
 
 
 module LevelComparison : sig
@@ -491,4 +491,4 @@ module LevelComparison : sig
     end
 
     val check_level_change : ctx -> expr -> expr
-end;;
+end

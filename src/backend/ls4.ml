@@ -30,7 +30,7 @@ let is_only_whitespace s =
   in
   try String.iter check s; true
   with Exit -> false
-;;
+
 
 (*
 let rec pp_apply sd cx ff op args = match op.core with
@@ -580,4 +580,3 @@ let pp_print_obligation ff ob =
   (* we negate the query as we try to refute it *)
   fprintf ff "not (%a)"
   (visitor#print Deque.empty)  (noprops (Sequent ob.obl.core))
-;;

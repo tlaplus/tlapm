@@ -341,7 +341,7 @@ let rec simp_c = function
 
 let rec subs_ss a t = function
   | [] -> []
-  | (b,t') :: ss -> (b, T.subst a t t') :: subs_ss a t ss ;;
+  | (b, t') :: ss -> (b, T.subst a t t') :: subs_ss a t ss
 
 (** Apply substitution-function [f] to [xs] with substitution [ss] *)
 let app_ss f xs ss = fold_left (fun xs (a,t) -> List.map (f a t) xs) xs ss

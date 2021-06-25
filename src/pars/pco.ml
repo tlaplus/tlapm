@@ -459,8 +459,7 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
   let restore (s, l, u) pst =
     pst.source <- s ;
     pst.lastpos <- l ;
-    pst.ustate <- u ;
-  ;;
+    pst.ustate <- u
 
   let lookahead ap = Prs begin
     fun pst ->

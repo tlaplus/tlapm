@@ -527,7 +527,6 @@ let process_obligation sq =
      (if ops = [] then "---" else (String.concat ", " ops));
 
   scx,hs,c
-;;
 
 let reset () =
   Smt.record_ids := Smt.SSMap.empty ;
@@ -559,7 +558,6 @@ let reset () =
      else Preprocess.abstract
     end ;
   ()
-;;
 
 let encode_smtlib ?solver:(mode="SMTLIB") ff ob =
   Smt.mode := if mode = "Z3" then Smt.Z3 else Smt.Smtlib ;
@@ -603,8 +601,8 @@ let encode_smtlib ?solver:(mode="SMTLIB") ff ob =
 
   fprintf ff "\n";
   fprintf ff "(check-sat)\n";
-  fprintf ff "(exit)\n";
-;;
+    fprintf ff "(exit)\n"
+
 
 let encode_fof ff ob =
   Smt.mode := Smt.Fof;
@@ -642,8 +640,8 @@ let encode_fof ff ob =
   List.iteri (fprintf ff "@[<hov2>fof(s%d,axiom,@,@[<hov2>%s@]).@]@.") distincts;
   let ecx = Ectx.from_hyps Ectx.dot (snd scx) in
   List.iteri (fun i e -> fprintf ff "@?@[<hov2>fof(h%d,axiom,@,@[<hov2>%a@]).@]@." i (to_fol_expr ecx) e) hs;
-  fprintf ff "@?@[<hov2>fof(conc,conjecture,@,@[<hov2>%a@]).@]@." (to_fol_expr ecx) c;
-;;
+    fprintf ff "@?@[<hov2>fof(conc,conjecture,@,@[<hov2>%a@]).@]@."
+        (to_fol_expr ecx) c
 
 (* Everything below is part of a deprecated version of the SMT encoding; ignore it *)
 (*

@@ -14,7 +14,7 @@ open Tla_parser.P
 open M_t
 open M_parser
 
-(*let debug = Printf.eprintf;;*)
+(* let debug = Printf.eprintf *)
 
 exception Unknown_module_exception
 exception Not_loadable_exception of string wrapped

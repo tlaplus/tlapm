@@ -358,7 +358,7 @@ let rec unify_fails t1 t2 =
 let lookup_id cx n =
   assert (n > 0 && n <= length cx) ;
   hyp_name (nth cx (n - 1))
-;;
+
 
 (** Type normal form *)
 let rec simplify t =

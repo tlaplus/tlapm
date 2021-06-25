@@ -52,7 +52,7 @@ let citable st = match st.core with
   | _ -> true
 
 
-let push_name sn (stack, cx) = ((string_of_stepno sn) :: stack, cx);;
+let push_name sn (stack, cx) = ((string_of_stepno sn) :: stack, cx)
 
 class anon = object (self : 'self)
   inherit [string list] P_visit.map as super

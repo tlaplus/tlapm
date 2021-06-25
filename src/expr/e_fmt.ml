@@ -28,7 +28,7 @@ let is_letter c =
   match c with
   | 'A'..'Z' | 'a'..'z' -> true
   | _ -> false
-;;
+
 
 let pp_print_var ff v = pp_print_string ff v.core
 

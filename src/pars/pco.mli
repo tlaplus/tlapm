@@ -190,4 +190,3 @@ end
 
 module Make (Tok : Intf.Tok) (Prec : Intf.Prec) :
   Make_sig with module Tok = Tok and module Prec = Prec
-;;

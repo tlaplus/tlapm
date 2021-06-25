@@ -13,7 +13,7 @@ open Expr.T
 open Proof.T
 open M_t
 
-(*let debug = Printf.eprintf;;*)
+(* let debug = Printf.eprintf *)
 
 let rec exports m =
   let rec spin body = function
@@ -89,4 +89,3 @@ and flatten_body mcx m =
   in
   spin mcx m.core.body ;
   {m.core with body = Deque.to_list !prefix; stage = Flat} @@ m
-;;

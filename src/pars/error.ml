@@ -50,8 +50,8 @@ let print_error ?(verbose = false) ouch (Error (err, locus)) =
   flush ouch;
 
   if !Params.toolbox
-  then Toolbox_msg.print_warning (loc ^ unexp ^ exps ^ msgs ^ ints);
-;;
+  then Toolbox_msg.print_warning (loc ^ unexp ^ exps ^ msgs ^ ints)
+
 
 let error locus =
   Error ({ err_unex = None ;

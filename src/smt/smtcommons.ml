@@ -1281,7 +1281,6 @@ let smt_backend_keys = [
   "tptp_plus";"tptp_minus";"tptp_times";"tptp_ratio";"tptp_div";"tptp_mod";
 	"tptp_exp";"tptp_ls";"tptp_le";"tptp_uminus";
   ]
-;;
 
 let is_smt_kwd x = List.mem x smt_backend_keys
 

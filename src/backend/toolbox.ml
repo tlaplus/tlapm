@@ -18,7 +18,7 @@ let reason_to_string r =
   | False -> "false"
   | Timeout -> "timeout"
   | Cantwork s -> s
-;;
+
 
 let toolbox_print ob ?(temp=false) status prover meth timeout already print_ob
                   reason warnings time_used =
@@ -69,7 +69,7 @@ let toolbox_print ob ?(temp=false) status prover meth timeout already print_ob
       ~already: already
       ~obl: obl
   end
-;;
+
 
 let print_res_aux ob st fp do_print warns time_used =
   let status, prover, meth, timeout, print_ob, reason, temp =
@@ -88,11 +88,10 @@ let print_res_aux ob st fp do_print warns time_used =
   in
   toolbox_print ob ~temp status prover meth timeout fp print_ob reason warns
                 time_used
-;;
+
 
 let print_new_res ob st warns time_used =
   print_res_aux ob st (Some false) true warns time_used
-;;
 
 
 
@@ -138,32 +137,32 @@ let print_old_res ob st really_print =
 (* FIXME obsolete these functions *)
 
 let print_message msg =
-  if !Params.toolbox then Toolbox_msg.print_warning msg;
-;;
+  if !Params.toolbox then Toolbox_msg.print_warning msg
+
 
 let print_message_url msg url =
-  if !Params.toolbox then Toolbox_msg.print_error msg url;
-;;
+  if !Params.toolbox then Toolbox_msg.print_error msg url
+
 
 let print_ob_number n =
-  if !Params.toolbox then Toolbox_msg.print_obligationsnumber n;
-;;
+  if !Params.toolbox then Toolbox_msg.print_obligationsnumber n
+
 
 (* --------------- *)
 
 (* Functions to deal with toolbox commands ("stop" and "kill"). *)
 
-let stopped = ref false;;
+let stopped = ref false
 (* True iff the STOP command was found in stdin. *)
 
-let killed = ref [];;
+let killed = ref []
 (* List of task ids found as argument of KILL command in stdin. *)
 
-let got_eof = ref false;;
+let got_eof = ref false
 (* True iff an end-of-file was read on stdin. In that case, no further
    input will be read. *)
 
-let line_buf = System.make_line_buffer Unix.stdin;;
+let line_buf = System.make_line_buffer Unix.stdin
 
 (* Read standard input and update the [stopped] and [killed] variables. *)
 let read_stdin () =
@@ -174,20 +173,20 @@ let read_stdin () =
        let cmds = System.read_toolbox_commands line_buf in
        let f cmd =
          match cmd with
-         | System.Eof -> got_eof := true;
-         | System.Killall -> stopped := true;
-         | System.Kill id -> killed := id :: !killed;
+         | System.Eof -> got_eof := true
+         | System.Killall -> stopped := true
+         | System.Kill id -> killed := id :: !killed
        in
        List.iter f cmds
   end
-;;
+
 
 (* Get any pending commands from the toolbox and return true iff the toolbox
    sent "stop" at any point in the past. *)
 let is_stopped () =
   read_stdin ();
   !stopped
-;;
+
 
 (* Get any pending commands from the toolbox and return the list of new (since
    the last call to get_kills) task ids for which the toolbox sent the
@@ -197,4 +196,3 @@ let get_kills () =
   let result = !killed in
   killed := [];
   result
-;;

@@ -73,4 +73,5 @@ module type Minimal_sig = sig
   val pp_print_minimal : formatter -> exp -> unit
 end
 
-module Minimal (Prec : Pars.Intf.Prec) : Minimal_sig with module Prec = Prec;;
+module Minimal (Prec: Pars.Intf.Prec):
+    Minimal_sig with module Prec = Prec

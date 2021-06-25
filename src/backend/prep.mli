@@ -8,7 +8,7 @@
 (** Ship obligations to the backend *)
 
 open Proof.T
-open Types;;
+open Types
 
 val make_task :
   out_channel ->
@@ -16,7 +16,6 @@ val make_task :
   (bool -> obligation -> unit) ->
   obligation ->
     Schedule.task
-;;
 (** @raise Exit if the toolbox sent the "stop" command. *)
 
 val expand_defs : ?what:(Expr.T.wheredef -> bool) -> obligation -> obligation

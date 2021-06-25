@@ -9,7 +9,7 @@ open Typ_t
 open Typ_e
 open Typ_c
 
-(* val boolify : expr -> expr ;; *)
+(* val boolify: expr -> expr *)
 
 (* val cg : hyp list -> expr -> (Typ_e.t * Typ_c.t) *)
 (* val solve : hyp list -> expr list -> expr list *)

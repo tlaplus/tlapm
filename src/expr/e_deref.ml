@@ -12,7 +12,7 @@ open E_t
 open E_subst
 open E_fmt
 
-module Visit = E_visit;;
+module Visit = E_visit
 
 let atomic : unit pfuncs = Property.make "Expr.Deref.atom"
 

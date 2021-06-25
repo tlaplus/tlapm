@@ -54,7 +54,7 @@ module List : sig
   val sort : ?cmp:('a -> 'a -> int) -> 'a list -> 'a list
   val iteri : (int -> 'a -> unit) -> 'a list -> unit
   val split_nth : int -> 'a list -> 'a list * 'a list
-end;;
+end
 
 module Option : sig
   val get : 'a option -> 'a
@@ -63,7 +63,7 @@ module Option : sig
   val default : 'a -> 'a option -> 'a
   val is_some : 'a option -> bool
   val is_none : 'a option -> bool
-end;;
+end
 
 module Std : sig
   val unique : unit -> int
@@ -72,7 +72,7 @@ module Std : sig
   val input_all : ?bsize:int -> in_channel -> string
   val identity : 'a -> 'a
   val finally : (unit -> unit) -> ('a -> 'b) -> 'a -> 'b
-end;;
+end
 
 val string_contains : string -> string -> bool
 val is_prefix : string -> string -> bool

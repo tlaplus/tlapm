@@ -17,7 +17,7 @@ type ident =
   | Identvar of string
   | Identhyp of string * string
   | IdentBPragma
-;;
+
 
 (************************)
 (***** Stack module ******)
@@ -180,38 +180,38 @@ let builtin_to_int bi =
   | Builtin.ToString -> 67
   | Builtin.Unprimable -> 68
   | Builtin.Irregular -> 69
-;;
+
 
 let bullet_to_int b =
   match b with
   | And -> 0
   | Or -> 1
   | Refs -> 2
-;;
+
 
 let quantifier_to_int q =
   match q with
   | Forall -> 0
   | Exists -> 1
-;;
+
 
 let modal_op_to_int m =
   match m with
   | Box -> 0
   | Dia -> 1
-;;
+
 
 let fairness_op_to_int f =
   match f with
   | Weak -> 0
   | Strong -> 1
-;;
+
 
 let rec time_to_string = function
   | Now -> "now"
   | Always -> "always"
   | NotSet -> assert false
-;;
+
 
 let to_string fp = Digest.to_hex (Digest.string (Buffer.contents fp))
 (* FIXME: remove conversion to hex, watch out for FP files. *)
@@ -229,8 +229,8 @@ let rec list ?(sep=fun buf -> bprintf buf ",") pr buf = function
 let fp_bin buf = function
   | Builtin.Box false -> Buffer.add_string buf "$FakeBox"
   | Builtin.Box true  -> Buffer.add_string buf "$Box"
-  | bin -> Printf.bprintf buf "$%d" (builtin_to_int bin);
-;;
+  | bin -> Printf.bprintf buf "$%d" (builtin_to_int bin)
+
 
 let rec fp_expr counthyp countvar stack buf e =
   let fps = fp_expr counthyp countvar stack in
@@ -502,7 +502,7 @@ and fp_sequent stack buf sq =
                 "%s@\n  @[<b0>%t@]@." msg pr_obl;
               *)
               bprintf buf "$Fact(%a,%s)" (fp_expr counthyp countvar stack) e
-                      (time_to_string tm);
+                      (time_to_string tm)
   in
   spin stack sq.context
 

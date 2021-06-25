@@ -2,11 +2,11 @@
  * Copyright (C) 2011  INRIA and Microsoft Corporation
  *)
 
-open Property;;
-open Util;;
+open Property
+open Util
 
-open Expr.T;;
-open Proof.T;;
+open Expr.T
+open Proof.T
 
 (* module/fmt.mli *)
 type mule = mule_ wrapped
@@ -56,14 +56,14 @@ and final = { final_named  : modunit list
 
 and status =
   | Unchecked | Proved | Certified | Incomplete
-;;
-type modctx = mule Coll.Sm.t;;
+type modctx = mule Coll.Sm.t
 
 (* module/gen.ml *)
-val empty_summary : summary;;
-val cat_summary : summary -> summary -> summary;;
-val hyps_of_modunit : modunit -> Expr.T.hyp_ Property.wrapped list;;
+val empty_summary: summary
+val cat_summary: summary -> summary -> summary
+val hyps_of_modunit:
+    modunit -> Expr.T.hyp_ Property.wrapped list
 
 (* module/elab.ml *)
-val hyp_size : modunit -> int;;
-val salt_prop : unit Property.pfuncs;;
+val hyp_size: modunit -> int
+val salt_prop: unit Property.pfuncs

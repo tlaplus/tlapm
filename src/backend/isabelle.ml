@@ -62,9 +62,8 @@ let print_shape ff shp =
   | Shape_op (n) ->
      for _i = 1 to n do fprintf ff "c => "; done;
      fprintf ff "c";
-;;
 
-exception Unsupported of string;;
+exception Unsupported of string
 let failwith_unsupp op = failwith ("Unsupported operator `" ^ op ^ "`.\n")
 
 
@@ -614,8 +613,8 @@ let thy_header ?(verbose=true) modname oc =
             Printf.fprintf oc "  %s [%s] : \"%s\"\n" axname cookie axbod
     end ax_table;
   end;
-  Printf.fprintf oc "\n";
-;;
+  Printf.fprintf oc "\n"
+
 
 let thy_init modname thy =
   begin try Sys.remove thy with _ -> () end ;
@@ -623,7 +622,7 @@ let thy_init modname thy =
   let thyout = open_out thy in
   thy_header modname thyout;
   thyout
-;;
+
 
 let thy_write thyout ob proof =
   let obid = Option.get ob.id in
@@ -645,14 +644,14 @@ let thy_write thyout ob proof =
                    "ML_command {* writeln \"*** TLAPS EXIT %d\"; *} qed\n"
                    obid;
   with Failure msg ->
-    Errors.warn "Proof of obligation %d cannot be checked:\n%s\n" obid msg;
-;;
+    Errors.warn "Proof of obligation %d cannot be checked:\n%s\n" obid msg
+
 
 let thy_close thy thyout =
   Printf.fprintf thyout "end\n";
   close_out thyout;
-  Util.printf "(* created new %S *)" thy;
-;;
+  Util.printf "(* created new %S *)" thy
+
 
 (* Make theory file for proving (isabelle as normal back-end). *)
 (* FIXME get rid of the buffer and write directly to the file *)
@@ -673,8 +672,8 @@ let thy_temp ob tac tempname thyout =
   Printf.fprintf thyout "show \"PROP ?ob'%d\"\n" obid;
   Printf.fprintf thyout "using assms by %s\n" tac;
   Printf.fprintf thyout "qed\n";
-  Printf.fprintf thyout "end\n";
-;;
+  Printf.fprintf thyout "end\n"
+
 
 let success_banner modname nmiss =
   let allobs =
@@ -692,7 +691,7 @@ let success_banner modname nmiss =
                 (if nmiss = 1 then "" else "s") modname;
     Util.printf ">>> Rerun tlapm with the --summary flag for details."
   end
-;;
+
 
 let parsed_re = Str.regexp "^ *\\*\\*\\* TLAPS PARSED"
 let enter_re = Str.regexp "\\*\\*\\* TLAPS ENTER \\([0-9]+\\)"
@@ -701,7 +700,7 @@ let failure_location_re = Str.regexp "^ *\\*\\*\\*.*(line \\([0-9]+\\) of"
 
 type isa_msg = Input of string | Output of string
 
-module IntSet = Set.Make (struct type t = int let compare = (-) end);;
+module IntSet = Set.Make (struct type t = int let compare = (-) end)
 
 let find_obid linenum thy =
   let ic = open_in thy in
@@ -724,7 +723,7 @@ let find_obid linenum thy =
   match int_of_string !curobl with
   | 0 -> None
   | x -> Some x
-;;
+
 
 (* Check the [thy] file with Isabelle and report any problems. *)
 let recheck (modname, nmiss, thy) =
@@ -846,5 +845,4 @@ let recheck (modname, nmiss, thy) =
       Errors.warn "Warning: Isabelle/TLA+ returned non-zero exit code";
     List.iter (fun fn -> fn ()) !teardown;
     if !failure_line = 0 then success_banner modname nmiss;
-  end;
-;;
+  end

@@ -81,4 +81,3 @@ type builtin =
     (* special *)
   | Unprimable
   | Irregular
-;;

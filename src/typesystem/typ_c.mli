@@ -9,11 +9,11 @@ open Typ_t
 open Typ_e
 
 (* type substitutions = (string * Typ_t.t) list *)
-(* val subs : substitutions ref;; *)
+(* val subs: substitutions ref *)
 (* val pp_subs : Format.formatter -> substitutions -> unit *)
 
 (* type judg_imp = Typ_e.t * hyp list * expr * hyp list * expr
-val vcs : judg_imp list ref;;
+val vcs: judg_imp list ref
 val pp_vcs : Format.formatter -> judg_imp list -> unit *)
 
 type tc =                         (** Atomic constraints *)

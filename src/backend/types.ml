@@ -10,18 +10,18 @@ type reason =
   | False
   | Timeout
   | Cantwork of string
-;;
+
 
 type status_type_aux6 =
   | RSucc
   | RFail of reason option
   | RInt
-;;
+
 
 type status_type6 =
   | Triv
   | NTriv of status_type_aux6 * Method.t
-;;
+
 
 type package = {
   final_form   : obligation;

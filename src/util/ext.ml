@@ -41,14 +41,14 @@ module List = struct
    * needed because the lists that occur at runtime can get very large.
    *)
 
-  let map fn xs = rev (rev_map fn xs);;
+  let map fn xs = rev (rev_map fn xs)
 
   let rec rev_mapi fn xs i accu =
     match xs with
     | [] -> accu
     | x :: xs -> rev_mapi fn xs (i+1) (fn i x :: accu)
-  ;;
-  let mapi fn xs = rev (rev_mapi fn xs 0 []);;
+
+  let mapi fn xs = rev (rev_mapi fn xs 0 [])
 
   let rec rev_filter_map fn xs accu =
     match xs with
@@ -57,8 +57,8 @@ module List = struct
        match fn x with
        | None -> rev_filter_map fn xs accu
        | Some y -> rev_filter_map fn xs (y :: accu)
-  ;;
-  let filter_map fn xs = rev (rev_filter_map fn xs []);;
+
+  let filter_map fn xs = rev (rev_filter_map fn xs [])
 
   let iteri : (int -> 'a -> unit) -> 'a list -> unit =
     fun fn xs ->
@@ -82,8 +82,8 @@ module List = struct
 
   let rec rev_init k n f accu =
     if k >= n then accu else rev_init (k+1) n f (f k :: accu)
-  ;;
-  let init n f = rev (rev_init 0 n f []);;
+
+  let init n f = rev (rev_init 0 n f [])
 
   let rec rev_unique cmp xs accu =
     match xs with
@@ -92,8 +92,8 @@ module List = struct
        if exists (cmp x) accu
        then rev_unique cmp xs accu
        else rev_unique cmp xs (x :: accu)
-  ;;
-  let unique ?(cmp = (=)) xs = rev (rev_unique cmp xs []);;
+
+  let unique ?(cmp = (=)) xs = rev (rev_unique cmp xs [])
 
   let sort ?(cmp = Stdlib.compare) = List.sort cmp
 
@@ -107,7 +107,7 @@ module List = struct
       | _, x :: xs -> loop (n - 1) xs (x :: accu)
     in
     loop n xs []
-  ;;
+
 
 end
 
@@ -159,7 +159,7 @@ module Std = struct
       accu := Stdlib.input_line ch :: !accu;
     done; assert false
     with End_of_file -> List.rev !accu
-  ;;
+
 
   let identity : 'a -> 'a =
     fun x -> x
@@ -174,7 +174,7 @@ end
 let is_prefix pref txt =
   String.length txt >= String.length pref
   && String.sub txt 0 (String.length pref) = pref
-;;
+
 
 let split s c =
   let len = String.length s in
@@ -187,4 +187,3 @@ let split s c =
       spin base (cur+1) accu
   in
   spin 0 0 []
-;;

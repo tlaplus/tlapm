@@ -74,7 +74,6 @@ val line_wrap : ?cols:int -> string -> string
 val heap_stats : unit -> unit
 val temp_file :
   (unit -> unit) ref -> string -> string * out_channel
-;;
 (** [temp_file clean_hook suffix]
     Create a temporary file, return its name and an output channel to it.
     Add to [clean_hook] a clean-up action that closes the out_channel
@@ -84,7 +83,7 @@ val temp_file :
 val rm_temp_file : string -> unit
 (** Remove the given temporary file unless debugging "tempfiles" *)
 
-val add_hook : (unit -> unit) ref -> ('a -> unit) -> 'a -> unit;;
+val add_hook: (unit -> unit) ref -> ('a -> unit) -> 'a -> unit
 (** [add_hook cleanup fn argument]
     Adds to [cleanup] the action of calling [fn argument] before doing
     whatever was in [cleanup] already.
@@ -94,7 +93,7 @@ exception Internal_timeout
 (** exception raised by the timer interrupt handler to prevent looping within
     PM code. *)
 
-val run_with_timeout : float -> ('a -> 'b) -> 'a -> 'b option;;
+val run_with_timeout: float -> ('a -> 'b) -> 'a -> 'b option
 (** [run_with_timeout tmo f x]
     Run [f] with argument [x], with a time limit of [tmo]. Return
     [Some result] if [f] managed to finish before the timeout, or

@@ -311,6 +311,5 @@ and comment depth = parse
         Error.print_error stderr e;
         None
     in (LazyList.make next, Loc.locus_of_position lb.lex_curr_p)
-  ;;
 
 }

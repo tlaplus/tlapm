@@ -10,7 +10,7 @@ open Property
 open E_t
 
 module Dq = Deque
-module Fmt = E_fmt;;
+module Fmt = E_fmt
 
 type sub =
   | Shift of int

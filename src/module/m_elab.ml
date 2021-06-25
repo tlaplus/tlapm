@@ -19,7 +19,7 @@ open Proof.T
 
 open M_t
 
-(*let debug = Printf.eprintf;;*)
+(* let debug = Printf.eprintf *)
 
 (******************************************************************************)
 
@@ -72,7 +72,7 @@ let localize_axioms body =
 
 (******************************************************************************)
 
-let salt_counter = ref 0;;
+let salt_counter = ref 0
 let salt oname =
   incr salt_counter;
   (oname.core ^ "$" ^ string_of_int !salt_counter) @@ oname

@@ -59,7 +59,7 @@ module Number = Why3.Number
       exit 0
     end else
       snd (Whyconf.Mprover.max_binding provers)
-  ;;
+
 
   (* builds the environment from the [loadpath] *)
   let env : Env.env = Env.create_env (Whyconf.loadpath main)
@@ -72,12 +72,12 @@ module Number = Why3.Number
       WhyFormat.eprintf "Failed to load driver for alt-ergo: %a@."
         Exn_printer.exn_printer e;
       exit 1
-  ;;
+
 
   let int_theory : Th.theory = Env.find_theory env ["int"] "Int"
   (* let str_theory : Th.theory = Env.find_theory env ["string"] "String" *)
 
-let th_find_ls = Th.ns_find_ls int_theory.Th.th_export;;
+let th_find_ls = Th.ns_find_ls int_theory.Th.th_export
 
 let plus_symbol : Tm.lsymbol  = th_find_ls ["infix +"]
 let minus_symbol : Tm.lsymbol = th_find_ls ["infix -"]
@@ -199,14 +199,14 @@ let rec to_why cx e : Tm.term =
   | _ ->
       Util.eprintf ~at:e "SMT backend translation error.@\nWhy3 cannot process the expression: %a" (print_prop ()) e ;
       assert false
-;;
+
 
 let new_task fm (vs:Tm.lsymbol list) : Task.task =
   let t = Task.use_export None int_theory in
   let t = fold_left Task.add_param_decl t vs in
   let goal_id1 : Decl.prsymbol = Decl.create_prsymbol (Ident.id_fresh "goal1") in
   Task.add_prop_decl t Decl.Pgoal goal_id1 fm
-;;
+
 
 (* let term_lsymbols env = SMap.mapi (fun x _ -> x) env *)
 
@@ -258,5 +258,4 @@ let solve ((env:Typ_e.t),e) =
     r.Call_provers.pr_time ;
 
   Util.sprintf ?nonl:(Some ()) "%a" Call_provers.print_prover_answer r.Call_provers.pr_answer
-;;  
   

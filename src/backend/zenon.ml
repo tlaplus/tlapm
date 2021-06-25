@@ -29,8 +29,8 @@ include (Isabelle : sig
            val crypthash : ctx -> expr -> string
          end)
 
-exception Unsupported of string;;
-let unsupp o = raise (Unsupported o);;
+exception Unsupported of string
+let unsupp o = raise (Unsupported o)
 let failwith_unsupp op = failwith ("Unsupported operator `" ^ op ^ "`.\n")
 
 let rec pp_apply sd cx ff op args = match op.core with
@@ -488,7 +488,6 @@ and pp_print_sequent cx ff sq =
   | Some ({core = Fact (_, Hidden, _)}, hs) ->
      let ncx = bump cx in
      pp_print_sequent ncx ff {sq with context = hs}
-;;
 
 let pp_print_obligation ff ob =
   fprintf ff ";; obligation #%d@\n" (Option.get ob.id);
@@ -496,4 +495,3 @@ let pp_print_obligation ff ob =
     pp_print_sequent dot ff ob.obl.core;
   with Unsupported msg ->
     failwith ("Zenon: unsupported operator " ^ msg)
-;;

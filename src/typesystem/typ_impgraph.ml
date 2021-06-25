@@ -180,7 +180,7 @@ let rule_true i =
     let e = [], Internal B.TRUE %% [] in
     iter (fun j -> plhdrs := SMap.add j e !plhdrs) (i :: ps)
   end else ()
-;;
+
 
 (** [init_phs] : initial plhdrs
     [vcs] : verification conditions in the form (env,tref1,tref2)

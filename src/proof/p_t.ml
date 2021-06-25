@@ -79,14 +79,13 @@ type obligation_kind =
   | Ob_main
   | Ob_support
   | Ob_error of string
-;;
 
 type obligation = {
   id  : int option;
   obl : sequent wrapped;
   fingerprint : string option;
-  kind : obligation_kind;
-};;
+    kind: obligation_kind}
+
 
 module Props = struct
   let step : stepno Property.pfuncs =

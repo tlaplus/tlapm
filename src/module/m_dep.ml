@@ -12,7 +12,7 @@ open Util.Coll
 open Expr.T
 open M_t
 
-(*let debug = Printf.eprintf;;*)
+(* let debug = Printf.eprintf *)
 
 let external_deps m =
   let deps = ref Hs.empty in
@@ -24,9 +24,9 @@ let external_deps m =
     method defn scx df = begin match df.core with
       | Recursive (_, _) -> ()
       | Operator (_, e) ->
-          self#expr scx e;
+          self#expr scx e
       | Bpragma (_,e,l) ->
-          self#expr scx e;
+          self#expr scx e
       | Instance (_, ins) ->
           deps := Hs.add (ins.inst_mod @@ df) !deps ;
           instances := Hs.add (ins.inst_mod @@ df) !instances;
@@ -74,7 +74,7 @@ let schedule mcx =
         fun dep ->
           spin dep.core (Sm.find dep.core mcx) ;
       end (Sm.find mn.core moddeps) ;
-      order := m :: !order ;
+      order := m :: !order
     end
   in
   Sm.iter spin mcx ;
@@ -90,4 +90,3 @@ let schedule mcx =
   end (Sm.empty, []) order in
   let order = List.rev order in
   (mc, order)
-;;

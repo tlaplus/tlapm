@@ -9,10 +9,10 @@ open Property
 open E_t
 open E_subst
 
-module Elab = E_elab;;
-module Visit = E_visit;;
-module Deref = E_deref;;
-module Eq = E_eq;;
+module Elab = E_elab
+module Visit = E_visit
+module Deref = E_deref
+module Eq = E_eq
 
 let ( |> ) x f = f x
 

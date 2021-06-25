@@ -90,7 +90,7 @@ let handle_abort _ =
   Stdlib.exit 255
 
 
-module IntSet = Set.Make (struct type t = int let compare = (-) end);;
+module IntSet = Set.Make (struct type t = int let compare = (-) end)
 
 let modules_list : string list ref = ref []
 
@@ -583,11 +583,12 @@ let init () =
           let url = "http://tla.msr-inria.inria.fr/bugs" in
           Backend.Toolbox.print_message_url msg url;
        end;
-       exit 3;
-;;
+       exit 3
 
 exception Stacktrace;;
 
-Sys.set_signal Sys.sigusr1 (Sys.Signal_handle (fun _ -> raise Stacktrace));;
+Sys.set_signal
+    Sys.sigusr1
+    (Sys.Signal_handle (fun _ -> raise Stacktrace));
 
-init ();;
+init ()

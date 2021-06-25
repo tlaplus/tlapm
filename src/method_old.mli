@@ -15,7 +15,6 @@ and zenon = {
   zenon_timeout : float;
   zenon_fallback : t;
 }
-;;
 type status_type =
   | Trivial
   | BeingProved
@@ -23,7 +22,6 @@ type status_type =
   | Fail of t
   | Checked
   | Interrupted of t
-;;
 
 (* fingerprints.ml *)
-val pp_print_tactic_fp : Format.formatter -> t -> unit;;
+val pp_print_tactic_fp: Format.formatter -> t -> unit

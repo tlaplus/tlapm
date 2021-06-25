@@ -2,15 +2,14 @@
  * Copyright (C) 2011  INRIA and Microsoft Corporation
  *)
 
-open Property;;
-open Expr.T;;
+open Property
+open Expr.T
 
 (* fmt.mli *)
 type omission =
   | Implicit
   | Explicit
   | Elsewhere of Loc.locus
-;;
 type proof = proof_ wrapped
 and proof_ =
   | Obvious
@@ -47,13 +46,12 @@ and usable = { facts : expr list
 and use_def =
   | Dvar of string
   | Dx   of int
-;;
 
 (*
 type isequent = private {
   isq : sequent;
   idx : unit;  (* FIXME add index *)
-};;
+}
 *)
 
 (* There are three kinds of obligations:
@@ -65,20 +63,17 @@ type obligation_kind =
   | Ob_main
   | Ob_support
   | Ob_error of string
-;;
 
 type obligation = {
   id  : int option;
   obl : sequent wrapped;
   fingerprint : string option;
-  kind : obligation_kind;
-};;
+    kind: obligation_kind}
 
 (* fmt.ml *)
 type stepno =
   | Named   of int * string * bool
   | Unnamed of int * int
-;;
 module Props : sig
   val step : stepno pfuncs
   val goal : sequent pfuncs
@@ -88,11 +83,13 @@ module Props : sig
   val orig_step : step pfuncs
   val orig_proof : proof pfuncs
   val use_location : Loc.locus pfuncs
-end;;
-val string_of_stepno : ?anonid:bool -> stepno -> string;;
+end
+val string_of_stepno:
+    ?anonid:bool -> stepno -> string
 
 (* proof/subst.ml *)
-val get_qed_proof : qed_step_ Property.wrapped -> proof;;
+val get_qed_proof:
+    qed_step_ Property.wrapped -> proof
 
 (* proof/simplify.ml *)
-val step_number : stepno -> int;;
+val step_number: stepno -> int

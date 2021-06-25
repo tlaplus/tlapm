@@ -2,8 +2,8 @@
  * Copyright (C) 2011  INRIA and Microsoft Corporation
  *)
 
-open Property;;
-open Util;;
+open Property
+open Util
 
 (** Type of bulleted lists. [And] and [Or] are the standard TLA+
     bulleted lists of 1 or more arguments. [Refs] represents a
@@ -164,12 +164,13 @@ and export = Local | Export
 and visibility = Visible | Hidden
 
 and time = Now | Always | NotSet
-;;
 
-val get_val_from_id : 'hyp Deque.dq -> int -> 'hyp;;
+val get_val_from_id:
+    'hyp Deque.dq -> int -> 'hyp
 
 (* fmt.ml *)
-val hyp_name : hyp_ Property.wrapped -> string;;
+val hyp_name:
+    hyp_ Property.wrapped -> string
 
 val print_cx: ctx -> unit
 
@@ -180,7 +181,7 @@ val format_locus : 'a wrapped -> string
 val shape_to_arity : shape -> int
 
 (* anon.ml *)
-val exprify_sequent : sequent -> expr_;;
+val exprify_sequent: sequent -> expr_
 
 val sequent_stats : sequent -> int
 

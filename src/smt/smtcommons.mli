@@ -113,7 +113,7 @@ val split_domain :
   bound list ->
   bound list * expr
 
-val deconj : expr -> expr list;;
+val deconj : expr -> expr list
 val deimpl : expr -> expr list * expr
 val unroll_seq : sequent -> expr
 val to_list : sequent -> ((unit * hyp Deque.dq) * expr list * expr)
