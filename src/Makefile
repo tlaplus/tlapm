@@ -13,57 +13,145 @@ OCAMLOPT = ocamlopt${OPTTOOLS}
 OCAMLLEX = ocamllex${OPTTOOLS} -q
 OCAMLDOC = ocamldoc${OPTTOOLS}
 
+# NOTE: 2-space indentation is used to
+# distinguish from the tabs (needed) in the recipes
 FRONTEND_PACK = \
-  frontend/symbol_commute frontend/coalesce frontend/action frontend/pltl
+  frontend/symbol_commute \
+  frontend/coalesce \
+  frontend/action \
+  frontend/pltl
 
 BACKEND_PACK = \
-  backend/types backend/isabelle backend/zenon \
-  backend/ls4 backend/fingerprints backend/fpfile \
-  backend/smt backend/prep
+  backend/types \
+  backend/isabelle \
+  backend/zenon \
+  backend/ls4 \
+  backend/fingerprints \
+  backend/fpfile \
+  backend/smt \
+  backend/prep
 
 MODULE_PACK = \
-  module/m_t module/m_visit module/m_subst \
-  module/m_fmt module/m_globalness module/m_gen module/m_elab \
+  module/m_t \
+  module/m_visit \
+  module/m_subst \
+  module/m_fmt \
+  module/m_globalness \
+  module/m_gen \
+  module/m_elab \
   module/m_standard \
-  module/m_flatten module/m_dep module/m_parser module/m_save
+  module/m_flatten \
+  module/m_dep \
+  module/m_parser \
+  module/m_save
 
 PROOF_PACK = \
-  proof/p_t proof/p_fmt proof/p_subst proof/p_visit proof/p_gen \
-  proof/p_simplify proof/p_anon proof/p_parser
+  proof/p_t \
+  proof/p_fmt \
+  proof/p_subst \
+  proof/p_visit \
+  proof/p_gen \
+  proof/p_simplify \
+  proof/p_anon \
+  proof/p_parser
 
 PARS_PACK = \
-  pars/error pars/intf pars/lazyList pars/pco
+  pars/error \
+  pars/intf \
+  pars/lazyList \
+  pars/pco
 
 EXPR_PACK = \
-  expr/e_t expr/e_visit expr/e_fmt expr/e_levels expr/e_constness \
-  expr/e_substitutive expr/e_subst expr/e_eq expr/e_deref \
-  expr/e_leibniz expr/e_parser expr/e_tla_norm expr/e_temporal_props \
-  expr/e_elab expr/e_anon \
-  expr/e_action expr/e_level_comparison
+  expr/e_t \
+  expr/e_visit \
+  expr/e_fmt \
+  expr/e_levels \
+  expr/e_constness \
+  expr/e_substitutive \
+  expr/e_subst \
+  expr/e_eq \
+  expr/e_deref \
+  expr/e_leibniz \
+  expr/e_parser \
+  expr/e_tla_norm \
+  expr/e_temporal_props \
+  expr/e_elab \
+  expr/e_anon \
+  expr/e_action \
+  expr/e_level_comparison
 
 TYPESYSTEM_DIR = \
-  typesystem/typ_t typesystem/typ_e typesystem/typ_c \
-  typesystem/typ_cg1 typesystem/typ_cg2 typesystem/typ_impgraph typesystem/typ_system
+  typesystem/typ_t \
+  typesystem/typ_e \
+  typesystem/typ_c \
+  typesystem/typ_cg1 \
+  typesystem/typ_cg2 \
+  typesystem/typ_impgraph \
+  typesystem/typ_system
 
 SMT_DIR = \
-  smt/smtcommons ${TYPESYSTEM_DIR} smt/fmt smt/boolify smt/rewrite_trivial smt/rewrite_arith smt/rewrite smt/ectx \
-  smt/preprocess smt/axioms
+  smt/smtcommons \
+  ${TYPESYSTEM_DIR} \
+  smt/fmt \
+  smt/boolify \
+  smt/rewrite_trivial \
+  smt/rewrite_arith \
+  smt/rewrite \
+  smt/ectx \
+  smt/preprocess \
+  smt/axioms
 
 # FIXME remove useless files: dumpfp abstractor method_old backend/cooper
-MODULES = sysconf \
-  util/ext system builtin config method version loc toolbox_msg \
-  params ${PARS_PACK} pars util/property \
-  util/util ctx errors optable util/fmtutil \
-  isabelle_keywords tla_parser util/deque alexer ${EXPR_PACK} expr \
+MODULES = \
+  sysconf \
+  util/ext \
+  system \
+  builtin \
+  config \
+  method \
+  version \
+  loc \
+  toolbox_msg \
+  params \
+  ${PARS_PACK} \
+  pars \
+  util/property \
+  util/util \
+  ctx \
+  errors \
+  optable \
+  util/fmtutil \
+  isabelle_keywords \
+  tla_parser \
+  util/deque \
+  alexer \
+  ${EXPR_PACK} \
+  expr \
   method_prs \
-  ${PROOF_PACK} proof ${SMT_DIR} util/timing \
-	${FRONTEND_PACK} \
-  backend/toolbox backend/schedule ${BACKEND_PACK} backend \
-  ${MODULE_PACK} module \
-  tlapm_args tlapm
+  ${PROOF_PACK} \
+  proof \
+  ${SMT_DIR} \
+  util/timing \
+  ${FRONTEND_PACK} \
+  backend/toolbox \
+  backend/schedule \
+  ${BACKEND_PACK} \
+  backend \
+  ${MODULE_PACK} \
+  module \
+  tlapm_args \
+  tlapm
 
-INC0 = -I ../backend -I ../frontend -I ../expr -I ../module -I ../proof \
-       -I ../util -I ../pars -I ../typesystem -I ../smt
+INC0 = \
+  -I ../backend \
+  -I ../frontend \
+  -I ../expr \
+  -I ../module \
+  -I ../proof \
+  -I ../util \
+  -I ../pars \
+  -I ../typesystem \
+  -I ../smt
 
 INC = ${INC0:../%=%}
 INC1 = ${INC0} -I ..
