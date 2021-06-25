@@ -171,7 +171,7 @@ let rename_with_loc cx e =
                 *)
                 let h = Defn (df, wd, vis, ex) @@ hyp in
                 (h, name)
-            | Fact (e, vis, tm) ->
+            | Fact _ ->
                 assert false
     end in
     visitor#expr ((), cx) e

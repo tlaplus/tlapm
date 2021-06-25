@@ -265,12 +265,12 @@ class virtual ['s] iter = object (self : 'self)
         self#expr scx a ;
         self#expr scx b ;
         self#expr scx c
-    | List (q, es) ->
+    | List (_, es) ->
         List.iter (self#expr scx) es
-    | Quant (q, bs, e) ->
+    | Quant (_, bs, e) ->
         let scx = self#bounds scx bs in
         self#expr scx e
-    | Tquant (q, vs, e) ->
+    | Tquant (_, vs, e) ->
         let scx = adjs scx (List.map (fun v -> Flex v @@ v) vs) in
         self#expr scx e
     | Choose (v, optdom, e) ->
@@ -395,7 +395,7 @@ class virtual ['s] iter = object (self : 'self)
               | Bounded (dom, _) -> self#expr scx dom
               | Unbounded -> ()
           end
-        | Flex s ->
+        | Flex _ ->
             ()
         | Defn (df, _, _, _) ->
             ignore (self#defn scx df)
@@ -451,7 +451,7 @@ class virtual ['s] iter_visible_hyp = object (self : 'self)
                 | Bounded (dom, _) -> self#expr scx dom
                 | Unbounded -> ()
             end
-          | Flex s ->
+          | Flex _ ->
               ()
           | Defn (_, _, Hidden, _)
           | Fact (_, Hidden, _) ->

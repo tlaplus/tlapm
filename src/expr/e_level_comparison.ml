@@ -454,7 +454,7 @@ class level_comparison = object (self : 'self)
             i = k
             && j = l
         | At b, At c -> b = c
-        | ec, fc -> false
+        | _, _ -> false
 
     method exprs cx1 cx2 es fs = match es, fs with
       | [], [] -> true
