@@ -143,7 +143,8 @@ let hyps_of_modunit
                         (n - 1)
                 | None ->
                     Errors.bug ~at:mu
-                        "Module.hyps_of_modunit: naxs > #cx"
+                        "`Module.hyps_of_modunit`: \
+                         naxs > #cx"
                 end in
         let sq = app_sequent
             (shift (- naxs))

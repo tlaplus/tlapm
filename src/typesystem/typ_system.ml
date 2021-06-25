@@ -510,7 +510,8 @@ let tccs_to_seq
                 "TCCs: @,@[%a@]"
                 C.pp_tccs [op, env, r1, r2];
             failwith
-                "some placeholder was not solved!"
+                "some placeholder \
+                was not solved!"
         in
     (*** FIX relativization of
     typing context [env] *)
@@ -589,7 +590,8 @@ let solve_tccs tccs =
             "** Solved TCCs in %5.3fs.%!"
                 (Sys.time() -. tx);
         Smt.ifprint 2
-            "-- TCCs: %d valids, %d unknown/fails"
+            "-- TCCs: %d valids, \
+            %d unknown/fails"
             (List.length valids)
             (List.length unknowns)
     end
@@ -640,7 +642,8 @@ let solve_phs init_phs tccs n =
             "-- TCCs: %a"
             C.pp_tccs tccs;
     Smt.ifprint 2
-        "-- Type-correctness conditions: %d/%d (non-trivial/total)"
+        "-- Type-correctness conditions: \
+        %d/%d (non-trivial/total)"
     (List.length tccs) total;
     solve_tccs tccs;
     phs
@@ -678,7 +681,8 @@ let solve (env, c) =
             "** Solved in %5.3fs.%!"
             (Sys.time() -. tx);
         Smt.ifprint 2
-            "---------------------------------------------------------------------------" ;
+            "-------------------------------------\
+            --------------------------------------";
         env, c in
 
     let solve_and_update env c =
@@ -700,9 +704,15 @@ let solve (env, c) =
         env, c in
 
     Smt.ifprint 2
-        "-- Solving == and <: ------------------------------------------------------" ;
+        "-- Solving == and <: \
+        ---------------------------\
+        ---------------------------";
     let env, c = solve_c' env c in
-    (* ifprint 2 "-- Solved TCs to get main type ---------------------------------" ;  *)
+    (*
+    ifprint 2
+        "-- Solved TCs to get main type \
+        ---------------------------------";
+    *)
     (* Smt.ifprint 2
         "TCs: %a"
         C.pp_tccs !C.tccs;
@@ -719,7 +729,9 @@ let solve (env, c) =
     Smt.ifprint 2 "\n";
     (* ---- *)
     Smt.ifprint 2
-        "-- Solving =?= and <? ------------------------------------------------------" ;
+        "-- Solving =?= and <? \
+        ---------------------------\
+        ---------------------------";
     let c = c
         |> C.iseq_to_eq  (** replace =?= by == *)
         |> C.issub_to_sub  (** replace <?  by <: *)
@@ -999,7 +1011,8 @@ let type_construct sq =
             sqt
         with Typeinf_failed ->
             Smt.ifprint 1
-                "** Type synthesis failed. Using untyped encoding.";
+                "** Type synthesis failed. \
+                Using untyped encoding.";
             sq
         end
     end

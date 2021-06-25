@@ -291,7 +291,9 @@ and pp_print_boundset ecx ff b =
         to_fol_expr ecx ff e
     | _ ->
         Errors.bug ~at:b
-            "Backend.SMT.pp_print_boundset: Fcn or SetOf without bounds"
+            "Backend.SMT.pp_print_boundset: \
+            Fcn or SetOf without bounds"
+
 
 and to_fol_expr ecx ff e =
     Fu.pp_print_minimal ff (fmt_expr ecx e)
@@ -893,7 +895,9 @@ let pp_print_obligation ?solver:(solver="?") ?logic:(logic=AUFNIRA) ff ob =
             let dcl = find th smb in
             if not dcl.iscore then begin
                 begin if List.length dcl.pars > 0 then
-          failwith "Backend.Smt.pp_print_obligation: Can't declare parametric functions"
+                    failwith
+                        "Backend.Smt.pp_print_obligation: \
+                        Can't declare parametric functions"
                 end;
                 Format.fprintf ff
                     "(@[declare-fun %s (@[%a)@]@ %a)@]@."

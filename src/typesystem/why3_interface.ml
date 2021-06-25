@@ -56,7 +56,8 @@ let alt_ergo: Whyconf.config_prover =
     let provers = Whyconf.filter_provers config fp in
     if Whyconf.Mprover.is_empty provers then begin
         eprintf
-            "Prover Alt-Ergo not installed or not configured@.";
+            "Prover Alt-Ergo \
+            not installed or not configured@.";
         exit 0
     end else
         snd (Whyconf.Mprover.max_binding provers)
@@ -72,7 +73,8 @@ try
     Driver.load_driver env alt_ergo.Whyconf.driver []
 with e ->
     WhyFormat.eprintf
-        "Failed to load driver for alt-ergo: %a@."
+        "Failed to load driver \
+        for alt-ergo: %a@."
     Exn_printer.exn_printer e;
     exit 1
 
@@ -233,7 +235,8 @@ let rec to_why cx e: Tm.term =
         | _ ->
             Errors.set
                 (Internal op @@ e)
-                "why_interface.ml: Arity mismatch";
+                "why_interface.ml: \
+                Arity mismatch";
             Util.eprintf
                 ~at:(Internal op @@ e)
                 "Arity mismatch";
@@ -274,7 +277,8 @@ let rec to_why cx e: Tm.term =
             (to_why cx f)
     | _ ->
         Util.eprintf ~at:e
-            "SMT backend translation error.@\nWhy3 cannot process the expression: %a"
+            "SMT backend translation error.@\n\
+            Why3 cannot process the expression: %a"
             (print_prop ()) e;
         assert false
 
@@ -373,7 +377,8 @@ let solve ((env: Typ_e.t), e) =
         (Task.local_decls
             t (Task.used_symbols (Task.used_theories t)));
 
-    ifprint 1 "@[    ...alt-ergo answered %a in %5.3fs.@]"
+    ifprint 1 "@[    ...alt-ergo answered \
+        %a in %5.3fs.@]"
         Call_provers.print_prover_answer
             r.Call_provers.pr_answer
         r.Call_provers.pr_time;

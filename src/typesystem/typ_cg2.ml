@@ -603,7 +603,8 @@ let rec cg_expr
                     mk_eq_bool t])
         | _ ->
             Util.eprintf
-                "!! Constraint generation. Expression not supported: %a"
+                "!! Constraint generation. \
+                Expression not supported: %a"
                 (E.pp_print_expr (snd scx, Ctx.dot)) e;
             assert false
         end
@@ -1472,7 +1473,8 @@ let rec cg_expr
         cc
     | _ ->
         Util.eprintf
-            "!! Constraint generation. Expression not supported: %a"
+            "!! Constraint generation. \
+            Expression not supported: %a"
             (E.pp_print_expr (snd scx, Ctx.dot)) e;
         assert false
 
@@ -1627,7 +1629,8 @@ and cg_hyp (env: E.t) scx h =
                         r
                     | _ ->
                         Errors.bug
-                            "Typesystem.cg_hyp: Fresh hypothesis"
+                            "Typesystem.cg_hyp: \
+                            Fresh hypothesis"
                     in
                 let r = app_expr (shift (-1)) r in
                 Bounded (r, Visible),
@@ -1811,10 +1814,12 @@ let cg sq =
         E.empty ((), sq.context) sq in
     let c = C.mk_ex (fvs, [c]) in
     Smtcommons.ifprint 2
-        "** Constraint generation in %5.3fs.%!"
+        "** Constraint generation \
+        in %5.3fs.%!"
         (Sys.time() -. tx);
     Smtcommons.ifprint 3
-        "@[<hov2>C_0 == @[<v>%a@] ||-@ @[<hov>%a@]@]"
+        "@[<hov2>C_0 == \
+        @[<v>%a@] ||-@ @[<hov>%a@]@]"
         E.pp env C.pp (env, c);
     (*
     Smtcommons.ifprint 3

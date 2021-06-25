@@ -1350,7 +1350,8 @@ let rec get_type scx e: t option =
             None
             (*
             Util.bug
-                "[SMT] get_type: not supported Apply Internal"
+                "[SMT] get_type: \
+                not supported Apply Internal"
             *)
         end
     | Apply (f, es)

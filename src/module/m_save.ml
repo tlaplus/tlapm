@@ -221,7 +221,8 @@ let complete_load ?clock ?root:(r="") mcx =
                                 mcx
                             | Not_loadable_exception fnx ->
                                 Util.eprintf ~at:fnx
-                                    "%S not loadable\nNo corresponding source found either!"
+                                    "%S not loadable\n\
+                                    No corresponding source found either!"
                                     fnx.core;
                                 failwith "Module.Parser.load_module"
                         (* else load it only if it is not already defined
@@ -256,7 +257,8 @@ let complete_load ?clock ?root:(r="") mcx =
                                 *)
                             | Not_loadable_exception fnx ->
                                 Util.eprintf ~at:fnx
-                                    "%S not loadable\nNo corresponding source found either!"
+                                    "%S not loadable\n\
+                                    No corresponding source found either!"
                                     fnx.core;
                                 failwith "Module.Parser.load_module"
                     end eds mcx in

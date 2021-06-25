@@ -344,7 +344,8 @@ let describe_domain_bound = function
 
 let print_cx cx =
     (* Print the hypotheses of context `cx`. *)
-    print_string "\nContext of sequent (hypotheses):\n";
+    print_string "\nContext of sequent \
+        (hypotheses):\n";
     let print_hyp i hyp =
         let idx = string_of_int i in
         print_string ("\nHypothesis with index " ^

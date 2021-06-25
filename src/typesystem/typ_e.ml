@@ -227,7 +227,8 @@ let find x env =
     with _ ->
         begin
         Smtcommons.ifprint 1
-            "Type for %s not found in environment." x;
+            "Type for %s not found \
+            in environment." x;
         raise Typeinf_failed
         end
 

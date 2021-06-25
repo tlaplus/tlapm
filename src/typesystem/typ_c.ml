@@ -303,7 +303,8 @@ let tccs: tcc_raw list ref = ref []
 let pp_tcc ppf (op, env, r1, r2) =
     fprintf
         ppf
-        "@[<hov2>* %a@, |- @[<hov2>%a@   %s   %a@]@]"
+        "@[<hov2>* %a@, \
+        |- @[<hov2>%a@   %s   %a@]@]"
         E.pp env E.pp_ref (env, r1)
         (if op = B.Equiv
             then "<==>"
@@ -373,7 +374,8 @@ let _simp_cc = function
         | _
                 when T.unify_fails t1 t2 ->
             Smt.ifprint 2
-                "Unification failed for@, @[<v>%a@ ==@ %a@]"
+                "Unification failed for@, \
+                @[<v>%a@ ==@ %a@]"
                 E.ppt (env, t1)
                 E.ppt (env, t2);
             [CFalse]
@@ -397,7 +399,8 @@ let _simp_cc = function
         | _
                 when T.unify_fails t1 t2 ->
             Smt.ifprint 2
-                "Unification failed for@, @[<v>%a@ ==@ %a@]"
+                "Unification failed for@, \
+                @[<v>%a@ ==@ %a@]"
                 E.ppt (env, t1)
                 E.ppt (env, t2);
             [CFalse]
@@ -459,7 +462,8 @@ let _simp_cc = function
                     [CSub (env, t, t')]
                 | _ when T.unify_fails t1 t2 ->
                     Smt.ifprint 2
-                        "Unification failed for@, @[<v>%a@ ==@ %a@]"
+                        "Unification failed for@, \
+                        @[<v>%a@ ==@ %a@]"
                         E.ppt (env, t1)
                         E.ppt (env, t2);
                     [CFalse]
@@ -490,7 +494,8 @@ let _simp_cc = function
                 | _
                         when T.unify_fails t1 t2 ->
                     Smt.ifprint 2
-                        "Unification failed for@, @[<v>%a@ ==@ %a@]"
+                        "Unification failed for@, \
+                        @[<v>%a@ ==@ %a@]"
                     E.ppt (env, t1)
                     E.ppt (env, t2);
                     [CFalse]
@@ -598,7 +603,8 @@ let rec rewrite_eqs (env, vs, cs) =
                 let cx, e = Option.default
                     ([], Internal B.TRUE %% []) cxe in
                 Smt.ifprint 1
-                    "Recursive equality %a where \\%s is the type of %a"
+                    "Recursive equality %a \
+                    where \\%s is the type of %a"
                     ppc (env $! env', w) a
                     (Expr.Fmt.pp_print_expr (Smt.to_scx cx, Ctx.dot)) e;
                 raise Typeinf_failed

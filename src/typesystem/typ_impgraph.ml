@@ -250,13 +250,16 @@ let rec fix ns c rule x =
     if c = 0
         then
             (failwith
-                "typesystem/typ_impgraph.ml: Cannot reach fixed point (for eq_phs).\n")
+                "typesystem/typ_impgraph.ml: \
+                Cannot reach fixed point \
+                (for eq_phs).\n")
         else
             let x = !plhdrs in
             iter rule ns;
     let x' = !plhdrs in
     (*
-    Util.eprintf "---------------------------------------";
+    Util.eprintf "------------\
+    ---------------------------";
     SMap.iter Typ_c.pp_ph x';
     *)
     if eq x x'
@@ -297,7 +300,8 @@ let solve init_phs vcs ns =
     (*
     if (ns <> []) then begin
     Smt.ifprint 3
-        "-- Initial graph --------------------------------------------";
+        "-- Initial graph -------------\
+        -------------------------------";
     Smt.ifprint 3 "  in:";
     iter (pp_imp "\\/" in_ph in_fm) ns;
     Smt.ifprint 3 "  out:";
@@ -315,7 +319,8 @@ let solve init_phs vcs ns =
     (*
     if (ns <> []) then begin
         Smt.ifprint 3
-            "-- Final graph ----------------------------------------------";
+            "-- Final graph -----------\
+            -----------------------------------";
         Smt.ifprint 3 "  in:";
         iter (pp_imp "\\/" in_ph in_fm) ns;
         Smt.ifprint 3 "  out:";
@@ -324,7 +329,8 @@ let solve init_phs vcs ns =
     *)
 
     Smt.ifprint 3
-        "-- Placeholders ---------------------------------------------";
+        "-- Placeholders ------------\
+        ---------------------------------";
     SMap.iter Typ_c.pp_ph !plhdrs;
 
     !plhdrs
