@@ -101,7 +101,7 @@ back-end prover for temporal logic (LS4), invoked with the pragma `PTL`
 
 - Overall efficiency improved (speed and robustness: minor bugs fixed)
 - New way to call backend provers via TLA+ identifiers (see
-  [tactics](../Documentation/Tutorial/Tactics.html)).
+  [tactics](../documentation/tutorial/tactics.html)).
 - Improved fingerprints (incremental saving, improved sharing,
   history).
 - Implementation of Cooper's quantifier-elimination algorithm (tactic

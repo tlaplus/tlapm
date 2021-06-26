@@ -40,8 +40,8 @@
     Giannakopoulou, D. Méry (eds.): 18th International Symposium on
     Formal Methods (FM 2012). Springer LNCS 7436, pp. 147-154, Paris,
     France, 2012. *Also available:* longer version
-    \[[pdf](Publications/fm-long.pdf)\], TLA model
-    \[[tla](Publications/Peterson.tla)\].
+    \[[pdf](publications/fm-long.pdf)\], TLA model
+    \[[tla](publications/Peterson.tla)\].
 5.  <span clas="authors">S. Merz, H. Vanzetto</span>,
     “[*Towards certification of TLA+ proof obligations with SMT solvers*](
         http://hal.inria.fr/docs/00/64/54/58/PDF/tla2smt.pdf)”,
