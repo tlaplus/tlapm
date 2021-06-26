@@ -197,7 +197,7 @@ $ tlapm -C -I +examples/cantor Cantor1.tla
 
 You will see a lot of output from Isabelle, the most important being the message
 at the end stating that all obligations were proved. For more information on how
-to use TLAPS, read the [tutorial](../Documentation/Tutorial.html).
+to use TLAPS, read the [tutorial](../documentation/tutorial.html).
 
 
 ### 8. Update paths
@@ -208,7 +208,7 @@ operating system and where `tlapm` has been installed.
 Note that for calling `tlapm` from a Windows environment when it has been
 installed inside Cygwin, the Windows environment path needs to be updated too.
 For more details on that, see the section on setting the Windows path in
-the page about [Windows installation](Binaries/Windows.html).
+the page about [Windows installation](binaries/windows.html).
 
 
 <!-- DO NOT EDIT BELOW THIS LINE, DO NOT REMOVE THIS LINE -->

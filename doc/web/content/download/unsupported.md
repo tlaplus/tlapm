@@ -3,15 +3,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="refresh"
-      content="0; url=Tutorial/The_example.html" />
+      content="0; url=../documentation/unsupported_features.html" />
 <title>Redirection</title>
 <meta name="robots" content="noindex,follow" />
 </head>
 <body>
 
-
-[Redirection](Tutorial/The_example.html)
-
+Redirecting to
+[../documentation/unsupported\_features.html](
+    ../documentation/unsupported_features.html)
 
 </body>
 </html>
