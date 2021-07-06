@@ -39,6 +39,8 @@ val choose_ext : unit -> expr
 
 val set_ext : unit -> expr
 val subseteq_def : unit -> expr
+val subseteq_def_alt1 : unit -> expr
+val subseteq_def_alt2 : unit -> expr
 val setenum_def : int -> expr
 val union_def : unit -> expr
 val subset_def : unit -> expr

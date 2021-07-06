@@ -333,7 +333,7 @@ let untyped_deps ~solver tla_smb s =
   | Mem ->
       ([],        [ (*SetExt*) ])
   | SubsetEq ->
-      ([ Mem ],   [ SubsetEqDef ])
+      ([ Mem ],   [ (*SubsetEqDef*) SubsetEqDef_alt1 ; SubsetEqDef_alt2 ])
   | SetEnum n ->
       ([ Mem ],   [ EnumDef n ])
   | Union ->

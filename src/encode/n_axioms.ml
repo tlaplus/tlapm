@@ -352,6 +352,67 @@ let subseteq_def () =
     ] %% []
   ) %% []
 
+let subseteq_def_alt1 () =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.SubsetEq
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ quant Forall
+      [ "z" ] [ t_idv ]
+      ( appb B.Implies
+        [ apps T.Mem
+          [ Ix 1 %% []
+          ; Ix 3 %% []
+          ] %% []
+        ; apps T.Mem
+          [ Ix 1 %% []
+          ; Ix 2 %% []
+          ] %% []
+        ] %% []
+      ) %% []
+    ; apps T.SubsetEq
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let subseteq_def_alt2 () =
+  quant Forall
+  [ "x" ; "y" ; "z" ] [ t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.SubsetEq
+    [ Ix 3 %% []
+    ; Ix 2 %% []
+    ] %% []
+  ; apps T.Mem
+    [ Ix 1 %% []
+    ; Ix 3 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.SubsetEq
+        [ Ix 3 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; Ix 3 %% []
+        ] %% []
+      ] %% []
+    ; apps T.Mem
+      [ Ix 1 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
 let setenum_def n =
   quant Forall
   (gen "a" n @ [ "x" ]) (dupl t_idv (n+1))
@@ -1691,6 +1752,8 @@ let get_axm ~solver tla_smb =
   | T.ChooseExt -> choose_ext ()
   | T.SetExt -> set_ext ()
   | T.SubsetEqDef -> subseteq_def ()
+  | T.SubsetEqDef_alt1 -> subseteq_def_alt1 ()
+  | T.SubsetEqDef_alt2 -> subseteq_def_alt2 ()
   | T.EnumDef n -> setenum_def n
   | T.UnionDef -> union_def ()
   | T.SubsetDef -> subset_def ()

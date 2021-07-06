@@ -46,3 +46,6 @@ val simplify : sequent -> sequent
 (** Apply extensionnality axioms to equalities *)
 val apply_ext : sequent -> sequent
 
+(** Simplify positive subset relations *)
+val simpl_subseteq : sequent -> sequent
+

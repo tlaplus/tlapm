@@ -688,3 +688,48 @@ let apply_ext sq =
   let cx = (true, Deque.empty) in
   snd (apply_ext_visitor#sequent cx sq)
 
+
+let simpl_subseteq_visitor = object (self : 'self)
+  inherit [bool] Expr.Visit.map as super
+
+  method expr (b, cx as scx) oe =
+    match oe.core with
+    | Apply ({ core = Internal B.Subseteq } as op, [ e ; f ])
+      when b && (match query op Props.tpars_prop with
+                 None -> true | _ -> false) ->
+        (* TODO Typelvl=1 *)
+        let e = self#expr scx e in
+        let f = self#expr scx f in
+        let q = Forall in
+        let v = assign ("x" %% []) Props.ty0_prop (TAtm TAIdv) in
+        let mem_op = Internal B.Mem %% [] in
+        Quant (
+          q, [ v, Constant, No_domain ],
+          Apply (
+            Internal B.Implies %% [],
+            [ Apply (mem_op, [ Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) e ]) %% []
+            ; Apply (mem_op, [ Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) f ]) %% []
+            ]
+          ) %% []
+        ) @@ oe
+
+    | Apply ({ core = Internal B.Implies } as op, [ e ; f ]) ->
+        let e = self#expr (not b, cx) e in
+        let f = self#expr scx f in
+        Apply (op, [ e ; f ]) @@ oe
+    | Apply ({ core = Internal B.Neg } as op, [ e ]) ->
+        let e = self#expr (not b, cx) e in
+        Apply (op, [ e ]) @@ oe
+
+    | _ -> super#expr scx oe
+
+  method sequent (b, hx) sq =
+    let (_, hx), hs = self#hyps (not b, hx) sq.context in
+    let e = self#expr (b, hx) sq.active in
+    (b, hx), { context = hs ; active = e }
+end
+
+let simpl_subseteq sq =
+  let cx = (true, Deque.empty) in
+  snd (simpl_subseteq_visitor#sequent cx sq)
+

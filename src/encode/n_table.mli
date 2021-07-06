@@ -123,6 +123,8 @@ type tla_axm =
   (* Set Theory *)
   | SetExt
   | SubsetEqDef
+  | SubsetEqDef_alt1
+  | SubsetEqDef_alt2
   | EnumDef of int
   | UnionDef
   | SubsetDef
