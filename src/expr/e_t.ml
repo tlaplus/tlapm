@@ -297,14 +297,18 @@ let print_cx cx =
             | Fresh (name, arity, kind, dom) ->
                 "Constant operator `" ^ name.core ^ "`\n"
             | Defn (df, _, visibility, _) ->
-                let name = match df.core with
-                    | Operator (name, expr) -> name
-                    | Bpragma (name, expr, backend_args) -> name
-                    | Instance (name, instance) -> name
-                    | Recursive (name, arity) -> name
-                    in
                 let visible = visibility_to_string visibility in
-                "Defined operator `" ^ name.core ^ "` (" ^ visible ^ ")\n"
+                let prefix = match df.core with
+                | Operator (name, expr) ->
+                    "Defined operator `" ^ name.core
+                | Bpragma (name, _, _) ->
+                    "Backend pragma `" ^ name.core
+                | Instance (name, _) ->
+                    "INSTANCE `" ^ name.core
+                | Recursive (name, _) ->
+                    "`RECURSIVE` declaration of `" ^ name.core
+                in
+                prefix ^ "` (" ^ visible ^ ")\n"
             | Fact (expr, visibility, _) ->
                 let visible = visibility_to_string visibility in
                 "Fact (" ^ visible ^ ")\n"
