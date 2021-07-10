@@ -109,9 +109,9 @@ val mk_string : string -> string
 val split_domain :
   quantifier ->
   expr ->
-  (Util.hint * kind * bound_domain) list ->
   bound list ->
-  (Util.hint * kind * bound_domain) list * expr
+  bound list ->
+  bound list * expr
 
 val deconj : expr -> expr list;;
 val deimpl : expr -> expr list * expr
