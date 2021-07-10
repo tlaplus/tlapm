@@ -100,11 +100,9 @@ let is_atomic_type = function
     | _ -> false
 
 let add_x_ctx x t cx =
-    Smt.add_bs_ctx
-        [noprops x <<< t,
-            Unknown,
-            No_domain]
-        cx
+    let h = noprops x <<< t in
+    let bounds = [From_hint.make_param_decl h] in
+    Smt.add_bs_ctx bounds cx
 
 let add_x_ref x t = function
     | Ex (cx, e) ->
@@ -1023,13 +1021,12 @@ let rec to_predtyp cx (x: expr) t =
             | Some d ->
                 (* let t = TLAtype.base (typpbot d) in *)
                 (* let h = assign h boundvar () in *)
-                [h |> mk (* <<< Some t *),
-                 Unknown,
-                 Domain d]
+                (* (h |> mk) <<< Some t
+                (this was an earlier comment) *)
+                [From_hint.make_bounded
+                    (noprops h) Unknown d]
             | None ->
-                [h |> mk,
-                 Unknown,
-                 No_domain]
+                [From_string.make_param_decl h]
             in
         (* let ex = app_expr (bump (shift 1)) ex in *)
         Quant (q, dom, ex) |> mk in
@@ -1097,9 +1094,9 @@ let rec to_predtyp cx (x: expr) t =
         Func ("", b1, b3), cx, lAnd [
             app B.Eq x (
                 Fcn (
-                    [y %% [],
-                        Unknown,
-                        Domain (app1 B.DOMAIN x)],
+                    [From_hint.make_bounded
+                        (noprops y) Unknown
+                        (app1 B.DOMAIN x)],
                     FcnApp (sh1 x, [ix1]) %% [])
                         %% []);
             forall y (

@@ -839,7 +839,7 @@ and gen_tyvars ?sets:(s=false) ts env scx es =
 [env]
   *)
 and cg_bounds env scx bs =
-    let bs = Smtcommons.unditto bs in
+    let bs = Expr.T.unditto bs in
     let bs, cbs, aas, vs =
         List.map
             begin fun (v, k, d) ->
@@ -851,12 +851,14 @@ and cg_bounds env scx bs =
                     let s, cs = cg_expr
                         OnlySafe env
                         (Set (mk_var a)) scx s in
-                    (v <<< mk_var a, k, Domain s),
-                    [cs],
-                    a,
-                    v.core
-                | _ ->
-                    (v <<< mk_var a, k, d), [], a, v.core
+                    let bound = From_hint.make_bounded
+                        (v <<< mk_var a) k s in
+                    (bound, [cs], a, v.core)
+                | No_domain ->
+                    let bound = From_hint.make_unbounded
+                        (v <<< mk_var a) k in
+                    (bound, [], a, v.core)
+                | Ditto -> assert false
             end
             bs
         |> fold_left
@@ -864,11 +866,7 @@ and cg_bounds env scx bs =
                 bs@[b], cbs @ cs, aas@[a], vs@[v])
             ([], [], [], [])
     in
-    let hs = List.map
-        begin fun (v, k, _) -> Fresh (
-            v, Shape_expr, k, Unbounded) @@ v
-        end
-        bs in
+    let hs = Expr.Visit.hyps_of_bounds bs in
     let env = fold_left2
         (fun e v a -> E.adj e (v, mk_var a))
         env vs aas in

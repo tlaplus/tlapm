@@ -192,8 +192,174 @@ and visibility = Visible | Hidden
 
 and time = Now | Always | NotSet
 
+val unditto:
+    bounds -> bounds
+val name_of_bound:
+    bound -> hint
+val names_of_bounds:
+    bounds -> hints
+val string_of_bound:
+    bound -> string
+val strings_of_bounds:
+    bounds -> string list
+val bounds_of_variables:
+    hints -> bounds
+val bounds_of_parameters:
+    (hint * shape) list -> bounds
+
+
+module type Node_factory_sig =
+sig
+    type t
+
+    (* construction of
+    syntax-tree nodes *)
+    val make_ix:
+        int -> expr
+    val make_opaque:
+        t -> expr
+    val make_internal:
+        Builtin.builtin -> expr
+    val make_arg:
+        t -> (hint * shape)
+    val make_lambda:
+        t list -> expr -> expr
+    val make_def:
+        t -> expr -> defn
+    val make_def_with_args:
+        t -> t list ->
+        expr -> defn
+    val make_recursive_def:
+        t -> shape -> defn
+    val make_sequent:
+        ctx -> expr -> expr
+    val make_bang:
+        expr -> sel list ->
+        expr
+    val make_apply:
+        expr -> expr list ->
+        expr
+    val make_with:
+        expr -> Method.t -> expr
+    val make_if:
+        expr -> expr ->
+        expr -> expr
+    val make_junction:
+        bullet -> expr list ->
+        expr
+    val make_disjunction:
+        expr list -> expr
+    val make_conjunction:
+        expr list -> expr
+    val make_let:
+        defn list -> expr -> expr
+    val make_quantifier:
+        quantifier -> bounds ->
+        expr -> expr
+    val make_exists:
+        bounds -> expr -> expr
+    val make_forall:
+        bounds -> expr -> expr
+    val make_temporal_exists:
+        t list -> expr -> expr
+    val make_temporal_forall:
+        t list -> expr -> expr
+    val make_choose:
+        t -> expr -> expr
+    val make_bounded_choose:
+        t -> expr -> expr -> expr
+    val make_setst:
+        t -> expr -> expr -> expr
+    val make_setof:
+        expr -> bounds -> expr
+    val make_setenum:
+        expr list -> expr
+    val make_product:
+        expr list -> expr
+    val make_tuple:
+        expr list -> expr
+    val make_fcn:
+        bounds -> expr -> expr
+    val make_fcn_domain:
+        expr -> expr
+    val make_fcn_app:
+        expr -> expr -> expr
+    val make_fcn_app_commas:
+        expr -> expr list ->
+        expr
+    val make_fcn_set:
+        expr -> expr -> expr
+    val make_record_set:
+        (t * expr) list -> expr
+    val make_record:
+        (t * expr) list -> expr
+    val make_except:
+        expr -> exspec list ->
+        expr
+    val make_dot:
+        expr -> t -> expr
+    val make_square_action:
+        expr -> expr -> expr
+    val make_angle_action:
+        expr -> expr -> expr
+    val make_subscripted_always:
+        expr -> expr -> expr
+    val make_subscripted_eventually:
+        expr -> expr -> expr
+    val make_weak_fairness:
+        expr -> expr -> expr
+    val make_strong_fairness:
+        expr -> expr -> expr
+    val make_case:
+        (expr * expr) list ->
+        expr option -> expr
+    val make_string:
+        t -> expr
+    val make_number:
+        t -> t -> expr
+    val make_at: bool -> expr
+    val make_parens:
+        expr -> pform -> expr
+    val make_const_decl:
+        t -> bound
+    val make_const_decls:
+        t list -> bounds
+    val make_bounded_const_decl:
+        t -> expr -> bound
+    val make_bounded_const_decls:
+        (t * expr) list -> bounds
+    val make_param_decl:
+        t -> bound
+    val make_param_decls:
+        t list -> bounds
+    val make_unbounded:
+        t -> kind -> bound
+    val make_bounded:
+        t -> kind ->
+        expr -> bound
+    val make_fresh:
+        t -> kind -> hyp
+    val make_bounded_fresh:
+        t -> expr -> hyp
+    val make_fresh_with_arity:
+        t -> kind -> int -> hyp
+end
+
+
+module From_string:
+    Node_factory_sig with
+    type t = string
+
+
+module From_hint:
+    Node_factory_sig with
+    type t = hint
+
+
 val get_val_from_id:
     'hyp Deque.dq -> int -> 'hyp
+val name_of_ix:
+    int -> ctx -> hint
 
 (* fmt.ml *)
 val hyp_name:

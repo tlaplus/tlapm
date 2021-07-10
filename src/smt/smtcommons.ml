@@ -166,22 +166,8 @@ let get_pattern x = Property.get x pattern_prop
 
 (****************************************************************************)
 
-let rec unditto = function
-  | (_, _, Domain d) as b1 :: (h,k,Ditto) :: bs ->
-      b1 :: unditto ((h,k,Domain d) :: bs)
-  | b :: bs -> b :: unditto bs
-  | [] -> []
-
 let add_bs_ctx bs cx : hyp list =
-  let bs = unditto bs in
-  let hyps = mapi begin
-    fun n (v, k, dom) ->
-      (* let v = assign v boundvar () in *)
-      match dom with
-      | No_domain -> Fresh (v, Shape_expr, k, Unbounded) @@ v
-      | Domain d -> Fresh (v, Shape_expr, k, Bounded (app_expr (shift n) d, Visible)) @@ v
-      | _ -> assert false
-  end bs in
+  let hyps = Expr.Visit.hyps_of_bounds_unditto bs in
   rev hyps @ cx
 
 let rec n_to_list = function
@@ -257,9 +243,11 @@ let rec unroll_seq sq =
       begin match h.core with
         | Fresh (v, Shape_expr, kn, ran)
         | Fresh (v, Shape_op 0, kn, ran) ->
-            let ran = match ran with
-              | Bounded (ran, Visible) -> Domain ran
-              | _ -> No_domain
+            let bound = match ran with
+              | Bounded (range, Visible) ->
+                From_hint.make_bounded v kn range
+              | _ ->
+                From_hint.make_unbounded v kn
             in
             let ex = unroll_seq sq in
             let hs,c = deimpl ex in
@@ -268,14 +256,14 @@ let rec unroll_seq sq =
               | [h] -> app B.Implies [h ; c]
               | hs -> app B.Implies [List (And, hs) %% [] ; c]
             in
-            Quant (Forall, [v, kn, ran], ex) @@ nowhere
+            From_hint.make_forall [bound] ex
         | Fresh _ ->
             failwith "smt/smtcommons.ml: encountered sequent-order sequent"
         | Flex v ->
             let v_prime = (v.core ^ "'") @@ v in
-            Quant (Forall, [ v, Constant, No_domain
-                           ; v_prime, Constant, No_domain ],
-                   unroll_seq (app_sequent (shift 1) sq)) @@ nowhere
+            let bounds = From_hint.make_const_decls [v; v_prime] in
+            let predicate = unroll_seq (app_sequent (shift 1) sq) in
+            From_hint.make_forall bounds predicate
         | Fact (e, Visible, _) ->
             let hs = deconj e in
             let c = unroll_seq (app_sequent (shift (-1)) sq) in
@@ -334,7 +322,7 @@ let map_exp g cx e =
       | (v, k, Domain d) -> (v, k, Domain (g cx d))
       | b -> b
       end
-    (unditto bs)
+    (Expr.T.unditto bs)
   in
   let iter_es es = List.map (fun e -> g cx e) es in
   match e.core with
@@ -401,7 +389,7 @@ let e_map (ff:'a -> 'a -> 'a) (base:'a) (g:hyp list -> expr -> 'a) (cx:hyp list)
       | (_, _, Domain d) -> d :: r
       | b -> r
       end []
-    (unditto bs)
+    (Expr.T.unditto bs)
     |> map_es
   in
   match e.core with
@@ -999,10 +987,8 @@ and fv_bounds scx bs =
     end bs
     |> List.flatten
   in
-  let hs = List.map begin
-    fun (v, k, _) -> Fresh (v, Shape_expr, k, Unbounded) @@ v
-  end bs in
-  let vs = List.map (fun (v, _, _) -> v.core) bs in
+  let hs = Expr.Visit.hyps_of_bounds bs in
+  let vs = Expr.T.strings_of_bounds bs in
   let scx = adjs scx hs in
   (scx, vs, fbs)
 and fv_exspec scx (trail, res) =
@@ -1122,7 +1108,9 @@ let rec renameb cx e =
     let ren v = if SSet.mem v.core (allids cx) then (v.core^"_1") @@ v else v in
     match e.core with
     | Quant (q, bs, ex) ->
-        let bs = List.map (fun (v,k,d) -> ren v,k,d) bs in
+        let names = Expr.T.names_of_bounds bs in
+        let names = List.map ren names in
+        let bs = Expr.Visit.rename_bounds bs names in
         (* Quant (q, (* map_exp_bs renameb cx *) bs, renameb (add_bs_ctx bs cx) ex) @@ e *)
         map_exp renameb cx (Quant (q, bs, ex) @@ e)
     | _ -> map_exp renameb cx e

@@ -291,7 +291,7 @@ let rec fp_expr counthyp countvar stack buf e =
         fp_let counthyp countvar stack buf ds e
     | Quant (q, bs, e) ->
         let n = List.length bs in
-        let l = List.map (fun (a,_,_) -> a.core) bs in
+        let l = strings_of_bounds bs in
         (*let bounds = (fp_bounds count stack) bs in*)
          let bu = Buffer.create 17 in
            pushlvars stack l;
@@ -345,7 +345,7 @@ let rec fp_expr counthyp countvar stack buf e =
            (Buffer.contents bu)
     | SetOf (e, bs) ->
         let n = List.length bs in
-        let l = List.map (fun (a,_,_) -> a.core) bs in
+        let l = strings_of_bounds bs in
         (*let vars = String.concat "." l in*)
          let bu = Buffer.create 17 in
            pushlvars stack l;
@@ -361,7 +361,7 @@ let rec fp_expr counthyp countvar stack buf e =
         bprintf buf "$Prod(%a)" (list fps) es
     | Fcn (bs, e) ->
         let n = List.length bs in
-        let l = List.map (fun (a,_,_) -> a.core) bs in
+        let l = strings_of_bounds bs in
          let bu = Buffer.create 17 in
            pushlvars stack l;
            bprintf bu "%a" (fp_expr counthyp countvar stack) e;

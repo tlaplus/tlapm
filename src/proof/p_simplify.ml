@@ -16,22 +16,7 @@ open P_t
 let at_nowhere = At false @@ nowhere
 
 let hyps_of bs =
-  let rec unditto fbs prevdom = function
-    | [] -> List.rev fbs
-    | (v, k, (Domain d as prevdom) as b) :: bs ->
-        unditto (b :: fbs) prevdom bs
-    | (v, k, Ditto) :: bs ->
-        unditto ((v, k, prevdom) :: fbs) prevdom bs
-    | b :: bs ->
-        unditto (b :: fbs) prevdom bs
-  in
-  let bs = unditto [] No_domain bs in
-  let hyps = List.mapi begin
-    fun n (v, k, dom) -> match dom with
-      | No_domain -> Fresh (v, Shape_expr, k, Unbounded) @@ v
-      | Domain d -> Fresh (v, Shape_expr, k, Bounded (app_expr (shift n) d, Visible)) @@ v
-      | _ -> assert false
-  end bs in
+  let hyps = Expr.Visit.hyps_of_bounds_unditto bs in
   Deque.of_list hyps
 
 (* the following at_expand function is not efficient because it reparses the proof tree *)

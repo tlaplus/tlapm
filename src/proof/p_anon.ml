@@ -199,9 +199,7 @@ class anon = object (self : 'self)
           let scx = bump scx 2 in
           (* there is a SUFFICES here *)
           (*    ... so add assumptions for the new identifiers *)
-          let hyps = List.map begin
-            fun (v, k, _) -> Fresh (v, Shape_expr, k, Unbounded) @@ v
-          end bs in
+          let hyps = Expr.Visit.hyps_of_bounds bs in
           let scx = Expr.Visit.adjs scx hyps in
           (*    ... then add assumption about the body of the PICK *)
           (*    ... then add the negation of the old goal *)

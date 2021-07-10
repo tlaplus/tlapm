@@ -1265,7 +1265,7 @@ let rec cg_expr
     *)
     | Quant (
             Forall,
-            [h, k, No_domain],
+            [bound],
             {core=Apply (
                 {core=Internal B.Implies},
                 [{core=Apply (
@@ -1299,18 +1299,19 @@ let rec cg_expr
             env,
             tp,
             Func ("", mk_var a1, Bool)) in
+        let const_name = string_of_bound bound in
         let ta = Ref (
-            h.core,
+            const_name,
             mk_var a1,
             Ex (
-                add_x_ctx h.core (mk_var a1) (E.to_cx env),
+                add_x_ctx const_name (mk_var a1) (E.to_cx env),
                 app1 (sh_diff p))) in
         let cq = mk_eq (env, tq, Func ("", ta, mk_var a2)) in
-        let bs = [h, k, No_domain] in
         let ex = app B.Implies
             (boolify (app1 p))
             (app B.Mem (app1 q) s) in
-        let ex = Quant (Forall, bs, ex) @@ e in
+        let ex = (From_hint.make_forall
+            [bound] ex).core @@ e in
         ex,
         CExists (
             [a1; a2],
@@ -1514,7 +1515,7 @@ environment [env], generate:
 [local_env] = new type assignements
 *)
 and cg_bounds env scx bs =
-    let bs = Smtcommons.unditto bs in
+    let bs = Expr.T.unditto bs in
     let bs, cbs, a1s, a2s, vs =
         List.map
             begin fun (v, k, d) ->
@@ -1528,20 +1529,19 @@ and cg_bounds env scx bs =
                     let s, cs = cg_expr
                         OnlySafe env
                         (Set (mk_var a2)) scx s in
-                    (v <<< mk_var a1, k, Domain s),
+                    From_hint.make_bounded
+                        (v <<< mk_var a1) k s,
                     [cs; mk_sub (
                         E.empty,
                         mk_var a2,
                         mk_var a1)],
                     a1,
                     Some a2, v.core
-                | _ ->
-                    (v <<< mk_var a1, k, d),
-                    [],
-                    a1,
-                    None,
-                    v.core
-                    (* assert false *)
+                | No_domain ->
+                    From_hint.make_unbounded
+                        (v <<< mk_var a1) k,
+                    [], a1, None, v.core
+                | Ditto -> assert false
             end
             bs
         |> fold_left
@@ -1553,11 +1553,7 @@ and cg_bounds env scx bs =
                 a2s@[a2],
                 vs@[v])
             ([], [], [], [], []) in
-    let hs = List.map
-        begin fun (v, k, _) ->
-            Fresh (v, Shape_expr, k, Unbounded) @@ v
-        end
-        bs in
+    let hs = Expr.Visit.hyps_of_bounds bs in
     (*
     let env = fold_left2
         (fun e v a1 -> E.adj e (v, mk_var a1))

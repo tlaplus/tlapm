@@ -494,8 +494,7 @@ class level_comparison = object (self : 'self)
       | _ -> false
 
     method bounds_cx cx bs =
-        let f (v, k, _) = Fresh (v, Shape_expr, k, Unbounded) @@ v in
-        let hs = List.map f bs in
+        let hs = E_visit.hyps_of_bounds bs in
         let cx_ = Deque.append_list cx hs in
         cx_
     (*

@@ -26,6 +26,9 @@ include (Isabelle : sig
            val cook : string -> string
            val lookup_id : ctx -> int -> string
            val crypthash : ctx -> expr -> string
+           val extend_bound:
+              ctx -> bound ->
+              ctx * (string * Expr.T.kind * Expr.T.bound_domain)
          end)
 
 exception Unsupported of string
@@ -434,10 +437,6 @@ and fmt_expr sd cx e =
         Errors.bug ~at:e "Backend.Zenon.fmt_exp: encountered @"
     | Parens (e, _) ->
         fmt_expr sd cx e
-
-and extend_bound cx (v, kn, ran) =
-  let (cx, v) = adj cx v in
-    (cx, (v, kn, ran))
 
 and pp_print_boundvar cx ff (v, _, _) = pp_print_string ff v
 

@@ -856,36 +856,16 @@ let decorate typesmap sq =
             | _ ->
                 super#expr scx e
         method bounds scx bs =
-            let bs = List.map
-                begin
-                fun (v, k, dom) ->
-                    (*
-                    Util.eprintf
-                        "  decor_b @[<h2>\\%s : %a@]"
-                        v.core E.ppt
-                        (env,
-                         Option.default
-                            (TyVar "?")
-                            (optype v));
-                    *)
-                    let v = decor v in
-                    match dom with
-                    | Domain d ->
-                        (v, k, Domain (self#expr scx d))
-                    | _ ->
-                        (v, k, dom)
-                end
-                bs in
-            let hs = List.map
-                begin
-                fun (v, k, _) ->
-                    Fresh (
-                        v,
-                        Shape_expr,
-                        k,
-                        Unbounded) @@ v
-                end
-                bs in
+            (*
+            Util.eprintf
+                "  decor_b @[<h2>\\%s : %a@]"
+                v.core E.ppt
+                (env, Option.default
+                    (TyVar "?") (optype v));
+             *)
+            let bs = map_bounds
+                decor (self#expr scx) bs in
+            let hs = Expr.Visit.hyps_of_bounds bs in
             let scx = Expr.Visit.adjs scx hs in
             (scx, bs)
         method hyp scx h =

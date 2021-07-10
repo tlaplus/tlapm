@@ -14,6 +14,9 @@ val adjs:
 val cook: string -> string
 val lookup_id: ctx -> int -> string
 val crypthash: ctx -> Expr.T.expr -> string
+val extend_bound:
+    ctx -> Expr.T.bound ->
+    ctx * (string * Expr.T.kind * Expr.T.bound_domain)
 
 (* backend/prep.ml *)
 val thy_temp:

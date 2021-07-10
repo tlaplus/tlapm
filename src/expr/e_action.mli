@@ -13,7 +13,6 @@ val expand_definition:
     pfdirective:string ->
         expr
 val var_to_fresh: int -> string -> string
-val mk_bounds: string list -> bounds
 val invert_renaming: ctx -> expr -> expr
 val expand_definitions:
     ctx -> expr ->

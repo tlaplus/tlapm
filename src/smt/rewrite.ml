@@ -836,14 +836,7 @@ class rw = object (self : 'self)
           self#expr scx (ifte c (apply1 op t) (apply1 op f))
         | B.Neg, _ -> neg ex
         | B.DOMAIN, Fcn (bs,_) ->
-            let rec unditto = function
-              | (_, _, Domain d) as b1 :: (h,k,Ditto) :: bs ->
-                b1 :: unditto ((h,k,Domain d) :: bs)
-              | b :: bs ->
-                b :: unditto bs
-              | [] -> []
-            in
-            let bs = unditto bs in
+            let bs = Expr.T.unditto bs in
             let rec doms = function
               | (_,_,Domain d) :: bs -> d :: doms bs
               | [] -> []
@@ -1169,7 +1162,7 @@ class rw = object (self : 'self)
       in
       ex |> self#expr scx'
 
-    (** [Quant] assumption: already [Smt.unditto] *)
+    (** [Quant] assumption: already [Expr.T.unditto] *)
     (* | Quant (q, b :: bs, ex) -> *)
     | Quant (q, ((v,_,_) as b) :: bs, ex) ->
 (* Util.eprintf "{rw} %a" (Expr.Fmt.pp_print_expr (snd scx, Ctx.dot)) e ; *)
@@ -1379,12 +1372,16 @@ class rw = object (self : 'self)
     | Choose (v, None, ex) ->
       let scx' = adj scx (Fresh (v, Shape_expr, Constant, Unbounded) @@ v) in
       let ex = self#expr scx' ex in
-      Choose (v, None, ex) |> mk
+      let choose = From_hint.make_choose v ex in
+      choose.core |> mk
 
     | Choose (v, Some dom, ex) ->
       (** Note: Don't attach types to h or ix1. They will be later substituted
            by other expressions with (maybe) other types.  *)
-      Choose (v, None, conj (mem ix1 (sh1 dom)) ex) |> mk
+      let ex = conj (mem ix1 (sh1 dom)) ex in
+      let choose = From_hint.make_choose v ex in
+      choose.core
+      |> mk
       |> self#expr scx
 
     (* | Internal B.BOOLEAN -> SetEnum [tla_true ; tla_false] |> mk *)

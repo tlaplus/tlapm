@@ -962,7 +962,7 @@ and fmt_apply (hx, vx as cx) op args = match op.core, args with
       end
 
 and fmt_bounds cx bs =
-  let ts = List.map (fun (v, _, _) -> optype v) bs in
+  let ts = List.map optype (Expr.T.names_of_bounds bs) in
   let (ecx, vs) = Expr.Fmt.extend_bounds cx bs in
   let bs = List.map2 (fun (_, k, d) (v, _) -> (v, k, d)) bs vs in
   let bs = List.map2 (fun (v, k, d) t -> (v, t, k, d)) bs ts in

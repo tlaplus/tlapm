@@ -680,8 +680,9 @@ class virtual ['s] level_computation = object (self : 'self)
             let level_args = StringSet.union
                 dom_level_args e_level_args in
             let level_info = LevelInfo (level, [], level_args) in
-            let new_setst = SetSt (v, dom_, e_) in
-            let new_e = new_setst @@ e in
+            let new_setst = E_t.From_hint.make_setst
+                v dom_ e_ in
+            let new_e = new_setst.core @@ e in
             assign new_e exprlevel level_info
         | SetOf (e, bs) ->  (* {f(x):  x \in S} *)
                 (* There is one bound constant in the expression

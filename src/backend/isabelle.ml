@@ -30,7 +30,7 @@ let cook x = "is" ^ pickle x
 
 let adj cx v =
   let cx = Ctx.push cx (pickle v.core) in
-  (cx, Ctx.string_of_ident (fst (Ctx.top cx)))
+  (cx, Ctx.string_of_ident (Ctx.front cx))
 
 let rec adjs cx = function
   | [] -> (cx, [])

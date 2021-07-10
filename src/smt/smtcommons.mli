@@ -83,7 +83,6 @@ val boundvar : unit Property.pfuncs
 val has_boundvar : expr -> bool
 (* val quant_id : string -> string *)
 
-val unditto : bound list -> bound list
 val add_bs_ctx : bound list -> hyp list -> hyp list
 
 val n_to_list : int -> int list

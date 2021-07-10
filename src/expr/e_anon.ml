@@ -277,12 +277,14 @@ class anon_sg = object (self: 'self)
                 let op' = (app_expr (scons (Opaque "%%%" |> mk) (shift 1)) op) in
                 not (Eq.expr op' op)
               in
-                if occurs op then
-                  Choose (nm, None,
-                          Apply (Internal Builtin.Eq |> mk, [
-                                   Ix 1 |> mk ;
-                                   op
-                                 ]) |> mk) |> mk
+                if occurs op then begin
+                    let e = Apply (Internal Builtin.Eq |> mk, [
+                             Ix 1 |> mk ;
+                             op
+                           ]) |> mk in
+                    let choose = E_t.From_hint.make_choose nm e in
+                    choose.core |> mk
+                    end
                 else
                   app_expr (shift (-1)) op
 

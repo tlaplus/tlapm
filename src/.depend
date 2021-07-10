@@ -1,69 +1,48 @@
-revision.cmo: revision.mlt \
-    revision.cmi
-revision.cmx: revision.mlt \
-    revision.cmi
 sysconf.cmo: sysconf.mlt \
-    revision.cmi \
     sysconf.cmi
 sysconf.cmx: sysconf.mlt \
-    revision.cmx \
     sysconf.cmi
 util/ext.cmo: util/ext.mlt \
-    revision.cmi \
     util/ext.cmi
 util/ext.cmx: util/ext.mlt \
-    revision.cmx \
     util/ext.cmi
 system.cmo: system.mlt \
-    revision.cmi \
     util/ext.cmi \
     system.cmi
 system.cmx: system.mlt \
-    revision.cmx \
     util/ext.cmx \
     system.cmi
 builtin.cmo: builtin.mlt \
-    revision.cmi \
     builtin.cmi
 builtin.cmx: builtin.mlt \
-    revision.cmx \
     builtin.cmi
 config.cmo: config.mlt \
     config.cmi
 config.cmx: config.mlt \
     config.cmi
 method.cmo: method.mlt \
-    revision.cmi \
     method.cmi
 method.cmx: method.mlt \
-    revision.cmx \
     method.cmi
 version.cmo: version.mlt \
-    revision.cmi \
     version.cmi
 version.cmx: version.mlt \
-    revision.cmx \
     version.cmi
 loc.cmo: loc.mlt \
-    revision.cmi \
     loc.cmi
 loc.cmx: loc.mlt \
-    revision.cmx \
     loc.cmi
 toolbox_msg.cmo: toolbox_msg.mlt \
-    revision.cmi \
     loc.cmi \
     util/ext.cmi \
     toolbox_msg.cmi
 toolbox_msg.cmx: toolbox_msg.mlt \
-    revision.cmx \
     loc.cmx \
     util/ext.cmx \
     toolbox_msg.cmi
 params.cmo: params.mlt \
     version.cmi \
     sysconf.cmi \
-    revision.cmi \
     method.cmi \
     util/ext.cmi \
     config.cmi \
@@ -71,136 +50,110 @@ params.cmo: params.mlt \
 params.cmx: params.mlt \
     version.cmx \
     sysconf.cmx \
-    revision.cmx \
     method.cmx \
     util/ext.cmx \
     config.cmx \
     params.cmi
 pars/error.cmo: pars/error.mlt \
     toolbox_msg.cmi \
-    revision.cmi \
     params.cmi \
     loc.cmi \
     util/ext.cmi \
     pars/error.cmi
 pars/error.cmx: pars/error.mlt \
     toolbox_msg.cmx \
-    revision.cmx \
     params.cmx \
     loc.cmx \
     util/ext.cmx \
     pars/error.cmi
 pars/intf.cmo: pars/intf.mlt \
-    revision.cmi \
     loc.cmi \
     pars/intf.cmi
 pars/intf.cmx: pars/intf.mlt \
-    revision.cmx \
     loc.cmx \
     pars/intf.cmi
 pars/lazyList.cmo: pars/lazyList.mlt \
-    revision.cmi \
     pars/lazyList.cmi
 pars/lazyList.cmx: pars/lazyList.mlt \
-    revision.cmx \
     pars/lazyList.cmi
 pars/pco.cmo: pars/pco.mlt \
-    revision.cmi \
     loc.cmi \
     pars/lazyList.cmi \
     pars/intf.cmi \
     pars/error.cmi \
     pars/pco.cmi
 pars/pco.cmx: pars/pco.mlt \
-    revision.cmx \
     loc.cmx \
     pars/lazyList.cmx \
     pars/intf.cmx \
     pars/error.cmx \
     pars/pco.cmi
 pars.cmo: pars.mlt \
-    revision.cmi \
     pars/pco.cmi \
     pars/lazyList.cmi \
     pars/intf.cmi \
     pars/error.cmi \
     pars.cmi
 pars.cmx: pars.mlt \
-    revision.cmx \
     pars/pco.cmx \
     pars/lazyList.cmx \
     pars/intf.cmx \
     pars/error.cmx \
     pars.cmi
 util/property.cmo: util/property.mlt \
-    revision.cmi \
     util/ext.cmi \
     util/property.cmi
 util/property.cmx: util/property.mlt \
-    revision.cmx \
     util/ext.cmx \
     util/property.cmi
 util/util.cmo: util/util.mlt \
-    revision.cmi \
     util/property.cmi \
     params.cmi \
     loc.cmi \
     util/ext.cmi \
     util/util.cmi
 util/util.cmx: util/util.mlt \
-    revision.cmx \
     util/property.cmx \
     params.cmx \
     loc.cmx \
     util/ext.cmx \
     util/util.cmi
 ctx.cmo: ctx.mlt \
-    revision.cmi \
     util/ext.cmi \
     ctx.cmi
 ctx.cmx: ctx.mlt \
-    revision.cmx \
     util/ext.cmx \
     ctx.cmi
 errors.cmo: errors.mlt \
     util/util.cmi \
     toolbox_msg.cmi \
-    revision.cmi \
     params.cmi \
     loc.cmi \
     errors.cmi
 errors.cmx: errors.mlt \
     util/util.cmx \
     toolbox_msg.cmx \
-    revision.cmx \
     params.cmx \
     loc.cmx \
     errors.cmi
 optable.cmo: optable.mlt \
-    revision.cmi \
     builtin.cmi \
     optable.cmi
 optable.cmx: optable.mlt \
-    revision.cmx \
     builtin.cmx \
     optable.cmi
 util/fmtutil.cmo: util/fmtutil.mlt \
-    revision.cmi \
     pars.cmi \
     util/fmtutil.cmi
 util/fmtutil.cmx: util/fmtutil.mlt \
-    revision.cmx \
     pars.cmx \
     util/fmtutil.cmi
 isabelle_keywords.cmo: isabelle_keywords.mlt \
-    revision.cmi \
     isabelle_keywords.cmi
 isabelle_keywords.cmx: isabelle_keywords.mlt \
-    revision.cmx \
     isabelle_keywords.cmi
 tla_parser.cmo: tla_parser.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
     pars.cmi \
     optable.cmi \
@@ -211,7 +164,6 @@ tla_parser.cmo: tla_parser.mlt \
     tla_parser.cmi
 tla_parser.cmx: tla_parser.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
     pars.cmx \
     optable.cmx \
@@ -221,11 +173,9 @@ tla_parser.cmx: tla_parser.mlt \
     util/ext.cmx \
     tla_parser.cmi
 util/deque.cmo: util/deque.mlt \
-    revision.cmi \
     util/ext.cmi \
     util/deque.cmi
 util/deque.cmx: util/deque.mlt \
-    revision.cmx \
     util/ext.cmx \
     util/deque.cmi
 alexer.cmo: alexer.mlt \
@@ -246,7 +196,6 @@ alexer.cmx: alexer.mlt \
     alexer.cmi
 expr/e_t.cmo: expr/e_t.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
     method.cmi \
     loc.cmi \
@@ -256,7 +205,6 @@ expr/e_t.cmo: expr/e_t.mlt \
     expr/e_t.cmi
 expr/e_t.cmx: expr/e_t.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
     method.cmx \
     loc.cmx \
@@ -264,24 +212,9 @@ expr/e_t.cmx: expr/e_t.mlt \
     util/deque.cmx \
     builtin.cmx \
     expr/e_t.cmi
-expr/e_visit.cmo: expr/e_visit.mlt \
-    revision.cmi \
-    util/property.cmi \
-    util/ext.cmi \
-    expr/e_t.cmi \
-    util/deque.cmi \
-    expr/e_visit.cmi
-expr/e_visit.cmx: expr/e_visit.mlt \
-    revision.cmx \
-    util/property.cmx \
-    util/ext.cmx \
-    expr/e_t.cmx \
-    util/deque.cmx \
-    expr/e_visit.cmi
 expr/e_fmt.cmo: expr/e_fmt.mlt \
     util/util.cmi \
     tla_parser.cmi \
-    revision.cmi \
     util/property.cmi \
     params.cmi \
     optable.cmi \
@@ -297,7 +230,6 @@ expr/e_fmt.cmo: expr/e_fmt.mlt \
 expr/e_fmt.cmx: expr/e_fmt.mlt \
     util/util.cmx \
     tla_parser.cmx \
-    revision.cmx \
     util/property.cmx \
     params.cmx \
     optable.cmx \
@@ -310,9 +242,46 @@ expr/e_fmt.cmx: expr/e_fmt.mlt \
     ctx.cmx \
     builtin.cmx \
     expr/e_fmt.cmi
+expr/e_subst.cmo: expr/e_subst.mlt \
+    util/util.cmi \
+    util/property.cmi \
+    util/fmtutil.cmi \
+    util/ext.cmi \
+    expr/e_t.cmi \
+    expr/e_fmt.cmi \
+    util/deque.cmi \
+    ctx.cmi \
+    expr/e_subst.cmi
+expr/e_subst.cmx: expr/e_subst.mlt \
+    util/util.cmx \
+    util/property.cmx \
+    util/fmtutil.cmx \
+    util/ext.cmx \
+    expr/e_t.cmx \
+    expr/e_fmt.cmx \
+    util/deque.cmx \
+    ctx.cmx \
+    expr/e_subst.cmi
+expr/e_visit.cmo: expr/e_visit.mlt \
+    util/util.cmi \
+    util/property.cmi \
+    util/ext.cmi \
+    errors.cmi \
+    expr/e_t.cmi \
+    expr/e_subst.cmi \
+    util/deque.cmi \
+    expr/e_visit.cmi
+expr/e_visit.cmx: expr/e_visit.mlt \
+    util/util.cmx \
+    util/property.cmx \
+    util/ext.cmx \
+    errors.cmx \
+    expr/e_t.cmx \
+    expr/e_subst.cmx \
+    util/deque.cmx \
+    expr/e_visit.cmi
 expr/e_levels.cmo: expr/e_levels.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
     util/ext.cmi \
     expr/e_visit.cmi \
@@ -322,7 +291,6 @@ expr/e_levels.cmo: expr/e_levels.mlt \
     expr/e_levels.cmi
 expr/e_levels.cmx: expr/e_levels.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
     util/ext.cmx \
     expr/e_visit.cmx \
@@ -332,7 +300,6 @@ expr/e_levels.cmx: expr/e_levels.mlt \
     expr/e_levels.cmi
 expr/e_constness.cmo: expr/e_constness.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
     util/ext.cmi \
     errors.cmi \
@@ -344,7 +311,6 @@ expr/e_constness.cmo: expr/e_constness.mlt \
     expr/e_constness.cmi
 expr/e_constness.cmx: expr/e_constness.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
     util/ext.cmx \
     errors.cmx \
@@ -372,43 +338,18 @@ expr/e_substitutive.cmx: expr/e_substitutive.mlt \
     util/deque.cmx \
     builtin.cmx \
     expr/e_substitutive.cmi
-expr/e_subst.cmo: expr/e_subst.mlt \
-    util/util.cmi \
-    revision.cmi \
-    util/property.cmi \
-    util/fmtutil.cmi \
-    util/ext.cmi \
-    expr/e_t.cmi \
-    expr/e_fmt.cmi \
-    util/deque.cmi \
-    ctx.cmi \
-    expr/e_subst.cmi
-expr/e_subst.cmx: expr/e_subst.mlt \
-    util/util.cmx \
-    revision.cmx \
-    util/property.cmx \
-    util/fmtutil.cmx \
-    util/ext.cmx \
-    expr/e_t.cmx \
-    expr/e_fmt.cmx \
-    util/deque.cmx \
-    ctx.cmx \
-    expr/e_subst.cmi
 expr/e_eq.cmo: expr/e_eq.mlt \
-    revision.cmi \
     util/property.cmi \
     expr/e_t.cmi \
     util/deque.cmi \
     expr/e_eq.cmi
 expr/e_eq.cmx: expr/e_eq.mlt \
-    revision.cmx \
     util/property.cmx \
     expr/e_t.cmx \
     util/deque.cmx \
     expr/e_eq.cmi
 expr/e_deref.cmo: expr/e_deref.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
     util/ext.cmi \
     errors.cmi \
@@ -421,7 +362,6 @@ expr/e_deref.cmo: expr/e_deref.mlt \
     expr/e_deref.cmi
 expr/e_deref.cmx: expr/e_deref.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
     util/ext.cmx \
     errors.cmx \
@@ -433,7 +373,6 @@ expr/e_deref.cmx: expr/e_deref.mlt \
     ctx.cmx \
     expr/e_deref.cmi
 expr/e_leibniz.cmo: expr/e_leibniz.mlt \
-    revision.cmi \
     util/property.cmi \
     util/ext.cmi \
     errors.cmi \
@@ -443,7 +382,6 @@ expr/e_leibniz.cmo: expr/e_leibniz.mlt \
     builtin.cmi \
     expr/e_leibniz.cmi
 expr/e_leibniz.cmx: expr/e_leibniz.mlt \
-    revision.cmx \
     util/property.cmx \
     util/ext.cmx \
     errors.cmx \
@@ -455,7 +393,6 @@ expr/e_leibniz.cmx: expr/e_leibniz.mlt \
 expr/e_parser.cmo: expr/e_parser.mlt \
     util/util.cmi \
     tla_parser.cmi \
-    revision.cmi \
     util/property.cmi \
     optable.cmi \
     loc.cmi \
@@ -468,7 +405,6 @@ expr/e_parser.cmo: expr/e_parser.mlt \
 expr/e_parser.cmx: expr/e_parser.mlt \
     util/util.cmx \
     tla_parser.cmx \
-    revision.cmx \
     util/property.cmx \
     optable.cmx \
     loc.cmx \
@@ -480,7 +416,6 @@ expr/e_parser.cmx: expr/e_parser.mlt \
     expr/e_parser.cmi
 expr/e_tla_norm.cmo: expr/e_tla_norm.mlt \
     tla_parser.cmi \
-    revision.cmi \
     util/property.cmi \
     util/ext.cmi \
     expr/e_visit.cmi \
@@ -490,7 +425,6 @@ expr/e_tla_norm.cmo: expr/e_tla_norm.mlt \
     expr/e_tla_norm.cmi
 expr/e_tla_norm.cmx: expr/e_tla_norm.mlt \
     tla_parser.cmx \
-    revision.cmx \
     util/property.cmx \
     util/ext.cmx \
     expr/e_visit.cmx \
@@ -499,7 +433,6 @@ expr/e_tla_norm.cmx: expr/e_tla_norm.mlt \
     builtin.cmx \
     expr/e_tla_norm.cmi
 expr/e_temporal_props.cmo: expr/e_temporal_props.mlt \
-    revision.cmi \
     util/property.cmi \
     util/ext.cmi \
     expr/e_visit.cmi \
@@ -510,7 +443,6 @@ expr/e_temporal_props.cmo: expr/e_temporal_props.mlt \
     builtin.cmi \
     expr/e_temporal_props.cmi
 expr/e_temporal_props.cmx: expr/e_temporal_props.mlt \
-    revision.cmx \
     util/property.cmx \
     util/ext.cmx \
     expr/e_visit.cmx \
@@ -521,7 +453,6 @@ expr/e_temporal_props.cmx: expr/e_temporal_props.mlt \
     builtin.cmx \
     expr/e_temporal_props.cmi
 expr/e_elab.cmo: expr/e_elab.mlt \
-    revision.cmi \
     util/property.cmi \
     errors.cmi \
     expr/e_visit.cmi \
@@ -533,7 +464,6 @@ expr/e_elab.cmo: expr/e_elab.mlt \
     builtin.cmi \
     expr/e_elab.cmi
 expr/e_elab.cmx: expr/e_elab.mlt \
-    revision.cmx \
     util/property.cmx \
     errors.cmx \
     expr/e_visit.cmx \
@@ -546,13 +476,13 @@ expr/e_elab.cmx: expr/e_elab.mlt \
     expr/e_elab.cmi
 expr/e_anon.cmo: expr/e_anon.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
     errors.cmi \
     expr/e_visit.cmi \
     expr/e_temporal_props.cmi \
     expr/e_t.cmi \
     expr/e_subst.cmi \
+    expr/e_fmt.cmi \
     expr/e_eq.cmi \
     expr/e_elab.cmi \
     expr/e_deref.cmi \
@@ -561,13 +491,13 @@ expr/e_anon.cmo: expr/e_anon.mlt \
     expr/e_anon.cmi
 expr/e_anon.cmx: expr/e_anon.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
     errors.cmx \
     expr/e_visit.cmx \
     expr/e_temporal_props.cmx \
     expr/e_t.cmx \
     expr/e_subst.cmx \
+    expr/e_fmt.cmx \
     expr/e_eq.cmx \
     expr/e_elab.cmx \
     expr/e_deref.cmx \
@@ -576,7 +506,6 @@ expr/e_anon.cmx: expr/e_anon.mlt \
     expr/e_anon.cmi
 expr/e_action.cmo: expr/e_action.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
     util/ext.cmi \
     expr/e_visit.cmi \
@@ -592,7 +521,6 @@ expr/e_action.cmo: expr/e_action.mlt \
     expr/e_action.cmi
 expr/e_action.cmx: expr/e_action.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
     util/ext.cmx \
     expr/e_visit.cmx \
@@ -608,8 +536,8 @@ expr/e_action.cmx: expr/e_action.mlt \
     expr/e_action.cmi
 expr/e_level_comparison.cmo: expr/e_level_comparison.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
+    params.cmi \
     expr/e_visit.cmi \
     expr/e_t.cmi \
     expr/e_levels.cmi \
@@ -617,15 +545,14 @@ expr/e_level_comparison.cmo: expr/e_level_comparison.mlt \
     expr/e_level_comparison.cmi
 expr/e_level_comparison.cmx: expr/e_level_comparison.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
+    params.cmx \
     expr/e_visit.cmx \
     expr/e_t.cmx \
     expr/e_levels.cmx \
     util/deque.cmx \
     expr/e_level_comparison.cmi
 expr.cmo: expr.mlt \
-    revision.cmi \
     expr/e_visit.cmi \
     expr/e_tla_norm.cmi \
     expr/e_temporal_props.cmi \
@@ -645,7 +572,6 @@ expr.cmo: expr.mlt \
     expr/e_action.cmi \
     expr.cmi
 expr.cmx: expr.mlt \
-    revision.cmx \
     expr/e_visit.cmx \
     expr/e_tla_norm.cmx \
     expr/e_temporal_props.cmx \
@@ -666,25 +592,21 @@ expr.cmx: expr.mlt \
     expr.cmi
 method_prs.cmo: method_prs.mlt \
     tla_parser.cmi \
-    revision.cmi \
     method.cmi \
     util/ext.cmi \
     method_prs.cmi
 method_prs.cmx: method_prs.mlt \
     tla_parser.cmx \
-    revision.cmx \
     method.cmx \
     util/ext.cmx \
     method_prs.cmi
 proof/p_t.cmo: proof/p_t.mlt \
-    revision.cmi \
     util/property.cmi \
     method.cmi \
     loc.cmi \
     expr.cmi \
     proof/p_t.cmi
 proof/p_t.cmx: proof/p_t.mlt \
-    revision.cmx \
     util/property.cmx \
     method.cmx \
     loc.cmx \
@@ -692,7 +614,6 @@ proof/p_t.cmx: proof/p_t.mlt \
     proof/p_t.cmi
 proof/p_fmt.cmo: proof/p_fmt.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
     params.cmi \
     proof/p_t.cmi \
@@ -706,7 +627,6 @@ proof/p_fmt.cmo: proof/p_fmt.mlt \
     proof/p_fmt.cmi
 proof/p_fmt.cmx: proof/p_fmt.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
     params.cmx \
     proof/p_t.cmx \
@@ -720,7 +640,6 @@ proof/p_fmt.cmx: proof/p_fmt.mlt \
     proof/p_fmt.cmi
 proof/p_subst.cmo: proof/p_subst.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
     proof/p_t.cmi \
     util/ext.cmi \
@@ -731,7 +650,6 @@ proof/p_subst.cmo: proof/p_subst.mlt \
     proof/p_subst.cmi
 proof/p_subst.cmx: proof/p_subst.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
     proof/p_t.cmx \
     util/ext.cmx \
@@ -741,7 +659,6 @@ proof/p_subst.cmx: proof/p_subst.mlt \
     ctx.cmx \
     proof/p_subst.cmi
 proof/p_visit.cmo: proof/p_visit.mlt \
-    revision.cmi \
     util/property.cmi \
     proof/p_t.cmi \
     util/ext.cmi \
@@ -750,7 +667,6 @@ proof/p_visit.cmo: proof/p_visit.mlt \
     util/deque.cmi \
     proof/p_visit.cmi
 proof/p_visit.cmx: proof/p_visit.mlt \
-    revision.cmx \
     util/property.cmx \
     proof/p_t.cmx \
     util/ext.cmx \
@@ -760,7 +676,6 @@ proof/p_visit.cmx: proof/p_visit.mlt \
     proof/p_visit.cmi
 proof/p_gen.cmo: proof/p_gen.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
     params.cmi \
     proof/p_visit.cmi \
@@ -775,7 +690,6 @@ proof/p_gen.cmo: proof/p_gen.mlt \
     proof/p_gen.cmi
 proof/p_gen.cmx: proof/p_gen.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
     params.cmx \
     proof/p_visit.cmx \
@@ -790,7 +704,6 @@ proof/p_gen.cmx: proof/p_gen.mlt \
     proof/p_gen.cmi
 proof/p_simplify.cmo: proof/p_simplify.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
     proof/p_t.cmi \
     proof/p_gen.cmi \
@@ -804,7 +717,6 @@ proof/p_simplify.cmo: proof/p_simplify.mlt \
     proof/p_simplify.cmi
 proof/p_simplify.cmx: proof/p_simplify.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
     proof/p_t.cmx \
     proof/p_gen.cmx \
@@ -817,29 +729,28 @@ proof/p_simplify.cmx: proof/p_simplify.mlt \
     builtin.cmx \
     proof/p_simplify.cmi
 proof/p_anon.cmo: proof/p_anon.mlt \
-    revision.cmi \
     util/property.cmi \
     proof/p_visit.cmi \
     proof/p_t.cmi \
     util/ext.cmi \
     expr.cmi \
+    errors.cmi \
     util/deque.cmi \
     builtin.cmi \
     proof/p_anon.cmi
 proof/p_anon.cmx: proof/p_anon.mlt \
-    revision.cmx \
     util/property.cmx \
     proof/p_visit.cmx \
     proof/p_t.cmx \
     util/ext.cmx \
     expr.cmx \
+    errors.cmx \
     util/deque.cmx \
     builtin.cmx \
     proof/p_anon.cmi
 proof/p_parser.cmo: proof/p_parser.mlt \
     util/util.cmi \
     tla_parser.cmi \
-    revision.cmi \
     util/property.cmi \
     proof/p_t.cmi \
     method_prs.cmi \
@@ -853,7 +764,6 @@ proof/p_parser.cmo: proof/p_parser.mlt \
 proof/p_parser.cmx: proof/p_parser.mlt \
     util/util.cmx \
     tla_parser.cmx \
-    revision.cmx \
     util/property.cmx \
     proof/p_t.cmx \
     method_prs.cmx \
@@ -865,7 +775,6 @@ proof/p_parser.cmx: proof/p_parser.mlt \
     util/deque.cmx \
     proof/p_parser.cmi
 proof.cmo: proof.mlt \
-    revision.cmi \
     proof/p_visit.cmi \
     proof/p_t.cmi \
     proof/p_subst.cmi \
@@ -876,7 +785,6 @@ proof.cmo: proof.mlt \
     proof/p_anon.cmi \
     proof.cmi
 proof.cmx: proof.mlt \
-    revision.cmx \
     proof/p_visit.cmx \
     proof/p_t.cmx \
     proof/p_subst.cmx \
@@ -889,7 +797,6 @@ proof.cmx: proof.mlt \
 smt/smtcommons.cmo: smt/smtcommons.mlt \
     util/util.cmi \
     tla_parser.cmi \
-    revision.cmi \
     util/property.cmi \
     params.cmi \
     util/fmtutil.cmi \
@@ -902,7 +809,6 @@ smt/smtcommons.cmo: smt/smtcommons.mlt \
 smt/smtcommons.cmx: smt/smtcommons.mlt \
     util/util.cmx \
     tla_parser.cmx \
-    revision.cmx \
     util/property.cmx \
     params.cmx \
     util/fmtutil.cmx \
@@ -915,7 +821,6 @@ smt/smtcommons.cmx: smt/smtcommons.mlt \
 typesystem/typ_t.cmo: typesystem/typ_t.mlt \
     tla_parser.cmi \
     smt/smtcommons.cmi \
-    revision.cmi \
     util/property.cmi \
     util/fmtutil.cmi \
     util/ext.cmi \
@@ -926,7 +831,6 @@ typesystem/typ_t.cmo: typesystem/typ_t.mlt \
 typesystem/typ_t.cmx: typesystem/typ_t.mlt \
     tla_parser.cmx \
     smt/smtcommons.cmx \
-    revision.cmx \
     util/property.cmx \
     util/fmtutil.cmx \
     util/ext.cmx \
@@ -939,7 +843,6 @@ typesystem/typ_e.cmo: typesystem/typ_e.mlt \
     typesystem/typ_t.cmi \
     tla_parser.cmi \
     smt/smtcommons.cmi \
-    revision.cmi \
     util/property.cmi \
     params.cmi \
     optable.cmi \
@@ -957,7 +860,6 @@ typesystem/typ_e.cmx: typesystem/typ_e.mlt \
     typesystem/typ_t.cmx \
     tla_parser.cmx \
     smt/smtcommons.cmx \
-    revision.cmx \
     util/property.cmx \
     params.cmx \
     optable.cmx \
@@ -975,7 +877,6 @@ typesystem/typ_c.cmo: typesystem/typ_c.mlt \
     typesystem/typ_t.cmi \
     typesystem/typ_e.cmi \
     smt/smtcommons.cmi \
-    revision.cmi \
     util/property.cmi \
     util/fmtutil.cmi \
     util/ext.cmi \
@@ -988,7 +889,6 @@ typesystem/typ_c.cmx: typesystem/typ_c.mlt \
     typesystem/typ_t.cmx \
     typesystem/typ_e.cmx \
     smt/smtcommons.cmx \
-    revision.cmx \
     util/property.cmx \
     util/fmtutil.cmx \
     util/ext.cmx \
@@ -1003,7 +903,6 @@ typesystem/typ_cg1.cmo: typesystem/typ_cg1.mlt \
     typesystem/typ_c.cmi \
     tla_parser.cmi \
     smt/smtcommons.cmi \
-    revision.cmi \
     util/property.cmi \
     util/fmtutil.cmi \
     util/ext.cmi \
@@ -1020,7 +919,6 @@ typesystem/typ_cg1.cmx: typesystem/typ_cg1.mlt \
     typesystem/typ_c.cmx \
     tla_parser.cmx \
     smt/smtcommons.cmx \
-    revision.cmx \
     util/property.cmx \
     util/fmtutil.cmx \
     util/ext.cmx \
@@ -1037,7 +935,6 @@ typesystem/typ_cg2.cmo: typesystem/typ_cg2.mlt \
     typesystem/typ_c.cmi \
     tla_parser.cmi \
     smt/smtcommons.cmi \
-    revision.cmi \
     util/property.cmi \
     util/fmtutil.cmi \
     util/ext.cmi \
@@ -1054,7 +951,6 @@ typesystem/typ_cg2.cmx: typesystem/typ_cg2.mlt \
     typesystem/typ_c.cmx \
     tla_parser.cmx \
     smt/smtcommons.cmx \
-    revision.cmx \
     util/property.cmx \
     util/fmtutil.cmx \
     util/ext.cmx \
@@ -1070,7 +966,6 @@ typesystem/typ_impgraph.cmo: typesystem/typ_impgraph.mlt \
     typesystem/typ_e.cmi \
     typesystem/typ_c.cmi \
     smt/smtcommons.cmi \
-    revision.cmi \
     util/property.cmi \
     util/ext.cmi \
     expr.cmi \
@@ -1082,7 +977,6 @@ typesystem/typ_impgraph.cmx: typesystem/typ_impgraph.mlt \
     typesystem/typ_e.cmx \
     typesystem/typ_c.cmx \
     smt/smtcommons.cmx \
-    revision.cmx \
     util/property.cmx \
     util/ext.cmx \
     expr.cmx \
@@ -1098,7 +992,6 @@ typesystem/typ_system.cmo: typesystem/typ_system.mlt \
     typesystem/typ_c.cmi \
     tla_parser.cmi \
     smt/smtcommons.cmi \
-    revision.cmi \
     util/property.cmi \
     util/fmtutil.cmi \
     util/ext.cmi \
@@ -1116,7 +1009,6 @@ typesystem/typ_system.cmx: typesystem/typ_system.mlt \
     typesystem/typ_c.cmx \
     tla_parser.cmx \
     smt/smtcommons.cmx \
-    revision.cmx \
     util/property.cmx \
     util/fmtutil.cmx \
     util/ext.cmx \
@@ -1128,7 +1020,6 @@ smt/fmt.cmo: smt/fmt.mlt \
     util/util.cmi \
     typesystem/typ_t.cmi \
     smt/smtcommons.cmi \
-    revision.cmi \
     util/property.cmi \
     util/ext.cmi \
     expr.cmi \
@@ -1139,7 +1030,6 @@ smt/fmt.cmx: smt/fmt.mlt \
     util/util.cmx \
     typesystem/typ_t.cmx \
     smt/smtcommons.cmx \
-    revision.cmx \
     util/property.cmx \
     util/ext.cmx \
     expr.cmx \
@@ -1148,7 +1038,6 @@ smt/fmt.cmx: smt/fmt.mlt \
     smt/fmt.cmi
 smt/boolify.cmo: smt/boolify.mlt \
     smt/smtcommons.cmi \
-    revision.cmi \
     util/property.cmi \
     util/ext.cmi \
     expr.cmi \
@@ -1156,7 +1045,6 @@ smt/boolify.cmo: smt/boolify.mlt \
     smt/boolify.cmi
 smt/boolify.cmx: smt/boolify.mlt \
     smt/smtcommons.cmx \
-    revision.cmx \
     util/property.cmx \
     util/ext.cmx \
     expr.cmx \
@@ -1200,7 +1088,6 @@ smt/rewrite.cmo: smt/rewrite.mlt \
     smt/smtcommons.cmi \
     smt/rewrite_trivial.cmi \
     smt/rewrite_arith.cmi \
-    revision.cmi \
     util/property.cmi \
     util/fmtutil.cmi \
     util/ext.cmi \
@@ -1214,7 +1101,6 @@ smt/rewrite.cmx: smt/rewrite.mlt \
     smt/smtcommons.cmx \
     smt/rewrite_trivial.cmx \
     smt/rewrite_arith.cmx \
-    revision.cmx \
     util/property.cmx \
     util/fmtutil.cmx \
     util/ext.cmx \
@@ -1226,11 +1112,9 @@ smt/ectx.cmo: smt/ectx.mlt \
     typesystem/typ_t.cmi \
     tla_parser.cmi \
     smt/smtcommons.cmi \
-    revision.cmi \
     util/property.cmi \
     util/ext.cmi \
     expr.cmi \
-    errors.cmi \
     util/deque.cmi \
     ctx.cmi \
     smt/axioms.cmi \
@@ -1239,11 +1123,9 @@ smt/ectx.cmx: smt/ectx.mlt \
     typesystem/typ_t.cmx \
     tla_parser.cmx \
     smt/smtcommons.cmx \
-    revision.cmx \
     util/property.cmx \
     util/ext.cmx \
     expr.cmx \
-    errors.cmx \
     util/deque.cmx \
     ctx.cmx \
     smt/axioms.cmx \
@@ -1253,7 +1135,6 @@ smt/preprocess.cmo: smt/preprocess.mlt \
     typesystem/typ_e.cmi \
     tla_parser.cmi \
     smt/smtcommons.cmi \
-    revision.cmi \
     util/property.cmi \
     util/fmtutil.cmi \
     util/ext.cmi \
@@ -1269,7 +1150,6 @@ smt/preprocess.cmx: smt/preprocess.mlt \
     typesystem/typ_e.cmx \
     tla_parser.cmx \
     smt/smtcommons.cmx \
-    revision.cmx \
     util/property.cmx \
     util/fmtutil.cmx \
     util/ext.cmx \
@@ -1284,7 +1164,6 @@ smt/axioms.cmo: smt/axioms.mlt \
     typesystem/typ_t.cmi \
     tla_parser.cmi \
     smt/smtcommons.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     util/fmtutil.cmi \
@@ -1297,7 +1176,6 @@ smt/axioms.cmx: smt/axioms.mlt \
     typesystem/typ_t.cmx \
     tla_parser.cmx \
     smt/smtcommons.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     util/fmtutil.cmx \
@@ -1307,15 +1185,12 @@ smt/axioms.cmx: smt/axioms.mlt \
     builtin.cmx \
     smt/axioms.cmi
 util/timing.cmo: util/timing.mlt \
-    revision.cmi \
     util/timing.cmi
 util/timing.cmx: util/timing.mlt \
-    revision.cmx \
     util/timing.cmi
 frontend/symbol_commute.cmo: frontend/symbol_commute.mlt \
     util/util.cmi \
     tla_parser.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     util/ext.cmi \
@@ -1326,7 +1201,6 @@ frontend/symbol_commute.cmo: frontend/symbol_commute.mlt \
 frontend/symbol_commute.cmx: frontend/symbol_commute.mlt \
     util/util.cmx \
     tla_parser.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     util/ext.cmx \
@@ -1336,7 +1210,6 @@ frontend/symbol_commute.cmx: frontend/symbol_commute.mlt \
     frontend/symbol_commute.cmi
 frontend/coalesce.cmo: frontend/coalesce.mlt \
     tla_parser.cmi \
-    revision.cmi \
     util/property.cmi \
     util/ext.cmi \
     expr.cmi \
@@ -1346,7 +1219,6 @@ frontend/coalesce.cmo: frontend/coalesce.mlt \
     frontend/coalesce.cmi
 frontend/coalesce.cmx: frontend/coalesce.mlt \
     tla_parser.cmx \
-    revision.cmx \
     util/property.cmx \
     util/ext.cmx \
     expr.cmx \
@@ -1358,7 +1230,6 @@ frontend/action.cmo: frontend/action.mlt \
     util/util.cmi \
     tla_parser.cmi \
     frontend/symbol_commute.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     util/ext.cmi \
@@ -1372,7 +1243,6 @@ frontend/action.cmx: frontend/action.mlt \
     util/util.cmx \
     tla_parser.cmx \
     frontend/symbol_commute.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     util/ext.cmx \
@@ -1384,7 +1254,6 @@ frontend/action.cmx: frontend/action.mlt \
     frontend/action.cmi
 frontend/pltl.cmo: frontend/pltl.mlt \
     tla_parser.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     util/ext.cmi \
@@ -1395,7 +1264,6 @@ frontend/pltl.cmo: frontend/pltl.mlt \
     frontend/pltl.cmi
 frontend/pltl.cmx: frontend/pltl.mlt \
     tla_parser.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     util/ext.cmx \
@@ -1409,7 +1277,6 @@ backend/toolbox.cmo: backend/toolbox.mlt \
     backend/types.cmi \
     toolbox_msg.cmi \
     system.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     params.cmi \
@@ -1424,7 +1291,6 @@ backend/toolbox.cmx: backend/toolbox.mlt \
     backend/types.cmx \
     toolbox_msg.cmx \
     system.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     params.cmx \
@@ -1437,22 +1303,18 @@ backend/toolbox.cmx: backend/toolbox.mlt \
 backend/schedule.cmo: backend/schedule.mlt \
     backend/toolbox.cmi \
     system.cmi \
-    revision.cmi \
     params.cmi \
     backend/schedule.cmi
 backend/schedule.cmx: backend/schedule.mlt \
     backend/toolbox.cmx \
     system.cmx \
-    revision.cmx \
     params.cmx \
     backend/schedule.cmi
 backend/types.cmo: backend/types.mlt \
-    revision.cmi \
     proof.cmi \
     method.cmi \
     backend/types.cmi
 backend/types.cmx: backend/types.mlt \
-    revision.cmx \
     proof.cmx \
     method.cmx \
     backend/types.cmi
@@ -1460,7 +1322,6 @@ backend/isabelle.cmo: backend/isabelle.mlt \
     util/util.cmi \
     tla_parser.cmi \
     system.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     params.cmi \
@@ -1476,7 +1337,6 @@ backend/isabelle.cmx: backend/isabelle.mlt \
     util/util.cmx \
     tla_parser.cmx \
     system.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     params.cmx \
@@ -1491,7 +1351,6 @@ backend/isabelle.cmx: backend/isabelle.mlt \
 backend/zenon.cmo: backend/zenon.mlt \
     util/util.cmi \
     tla_parser.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     backend/isabelle.cmi \
@@ -1505,7 +1364,6 @@ backend/zenon.cmo: backend/zenon.mlt \
 backend/zenon.cmx: backend/zenon.mlt \
     util/util.cmx \
     tla_parser.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     backend/isabelle.cmx \
@@ -1518,7 +1376,6 @@ backend/zenon.cmx: backend/zenon.mlt \
     backend/zenon.cmi
 backend/ls4.cmo: backend/ls4.mlt \
     tla_parser.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     util/fmtutil.cmi \
@@ -1532,7 +1389,6 @@ backend/ls4.cmo: backend/ls4.mlt \
     backend/ls4.cmi
 backend/ls4.cmx: backend/ls4.mlt \
     tla_parser.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     util/fmtutil.cmx \
@@ -1545,7 +1401,6 @@ backend/ls4.cmx: backend/ls4.mlt \
     builtin.cmx \
     backend/ls4.cmi
 backend/fingerprints.cmo: backend/fingerprints.mlt \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     util/ext.cmi \
@@ -1555,7 +1410,6 @@ backend/fingerprints.cmo: backend/fingerprints.mlt \
     builtin.cmi \
     backend/fingerprints.cmi
 backend/fingerprints.cmx: backend/fingerprints.mlt \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     util/ext.cmx \
@@ -1567,7 +1421,6 @@ backend/fingerprints.cmx: backend/fingerprints.mlt \
 backend/fpfile.cmo: backend/fpfile.mlt \
     util/util.cmi \
     backend/types.cmi \
-    revision.cmi \
     params.cmi \
     method.cmi \
     util/ext.cmi \
@@ -1576,7 +1429,6 @@ backend/fpfile.cmo: backend/fpfile.mlt \
 backend/fpfile.cmx: backend/fpfile.mlt \
     util/util.cmx \
     backend/types.cmx \
-    revision.cmx \
     params.cmx \
     method.cmx \
     util/ext.cmx \
@@ -1590,7 +1442,6 @@ backend/smt.cmo: backend/smt.mlt \
     tla_parser.cmi \
     smt/smtcommons.cmi \
     smt/rewrite.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     smt/preprocess.cmi \
@@ -1615,7 +1466,6 @@ backend/smt.cmx: backend/smt.mlt \
     tla_parser.cmx \
     smt/smtcommons.cmx \
     smt/rewrite.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     smt/preprocess.cmx \
@@ -1639,7 +1489,6 @@ backend/prep.cmo: backend/prep.mlt \
     backend/toolbox.cmi \
     backend/smt.cmi \
     backend/schedule.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     frontend/pltl.cmi \
@@ -1665,7 +1514,6 @@ backend/prep.cmx: backend/prep.mlt \
     backend/toolbox.cmx \
     backend/smt.cmx \
     backend/schedule.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     frontend/pltl.cmx \
@@ -1688,7 +1536,6 @@ backend.cmo: backend.mlt \
     backend/zenon.cmi \
     backend/types.cmi \
     backend/toolbox.cmi \
-    revision.cmi \
     backend/prep.cmi \
     backend/fpfile.cmi \
     backend/fingerprints.cmi \
@@ -1697,14 +1544,12 @@ backend.cmx: backend.mlt \
     backend/zenon.cmx \
     backend/types.cmx \
     backend/toolbox.cmx \
-    revision.cmx \
     backend/prep.cmx \
     backend/fpfile.cmx \
     backend/fingerprints.cmx \
     backend.cmi
 module/m_t.cmo: module/m_t.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     loc.cmi \
@@ -1715,7 +1560,6 @@ module/m_t.cmo: module/m_t.mlt \
     module/m_t.cmi
 module/m_t.cmx: module/m_t.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     loc.cmx \
@@ -1752,7 +1596,6 @@ module/m_subst.cmx: module/m_subst.mlt \
     module/m_subst.cmi
 module/m_fmt.cmo: module/m_fmt.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     params.cmi \
@@ -1766,7 +1609,6 @@ module/m_fmt.cmo: module/m_fmt.mlt \
     module/m_fmt.cmi
 module/m_fmt.cmx: module/m_fmt.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     params.cmx \
@@ -1792,7 +1634,6 @@ module/m_globalness.cmx: module/m_globalness.mlt \
     module/m_globalness.cmi
 module/m_gen.cmo: module/m_gen.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     params.cmi \
@@ -1805,7 +1646,6 @@ module/m_gen.cmo: module/m_gen.mlt \
     module/m_gen.cmi
 module/m_gen.cmx: module/m_gen.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     params.cmx \
@@ -1819,7 +1659,6 @@ module/m_gen.cmx: module/m_gen.mlt \
 module/m_elab.cmo: module/m_elab.mlt \
     util/util.cmi \
     tla_parser.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     params.cmi \
@@ -1841,7 +1680,6 @@ module/m_elab.cmo: module/m_elab.mlt \
 module/m_elab.cmx: module/m_elab.mlt \
     util/util.cmx \
     tla_parser.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     params.cmx \
@@ -1862,7 +1700,6 @@ module/m_elab.cmx: module/m_elab.mlt \
     module/m_elab.cmi
 module/m_standard.cmo: module/m_standard.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
     module/m_t.cmi \
     module/m_elab.cmi \
@@ -1874,7 +1711,6 @@ module/m_standard.cmo: module/m_standard.mlt \
     module/m_standard.cmi
 module/m_standard.cmx: module/m_standard.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
     module/m_t.cmx \
     module/m_elab.cmx \
@@ -1886,7 +1722,6 @@ module/m_standard.cmx: module/m_standard.mlt \
     module/m_standard.cmi
 module/m_flatten.cmo: module/m_flatten.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     module/m_t.cmi \
@@ -1896,7 +1731,6 @@ module/m_flatten.cmo: module/m_flatten.mlt \
     module/m_flatten.cmi
 module/m_flatten.cmx: module/m_flatten.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     module/m_t.cmx \
@@ -1906,7 +1740,6 @@ module/m_flatten.cmx: module/m_flatten.mlt \
     module/m_flatten.cmi
 module/m_dep.cmo: module/m_dep.mlt \
     util/util.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     module/m_t.cmi \
@@ -1917,7 +1750,6 @@ module/m_dep.cmo: module/m_dep.mlt \
     module/m_dep.cmi
 module/m_dep.cmx: module/m_dep.mlt \
     util/util.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     module/m_t.cmx \
@@ -1928,7 +1760,6 @@ module/m_dep.cmx: module/m_dep.mlt \
     module/m_dep.cmi
 module/m_parser.cmo: module/m_parser.mlt \
     tla_parser.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     method_prs.cmi \
@@ -1939,7 +1770,6 @@ module/m_parser.cmo: module/m_parser.mlt \
     module/m_parser.cmi
 module/m_parser.cmx: module/m_parser.mlt \
     tla_parser.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     method_prs.cmx \
@@ -1952,7 +1782,6 @@ module/m_save.cmo: module/m_save.mlt \
     util/util.cmi \
     tla_parser.cmi \
     util/timing.cmi \
-    revision.cmi \
     util/property.cmi \
     params.cmi \
     module/m_t.cmi \
@@ -1968,7 +1797,6 @@ module/m_save.cmx: module/m_save.mlt \
     util/util.cmx \
     tla_parser.cmx \
     util/timing.cmx \
-    revision.cmx \
     util/property.cmx \
     params.cmx \
     module/m_t.cmx \
@@ -1981,7 +1809,6 @@ module/m_save.cmx: module/m_save.mlt \
     alexer.cmx \
     module/m_save.cmi
 module.cmo: module.mlt \
-    revision.cmi \
     module/m_visit.cmi \
     module/m_t.cmi \
     module/m_subst.cmi \
@@ -1996,7 +1823,6 @@ module.cmo: module.mlt \
     module/m_dep.cmi \
     module.cmi
 module.cmx: module.mlt \
-    revision.cmx \
     module/m_visit.cmx \
     module/m_t.cmx \
     module/m_subst.cmx \
@@ -2012,7 +1838,6 @@ module.cmx: module.mlt \
     module.cmi
 tlapm_args.cmo: tlapm_args.mlt \
     version.cmi \
-    revision.cmi \
     params.cmi \
     method.cmi \
     util/ext.cmi \
@@ -2020,7 +1845,6 @@ tlapm_args.cmo: tlapm_args.mlt \
     tlapm_args.cmi
 tlapm_args.cmx: tlapm_args.mlt \
     version.cmx \
-    revision.cmx \
     params.cmx \
     method.cmx \
     util/ext.cmx \
@@ -2034,7 +1858,6 @@ tlapm.cmo: tlapm.mlt \
     tla_parser.cmi \
     util/timing.cmi \
     backend/schedule.cmi \
-    revision.cmi \
     util/property.cmi \
     proof.cmi \
     backend/prep.cmi \
@@ -2060,7 +1883,6 @@ tlapm.cmx: tlapm.mlt \
     tla_parser.cmx \
     util/timing.cmx \
     backend/schedule.cmx \
-    revision.cmx \
     util/property.cmx \
     proof.cmx \
     backend/prep.cmx \
@@ -2078,7 +1900,6 @@ tlapm.cmx: tlapm.mlt \
     config.cmx \
     backend.cmx \
     tlapm.cmi
-revision.cmi :
 sysconf.cmi :
 util/ext.cmi :
 system.cmi :
@@ -2115,6 +1936,7 @@ util/fmtutil.cmi : \
     pars.cmi
 isabelle_keywords.cmi :
 tla_parser.cmi : \
+    util/util.cmi \
     util/property.cmi \
     pars.cmi \
     loc.cmi \
@@ -2131,16 +1953,21 @@ expr/e_t.cmi : \
     method.cmi \
     util/deque.cmi \
     builtin.cmi
-expr/e_visit.cmi : \
-    util/util.cmi \
-    expr/e_t.cmi \
-    util/deque.cmi
 expr/e_fmt.cmi : \
     util/util.cmi \
     tla_parser.cmi \
     expr/e_t.cmi \
     util/deque.cmi \
     ctx.cmi
+expr/e_subst.cmi : \
+    util/property.cmi \
+    expr/e_t.cmi \
+    expr/e_fmt.cmi \
+    util/deque.cmi
+expr/e_visit.cmi : \
+    util/util.cmi \
+    expr/e_t.cmi \
+    util/deque.cmi
 expr/e_levels.cmi : \
     util/property.cmi \
     expr/e_visit.cmi \
@@ -2152,11 +1979,6 @@ expr/e_constness.cmi : \
 expr/e_substitutive.cmi : \
     util/property.cmi \
     expr/e_t.cmi
-expr/e_subst.cmi : \
-    util/property.cmi \
-    expr/e_t.cmi \
-    expr/e_fmt.cmi \
-    util/deque.cmi
 expr/e_eq.cmi : \
     expr/e_t.cmi
 expr/e_deref.cmi : \
@@ -2165,8 +1987,7 @@ expr/e_deref.cmi : \
 expr/e_leibniz.cmi : \
     util/property.cmi \
     expr/e_visit.cmi \
-    expr/e_t.cmi \
-    util/deque.cmi
+    expr/e_t.cmi
 expr/e_parser.cmi : \
     util/util.cmi \
     tla_parser.cmi \
@@ -2243,7 +2064,6 @@ proof.cmi : \
     util/deque.cmi \
     ctx.cmi
 smt/smtcommons.cmi : \
-    util/util.cmi \
     util/property.cmi \
     expr.cmi \
     util/deque.cmi

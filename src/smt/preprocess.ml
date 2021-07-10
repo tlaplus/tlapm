@@ -136,11 +136,12 @@ let make_salt_explicit sq =
         method bounds scx bs =
             let _, cx = Ectx.from_hyps Ectx.dot (snd scx) in
             let bs = List.map begin
-                fun (v, k, dom) ->
-                    (* let _, nm = Isabelle.adj cx v in *)
+                fun bound ->
+                    let v = Expr.T.name_of_bound bound in
                     let cx = Ctx.push cx v.core in
                     let nm = Ctx.string_of_ident (Ctx.front cx) in
-                    (nm @@ v, k, dom)
+                    let h = nm @@ v in
+                    Expr.Visit.rename_bound bound h
                 end bs in
                 super#bounds scx bs
 
@@ -230,8 +231,16 @@ let prepreproc sq =
     | Apply ({core = Internal B.Neq}, ([x ; {core = SetEnum []}]
                                      | [{core = SetEnum []} ; x])) ->
         (* app B.Implies [app B.Eq [x ; SetEnum [] %% []] ; Internal B.FALSE %% []] *)
-        app B.Implies [
-            Quant (Forall, [ ("y"^fresh_id ()) %% [], Constant, No_domain ], app B.Neg [app B.Mem [Ix 1 %% [] ; app_expr (shift 1) x]]) %% [];
+        let name = ("y" ^ fresh_id ()) in
+        let bounds = [From_string.make_const_decl name] in
+        let expr = app B.Neg [
+            app B.Mem [
+                Ix 1 %% [];
+                app_expr (shift 1) x]
+            ] in
+        let forall = From_hint.make_forall
+            bounds expr in
+        app B.Implies [forall;
             Internal B.FALSE %% []]
     | _ -> sq.active
   in
@@ -244,8 +253,7 @@ let prepreproc sq =
         let x = Ix 2 %% [] in
         let y = Ix 1 %% [] in
         let fcnapp f x = Apply (Opaque Smt.fcnapp %% [], [f ; x]) %% [] in
-        let bs = [ "r1" %% [], Constant, No_domain
-                 ; "r2" %% [], Constant, No_domain ] in
+        let bs = From_string.make_const_decls ["r1"; "r2"] in
         let hs = List.sort ~cmp:String.compare hs in
         let hs = List.map (fun h -> String h %% []) hs in
         let ex = app B.Implies [
@@ -296,7 +304,7 @@ let rec uncurry sq n =
 (* Util.eprintf "Skolem Fact: %a" (Typ_e.pp_print_expr (sq.context, Ctx.dot)) sq.active; *)
       (* let ecx = Ectx.from_hyps Ectx.dot sq.context in                        (** creates [ecx] from [sq.context] *)
       let (scx,_),_,hs = Ectx.adj_bs ecx bs in *)
-      let hs = Ectx.to_fresh bs in
+      let hs = Expr.Visit.hyps_of_bounds_unditto bs in
       let cx = snd (Expr.Visit.adjs ((),sq.context) hs) in
 (* Util.eprintf "       Fact: %a" (Typ_e.pp_print_expr (scx, Ctx.dot)) c; *)
       let sq = { context = cx ; active = c } in
@@ -320,9 +328,9 @@ let rec skolemize_once sq =
     match h.core with
     | Fact ({core = Quant (Exists, bs, ex)}, Visible, tm) ->
 (* Util.eprintf "       Fact: %a" (Expr.Fmt.pp_print_expr (snd cx, Ctx.dot)) (Quant (Exists, bs, ex) @@ h); *)
-        let bs = Smt.unditto bs in
+        let bs = Expr.T.unditto bs in
         let h = Fact (ex, Visible, tm) @@ h in
-        let ks = Ectx.to_fresh bs @ [h] in                                    (** [ks] = new hypotheses *)
+        let ks = Expr.Visit.hyps_of_bounds_unditto bs @ [h] in                                    (** [ks] = new hypotheses *)
         let cx = Expr.Visit.adjs ((),sq.context) ks in
         let n = List.length ks - 1 in                                         (** [n] = number of new hypotheses; the 1 corresponds to [h] *)
         let hs = Dq.map (fun i -> app_hyp (bumpn i (shift n))) hs in          (** apply [shift n] only to the ids that are higher than [i] *)
@@ -330,7 +338,7 @@ let rec skolemize_once sq =
 
     (* | Fact ({core = Quant (Exists, bs, ex)}, Visible, tm) ->
 Util.eprintf "       Fact: %a" (Typ_e.pp_print_expr (snd cx, Ctx.dot)) (Quant (Exists, bs, ex) @@ h);
-        let bs = Smt.unditto bs in
+        let bs = Expr.T.unditto bs in
         let h = Fact (ex, Visible, tm) @@ h in
 
         let ecx = Ectx.from_hyps Ectx.dot (snd cx) in                         (** creates [ecx] from [cx] *)
@@ -349,7 +357,7 @@ Util.eprintf "Skolem \\E %s:  %a" (String.concat "," vs) (Typ_e.pp_print_expr (s
         let ecx,(_,h) = Ectx.adj ecx h in
         let ks = js @ [h] in
 
-(* let ks = Ectx.to_fresh bs @ [h] in *)
+(* let ks = Expr.Visit.hyps_of_bounds_unditto bs @ [h] in *)
 let cx' = Expr.Visit.adjs cx' [h] in
 
         let n = List.length ks - 1 in                                         (** [n] = number of new hypotheses; the 1 corresponds to [h] *)
@@ -690,14 +698,28 @@ let add_hyps hs ex =
   | [h] -> imp h ex
   | hs -> imp (List (And, hs) |> noprops) ex
 
-let add_eqs ss scx ex =
-  (* let ss = filter (fun (_,(_,_,b)) -> not b) ss in *)
-  if ss = [] then ex else
-  let bs' = List.map (fun (id,(_,e,_)) -> ((* Smt.turn_first_char true *) id) @@ e, Unknown, No_domain) ss in
-  let ex = add_hyps (mk_defs2 scx ss) ex
-    |> app_expr (shift (length bs'))
-  in
-  Quant (Forall, bs', ex) @@ ex
+
+let add_eqs id_bounds scx ex =
+    (* let id_bounds =
+        filter (fun (_,(_,_,b)) -> not b) id_bounds in
+    *)
+    match id_bounds with
+    | [] -> ex
+    | _ ->
+        (* (* Smt.turn_first_char true *) id
+        (earlier comment)
+        *)
+        let bs = List.map
+            (fun (id, (_, e, _)) ->
+                let h = id @@ e in
+                From_hint.make_param_decl h)
+            id_bounds in
+        let ex =
+            add_hyps
+                (mk_defs2 scx id_bounds) ex
+            |> app_expr (shift (List.length bs)) in
+        From_hint.make_forall bs ex $$ ex
+
 
 (** TODO: abstract (and normalize) just one non-basic expression at a time (with all its occurences, of course)
     See, for instance, the translation of, with two non-basic expressions:
@@ -927,7 +949,8 @@ let abstract2 scx (hs,c) =
       let fvs = fvis off e in
 (* Util.eprintf "  mk_def  %s : %a  [%s]" k (Typ_e.pp_print_expr (Dq.empty, Ctx.dot)) e  (String.concat "," (map string_of_int fvs)) ; *)
       let bs = map begin fun v ->
-          ("x"^(string_of_int v)) %% [], Constant, No_domain
+            let name = "x" ^ (string_of_int v) in
+            From_string.make_const_decl name
         end fvs
       in
       (* let e = canonical off e in *)

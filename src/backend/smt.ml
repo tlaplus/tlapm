@@ -199,7 +199,7 @@ and fmt_expr (ecx:Ectx.t) e =
             when q = q' ->
         fmt_expr ecx (Quant (q, bs @ bs', ex) @@ e)
     | Quant (q, bs, ex) ->
-        (** Assumption: [ex] is [Smt.unditto]'ed and
+        (** Assumption: [ex] is [Expr.T.unditto]'ed and
         [bs] has [No_domain]s.
         *)
         let ecx, vss, _ = Ectx.adj_bs ecx bs in
@@ -446,10 +446,8 @@ let collect_data scx (hs, c) =
                         self#expr scx d
                     | _ -> ()
                 end bs ;
-            let hs = List.map begin
-                fun (v, k, _) -> Fresh (v, Shape_op 0, k, Unbounded) @@ v
-                    (** Hack to recognize bounded variables by [Shape_op 0] *)
-                end bs in
+            (* Hack to recognize bounded variables by [Shape_op 0] *)
+            let hs = Expr.Visit.hyps_of_bounds_as_arity_0 bs in
             Expr.Visit.adjs scx hs
     end in
     List.iter (visitor#expr scx) hs;

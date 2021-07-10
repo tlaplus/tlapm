@@ -65,19 +65,9 @@ let rec adjs ecx = function
       let ecx,vhs = adjs ecx hs in
       (ecx, vh :: vhs)
 
-let to_fresh bs =
-  let bs = Smtcommons.unditto bs in
-  List.map begin fun (v, k, d) ->
-    let d = match d with
-    | Domain d -> Bounded (d,Visible)
-    | No_domain -> Unbounded
-    | Ditto -> Errors.bug "Backend.SMT.Ectx.to_fresh: Ditto not expected"
-    in
-    Fresh (v, Shape_expr, k, d) @@ v
-  end bs
-  |> List.mapi (fun i -> Expr.Subst.app_hyp (Expr.Subst.shift i))
-
-(** Hack to recognize bounded vars by [Shape_op 0] in [is_bounded]. Normally it is [Shape_expr]. *)
+(* Hack to recognize bounded vars by [Shape_op 0] in [is_bounded].
+Normally it is [Shape_expr].
+*)
 let hack_bs hs = List.map begin fun h ->
   match h.core with
   | Fresh (v, s, k, d) -> Fresh (v, Shape_op 0, k, d) @@ h
@@ -98,7 +88,7 @@ let is_bounded dx n =
     [hs]
     *)
 let adj_bs ecx bs =
-  let hs = to_fresh bs |> hack_bs in
+  let hs = Expr.Visit.hyps_of_bounds_unditto bs |> hack_bs in
   let (dx,cx),vhs = adjs ecx hs in
   let vs,hs = List.split vhs in
   let vs = List.map (Smtcommons.turn_first_char true) vs in

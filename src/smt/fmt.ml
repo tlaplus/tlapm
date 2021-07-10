@@ -245,14 +245,9 @@ and lift_term t req e =
   | _          -> e
   end
 and lift_bs scx bs =
-  let bs = List.map begin
-    fun (v, k, dom) -> match dom with
-      | Domain d -> (v, k, Domain (lift Top scx d))
-      | _ -> (v, k, dom)
-  end bs in
-  let hs = List.map begin
-    fun (v, k, _) -> Fresh (v, Shape_expr, k, Unbounded) @@ v
-  end bs in
+  let bs = Expr.Visit.map_bound_domains
+    (fun d -> lift Top scx d) bs in
+  let hs = Expr.Visit.hyps_of_bounds bs in
   let scx = Expr.Visit.adjs ((),scx) hs in
   (snd scx, bs)
 and lift_sq scx (hs,c) =

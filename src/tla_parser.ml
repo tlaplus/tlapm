@@ -202,7 +202,42 @@ let str = scan begin
     | _ -> None
 end
 
-let pragma p = punct "(*{" >>> p <<< punct "}*)"
+
+let comma_symbol = punct ","
+let hint = locate anyident
+
+
+let comma element =
+    sep comma_symbol element
+
+
+let comma1 element =
+    sep1 comma_symbol element
+
+
+(* Numeral `1` omitted because
+there are no empty sequences of names.
+*)
+let names = comma1 hint
+
+
+let underscore = punct "_"
+let begin_tuple = punct "<<"
+let end_tuple = punct ">>"
+let colon = punct ":"
+let mapsto = punct "|->"
+let delimit left x right =
+    let start = punct left in
+    let close = punct right in
+    start >>> x <<< close
+let paren x = delimit "(" x ")"
+let brace x = delimit "{" x "}"
+let bracket x = delimit "[" x "]"
+let bracket_sub x = delimit "[" x "]_"
+let angle x = delimit "<<" x ">>"
+let angle_sub x = delimit "<<" x ">>_"
+let pragma p = delimit "(*{" p "}*)"
+
 
 (*****************************************************************)
 

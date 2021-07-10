@@ -152,9 +152,7 @@ class virtual ['hyp] map = object (self : 'self)
           let scx = bump scx 1 in
           (* there is a SUFFICES here *)
           (*    ... so add assumptions for the new identifiers *)
-          let hyps = List.map begin
-            fun (v, k, _) -> Fresh (v, Shape_expr, k, Unbounded) @@ v
-          end bs in
+          let hyps = Expr.Visit.hyps_of_bounds bs in
           let scx = Expr.Visit.adjs scx hyps in
           (*    ... then add assumption about the body of the PICK *)
           (*    ... then add the negation of the old goal *)
@@ -265,10 +263,8 @@ class virtual ['hyp] iter = object (self : 'self)
             self#expr scx e in
           let scx = adj_step scx in
           let scx = bump scx 1 in
-          let scx = List.fold_left begin
-            fun scx (v, k, _) ->
-              Expr.Visit.adj scx (Fresh (v, Shape_expr, k, Unbounded) @@ v)
-          end scx bs in
+          let scx =
+            Expr.Visit.adj_unboundeds_unchecked scx bs in
           bump scx 4
 
   method usable scx us  =

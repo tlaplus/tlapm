@@ -61,6 +61,44 @@ val ident: string -> (pcx, string) P.prs
 val pragma:
     (pcx, 'a) P.prs -> (pcx, 'a) P.prs
 val str: (pcx, string) P.prs
+val comma_symbol: (pcx, string) P.prs
+val hint: (pcx, Util.hint) P.prs
+val comma:
+    (pcx, 'a) P.prs ->
+        (pcx, 'a list) P.prs
+val comma1:
+    (pcx, 'a) P.prs ->
+        (pcx, 'a list) P.prs
+val names:
+    (pcx, Util.hint list) P.prs
+val underscore:
+    (pcx, string) P.prs
+val begin_tuple:
+    (pcx, string) P.prs
+val end_tuple:
+    (pcx, string) P.prs
+val colon:
+    (pcx, string) P.prs
+val mapsto:
+    (pcx, string) P.prs
+val paren:
+    (pcx, 'a) P.prs ->
+        (pcx, 'a) P.prs
+val brace:
+    (pcx, 'a) P.prs ->
+        (pcx, 'a) P.prs
+val bracket:
+    (pcx, 'a) P.prs ->
+        (pcx, 'a) P.prs
+val bracket_sub:
+    (pcx, 'a) P.prs ->
+        (pcx, 'a) P.prs
+val angle:
+    (pcx, 'a) P.prs ->
+        (pcx, 'a) P.prs
+val angle_sub:
+    (pcx, 'a) P.prs ->
+        (pcx, 'a) P.prs
 val anyprefix: (pcx, string) P.prs
 val anypostfix: (pcx, string) P.prs
 val anyinfix: (pcx, string) P.prs

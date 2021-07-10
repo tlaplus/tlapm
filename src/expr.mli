@@ -168,7 +168,170 @@ module T: sig
 
   and time = Now | Always | NotSet
 
+  val unditto: bounds -> bounds
+
+  val name_of_bound: bound -> hint
+  val names_of_bounds: bounds -> hints
+  val string_of_bound: bound -> string
+  val strings_of_bounds:
+      bounds -> string list
+  val bounds_of_variables:
+      hints -> bounds
+  val bounds_of_parameters:
+      (hint * shape) list -> bounds
+
+
+  module type Node_factory_sig =
+  sig
+      type t
+
+      (* construction of
+      syntax-tree nodes *)
+      val make_ix:
+          int -> expr
+      val make_opaque:
+          t -> expr
+      val make_internal:
+          Builtin.builtin -> expr
+      val make_arg:
+          t -> (hint * shape)
+      val make_lambda:
+          t list -> expr -> expr
+      val make_def:
+          t -> expr -> defn
+      val make_def_with_args:
+          t -> t list ->
+          expr -> defn
+      val make_recursive_def:
+          t -> shape -> defn
+      val make_sequent:
+          ctx -> expr -> expr
+      val make_bang:
+          expr -> sel list ->
+          expr
+      val make_apply:
+          expr -> expr list ->
+          expr
+      val make_with:
+          expr -> Method.t -> expr
+      val make_if:
+          expr -> expr ->
+          expr -> expr
+      val make_junction:
+          bullet -> expr list ->
+          expr
+      val make_disjunction:
+          expr list -> expr
+      val make_conjunction:
+          expr list -> expr
+      val make_let:
+          defn list -> expr -> expr
+      val make_quantifier:
+          quantifier -> bounds ->
+          expr -> expr
+      val make_exists:
+          bounds -> expr -> expr
+      val make_forall:
+          bounds -> expr -> expr
+      val make_temporal_exists:
+          t list -> expr -> expr
+      val make_temporal_forall:
+          t list -> expr -> expr
+      val make_choose:
+          t -> expr -> expr
+      val make_bounded_choose:
+          t -> expr -> expr -> expr
+      val make_setst:
+          t -> expr -> expr -> expr
+      val make_setof:
+          expr -> bounds -> expr
+      val make_setenum:
+          expr list -> expr
+      val make_product:
+          expr list -> expr
+      val make_tuple:
+          expr list -> expr
+      val make_fcn:
+          bounds -> expr -> expr
+      val make_fcn_domain:
+          expr -> expr
+      val make_fcn_app:
+          expr -> expr -> expr
+      val make_fcn_app_commas:
+          expr -> expr list ->
+          expr
+      val make_fcn_set:
+          expr -> expr -> expr
+      val make_record_set:
+          (t * expr) list -> expr
+      val make_record:
+          (t * expr) list -> expr
+      val make_except:
+          expr -> exspec list ->
+          expr
+      val make_dot:
+          expr -> t -> expr
+      val make_square_action:
+          expr -> expr -> expr
+      val make_angle_action:
+          expr -> expr -> expr
+      val make_subscripted_always:
+          expr -> expr -> expr
+      val make_subscripted_eventually:
+          expr -> expr -> expr
+      val make_weak_fairness:
+          expr -> expr -> expr
+      val make_strong_fairness:
+          expr -> expr -> expr
+      val make_case:
+          (expr * expr) list ->
+          expr option -> expr
+      val make_string:
+          t -> expr
+      val make_number:
+          t -> t -> expr
+      val make_at: bool -> expr
+      val make_parens:
+          expr -> pform -> expr
+      val make_const_decl:
+          t -> bound
+      val make_const_decls:
+          t list -> bounds
+      val make_bounded_const_decl:
+          t -> expr -> bound
+      val make_bounded_const_decls:
+          (t * expr) list -> bounds
+      val make_param_decl:
+          t -> bound
+      val make_param_decls:
+          t list -> bounds
+      val make_unbounded:
+          t -> kind -> bound
+      val make_bounded:
+          t -> kind ->
+          expr -> bound
+      val make_fresh:
+          t -> kind -> hyp
+      val make_bounded_fresh:
+          t -> expr -> hyp
+      val make_fresh_with_arity:
+          t -> kind -> int -> hyp
+  end
+
+
+  module From_string:
+      Node_factory_sig with
+      type t = string
+
+
+  module From_hint:
+      Node_factory_sig with
+      type t = hint
+
+
   val get_val_from_id: 'hyp Deque.dq -> int -> 'hyp
+  val name_of_ix:
+      int -> ctx -> hint
   val hyp_name: hyp -> string
 
   val print_cx: ctx -> unit
@@ -363,9 +526,21 @@ end
 
 module Visit: sig
   open T
+  val hyp_of_bound_full: bound -> hyp
+  val hyps_of_bounds: bounds -> hyp list
+  val hyps_of_bounds_full: bounds -> hyp list
+  val hyps_of_bounds_unditto: bounds -> hyp list
+  val hyps_of_bounds_as_arity_0: bounds -> hyp list
+  val map_bound_domains:
+      (expr -> expr) -> bounds -> bounds
+  val map_bounds:
+      (Util.hint -> Util.hint) -> (expr -> expr) -> bounds -> bounds
+  val rename_bound: bound -> Util.hint -> bound
+  val rename_bounds: bounds -> Util.hints -> bounds
   type 's scx = 's * hyp Deque.dq
   val adj  : 's scx -> hyp -> 's scx
   val adjs : 's scx -> hyp list -> 's scx
+  val adj_unboundeds_unchecked: 's scx -> bounds -> 's scx
   class virtual ['s] map : object
     method expr     : 's scx -> expr -> expr
     method pform    : 's scx -> pform -> pform
@@ -400,20 +575,7 @@ module Visit: sig
   class virtual ['s] iter_visible_hyp : ['s] iter
 
   class virtual ['s] map_rename : object
-    method expr     : 's scx -> expr -> expr
-    method pform    : 's scx -> pform -> pform
-    method sel      : 's scx -> sel -> sel
-    method sequent  : 's scx -> sequent -> 's scx * sequent
-    method defn     : 's scx -> defn -> defn
-    method defns    : 's scx -> defn list -> 's scx * defn list
-    method bounds   : 's scx -> bound list -> 's scx * bound list
-    method bound    : 's scx -> bound -> 's scx * bound
-    method exspec   : 's scx -> exspec -> exspec
-    method instance : 's scx -> instance -> instance
-    method hyp      : 's scx -> hyp -> 's scx * hyp
-    method hyps     : 's scx -> hyp Deque.dq -> 's scx * hyp Deque.dq
-    method adj      : 's scx -> hyp -> 's scx
-    method adjs     : 's scx -> hyp list -> 's scx
+      inherit ['s] map
       method rename : ctx -> hyp -> Util.hint -> hyp * Util.hint
       method renames : ctx -> hyp list -> Util.hints -> hyp list * Util.hints
   end
@@ -442,53 +604,7 @@ module Leibniz: sig
             bool
 
     class virtual leibniz_visitor:
-        object
-        inherit [unit] Visit.map
-        method expr:
-            unit Visit.scx -> expr ->
-                expr
-        method pform:
-            unit Visit.scx -> pform ->
-                pform
-        method sel:
-            unit Visit.scx -> sel ->
-                sel
-        method sequent:
-            unit Visit.scx ->
-            sequent ->
-                unit Visit.scx * sequent
-        method defn:
-            unit Visit.scx -> defn ->
-                defn
-        method defns:
-            unit Visit.scx ->
-            defn list ->
-                unit Visit.scx * defn list
-        method bounds:
-            unit Visit.scx ->
-            bound list ->
-                unit Visit.scx * bound list
-        method bound:
-            unit Visit.scx ->
-            bound ->
-                unit Visit.scx * bound
-        method exspec:
-            unit Visit.scx ->
-            exspec ->
-                exspec
-        method instance:
-            unit Visit.scx ->
-            instance ->
-                instance
-        method hyp:
-            unit Visit.scx ->
-            hyp ->
-                unit Visit.scx * hyp
-        method hyps:
-            unit Visit.scx ->
-            hyp Deque.dq ->
-                unit Visit.scx * hyp Deque.dq
-    end
+        [unit] Visit.map
 end
 
 
