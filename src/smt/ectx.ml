@@ -85,7 +85,8 @@ let hack_bs hs = List.map begin fun h ->
   end hs
 
 let is_bounded_hyp = function
-  | Some {core = Fresh (_, Shape_op 0, _, Unbounded)} -> true                 (** Hack introduced by [to_fresh] *)
+  | Some {core = Fresh (_, Shape_op 0, _, Unbounded)} -> true
+    (* Hack introduced by [hack_bs] *)
   | _ -> false
 
 let is_bounded dx n =
