@@ -28,17 +28,29 @@ let hyp_is_named what h = match h.core with
         nm.core = what
     | Fact (_, _, _) -> what = "_"
 
-let standard_form ~cx ~dep ~wd op args = match wd with
-  | Builtin ->
-      if args = [] then
-        (app_expr (shift dep) op).core @@ op
-      else
-        normalize ~cx:cx (app_expr (shift dep) op) args @@ op
-  | _ ->
-      if args = [] then
-        Ix dep @@ op
-      else
-        Apply (Ix dep @@ op, args) @@ op
+
+let anon_apply index op args =
+    let ix = Ix index @@ op in
+    match args with
+    | [] -> ix
+    | _ -> Apply (ix, args) @@ op
+
+
+let standard_form
+        ~cx ~index ~wd op args =
+    match wd with
+    | Builtin -> begin
+        let ix = app_expr
+            (shift index) op in
+        match args with
+        | [] -> ix.core @@ op
+        | _ ->
+            let e = normalize
+                ~cx:cx ix args in
+            e @@ op
+        end
+    | _ ->
+        anon_apply index op args
 
 
 class anon_sg = object (self: 'self)
@@ -131,7 +143,7 @@ class anon_sg = object (self: 'self)
                       match pargs with
                         | [] -> ix
                         | pargs ->
-                            standard_form ~cx:(snd scx) ~dep:(dep + 1) ~wd:wd
+                            standard_form ~cx:(snd scx) ~index:(dep + 1) ~wd:wd
                               (op.core @@ e) pargs
                     end
                   | _ -> begin
@@ -178,22 +190,39 @@ class anon_sg = object (self: 'self)
                     Defined operators are not expanded. *)
 
                     (* defined or builtin operator *)
-                    | Some (dep, {
-                        core = Defn (
-                            {core = Operator (_, op)} as opc,
-                            wd, _, _)
-                        }) ->
+                    | Some (depth, {core=Defn (defn, wd, _, _)}) ->
+                        begin
+                        match defn.core with
+                        | Operator (_, op) ->
+                            let cx = snd scx in
+                            (* An increment by 1 is needed
+                            to convert the 0-based depth to
+                            a 1-based De Bruijn index.
+                            *)
+                            let index = depth + 1 in
+                            let op = op.core @@ e $$ defn in
                             (* does not expand defined operators *)
-                            standard_form ~cx:(snd scx) ~dep:(dep + 1) ~wd:wd
-                            (op.core @@ e $$ opc) args
+                            standard_form
+                                ~cx:cx ~index:index ~wd:wd op args
+                        | Instance _
+                        | Bpragma _ ->
+                            let index = depth + 1 in
+                            let op = e $$ defn in
+                            anon_apply index op args
+                        | Recursive _ -> assert false
+                        end
                     (* declared operator *)
-                    | Some (dep, opc) ->
-                        (* nullary *)
-                        if args = [] then
-                          Ix (dep + 1) @@ e $$ opc
-                        (* with arguments *)
-                        else
-                          Apply (Ix (dep + 1) @@ e, args) @@ e $$ opc
+                    | Some (depth, ({core=Fresh _} as decl)) ->
+                        let index = depth + 1 in
+                        let op = e $$ decl in
+                        anon_apply index op args
+                    | Some (depth, ({core=Flex _} as decl)) ->
+                        assert ((List.length args) = 0);
+                        let index = depth + 1 in
+                        let op = e $$ decl in
+                        Ix index @@ op
+                    (* fact: unexpected *)
+                    | Some (_, {core=Fact _}) -> assert false
                     | None ->
                          (* TODO? allow builtin operators here ?
                          possibly passing a context with builtin operators
