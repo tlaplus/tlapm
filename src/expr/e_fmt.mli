@@ -13,6 +13,10 @@ val bump : ctx -> ctx
 val adj : ctx -> Util.hint -> ctx * string
 val adjs : ctx -> Util.hints -> ctx * string list
 
+val is_letter: char -> bool
+val is_hidden: hyp -> bool
+val elide: hyp -> bool
+
 val fmt_expr : ?temp:bool -> ctx -> expr -> Fu.exp
 
 val fmt_bounds :
@@ -26,6 +30,7 @@ val extend_bounds :
 
 val pp_print_shape : Format.formatter -> shape -> unit
 
+val pp_print_var: Format.formatter -> Util.hint -> unit
 val pp_print_bound :
   ctx -> Format.formatter -> string * expr option -> unit
 val pp_print_expr : ?temp:bool ->  ctx -> Format.formatter -> expr -> unit

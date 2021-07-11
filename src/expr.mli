@@ -200,6 +200,12 @@ module Fmt: sig
     val adjs:
         ctx -> Util.hints ->
             ctx * string list
+    val is_letter:
+        char -> bool
+    val is_hidden:
+        hyp -> bool
+    val elide:
+        hyp -> bool
     val fmt_bounds:
         ctx -> bound list ->
             ctx * (Format.formatter -> unit)
@@ -209,6 +215,9 @@ module Fmt: sig
             ctx * (string * expr option) list
     val pp_print_shape:
         Format.formatter -> shape ->
+            unit
+    val pp_print_var:
+        Format.formatter -> Util.hint ->
             unit
     val pp_print_bound:
         ctx -> Format.formatter ->

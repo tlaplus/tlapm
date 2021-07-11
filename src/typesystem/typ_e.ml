@@ -507,40 +507,7 @@ decorations of bounded variables.
 Only for debugging.
 *)
 
-let pp_print_var ff v = pp_print_string ff v.core
 
-let is_letter c =
-  match c with
-  | 'A'..'Z' | 'a'..'z' -> true
-  | _ -> false
-;;
-
-let is_hidden h = match h.core with
-  | Defn (_, _, us, _)
-  | Fact (_, us, _) -> us = Hidden
-  | _ -> false
-
-let rec is_with e = match e.core with
-  | Lambda (_, e) -> is_with e
-  | Sequent sq -> is_with sq.active
-  | With _ -> true
-  | _ -> false
-
-let has_with df = match df.core with
-  | Operator (_, e) -> is_with e
-  | _ -> false
-
-let elide h =
-  not (Params.debugging "hidden")
-  && begin
-    match h.core with
-      | Defn (df, wd, us, _) ->
-          not (Params.debugging "alldefs")
-          && (us = Hidden || has_with df || wd <> User)
-      | Fact (e, us, _) ->
-          us = Hidden || is_with e
-      | _ -> false
-  end
 
 (* let p_boolify cond ff doit =
   (if cond then fprintf ff "(boolify ");
@@ -803,7 +770,7 @@ let rec fmt_expr (cx: Expr.Fmt.ctx) ew = match ew.core with
       in
       Fu.Atm begin fun ff ->
         fprintf ff fmt
-          l (pp_print_delimited pp_print_var) xs
+          l (pp_print_delimited Expr.Fmt.pp_print_var) xs
           Fu.pp_print_minimal fe
       end
     end
@@ -953,7 +920,7 @@ and fmt_apply (hx, vx as cx) op args = match op.core, args with
           | Optable.Prefix when List.length args = 1 ->
               let n = top.Optable.name in
               let fmt =
-                if is_letter n.[String.length n - 1]
+                if Expr.Fmt.is_letter n.[String.length n - 1]
                 then format_of_string "%s@ "
                 else format_of_string "%s"
               in
@@ -996,7 +963,7 @@ and fmt_apply (hx, vx as cx) op args = match op.core, args with
 
 and fmt_bounds cx bs =
   let ts = List.map (fun (v, _, _) -> optype v) bs in
-  let (ecx, vs) = extend_bounds cx bs in
+  let (ecx, vs) = Expr.Fmt.extend_bounds cx bs in
   let bs = List.map2 (fun (_, k, d) (v, _) -> (v, k, d)) bs vs in
   let bs = List.map2 (fun (v, k, d) t -> (v, t, k, d)) bs ts in
   begin ecx, fun ff -> match bs with
@@ -1032,22 +999,6 @@ and pp_print_chunk cx ff (vs, dom) =
     | Ditto ->
         fprintf ff "@[<hov0>%a@ \\in ??????@]"
           (pp_print_delimited pp_print_var_type) vs
-
-and extend_bound ?(prevdom=None) cx (v, _, dom) =
-  let (ecx, v) = Expr.Fmt.adj cx v in
-  let dom = match dom with
-    | Ditto -> prevdom
-    | No_domain -> None
-    | Domain d -> Some d
-  in
-  (ecx, (v, dom))
-
-and extend_bounds ?(prevdom=None) cx = function
-  | [] -> (cx, [])
-  | b :: bs ->
-      let (cx, b) = extend_bound ~prevdom:prevdom cx b in
-      let (cx, bs) = extend_bounds ~prevdom:(snd b) cx bs in
-      (cx, b :: bs)
 
 and pp_print_bound cx ff (v, e) = match e with
   | None -> pp_print_string ff v
@@ -1135,7 +1086,7 @@ and pp_print_sequent cx ff sq = match Deque.null sq.context with
             in (cx, ch :: chs)
         end (cx, []) sq.context in
       let chs = List.filter
-        (fun (cx, h) -> not (elide h))
+        (fun (cx, h) -> not (Expr.Fmt.elide h))
         (List.rev chs) in
       if List.length chs > 0 then begin
         fprintf ff "@[<v0>ASSUME @[<v0>" ;
@@ -1148,7 +1099,7 @@ and pp_print_sequent cx ff sq = match Deque.null sq.context with
 
 and pp_print_hyp cx ff h =
   if Params.debugging "hidden" then begin
-    if is_hidden h then fprintf ff "(* hidden *)@\n"
+    if Expr.Fmt.is_hidden h then fprintf ff "(* hidden *)@\n"
   end ;
   match h.core with
     | Fresh (nm, shp, lc, b) ->
