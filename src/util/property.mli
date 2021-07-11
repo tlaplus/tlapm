@@ -89,7 +89,7 @@ val noprops : 'a -> 'a wrapped
 (** [nowhere] is a wrapped value with no properties. *)
 val nowhere : unit wrapped
 
-(** [aw $ bw] returns aw with all new properties in bw *)
+(** [aw $$ bw] returns aw with all new properties in bw *)
 val ( $$ ) : 'a wrapped -> 'b wrapped -> 'a wrapped
 
 (** [x @@ w] wraps [x] with the properties of [w] *)
