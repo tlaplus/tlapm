@@ -385,7 +385,7 @@ and expr_aux scx oe =
           let ret = assign ret Props.tpars_prop [ ty03 ] in
           (ret, TSet ty03)
       | None ->
-          let ret = SetEnum es @@ oe in
+          let ret = SetEnum (List.map2 force_idv ty01s es) @@ oe in
           (ret, TAtm TAIdv)
       end
 
