@@ -774,6 +774,8 @@ class virtual ['s, 'a] foldmap = object (self : 'self)
         let h = Fact (e, vis, tm) @@ h in
         let scx = adj scx h in
         (scx, a, h)
+    | FreshTuply _ ->
+        failwith "unexpected case"
 
   method hyps scx a hs =
     match Deque.front hs with

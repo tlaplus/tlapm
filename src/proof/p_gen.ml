@@ -352,6 +352,9 @@ and gen_step (sq, inits, time_flag) stp =
     | Witness _
     | Pick _ ->
         Errors.bug ~at:stp "Proof.Gen.gen_step"
+    | TakeTuply _
+    | PickTuply _ ->
+        assert false
 
 (* FIXME this function must split the list of facts into
    its elements and pass them one by one to gen_step *)

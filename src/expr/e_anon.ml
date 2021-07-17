@@ -27,6 +27,8 @@ let hyp_is_named what h = match h.core with
             _, _, _) ->
         nm.core = what
     | Fact (_, _, _) -> false
+    | FreshTuply _ -> assert false  (* unexpected
+        case *)
 
 
 let anon_apply index op args =
@@ -221,8 +223,9 @@ class anon_sg = object (self: 'self)
                         let index = depth + 1 in
                         let op = e $$ decl in
                         Ix index @@ op
-                    (* fact: unexpected *)
-                    | Some (_, {core=Fact _}) -> assert false
+                    (* unexpected cases *)
+                    | Some (_, {core=Fact _ | FreshTuply _}) ->
+                        assert false
                     | None ->
                          (* TODO? allow builtin operators here ?
                          possibly passing a context with builtin operators
