@@ -20,9 +20,10 @@ module T : sig
 
   type fairness_op  = Weak | Strong
 
-  (** Type representing arguments to operators, sometimes conflated with
-      "arity" in the TLA+ book. [Shape_op] represents an operator
-      argument of specified arity (>= 1). [Shape_expr] represents an
+  (** Type representing arguments to operators.
+      [Shape_op] represents an operator
+      argument of specified arity (>= 1).
+      [Shape_expr] represents an
       expression argument. *)
   type shape =
     | Shape_expr
