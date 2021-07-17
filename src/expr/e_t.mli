@@ -59,16 +59,24 @@ and expr_ =
   | List of bullet * expr list
   | Let of defn list * expr
   | Quant of quantifier * bounds * expr
+  | QuantTuply of
+        quantifier * tuply_bounds * expr
   | Tquant of
         quantifier * hints * expr
   | Choose of
         hint * expr option * expr
+  | ChooseTuply of
+        hints * expr option * expr
   | SetSt of hint * expr * expr
+  | SetStTuply of
+        hints * expr * expr
   | SetOf of expr * bounds
+  | SetOfTuply of expr * tuply_bounds
   | SetEnum of expr list
   | Product of expr list
   | Tuple of expr list
   | Fcn of bounds * expr
+  | FcnTuply of tuply_bounds * expr
   | FcnApp of expr * expr list
   | Arrow of expr * expr
   | Rect of (string * expr) list
@@ -117,6 +125,13 @@ and expoint =
 and bounds = bound list
 and bound =
     hint * kind * bound_domain
+(* tuply bounds *)
+and tuply_bounds = tuply_bound list
+and tuply_bound =
+    tuply_name * bound_domain
+and tuply_name =
+  | Bound_name of hint
+  | Bound_names of hints
 and bound_domain =
   | No_domain
   | Domain of expr
@@ -175,6 +190,7 @@ and hyp = hyp_ wrapped
 and hyp_ =
   | Fresh of
         hint * shape * kind * hdom
+  | FreshTuply of hints * hdom
   | Flex of hint
   | Defn of defn * wheredef *
             visibility * export
@@ -194,6 +210,11 @@ and time = Now | Always | NotSet
 
 val unditto:
     bounds -> bounds
+val unditto_tuply:
+    tuply_bounds -> tuply_bounds
+
+val name_of_tuply:
+    tuply_name -> hint
 val name_of_bound:
     bound -> hint
 val names_of_bounds:
@@ -287,6 +308,12 @@ sig
         bounds -> expr -> expr
     val make_forall:
         bounds -> expr -> expr
+    val make_tuply_exists:
+        tuply_bounds -> expr ->
+        expr
+    val make_tuply_forall:
+        tuply_bounds -> expr ->
+        expr
     val make_temporal_exists:
         t list -> expr -> expr
     val make_temporal_forall:
@@ -295,10 +322,21 @@ sig
         t -> expr -> expr
     val make_bounded_choose:
         t -> expr -> expr -> expr
+    val make_tuply_choose:
+        t list -> expr -> expr
+    val make_bounded_tuply_choose:
+        t list -> expr ->
+        expr -> expr
     val make_setst:
         t -> expr -> expr -> expr
+    val make_tuply_setst:
+        t list -> expr ->
+        expr -> expr
     val make_setof:
         expr -> bounds -> expr
+    val make_tuply_setof:
+        expr -> tuply_bounds ->
+        expr
     val make_setenum:
         expr list -> expr
     val make_product:
@@ -307,6 +345,9 @@ sig
         expr list -> expr
     val make_fcn:
         bounds -> expr -> expr
+    val make_tuply_fcn:
+        tuply_bounds -> expr ->
+        expr
     val make_fcn_domain:
         expr -> expr
     val make_fcn_app:
@@ -364,12 +405,25 @@ sig
     val make_bounded:
         t -> kind ->
         expr -> bound
+    val make_unbounded_name_decl:
+        t -> tuply_bound
+    val make_bounded_name_decl:
+        t -> expr -> tuply_bound
+    val make_tuply_decl:
+        t list -> tuply_bound
+    val make_bounded_tuply_decl:
+        t list -> expr ->
+        tuply_bound
     val make_fresh:
         t -> kind -> hyp
     val make_bounded_fresh:
         t -> expr -> hyp
     val make_fresh_with_arity:
         t -> kind -> int -> hyp
+    val make_tuply_fresh:
+        t list -> hyp
+    val make_bounded_tuply_fresh:
+        t list -> expr -> hyp
 end
 
 

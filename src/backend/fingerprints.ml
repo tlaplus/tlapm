@@ -405,6 +405,11 @@ let rec fp_expr counthyp countvar stack buf e =
         fp_expr counthyp countvar stack buf e
     | Bang _ ->
         Errors.bug ~at:e "Expr.Fingerprint: Bang"
+    | QuantTuply _
+    | ChooseTuply _
+    | SetStTuply _
+    | SetOfTuply _
+    | FcnTuply _ -> assert false
 
 
 and fp_sequent stack buf sq =
@@ -503,6 +508,8 @@ and fp_sequent stack buf sq =
               *)
               bprintf buf "$Fact(%a,%s)" (fp_expr counthyp countvar stack) e
                       (time_to_string tm)
+          | FreshTuply _ ->
+             assert false  (* unexpected case *)
   in
   spin stack sq.context
 
