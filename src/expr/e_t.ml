@@ -341,7 +341,7 @@ let hyp_name h = match h.core with
             | Recursive (nm, _)},
             _, _, _)
         -> nm.core
-    | Fact (_, _, _) -> "_"
+    | Fact (_, _,_) -> "??? FACT ???"
 
 
 let visibility_to_string = function
@@ -429,6 +429,7 @@ let find_hyp_named
     the hypothesis with `name`, and
     the hypothesis expression.
     *)
+    assert (name <> "??? FACT ???");
     let name_test hyp = (name = (hyp_name hyp)) in
     let pair = Deque.find
         ~backwards:true cx name_test in

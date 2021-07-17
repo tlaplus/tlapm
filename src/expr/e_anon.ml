@@ -26,7 +26,7 @@ let hyp_is_named what h = match h.core with
             | Recursive (nm, _)},
             _, _, _) ->
         nm.core = what
-    | Fact (_, _, _) -> what = "_"
+    | Fact (_, _, _) -> false
 
 
 let anon_apply index op args =
