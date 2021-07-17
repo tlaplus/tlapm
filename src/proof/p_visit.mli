@@ -26,3 +26,13 @@ class virtual ['s] iter: object
   method step: 's scx -> step -> 's scx
   method usable: 's scx -> usable -> unit
 end
+
+class virtual ['s] map_concrete: object
+    inherit ['s] map
+    inherit ['s] Expr.Visit.map_concrete
+end
+
+class virtual ['s] iter_concrete: object
+    inherit ['s] iter
+    inherit ['s] Expr.Visit.iter_concrete
+end

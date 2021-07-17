@@ -74,6 +74,9 @@ and app_step s stp = match stp.core with
   | Witness es ->
       let es = List.map (app_expr s) es in
       (s, Witness es @@ stp)
+  | TakeTuply _
+  | PickTuply _ ->
+      assert false
 
 and app_usable s us =
   let app_def dw =

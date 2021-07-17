@@ -56,6 +56,23 @@ class virtual ['s] iter : object
   method hyps     : 's scx -> hyp Deque.dq -> 's scx
 end
 
+class virtual ['s] map_concrete: object
+    inherit ['s] map
+    method tuply_bounds:
+        's scx -> tuply_bounds ->
+        's scx * tuply_bounds
+    method tuply_bound:
+        's scx -> tuply_bound -> tuply_bound
+end
+
+class virtual ['s] iter_concrete: object
+    inherit ['s] iter
+    method tuply_bounds:
+        's scx -> tuply_bounds -> 's scx
+    method tuply_bound:
+        's scx -> tuply_bound -> unit
+end
+
 class virtual ['s] map_visible_hyp : ['s] map
 class virtual ['s] iter_visible_hyp : ['s] iter
 

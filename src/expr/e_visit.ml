@@ -15,6 +15,8 @@ let hyp_rename v h = begin
     match h.core with
     | Fresh (_, shp, k, dom) ->
         Fresh (v, shp, k, dom)
+    | FreshTuply _ -> assert false  (* renaming
+        is undefined for this case *)
     | Flex _ ->
         Flex v
     | Defn (df, wd, vis, ex) ->
@@ -157,6 +159,41 @@ let hyps_of_bounds_as_arity_0
             kind, Unbounded) in
         fresh @@ name in
     List.map make_fresh bs
+
+
+let hyp_of_tuply_bound
+        (names: Util.hints)
+        (dom: bound_domain):
+            hyp =
+    match dom with
+    | Domain d ->
+        make_bounded_tuply_fresh names d
+    | No_domain ->
+        make_tuply_fresh names
+    | Ditto -> Errors.bug "\
+        E_visit.hyp_of_tuply_bound: \
+        Ditto not expected"
+
+
+let hyps_of_tuply_bounds_unditto
+        (bs: tuply_bounds): hyp list =
+    let bs = unditto_tuply bs in
+    let mapper n (v, dom) =
+        let dom =
+            match dom with
+            | Domain d ->
+                let d = shifter n d in
+                Domain d
+            | No_domain -> dom
+            | Ditto -> assert false in
+        match v with
+        | Bound_name name ->
+            hyp_of_bound_full (
+                name, Constant, dom)
+        | Bound_names names ->
+            hyp_of_tuply_bound names dom
+        in
+    List.mapi mapper bs
 
 
 let map_bound_domains
@@ -326,6 +363,13 @@ class virtual ['s] map = object (self : 'self)
         At b @@ oe
     | Parens (e, pf) ->
         Parens (self#expr scx e, self#pform scx pf) @@ oe
+    | QuantTuply _
+    | ChooseTuply _
+    | SetStTuply _
+    | SetOfTuply _
+    | FcnTuply _ ->
+        failwith "use instead the class \
+            `E_visit.map_concrete`"
 
   method pform scx pf = pf
 
@@ -398,6 +442,9 @@ class virtual ['s] map = object (self : 'self)
         in
         let h = Fresh (nm, shp, lc, dom) @@ h in
         (self#adj scx h, h)
+    | FreshTuply (names, dom) ->
+        failwith "use instead the class \
+            `E_visit.map_concrete`"
     | Flex s ->
         let h = Flex s @@ h in
         (self#adj scx h, h)
@@ -518,6 +565,13 @@ class virtual ['s] iter = object (self : 'self)
     | Parens (e, pf) ->
         self#expr scx e ;
         self#pform scx pf
+    | QuantTuply _
+    | ChooseTuply _
+    | SetStTuply _
+    | SetOfTuply _
+    | FcnTuply _ ->
+        failwith "use instead the class\
+            `E_visit.iter_concrete`"
 
   method pform scx pf = ()
 
@@ -591,6 +645,9 @@ class virtual ['s] iter = object (self : 'self)
             ignore (self#defn scx df)
         | Fact (e, _, _) ->
             self#expr scx e
+        | FreshTuply _ ->
+            failwith "use instead the class\
+                `E_visit.iter_concrete`"
     end ; adj scx h
 
   method hyps scx hs = match Dq.front hs with
@@ -601,6 +658,135 @@ class virtual ['s] iter = object (self : 'self)
         scx
 
 end
+
+
+class virtual ['s] map_concrete =
+    (* Mapping of a concrete syntax tree.
+
+    Code related to use of `FreshTuply`
+    from the context is untested,
+    but implemented for completeness.
+    *)
+    object (self: 'self)
+    inherit ['s] map as super
+
+    method expr scx oe =
+        match oe.core with
+        | QuantTuply (qfr, bs, pred) ->
+            let (scx, bs) = self#tuply_bounds scx bs in
+            let pred = self#expr scx pred in
+            QuantTuply (qfr, bs, pred) @@ oe
+        | ChooseTuply (names, optdom, pred) ->
+            let optdom = Option.map
+                (self#expr scx) optdom in
+            let h = match optdom with
+                | None -> make_tuply_fresh names
+                | Some dom ->
+                    make_bounded_tuply_fresh
+                        names dom in
+            let scx = self#adj scx h in
+            let pred = self#expr scx pred in
+            ChooseTuply (names, optdom, pred) @@ oe
+        | SetStTuply (names, dom, pred) ->
+            let dom = self#expr scx dom in
+            let fresh = make_bounded_tuply_fresh
+                names dom in
+            let scx = self#adj scx fresh in
+            let pred = self#expr scx pred in
+            SetStTuply (names, dom, pred) @@ oe
+        | SetOfTuply (elem, bs) ->
+            let (scx, bs) = self#tuply_bounds scx bs in
+            let elem = self#expr scx elem in
+            SetOfTuply (elem, bs) @@ oe
+        | FcnTuply (bs, value) ->
+            let (scx, bs) = self#tuply_bounds scx bs in
+            let value = self#expr scx value in
+            FcnTuply (bs, value) @@ oe
+        | _ -> super#expr scx oe
+
+    method tuply_bounds scx bs =
+        let bs = List.map (self#tuply_bound scx) bs in
+        let hs = hyps_of_tuply_bounds_unditto bs in
+        let scx = self#adjs scx hs in
+        (scx, bs)
+
+    method tuply_bound scx (tuply_name, dom) =
+        let dom = match dom with
+            | Domain d ->
+                let d = self#expr scx d in
+                Domain d
+            | _ -> dom in
+        (tuply_name, dom)
+
+    method hyp scx h =
+        match h.core with
+        | FreshTuply (names, dom) ->
+            let dom = match dom with
+                | Unbounded -> Unbounded
+                | Bounded (r, rvis) ->
+                    Bounded (self#expr scx r, rvis) in
+            let h = FreshTuply (names, dom) @@ h in
+            (self#adj scx h, h)
+        | _ -> super#hyp scx h
+end
+
+
+class virtual ['s] iter_concrete =
+    (* Iteration over a concrete syntax tree.
+
+    Code related to use of `FreshTuply`
+    from the context is untested,
+    but implemented for completeness.
+    *)
+    object (self: 'self)
+    inherit ['s] iter as super
+
+    method expr scx oe =
+        match oe.core with
+        | QuantTuply (_, bs, pred) ->
+            let scx = self#tuply_bounds scx bs in
+            self#expr scx pred
+        | ChooseTuply (names, optdom, pred) ->
+            let h = match optdom with
+              | None -> make_tuply_fresh names
+              | Some dom ->
+                  self#expr scx dom;
+                  make_bounded_tuply_fresh
+                    names dom in
+            let scx = adj scx h in
+            self#expr scx pred
+        | SetStTuply (names, dom, pred) ->
+            self#expr scx dom;
+            let fresh = make_bounded_tuply_fresh
+                names dom in
+            let scx = adj scx fresh in
+            self#expr scx pred
+        | SetOfTuply (elem, bs) ->
+            let scx = self#tuply_bounds scx bs in
+            self#expr scx elem
+        | FcnTuply (bs, value) ->
+            let scx = self#tuply_bounds scx bs in
+            self#expr scx value
+        | _ -> super#expr scx oe
+
+    method tuply_bounds scx bs =
+        List.iter (self#tuply_bound scx) bs;
+        let hs = hyps_of_tuply_bounds_unditto bs in
+        adjs scx hs
+
+    method tuply_bound scx (_, dom) =
+        match dom with
+        | Domain d -> self#expr scx d
+        | _ -> ()
+
+    method hyp scx h =
+        match h.core with
+        | FreshTuply (_, Bounded (dom, _)) ->
+            self#expr scx dom;
+            adj scx h
+        | _ -> super#hyp scx h
+end
+
 
 class virtual ['s] map_visible_hyp = object (self : 'self)
     (* Map expressions, visiting only visible hypotheses. *)
@@ -627,6 +813,9 @@ class virtual ['s] map_visible_hyp = object (self : 'self)
       | Fact (e, Visible, tm) ->
           let h = Fact (self#expr scx e, Visible, tm) @@ h in
           (adj scx h, h)
+      | FreshTuply _ ->
+          failwith "use instead the class \
+              `E_visit.iter_concrete`"
 end
 
 class virtual ['s] iter_visible_hyp = object (self : 'self)
@@ -648,6 +837,9 @@ class virtual ['s] iter_visible_hyp = object (self : 'self)
               ignore (self#defn scx df)
           | Fact (e, Visible, _) ->
               self#expr scx e
+          | FreshTuply _ ->
+              failwith "use instead the class \
+                  `E_visit.iter_concrete`"
       end ; adj scx h
 end
 
@@ -790,6 +982,12 @@ class virtual ['s] map_rename = object (self : 'self)
         let scx = self#adj scx hyp in
         let e = self#expr scx e in
         SetSt (v, dom, e) @@ oe
+    | QuantTuply _
+    | ChooseTuply _
+    | SetStTuply _
+    | SetOfTuply _
+    | FcnTuply _ ->
+        failwith "unused pattern-case, so not implemented"
     | _ -> super#expr scx oe
 
   method defn scx df =
@@ -854,6 +1052,8 @@ class virtual ['s] map_rename = object (self : 'self)
         let h = Fresh (nm, shp, lc, dom) @@ h in
         let (h, _) = self#rename cx h nm in
         (self#adj scx h, h)
+    | FreshTuply _ ->
+        failwith "unused pattern-case, so not implemented"
     | Flex s ->
         let h = Flex s @@ h in
         let (h, _) = self#rename cx h s in
