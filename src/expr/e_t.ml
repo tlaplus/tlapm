@@ -285,6 +285,19 @@ let visibility_to_string = function
     | Hidden -> "hidden"
 
 
+let visibility_of_domain = function
+    | Bounded (_, visibility) ->
+        visibility_to_string visibility
+    | Unbounded -> "no domain"
+
+
+let describe_domain_bound = function
+    | Bounded (_, visibility) ->
+        let visible = visibility_to_string visibility in
+        "with " ^ visible ^ " domain-bound"
+    | Unbounded -> "without domain-bound"
+
+
 let print_cx cx =
     (* Print the hypotheses of context `cx`. *)
     print_string "\nContext of sequent (hypotheses):\n";
@@ -295,7 +308,9 @@ let print_cx cx =
             | Flex name ->
                 "Variable `" ^ name.core ^ "`\n"
             | Fresh (name, arity, kind, dom) ->
-                "Constant operator `" ^ name.core ^ "`\n"
+                let visible = describe_domain_bound dom in
+                ("Constant operator `" ^ name.core ^
+                 "` (" ^ visible ^ ")\n")
             | Defn (df, _, visibility, _) ->
                 let visible = visibility_to_string visibility in
                 let prefix = match df.core with
