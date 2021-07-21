@@ -762,7 +762,7 @@ and func_boundeds b = lazy begin
         fresh identifier (unique within that context and that context's
         extensions).
         *)
-        ((punct "<<" >>> (sep (punct ",") hint) <<< punct ">>")
+        ((punct "<<" >>> (sep1 (punct ",") hint) <<< punct ">>")
             <*> (infix "\\in" >*> use (expr b)))
             <$> begin
                 fun (vs, dom) ->
