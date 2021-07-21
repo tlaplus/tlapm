@@ -10,8 +10,8 @@ module T : sig
   type mule = mule_ wrapped
   and mule_ = {
     name              : hint ;
-    extendees         : hint list ;
-    instancees        : hint list ;
+    extendees         : hints ;
+    instancees        : hints ;
       (* only external instancees *)
     body              : modunit list ;
     defdepth          : int ;
@@ -22,7 +22,7 @@ module T : sig
   and modunit_ =
     | Constants  of (hint * shape) list
     | Recursives of (hint * shape) list
-    | Variables  of hint list
+    | Variables  of hints
     | Definition of defn * wheredef * visibility * export
     | Axiom      of hint option * expr
     | Theorem    of hint option * sequent * int * proof * proof * summary
@@ -150,7 +150,7 @@ module Visit : sig
             ctx * modunit
         method constants: ctx -> (hint * shape) list ->
             ctx * modunit_
-        method variables: ctx -> hint list ->
+        method variables: ctx -> hints ->
             ctx * modunit_
         method recursives: ctx -> (hint * shape) list ->
             ctx * modunit_

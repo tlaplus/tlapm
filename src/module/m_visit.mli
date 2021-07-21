@@ -12,7 +12,7 @@ class map: object
         ctx * modunit
     method constants: ctx -> (hint * shape) list ->
         ctx * modunit_
-    method variables: ctx -> hint list ->
+    method variables: ctx -> hints ->
         ctx * modunit_
     method recursives: ctx -> (hint * shape) list ->
         ctx * modunit_

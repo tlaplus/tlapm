@@ -21,6 +21,7 @@ val set_locus   : 'a wrapped -> Loc.locus -> 'a wrapped
 (** {3 Hinting and collections of hints} *)
 
 type hint = string wrapped
+type hints = hint list
 
 val pp_print_hint : Format.formatter -> hint -> unit
 

@@ -166,7 +166,7 @@ let assert_instance_substitutes_declared_identifiers
 
 let extend_context
         (cx: Expr.T.ctx)
-        (instance_args: hint list):
+        (instance_args: hints):
             Expr.T.ctx =
     (* Extend the context `cx` with the parameters that occur in the
     `WITH` of the statement `INSTANCE ModuleName WITH ...`.

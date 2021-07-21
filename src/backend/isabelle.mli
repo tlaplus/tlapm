@@ -10,7 +10,7 @@ val bump: ctx -> ctx
 val length: ctx -> int
 val adj: ctx -> Util.hint -> ctx * string
 val adjs:
-    ctx -> Util.hint list -> ctx * string list
+    ctx -> Util.hints -> ctx * string list
 val cook: string -> string
 val lookup_id: ctx -> int -> string
 val crypthash: ctx -> Expr.T.expr -> string

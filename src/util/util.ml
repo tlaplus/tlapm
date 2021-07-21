@@ -10,6 +10,7 @@ open Property
 open Loc
 
 type hint = string wrapped
+type hints = hint list
 
 let pp_print_hint ff h = Format.pp_print_string ff h.core
 

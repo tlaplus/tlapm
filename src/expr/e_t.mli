@@ -60,7 +60,7 @@ and expr_ =
   | Let of defn list * expr
   | Quant of quantifier * bounds * expr
   | Tquant of
-        quantifier * hint list * expr
+        quantifier * hints * expr
   | Choose of
         hint * expr option * expr
   | SetSt of hint * expr * expr
@@ -92,7 +92,7 @@ and pform_ =
   | Syntax
       (** actual parens in
       source syntax *)
-  | Nlabel of string * hint list
+  | Nlabel of string * hints
       (** named label *)
   | Xlabel of string * (hint * int) list
       (** indexed label *)
@@ -134,7 +134,7 @@ and defn_ =
 (** Instance *)
 and instance = {
   (** arguments of the instance *)
-  inst_args : hint list ;
+  inst_args : hints ;
   (** the instanced module *)
   inst_mod  : string ;
   (** substitution *)

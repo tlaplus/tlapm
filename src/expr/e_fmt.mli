@@ -11,7 +11,7 @@ type ctx = hyp Deque.dq * int Ctx.ctx
 val bump : ctx -> ctx
 
 val adj : ctx -> Util.hint -> ctx * string
-val adjs : ctx -> Util.hint list -> ctx * string list
+val adjs : ctx -> Util.hints -> ctx * string list
 
 val fmt_expr : ?temp:bool -> ctx -> expr -> Fu.exp
 

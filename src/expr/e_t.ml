@@ -74,7 +74,7 @@ and expr_ =
     (* rigid quantification `\E` or `\A` *)
   | Quant of quantifier * bounds * expr
     (* temporal quantification `\EE` or `\AA` *)
-  | Tquant of quantifier * hint list * expr
+  | Tquant of quantifier * hints * expr
     (* Two cases (unbounded and bounded `CHOOSE`):
 
     - `CHOOSE x:  pred`, for example:
@@ -157,7 +157,7 @@ and pform = pform_ wrapped
 and pform_ =
   | Syntax
       (** actual parens in source syntax *)
-  | Nlabel of string * hint list
+  | Nlabel of string * hints
       (** named label *)
   | Xlabel of string * (hint * int) list
       (** indexed label *)
@@ -228,7 +228,7 @@ and instance = {
     let wrap (x: string): hint = noprops x in
     List.map wrap ["x"; "y"]
   *)
-  inst_args : hint list ;
+  inst_args : hints ;
 
   (* name of the instantiated module *)
   inst_mod  : string ;

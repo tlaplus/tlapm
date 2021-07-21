@@ -63,7 +63,7 @@ class virtual ['s] map_rename : object
   method adj      : 's scx -> hyp -> 's scx
   method adjs     : 's scx -> hyp list -> 's scx
   method rename : ctx -> hyp -> Util.hint -> hyp * Util.hint
-  method renames : ctx -> hyp list -> Util.hint list -> hyp list * Util.hint list
+  method renames : ctx -> hyp list -> Util.hints -> hyp list * Util.hints
 end
 
 val set_to_list: ('a, 'b) Hashtbl.t -> 'a list

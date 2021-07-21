@@ -18,8 +18,8 @@ because it is a keyword in OCaml.
 type mule = mule_ wrapped
 and mule_ = {
     name: hint;
-    extendees: hint list;
-    instancees: hint list;
+    extendees: hints;
+    instancees: hints;
     (* only external instancees *)
     body: modunit list;
     defdepth: int;
@@ -30,7 +30,7 @@ and modunit = modunit_ wrapped
 and modunit_ =
     | Constants of (hint * shape) list
     | Recursives of (hint * shape) list
-    | Variables of hint list
+    | Variables of hints
     | Definition of
         defn * wheredef *
         visibility * export

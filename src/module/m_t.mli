@@ -13,9 +13,9 @@ open Proof.T
 type mule = mule_ wrapped
 and mule_ = {
     name: hint;
-    extendees: hint list;  (* module names
+    extendees: hints;  (* module names
         from `EXTENDS` statements *)
-    instancees: hint list;  (* module names
+    instancees: hints;  (* module names
         from `INSTANCE` statements,
         only external instancees *)
     body: modunit list;
@@ -29,7 +29,7 @@ and modunit = modunit_ wrapped
 and modunit_ =
     | Constants of (hint * shape) list
     | Recursives of (hint * shape) list
-    | Variables of hint list
+    | Variables of hints
     | Definition of
         defn * wheredef * visibility * export
     | Axiom of hint option * expr

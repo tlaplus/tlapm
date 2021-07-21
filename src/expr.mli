@@ -48,7 +48,7 @@ module T: sig
     | List of bullet * expr list
     | Let of defn list * expr
     | Quant of quantifier * bounds * expr
-    | Tquant of quantifier * hint list * expr
+    | Tquant of quantifier * hints * expr
     | Choose of hint * expr option * expr
     | SetSt of hint * expr * expr
     | SetOf of expr * bounds
@@ -75,7 +75,7 @@ module T: sig
   and pform_ =
     | Syntax
         (** actual parens in source syntax *)
-    | Nlabel of string * hint list
+    | Nlabel of string * hints
         (** named label *)
     | Xlabel of string * (hint * int) list
         (** indexed label *)
@@ -116,7 +116,7 @@ module T: sig
   (** Instance *)
   and instance = {
     (** arguments of the instance *)
-    inst_args : hint list ;
+    inst_args : hints ;
 
     (** the instanced module *)
     inst_mod  : string ;
@@ -198,7 +198,7 @@ module Fmt: sig
         ctx -> Util.hint ->
             ctx * string
     val adjs:
-        ctx -> Util.hint list ->
+        ctx -> Util.hints ->
             ctx * string list
     val fmt_bounds:
         ctx -> bound list ->
@@ -406,7 +406,7 @@ module Visit: sig
     method adj      : 's scx -> hyp -> 's scx
     method adjs     : 's scx -> hyp list -> 's scx
       method rename : ctx -> hyp -> Util.hint -> hyp * Util.hint
-      method renames : ctx -> hyp list -> Util.hint list -> hyp list * Util.hint list
+      method renames : ctx -> hyp list -> Util.hints -> hyp list * Util.hints
   end
 end
 
