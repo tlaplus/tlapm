@@ -83,6 +83,11 @@ val assign : 'a wrapped -> 'b pfuncs -> 'b -> 'a wrapped
     [w]. *)
 val remove : 'a wrapped -> 'b pfuncs -> 'a wrapped
 
+(* `unwrap x` returns `x.core`.
+Useful for use with `List.map`.
+*)
+val unwrap: 'a wrapped -> 'a
+
 (** [noprops x] wraps [x] with no properties. *)
 val noprops : 'a -> 'a wrapped
 

@@ -80,6 +80,8 @@ let assign w pf v =
 let remove w pf =
   { w with props = List.filter (fun p -> pf.pid <> fst p) w.props }
 
+let unwrap x = x.core
+
 let noprops x = { core = x ; props = [] }
 
 let nowhere : unit wrapped = noprops ()
