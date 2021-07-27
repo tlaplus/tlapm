@@ -10,12 +10,15 @@ References
 ==========
 
 [1] Leslie Lamport, Specifying Systems, Addison-Wesley, 2002
+    https://lamport.azurewebsites.net/tla/book.html
 
 [2] Leslie Lamport, TLA+ Version 2: A Preliminary Guide, 2018
+    https://lamport.azurewebsites.net/tla/tla2-guide.pdf
 
 [3] Leslie Lamport, TLA+2: A Preliminary Guide, 2014
 
 [4] Leslie Lamport, Proving safety properties, 2019
+    https://lamport.azurewebsites.net/tla/proving-safety.pdf
 
 [5] Leslie Lamport, LevelSpec specification, from the repository `tlaplus` at:
     https://github.com/tlaplus/tlatools/src/tla2sany/semantic/LevelNode.java
