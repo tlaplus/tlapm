@@ -1,6 +1,6 @@
 ------------------------------ MODULE Level_test -------------------------------
 (* Tests for computing expression levels. *)
-EXTENDS TLAPS, Integers
+EXTENDS TLAPS, Integers, TLC
 
 
 CONSTANT c
@@ -105,11 +105,21 @@ Q == /\ IF x THEN x' ELSE c
 
      /\ LET R(w) == TRUE
         IN R(TRUE)
+     /\ Print(1, "message")
+     /\ Assert(1, "message")
+     /\ JavaTime
+     /\ {1} :> 2
+     /\ 1 @@ 2
+     /\ Permutations({1, 2, 3})
 
 
 THEOREM ENABLED Q
 PROOF
     BY ExpandENABLED DEF Q
+
+
+THEOREM SortSeq(<<1, 2, 3>>, <)
+OBVIOUS
 
 ================================================================================
 stderr: status:failed

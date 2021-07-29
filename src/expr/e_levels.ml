@@ -353,7 +353,7 @@ class virtual ['s] level_computation = object (self : 'self)
             | Builtin.SelectSeq ->
                 make_level_info_arity 0 2
             | Builtin.OneArg ->  (* :> *)
-                make_level_info_arity 0 1
+                make_level_info_arity 0 2
             | Builtin.Extend -> (* @@ *)
                 make_level_info_arity 0 2
             | Builtin.Print ->
