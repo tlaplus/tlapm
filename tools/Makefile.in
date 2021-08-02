@@ -79,6 +79,83 @@ distclean: clean
 	rm -f tools/installer/tlaps-release.sh
 	rm -f tools/installer/tlaps-source-release.sh
 
+
+FORMATTING_FILE_TYPES = \
+  -e thy \
+  -e ml -e mli -e mll -e mlt \
+  -e pxd -e pxi -e py -e pyx \
+  -e sh \
+  -e tla
+FORMATTING_FILE_REGEX = \
+  '\.(ml|mli|mll|mlt|pxd|pxi|pyx|sh|thy|tla)$$'
+
+
+# Formatting rules below require the packages:
+# - `coreutils` (contains `gexpand`, `gtr`)
+# - `moreutils` (contains `sponge`)
+# - `ag`
+# - `as-tree`
+# - `fd`
+
+
+.PHONY: format_tab_space_dryrun
+# detect and print Isabelle, OCaml, Python, Shell, TLA+ files with:
+# - trailing blanks (\t and \s)
+# - leading tabs (\t)
+# - tabs (\t)
+# - CR characters
+format_tab_space_dryrun:
+	@echo $$'\nsearching for files with extensions:\n'
+	@echo ${FORMATTING_FILE_REGEX}
+	@echo $$'\nfiles that contain tabs within leading blanks:\n'
+	ag --file-search-regex ${FORMATTING_FILE_REGEX} \
+	    --files-with-matches \
+	    '^\s*\t' . \
+	    | as-tree
+	@echo $$'\nfiles that contain tabs anywhere:\n'
+	ag --file-search-regex ${FORMATTING_FILE_REGEX} \
+	    --files-with-matches '\t' . \
+	    | as-tree
+	@echo $$'\nfiles that contain trailing blank space:\n'
+	ag --file-search-regex ${FORMATTING_FILE_REGEX} \
+	    --files-with-matches '( |\t)$$' . \
+	    | as-tree
+	@echo $$'\nany files that contain CR:\n'
+	ag --files-with-matches $$'\r' . | as-tree
+
+
+.PHONY: expand_tabs
+expand_tabs:
+	@echo $$'\nreplace each tab by 4 spaces\n'
+	time fd -t f ${FORMATTING_FILE_TYPES} \
+	    --exec bash -c \
+	        "gexpand -i -t 4 {} \
+	            | sponge {}" ';'
+
+
+.PHONY: rm_cr
+# `sponge` is not used in this case,
+# because in case the Python script
+# finds any `\r` outside of `\r\n`,
+# it raises an exception, and then
+# the file should remain unchanged.
+rm_cr:
+	@echo $$'\nremove CR characters'
+	time fd -t f ${FORMATTING_FILE_TYPES} \
+	    --exec bash -c \
+	        "python tools/change_blank_space.py \
+	            --rm-cr {}" ';'
+
+
+.PHONY: rm_trailing
+rm_trailing:
+	@echo $$'\nremove trailing blank space'
+	time fd -t f ${FORMATTING_FILE_TYPES} \
+	    --exec bash -c \
+	        "python tools/change_blank_space.py \
+	            --rm-trailing-blank {}" ';'
+
+
 .PHONY: allinstall
 allinstall: all
 	${MAKE} install
