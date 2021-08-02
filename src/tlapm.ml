@@ -342,7 +342,18 @@ let process_module
                     && (summ.sum_total <> 0)
                     && t.core.important
                 then begin
-                Util.printf "(* loading fingerprints in %S *)%!" fpf_in;
+                if !Params.no_fp then
+                    Util.printf "(* will not use fingerprints \
+                        (because of option `--nofp`), \
+                        but will now load fingerprints from \
+                        the file `%s`, in order to overwrite with \
+                        the new fingerprints, and then save \
+                        the results at the end. *)%!"
+                        fpf_in
+                else
+                    Util.printf
+                        "(* loading fingerprints in %S *)%!"
+                        fpf_in;
                 Clocks.start Clocks.fp_loading;
                 (* load fingerprints from input file *)
                 Backend.Fpfile.load_fingerprints fpf_in;

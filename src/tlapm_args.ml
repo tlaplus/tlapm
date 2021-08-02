@@ -195,7 +195,10 @@ let init () =
     deprecated "--fpdir" 1;
     "--safefp", Arg.Set Params.safefp,
                 " check tlapm, zenon, Isabelle versions for fingerprints";
-    "--nofp", Arg.Set Params.no_fp, " disable fingerprint use";
+    "--nofp", Arg.Set Params.no_fp, " do not use existing fingerprints, \
+        but overwrite any preexisting fingerprints associated \
+        with the current proof obligations, \
+        using the newly computed fingerprints and results";
     "--nofpl", (Arg.Tuple [Arg.Int set_nofp_start;Arg.Int set_nofp_end]),
                "<int><int> disable fingerprint use between given lines";
     "--cleanfp", Arg.Set Params.cleanfp,
