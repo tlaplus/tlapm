@@ -8,6 +8,7 @@
 *.toolbox
 *.tlaps
 *.log
+.DS_Store
 
 /Makefile
 /config.log
