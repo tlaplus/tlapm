@@ -468,8 +468,21 @@ let read_new_modules mcx fs =
       (mcx, mule :: mods)
   end (mcx, []) fs
 
+
+let append_ext_if_not_tla filename =
+    if Filename.check_suffix filename ".tla" then
+        filename
+    else
+        filename ^ ".tla"
+
+
+let map_paths_to_filenames paths =
+    let basenames = List.map Filename.basename paths in
+    List.map append_ext_if_not_tla basenames
+
+
 let main fs =
-  Params.input_files := List.map Filename.basename fs;
+  Params.input_files := map_paths_to_filenames fs;
   let () =
     List.iter begin
       fun s ->
