@@ -215,6 +215,29 @@ class anon = object (self : 'self)
           (scx, st)
       | _ ->
           super#step scx st
+
+    method usable scx usables =
+        let usdef dw = match dw.core with
+            | Dvar v ->
+                begin
+                let opaque = Opaque v @@ dw in
+                let opaque = self#expr scx opaque in
+                match opaque.core with
+                | Ix n -> [Dx n @@ dw]
+                | _ ->
+                    Errors.warn ~at:dw
+                        "Ignored unexpandable \
+                        identifier %S in BY DEF."
+                        v;
+                    []
+                end
+            | Dx n ->
+                [{dw with core = Dx n}] in
+        let facts = List.map
+            (self#expr scx) usables.facts in
+        let defs = List.flatten (
+            List.map usdef usables.defs) in
+        {facts=facts; defs=defs}
 end
 
 let anon = new anon

@@ -168,13 +168,16 @@ class virtual ['hyp] map = object (self : 'self)
     let usdef dw =
       match dw.core with
       | Dvar v ->
-         begin match self#expr scx { dw with core = Opaque v } with
-         | { core = Ix n } -> [{dw with core = Dx n}]
-         | _ ->
-            Errors.warn ~at:dw "Ignored unexpandable identifier %S in BY DEF."
-                        v;
-            []
-         end
+            begin
+            let opaque = Opaque v @@ dw in
+            let opaque = self#expr scx opaque in
+            match opaque.core with
+            | Opaque _ -> [Dvar v @@ dw]
+            | _ -> Errors.bug ~at:dw
+                ("unexpected result from `self#expr` \
+                for the identifier `" ^ v ^
+                "` in a `BY DEF`")
+            end
       | Dx n -> [{dw with core = Dx n}]
     in
     { facts = List.map (self#expr scx) us.facts ;
