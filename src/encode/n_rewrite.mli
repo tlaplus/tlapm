@@ -31,21 +31,17 @@ val elim_tuples : sequent -> sequent
 (** Reduce records to functions *) (* FIXME remove *)
 val elim_records : sequent -> sequent
 
-(** Simplify by applying standard axioms *)
-(* TODO *)
-val simplify : sequent -> sequent
-(** This includes:
-    - `x \in {}` --> `FALSE`
-    - `x \in {a, b}` --> `x = a \/ x = b`
-    - `x \in { y \in S : P(y) }` --> `x \in S /\ P(x)`
-    - `[ x \in S |-> F(x) ][z]` --> `IF z \in S THEN F(z) ELSE @`
-      where `@` is the original expression
-    - etc.
-*)
-
 (** Apply extensionnality axioms to equalities *)
 val apply_ext : sequent -> sequent
 
 (** Simplify positive subset relations *)
 val simpl_subseteq : sequent -> sequent
+
+(** Simplify expressions of set theory *)
+val simplify_sets : sequent -> sequent
+(** NOTE Rewriting rules are applied bottom-up, and there may be
+    residual redexes.  The function itself terminates, but calling it
+    while there are possible reductions may not (Russell's paradox is
+    an example).
+*)
 

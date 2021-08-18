@@ -466,150 +466,6 @@ let elim_records sq =
   snd (elim_records_visitor#sequent cx sq)
 
 
-(* {3 Simplify} *)
-
-(* Some expressions must be annotated so that simplification is not
- * attempted, to prevent infinite loops *)
-let nosimpl_prop = make "Encode.Rewrite.nosimpl"
-
-let simpl_visitor = object (self : 'self)
-  inherit [unit, bool] Expr.Visit.foldmap as super
-
-  method expr scx b oe =
-    if has oe nosimpl_prop then false, oe else
-    match oe.core with
-    | Apply ({ core = Internal (B.Eq | B.Neq) } as op, [ e ; { core = If (p, f, g) } ])
-    | Apply ({ core = Internal (B.Eq | B.Neq) } as op, [ { core = If (p, f, g) } ; e ]) ->
-        let _, e = self#expr scx false e in
-        let _, f = self#expr scx false f in
-        let _, g = self#expr scx false g in
-        let f = Apply (op, [ e ; f ]) %% [] in
-        let g = Apply (op, [ e ; g ]) %% [] in
-        let ret = If (p, f, g) @@ oe in
-        let ty0 =
-          match query op Props.tpars_prop with
-          | Some [ ty0 ] -> ty0
-          | None -> error ~at:op "Missing type annotation"
-          | _ -> error ~at:op "Bad type annotation"
-        in
-        let ret = assign ret Props.tpars_prop [ ty0 ] in
-        true, ret
-
-    | Apply ({ core = Internal B.Mem } as op,
-      [ e ; { core = SetEnum es } ]) ->
-        let _, e = self#expr scx false e in
-        let _, es = List.map (self#expr scx false) es |> List.split in
-        let ty0 =
-          match query op Props.tpars_prop with
-          | Some [ ty0 ] -> ty0
-          | None -> TAtm TAIdv
-          | _ -> error ~at:op "Bad type annotation"
-        in
-        let eq = assign (Internal B.Eq %% []) Props.tpars_prop [ ty0 ] in
-        let ret =
-          match es with
-          | [] -> Internal B.FALSE %% []
-          | [ f ] ->
-              Apply (eq, [ e ; f ]) %% []
-          | _ ->
-              List (Or,
-              List.map (fun f -> Apply (eq, [ e ; f ]) %% []) es
-              ) %% []
-        in
-        true, ret
-
-    | Apply ({ core = Internal B.Mem } as op,
-      [ e ; { core = Apply ({ core = Internal B.SUBSET }, [ f ]) }]) ->
-        let _, e = self#expr scx false e in
-        let _, f = self#expr scx false f in
-        let ty0 =
-          match query op Props.tpars_prop with
-          | Some [ ty0 ] -> ty0
-          | None -> TAtm TAIdv
-          | _ -> error ~at:op "Bad type annotation"
-        in
-        let ret =
-          let v = assign ("x" %% []) Props.ty0_prop ty0 in
-          Quant (Forall, [ v, Constant, No_domain ],
-          Apply (Internal B.Implies %% [],
-          [ Apply (op, [ Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) e ]) %% []
-          ; Apply (op, [ Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) f ]) %% []
-          ]) %% [] ) %% []
-        in
-        true, ret
-
-    | FcnApp ({ core = Fcn (bs, e) }, es)
-      when not (has oe Props.tpars_prop) ->
-        let scx', _, bs = self#bounds scx false bs in
-        let _, e = self#expr scx' false e in
-        let _, es = List.map (self#expr scx false) es |> List.split in
-        let ps, _ =
-          List.fold_left2 begin fun (r_ps, dit) e (v, _, d) ->
-            match d, dit with
-            | Domain d, _
-            | Ditto, Some d ->
-                let p = Apply (Internal B.Mem %% [], [ e ; d ]) %% [] in
-                (p :: r_ps, Some d)
-            | _, _ ->
-                error ~at:v "Missing bound"
-          end ([], None) es bs |>
-          fun (r_ps, dit) -> List.rev r_ps, dit
-        in
-        let p =
-          match ps with
-          | [p] -> p
-          | ps -> List (And, ps) %% []
-        in
-        let sub = List.fold_left Subst.ssnoc (Subst.shift 0) es in
-        let f = Subst.app_expr sub e in
-        let g = assign oe nosimpl_prop () in
-        true, If (p, f, g) %% []
-
-    | Apply ({ core = Internal B.DOMAIN } as op, [ { core = Fcn (bs, _) } ])
-      when not (has op Props.tpars_prop) ->
-        let _, _, bs = self#bounds scx false bs in
-        let ds, _ =
-          List.fold_left begin fun (r_ds, dit) (v, _, d) ->
-            match d, dit with
-            | Domain d, _
-            | _, Some d ->
-                d :: r_ds, Some d
-            | _, _ ->
-                error ~at:v "Missing bound"
-          end ([], None) bs |>
-          fun (r_ds, dit) -> List.rev r_ds, dit
-        in
-        let e =
-          match ds with
-          | [d] -> d
-          | ds -> Product ds %% []
-        in
-        true, e $$ oe
-
-    | _ -> super#expr scx b oe
-
-  method hyp scx b h =
-    match h.core with
-    | Fact (_, Hidden, _)
-    | Defn (_, _, Hidden, _) ->
-        let scx = Expr.Visit.adj scx h in
-        (scx, b, h)
-    | _ -> super#hyp scx b h
-
-end
-
-let simplify sq =
-  let rec spin n b sq =
-    if (b && n > 0) then
-      let cx = ((), Deque.empty) in
-      let _, b, sq = simpl_visitor#sequent cx false sq in
-      spin (n-1) b sq
-    else
-      sq
-  in
-  spin 50 true sq
-
-
 (* {3 Apply Extensionnality} *)
 
 let is_set e =
@@ -732,4 +588,169 @@ end
 let simpl_subseteq sq =
   let cx = (true, Deque.empty) in
   snd (simpl_subseteq_visitor#sequent cx sq)
+
+
+(* {3 Simplify Sets} *)
+
+let simplify_sets_visitor = object (self : 'self)
+  inherit [unit] Expr.Visit.map as super
+
+  method expr scx oe =
+    match oe.core with
+    | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = SetEnum es } as e2 ])
+      when not (has op Props.tpars_prop) ->
+        let n = List.length es in
+        if n = 0 then
+          Internal B.FALSE @@ oe
+        else if n = 1 then
+          let e1 = self#expr scx e1 in
+          let es = List.map (self#expr scx) es in
+          let e2 =
+            match es with
+            | [e] -> e $$ e2
+            | _ -> error ~at:e2 "Internal error"
+          in
+          let eq = assign (Internal B.Eq %% []) Props.tpars_prop [ TAtm TAIdv ] in
+          Apply (eq, [ e1 ; e2 ]) @@ oe
+        else
+          let e1 = self#expr scx e1 in
+          let es = List.map (self#expr scx) es in
+          let eq = assign (Internal B.Eq %% []) Props.tpars_prop [ TAtm TAIdv ] in
+          List (Or, List.map begin fun e2 ->
+            Apply (eq, [ e1 ; e2 ]) %% []
+          end es) @@ e2
+
+    | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.SUBSET } as op2, [ e2 ]) } ])
+      when not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
+        let e1 = self#expr scx e1 in
+        let e2 = self#expr scx e2 in
+        let v = assign ("v" %% []) Props.ty0_prop (TAtm TAIdv) in
+        let e =
+          let e1 = Subst.app_expr (Subst.shift 1) e1 in
+          let e2 = Subst.app_expr (Subst.shift 1) e2 in
+          Apply (
+            Internal B.Implies %% [],
+            [ Apply (
+              Internal B.Mem %% [],
+              [ Ix 1 %% []
+              ; e1 ]
+            ) %% []
+            ; Apply (
+              Internal B.Mem %% [],
+              [ Ix 1 %% []
+              ; e2 ]
+            ) %% [] ]
+          ) %% []
+        in
+        Quant (Forall, [ v, Constant, No_domain ], e) @@ oe
+
+    | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.UNION } as op2, [ e2 ]) } ])
+      when not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
+        let e1 = self#expr scx e1 in
+        let e2 = self#expr scx e2 in
+        let v = assign ("v" %% []) Props.ty0_prop (TAtm TAIdv) in
+        let e =
+          let e1 = Subst.app_expr (Subst.shift 1) e1 in
+          let e2 = Subst.app_expr (Subst.shift 1) e2 in
+          Apply (
+            Internal B.Conj %% [],
+            [ Apply (
+              Internal B.Mem %% [],
+              [ Ix 1 %% []
+              ; e2 ]
+            ) %% []
+            ; Apply (
+              Internal B.Mem %% [],
+              [ e1
+              ; Ix 1 %% [] ]
+            ) %% [] ]
+          ) %% []
+        in
+        Quant (Exists, [ v, Constant, No_domain ], e) @@ oe
+
+    | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.Cup } as op2, [ e2 ; e3 ]) } ])
+      when not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
+        let e1 = self#expr scx e1 in
+        let e2 = self#expr scx e2 in
+        let e3 = self#expr scx e3 in
+        Apply (
+          Internal B.Disj %% [],
+          [ Apply (
+            Internal B.Mem %% [],
+            [ e1
+            ; e2 ]
+          ) %% []
+          ; Apply (
+            Internal B.Mem %% [],
+            [ e1
+            ; e3 ]
+          ) %% [] ]
+        ) @@ oe
+
+    | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.Cap } as op2, [ e2 ; e3 ]) } ])
+      when not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
+        let e1 = self#expr scx e1 in
+        let e2 = self#expr scx e2 in
+        let e3 = self#expr scx e3 in
+        Apply (
+          Internal B.Conj %% [],
+          [ Apply (
+            Internal B.Mem %% [],
+            [ e1
+            ; e2 ]
+          ) %% []
+          ; Apply (
+            Internal B.Mem %% [],
+            [ e1
+            ; e3 ]
+          ) %% [] ]
+        ) @@ oe
+
+    | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.Setminus } as op2, [ e2 ; e3 ]) } ])
+      when not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
+        let e1 = self#expr scx e1 in
+        let e2 = self#expr scx e2 in
+        let e3 = self#expr scx e3 in
+        Apply (
+          Internal B.Conj %% [],
+          [ Apply (
+            Internal B.Mem %% [],
+            [ e1
+            ; e2 ]
+          ) %% []
+          ; Apply (
+            Internal B.Neg %% [],
+            [ Apply (
+              Internal B.Mem %% [],
+              [ e1
+              ; e3 ]
+            ) %% [] ]
+          ) %% [] ]
+        ) @@ oe
+
+    | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = SetSt (v, e2, e3) } ])
+      when not (has op Props.tpars_prop) ->
+        let e1 = self#expr scx e1 in
+        let e2 = self#expr scx e2 in
+        let h = Fresh (v, Shape_expr, Constant, Unbounded) %% [] in
+        let scx' = Expr.Visit.adj scx h in
+        let e3 = self#expr scx' e3 in
+        Apply (
+          Internal B.Conj %% [],
+          [ Apply (
+            Internal B.Mem %% [],
+            [ e1
+            ; e2 ]
+          ) %% []
+          ; Subst.app_expr (Subst.scons e1 (Subst.shift 0)) e3 ]
+        ) @@ oe
+
+    (* TODO SetOf *)
+
+    | _ -> super#expr scx oe
+end
+
+let simplify_sets sq =
+  let cx = ((), Deque.empty) in
+  snd (simplify_sets_visitor#sequent cx sq)
 

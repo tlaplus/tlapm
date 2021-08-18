@@ -444,6 +444,24 @@ let preprocess ~solver sq =
   in
   let noarith = Params.debugging "noarith" in
 
+  let rwsets =
+         if Params.debugging "rwsets1" then 1
+    else if Params.debugging "rwsets2" then 2
+    else if Params.debugging "rwsets3" then 3
+    else if Params.debugging "rwsets4" then 4
+    else if Params.debugging "rwsets5" then 5
+    else if Params.debugging "rwsets6" then 6
+    else if Params.debugging "rwsets7" then 7
+    else if Params.debugging "rwsets8" then 8
+    else if Params.debugging "rwsets9" then 9
+    else 0
+  in
+
+  let rec repeat k f a =
+    if k <= 0 then a
+    else repeat (k - 1) f (f a)
+  in
+
   let sq = sq
     (*|> Encode.Hints.main*) (* TODO *)
     |> debug "Original Obligation:"
@@ -453,6 +471,7 @@ let preprocess ~solver sq =
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
     |> Encode.Rewrite.apply_ext
+    |> repeat rwsets Encode.Rewrite.simplify_sets
     |> debug "Disambiguate and Simplify:"
     |> Encode.Standardize.main
     |> debug "Standardize:"

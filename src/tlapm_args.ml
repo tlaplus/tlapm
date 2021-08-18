@@ -174,6 +174,7 @@ let init () =
                  * "oldsmt"     use the old version of SMT (default)
                  * "newsmt"     use the new version of SMT
                  * "noarith"    don't use the primitive sort int of SMT-LIB
+                 * "rwsetsX"    apply rewriting rules to eliminate set expressions; call function X times where 0 < X < 10
                  *)
     deprecated "--paranoid" 0;
     deprecated "--isaprove" 0;
