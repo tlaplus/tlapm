@@ -62,6 +62,7 @@ module Table : sig
     | FunConstr
     | FunDom
     | FunApp
+    | FunExcept
     | Tuple of int
     | Product of int
     | Rec of string list

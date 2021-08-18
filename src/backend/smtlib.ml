@@ -450,7 +450,6 @@ let preprocess ~solver sq =
     |> Type.Synthesize.main ~typelvl ~noarith
     |> Encode.Rewrite.elim_notmem
     |> (if noarith then Encode.Rewrite.elim_compare else fun e -> e)
-    |> Encode.Rewrite.elim_except
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
     |> Encode.Rewrite.apply_ext

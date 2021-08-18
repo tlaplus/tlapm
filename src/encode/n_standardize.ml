@@ -267,6 +267,31 @@ let visitor = object (self : 'self)
           let opq = mk_opq smb in
           Apply (opq, [ e1 ; e2 ]) %% []
 
+    | Except (e1, [ [ Except_apply e2 ], e3 ]) ->
+        let e1 = self#expr scx e1 in
+        let e2 = self#expr scx e2 in
+        let e3 = self#expr scx e3 in
+        if has oe Props.tpars_prop then
+          error ~at:oe "Typelvl=1 not implemented"
+        else
+          let smb = mk_smb FunExcept in
+          let opq = mk_opq smb in
+          Apply (opq, [ e1 ; e2 ; e3 ]) %% []
+    | Except (e1, [ [ Except_dot s ], e3 ]) ->
+        let e1 = self#expr scx e1 in
+        let e3 = self#expr scx e3 in
+        if has oe Props.tpars_prop then
+          error ~at:oe "Typelvl=1 not implemented"
+        else
+          let smb = mk_smb FunExcept in
+          let opq = mk_opq smb in
+          let strlit = mk_smb (StrLit s) in
+          let strlit_opq = mk_opq strlit in
+          Apply (opq, [ e1 ; strlit_opq  ; e3 ]) %% []
+
+    | Except _ ->
+        error ~at:oe "Unsupported EXCEPT expression"
+
     | Tuple es ->
         let es = List.map (self#expr scx) es in
         if has oe Props.tpars_prop then

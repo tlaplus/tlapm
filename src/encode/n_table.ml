@@ -50,6 +50,7 @@ type tla_smb =
   | FunConstr
   | FunDom
   | FunApp
+  | FunExcept
   (* Tuples *)
   | Tuple of int
   | Product of int
@@ -140,6 +141,9 @@ type tla_axm =
   | FunSetDef
   | FunDomDef
   | FunAppDef
+  | FunExceptIsafcn
+  | FunExceptDomDef
+  | FunExceptAppDef
   (* Tuples *)
   | TupIsafcn of int
   | ProductDef of int

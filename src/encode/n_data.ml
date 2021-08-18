@@ -129,6 +129,9 @@ let untyped_data tla_smb =
       ("FunDom",        [ t_cst t_idv ],                      t_idv)
   | FunApp ->
       ("FunApp",        [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+  | FunExcept ->
+      ("FunExcept",     [ t_cst t_idv ; t_cst t_idv ; t_cst t_idv ],
+                                                              t_idv)
   (* Tuples *)
   | Tuple n ->
       ("Tuple_" ^ string_of_int n,
@@ -270,9 +273,9 @@ let get_data tla_smb =
   | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet | NatSet | IntLit _
   | IntPlus | IntUminus | IntMinus | IntTimes | IntQuotient | IntRemainder
   | IntExp | IntLteq | IntLt | IntGteq | IntGt | IntRange | FunIsafcn | FunSet
-  | FunConstr | FunDom | FunApp | Tuple _ | Product _ | Rec _ | RecSet _
-  | SeqSeq | SeqLen | SeqBSeq | SeqCat | SeqAppend | SeqHead | SeqTail
-  | SeqSubSeq | SeqSelectSeq ->
+  | FunConstr | FunDom | FunApp | FunExcept | Tuple _ | Product _ | Rec _
+  | RecSet _ | SeqSeq | SeqLen | SeqBSeq | SeqCat | SeqAppend | SeqHead
+  | SeqTail | SeqSubSeq | SeqSelectSeq ->
       let (nm, tins, tout) = untyped_data tla_smb in
       { dat_name = "TLA__" ^ nm
       ; dat_ty2  = Ty2 (tins, tout)
@@ -428,6 +431,9 @@ let untyped_deps ~solver tla_smb s =
       ([ FunConstr ],             [ FunDomDef ])
   | FunApp ->
       ([ Mem ; FunConstr ],       [ FunAppDef ])
+  | FunExcept ->
+      ([ Mem ; FunIsafcn ; FunDom ; FunApp ],
+                                  [ FunExceptIsafcn ; FunExceptDomDef ; FunExceptAppDef ])
   (* Tuples *)
   | Tuple 0 ->
       ([ FunIsafcn ],             [ TupIsafcn 0 ])
@@ -539,9 +545,9 @@ let get_deps ~solver tla_smb s =
   | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet | NatSet | IntLit _
   | IntPlus | IntUminus | IntMinus | IntTimes | IntQuotient | IntRemainder
   | IntExp | IntLteq | IntLt | IntGteq | IntGt | IntRange | FunIsafcn | FunSet
-  | FunConstr | FunDom | FunApp | Tuple _ | Product _ | Rec _ | RecSet _
-  | SeqSeq | SeqLen | SeqBSeq | SeqCat | SeqAppend | SeqHead | SeqTail
-  | SeqSubSeq | SeqSelectSeq ->
+  | FunConstr | FunDom | FunApp | FunExcept | Tuple _ | Product _ | Rec _
+  | RecSet _ | SeqSeq | SeqLen | SeqBSeq | SeqCat | SeqAppend | SeqHead
+  | SeqTail | SeqSubSeq | SeqSelectSeq ->
       let s, (smbs, axms) = untyped_deps ~solver tla_smb s in
       s,
       { dat_deps = smbs

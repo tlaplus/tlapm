@@ -765,6 +765,12 @@ let fcnconstr_isafcn () =
   seq
   [ "F" ] [ Ty1 ([ t_idv ], t_idv) ]
   ( quant Forall
+    ~pats:[ [
+      apps T.FunConstr
+      [ Ix 1 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ] ]
     [ "a" ] [ t_idv ]
     ( apps T.FunIsafcn
       [ apps T.FunConstr
@@ -830,6 +836,14 @@ let fcndom_def () =
   [ "F" ] [ Ty1 ([ t_idv ], t_idv) ]
   ( quant Forall
     [ "a" ] [ t_idv ]
+    ~pats:[ [
+      apps T.FunDom
+      [ apps T.FunConstr
+        [ Ix 1 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ] %% []
+    ] ]
     ( appb ~tys:[ t_idv ] B.Eq
       [ apps T.FunDom
         [ apps T.FunConstr
@@ -847,6 +861,15 @@ let fcnapp_def () =
   [ "F" ] [ Ty1 ([ t_idv ], t_idv) ]
   ( quant Forall
     [ "a" ; "x" ] [ t_idv ; t_idv ]
+    ~pats:[ [
+      apps T.FunApp
+      [ apps T.FunConstr
+        [ Ix 2 %% []
+        ; Ix 3 %% []
+        ] %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] ]
     ( appb B.Implies
       [ apps T.Mem
         [ Ix 1 %% []
@@ -866,6 +889,115 @@ let fcnapp_def () =
         ] %% []
       ] %% []
     ) %% []
+  ) %% []
+
+let fcnexcept_isafcn () =
+  quant Forall
+  [ "f" ; "x" ; "y" ] [ t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.FunIsafcn
+    [ apps T.FunExcept
+      [ Ix 3 %% []
+      ; Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( apps T.FunIsafcn
+    [ apps T.FunExcept
+      [ Ix 3 %% []
+      ; Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let fcnexceptdom_def () =
+  quant Forall
+  [ "f" ; "x" ; "y" ] [ t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.FunDom
+    [ apps T.FunExcept
+      [ Ix 3 %% []
+      ; Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb ~tys:[ t_idv ] B.Eq
+    [ apps T.FunDom
+      [ apps T.FunExcept
+        [ Ix 3 %% []
+        ; Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ] %% []
+    ; apps T.FunDom
+      [ Ix 3 %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let fcnexceptapp_def () =
+  quant Forall
+  [ "f" ; "x" ; "y" ; "z" ] [ t_idv ; t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.FunApp
+    [ apps T.FunExcept
+      [ Ix 4 %% []
+      ; Ix 3 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.FunDom
+        [ Ix 4 %% []
+        ] %% []
+      ] %% []
+    ; appb B.Conj
+      [ appb B.Implies
+        [ appb ~tys:[ t_idv ] B.Eq
+          [ Ix 1 %% []
+          ; Ix 3 %% []
+          ] %% []
+        ; appb ~tys:[ t_idv ] B.Eq
+          [ apps T.FunApp
+            [ apps T.FunExcept
+              [ Ix 4 %% []
+              ; Ix 3 %% []
+              ; Ix 2 %% []
+              ] %% []
+            ; Ix 1 %% []
+            ] %% []
+          ; Ix 2 %% []
+          ] %% []
+        ] %% []
+      ; appb B.Implies
+        [ appb ~tys:[ t_idv ] B.Neq
+          [ Ix 1 %% []
+          ; Ix 3 %% []
+          ] %% []
+        ; appb ~tys:[ t_idv ] B.Eq
+          [ apps T.FunApp
+            [ apps T.FunExcept
+              [ Ix 4 %% []
+              ; Ix 3 %% []
+              ; Ix 2 %% []
+              ] %% []
+            ; Ix 1 %% []
+            ] %% []
+          ; apps T.FunApp
+            [ Ix 4 %% []
+            ; Ix 1 %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ] %% []
   ) %% []
 
 
@@ -1737,6 +1869,8 @@ let t_intrange_def () =
 
 (* {3 Get Axiom} *)
 
+(* These annotations are used to rewrite instances of an axiom schema.
+ * See {!N_flatten}. *)
 let mark tla_smb e =
   let smb = mk_smb tla_smb in
   assign e smb_prop smb
@@ -1786,6 +1920,9 @@ let get_axm ~solver tla_smb =
   | T.FunSetDef -> fcnset_def ()
   | T.FunDomDef -> fcndom_def () |> mark T.FunConstr
   | T.FunAppDef -> fcnapp_def () |> mark T.FunConstr
+  | T.FunExceptIsafcn -> fcnexcept_isafcn ()
+  | T.FunExceptDomDef -> fcnexceptdom_def ()
+  | T.FunExceptAppDef -> fcnexceptapp_def ()
   | T.TupIsafcn n -> tuple_isafcn n
   | T.ProductDef n -> productset_def_alt n
   | T.TupDomDef n -> tupdom_def ~noarith n

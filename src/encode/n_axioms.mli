@@ -57,6 +57,9 @@ val fcnconstr_isafcn : unit -> expr
 val fcnset_def : unit -> expr
 val fcndom_def : unit -> expr
 val fcnapp_def : unit -> expr
+val fcnexcept_isafcn : unit -> expr
+val fcnexceptdom_def : unit -> expr
+val fcnexceptapp_def : unit -> expr
 
 (* {4 Strings} *)
 
