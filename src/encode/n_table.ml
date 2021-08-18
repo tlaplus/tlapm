@@ -104,8 +104,6 @@ type tla_axm =
   (* Set Theory *)
   | SetExt
   | SubsetEqDef
-  | SubsetEqDef_alt1
-  | SubsetEqDef_alt2
   | EnumDef of int
   | UnionDef
   | SubsetDef
@@ -114,6 +112,10 @@ type tla_axm =
   | SetMinusDef
   | SetStDef
   | SetOfDef of int
+  | SubsetEqDef_alt1
+  | SubsetEqDef_alt2
+  | EnumDef_alt1 of int
+  | EnumDef_alt2 of int
   (* Strings *)
   | StrLitIsstr of string
   | StrLitDistinct of string * string

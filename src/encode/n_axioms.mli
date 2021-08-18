@@ -39,8 +39,6 @@ val choose_ext : unit -> expr
 
 val set_ext : unit -> expr
 val subseteq_def : unit -> expr
-val subseteq_def_alt1 : unit -> expr
-val subseteq_def_alt2 : unit -> expr
 val setenum_def : int -> expr
 val union_def : unit -> expr
 val subset_def : unit -> expr
@@ -49,6 +47,11 @@ val cap_def : unit -> expr
 val setminus_def : unit -> expr
 val setst_def : unit -> expr
 val setof_def : int -> expr
+
+val subseteq_def_alt1 : unit -> expr
+val subseteq_def_alt2 : unit -> expr
+val setenum_def_alt1 : int -> expr
+val setenum_def_alt2 : int -> expr
 
 (* {4 Functions} *)
 

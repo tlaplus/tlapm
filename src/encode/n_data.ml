@@ -336,9 +336,14 @@ let untyped_deps ~solver tla_smb s =
   | Mem ->
       ([],        [ (*SetExt*) ])
   | SubsetEq ->
-      ([ Mem ],   [ (*SubsetEqDef*) SubsetEqDef_alt1 ; SubsetEqDef_alt2 ])
+      (*([ Mem ],   [ SubsetEqDef ])*)
+      ([ Mem ],   [ SubsetEqDef_alt1 ; SubsetEqDef_alt2 ])
   | SetEnum n ->
-      ([ Mem ],   [ EnumDef n ])
+      (*([ Mem ],   [ EnumDef n ])*)
+      if (n = 0) then
+      ([ Mem ],   [ EnumDef_alt2 0 ])
+      else
+      ([ Mem ],   [ EnumDef_alt1 n ; EnumDef_alt2 n ])
   | Union ->
       ([ Mem ],   [ UnionDef ])
   | Subset ->
