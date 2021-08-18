@@ -454,7 +454,6 @@ let preprocess ~solver sq =
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
     |> Encode.Rewrite.apply_ext
-    |> Encode.Rewrite.simpl_subseteq
     |> debug "Disambiguate and Simplify:"
     |> Encode.Standardize.main
     |> debug "Standardize:"
