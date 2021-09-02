@@ -171,6 +171,9 @@ type tla_axm =
   | ProductDef of int
   | TupDomDef of int
   | TupAppDef of int * int
+  | ProductDef_alt1 of int
+  | ProductDef_alt21 of int
+  | ProductDef_alt22 of int
   (* Records *)
   | RecIsafcn of string list
   | RecSetDef of string list

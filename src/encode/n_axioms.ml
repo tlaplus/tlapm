@@ -1568,41 +1568,6 @@ let productset_def ~noarith n =
     ] %% []
   ) %% []
 
-let productset_def_alt n =
-  quant Forall
-  (gen "s" n @ [ "t" ]) (dupl t_idv (n + 1))
-  ~pats:[ [
-    apps T.Mem
-    [ Ix 1 %% []
-    ; apps (T.Product n)
-      (ixi ~shift:1 n) %% []
-    ] %% []
-  ] ]
-  ( appb B.Equiv
-    [ apps T.Mem
-      [ Ix 1 %% []
-      ; apps (T.Product n)
-        (ixi ~shift:1 n) %% []
-      ] %% []
-    ; quant Exists
-      (gen "x" n) (dupl t_idv n)
-      ( List (And,
-        [ appb ~tys:[ t_idv ] B.Eq
-          [ Ix (n + 1) %% []
-          ; apps (T.Tuple n)
-            (ixi n) %% []
-          ] %% []
-        ] @
-        List.init n begin fun i ->
-          apps T.Mem
-          [ Ix (n - i) %% []
-          ; Ix (2*n - i + 1) %% []
-          ] %% []
-        end) %% []
-      ) %% []
-    ] %% []
-  ) %% []
-
 let tupdom_def ~noarith n =
   quant Forall
   (gen "x" n) (dupl t_idv n)
@@ -1669,6 +1634,102 @@ let tupapp_def ~noarith n i =
         end
       ] %% []
     ; Ix (n - i + 1) %% []
+    ] %% []
+  ) %% []
+
+let productset_def_alt1 n =
+  quant Forall
+  (gen "s" n @ [ "t" ]) (dupl t_idv (n + 1))
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps (T.Product n)
+      (ixi ~shift:1 n) %% []
+    ] %% []
+  ] ]
+  ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps (T.Product n)
+        (ixi ~shift:1 n) %% []
+      ] %% []
+    ; quant Exists
+      (gen "x" n) (dupl t_idv n)
+      ( List (And,
+        [ appb ~tys:[ t_idv ] B.Eq
+          [ Ix (n + 1) %% []
+          ; apps (T.Tuple n)
+            (ixi n) %% []
+          ] %% []
+        ] @
+        List.init n begin fun i ->
+          apps T.Mem
+          [ Ix (n - i) %% []
+          ; Ix (2*n - i + 1) %% []
+          ] %% []
+        end) %% []
+      ) %% []
+    ] %% []
+  ) %% []
+
+let productset_def_alt21 n =
+  quant Forall
+  (gen "s" n @ gen "x" n) (dupl t_idv (2 * n))
+  ~pats:[ [
+    apps (T.Tuple n)
+    (ixi n) %% []
+  ; apps (T.Product n)
+    (ixi ~shift:n n) %% []
+  ] ]
+  ( appb B.Implies
+    [ List (And,
+      List.init n begin fun i ->
+        apps T.Mem
+        [ Ix (n - i) %% []
+        ; Ix (2*n - i) %% []
+        ] %% []
+      end) %% []
+    ; apps T.Mem
+      [ apps (T.Tuple n)
+        (ixi n) %% []
+      ; apps (T.Product n)
+        (ixi ~shift:n n) %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let productset_def_alt22 n =
+  quant Forall
+  (gen "s" n @ [ "t" ]) (dupl t_idv (n + 1))
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps (T.Product n)
+      (ixi ~shift:1 n) %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps (T.Product n)
+        (ixi ~shift:1 n) %% []
+      ] %% []
+    ; quant Exists
+      (gen "x" n) (dupl t_idv n)
+      ( List (And,
+        [ appb ~tys:[ t_idv ] B.Eq
+          [ Ix (n + 1) %% []
+          ; apps (T.Tuple n)
+            (ixi n) %% []
+          ] %% []
+        ] @
+        List.init n begin fun i ->
+          apps T.Mem
+          [ Ix (n - i) %% []
+          ; Ix (2*n - i + 1) %% []
+          ] %% []
+        end) %% []
+      ) %% []
     ] %% []
   ) %% []
 
@@ -1981,7 +2042,7 @@ let get_axm ~solver tla_smb =
   | T.FunExceptDomDef -> fcnexceptdom_def ()
   | T.FunExceptAppDef -> fcnexceptapp_def ()
   | T.TupIsafcn n -> tuple_isafcn n
-  | T.ProductDef n -> productset_def_alt n
+  | T.ProductDef n -> productset_def ~noarith n
   | T.TupDomDef n -> tupdom_def ~noarith n
   | T.TupAppDef (n, i) -> tupapp_def ~noarith n i
   | T.RecIsafcn fs -> record_isafcn fs
@@ -1994,6 +2055,9 @@ let get_axm ~solver tla_smb =
   | T.EnumDef_alt2 n -> setenum_def_alt2 n
   | T.SubsetEqDef_alt1 -> subseteq_def_alt1 ()
   | T.SubsetEqDef_alt2 -> subseteq_def_alt2 ()
+  | T.ProductDef_alt1 n -> productset_def_alt1 n
+  | T.ProductDef_alt21 n -> productset_def_alt21 n
+  | T.ProductDef_alt22 n -> productset_def_alt22 n
 
   | T.TStrSetDef -> t_strset_def ()
   | T.TStrLitDistinct (s1, s2) -> t_strlit_distinct s1 s2

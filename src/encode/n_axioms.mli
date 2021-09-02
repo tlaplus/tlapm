@@ -93,9 +93,12 @@ val lteq_antisym : unit -> expr
 
 val tuple_isafcn : int -> expr
 val productset_def : noarith:bool -> int -> expr (* not used *)
-val productset_def_alt : int -> expr
 val tupdom_def : noarith:bool -> int -> expr
 val tupapp_def : noarith:bool -> int -> int -> expr
+
+val productset_def_alt1 : int -> expr
+val productset_def_alt21: int -> expr
+val productset_def_alt22: int -> expr
 
 (* {4 Records} *)
 

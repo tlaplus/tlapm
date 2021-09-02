@@ -452,7 +452,8 @@ let untyped_deps ~solver tla_smb s =
                                   [ TupIsafcn n ; TupDomDef n ;]
                                   @ List.init n (fun i -> TupAppDef (n, i+1)))
   | Product n ->
-      ([ Mem ; Tuple n ],         [ ProductDef n ])
+      (*([ Mem ; Tuple n ],         [ ProductDef n ])*)
+      ([ Mem ; Tuple n ],         [ ProductDef_alt21 n ; ProductDef_alt22 n ])
   (* Records *)
   | Rec fs ->
       let n = List.length fs in
