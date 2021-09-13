@@ -56,6 +56,7 @@ let repls =
   ; '<',  "lessthansign_"
   ; '>',  "greaterthansign_"
   ; '=',  "equalsign_"
+  ; ' ',  "space"
   ]
 
 let escaped =
