@@ -470,6 +470,12 @@ let get_encode_fof () =
   else Smtlib.pp_print_obligation ~solver:"fof"
 
 let smt_solve ob org_ob f res_cont =
+  let ob =
+    if Params.debugging "smt_prove_false" then
+      { ob with obl = { ob.obl.core with active = Internal Builtin.FALSE %% [] } @@ ob.obl }
+    else
+      ob
+  in
   gen_smt_solve ".smt" Params.smt "default SMT solver" (get_encode_smtlib ())
                 (Method.Smt3 f) ob org_ob f res_cont ";;"
 ;;
