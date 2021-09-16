@@ -24,6 +24,8 @@ module Smb = Encode.Smb
 module T = Encode.Table
 module B = Builtin
 
+let (@@@) = Pervasives.(@@)
+
 let error ?at mssg =
   let mssg = "Backend.Smtlib: " ^ mssg in
   (*Errors.bug ?at mssg*)
@@ -82,6 +84,9 @@ let lookup_id cx n =
 
 (* {3 Expression Formatting} *)
 
+let pp_box fmt ff x =
+  fprintf ff "@[<hov 0>%a@]" fmt x
+
 let pp_print_sexpr fmt ff v =
   fprintf ff "@[<hov 2>(%a@])" fmt v
 
@@ -101,8 +106,8 @@ let rec pp_apply cx ff op args =
           pp_print_string ff id
       | _ ->
           pp_print_sexpr begin fun ff (op, args) ->
-            fprintf ff "%s %a" op
-            (pp_print_delimited ~sep:pp_print_space (pp_print_expr cx)) args
+            fprintf ff "%s@ %a" op
+            (pp_print_delimited ~sep:pp_print_space (pp_box @@@ pp_print_expr cx)) args
           end ff (id, args)
       end
 
@@ -114,62 +119,62 @@ let rec pp_apply cx ff op args =
           pp_print_int ff n
       | T.TIntPlus,       [ e ; f ] ->
           pp_print_sexpr begin fun ff (e, f) ->
-            fprintf ff "+ %a %a"
-            (pp_print_expr cx) e
-            (pp_print_expr cx) f
+            fprintf ff "+@ %a %a"
+            (pp_box @@@ pp_print_expr cx) e
+            (pp_box @@@ pp_print_expr cx) f
           end ff (e, f)
       | T.TIntUminus,     [ e ] ->
           pp_print_sexpr begin fun ff e ->
-            fprintf ff "- %a"
-            (pp_print_expr cx) e
+            fprintf ff "-@ %a"
+            (pp_box @@@ pp_print_expr cx) e
           end ff e
       | T.TIntMinus,      [ e ; f ] ->
           pp_print_sexpr begin fun ff (e, f) ->
-            fprintf ff "- %a %a"
-            (pp_print_expr cx) e
-            (pp_print_expr cx) f
+            fprintf ff "-@ %a@ %a"
+            (pp_box @@@ pp_print_expr cx) e
+            (pp_box @@@ pp_print_expr cx) f
           end ff (e, f)
       | T.TIntTimes,      [ e ; f ] ->
           pp_print_sexpr begin fun ff (e, f) ->
-            fprintf ff "* %a %a"
-            (pp_print_expr cx) e
-            (pp_print_expr cx) f
+            fprintf ff "*@ %a@ %a"
+            (pp_box @@@ pp_print_expr cx) e
+            (pp_box @@@ pp_print_expr cx) f
           end ff (e, f)
       | T.TIntQuotient,   [ e ; f ] ->
           pp_print_sexpr begin fun ff (e, f) ->
-            fprintf ff "div %a %a"
-            (pp_print_expr cx) e
-            (pp_print_expr cx) f
+            fprintf ff "div@ %a@ %a"
+            (pp_box @@@ pp_print_expr cx) e
+            (pp_box @@@ pp_print_expr cx) f
           end ff (e, f)
       | T.TIntRemainder,  [ e ; f ] ->
           pp_print_sexpr begin fun ff (e, f) ->
-            fprintf ff "mod %a %a"
-            (pp_print_expr cx) e
-            (pp_print_expr cx) f
+            fprintf ff "mod@ %a@ %a"
+            (pp_box @@@ pp_print_expr cx) e
+            (pp_box @@@ pp_print_expr cx) f
           end ff (e, f)
       | T.TIntLteq,       [ e ; f ] ->
           pp_print_sexpr begin fun ff (e, f) ->
-            fprintf ff "<= %a %a"
-            (pp_print_expr cx) e
-            (pp_print_expr cx) f
+            fprintf ff "<=@ %a@ %a"
+            (pp_box @@@ pp_print_expr cx) e
+            (pp_box @@@ pp_print_expr cx) f
           end ff (e, f)
       | T.TIntLt,         [ e ; f ] ->
           pp_print_sexpr begin fun ff (e, f) ->
-            fprintf ff "< %a %a"
-            (pp_print_expr cx) e
-            (pp_print_expr cx) f
+            fprintf ff "<@ %a@ %a"
+            (pp_box @@@ pp_print_expr cx) e
+            (pp_box @@@ pp_print_expr cx) f
           end ff (e, f)
       | T.TIntGteq,       [ e ; f ] ->
           pp_print_sexpr begin fun ff (e, f) ->
-            fprintf ff ">= %a %a"
-            (pp_print_expr cx) e
-            (pp_print_expr cx) f
+            fprintf ff ">=@ %a@ %a"
+            (pp_box @@@ pp_print_expr cx) e
+            (pp_box @@@ pp_print_expr cx) f
           end ff (e, f)
       | T.TIntGt,         [ e ; f ] ->
           pp_print_sexpr begin fun ff (e, f) ->
-            fprintf ff "> %a %a"
-            (pp_print_expr cx) e
-            (pp_print_expr cx) f
+            fprintf ff ">@ %a@ %a"
+            (pp_box @@@ pp_print_expr cx) e
+            (pp_box @@@ pp_print_expr cx) f
           end ff (e, f)
       | _, _ ->
           (* assuming arity is always correct *)
@@ -190,8 +195,8 @@ let rec pp_apply cx ff op args =
           pp_print_string ff (format_smt s)
       | _ ->
           pp_print_sexpr begin fun ff (op, args) ->
-            fprintf ff "%s %a" op
-            (pp_print_delimited ~sep:pp_print_space (pp_print_expr cx)) args
+            fprintf ff "%s@ %a" op
+            (pp_print_delimited ~sep:pp_print_space (pp_box @@@ pp_print_expr cx)) args
           end ff (s, args)
       end
 
@@ -217,8 +222,8 @@ let rec pp_apply cx ff op args =
           pp_print_string ff kw
       | _ ->
           pp_print_sexpr begin fun ff (op, args) ->
-            fprintf ff "%s %a" op
-            (pp_print_delimited ~sep:pp_print_space (pp_print_expr cx)) args
+            fprintf ff "%s@ %a" op
+            (pp_print_delimited ~sep:pp_print_space (pp_box @@@ pp_print_expr cx)) args
           end ff (kw, args)
       end
 
@@ -229,14 +234,14 @@ and fmt_expr cx oe =
     Fu.Atm (fun ff ->
       let pats = get oe pattern_prop in
       let pp_print_pat ff es =
-        fprintf ff ":pattern %a"
+        fprintf ff ":pattern@ %a"
         (pp_print_sexpr (
-          pp_print_delimited ~sep:pp_print_space (pp_print_expr cx))
+          pp_print_delimited ~sep:pp_print_space (pp_box @@@ pp_print_expr cx))
         ) es
       in
       pp_print_sexpr begin fun ff () ->
-        fprintf ff "! %a@ %a"
-        (pp_print_expr cx) (remove_pats oe)
+        fprintf ff "!@ %a@ %a"
+        (pp_box @@@ pp_print_expr cx) (remove_pats oe)
         (pp_print_delimited ~sep:pp_print_space pp_print_pat) pats
       end ff ())
   else
@@ -264,9 +269,9 @@ and fmt_expr cx oe =
           let ncx = bump cx in
           Fu.Atm begin fun ff ->
             pp_print_sexpr begin fun ff (e1, e2) ->
-              fprintf ff "=> %a@ %a"
-              (pp_print_expr cx) e1
-              (pp_print_expr ncx) e2
+              fprintf ff "=>@ %a@ %a"
+              (pp_box @@@ pp_print_expr cx) e1
+              (pp_box @@@ pp_print_expr ncx) e2
             end ff (e, Sequent { sq with context = hs } @@ oe)
           end
 
@@ -279,13 +284,13 @@ and fmt_expr cx oe =
           let ncx, nm = adj cx nm in
           Fu.Atm begin fun ff ->
             pp_print_sexpr begin fun ff (nm, ty, e) ->
-              fprintf ff "forall %a %a"
+              fprintf ff "forall@ %a@ %a"
               (pp_print_sexpr begin fun ff (nm, ty) ->
                 fprintf ff "%a %a"
                 pp_print_binding (nm, ty)
                 pp_print_binding (primed nm, ty)
               end) (nm, ty)
-              (pp_print_expr ncx) e
+              (pp_box @@@ pp_print_expr ncx) e
             end ff (nm, ty, Sequent { sq with context = hs } @@ oe)
           end
 
@@ -295,9 +300,9 @@ and fmt_expr cx oe =
           let ncx, nm = adj cx nm in
           Fu.Atm begin fun ff ->
             pp_print_sexpr begin fun ff (nm, ty, e) ->
-              fprintf ff "forall %a %a"
+              fprintf ff "forall@ %a@ %a"
               (pp_print_sexpr pp_print_binding) (nm, ty)
-              (pp_print_expr ncx) e
+              (pp_box @@@ pp_print_expr ncx) e
             end ff (nm, ty, Sequent { sq with context = hs } @@ oe)
           end
 
@@ -310,10 +315,10 @@ and fmt_expr cx oe =
   | If (e, f, g) ->
       Fu.Atm begin fun ff ->
         pp_print_sexpr begin fun ff (e, f, g) ->
-          fprintf ff "ite %a %a %a"
-          (pp_print_expr cx) e
-          (pp_print_expr cx) f
-          (pp_print_expr cx) g
+          fprintf ff "ite@ %a@ %a@ %a"
+          (pp_box @@@ pp_print_expr cx) e
+          (pp_box @@@ pp_print_expr cx) f
+          (pp_box @@@ pp_print_expr cx) g
         end ff (e, f, g)
       end
 
@@ -331,8 +336,8 @@ and fmt_expr cx oe =
       in
       Fu.Atm begin fun ff ->
         pp_print_sexpr begin fun ff (op, es) ->
-          fprintf ff "%s %a" op
-          (pp_print_delimited ~sep:pp_print_space (pp_print_expr cx)) es
+          fprintf ff "%s@ %a" op
+          (pp_print_delimited ~sep:pp_print_space (pp_box @@@ pp_print_expr cx)) es
         end ff (op, es)
       end
 
@@ -364,7 +369,7 @@ and fmt_expr cx oe =
           fprintf ff "let %a@ %a"
           (pp_print_sexpr (
             pp_print_delimited ~sep:pp_print_space (pp_print_vbind cx))) vs
-          (pp_print_expr ncx) e
+          (pp_box @@@ pp_print_expr ncx) e
         end ff (vs, e)
       end
 
@@ -392,10 +397,10 @@ and fmt_expr cx oe =
       in
       Fu.Atm begin fun ff ->
         pp_print_sexpr begin fun ff (bs, e) ->
-          fprintf ff "%s %a %a" qrep
+          fprintf ff "%s@ %a@ %a" qrep
           (pp_print_sexpr (
             pp_print_delimited ~sep:pp_print_space pp_print_binding)) bs
-          (pp_print_expr ncx) e
+          (pp_box @@@ pp_print_expr ncx) e
         end ff (bs, e)
       end
 
@@ -503,8 +508,8 @@ let collect_sorts sq =
 
 let pp_print_assert cx ff e =
   pp_print_sexpr begin fun ff () ->
-    fprintf ff "assert %a"
-    (pp_print_expr cx) e
+    fprintf ff "assert@ %a"
+    (pp_box @@@ pp_print_expr cx) e
   end ff ();
   pp_print_newline ff ()
 
