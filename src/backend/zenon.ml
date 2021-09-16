@@ -323,7 +323,8 @@ and fmt_expr sd cx e =
                     (pp_print_boundset sd cx) (b @@ e)
                     (pp_print_boundvar cx) b
                     (pp_print_expr sd ecx) e)
-    | SetOf _ -> unsupp "Setof (tuple)"
+    | SetOf _ ->
+        unsupp "Setof (multiple declared constants)"
     | SetEnum [] -> Fu.Atm (fun ff -> fprintf ff "TLA.emptyset")
     | SetEnum es ->
         Fu.Big (fun ff ->
@@ -338,7 +339,8 @@ and fmt_expr sd cx e =
                     (pp_print_boundset sd cx) (b @@ e)
                     (pp_print_boundvar cx) b
                     (pp_print_expr sd ecx) e)
-    | Fcn _ -> unsupp "Fcn (tuple)"
+    | Fcn _ ->
+        unsupp "Fcn (multiple declared constants)"
     | FcnApp (f, [e]) ->
         Fu.Atm begin
           fun ff ->
