@@ -476,7 +476,6 @@ let preprocess ~solver sq =
     |> (if noarith then Encode.Rewrite.elim_compare else fun e -> e)
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
-    |> Encode.Rewrite.apply_ext
     |> repeat rwsets Encode.Rewrite.simplify_sets
     |> debug "Disambiguate and Simplify:"
     |> Encode.Standardize.main

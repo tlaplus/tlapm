@@ -593,9 +593,9 @@ let simpl_subseteq sq =
 (* {3 Simplify Sets} *)
 
 let simplify_sets_visitor = object (self : 'self)
-  inherit [unit] Expr.Visit.map as super
+  inherit [bool] Expr.Visit.map as super
 
-  method expr scx oe =
+  method expr (b, hx as scx) oe =
     match oe.core with
     | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = SetEnum es } as e2 ])
       when not (has op Props.tpars_prop) ->
@@ -747,10 +747,72 @@ let simplify_sets_visitor = object (self : 'self)
 
     (* TODO SetOf *)
 
+    | Apply ({ core = Internal (B.Eq | B.Neq as blt) } as op, [ e ; f ])
+      when eq_pol b blt
+      && (is_set e || is_set f)
+      && (match query op Props.tpars_prop with
+          Some [TAtm TAIdv] -> true | _ -> false) ->
+        let e = self#expr scx e in
+        let f = self#expr scx f in
+        let q =
+          match blt with
+          | B.Eq -> Forall
+          | B.Neq -> Exists
+          | _ -> failwith ""
+        in
+        let v = assign ("x" %% []) Props.ty0_prop (TAtm TAIdv) in
+        let mem_op = Internal B.Mem %% [] in
+        Quant (
+          q, [ v, Constant, No_domain ],
+          Apply (
+            Internal B.Equiv %% [],
+            [ Apply (mem_op, [ Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) e ]) %% []
+            ; Apply (mem_op, [ Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) f ]) %% []
+            ]
+          ) %% []
+          |> fun e ->
+              match blt with
+              | B.Eq -> e
+              | B.Neq ->
+                  Apply (Internal B.Neg %% [], [e]) %% []
+              | _ -> failwith ""
+        ) @@ oe
+
+    | Apply ({ core = Internal B.Subseteq } as op, [ e ; f ])
+      when b && (match query op Props.tpars_prop with
+                 None -> true | _ -> false) ->
+        let e = self#expr scx e in
+        let f = self#expr scx f in
+        let q = Forall in
+        let v = assign ("x" %% []) Props.ty0_prop (TAtm TAIdv) in
+        let mem_op = Internal B.Mem %% [] in
+        Quant (
+          q, [ v, Constant, No_domain ],
+          Apply (
+            Internal B.Implies %% [],
+            [ Apply (mem_op, [ Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) e ]) %% []
+            ; Apply (mem_op, [ Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) f ]) %% []
+            ]
+          ) %% []
+        ) @@ oe
+
+    | Apply ({ core = Internal B.Implies } as op, [ e ; f ]) ->
+        let e = self#expr (not b, hx) e in
+        let f = self#expr scx f in
+        Apply (op, [ e ; f ]) @@ oe
+    | Apply ({ core = Internal B.Neg } as op, [ e ]) ->
+        let e = self#expr (not b, hx) e in
+        Apply (op, [ e ]) @@ oe
+
     | _ -> super#expr scx oe
+
+  method sequent (b, hx) sq =
+    let (_, hx), hs = self#hyps (not b, hx) sq.context in
+    let e = self#expr (b, hx) sq.active in
+    (b, hx), { context = hs ; active = e }
 end
 
 let simplify_sets sq =
-  let cx = ((), Deque.empty) in
+  let cx = (true, Deque.empty) in
   snd (simplify_sets_visitor#sequent cx sq)
 
