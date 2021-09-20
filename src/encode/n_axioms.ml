@@ -1111,6 +1111,10 @@ let natset_def ~noarith =
     ] %% []
   ) %% []
 
+(* NOTE According to Specifying Systems, the definition is:
+ *     a..b == { i \in Int : a <= i /\ i <= b }
+ * By this definition it is not required that a, b \in Int
+ *)
 let intrange_def () =
   quant Forall
   [ "a" ; "b" ; "x" ] [ t_idv ; t_idv ; t_idv ]
@@ -1123,7 +1127,7 @@ let intrange_def () =
       ] %% []
     ] %% []
   ] ]
-  ( appb B.Implies
+  ( (*appb B.Implies
     [ appb B.Conj
       [ apps T.Mem
         [ Ix 3 %% []
@@ -1134,7 +1138,7 @@ let intrange_def () =
         ; apps T.IntSet [] %% []
         ] %% []
       ] %% []
-    ; appb B.Equiv
+    ;*) appb B.Equiv
       [ apps T.Mem
         [ Ix 1 %% []
         ; apps T.IntRange
@@ -1157,7 +1161,7 @@ let intrange_def () =
           ] %% []
         ]) %% []
       ] %% []
-    ] %% []
+    (*] %% []*)
   ) %% []
 
 let intlit_isint n =
