@@ -174,6 +174,11 @@ let untyped_data tla_smb =
   end
 
 let typed_data tla_smb =
+  let t0p =
+    match Params.debugging "noarith" with
+    | true -> false
+    | _ -> Params.debugging "t0+"
+  in
   begin match tla_smb with
   (* Set Theory *)
   | TMem ty ->
@@ -243,6 +248,10 @@ let typed_data tla_smb =
       ("Gt_" ^ ty_to_string t_int,
                         [ t_cst t_int ; t_cst t_int ],        t_bol,
       IntGt)
+  | TIntRange when t0p ->
+      ("Range_" ^ ty_to_string t_int,
+                        [ t_cst t_int ; t_cst t_int ],        t_idv,
+      IntRange)
   | TIntRange ->
       ("Range_" ^ ty_to_string t_int,
                         [ t_cst t_int ; t_cst t_int ],        TSet t_int,
@@ -327,6 +336,11 @@ let untyped_deps ~solver tla_smb s =
     match solver with
     | "Zipper" -> true
     | _ -> Params.debugging "noarith"
+  in
+  let t0p =
+    match noarith with
+    | true -> false
+    | _ -> Params.debugging "t0+"
   in
   begin match tla_smb with
   (* Logic *)
@@ -447,6 +461,10 @@ let untyped_deps ~solver tla_smb s =
        @ List.init n (fun i -> IntLit (i+1)),
                                   [ TupIsafcn n ; TupDomDef n ;]
                                   @ List.init n (fun i -> TupAppDef (n, i+1)))
+  | Tuple n when n > 0 && t0p ->
+      ([ FunIsafcn ; FunDom ; FunApp ; TIntRange ],
+                                  [ TupIsafcn n ; TupDomDef n ;]
+                                  @ List.init n (fun i -> TupAppDef (n, i+1)))
   | Tuple n when n > 0 ->
       ([ FunIsafcn ; FunDom ; FunApp ; IntRange ; Cast (TAtm TAInt) ],
                                   [ TupIsafcn n ; TupDomDef n ;]
@@ -487,6 +505,11 @@ let typed_deps tla_smb s =
         { s with t_strlits = Ss.add str s.t_strlits }
     | _ -> s
   in
+  let t0p =
+    match Params.debugging "noarith" with
+    | true -> false
+    | _ -> Params.debugging "t0+"
+  in
   begin match tla_smb with
   (* Set Theory *)
   | TMem ty ->
@@ -517,6 +540,9 @@ let typed_deps tla_smb s =
   | TIntGteq
   | TIntGt ->
       ([], []) (* Implemented natively by solvers *)
+  | TIntRange when t0p ->
+      ([ Mem ; Cast t_int ; TIntLteq ; IntRange ],
+                                              [ TIntRangeDef ; Typing TIntRange ])
   | TIntRange ->
       ([ TMem t_int ; TIntLteq ],             [ TIntRangeDef ])
   | _ ->

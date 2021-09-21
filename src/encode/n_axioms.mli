@@ -93,7 +93,7 @@ val lteq_antisym : unit -> expr
 
 val tuple_isafcn : int -> expr
 val productset_def : noarith:bool -> int -> expr (* not used *)
-val tupdom_def : noarith:bool -> int -> expr
+val tupdom_def : noarith:bool -> t0p:bool -> int -> expr
 val tupapp_def : noarith:bool -> int -> int -> expr
 
 val productset_def_alt1 : int -> expr
@@ -124,5 +124,5 @@ val t_strlit_distinct : string -> string -> expr
 
 val t_intset_def : unit -> expr
 val t_natset_def : unit -> expr
-val t_intrange_def : unit -> expr
+val t_intrange_def : t0p:bool -> expr
 

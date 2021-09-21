@@ -55,11 +55,13 @@ let elim_bounds_visitor = object (self : 'self)
                 let d = self#expr scx d in
                 let d = Subst.app_expr (Subst.shift n) d in
                 let op = maybe_assign Props.tpars_prop (Internal B.Mem %% []) (query d Props.tpars_prop) in
-                let h = Apply (op, [ Ix i %% [] ; d ]) %% [] in
+                let ix = maybe_assign Props.icast_prop (Ix i %% []) (query v Props.icast_prop) in
+                let h = Apply (op, [ ix ; d ]) %% [] in
                 (nscx, b :: r_bs, h :: r_hs, Some d, i - 1)
             | Ditto, Some d ->
                 let op = maybe_assign Props.tpars_prop (Internal B.Mem %% []) (query d Props.tpars_prop) in
-                let h = Apply (op, [ Ix i %% [] ; d ]) %% [] in
+                let ix = maybe_assign Props.icast_prop (Ix i %% []) (query v Props.icast_prop) in
+                let h = Apply (op, [ ix ; d ]) %% [] in
                 (nscx, b :: r_bs, h :: r_hs, Some d, i - 1)
             | _, _ ->
                 error ~at:oe "Missing bound"

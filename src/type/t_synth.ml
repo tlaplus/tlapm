@@ -24,7 +24,6 @@ let error ?at mssg =
 
 type options =
   { typelvl : int
-  ; noarith : bool
   }
 
 type tty = TTy0 of ty0 | TTy1 of ty1 | TTy2 of ty2
@@ -33,11 +32,9 @@ type scx = options * tty Ctx.t
 let init =
   let cx = Ctx.dot in
   { typelvl = 0
-  ; noarith = false
   }, cx
 
 let typelvl (ops, _) = ops.typelvl
-let noarith (ops, _) = ops.noarith
 
 let adj_ty0 (ops, cx) v ty0 =
   let cx = Ctx.adj cx v.core (TTy0 ty0) in
@@ -289,7 +286,7 @@ and expr_aux scx oe =
           | Domain e, _ ->
               let e, ty01 = expr scx e in (* eval in top context *)
               begin match ty01 with
-              | TSet ty02 when typelvl scx <> 0 ->
+              | TSet ty02 when typelvl scx = 3 ->
                   let v, scx' = adj_ty0 scx' v ty02 in
                   let dom = Domain (assign e Props.tpars_prop [ ty02 ]) in
                   (scx', (v, k, dom) :: r_bs, Some ty02)
@@ -323,7 +320,7 @@ and expr_aux scx oe =
   | Choose (v, Some d, e) ->
       let d, ty01 = expr scx d in
       begin match ty01 with
-      | TSet ty02 when typelvl scx <> 0 ->
+      | TSet ty02 when typelvl scx = 3 ->
           let v, scx = adj_ty0 scx v ty02 in
           let e, ty03 = expr scx e in
           let ret = Choose (v, Some d, force_bool ty03 e) @@ oe in
@@ -346,7 +343,7 @@ and expr_aux scx oe =
       let e, ty01 = expr scx e in
       let f, ty02 = expr scx f in
       begin match ty01, ty02 with
-      | ty03, TSet ty04 when typelvl scx <> 0 && ty03 = ty04->
+      | ty03, TSet ty04 when typelvl scx = 3 && ty03 = ty04->
           let op = assign op Props.tpars_prop [ ty03 ] in
           let ret = Apply (op, [ e ; f ]) @@ oe in
           (ret, TAtm TABol)
@@ -359,7 +356,7 @@ and expr_aux scx oe =
       let e, ty01 = expr scx e in
       let f, ty02 = expr scx f in
       begin match ty01, ty02 with
-      | TSet ty03, TSet ty04 when typelvl scx <> 0 && ty03 = ty04 ->
+      | TSet ty03, TSet ty04 when typelvl scx = 3 && ty03 = ty04 ->
           let op = assign op Props.tpars_prop [ ty03 ] in
           let ret = Apply (op, [ e ; f ]) @@ oe in
           (ret, TAtm TABol)
@@ -372,9 +369,9 @@ and expr_aux scx oe =
       let es, ty01s = List.map (expr scx) es |> List.split in
       let oty02 =
         match ty01s with
-        | [] when typelvl scx <> 0 ->
+        | [] when typelvl scx = 3 ->
             Some (TAtm TAIdv)
-        | ty03 :: ty04s when typelvl scx <> 0 && List.for_all ((=) ty03) ty04s ->
+        | ty03 :: ty04s when typelvl scx = 3 && List.for_all ((=) ty03) ty04s ->
             Some ty03
         | _ ->
             None
@@ -392,7 +389,7 @@ and expr_aux scx oe =
   | Apply ({ core = Internal B.UNION } as op, [ e ]) ->
       let e, ty01 = expr scx e in
       begin match ty01 with
-      | TSet (TSet ty02) when typelvl scx <> 0 ->
+      | TSet (TSet ty02) when typelvl scx = 3 ->
           let op = assign op Props.tpars_prop [ ty02 ] in
           let ret = Apply (op, [ e ]) @@ oe in
           (ret, TSet ty02)
@@ -404,7 +401,7 @@ and expr_aux scx oe =
   | Apply ({ core = Internal B.SUBSET } as op, [ e ]) ->
       let e, ty01 = expr scx e in
       begin match ty01 with
-      | TSet ty02 when typelvl scx <> 0 ->
+      | TSet ty02 when typelvl scx = 3 ->
           let op = assign op Props.tpars_prop [ ty02 ] in
           let ret = Apply (op, [ e ]) @@ oe in
           (ret, TSet (TSet ty02))
@@ -416,7 +413,7 @@ and expr_aux scx oe =
   | SetSt (v, e, f) ->
       let e, ty01 = expr scx e in
       begin match ty01 with
-      | TSet ty02 when typelvl scx <> 0 ->
+      | TSet ty02 when typelvl scx = 3 ->
           let v, scx = adj_ty0 scx v ty02 in
           let f, ty03 = expr scx f in
           let ret = SetSt (v, e, force_bool ty03 f) @@ oe in
@@ -447,7 +444,7 @@ and expr_aux scx oe =
         fun (r_doms, r_ty01s, last_ty0) -> (List.rev r_doms, List.rev r_ty01s, last_ty0)
       in
       let oty02s =
-        if typelvl scx <> 0 then try
+        if typelvl scx = 3 then try
           Some (List.map (function TSet ty0 -> ty0 | _ -> failwith "") ty01s)
         with _ -> None
         else None
@@ -492,7 +489,7 @@ and expr_aux scx oe =
       let e, ty01 = expr scx e in
       let f, ty02 = expr scx f in
       begin match ty01, ty02 with
-      | TSet ty03, TSet ty04 when typelvl scx <> 0 && ty03 = ty04 ->
+      | TSet ty03, TSet ty04 when typelvl scx = 3 && ty03 = ty04 ->
           let op = assign op Props.tpars_prop [ ty03 ] in
           let ret = Apply (op, [ e ; f ]) @@ oe in
           (ret, TSet ty03)
@@ -502,7 +499,7 @@ and expr_aux scx oe =
       end
 
   | Internal B.BOOLEAN ->
-      if typelvl scx <> 0 then
+      if typelvl scx = 3 then
         let ret = Internal B.BOOLEAN @@ oe in
         let ret = assign ret Props.tpars_prop [ ] in
         (ret, TSet (TAtm TABol))
@@ -511,7 +508,7 @@ and expr_aux scx oe =
         (ret, TAtm TAIdv)
 
   | Internal B.STRING ->
-      if typelvl scx <> 0 then
+      if typelvl scx = 3 then
         let ret = Internal B.STRING @@ oe in
         let ret = assign ret Props.tpars_prop [ ] in
         (ret, TSet (TAtm TAStr))
@@ -520,7 +517,7 @@ and expr_aux scx oe =
         (ret, TAtm TAIdv)
 
   | String s ->
-      if typelvl scx <> 0 then
+      if typelvl scx = 3 then
         let ret = String s @@ oe in
         let ret = assign ret Props.tpars_prop [ ] in
         (ret, TAtm TAStr)
@@ -545,7 +542,7 @@ and expr_aux scx oe =
         fun (r_doms, r_ty01s, last_ty0) -> (List.rev r_doms, List.rev r_ty01s, last_ty0)
       in
       let oty02s =
-        if typelvl scx <> 0 then try
+        if typelvl scx = 3 then try
           Some (List.map (function TSet ty0 -> ty0 | _ -> failwith "") ty01s)
         with _ -> None
         else None
@@ -594,15 +591,15 @@ and expr_aux scx oe =
   | Apply ({ core = Internal B.DOMAIN } as op, [ e ]) ->
       let e, ty01 = expr scx e in
       begin match ty01 with
-      | TFun (ty02, ty03) when typelvl scx <> 0 ->
+      | TFun (ty02, ty03) when typelvl scx = 3 ->
           let op = assign op Props.tpars_prop [ ty01 ] in
           let ret = Apply (op, [ e ]) @@ oe in
           (ret, TSet ty02)
-      | TPrd ty02s when typelvl scx <> 0 ->
+      | TPrd ty02s when typelvl scx = 3 ->
           let op = assign op Props.tpars_prop [ ty01 ] in
           let ret = Apply (op, [ e ]) @@ oe in
           (ret, TSet (TAtm TAInt))
-      | TRec fty0s when typelvl scx <> 0 ->
+      | TRec fty0s when typelvl scx = 3 ->
           let op = assign op Props.tpars_prop [ ty01 ] in
           let ret = Apply (op, [ e ]) @@ oe in
           (ret, TSet (TAtm TAStr))
@@ -615,7 +612,7 @@ and expr_aux scx oe =
       let e1, ty01 = expr scx e1 in
       let n = int_of_string n in
       begin match ty01 with
-      | TPrd ty03s when typelvl scx <> 0 && List.length ty03s >= n ->
+      | TPrd ty03s when typelvl scx = 3 && List.length ty03s >= n ->
           let ret = FcnApp (e1, [ e2 ]) @@ oe in
           let ret = assign ret Props.tpars_prop [ ty01 ] in
           (ret, List.nth ty03s (n-1))
@@ -627,7 +624,7 @@ and expr_aux scx oe =
   | FcnApp (e1, [{ core = String s } as e2]) ->
       let e1, ty01 = expr scx e1 in
       begin match ty01 with
-      | TRec fty0s when typelvl scx <> 0 && List.exists (fun (f, _) -> f = s) fty0s ->
+      | TRec fty0s when typelvl scx = 3 && List.exists (fun (f, _) -> f = s) fty0s ->
           let ret = FcnApp (e1, [ e2 ]) @@ oe in
           let ret = assign ret Props.tpars_prop [ ty01 ] in
           let ty02 = List.find (fun (f, _) -> f = s) fty0s |> snd in
@@ -641,11 +638,11 @@ and expr_aux scx oe =
       let e, ty01 = expr scx e in
       let es, ty02s = List.map (expr scx) es |> List.split in
       begin match ty01 with
-      | TFun (TPrd ty03s, ty04) when typelvl scx <> 0 && List.for_all2 (=) ty02s ty03s ->
+      | TFun (TPrd ty03s, ty04) when typelvl scx = 3 && List.for_all2 (=) ty02s ty03s ->
           let ret = FcnApp (e, es) @@ oe in
           let ret = assign ret Props.tpars_prop [ ty01 ] in
           (ret, ty04)
-      | TFun (ty03, ty04) when typelvl scx <> 0 && List.length es = 1 && List.hd ty02s = ty03 ->
+      | TFun (ty03, ty04) when typelvl scx = 3 && List.length es = 1 && List.hd ty02s = ty03 ->
           let ret = FcnApp (e, es) @@ oe in
           let ret = assign ret Props.tpars_prop [ ty01 ] in
           (ret, ty04)
@@ -657,11 +654,11 @@ and expr_aux scx oe =
   | Dot (e, s) ->
       let e, ty01 = expr scx e in
       begin match ty01 with
-      | TFun (TAtm TAStr, ty02) when typelvl scx <> 0 ->
+      | TFun (TAtm TAStr, ty02) when typelvl scx = 3 ->
           let ret = Dot (e, s) @@ oe in
           let ret = assign ret Props.tpars_prop [ ty01 ] in
           (ret, ty02)
-      | TRec fty0s when typelvl scx <> 0 && List.exists (fun (f, _) -> f = s) fty0s ->
+      | TRec fty0s when typelvl scx = 3 && List.exists (fun (f, _) -> f = s) fty0s ->
           let ret = Dot (e, s) @@ oe in
           let ret = assign ret Props.tpars_prop [ ty01 ] in
           let ty02 = List.find (fun (f, _) -> f = s) fty0s |> snd in
@@ -674,7 +671,7 @@ and expr_aux scx oe =
   | Product es ->
       let es, ty01s = List.map (expr scx) es |> List.split in
       let oty02s =
-        if typelvl scx <> 0 then try
+        if typelvl scx = 3 then try
           Some (List.map (function TSet ty0 -> ty0 | _ -> failwith "") ty01s)
         with _ -> None
         else None
@@ -691,7 +688,7 @@ and expr_aux scx oe =
 
   | Tuple es ->
       let es, ty0s = List.map (expr scx) es |> List.split in
-      if typelvl scx <> 0 then
+      if typelvl scx = 3 then
         let ret = Tuple es @@ oe in
         let ret = assign ret Props.tpars_prop ty0s in
         (ret, TPrd ty0s)
@@ -703,7 +700,7 @@ and expr_aux scx oe =
       let e, ty01 = expr scx e in
       let f, ty02 = expr scx f in
       begin match ty01, ty02 with
-      | TSet ty03, TSet ty04 when typelvl scx <> 0 ->
+      | TSet ty03, TSet ty04 when typelvl scx = 3 ->
           let ret = Arrow (e, f) @@ oe in
           let ret = assign ret Props.tpars_prop [ ty03 ; ty04 ] in
           (ret, TSet (TFun (ty03, ty04)))
@@ -721,7 +718,7 @@ and expr_aux scx oe =
         List.split
       in
       let oty02s =
-        if typelvl scx <> 0 then try
+        if typelvl scx = 3 then try
           Some (List.map (function TSet ty0 -> ty0 | _ -> failwith "") ty01s)
         with _ -> None
         else None
@@ -746,7 +743,7 @@ and expr_aux scx oe =
         end fs |>
         List.split
       in
-      if typelvl scx <> 0 then
+      if typelvl scx = 3 then
         let ret = Record fs @@ oe in
         let ret = assign ret Props.tpars_prop ty0s in
         let fty0s = List.map2 (fun (f, _) ty0 -> (f, ty0)) fs ty0s in
@@ -777,7 +774,7 @@ and expr_aux scx oe =
         List.split
       in
       let oty04s =
-        if typelvl scx <> 0 then begin
+        if typelvl scx = 3 then begin
           (* In `[ f EXCEPT ![d1]..[dn] = a, .. ]` the function `f`
            * is expected to be a currified function, `d1` to have the
            * type of the first argument, `d2` the second etc.
@@ -842,7 +839,7 @@ and expr_aux scx oe =
       end
 
   | Internal B.Nat ->
-      if typelvl scx <> 0 && not (noarith scx) then
+      if typelvl scx = 3 then
         let ret = Internal B.Nat @@ oe in
         let ret = assign ret Props.tpars_prop [ ] in
         (ret, TSet (TAtm TAInt))
@@ -851,7 +848,7 @@ and expr_aux scx oe =
         (ret, TAtm TAIdv)
 
   | Internal B.Int ->
-      if typelvl scx <> 0 && not (noarith scx) then
+      if typelvl scx = 3 then
         let ret = Internal B.Int @@ oe in
         let ret = assign ret Props.tpars_prop [ ] in
         (ret, TSet (TAtm TAInt))
@@ -860,7 +857,7 @@ and expr_aux scx oe =
         (ret, TAtm TAIdv)
 
   | Internal B.Real ->
-      if typelvl scx <> 0 && (noarith scx) then
+      if typelvl scx = 3 then
         let ret = Internal B.Real @@ oe in
         let ret = assign ret Props.tpars_prop [ ] in
         (ret, TSet (TAtm TARel))
@@ -868,13 +865,8 @@ and expr_aux scx oe =
         let ret = Internal B.Real @@ oe in
         (ret, TAtm TAIdv)
 
-  (* NOTE It suffices to put the 'noarith' guard on constants and variables.
-   * All arithmetic operators will be interpreted as untyped because their
-   * arguments will never be int or reat.
-   * Variables will not be int as long as no expressions can be set(int). *)
-
   | Num (s, "") ->
-      if not (noarith scx) then
+      if typelvl scx > 0 then
         let ret = Num (s, "") @@ oe in
         let ret = assign ret Props.tpars_prop [ ] in
         (ret, TAtm TAInt)
@@ -883,7 +875,7 @@ and expr_aux scx oe =
         (ret, TAtm TAIdv)
 
   | Num (s1, s2) ->
-      if not (noarith scx) then
+      if typelvl scx > 0 then
         let ret = Num (s1, s2) @@ oe in
         let ret = assign ret Props.tpars_prop [ ] in
         (ret, TAtm TARel)
@@ -892,7 +884,7 @@ and expr_aux scx oe =
         (ret, TAtm TAIdv)
 
   | Internal B.Infinity ->
-      if not (noarith scx) then
+      if typelvl scx > 0 then
         let ret = Internal B.Infinity @@ oe in
         let ret = assign ret Props.tpars_prop [ ] in
         (ret, TAtm TARel)
@@ -904,11 +896,11 @@ and expr_aux scx oe =
       let e, ty01 = expr scx e in
       let f, ty02 = expr scx f in
       begin match ty01, ty02 with
-      | TAtm TAInt, TAtm TAInt when typelvl scx <> 0 ->
+      | TAtm TAInt, TAtm TAInt when typelvl scx > 1 ->
           let op = assign op Props.tpars_prop [ TAtm TAInt ] in
           let ret = Apply (op, [ e ; f ]) @@ oe in
           (ret, TAtm TAInt)
-      | TAtm TARel, TAtm TARel when typelvl scx <> 0 ->
+      | TAtm TARel, TAtm TARel when typelvl scx > 1 ->
           let op = assign op Props.tpars_prop [ TAtm TARel ] in
           let ret = Apply (op, [ e ; f ]) @@ oe in
           (ret, TAtm TARel)
@@ -920,11 +912,11 @@ and expr_aux scx oe =
   | Apply ({ core = Internal B.Uminus } as op, [ e ]) ->
       let e, ty01 = expr scx e in
       begin match ty01 with
-      | TAtm TAInt when typelvl scx <> 0 ->
+      | TAtm TAInt when typelvl scx > 1 ->
           let op = assign op Props.tpars_prop [ TAtm TAInt ] in
           let ret = Apply (op, [ e ]) @@ oe in
           (ret, TAtm TAInt)
-      | TAtm TARel when typelvl scx <> 0 ->
+      | TAtm TARel when typelvl scx <> 1 ->
           let op = assign op Props.tpars_prop [ TAtm TARel ] in
           let ret = Apply (op, [ e ]) @@ oe in
           (ret, TAtm TARel)
@@ -937,7 +929,7 @@ and expr_aux scx oe =
       let e, ty01 = expr scx e in
       let f, ty02 = expr scx f in
       begin match ty01, ty02 with
-      | TAtm TAInt, TAtm TAInt when typelvl scx <> 0 ->
+      | TAtm TAInt, TAtm TAInt when typelvl scx > 1 ->
           let op = assign op Props.tpars_prop [ ] in
           let ret = Apply (op, [ e ; f ]) @@ oe in
           (ret, TAtm TAInt)
@@ -950,10 +942,14 @@ and expr_aux scx oe =
       let e, ty01 = expr scx e in
       let f, ty02 = expr scx f in
       begin match ty01, ty02 with
-      | TAtm TAInt, TAtm TAInt when typelvl scx <> 0 ->
+      | TAtm TAInt, TAtm TAInt when typelvl scx > 2 ->
           let op = assign op Props.tpars_prop [ ] in
           let ret = Apply (op, [ e ; f ]) @@ oe in
           (ret, TSet (TAtm TAInt))
+      | TAtm TAInt, TAtm TAInt when typelvl scx = 2 ->
+          let op = assign op Props.tpars_prop [ ] in
+          let ret = Apply (op, [ e ; f ]) @@ oe in
+          (ret, TAtm TAIdv)
       | _, _ ->
           let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
           (ret, TAtm TAIdv)
@@ -963,7 +959,7 @@ and expr_aux scx oe =
       let e, ty01 = expr scx e in
       let f, ty02 = expr scx f in
       begin match ty01, ty02 with
-      | TAtm TAInt, TAtm TAInt when typelvl scx <> 0 ->
+      | TAtm TAInt, TAtm TAInt when typelvl scx > 1 ->
           let op = assign op Props.tpars_prop [ ] in
           let ret = Apply (op, [ e ; f ]) @@ oe in
           (ret, TAtm TABol)
@@ -998,13 +994,13 @@ and expr_aux scx oe =
       let ret = Apply (op, [ force_idv ty0 e ; force_arg (Ty1 ([ TAtm TAIdv ], TAtm TAIdv)) ty1 f ]) @@ oe in
       (ret, TAtm TAIdv)
 
-  (* The code may wrap `e` like this sometimes to prevent infinite loops.
+  (* The code may wrap `e` like this to prevent infinite loops.
    * Do not remove! *)
   | Apply (e, []) ->
       expr scx e
 
   | Apply (op, es) ->
-      (* no reconstruction in this case, only typechecking *)
+      (* no type synthesis in this case, only typechecking *)
       let op, Ty2 (ty11s, ty01) = eopr scx op in
       let es, ty12s = List.map (earg scx) es |> List.split in
       let es =
@@ -1208,7 +1204,7 @@ and hyp scx h =
         | Bounded (e, Visible) ->
             let e, ty0 = expr scx e in
             begin match ty0 with
-            | TSet ty01 when typelvl scx <> 0 ->
+            | TSet ty01 when typelvl scx > 1 ->
                 Bounded (assign e Props.tpars_prop [ ty01 ], Visible), Some ty0
             | _ ->
                 Bounded (force_idv ty0 e, Visible), None
@@ -1261,11 +1257,33 @@ and sequent scx sq =
   (scx, { context = hs ; active = force_bool ty0 e })
 
 
-let main ?(typelvl=0) ?(noarith=false) sq =
+(* For each TLA+ construct
+ *   F(e_1, .., e_n)
+ * we either annotate F with type information, or not. In the second case,
+ * we may insert casts on the arguments e_i to correct the types.
+ *
+ * The algorithm explores expressions from the bottom-up, returning the new
+ * subexpressions with their inferred types. Here is how typelvl is
+ * implemented:
+ *
+ * - typelvl=0
+ *     Like typelvl=1 (see below), but constants are never given a type.
+ *     This entails that no expression is typed.
+ * - typelvl=1
+ *     No annotation is placed on F, except for constants, like numbers.
+ *     Constants can always be given the intended type.
+ * - typelvl=2
+ *     Like typelvl=3 (see below), but type annotations are not actually
+ *     put on the operators. Only the inferred types are returned. Every sort
+ *     except Int will be assimilated to Idv in the rest of preprocessing.
+ * - typelvl=3
+ *     Types are inferred and annotations are put on operators. For variables,
+ *     a bound is searched for in the hypotheses/body of a quantified expression.
+ *)
+let main ?(typelvl=1) sq =
   let ops, cx = init in
   let ops =
     { typelvl = typelvl
-    ; noarith = noarith
     }
   in
   snd (sequent (ops, cx) sq)

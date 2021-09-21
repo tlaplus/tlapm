@@ -84,12 +84,12 @@ val sequent : scx -> sequent -> scx * sequent
 
 (** Main function, only use this one.
     @param typelvl set the level of typing.
-        typelvl=0: no types, except bool, int, string
-        typelvl=1: use types for sets, functions, tuples, records TODO
-    @param noarith disable the type int (intended for Zipperposition)
+        typelvl=0: only Idv and Bool (pure TLA+)
+        typelvl=1: allow Int for constants, insert casts
+        typelvl=2: allow Int for all operators, try to simplify casts
+        typelvl=3: allow all types and casts
 *)
 val main :
   ?typelvl:int ->
-  ?noarith:bool ->
   sequent -> sequent
 

@@ -143,8 +143,11 @@ let visitor = object (self : 'self)
           | Gt,         Some [ ]              -> TIntGteq
           | Range,      Some [ ]              -> TIntRange
 
+          | (Plus | Uminus | Minus | Times | Exp),
+                        Some [ TAtm TARel ]   ->
+              error ~at:oe "Real numbers not implemented"
           | _,          Some _      ->
-              error ~at:oe "Typelvl=1 not implemented"
+              error ~at:oe "T1 not implemented"
           | _, _ ->
               let mssg = "Unexpected builtin '" ^
                          B.builtin_to_string b ^ "'"
@@ -161,7 +164,7 @@ let visitor = object (self : 'self)
         let scx = adj scx h in
         let e = self#expr scx e in
         if has oe Props.tpars_prop then
-          error ~at:oe "Typelvl=1 not implemented"
+          error ~at:oe "T1 not implemented"
         else
           let smb = mk_smb Choose in
           let opq = mk_opq smb in
@@ -176,7 +179,7 @@ let visitor = object (self : 'self)
           fun (r_es) -> (List.rev r_es)
         in
         if has oe Props.tpars_prop then
-          error ~at:oe "Typelvl=1 not implemented"
+          error ~at:oe "T1 not implemented"
         else
           let n = List.length es in
           let smb = mk_smb (SetEnum n) in
@@ -189,7 +192,7 @@ let visitor = object (self : 'self)
         let scx = adj scx h in
         let e2 = self#expr scx e2 in
         if has oe Props.tpars_prop then
-          error ~at:oe "Typelvl=1 not implemented"
+          error ~at:oe "T1 not implemented"
         else
           let smb = mk_smb SetSt in
           let opq = mk_opq smb in
@@ -199,7 +202,7 @@ let visitor = object (self : 'self)
         let scx, bs = self#bounds scx bs in
         let e = self#expr scx e in
         if has oe Props.tpars_prop then
-          error ~at:oe "Typelvl=1 not implemented"
+          error ~at:oe "T1 not implemented"
         else
           let n = List.length bs in
           let smb = mk_smb (SetOf n) in
@@ -244,7 +247,7 @@ let visitor = object (self : 'self)
         let e1 = self#expr scx e1 in
         let e2 = self#expr scx e2 in
         if has oe Props.tpars_prop then
-          error ~at:oe "Typelvl=1 not implemented"
+          error ~at:oe "T1 not implemented"
         else
           let smb = mk_smb FunSet in
           let opq = mk_opq smb in
@@ -258,7 +261,7 @@ let visitor = object (self : 'self)
         let scx = adj scx h in
         let e2 = self#expr scx e2 in
         if has oe Props.tpars_prop then
-          error ~at:oe "Typelvl=1 not implemented"
+          error ~at:oe "T1 not implemented"
         else
           let smb = mk_smb FunConstr in
           let opq = mk_opq smb in
@@ -270,7 +273,7 @@ let visitor = object (self : 'self)
         let e1 = self#expr scx e1 in
         let e2 = self#expr scx e2 in
         if has oe Props.tpars_prop then
-          error ~at:oe "Typelvl=1 not implemented"
+          error ~at:oe "T1 not implemented"
         else
           let smb = mk_smb FunApp in
           let opq = mk_opq smb in
@@ -281,7 +284,7 @@ let visitor = object (self : 'self)
         let e2 = self#expr scx e2 in
         let e3 = self#expr scx e3 in
         if has oe Props.tpars_prop then
-          error ~at:oe "Typelvl=1 not implemented"
+          error ~at:oe "T1 not implemented"
         else
           let smb = mk_smb FunExcept in
           let opq = mk_opq smb in
@@ -290,7 +293,7 @@ let visitor = object (self : 'self)
         let e1 = self#expr scx e1 in
         let e3 = self#expr scx e3 in
         if has oe Props.tpars_prop then
-          error ~at:oe "Typelvl=1 not implemented"
+          error ~at:oe "T1 not implemented"
         else
           let smb = mk_smb FunExcept in
           let opq = mk_opq smb in
@@ -304,7 +307,7 @@ let visitor = object (self : 'self)
     | Tuple es ->
         let es = List.map (self#expr scx) es in
         if has oe Props.tpars_prop then
-          error ~at:oe "Typelvl=1 not implemented"
+          error ~at:oe "T1 not implemented"
         else
           let n = List.length es in
           let smb = mk_smb (Tuple n) in
@@ -314,7 +317,7 @@ let visitor = object (self : 'self)
     | Product es ->
         let es = List.map (self#expr scx) es in
         if has oe Props.tpars_prop then
-          error ~at:oe "Typelvl=1 not implemented"
+          error ~at:oe "T1 not implemented"
         else
           let n = List.length es in
           let smb = mk_smb (Product n) in
@@ -324,7 +327,7 @@ let visitor = object (self : 'self)
     | Record fs ->
         let fs = List.map (fun (f, e) -> (f, self#expr scx e)) fs in
         if has oe Props.tpars_prop then
-          error ~at:oe "Typelvl=1 not implemented"
+          error ~at:oe "T1 not implemented"
         else
           let fs, es = List.split fs in
           let smb = mk_smb (Rec fs) in
@@ -334,7 +337,7 @@ let visitor = object (self : 'self)
     | Rect fs ->
         let fs = List.map (fun (f, e) -> (f, self#expr scx e)) fs in
         if has oe Props.tpars_prop then
-          error ~at:oe "Typelvl=1 not implemented"
+          error ~at:oe "T1 not implemented"
         else
           let fs, es = List.split fs in
           let smb = mk_smb (RecSet fs) in
@@ -344,7 +347,7 @@ let visitor = object (self : 'self)
     | Dot (e, s) ->
         let e = self#expr scx e in
         if has oe Props.tpars_prop then
-          error ~at:oe "Typelvl=1 not implemented"
+          error ~at:oe "T1 not implemented"
         else
           let smb = mk_smb FunApp in
           let opq = mk_opq smb in

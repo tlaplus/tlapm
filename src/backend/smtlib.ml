@@ -445,11 +445,12 @@ let preprocess ~solver sq =
   in
 
   let typelvl =
-    if Params.debugging "t0" then 0
-    else if Params.debugging "t1" then 1
-    else 0
+         if Params.debugging "noarith"  then 0
+    else if Params.debugging "t0"       then 1
+    else if Params.debugging "t0+"      then 2
+    else if Params.debugging "t1"       then 3
+    else 1
   in
-  let noarith = Params.debugging "noarith" in
 
   let rwsets =
          if Params.debugging "rwsets1" then 1
@@ -472,9 +473,9 @@ let preprocess ~solver sq =
   let sq = sq
     (*|> Encode.Hints.main*) (* TODO *)
     |> debug "Original Obligation:"
-    |> Type.Synthesize.main ~typelvl ~noarith
+    |> Type.Synthesize.main ~typelvl
     |> Encode.Rewrite.elim_notmem
-    |> (if noarith then Encode.Rewrite.elim_compare else fun e -> e)
+    |> (if typelvl = 0 then Encode.Rewrite.elim_compare else fun e -> e)
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
     |> repeat rwsets Encode.Rewrite.simplify_sets

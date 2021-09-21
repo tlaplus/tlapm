@@ -169,11 +169,12 @@ let init () =
                "{[-]<flag>} enable/disable debugging flags" ;
                (* NOTE Available flags are (non-exhaustive list):
                  * "verbose"    display message between encoding steps
-                 * "t0"         set type level on 0 (default)
-                 * "t1"         set type level on 1 (TODO)
+                 * "t0"         set type level on 0
+                 * "t0+"        like t0 but allow int (default)
+                 * "t1"         set type level on 1
+                 * "noarith"    don't use the primitive sort int of SMT-LIB (entails t0)
                  * "oldsmt"     use the old version of SMT (default)
                  * "newsmt"     use the new version of SMT
-                 * "noarith"    don't use the primitive sort int of SMT-LIB
                  * "rwsetsX"    apply rewriting rules to eliminate set expressions; call function X times where 0 < X < 10
                  * "smt_prove_false"
                  *              replace the goal with FALSE to catch bugs

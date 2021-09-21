@@ -472,15 +472,9 @@ let preprocess ~solver sq =
     sq
   in
 
-  let typelvl =
-    if Params.debugging "t0" then 0
-    else if Params.debugging "t1" then 1
-    else 0
-  in
-
   let sq = sq
     |> debug "Original Obligation:"
-    |> Type.Synthesize.main ~typelvl ~noarith:true
+    |> Type.Synthesize.main ~typelvl:0
     |> Encode.Rewrite.elim_notmem
     |> Encode.Rewrite.elim_compare
     |> Encode.Rewrite.elim_except

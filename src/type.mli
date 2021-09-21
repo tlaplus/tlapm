@@ -116,6 +116,6 @@ end
 
 module Synthesize : sig
   open Expr.T
-  val main : ?typelvl:int -> ?noarith:bool -> sequent -> sequent
+  val main : ?typelvl:int -> sequent -> sequent
 end
 

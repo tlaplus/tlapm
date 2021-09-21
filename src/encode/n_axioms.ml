@@ -1288,6 +1288,7 @@ let intexp_typing () =
         ] %% []
       ; appb ~tys:[ t_idv ] B.Neq
         [ Ix 2 %% []
+          (* This axiom is only used when noarith = true *)
         ; apps (T.IntLit 0) [] %% []
         ] %% []
       ; apps T.Mem
@@ -1319,6 +1320,7 @@ let intquotient_typing () =
         ; apps T.IntSet [] %% []
         ] %% []
       ; apps T.IntLteq
+          (* This axiom is only used when noarith = true *)
         [ apps (T.IntLit 0) [] %% []
         ; Ix 1 %% []
         ] %% []
@@ -1347,6 +1349,7 @@ let intremainder_typing () =
         ; apps T.IntSet [] %% []
         ] %% []
       ; apps T.IntLteq
+          (* This axiom is only used when noarith = true *)
         [ apps (T.IntLit 0) [] %% []
         ; Ix 1 %% []
         ] %% []
@@ -1572,7 +1575,7 @@ let productset_def ~noarith n =
     ] %% []
   ) %% []
 
-let tupdom_def ~noarith n =
+let tupdom_def ~noarith ~t0p n =
   quant Forall
   (gen "x" n) (dupl t_idv n)
   ~pats:[ [
@@ -1586,24 +1589,32 @@ let tupdom_def ~noarith n =
       [ apps (T.Tuple n)
         (ixi n) %% []
       ] %% []
-    ; apps T.IntRange
-      [ begin
-        if noarith then
-          apps (T.IntLit 1) [] %% []
-        else
-          apps (T.Cast t_int)
-          [ apps (T.TIntLit 1) [] %% []
-          ] %% []
-        end
-      ; begin
-        if noarith then
-          apps (T.IntLit n) [] %% []
-        else
-          apps (T.Cast t_int)
-          [ apps (T.TIntLit n) [] %% []
-          ] %% []
-        end
-      ] %% []
+    ; begin
+      if t0p then
+        apps T.TIntRange
+        [ apps (T.TIntLit 1) [] %% []
+        ; apps (T.TIntLit n) [] %% []
+        ] %% []
+      else
+        apps T.IntRange
+        [ begin
+          if noarith then
+            apps (T.IntLit 1) [] %% []
+          else
+            apps (T.Cast t_int)
+            [ apps (T.TIntLit 1) [] %% []
+            ] %% []
+          end
+        ; begin
+          if noarith then
+            apps (T.IntLit n) [] %% []
+          else
+            apps (T.Cast t_int)
+            [ apps (T.TIntLit n) [] %% []
+            ] %% []
+          end
+        ] %% []
+      end
     ] %% []
   ) %% []
 
@@ -1957,12 +1968,21 @@ let t_natset_def () =
     ] %% []
   ) %% []
 
-let t_intrange_def () =
+let t_intrange_def ~t0p =
+  let cast_if_t0p = fun e ->
+    if t0p then
+      apps (T.Cast t_int) [ e ] %% []
+    else e
+  in
+  let mem_op =
+    if t0p then T.Mem
+    else (T.TMem t_int)
+  in
   quant Forall
   [ "m" ; "n" ; "p" ] [ t_int ; t_int ; t_int ]
   ~pats:[ [
-    apps (T.TMem t_int)
-    [ Ix 1 %% []
+    apps mem_op
+    [ Ix 1 %% [] |> cast_if_t0p
     ; apps T.TIntRange
       [ Ix 3 %% []
       ; Ix 2 %% []
@@ -1970,19 +1990,19 @@ let t_intrange_def () =
     ] %% []
   ] ]
   ( appb B.Equiv
-    [ apps (T.TMem t_int)
-      [ Ix 1 %% []
+    [ apps mem_op
+      [ Ix 1 %% [] |> cast_if_t0p
       ; apps T.TIntRange
         [ Ix 3 %% []
         ; Ix 2 %% []
         ] %% []
       ] %% []
     ; appb B.Conj
-      [ apps T.IntLteq
+      [ apps T.TIntLteq
         [ Ix 3 %% []
         ; Ix 1 %% []
         ] %% []
-      ; apps T.IntLteq
+      ; apps T.TIntLteq
         [ Ix 1 %% []
         ; Ix 2 %% []
         ] %% []
@@ -2004,6 +2024,11 @@ let get_axm ~solver tla_smb =
     match solver with
     | "Zipper" -> true
     | _ -> Params.debugging "noarith"
+  in
+  let t0p =
+    match noarith with
+    | true -> false
+    | _ -> Params.debugging "t0+"
   in
   match tla_smb with
   | T.ChooseDef -> choose_def () |> mark T.Choose
@@ -2047,7 +2072,7 @@ let get_axm ~solver tla_smb =
   | T.FunExceptAppDef -> fcnexceptapp_def ()
   | T.TupIsafcn n -> tuple_isafcn n
   | T.ProductDef n -> productset_def ~noarith n
-  | T.TupDomDef n -> tupdom_def ~noarith n
+  | T.TupDomDef n -> tupdom_def ~noarith ~t0p n
   | T.TupAppDef (n, i) -> tupapp_def ~noarith n i
   | T.RecIsafcn fs -> record_isafcn fs
   | T.RecSetDef fs -> recset_def_alt fs
@@ -2067,7 +2092,7 @@ let get_axm ~solver tla_smb =
   | T.TStrLitDistinct (s1, s2) -> t_strlit_distinct s1 s2
   | T.TIntSetDef -> t_intset_def ()
   | T.TNatSetDef -> t_natset_def ()
-  | T.TIntRangeDef -> t_intrange_def ()
+  | T.TIntRangeDef -> t_intrange_def ~t0p
 
   | T.CastInj ty0 -> cast_inj ty0
   | T.TypeGuard ty0 -> type_guard ty0
