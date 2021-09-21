@@ -62,6 +62,13 @@ let visitor = object (self : 'self)
 
     begin match oe.core with
 
+    (* FIXME a bit dirty *)
+    | Apply ({ core = Opaque "IsAFcn" } as op, [ e ]) ->
+        let e = self#expr scx e in
+        let smb = mk_smb FunIsafcn in
+        let opq = mk_opq smb $$ op in
+        Apply (opq, [ e ]) @@ oe
+
     | Opaque s when Str.string_match (Str.regexp "#prime$") s 0 ->
         let s = Str.global_replace (Str.regexp "#prime$") "" s in
         let _, h = Deque.find ~backwards:true (snd scx) (fun h -> hyp_name h = s) |> Option.get in

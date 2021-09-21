@@ -747,7 +747,153 @@ let simplify_sets_visitor = object (self : 'self)
           ; Subst.app_expr (Subst.scons e1 (Subst.shift 0)) e3 ]
         ) @@ oe
 
-    (* TODO SetOf *)
+    | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = SetOf (e2, bs) } ])
+      when not (has op Props.tpars_prop) ->
+        let e1 = self#expr scx e1 in
+        let scx', bs = self#bounds scx bs in
+        let e2 = self#expr scx' e2 in
+        let bs, ds =
+          List.fold_left begin fun (r_bs, r_ds, dit) (v, k, dom) ->
+            match dom, dit with
+            | Domain d, _
+            | Ditto, Some d ->
+                (v, k, No_domain) :: r_bs, d :: r_ds, Some d
+            | _ ->
+                error ~at:v "Missing bound"
+          end ([], [], None) bs |>
+          fun (r_bs, r_ds, _) ->
+            (List.rev r_bs, List.rev r_ds)
+        in
+        let eq_op = assign (Internal B.Eq %% []) Props.tpars_prop [ TAtm TAIdv ] in
+        let n = List.length bs in
+        Quant (
+          Exists,
+          bs,
+          List (
+            And,
+            Apply (
+              eq_op,
+              [ Subst.app_expr (Subst.shift n) e1
+              ; e2
+              ]
+            ) %% [] ::
+            List.mapi begin fun i d ->
+              Apply (
+                Internal B.Mem %% [],
+                [ Ix (i + 1) %% []
+                ; Subst.app_expr (Subst.shift n) d
+                ]
+              ) %% []
+            end ds
+          ) %% []
+        ) @@ oe
+
+    (* FIXME This rule inserts an Opaque "IsAFcn" which is recognized later
+     * during standardization. Careful when modifying! *)
+    | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Arrow (e2, e3) } ])
+      when not (has op1 Props.tpars_prop) ->
+        let e1 = self#expr scx e1 in
+        let e2 = self#expr scx e2 in
+        let e3 = self#expr scx e3 in
+        let eq_op = assign (Internal B.Eq %% []) Props.tpars_prop [ TAtm TAIdv ] in
+        List (
+          And,
+          [ Apply (
+            Opaque "IsAFcn" %% [],
+            [ e1
+            ]) %% []
+          ; Apply (
+            eq_op,
+            [ Apply (
+              Internal B.DOMAIN %% [],
+              [ e1
+              ]) %% []
+            ; e2
+            ]) %% []
+          ; Quant (
+            Forall,
+            [ assign ("x" %% []) Props.ty0_prop (TAtm TAIdv), Constant, No_domain ],
+            Apply (
+              Internal B.Implies %% [],
+              [ Apply (
+                Internal B.Mem %% [],
+                [ Ix 1 %% []
+                ; Subst.app_expr (Subst.shift 1) e2
+                ]) %% []
+              ; Apply (
+                Internal B.Mem %% [],
+                [ FcnApp (
+                  Subst.app_expr (Subst.shift 1) e1,
+                  [ Ix 1 %% []
+                  ]) %% []
+                ; Subst.app_expr (Subst.shift 1) e3
+                ]) %% []
+              ]
+            ) %% []
+          ) %% []
+          ]) @@ oe
+
+    | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = Product es } ])
+      when not (has op Props.tpars_prop) ->
+        let e1 = self#expr scx e1 in
+        let es = List.map (self#expr scx) es in
+        let eq_op = assign (Internal B.Eq %% []) Props.tpars_prop [ TAtm TAIdv ] in
+        let n = List.length es in
+        let bs =
+          List.init n begin fun i ->
+            let v = ("e" ^ string_of_int (i + 1)) %% [] in
+            let v = assign v Props.ty0_prop (TAtm TAIdv) in
+            (v, Constant, No_domain)
+          end
+        in
+        Quant (
+          Exists,
+          bs,
+          List (
+            And,
+            Apply (
+              eq_op,
+              [ Subst.app_expr (Subst.shift n) e1
+              ; Tuple (
+                List.init n (fun i -> Ix (n - i) %% [])
+              ) %% []
+              ]
+            ) %% [] ::
+            List.mapi begin fun i e ->
+              Apply (
+                Internal B.Mem %% [],
+                [ Ix (n - i) %% []
+                ; Subst.app_expr (Subst.shift n) e
+                ]
+              ) %% []
+            end es
+          ) %% []
+        ) @@ oe
+
+    | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.Range } as op2, [ e2 ; e3 ]) } ])
+      when not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
+        let e1 = self#expr scx e1 in
+        let e2 = self#expr scx e2 in
+        let e3 = self#expr scx e3 in
+        List (
+          And,
+          [ Apply (
+            Internal B.Mem %% [],
+            [ e1
+            ; Internal B.Int %% []
+            ]) %% []
+          ; Apply (
+            Internal B.Lteq %% [],
+            [ e2
+            ; e1
+            ]) %% []
+          ; Apply (
+            Internal B.Lteq %% [],
+            [ e1
+            ; e3
+            ]) %% []
+          ]
+        ) @@ oe
 
     | Apply ({ core = Internal (B.Eq | B.Neq as blt) } as op, [ e ; f ])
       when eq_pol b blt
