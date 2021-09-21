@@ -62,6 +62,15 @@ let visitor = object (self : 'self)
 
     begin match oe.core with
 
+    | Opaque s when Str.string_match (Str.regexp "#prime$") s 0 ->
+        let s = Str.global_replace (Str.regexp "#prime$") "" s in
+        let _, h = Deque.find ~backwards:true (snd scx) (fun h -> hyp_name h = s) |> Option.get in
+        let ty0 = get (hyp_hint h) Props.ty0_prop in
+        let ty2 = Ty2 ([], ty0) in
+        let smb = mk_smb (Anon (s ^ "_prime", ty2)) in
+        let opq = mk_opq smb $$ oe in
+        opq
+
     | Opaque s ->
         let ty2 = Ty2 ([], TAtm TAIdv) in
         let smb = mk_smb (Anon (s, ty2)) in

@@ -280,7 +280,8 @@ and fmt_expr cx oe =
           fmt_expr ncx (Sequent { sq with context = hs } @@ oe)
 
       | Some ({ core = Flex nm }, hs) ->
-          let ty = get nm Props.ty0_prop in
+          error ~at:oe "Nested variable declaration not supported"
+          (*let ty = get nm Props.ty0_prop in
           let ncx, nm = adj cx nm in
           Fu.Atm begin fun ff ->
             pp_print_sexpr begin fun ff (nm, ty, e) ->
@@ -292,7 +293,7 @@ and fmt_expr cx oe =
               end) (nm, ty)
               (pp_box @@@ pp_print_expr ncx) e
             end ff (nm, ty, Sequent { sq with context = hs } @@ oe)
-          end
+          end*)
 
       | Some ({ core = Fresh (nm, _, _, _) }, hs) ->
           (* NOTE Second-order quantification rejected *)
@@ -591,8 +592,6 @@ let pp_print_obligation ?(solver="SMT") ff ob =
         let ty = get nm Props.ty0_prop in
         let ncx, nm = adj cx nm in
         pp_print_declarefun ff nm [] ty;
-        pp_print_newline ff ();
-        pp_print_declarefun ff (primed nm) [] ty;
         pp_print_newline ff ();
         spin ncx hs
 
