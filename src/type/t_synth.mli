@@ -77,9 +77,6 @@ val eopr : scx -> expr -> expr * ty2  (** Called on applied operators *)
 val defn  : ?ignore:bool -> scx -> defn -> scx * defn
 val defns :                 scx -> defn list -> scx * defn list
 
-val hyp  : scx -> hyp -> scx * hyp
-val hyps : scx -> hyp Deque.dq -> scx * hyp Deque.dq
-
 val sequent : scx -> sequent -> scx * sequent
 
 (** Main function, only use this one.

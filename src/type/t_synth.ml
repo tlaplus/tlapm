@@ -1196,62 +1196,69 @@ and defns scx dfs =
       let scx, dfs = defns scx dfs in
       (scx, df :: dfs)
 
-and hyp scx h =
-  match h.core with
-  | Fresh (v, Shape_expr, k, b) ->
-      let b, oty0 =
-        match b with
-        | Bounded (e, Visible) ->
-            let e, ty0 = expr scx e in
-            begin match ty0 with
-            | TSet ty01 when typelvl scx > 1 ->
-                Bounded (assign e Props.tpars_prop [ ty01 ], Visible), Some ty0
-            | _ ->
-                Bounded (force_idv ty0 e, Visible), None
-            end
-        | _ -> b, None
-      in
-      let ty0 = Option.default (TAtm TAIdv) oty0 in
-      let v, scx = adj_ty0 scx v ty0 in
-      (scx, Fresh (v, Shape_expr, k, b) @@ h)
-
-  | Fresh (v, shp, k, Unbounded) ->
-      let ty1 = shp_to_ty1 shp in
-      let v, scx = adj_ty1 scx v ty1 in
-      (scx, Fresh (v, shp, k, Unbounded) @@ h)
-
-  | Fresh (_, Shape_op n, _, Bounded _) ->
-      error ~at:h "Fresh operator cannot be bounded"
-
-  | Flex v ->
-      let ty0 = TAtm TAIdv in
-      let v, scx = adj_ty0 scx v ty0 in
-      (scx, Flex v @@ h)
-
-  | Defn (df, wd, vis, ex) ->
-      let ignore = match vis with Hidden -> true | _ -> false in
-      let scx, df = defn ~ignore scx df in
-      (scx, Defn (df, wd, vis, ex) @@ h)
-
-  | Fact (e, Visible, tm) ->
-      let e, ty0 = expr scx e in
-      let scx = bump scx in
-      (scx, Fact (force_bool ty0 e, Visible, tm) @@ h)
-
-  | Fact (e, Hidden, tm) ->
-      let scx = bump scx in
-      (scx, Fact (e, Hidden, tm) @@ h)
-
-
-and hyps scx hs =
-  match Deque.front hs with
-  | None -> (scx, Deque.empty)
-  | Some (h, hs) ->
-      let scx, h = hyp scx h in
-      let scx, hs = hyps scx hs in
-      (scx, Deque.cons h hs)
-
 and sequent scx sq =
+  let rec hyps scx hs =
+    match Deque.front hs with
+    | None ->
+        (scx, Deque.empty)
+
+    | Some ({ core = Fresh (v, Shape_expr, k, b) } as h, hs) ->
+        let b, oty0 =
+          match b with
+          | Bounded (e, Visible) ->
+              let e, ty0 = expr scx e in
+              begin match ty0 with
+              | TSet ty01 when typelvl scx = 3 ->
+                  Bounded (assign e Props.tpars_prop [ ty01 ], Visible), Some ty0
+              | _ ->
+                  Bounded (force_idv ty0 e, Visible), None
+              end
+          | _ -> b, None
+        in
+        let ty0 = Option.default (TAtm TAIdv) oty0 in
+        let v, scx = adj_ty0 scx v ty0 in
+        let h = Fresh (v, Shape_expr, k, b) @@ h in
+        let scx, hs = hyps scx hs in
+        (scx, Deque.cons h hs)
+
+    | Some ({ core = Fresh (v, shp, k, Unbounded) } as h, hs) ->
+        let ty1 = shp_to_ty1 shp in
+        let v, scx = adj_ty1 scx v ty1 in
+        let h = Fresh (v, shp, k, Unbounded) @@ h in
+        let scx, hs = hyps scx hs in
+        (scx, Deque.cons h hs)
+
+    | Some ({ core = Fresh (_, Shape_op n, _, Bounded _) } as h, hs) ->
+        error ~at:h "Fresh operator cannot be bounded"
+
+    | Some ({ core = Flex v } as h, hs) ->
+        let ty0 = TAtm TAIdv in
+        let v, scx = adj_ty0 scx v ty0 in
+        let h = Flex v @@ h in
+        let scx, hs = hyps scx hs in
+        (scx, Deque.cons h hs)
+
+    | Some ({ core = Defn (df, wd, vis, ex) } as h, hs) ->
+        let ignore = match vis with Hidden -> true | _ -> false in
+        let scx, df = defn ~ignore scx df in
+        let h = Defn (df, wd, vis, ex) @@ h in
+        let scx, hs = hyps scx hs in
+        (scx, Deque.cons h hs)
+
+    | Some ({ core = Fact (e, Visible, tm) } as h, hs) ->
+        let e, ty0 = expr scx e in
+        let scx = bump scx in
+        let h = Fact (force_bool ty0 e, Visible, tm) @@ h in
+        let scx, hs = hyps scx hs in
+        (scx, Deque.cons h hs)
+
+    | Some ({ core = Fact (e, Hidden, tm) } as h, hs) ->
+        let scx = bump scx in
+        let h = Fact (e, Hidden, tm) @@ h in
+        let scx, hs = hyps scx hs in
+        (scx, Deque.cons h hs)
+  in
+
   let scx, hs = hyps scx sq.context in
   let e, ty0 = expr scx sq.active in
   (scx, { context = hs ; active = force_bool ty0 e })
