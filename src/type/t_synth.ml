@@ -26,60 +26,84 @@ type options =
   { typelvl : int
   }
 
-type tty = TTy0 of ty0 | TTy1 of ty1 | TTy2 of ty2
-type scx = options * tty Ctx.t
+type scx = options * hyp Deque.dq
 
-let init =
-  let cx = Ctx.dot in
-  { typelvl = 0
-  }, cx
+let init = { typelvl = 0 }, Deque.empty
 
-let typelvl (ops, _) = ops.typelvl
+let typelvl (ops, _ : scx) = ops.typelvl
 
-let adj_ty0 (ops, cx) v ty0 =
-  let cx = Ctx.adj cx v.core (TTy0 ty0) in
+let adj_ty0 (ops, hx : scx) v ty0 =
   let v = assign v Props.ty0_prop ty0 in
-  (v, (ops, cx))
+  let h = Fresh (v, Shape_expr, Constant, Unbounded) %% [] in
+  let hx = Deque.snoc hx h in
+  (v, (ops, hx))
 
-let adj_ty1 (ops, cx) v ty1 =
-  let cx = Ctx.adj cx v.core (TTy1 ty1) in
+let adj_ty1 (ops, hx : scx) v ty1 =
   let v = assign v Props.ty1_prop ty1 in
-  (v, (ops, cx))
+  let h = Fresh (v, Shape_op 0, Constant, Unbounded) %% [] in
+  let hx = Deque.snoc hx h in
+  (v, (ops, hx))
 
-let adj_ty2 (ops, cx) v ty2 =
-  let cx = Ctx.adj cx v.core (TTy2 ty2) in
+let adj_ty2 (ops, hx : scx) v ty2 =
   let v = assign v Props.ty2_prop ty2 in
-  (v, (ops, cx))
+  let h = Fresh (v, Shape_op 0, Constant, Unbounded) %% [] in
+  let hx = Deque.snoc hx h in
+  (v, (ops, hx))
 
-let bump (ops, cx) = (ops, Ctx.bump cx)
+let bump (ops, hx : scx) =
+  let h = Fact (Internal B.TRUE %% [], Hidden, NotSet) %% [] in
+  let hx = Deque.snoc hx h in
+  (ops, hx)
 
-let lookup_tty (_, cx) n =
-  let idt, otty = Ctx.index cx n in
-  match otty with
-  | None ->
-      let mssg = "Missing annotation on ident \
-                  '" ^ Ctx.string_of_ident idt ^ "'"
-      in
-      error mssg
-  | Some tty -> tty
+let lookup (_, hx : scx) n =
+  let h = Option.get (Deque.nth ~backwards:true hx (n - 1)) in
+  let v = hyp_hint h in
+  v
 
 let lookup_ty0 scx n =
-  match lookup_tty scx n with
-  | TTy0 ty0 -> ty0
-  | TTy1 ty1 -> downcast_ty0 ty1
-  | TTy2 ty2 -> downcast_ty0 (downcast_ty1 ty2)
+  let v = lookup scx n in
+  match query v Props.ty0_prop with
+  | Some ty0 -> ty0
+  | None -> begin
+    match query v Props.ty1_prop with
+    | Some ty1 -> downcast_ty0 ty1
+    | None -> begin
+      match query v Props.ty2_prop with
+      | Some ty2 -> downcast_ty0 (downcast_ty1 ty2)
+      | None -> error ~at:v ("Missing type (ord 0) on \
+                              '" ^ v.core ^ "'")
+    end
+  end
 
 let lookup_ty1 scx n =
-  match lookup_tty scx n with
-  | TTy0 ty0 -> upcast_ty1 ty0
-  | TTy1 ty1 -> ty1
-  | TTy2 ty2 -> downcast_ty1 ty2
+  let v = lookup scx n in
+  match query v Props.ty0_prop with
+  | Some ty0 -> upcast_ty1 ty0
+  | None -> begin
+    match query v Props.ty1_prop with
+    | Some ty1 -> ty1
+    | None -> begin
+      match query v Props.ty2_prop with
+      | Some ty2 -> downcast_ty1 ty2
+      | None -> error ~at:v ("Missing type (ord 1) on \
+                              '" ^ v.core ^ "'")
+    end
+  end
 
 let lookup_ty2 scx n =
-  match lookup_tty scx n with
-  | TTy0 ty0 -> upcast_ty2 (upcast_ty1 ty0)
-  | TTy1 ty1 -> upcast_ty2 ty1
-  | TTy2 ty2 -> ty2
+  let v = lookup scx n in
+  match query v Props.ty0_prop with
+  | Some ty0 -> upcast_ty2 (upcast_ty1 ty0)
+  | None -> begin
+    match query v Props.ty1_prop with
+    | Some ty1 -> upcast_ty2 ty1
+    | None -> begin
+      match query v Props.ty2_prop with
+      | Some ty2 -> ty2
+      | None -> error ~at:v ("Missing type (ord 2) on \
+                              '" ^ v.core ^ "'")
+    end
+  end
 
 
 (* {3 Helpers} *)
@@ -178,9 +202,9 @@ and expr_aux scx oe =
   | Opaque s when is_prime s ->
       let s = remove_prime s in
       let ty0 =
-        match Ctx.find (snd scx) s with
-        | Some (TTy0 ty0) -> ty0
-        | _ -> (* fail *) TAtm TAIdv
+        match Deque.find ~backwards:true (snd scx) (fun h -> hyp_name h = s) with
+        | Some (n, _) -> lookup_ty0 scx (n + 1)
+        | _ -> error ~at:oe "Cannot find declaration for unprimed variable"
       in
       (Opaque s @@ oe, ty0)
 
