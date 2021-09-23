@@ -144,10 +144,10 @@ let visitor = object (self : 'self)
           | Exp,        Some [ TAtm TAInt ]   -> TIntExp
           | Quotient,   Some [ ]              -> TIntQuotient
           | Remainder,  Some [ ]              -> TIntRemainder
-          | Lteq,       Some [ ]              -> TIntLt
-          | Lt,         Some [ ]              -> TIntLteq
-          | Gteq,       Some [ ]              -> TIntGt
-          | Gt,         Some [ ]              -> TIntGteq
+          | Lteq,       Some [ ]              -> TIntLteq
+          | Lt,         Some [ ]              -> TIntLt
+          | Gteq,       Some [ ]              -> TIntGteq
+          | Gt,         Some [ ]              -> TIntGt
           | Range,      Some [ ]              -> TIntRange
 
           | (Plus | Uminus | Minus | Times | Exp),

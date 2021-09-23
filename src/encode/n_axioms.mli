@@ -122,7 +122,7 @@ val t_strlit_distinct : string -> string -> expr
 
 (* {4 Arithmetic} *)
 
-val t_intset_def : unit -> expr
-val t_natset_def : unit -> expr
+val t_intset_def : t0p:bool -> expr
+val t_natset_def : t0p:bool -> expr
 val t_intrange_def : t0p:bool -> expr
 

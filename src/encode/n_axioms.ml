@@ -1932,33 +1932,51 @@ let t_strlit_distinct s1 s2 =
 
 (* {4 Arithmetic} *)
 
-let t_intset_def () =
+let t_intset_def ~t0p =
+  let cast_if_t0p = fun e ->
+    if t0p then
+      apps (T.Cast t_int) [ e ] %% []
+    else e
+  in
+  let mem_op =
+    if t0p then T.Mem
+    else (T.TMem t_int)
+  in
   quant Forall
   [ "n" ] [ t_int ]
   ~pats:[ [
-    apps (T.TMem t_int)
-    [ Ix 1 %% []
+    apps mem_op
+    [ Ix 1 %% [] |> cast_if_t0p
     ; apps T.TIntSet [] %% []
     ] %% []
   ] ]
-  ( apps (T.TMem t_int)
-    [ Ix 1 %% []
+  ( apps mem_op
+    [ Ix 1 %% [] |> cast_if_t0p
     ; apps T.TIntSet [] %% []
     ] %% []
   ) %% []
 
-let t_natset_def () =
+let t_natset_def ~t0p =
+  let cast_if_t0p = fun e ->
+    if t0p then
+      apps (T.Cast t_int) [ e ] %% []
+    else e
+  in
+  let mem_op =
+    if t0p then T.Mem
+    else (T.TMem t_int)
+  in
   quant Forall
   [ "n" ] [ t_int ]
   ~pats:[ [
-    apps (T.TMem t_int)
-    [ Ix 1 %% []
+    apps mem_op
+    [ Ix 1 %% [] |> cast_if_t0p
     ; apps T.TNatSet [] %% []
     ] %% []
   ] ]
   ( appb B.Equiv
-    [ apps (T.TMem t_int)
-      [ Ix 1 %% []
+    [ apps mem_op
+      [ Ix 1 %% [] |> cast_if_t0p
       ; apps T.TNatSet [] %% []
       ] %% []
     ; apps T.TIntLteq
@@ -2090,8 +2108,8 @@ let get_axm ~solver tla_smb =
 
   | T.TStrSetDef -> t_strset_def ()
   | T.TStrLitDistinct (s1, s2) -> t_strlit_distinct s1 s2
-  | T.TIntSetDef -> t_intset_def ()
-  | T.TNatSetDef -> t_natset_def ()
+  | T.TIntSetDef -> t_intset_def ~t0p
+  | T.TNatSetDef -> t_natset_def ~t0p
   | T.TIntRangeDef -> t_intrange_def ~t0p
 
   | T.CastInj ty0 -> cast_inj ty0

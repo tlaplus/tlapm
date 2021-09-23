@@ -194,11 +194,17 @@ let typed_data tla_smb =
                         [],                                   t_str,
       StrLit str)
   (* Arithmetic *)
-  | TIntSet ->
-      ("TInt",          [],                                   TSet t_int,
+  | TIntSet when t0p ->
+      ("TIntSet",       [],                                   t_idv,
       IntSet)
+  | TIntSet ->
+      ("TIntSet ",      [],                                   TSet t_int,
+      IntSet)
+  | TNatSet when t0p ->
+      ("TNatSet",       [],                                   t_idv,
+      NatSet)
   | TNatSet ->
-      ("TNat",          [],                                   TSet t_int,
+      ("TNatSet",       [],                                   TSet t_int,
       NatSet)
   | TIntLit n ->
       ("TIntLit_" ^ string_of_int n,
@@ -523,28 +529,44 @@ let typed_deps tla_smb s =
       in
       ([], distincts)
   (* Arithmetic *)
+  | TIntSet when t0p ->
+      ([ Mem ; Cast t_int ; IntSet ],         [ TIntSetDef ; Typing TIntSet ])
   | TIntSet ->
       ([ TMem t_int ],                        [ TIntSetDef ])
+  | TNatSet when t0p ->
+      ([ Mem ; TIntLit 0 ; TIntLteq ; Cast t_int ; NatSet ],
+                                              [ TNatSetDef ; Typing TNatSet ])
   | TNatSet ->
       ([ TMem t_int ; TIntLit 0 ; TIntLteq ], [ TNatSetDef ])
-  | TIntLit _
-  | TIntPlus
-  | TIntUminus
-  | TIntMinus
-  | TIntTimes
-  | TIntQuotient
-  | TIntRemainder
-  | TIntExp
-  | TIntLteq
-  | TIntLt
-  | TIntGteq
+  | TIntLit _ ->
+      ([],                                    [])
+  | TIntPlus ->
+      ([ IntPlus ],                           [])
+  | TIntUminus ->
+      ([ IntUminus ],                         [])
+  | TIntMinus ->
+      ([ IntMinus ],                          [])
+  | TIntTimes ->
+      ([ IntTimes ],                          [])
+  | TIntQuotient ->
+      ([ IntQuotient ],                       [])
+  | TIntRemainder ->
+      ([ IntRemainder ],                      [])
+  | TIntExp ->
+      ([ IntExp ],                            [])
+  | TIntLteq ->
+      ([ IntLteq ],                           [])
+  | TIntLt ->
+      ([ IntLt ],                             [])
+  | TIntGteq ->
+      ([ IntGteq ],                           [])
   | TIntGt ->
-      ([], []) (* Implemented natively by solvers *)
+      ([ IntGt ],                             [])
   | TIntRange when t0p ->
       ([ Mem ; Cast t_int ; TIntLteq ; IntRange ],
                                               [ TIntRangeDef ; Typing TIntRange ])
   | TIntRange ->
-      ([ TMem t_int ; TIntLteq ],             [ TIntRangeDef ])
+      ([ TMem t_int ; TIntLteq ; IntRange ],  [ TIntRangeDef ])
   | _ ->
       error "internal error"
   end |>
