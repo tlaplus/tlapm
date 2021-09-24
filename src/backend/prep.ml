@@ -950,8 +950,13 @@ let normalize_expand ob fpout thyout record
     let ob = normalize_expr ob in
     try
         let ob = expand_enabled_cdot
-            ob expand_enabled expand_cdot autouse
-            apply_lambdify enabled_axioms level_comparison in
+            ob
+            ~expand_enabled:expand_enabled
+            ~expand_cdot:expand_cdot
+            ~autouse:autouse
+            ~apply_lambdify:apply_lambdify
+            ~enabled_axioms:enabled_axioms
+            ~level_comparison:level_comparison in
         (ob, true)
     with Failure msg ->
         (* `msg` is the message from soundness checks,
