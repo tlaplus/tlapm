@@ -222,6 +222,9 @@ let init () =
              parameter takes precedence over \
              the environment variable. If neither \
              is specified, the default value is \".tlacache\".";
+    "--json-ast", Arg.Set Params.dumps_json_ast,
+        "Serialize the abstract syntax tree to \
+        JSON, and write the output to stdout.";
   ]
   in
   let opts = Arg.align opts in

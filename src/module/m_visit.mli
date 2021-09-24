@@ -30,3 +30,8 @@ class map : object
     method anoninst: ctx -> Expr.T.instance -> export ->
         ctx * modunit_
 end
+
+
+
+val json_of_module:
+    Expr.T.ctx -> M_t.mule -> string

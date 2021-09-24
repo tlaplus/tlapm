@@ -308,6 +308,42 @@ module Visit : sig
       method rename : ctx -> hyp -> Util.hint -> hyp * Util.hint
       method renames : ctx -> hyp list -> Util.hint list -> hyp list * Util.hint list
   end
+
+  val hyps_of_bounds: bounds -> hyp list
+
+  class virtual ['s] json_map: object
+      method expr:
+          's scx -> expr -> string
+      method sel:
+          's scx -> sel -> string
+      method sequent:
+          's scx -> sequent -> string
+      method defn:
+          's scx -> defn -> string
+      method defns:
+          's scx -> defn list ->
+              's scx * string
+      method bounds: 's scx -> bounds ->
+          's scx * string
+      method bound: 's scx -> bound ->
+          's scx * string
+      method exspec:
+          's scx -> exspec -> string
+      method instance:
+          's scx -> instance -> string
+      method hyp:
+          's scx -> hyp -> 's scx * string
+      method hyps:
+          's scx -> hyp Deque.dq ->
+              's scx * string
+      method adj:
+          's scx -> hyp -> 's scx
+      method adjs:
+          's scx -> hyp list -> 's scx
+  end
+  val format_parameter:
+      Util.hint * shape -> string
+  val json_of_ast: ctx -> expr -> string
 end;;
 
 module Eq : sig
