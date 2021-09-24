@@ -101,7 +101,7 @@ jobs:
             cd ../..
             PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make test
       - name: Upload Release Asset
-        if: matrix.ocaml-compiler == '4.12.0'
+        if: matrix.ocaml-compiler == '4.13.0'
         id: upload-release-asset
         uses: actions/upload-release-asset@v1.0.1
         env:
@@ -115,7 +115,7 @@ jobs:
       - name: Download and Test TLAPM installer
         if: >-
             matrix.operating-system == 'ubuntu-latest' &&
-            matrix.ocaml-compiler == '4.12.0'
+            matrix.ocaml-compiler == '4.13.0'
         ## The test suite has known failures, thus keep going until the
         ## test suite has been fixed (TODO).
         continue-on-error: true
