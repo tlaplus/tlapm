@@ -51,7 +51,7 @@ jobs:
       fail-fast: false
       matrix:
         operating-system: [macos-latest, ubuntu-latest]
-        ocaml-compiler: [ '4.08.1', '4.11.0', '4.12.0' ]
+        ocaml-compiler: [ '4.08.1', '4.11.0', '4.12.0', '4.13.0' ]
         include:
         - operating-system: macos-latest
           INSTALLER: tlaps-1.5.0-i386-darwin-inst.bin
