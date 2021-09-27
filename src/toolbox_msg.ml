@@ -6,6 +6,7 @@
 (* It depends only on Ext and Loc. *)
 
 open Printf
+open Ext
 
 
 let delim = "@!!"
@@ -44,8 +45,6 @@ let print_obligationsnumber n =
 
 let line loc = Loc.line loc
 let col loc = Loc.column loc
-
-open Ext
 
 let print_obligation ~id ~loc ~status ~fp ~prover ~meth ~reason ~already ~obl =
   print_begin "obligation";

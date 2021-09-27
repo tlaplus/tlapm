@@ -12,6 +12,7 @@ open Property
 open Util
 open Coll
 
+open Expr.Subst
 open Expr.T
 open Proof.T
 
@@ -77,7 +78,6 @@ let cat_summary s t =
 
 let salt_prop : unit pfuncs = Property.make "Module.salt_prop"
 
-open Expr.Subst
 
 let hyps_of_modunit (mu : modunit) = match mu.core with
   | Constants cs ->
