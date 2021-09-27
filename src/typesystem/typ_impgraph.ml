@@ -4,7 +4,7 @@
 *
 *
 *  Created by Hernán Vanzetto on 4 Nov 2013.
-*  Copyright (c) 2013 __MyCompanyName__. All rights reserved.
+Copyright (c) 2013  INRIA and Microsoft Corporation
 *
 ************************************************************************)
 

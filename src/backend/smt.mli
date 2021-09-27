@@ -3,7 +3,7 @@
 *
 *
 *  Created by Hernán Vanzetto on 9 Dec 2013.
-*  Copyright (c) 2013 __MyCompanyName__. All rights reserved.
+Copyright (c) 2013  INRIA and Microsoft Corporation
 ************************************************************************)
 
 val encode_smtlib : ?solver:string -> Format.formatter -> Proof.T.obligation -> unit
