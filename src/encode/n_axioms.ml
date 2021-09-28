@@ -215,12 +215,17 @@ let op_typing t_smb =
 
   quant Forall
   (gen "x" n) t_ty0s
-  ~pats:[ [
-    apps i_smb
-    (List.map2 begin fun e ty0 ->
-      cast ty0 e
-    end (ixi n) t_ty0s) %% []
-  ] ]
+  ?pats:(
+    if n > 0 then
+      Some ([ [
+        apps i_smb
+        (List.map2 begin fun e ty0 ->
+          cast ty0 e
+        end (ixi n) t_ty0s) %% []
+      ] ])
+    else
+      None
+  )
   ( begin
       if is_pred then appb B.Equiv
       else appb ~tys:[ t_idv ] B.Eq
