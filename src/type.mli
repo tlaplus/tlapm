@@ -115,6 +115,13 @@ module Collect : sig
   val main : sequent -> Ts.t
 end
 
+module Hyps : sig
+  open Expr.T
+  open T
+  type scx = hyp Deque.dq
+  val search_type_hyp : inferer:(scx -> expr -> ty0) -> pol:bool -> scx -> expr -> ty0 option
+end
+
 module Synthesize : sig
   open Expr.T
   val main : ?typelvl:int -> sequent -> sequent

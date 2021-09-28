@@ -327,7 +327,11 @@ and expr_aux scx oe =
                   let dom = Domain (force_idv ty01 e) in
                   let v = force_idv ty02 v in
                   (scx', (v, k, dom) :: r_bs, Some ty02)
-              (* TODO search_bound *)
+              | TSet ty02 when typelvl scx = 2 ->
+                  let _, scx' = adj_ty0 scx' v ty02 in
+                  let v = assign v Props.ty0_prop (TAtm TAIdv) in
+                  let dom = Domain (force_idv ty01 e) in
+                  (scx', (v, k, dom) :: r_bs, Some ty02)
               | _ ->
                   let v, scx' = adj_ty0 scx' v (TAtm TAIdv) in
                   let dom = Domain (force_idv ty01 e) in
@@ -336,6 +340,34 @@ and expr_aux scx oe =
           | Ditto, Some ty0 ->
               let v, scx' = adj_ty0 scx' v ty0 in
               (scx', (v, k, Ditto) :: r_bs, Some ty0)
+          | Ditto, None
+          | No_domain, _ when typelvl scx = 2 ->
+              let pol =
+                match q with
+                | Forall -> true
+                | Exists -> false
+              in
+              let e' =
+                let n = List.length r_bs + 1 in
+                if n = List.length bs then e
+                else
+                  let bs' = snd (List.split_nth (List.length r_bs + 1) bs) in
+                  Quant (q, bs', e) %% []
+              in
+              let inferer = fun hx e -> snd (expr (fst scx, hx) e) in
+              begin match T_hyps.search_type_hyp ~inferer ~pol:pol (snd scx') e' with
+              | Some (TAtm _ as ty02) ->
+                  let v, scx' = adj_ty0 scx' v ty02 in
+                  let v = force_idv ty02 v in
+                  (scx', (v, k, dom) :: r_bs, Some ty02)
+              | Some ty02 ->
+                  let _, scx' = adj_ty0 scx' v ty02 in
+                  let v = assign v Props.ty0_prop (TAtm TAIdv) in
+                  (scx', (v, k, dom) :: r_bs, Some ty02)
+              | None ->
+                  let v, scx' = adj_ty0 scx' v (TAtm TAIdv) in
+                  (scx', (v, k, dom) :: r_bs, None)
+              end
           | Ditto, None
           | No_domain, _ ->
               let v, scx' = adj_ty0 scx' v (TAtm TAIdv) in
@@ -1387,10 +1419,29 @@ and sequent scx sq =
                   let b = Bounded (force_idv ty0 e, Visible) in
                   let v = force_idv ty01 v in
                   (v, scx, b)
-              (* TODO search_bound *)
+              | TSet ty01 when typelvl scx = 2 ->
+                  let _, scx = adj_ty0 scx v ty01 in
+                  let v = assign v Props.ty0_prop (TAtm TAIdv) in
+                  let b = Bounded (force_idv ty0 e, Visible) in
+                  (v, scx, b)
               | _ ->
                   let v, scx = adj_ty0 scx v (TAtm TAIdv) in
                   let b = Bounded (force_idv ty0 e, Visible) in
+                  (v, scx, b)
+              end
+          | _ when typelvl scx = 2 ->
+              let inferer = fun hx e -> snd (expr (fst scx, hx) e) in
+              begin match T_hyps.search_type_hyp ~inferer ~pol:true (snd scx) (Sequent { context = hs ; active = sq.active } %% []) with
+              | Some (TAtm _ as ty01) ->
+                  let v, scx = adj_ty0 scx v ty01 in
+                  let v = force_idv ty01 v in
+                  (v, scx, b)
+              | Some ty01 ->
+                  let _, scx = adj_ty0 scx v ty01 in
+                  let v = assign v Props.ty0_prop (TAtm TAIdv) in
+                  (v, scx, b)
+              | None ->
+                  let v, scx = adj_ty0 scx v (TAtm TAIdv) in
                   (v, scx, b)
               end
           | _ ->
@@ -1412,11 +1463,32 @@ and sequent scx sq =
         error ~at:h "Fresh operator cannot be bounded"
 
     | Some ({ core = Flex v } as h, hs) ->
-        let ty0 = TAtm TAIdv in
-        let v, scx = adj_ty0 scx v ty0 in
-        let h = Flex v @@ h in
-        let scx, hs = hyps scx hs in
-        (scx, Deque.cons h hs)
+        if typelvl scx = 2 then
+          let inferer = fun hx e -> snd (expr (fst scx, hx) e) in
+          begin match T_hyps.search_type_hyp ~inferer ~pol:true (snd scx) (Sequent { context = hs ; active = sq.active } %% []) with
+          | Some (TAtm _ as ty01) ->
+              let v, scx = adj_ty0 scx v ty01 in
+              let v = force_idv ty01 v in
+              let h = Flex (force_idv ty01 v) @@ h in
+              let scx, hs = hyps scx hs in
+              (scx, Deque.cons h hs)
+          | Some ty01 ->
+              let _, scx = adj_ty0 scx v ty01 in
+              let v = assign v Props.ty0_prop (TAtm TAIdv) in
+              let h = Flex v @@ h in
+              let scx, hs = hyps scx hs in
+              (scx, Deque.cons h hs)
+          | None ->
+              let v, scx = adj_ty0 scx v (TAtm TAIdv) in
+              let h = Flex v @@ h in
+              let scx, hs = hyps scx hs in
+              (scx, Deque.cons h hs)
+          end
+        else
+          let v, scx = adj_ty0 scx v (TAtm TAIdv) in
+          let h = Flex v @@ h in
+          let scx, hs = hyps scx hs in
+          (scx, Deque.cons h hs)
 
     | Some ({ core = Defn (df, wd, vis, ex) } as h, hs) ->
         let ignore = match vis with Hidden -> true | _ -> false in
