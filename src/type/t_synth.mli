@@ -38,7 +38,7 @@ open T_t
         Dot application is overloaded for functions and records.
         The domain operator is overloaded for functions, tuples, and records.
     - Bounds imply a hidden [\\in].  The optional annotation for it may be found
-      on the domain of the bound.
+      on the domain of the bound as a {!Type.T.mpars_prop}.
     - Some expressions must be cast from some type [ty] to the domain of
       individuals.  The annotation {!Type.T.icast_prop} with parameter [ty]
       decorates these expressions.

@@ -29,11 +29,13 @@ let error ?at mssg =
   (*Errors.bug ?at mssg*)
   failwith mssg
 
+let maybe_assign prop a = function
+  | Some p -> assign a prop p
+  | None -> a
+
 (* Return a with the value of prop attached to from, if present *)
 let copy_prop prop a from =
-  match query from prop with
-  | None -> a
-  | Some v -> assign a prop v
+  maybe_assign prop a (query from prop)
 
 
 (* {3 Bounds Elimination} *)
@@ -57,12 +59,18 @@ let elim_bounds_visitor = object (self : 'self)
             | Domain d, _ ->
                 let d = self#expr scx d in
                 let d = Subst.app_expr (Subst.shift n) d in
-                let op = copy_prop Props.tpars_prop (Internal B.Mem %% []) d in
+                let op =
+                  Option.map (fun ty -> [ ty ]) (query d Props.mpars_prop) |>
+                  maybe_assign Props.tpars_prop (Internal B.Mem %% [])
+                in
                 let ix = copy_prop Props.icast_prop (Ix i %% []) v in
                 let h = Apply (op, [ ix ; d ]) %% [] in
                 (nscx, b :: r_bs, h :: r_hs, Some d, i - 1)
             | Ditto, Some d ->
-                let op = copy_prop Props.tpars_prop (Internal B.Mem %% []) d in
+                let op =
+                  Option.map (fun ty -> [ ty ]) (query d Props.mpars_prop) |>
+                  maybe_assign Props.tpars_prop (Internal B.Mem %% [])
+                in
                 let ix = copy_prop Props.icast_prop (Ix i %% []) v in
                 let h = Apply (op, [ ix ; d ]) %% [] in
                 (nscx, b :: r_bs, h :: r_hs, Some d, i - 1)
@@ -102,7 +110,10 @@ let elim_bounds_visitor = object (self : 'self)
         let h = Fresh (v, Shape_expr, Constant, Unbounded) %% [] in
         let scx = Visit.adj scx h in
         let e = self#expr scx e in
-        let op = copy_prop Props.tpars_prop (Internal B.Mem %% []) d in
+        let op =
+          Option.map (fun ty -> [ ty ]) (query d Props.mpars_prop) |>
+          maybe_assign Props.tpars_prop (Internal B.Mem %% [])
+        in
         let ix = copy_prop Props.icast_prop (Ix 1 %% []) v in
         let h = Apply (op, [ ix ; Subst.app_expr (Subst.shift 1) d ]) %% [] in
         let e = Apply (Internal B.Conj %% [], [ h ; e ]) %% [] in
@@ -122,7 +133,10 @@ let elim_bounds_visitor = object (self : 'self)
           let d = Subst.app_expr sub d in
           let d = self#expr scx d in
           let h = Fresh (v, shp, k, Unbounded) @@ h in
-          let op = copy_prop Props.tpars_prop (Internal B.Mem %% []) d in
+          let op =
+            Option.map (fun ty -> [ ty ]) (query d Props.mpars_prop) |>
+            maybe_assign Props.tpars_prop (Internal B.Mem %% [])
+          in
           let ix = copy_prop Props.icast_prop (Ix 1 %% []) v in
           let e = Apply (op, [ ix ; Subst.app_expr (Subst.shift 1) d ]) %% [] in
           let hh = Fact (e, vis, NotSet) %% [] in

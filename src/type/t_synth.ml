@@ -320,7 +320,7 @@ and expr_aux scx oe =
               begin match ty01 with
               | TSet ty02 when typelvl scx = 3 ->
                   let v, scx' = adj_ty0 scx' v ty02 in
-                  let dom = Domain (assign e Props.tpars_prop [ ty02 ]) in
+                  let dom = Domain (assign e Props.mpars_prop ty02) in
                   (scx', (v, k, dom) :: r_bs, Some ty02)
               | TSet (TAtm _ as ty02) when typelvl scx = 2 ->
                   let v, scx' = adj_ty0 scx' v ty02 in
@@ -362,7 +362,7 @@ and expr_aux scx oe =
           let v, scx = adj_ty0 scx v ty02 in
           let e, ty03 = expr scx e in
           let ret = Choose (v, Some d, force_bool ty03 e) @@ oe in
-          let ret = assign ret Props.tpars_prop [ ty02 ] in
+          let ret = assign ret Props.mpars_prop ty02 in
           (ret, TAtm TAIdv)
       | TSet (TAtm _ as ty02) when typelvl scx = 2 ->
           let v, scx = adj_ty0 scx v ty02 in
@@ -1380,7 +1380,7 @@ and sequent scx sq =
               begin match ty0 with
               | TSet ty01 when typelvl scx = 3 ->
                   let v, scx = adj_ty0 scx v ty01 in
-                  let b = Bounded (assign e Props.tpars_prop [ ty01 ], Visible) in
+                  let b = Bounded (assign e Props.mpars_prop ty01, Visible) in
                   (v, scx, b)
               | TSet (TAtm _ as ty01) when typelvl scx = 2 ->
                   let v, scx = adj_ty0 scx v ty01 in

@@ -65,6 +65,7 @@ module T : sig
     val ty2_prop : ty2 pfuncs
 
     val tpars_prop : ty list pfuncs (** Type instances to polymorphics ops. *)
+    val mpars_prop : ty pfuncs      (** Like tpars but for hidden Mem ops. *)
     val icast_prop : ty pfuncs      (** Forgetful injection into individuals *)
     val bproj_prop : ty pfuncs      (** Expressions occurring in boolean ctxt *)
   end

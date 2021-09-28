@@ -224,17 +224,15 @@ class virtual ['s, 'a] foldmap = object (self : 'self)
           | Some dom ->
               let ty01 = get v Props.ty0_prop in
               let a, dom, ty02 = self#expr scx a dom in
-              begin match query v Props.tpars_prop with
+              begin match query v Props.mpars_prop with
               | None ->
                   check0 ~at:v (TAtm TAIdv) ty01;
                   check0 ~at:dom (TAtm TAIdv) ty02;
                   (a, Some dom, Fresh (v, Shape_expr, Constant, Bounded (dom, Visible)) @@ v)
-              | Some ([ ty03 ]) ->
+              | Some ty03 ->
                   check0 ~at:v ty03 ty01;
                   check0 ~at:dom (TSet ty03) ty02;
                   (a, Some dom, Fresh (v, Shape_expr, Constant, Bounded (dom, Visible)) @@ v)
-              | _ ->
-                  error ~at:v "Bad type annotation"
               end
         in
         let scx = adj scx h in
@@ -697,17 +695,15 @@ class virtual ['s, 'a] foldmap = object (self : 'self)
         | Domain d ->
             let ty01 = get v Props.ty0_prop in
             let a, d, ty02 = self#expr scx a d in
-            begin match query d Props.tpars_prop with
+            begin match query d Props.mpars_prop with
             | None ->
                 check0 (TAtm TAIdv) ty01;
                 check0 (TAtm TAIdv) ty02;
                 (a, (v, k, Domain d) :: r_bs)
-            | Some ([ ty03 ]) ->
+            | Some ty03 ->
                 check0 ty03 ty01;
                 check0 (TSet ty03) ty02;
                 (a, (v, k, Domain d) :: r_bs)
-            | _ ->
-                error ~at:d "Bad type annotation"
             end
         | _ ->
             (a, (v, k, dom) :: r_bs)
@@ -762,17 +758,15 @@ class virtual ['s, 'a] foldmap = object (self : 'self)
           | Bounded (e, rvis) ->
               let ty01 = get v Props.ty0_prop in
               let a, e, ty02 = self#expr scx a e in
-              begin match query e Props.tpars_prop with
+              begin match query e Props.mpars_prop with
               | None ->
                   check0 (TAtm TAIdv) ty01;
                   check0 (TAtm TAIdv) ty02;
                   (a, Bounded (e, rvis))
-              | Some ([ ty03 ]) ->
+              | Some ty03 ->
                   check0 ty03 ty01;
                   check0 (TSet ty03) ty02;
                   (a, Bounded (e, rvis))
-              | _ ->
-                  error ~at:e "Bad type annotation"
               end
         in
         let h = Fresh (v, shp, lc, dom) @@ h in
