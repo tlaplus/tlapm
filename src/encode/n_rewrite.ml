@@ -654,7 +654,8 @@ let simplify_sets_visitor = object (self : 'self)
           end es) @@ e2
 
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.SUBSET } as op2, [ e2 ]) } ])
-      when not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
+      when ((not b) || not (Params.debugging "nonewqut"))
+      && not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
         let e2 = self#expr scx e2 in
         let v = assign ("v" %% []) Props.ty0_prop (TAtm TAIdv) in
@@ -678,7 +679,8 @@ let simplify_sets_visitor = object (self : 'self)
         Quant (Forall, [ v, Constant, No_domain ], e) @@ oe
 
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.UNION } as op2, [ e2 ]) } ])
-      when not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
+      when ((not b) && not (Params.debugging "nonewqut"))
+      && not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
         let e2 = self#expr scx e2 in
         let v = assign ("v" %% []) Props.ty0_prop (TAtm TAIdv) in
@@ -779,7 +781,8 @@ let simplify_sets_visitor = object (self : 'self)
         ) @@ oe
 
     | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = SetOf (e2, bs) } ])
-      when not (has op Props.tpars_prop) ->
+      when ((not b) || not (Params.debugging "nonewqut"))
+      && not (has op Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
         let scx', bs = self#bounds scx bs in
         let e2 = self#expr scx' e2 in
@@ -822,7 +825,8 @@ let simplify_sets_visitor = object (self : 'self)
     (* FIXME This rule inserts an Opaque "IsAFcn" which is recognized later
      * during standardization. Careful when modifying! *)
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Arrow (e2, e3) } ])
-      when not (has op1 Props.tpars_prop) ->
+      when (b || not (Params.debugging "nonewqut"))
+      && not (has op1 Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
         let e2 = self#expr scx e2 in
         let e3 = self#expr scx e3 in
@@ -865,7 +869,8 @@ let simplify_sets_visitor = object (self : 'self)
           ]) @@ oe
 
     | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = Product es } ])
-      when not (has op Props.tpars_prop) ->
+      when ((not b) || not (Params.debugging "nonewqut"))
+      && not (has op Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
         let es = List.map (self#expr scx) es in
         let eq_op = assign (Internal B.Eq %% []) Props.tpars_prop [ TAtm TAIdv ] in
@@ -927,7 +932,7 @@ let simplify_sets_visitor = object (self : 'self)
         ) @@ oe
 
     | Apply ({ core = Internal (B.Eq | B.Neq as blt) } as op, [ e ; f ])
-      when eq_pol b blt
+      when (eq_pol b blt || not (Params.debugging "nonewqut"))
       && (is_set e || is_set f)
       && (match query op Props.tpars_prop with
           Some [TAtm TAIdv] -> true | _ -> false) ->
@@ -958,7 +963,8 @@ let simplify_sets_visitor = object (self : 'self)
         ) @@ oe
 
     | Apply ({ core = Internal B.Subseteq } as op, [ e ; f ])
-      when b && (match query op Props.tpars_prop with
+      when (b || not (Params.debugging "nonewqut"))
+        && (match query op Props.tpars_prop with
                  None -> true | _ -> false) ->
         let e = self#expr scx e in
         let f = self#expr scx f in
@@ -982,6 +988,24 @@ let simplify_sets_visitor = object (self : 'self)
     | Apply ({ core = Internal B.Neg } as op, [ e ]) ->
         let e = self#expr (not b, hx) e in
         Apply (op, [ e ]) @@ oe
+    | Apply ({ core = Internal B.Equiv } as op, [ e ; f ]) ->
+        let e1 = self#expr (not b, hx) e in
+        let f1 = self#expr (b, hx) f in
+        let e2 = self#expr (b, hx) e in
+        let f2 = self#expr (not b, hx) f in
+        Apply (
+          Internal B.Conj @@ op,
+          [ Apply (
+            Internal B.Implies %% [],
+            [ e1
+            ; f1
+            ]) %% []
+          ; Apply (
+            Internal B.Implies %% [],
+            [ f2
+            ; e2
+            ]) %% []
+          ]) @@ oe
 
     | _ -> super#expr scx oe
 

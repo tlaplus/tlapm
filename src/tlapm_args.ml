@@ -176,6 +176,7 @@ let init () =
                  * "oldsmt"     use the old version of SMT (default)
                  * "newsmt"     use the new version of SMT
                  * "rwsetsX"    apply rewriting rules to eliminate set expressions; call function X times where 0 < X < 10
+                 * "nonewqut"   don't apply rewritings that introduce quantifiers
                  * "smt_prove_false"
                  *              replace the goal with FALSE to catch bugs
                  *)
