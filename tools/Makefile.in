@@ -218,7 +218,7 @@ same-full:
 
 .PHONY: emacs
 emacs:
-	svn --force export svn+ssh://${MSR_SVN_USER}@svn.msr-inria.inria.fr/var/lib/svn/repository/tla/trunk/misc/tla-mode doc/web/tla-mode
+	svn --force export svn+ssh://${MSR_SVN_USER}@svn.msr-inria.inria.fr/var/lib/svn/repository/tla/trunk/misc/tla_mode doc/web/tla_mode
 
 .PHONY: web
 web: same-justconf emacs

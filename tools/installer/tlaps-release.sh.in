@@ -329,7 +329,7 @@ banner "Exporting tla-mode"
 cd "$INSTDIR"
 
 mkdir -p lib/tlaps/emacs
-(cd lib/tlaps/emacs && git_export "$PS_DIR/misc" tla-mode)
+(cd lib/tlaps/emacs && git_export "$PS_DIR/misc" tla_mode)
 echo "   [x] Exported"
 
 ################################################################################
