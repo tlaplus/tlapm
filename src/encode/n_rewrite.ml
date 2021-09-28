@@ -605,6 +605,26 @@ let simpl_subseteq sq =
 
 (* {3 Simplify Sets} *)
 
+let normalize = object (self : 'self)
+  inherit [unit] Expr.Visit.map as super
+  method expr scx oe =
+    match oe.core with
+    | Apply (e, []) ->
+        e $$ oe
+    | _ ->
+        super#expr scx oe
+end
+
+(* A simple function to make one substitution.
+ * NOTE This is a DIRTY HACK that circumvents a limitation of {!Subst.app_expr}
+ * regarding annotations.  The functions of {!Subst} do not always preserve
+ * annotations, which would be an issue here. *)
+let subst a b =
+  let lam = Lambda ([ "x" %% [], Shape_expr ], a) %% [] in
+  let arg = Apply (b, []) %% [] in
+  Subst.normalize lam [arg] |>
+  normalize#expr ((), Deque.empty)
+
 let simplify_sets_visitor = object (self : 'self)
   inherit [bool] Expr.Visit.map as super
 
@@ -755,7 +775,7 @@ let simplify_sets_visitor = object (self : 'self)
             [ e1
             ; e2 ]
           ) %% []
-          ; Subst.app_expr (Subst.scons e1 (Subst.shift 0)) e3 ]
+          ; subst e3 e1 ]
         ) @@ oe
 
     | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = SetOf (e2, bs) } ])
