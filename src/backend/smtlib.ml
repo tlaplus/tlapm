@@ -374,9 +374,6 @@ and fmt_expr cx oe =
         end ff (vs, e)
       end
 
-  | Quant (_, [], e) ->
-      fmt_expr cx e
-
   | Quant (q, bs, e) ->
       let ncx, rbs =
         let rec spin acc_cx acc_bs bs =

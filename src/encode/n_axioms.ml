@@ -47,13 +47,16 @@ let apps tla_smb es =
   app opq es
 
 let quant q xs ty0s ?pats e =
-  let xs =
-    List.map2 begin fun x ty0 ->
-      (assign (x %% []) Props.ty0_prop ty0, Constant, No_domain)
-    end xs ty0s
-  in
-  let e = maybe_assign pattern_prop e pats in
-  Quant (q, xs, e)
+  if List.length xs > 0 then
+    let xs =
+      List.map2 begin fun x ty0 ->
+        (assign (x %% []) Props.ty0_prop ty0, Constant, No_domain)
+      end xs ty0s
+    in
+    let e = maybe_assign pattern_prop e pats in
+    Quant (q, xs, e)
+  else
+    e.core
 
 let lam xs ty0s e =
   let xs =
@@ -215,17 +218,12 @@ let op_typing t_smb =
 
   quant Forall
   (gen "x" n) t_ty0s
-  ?pats:(
-    if n > 0 then
-      Some ([ [
-        apps i_smb
-        (List.map2 begin fun e ty0 ->
-          cast ty0 e
-        end (ixi n) t_ty0s) %% []
-      ] ])
-    else
-      None
-  )
+  ~pats:[ [
+    apps i_smb
+    (List.map2 begin fun e ty0 ->
+      cast ty0 e
+    end (ixi n) t_ty0s) %% []
+  ] ]
   ( begin
       if is_pred then appb B.Equiv
       else appb ~tys:[ t_idv ] B.Eq
