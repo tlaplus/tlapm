@@ -24,6 +24,8 @@ import pprint
 import subprocess
 import sys
 
+import assets.header
+
 
 ROOT_DIR = 'content/'
 MARKDOWN_SOURCES = [
@@ -75,31 +77,20 @@ r'''<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<link rel="stylesheet" type="text/css" id="ss"/>
+<link
+rel="stylesheet" type="text/css"
+id="ss"
+href="{path_to_assets_root}assets/css/common.css"
+/>
 <title>TLA+ Proof System</title>
 </head>
 <body>
-<script type="text/javascript">
-  var baseurl = (document.URL.match (/.*[\\\/]content[\\\/]/))[0]
-  baseurl = baseurl.slice (0, baseurl.length - "content/".length)
-  document.getElementById('ss').href = baseurl + 'assets/css/common.css'
-  document.write ('\x3Cscript type="text/javascript" src="'
-                  + baseurl + 'assets/header.js">\x3C/script>')
-</script>
-<noscript><p><b>Warning: This site uses JavaScript. Without JavaScript, you
-are missing the navigation menus.</b></p><hr/></noscript>
-
-<!-- DO NOT EDIT ABOVE THIS LINE, DO NOT REMOVE THIS LINE -->
-
-
 ''')
-CONTENT_PAGE_FOOTER = r'''
+CONTENT_PAGE_FOOTER = '''
+    </div>
+  </div>
+</div>
 
-<!-- DO NOT EDIT BELOW THIS LINE, DO NOT REMOVE THIS LINE -->
-
-<script type="text/javascript">
-  document.write ('\x3Cscript type="text/javascript" src="'
-                  + baseurl + 'assets/footer.js">\x3C/script>')
 </script>
 </body>
 </html>
@@ -186,7 +177,8 @@ def _convert_source_to_html(
     if '<title>Redirection</title>' in md_src:
         html_src = _convert_redirection_page_to_html(md_src)
     else:
-        html_src = _convert_content_page_to_html(md_src)
+        html_src = _convert_content_page_to_html(
+            md_src, basepath)
     html_path = f'{basepath}.html'
     with open(html_path, 'wt') as f:
         f.write(html_src)
@@ -202,17 +194,27 @@ def _convert_redirection_page_to_html(md_src) -> str:
     return html + REDIRECT_PAGE_FOOTER
 
 
-def _convert_content_page_to_html(md_src):
+def _convert_content_page_to_html(
+        md_src:
+            str,
+        basepath:
+            str
+            ) -> str:
     """Return HTML from converting Markdown `md_src`.
 
     This function prepends the HTML header and
     appends the HTML footer for redirection webpages.
-
-    @type md_src: `str`
     """
+    depth = basepath.count('/')
+    root_path = '../' * depth
     html = _convert_md_to_html(md_src)
+    html = assets.header.colorize_tla_blocks(html)
+    menu = assets.header.make_menu(f'{basepath}.html')
+    header = CONTENT_PAGE_HEADER.format(
+        path_to_assets_root=root_path)
     return '\n'.join([
-        CONTENT_PAGE_HEADER,
+        header,
+        menu,
         html,
         CONTENT_PAGE_FOOTER])
 
