@@ -1143,7 +1143,7 @@ and expr_aux scx oe =
       let f, ty02 = expr scx f in
       begin match ty01, ty02 with
       | TAtm TAInt, TAtm TAInt when typelvl scx > 1 ->
-          let op = assign op Props.tpars_prop [ ] in
+          let op = assign op Props.tpars_prop [ TAtm TAInt ] in
           let ret = Apply (op, [ e ; f ]) @@ oe in
           (ret, TAtm TABol)
       | _, _ ->

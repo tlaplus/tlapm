@@ -135,13 +135,13 @@ let visitor = object (self : 'self)
           | Exp,        Some [ TAtm TAInt ]   -> TIntExp
           | Quotient,   Some [ ]              -> TIntQuotient
           | Remainder,  Some [ ]              -> TIntRemainder
-          | Lteq,       Some [ ]              -> TIntLteq
-          | Lt,         Some [ ]              -> TIntLt
-          | Gteq,       Some [ ]              -> TIntGteq
-          | Gt,         Some [ ]              -> TIntGt
+          | Lteq,       Some [ TAtm TAInt ]   -> TIntLteq
+          | Lt,         Some [ TAtm TAInt ]   -> TIntLt
+          | Gteq,       Some [ TAtm TAInt ]   -> TIntGteq
+          | Gt,         Some [ TAtm TAInt ]   -> TIntGt
           | Range,      Some [ ]              -> TIntRange
 
-          | (Plus | Uminus | Minus | Times | Exp),
+          | (Plus | Uminus | Minus | Times | Exp | Lteq | Lt | Gteq | Gt),
                         Some [ TAtm TARel ]   ->
               error ~at:oe "Real numbers not implemented"
           | _,          Some _      ->
