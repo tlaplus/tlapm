@@ -693,6 +693,9 @@ let simplify_sets_visitor = object (self : 'self)
 
   method expr (b, hx as scx) oe =
     match oe.core with
+    (* x \in { a1, .., an }
+     *    -->
+     * x = a1 \/ .. \/ x = an *)
     | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = SetEnum es } as e2 ])
       when not (has op Props.tpars_prop) ->
         let n = List.length es in
@@ -716,6 +719,9 @@ let simplify_sets_visitor = object (self : 'self)
             Apply (eq, [ e1 ; e2 ]) %% []
           end es) @@ e2
 
+    (* x \in SUBSET a
+     *    -->
+     * \A y : y \in x => y \in a *)
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.SUBSET } as op2, [ e2 ]) } ])
       when ((not b) || not (Params.debugging "nonewqut"))
       && not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
@@ -741,6 +747,9 @@ let simplify_sets_visitor = object (self : 'self)
         in
         Quant (Forall, [ v, Constant, No_domain ], e) @@ oe
 
+    (* x \in UNION a
+     *    -->
+     * \E y : y \in a /\ x \in y *)
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.UNION } as op2, [ e2 ]) } ])
       when ((not b) && not (Params.debugging "nonewqut"))
       && not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
@@ -766,6 +775,9 @@ let simplify_sets_visitor = object (self : 'self)
         in
         Quant (Exists, [ v, Constant, No_domain ], e) @@ oe
 
+    (* x \in a \cup b
+     *    -->
+     * x \in a \/ x \in b *)
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.Cup } as op2, [ e2 ; e3 ]) } ])
       when not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
@@ -785,6 +797,9 @@ let simplify_sets_visitor = object (self : 'self)
           ) %% [] ]
         ) @@ oe
 
+    (* x \in a \cap b
+     *    -->
+     * x \in a /\ x \in b *)
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.Cap } as op2, [ e2 ; e3 ]) } ])
       when not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
@@ -804,6 +819,9 @@ let simplify_sets_visitor = object (self : 'self)
           ) %% [] ]
         ) @@ oe
 
+    (* x \in a \ b
+     *    -->
+     * x \in a /\ ~ x \in b *)
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.Setminus } as op2, [ e2 ; e3 ]) } ])
       when not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
@@ -826,6 +844,9 @@ let simplify_sets_visitor = object (self : 'self)
           ) %% [] ]
         ) @@ oe
 
+    (* x \in { y \in S : P(y) }
+     *    -->
+     * x \in S /\ P(x) *)
     | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = SetSt (v, e2, e3) } ])
       when not (has op Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
@@ -843,6 +864,9 @@ let simplify_sets_visitor = object (self : 'self)
           ; subst e3 e1 ]
         ) @@ oe
 
+    (* x \in { F(y1, .., yn) : y1 \in a1, .., yn \in an }
+     *    -->
+     * \E y1, .., yn : y1 \in a1 /\ .. /\ yn \in an /\ x = F(y1, .., yn) *)
     | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = SetOf (e2, bs) } ])
       when ((not b) || not (Params.debugging "nonewqut"))
       && not (has op Props.tpars_prop) ->
@@ -885,6 +909,9 @@ let simplify_sets_visitor = object (self : 'self)
           ) %% []
         ) @@ oe
 
+    (* x \in [ a -> b ]
+     *    -->
+     * IsAFcn(x) /\ DOMAIN x = a /\ \A y : y \in a => x[y] \in b *)
     (* FIXME This rule inserts an Opaque "IsAFcn" which is recognized later
      * during standardization. Careful when modifying! *)
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Arrow (e2, e3) } ])
@@ -931,6 +958,9 @@ let simplify_sets_visitor = object (self : 'self)
           ) %% []
           ]) @@ oe
 
+    (* x \in a1 \X .. \X an
+     *    -->
+     * \E y1, .., yn : y1 \in a1 /\ .. /\ yn \in an /\ x = << y1, .., yn >> *)
     | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = Product es } ])
       when ((not b) || not (Params.debugging "nonewqut"))
       && not (has op Props.tpars_prop) ->
@@ -969,6 +999,9 @@ let simplify_sets_visitor = object (self : 'self)
           ) %% []
         ) @@ oe
 
+    (* x \in a..b
+     *    -->
+     * x \in Int /\ a <= x /\ x <= b *)
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.Range } as op2, [ e2 ; e3 ]) } ])
       when not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
@@ -994,6 +1027,29 @@ let simplify_sets_visitor = object (self : 'self)
           ]
         ) @@ oe
 
+    (* x \in Nat
+     *    -->
+     * x \in Int /\ 0 <= x *)
+    | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Internal B.Nat } as op2 ])
+      when not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
+        let e1 = self#expr scx e1 in
+        Apply (
+          Internal B.Conj %% [],
+          [ Apply (
+            Internal B.Mem %% [],
+            [ e1
+            ; Internal B.Int %% []
+            ]) %% []
+          ; Apply (
+            Internal B.Lteq %% [],
+            [ Num ("0", "") %% []
+            ; e1
+            ]) %% []
+          ]) %% []
+
+    (* x = y    when x or y's top connective is a set constructor
+     *    -->
+     * \A z : z \in x <=> z \in y *)
     | Apply ({ core = Internal (B.Eq | B.Neq as blt) } as op, [ e ; f ])
       when (eq_pol b blt || not (Params.debugging "nonewqut"))
       && (is_set e || is_set f)
@@ -1025,6 +1081,9 @@ let simplify_sets_visitor = object (self : 'self)
               | _ -> failwith ""
         ) @@ oe
 
+    (* x \subseteq y    when x or y's top connective is a set constructor
+     *    -->
+     * \A z : z \in x => z \in y *)
     | Apply ({ core = Internal B.Subseteq } as op, [ e ; f ])
       when (b || not (Params.debugging "nonewqut"))
         && (match query op Props.tpars_prop with
@@ -1043,6 +1102,60 @@ let simplify_sets_visitor = object (self : 'self)
             ]
           ) %% []
         ) @@ oe
+
+    (* x \in a..b   when x, a, b : int
+     *    -->
+     * a <= x /\ x <= b *)
+    | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.Range } as op2, [ e2 ; e3 ]) } ])
+      when query op2 Props.tpars_prop = Some []
+        && ((query op1 Props.tpars_prop = Some [ TAtm TAInt ])
+          || (not (has op1 Props.tpars_prop)
+              && query e1 Props.icast_prop = Some (TAtm TAInt))) ->
+        let e1 = Property.remove (self#expr scx e1) Props.icast_prop in
+        let e2 = self#expr scx e2 in
+        let e3 = self#expr scx e3 in
+        let lteq_op = assign (Internal B.Lteq %% []) Props.tpars_prop [ TAtm TAInt ] in
+        List (
+          And,
+          [ Apply (
+            lteq_op,
+            [ e2
+            ; e1
+            ]) %% []
+          ; Apply (
+            lteq_op,
+            [ e1
+            ; e3
+            ]) %% []
+          ]
+        ) @@ oe
+
+    (* x \in Int    when x : int
+     *    -->
+     * TRUE *)
+    | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Internal B.Int } as op2 ])
+      when (query op2 Props.tpars_prop = Some [])
+        && ((query op1 Props.tpars_prop = Some [ TAtm TAInt ])
+          || (not (has op1 Props.tpars_prop)
+            && query e1 Props.icast_prop = Some (TAtm TAInt))) ->
+        Internal B.TRUE @@ oe
+
+    (* x \in Nat    when x : int
+     *    -->
+     * x \in Int /\ 0 <= x *)
+    | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Internal B.Nat } as op2 ])
+      when (query op2 Props.tpars_prop = Some [])
+        && ((query op1 Props.tpars_prop = Some [ TAtm TAInt ])
+          || (not (has op1 Props.tpars_prop)
+            && query e1 Props.icast_prop = Some (TAtm TAInt))) ->
+        let e1 = Property.remove (self#expr scx e1) Props.icast_prop in
+        let lteq_op = assign (Internal B.Lteq %% []) Props.tpars_prop [ TAtm TAInt ] in
+        let zero_op = assign (Num ("0", "") %% []) Props.tpars_prop [] in
+        Apply (
+          lteq_op,
+          [ zero_op
+          ; e1
+        ]) @@ oe
 
     | Apply ({ core = Internal B.Implies } as op, [ e ; f ]) ->
         let e = self#expr (not b, hx) e in
