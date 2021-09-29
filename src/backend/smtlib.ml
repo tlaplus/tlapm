@@ -475,7 +475,7 @@ let preprocess ~solver sq =
     |> debug "Original Obligation:"
     |> Type.Synthesize.main ~typelvl
     |> Encode.Rewrite.elim_notmem
-    |> (if typelvl = 0 then Encode.Rewrite.elim_compare else fun e -> e)
+    |> Encode.Rewrite.elim_compare
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
     |> repeat rwsets Encode.Rewrite.simplify_sets

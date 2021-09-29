@@ -554,14 +554,15 @@ let typed_deps tla_smb s =
       ([ IntRemainder ],                      [])
   | TIntExp ->
       ([ IntExp ],                            [])
+  (* NOTE Best to declare only Lteq and not the four variants *)
   | TIntLteq ->
-      ([ IntLteq ],                           [])
+      ([ IntLteq ],                           [ Typing TIntLteq ])
   | TIntLt ->
-      ([ IntLt ],                             [])
+      ([ (*IntLt*) IntLteq ],                 [ Typing TIntLteq ])
   | TIntGteq ->
-      ([ IntGteq ],                           [])
+      ([ (*IntGteq*) IntLteq ],               [ Typing TIntLteq ])
   | TIntGt ->
-      ([ IntGt ],                             [])
+      ([ (*IntGt*) IntLteq ],                 [ Typing TIntLteq ])
   | TIntRange when t0p ->
       ([ Mem ; Cast t_int ; TIntLteq ; IntRange ],
                                               [ TIntRangeDef ; Typing TIntRange ])
