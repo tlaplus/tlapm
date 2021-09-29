@@ -12,6 +12,11 @@ open Expr.T
 *)
 val elim_bounds : sequent -> sequent
 
+(** Every [Flex v] replaced by two declarations for [v] and [v'],
+    with occurrences of [Opaque v'] replaced by an index.
+*)
+val elim_flex : sequent -> sequent
+
 (** Simplify NotMem *)
 val elim_notmem : sequent -> sequent
 

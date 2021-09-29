@@ -13,6 +13,7 @@ end
 module Rewrite : sig
   open Expr.T
   val elim_bounds : sequent -> sequent
+  val elim_flex : sequent -> sequent
   val elim_notmem : sequent -> sequent
   val elim_compare : sequent -> sequent
   val elim_except : sequent -> sequent

@@ -470,6 +470,7 @@ let preprocess ~solver sq =
   let sq = sq
     (*|> Encode.Hints.main*) (* TODO *)
     |> debug "Original Obligation:"
+    |> Encode.Rewrite.elim_flex
     |> Type.Synthesize.main ~typelvl
     |> Encode.Rewrite.elim_notmem
     |> Encode.Rewrite.elim_compare

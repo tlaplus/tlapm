@@ -165,6 +165,69 @@ let elim_bounds sq =
   snd (elim_bounds_visitor#sequent cx sq)
 
 
+(* {3 Flex Elimination} *)
+
+let is_prime s =
+  let rgx = Str.regexp "#prime$" in
+  try
+    let _ = Str.search_forward rgx s 0 in
+    true
+  with Not_found ->
+    false
+
+let remove_prime s =
+  let rgx = Str.regexp "#prime$" in
+  Str.replace_first rgx "" s
+
+let mk_prime s =
+  s ^ "_prime"
+
+let elim_flex_visitor = object (self : 'self)
+  inherit [unit] Expr.Visit.map as super
+
+  method expr scx oe =
+    match oe.core with
+    | Opaque s when is_prime s ->
+        let s = mk_prime (remove_prime s) in
+        let n, _ = Option.get (Deque.find ~backwards:true (snd scx) (fun h -> hyp_name h = s)) in
+        Ix (n + 1) %% []
+    | _ -> super#expr scx oe
+
+  (* See the sequent method for elim_bounds_visitor *)
+  method sequent scx sq =
+    let rec spin scx sub hs =
+      match Deque.front hs with
+      | None -> (scx, sub, Deque.empty)
+
+      | Some ({ core = Flex v } as h, hs) ->
+          let h1 = Fresh (v, Shape_expr, Constant, Unbounded) @@ h in
+          let v' = mk_prime v.core %% [] in
+          let h2 = Fresh (v', Shape_expr, Constant, Unbounded) %% [] in
+          let scx = Visit.adj scx h1 in
+          let sub = Subst.bump sub in
+          let scx = Visit.adj scx h2 in
+          let sub = Subst.compose (Subst.shift 1) sub in
+          let scx, sub, hs = spin scx sub hs in
+          (scx, sub, Deque.cons h1 (Deque.cons h2 hs))
+
+      | Some (h, hs) ->
+          let h = Subst.app_hyp sub h in
+          let scx, h = self#hyp scx h in
+          let sub = Subst.bump sub in
+          let scx, sub, hs = spin scx sub hs in
+          (scx, sub, Deque.cons h hs)
+    in
+    let scx, sub, hs = spin scx (Subst.shift 0) sq.context in
+    let e = Subst.app_expr sub sq.active in
+    let e = self#expr scx e in
+    (scx, { context = hs ; active = e })
+end
+
+let elim_flex sq =
+  let cx = ((), Deque.empty) in
+  snd (elim_flex_visitor#sequent cx sq)
+
+
 (* {3 NotMem Simplification} *)
 
 let elim_notmem_visitor = object (self : 'self)

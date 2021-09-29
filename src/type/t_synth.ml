@@ -175,14 +175,6 @@ let rec fold_left3 f a l1 l2 l3 =
   | _, _, _ ->
       failwith "fold_left3"
 
-let is_prime s =
-  let rgx = Str.regexp "#prime$" in
-  Str.string_match rgx s 0
-
-let remove_prime s =
-  let rgx = Str.regexp "#prime$" in
-  Str.replace_first rgx "" s
-
 
 (* {3 Main} *)
 
@@ -198,15 +190,6 @@ and expr_aux scx oe =
   | Ix n ->
       let ty0 = lookup_ty0 scx n in
       (Ix n @@ oe, ty0)
-
-  | Opaque s when is_prime s ->
-      let s = remove_prime s in
-      let ty0 =
-        match Deque.find ~backwards:true (snd scx) (fun h -> hyp_name h = s) with
-        | Some (n, _) -> lookup_ty0 scx (n + 1)
-        | _ -> error ~at:oe "Cannot find declaration for unprimed variable"
-      in
-      (Opaque s @@ oe, ty0)
 
   | Opaque s ->
       (Opaque s @@ oe, TAtm TAIdv)
