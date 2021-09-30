@@ -505,12 +505,33 @@ let collect_sorts sq =
 
 (* {3 Obligation Formatting} *)
 
-let pp_print_assert cx ff e =
-  pp_print_sexpr begin fun ff () ->
-    fprintf ff "assert@ %a"
-    (pp_box @@@ pp_print_expr cx) e
-  end ff ();
-  pp_print_newline ff ()
+let pp_print_assert ?meta cx ff e =
+    match meta with
+    | None ->
+        pp_print_sexpr begin fun ff () ->
+          fprintf ff "assert@ %a"
+          (pp_box @@@ pp_print_expr cx) e
+        end ff ();
+        pp_print_newline ff ()
+    | Some m ->
+        fprintf ff ";; %s"
+        begin match m.hkind with
+        | Axiom -> "Axiom: " ^ m.name
+        | Hypothesis -> "Hypothesis: " ^ m.name
+        | Goal -> "Goal"
+        end;
+        pp_print_newline ff ();
+        pp_print_sexpr begin fun ff () ->
+          fprintf ff "assert@ %a"
+          begin pp_box @@@ pp_print_sexpr
+            begin fun ff e ->
+              fprintf ff "!@ %a@ :named@ %s"
+              (pp_box @@@ pp_print_expr cx) e
+              ("name__" ^ format_smt m.name)
+            end
+          end e
+        end ff ();
+        pp_print_newline ff ()
 
 let pp_print_declaresort ff nm ar =
   pp_print_sexpr begin fun ff () ->
@@ -575,14 +596,14 @@ let pp_print_obligation ?(solver="SMT") ff ob =
     | None ->
         cx
 
-    | Some ({ core = Fact (e, vis, _) }, hs) ->
+    | Some ({ core = Fact (e, vis, _) } as h, hs) ->
         let ncx = bump cx in
         begin if vis = Hidden then
           fprintf ff "; hidden fact@."
         else if is_sndord_fact e then
           fprintf ff "; omitted fact (second-order)@."
         else
-          pp_print_assert cx ff e
+          pp_print_assert ?meta:(query h meta_prop) cx ff e
         end;
         pp_print_newline ff ();
         spin ncx hs
@@ -649,11 +670,10 @@ let pp_print_obligation ?(solver="SMT") ff ob =
   in
 
   (* Print goal *)
-  fprintf ff ";; Goal@.";
   if is_sndord_fact sq.active then
     eprintf "; omitted goal (second-order)@."
   else
-    pp_print_assert cx ff (Apply (Internal B.Neg %% [], [sq.active]) %% []);
+    pp_print_assert ~meta:{ hkind = Goal ; name = "Goal" } cx ff (Apply (Internal B.Neg %% [], [sq.active]) %% []);
   pp_print_newline ff ();
 
   fprintf ff "(check-sat)@.";
