@@ -17,7 +17,12 @@ open N_table
 
 (* {3 Contexts} *)
 
-type ecx = s * SmbSet.t * expr Deque.dq
+module TlaAxmSet = Set.Make (struct
+  type t = tla_axm
+  let compare = Pervasives.compare
+end)
+
+type ecx = s * SmbSet.t * TlaAxmSet.t
 
 let init_ecx =
   let init_smbs =
@@ -25,7 +30,7 @@ let init_ecx =
     List.map mk_smb |>
     SmbSet.of_list
   in
-  (init, init_smbs, Deque.empty)
+  (init, init_smbs, TlaAxmSet.empty)
 
 
 (* {3 Helpers} *)
@@ -74,13 +79,8 @@ let add_smb ~solver smb ecx =
           let smb = mk_smb tla_smb in
           smb :: smbs
         end [] deps.dat_deps in
-        let axms =
-          List.map begin fun tla_axm ->
-            assign (get_axm ~solver tla_axm) meta_prop { hkind = Axiom; name = axm_desc tla_axm }
-          end deps.dat_axms
-        in
         let acc_smbs = SmbSet.add smb acc_smbs in
-        let acc_facts = List.fold_left Deque.snoc acc_facts axms in
+        let acc_facts = List.fold_right TlaAxmSet.add deps.dat_axms acc_facts in
         let work_smbs = SmbSet.remove smb work_smbs in
         let work_smbs = List.fold_right SmbSet.add smb_deps work_smbs in
         spin (s, acc_smbs, acc_facts) work_smbs
@@ -129,8 +129,11 @@ let mk_decl smb =
   let h = Fresh (v, shp, Constant, Unbounded) %% [] in
   assign h smb_prop smb
 
-let mk_fact e =
+let mk_fact ~solver tla_axm =
+  let e = get_axm ~solver tla_axm in
+  let meta = { hkind = Axiom ; name = axm_desc tla_axm } in
   let h = Fact (e, Visible, NotSet) %% [] in
+  let h = assign h meta_prop meta in
   (* The optional smb_prop annotation is used in Flattening
    * for detecting axiom instances *)
   let h = Option.fold (fun h -> assign h smb_prop) h (query e smb_prop) in
@@ -178,7 +181,7 @@ end
 let assemble ~solver (_, decls, axms) sq =
   let decls = SmbSet.filter (fun smb -> not (is_native ~solver smb)) decls in
   let decls = Deque.map (fun _ -> mk_decl) (SmbSet.elements decls |> Deque.of_list) in
-  let axms = Deque.map (fun _ -> mk_fact) axms in
+  let axms = TlaAxmSet.fold (fun tla_axm dq -> Deque.snoc dq (mk_fact ~solver tla_axm)) axms Deque.empty in
   let top_hx = Deque.append decls axms in
 
   let sq = { sq with context = Deque.append top_hx sq.context } in

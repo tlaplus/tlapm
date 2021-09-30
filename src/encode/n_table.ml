@@ -176,6 +176,78 @@ type tla_axm =
   | TypeGuard of ty
   | Typing of tla_smb (** Only for typed symbols *)
 
+
+let tla_smb_to_string = function
+  | Choose -> "Choose"
+  | Mem -> "Mem"
+  | SubsetEq -> "SubsetEq"
+  | SetEnum n -> Format.sprintf "SetEnum %d" n
+  | Union -> "Union"
+  | Subset -> "Subset"
+  | Cup -> "Cup"
+  | Cap -> "Cap"
+  | SetMinus -> "SetMinus"
+  | SetSt -> "SetSt"
+  | SetOf n -> Format.sprintf "SetOf %d" n
+  | BoolSet -> "BoolSet"
+  | StrSet -> "StrSet"
+  | StrLit s -> Format.sprintf "StrLit %s" s
+  | IntSet -> "IntSet"
+  | NatSet -> "NatSet"
+  | IntLit n -> Format.sprintf "IntLit %d" n
+  | IntPlus -> "IntPlus"
+  | IntUminus -> "IntUminus"
+  | IntMinus -> "IntMinus"
+  | IntTimes -> "IntTimes"
+  | IntQuotient -> "IntQuotient"
+  | IntRemainder -> "IntRemainder"
+  | IntExp -> "IntExp"
+  | IntLteq -> "IntLteq"
+  | IntLt -> "IntLt"
+  | IntGteq -> "IntGteq"
+  | IntGt -> "IntGt"
+  | IntRange -> "IntRange"
+  | FunIsafcn -> "FunIsafcn"
+  | FunSet -> "FunSet"
+  | FunConstr -> "FunConstr"
+  | FunDom -> "FunDom"
+  | FunApp -> "FunApp"
+  | FunExcept -> "FunExcept"
+  | Tuple n -> Format.sprintf "Tuple %d" n
+  | Product n -> Format.sprintf "Product %d" n
+  | Rec fs -> String.concat " " ("Rec" :: fs)
+  | RecSet fs -> String.concat " " ("RecSet" :: fs)
+  | SeqSeq -> "SeqSeq"
+  | SeqLen -> "SeqLen"
+  | SeqBSeq -> "SeqBSeq"
+  | SeqCat -> "SeqCat"
+  | SeqAppend -> "SeqAppend"
+  | SeqHead -> "SeqHead"
+  | SeqTail -> "SeqTail"
+  | SeqSubSeq -> "SeqSubSeq"
+  | SeqSelectSeq -> "SeqSelectSeq"
+  | TMem ty -> "TMem " ^ ty_to_string ty
+  | TStrSet -> "TStrSet"
+  | TStrLit s -> Format.sprintf "TStrLit %s" s
+  | TIntSet -> "TIntSet"
+  | TNatSet -> "TNatSet"
+  | TIntLit n -> Format.sprintf "TIntLit %d" n
+  | TIntPlus -> "TIntPlus"
+  | TIntUminus -> "TIntUminus"
+  | TIntMinus -> "TIntMinus"
+  | TIntTimes -> "TIntTimes"
+  | TIntQuotient -> "TIntQuotient"
+  | TIntRemainder -> "TIntRemainder"
+  | TIntExp -> "TIntExp"
+  | TIntLteq -> "TIntLteq"
+  | TIntLt -> "TIntLt"
+  | TIntGteq -> "TIntGteq"
+  | TIntGt -> "TIntGt"
+  | TIntRange -> "TIntRange"
+  | Cast ty -> "Cast " ^ ty_to_string ty
+  | True ty -> "True" ^ ty_to_string ty
+  | Anon (s, ty2) -> "Anon " ^ s ^ " " ^ ty2_to_string ty2
+
 let axm_desc = function
   | ChooseDef -> "ChooseDef"
   | ChooseExt -> "ChooseExt"
@@ -227,17 +299,17 @@ let axm_desc = function
   | ProductDef_alt1 n -> Format.sprintf "ProductDef_alt1 %d" n
   | ProductDef_alt21 n -> Format.sprintf "ProductDef_alt21 %d" n
   | ProductDef_alt22 n -> Format.sprintf "ProductDef_alt22 %d" n
-  | RecIsafcn fs -> "" (*Format.sprintf "RecIsafcn %a" (Fmtutil.pp_print_delimited ~sep:Format.pp_print_space Format.pp_print_string) fs*)
-  | RecSetDef fs -> "" (*Format.sprintf "RecSetDef %a" (Fmtutil.pp_print_delimited ~sep:Format.pp_print_space Format.pp_print_string) fs*)
-  | RecDomDef fs -> "" (*Format.sprintf "RecDomDef %a" (Fmtutil.pp_print_delimited ~sep:Format.pp_print_space Format.pp_print_string) fs*)
-  | RecAppDef fs -> "" (*Format.sprintf "RecAppDef %a" (Fmtutil.pp_print_delimited ~sep:Format.pp_print_space Format.pp_print_string) fs*)
+  | RecIsafcn fs -> String.concat " " ( "RecIsafcn" :: fs )
+  | RecSetDef fs -> String.concat " " ( "RecSetDef" :: fs )
+  | RecDomDef fs -> String.concat " " ( "RecDomDef" :: fs )
+  | RecAppDef fs -> String.concat " " ( "RecAppDef" :: fs )
   | SeqTailIsSeq -> "SeqTailIsSeq"
   | TStrSetDef -> "TStrSetDef"
   | TStrLitDistinct (s1, s2) -> Format.sprintf "TStrLitDistinct %s %s" s1 s2
   | TIntSetDef -> "TIntSetDef"
   | TNatSetDef -> "TNatSetDef"
   | TIntRangeDef -> "TIntRangeDef"
-  | CastInj ty -> Format.sprintf "CastInj"
-  | TypeGuard ty -> Format.sprintf "TypeGuard"
-  | Typing tla_smb -> Format.sprintf "Typing"
+  | CastInj ty -> "CastInj " ^ ty_to_string ty
+  | TypeGuard ty -> "TypeGuard " ^ ty_to_string ty
+  | Typing tla_smb -> "Typing " ^ tla_smb_to_string tla_smb
 

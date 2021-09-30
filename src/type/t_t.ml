@@ -134,6 +134,12 @@ and tyatom_to_string a =
   | TARel -> "Real"
   | TAStr -> "String"
 
+let ty1_to_string (Ty1 (tys, ty)) =
+  "Ty1[" ^ String.concat "_" (List.map ty_to_string tys) ^ ty_to_string ty ^ "]"
+
+let ty2_to_string (Ty2 (tys, ty)) =
+  "Ty2[" ^ String.concat " " (List.map ty1_to_string tys) ^ ty_to_string ty ^ "]"
+
 
 let rec pp_print_ty0 ff ty =
   pp_print_tyarrow ff ty

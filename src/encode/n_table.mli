@@ -196,6 +196,9 @@ type tla_axm =
   | TypeGuard of ty
   | Typing of tla_smb (** Only for typed symbols *)
 
+
+val tla_smb_to_string : tla_smb -> string
+
 (** Short description for the axiom *)
 val axm_desc : tla_axm -> string
 

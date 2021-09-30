@@ -71,6 +71,8 @@ module T : sig
   end
 
   val ty_to_string : ty -> string
+  val ty1_to_string : ty1 -> string
+  val ty2_to_string : ty2 -> string
 
   val pp_print_ty0 : Format.formatter -> ty0 -> unit
   val pp_print_ty1 : Format.formatter -> ty1 -> unit
