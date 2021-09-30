@@ -12,6 +12,7 @@ open Expr.T
 open N_smb
 open N_data
 open N_axioms
+open N_table
 
 
 (* {3 Contexts} *)
@@ -73,7 +74,11 @@ let add_smb ~solver smb ecx =
           let smb = mk_smb tla_smb in
           smb :: smbs
         end [] deps.dat_deps in
-        let axms = List.map (get_axm ~solver) deps.dat_axms in
+        let axms =
+          List.map begin fun tla_axm ->
+            assign (get_axm ~solver tla_axm) meta_prop { hkind = Axiom; name = axm_desc tla_axm }
+          end deps.dat_axms
+        in
         let acc_smbs = SmbSet.add smb acc_smbs in
         let acc_facts = List.fold_left Deque.snoc acc_facts axms in
         let work_smbs = SmbSet.remove smb work_smbs in
@@ -128,7 +133,8 @@ let mk_fact e =
   let h = Fact (e, Visible, NotSet) %% [] in
   (* The optional smb_prop annotation is used in Flattening
    * for detecting axiom instances *)
-  Option.fold (fun h -> assign h smb_prop) h (query e smb_prop)
+  let h = Option.fold (fun h -> assign h smb_prop) h (query e smb_prop) in
+  h
 
 let assemble_visitor = object (self : 'self)
   inherit [string] Expr.Visit.map as super

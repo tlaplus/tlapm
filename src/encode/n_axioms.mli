@@ -17,8 +17,9 @@ open N_table
     may affect their statements.
 *)
 
-(** You may use only this function.  Everything below is for documentation. *)
+(** Return the actual expression for an axiom *)
 val get_axm : solver:string -> tla_axm -> expr
+(** You should only use this function.  The rest is for documentation. *)
 
 
 (* {3 Special} *)

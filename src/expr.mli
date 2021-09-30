@@ -172,6 +172,13 @@ module T : sig
   val map_pats : (pat -> pat) -> expr -> expr;;
   val fold_pats : (pat -> 'a -> 'a) -> expr -> 'a -> 'a;;
 
+  type meta = {
+    hkind : hyp_kind ;
+    name : string ;
+  }
+  and hyp_kind = Axiom | Hypothesis | Goal
+  val meta_prop : meta pfuncs;;
+
   val get_val_from_id : 'hyp Deque.dq -> int -> 'hyp;;
   val hyp_hint : hyp -> hint;;
   val hyp_name : hyp -> string;;

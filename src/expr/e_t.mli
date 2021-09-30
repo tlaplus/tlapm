@@ -176,6 +176,15 @@ val remove_pats : expr -> expr;;
 val map_pats : (pat -> pat) -> expr -> expr;;
 val fold_pats : (pat -> 'a -> 'a) -> expr -> 'a -> 'a;;
 
+(** Information attached to an hypothesis in a sequent *)
+type meta = {
+  hkind : hyp_kind ;
+  name : string ;
+}
+and hyp_kind = Axiom | Hypothesis | Goal
+
+val meta_prop : meta pfuncs;;
+
 val get_val_from_id : 'hyp Deque.dq -> int -> 'hyp;;
 
 (* fmt.ml *)

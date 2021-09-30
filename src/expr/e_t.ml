@@ -193,6 +193,14 @@ let fold_pats f oe a =
   | None -> a
   | Some pats -> List.fold_right f pats a
 
+type meta = {
+  hkind : hyp_kind ;
+  name : string ;
+}
+and hyp_kind = Axiom | Hypothesis | Goal
+
+let meta_prop = make "Expr.T.meta_prop"
+
 (* context helper function *)
 let get_val_from_id cx n = match Deque.nth ~backwards:true cx (n - 1) with
 | Some e -> e
