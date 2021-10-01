@@ -449,17 +449,10 @@ let preprocess ~solver sq =
     else 1
   in
 
-  let rwsets =
-         if Params.debugging "rwsets1" then 1
-    else if Params.debugging "rwsets2" then 2
-    else if Params.debugging "rwsets3" then 3
-    else if Params.debugging "rwsets4" then 4
-    else if Params.debugging "rwsets5" then 5
-    else if Params.debugging "rwsets6" then 6
-    else if Params.debugging "rwsets7" then 7
-    else if Params.debugging "rwsets8" then 8
-    else if Params.debugging "rwsets9" then 9
-    else 0
+  let rw =
+         if Params.debugging "rw"   then true
+    else if Params.debugging "norw" then false
+    else true
   in
 
   let rec repeat k f a =
@@ -476,7 +469,7 @@ let preprocess ~solver sq =
     |> Encode.Rewrite.elim_compare
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
-    |> repeat rwsets Encode.Rewrite.simplify_sets
+    |> repeat (if rw then 10 else 0) Encode.Rewrite.simplify_sets
     |> debug "Disambiguate and Simplify:"
     |> Encode.Standardize.main
     |> debug "Standardize:"
