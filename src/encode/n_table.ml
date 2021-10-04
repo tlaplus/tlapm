@@ -104,18 +104,24 @@ type tla_axm =
   (* Set Theory *)
   | SetExt
   | SubsetEqDef
+  | SubsetEqIntro
+  | SubsetEqElim
   | EnumDef of int
+  | EnumDefIntro of int
+  | EnumDefElim of int
   | UnionDef
+  | UnionIntro
+  | UnionElim
   | SubsetDef
+  | SubsetIntro
+  | SubsetElim
   | CupDef
   | CapDef
   | SetMinusDef
   | SetStDef
   | SetOfDef of int
-  | SubsetEqDef_alt1
-  | SubsetEqDef_alt2
-  | EnumDef_alt1 of int
-  | EnumDef_alt2 of int
+  | SetOfIntro of int
+  | SetOfElim of int
   (* Strings *)
   | StrLitIsstr of string
   | StrLitDistinct of string * string
@@ -141,6 +147,9 @@ type tla_axm =
   | FunExt
   | FunConstrIsafcn
   | FunSetDef
+  | FunSetIntro
+  | FunSetElim1
+  | FunSetElim2
   | FunDomDef
   | FunAppDef
   | FunExceptIsafcn
@@ -148,17 +157,18 @@ type tla_axm =
   | FunExceptAppDef
   (* Tuples *)
   | TupIsafcn of int
-  | ProductDef of int
   | TupDomDef of int
   | TupAppDef of int * int
-  | ProductDef_alt1 of int
-  | ProductDef_alt21 of int
-  | ProductDef_alt22 of int
+  | ProductDef of int
+  | ProductIntro of int
+  | ProductElim of int
   (* Records *)
   | RecIsafcn of string list
-  | RecSetDef of string list
   | RecDomDef of string list
   | RecAppDef of string list
+  | RecSetDef of string list
+  | RecSetIntro of string list
+  | RecSetElim of string list
   (* Sequences *)
   | SeqTailIsSeq
 
@@ -253,18 +263,24 @@ let axm_desc = function
   | ChooseExt -> "ChooseExt"
   | SetExt -> "SetExt"
   | SubsetEqDef -> "SubsetEqDef"
+  | SubsetEqIntro -> "SubsetEqIntro"
+  | SubsetEqElim -> "SubsetEqElim"
   | EnumDef n -> Format.sprintf "EnumDef %d" n
+  | EnumDefIntro n -> Format.sprintf "EnumDefIntro %d" n
+  | EnumDefElim n -> Format.sprintf "EnumDefElim %d" n
   | UnionDef -> "UnionDef"
+  | UnionIntro -> "UnionIntro"
+  | UnionElim -> "UnionElim"
   | SubsetDef -> "SubsetDef"
+  | SubsetIntro -> "SubsetIntro"
+  | SubsetElim -> "SubsetElim"
   | CupDef -> "CupDef"
   | CapDef -> "CapDef"
   | SetMinusDef -> "SetMinusDef"
   | SetStDef -> "SetStDef"
   | SetOfDef n -> Format.sprintf "SetOfDef %d" n
-  | SubsetEqDef_alt1 -> "SubsetEqDef_alt1"
-  | SubsetEqDef_alt2 -> "SubsetEqDef_alt2"
-  | EnumDef_alt1 n -> Format.sprintf "EnumDef_alt1 %d" n
-  | EnumDef_alt2 n -> Format.sprintf "EnumDef_alt2 %d" n
+  | SetOfIntro n -> Format.sprintf "SetOfIntro %d" n
+  | SetOfElim n -> Format.sprintf "SetOfElim %d" n
   | StrLitIsstr s -> Format.sprintf "StrLitIsstr %s" s
   | StrLitDistinct (s1, s2) -> Format.sprintf "StrLitDistinct %s %s" s1 s2
   | IntLitIsint n -> Format.sprintf "IntLitIsint %d" n
@@ -287,22 +303,26 @@ let axm_desc = function
   | FunExt -> "FunExt"
   | FunConstrIsafcn -> "FunConstrIsafcn"
   | FunSetDef -> "FunSetDef"
+  | FunSetIntro -> "FunSetIntro"
+  | FunSetElim1 -> "FunSetElim1"
+  | FunSetElim2 -> "FunSetElim2"
   | FunDomDef -> "FunDomDef"
   | FunAppDef -> "FunAppDef"
   | FunExceptIsafcn -> "FunExceptIsafcn"
   | FunExceptDomDef -> "FunExceptDomDef"
   | FunExceptAppDef -> "FunExceptAppDef"
   | TupIsafcn n -> Format.sprintf "TupIsafcn %d" n
-  | ProductDef n -> Format.sprintf "ProductDef %d" n
   | TupDomDef n -> Format.sprintf "TupDomDef %d" n
   | TupAppDef (n1, n2) -> Format.sprintf "TupAppDef %d %d" n1 n2
-  | ProductDef_alt1 n -> Format.sprintf "ProductDef_alt1 %d" n
-  | ProductDef_alt21 n -> Format.sprintf "ProductDef_alt21 %d" n
-  | ProductDef_alt22 n -> Format.sprintf "ProductDef_alt22 %d" n
+  | ProductDef n -> Format.sprintf "ProductDef %d" n
+  | ProductIntro n -> Format.sprintf "ProductIntro %d" n
+  | ProductElim n -> Format.sprintf "ProductElim %d" n
   | RecIsafcn fs -> String.concat " " ( "RecIsafcn" :: fs )
-  | RecSetDef fs -> String.concat " " ( "RecSetDef" :: fs )
   | RecDomDef fs -> String.concat " " ( "RecDomDef" :: fs )
   | RecAppDef fs -> String.concat " " ( "RecAppDef" :: fs )
+  | RecSetDef fs -> String.concat " " ( "RecSetDef" :: fs )
+  | RecSetIntro fs -> String.concat " " ( "RecSetIntro" :: fs )
+  | RecSetElim fs -> String.concat " " ( "RecSetElim" :: fs )
   | SeqTailIsSeq -> "SeqTailIsSeq"
   | TStrSetDef -> "TStrSetDef"
   | TStrLitDistinct (s1, s2) -> Format.sprintf "TStrLitDistinct %s %s" s1 s2

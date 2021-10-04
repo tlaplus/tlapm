@@ -39,44 +39,71 @@ val choose_ext : unit -> expr
 (* {4 Sets} *)
 
 val set_ext : unit -> expr
-val subseteq_def : unit -> expr
-val setenum_def : int -> expr
-val union_def : unit -> expr
-val subset_def : unit -> expr
-val cup_def : unit -> expr
-val cap_def : unit -> expr
-val setminus_def : unit -> expr
-val setst_def : unit -> expr
-val setof_def : int -> expr
 
-val subseteq_def_alt1 : unit -> expr
-val subseteq_def_alt2 : unit -> expr
-val setenum_def_alt1 : int -> expr
-val setenum_def_alt2 : int -> expr
+val subseteq_def : unit -> expr
+val subseteq_intro : unit -> expr
+val subseteq_elim : unit -> expr
+
+val setenum_def : int -> expr
+val setenum_intro : int -> expr
+val setenum_elim : int -> expr
+
+val union_def : unit -> expr
+val union_intro : unit -> expr
+val union_elim : unit -> expr
+
+val subset_def : unit -> expr
+val subset_intro : unit -> expr
+val subset_elim : unit -> expr
+
+val cup_def : unit -> expr
+
+val cap_def : unit -> expr
+
+val setminus_def : unit -> expr
+
+val setst_def : unit -> expr
+
+val setof_def : int -> expr
+val setof_intro : int -> expr
+val setof_elim : int -> expr
 
 (* {4 Functions} *)
 
 val fcn_ext : unit -> expr
+
 val fcnconstr_isafcn : unit -> expr
-val fcnset_def : unit -> expr
+
 val fcndom_def : unit -> expr
+
 val fcnapp_def : unit -> expr
+
+val fcnset_def : unit -> expr
+val fcnset_intro : unit -> expr
+val fcnset_elim1 : unit -> expr
+val fcnset_elim2 : unit -> expr
+
 val fcnexcept_isafcn : unit -> expr
+
 val fcnexceptdom_def : unit -> expr
+
 val fcnexceptapp_def : unit -> expr
 
 (* {4 Strings} *)
 
 val strlit_isstr : string -> expr
+
 val strlit_distinct : string -> string -> expr
 
 (* {4 Arithmetic} *)
 
 val natset_def : noarith:bool -> expr
 val intrange_def : unit -> expr
-val intlit_isint : int -> expr
+
 val intlit_distinct : int -> int -> expr
 val intlit_zerocmp : int -> expr
+
+val intlit_isint : int -> expr
 val intplus_typing : unit -> expr
 val intuminus_typing : unit -> expr
 val intminus_typing : unit -> expr
@@ -86,6 +113,7 @@ val intremainder_typing : unit -> expr
 val intexp_typing : unit -> expr
 val natplus_typing : unit -> expr
 val nattimes_typing : unit -> expr
+
 val lteq_reflexive : unit -> expr
 val lteq_transitive : unit -> expr
 val lteq_antisym : unit -> expr
@@ -93,21 +121,26 @@ val lteq_antisym : unit -> expr
 (* {4 Tuples} *)
 
 val tuple_isafcn : int -> expr
-val productset_def : noarith:bool -> int -> expr (* not used *)
+
 val tupdom_def : noarith:bool -> t0p:bool -> int -> expr
+
 val tupapp_def : noarith:bool -> int -> int -> expr
 
-val productset_def_alt1 : int -> expr
-val productset_def_alt21: int -> expr
-val productset_def_alt22: int -> expr
+val productset_def : int -> expr
+val productset_intro : int -> expr
+val productset_elim : noarith:bool -> int -> expr
 
 (* {4 Records} *)
 
 val record_isafcn : string list -> expr
-val recset_def : string list -> expr
-val recset_def_alt : string list -> expr
+
 val recdom_def : string list -> expr
+
 val recapp_def : string list -> expr
+
+val recset_def : string list -> expr
+val recset_intro : string list -> expr
+val recset_elim : string list -> expr
 
 (* {4 Sequences} *)
 

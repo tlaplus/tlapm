@@ -355,6 +355,67 @@ let subseteq_def () =
     ] %% []
   ) %% []
 
+let subseteq_intro () =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.SubsetEq
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ quant Forall
+      [ "z" ] [ t_idv ]
+      ( appb B.Implies
+        [ apps T.Mem
+          [ Ix 1 %% []
+          ; Ix 3 %% []
+          ] %% []
+        ; apps T.Mem
+          [ Ix 1 %% []
+          ; Ix 2 %% []
+          ] %% []
+        ] %% []
+      ) %% []
+    ; apps T.SubsetEq
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let subseteq_elim () =
+  quant Forall
+  [ "x" ; "y" ; "z" ] [ t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.SubsetEq
+    [ Ix 3 %% []
+    ; Ix 2 %% []
+    ] %% []
+  ; apps T.Mem
+    [ Ix 1 %% []
+    ; Ix 3 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.SubsetEq
+        [ Ix 3 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; Ix 3 %% []
+        ] %% []
+      ] %% []
+    ; apps T.Mem
+      [ Ix 1 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
 let setenum_def n =
   quant Forall
   (gen "a" n @ [ "x" ]) (dupl t_idv (n+1))
@@ -391,6 +452,64 @@ let setenum_def n =
     ] %% []
   end %% []
 
+let setenum_intro n =
+  quant Forall
+  (gen "a" n @ [ "x" ]) (dupl t_idv (n+1))
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps (T.SetEnum n)
+      (ixi ~shift:1 n) %% []
+    ] %% []
+  ] ]
+  begin if (n = 0) then
+    appb B.Neg
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps (T.SetEnum 0) [] %% []
+      ] %% []
+    ] %% []
+  else
+    appb B.Implies
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps (T.SetEnum n)
+        (ixi ~shift:1 n) %% []
+      ] %% []
+    ; List.init n begin fun i ->
+        appb ~tys:[ t_idv ] B.Eq
+        [ Ix 1 %% []
+        ; Ix (n-i+1) %% []
+        ] %% []
+      end |>
+      function
+        | [e] -> e
+        | es -> List (Or, es) %% []
+    ] %% []
+  end %% []
+
+let setenum_elim n =
+  quant Forall
+  (gen "a" n) (dupl t_idv n)
+  ~pats:[ [
+    apps (T.SetEnum n)
+    (ixi n) %% []
+  ] ]
+  begin if (n = 0) then
+    Internal B.TRUE %% []
+  else
+    List.init n begin fun i ->
+      apps T.Mem
+      [ Ix (n-i) %% []
+      ; apps (T.SetEnum n)
+        (ixi n) %% []
+      ] %% []
+    end |>
+    function
+      | [e] -> e
+      | es -> List (And, es) %% []
+  end %% []
+
 let union_def () =
   quant Forall
   [ "a" ; "x" ] [ t_idv ; t_idv ]
@@ -403,6 +522,95 @@ let union_def () =
     ] %% []
   ] ]
   ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.Union
+        [ Ix 2 %% []
+        ] %% []
+      ] %% []
+    ; quant Exists
+      [ "y" ] [ t_idv ]
+      ( appb B.Conj
+        [ apps T.Mem
+          [ Ix 1 %% []
+          ; Ix 3 %% []
+          ] %% []
+        ; apps T.Mem
+          [ Ix 2 %% []
+          ; Ix 1 %% []
+          ] %% []
+        ] %% []
+      ) %% []
+    ] %% []
+  ) %% []
+
+let union_intro () =
+  quant Forall
+  [ "a" ; "x" ; "y" ] [ t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; Ix 3 %% []
+    ] %% []
+  ; apps T.Mem
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ; [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; Ix 3 %% []
+    ] %% []
+  ; apps T.Mem
+    [ Ix 2 %% []
+    ; apps T.Union
+      [ Ix 3 %% []
+      ] %% []
+    ] %% []
+  ] ; [
+    apps T.Mem
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ; apps T.Mem
+    [ Ix 2 %% []
+    ; apps T.Union
+      [ Ix 3 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.Mem
+        [ Ix 1 %% []
+        ; Ix 3 %% []
+        ] %% []
+      ; apps T.Mem
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ] %% []
+    ; apps T.Mem
+      [ Ix 2 %% []
+      ; apps T.Union
+        [ Ix 3 %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let union_elim () =
+  quant Forall
+  [ "a" ; "x" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps T.Union
+      [ Ix 2 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
     [ apps T.Mem
       [ Ix 1 %% []
       ; apps T.Union
@@ -456,6 +664,86 @@ let subset_def () =
           ] %% []
         ] %% []
       ) %% []
+    ] %% []
+  ) %% []
+
+let subset_intro () =
+  quant Forall
+  [ "a" ; "x" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps T.Subset
+      [ Ix 2 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ quant Forall
+      [ "y" ] [ t_idv ]
+      ( appb B.Implies
+        [ apps T.Mem
+          [ Ix 1 %% []
+          ; Ix 2 %% []
+          ] %% []
+        ; apps T.Mem
+          [ Ix 1 %% []
+          ; Ix 3 %% []
+          ] %% []
+        ] %% []
+      ) %% []
+    ; apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.Subset
+        [ Ix 2 %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let subset_elim () =
+  quant Forall
+  [ "a" ; "x" ; "y" ] [ t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 2 %% []
+    ; apps T.Subset
+      [ Ix 3 %% []
+      ] %% []
+    ] %% []
+  ; apps T.Mem
+    [ Ix 1 %% []
+    ; Ix 2 %% []
+    ] %% []
+  ] ; [
+    apps T.Mem
+    [ Ix 2 %% []
+    ; apps T.Subset
+      [ Ix 3 %% []
+      ] %% []
+    ] %% []
+  ; apps T.Mem
+    [ Ix 1 %% []
+    ; Ix 3 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.Mem
+        [ Ix 2 %% []
+        ; apps T.Subset
+          [ Ix 3 %% []
+          ] %% []
+        ] %% []
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ] %% []
+    ; apps T.Mem
+      [ Ix 1 %% []
+      ; Ix 3 %% []
+      ] %% []
     ] %% []
   ) %% []
 
@@ -644,128 +932,99 @@ let setof_def n =
     ) %% []
   ) %% []
 
-
-let subseteq_def_alt1 () =
-  quant Forall
-  [ "x" ; "y" ] [ t_idv ; t_idv ]
-  ~pats:[ [
-    apps T.SubsetEq
-    [ Ix 2 %% []
-    ; Ix 1 %% []
-    ] %% []
-  ] ]
-  ( appb B.Implies
-    [ quant Forall
-      [ "z" ] [ t_idv ]
-      ( appb B.Implies
-        [ apps T.Mem
-          [ Ix 1 %% []
-          ; Ix 3 %% []
-          ] %% []
-        ; apps T.Mem
-          [ Ix 1 %% []
-          ; Ix 2 %% []
-          ] %% []
-        ] %% []
-      ) %% []
-    ; apps T.SubsetEq
-      [ Ix 2 %% []
-      ; Ix 1 %% []
-      ] %% []
-    ] %% []
-  ) %% []
-
-let subseteq_def_alt2 () =
-  quant Forall
-  [ "x" ; "y" ; "z" ] [ t_idv ; t_idv ; t_idv ]
-  ~pats:[ [
-    apps T.SubsetEq
-    [ Ix 3 %% []
-    ; Ix 2 %% []
-    ] %% []
-  ; apps T.Mem
-    [ Ix 1 %% []
-    ; Ix 3 %% []
-    ] %% []
-  ] ]
-  ( appb B.Implies
-    [ appb B.Conj
-      [ apps T.SubsetEq
-        [ Ix 3 %% []
-        ; Ix 2 %% []
-        ] %% []
-      ; apps T.Mem
-        [ Ix 1 %% []
-        ; Ix 3 %% []
-        ] %% []
-      ] %% []
-    ; apps T.Mem
-      [ Ix 1 %% []
-      ; Ix 2 %% []
-      ] %% []
-    ] %% []
-  ) %% []
-
-let setenum_def_alt1 n =
-  quant Forall
-  (gen "a" n) (dupl t_idv n)
-  ~pats:[ [
-    apps (T.SetEnum n)
-    (ixi n) %% []
-  ] ]
-  begin if (n = 0) then
-    Internal B.TRUE %% []
-  else
-    List.init n begin fun i ->
+let setof_intro n =
+  seq
+  [ "F" ]
+  [ Ty1 (dupl t_idv n, t_idv) ]
+  ( quant Forall
+    (gen "a" n @ gen "y" n) (dupl t_idv (n+n))
+    ~pats:[ [
       apps T.Mem
-      [ Ix (n-i) %% []
-      ; apps (T.SetEnum n)
+      [ app (Ix (2*n+1) %% [])
         (ixi n) %% []
+      ; apps (T.SetOf n)
+        (List.init n begin fun i ->
+          Ix (n-i+1) %% []
+        end @
+        [ Ix (n+2) %% []
+        ]) %% []
       ] %% []
-    end |>
-    function
-      | [e] -> e
-      | es -> List (And, es) %% []
-  end %% []
-
-let setenum_def_alt2 n =
-  quant Forall
-  (gen "a" n @ [ "x" ]) (dupl t_idv (n+1))
-  ~pats:[ [
-    apps T.Mem
-    [ Ix 1 %% []
-    ; apps (T.SetEnum n)
-      (ixi ~shift:1 n) %% []
-    ] %% []
-  ] ]
-  begin if (n = 0) then
-    appb B.Neg
-    [ apps T.Mem
-      [ Ix 1 %% []
-      ; apps (T.SetEnum 0) [] %% []
-      ] %% []
-    ] %% []
-  else
-    appb B.Implies
-    [ apps T.Mem
-      [ Ix 1 %% []
-      ; apps (T.SetEnum n)
-        (ixi ~shift:1 n) %% []
-      ] %% []
-    ; List.init n begin fun i ->
-        appb ~tys:[ t_idv ] B.Eq
-        [ Ix 1 %% []
-        ; Ix (n-i+1) %% []
+    ] ]
+    ( appb B.Implies
+      [ List (And,
+          List.init n begin fun i ->
+            apps T.Mem
+            [ Ix (n-i) %% []
+            ; Ix (2*n-i) %% []
+            ] %% []
+          end
+        ) %% []
+      ; apps T.Mem
+        [ app (Ix (2*n+1) %% [])
+          (ixi n) %% []
+        ; apps (T.SetOf n)
+          (List.init n begin fun i ->
+            Ix (n-i+1) %% []
+          end @
+          [ Ix (n+2) %% []
+          ]) %% []
         ] %% []
-      end |>
-      function
-        | [e] -> e
-        | es -> List (Or, es) %% []
-    ] %% []
-  end %% []
+      ] %% []
+    ) %% []
+  ) %% []
+
+let setof_elim n =
+  seq
+  [ "F" ]
+  [ Ty1 (dupl t_idv n, t_idv) ]
+  ( quant Forall
+    (gen "a" n @ [ "x" ]) (dupl t_idv (n+1))
+    ~pats:[ [
+      apps T.Mem
+      [ Ix 1 %% []
+      ; apps (T.SetOf n)
+        (List.init n begin fun i ->
+          Ix (n-i+1) %% []
+        end @
+        [ Ix (n+2) %% []
+        ]) %% []
+      ] %% []
+    ] ]
+    ( appb B.Implies
+      [ apps T.Mem
+        [ Ix 1 %% []
+        ; apps (T.SetOf n)
+          (List.init n begin fun i ->
+            Ix (n-i+1) %% []
+          end @
+          [ Ix (n+2) %% []
+          ]) %% []
+        ] %% []
+      ; quant Exists
+        (gen "y" n) (dupl t_idv n)
+        ( List (And,
+            List.init n begin fun i ->
+              apps T.Mem
+              [ Ix (n-i) %% []
+              ; Ix (2*n-i+1) %% []
+              ] %% []
+            end @
+            [ appb ~tys:[ t_idv ] B.Eq
+              [ Ix (n+1) %% []
+              ; app (Ix (2*n+2) %% [])
+                (ixi n) %% []
+              ] %% []
+            ]
+          ) %% []
+        ) %% []
+      ] %% []
+    ) %% []
+  ) %% []
 
 
 (* {4 Functions} *)
+
+(* {3 Functions - Base Axioms} *)
 
 let fcn_ext () =
   quant Forall
@@ -893,6 +1152,142 @@ let fcnset_def () =
     ] %% []
   ) %% []
 
+let fcnset_intro () =
+  quant Forall
+  [ "a" ; "b" ; "f" ] [ t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps T.FunSet
+      [ Ix 3 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ List (And,
+      [ apps T.FunIsafcn
+        [ Ix 1 %% []
+        ] %% []
+      ; appb ~tys:[ t_idv ] B.Eq
+        [ apps T.FunDom
+          [ Ix 1 %% []
+          ] %% []
+        ; Ix 3 %% []
+        ] %% []
+      ; quant Forall
+        [ "x" ] [ t_idv ]
+        ( appb B.Implies
+          [ apps T.Mem
+            [ Ix 1 %% []
+            ; Ix 4 %% []
+            ] %% []
+          ; apps T.Mem
+            [ apps T.FunApp
+              [ Ix 2 %% []
+              ; Ix 1 %% []
+              ] %% []
+            ; Ix 3 %% []
+            ] %% []
+          ] %% []
+        ) %% []
+      ]) %% []
+    ; apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.FunSet
+        [ Ix 3 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let fcnset_elim1 () =
+  quant Forall
+  [ "a" ; "b" ; "f" ] [ t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps T.FunSet
+      [ Ix 3 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.FunSet
+        [ Ix 3 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ] %% []
+    ; appb B.Conj
+      [ apps T.FunIsafcn
+        [ Ix 1 %% []
+        ] %% []
+      ; appb ~tys:[ t_idv ] B.Eq
+        [ apps T.FunDom
+          [ Ix 1 %% []
+          ] %% []
+        ; Ix 3 %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let fcnset_elim2 () =
+  quant Forall
+  [ "a" ; "b" ; "f" ; "x" ] [ t_idv ; t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 2 %% []
+    ; apps T.FunSet
+      [ Ix 4 %% []
+      ; Ix 3 %% []
+      ] %% []
+    ] %% []
+  ; apps T.Mem
+    [ Ix 1 %% []
+    ; Ix 4 %% []
+    ] %% []
+  ] ; [
+    apps T.Mem
+    [ Ix 2 %% []
+    ; apps T.FunSet
+      [ Ix 4 %% []
+      ; Ix 3 %% []
+      ] %% []
+    ] %% []
+  ; apps T.FunApp
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.Mem
+        [ Ix 2 %% []
+        ; apps T.FunSet
+          [ Ix 4 %% []
+          ; Ix 3 %% []
+          ] %% []
+        ] %% []
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; Ix 4 %% []
+        ] %% []
+      ] %% []
+    ; apps T.Mem
+      [ apps T.FunApp
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ; Ix 3 %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
 let fcndom_def () =
   seq
   [ "F" ] [ Ty1 ([ t_idv ], t_idv) ]
@@ -957,12 +1352,10 @@ let fcnexcept_isafcn () =
   quant Forall
   [ "f" ; "x" ; "y" ] [ t_idv ; t_idv ; t_idv ]
   ~pats:[ [
-    apps T.FunIsafcn
-    [ apps T.FunExcept
-      [ Ix 3 %% []
-      ; Ix 2 %% []
-      ; Ix 1 %% []
-      ] %% []
+    apps T.FunExcept
+    [ Ix 3 %% []
+    ; Ix 2 %% []
+    ; Ix 1 %% []
     ] %% []
   ] ]
   ( apps T.FunIsafcn
@@ -978,12 +1371,10 @@ let fcnexceptdom_def () =
   quant Forall
   [ "f" ; "x" ; "y" ] [ t_idv ; t_idv ; t_idv ]
   ~pats:[ [
-    apps T.FunDom
-    [ apps T.FunExcept
-      [ Ix 3 %% []
-      ; Ix 2 %% []
-      ; Ix 1 %% []
-      ] %% []
+    apps T.FunExcept
+    [ Ix 3 %% []
+    ; Ix 2 %% []
+    ; Ix 1 %% []
     ] %% []
   ] ]
   ( appb ~tys:[ t_idv ] B.Eq
@@ -1515,69 +1906,6 @@ let tuple_isafcn n =
       ] %% []
     ) %% []
 
-let productset_def ~noarith n =
-  quant Forall
-  (gen "s" n @ [ "t" ]) (dupl t_idv (n + 1))
-  ~pats:[ [
-    apps T.Mem
-    [ Ix 1 %% []
-    ; apps (T.Product n)
-      (ixi ~shift:1 n) %% []
-    ] %% []
-  ] ]
-  ( appb B.Equiv
-    [ apps T.Mem
-      [ Ix 1 %% []
-      ; apps (T.Product n)
-        (ixi ~shift:1 n) %% []
-      ] %% []
-    ; List (And,
-      [ apps T.FunIsafcn
-        [ Ix 1 %% []
-        ] %% []
-      ; appb ~tys:[ t_idv ] B.Eq
-        [ apps T.FunDom
-          [ Ix 1 %% []
-          ] %% []
-        ; apps T.IntRange
-          [ begin
-            if noarith then
-              apps (T.IntLit 1) [] %% []
-            else
-              apps (T.Cast t_int)
-              [ apps (T.TIntLit 1) [] %% []
-              ] %% []
-            end
-          ; begin
-            if noarith then
-              apps (T.IntLit n) [] %% []
-            else
-              apps (T.Cast t_int)
-              [ apps (T.TIntLit n) [] %% []
-              ] %% []
-            end
-          ] %% []
-        ] %% []
-      ] @
-      List.init n begin fun i ->
-        apps T.Mem
-        [ apps T.FunApp
-          [ Ix 1 %% []
-          ; begin
-            if noarith then
-              apps (T.IntLit (i + 1)) [] %% []
-            else
-              apps (T.Cast t_int)
-              [ apps (T.TIntLit (i + 1)) [] %% []
-              ] %% []
-            end
-          ] %% []
-        ; Ix (n - i + 1) %% []
-        ] %% []
-      end) %% []
-    ] %% []
-  ) %% []
-
 let tupdom_def ~noarith ~t0p n =
   quant Forall
   (gen "x" n) (dupl t_idv n)
@@ -1655,7 +1983,7 @@ let tupapp_def ~noarith n i =
     ] %% []
   ) %% []
 
-let productset_def_alt1 n =
+let productset_def n =
   quant Forall
   (gen "s" n @ [ "t" ]) (dupl t_idv (n + 1))
   ~pats:[ [
@@ -1690,7 +2018,7 @@ let productset_def_alt1 n =
     ] %% []
   ) %% []
 
-let productset_def_alt21 n =
+let productset_intro n =
   quant Forall
   (gen "s" n @ gen "x" n) (dupl t_idv (2 * n))
   ~pats:[ [
@@ -1716,7 +2044,7 @@ let productset_def_alt21 n =
     ] %% []
   ) %% []
 
-let productset_def_alt22 n =
+let productset_elim ~noarith n =
   quant Forall
   (gen "s" n @ [ "t" ]) (dupl t_idv (n + 1))
   ~pats:[ [
@@ -1732,22 +2060,41 @@ let productset_def_alt22 n =
       ; apps (T.Product n)
         (ixi ~shift:1 n) %% []
       ] %% []
-    ; quant Exists
-      (gen "x" n) (dupl t_idv n)
-      ( List (And,
-        [ appb ~tys:[ t_idv ] B.Eq
-          [ Ix (n + 1) %% []
-          ; apps (T.Tuple n)
-            (ixi n) %% []
+    ; List (And,
+      [ appb ~tys:[ t_idv ] B.Eq
+        [ Ix 1 %% []
+        ; apps (T.Tuple n)
+          (List.init n begin fun i ->
+            apps T.FunApp
+            [ Ix 1 %% []
+            ; begin
+              if noarith then
+                apps (T.IntLit (i + 1)) [] %% []
+              else
+                apps (T.Cast t_int)
+                [ apps (T.TIntLit (i + 1)) [] %% []
+                ] %% []
+            end
+            ] %% []
+          end) %% []
+        ] %% []
+      ] @
+      List.init n begin fun i ->
+        apps T.Mem
+        [ apps T.FunApp
+          [ Ix 1 %% []
+          ; begin
+            if noarith then
+              apps (T.IntLit (i + 1)) [] %% []
+            else
+              apps (T.Cast t_int)
+              [ apps (T.TIntLit (i + 1)) [] %% []
+              ] %% []
+          end
           ] %% []
-        ] @
-        List.init n begin fun i ->
-          apps T.Mem
-          [ Ix (n - i) %% []
-          ; Ix (2*n - i + 1) %% []
-          ] %% []
-        end) %% []
-      ) %% []
+        ; Ix (n - i + 1) %% []
+        ] %% []
+      end) %% []
     ] %% []
   ) %% []
 
@@ -1761,85 +2108,6 @@ let record_isafcn fs =
   ( apps T.FunIsafcn
     [ apps (T.Rec fs)
       (ixi n) %% []
-    ] %% []
-  ) %% []
-
-let recset_def fs =
-  let n = List.length fs in
-  quant Forall
-  (gen "s" n @ [ "r" ]) (dupl t_idv (n+1))
-  ~pats:[ [
-    apps T.Mem
-    [ Ix 1 %% []
-    ; apps (T.RecSet fs)
-      (ixi ~shift:1 n) %% []
-    ] %% []
-  ] ]
-  ( appb B.Equiv
-    [ apps T.Mem
-      [ Ix 1 %% []
-      ; apps (T.RecSet fs)
-        (ixi ~shift:1 n) %% []
-      ] %% []
-    ; List (And,
-      [ apps T.FunIsafcn
-        [ Ix 1 %% []
-        ] %% []
-      ; appb ~tys:[ t_idv ] B.Eq
-        [ apps T.FunDom
-          [ Ix 1 %% []
-          ] %% []
-        ; apps (T.SetEnum n)
-          (List.map begin fun s ->
-            apps (T.StrLit s) [] %% []
-          end fs) %% []
-        ] %% []
-      ] @
-      List.mapi begin fun i s ->
-        apps T.Mem
-        [ apps T.FunApp
-          [ Ix 1 %% []
-          ; apps (T.StrLit s) [] %% []
-          ] %% []
-        ; Ix (n - i + 1) %% []
-        ] %% []
-      end fs) %% []
-    ] %% []
-  ) %% []
-
-let recset_def_alt fs =
-  let n = List.length fs in
-  quant Forall
-  (gen "s" n @ [ "r" ]) (dupl t_idv (n+1))
-  ~pats:[ [
-    apps T.Mem
-    [ Ix 1 %% []
-    ; apps (T.RecSet fs)
-      (ixi ~shift:1 n) %% []
-    ] %% []
-  ] ]
-  ( appb B.Equiv
-    [ apps T.Mem
-      [ Ix 1 %% []
-      ; apps (T.RecSet fs)
-        (ixi ~shift:1 n) %% []
-      ] %% []
-    ; quant Exists
-      (gen "x" n) (dupl t_idv n)
-      ( List (And,
-        [ appb ~tys:[ t_idv ] B.Eq
-          [ Ix (n + 1) %% []
-          ; apps (T.Rec fs)
-            (ixi n) %% []
-          ] %% []
-        ] @
-        List.mapi begin fun i s ->
-          apps T.Mem
-          [ Ix (n - i) %% []
-          ; Ix (2*n + 1 - i) %% []
-          ] %% []
-        end fs) %% []
-      ) %% []
     ] %% []
   ) %% []
 
@@ -1880,6 +2148,110 @@ let recapp_def fs =
       ; Ix (n - i) %% []
       ] %% []
     end fs) %% []
+  ) %% []
+
+let recset_def fs =
+  let n = List.length fs in
+  quant Forall
+  (gen "s" n @ [ "r" ]) (dupl t_idv (n+1))
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps (T.RecSet fs)
+      (ixi ~shift:1 n) %% []
+    ] %% []
+  ] ]
+  ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps (T.RecSet fs)
+        (ixi ~shift:1 n) %% []
+      ] %% []
+    ; quant Exists
+      (gen "x" n) (dupl t_idv n)
+      ( List (And,
+        [ appb ~tys:[ t_idv ] B.Eq
+          [ Ix (n + 1) %% []
+          ; apps (T.Rec fs)
+            (ixi n) %% []
+          ] %% []
+        ] @
+        List.mapi begin fun i s ->
+          apps T.Mem
+          [ Ix (n - i) %% []
+          ; Ix (2*n + 1 - i) %% []
+          ] %% []
+        end fs) %% []
+      ) %% []
+    ] %% []
+  ) %% []
+
+let recset_intro fs =
+  let n = List.length fs in
+  quant Forall
+  (gen "s" n @ gen "x" n) (dupl t_idv (2*n))
+  ~pats:[ [
+    apps (T.Rec fs)
+    (ixi n) %% []
+  ; apps (T.RecSet fs)
+    (ixi ~shift:n n) %% []
+  ] ]
+  ( appb B.Implies
+    [ List (And,
+      List.mapi begin fun i s ->
+        apps T.Mem
+        [ Ix (n - i) %% []
+        ; Ix (2*n - i) %% []
+        ] %% []
+      end fs) %% []
+    ; apps T.Mem
+      [ apps (T.Rec fs)
+        (ixi n) %% []
+      ; apps (T.RecSet fs)
+        (ixi ~shift:n n) %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let recset_elim fs =
+  let n = List.length fs in
+  quant Forall
+  (gen "s" n @ [ "r" ]) (dupl t_idv (n+1))
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps (T.RecSet fs)
+      (ixi ~shift:1 n) %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps (T.RecSet fs)
+        (ixi ~shift:1 n) %% []
+      ] %% []
+    ; List (And,
+      [ appb ~tys:[ t_idv ] B.Eq
+        [ Ix 1 %% []
+        ; apps (T.Rec fs)
+          (List.map begin fun s ->
+            apps T.FunApp
+            [ Ix 1 %% []
+            ; apps (T.StrLit s) [] %% []
+            ] %% []
+          end fs) %% []
+        ] %% []
+      ] @
+      List.mapi begin fun i s ->
+        apps T.Mem
+        [ apps T.FunApp
+          [ Ix 1 %% []
+          ; apps (T.StrLit s) [] %% []
+          ] %% []
+        ; Ix (n + 1 - i) %% []
+        ] %% []
+      end fs) %% []
+    ] %% []
   ) %% []
 
 
@@ -2056,14 +2428,24 @@ let get_axm ~solver tla_smb =
   | T.ChooseExt -> choose_ext ()
   | T.SetExt -> set_ext ()
   | T.SubsetEqDef -> subseteq_def ()
+  | T.SubsetEqIntro -> subseteq_intro ()
+  | T.SubsetEqElim -> subseteq_elim ()
   | T.EnumDef n -> setenum_def n
+  | T.EnumDefIntro n -> setenum_intro n
+  | T.EnumDefElim n -> setenum_elim n
   | T.UnionDef -> union_def ()
+  | T.UnionIntro -> union_intro ()
+  | T.UnionElim -> union_elim ()
   | T.SubsetDef -> subset_def ()
+  | T.SubsetIntro -> subset_intro ()
+  | T.SubsetElim -> subset_elim ()
   | T.CupDef -> cup_def ()
   | T.CapDef -> cap_def ()
   | T.SetMinusDef -> setminus_def ()
   | T.SetStDef -> setst_def () |> mark T.SetSt
   | T.SetOfDef n -> setof_def n |> mark (T.SetOf n)
+  | T.SetOfIntro n -> setof_intro n |> mark (T.SetOf n)
+  | T.SetOfElim n -> setof_elim n |> mark (T.SetOf n)
   | T.StrLitIsstr s -> strlit_isstr s
   | T.StrLitDistinct (s1, s2) -> strlit_distinct s1 s2
   | T.IntLitIsint n -> intlit_isint n
@@ -2086,28 +2468,27 @@ let get_axm ~solver tla_smb =
   | T.FunExt -> fcn_ext ()
   | T.FunConstrIsafcn -> fcnconstr_isafcn () |> mark T.FunConstr
   | T.FunSetDef -> fcnset_def ()
+  | T.FunSetIntro -> fcnset_intro ()
+  | T.FunSetElim1 -> fcnset_elim1 ()
+  | T.FunSetElim2 -> fcnset_elim2 ()
   | T.FunDomDef -> fcndom_def () |> mark T.FunConstr
   | T.FunAppDef -> fcnapp_def () |> mark T.FunConstr
   | T.FunExceptIsafcn -> fcnexcept_isafcn ()
   | T.FunExceptDomDef -> fcnexceptdom_def ()
   | T.FunExceptAppDef -> fcnexceptapp_def ()
   | T.TupIsafcn n -> tuple_isafcn n
-  | T.ProductDef n -> productset_def ~noarith n
   | T.TupDomDef n -> tupdom_def ~noarith ~t0p n
   | T.TupAppDef (n, i) -> tupapp_def ~noarith n i
+  | T.ProductDef n -> productset_def n
+  | T.ProductIntro n -> productset_intro n
+  | T.ProductElim n -> productset_elim ~noarith n
   | T.RecIsafcn fs -> record_isafcn fs
-  | T.RecSetDef fs -> recset_def_alt fs
   | T.RecDomDef fs -> recdom_def fs
   | T.RecAppDef fs -> recapp_def fs
+  | T.RecSetDef fs -> recset_def fs
+  | T.RecSetIntro fs -> recset_intro fs
+  | T.RecSetElim fs -> recset_elim fs
   | T.SeqTailIsSeq -> tail_isseq ()
-
-  | T.EnumDef_alt1 n -> setenum_def_alt1 n
-  | T.EnumDef_alt2 n -> setenum_def_alt2 n
-  | T.SubsetEqDef_alt1 -> subseteq_def_alt1 ()
-  | T.SubsetEqDef_alt2 -> subseteq_def_alt2 ()
-  | T.ProductDef_alt1 n -> productset_def_alt1 n
-  | T.ProductDef_alt21 n -> productset_def_alt21 n
-  | T.ProductDef_alt22 n -> productset_def_alt22 n
 
   | T.TStrSetDef -> t_strset_def ()
   | T.TStrLitDistinct (s1, s2) -> t_strlit_distinct s1 s2

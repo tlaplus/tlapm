@@ -124,18 +124,24 @@ type tla_axm =
   (* Set Theory *)
   | SetExt
   | SubsetEqDef
+  | SubsetEqIntro
+  | SubsetEqElim
   | EnumDef of int
+  | EnumDefIntro of int
+  | EnumDefElim of int
   | UnionDef
+  | UnionIntro
+  | UnionElim
   | SubsetDef
+  | SubsetIntro
+  | SubsetElim
   | CupDef
   | CapDef
   | SetMinusDef
   | SetStDef
   | SetOfDef of int
-  | SubsetEqDef_alt1
-  | SubsetEqDef_alt2
-  | EnumDef_alt1 of int
-  | EnumDef_alt2 of int
+  | SetOfIntro of int
+  | SetOfElim of int
   (* Strings *)
   | StrLitIsstr of string
   | StrLitDistinct of string * string
@@ -161,6 +167,9 @@ type tla_axm =
   | FunExt
   | FunConstrIsafcn
   | FunSetDef
+  | FunSetIntro
+  | FunSetElim1
+  | FunSetElim2
   | FunDomDef
   | FunAppDef
   | FunExceptIsafcn
@@ -168,17 +177,18 @@ type tla_axm =
   | FunExceptAppDef
   (* Tuples *)
   | TupIsafcn of int
-  | ProductDef of int
   | TupDomDef of int
   | TupAppDef of int * int
-  | ProductDef_alt1 of int
-  | ProductDef_alt21 of int
-  | ProductDef_alt22 of int
+  | ProductDef of int
+  | ProductIntro of int
+  | ProductElim of int
   (* Records *)
   | RecIsafcn of string list
-  | RecSetDef of string list
   | RecDomDef of string list
   | RecAppDef of string list
+  | RecSetDef of string list
+  | RecSetIntro of string list
+  | RecSetElim of string list
   (* Sequences *)
   | SeqTailIsSeq
 
