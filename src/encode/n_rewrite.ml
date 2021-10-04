@@ -1033,6 +1033,14 @@ let simplify_sets_visitor = object (self : 'self)
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Internal B.Nat } as op2 ])
       when not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
+        let zero_op =
+          if Params.debugging "noarith" then
+            Num ("0", "") %% []
+          else
+            Num ("0", "") %% [] |> fun e ->
+             assign e Props.tpars_prop [] |> fun e ->
+               assign e Props.icast_prop (TAtm TAInt)
+        in
         Apply (
           Internal B.Conj %% [],
           [ Apply (
@@ -1042,7 +1050,7 @@ let simplify_sets_visitor = object (self : 'self)
             ]) %% []
           ; Apply (
             Internal B.Lteq %% [],
-            [ Num ("0", "") %% []
+            [ zero_op
             ; e1
             ]) %% []
           ]) %% []
