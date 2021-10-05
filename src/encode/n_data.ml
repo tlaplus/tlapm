@@ -272,6 +272,9 @@ let special_data tla_smb =
   | Cast ty ->
       ("Cast_" ^ ty_to_string ty,
                         [ t_cst ty ],                         t_idv)
+  | Proj ty ->
+      ("Proj_" ^ ty_to_string ty,
+                        [ t_cst t_idv ],                      ty)
   | True ty ->
       ("Tt_" ^ ty_to_string ty,
                         [],                                   ty)
@@ -306,7 +309,7 @@ let get_data tla_smb =
       ; dat_kind = Typed
       ; dat_tver = Some tver
       }
-  | Cast _ | True _ | Anon _ ->
+  | Cast _ | Proj _ | True _ | Anon _ ->
       let (nm, tins, tout) = special_data tla_smb in
       { dat_name = "TLA__" ^ nm
       ; dat_ty2  = Ty2 (tins, tout)
@@ -596,7 +599,18 @@ let typed_deps tla_smb s =
   fun x -> (s', x)
 
 let special_deps tla_smb =
+  let effaxms = Params.debugging "effaxms" in
   begin match tla_smb with
+  | Cast ty0 when effaxms ->
+      let tla_smbs =
+        match ty0 with
+        | TAtm TAIdv -> []
+        | TAtm TABol -> [ Mem ; BoolSet ; True (TAtm TAIdv) ]
+        | TAtm TAInt -> [ Mem ; IntSet ]
+        | TAtm TAStr -> [ Mem ; StrSet ]
+        | _ -> []
+      in
+      (tla_smbs @ [ Proj ty0 ], [ CastInj ty0 ; TypeGuardIntro ty0 ; TypeGuardElim ty0 ])
   | Cast ty0 ->
       let tla_smbs =
         match ty0 with
@@ -607,6 +621,8 @@ let special_deps tla_smb =
         | _ -> []
       in
       (tla_smbs, [ CastInj ty0 ; TypeGuard ty0 ])
+  | Proj _ ->
+      ([], [])
   | True ty0 ->
       ([], [])
   | Anon _ ->
@@ -638,7 +654,7 @@ let get_deps ~solver tla_smb s =
       { dat_deps = smbs
       ; dat_axms = axms
       }
-  | Cast _ | True _ | Anon _ ->
+  | Cast _ | Proj _ | True _ | Anon _ ->
       let s, (smbs, axms) = special_deps tla_smb s in
       s,
       { dat_deps = smbs

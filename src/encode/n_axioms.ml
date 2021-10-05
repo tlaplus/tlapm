@@ -178,6 +178,86 @@ let type_guard ty0 =
     ] %% []
   ) %% []
 
+let type_guard_intro ty0 =
+  let p =
+    match ty0 with
+    | TAtm TAIdv ->
+        appb B.TRUE [] %% []
+    | TAtm TABol ->
+        apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.BoolSet [] %% []
+        ] %% []
+    | TAtm TAInt ->
+        apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntSet [] %% []
+        ] %% []
+    | TAtm TAStr ->
+        apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.StrSet [] %% []
+        ] %% []
+    | _ -> error "Not implemented"
+  in
+  quant Forall
+  [ "x" ] [ t_idv ]
+  ~pats:[ [
+    p
+  ] ; [
+    apps (T.Proj ty0)
+    [ Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ p
+    ; appb ~tys:[ t_idv ] B.Eq
+      [ Ix 1 %% []
+      ; apps (T.Cast ty0)
+        [ apps (T.Proj ty0)
+          [ Ix 1 %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let type_guard_elim ty0 =
+  quant Forall
+  [ "z" ] [ ty0 ]
+  ~pats:[ [
+    apps (T.Cast ty0)
+    [ Ix 1 %% []
+    ] %% []
+  ] ]
+  ( begin match ty0 with
+    | TAtm TAIdv ->
+        appb B.TRUE [] %% []
+    | TAtm TABol ->
+        apps T.Mem
+        [ apps (T.Cast ty0)
+          [ Ix 1 %% []
+          ] %% []
+        ; apps T.BoolSet [] %% []
+        ] %% []
+    | TAtm TAInt ->
+        apps T.Mem
+        [ apps (T.Cast ty0)
+          [ Ix 1 %% []
+          ] %% []
+        ; apps T.IntSet [] %% []
+        ] %% []
+    | TAtm TAStr ->
+        apps T.Mem
+        [ apps (T.Cast ty0)
+          [ Ix 1 %% []
+          ] %% []
+        ; apps T.StrSet [] %% []
+        ] %% []
+    | _ -> error "Not implemented"
+    end
+  ) %% []
+
 let op_typing t_smb =
   let t_dat = N_data.get_data t_smb in
   let i_smb = Option.get (t_dat.dat_tver) in
@@ -2498,5 +2578,7 @@ let get_axm ~solver tla_smb =
 
   | T.CastInj ty0 -> cast_inj ty0
   | T.TypeGuard ty0 -> type_guard ty0
+  | T.TypeGuardIntro ty0 -> type_guard_intro ty0
+  | T.TypeGuardElim ty0 -> type_guard_elim ty0
   | T.Typing tla_smb -> op_typing tla_smb
 

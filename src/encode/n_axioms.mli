@@ -26,6 +26,8 @@ val get_axm : solver:string -> tla_axm -> expr
 
 val cast_inj : ty0 -> expr
 val type_guard : ty0 -> expr
+val type_guard_intro : ty0 -> expr
+val type_guard_elim : ty0 -> expr
 val op_typing : tla_smb -> expr
 
 

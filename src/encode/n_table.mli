@@ -112,6 +112,7 @@ type tla_smb =
 
     (* SPECIAL *)
   | Cast of ty
+  | Proj of ty
   | True of ty
   | Anon of string * ty2
 
@@ -204,6 +205,8 @@ type tla_axm =
     (* SPECIAL *)
   | CastInj of ty
   | TypeGuard of ty
+  | TypeGuardIntro of ty
+  | TypeGuardElim of ty
   | Typing of tla_smb (** Only for typed symbols *)
 
 

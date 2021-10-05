@@ -97,6 +97,7 @@ module Table : sig
     | TIntGt
     | TIntRange
     | Cast of ty
+    | Proj of ty
     | True of ty
     | Anon of string * ty2
 end

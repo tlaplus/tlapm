@@ -51,6 +51,13 @@ let visitor = object (self : 'self)
       let opq = mk_opq smb in
       Apply (opq, [ oe ]) %% []
 
+    else if has oe Props.sproj_prop then
+      let ty0 = get oe Props.sproj_prop in
+      let oe = self#expr scx (remove oe Props.sproj_prop) in
+      let smb = mk_smb (Proj ty0) in
+      let opq = mk_opq smb in
+      Apply (opq, [ oe ]) %% []
+
     else if has oe Props.bproj_prop then
       let ty0 = get oe Props.bproj_prop in
       let oe = self#expr scx (remove oe Props.bproj_prop) in

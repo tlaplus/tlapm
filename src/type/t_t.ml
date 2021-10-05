@@ -112,6 +112,7 @@ module Props = struct
   let tpars_prop = make "Type.T.Props.tpars_prop"
   let mpars_prop = make "Type.T.Props.mpars_prop"
   let icast_prop = make "Type.T.Props.icast_prop"
+  let sproj_prop = make "Type.T.Props.sproj_prop"
   let bproj_prop = make "Type.T.Props.bproj_prop"
 end
 

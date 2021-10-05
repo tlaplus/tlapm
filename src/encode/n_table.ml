@@ -93,6 +93,7 @@ type tla_smb =
 
     (* SPECIAL *)
   | Cast of ty
+  | Proj of ty
   | True of ty
   | Anon of string * ty2
 
@@ -184,6 +185,8 @@ type tla_axm =
     (* SPECIAL *)
   | CastInj of ty
   | TypeGuard of ty
+  | TypeGuardIntro of ty
+  | TypeGuardElim of ty
   | Typing of tla_smb (** Only for typed symbols *)
 
 
@@ -255,6 +258,7 @@ let tla_smb_to_string = function
   | TIntGt -> "TIntGt"
   | TIntRange -> "TIntRange"
   | Cast ty -> "Cast " ^ ty_to_string ty
+  | Proj ty -> "Proj " ^ ty_to_string ty
   | True ty -> "True" ^ ty_to_string ty
   | Anon (s, ty2) -> "Anon " ^ s ^ " " ^ ty2_to_string ty2
 
@@ -331,5 +335,7 @@ let axm_desc = function
   | TIntRangeDef -> "TIntRangeDef"
   | CastInj ty -> "CastInj " ^ ty_to_string ty
   | TypeGuard ty -> "TypeGuard " ^ ty_to_string ty
+  | TypeGuardIntro ty -> "TypeGuardIntro " ^ ty_to_string ty
+  | TypeGuardElim ty -> "TypeGuardElim " ^ ty_to_string ty
   | Typing tla_smb -> "Typing " ^ tla_smb_to_string tla_smb
 

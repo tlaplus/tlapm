@@ -110,14 +110,20 @@ let lookup_ty2 scx n =
 
 let force_idv ~typelvl ty0 e =
   if typelvl = 2 then
-    match ty0 with
-    | TAtm TAIdv -> e
-    | TAtm (TAInt | TABol) -> assign e Props.icast_prop ty0
+    match ty0, query e Props.sproj_prop with
+    | TAtm TAIdv, _ -> e
+    | TAtm (TAInt | TABol), Some ty0' when ty0 = ty0' ->
+        remove e Props.sproj_prop
+    | TAtm (TAInt | TABol), _ ->
+        assign e Props.icast_prop ty0
     | _ -> e
   else
-    match ty0 with
-    | TAtm TAIdv -> e
-    | _ -> assign e Props.icast_prop ty0
+    match ty0, query e Props.sproj_prop with
+    | TAtm TAIdv, _ -> e
+    | _, Some ty0' when ty0 = ty0' ->
+        remove e Props.sproj_prop
+    | _ ->
+        assign e Props.icast_prop ty0
 
 let force_bool ty0 e =
   match ty0 with
@@ -159,6 +165,19 @@ let force_arg ~typelvl ty11 ty12 ea =
   | _ ->
       error ~at:ea "Impossible operator conversion"
 
+(* Expressions for which a sort was infered but that cannot be encoded
+ * into an expression of that sort (for some reason) need to be marked
+ * as 'projected' into that sort. *)
+let proj ~typelvl ty0 e =
+  if typelvl = 2 then
+    match ty0 with
+    | TAtm (TAInt) ->
+        assign e Props.sproj_prop ty0
+    | _ -> e
+  else
+    assign e Props.sproj_prop ty0
+
+
 let shp_to_ty1 = function
   | Shape_expr -> Ty1 ([], TAtm TAIdv)
   | Shape_op n -> Ty1 (List.init n (fun _ -> TAtm TAIdv), TAtm TAIdv)
@@ -186,6 +205,7 @@ let rec expr scx oe =
 and expr_aux scx oe =
   let force_idv ty x = force_idv ~typelvl:(typelvl scx) ty x in
   let force_arg ty x = force_arg ~typelvl:(typelvl scx) ty x in
+  let proj ty x = proj ~typelvl:(typelvl scx) ty x in
   match oe.core with
   | Ix n ->
       let ty0 = lookup_ty0 scx n in
@@ -752,7 +772,9 @@ and expr_aux scx oe =
       | TPrd ty03s when typelvl scx = 2 && List.length ty03s >= n ->
           let e2 = assign e2 Props.tpars_prop [ ] in
           let ret = FcnApp (force_idv ty01 e1, [ force_idv (TAtm TAInt) e2 ]) @@ oe in
-          (ret, List.nth ty03s (n-1))
+          let ty04 = List.nth ty03s (n-1) in
+          let ret = proj ty04 ret in
+          (ret, ty04)
       | _ ->
           let oe = FcnApp (e1, [ Apply (e2, []) %% [] ]) @@ oe in
           expr scx oe
@@ -769,6 +791,7 @@ and expr_aux scx oe =
       | TRec fty0s when typelvl scx = 2 && List.exists (fun (f, _) -> f = s) fty0s ->
           let ret = FcnApp (force_idv ty01 e1, [ e2 ]) @@ oe in
           let ty02 = List.find (fun (f, _) -> f = s) fty0s |> snd in
+          let ret = proj ty02 ret in
           (ret, ty02)
       | _ ->
           let oe = FcnApp (e1, [ Apply (e2, []) %% [] ]) @@ oe in
@@ -812,10 +835,12 @@ and expr_aux scx oe =
           (ret, ty02)
       | TFun (TAtm TAStr, ty02) when typelvl scx = 2 ->
           let ret = Dot (force_idv ty01 e, s) @@ oe in
+          let ret = proj ty02 ret in
           (ret, ty02)
       | TRec fty0s when typelvl scx = 2 && List.exists (fun (f, _) -> f = s) fty0s ->
           let ret = Dot (force_idv ty01 e, s) @@ oe in
           let ty02 = List.find (fun (f, _) -> f = s) fty0s |> snd in
+          let ret = proj ty02 ret in
           (ret, ty02)
       | _ ->
           let ret = Dot (force_idv ty01 e, s) @@ oe in
