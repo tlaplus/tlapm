@@ -805,17 +805,21 @@ and expr_aux scx oe =
       | TFun (TPrd ty03s, ty04) when typelvl scx = 3 && List.for_all2 (=) ty02s ty03s ->
           let ret = FcnApp (e, es) @@ oe in
           let ret = assign ret Props.tpars_prop [ ty01 ] in
-          (ret, ty04)
+          (*(ret, ty04)*)
+          (ret, TAtm TAIdv)
       | TFun (ty03, ty04) when typelvl scx = 3 && List.length es = 1 && List.hd ty02s = ty03 ->
           let ret = FcnApp (e, es) @@ oe in
           let ret = assign ret Props.tpars_prop [ ty01 ] in
-          (ret, ty04)
+          (*(ret, ty04)*)
+          (ret, TAtm TAIdv)
       | TFun (TPrd ty03s, ty04) when typelvl scx = 2 && List.for_all2 (=) ty02s ty03s ->
           let ret = FcnApp (force_idv ty01 e, List.map2 force_idv ty02s es) @@ oe in
-          (ret, ty04)
+          (*(ret, ty04)*)
+          (ret, TAtm TAIdv)
       | TFun (ty03, ty04) when typelvl scx = 2 && List.length es = 1 && List.hd ty02s = ty03 ->
           let ret = FcnApp (force_idv ty01 e, List.map2 force_idv ty02s es) @@ oe in
-          (ret, ty04)
+          (*(ret, ty04)*)
+          (ret, TAtm TAIdv)
       | _ ->
           let ret = FcnApp (force_idv ty01 e, List.map2 force_idv ty02s es) @@ oe in
           (ret, TAtm TAIdv)
