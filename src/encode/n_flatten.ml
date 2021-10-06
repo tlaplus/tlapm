@@ -445,61 +445,134 @@ let rewrite_expr bp s e =
 
 (* {3 Main} *)
 
-let treat_expr gtx e =
-  let rec spin gtx' acc e =
+let compare_expr bp' bp e1 e2 =
+  (* Compare e1 and e2 in their respective original contexts bp' and bp
+   * (field bp_ctx).
+   * Global variables must match, but since the contexts are desynchronized,
+   * only the names are compared (same for function {!same_app} below.)
+   * Variables that are bound locally in bp' or bp do not need to match. *)
+  let lsz = local_sz bp.bp_ctx in
+  let lsz' = local_sz bp'.bp_ctx in
+  let rec comp s e1 e2 =
+    match e1.core, e2.core with
+    | Ix m, Ix n ->
+        if m <= s && n <= s then
+          m = n
+        else if m > s && (m - s) <= lsz'
+             && n > s && (n - s) <= lsz then
+          true
+        else if m > s && (m - s) > lsz'
+             && n > s && (n - s) > lsz then
+          let h1 = get_hyp bp'.bp_ctx (m - s) in
+          let h2 = get_hyp bp.bp_ctx (n - s) in
+          hyp_name h1 = hyp_name h2
+        else
+          false
+    | Opaque s1, Opaque s2 ->
+        s1 = s2
+    | Apply (op1, es1), Apply (op2, es2) ->
+        comp s op1 op2 && List.for_all2 (comp s) es1 es2
+    | Internal b1, Internal b2 ->
+        b1 = b2
+    | Lambda (vs1, e1), Lambda (vs2, e2)
+      when List.length vs1 = List.length vs2 ->
+        comp (s + List.length vs1) e1 e2
+    | List (bl1, es1), List (bl2, es2) ->
+        bl1 = bl2 && List.for_all2 (comp s) es1 es2
+    | _, _ ->
+        false
+  in
+  comp 0 e1 e2
+
+let same_app bp' bp =
+  let h1 = get_hyp bp'.bp_ctx bp'.bp_orig_ix in
+  let h2 = get_hyp bp.bp_ctx bp.bp_orig_ix in
+  hyp_name h1 = hyp_name h2
+  && List.for_all2 (compare_expr bp' bp) bp'.bp_ho_args bp.bp_ho_args
+
+let rec match_previous_bp bps bp =
+  if Params.debugging "nosmartflatten" && not (Params.debugging "smartflatten") then
+    None
+  else begin
+    match bps with
+    | [] -> None
+    | bp' :: bps ->
+        if same_app bp' bp then Some bp'
+        else match_previous_bp bps bp
+  end
+
+let treat_expr bps gtx e =
+  let rec spin gtx' bps acc e =
     match find_hoapp gtx' e with
     | None ->
-        (gtx, acc, e)
-    | Some (bp, e') ->
-        let h = mk_flat_declaration bp in
-        let axms = find_axms bp in
-        let axms = List.map (instantiate bp) axms in
+        (gtx, bps, acc, e)
+    | Some (bp, e') -> begin
+      match match_previous_bp bps bp with
+      | Some bp' ->
+          (* The declaration from a previous call can be recycled *)
+          let n, _ =
+            Deque.find ~backwards:true (snd gtx') begin fun h ->
+              match query h bp_prop with
+              | None -> false
+              | Some bp -> bp.bp_id = bp'.bp_id
+            end |>
+            Option.get
+          in
+          let e' = rewrite_expr bp (n + 1) e' in
+          spin gtx' bps acc e'
 
-        (* So far the variables of axms and e' are calibrated for the same
-         * context gtx.  We need to shift all of them to setup the new context:
-         *    gtx, h, axm1, .., axm2, e'
-         * After this step, the blueprint annotations in axms and e' will be
-         * partially deprecated. *)
-        let n = List.length axms in
-        let axms =
-          List.mapi (fun i -> Subst.app_expr (Subst.shift (i + 1))) axms
-        in
-        let e' = Subst.app_expr (Subst.shift (n + 1)) e' in
+      | None ->
+          let h = mk_flat_declaration bp in
+          let h = assign h bp_prop bp in (* to find this hyp again later *)
+          let axms = find_axms bp in
+          let axms = List.map (instantiate bp) axms in
 
-        let axms =
-          List.mapi (fun i -> rewrite_expr bp (i + 1)) axms
-        in
-        let e' = rewrite_expr bp (n + 1) e' in
+          (* So far the variables of axms and e' are calibrated for the same
+           * context gtx.  We need to shift all of them to setup the new context:
+           *    gtx, h, axm1, .., axm2, e'
+           * After this step, the blueprint annotations in axms and e' will be
+           * partially deprecated. *)
+          let n = List.length axms in
+          let axms =
+            List.mapi (fun i -> Subst.app_expr (Subst.shift (i + 1))) axms
+          in
+          let e' = Subst.app_expr (Subst.shift (n + 1)) e' in
 
-        let axms = List.map (fun e -> Fact (e, Visible, NotSet) %% []) axms in
-        let hs' = h :: axms in
-        let gtx' = List.fold_left global_adj gtx' hs' in
-        let acc' = Deque.append_list acc hs' in
-        spin gtx' acc' e'
+          let axms =
+            List.mapi (fun i -> rewrite_expr bp (i + 1)) axms
+          in
+          let e' = rewrite_expr bp (n + 1) e' in
+
+          let axms = List.map (fun e -> Fact (e, Visible, NotSet) %% []) axms in
+          let hs' = h :: axms in
+          let gtx' = List.fold_left global_adj gtx' hs' in
+          let acc' = Deque.append_list acc hs' in
+          spin gtx' (bp :: bps) acc' e'
+    end
   in
-  spin gtx (Deque.empty) e
+  spin gtx bps (Deque.empty) e
 
 let main sq =
   init_bp_count ();
-  let rec spin gtx hs =
+  let rec spin bps gtx hs =
     match Deque.front hs with
     | None ->
         snd gtx
     | Some ({ core = Fact (e, Visible, tm) } as h, hs) ->
-        let gtx, hs', e = treat_expr gtx e in
+        let gtx, bps, hs', e = treat_expr bps gtx e in
         let h = Fact (e, Visible, tm) @@ h in
         let gtx = Deque.fold_left global_adj gtx hs' in
         let gtx = global_adj gtx h in
         let shift = Subst.shift (Deque.size hs') in
         let hs = snd (Subst.app_hyps shift hs) in
-        spin gtx hs
+        spin bps gtx hs
     | Some (h, hs) ->
         let gtx = global_adj gtx h in
-        spin gtx hs
+        spin bps gtx hs
   in
   let hs = Deque.snoc sq.context (Fact (sq.active, Visible, NotSet) %% []) in
   let gtx = init_ctx in
-  let hs = spin gtx hs in
+  let hs = spin [] gtx hs in
   let hs, e =
     match Deque.rear hs with
     | Some (hs, { core = Fact (e, Visible, NotSet) }) -> (hs, e)

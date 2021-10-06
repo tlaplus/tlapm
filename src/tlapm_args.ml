@@ -178,6 +178,8 @@ let init () =
                  * "(no)effaxms"
                  *              use efficient axioms (more patterns)
                  * (no)rw       simplify expressions (rewriting)
+                 * (no)smartflatten
+                 *              try to reuse previous results of flattening
                  * "nonewqut"   don't apply simplifications that introduce quantifiers
                  * "smt_prove_false"
                  *              replace the goal with FALSE to catch bugs
