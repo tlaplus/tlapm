@@ -43,22 +43,24 @@ let error ?at mssg =
 (* Native symbols do not lead to a declaration, they are translated
  * as builtins of the backends *)
 let is_native ~solver smb =
-  if solver = "SMT" then
-    match get_defn smb with
-    | TIntLit _
-    | TIntPlus
-    | TIntUminus
-    | TIntMinus
-    | TIntTimes
-    | TIntQuotient
-    | TIntRemainder
-    | TIntLteq
-    | TIntLt
-    | TIntGteq
-    | TIntGt -> true
-    | _ -> false
-  else
-    false
+  begin match solver with
+  | "SMT" | "Z3" | "CVC4" ->
+      begin match get_defn smb with
+      | TIntLit _
+      | TIntPlus
+      | TIntUminus
+      | TIntMinus
+      | TIntTimes
+      | TIntQuotient
+      | TIntRemainder
+      | TIntLteq
+      | TIntLt
+      | TIntGteq
+      | TIntGt -> true
+      | _ -> false
+      end
+  | _ -> false
+  end
 
 
 (* {3 Collection} *)

@@ -392,6 +392,12 @@ let eprover_unsat_re = Str.regexp "SZS status Theorem";;
 let generic_unsat_re = Str.regexp "^unsat";;
 
 let gen_smt_solve suffix exec desc fmt_expr meth ob org_ob f res_cont comm =
+  let ob =
+    if Params.debugging "smt_prove_false" then
+      { ob with obl = { ob.obl.core with active = Internal Builtin.FALSE %% [] } @@ ob.obl }
+    else
+      ob
+  in
   let cleanup = ref (fun () -> ()) in
   try
     let (inf, inc, outf, outc) = mk_temps cleanup suffix in
@@ -470,12 +476,6 @@ let get_encode_fof () =
   else Smtlib.pp_print_obligation ~solver:"fof"
 
 let smt_solve ob org_ob f res_cont =
-  let ob =
-    if Params.debugging "smt_prove_false" then
-      { ob with obl = { ob.obl.core with active = Internal Builtin.FALSE %% [] } @@ ob.obl }
-    else
-      ob
-  in
   gen_smt_solve ".smt" Params.smt "default SMT solver" (get_encode_smtlib ())
                 (Method.Smt3 f) ob org_ob f res_cont ";;"
 ;;
