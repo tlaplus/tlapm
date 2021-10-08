@@ -159,7 +159,7 @@ type tla_axm =
   (* Tuples *)
   | TupIsafcn of int
   | TupDomDef of int
-  | TupAppDef of int * int
+  | TupAppDef of int
   | ProductDef of int
   | ProductIntro of int
   | ProductElim of int
@@ -317,7 +317,7 @@ let axm_desc = function
   | FunExceptAppDef -> "FunExceptAppDef"
   | TupIsafcn n -> Format.sprintf "TupIsafcn %d" n
   | TupDomDef n -> Format.sprintf "TupDomDef %d" n
-  | TupAppDef (n1, n2) -> Format.sprintf "TupAppDef %d %d" n1 n2
+  | TupAppDef n -> Format.sprintf "TupAppDef %d" n
   | ProductDef n -> Format.sprintf "ProductDef %d" n
   | ProductIntro n -> Format.sprintf "ProductIntro %d" n
   | ProductElim n -> Format.sprintf "ProductElim %d" n

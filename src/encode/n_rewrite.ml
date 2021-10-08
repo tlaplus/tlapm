@@ -960,44 +960,73 @@ let simplify_sets_visitor = object (self : 'self)
 
     (* x \in a1 \X .. \X an
      *    -->
-     * \E y1, .., yn : y1 \in a1 /\ .. /\ yn \in an /\ x = << y1, .., yn >> *)
+     * x[1] \in a1 /\ .. /\ x[n] \in an /\ x = << x[1], .., x[n] >> *)
     | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = Product es } ])
-      when ((not b) || not (Params.debugging "nonewqut"))
-      && not (has op Props.tpars_prop) ->
+      when not (has op Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
         let es = List.map (self#expr scx) es in
         let eq_op = assign (Internal B.Eq %% []) Props.tpars_prop [ TAtm TAIdv ] in
         let n = List.length es in
-        let bs =
-          List.init n begin fun i ->
-            let v = ("e" ^ string_of_int (i + 1)) %% [] in
-            let v = assign v Props.ty0_prop (TAtm TAIdv) in
-            (v, Constant, No_domain)
-          end
+        let num i =
+          Num (string_of_int i, "" ) %% [] |> fun e ->
+            if Params.debugging "noarith" then
+              e
+            else
+              assign (assign e Props.tpars_prop []) Props.icast_prop (TAtm TAInt)
         in
-        Quant (
-          Exists,
-          bs,
-          List (
-            And,
+        List (
+          And,
+          Apply (
+            eq_op,
+            [ e1
+            ; Tuple (
+              List.init n begin fun i ->
+                FcnApp (e1, [ num (i + 1) ]) %% []
+              end) %% []
+            ]
+          ) %% [] ::
+          List.mapi begin fun i e ->
             Apply (
-              eq_op,
-              [ Subst.app_expr (Subst.shift n) e1
-              ; Tuple (
-                List.init n (fun i -> Ix (n - i) %% [])
-              ) %% []
+              Internal B.Mem %% [],
+              [ FcnApp (e1, [ num (i + 1) ]) %% []
+              ; e
               ]
-            ) %% [] ::
-            List.mapi begin fun i e ->
-              Apply (
-                Internal B.Mem %% [],
-                [ Ix (n - i) %% []
-                ; Subst.app_expr (Subst.shift n) e
-                ]
-              ) %% []
-            end es
-          ) %% []
+            ) %% []
+          end es
         ) @@ oe
+
+    (* x \in [ f1 : a1, .., fn : an ]
+     *    -->
+     * x = [ f1 |-> x.f1, .., fn |-> x.fn ] /\ x.f1 \in a1 /\ .. /\ x.fn \in an *)
+    | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = Rect fs } ])
+      when not (has op Props.tpars_prop) ->
+        let e1 = self#expr scx e1 in
+        let fs =
+          List.map begin fun (f, e) ->
+            (f, self#expr scx e)
+          end fs
+        in
+        let eq_op = assign (Internal B.Eq %% []) Props.tpars_prop [ TAtm TAIdv ] in
+        List (
+          And,
+          Apply (
+            eq_op,
+            [ e1
+            ; Record (
+              List.map begin fun (f, _) ->
+                (f, Dot (e1, f) %% [])
+              end fs) %% []
+            ]
+          ) %% [] ::
+          List.map begin fun (f, e) ->
+            Apply (
+              Internal B.Mem %% [],
+              [ Dot (e1, f) %% []
+              ; e
+              ]
+            ) %% []
+          end fs
+        ) %% []
 
     (* x \in a..b
      *    -->

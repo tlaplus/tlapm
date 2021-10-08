@@ -480,16 +480,13 @@ let untyped_deps ~solver tla_smb s =
   | Tuple n when n > 0 && noarith ->
       ([ FunIsafcn ; FunDom ; FunApp ; IntRange ]
        @ List.init n (fun i -> IntLit (i+1)),
-                                  [ TupIsafcn n ; TupDomDef n ;]
-                                  @ List.init n (fun i -> TupAppDef (n, i+1)))
+                                  [ TupIsafcn n ; TupDomDef n ; TupAppDef n ])
   | Tuple n when n > 0 && t0p ->
       ([ FunIsafcn ; FunDom ; FunApp ; TIntRange ],
-                                  [ TupIsafcn n ; TupDomDef n ;]
-                                  @ List.init n (fun i -> TupAppDef (n, i+1)))
+                                  [ TupIsafcn n ; TupDomDef n ; TupAppDef n ])
   | Tuple n when n > 0 ->
       ([ FunIsafcn ; FunDom ; FunApp ; IntRange ; Cast (TAtm TAInt) ],
-                                  [ TupIsafcn n ; TupDomDef n ;]
-                                  @ List.init n (fun i -> TupAppDef (n, i+1)))
+                                  [ TupIsafcn n ; TupDomDef n ; TupAppDef n ])
   | Product n when effaxms ->
       ([ Mem ; Tuple n ; FunApp ]
        @ List.init n (fun i ->

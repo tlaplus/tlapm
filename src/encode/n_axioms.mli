@@ -126,7 +126,7 @@ val tuple_isafcn : int -> expr
 
 val tupdom_def : noarith:bool -> t0p:bool -> int -> expr
 
-val tupapp_def : noarith:bool -> int -> int -> expr
+val tupapp_def : noarith:bool -> int -> expr
 
 val productset_def : int -> expr
 val productset_intro : int -> expr

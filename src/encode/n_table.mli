@@ -179,7 +179,7 @@ type tla_axm =
   (* Tuples *)
   | TupIsafcn of int
   | TupDomDef of int
-  | TupAppDef of int * int
+  | TupAppDef of int
   | ProductDef of int
   | ProductIntro of int
   | ProductElim of int

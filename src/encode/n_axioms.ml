@@ -1980,6 +1980,10 @@ let tuple_isafcn n =
   else
     quant Forall
     (gen "x" n) (dupl t_idv n)
+    ~pats:[ [
+      apps (T.Tuple n)
+      (ixi n) %% []
+    ] ]
     ( apps T.FunIsafcn
       [ apps (T.Tuple n)
         (ixi n) %% []
@@ -1990,10 +1994,8 @@ let tupdom_def ~noarith ~t0p n =
   quant Forall
   (gen "x" n) (dupl t_idv n)
   ~pats:[ [
-    apps T.FunDom
-    [ apps (T.Tuple n)
-      (ixi n) %% []
-    ] %% []
+    apps (T.Tuple n)
+    (ixi n) %% []
   ] ]
   ( appb ~tys:[ t_idv ] B.Eq
     [ apps T.FunDom
@@ -2029,38 +2031,33 @@ let tupdom_def ~noarith ~t0p n =
     ] %% []
   ) %% []
 
-let tupapp_def ~noarith n i =
+let tupapp_def ~noarith n =
   quant Forall
   (gen "x" n) (dupl t_idv n)
   ~pats:[ [
-    apps T.FunApp
-    [ apps (T.Tuple n)
-      (ixi n) %% []
-    ; begin
-      if noarith then
-        apps (T.IntLit i) [] %% []
-      else
-        apps (T.Cast t_int)
-        [ apps (T.TIntLit i) [] %% []
+    apps (T.Tuple n)
+    (ixi n) %% []
+  ] ]
+  ( List (
+      And,
+      List.init n begin fun i ->
+        appb ~tys:[ t_idv ] B.Eq
+        [ apps T.FunApp
+          [ apps (T.Tuple n)
+            (ixi n) %% []
+          ; begin
+            if noarith then
+              apps (T.IntLit (i + 1)) [] %% []
+            else
+              apps (T.Cast t_int)
+              [ apps (T.TIntLit (i + 1)) [] %% []
+              ] %% []
+            end
+          ] %% []
+        ; Ix (n - i) %% []
         ] %% []
       end
-    ] %% []
-  ] ]
-  ( appb ~tys:[ t_idv ] B.Eq
-    [ apps T.FunApp
-      [ apps (T.Tuple n)
-        (ixi n) %% []
-      ; begin
-        if noarith then
-          apps (T.IntLit i) [] %% []
-        else
-          apps (T.Cast t_int)
-          [ apps (T.TIntLit i) [] %% []
-          ] %% []
-        end
-      ] %% []
-    ; Ix (n - i + 1) %% []
-    ] %% []
+    ) %% []
   ) %% []
 
 let productset_def n =
@@ -2185,6 +2182,10 @@ let record_isafcn fs =
   let n = List.length fs in
   quant Forall
   (gen "x" n) (dupl t_idv n)
+  ~pats:[ [
+    apps (T.Rec fs)
+    (ixi n) %% []
+  ] ]
   ( apps T.FunIsafcn
     [ apps (T.Rec fs)
       (ixi n) %% []
@@ -2196,10 +2197,8 @@ let recdom_def fs =
   quant Forall
   (gen "x" n) (dupl t_idv n)
   ~pats:[ [
-    apps T.FunDom
-    [ apps (T.Rec fs)
-      (ixi n) %% []
-    ] %% []
+    apps (T.Rec fs)
+    (ixi n) %% []
   ] ]
   ( appb ~tys:[ t_idv ] B.Eq
     [ apps T.FunDom
@@ -2217,6 +2216,10 @@ let recapp_def fs =
   let n = List.length fs in
   quant Forall
   (gen "x" n) (dupl t_idv n)
+  ~pats:[ [
+    apps (T.Rec fs)
+    (ixi n) %% []
+  ] ]
   ( List (And,
     List.mapi begin fun i s ->
       appb ~tys:[ t_idv ] B.Eq
@@ -2558,7 +2561,7 @@ let get_axm ~solver tla_smb =
   | T.FunExceptAppDef -> fcnexceptapp_def ()
   | T.TupIsafcn n -> tuple_isafcn n
   | T.TupDomDef n -> tupdom_def ~noarith ~t0p n
-  | T.TupAppDef (n, i) -> tupapp_def ~noarith n i
+  | T.TupAppDef n -> tupapp_def ~noarith n
   | T.ProductDef n -> productset_def n
   | T.ProductIntro n -> productset_intro n
   | T.ProductElim n -> productset_elim ~noarith n
