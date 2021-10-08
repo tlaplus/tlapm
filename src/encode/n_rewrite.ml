@@ -1059,7 +1059,7 @@ let simplify_sets_visitor = object (self : 'self)
      *    -->
      * \A z : z \in x <=> z \in y *)
     | Apply ({ core = Internal (B.Eq | B.Neq as blt) } as op, [ e ; f ])
-      when (eq_pol b blt || not (Params.debugging "nonewqut"))
+      when (eq_pol b blt || not (Params.debugging "nonewqut") || Params.debugging "rwsetext")
       && (is_set e || is_set f)
       && (match query op Props.tpars_prop with
           Some [TAtm TAIdv] -> true | _ -> false) ->

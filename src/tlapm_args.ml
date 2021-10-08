@@ -181,6 +181,7 @@ let init () =
                  * (no)smartflatten
                  *              try to reuse previous results of flattening
                  * "nonewqut"   don't apply simplifications that introduce quantifiers
+                 * "rwsetext"   always rewrite equalities between sets
                  * "smt_prove_false"
                  *              replace the goal with FALSE to catch bugs
                  *)
