@@ -1,5 +1,9 @@
 name: Build and Package TLA Proof Manager
-on: [push]
+on:
+    push:
+    schedule:
+        - cron: '42 5 5 * *'
+
 
 ## The 'release' job creates an empty Github (draft) release before the 'publish' job
 ## below builds and uploads installers into the release.  This complexity is required
