@@ -341,10 +341,10 @@ Util.eprintf "       Fact: %a" (Typ_e.pp_print_expr (snd cx, Ctx.dot)) (Quant (E
 
 let ex' = app_expr (bumpn (Dq.size hs) (shift (List.length bs))) ex in
 let vs = map fst vss in
-Util.eprintf "Skolem \\E %s : %a" (String.concat "," vs) (Typ_e.pp_print_expr ecx) ex';
-Util.eprintf "Skolem \\E %s : %a" (String.concat "," vs) (Typ_e.pp_print_expr (fst ecx, Ctx.dot)) ex';
+Util.eprintf "Skolem \\E %s:  %a" (String.concat "," vs) (Typ_e.pp_print_expr ecx) ex';
+Util.eprintf "Skolem \\E %s:  %a" (String.concat "," vs) (Typ_e.pp_print_expr (fst ecx, Ctx.dot)) ex';
 let cx' = Expr.Visit.adjs cx js in
-Util.eprintf "Skolem \\E %s : %a" (String.concat "," vs) (Typ_e.pp_print_expr (snd cx', Ctx.dot)) ex';
+Util.eprintf "Skolem \\E %s:  %a" (String.concat "," vs) (Typ_e.pp_print_expr (snd cx', Ctx.dot)) ex';
 
 
         (* let cx = Expr.Visit.adjs cx ks in *)
