@@ -1239,11 +1239,11 @@ let rec is_typhyp ?var (scx:hyp Dq.dq) e =
           (match var with None -> true | Some v -> idx = v) &&
           not (List.mem idx (fv_expr ((),scx) y))
       end
-  (** \A x \in S : op(x) \in T *)
+  (** \A x \in S:  op(x) \in T *)
   | Quant (Forall, [h,_,Domain s], {core = Apply ({core = Internal B.Mem},
       [{core = Apply ({core = Ix _}, [{core = Ix 1}])} ; t])}) ->
       true
-  (** \A x : p(x) => op(x) \in S *)
+  (** \A x:  p(x) => op(x) \in S *)
   | Quant (Forall, [_,_,No_domain], {core = Apply ({core = Internal B.Implies}, [
       {core = Apply ({core = Opaque "boolify"}, [
         {core = Apply ({core = Ix n}, [{core = Ix 1}])}

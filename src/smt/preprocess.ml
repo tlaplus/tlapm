@@ -163,12 +163,16 @@ let make_salt_explicit sq =
     - Register record signatures in [Smt.record_signatures] and add (instances of) record extensionality axioms
     - [TODO] Register tuple signatures
     - Unroll sequents
-    - Rewrite [<<a_1,...,a_n>> = <<b_1,...,b_n>>]  -->  [a_1 = b_1 /\ ... /\ a_n = b_n]
+    - Rewrite
+      ```
+      [<<a_1, ..., a_n>> = <<b_1, ..., b_n>>]  -->
+      [a_1 = b_1 /\ ... /\ a_n = b_n]
+      ```
     - Rewrite [x = TRUE|FALSE]  -->  [x <=> TRUE|FALSE]
-    - Rewrite [x # {}]  -->  [(\A y : ~ y \in x) => FALSE]  in conclusions
+    - Rewrite `[x # {}]  -->  [(\A y:  ~ y \in x) => FALSE]`  in conclusions
     - Insert operator symbols and primed variable symbols in the context
     - Remove [B.Unprimable] from expressions
-    - Sort string elements in sets {s1,...,sn} alphabetically
+    - Sort string elements in sets `{s1, ..., sn}` alphabetically
     - make_salt_explicit
     *)
 let prepreproc sq =
@@ -221,7 +225,7 @@ let prepreproc sq =
   end in
   let sq = snd (visitor#sequent ((),sq.context) sq) in
 
-  (** Transform conclusion(s)  [x # {}]  -->  [(\A y : ~ y \in x) => FALSE]
+  (** Transform conclusion(s)  `[x # {}]  -->  [(\A y:  ~ y \in x) => FALSE]`
   (TODO: also transform all positive formulas) *)
   let c =
     match sq.active.core with
@@ -304,7 +308,8 @@ let rec uncurry sq n =
 
 (****************************************************************************)
 (* Skolemize and deconj hypotheses + [uncurry]                              *)
-(*   FIX: Suppose two hypotheses [\E i: P(i)] and [\E i: Q(i)]. The first   *)
+(*   FIX: Suppose two hypotheses `[\E i:  P(i)]` and `[\E i:  Q(i)]`.
+The first *)
 (*   one is skolemized as [NEW i; P(i)] while the second as [NEW i; Q(i_1)].*)
 (****************************************************************************)
 let rec skolemize_once sq =
@@ -698,11 +703,14 @@ let add_eqs ss scx ex =
 
 (** TODO: abstract (and normalize) just one non-basic expression at a time (with all its occurences, of course)
     See, for instance, the translation of, with two non-basic expressions:
+
+```
 LEMMA
   ASSUME NEW h(_)
   PROVE  [a |-> h(1), b |-> h(2)]  =
-         [x \in {"a","b"} |-> IF x = "a" THEN h(1) ELSE h(2)]
+         [x \in {"a", "b"} |-> IF x = "a" THEN h(1) ELSE h(2)]
   BY TPTP   \** function extensionality missing
+```
 *)
 let abstract scx (hs,c) =
   let offset1 = Dq.size (snd scx) in
@@ -789,8 +797,9 @@ let abstract scx (hs,c) =
 (****************************************************************************)
 (* Kinds of non-basic expressions E:
    - P(E)              non-shifted, no free variables
-   - \A x : P(E,x)     shifted, e.g. by quantified variables, no free variables
-   - \A x : P(E(x),x)  shifted, with free variables [x] bound by \A x       *)
+   - `\A x:  P(E, x)` shifted, e.g., by quantified variables, no free variables
+   - `\A x:  P(E(x), x)` shifted, with free variables `[x]` bound by `\A x`
+*)
 (****************************************************************************)
 
 let abstract2 scx (hs,c) =
@@ -832,8 +841,9 @@ let abstract2 scx (hs,c) =
 (* Util.eprintf "^^ canonical (%d-%d) of %a" offset offset0 (Typ_e.pp_print_expr (snd scx, Ctx.dot)) e ; *)
     let fvs = fvis offset e in
 (* - P(E)               canonical E = E
-   - \A x : P(E,x)      canonical E = shift -length(x) E
-   - \A x : P(E(x),x)   canonical E(x) = old_canonical(E(x))      // E will be always bound, so no need to shift
+   - `\A x:  P(E, x)`      canonical E = shift - length(x) E
+   - `\A x:  P(E(x), x)`   canonical E(x) = old_canonical(E(x))
+     // E will be always bound, so no need to shift
    *)
     if fvs = [] then app_expr (shift (-offset)) e else begin
 (* Smt.ifprint 2 "   fvs [%s]" (String.concat "," (map string_of_int fvs)) ; *)

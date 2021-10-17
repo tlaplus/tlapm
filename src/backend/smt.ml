@@ -527,13 +527,29 @@ let to_basic scx (hs, c) =
 
 
 (* Post-pre-process (after type synthesis)
-    - Rewriting rules to apply:
-        [a \div b] --> [IF a \in Int /\ b \in Int /\ 0 < b THEN a \div b ELSE tla__div(a,b)]
-        [a \mod b] --> [IF a \in Int /\ b \in Int /\ 0 < b THEN a \mod b ELSE tla__mod(a,b)]
-        [a ^ b]    --> [IF a \in Int /\ b \in Int /\ a # 0 THEN exp(a,b) ELSE tla__exp(a,b)]
-        (* [a + b]    --> [IF a \in Int /\ b \in Int THEN a + b ELSE tla__plus(a,b)] *)
-        (* [Cardinality(S)] --> [IF IsFiniteSet(S) THEN Cardinality(S) ELSE tla__Cardinality(S)] *)
-   *)
+
+- Rewriting rules to apply:
+    [a \div b] -->
+        [IF a \in Int /\ b \in Int /\ 0 < b
+            THEN a \div b
+            ELSE tla__div(a, b)]
+    [a \mod b] -->
+        [IF a \in Int /\ b \in Int /\ 0 < b
+            THEN a \mod b
+            ELSE tla__mod(a, b)]
+    [a ^ b] -->
+        [IF a \in Int /\ b \in Int /\ a # 0
+            THEN exp(a, b)
+            ELSE tla__exp(a, b)]
+    (* [a + b] -->
+        [IF a \in Int /\ b \in Int
+            THEN a + b
+            ELSE tla__plus(a, b)] *)
+    (* [Cardinality(S)] -->
+        [IF IsFiniteSet(S)
+            THEN Cardinality(S)
+            ELSE tla__Cardinality(S)] *)
+*)
 let postpreproc sq =
     let app op es = Apply (Internal op %% [], es) %% [] in
     let lAnd = function [e] -> e | es -> List (And, es) %% [] in

@@ -1084,9 +1084,10 @@ let rec to_predtyp cx (x: expr) t =
         cx,
         forall ~dom:x
             z (sh1 ex)
-    (** [[x : (y:t1) -> t2]] == /\ x = [y \in DOMAIN x |-> x[y]]
-      /\ \A y : y \in DOMAIN x <=> [[y : t1]]
-      /\ \A y : [[y : t1]] => [[x[y] : t2]]
+    (** [[x : (y: t1) -> t2]] ==
+        /\ x = [y \in DOMAIN x |-> x[y]]
+        /\ \A y:  y \in DOMAIN x <=> [[y : t1]]
+        /\ \A y:  [[y : t1]] => [[x[y] : t2]]
     *)
     | Func (y, t1, t2) ->
         let b1, cx1, p1 = to_predtyp cx ix1 t1 in

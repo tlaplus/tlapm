@@ -330,9 +330,11 @@ let rec cg_expr
                         t,
                         Set (Tdom (mk_var af)))])
         (** << env |- x..y : t >> ==
-            \E a1,a2: /\ <<env |- x : a1 >> /\ env |- a1 <? Int
-                      /\ <<env |- y : a2 >> /\ env |- a2 <? Int
-                      /\ t == Set {z : Int | x <= z /\ z <= y} *)
+            \E a1, a2:
+                /\ <<env |- x : a1 >> /\ env |- a1 <? Int
+                /\ <<env |- y : a2 >> /\ env |- a2 <? Int
+                /\ t == Set {z : Int | x <= z /\ z <= y}
+        *)
         | B.Range, [x; y] ->
             (*
             Util.eprintf
@@ -400,9 +402,11 @@ let rec cg_expr
                 c;
                 mk_eq_bool t]
         (** << env |- e1 = e2 : t >> ==
-            \E a: /\ << env |- e1 : a >>
-                  /\ << env |- e2 : a >>
-                  /\ |- t == Bool *)
+            \E a:
+                /\ << env |- e1 : a >>
+                /\ << env |- e2 : a >>
+                /\ |- t == Bool
+        *)
         | B.Eq, [e1; e2] when mode = TypHyp ->
             let a = fresh_tyvar (E.to_cx env, e1) in
             let e1, ce1 = cg_expr
@@ -412,9 +416,11 @@ let rec cg_expr
             mk_ex op [e1; e2],
             CExists ([a], CConj [ce1; ce2; mk_eq_bool t])
         (** << env |- e1 = e2 : t >> ==
-           \E a1,a2: /\ << env |- e1 : a1 >> /\ env |- a1 <? a1 ++ a2
-                     /\ << env |- e2 : a2 >> /\ env |- a2 <? a1 ++ a2
-                     /\ |- t == Bool *)
+            \E a1, a2:
+                /\ << env |- e1 : a1 >> /\ env |- a1 <? a1 ++ a2
+                /\ << env |- e2 : a2 >> /\ env |- a2 <? a1 ++ a2
+                /\ |- t == Bool
+        *)
         | (B.Eq | B.Neq), [e1; e2] ->
             let a1 = fresh_tyvar (E.to_cx env, e1) in
             let a2 = fresh_tyvar (E.to_cx env, e2) in
@@ -663,7 +669,10 @@ let rec cg_expr
                 (fun a b -> mk_issub (E.empty, a, b))
                 t1s t2s)
             @ [cf; mk_eq (E.empty, t, mk_var ar)]))
-    (** << env |- {} : t >> == \E a: t == {z : a | FALSE} *)
+    (** << env |- {} : t >> ==
+        \E a:
+            t == {z : a | FALSE}
+    *)
     | SetEnum [] ->
         let a = fresh_tyvar (E.to_cx env, e) in
         let tt = Ref (
@@ -676,7 +685,10 @@ let rec cg_expr
         CExists (
             [a],
             mk_eq (E.empty, t, Set tt))
-    (** << env |- {ex} : t >> == \E a: <<env |- ex : a >> /\ t == Set a *)
+    (** << env |- {ex} : t >> ==
+        \E a:
+            <<env |- ex : a >> /\ t == Set a
+    *)
     | SetEnum [ex] ->
         let a = fresh_tyvar (E.to_cx env, ex) in
         let ex, cex = cg_expr
@@ -691,8 +703,10 @@ let rec cg_expr
                     t,
                     Set (mk_var a))]))
     (** << env |- es : t >> ==
-        \E a{1..n}: /\ <<env |- e_i : a_i >>_{i:1..n}
-                    /\ t == Set (a1 ++ ... ++ an) *)
+        \E a{1..n}:
+            /\ <<env |- e_i : a_i >>_{i:1..n}
+            /\ t == Set (a1 ++ ... ++ an)
+    *)
     | SetEnum es ->
         let a1s, t1s, es, cs = gen_tyvars
             mode env scx es in
@@ -704,11 +718,13 @@ let rec cg_expr
                     E.empty,
                     t,
                     Set (TyPlus t1s))]))
-    (** << env |- {v \in d : ex} : t >> ==
-        \E a1,a2: /\ <<env |- d : Set a2 >>
-                  /\ <<env, x:a1 |- ex : Bool>>
-                  /\ env |- a1 <: a2
-                  /\ t == Set {x : a1 | ex} *)
+    (** << env |- {v \in d: ex} : t >> ==
+        \E a1, a2:
+            /\ <<env |- d : Set a2 >>
+            /\ <<env, x:a1 |- ex : Bool>>
+            /\ env |- a1 <: a2
+            /\ t == Set {x : a1 | ex}
+    *)
     | SetSt (v, d, ex) ->
         let a = fresh_tyvar (E.to_cx env, d) in
         let d, cd = cg_expr
@@ -1188,13 +1204,15 @@ let rec cg_expr
         e,
         mk_eq_bool t
 
-    (** Typing hypothesis [\A x \in S : op(x) \in T] *)
-    (** << env |- (\A x \in S : op(x) \in T) : t >> ==
-        \E a1,a2: /\ << env |- S : Set a1 >>
-                  /\ << env |- T : Set a2 >>
-                  /\ << env |- op : a1 -> a2 >>
-                  (* /\ |- env(op) == a1 -> a2  *)
-                  /\ t == Bool *)
+    (** Typing hypothesis [\A x \in S:  op(x) \in T] *)
+    (** << env |- (\A x \in S:  op(x) \in T) : t >> ==
+        \E a1, a2:
+            /\ << env |- S : Set a1 >>
+            /\ << env |- T : Set a2 >>
+            /\ << env |- op : a1 -> a2 >>
+            (* /\ |- env(op) == a1 -> a2 *)
+            /\ t == Bool
+    *)
     | Quant (
             Forall,
             [h, k, Domain s1],
@@ -1238,14 +1256,16 @@ let rec cg_expr
                 cop;
                 mk_eq_bool t])
 
-    (** Typing hypothesis [\A x : p(x) => op(x) \in S] *)
-    (** << env |- (\A x : p(x) => op(x) \in S) : t >> ==
-        \E a1,a2: /\ << env |- S : Set a2 >>
+    (** Typing hypothesis [\A x:  p(x) => op(x) \in S] *)
+    (** << env |- (\A x:  p(x) => op(x) \in S) : t >> ==
+        \E a1, a2:
+            /\ << env |- S : Set a2 >>
             /\ env(p) =?= a1 -> Bool
             /\ env(op) == (_ : {x:a1 | p(x)}) -> a2
-            (* /\ << env,x:a1 |- p(x) : Bool >>  *)
-            (* /\ << env,x:a1 |- op(x) : a2 >> *)
-            /\ t == Bool *)
+            (* /\ << env, x:a1 |- p(x) : Bool >>  *)
+            (* /\ << env, x:a1 |- op(x) : a2 >> *)
+            /\ t == Bool
+    *)
     | Quant (
             Forall,
             [h, k, No_domain],
@@ -1361,7 +1381,7 @@ let rec cg_expr
         (** process [ex] to obtain
         more typing hypotheses *)
         let e, ces = match q, ex.core with
-            (** (\A bs : hs => c) *)
+            (** (\A bs:  hs => c) *)
             | Forall, Apply (
                     {core=Internal B.Implies},
                     [{core=Apply (
@@ -1389,7 +1409,7 @@ let rec cg_expr
                         c in
                 Quant (q, bs, ex) @@ e,
                 (cths @ crest)
-            (** (\E bs : hs) *)
+            (** (\E bs:  hs) *)
             | Exists, (
                       Apply ({core=Internal B.Conj}, hs)
                     | List (And, hs)) ->
