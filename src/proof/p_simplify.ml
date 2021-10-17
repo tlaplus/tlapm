@@ -247,14 +247,16 @@ and simplify_step cx goal st time_flag =
                   let aux =
                     match b, gb with
                     | (_, _, No_domain), (_, _, No_domain) -> aux
-                    | (v, _, Domain dom), (_, _, Domain gdom) ->
+                    | (v, _, Domain dom),
+                      (_, _, Domain gdom) ->
                         if Expr.Eq.expr dom gdom then aux else
                           let sub =
                             Apply (Internal Builtin.Subseteq @@ v, [
                                      gdom ; dom
                                    ]) @@ v
                           in sub :: aux
-                    | (v, _, No_domain), (gv, _, Domain gdom) ->
+                    | (v, _, No_domain),
+                      (gv, _, Domain gdom) ->
                         let msg = Util.sprintf
                            "@.@[<b0>%s (%s)@ %s (%s \\in %a)@]@."
                            "Error: the TAKE argument" v.core
@@ -262,7 +264,8 @@ and simplify_step cx goal st time_flag =
                            (Expr.Fmt.pp_print_expr (cx, Ctx.dot)) gdom
                          in
                          failwith msg
-                    | (v, _, Domain dom), (gv, _, No_domain) ->
+                    | (v, _, Domain dom),
+                      (gv, _, No_domain) ->
                         let msg =
                           Util.sprintf "@.@[<b0>%s (%s \\in %a)@ %s (%s)@]@."
                               "Error: the TAKE argument" v.core

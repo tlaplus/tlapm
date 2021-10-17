@@ -89,7 +89,8 @@ class level_comparison = object (self : 'self)
         match e.core, f.core with
         | Parens (e, _), _ -> self#expr cx1 cx2 e f
         | _, Parens (f, _) -> self#expr cx1 cx2 e f
-        | Ix m, Ix n ->
+        | Ix m,
+          Ix n ->
             let get_hyp cx n = begin
                 let hyp = get_val_from_id cx n in
                 match hyp.core with
@@ -166,11 +167,14 @@ class level_comparison = object (self : 'self)
                 name1 = name2
                 && kind2 = Kdefinition
             end
-        | Opaque p, Opaque q ->
+        | Opaque p,
+          Opaque q ->
             p = q
-        | Internal b, Internal c ->
+        | Internal b,
+          Internal c ->
             b = c
-        | Lambda (rs, e), Lambda (vs, f) ->
+        | Lambda (rs, e),
+          Lambda (vs, f) ->
             let mk_param (v, shp) = Fresh (
                 v, shp, Unknown, Unbounded) @@ v in
             let cx1_ext = List.map mk_param rs in
@@ -187,34 +191,39 @@ class level_comparison = object (self : 'self)
                   vs) in
           Lambda (vs, self#expr scx e) @@ oe
         *)
-        | Apply (p, es), Apply (q, fs) ->
+        | Apply (p, es),
+          Apply (q, fs) ->
             self#expr cx1 cx2 p q &&
             self#exprs cx1 cx2 es fs
         (*
         | Apply (op, es) ->
             Apply (self#expr scx op, List.map (self#expr scx) es) @@ oe
         *)
-        | Sequent s, Sequent t ->
+        | Sequent s,
+          Sequent t ->
             self#sequent cx1 cx2 s t
         (*
         | Sequent sq ->
             let (_, sq) = self#sequent scx sq in
             Sequent sq @@ oe
         *)
-        | Bang (e, ss), Bang (f, tt) ->
+        | Bang (e, ss),
+          Bang (f, tt) ->
             self#expr cx1 cx2 e f &&
             List.for_all2 (self#sel cx1 cx2) ss tt
         (*
         | Bang (e, sels) ->
             Bang (self#expr scx e, List.map (self#sel scx) sels) @@ oe
         *)
-        | With (e, _), With (f, _) ->
+        | With (e, _),
+          With (f, _) ->
             self#expr cx1 cx2 e f
         (*
         | With (e, m) ->
             With (self#expr scx e, m) @@ oe
         *)
-        | Let (xi, a), Let (phi, b) ->
+        | Let (xi, a),
+          Let (phi, b) ->
             let cx1_ = self#defns_cx cx1 xi in
             let cx2_ = self#defns_cx cx2 phi in
             self#defns cx1 cx2 xi phi &&
@@ -224,7 +233,8 @@ class level_comparison = object (self : 'self)
             let (scx, ds) = self#defns scx ds in
             Let (ds, self#expr scx e) @@ oe
         *)
-        | If (c1, t1, e1), If (c2, t2, e2) ->
+        | If (c1, t1, e1),
+          If (c2, t2, e2) ->
             self#expr cx1 cx2 c1 c2
             && self#expr cx1 cx2 t1 t2
             && self#expr cx1 cx2 e1 e2
@@ -232,14 +242,16 @@ class level_comparison = object (self : 'self)
         | If (e, f, g) ->
             If (self#expr scx e, self#expr scx f, self#expr scx g) @@ oe
         *)
-        | List (q, es), List (r, fs) ->
+        | List (q, es),
+          List (r, fs) ->
             q = r
             && self#exprs cx1 cx2 es fs
         (*
         | List (q, es) ->
             List (q, List.map (self#expr scx) es) @@ oe
         *)
-        | Quant (q, bs, e), Quant (r, cs, f) ->
+        | Quant (q, bs, e),
+          Quant (r, cs, f) ->
             let cx1_ = self#bounds_cx cx1 bs in
             let cx2_ = self#bounds_cx cx2 bs in
             q = r
@@ -250,7 +262,8 @@ class level_comparison = object (self : 'self)
             let (scx, bs) = self#bounds scx bs in
             Quant (q, bs, self#expr scx e) @@ oe
         *)
-        | Tquant (q, rs, e), Tquant (r, vs, f) ->
+        | Tquant (q, rs, e),
+          Tquant (r, vs, f) ->
             let g v = Flex v @@ v in
             let cx1_ext = List.map g rs in
             let cx2_ext = List.map g vs in
@@ -264,7 +277,8 @@ class level_comparison = object (self : 'self)
             let scx = self#adjs scx (List.map (fun v -> Flex v @@ v) vs) in
             Tquant (q, vs, self#expr scx e) @@ oe
         *)
-        | Choose (ve, Some edom, e), Choose (vf, Some fdom, f) ->
+        | Choose (ve, Some edom, e),
+          Choose (vf, Some fdom, f) ->
             let g v dom = Fresh (v, Shape_expr, Constant,
                                  Bounded (dom, Visible)) @@ v in
             let h1 = g ve edom in
@@ -273,7 +287,8 @@ class level_comparison = object (self : 'self)
             let cx2_ = Deque.snoc cx2 h2 in
             self#expr cx1 cx2 edom fdom
             && self#expr cx1_ cx2_ e f
-        | Choose (ve, None, e), Choose (vf, None, f) ->
+        | Choose (ve, None, e),
+          Choose (vf, None, f) ->
             let g v = Fresh (v, Shape_expr, Constant, Unbounded) @@ v in
             let h1 = g ve in
             let h2 = g vf in
@@ -292,7 +307,8 @@ class level_comparison = object (self : 'self)
             let e = self#expr scx e in
             Choose (v, optdom, e) @@ oe
         *)
-        | SetSt (ve, edom, e), SetSt (vf, fdom, f) ->
+        | SetSt (ve, edom, e),
+          SetSt (vf, fdom, f) ->
             let g v dom = Fresh (v, Shape_expr, Constant,
                             Bounded (dom, Visible)) @@ v in
             let h1 = g ve edom in
@@ -310,7 +326,8 @@ class level_comparison = object (self : 'self)
             let e = self#expr scx e in
             SetSt (v, dom, e) @@ oe
         *)
-        | SetOf (e, bs), SetOf (f, cs) ->
+        | SetOf (e, bs),
+          SetOf (f, cs) ->
             let cx1_ = self#bounds_cx cx1 bs in
             let cx2_ = self#bounds_cx cx2 cs in
             self#expr cx1_ cx2_ e f
@@ -320,20 +337,23 @@ class level_comparison = object (self : 'self)
             let (scx, bs) = self#bounds scx bs in
             SetOf (self#expr scx e, bs) @@ oe
         *)
-        | SetEnum es, SetEnum fs ->
+        | SetEnum es,
+          SetEnum fs ->
             self#exprs cx1 cx2 es fs
         (*
         | SetEnum es ->
             SetEnum (List.map (self#expr scx) es) @@ oe
         *)
-        | Arrow (a, b), Arrow (c, d) ->
+        | Arrow (a, b),
+          Arrow (c, d) ->
             self#expr cx1 cx2 a c
             && self#expr cx1 cx2 b d
         (*
         | Arrow (a, b) ->
             Arrow (self#expr scx a, self#expr scx b) @@ oe
         *)
-        | Fcn (bs, e), Fcn (cs, f) ->
+        | Fcn (bs, e),
+          Fcn (cs, f) ->
             let cx1_ = self#bounds_cx cx1 bs in
             let cx2_ = self#bounds_cx cx2 cs in
             self#bounds cx1 cx2 bs cs
@@ -343,25 +363,29 @@ class level_comparison = object (self : 'self)
             let (scx, bs) = self#bounds scx bs in
             Fcn (bs, self#expr scx e) @@ oe
         *)
-        | FcnApp (f, es), FcnApp (g, fs) ->
+        | FcnApp (f, es),
+          FcnApp (g, fs) ->
             self#exprs cx1 cx2 (f :: es) (g :: fs)
         (*
         | FcnApp (f, es) ->
             FcnApp (self#expr scx f, List.map (self#expr scx) es) @@ oe
         *)
-        | Tuple es, Tuple fs ->
+        | Tuple es,
+          Tuple fs ->
             self#exprs cx1 cx2 es fs
         (*
         | Tuple es ->
             Tuple (List.map (self#expr scx) es) @@ oe
         *)
-        | Product es, Product fs ->
+        | Product es,
+          Product fs ->
             self#exprs cx1 cx2 es fs
         (*
         | Product es ->
             Product (List.map (self#expr scx) es) @@ oe
         *)
-        | Rect fs, Rect gs ->
+        | Rect fs,
+          Rect gs ->
             let fmap = digest fs in
             let gmap = digest gs in
               StringMap.equal (self#expr cx1 cx2) fmap gmap
@@ -369,7 +393,8 @@ class level_comparison = object (self : 'self)
         | Rect fs ->
             Rect (List.map (fun (s, e) -> (s, self#expr scx e)) fs) @@ oe
         *)
-        | Record fs, Record gs ->
+        | Record fs,
+          Record gs ->
             let fmap = digest fs in
             let gmap = digest gs in
               StringMap.equal (self#expr cx1 cx2) fmap gmap
@@ -377,7 +402,8 @@ class level_comparison = object (self : 'self)
         | Record fs ->
             Record (List.map (fun (s, e) -> (s, self#expr scx e)) fs) @@ oe
         *)
-        | Except (e, xs), Except (f, ys) ->
+        | Except (e, xs),
+          Except (f, ys) ->
             let rec exspecs cx1 cx2 xs ys = match xs, ys with
               | [], [] -> true
               | x :: xs, y :: ys ->
@@ -403,14 +429,16 @@ class level_comparison = object (self : 'self)
         | Except (e, xs) ->
             Except (self#expr scx e, List.map (self#exspec scx) xs) @@ oe
         *)
-        | Dot (e, x), Dot (f, y) ->
+        | Dot (e, x),
+          Dot (f, y) ->
             self#expr cx1 cx2 e f
             && x = y
         (*
         | Dot (e, f) ->
             Dot (self#expr scx e, f) @@ oe
         *)
-        | Sub (m, e, f), Sub (n, g, h) ->
+        | Sub (m, e, f),
+          Sub (n, g, h) ->
             m = n
             && self#expr cx1 cx2 e g
             && self#expr cx1 cx2 f h
@@ -418,7 +446,8 @@ class level_comparison = object (self : 'self)
         | Sub (s, e, f) ->
             Sub (s, self#expr scx e, self#expr scx f) @@ oe
         *)
-        | Tsub (m, e, f), Tsub (n, g, h) ->
+        | Tsub (m, e, f),
+          Tsub (n, g, h) ->
             m = n
             && self#expr cx1 cx2 e g
             && self#expr cx1 cx2 f h
@@ -426,7 +455,8 @@ class level_comparison = object (self : 'self)
         | Tsub (s, e, f) ->
             Tsub (s, self#expr scx e, self#expr scx f) @@ oe
         *)
-        | Fair (m, e, f), Fair (n, g, h) ->
+        | Fair (m, e, f),
+          Fair (n, g, h) ->
             m = n
             && self#expr cx1 cx2 e g
             && self#expr cx1 cx2 f h
@@ -449,11 +479,14 @@ class level_comparison = object (self : 'self)
             Case (List.map (fun (e, f) -> (self#expr scx e, self#expr scx f)) arms,
                   Option.map (self#expr scx) oth) @@ oe
         *)
-        | String x, String y -> x = y
-        | Num (i, j), Num (k, l) ->
+        | String x,
+          String y -> x = y
+        | Num (i, j),
+          Num (k, l) ->
             i = k
             && j = l
-        | At b, At c -> b = c
+        | At b,
+          At c -> b = c
         | _, _ -> false
 
     method exprs cx1 cx2 es fs = match es, fs with
