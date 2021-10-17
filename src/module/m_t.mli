@@ -45,8 +45,7 @@ and summary = {
     sum_total: int;
     sum_absent: int * Loc.locus list;
     sum_omitted: int * Loc.locus list;
-    sum_suppressed: int * Loc.locus list;
-}
+    sum_suppressed: int * Loc.locus list}
 and stage =
     | Special
     | Parsed | Flat

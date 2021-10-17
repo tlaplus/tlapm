@@ -23,8 +23,7 @@ module Token: sig
     and token = {
         form: token_;
         mutable rep: string;
-        loc: Loc.locus;
-    }
+        loc: Loc.locus}
     (* include Pars.Intf.Tok *)
     val bof: Loc.locus -> token
     val rep: token -> string

@@ -22,8 +22,7 @@ type tlaop = {
     prec: prec;
     fix: fixity;
     dom: dom;
-    defn: Builtin.builtin option;
-}
+    defn: Builtin.builtin option}
 val optable: (string, tlaop) Hashtbl.t
 
 (* fmt.ml *)
