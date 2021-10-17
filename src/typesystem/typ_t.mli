@@ -4,25 +4,38 @@
 open Expr.T
 
 type t =
-  | Int | Str | Bool
-  | TyAtom of string                (** Atomic type *)
-  | Top                             (** Only for CHOOSE *)
-  | TyVar of ty_subst list * string (** Variable type with delayed substitution *)
-  | Set of t                        (** Power set type *)
-  | Func of string * t * t          (** Dependent function type *)
-  | Ref of string * t * tref        (** Refinement type *)
-  | Rec of (string * t) list
-  | Rec_dot of t * string
-  | TyPlus of t list
-  | TyTimes of t list
-  | Tbase of t                      (** Base of refinement *)
-  | Tdom of t                       (** Domain *)
-  | Tcod of t                       (** Co-domain *)
+    | Int
+    | Str
+    | Bool
+    | TyAtom of string
+        (** Atomic type *)
+    | Top
+        (** Only for CHOOSE *)
+    | TyVar of ty_subst list * string
+        (** Variable type with
+        delayed substitution *)
+    | Set of t
+        (** Power set type *)
+    | Func of string * t * t
+        (** Dependent function type *)
+    | Ref of string * t * tref
+        (** Refinement type *)
+    | Rec of (string * t) list
+    | Rec_dot of t * string
+    | TyPlus of t list
+    | TyTimes of t list
+    | Tbase of t
+        (** Base of refinement *)
+    | Tdom of t
+        (** Domain *)
+    | Tcod of t
+        (** Co-domain *)
 and tref =
-  | Ex of hyp list * expr
-  | Ph of (ty_subst list * plhdr)
+    | Ex of hyp list * expr
+    | Ph of (ty_subst list * plhdr)
 and plhdr = string
-and ty_subst = string * hyp list * expr * t
+and ty_subst =
+    string * hyp list * expr * t
 
 (* val to_scx : hyp list -> hyp Deque.dq *)
 val (<<<) : 'a Property.wrapped -> t -> 'a Property.wrapped

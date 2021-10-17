@@ -20,8 +20,8 @@ val launch_process: string -> int * Unix.file_descr
 (*******************************************)
 
 type line =
-  | Line of string
-  | Leof
+    | Line of string
+    | Leof
 
 
 type line_buffer;;
@@ -39,9 +39,9 @@ val read_lines: line_buffer -> line list
 *)
 
 type toolbox_command =
-  | Kill of int
-  | Killall
-  | Eof
+    | Kill of int
+    | Killall
+    | Eof
 
 
 val read_toolbox_commands:

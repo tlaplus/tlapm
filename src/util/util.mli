@@ -73,7 +73,7 @@ val line_wrap : ?cols:int -> string -> string
 
 val heap_stats : unit -> unit
 val temp_file :
-  (unit -> unit) ref -> string -> string * out_channel
+    (unit -> unit) ref -> string -> string * out_channel
 (** [temp_file clean_hook suffix]
     Create a temporary file, return its name and an output channel to it.
     Add to [clean_hook] a clean-up action that closes the out_channel

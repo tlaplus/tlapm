@@ -6,41 +6,41 @@ open Expr.T
 
 
 type omission =
-  | Implicit
-  | Explicit
-  | Elsewhere of Loc.locus
+    | Implicit
+    | Explicit
+    | Elsewhere of Loc.locus
 type proof = proof_ wrapped
 and proof_ =
-  | Obvious
-  | Omitted of omission
-  | By      of usable * bool
-  | Steps   of step list * qed_step
-  | Error   of string
+    | Obvious
+    | Omitted of omission
+    | By of usable * bool
+    | Steps of step list * qed_step
+    | Error of string
 (** Non-terminal proof steps *)
 and step = step_ wrapped
 and step_ =
-  | Hide     of usable
-  | Define   of defn list
-  | Assert   of sequent * proof
-  | Suffices of sequent * proof
-  | Pcase    of expr * proof
-  | Pick     of bound list * expr * proof
-  | Use      of usable * bool
-  | Have     of expr
-  | Take     of bound list
-  | Witness  of expr list
-  | Forget   of int
+    | Hide of usable
+    | Define of defn list
+    | Assert of sequent * proof
+    | Suffices of sequent * proof
+    | Pcase of expr * proof
+    | Pick of bound list * expr * proof
+    | Use of usable * bool
+    | Have of expr
+    | Take of bound list
+    | Witness of expr list
+    | Forget of int
 (** Terminal proof-step **)
 and qed_step = qed_step_ wrapped
 and qed_step_ =
-  | Qed of proof
+    | Qed of proof
 (** Usable elements *)
 and usable = { facts : expr list
              ; defs  : use_def wrapped list }
 
 and use_def =
-  | Dvar of string
-  | Dx   of int
+    | Dvar of string
+    | Dx of int
 
 
 (*
@@ -58,9 +58,9 @@ type isequent = private {
    Error -> a special obligation that carries an error message to the user
 *)
 type obligation_kind =
-  | Ob_main
-  | Ob_support
-  | Ob_error of string
+    | Ob_main
+    | Ob_support
+    | Ob_error of string
 type obligation = {
   id  : int option;
   obl : sequent wrapped;
@@ -69,8 +69,8 @@ type obligation = {
 
 
 type stepno =
-  | Named   of int * string * bool
-  | Unnamed of int * int
+    | Named of int * string * bool
+    | Unnamed of int * int
 
 
 module Props : sig

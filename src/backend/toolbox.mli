@@ -29,7 +29,8 @@ val toolbox_print :
 
 (* backend/prep.ml *)
 val print_new_res :
-  Proof.T.obligation -> Types.status_type6 -> string -> float option -> unit
+  Proof.T.obligation -> Types.status_type6 ->
+  string -> float option -> unit
 val print_message: string -> unit
 val print_old_res:
     Proof.T.obligation -> Types.status_type6 ->

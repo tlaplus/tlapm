@@ -713,7 +713,8 @@ and func_boundeds b = lazy begin
                     let bounds =
                         let hd = (List.hd vs, Constant, Domain dom) in
                         let tl = List.map
-                            (fun v -> (v, Constant, Ditto)) (List.tl vs) in
+                            (fun v -> (v, Constant, Ditto))
+                            (List.tl vs) in
                         hd :: tl in
                     let letin = [] in
                     (bounds, letin)

@@ -9,12 +9,19 @@ open Ext
 open Property
 open Util
 
-(** Type of bulleted lists. [And] and [Or] are the standard TLA+
-    bulleted lists of 1 or more arguments. [Refs] represents a
-    generic conjunction that can take 0, 1 or many arguments. The
-    0-argument case is treated as similaar (but not identical) to
-    TRUE, the 1-argument case as the same as no conjunction, and the
-    many argument case as similar to [And]. *)
+
+(** Type of bulleted lists.
+[And] and [Or] are the standard TLA+
+bulleted lists of 1 or more arguments.
+[Refs] represents a generic conjunction
+that can take 0, 1 or many arguments.
+
+The 0-argument case is treated as similaar
+(but not identical) to TRUE,
+the 1-argument case as the same as
+no conjunction, and the many argument case
+as similar to [And].
+*)
 type bullet  = And | Or | Refs
 
 type quantifier = Forall | Exists
@@ -33,7 +40,10 @@ type shape =
   | Shape_expr
   | Shape_op of int
 
-(** An "expression" is either a TLA+ expression, operator or sequent *)
+(** An "expression" is either
+a TLA+ expression,
+operator or
+sequent *)
 type expr = expr_ wrapped
 and expr_ =
     (* operators *)
@@ -46,15 +56,17 @@ and expr_ =
     (* `LAMBDA` and
     signatures of operator definitions *)
   | Lambda of (hint * shape) list * expr
-    (* sequents (`ASSUME`/`PROVE` with definitions from
-    module scope) *)
+    (* sequents (`ASSUME`/`PROVE` with
+    definitions from module scope) *)
   | Sequent of sequent
-    (* unified module and subexpression references (Foo!Op) *)
+    (* unified module and
+    subexpression references (Foo!Op) *)
   | Bang of expr * sel list
     (* ordinary TLA+ expressions *)
     (* operator application `Op(arg1, arg2)` *)
   | Apply of expr * expr list
-    (* Expression annotated with prover directive. *)
+    (* Expression annotated with
+    prover directive. *)
   | With of expr * Method.t
     (* Ternary conditional `IF P THEN A ELSE B` *)
   | If of expr * expr * expr
@@ -71,21 +83,24 @@ and expr_ =
     (* `{x \in S:  P(x)}`
     axiom scheme of separation
 
-    Section 16.1.6 on pages 299--301 of the book "Specifying Systems",
+    Section 16.1.6 on pages 299--301 of
+    the book "Specifying Systems",
     specifically page 301
     *)
   | SetSt of hint * expr * expr
     (* `{f(x):  x \in S}`
     axiom scheme of replacement
 
-    Section 16.1.6 on pages 299--301 of the book "Specifying Systems",
+    Section 16.1.6 on pages 299--301 of
+    the book "Specifying Systems",
     specifically page 301
     *)
   | SetOf of expr * bounds
     (* `{1, 2}`
     set enumeration
 
-    Section 16.1.6 on pages 299--301 of the book "Specifying Systems",
+    Section 16.1.6 on pages 299--301 of
+    the book "Specifying Systems",
     specifically page 300
     *)
   | SetEnum of expr list
@@ -105,9 +120,11 @@ and expr_ =
   | Record of (string * expr) list
   | Except of expr * exspec list
   | Dot of expr * string
-    (* Subscripted (action) expressions:  `[A]_v` and `<< A >>_v` *)
+    (* Subscripted (action) expressions:
+    `[A]_v` and `<< A >>_v` *)
   | Sub of modal_op * expr * expr
-    (* Temporal subscripted expressions:  `[][A]_v` and `<><< A >>_v` *)
+    (* Temporal subscripted expressions:
+    `[][A]_v` and `<><< A >>_v` *)
   | Tsub of modal_op * expr * expr
     (* `WF_` and `SF_` *)
   | Fair of fairness_op * expr * expr
@@ -159,27 +176,36 @@ and bound_domain =
 and defn = defn_ wrapped
 and defn_ =
     (* recursive operator definition
-    Results by expanding in the function `hyps_of_modunit`
-    a `RECURSIVE` section represented by `Module.T.Recursives`.
+    Results by expanding in the
+    function `hyps_of_modunit`
+    a `RECURSIVE` section represented
+    by `Module.T.Recursives`.
     *)
   | Recursive of hint * shape
     (*
     operator definition:
     - name `hint`
     - body `expr`:
-      - if arity is <_, ... >, then a `Lambda (args, expr)`, with:
-        - `args`: the signature of the operator definition
-        - `expr`: the expression of the body of the operator definition.
-      - if arity is _, then the expression of the definition body.
+      - if arity is <_, ... >,
+        then a `Lambda (args, expr)`, with:
+        - `args`: the signature of
+          the operator definition
+        - `expr`: the expression of
+          the body of the operator definition.
+      - if arity is _, then the expression
+        of the definition body.
     *)
   | Operator of hint * expr
     (* parameter substitution for instantiation *)
   | Instance of hint * instance
-  | Bpragma of hint * expr * ((hint * backend_args) list list)
+  | Bpragma of
+        hint * expr * (
+            (hint * backend_args) list list)
 
 (** Instance *)
 and instance = {
-  (** arguments of the statement `INSTANCE`, for example:
+  (** arguments of the statement `INSTANCE`,
+  for example:
 
     let wrap (x: string): hint = noprops x in
     List.map wrap ["x"; "y"]
@@ -189,7 +215,8 @@ and instance = {
   (** name of the instantiated module *)
   inst_mod  : string ;
 
-  (** substitution defined by the statement `INSTANCE`, for example:
+  (** substitution defined by the
+  statement `INSTANCE`, for example:
 
     let wrap (x: string): hint = noprops x in
     let expr1 = noprops (Opaque "p")
@@ -206,15 +233,21 @@ and instance = {
   inst_sub  : (hint * expr) list ;
 }
 
-(** The [sequent] type represents (a generalisation of) TLA+
-    ASSUME/PROVE forms *)
+(** The [sequent] type represents
+(a generalisation of) TLA+
+ASSUME/PROVE forms *)
 and sequent = {
   (** antecedents:
   These include all definitions from module scope.
-  The definitions are annotated as `Visible` or `Hidden` (see the component
-  `visibility` of the constructor `Defn` of the type `hyp_` below).
-  Proof obligations are sequents. Visible definitions in a proof obligation are
-  expanded in `backends/prep.ml`. Hidden definitions remain in the
+  The definitions are annotated as
+  `Visible` or `Hidden` (see the component
+  `visibility` of the constructor `Defn` of
+  the type `hyp_` below).
+
+  Proof obligations are sequents.
+  Visible definitions in a proof obligation
+  are expanded in `backends/prep.ml`.
+  Hidden definitions remain in the
   sequent's context.
   *)
   context : hyp Deque.dq ;
@@ -244,7 +277,8 @@ and hyp_ =
     (* declared identifier with:
       - name `hint.core`
       - arity `shape`
-      - level `kind` (unspecified level if `kind` is `Unknown`)
+      - level `kind` (unspecified level if
+        `kind` is `Unknown`)
       - domain bound `hdom`
     *)
   | Fresh of hint * shape * kind * hdom
@@ -263,24 +297,30 @@ and export = Local | Export
 
 and visibility = Visible | Hidden
 
-and time = Now | Always | NotSet (* this value exists because when we create
-facts, we need to wait for later normalization in order to know if the terms are
-constants or not *)
+and time = Now | Always | NotSet  (* this value
+    exists because when we create facts,
+    we need to wait for later normalization
+    in order to know if the terms are
+    constants or not *)
 
 (* context helper function *)
 let get_val_from_id cx n = match Deque.nth ~backwards:true cx (n - 1) with
-| Some e -> e
-| None -> failwith "unknown bound variable"
+    | Some e -> e
+    | None -> failwith
+        "unknown bound variable"
 
 
 let hyp_name h = match h.core with
-  | Fresh (nm, _, _, _)
-  | Flex nm
-  | Defn ({core = Operator (nm, _) | Instance (nm, _)
-                  | Bpragma(nm,_,_) | Recursive (nm, _)},
-          _, _, _)
-  -> nm.core
-  | Fact (_, _,_) -> "_"
+    | Fresh (nm, _, _, _)
+    | Flex nm
+    | Defn ({core =
+              Operator (nm, _)
+            | Instance (nm, _)
+            | Bpragma(nm,_,_)
+            | Recursive (nm, _)},
+            _, _, _)
+        -> nm.core
+    | Fact (_, _, _) -> "_"
 
 
 let visibility_to_string = function
@@ -296,7 +336,8 @@ let visibility_of_domain = function
 
 let describe_domain_bound = function
     | Bounded (_, visibility) ->
-        let visible = visibility_to_string visibility in
+        let visible = visibility_to_string
+            visibility in
         "with " ^ visible ^ " domain-bound"
     | Unbounded -> "without domain-bound"
 
@@ -306,7 +347,8 @@ let print_cx cx =
     print_string "\nContext of sequent (hypotheses):\n";
     let print_hyp i hyp =
         let idx = string_of_int i in
-        print_string ("\nHypothesis with index " ^ idx ^ " :\n");
+        print_string ("\nHypothesis with index " ^
+            idx ^ " :\n");
         let msg = match hyp.core with
             | Flex name ->
                 "Variable `" ^ name.core ^ "`\n"
@@ -315,7 +357,8 @@ let print_cx cx =
                 ("Constant operator `" ^ name.core ^
                  "` (" ^ visible ^ ")\n")
             | Defn (df, _, visibility, _) ->
-                let visible = visibility_to_string visibility in
+                let visible = visibility_to_string
+                    visibility in
                 let prefix = match df.core with
                 | Operator (name, expr) ->
                     "Defined operator `" ^ name.core
@@ -324,11 +367,13 @@ let print_cx cx =
                 | Instance (name, _) ->
                     "INSTANCE `" ^ name.core
                 | Recursive (name, _) ->
-                    "`RECURSIVE` declaration of `" ^ name.core
+                    "`RECURSIVE` declaration of `" ^
+                    name.core
                 in
                 prefix ^ "` (" ^ visible ^ ")\n"
             | Fact (expr, visibility, _) ->
-                let visible = visibility_to_string visibility in
+                let visible = visibility_to_string
+                    visibility in
                 "Fact (" ^ visible ^ ")\n"
             in
         print_string msg
@@ -359,20 +404,24 @@ let find_hyp_named
     the hypothesis expression.
     *)
     let name_test hyp = (name = (hyp_name hyp)) in
-    let pair = Deque.find ~backwards:true cx name_test in
+    let pair = Deque.find
+        ~backwards:true cx name_test in
     let pair = Option.get pair in
     let (depth, expr) = pair in
     (depth, expr)
 
 
-let expr_locus expr = match Util.query_locus expr with
+let expr_locus expr =
+    match Util.query_locus expr with
     | None -> None
     | Some loc ->
-        let loc_str = Loc.string_of_locus ~cap:true loc in
+        let loc_str = Loc.string_of_locus
+            ~cap:true loc in
         Some loc_str
 
 
-let format_locus expr = match (expr_locus expr) with
+let format_locus expr =
+    match (expr_locus expr) with
     | None -> "<unknown location>"
     | Some loc_str -> loc_str
 
@@ -387,7 +436,9 @@ let shape_to_arity (shape: shape): int =
     (* Return operator arity that corresponds to `shape`. *)
     let arity = match shape with
         | Shape_expr -> 0
-        | Shape_op arity -> assert (arity >= 1); arity
+        | Shape_op arity ->
+            assert (arity >= 1);
+            arity
         in
     assert (arity >= 0);
     arity
@@ -423,16 +474,26 @@ let rec number_of_hyp (hyps: ctx) =
         | Some (h, hs) -> begin match h.core with
             | Fresh _ -> incr n_constants
             | Flex _ -> incr n_variables
-            | Defn ({core=Operator (name, _)}, _, Visible, _)
-            | Defn ({core=Bpragma (name, _, _)}, _, Visible, _) ->
+            | Defn (
+                    {core=Operator (name, _)},
+                    _, Visible, _)
+            | Defn (
+                    {core=Bpragma (name, _, _)},
+                    _, Visible, _) ->
                 incr n_visible_defs;
                 visible_definition_names :=
-                    name.core :: !visible_definition_names
-            | Defn ({core=Operator (name, _)}, _, Hidden, _)
-            | Defn ({core=Bpragma (name, _, _)}, _, Hidden, _) ->
+                    name.core
+                    :: !visible_definition_names
+            | Defn (
+                    {core=Operator (name, _)},
+                    _, Hidden, _)
+            | Defn (
+                    {core=Bpragma (name, _, _)},
+                    _, Hidden, _) ->
                 incr n_hidden_defs;
                 hidden_definition_names :=
-                    name.core :: !hidden_definition_names
+                    name.core
+                    :: !hidden_definition_names
             | Fact (expr, Hidden, _) ->
                 incr n_hidden_facts;
                 visible_fact_names :=
@@ -466,21 +527,27 @@ let sequent_stats (sq: sequent) =
     let n_hyp = Deque.size sq.context in
     let nums = number_of_hyp sq.context in
     let msg = (
-        "\nNumber of sequent hypotheses: " ^ (string_of_int n_hyp) ^
-        "\nNumber of constants: " ^ (string_of_int nums.n_constants) ^
-        "\nNumber of variables: " ^ (string_of_int nums.n_variables) ^
+        "\nNumber of sequent hypotheses: " ^
+            (string_of_int n_hyp) ^
+        "\nNumber of constants: " ^
+            (string_of_int nums.n_constants) ^
+        "\nNumber of variables: " ^
+            (string_of_int nums.n_variables) ^
         "\nNumber of visible definitions: " ^
             (string_of_int nums.n_visible_defs) ^
         "\nNumber of hidden definitions: " ^
             (string_of_int nums.n_hidden_defs) ^
         "\nNumber of visible facts: " ^
             (string_of_int nums.n_visible_facts) ^
-        "\nNumber of hidden facts: " ^ (string_of_int nums.n_hidden_facts) ^
+        "\nNumber of hidden facts: " ^
+            (string_of_int nums.n_hidden_facts) ^
         "\n\n" ^
         "\nVisible definition names:\n" ^
-        (String.concat "\n" nums.visible_definition_names) ^
+            (String.concat "\n"
+             nums.visible_definition_names) ^
         "\nHidden definition names:\n" ^
-        (String.concat "\n" nums.hidden_definition_names) ^
+            (String.concat "\n"
+             nums.hidden_definition_names) ^
         "\nVisible fact names:\n")
         in
     Util.printf ~prefix:"[INFO]: " "%s" msg;
@@ -499,5 +566,7 @@ let sequent_stats (sq: sequent) =
 
 let enabledaxioms : bool pfuncs =
   Property.make "Module.Elab.enabledaxioms"
-let has_enabledaxioms x = Property.has x enabledaxioms
-let get_enabledaxioms x = Property.get x enabledaxioms
+let has_enabledaxioms x = Property.has
+    x enabledaxioms
+let get_enabledaxioms x = Property.get
+    x enabledaxioms

@@ -3,20 +3,24 @@
  *)
 
 (* expr/fmt.ml *)
-module Prec: Pars.Intf.Prec with type prec = int * int
-module Fu: Fmtutil.Minimal_sig with module Prec = Prec
+module Prec: Pars.Intf.Prec with
+    type prec = int * int
+module Fu: Fmtutil.Minimal_sig with
+    module Prec = Prec
 module Token : sig
-  type token_ =
-    | BOF                               (* beginning of file *)
-    | ID of string                      (* identifiers *)
-    | OP of string                      (* operators *)
-    | KWD of string                     (* keywords *)
-    | NUM of string * string            (* numbers *)
-    | STR of string                     (* strings *)
-    | PUNCT of string                   (* misc. punctuation *)
-    | ST of [`Star | `Plus | `Num of int] * string * int
-                                        (* step token *)
-  and token = {
+    type token_ =
+        | BOF  (* beginning of file *)
+        | ID of string  (* identifiers *)
+        | OP of string  (* operators *)
+        | KWD of string  (* keywords *)
+        | NUM of string * string  (* numbers *)
+        | STR of string  (* strings *)
+        | PUNCT of string  (* misc. punctuation *)
+        | ST of
+            [`Star | `Plus | `Num of int] *
+            string * int
+            (* step token *)
+    and token = {
     form : token_;
     mutable rep : string;
     loc : Loc.locus;
@@ -31,7 +35,9 @@ end
 
 
 module P :
-  Pars.Pco.Make_sig with type Tok.token = Token.token and module Prec = Prec
+    Pars.Pco.Make_sig with
+        type Tok.token = Token.token and
+        module Prec = Prec
 
 
 (* expr/parser.ml *)

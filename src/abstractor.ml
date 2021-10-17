@@ -187,9 +187,11 @@ let rec equal d1 d2 env e1 e2 =
   | Arrow (a1, b1), Arrow (a2, b2) ->
      equal d1 d2 env a1 a2 && equal d1 d2 env b1 b2
   | Rect (l1), Rect (l2) ->
-     equal_list (fun (s1, e1) (s2, e2) -> s1 = s2 && equal d1 d2 env e1 e2) l1 l2
+     equal_list
+        (fun (s1, e1) (s2, e2) -> s1 = s2 && equal d1 d2 env e1 e2) l1 l2
   | Record (l1), Record (l2) ->
-     equal_list (fun (s1, e1) (s2, e2) -> s1 = s2 && equal d1 d2 env e1 e2) l1 l2
+     equal_list
+        (fun (s1, e1) (s2, e2) -> s1 = s2 && equal d1 d2 env e1 e2) l1 l2
   | Except (e1, l1), Except (e2, l2) ->
      equal d1 d2 env e1 e2 && equal_list (equal_exspec d1 d2 env) l1 l2
   | Dot (e1, s1), Dot (e2, s2) -> equal d1 d2 env e1 e2 && s1 = s2
@@ -282,7 +284,8 @@ let cur = ref 0
 let gensym () = incr cur; !cur
 
 (* spine = still in the spine ?
-   env = local environment (i.e. number of binders between the spine and here)
+   env = local environment
+         (i.e. number of binders between the spine and here)
    stk = stack of references to (expr * hint) list for the spine
 
 TO DO: generaliser la spine aux \E sous negations / a gauche des =>

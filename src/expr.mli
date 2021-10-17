@@ -98,7 +98,8 @@ module T : sig
 
   (** Bound variables *)
   and bounds = bound list
-  and bound = hint * kind * bound_domain
+  and bound =
+      hint * kind * bound_domain
   and bound_domain =
     | No_domain
     | Domain of expr

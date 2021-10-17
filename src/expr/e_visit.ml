@@ -15,21 +15,22 @@ open E_t
 module Dq = Deque
 
 
-let hyp_rename v h = begin match h.core with
-  | Fresh (_, shp, k, dom) ->
-      Fresh (v, shp, k, dom)
-  | Flex _ ->
-      Flex v
-  | Defn (df, wd, vis, ex) ->
+let hyp_rename v h = begin
+    match h.core with
+    | Fresh (_, shp, k, dom) ->
+        Fresh (v, shp, k, dom)
+    | Flex _ ->
+        Flex v
+    | Defn (df, wd, vis, ex) ->
       Defn ({ df with core = match df.core with
                 | Recursive (_, shp) -> Recursive (v, shp)
                 | Operator (_, e) -> Operator (v, e)
                 | Instance (_, i) -> Instance (v, i)
                 | Bpragma (_, e, l) -> Bpragma (v, e, l)},
             wd, vis, ex)
-  | Fact (e, vis, tm) ->
-      Fact (e, vis, tm)
-end @@ h
+    | Fact (e, vis, tm) ->
+        Fact (e, vis, tm)
+    end @@ h
 
 type 's scx = 's * hyp Deque.dq
 

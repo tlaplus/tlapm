@@ -7,29 +7,29 @@
 val fp_init:
     string -> string list -> out_channel
 (* [fp_init fp_file source_files]
-   Save the previous fingerprint file [fp_file] to a new history directory.
-   Save the [source_files] (a list of source file names without the
-   .tla extension) to the same history directory.
-   Trim the history to 10 entries.
-   Open the [fp_file] for writing, write the known results to it,
-   and return its out_channel for incremental updates.
- *)
+Save the previous fingerprint file [fp_file] to a new history directory.
+Save the [source_files] (a list of source file names without the
+.tla extension) to the same history directory.
+Trim the history to 10 entries.
+Open the [fp_file] for writing, write the known results to it,
+and return its out_channel for incremental updates.
+*)
 
 val fp_writes:
     out_channel -> string ->
     Types.status_type6 list -> unit
 (* [fp_writes oc fp statuses]
-   Takes as argument the output channel returned by fp_init, a fingerprint,
-   and a list of results.  Adds them to the fingerprint file and to the
-   internal table.
+Takes as argument the output channel returned by fp_init, a fingerprint,
+and a list of results.  Adds them to the fingerprint file and to the
+internal table.
 *)
 
 val fp_close_and_consolidate:
     string -> out_channel -> unit
 (* [fp_close_and_consolidate file oc]
-   Takes as arguments the fingerprint file name [file] and the output
-   channel [oc] returned by fp_init.  Closes [oc] and writes the
-   accumulated results to [file].
+Takes as arguments the fingerprint file name [file] and the output
+channel [oc] returned by fp_init.  Closes [oc] and writes the
+accumulated results to [file].
 *)
 
 
@@ -43,9 +43,9 @@ val print: string -> unit
 
 val erase_results: string -> Method.t -> unit
 (* [erase_results fpfile meth]
-   Erase from the fingerprints file [fpfile] all the results of the prover
-   associated with method [meth].
-   Save the old fingerprints file in the history.
+Erase from the fingerprints file [fpfile] all the results of the prover
+associated with method [meth].
+Save the old fingerprints file in the history.
 *)
 
 (* backend/prep.ml *)

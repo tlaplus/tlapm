@@ -129,7 +129,7 @@ let smt_id id =
 
 
 let lookup_id (cx:hyp list) n =
-  assert (n > 0 && n <= length cx) ;
+    assert (n > 0 && n <= length cx);
     hyp_name (nth cx (n - 1))
 
 
@@ -1277,46 +1277,111 @@ let rec unb bs =
 
 
 let rec_sort rs =
-  let compare (h,t) (i,u) = String.compare h i in
-  List.sort ~cmp:compare rs
+    let compare (h, t) (i, u) = String.compare h i in
+    List.sort ~cmp:compare rs
 
 
 (** Keywords *)
 let smt_backend_keys = [
-  "u";"bool";"int";"str";"Int";"boolify";"bool2u";"int2u";"str2u";"u2int";"u2str";
-  "tla__isAFcn";"tla__fcnapp";"tla__unspec";
-  "tla__STRING";"tla__BOOLEAN";"tla__SUBSET";"tla__UNION";"tla__DOMAIN";
-  "tla__subseteq";"tla__in";"tla__notin";"tla__setminus";"tla__cap";"tla__cup";
-  "tla__Int";"tla__Nat";"tla__Real";"tla__plus";"tla__minus";"tla__times";
-  "tla__exp";"tla__ratio";"tla__div";"tla__mod";"tla__lt";"tla__le";"tla__lt";
-  "tla__le";"tla__uminus";"tla__Range";"tla__Infinity";
-  "exp";"mod";
-  "tla__Seq";"tla__Len";"tla__BSeq";"tla__concat";"tla__Append";"tla__Head";
-  "tla__Tail";"tla__SubSeq";"tla__SelectSeq";
-  "tla__Cardinality";
-  "tptp_plus";"tptp_minus";"tptp_times";"tptp_ratio";"tptp_div";"tptp_mod";
-  "tptp_exp";"tptp_ls";"tptp_le";"tptp_uminus";
-  ]
+    "u";
+    "bool";
+    "int";
+    "str";
+    "Int";
+    "boolify";
+    "bool2u";
+    "int2u";
+    "str2u";
+    "u2int";
+    "u2str";
+    "tla__isAFcn";
+    "tla__fcnapp";
+    "tla__unspec";
+    "tla__STRING";
+    "tla__BOOLEAN";
+    "tla__SUBSET";
+    "tla__UNION";
+    "tla__DOMAIN";
+    "tla__subseteq";
+    "tla__in";
+    "tla__notin";
+    "tla__setminus";
+    "tla__cap";
+    "tla__cup";
+    "tla__Int";
+    "tla__Nat";
+    "tla__Real";
+    "tla__plus";
+    "tla__minus";
+    "tla__times";
+    "tla__exp";
+    "tla__ratio";
+    "tla__div";
+    "tla__mod";
+    "tla__lt";
+    "tla__le";
+    "tla__lt";
+    "tla__le";
+    "tla__uminus";
+    "tla__Range";
+    "tla__Infinity";
+    "exp";
+    "mod";
+    "tla__Seq";
+    "tla__Len";
+    "tla__BSeq";
+    "tla__concat";
+    "tla__Append";
+    "tla__Head";
+    "tla__Tail";
+    "tla__SubSeq";
+    "tla__SelectSeq";
+    "tla__Cardinality";
+    "tptp_plus";
+    "tptp_minus";
+    "tptp_times";
+    "tptp_ratio";
+    "tptp_div";
+    "tptp_mod";
+    "tptp_exp";
+    "tptp_ls";
+    "tptp_le";
+    "tptp_uminus";
+    ]
 
 
 let is_smt_kwd x = List.mem x smt_backend_keys
 
 
 let smt_pickle isbounded id =
-  if id = "_" then (failwith "SMT bug: identifier \"_\"") else
-  if is_smt_kwd id then id else
-  begin match id with
-  | "<=" | "<" -> id
-  | _ ->
-    let id = if Str.string_match (Str.regexp "^[0-9].*") id 0 then "x"^id else id in
-        (** identifiers cannot start with [0-9] *)
-    let rep s r id = Str.global_replace (Str.regexp s) r id in
-    id
-    |> Tla_parser.pickle
+    if id = "_" then (failwith "SMT bug: identifier \"_\"") else
+    if is_smt_kwd id then id else
+    begin match id with
+    | "<="
+    | "<" -> id
+    | _ ->
+        let id = if Str.string_match (Str.regexp "^[0-9].*") id 0 then
+                "x"^id
+            else
+                id in
+            (** identifiers cannot start with [0-9] *)
+        let rep s r id = Str.global_replace (Str.regexp s) r id in
+        id
+        |> Tla_parser.pickle
         |> rep "'" "_"  (** Identifiers cannot contain "'" *)
-    (* |> rep "^max$" "max__"        (** max is a reserved word in Z3 v4.0 *) *)
-    (* |> rep "^u$" "u__"            (** u is also a sort: not allowed in CVC3 *) *)
-    (* |> rep "^status$" "X__status" (** keyword in Spass *) *)
-    (* |> rep "^repeat$" "tla_repeat" (** keyword in Spass *) *)
-    |> turn_first_char isbounded
-  end
+        (*
+        |> rep "^max$" "max__"  (** max is
+            a reserved word in Z3 v4.0 *)
+        *)
+        (*
+        |> rep "^u$" "u__"  (** u is also a sort:
+            not allowed in CVC3 *)
+        *)
+        (*
+        |> rep "^status$" "X__status"  (** keyword in Spass *)
+        *)
+        (*
+        |> rep "^repeat$" "tla_repeat"  (** keyword in Spass *)
+        *)
+        |> turn_first_char isbounded
+    end

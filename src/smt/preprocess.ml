@@ -112,7 +112,7 @@ let make_operators_visible ids sq =
         | Defn (defn, wd, Hidden, ex) when List.mem nm ids ->
             let h = Fresh (nm %% [], Shape_expr, Constant, Unbounded) @@ h in
             super#hyp scx h
-      | _ -> super#hyp scx h
+        | _ -> super#hyp scx h
   end in
   snd (visitor#sequent ((),sq.context) sq)
 
@@ -129,9 +129,10 @@ let insert_vars vars sq =
 
 (** The type [Ctx.ident] contains a field [salt] that counts the number
 of occurrences of an identifier symbol. [Ctx.string_of_ident] is the
-string that will be actually printed, i.e. [i_1].  *)
+string that will be actually printed, i.e. [i_1].
+*)
 let make_salt_explicit sq =
-  let visitor = object (self : 'self)
+    let visitor = object (self : 'self)
     inherit [unit] Expr.Visit.map as super
 
         method bounds scx bs =
@@ -145,13 +146,14 @@ let make_salt_explicit sq =
                 end bs in
                 super#bounds scx bs
 
-    method hyp scx h =
-      match h.core with
+        method hyp scx h =
+            match h.core with
             | Defn (_, _, Hidden, _)  (** ignore these cases *)
-      | Fact (_, Hidden, _) ->
-          (Expr.Visit.adj scx h, h)
-      | _ -> super#hyp scx h
-  end in
+            | Fact (_, Hidden, _) ->
+                (Expr.Visit.adj scx h, h)
+            | _ ->
+                super#hyp scx h
+        end in
     snd (visitor#sequent ((), sq.context) sq)
 
 

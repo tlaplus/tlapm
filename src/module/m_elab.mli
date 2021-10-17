@@ -16,4 +16,4 @@ open M_t
 
 val normalize :
     modctx -> Expr.T.ctx -> mule ->
-    modctx * mule * summary
+        modctx * mule * summary

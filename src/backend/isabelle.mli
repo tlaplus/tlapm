@@ -18,7 +18,9 @@ val crypthash: ctx -> Expr.T.expr -> string
 val thy_temp:
     Proof.T.obligation -> string ->
     string -> out_channel -> unit
-(** [thy_temp obligation tactic isabelle_module_name out_file] *)
+(** [thy_temp obligation tactic
+isabelle_module_name out_file]
+*)
 
 (* backend/server.ml *)
 val thy_init: string -> string -> out_channel

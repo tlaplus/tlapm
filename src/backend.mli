@@ -3,22 +3,22 @@
  *)
 
 module Types : sig
-  type reason =
-    | False
-    | Timeout
-    | Cantwork of string
-  type status_type_aux6 =
-    | RSucc
-    | RFail of reason option
-    | RInt
-  type status_type6 =
-    | Triv
-    | NTriv of status_type_aux6 * Method.t
-  type package = {
-    final_form   : Proof.T.obligation;
-    log          : string list;
-    proof        : string;
-    results      : status_type6 list;
+    type reason =
+        | False
+        | Timeout
+        | Cantwork of string
+    type status_type_aux6 =
+        | RSucc
+        | RFail of reason option
+        | RInt
+    type status_type6 =
+        | Triv
+        | NTriv of status_type_aux6 * Method.t
+    type package = {
+        final_form   : Proof.T.obligation;
+        log          : string list;
+        proof        : string;
+        results      : status_type6 list;
         }
 end
 
@@ -50,18 +50,18 @@ end
 
 module Toolbox : sig
   val toolbox_print :
-    Proof.T.obligation ->
-    ?temp:bool ->
-    string ->
-    string option ->
-    string option ->
-    float ->
-    bool option ->
-    bool ->
-    Types.reason option ->
-    string ->
-    float option ->
-      unit
+        Proof.T.obligation ->
+        ?temp:bool ->
+        string ->
+        string option ->
+        string option ->
+        float ->
+        bool option ->
+        bool ->
+        Types.reason option ->
+        string ->
+        float option ->
+            unit
     val print_ob_number: int -> unit
     val print_message: string -> unit
     val print_message_url:

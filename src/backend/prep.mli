@@ -17,7 +17,7 @@ val make_task :
   (bool -> obligation -> unit) ->
   obligation ->
     Schedule.task
-(** @raise Exit if the toolbox sent the "stop" command. *)
+  (** @raise Exit if the toolbox sent the "stop" command. *)
 
 
 val expand_defs : ?what:(Expr.T.wheredef -> bool) -> obligation -> obligation

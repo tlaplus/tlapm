@@ -20,14 +20,16 @@ let ( |> ) x f = f x
 
 (* see also `Expr.T.hyp_name` *)
 let hyp_is_named what h = match h.core with
-  | Fresh (nm, _, _, _)
-  | Flex nm
-  | Defn ({core = Operator (nm, _) | Instance (nm, _)
-                  | Bpragma(nm,_,_) | Recursive (nm, _)},
-          _, _, _)
-  -> nm.core = what
-  | Fact (_, _, _) ->
-      what = "_"
+    | Fresh (nm, _, _, _)
+    | Flex nm
+    | Defn ({core =
+              Operator (nm, _)
+            | Instance (nm, _)
+            | Bpragma(nm,_,_)
+            | Recursive (nm, _)},
+            _, _, _) ->
+        nm.core = what
+    | Fact (_, _, _) -> what = "_"
 
 let standard_form ~cx ~dep ~wd op args = match wd with
   | Builtin ->
@@ -43,43 +45,78 @@ let standard_form ~cx ~dep ~wd op args = match wd with
 
 
 class anon_sg = object (self : 'self)
-  inherit [string list] Visit.map as super
+  inherit [string list] Visit.map
+        as super
 
   method expr scx e =
     match e.core with
-    | Bang ({core = Apply ({core = Opaque op}, args)}, sels) -> begin
-        let sels = List.map (self#sel scx) sels in
-        let args = List.map (self#expr scx) args in
+    | Bang (
+            {core=Apply (
+                {core = Opaque op},
+                args)},
+            sels) -> begin
+        let sels = List.map
+            (self#sel scx) sels in
+        let args = List.map
+            (self#expr scx) args in
         let scx = ([], snd scx) in
-        (* check the operator without the "use <1>1 in proof of <1>1" warning *)
-        let rec check (pfx, pargs) sels is_inst = begin
+        (* check the operator without the
+        "use <1>1 in proof of <1>1" warning *)
+        let rec check
+                (pfx, pargs)
+                sels
+                is_inst =
+            begin
           match Deque.find ~backwards:true (snd scx) (hyp_is_named pfx) with
-            | None -> begin match sels with
+            | None -> begin
+                match sels with
                 | Sel_lab (sfx, sargs) :: sels ->
-                    let sargs = List.map (self#expr scx) sargs in
-                    check (pfx ^ "!" ^ sfx, pargs @ sargs) sels true
-(* a enlever *) | (Sel_num n)::sels ->  Util.eprintf ~at:e
-                      "Operator \"%s\" not found" pfx ;
-                    Errors.set e (Printf.sprintf "Operator \"%s\" not found" pfx);
+                    let sargs = List.map
+                        (self#expr scx) sargs in
+                    check
+                        (pfx ^ "!" ^ sfx,
+                         pargs @ sargs)
+                        sels true
+                (* a enlever *)
+                | (Sel_num n) :: sels ->
+                    Util.eprintf ~at:e
+                        "Operator \"%s\" not found" pfx;
+                    Errors.set
+                        e (Printf.sprintf
+                            "Operator \"%s\" not found" pfx);
                     failwith "Expr.Anon: 1NUM"
-                | (Sel_down)::sels ->  Util.eprintf ~at:e
-                      "Operator \"%s\" not found" pfx ;
-                    Errors.set e (Printf.sprintf "Operator \"%s\" not found" pfx);
+                | (Sel_down) :: sels ->
+                    Util.eprintf ~at:e
+                        "Operator \"%s\" not found" pfx;
+                    Errors.set
+                        e (Printf.sprintf
+                            "Operator \"%s\" not found" pfx);
                     failwith "Expr.Anon: 1DOWN"
-                | (Sel_at)::sels ->  Util.eprintf ~at:e
-                      "Operator \"%s\" not found" pfx ;
-                    Errors.set e (Printf.sprintf "Operator \"%s\" not found" pfx);
+                | (Sel_at) :: sels ->
+                    Util.eprintf ~at:e
+                        "Operator \"%s\" not found" pfx;
+                    Errors.set
+                        e (Printf.sprintf
+                            "Operator \"%s\" not found" pfx);
                     failwith "Expr.Anon: 1AT"
-                | (Sel_inst _)::sels ->  Util.eprintf ~at:e
-                      "Operator \"%s\" not found" pfx ;
-                    Errors.set e (Printf.sprintf "Operator \"%s\" not found" pfx);
+                | (Sel_inst _) :: sels ->
+                    Util.eprintf ~at:e
+                        "Operator \"%s\" not found" pfx;
+                    Errors.set
+                        e (Printf.sprintf
+                            "Operator \"%s\" not found" pfx);
                     failwith "Expr.Anon: 1INST"
-                | [] -> Errors.set e (Printf.sprintf "Operator \"%s\" not found" pfx);
+                | [] ->
+                    Errors.set
+                        e (Printf.sprintf
+                            "Operator \"%s\" not found" pfx);
                     failwith "Expr.Anon: 1EMPTY"
                 | _ ->
                     Util.eprintf ~at:e
-                      "Operator \"%s\" not found" pfx ;
-                    Errors.set e (Printf.sprintf "Operator \"%s\" not found" pfx);
+                        "Operator \"%s\" not found" pfx;
+                    Errors.set
+                        e (Printf.sprintf
+                            "Operator \"%s\" not found" pfx);
                     failwith "Expr.Anon: 1"
               end
             | Some (dep,
@@ -229,10 +266,10 @@ end
 
 
 class anon = object
-  inherit anon_sg as super
+    inherit anon_sg as super
 
-  method expr scx e =
-    Elab.desugar (super#expr scx e)
+    method expr scx e =
+        Elab.desugar (super#expr scx e)
 end
 
 

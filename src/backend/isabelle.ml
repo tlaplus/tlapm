@@ -534,7 +534,7 @@ and pp_print_sequent_outer cx ff sq = match Deque.front sq.context with
                * | _ ->
                *     failwith "Backend.Isabelle.pp_print_sequent"
                *)
-        |  Defn ({ core = Bpragma _ } , _, _, _) -> cx
+        | Defn ({ core = Bpragma _ } , _, _, _) -> cx
     end
 
 and pp_print_sequent_inner cx ff sq = match Deque.front sq.context with

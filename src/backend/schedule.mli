@@ -22,15 +22,17 @@
 type task = int * (unit -> computation) list
 
 and computation =
-  | Immediate of bool    (* already computed, argument is success *)
-  | Todo of command      (* must launch process *)
+    | Immediate of bool  (* already computed,
+        argument is success *)
+    | Todo of command  (* must launch process *)
 
 and command = {
   line : string;         (* Shell command line *)
   timeout : float;       (* delay before running tc *)
   timec : timeout_cont;  (* function to launch after timeout *)
   donec : result -> float -> bool;
-    (* function to call when finished; float is time used; returns success *)
+    (* function to call when finished;
+    float is time used; returns success *)
 }
 
 and timeout_cont = unit -> continue
@@ -47,6 +49,7 @@ and result =
 
 val run: int -> task list -> unit
 (* [run max_threads tasks]
-   Run the tasks described by [tasks], launching at most [max_threads]
-   simultatenous processes.
- *)
+Run the tasks described by [tasks],
+launching at most [max_threads]
+simultatenous processes.
+*)

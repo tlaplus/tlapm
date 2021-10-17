@@ -37,7 +37,7 @@ val string_of_ident : ident -> string
 val pp_print_ident : Format.formatter -> ident -> unit
 
 val pp_print_ctx :
-  (Format.formatter -> 'a -> unit)
-  -> Format.formatter -> 'a ctx -> unit
+    (Format.formatter -> 'a -> unit) ->
+    Format.formatter -> 'a ctx -> unit
 
 type 'a t = 'a ctx

@@ -22,10 +22,10 @@ end
 
 let globalness md =
   let iterfun = function
-    | {core = Axiom (nm,e)} as mu -> assign ((Axiom (nm,globalize#expr
-    ((),Deque.empty) e)) @@ mu) isglobal ()
+    | {core = Axiom (nm, e)} as mu -> assign ((Axiom (nm, globalize#expr
+    ((), Deque.empty) e)) @@ mu) isglobal ()
     | {core = Theorem (nm, sq, a, p, b, c)} as mu ->
-       let (_,sq) = globalize#sequent ((),Deque.empty) sq in
+       let (_, sq) = globalize#sequent ((), Deque.empty) sq in
        assign (Theorem (nm,sq,a, p, b, c) @@
        mu) isglobal ()
     | mu -> mu

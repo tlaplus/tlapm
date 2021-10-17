@@ -8,18 +8,19 @@ exception Fatal
 
 
 let loc_to_string at =
-  match at with
-  | None -> ""
-  | Some w ->
-     match Util.query_locus w with
-     | None -> ""
-     | Some loc -> Loc.string_of_locus loc ^ " :\n"
+    match at with
+    | None -> ""
+    | Some w ->
+        match Util.query_locus w with
+        | None -> ""
+        | Some loc -> Loc.string_of_locus loc ^ " :\n"
 
 
 
 let info ?at fmt =
-  let k s = Printf.eprintf "%s%s\n%!" (loc_to_string at) s in
-  Format.ksprintf k fmt
+    let k s = Printf.eprintf
+        "%s%s\n%!" (loc_to_string at) s in
+    Format.ksprintf k fmt
 
 
 
@@ -28,23 +29,22 @@ Buffer.add_char warnbuf '\n'
 
 
 let warn ?at fmt =
-  let k s =
-    Printf.eprintf "%s%s\n%!" (loc_to_string at) s;
-    Printf.bprintf warnbuf "\\* %s\n" s
-  in
-  Format.ksprintf k fmt
+    let k s =
+        Printf.eprintf "%s%s\n%!" (loc_to_string at) s;
+        Printf.bprintf warnbuf "\\* %s\n" s in
+    Format.ksprintf k fmt
 
 
 let get_warnings () =
-  let res = Buffer.contents warnbuf in
-  Buffer.clear warnbuf;
-  Buffer.add_char warnbuf '\n';
-  res
+    let res = Buffer.contents warnbuf in
+    Buffer.clear warnbuf;
+    Buffer.add_char warnbuf '\n';
+    res
 
 
 let set_warnings s =
-  Buffer.clear warnbuf;
-  Buffer.add_string warnbuf s
+    Buffer.clear warnbuf;
+    Buffer.add_string warnbuf s
 
 
 let aux url ?at msg =
@@ -64,8 +64,8 @@ let aux url ?at msg =
 let err ?at fmt = Format.ksprintf (fun x -> aux None ?at x) fmt
 
 let fatal ?at fmt =
-  let f x =
-    aux None ?at (x ^ "\nAborting.");
+    let f x =
+        aux None ?at (x ^ "\nAborting.");
         raise Fatal in
     Format.ksprintf f fmt
 
@@ -83,14 +83,14 @@ let warning = ref false
 
 
 let sget v =
-  match v with
+    match v with
     | None -> ""
     | Some v -> v
 
 
 let set st mesg =
-loc :=
-  begin match (Util.query_locus st) with
+    loc := begin
+    match (Util.query_locus st) with
     | None ->
         None
     | Some loc ->
