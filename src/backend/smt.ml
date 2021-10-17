@@ -597,8 +597,6 @@ let postpreproc sq =
     (**
     1. get type annotations from [sq.context]
        whose types are different from [u]
-    *)
-    (**
     2. for each pair (x, t) add a new hyp [to_typred x t]
     *)
     snd (visitor#sequent ((), cx) sq)
