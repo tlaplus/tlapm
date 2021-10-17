@@ -17,7 +17,7 @@ LOCAL INSTANCE TLAPS
 THEOREM ConsProperties ==
   ASSUME NEW S, NEW seq \in Seq(S), NEW elt \in S
   PROVE /\ Cons(elt, seq) \in Seq(S)
-        /\ Cons(elt, seq) # <<>> 
+        /\ Cons(elt, seq) # <<>>
         /\ Len(Cons(elt, seq)) = Len(seq)+1
         /\ Head(Cons(elt, seq)) = elt
         /\ Tail(Cons(elt, seq)) = seq
@@ -40,7 +40,7 @@ THEOREM ConsInjective ==
   ASSUME NEW S, NEW e \in S, NEW s \in Seq(S), NEW f \in S, NEW t \in Seq(S)
   PROVE  Cons(e,s) = Cons(f,t) <=> e = f /\ s = t
 
-THEOREM SequencesInductionCons == 
+THEOREM SequencesInductionCons ==
   ASSUME NEW P(_), NEW S,
          P(<< >>),
          \A s \in Seq(S), e \in S : P(s) => P(Cons(e,s))
@@ -85,8 +85,8 @@ THEOREM FrontOfEmpty == Front(<< >>) = << >>
 
 THEOREM LastProperties ==
   ASSUME NEW S, NEW seq \in Seq(S), seq # << >>
-  PROVE  /\ Last(seq) \in S 
-         /\ Append(Front(seq), Last(seq)) = seq 
+  PROVE  /\ Last(seq) \in S
+         /\ Append(Front(seq), Last(seq)) = seq
 
 THEOREM FrontLastOfSubSeq ==
   ASSUME NEW S, NEW seq \in Seq(S),
@@ -106,7 +106,7 @@ LEMMA FrontInjectiveSeq ==
 
 THEOREM SequencesInductionFront ==
   ASSUME NEW S,  NEW P(_),
-         P(<< >>), 
+         P(<< >>),
          \A s \in Seq(S) : (s # << >>) /\ P(Front(s)) => P(s)
   PROVE  \A s \in Seq(S) : P(s)
 
@@ -131,7 +131,7 @@ THEOREM ReverseEmptyIffEmpty ==
   ASSUME NEW S, NEW seq \in Seq(S), Reverse(seq) = <<>>
   PROVE  seq = <<>>
 
-THEOREM ReverseConcat == 
+THEOREM ReverseConcat ==
   ASSUME NEW S, NEW s1 \in Seq(S), NEW s2 \in Seq(S)
   PROVE  Reverse(s1 \o s2) = Reverse(s2) \o Reverse(s1)
 
@@ -164,7 +164,7 @@ THEOREM ReverseFrontEqualsTailReverse ==
   PROVE  Reverse(Front(seq)) = Tail(Reverse(seq))
 
 (* The range of the reverse sequence equals that of the original one. *)
-THEOREM RangeReverse == 
+THEOREM RangeReverse ==
   ASSUME NEW S, NEW seq \in Seq(S)
   PROVE /\ DOMAIN Reverse(seq) = DOMAIN seq
         /\ Range(Reverse(seq)) = Range(seq)

@@ -16,7 +16,7 @@ THEOREM WFmsgs == TypeOK => WellFormedMessages
   BY Z3 DEFS Ballot, TypeOK, Message, WellFormedMessages
 
 THEOREM typing == Spec => []TypeOK
-<1>. USE DEFS Ballot, TypeOK  
+<1>. USE DEFS Ballot, TypeOK
 <1>1. Init => TypeOK
   BY SMT DEFS Init
 <1>2. TypeOK /\ [Next]_vars => TypeOK'
@@ -36,7 +36,7 @@ THEOREM Spec => []StructOK1
 <1>1. Init => StructOK1
   BY Z3 DEFS Init
 <1>2. TypeOK /\ StructOK1 /\ [Next]_vars => StructOK1'
-  BY WFmsgs, Z3 DEFS Next, Phase1a, Phase2a, Phase1b, Phase2b, Send, votes, 
+  BY WFmsgs, Z3 DEFS Next, Phase1a, Phase2a, Phase1b, Phase2b, Send, votes,
     WellFormedMessages, vars, Message
 <1>q. QED
   BY ONLY <1>1, <1>2, typing, PTL DEF Spec
@@ -61,12 +61,12 @@ StructOK4 == \A m \in msgs : m[1] = "2b" => /\ \E mo \in msgs : /\ mo[1] = "2a"
 StructOK5 == \A m \in msgs : m[1] = "1b" => \A d \in Ballot : m[4] < d /\ d < m[3] =>
                                             \A v \in Value : ~ <<d,v>> \in votes[m[2]]
 
-StructOK == /\ TypeOK 
-            /\ StructOK1 
-            /\ StructOK2 
-\*            /\ StructOK3 
-            /\ StructOK4 
-            /\ StructOK5 
+StructOK == /\ TypeOK
+            /\ StructOK1
+            /\ StructOK2
+\*            /\ StructOK3
+            /\ StructOK4
+            /\ StructOK5
 
 THEOREM struct_lemma == Spec => []StructOK
 <1>. USE DEFS Ballot, StructOK, TypeOK, StructOK1, StructOK2, StructOK4, StructOK5
@@ -98,9 +98,9 @@ THEOREM OtherMessage == \A m1, m2 \in msgs', a, b \in {"1a","2a","1b","2b"} :
                => m1 \in msgs
   BY Z3
 
-THEOREM \A b \in Ballot, v \in Value : 
+THEOREM \A b \in Ballot, v \in Value :
             Phase2a(b,v) /\ Inv => \E Q \in Quorum : V!ShowsSafeAt(Q,b,v)
-<1>1. SUFFICES ASSUME NEW b \in Ballot, 
+<1>1. SUFFICES ASSUME NEW b \in Ballot,
                       NEW v \in Value,
                       ~ \E m \in msgs : m[1] = "2a" /\ m[3] = b,
                       NEW Q \in Quorum,
@@ -132,9 +132,9 @@ THEOREM \A b \in Ballot, v \in Value :
     BY SMT
   <2>2. c # -1 => (\E a \in Q : V!VotedFor(a, c, v))
   <2>3. \A d \in c + 1 .. b - 1, a \in Q : V!DidNotVoteAt(a, d)
-  <2>q. QED 
+  <2>q. QED
     BY <2>2, <2>3, SMT
-<1>q. QED 
+<1>q. QED
   BY <1>2, <1>3, Z3 DEF V!ShowsSafeAt
 
 ------------------------------------------------------------
@@ -146,10 +146,10 @@ THEOREM Next /\ Inv => V!Next \/ UNCHANGED <<votes,maxBal>>
 <1>2. CASE \E b \in Ballot : Phase1a(b)
 <1>3. CASE \E b \in Ballot : \E v \in Value : Phase2a(b, v)
 <1>4. CASE \E a \in Acceptor : Phase1b(a)
-  BY <1>4, Inv, WFmsgs, Z3T(10) 
+  BY <1>4, Inv, WFmsgs, Z3T(10)
   DEF Phase1b, Inv, WellFormedMessages, Ballot, V!Ballot, V!IncreaseMaxBal, votes, Send
 <1>5. CASE \E a \in Acceptor : Phase2b(a)
-  <2>1. PICK a \in Acceptor, m \in msgs : 
+  <2>1. PICK a \in Acceptor, m \in msgs :
             /\ m[1] = "2a"
             /\ m[2] \geq maxBal[a]
             /\ maxBal' = [maxBal EXCEPT ![a] = m[2]]

@@ -1,7 +1,7 @@
 (************************************************************************
 *
 *  typ_e.ml
-*  
+*
 *
 *  Created by Hernán Vanzetto on 23 Oct 2013.
 *  Copyright (c) 2013 __MyCompanyName__. All rights reserved.
@@ -41,24 +41,24 @@ let hyp_optype h = match h.core with
 
 let type_equiv = ref SMap.empty
 
-let type_equiv_singleton a = 
+let type_equiv_singleton a =
   type_equiv := SMap.add a (SSet.singleton a) !type_equiv
 
-let type_equiv_find a = SMap.fold begin fun k set r -> 
+let type_equiv_find a = SMap.fold begin fun k set r ->
     if k = a || SSet.mem a set then Some (k,set) else r
   end !type_equiv None
 
-let type_equiv_union a b = 
+let type_equiv_union a b =
   let k1,s1 = Option.default (a,SSet.singleton a) (type_equiv_find a) in
   let k2,s2 = Option.default (b,SSet.singleton b) (type_equiv_find b) in
   type_equiv := SMap.add k1 (SSet.union s1 s2) (SMap.remove k2 !type_equiv)
 
 (** add [a] to the class of [b] *)
-let add_type_equiv b a = 
+let add_type_equiv b a =
   let id,set = Option.default (a,SSet.empty) (type_equiv_find b) in
   type_equiv := SMap.add id (SSet.add a set) !type_equiv
 
-let type_equiv_pp v = SMap.iter begin fun k set -> 
+let type_equiv_pp v = SMap.iter begin fun k set ->
     Smtcommons.ifprint v "  %s |--> { %s }" k (String.concat "," (SSet.elements set))
   end !type_equiv
 
@@ -72,7 +72,7 @@ let type_equiv_pp v = SMap.iter begin fun k set ->
 let tyvar_assignment = ref SMap.empty
 
 let ctr_types = ref 0
-let fresh_tyvar ?id (cx,e) = 
+let fresh_tyvar ?id (cx,e) =
   (* let a = Option.default ("a" ^ string_of_int (incr ctr_types ; !ctr_types)) id in *)
   (* let a = Option.default z id in *)
   let z = "a" ^ string_of_int (incr ctr_types ; !ctr_types) in
@@ -108,7 +108,7 @@ let rec adjs env = function
       adjs (adj env xt) xts
 
 (** mk_from_hyp *)
-let adj_hyp env h = 
+let adj_hyp env h =
   let mk_a id = fresh_tyvar ~id:id ([], Opaque ("hyp-"^id) %% []) in
   match h.core with
   | Fresh (nm, shp, lc, dom) ->
@@ -136,28 +136,28 @@ let rec adj_hyps env hs = match Dq.front hs with
       (env, ass)
 
 (** Make environment from (free) variables [vs] *)
-let mk vs = 
+let mk vs =
   let ass = map (fun v -> fresh_tyvar ~id:v ([], Opaque ("fv-"^v) %% [])) vs in
   let env = fold_left2 (fun env v a -> adj env (v, TyVar ([],a))) empty vs ass in
   (env, ass)
 
-let to_list (env:t) = 
+let to_list (env:t) =
   (* List.fold_left (fun r -> function None -> r | Some (x,t) -> (x,t) :: r) []  *)
     (Dq.to_list env)
 
-let _types (env:t) = 
+let _types (env:t) =
   List.fold_left (fun r -> function _,None -> r | h, Some t -> t :: r) [] (Dq.to_list env)
 
-let find x env = 
+let find x env =
   let env = Dq.map (fun _ (h,ot) -> hyp_name h,ot) env in
-  try Option.get (assoc x (Dq.to_list env)) with _ -> 
+  try Option.get (assoc x (Dq.to_list env)) with _ ->
   begin Smtcommons.ifprint 1 "Type for %s not found in environment." x;
     raise Typeinf_failed end
 
-let eq (e1:t) (e2:t) : bool = 
+let eq (e1:t) (e2:t) : bool =
   let e1 = Dq.to_list e1 in
   let e2 = Dq.to_list e2 in
-  begin try for_all2 begin fun (h1,o1) (h2,o2) -> 
+  begin try for_all2 begin fun (h1,o1) (h2,o2) ->
     Expr.Eq.hyp h1 h2 &&
     match o1, o2 with
     | Some t, Some t' -> T.eq t t'
@@ -166,10 +166,10 @@ let eq (e1:t) (e2:t) : bool =
     end e1 e2
   with _ -> false end
 
-let subst (a:string) (t:T.t) env = 
+let subst (a:string) (t:T.t) env =
   Dq.map (fun i -> function h,None -> h,None | h,Some t' -> h, Some (T.subst a t t')) env
 
-let vsubst (a:string) (b:string) env = 
+let vsubst (a:string) (b:string) env =
   (* Dq.map (fun i -> function h,None -> h,None | h,Some t -> h, Some ((if a = x then b else x), T.vsubst a b t)) env   *)
   Dq.map (fun i -> function h,None -> h,None | h,Some t -> h, Some (T.vsubst a b t)) env  (** CHECK *)
 
@@ -178,11 +178,11 @@ let vsubst (a:string) (b:string) env =
   fprintf ppf "@[<hv>%a@] " (pp_print_delimited pp_print_elem) env *)
 
 (** Free type variables *)
-let tyvars env = 
+let tyvars env =
   List.flatten (List.map T.fv (_types env))
 
-let to_scx env = 
-  Dq.map begin fun i -> function 
+let to_scx env =
+  Dq.map begin fun i -> function
     | h, None -> h
     | h, Some t -> h
   end env
@@ -190,14 +190,14 @@ let to_scx env =
 let to_cx env =
   Smtcommons.to_cx (to_scx env)
 
-let simplify env = 
+let simplify env =
   Dq.map (fun i -> function h,None -> h,None | h,Some t -> h, Some (T.simplify t)) env
 
 let ss_to_env ss = fold_left (fun e (v,_,_,t) -> adj e (v,t)) empty ss
 
-let map f env = Dq.map 
-  begin fun i -> function 
-  | h, None -> h, None 
+let map f env = Dq.map
+  begin fun i -> function
+  | h, None -> h, None
   | h, Some t -> h, Some (f t)
   end env
 
@@ -212,46 +212,46 @@ let empty = []
 let ( $$ ) env (x,t) = (x,t) :: env
 let ( $! ) e1 e2 = e1 @ e2
 
-let mk vs = 
+let mk vs =
   let ass = map (fun v -> fresh_tyvar ~id:v ([], Opaque ("fv-"^v) %% [])) vs in
   let env = fold_left2 (fun env v a -> env $$ (v, TyVar ([],a))) empty vs ass in
   (ass, env)
 
 let find x env =
-  try assoc x env with Not_found -> 
+  try assoc x env with Not_found ->
     failwith ("Type for "^x^" not found in environment.")
 
-let eq e1 e2 : bool = 
+let eq e1 e2 : bool =
   begin try for_all2 (fun (x,t) (x',t') -> x = x' && T.eq t t') e1 e2
   with _ -> false end
 
-let subst (a:string) (t:T.t) env = 
+let subst (a:string) (t:T.t) env =
   map (fun (x,t') -> (x,T.subst a t t')) env
 
-let vsubst (a:string) (b:string) env = 
-  map (fun (x,t) -> (if a = x then b else x), T.vsubst a b t) env  
+let vsubst (a:string) (b:string) env =
+  map (fun (x,t) -> (if a = x then b else x), T.vsubst a b t) env
 
 (* let pp ppf env =
   let pp_print_elem ppf (x,t) = fprintf ppf "@[<h>%s:%a@]" x T.pp t in
   fprintf ppf "@[<hv>%a@] " (pp_print_delimited pp_print_elem) env *)
 
 (** Free type variables *)
-let tyvars env = 
+let tyvars env =
   let xs,ts = split env in
   (* list_minus (flatten (map fv ts)) xs *)
   flatten (map fv ts)
 
 (** returns the types in the range of [vs], filtered to only type variables *)
-let finds env vs = 
+let finds env vs =
   fold_left (fun r (x,t) -> if mem x vs then (match t with TyVar (_,a) -> a :: r | _ -> r) else r) [] env
-(* let finds env vs = 
+(* let finds env vs =
   let find v env = try (match assoc v env with TyVar a -> [a] | _ -> []) with _ -> [] in
   fold_left (fun r v -> r @ find v env) [] vs *)
 
 let to_cx env =
   fold_left (fun r (x,t) -> T.add_x_ctx x t r) [] (List.rev env)
 
-let to_scx env = 
+let to_scx env =
   Smtcommons.to_scx (to_cx env)
 
 let simplify env = map (fun (x,t) -> (x,T.simplify t)) env *)
@@ -295,22 +295,22 @@ module Fu = Tla_parser.Fu
 module B = Builtin
 
 let is_eq e =
-  match e.core with 
-  | Apply ({core = Internal B.Eq}, [{core = Ix 1} ; _]) -> true 
-  | _ -> false 
+  match e.core with
+  | Apply ({core = Internal B.Eq}, [{core = Ix 1} ; _]) -> true
+  | _ -> false
 (* let is_setenum e =
   match e.core with
   | List (Or,es) when for_all is_eq es -> true
   | _ -> false *)
 
-(* let pp_cx ppf cx = 
+(* let pp_cx ppf cx =
   let cx = mapi (fun i k -> Smtcommons.lookup_id cx (i+1)) cx in
   Util.eprintf "@[<hov>%a@]" (pp_print_delimited pp_print_string) cx *)
 
 (****************************************************************************)
-(** The following functions are an exact copy of the corresponding functions 
-    in [Expr.Fmt]  __except__  for [fmt_expr:SetSt,Choose], [fmt_bounds], 
-    [pp_print_chunk] and [pp_print_hyp] that were modified to print type 
+(** The following functions are an exact copy of the corresponding functions
+    in [Expr.Fmt]  __except__  for [fmt_expr:SetSt,Choose], [fmt_bounds],
+    [pp_print_chunk] and [pp_print_hyp] that were modified to print type
     decorations of bounded variables. Only for debugging. *)
 
 let pp_print_var ff v = pp_print_string ff v.core
@@ -642,7 +642,7 @@ and pp_print_sel cx ff = function
       fprintf ff "@[<b2>%s@,@[<b1>(%a)@]@]"
         l (pp_print_delimited (pp_print_expr cx)) args
 
-and pp_print_lambda cx ff vss e = 
+and pp_print_lambda cx ff vss e =
   let vs = List.map fst vss in
   let (ecx, _) = Expr.Fmt.adjs cx vs in
   fprintf ff "@[<b2>LAMBDA @[<hv0>%a@] :@ %a@]"
@@ -972,18 +972,18 @@ and pp_print_hyp cx ff h =
 
 (** Extra function to print type annotation *)
 and pp_print_optype ff = function
-  | cx, Some t -> 
+  | cx, Some t ->
       let env = Dq.fold_left (fun e h -> e $$ (h,hyp_optype h)) empty (fst cx) in
       fprintf ff "::%a" ppt (env,t)
   | cx, None -> ()
 
 
-(** 
-  Refinements: In type [Ref(x,t,Ex(cx,ex))], variable [x] is implicitly the 
-	  first element of [cx], that is, [x] bounds the first De Bruijn index 
+(**
+  Refinements: In type [Ref(x,t,Ex(cx,ex))], variable [x] is implicitly the
+	  first element of [cx], that is, [x] bounds the first De Bruijn index
 	  (Ix 1) in [ex].
-  Functions: In type [Func(x,t1,t2)], if [t2] matches [Ref(y,t,Ex(cx,ex))], 
-	  then [ex]'s context should be evaluated as "cx @ [x]", where [y] is 
+  Functions: In type [Func(x,t1,t2)], if [t2] matches [Ref(y,t,Ex(cx,ex))],
+	  then [ex]'s context should be evaluated as "cx @ [x]", where [y] is
 	  already the first element of [cx].
   *)
 and ppt ppf (env,t) = match t with
@@ -992,61 +992,61 @@ and ppt ppf (env,t) = match t with
   | Bool -> fprintf ppf "Bool"
   | TyAtom b -> fprintf ppf "#%s" b
   | Top -> fprintf ppf "T"
-  | TyVar ([], x) -> 
+  | TyVar ([], x) ->
       fprintf ppf "\\%s" x
-  | TyVar (ss, x) -> 
+  | TyVar (ss, x) ->
       let ess = List.map (fun s -> env,s) ss in
       fprintf ppf "@[<h>(%s . @ @[<hv>[%a]@])@]" x
-        (pp_print_delimited pp_ss) ess 
-  (* | EmptyVar x -> 
+        (pp_print_delimited pp_ss) ess
+  (* | EmptyVar x ->
       fprintf ppf "%s" x *)
-  | Set t -> 
+  | Set t ->
       fprintf ppf "@[<h>(Set %a)@]" ppt (env,t)
-  | Func ("",t1,t2) -> 
+  | Func ("",t1,t2) ->
       fprintf ppf "@[<hov>(%a ->@ %a)@]" ppt (env,t1) ppt (env,t2)
-  | Func (x,t1,t2) -> 
+  | Func (x,t1,t2) ->
       fprintf ppf "@[<hov>((%s : %a) ->@ %a)@]" x ppt (env,t1) ppt (adj env (x,t1),t2)
-  | Ref (_,Int,Ex (_,{core = Apply ({core = Internal B.Eq}, [{core = Ix 1} ; {core = Num (n,"")}])})) -> 
+  | Ref (_,Int,Ex (_,{core = Apply ({core = Internal B.Eq}, [{core = Ix 1} ; {core = Num (n,"")}])})) ->
       fprintf ppf "{%s}_Int" n
-  | Ref (_,Int,Ex (_,{core = Apply ({core = Internal B.Lteq}, [{core = Num ("0","")} ; {core = Ix 1}])})) -> 
+  | Ref (_,Int,Ex (_,{core = Apply ({core = Internal B.Lteq}, [{core = Num ("0","")} ; {core = Ix 1}])})) ->
       fprintf ppf "[Nat]"
-  | Ref (_,((Int|Bool|Str) as b), Ex (_,{core = Internal B.TRUE})) -> 
+  | Ref (_,((Int|Bool|Str) as b), Ex (_,{core = Internal B.TRUE})) ->
       fprintf ppf "[%a]" ppt (env,b)
-  | Ref (x,((Int|Str|Bool) as b), Ex (_,ex)) when is_eq ex -> 
-      let ex = match ex.core with 
+  | Ref (x,((Int|Str|Bool) as b), Ex (_,ex)) when is_eq ex ->
+      let ex = match ex.core with
         | Apply ({core = Internal B.Eq}, [{core = Ix 1} ; ex]) -> ex
         | _ -> assert false in
       fprintf ppf "{%a}_%a" (pp_print_expr (to_scx (adj env (x,b)), Ctx.dot)) ex ppt (env,b)
-  | Ref (x, ((Int|Str|Bool) as b), Ex (_,{core = List (Or,es)})) when for_all is_eq es -> 
-      let es = List.map (fun e -> match e.core with 
+  | Ref (x, ((Int|Str|Bool) as b), Ex (_,{core = List (Or,es)})) when for_all is_eq es ->
+      let es = List.map (fun e -> match e.core with
         | Apply ({core = Internal B.Eq}, [{core = Ix 1} ; ex]) -> ex
         | _ -> assert false) es in
       fprintf ppf "{%a}_%a" (pp_print_delimited (pp_print_expr (to_scx (adj env (x,b)), Ctx.dot))) es ppt (env,b)
-  | Ref (x, Int, Ex (_,{core = 
-      (List (And, 
+  | Ref (x, Int, Ex (_,{core =
+      (List (And,
         [{core = Apply ({core = Internal B.Lteq}, [a ; {core = Ix 1}])} ;
          {core = Apply ({core = Internal B.Lteq}, [{core = Ix 1} ; b])}
         ])) |
-      (Apply ({core = Internal B.Conj}, 
+      (Apply ({core = Internal B.Conj},
         [{core = Apply ({core = Internal B.Lteq}, [a ; {core = Ix 1}])} ;
          {core = Apply ({core = Internal B.Lteq}, [{core = Ix 1} ; b])}
         ]))
-      })) -> 
-      fprintf ppf "{%a .. %a}" 
+      })) ->
+      fprintf ppf "{%a .. %a}"
         (pp_print_expr (to_scx (adj env (x,Int)), Ctx.dot)) a
         (pp_print_expr (to_scx (adj env (x,Int)), Ctx.dot)) b
-  | Ref (x,t,r) -> 
+  | Ref (x,t,r) ->
       (* let r = add_x_ref x t r in *)
       fprintf ppf "@[<hov>{%s :@ %a |@ %a}@]" x ppt (env,t) pp_ref (adj env (x,t),r)
-  (* | TySubst ([], t) -> 
+  (* | TySubst ([], t) ->
       fprintf ppf "@[<h>@[<hv>%a@]" ppt (env,t)
-  | TySubst (ss, t) -> 
+  | TySubst (ss, t) ->
       let ess = List.map (fun s -> env,s) ss in
       fprintf ppf "@[<h>(%a . @ @[<hv>[%a]@])@]" ppt (env,t)
         (pp_print_delimited pp_ss) ess  *)
   (* | Emptyset -> pp_print_string ppf "00" (* "{-}" *) *)
   (* | Emptyset t -> fprintf ppf "0(%a)" ppt t (* "{-}" *) *)
-  | Rec rs -> 
+  | Rec rs ->
       let ers = List.map (fun rs -> env,rs) rs in
       fprintf ppf "@[<hov>Rec{@[%a@]}@]" (pp_print_delimited pp_rec) ers
   | Rec_dot (t,h) ->
@@ -1059,20 +1059,20 @@ and ppt ppf (env,t) = match t with
       let pp_sep ff () = pp_print_string ff " xx " in
       let ets = List.map (fun t -> env,t) ts in
       fprintf ppf "@[<hov>(%a)@]" (pp_print_delimited ~sep:pp_sep ppt) ets
-  | Tbase t -> 
+  | Tbase t ->
       fprintf ppf "@[<h>(base %a)@]" ppt (env,t)
-  | Tdom t -> 
+  | Tdom t ->
       fprintf ppf "@[<h>(dom %a)@]" ppt (env,t)
-  | Tcod t -> 
+  | Tcod t ->
       fprintf ppf "@[<h>(cod %a)@]" ppt (env,t)
 and pp_ref ppf = function
   | env, Ex (_,e) -> fprintf ppf "@[<hv>%a@]" (pp_print_expr (to_scx env, Ctx.dot)) e
   | env, Ph ([],p) -> fprintf ppf "@[<hv>%s@]" p
-  | env, Ph (ss,p) -> 
+  | env, Ph (ss,p) ->
       let ess = List.map (fun s -> env,s) ss in
       fprintf ppf "@[<hv>[%a].@ %s@]" (pp_print_delimited pp_ss) ess p
 and pp_ss ppf = function
-  | env, (v,_,e,t) -> 
+  | env, (v,_,e,t) ->
       fprintf ppf "@[<h>%s:%a <- %a@]" v ppt (env,t) (pp_print_expr (to_scx env, Ctx.dot)) e
       (* fprintf ppf "@[<h>%s |=> %a:%a@]" v (print_prop ()) e ppt t *)
       (* fprintf ppf "@[<h>%s |=> %a@]" v (print_prop ()) (Smtcommons.opaque cx e) *)
@@ -1080,9 +1080,9 @@ and pp_ss ppf = function
 and pp_rec ppf = function
   | env,(h,t) -> fprintf ppf "@[<hov>%s |-> %a@]" h ppt (env,t)
 
-and pp ppf env = 
+and pp ppf env =
   let pp_print_elem ppf = function
-    (x,t) -> fprintf ppf "@[<h>%s:%a@]" x ppt (env,t) 
+    (x,t) -> fprintf ppf "@[<h>%s:%a@]" x ppt (env,t)
   in
   match Dq.front env with
   | None -> ()
@@ -1092,7 +1092,7 @@ and pp ppf env =
 
 (*
 (** PP environment (old E.pp) *)
- and pp ppf env = 
+ and pp ppf env =
   let pp_print_elem ppf (x,t) = fprintf ppf "@[<h>%s:%a@]" x ppt (env,t) in
   match env with
   | [] -> ()
@@ -1111,35 +1111,35 @@ let tyvar_assignment_subst a t =
     let (cxe,bvar,_) = SMap.find a !tyvar_assignment in
 (* (if bvar then Util.eprintf "  @[<h2>\\%s := %a@]" a T.pp t else ()); *)
     (** update type in the other assignments *)
-    tyvar_assignment := SMap.mapi 
-      begin fun _ (cxe,bvar,ot) -> 
-        let ot = match ot with 
+    tyvar_assignment := SMap.mapi
+      begin fun _ (cxe,bvar,ot) ->
+        let ot = match ot with
         | Some t' -> Some (T.subst a t t')
-        | None -> None 
+        | None -> None
         in
         (cxe,bvar,ot)
       end !tyvar_assignment;
-    tyvar_assignment := SMap.add a (cxe,bvar,Some t) !tyvar_assignment 
-  with _ -> 
+    tyvar_assignment := SMap.add a (cxe,bvar,Some t) !tyvar_assignment
+  with _ ->
     tyvar_assignment := SMap.add a (None,false,Some t) !tyvar_assignment ;
 (* Util.eprintf "___type %s not found in tyvar_assignment!!" a; *)
     end
 
 let tyvar_assignment_pp v =
-  SMap.iter (fun k (cxe,bvar,typ) -> 
+  SMap.iter (fun k (cxe,bvar,typ) ->
     let cx,e = Option.default ([],Internal B.TRUE %% []) cxe in
-    if bvar then (Smtcommons.ifprint v "@[<h2>\\%s |-> %a  ~  %a@]" k ppt 
-        (empty, Option.default (TyVar ([],k)) typ) 
-        (pp_print_expr (Smtcommons.to_scx cx, Ctx.dot)) e) 
+    if bvar then (Smtcommons.ifprint v "@[<h2>\\%s |-> %a  ~  %a@]" k ppt
+        (empty, Option.default (TyVar ([],k)) typ)
+        (pp_print_expr (Smtcommons.to_scx cx, Ctx.dot)) e)
       else ()
-    ) !tyvar_assignment 
+    ) !tyvar_assignment
 
 let tyvar_assignment_simp () =
-  tyvar_assignment := SMap.mapi 
-    begin fun _ (cxe,bvar,ot) -> 
-      let ot = match ot with 
+  tyvar_assignment := SMap.mapi
+    begin fun _ (cxe,bvar,ot) ->
+      let ot = match ot with
       | Some t -> Some (T.simplify t)
-      | None -> None 
+      | None -> None
       in
-      (cxe,bvar,ot)      
+      (cxe,bvar,ot)
     end !tyvar_assignment

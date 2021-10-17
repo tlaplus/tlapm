@@ -51,14 +51,14 @@ THEOREM EmptySetFinite == IsFiniteSet({}) /\ Cardinality({}) = 0
   split the following theorems in two parts since the first part doesn't
   need the hypothesis about x (not) being in S
 
-THEOREM AddElementToFiniteSet == 
-         \A S, x : IsFiniteSet(S) /\ x \notin S => 
+THEOREM AddElementToFiniteSet ==
+         \A S, x : IsFiniteSet(S) /\ x \notin S =>
             /\ IsFiniteSet(S \cup {x})
             /\ Cardinality(S \cup {x}) = Cardinality(S) + 1
- **)          
+ **)
 
 THEOREM RemoveElementFromFiniteSet ==
-          \A S, x : IsFiniteSet(S) /\ x \in S => 
+          \A S, x : IsFiniteSet(S) /\ x \in S =>
             /\ IsFiniteSet(S \ {x})
             /\ Cardinality(S \ {x}) = Cardinality(S) - 1
 
@@ -75,9 +75,9 @@ THEOREM AddElementCardinality ==
 (* This is a trivial consequence of the above, but probably useful enough  *)
 (* to include.                                                             *)
 (***************************************************************************)
-THEOREM SingletonSetFinite == 
+THEOREM SingletonSetFinite ==
           \A x : IsFiniteSet({x}) /\ (Cardinality({x}) = 1)
-BY EmptySetFinite, AddElementFiniteSet, AddElementCardinality             
+BY EmptySetFinite, AddElementFiniteSet, AddElementCardinality
 
 THEOREM CardinalityType ==
           \A S : IsFiniteSet(S) => Cardinality(S) \in Nat
@@ -90,16 +90,16 @@ THEOREM FiniteSetInduction ==
 
 THEOREM GeneralFiniteSetInduction ==
     ASSUME NEW P(_),
-           \A S : /\ IsFiniteSet(S) 
+           \A S : /\ IsFiniteSet(S)
                   /\ (\A T \in (SUBSET S) \ {S} : P(T)) => P(S)
     PROVE  \A S : IsFiniteSet(S) => P(S)
-    
-THEOREM SubsetInduction == 
+
+THEOREM SubsetInduction ==
     ASSUME NEW P(_), NEW U, IsFiniteSet(U),
-           \A S \in SUBSET U : 
+           \A S \in SUBSET U :
               (\A T \in (SUBSET S) \ {S} : P(T)) => P(S)
     PROVE  P(U)
-    
+
 THEOREM SubsetOfFiniteSet ==
           \A S, T : IsFiniteSet(T) /\ (S \subseteq T) =>
                       /\ IsFiniteSet(S)
@@ -122,45 +122,45 @@ OBVIOUS
 (* necessary.                                                              *)
 (***************************************************************************)
 IsSurjectiveFunction(f, S, T) == /\ f \in [S -> T]
-                           /\ \A t \in T : \E s \in S : f[s] = t 
-                           
+                           /\ \A t \in T : \E s \in S : f[s] = t
+
 IsInjectiveFunction(f, S, T) == /\ f \in [S -> T]
                              /\ \A s1, s2 \in S : (s1 # s2) => (f[s1] # f[s2])
-                        
+
 IsBijection(f, S, T) == /\ IsSurjectiveFunction(f, S, T)
                         /\ IsInjectiveFunction(f, S, T)
 
 THEOREM CountingElements ==
-         \A n \in Nat : 
+         \A n \in Nat :
            \A S : IsFiniteSet(S) /\ (Cardinality(S) = n) <=>
              \E f : IsBijection(f, 1..n, S)
 
-THEOREM IntervalCardinality == 
+THEOREM IntervalCardinality ==
            \A i, j \in Int : i =< j => /\ IsFiniteSet(i..j)
                                        /\ Cardinality(i..j) = j - i + 1
   <1> SUFFICES ASSUME NEW i \in Int, NEW j \in Int,
                       i =< j
                PROVE  Cardinality(i..j) = j - i + 1
-    OBVIOUS 
-  <1> DEFINE f == [x \in 1..(j-i+1) |-> x + i - 1] 
+    OBVIOUS
+  <1> DEFINE f == [x \in 1..(j-i+1) |-> x + i - 1]
   <1>1. f \in [1..(j-i+1) -> i..j]
     BY SMT
   <1>2. IsBijection(f, 1..(j-i+1), i..j)
     <2>1. \A s1, s2 \in 1..(j-i+1) : (s1 # s2) => (f[s1] # f[s2])
-      BY SMT  
-    <2>2. \A t \in i..j : \E s \in 1..(j-i+1) : f[s] = t 
+      BY SMT
+    <2>2. \A t \in i..j : \E s \in 1..(j-i+1) : f[s] = t
       BY SMT
     <2>3. QED
      BY <1>1, <2>1, <2>2 DEF IsBijection, IsInjectiveFunction, IsSurjectiveFunction \* SMT doesn't prove this.
   <1>3. QED
-    BY <1>1, <1>2, CountingElements, SMT 
+    BY <1>1, <1>2, CountingElements, SMT
 
 (***************************************************************************)
 (* I'm not sure if we need this, since its proof is so simple.             *)
 (***************************************************************************)
 THEOREM BoundedSetOfNaturalsFinite ==
            \A S \in SUBSET Nat, n \in Nat :
-             (\A s \in S : n \geq s) => 
+             (\A s \in S : n \geq s) =>
                  /\ IsFiniteSet(S)
                  /\ Cardinality(S) \leq n+1
   <1> SUFFICES ASSUME NEW S \in SUBSET Nat, NEW n \in Nat,
@@ -175,17 +175,17 @@ THEOREM BoundedSetOfNaturalsFinite ==
     BY <1>1, IntervalCardinality, SMT
   <1>3. QED
     BY <1>1, <1>2, SubsetOfFiniteSet  \* SMT fails on this
-  
-THEOREM UnionOfFiniteSets == 
+
+THEOREM UnionOfFiniteSets ==
          \A S, T : IsFiniteSet(S) /\ IsFiniteSet(T) =>
               /\ IsFiniteSet(S \cup T)
-              /\ Cardinality(S \cup T) = 
+              /\ Cardinality(S \cup T) =
                    Cardinality(S) + Cardinality(T) - Cardinality(S \cap T)
 
 THEOREM UNIONofFiniteSets ==
           \A S : /\ IsFiniteSet(S)
                  /\ \A T \in S : IsFiniteSet(T)
-                 => IsFiniteSet(UNION S)       
+                 => IsFiniteSet(UNION S)
 
 (***************************************************************************)
 (* I don't know how to generalize this simply enough to handle the         *)
@@ -193,16 +193,16 @@ THEOREM UNIONofFiniteSets ==
 (***************************************************************************)
 THEOREM ProductOfFiniteSets ==
           \A S, T : IsFiniteSet(S) /\ IsFiniteSet(T) =>
-                      /\ IsFiniteSet(S \X T) 
+                      /\ IsFiniteSet(S \X T)
                       /\ Cardinality(S \X T) = Cardinality(S) * Cardinality(T)
-                 
+
 
 THEOREM DifferenceOfFiniteSets ==
-          \A S, T : IsFiniteSet(S) => 
+          \A S, T : IsFiniteSet(S) =>
                       /\ IsFiniteSet(S \ T)
                       /\ IsFiniteSet(S \cap T)
                       /\ Cardinality(S \ T) = Cardinality(S) - Cardinality(S \cap T)
-                      
+
 THEOREM ImageOfFiniteSet ==
           \A f, S, T : IsSurjectiveFunction(f, S, T) /\ IsFiniteSet(S) =>
                          /\ IsFiniteSet(T)

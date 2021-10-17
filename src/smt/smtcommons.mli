@@ -92,7 +92,7 @@ val n_to_list : int -> int list
 (* val concat0 : string -> 'a list -> string *)
 (* val concat1 : ('a -> string, unit, string) format -> 'a list -> string *)
 (* val concat2 : ('a -> string, unit, string) format -> 'a list -> string *)
-val remove_repeated : 'a list -> 'a list 
+val remove_repeated : 'a list -> 'a list
 val remove_repeated_ex : expr list -> expr list
 
 val ctr : int ref
@@ -194,9 +194,9 @@ val flatten_conj : expr -> expr
 val flatten_disj : expr -> expr
 
 val fix : ?feq:(expr -> expr -> bool) -> int -> (expr list -> expr list) -> expr list -> expr list
-val fix3 : int -> 
-	(((unit * hyp Deque.dq) * hyp Deque.dq * expr) -> ((unit * hyp Deque.dq) * hyp Deque.dq * expr)) -> 
-	((unit * hyp Deque.dq) * hyp Deque.dq * expr) -> 
+val fix3 : int ->
+	(((unit * hyp Deque.dq) * hyp Deque.dq * expr) -> ((unit * hyp Deque.dq) * hyp Deque.dq * expr)) ->
+	((unit * hyp Deque.dq) * hyp Deque.dq * expr) ->
 	((unit * hyp Deque.dq) * hyp Deque.dq * expr)
 val fix_sq : int -> (sequent -> sequent) -> sequent -> sequent
 val fix_sqs : int -> (sequent list -> sequent list) -> sequent list -> sequent list

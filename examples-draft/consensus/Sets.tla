@@ -26,8 +26,8 @@ AXIOM CardinalityAxiom ==
 -----------------------------------------------------------------------------
 
 THEOREM CardinalityInNat == \A S : IsFiniteSet(S) => Cardinality(S) \in Nat
-BY CardinalityAxiom 
-  
+BY CardinalityAxiom
+
 ------------------------------------------------------------------
 
 THEOREM CardinalityZero ==
@@ -68,13 +68,13 @@ THEOREM CardinalityOne == \A m : /\ IsFiniteSet({m})
                                  /\ Cardinality({m}) = 1
 BY CardinalityZero, CardinalityPlusOne, IsaM("auto")
 
-THEOREM CardinalityTwo == \A m, p : m # p => 
+THEOREM CardinalityTwo == \A m, p : m # p =>
                               /\ IsFiniteSet({m,p})
                               /\ Cardinality({m,p}) = 2
 BY CardinalityOne, CardinalityPlusOne, IsaM("auto")
 
-THEOREM IntervalCardinality ==  
-  ASSUME NEW a \in Nat, NEW b \in Nat 
+THEOREM IntervalCardinality ==
+  ASSUME NEW a \in Nat, NEW b \in Nat
   PROVE  /\ IsFiniteSet(a..b)
          /\ Cardinality(a..b) = IF a > b THEN 0 ELSE b-a+1
 <1>1. CASE a > b
@@ -84,7 +84,7 @@ THEOREM IntervalCardinality ==
   <2> DEFINE n == b - a + 1
   <2> DEFINE F == [x \in 1..n |-> x + a - 1]
   <2>1. \A y \in a .. b:  \E x \in 1 .. n : y + 1 - a = x
-    (** This equation cannot be proved by SMTs if the variables 
+    (** This equation cannot be proved by SMTs if the variables
         are in a different order. *)
     BY <1>2, SMT
   <2>2. IsBijection(F, 1..n, a..b)
@@ -109,23 +109,23 @@ THEOREM CardinalityOneConverse ==
 -----------------------------------------------------------------------------
 
 THEOREM IsBijectionInverse ==
-  ASSUME NEW f, NEW S, NEW T, 
-         IsBijection(f, S, T) 
+  ASSUME NEW f, NEW S, NEW T,
+         IsBijection(f, S, T)
   PROVE  \E g : IsBijection(g, T, S)
 <1> WITNESS [y \in T |-> CHOOSE x \in S : f[x] = y]
 <1> QED
   BY DEF IsBijection
 
 THEOREM IsBijectionTransitive ==
-  ASSUME NEW f1, NEW f2, NEW S, NEW T, NEW U, 
+  ASSUME NEW f1, NEW f2, NEW S, NEW T, NEW U,
            IsBijection(f1, S, U),
-           IsBijection(f2, U, T) 
+           IsBijection(f2, U, T)
   PROVE  \E g : IsBijection(g, S, T)
 <1> WITNESS [x \in S |-> f2[f1[x]]]
 <1> QED
   BY SMT DEF IsBijection
 
-THEOREM 
+THEOREM
     ASSUME NEW n \in Nat, NEW m \in Nat,
            IsBijection([x \in 1..n |-> x], 1..n, 1..m)
     PROVE  n = m
@@ -259,7 +259,7 @@ THEOREM CardinalityUnion ==
                       /\ IsFiniteSet(S \cap T)
                       /\ Cardinality(S \cup T) =
                               Cardinality(S) + Cardinality(T)
-                              - Cardinality(S \cap T)  
+                              - Cardinality(S \cap T)
 
 -----------------------------------------------------------------------------
 
@@ -296,7 +296,7 @@ THEOREM PigeonHole ==
   <2>4. CASE \A w  \in S : w # z => f[w] # f[z]
     <3>1. DEFINE g == [w \in (S \ {z}) |-> f[w]]
     <3>2. \E x, y \in S \ {z} : x # y /\ g[x] = g[y]
-      <4>1. /\ IsFiniteSet(S \ {z}) 
+      <4>1. /\ IsFiniteSet(S \ {z})
             /\ Cardinality(S \ {z}) = (n+1) - 1
             /\ IsFiniteSet(T \ {f[z]})
             /\ Cardinality(T \ {f[z]}) = Cardinality(T) - 1

@@ -22,7 +22,7 @@ Move == /\ exit   = {}
         /\ exit'  = entry
         /\ entry' = {}
         /\ pool'  = pool
-        
+
 Remove == \E o \in exit : /\ exit'  = exit \ {o}
                           /\ pool'  = pool \cup {o}
                           /\ entry' = entry
@@ -34,7 +34,7 @@ Spec == Init /\ [][Next]_vars /\ WF_vars(Move) /\ WF_vars(Remove)
 Inv == /\ pool \subseteq Objects
        /\ entry \subseteq Objects
        /\ exit  \subseteq Objects
-       /\ IsFiniteSet(entry) 
+       /\ IsFiniteSet(entry)
        /\ IsFiniteSet(exit)
 
 
@@ -43,7 +43,7 @@ CONSTANT Enabled(_), Box(_)
 Diamond(a) == ~ Box(~a)
 LeadsTo(a, b) == Box(a => Diamond(b))
 
-UC(v) == v' = v 
+UC(v) == v' = v
 Square(A, v) == A \/ UC(v)
 Angle(A, v) == A /\ ~ UC(v)
 Weak(v, A) == Box(Diamond(~ Enabled(Angle(A,v)))) \/ Box(Diamond(Angle(A,v)))
@@ -62,13 +62,13 @@ THEOREM FiniteSubsetsWellFounded ==
            \A S : IsWellFoundedOn(FiniteSubsetRel(S), FiniteSubsets(S))
 -----------------------------------------------------------------------------
 
-THEOREM Liveness == 
+THEOREM Liveness ==
           Spec => \A o \in Objects : LeadsTo((o \in entry), (o \in pool))
 
 (***************************************************************************)
 (* The following should be a []ASSUME/[]PROVE.                             *)
 (***************************************************************************)
-<1> SUFFICES ASSUME Box(Inv) /\ Box(Square(Next, vars)) 
+<1> SUFFICES ASSUME Box(Inv) /\ Box(Square(Next, vars))
                        /\ Weak(vars, Move) /\ Weak(vars, Remove),
                     NEW o \in Objects
              PROVE LeadsTo(o \in entry, o \in pool)
@@ -84,18 +84,18 @@ THEOREM Liveness ==
   (* which is proved by LWB.                                               *)
   (*************************************************************************)
   OMITTED
-  
+
 <1>x. ASSUME NEW B \in BOOLEAN, NEW c \in FiniteSubsets(Objects)
         PROVE  LET S == FiniteSubsets(Objects)
                R == FiniteSubsetRel(Objects)
-               OE == (B => o \in entry) 
-               H(T) == OE /\ (exit = T) 
+               OE == (B => o \in entry)
+               H(T) == OE /\ (exit = T)
                G == H({})
              IN LeadsTo(H(c), G \/ \E d \in SetLessThan(c, R, S) : H(d))
       <2> DEFINE S == FiniteSubsets(Objects)
                R == FiniteSubsetRel(Objects)
-               OE == (B => o \in entry) 
-               H(T) == OE /\ (exit = T) 
+               OE == (B => o \in entry)
+               H(T) == OE /\ (exit = T)
                G == H({})
        <2>a. IsWellFoundedOn(R, S)
         BY ONLY FiniteSubsetsWellFounded
@@ -114,7 +114,7 @@ THEOREM Liveness ==
           (*****************************************************************)
           OMITTED
       <2>2. CASE c # {}
-        <3>1. LeadsTo(H(c), \E d \in SetLessThan(c, R, S) : H(d)) 
+        <3>1. LeadsTo(H(c), \E d \in SetLessThan(c, R, S) : H(d))
           (*****************************************************************)
           (* This is a WF1 proof.                                          *)
           (*****************************************************************)
@@ -123,21 +123,21 @@ THEOREM Liveness ==
           <4>1. P /\ Remove => Q'
             <5> SUFFICES ASSUME P /\ Remove
                          PROVE  Q'
-              OBVIOUS 
+              OBVIOUS
             <5>1. PICK x \in exit : exit' = exit \ {x}
-               BY DEF Remove 
-            <5>2. IsFiniteSet(exit') 
+               BY DEF Remove
+            <5>2. IsFiniteSet(exit')
                BY <5>1,  <1>1, RemoveElementFromFiniteSet DEF Inv
-            <5>3. (exit' \subseteq exit) /\ (exit' # exit)  
-               BY <5>1  
+            <5>3. (exit' \subseteq exit) /\ (exit' # exit)
+               BY <5>1
             <5>4. exit' \in SetLessThan(c, R, S)
-               BY <5>2, <5>3 DEF SetLessThan, FiniteSubsets, FiniteSubsetRel 
+               BY <5>2, <5>3 DEF SetLessThan, FiniteSubsets, FiniteSubsetRel
             <5>5. QED
-               BY <5>1, <5>4  DEF Remove 
+               BY <5>1, <5>4  DEF Remove
           <4>2. P => P' \/ Q'
-            BY <4>1, <2>2, <1>1 DEF vars, Inv, Add, Move,  Next 
+            BY <4>1, <2>2, <1>1 DEF vars, Inv, Add, Move,  Next
           <4>3. P /\ Angle(Remove, vars) => Q'
-            BY <4>1 
+            BY <4>1
           <4>4. P => Enabled(Angle(Remove, vars))                      PROOF
             (***************************************************************)
             (* BY <2>2 DEF ENABLED, which produces the following           *)
@@ -186,10 +186,10 @@ THEOREM Liveness ==
   <2>1. LeadsTo(OE /\ ~(exit = {}), OE /\ (exit = {}))
     <3> DEFINE S == FiniteSubsets(Objects)
                R == FiniteSubsetRel(Objects)
-               H(T) == OE /\ (exit = T) 
+               H(T) == OE /\ (exit = T)
                G == H({})
     <3>1. IsWellFoundedOn(R, S)
-      BY ONLY FiniteSubsetsWellFounded 
+      BY ONLY FiniteSubsetsWellFounded
     <3>2. ASSUME NEW c \in S
           PROVE  LeadsTo(H(c), G \/ \E d \in SetLessThan(c, R, S) : H(d))
       <4>1. CASE c = {}
@@ -197,7 +197,7 @@ THEOREM Liveness ==
           PROOF (* BY ONLY <4>1 *) OMITTED
         <5>2. QED                PROOF OMITTED
       <4>2. CASE c # {}
-        <5>1. LeadsTo(H(c), \E d \in SetLessThan(c, R, S) : H(d)) 
+        <5>1. LeadsTo(H(c), \E d \in SetLessThan(c, R, S) : H(d))
           (*****************************************************************)
           (* This is a WF1 proof.                                          *)
           (*****************************************************************)
@@ -209,16 +209,16 @@ THEOREM Liveness ==
              OBVIOUS
             <7>1. PICK x \in exit : exit' = exit \ {x}
               BY DEF Remove
-            <7>2. IsFiniteSet(exit') 
-              BY <7>1,  <1>1, RemoveElementFromFiniteSet DEF Inv 
-            <7>3. (exit' \subseteq exit) /\ (exit' # exit)  
-              BY <7>1 
+            <7>2. IsFiniteSet(exit')
+              BY <7>1,  <1>1, RemoveElementFromFiniteSet DEF Inv
+            <7>3. (exit' \subseteq exit) /\ (exit' # exit)
+              BY <7>1
             <7>4. exit' \in SetLessThan(c, R, S)
               BY <7>2, <7>3 DEF SetLessThan, FiniteSubsets, FiniteSubsetRel
             <7>5. QED
               BY <7>1, <7>4  DEF Remove
           <6>2. P => P' \/ Q'
-            BY <6>1, <4>2, <1>1 DEF vars, Inv, Add, Move,  Next  
+            BY <6>1, <4>2, <1>1 DEF vars, Inv, Add, Move,  Next
           <6>3. P /\ Angle(Remove, vars) => Q'
             BY <6>1
           <6>4. P => Enabled(Angle(Remove, vars))
@@ -241,7 +241,7 @@ THEOREM Liveness ==
       <4>1. LeadsTo(\E c \in S : H(c), G)
         PROOF (* BY ONLY <3>1, <3>2, LeadstoInduction *) OMITTED
       <4>2. OE /\ ~(exit = {}) => \E c \in S : H(c)
-        BY ONLY <1>1 DEF H, S, FiniteSubsets, Inv 
+        BY ONLY <1>1 DEF H, S, FiniteSubsets, Inv
       <4>3. QED                                                      PROOF
       (*********************************************************************)
       (* BY ONLY <4>1, <4>2, PTL DEF G, H, LeadsTo, which translates to    *)
@@ -266,7 +266,7 @@ THEOREM Liveness ==
       (*********************************************************************)
       (* BY DEF ENABLED, which produces the following obligation.          *)
       (*********************************************************************)
-      <4> P => 
+      <4> P =>
             \E exitp, entryp, poolp : /\ exit   = {}
                                       /\ exitp  = entry
                                       /\ entryp = {}
@@ -275,7 +275,7 @@ THEOREM Liveness ==
        <4> QED PROOF OMITTED
     <3>4. QED
       PROOF OMITTED
-  <2>3. QED                                                                   PROOF 
+  <2>3. QED                                                                   PROOF
     (***********************************************************************)
     (* BY ONLY <2>1, <2>2, PTL DEF LeadsTo which is translated to:         *)
     (*   a1 := G(oe & (~xe) -> F(oe & xe)) ;                               *)
@@ -306,16 +306,16 @@ THEOREM Liveness ==
     <3> DEFINE S == FiniteSubsets(Objects)
                R == FiniteSubsetRel(Objects)
     <3>1. IsWellFoundedOn(R, S)
-      BY ONLY FiniteSubsetsWellFounded 
+      BY ONLY FiniteSubsetsWellFounded
     <3>2. ASSUME NEW c \in S
           PROVE  LeadsTo(H(c), G \/ \E d \in SetLessThan(c, R, S) : H(d))
       <4>1. CASE c = {}
         <5>1. G <=> H(c)
-          BY ONLY <4>1 
+          BY ONLY <4>1
         <5>2. QED                                                      PROOF
           OMITTED
       <4>2. CASE c # {}
-        <5>1. LeadsTo(H(c), \E d \in SetLessThan(c, R, S) : H(d)) 
+        <5>1. LeadsTo(H(c), \E d \in SetLessThan(c, R, S) : H(d))
           (*****************************************************************)
           (* This is a WF1 proof.                                          *)
           (*****************************************************************)
@@ -327,16 +327,16 @@ THEOREM Liveness ==
              OBVIOUS
             <7>1. PICK x \in exit : exit' = exit \ {x}
               BY DEF Remove
-            <7>2. IsFiniteSet(exit') 
-              BY <7>1,  <1>1, RemoveElementFromFiniteSet DEF Inv 
-            <7>3. (exit' \subseteq exit) /\ (exit' # exit)  
-              BY <7>1 
+            <7>2. IsFiniteSet(exit')
+              BY <7>1,  <1>1, RemoveElementFromFiniteSet DEF Inv
+            <7>3. (exit' \subseteq exit) /\ (exit' # exit)
+              BY <7>1
             <7>4. exit' \in SetLessThan(c, R, S)
               BY <7>2, <7>3 DEF SetLessThan, FiniteSubsets, FiniteSubsetRel
             <7>5. QED
               BY <7>1, <7>4  DEF Remove
           <6>2. P => P' \/ Q'
-            BY <6>1, <4>2, <1>1 DEF vars, Inv, Add, Move,  Next  
+            BY <6>1, <4>2, <1>1 DEF vars, Inv, Add, Move,  Next
           <6>3. P /\ Angle(Remove, vars) => Q'
             BY <6>1
           <6>4. P => Enabled(Angle(Remove, vars))
@@ -361,7 +361,7 @@ THEOREM Liveness ==
       <4>1. LeadsTo(\E c \in S : H(c), G)
         PROOF (* BY ONLY <3>1, <3>2, LeadstoInduction, TLA *) OMITTED
       <4>2. \E c \in S : H(c)
-        BY ONLY <1>1 DEF H, S, FiniteSubsets, Inv 
+        BY ONLY <1>1 DEF H, S, FiniteSubsets, Inv
       <4>3. QED                                                      PROOF
       (*********************************************************************)
       (* BY ONLY <4>1, <4>2, PTL DEF G, H, LeadsTo, which translates to    *)
@@ -385,7 +385,7 @@ THEOREM Liveness ==
     (* which LWB proves.                                                   *)
     (***********************************************************************)
     OMITTED
-         
+
 <1>4. QED                                                                     PROOF
   (*************************************************************************)
   (* BY ONLY <1>2, <1>3, PTL DEF LeadsTo , which translates to             *)
@@ -395,7 +395,7 @@ THEOREM Liveness ==
   (*   goal := G(oe -> F op);                                              *)
   (*   provable((G a1) & (G a2) -> goal);                                  *)
   (* which LWB proves                                                      *)
-  (*************************************************************************) 
+  (*************************************************************************)
   OMITTED
 
 =============================================================================

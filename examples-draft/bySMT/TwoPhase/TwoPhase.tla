@@ -1,4 +1,4 @@
-------------------------------- MODULE TwoPhase ----------------------------- 
+------------------------------- MODULE TwoPhase -----------------------------
 (***************************************************************************)
 (* This specification describes the Two-Phase Commit protocol, in which a  *)
 (* transaction manager (TM) coordinates the resource managers (RMs) to     *)
@@ -23,7 +23,7 @@ VARIABLES
   tmState,       \* The state of the transaction manager.
   tmPrepared,    \* The set of RMs from which the TM has received $"Prepared"$
                  \* messages.
-  msgs           
+  msgs
     (***********************************************************************)
     (* In the protocol, processes communicate with one another by sending  *)
     (* messages.  Since we are specifying only safety, a process is not    *)
@@ -49,8 +49,8 @@ Message ==
   (* of such a message.                                                    *)
   (*************************************************************************)
   [type : {"Prepared"}, rm : RM]  \cup  [type : {"Commit", "Abort"}]
-   
-TPTypeOK ==  
+
+TPTypeOK ==
   (*************************************************************************)
   (* The type-correctness invariant                                        *)
   (*************************************************************************)
@@ -59,7 +59,7 @@ TPTypeOK ==
   /\ tmPrepared \subseteq RM
   /\ msgs \subseteq Message
 
-TPInit ==   
+TPInit ==
   (*************************************************************************)
   (* The initial predicate.                                                *)
   (*************************************************************************)
@@ -101,7 +101,7 @@ TMAbort ==
   /\ msgs' = msgs \cup {[type |-> "Abort"]}
   /\ UNCHANGED <<rmState, tmPrepared>>
 
-RMPrepare(rm) == 
+RMPrepare(rm) ==
   (*************************************************************************)
   (* Resource manager $rm$ prepares.                                       *)
   (*************************************************************************)
@@ -109,7 +109,7 @@ RMPrepare(rm) ==
   /\ rmState' = [rmState EXCEPT ![rm] = "prepared"]
   /\ msgs' = msgs \cup {[type |-> "Prepared", rm |-> rm]}
   /\ UNCHANGED <<tmState, tmPrepared>>
-  
+
 RMChooseToAbort(rm) ==
   (*************************************************************************)
   (* Resource manager $rm$ spontaneously decides to abort.  As noted       *)
@@ -137,7 +137,7 @@ RMRcvAbortMsg(rm) ==
 
 TPNext ==
   \/ TMCommit \/ TMAbort
-  \/ \E rm \in RM : 
+  \/ \E rm \in RM :
        TMRcvPrepared(rm) \/ RMPrepare(rm) \/ RMChooseToAbort(rm)
          \/ RMRcvCommitMsg(rm) \/ RMRcvAbortMsg(rm)
 -----------------------------------------------------------------------------
@@ -160,7 +160,7 @@ THEOREM TPSpec => []TPTypeOK
 (* the operators defined in module $TCommit$ avoids any name conflicts     *)
 (* that might exist with operators in the current module.)                 *)
 (***************************************************************************)
-TC == INSTANCE TCommit 
+TC == INSTANCE TCommit
 
 THEOREM TPSpec => TC!TCSpec
   (*************************************************************************)

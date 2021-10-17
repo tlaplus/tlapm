@@ -13,7 +13,7 @@ Init == chosen = {}
 
 Next == /\ chosen = {}
         /\ \E v \in Values : chosen' = chosen \cup {v}
-        
+
 Spec == Init /\ [][Next]_chosen
 
 =============================================================================

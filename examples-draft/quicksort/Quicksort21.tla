@@ -7,20 +7,20 @@
 EXTENDS Integers, TLAPS, FiniteSetTheorems, Utils, Bags
 
 CONSTANT A0, N
- 
-ASSUME ConstantAssump == /\ N \in Nat \ {0}
-                         /\ A0 \in [1..N -> Int] 
 
-IsSorted(B) == \A i, j \in 1..N : 
+ASSUME ConstantAssump == /\ N \in Nat \ {0}
+                         /\ A0 \in [1..N -> Int]
+
+IsSorted(B) == \A i, j \in 1..N :
 (i < j) => (B[i] =< B[j])
 
 (* Modification: made Automorphisms and ** top-level operators because we want
    to reason about them.
 PermsOf(Arr) ==
   LET Automorphisms(S) == { f \in [S -> S] : \A y \in S : \E x \in S : f[x] = y }
-  
+
       f ** g == [x \in DOMAIN g |-> f[g[x]]]
-      
+
   IN  { Arr ** f : f \in Automorphisms(DOMAIN Arr) }
 *)
 
@@ -32,7 +32,7 @@ f ** g == [x \in DOMAIN g |-> f[g[x]]]
 
 (* Set of permutations of array Arr (with finite domain). *)
 PermsOf(Arr) == { Arr ** f : f \in Automorphisms(DOMAIN Arr) }
-  
+
 (* Leslie's original definition: the problem is that the automorphism that generates
    C from B is not restricted to the interval lo .. hi, so it might exchange some
    elements within this interval with elements outside (as long as the exchanged
@@ -42,19 +42,19 @@ PermsOf(Arr) == { Arr ** f : f \in Automorphisms(DOMAIN Arr) }
    obvious from the specification that partitioning two non-overlapping intervals in
    the worklist does not interfere.
 Partitions(B, pivot, lo, hi) ==
-  {C \in PermsOf(B) : 
+  {C \in PermsOf(B) :
       /\ \A i \in 1..(lo-1) \cup (hi+1)..N : C[i] = B[i]
       /\ \A i \in lo..pivot, j \in (pivot+1)..hi : C[i] =< C[j] }
 *)
 
 (* Jael's definition. I'm following the same idea but introduce a bit more structure.
 Partitions(B, pivot, lo, hi) ==
-{ C \in [1..N -> Int] : 
-    /\ (\E D \in PermsOf([i \in lo..hi |-> B[i]]) : C = [i \in 1..N |-> IF i \in lo..hi 
+{ C \in [1..N -> Int] :
+    /\ (\E D \in PermsOf([i \in lo..hi |-> B[i]]) : C = [i \in 1..N |-> IF i \in lo..hi
                                                                            THEN D[i]
                                                                            ELSE B[i] ] )
-    /\ \A i \in lo..pivot, j \in (pivot+1)..hi : C[i] =< C[j]                                                                       
-  } 
+    /\ \A i \in lo..pivot, j \in (pivot+1)..hi : C[i] =< C[j]
+  }
 *)
 
 (* Set of permutations such that all elements below pivot are smaller than all
@@ -75,7 +75,7 @@ VARIABLES A, U
 TypeOK == /\ A \in [1..N -> Int]
           /\ A \in PermsOf(A0)
           /\ U \in SUBSET { u \in (1..N) \X (1..N) : u[1] <= u[2] }
-          
+
 vars == <<A, U>>
 
 Init == /\ A = A0
@@ -89,18 +89,18 @@ Next ==   /\ U # {}    \* NB: This conjunct is implied by the following one
                            /\ A' \in Partitions(A, p, b, t)
                            /\ U' = (U \ {<<b, t>>}) \cup {<<b, p>>, <<p+1, t>>}
                     ELSE /\ U' = U \ {<<b, t>>}
-                         /\ A' = A  
-                        
+                         /\ A' = A
+
 Spec == Init /\ [][Next]_vars /\ WF_vars(Next)
 
 -----------------------------------------------------------------------------
 
-(* The main correctness (safety) property: 
+(* The main correctness (safety) property:
    whenever U becomes empty, A contains a sorted permutation of A0 *)
 Safety == (U = {}) => (A \in PermsOf(A0)) /\ IsSorted(A)
 
 
-(* UnsortedIsCovered : if there are two positions i,j that point to values which are not sorted, 
+(* UnsortedIsCovered : if there are two positions i,j that point to values which are not sorted,
     then the work list U contains a pair <<b,t>> that covers both i and j. *)
 UnsortedIsCovered == \A i, j \in 1..N  :  i < j /\ A[j] < A[i]
                                 => \E u \in U : {i,j} \subseteq u[1] .. u[2]
@@ -120,7 +120,7 @@ Inv ==
 (* Lemmas about constant operators.                                        *)
 (***************************************************************************)
 
-LEMMA ImageOfIntervalIsFinite == 
+LEMMA ImageOfIntervalIsFinite ==
   ASSUME NEW X, NEW a \in Int, NEW b \in Int
   PROVE  IsFiniteSet({X[k] : k \in a..b})
 <1>1. Restrict(X, a..b) \in Surjection(a..b, {X[k] : k \in a..b})
@@ -133,9 +133,9 @@ LEMMA PermsOf_type ==
   ASSUME NEW S, NEW T, NEW X \in [S -> T], NEW Y \in PermsOf(X)
   PROVE  Y \in [S -> T]
 BY DEF PermsOf, Automorphisms, **
-  
+
 (* Any array is a permutation of itself. *)
-LEMMA PermsOf_refl == 
+LEMMA PermsOf_refl ==
   ASSUME NEW S, NEW T, NEW X \in [S -> T]
   PROVE  X \in PermsOf(X)
 BY Isa DEF PermsOf, Automorphisms, **
@@ -169,7 +169,7 @@ BY DEF PermsOf, Automorphisms, **, Range
 
 (* A partition is a permutation. *)
 LEMMA PartitionPermsOf ==
-  ASSUME NEW S, NEW T, NEW B \in [S -> T], 
+  ASSUME NEW S, NEW T, NEW B \in [S -> T],
          NEW lo \in Int, NEW hi \in Int, NEW pivot \in Int, lo .. hi \subseteq S,
          NEW C \in Partitions(B, pivot, lo, hi)
   PROVE  C \in PermsOf(B)
@@ -188,8 +188,8 @@ LEMMA PartitionPermsOf ==
 <1>. QED
   BY <1>4, <1>5 DEF PermsOf
 
-(* For any partition, the set of values between lo and hi is the set of the 
-   original values contained in the array within that interval. 
+(* For any partition, the set of values between lo and hi is the set of the
+   original values contained in the array within that interval.
 *)
 LEMMA PartitionsSetStable ==
   ASSUME NEW B, NEW pivot, NEW lo, NEW hi, lo .. hi \subseteq DOMAIN B,
@@ -233,14 +233,14 @@ LEMMA Typing == Spec => []TypeOK
 <1>2. ASSUME TypeOK, [Next]_vars
       PROVE  TypeOK'
   <2>1. CASE Next
-    <3>1. PICK b \in 1..N, t \in 1..N : 
+    <3>1. PICK b \in 1..N, t \in 1..N :
                /\ <<b,t>> \in U
                /\ IF b # t
                     THEN \E p \in b..(t-1) :
                            /\ A' \in Partitions(A, p, b, t)
                            /\ U' = (U \ {<<b, t>>}) \cup {<<b, p>>, <<p+1, t>>}
                     ELSE /\ U' = U \ {<<b, t>>}
-                         /\ A' = A 
+                         /\ A' = A
       BY <2>1 DEF Next
     <3>2. CASE b # t
       <4>1. PICK p \in b .. (t-1) :
@@ -355,7 +355,7 @@ LEMMA Invariance == Spec => []Inv
           <6>1. /\ A' \in [1..N -> Int]
                 /\ \A k,l \in b..t : k <= p /\ p < l => A'[k] <= A'[l]
             BY TypeOK, TypeOK', Z3 DEF TypeOK, Partitions, Override, OrderingPerms, Restrict
-          <6>. QED  BY <6>1, Z3 
+          <6>. QED  BY <6>1, Z3
         <5>. QED  OBVIOUS
       <4>3. NoOverlap'
         BY <3>1, Inv DEF Inv, NoOverlap
@@ -375,6 +375,6 @@ THEOREM Spec => []Safety
   BY <1>1, Z3 DEF TypeOK, Inv, UnsortedIsCovered, Safety, IsSorted
 <1>. QED  BY <1>1, Typing, Invariance, PTL
 
-     
+
 =============================================================================
 

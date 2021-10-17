@@ -59,7 +59,7 @@ BY DEF Inverse, Range
 (***************************************************************************)
 THEOREM Fun_IsInj ==
   ASSUME NEW S, NEW T, NEW F \in [S -> T],
-         \A a,b \in S : F[a] = F[b] => a = b 
+         \A a,b \in S : F[a] = F[b] => a = b
   PROVE  F \in Injection(S,T)
 BY DEF Injection, IsInjective
 
@@ -378,7 +378,7 @@ BY Fun_BijInverse DEF ExistsBijection
 
 
 THEOREM Fun_ExistsBijTransitive ==
-  ASSUME NEW S, NEW T, NEW U, ExistsBijection(S,T), ExistsBijection(T,U)  
+  ASSUME NEW S, NEW T, NEW U, ExistsBijection(S,T), ExistsBijection(T,U)
   PROVE  ExistsBijection(S,U)
 BY Fun_BijTransitive, Zenon DEF ExistsBijection
 
@@ -445,21 +445,21 @@ THEOREM Fun_CantorBernsteinSchroeder_Lemma ==
 <1> PICK F \in Injection(S,T) : TRUE  BY Fun_ExistsInj
 
 <1>1. /\ F \in [S -> T]
-      /\ \A a,b \in S : F[a] = F[b] => a = b  
+      /\ \A a,b \in S : F[a] = F[b] => a = b
   BY Fun_InjectionProperties
-  
+
 (*************************************************************************)
 (* Pick Y as S excluding T.                                              *)
 (*************************************************************************)
 <1>2. PICK Y : Y = S \ T  BY Zenon
-  
+
 (*************************************************************************)
 (* Define Ci[0] as Y, and Ci[i+1] as the image of Ci[i] under F.         *)
 (*************************************************************************)
 <1> DEFINE Ci[i \in Nat] ==
       IF i = 0 THEN Y ELSE {F[s] : s \in Ci[i-1]}
 <1> HIDE DEF Ci
-  
+
 <1>3. \A i \in Nat : Ci[i] = IF i = 0 THEN Y ELSE {F[s] : s \in Ci[i-1]}
   (***********************************************************************)
   (* Use NatInductiveDef to prove that Ci equals its definition.         *)
@@ -473,7 +473,7 @@ THEOREM Fun_CantorBernsteinSchroeder_Lemma ==
   <2> SUFFICES NatInductiveDefConclusion(f,f0,Def)  BY DEF NatInductiveDefConclusion
   <2> SUFFICES NatInductiveDefHypothesis(f,f0,Def)  BY NatInductiveDef
   <2> QED BY DEF NatInductiveDefHypothesis, f
-  
+
 (*************************************************************************)
 (* Applying F to an element of Ci[i] produces an element of Ci[i+1].     *)
 (*************************************************************************)
@@ -483,7 +483,7 @@ THEOREM Fun_CantorBernsteinSchroeder_Lemma ==
       BY <1>3, SMT
    *)
    BY <1>3, i+1 \in Nat \ {0}, (i+1)-1 = i, Zenon
-  
+
 (*************************************************************************)
 (* Each element of Ci[i+1] is the application of F to some element in    *)
 (* Ci[i].                                                                *)
@@ -517,13 +517,13 @@ THEOREM Fun_CantorBernsteinSchroeder_Lemma ==
 (*************************************************************************)
 <1>7. PICK C : C = UNION {Ci[i] : i \in Nat}  OBVIOUS
 <1>8. C \subseteq S  BY <1>6, <1>7
-  
+
 (*************************************************************************)
 (* Pick FC as the image of C under F.                                    *)
 (*************************************************************************)
 <1>9. PICK FC : FC = {F[c] : c \in C}  BY Zenon
 <1>10. FC \subseteq T  BY <1>1, <1>8, <1>9, Isa
-  
+
 (*************************************************************************)
 (* C = Y \cup FC because Ci[0] = Y and Ci[i+1] = image of Ci[i] under F. *)
 (*************************************************************************)
@@ -551,7 +551,7 @@ THEOREM Fun_CantorBernsteinSchroeder_Lemma ==
       <4> QED BY <4>1, <4>3, <1>7
     <3> QED BY <3>1, <3>2
   <2> QED BY <2>1, <2>2
-  
+
 (*************************************************************************)
 (* S \ C is the same as T \ FC.                                          *)
 (*************************************************************************)
@@ -571,13 +571,13 @@ THEOREM Fun_CantorBernsteinSchroeder_Lemma ==
     <3>1. H[a] \in FC  BY <2>1, <1>1, <1>9, <1>13
     <3>2. H[b] \in T \ FC  BY <2>1, <1>12, <1>13
     <3> QED BY <3>1, <3>2
-      
+
   <2>2. H \in [S -> T]
     <3> SUFFICES ASSUME NEW s \in S  PROVE H[s] \in T  BY <1>13
     <3>1. CASE s \in C  BY <3>1, <1>1, <1>10, <1>13
     <3>2. CASE s \notin C  BY <3>2, <1>12, <1>13
     <3> QED BY <3>1, <3>2
-      
+
   <2>3. ASSUME NEW a \in S, NEW b \in S, H[a] = H[b]  PROVE a = b
     <3> H[a] = H[b]  BY <2>3
     <3>1. CASE a \in C /\ b \in C  BY <3>1, <1>1, <1>13
@@ -585,14 +585,14 @@ THEOREM Fun_CantorBernsteinSchroeder_Lemma ==
     <3>3. CASE a \notin C /\ b \in C  BY <3>3, <2>1  (* impossible by lemma *)
     <3>4. CASE a \notin C /\ b \notin C  BY <3>4, <1>13
     <3> QED BY <3>1, <3>2, <3>3, <3>4
-      
+
   <2>4. ASSUME NEW t \in T  PROVE \E s \in S : H[s] = t
     <3>1. CASE t \in FC  BY <3>1, <1>8, <1>9, <1>13
     <3>2. CASE t \notin FC  BY <3>2, <1>12, <1>13
     <3> QED BY <3>1, <3>2
-    
+
   <2> QED BY <2>2, <2>3, <2>4, Fun_IsBij
- 
+
 <1> QED BY <1>14, Fun_ExistsBij
 
 
@@ -643,7 +643,7 @@ THEOREM Fun_CantorBernsteinSchroeder ==
 (* `.  .'                                                                  *)
 (***************************************************************************)
 
-THEOREM Fun_ExistInjAndSurjThenBij == 
+THEOREM Fun_ExistInjAndSurjThenBij ==
   ASSUME NEW S, NEW T,
          ExistsInjection(S,T), ExistsSurjection(S,T)
   PROVE  ExistsBijection(S,T)
@@ -652,7 +652,7 @@ THEOREM Fun_ExistInjAndSurjThenBij ==
 
 
 
-THEOREM Fun_ExistSurjAndSurjThenBij == 
+THEOREM Fun_ExistSurjAndSurjThenBij ==
   ASSUME NEW S, NEW T,
          ExistsSurjection(S,T), ExistsSurjection(T,S)
   PROVE  ExistsBijection(S,T)
@@ -816,7 +816,7 @@ THEOREM Fun_NatSurjImpliesNatBij ==
     <3>. QED  BY <3>1, <3>2, Zenon DEF Surjection
   <2>. QED  BY SMT, <2>3, <2>4, <1>1 DEF ExistsSurjection
 
-<1>. QED  BY <1>2, <1>3, <1>4 DEF ExistsBijection, Bijection    
+<1>. QED  BY <1>2, <1>3, <1>4 DEF ExistsBijection, Bijection
 
 
 (***************************************************************************)
@@ -904,7 +904,7 @@ THEOREM Fun_NatBijSubset ==
   <2>2. ExistsSurjection(1..m, T)  BY <2>0, <2>1, Fun_ExistsSurjTransitive
   <2>. QED  BY <2>2, Fun_NatSurjImpliesNatBij
 <1> QED BY <1>1, <1>2
-  
+
 
 
 
@@ -934,7 +934,7 @@ THEOREM Fun_NatBijAddElem ==
 <1>30. ASSUME NEW i \in 1..m+1, NEW j \in 1..m+1, G[i] = G[j]  PROVE i = j
   BY <1>2, <1>4, <1>30
 <1>40. G \in Bijection(1..m+1, S \cup {x})
-  BY <1>10, <1>20, <1>30, Zenon DEF Bijection, Injection, IsInjective, Surjection  
+  BY <1>10, <1>20, <1>30, Zenon DEF Bijection, Injection, IsInjective, Surjection
 <1>. QED  BY <1>40, Zenon DEF ExistsBijection
 
 

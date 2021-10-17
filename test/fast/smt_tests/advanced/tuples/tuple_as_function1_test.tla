@@ -25,6 +25,6 @@ THEOREM ASSUME NEW A, NEW B, NEW C
         BY ONLY <2>1, <2>2, <2>3, <2>4
 <1> QED
     BY <1>2, <1>3
-    
+
 ====
 

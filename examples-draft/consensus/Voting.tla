@@ -113,7 +113,7 @@ THEOREM VotesSafeImpliesConsistency ==
     BY <1>7, <2>1, QuorumAssumption, Z3
     DEF CannotVoteAt, DidNotVoteAt, OneVote, ChosenAt, NoneOtherChoosableAt, Ballot, SafeAt
 <1>10. QED
-  BY QuorumAssumption, <1>2, <1>3, <1>7, Z3 
+  BY QuorumAssumption, <1>2, <1>3, <1>7, Z3
   DEF Ballot, ChosenAt, OneVote, chosen
 
 THEOREM ShowsSafety ==
@@ -121,7 +121,7 @@ THEOREM ShowsSafety ==
              \A Q \in Quorum, b \in Ballot, v \in Value :
                ShowsSafeAt(Q, b, v) => SafeAt(b, v)
   BY QuorumAssumption, Z3
-  DEFS Ballot, TypeOK, VotesSafe, OneValuePerBallot, SafeAt, 
+  DEFS Ballot, TypeOK, VotesSafe, OneValuePerBallot, SafeAt,
     ShowsSafeAt, CannotVoteAt, NoneOtherChoosableAt, DidNotVoteAt
 
 -----------------------------------------------------------------------------
@@ -133,7 +133,7 @@ THEOREM Invariance == Spec => []Inv
       PROVE Inv'
   <2> USE DEF Inv, Ballot, VotedFor, VoteFor
   <2>1. CASE UNCHANGED <<votes, maxBal>>
-    BY <1>2, <2>1, IsaM("auto") 
+    BY <1>2, <2>1, IsaM("auto")
     DEFS IncreaseMaxBal, ShowsSafeAt,
          DidNotVoteAt, TypeOK, VotesSafe, OneValuePerBallot,
          SafeAt, NoneOtherChoosableAt, CannotVoteAt
@@ -152,7 +152,7 @@ THEOREM Spec /\ Inv => C!Spec
   BY QuorumAssumption, SetExtensionality, IsaM("force")
   DEF Init, C!Init, chosen, ChosenAt, VotedFor
 <1>2. Next /\ Inv => C!Next \/ UNCHANGED chosen
-  <2>1 SUFFICES ASSUME Next, Inv PROVE C!Next \/ UNCHANGED chosen 
+  <2>1 SUFFICES ASSUME Next, Inv PROVE C!Next \/ UNCHANGED chosen
     BY <2>1
   <2>2. chosen \subseteq chosen'
     BY <2>1, QuorumAssumption, Z3   \* SMTT(10) fails

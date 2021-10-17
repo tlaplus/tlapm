@@ -35,8 +35,8 @@ ASSUME PsubsetNat == P \subseteq Nat
 variable num = [i \in P |-> 0], flag = [i \in P |-> FALSE];
 
 process (p \in P)
-  variables unread \in SUBSET P, 
-            max \in Nat, 
+  variables unread \in SUBSET P,
+            max \in Nat,
             nxt \in P
 {
 p1: while (TRUE) {
@@ -240,7 +240,7 @@ THEOREM GGIrreflexive == ASSUME NEW i \in P,
 <1>. QED  BY <1>1, <1>2, i#j, GEQAxiom, Zenon
 
 -----------------------------------------------------------------------------
-THEOREM InitImpliesTypeOK == 
+THEOREM InitImpliesTypeOK ==
   ASSUME Init
   PROVE  TypeOK
 <1>1. /\ num  \in  [P -> Nat]
@@ -283,7 +283,7 @@ THEOREM TypeOKInvariant ==
                           THEN [max EXCEPT ![self] = num[k]]
                           ELSE max
                 /\ pc' = [pc EXCEPT ![self] = "p2"]
-                /\ num' = num /\ flag' = flag /\ nxt' = nxt 
+                /\ num' = num /\ flag' = flag /\ nxt' = nxt
       BY <1>2, <2>2, Zenon DEF p2
     <3>2. QED  BY <3>1, Zenon
   <2>3. QED  BY <2>1, <2>2, Zenon
@@ -329,7 +329,7 @@ BY Zenon DEF Inv, IInv, MutualExclusion, After
 (* The following lemma asserts that the predicate After(i,j) is preserved  *)
 (* if none of the state components change in terms of which it is defined. *)
 (***************************************************************************)
-THEOREM AfterPrime == 
+THEOREM AfterPrime ==
   ASSUME NEW i, NEW j,
          After(i,j),
          UNCHANGED <<num[i], num[j], pc[i], unread[i], max[i]>>
@@ -575,7 +575,7 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
          <6>1. num[nxt[self]] > num[self]
            BY <5>1, Zenon  (* from definition of p6 *)
          <6>2. num[self] >= num[nxt[self]]
-           BY <4>2, <5>1, GTAxiom, PsubsetNat, Zenon DEF GG  
+           BY <4>2, <5>1, GTAxiom, PsubsetNat, Zenon DEF GG
               (* from definition of GG and assumptions for i and j *)
          <6>. QED  BY <6>1, <6>2, Transitivity2, GTAxiom, Zenon
        <5>2. CASE ~(self > nxt[self])

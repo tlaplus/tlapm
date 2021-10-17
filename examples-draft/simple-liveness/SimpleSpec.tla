@@ -30,11 +30,11 @@ EXTENDS Integers, FiniteSets, FiniteSetTheoremsLL, WellFoundedInduction, TLAPS
 \*AddElementFiniteSet == TRUE
 
 
-CONSTANT Objects  
+CONSTANT Objects
   (*************************************************************************)
   (* The set of all objects.  We don't assume it to be finite.             *)
   (*************************************************************************)
-  
+
 (***************************************************************************)
 (* The variables representing the set of objects in each bucket.           *)
 (***************************************************************************)
@@ -66,7 +66,7 @@ Move == /\ exit   = {}
 
 (***************************************************************************)
 (* The operation of moving an object from exit to pool.                    *)
-(***************************************************************************)        
+(***************************************************************************)
 Remove == \E o \in exit : /\ exit'  = exit \ {o}
                           /\ pool'  = pool \cup {o}
                           /\ entry' = entry
@@ -81,7 +81,7 @@ Spec == Init /\ [][Next]_vars /\ WF_vars(Move) /\ WF_vars(Remove)
 Inv == /\ pool  \subseteq Objects
        /\ entry \subseteq Objects
        /\ exit  \subseteq Objects
-       /\ IsFiniteSet(entry) 
+       /\ IsFiniteSet(entry)
        /\ IsFiniteSet(exit)
 
 (***************************************************************************)
@@ -109,7 +109,7 @@ THEOREM Invariance == Spec => []Inv
       BY <2>1, AddElementFiniteSet, RemoveElementFromFiniteSet, SMT DEF Inv, Next, vars, Add, Move, Remove
     <3>6. QED
       BY <3>1, <3>2, <3>3, <3>4, <3>5 DEF Inv
-    
+
   <2>2. ASSUME Inv,
                Move
         PROVE  Inv'
@@ -198,12 +198,12 @@ THEOREM DiamondExistsCommute ==
           PROVE  (\E a \in S : <>(P(a))) <=> <>(\E a \in S : P(a))
 <1>1. (\A a \in S : [](~P(a))) <=> [](\A a \in S : ~P(a))
   BY BoxForallCommute, TLA
-<1>2. QED 
+<1>2. QED
   BY <1>1, TLA (* DEF <> *)
 
 (* I believe the QED step cannot be proved by PTL (TL) *)
-(* SM: In fact, this is not a theorem at all. Trivializing P to TRUE, it 
-   would imply 
+(* SM: In fact, this is not a theorem at all. Trivializing P to TRUE, it
+   would imply
    []<>(\E a \in S : Q(a)) <=> (\E a \in S : []<>Q(a))
    which is clearly invalid: the LHS asserts that infinitely often there
    is some a \in S for which Q(a) holds whereas the RHS claims that for
@@ -216,22 +216,22 @@ THEOREM LeadsToDisjunctive ==
          PROVE  (P ~> (\E a \in S : Q(a))) <=> (\E a \in S : P ~> Q(a))
 <1>1. (P => <>(\E a \in S : Q(a))) <=> (P =>  \E a \in S : <>(Q(a)))
   BY DiamondExistsCommute, TLA
-<1>2. QED  
+<1>2. QED
   BY <1>1, PTL
 
 
-LEMMA EALeadsTo == 
+LEMMA EALeadsTo ==
         ASSUME NEW  S, NEW  H(_), NEW  G
         PROVE  (\E c \in S : H(c) ~> G) <=> (\A c \in S : H(c) ~> G)
 <1> DEFINE P(c) == H(c) ~> G
 <1>1. ((\E c \in S : H(c)) => <>(G)) <=> (\A c \in S : H(c) => <>(G))
-  BY TLA 
+  BY TLA
 <1>2. []((\E c \in S : H(c)) => <>(G)) <=> [](\A c \in S : H(c) => <>(G))
   BY <1>1, PTL
-<1>3. [](\A c \in S : H(c) => <>(G)) <=> (\A c \in S : [](H(c) => <>(G))) 
+<1>3. [](\A c \in S : H(c) => <>(G)) <=> (\A c \in S : [](H(c) => <>(G)))
   BY BoxForallCommute, TLA
-<1>4. QED      
-  BY <1>2, <1>3, TLA (* DEF ~> *) 
+<1>4. QED
+  BY <1>2, <1>3, TLA (* DEF ~> *)
 
 (***************************************************************************)
 (* Here is the rule that I used to call the Lattice Rule.                  *)
@@ -248,20 +248,20 @@ THEOREM LeadstoInduction ==
      BY EALeadsTo
   <2> QED
     OBVIOUS
-    
+
 <1> DEFINE P(x) == [](~G) /\ H(x) ~> FALSE
 
-<1> SUFFICES P(c)    
-  BY PTL 
+<1> SUFFICES P(c)
+  BY PTL
 
 <1>1. \A x \in S : (\A y \in SetLessThan(x, R, S) : P(y)) => P(x)
   <2> SUFFICES ASSUME NEW x \in S
-               PROVE  (\A y \in SetLessThan(x, R, S) : P(y)) => P(x)        
+               PROVE  (\A y \in SetLessThan(x, R, S) : P(y)) => P(x)
     BY TLA
   <2>1. H(x) ~>  G \/ (\E d \in SetLessThan(x, R, S) : H(d))
     BY TLA
   <2>2. [](~G) /\ H(x) ~> []~G /\ (\E d \in SetLessThan(x, R, S) : H(d))
-    BY <2>1, PTL 
+    BY <2>1, PTL
   <2>3. \E d \in SetLessThan(x, R, S) : [](~G) /\ H(x) ~> [](~G) /\ H(d)
     <3> DEFINE L == [](~G) /\ H(x)
                T == SetLessThan(x, R, S)
@@ -273,24 +273,24 @@ THEOREM LeadstoInduction ==
     <3>3. QED
       BY <3>2 DEF L, T
   <2>4. (\A y \in SetLessThan(x, R, S) : P(y)) =>
-           \E d \in SetLessThan(x, R, S) : 
+           \E d \in SetLessThan(x, R, S) :
                         /\ [](~G) /\ H(x) ~> [](~G) /\ H(d)
                         /\ [](~G) /\ H(d) ~> FALSE
     BY <2>3, TLA
   <2>5. ASSUME NEW d
         PROVE  /\ [](~G) /\ H(x) ~> [](~G) /\ H(d)
                /\ [](~G) /\ H(d) ~> FALSE
-               => [](~G) /\ H(x) ~> FALSE     
-     BY ONLY PTL 
+               => [](~G) /\ H(x) ~> FALSE
+     BY ONLY PTL
   <2>6. QED
     BY <2>4, <2>5
 
 <1> HIDE DEF P
 
-<1>2. QED    
+<1>2. QED
   <2> DEFINE Foo(RR, SS) ==
              \A x \in SS :
-                 (\A y \in SetLessThan(x, RR, SS) : P(y)) => P(x)     
+                 (\A y \in SetLessThan(x, RR, SS) : P(y)) => P(x)
   <2>1.  ASSUME NEW RR, NEW SS,
                 IsWellFoundedOn(RR, SS),
                 Foo(RR, SS)
@@ -298,7 +298,7 @@ THEOREM LeadstoInduction ==
     BY ONLY <2>1, WFInduction, TLA
   <2>2.  Foo(R, S) /\ IsWellFoundedOn(R, S)
      BY <1>1, TLA
-  <2> HIDE DEF Foo 
+  <2> HIDE DEF Foo
   <2>3.  QED
    BY ONLY <2>1, <2>2, TLA
 
@@ -326,7 +326,7 @@ THEOREM Liveness == Spec =>  \A o \in Objects : (o \in entry) ~> (o \in pool)
                     NEW o \in Objects
              PROVE (o \in entry) ~> (o \in pool)
   BY Invariance DEF Spec
-<1>1. Inv /\ [Next]_vars                                              
+<1>1. Inv /\ [Next]_vars
   BY PTL
 
 (***************************************************************************)
@@ -337,24 +337,24 @@ THEOREM Liveness == Spec =>  \A o \in Objects : (o \in entry) ~> (o \in pool)
 <1>2. ASSUME NEW B \in BOOLEAN, NEW c \in FiniteSubsets(Objects)
   PROVE  LET S == FiniteSubsets(Objects)
              R == FiniteSubsetRel(Objects)
-             OE == (B => o \in entry) 
-             H(T) == OE /\ (exit = T) 
+             OE == (B => o \in entry)
+             H(T) == OE /\ (exit = T)
              G == H({})
          IN H(c) ~> (G \/ \E d \in SetLessThan(c, R, S) : H(d))
   <2> DEFINE S == FiniteSubsets(Objects)
              R == FiniteSubsetRel(Objects)
-             OE == (B => o \in entry) 
-             H(T) == OE /\ (exit = T) 
+             OE == (B => o \in entry)
+             H(T) == OE /\ (exit = T)
              G == H({})
   <2>1. IsWellFoundedOn(R, S)
     BY ONLY FiniteSubsetsWellFounded
   <2>2. CASE c = {}
     <3>1. G <=> H(c)
       BY ONLY <2>2, TLA
-    <3>2. QED                                                   
+    <3>2. QED
       BY ONLY <3>1, PTL
   <2>3. CASE c # {}
-    <3>1. H(c) ~> (\E d \in SetLessThan(c, R, S) : H(d)) 
+    <3>1. H(c) ~> (\E d \in SetLessThan(c, R, S) : H(d))
       (*****************************************************************)
       (* This is a WF1 proof.                                          *)
       (*****************************************************************)
@@ -363,26 +363,26 @@ THEOREM Liveness == Spec =>  \A o \in Objects : (o \in entry) ~> (o \in pool)
       <4>1. P /\ Remove => Q'
         <5> SUFFICES ASSUME P /\ Remove
                      PROVE  Q'
-          OBVIOUS 
+          OBVIOUS
         <5>1. PICK x \in exit : exit' = exit \ {x}
-          BY DEF Remove 
-        <5>2. IsFiniteSet(exit') 
-           BY <5>1, <1>1, RemoveElementFromFiniteSet DEF Inv 
-        <5>3. (exit' \subseteq exit) /\ (exit' # exit)  
-           BY <5>1  
+          BY DEF Remove
+        <5>2. IsFiniteSet(exit')
+           BY <5>1, <1>1, RemoveElementFromFiniteSet DEF Inv
+        <5>3. (exit' \subseteq exit) /\ (exit' # exit)
+           BY <5>1
         <5>4. exit' \in SetLessThan(c, R, S)
-           BY <5>2, <5>3 DEF SetLessThan, FiniteSubsets, FiniteSubsetRel  
+           BY <5>2, <5>3 DEF SetLessThan, FiniteSubsets, FiniteSubsetRel
         <5>5. QED
            BY <5>1, <5>4  DEF Remove
       <4>2. P => P' \/ Q'
-        BY <4>1, <2>3, <1>1 DEF vars, Inv, Add, Move,  Next 
+        BY <4>1, <2>3, <1>1 DEF vars, Inv, Add, Move,  Next
       <4>3. P /\ <<Remove>>_vars => Q'
-        BY <4>1 
-      <4>4. P => ENABLED <<Remove>>_vars                      
+        BY <4>1
+      <4>4. P => ENABLED <<Remove>>_vars
         BY <2>3 (* DEF ENABLED *)
-      <4>5. QED                                                           
+      <4>5. QED
         BY <4>2, <4>3, <4>4, PTL (* DEF WF *)
-    <3>2. QED                                                    
+    <3>2. QED
       BY ONLY <3>1, PTL
   <2>4. QED
     BY <2>2, <2>3, TLA
@@ -395,71 +395,71 @@ THEOREM Liveness == Spec =>  \A o \in Objects : (o \in entry) ~> (o \in pool)
   <2>1. (OE /\ ~(exit = {})) ~> (OE /\ (exit = {}))
     <3> DEFINE S == FiniteSubsets(Objects)
                R == FiniteSubsetRel(Objects)
-               H(T) == OE /\ (exit = T) 
+               H(T) == OE /\ (exit = T)
                G == H({})
     <3>1. IsWellFoundedOn(R, S)
       BY ONLY FiniteSubsetsWellFounded
-    <3>2. ASSUME NEW c \in S
-          PROVE  H(c) ~> (G \/ \E d \in SetLessThan(c, R, S) : H(d))
-      BY <1>2, TLA   
-    <3> QED
-      <4> HIDE DEF S, R, H, G
-      <4>1. (\E c \in S : H(c)) ~> G
-        BY ONLY <3>1, <3>2, LeadstoInduction, TLA
-      <4>2. OE /\ ~(exit = {}) => \E c \in S : H(c) 
-        BY ONLY <1>1 DEF H, S, FiniteSubsets, Inv
-      <4>3. QED                                                      
-        BY ONLY <4>1, <4>2, PTL DEF G, H
-  <2>2. (OE /\ (exit = {})) ~> OX
-    (***********************************************************************)
-    (* This is a proof by WF1.                                             *)
-    (***********************************************************************)
-    <3> DEFINE P == OE /\ (exit = {})
-    <3>1. P => P' \/ OX'  
-      BY ONLY <1>1 DEF Inv, Next, Add, Move, Remove, vars 
-    <3>2. P /\ <<Move>>_vars => OX' 
-      BY ONLY <1>1 DEF Inv, Next, Move, vars 
-    <3>3. P => ENABLED <<Move>>_vars                           
-      (* BY DEF ENABLED *)
-      OMITTED
-    <3>4. QED                                                           
-      BY <3>1, <3>2, <3>3, PTL (* DEF WF *)
-  <2>3. QED                                                             
-    BY ONLY <2>1, <2>2, PTL
-
-<1>4. [](~OP) /\ OX ~> FALSE
-  <2>1. [](~OP) /\ OX => [](OX)
-    <3>1. OX /\ ~OP' => OX'
-       BY <1>1 DEF Inv, Next, Add, Remove, Move, vars  
-    <3>2. QED                                                          
-      BY ONLY <3>1, PTL
-  <2> DEFINE H(T) == (exit = T) 
-             G == H({})
-  <2>2. [](OX) => (TRUE ~> G)   
-    <3> SUFFICES ASSUME [](OX)
-                 PROVE  TRUE ~> G
-      BY PTL
-    <3> DEFINE S == FiniteSubsets(Objects)
-               R == FiniteSubsetRel(Objects)
-    <3>1. IsWellFoundedOn(R, S)
-      BY ONLY FiniteSubsetsWellFounded 
     <3>2. ASSUME NEW c \in S
           PROVE  H(c) ~> (G \/ \E d \in SetLessThan(c, R, S) : H(d))
       BY <1>2, TLA
     <3> QED
       <4> HIDE DEF S, R, H, G
       <4>1. (\E c \in S : H(c)) ~> G
-        BY ONLY <3>1, <3>2, LeadstoInduction, TLA 
+        BY ONLY <3>1, <3>2, LeadstoInduction, TLA
+      <4>2. OE /\ ~(exit = {}) => \E c \in S : H(c)
+        BY ONLY <1>1 DEF H, S, FiniteSubsets, Inv
+      <4>3. QED
+        BY ONLY <4>1, <4>2, PTL DEF G, H
+  <2>2. (OE /\ (exit = {})) ~> OX
+    (***********************************************************************)
+    (* This is a proof by WF1.                                             *)
+    (***********************************************************************)
+    <3> DEFINE P == OE /\ (exit = {})
+    <3>1. P => P' \/ OX'
+      BY ONLY <1>1 DEF Inv, Next, Add, Move, Remove, vars
+    <3>2. P /\ <<Move>>_vars => OX'
+      BY ONLY <1>1 DEF Inv, Next, Move, vars
+    <3>3. P => ENABLED <<Move>>_vars
+      (* BY DEF ENABLED *)
+      OMITTED
+    <3>4. QED
+      BY <3>1, <3>2, <3>3, PTL (* DEF WF *)
+  <2>3. QED
+    BY ONLY <2>1, <2>2, PTL
+
+<1>4. [](~OP) /\ OX ~> FALSE
+  <2>1. [](~OP) /\ OX => [](OX)
+    <3>1. OX /\ ~OP' => OX'
+       BY <1>1 DEF Inv, Next, Add, Remove, Move, vars
+    <3>2. QED
+      BY ONLY <3>1, PTL
+  <2> DEFINE H(T) == (exit = T)
+             G == H({})
+  <2>2. [](OX) => (TRUE ~> G)
+    <3> SUFFICES ASSUME [](OX)
+                 PROVE  TRUE ~> G
+      BY PTL
+    <3> DEFINE S == FiniteSubsets(Objects)
+               R == FiniteSubsetRel(Objects)
+    <3>1. IsWellFoundedOn(R, S)
+      BY ONLY FiniteSubsetsWellFounded
+    <3>2. ASSUME NEW c \in S
+          PROVE  H(c) ~> (G \/ \E d \in SetLessThan(c, R, S) : H(d))
+      BY <1>2, TLA
+    <3> QED
+      <4> HIDE DEF S, R, H, G
+      <4>1. (\E c \in S : H(c)) ~> G
+        BY ONLY <3>1, <3>2, LeadstoInduction, TLA
       <4>2. \E c \in S : H(c)
-        BY ONLY <1>1 DEF H, S, FiniteSubsets, Inv 
-      <4>3. QED                                                      
-        BY ONLY <4>1, <4>2, PTL DEF G, H (* ~> *) 
+        BY ONLY <1>1 DEF H, S, FiniteSubsets, Inv
+      <4>3. QED
+        BY ONLY <4>1, <4>2, PTL DEF G, H (* ~> *)
   <2>3. G => ~OX
     OBVIOUS
-  <2>4. QED                                                             
+  <2>4. QED
      BY ONLY <2>1, <2>2, <2>3, PTL
-              
-<1>5. QED                                                                     
+
+<1>5. QED
   BY ONLY <1>3, <1>4, PTL (* DEF ~> *)
 
 =============================================================================

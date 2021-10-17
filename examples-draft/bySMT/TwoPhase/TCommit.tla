@@ -2,7 +2,7 @@
 CONSTANT RM       \* The set of participating resource managers
 VARIABLE rmState  \* `rmState[rm]' is the state of resource manager rm.
 -----------------------------------------------------------------------------
-TCTypeOK == 
+TCTypeOK ==
   (*************************************************************************)
   (* The type-correctness invariant                                        *)
   (*************************************************************************)
@@ -18,7 +18,7 @@ canCommit == \A rm \in RM : rmState[rm] \in {"prepared", "committed"}
   (* True iff all RMs are in the "prepared" or "committed" state.          *)
   (*************************************************************************)
 
-notCommitted == \A rm \in RM : rmState[rm] # "committed" 
+notCommitted == \A rm \in RM : rmState[rm] # "committed"
   (*************************************************************************)
   (* True iff neither no resource manager has decided to commit.           *)
   (*************************************************************************)
@@ -51,7 +51,7 @@ TCSpec == TCInit /\ [][TCNext]_rmState
 (***************************************************************************)
 (* We now assert invariance properties of the specification.               *)
 (***************************************************************************)
-TCConsistent ==  
+TCConsistent ==
   (*************************************************************************)
   (* A state predicate asserting that two RMs have not arrived at          *)
   (* conflicting decisions.                                                *)

@@ -23,7 +23,7 @@ THEOREM Invariance == Spec => []Inv
   BY CardinalityZero DEFS Init, Inv
 <1>2. Inv /\ [Next]_chosen => Inv'
   BY CardinalityOne, Z3 DEFS Next, Inv
-<1>3 QED 
+<1>3 QED
   PROOF BY <1>1,<1>2,PTL DEF Spec
 
 =============================================================================

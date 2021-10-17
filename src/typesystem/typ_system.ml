@@ -1,7 +1,7 @@
 (************************************************************************
 *
 *  types_infer.ml
-*  
+*
 *
 *  Created by Hernán Vanzetto on 23 Oct 2013.
 *  Copyright (c) 2013 __MyCompanyName__. All rights reserved.
@@ -54,19 +54,19 @@ let pp_prop v env cx e =
 
 let rec rewrite_subs (env,vs,(cs:C.t list)) =
   (** Collect substitutions from subtype constraints, returns one type assignment [a <- t]. *)
-  let rec collect_ss vs = function 
-    | CAtom w :: cs -> 
+  let rec collect_ss vs = function
+    | CAtom w :: cs ->
         begin match w with
         | CSub (env, t1, t2) ->
             begin match t1, t2 with
             | TyVar (_,a), Set t
-            | Set t, TyVar (_,a) 
-                when List.mem a vs && not (T.occurs a t) -> 
+            | Set t, TyVar (_,a)
+                when List.mem a vs && not (T.occurs a t) ->
 (* Util.eprintf "collect_ss: %a" C.ppc (CSub (E.empty, t1, t2)) ; *)
                 ((a, Set t), []) :: collect_ss vs cs
             | TyVar (_,a), Func (x,t1,t2)
             | Func (x,t1,t2), TyVar (_,a)
-                when List.mem a vs && not (T.occurs a (Func (x,t1,t2))) -> 
+                when List.mem a vs && not (T.occurs a (Func (x,t1,t2))) ->
 (* Util.eprintf "collect_ss: %a" C.ppc c ; *)
                 (* if T.occurs a (Func (x,t1,t2)) then raise (Failure "occurs a Func") else *)
                 begin
@@ -78,7 +78,7 @@ let rec rewrite_subs (env,vs,(cs:C.t list)) =
             | (Ref (x,t,r) as tt), TyVar (_,a)
                 when List.mem a vs && not (T.occurs a tt) ->
 (* Util.eprintf "collect_ss: %a" C.ppc c ; *)
-                (* begin 
+                (* begin
                   let msg = Util.sprintf "type variable %s occurs in %a" a E.ppt (env,tt) in
                   E.tyvar_assignment_pp 1 ;
                   if T.occurs a tt then raise (Failure msg)
@@ -91,10 +91,10 @@ let rec rewrite_subs (env,vs,(cs:C.t list)) =
                 ((a, Ref (x,t,Ph ([],pid))), []) :: collect_ss vs cs
 
             (** TODO missing case for Rec *)
-            | _ -> 
+            | _ ->
                 collect_ss vs cs
             end
-        | _ -> 
+        | _ ->
             collect_ss vs cs
         end
     | _ :: cs -> collect_ss vs cs
@@ -107,7 +107,7 @@ let rec rewrite_subs (env,vs,(cs:C.t list)) =
 (* Smt.ifprint 4 "** Collect sub ss in %5.3fs.%!" (Sys.time() -. tx) ; *)
   let ss,vars = List.split ssvs in
   let vs = vs @ (List.flatten vars)in
-  if ss = [] then (env,vs,cs) else begin 
+  if ss = [] then (env,vs,cs) else begin
 (* let tx = Sys.time () in *)
     let env,vs,cs = C.apply_ss ss (env,vs,cs) in
     C.tccs := C.app_ss tcc_subst !C.tccs ss ;
@@ -123,24 +123,24 @@ let unify_subs (env,c) = C.rw_c rewrite_subs (env,c)
 
 let rec rewrite_refl (env,vs,cs) =
   let rec pickone_subst = function
-    | CAtom w :: cs -> 
+    | CAtom w :: cs ->
         begin match w with
-        | CEq (_, TyVar (ss,a), TyVar (_,a')) 
-        | CSub (_, TyVar (ss,a), TyVar (_,a')) 
+        | CEq (_, TyVar (ss,a), TyVar (_,a'))
+        | CSub (_, TyVar (ss,a), TyVar (_,a'))
             when a <> a' ->
             (a', TyVar (ss,a)) :: []
-        | CEq (_, TyVar (_,a), TyVar (_,a')) 
+        | CEq (_, TyVar (_,a), TyVar (_,a'))
         | CSub (_, TyVar (_,a), TyVar (_,a'))
-            -> 
+            ->
             (a, TyAtom a) :: (a', TyAtom a) :: []
-        | _ -> 
+        | _ ->
             pickone_subst cs
         end
     | _ :: cs -> pickone_subst cs
     | [] -> []
   in
   let ss = pickone_subst cs in
-  if ss = [] then (env,vs,cs) else begin 
+  if ss = [] then (env,vs,cs) else begin
     let env,vs,cs = C.apply_ss ss (env,vs,cs) in
     rewrite_refl (env,vs,cs)
   end
@@ -148,34 +148,34 @@ let rec rewrite_refl (env,vs,cs) =
 let rec rewrite_constructs (env,vs,cs) =
 (* Util.eprintf "rewrite_constructs %a" C.pp (env,C.mk_ex (vs,cs)) ; *)
   let rec pickone_subst = function
-    | CAtom w :: cs -> 
+    | CAtom w :: cs ->
         begin match w with
-        | CEq (_, Tdom (TyVar ([],a)), t) 
-            when T.is_atomic_type (T.ref_to_base t) -> 
+        | CEq (_, Tdom (TyVar ([],a)), t)
+            when T.is_atomic_type (T.ref_to_base t) ->
             Some (Tdom (TyVar ([],a)), t)
-        | CEq (_, t, Tdom (TyVar ([],a))) 
-            when T.is_atomic_type (T.ref_to_base t) -> 
+        | CEq (_, t, Tdom (TyVar ([],a)))
+            when T.is_atomic_type (T.ref_to_base t) ->
             Some (Tdom (TyVar ([],a)), t)
-        | CEq (_, Tcod (TyVar ([],a)), t) 
-            when T.is_atomic_type (T.ref_to_base t) -> 
+        | CEq (_, Tcod (TyVar ([],a)), t)
+            when T.is_atomic_type (T.ref_to_base t) ->
             Some (Tcod (TyVar ([],a)), t)
-        | CEq (_, t, Tcod (TyVar ([],a))) 
-            when T.is_atomic_type (T.ref_to_base t) -> 
+        | CEq (_, t, Tcod (TyVar ([],a)))
+            when T.is_atomic_type (T.ref_to_base t) ->
             Some (Tcod (TyVar ([],a)), t)
-        | CEq (_, Rec_dot (TyVar ([],a), h), t) 
+        | CEq (_, Rec_dot (TyVar ([],a), h), t)
             when T.is_atomic_type (T.ref_to_base t) ->    (** TODO change to accept also Rec_dot *)
             Some (Rec_dot (TyVar ([],a), h), t)
-        | CEq (_, t, Rec_dot (TyVar ([],a), h)) 
+        | CEq (_, t, Rec_dot (TyVar ([],a), h))
             when T.is_atomic_type (T.ref_to_base t) ->    (** TODO change to accept also Rec_dot *)
             Some (Rec_dot (TyVar ([],a), h), t)
-        | _ -> 
+        | _ ->
             pickone_subst cs
         end
     | _ :: cs -> pickone_subst cs
     | [] -> None
   in
   let ss = pickone_subst cs in
-  if Option.is_none ss then (env,vs,cs) else begin 
+  if Option.is_none ss then (env,vs,cs) else begin
     let a,b = Option.get ss in
 (* Util.eprintf "pickone_subst %a --> %a" E.ppt (env,a) E.ppt (env,b) ; *)
     let rep a b t = if T.eq a t then b else t in
@@ -209,8 +209,8 @@ let mdom m = let ks,_ = List.split (SMap.bindings m) in ks
 (****************************************************************************)
 
 let update_r phs env = function
-  | Ph (ss,p) -> 
-      begin try let cx,e = SMap.find p phs in 
+  | Ph (ss,p) ->
+      begin try let cx,e = SMap.find p phs in
         (* let cx = try tl cx with _ -> [] in *)
         let cx = E.to_cx (env $! E.ss_to_env ss) in
 (* Util.eprintf "  $ ss: %a" (pp_print_delimited E.pp_ss) ss ; *)
@@ -229,36 +229,36 @@ let rec update_t phs env = function
 let update_e phs env = E.map (update_t phs env) env
 
 let rec update_c phs e = function
-  | CConj cs -> 
+  | CConj cs ->
       CConj (map (update_c phs e) cs)
-  | CExists (vs,c) -> 
+  | CExists (vs,c) ->
       CExists (vs,update_c phs e c)
-  | CAtom w -> 
+  | CAtom w ->
       CAtom (update_cc phs e w)
 and update_cc phs e = function
-  | CEq (env,t1,t2) -> 
+  | CEq (env,t1,t2) ->
       let env,t1,t2 = update_triple phs e (env,t1,t2) in CEq (env,t1,t2)
-  | CIsEq (env,t1,t2) -> 
+  | CIsEq (env,t1,t2) ->
       let env,t1,t2 = update_triple phs e (env,t1,t2) in CIsEq (env,t1,t2)
-  | CSub (env,t1,t2) -> 
+  | CSub (env,t1,t2) ->
       let env,t1,t2 = update_triple phs e (env,t1,t2) in CSub (env,t1,t2)
-  | CIsSub (env,t1,t2) -> 
+  | CIsSub (env,t1,t2) ->
       let env,t1,t2 = update_triple phs e (env,t1,t2) in CIsSub (env,t1,t2)
   | c -> c
 and update_triple phs e = function
   | env,t1,t2 -> update_e phs env, update_t phs e t1, update_t phs e t2
 
 let update_tyvar_assignment phs env =
-  E.tyvar_assignment := SMap.mapi 
-    begin fun _ (cxe,bvar,ot) -> 
-      let ot = match ot with 
+  E.tyvar_assignment := SMap.mapi
+    begin fun _ (cxe,bvar,ot) ->
+      let ot = match ot with
       | Some t -> Some (update_t phs env t)
-      | None -> None 
+      | None -> None
       in
       (cxe,bvar,ot)
     end !E.tyvar_assignment
 
-let update_tcc phs (op,env,r1,r2) = 
+let update_tcc phs (op,env,r1,r2) =
 (* Util.eprintf "  updating vc: %a" C.pp_tccs [env,r1,r2] ; *)
   let vc = op, update_e phs (env (* @ T.ss_to_env ss *)), update_r phs env r1, update_r phs env r2 in
 (* Util.eprintf "  ---: %a" C.pp_tccs [vc] ; *)
@@ -270,9 +270,9 @@ let update_tcc phs (op,env,r1,r2) =
 (****************************************************************************)
 
 let nontrivial_vc = function
-  | _, _, Ex (cx,e), Ex (cx',e') 
+  | _, _, Ex (cx,e), Ex (cx',e')
       when Expr.Eq.expr e e' -> false
-  | B.Implies, _, Ex (cx,e),Ex (cx',e') -> 
+  | B.Implies, _, Ex (cx,e),Ex (cx',e') ->
       let e' = Smt.flatten_conj e' in
       (* let e = opaque cx e in *)
       (* let e = opaque cx e in *)
@@ -282,37 +282,37 @@ let nontrivial_vc = function
       not
       begin match e.core,e'.core with
       | _, Internal B.TRUE -> true
-      | List (Or,es), List (Or,es') -> 
+      | List (Or,es), List (Or,es') ->
           List.for_all (fun e -> e_mem e es') es
-      | List (And,es), List (And,es') -> 
+      | List (And,es), List (And,es') ->
           List.for_all (fun e -> e_mem e es) es'
-      | _, List (Or,es') -> 
+      | _, List (Or,es') ->
           e_mem e es'
-      | List (Or,es), _ -> 
+      | List (Or,es), _ ->
           List.for_all (Expr.Eq.expr e') es
-      | List (And,es), _ -> 
+      | List (And,es), _ ->
           List.exists (Expr.Eq.expr e') es
       | _ -> false
       end
   | _ -> true
 
 let vc_intro_elim = function
-  | (B.Implies, env, Ex (cx,e), Ex (cx',e')) as c -> 
+  | (B.Implies, env, Ex (cx,e), Ex (cx',e')) as c ->
       begin match e.core,e'.core with
-      | List (Or,es), _ -> 
+      | List (Or,es), _ ->
           map (fun e -> B.Implies, env, Ex (cx,e), Ex (cx',e')) es
-      | _, List (And,es') -> 
+      | _, List (And,es') ->
           map (fun e' -> B.Implies, env, Ex (cx,e), Ex (cx',e')) es'
       | _ -> [c]
       end
   | c -> [c]
-  
+
 (** Encodes a TCC into a TLA+ proof obligation *)
 let tccs_to_seq (op,env,r1,r2) : Typ_e.t * expr =
   let app op x y = Apply (Internal op |> noprops, [x ; y]) |> noprops in
   let e = match r1,r2 with
     | Ex (_,e1), Ex (_,e2) -> app op e1 e2
-    | _ -> 
+    | _ ->
         Util.eprintf "TCCs: @,@[%a@]" C.pp_tccs [op,env,r1,r2] ;
         failwith "some placeholder was not solved!"
   in
@@ -320,7 +320,7 @@ let tccs_to_seq (op,env,r1,r2) : Typ_e.t * expr =
   (* let env,ths = env
     (* |> trim_env e *)
     |> List.filter (fun (x,t) -> mem x (Smt.fv_expr ((),E.to_scx env) e))
-    |> mapi (fun i (x,t) -> 
+    |> mapi (fun i (x,t) ->
         let t,cx,p = T.to_predtyp (E.to_cx env) (Ix (i+1) |> noprops) t in (x,t),(cx,p))
     |> split
   in
@@ -344,10 +344,10 @@ let solve_tccs tccs =
   if tccs = [] then Smt.ifprint 2 "** No TCCs to prove."
   else begin
     let tx = Sys.time () in
-    let pr_answers = 
-      map tccs_to_seq tccs 
+    let pr_answers =
+      map tccs_to_seq tccs
       |> remove_repeated_seq
-      |> map (fun (env,e) -> Smt.ifprint 2 "  TCC: @[<hov>%a |- %a@]" E.pp env 
+      |> map (fun (env,e) -> Smt.ifprint 2 "  TCC: @[<hov>%a |- %a@]" E.pp env
           (Expr.Fmt.pp_print_expr (E.to_scx env, Ctx.dot)) e ; (env,e))
       (* |> map Why3_interface.solve *)
       |> map (fun _ -> "Not solved")
@@ -355,22 +355,22 @@ let solve_tccs tccs =
     (* Util.eprintf " pr_answers: %s"  (String.concat "," pr_answers) ; *)
     let valids, unknowns = List.partition (fun a -> a = "Valid") pr_answers in
     Smt.ifprint 2 "** Solved TCCs in %5.3fs.%!" (Sys.time() -. tx) ;
-    Smt.ifprint 2 "-- TCCs: %d valids, %d unknown/fails" 
-      (List.length valids) (List.length unknowns) 
-  end  
+    Smt.ifprint 2 "-- TCCs: %d valids, %d unknown/fails"
+      (List.length valids) (List.length unknowns)
+  end
 
 let remove_repeated_tccs tccs =
-  let vc_mem (op,env,r1,r2) vs = List.exists 
+  let vc_mem (op,env,r1,r2) vs = List.exists
     (function (op',_,r1',r2') -> (* op = op' && *) T.eq_ref r1' r2')
     vs in
   List.fold_left (fun r vc -> if vc_mem vc r then r else vc :: r) [] tccs
 
 (** Find solutions to placeholders.
   [init_phs] = initial placeholders
-  [tccs] = verification conditions in the form (env,tref1,tref2) 
+  [tccs] = verification conditions in the form (env,tref1,tref2)
   [n] = total number of placeholders
 *)
-let solve_phs init_phs tccs n = 
+let solve_phs init_phs tccs n =
   if tccs <> [] then Smt.ifprint 3 "-- TCCs: %a" C.pp_tccs tccs ;
 
   let tx = Sys.time () in
@@ -379,8 +379,8 @@ let solve_phs init_phs tccs n =
 
   C.tccs := map (update_tcc phs) !C.tccs ;
   let total = List.length tccs in
-  let tccs = 
-    map (update_tcc phs) tccs 
+  let tccs =
+    map (update_tcc phs) tccs
     (* |> remove_repeated *)
     |> remove_repeated_tccs
     |> List.filter nontrivial_vc
@@ -388,7 +388,7 @@ let solve_phs init_phs tccs n =
     |> List.filter nontrivial_vc
   in
   if tccs <> [] then Smt.ifprint 3 "-- TCCs: %a" C.pp_tccs tccs ;
-  Smt.ifprint 2 "-- Type-correctness conditions: %d/%d (non-trivial/total)" 
+  Smt.ifprint 2 "-- Type-correctness conditions: %d/%d (non-trivial/total)"
     (List.length tccs) total ;
   solve_tccs tccs ;
   phs
@@ -397,7 +397,7 @@ let solve_phs init_phs tccs n =
 (** Solving procedures (2)                                                  *)
 (****************************************************************************)
 
-let _solve_c' (env,c) = 
+let _solve_c' (env,c) =
   let _solve_c (env,c) = (env,c)
 (* |> tap (fun (env,c) -> pp_env_c 1 env c) *)
     |> C.simplify
@@ -409,22 +409,22 @@ let _solve_c' (env,c) =
     |> C.simplify
     ||> (if !Smt.typesystem_mode = 1 then (fun c -> c) else C.base_to_ref)
     |> C.fix_env_c _solve_c
-  in  
+  in
   env,c
 
 (****************************************************************************)
 
-let solve (env,c) = 
-  let solve_c' env c =  
+let solve (env,c) =
+  let solve_c' env c =
     let tx = Sys.time () in
     let env,c = _solve_c' (env,c) in
 (* pp_env_c 3 env c ; *)
     Smt.ifprint 2 "** Solved in %5.3fs.%!" (Sys.time() -. tx) ;
-    Smt.ifprint 2 "---------------------------------------------------------------------------" ; 
+    Smt.ifprint 2 "---------------------------------------------------------------------------" ;
     env,c
   in
 
-  let solve_and_update env c = 
+  let solve_and_update env c =
     C.phs := solve_phs !C.phs !C.tccs (mdom !C.phs_log) ;
     (* ifprint 2 "++ Types: @[<hov>%a@]" E.pp env ; *)
     let env = update_e !C.phs env in
@@ -436,7 +436,7 @@ let solve (env,c) =
     env,c
   in
 
-  Smt.ifprint 2 "-- Solving == and <: ------------------------------------------------------" ; 
+  Smt.ifprint 2 "-- Solving == and <: ------------------------------------------------------" ;
   let env,c = solve_c' env c in
   (* ifprint 2 "-- Solved TCs to get main type ---------------------------------" ;  *)
   (* Smt.ifprint 2 "TCs: %a" C.pp_tccs !C.tccs ;   *)
@@ -446,13 +446,13 @@ let solve (env,c) =
   E.tyvar_assignment_simp ();
   let typesmap = !Typ_e.tyvar_assignment in
 
-  Smt.ifprint 2 "\n** Final type assignment and constraint:" ; 
+  Smt.ifprint 2 "\n** Final type assignment and constraint:" ;
   pp_env_c 2 env c ;
   Smt.ifprint 2 "\n" ;
 
   (**************************************************************************)
 
-  Smt.ifprint 2 "-- Solving =?= and <? ------------------------------------------------------" ; 
+  Smt.ifprint 2 "-- Solving =?= and <? ------------------------------------------------------" ;
   let c = c
     |> C.iseq_to_eq      																											(** replace =?= by == *)
     |> C.issub_to_sub    																											(** replace <?  by <: *)
@@ -466,15 +466,15 @@ let solve (env,c) =
 
   let typesmap = SMap.mapi (fun _ (cxe,bvar,otyp) -> cxe,bvar,Option.map T.ref_to_base otyp) typesmap in
 
-  (** This resets types for type-variables whose constraints were not 
+  (** This resets types for type-variables whose constraints were not
     satisfied. The type variables in residual constraints have no types *)
   let vs = match c with CExists (vs,_) -> vs | _ -> [] in
-  let update (v,w) m = SMap.mapi begin fun a (cx,b,ot) -> 
+  let update (v,w) m = SMap.mapi begin fun a (cx,b,ot) ->
       (cx, b, if a = w then Some (TyVar ([],v)) else ot)
     end m
   in
-  let typesmap = List.fold_left begin fun m v -> 
-      let _,set = Option.default (v,SSet.empty) (type_equiv_find v) in 
+  let typesmap = List.fold_left begin fun m v ->
+      let _,set = Option.default (v,SSet.empty) (type_equiv_find v) in
       List.fold_left (fun m w -> update (v,w) m) m (SSet.elements set)
     end typesmap vs
   in
@@ -488,8 +488,8 @@ let solve (env,c) =
 (** In [sq], replace annotations [TyVar a] by the corresponding type from [typesmap] *)
 let decorate typesmap sq =
   let decor_env typesmap = function
-  | TyVar (ss,a) -> 
-      begin try 
+  | TyVar (ss,a) ->
+      begin try
         let _,_,otyp = SMap.find a typesmap in
         (Option.default (TyVar (ss,a)) otyp)
       with Not_found -> TyVar (ss,a)
@@ -501,10 +501,10 @@ let decorate typesmap sq =
   let env, tvars = E.adj_hyps empty sq.context in
   let env = E.map (decor_env typesmap) env in
 
-  let decor (* typesmap *) z = 
+  let decor (* typesmap *) z =
 (* Util.eprintf " decor has type? %s " (if T.has_type z then "yes" else "nop") ; *)
     match Typ_t.optype z with
-    | Some (TyVar (ss,a)) ->         
+    | Some (TyVar (ss,a)) ->
         let _,_,otyp = SMap.find a typesmap in
 (* Util.eprintf "    found: @[<h2>\\%s : %a@]" a E.ppt (env,Option.default (TyVar a) otyp) ; *)
         z <<< (Option.default (TyVar (ss,a)) otyp)
@@ -513,7 +513,7 @@ let decorate typesmap sq =
 
   let visitor = object (self : 'self)
     inherit [unit] Expr.Visit.map as super
-    method expr scx e = 
+    method expr scx e =
       match e.core with
       | SetSt (v, dom, ex) ->
           let v = decor v in
@@ -531,11 +531,11 @@ let decorate typesmap sq =
           let scx = Expr.Visit.adj scx h in
           let ex = self#expr scx ex in
           Choose (v, optdom, ex) @@ e
-      | _ -> 
+      | _ ->
           super#expr scx e
     method bounds scx bs =
       let bs = List.map begin
-        fun (v, k, dom) -> 
+        fun (v, k, dom) ->
 (* Util.eprintf "  decor_b @[<h2>\\%s : %a@]" v.core E.ppt (env,Option.default (TyVar "?") (optype v)) ; *)
           let v = decor v in
           match dom with
@@ -547,7 +547,7 @@ let decorate typesmap sq =
       end bs in
       let scx = Expr.Visit.adjs scx hs in
       (scx, bs)
-    method hyp scx h = 
+    method hyp scx h =
 (* let ph cx ff h = ignore (E.pp_print_hyp cx ff h) in *)
       match h.core with
       | Fresh (nm, shp, lc, dom) ->
@@ -581,7 +581,7 @@ let type_construct sq =
   C.phs := SMap.empty;         (** Placeholders *)
   C.phs_log := SMap.empty;
 
-  begin try 
+  begin try
 (* Util.eprintf "sq^1: @[<hov2> |-@ %a@]" Fu.pp_print_minimal (Fu.Big (fun ff -> ignore (E.pp_print_sequent (sq.context, Ctx.dot) ff sq))); *)
     let sqt,env,c = (if !Smt.typesystem_mode = 1 then Typ_cg1.cg else Typ_cg2.cg) sq in
 (* Util.eprintf "sq^2: @[<hov2>%a |-@ %a@]" E.pp env Fu.pp_print_minimal (Fu.Big (fun ff -> ignore (E.pp_print_sequent (sqt.context, Ctx.dot) ff sqt))); *)
@@ -591,24 +591,24 @@ let type_construct sq =
 
     let env',sqt = decorate typesmap sqt in
     Smt.ifprint 1 "** Type synthesis total time: %5.3fs" (Sys.time() -. tx) ;
-    Smt.ifprint 1 "sq^t: @[<hov2>%a ||-@ %a@]" E.pp env' Fu.pp_print_minimal 
+    Smt.ifprint 1 "sq^t: @[<hov2>%a ||-@ %a@]" E.pp env' Fu.pp_print_minimal
       (Fu.Big (fun ff -> ignore (E.pp_print_sequent (sqt.context, Ctx.dot) ff sqt)));
 
     (* if c = CAtom CTrue then () else begin
-      Smt.ifprint 1 "** Type constraint not satisfied:"; 
+      Smt.ifprint 1 "** Type constraint not satisfied:";
       pp_env_c 1 env c ;
       raise Typeinf_failed
     end ; *)
 
   (* Smt.ifprint 3 "typesmap:" ;
-  SMap.iter (fun k (cxe,bvar,typ) -> 
+  SMap.iter (fun k (cxe,bvar,typ) ->
         let cx,e = Option.default ([],Internal B.TRUE %% []) cxe in
-        if bvar then (Util.eprintf "@[<h2>\\%s : %a  ~  %a@]" k E.ppt (env,Option.default (TyVar k) typ) 
+        if bvar then (Util.eprintf "@[<h2>\\%s : %a  ~  %a@]" k E.ppt (env,Option.default (TyVar k) typ)
           (E.pp_print_expr (T.to_scx cx, Ctx.dot)) e) else ()
         ) typesmap ; *)
 
     sqt
-  with Typeinf_failed -> 
+  with Typeinf_failed ->
     Smt.ifprint 1 "** Type synthesis failed. Using untyped encoding." ;
     sq
   end

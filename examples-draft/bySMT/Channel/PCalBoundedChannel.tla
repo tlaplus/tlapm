@@ -8,14 +8,14 @@ ASSUME N \in Nat \ {0}
 (***************************************************************************
 --algorithm BChan {
    variable ch = << >>;
-   process (Send = "S") 
-    { s: while (TRUE) 
+   process (Send = "S")
+    { s: while (TRUE)
           { await Len(ch) # N ;
             with (v \in Msg) { ch := Append(ch, v) }
           }
     }
-   fair process (Rcv = "R") 
-    { r: while (TRUE) 
+   fair process (Rcv = "R")
+    { r: while (TRUE)
           { await Len(ch) # 0 ;
             ch := Tail(ch)
           }

@@ -37,10 +37,10 @@ Spec == Init /\ [][Next]_<<x,y>>
 Correctness == x=y => x = GCD(M,N)
 THEOREM Spec => []Correctness
 
-InductiveInvariant == 
+InductiveInvariant ==
   /\ x \in PosInteger /\ y \in PosInteger
   /\ GCD(x,y) = GCD(M,N)
-  
+
 LEMMA InductiveInvariant => Correctness
 BY GCDSelf DEF InductiveInvariant, Correctness
 
@@ -65,7 +65,7 @@ LEMMA InductiveInvariant /\ [Next]_<<x,y>> => InductiveInvariant'
   <2>3. QED
     BY <1>b, <2>1, <2>2, GCDSymm
 <1>q. QED
-  BY <1>a, <1>b             
+  BY <1>a, <1>b
 
 =============================================================================
 \* Modification History

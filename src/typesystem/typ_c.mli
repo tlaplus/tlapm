@@ -17,14 +17,14 @@ val vcs : judg_imp list ref;;
 val pp_vcs : Format.formatter -> judg_imp list -> unit *)
 
 type tc =                         (** Atomic constraints *)
-  | CTrue 
-  | CFalse 
+  | CTrue
+  | CFalse
   | CEq of Typ_e.t * Typ_t.t * Typ_t.t        (** Equality unification *)
   | CIsEq of Typ_e.t * Typ_t.t * Typ_t.t      (** Syntactic equality on ground types *)
   | CSub of Typ_e.t * Typ_t.t * Typ_t.t       (** Subtyping unification *)
   | CIsSub of Typ_e.t * Typ_t.t * Typ_t.t     (** Syntactic subtype on ground types *)
 and t =                           (** Structural constraints *)
-  | CAtom of tc                      
+  | CAtom of tc
   | CConj of t list
   | CExists of string list * t
 
@@ -67,8 +67,8 @@ val issub_to_sub : t -> t
 (* val sub_to_eq_vars : t -> t *)
 val c_length : t -> int
 
-type cg_mode = 
-  | OnlySafe (* Only safe types, no unification *) 
+type cg_mode =
+  | OnlySafe (* Only safe types, no unification *)
   | TypHyp   (* As a typing hypothesis *)
 
 val ctr_phs : int ref

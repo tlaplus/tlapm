@@ -27,9 +27,9 @@ Bijective(f, A, B) ==
 THEOREM ASSUME NEW A,
                NEW B,
                NEW f \in [ A -> B ]
-        PROVE Injective(f, 
+        PROVE Injective(f,
         A, B) /\ Surjective(f, A, B) <=> Bijective(f, A, B)
-        
+
 <1>1 ASSUME Injective(f, A, B),
             Surjective(f, A, B)
      PROVE Bijective(f, A, B)
@@ -44,7 +44,7 @@ THEOREM ASSUME NEW A,
         BY <2>2 DEF IsId, \o
     <2> QED
         BY <2>1, <2>3, <2>4 DEF Bijective
-        
+
 <1>2 ASSUME Bijective(f, A, B)
      PROVE Injective(f, A, B) /\ Surjective(f, A, B)
     <2>1 PICK g \in [ B -> A ] : IsId(f \o g) /\ IsId(g \o f)
@@ -71,9 +71,9 @@ THEOREM ASSUME NEW A,
             BY <2>1 DEF IsId, \o
     <2> QED
         BY ONLY <2>2, <2>3
-     
+
 <1> QED
     BY ONLY <1>1, <1>2
-    
+
 ====
 

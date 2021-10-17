@@ -42,11 +42,11 @@ protocol, receiving a message for the second time has no effect.)
 In addition to msgs, the algorithm uses the following variables:
 
   rmState : The same as in the algorithm of module PTCommit
-  
-  tmState : The state of the TM, its value is "init", "committed", 
+
+  tmState : The state of the TM, its value is "init", "committed",
             or "aborted".
-            
-  tmPrepared : The set of RMs from which the TM has received 
+
+  tmPrepared : The set of RMs from which the TM has received
                "Prepared" messages.
 
 As in the algorithm of module PTCommit, each atomic action of the
@@ -57,18 +57,18 @@ enabling condition.
 
  `.
 --algorithm TwoPhaseCommit {
-  variables rmState = [rm \in RM |-> "working"], 
+  variables rmState = [rm \in RM |-> "working"],
             tmState = "init",
             tmPrepared   = {},
-            msgs = {} ;     
-  macro SendMsg(m) { msgs := msgs \cup {m} } 
+            msgs = {} ;
+  macro SendMsg(m) { msgs := msgs \cup {m} }
   macro RcvMsg(m) { await m \in msgs }
   macro TMRcvPrepared() {
     (***********************************************************************)
     (* The TM receives a "Prepared" message from some resource manager.    *)
     (***********************************************************************)
     await tmState = "init";
-    with (rm \in RM) { 
+    with (rm \in RM) {
       RcvMsg([type |-> "Prepared", rm |-> rm]);
       tmPrepared := tmPrepared \cup {rm}
      }
@@ -112,29 +112,29 @@ enabling condition.
     (* Resource manager rm is told by the TM to commit.                    *)
     (***********************************************************************)
     RcvMsg([type |-> "Commit"]) ;
-    rmState[rm] := "committed" 
+    rmState[rm] := "committed"
    }
   macro RMRcvAbortMsg(rm) {
     (***********************************************************************)
     (* Resource manager rm is told by the TM to abort.                     *)
     (***********************************************************************)
     RcvMsg ([type |-> "Abort"]) ;
-    rmState[rm] := "aborted" 
+    rmState[rm] := "aborted"
    }
   process (TManager = TM) {
-    tmstart: while (TRUE) { 
+    tmstart: while (TRUE) {
                either TMCommit() or TMAbort() or TMRcvPrepared()
               }
    }
   process (RManager \in RM) {
     rmstart: while (TRUE) {
-               either RMPrepare(self) or RMChooseToAbort(self) 
+               either RMPrepare(self) or RMChooseToAbort(self)
                  or RMRcvCommitMsg(self) or RMRcvAbortMsg(self)
               }
    }
 }
  .'
- 
+
  The following is the translation of the PlusCal algorithm.  A careful
  comparison of the definitions shows that formula Spec is essentially
  the same as formula TPSpec of module TwoPhase.
@@ -203,7 +203,7 @@ THEOREM Spec <=> PTT!TPSpec
   BY SMT DEF Init, PTT!TPInit
 <1>2. [Next]_vars <=> [PTT!TPNext]_<<rmState, tmState, tmPrepared, msgs>>
   BY SMT DEF vars, Next, TManager, RManager, PTT!TPNext, PTT!TMCommit, PTT!TMAbort,
-         PTT!TMRcvPrepared, PTT!RMPrepare, PTT!RMChooseToAbort, 
+         PTT!TMRcvPrepared, PTT!RMPrepare, PTT!RMChooseToAbort,
          PTT!RMRcvCommitMsg, PTT!RMRcvAbortMsg
 <1>3. QED
   (*************************************************************************)
@@ -243,8 +243,8 @@ Message ==
   (* such a message.                                                       *)
   (*************************************************************************)
   [type : {"Prepared"}, rm : RM]  \cup  [type : {"Commit", "Abort"}]
-  
-TypeOK ==  
+
+TypeOK ==
   (*************************************************************************)
   (* The type-correctness invariant                                        *)
   (*************************************************************************)
@@ -258,13 +258,13 @@ TMInv == /\ (tmState = "committed") => (tmPrepared = RM)
          /\ ([type |-> "Commit"] \in msgs) => (tmState = "committed")
          /\ ([type |-> "Abort"] \in msgs) => (tmState = "aborted")
 
-RMInv(rm) == 
+RMInv(rm) ==
   /\ (rm \in tmPrepared) => ([type |-> "Prepared", rm |-> rm] \in msgs)
   /\ ([type |-> "Prepared", rm |-> rm] \in msgs) =>
          /\ rmState[rm] # "working"
          /\ (rmState[rm] = "aborted") => ([type |-> "Abort"] \in msgs)
   /\ (rmState[rm]= "committed") => ([type |-> "Commit"] \in msgs)
-         
+
 Inv == TypeOK /\ TMInv /\ (\A rm \in RM : RMInv(rm))
 
 (***************************************************************************)
@@ -316,7 +316,7 @@ THEOREM Spec => PTC!Spec
 <1>1. Spec => []Inv
   <2>1. Init => Inv
     BY SMT DEF Init, Inv, TypeOK, TMInv, RMInv
-  <2>2. Inv /\ [Next]_vars => Inv' 
+  <2>2. Inv /\ [Next]_vars => Inv'
     BY SMT DEF Inv, TypeOK, Message, TMInv, RMInv, Next, TManager, RManager, vars
   <2>3. QED
     (***********************************************************************)
@@ -347,8 +347,8 @@ THEOREM Spec => PTC!Spec
             PROVE  PTC!RManager(self)!2!1!2 \/ UNCHANGED rmState
         BY <4>4, Z3 DEFS PTC!RManager, PTC!notCommitted
       <4>5. QED
-      (* If <4>3 is removed, then there is a problem with set extensionality axiom.*) 
-        BY <3>2, <4>3, <4>4, Z3 
+      (* If <4>3 is removed, then there is a problem with set extensionality axiom.*)
+        BY <3>2, <4>3, <4>4, Z3
         DEF RManager, PTC!RManager, PTC!notCommitted
     <3>3. QED
       BY <3>2, Z3 DEF Next, PTC!Next, TManager

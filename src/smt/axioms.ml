@@ -520,13 +520,13 @@ let build_tla_ops (smap:t_map) std_set (* tuples record_ids *) =
     m_tla B.Remainder,[U;U], U,  [ lift_arith_positive (m_tla B.Remainder)  B.Remainder ], ["int2u" ; smap.op B.Remainder] ;
     m_tla B.Lt,    [U;U], SBool, [ lift_arith_predicate (m_tla B.Lt)   B.Lt ], ["int2u"] ;
     m_tla B.Lteq,  [U;U], SBool, [ lift_arith_predicate (m_tla B.Lteq) B.Lteq ], ["int2u"] ;
-    m_tla B.Range, [U;U], U,  [ 
+    m_tla B.Range, [U;U], U,  [
       forall [m,SInt ; n,SInt ; z,U ] (pattern_z3
 	     (equiv (mem z (app2 (m_tla B.Range) (int2u m) (int2u n)))
 		    (exists [x,SInt] (lAnd [eq z (int2u x) ; leq m x ; leq x n])))
 	     [ mem z (app2 (m_tla B.Range) (int2u m) (int2u n)) ])
       ;
-      (** added sm 2019-02-20, fixed sm 2019-12-16: 
+      (** added sm 2019-02-20, fixed sm 2019-12-16:
           Range is injective when intervals are non-empty. *)
       forall [m,SInt ; n,SInt ; x,SInt ; y,SInt ]
         (implies

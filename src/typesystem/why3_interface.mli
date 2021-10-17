@@ -1,6 +1,6 @@
 (************************************************************************
 *  alt-ergo_interface.mli
-*  
+*
 *
 *  Created by Hernán Vanzetto on 2 Nov 2013.
 *  Copyright (c) 2013 __MyCompanyName__. All rights reserved.

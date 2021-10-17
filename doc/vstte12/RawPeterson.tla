@@ -19,7 +19,7 @@ Not(i) == IF i = 0 THEN 1 ELSE 0
  ***************************************************************************)
 \* Peterson.tex contains a version of the translation wit the following
 \* changes:
-\* - Eliminated the definition 
+\* - Eliminated the definition
 \*      ProcSet == ({0,1})
 \*   and replaced the single instances of ProcSet with its definition.
 \*
@@ -30,7 +30,7 @@ Not(i) == IF i = 0 THEN 1 ELSE 0
 \*   in the Init predicate to
 \*       pc = [self \in {0, 1} |-> "a0"]
 \*
-\* - Removed some prefix /\ operators in a bulleted list 
+\* - Removed some prefix /\ operators in a bulleted list
 \*   consisting of a single conjunct.
 \*
 \* - Removed a TRUE conjunct.
@@ -117,7 +117,7 @@ THEOREM Spec => []MutualExclusion
 <1>2. Inv /\ [Next]_vars => Inv'
   <2> SUFFICES ASSUME Inv, Next
                PROVE Inv'
-    BY DEF vars, Inv, TypeOK, I 
+    BY DEF vars, Inv, TypeOK, I
   <2>1. TypeOK'
     BY DEF Inv, TypeOK, Next, proc, a0, a1, a2, a3a, a3b, cs, a4, Not
   <2>2. I'

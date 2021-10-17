@@ -114,19 +114,19 @@ let p_collect_usables prf : Proof.T.usable list =
     inherit [unit] Proof.Visit.iter as super
     method step scx st =
       let loc = Option.get (Util.query_locus st) in
-      if toolbox_main (Loc.line loc.Loc.start) 
+      if toolbox_main (Loc.line loc.Loc.start)
 				then main_step := (step_name st) else ();
       super#step scx st
     method proof scx prf =
       match prf.core with
-      | By (u,_) when toolbox_consider prf -> 
-          let ff = List.filter (fun e -> 
-            match e.core with 
-            | Opaque s when s.[0] = '<' -> 
-                let parse_step s = 
+      | By (u,_) when toolbox_consider prf ->
+          let ff = List.filter (fun e ->
+            match e.core with
+            | Opaque s when s.[0] = '<' ->
+                let parse_step s =
 									if Str.string_match (Str.regexp "<\\([0-9].*\\)>\\(.*\\)") s 0 then
-                  (int_of_string (Str.matched_group 1 s), Str.matched_group 2 s) 
-									else (0,"") 
+                  (int_of_string (Str.matched_group 1 s), Str.matched_group 2 s)
+									else (0,"")
 								in
                 let sn,sl = parse_step s in
                 if sn < (fst !main_step) then true else
@@ -138,7 +138,7 @@ let p_collect_usables prf : Proof.T.usable list =
       | Steps (inits, ({core = Qed pq} as q)) ->
           let scx = self#steps scx inits in
           let loc = Option.get (Util.query_locus pq) in
-          if toolbox_main ((Loc.line loc.Loc.start) - 1) 
+          if toolbox_main ((Loc.line loc.Loc.start) - 1)
 						then main_step := (step_name q) else ();
           self#proof scx pq
       | _ ->
@@ -154,7 +154,7 @@ let collect_usables (m:mule) : Proof.T.usable option =
     |> List.rev
   in
   let remove_repeated_def (ds:use_def wrapped list) =
-    let use_def_eq d e = 
+    let use_def_eq d e =
       match d.core, e.core with
       | Dvar s, Dvar t when s = t -> true
       | Dx n, Dx m when n = m -> true
@@ -166,16 +166,16 @@ let collect_usables (m:mule) : Proof.T.usable option =
   in
 
   let mloc = Option.get (Util.query_locus m) in
-  let rec visit (mus:modunit list) = 
+  let rec visit (mus:modunit list) =
     match mus with
     | [] -> []
     | mu :: mus -> begin
         match mu.core with
-        | Theorem (nm, _, _, _, prf_orig, _) 
-            when !Params.toolbox 
+        | Theorem (nm, _, _, _, prf_orig, _)
+            when !Params.toolbox
               (* && (not !Params.toolbox_all) *) ->
             let loc = Option.get (Util.query_locus prf_orig) in
-            if loc.Loc.file = mloc.Loc.file 
+            if loc.Loc.file = mloc.Loc.file
             then begin
              (List.rev (p_collect_usables prf_orig)) @ visit mus
             end

@@ -73,32 +73,32 @@ PROOF
     (* Size of set T.                                                      *)
     (***********************************************************************)
     Size(T)  == CHOOSE i \in Nat : ExistsBijection(1..i,T)
-    
+
     (***********************************************************************)
     (* Size function for subsets of S.                                     *)
     (***********************************************************************)
     SZ       == [ T \in SUBSET S |-> Size(T) ]
-    
+
     (***********************************************************************)
     (* Formula part of the CS property for element T.                      *)
     (***********************************************************************)
-    fn(CS,T) == IF T = {} THEN 0 ELSE 1 + CS[T \ {CHOOSE x : x \in T}] 
-    
+    fn(CS,T) == IF T = {} THEN 0 ELSE 1 + CS[T \ {CHOOSE x : x \in T}]
+
     (***********************************************************************)
     (* The CS property.                                                    *)
     (***********************************************************************)
     IsCS(CS) == CS = [T \in SUBSET S |-> fn(CS,T)]
-    
+
     (***********************************************************************)
     (* CS function for subsets of S.  Since this is defined as CHOOSE      *)
     (* something that satisfies the CS property, we do not know that the   *)
     (* CS function actually satisfies the CS property until we know that   *)
     (* there exists something that satisfies the CS property.              *)
     (***********************************************************************)
-    CS       == CHOOSE CS : IsCS(CS) 
-  
+    CS       == CHOOSE CS : IsCS(CS)
+
   <1> HIDE DEF SZ, CS, fn
-  
+
 
   (*************************************************************************)
   (* The SZ function satisfies the CS property.                            *)
@@ -124,7 +124,7 @@ PROOF
         <4>4. SZ[T] = 0  BY <4>2  DEF SZ
         <4>5. fn(SZ,T) = 0  BY <4>3  DEF fn
         <4> QED BY <4>4, <4>5
-        
+
       <3>2. ASSUME NEW i \in Nat, Prop(i)  PROVE Prop(i+1)
         (*******************************************************************)
         (* Inductive step.                                                 *)
@@ -151,7 +151,7 @@ PROOF
     <2>2. PICK i \in Nat : ExistsBijection(1..i,T) BY Fun_NatBijSubset
     <2> QED BY <2>1, <2>2
 
-    
+
   (*************************************************************************)
   (* Any two things that satisfy the CS property must be equal.            *)
   (*************************************************************************)
@@ -178,7 +178,7 @@ PROOF
         <4>3. fn(CS1,T) = 0  BY <4>2  DEF fn
         <4>4. fn(CS2,T) = 0  BY <4>2  DEF fn
         <4> QED BY <4>3, <4>4, <1>2
-        
+
       <3>2. ASSUME NEW i \in Nat, Prop(i)  PROVE Prop(i+1)
         (*******************************************************************)
         (* Inductive step.                                                 *)
@@ -195,15 +195,15 @@ PROOF
         <4>11. CS1[T] = 1 + CS1[U]  BY <4>6, <4>7, <1>2  DEF fn
         <4>12. CS2[T] = 1 + CS2[U]  BY <4>6, <4>7, <1>2  DEF fn
         <4> QED BY <4>10, <4>11, <4>12
-        
+
       <3> HIDE DEF Prop
       <3> QED BY Isa, <3>1, <3>2, NatInduction
-    
+
     <2> SUFFICES ASSUME NEW T \in SUBSET S  PROVE CS1[T] = CS2[T]  BY <1>2, Zenon
     <2>2. PICK i \in Nat : ExistsBijection(1..i,T)  BY Fun_NatBijSubset, Zenon
     <2> QED BY <2>1, <2>2
-  
-    
+
+
   (*************************************************************************)
   (* Since SZ satisfies the CS property, the CS function must satisfy the  *)
   (* CS property.  And it must be the same as SZ.                          *)
@@ -284,8 +284,8 @@ THEOREM FS_SurjSameCardinalityImpliesInj ==
 <1>. n \in Nat  BY FS_CardinalityType
 <1>. PICK g \in Bijection(1..n, S) : TRUE
   BY FS_CardinalityType, Zenon DEF ExistsBijection
-<1>2. PICK i,j \in 1 .. n : 
-          /\ i < j 
+<1>2. PICK i,j \in 1 .. n :
+          /\ i < j
           /\ \/ g[i] = a /\ g[j] = b
              \/ g[i] = b /\ g[j] = a
   <2>1. PICK i,j \in 1 .. n : i # j /\ g[i] = a /\ g[j] = b
@@ -339,7 +339,7 @@ THEOREM FS_AddElement ==
          /\ Cardinality(S \cup {x}) =
             IF x \in S THEN Cardinality(S) ELSE Cardinality(S)+1
 <1>1. CASE x \notin S
-  BY <1>1, FS_CardinalityType, Fun_NatBijAddElem, FS_NatBijection, 
+  BY <1>1, FS_CardinalityType, Fun_NatBijAddElem, FS_NatBijection,
      FS_CountingElements
 <1>. QED  BY <1>1, Zenon  \* the case "x \in S" is trivial
 
@@ -350,7 +350,7 @@ THEOREM FS_RemoveElement ==
          /\ Cardinality(S \ {x}) =
             IF x \in S THEN Cardinality(S)-1 ELSE Cardinality(S)
 <1>1. CASE x \in S
-  BY <1>1, FS_CardinalityType, Fun_NatBijSubElem, FS_NatBijection, 
+  BY <1>1, FS_CardinalityType, Fun_NatBijSubElem, FS_NatBijection,
      FS_CountingElements, FS_EmptySet
 <1>. QED  BY <1>1, Zenon  \* the case "x \notin S" is trivial
 
@@ -472,7 +472,7 @@ THEOREM FS_Injection ==
 <1>2. CASE S # {}
   <2>1. Inverse(f,S,T) \in Surjection(T,S)
     BY <1>2, Fun_InjInverse
-  <2>2. /\ IsFiniteSet(S) 
+  <2>2. /\ IsFiniteSet(S)
         /\ Cardinality(S) <= Cardinality(T)
         /\ Cardinality(S) = Cardinality(T) <=> Inverse(f,S,T) \in Injection(T,S)
     BY <2>1, FS_Surjection
@@ -524,7 +524,7 @@ THEOREM FS_Interval ==
          /\ Cardinality(a..b) = IF a > b THEN 0 ELSE b-a+1
 <1>1. CASE a <= b
   BY <1>1, Fun_ExistsBijInterval, FS_NatBijection, FS_CountingElements
-<1>2. CASE a > b  
+<1>2. CASE a > b
   BY <1>2, FS_EmptySet
 <1>. QED  BY <1>1, <1>2
 
@@ -549,7 +549,7 @@ THEOREM FS_BoundedSetOfNaturals ==
 (* `.  .'                                                                  *)
 (***************************************************************************)
 
-THEOREM FS_Induction == 
+THEOREM FS_Induction ==
   ASSUME NEW S, IsFiniteSet(S),
          NEW P(_), P({}),
          ASSUME NEW T, NEW x, IsFiniteSet(T), P(T), x \notin T
@@ -582,7 +582,7 @@ THEOREM FS_Induction ==
 (***************************************************************************)
 
 FiniteSubsetsOf(S) == { T \in SUBSET S : IsFiniteSet(T) }
-StrictSubsetOrdering(S) == { ss \in (SUBSET S) \X (SUBSET S) : 
+StrictSubsetOrdering(S) == { ss \in (SUBSET S) \X (SUBSET S) :
                                 ss[1] \subseteq ss[2] /\ ss[1] # ss[2] }
 
 LEMMA FS_FiniteSubsetsOfFinite ==
@@ -631,7 +631,7 @@ THEOREM FS_WFInduction ==
 <1>. DEFINE SubS == SUBSET S
 <1>1. IsWellFoundedOn(StrictSubsetOrdering(S), SubS)
   BY FS_FiniteSubsetsOfFinite, FS_StrictSubsetOrderingWellFounded, Zenon
-<1>2. \A T \in SubS : 
+<1>2. \A T \in SubS :
           (\A U \in SetLessThan(T, StrictSubsetOrdering(S), SubS) : P(U))
           => P(T)
   BY Zenon DEF SetLessThan, StrictSubsetOrdering
@@ -697,9 +697,9 @@ THEOREM FS_Union ==
 (*                                                                         *)
 (* `.  .'                                                                  *)
 (***************************************************************************)
-THEOREM FS_MajoritiesIntersect == 
-  ASSUME NEW U, NEW S, NEW T, IsFiniteSet(U), 
-         S \subseteq U, T \subseteq U, 
+THEOREM FS_MajoritiesIntersect ==
+  ASSUME NEW U, NEW S, NEW T, IsFiniteSet(U),
+         S \subseteq U, T \subseteq U,
          Cardinality(S) + Cardinality(T) > Cardinality(U)
   PROVE  S \cap T # {}
 
@@ -727,9 +727,9 @@ THEOREM FS_MajoritiesIntersect ==
 (*                                                                         *)
 (* `.  .'                                                                  *)
 (***************************************************************************)
-  
 
-THEOREM FS_Intersection == 
+
+THEOREM FS_Intersection ==
   ASSUME NEW S, IsFiniteSet(S), NEW T
   PROVE  /\ IsFiniteSet(S \cap T)
          /\ IsFiniteSet(T \cap S)
@@ -746,7 +746,7 @@ BY FS_Subset
 (*                                                                         *)
 (* `.  .'                                                                  *)
 (***************************************************************************)
-THEOREM FS_Difference == 
+THEOREM FS_Difference ==
   ASSUME NEW S, NEW T, IsFiniteSet(S)
   PROVE /\ IsFiniteSet(S \ T)
         /\ Cardinality(S \ T) = Cardinality(S) - Cardinality(S \cap T)
@@ -758,13 +758,13 @@ THEOREM FS_Difference ==
   BY FS_Subset, FS_CardinalityType, Zenon
 <1>2. Cardinality(S \ T) = Cardinality(S) - Cardinality(S \cap T)
   <2>1. Cardinality(S) = Cardinality((S \cap T) \cup (S \ T))  BY Zenon
-  <2>2. Cardinality((S \cap T) \cup (S \ T)) = 
+  <2>2. Cardinality((S \cap T) \cup (S \ T)) =
         Cardinality(S \cap T) + Cardinality(S \ T) - Cardinality((S \cap T) \cap (S \ T))
     BY FS_Union, Zenon
   <2>3. Cardinality((S \cap T) \cap (S \ T)) = 0  BY FS_EmptySet, Zenon
   <2>. QED  BY <2>1, <2>2, <2>3
 <1>3. QED  BY <1>2
-      
+
 
 
 (***************************************************************************)
@@ -831,8 +831,8 @@ THEOREM FS_Product ==
         /\ Cardinality(SX) = Cardinality(S)
     BY <2>3, FS_Bijection
   <2>5. /\ IsFiniteSet(S \X (A \cup {x}))
-         /\ Cardinality(S \X (A \cup {x})) = 
-              Cardinality(S \X A) + Cardinality(SX) - Cardinality((S \X A) \cap SX) 
+         /\ Cardinality(S \X (A \cup {x})) =
+              Cardinality(S \X A) + Cardinality(SX) - Cardinality((S \X A) \cap SX)
     BY <2>2, <2>4, P(A), FS_Union, Isa
   <2>6. (S \X A) \cap SX = {}  BY <1>2
   <2>7. Cardinality((S \X A) \cap SX) = 0  BY <2>6, FS_EmptySet, Zenon
@@ -898,7 +898,7 @@ THEOREM FS_SUBSET ==
 <1>. P(S)  BY <1>1, <1>2, FS_Induction, IsaM("blast")
 <1>. QED  BY DEF P
 
-   
+
 =============================================================================
 \* Modification History
 \* Last modified Wed Jan 08 17:42:32 CET 2020 by merz

@@ -17,7 +17,7 @@ LOCAL INSTANCE TLAPS
 THEOREM ConsProperties ==
   ASSUME NEW S, NEW seq \in Seq(S), NEW elt \in S
   PROVE /\ Cons(elt, seq) \in Seq(S)
-        /\ Cons(elt, seq) # <<>> 
+        /\ Cons(elt, seq) # <<>>
         /\ Len(Cons(elt, seq)) = Len(seq)+1
         /\ Head(Cons(elt, seq)) = elt
         /\ Tail(Cons(elt, seq)) = seq
@@ -45,7 +45,7 @@ THEOREM ConsInjective ==
   PROVE  Cons(e,s) = Cons(f,t) <=> e = f /\ s = t
 BY DEF Cons
 
-THEOREM SequencesInductionCons == 
+THEOREM SequencesInductionCons ==
   ASSUME NEW P(_), NEW S,
          P(<< >>),
          \A s \in Seq(S), e \in S : P(s) => P(Cons(e,s))
@@ -63,11 +63,11 @@ THEOREM SequencesInductionCons ==
           /\ Head(s) \in S
           /\ Len(Tail(s)) = n
           /\ Cons(Head(s), Tail(s)) = s
-      BY <2>1, ConsHeadTail 
+      BY <2>1, ConsHeadTail
     <3>2. P(Tail(s))
       BY <1>3, <3>1, Zenon
-    <3>. QED  BY <3>1, <3>2, Zenon                  
-  <2>. QED  BY <2>1          
+    <3>. QED  BY <3>1, <3>2, Zenon
+  <2>. QED  BY <2>1
 <1>. QED  BY <1>2, <1>3, NatInduction, Isa
 
 (***************************************************************************)
@@ -145,8 +145,8 @@ BY DEF Front
 
 THEOREM LastProperties ==
   ASSUME NEW S, NEW seq \in Seq(S), seq # << >>
-  PROVE  /\ Last(seq) \in S 
-         /\ Append(Front(seq), Last(seq)) = seq 
+  PROVE  /\ Last(seq) \in S
+         /\ Append(Front(seq), Last(seq)) = seq
 BY DEF Front, Last
 
 THEOREM FrontLastOfSubSeq ==
@@ -183,7 +183,7 @@ LEMMA FrontInjectiveSeq ==
 
 THEOREM SequencesInductionFront ==
   ASSUME NEW S,  NEW P(_),
-         P(<< >>), 
+         P(<< >>),
          \A s \in Seq(S) : (s # << >>) /\ P(Front(s)) => P(s)
   PROVE  \A s \in Seq(S) : P(s)
 <1>. DEFINE Q(n) == \A s \in Seq(S) : Len(s) = n => P(s)
@@ -191,7 +191,7 @@ THEOREM SequencesInductionFront ==
   OBVIOUS
 <1>1. Q(0)
   OBVIOUS
-<1>2. ASSUME NEW n \in Nat,  Q(n) 
+<1>2. ASSUME NEW n \in Nat,  Q(n)
       PROVE  Q(n+1)
   <2>. SUFFICES ASSUME NEW s \in Seq(S), Len(s) = n+1
                 PROVE  P(s)
@@ -232,7 +232,7 @@ THEOREM ReverseEmptyIffEmpty ==
   PROVE  seq = <<>>
 BY DEF Reverse
 
-THEOREM ReverseConcat == 
+THEOREM ReverseConcat ==
   ASSUME NEW S, NEW s1 \in Seq(S), NEW s2 \in Seq(S)
   PROVE  Reverse(s1 \o s2) = Reverse(s2) \o Reverse(s1)
 BY DEF Reverse
@@ -273,7 +273,7 @@ THEOREM ReverseFrontEqualsTailReverse ==
 BY DEF Reverse, Front
 
 (* The range of the reverse sequence equals that of the original one. *)
-THEOREM RangeReverse == 
+THEOREM RangeReverse ==
   ASSUME NEW S, NEW seq \in Seq(S)
   PROVE /\ DOMAIN Reverse(seq) = DOMAIN seq
         /\ Range(Reverse(seq)) = Range(seq)
@@ -337,7 +337,7 @@ THEOREM IsStrictPrefixProperties ==
     <3>2. PICK u \in Seq(S):  t = s \o u
       BY <3>1, IsPrefixProperties
     <3>. QED  BY <3>1, <3>2
-    
+
   <2>2. ASSUME NEW u \in Seq(S), u # << >>, t = s \o u
         PROVE  IsStrictPrefix(s,t)
     <3>1. IsPrefix(s,t)
@@ -483,7 +483,7 @@ THEOREM SeqStrictPrefixInduction ==
   ASSUME NEW P(_), NEW S,
          \A t \in Seq(S) : (\A s \in Seq(S) : IsStrictPrefix(s,t) => P(s)) => P(t)
   PROVE  \A s \in Seq(S) : P(s)
-<1>1. \A t \in Seq(S) : 
+<1>1. \A t \in Seq(S) :
          (\A s \in SetLessThan(t, OpToRel(IsStrictPrefix, Seq(S)), Seq(S)) : P(s))
          => P(t)
   BY Zenon DEF SetLessThan, OpToRel
@@ -687,7 +687,7 @@ THEOREM SeqStrictSuffixInduction ==
   ASSUME NEW P(_), NEW S,
          \A t \in Seq(S) : (\A s \in Seq(S) : IsStrictSuffix(s,t) => P(s)) => P(t)
   PROVE  \A s \in Seq(S) : P(s)
-<1>1. \A t \in Seq(S) : 
+<1>1. \A t \in Seq(S) :
          (\A s \in SetLessThan(t, OpToRel(IsStrictSuffix, Seq(S)), Seq(S)) : P(s))
          => P(t)
   BY Zenon DEF SetLessThan, OpToRel

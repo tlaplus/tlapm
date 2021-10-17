@@ -101,14 +101,14 @@ THEOREM LATTICE ==
   <2>0. (\A x \in S : LT(x)) => LT(z)
     <3>. HIDE DEF LT  \* necessary due to coalescing problem
     <3>. QED  OBVIOUS
-  <2>1. (\A y \in SetLessThan(z,R,S) : F(y) => <>G) 
+  <2>1. (\A y \in SetLessThan(z,R,S) : F(y) => <>G)
         <=> ((\E y \in SetLessThan(z,R,S) : F(y)) => <>G)
     OBVIOUS
-  <2>2. [](\A y \in SetLessThan(z,R,S) : F(y) => <>G) 
+  <2>2. [](\A y \in SetLessThan(z,R,S) : F(y) => <>G)
         <=> []((\E y \in SetLessThan(z,R,S) : F(y)) => <>G)
     BY <2>1, PTL
-  \* cannot write "H(y)" on the left-hand side because the PM doesn't 
-  \* expand "F(y) ~> G" to "[](F(y) => <>G)" 
+  \* cannot write "H(y)" on the left-hand side because the PM doesn't
+  \* expand "F(y) ~> G" to "[](F(y) => <>G)"
   <2>3. (\A y \in SetLessThan(z,R,S) : [](F(y) => <>G))
         <=> [](\A y \in SetLessThan(z,R,S) : F(y) => <>G)
     OBVIOUS
@@ -122,7 +122,7 @@ THEOREM LATTICE ==
 -----------------------------------------------------------------------------
 
 THEOREM Barcan ==
-  ASSUME CONSTANT S, STATE x 
+  ASSUME CONSTANT S, STATE x
   PROVE  <>(\E n \in S : [](x=n)) => (\E n \in S : <>[](x=n))
 <1>1. ASSUME NEW n PROVE [](x=n) => <>[](x=n)
   BY PTL

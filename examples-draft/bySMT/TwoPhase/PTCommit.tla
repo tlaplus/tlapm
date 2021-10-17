@@ -10,25 +10,25 @@ CONSTANT RM       \* The set of participating resource managers
       (*********************************************************************)
       (* True iff all RMs are in the "prepared" or "committed" state.      *)
       (*********************************************************************)
-    notCommitted == \A rm \in RM : rmState[rm] # "committed" 
+    notCommitted == \A rm \in RM : rmState[rm] # "committed"
       (*********************************************************************)
       (* True iff neither no resource manager has decided to commit.       *)
       (*********************************************************************)
    }
   macro Prepare(p) {
     when rmState[p] = "working";
-    rmState[p] := "prepared" ;    
+    rmState[p] := "prepared" ;
    }
-   
+
   macro Decide(p) {
-    either { when /\ rmState[p] = "prepared" 
+    either { when /\ rmState[p] = "prepared"
                   /\ canCommit ;
              rmState[p] := "committed"
            }
     or     { when /\ rmState[p] \in {"working", "prepared"}
                   /\ notCommitted ;
              rmState[p] := "aborted"
-           }  
+           }
    }
   process (RManager \in RM) {
     start: while (TRUE) { either Prepare(self) or Decide(self) }
@@ -69,19 +69,19 @@ Next == (\E self \in RM: RManager(self))
 Spec == Init /\ [][Next]_vars
 
 \* END TRANSLATION
-TypeOK == 
+TypeOK ==
   (*************************************************************************)
   (* The type-correctness invariant                                        *)
   (*************************************************************************)
   rmState \in [RM -> {"working", "prepared", "committed", "aborted"}]
-  
+
 TC == INSTANCE TCommit
 
 THEOREM Spec <=> TC!TCSpec
   <1>1. Init <=> TC!TCInit
     BY DEF Init, TC!TCInit
   <1>2. [Next]_rmState <=> [TC!TCNext]_rmState
-    BY DEF Next, ProcSet, RManager, canCommit, notCommitted, 
+    BY DEF Next, ProcSet, RManager, canCommit, notCommitted,
            TC!TCNext, TC!Prepare, TC!Decide, TC!canCommit, TC!notCommitted
   <1>3. QED
     (***********************************************************************)

@@ -1,4 +1,4 @@
------------------------------ MODULE Consensus ------------------------------ 
+----------------------------- MODULE Consensus ------------------------------
 (***************************************************************************)
 (* The consensus problem requires a set of processes to choose a single    *)
 (* value.  This module specifies the problem by specifying exactly what    *)
@@ -10,7 +10,7 @@ EXTENDS Naturals, FiniteSets, FiniteSetTheorems, TLAPS
 (* We let the constant parameter Value be the set of all values that can   *)
 (* be chosen.                                                              *)
 (***************************************************************************)
-CONSTANT Value  
+CONSTANT Value
 
 (****************************************************************************
 We now specify the safety property of consensus as a trivial algorithm
@@ -60,11 +60,11 @@ However, adding the `while' loop makes the TLA+ representation of the
 algorithm a tiny bit simpler.
 
 --algorithm Consensus {
-  variable chosen = {}; 
+  variable chosen = {};
   macro Choose() { when chosen = {};
                    with (v \in Value) { chosen := {v} } }
    { lbl: while (TRUE) { Choose() }
-   }  
+   }
 }
 
 The PlusCal translator writes the TLA+ translation of this algorithm
@@ -77,7 +77,7 @@ the next-state relation; it describes the possible state changes
 represent their values in the old state and primed variables represent
 their values in the new state.
 *****************************************************************************)
-\***** BEGIN TRANSLATION  
+\***** BEGIN TRANSLATION
 VARIABLE chosen
 
 vars == << chosen >>
@@ -103,7 +103,7 @@ Spec == Init /\ [][Next]_vars
 (* in any behavior.                                                        *)
 (***************************************************************************)
 TypeOK == /\ chosen \subseteq Value
-          /\ IsFiniteSet(chosen) 
+          /\ IsFiniteSet(chosen)
 
 Inv == /\ TypeOK
        /\ Cardinality(chosen) \leq 1
@@ -145,15 +145,15 @@ LEMMA InductiveInvariance ==
 <1>. SUFFICES ASSUME Inv, [Next]_vars
               PROVE  Inv'
   OBVIOUS
-<1>1. CASE Next 
-  \* In the following BY proof, <1>1 denotes the case assumption Next 
+<1>1. CASE Next
+  \* In the following BY proof, <1>1 denotes the case assumption Next
   BY <1>1, FS_EmptySet, FS_AddElement DEF Inv, TypeOK, Next
 <1>2. CASE vars' = vars
-  BY <1>2 DEF Inv, TypeOK, vars  
+  BY <1>2 DEF Inv, TypeOK, vars
 <1>3. QED
   BY <1>1, <1>2 DEF Next
 
-THEOREM Invariance == Spec => []Inv 
+THEOREM Invariance == Spec => []Inv
 <1>1.  Init => Inv
   BY FS_EmptySet DEF Init, Inv, TypeOK
 <1>2.  QED
@@ -195,9 +195,9 @@ ASSUME ValueNonempty == Value # {}
 (*  3. Existentially quantifying over those new symbols.                   *)
 (***************************************************************************)
 LEMMA EnabledDef ==
-        TypeOK => 
+        TypeOK =>
           ((ENABLED <<Next>>_vars) <=> (chosen = {}))
-<1> DEFINE E == 
+<1> DEFINE E ==
        \E chosenp :
                /\ /\ chosen = {}
                   /\ \E v \in Value: chosenp = {v}

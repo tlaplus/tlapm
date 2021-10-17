@@ -98,12 +98,12 @@ PROOF
     (***********************************************************************)
     <2>1. PICK QQ : QQ = {Q \in Seq(S) : \A s \in S : \E i \in 1..Len(Q) : Q[i] = s}  OBVIOUS
     <2>2. QQ # {}  BY <1>1, <2>1, FiniteSetThm_IsFiniteSetDef
-    <2>3. PICK NN \in SUBSET Nat : NN = {Len(Q) : Q \in QQ}  BY <2>1, LenProperties 
+    <2>3. PICK NN \in SUBSET Nat : NN = {Len(Q) : Q \in QQ}  BY <2>1, LenProperties
     <2>4. NN # {}  BY <2>2, <2>3
     (***********************************************************************)
     (* Pick n as smallest in NN and Q as a shortest in QQ.                 *)
     (***********************************************************************)
-    <2>5. PICK n \in NN : \A m \in NN : n \leq m  \*BY <2>4, NatLessThanWellFounded 
+    <2>5. PICK n \in NN : \A m \in NN : n \leq m  \*BY <2>4, NatLessThanWellFounded
     <2>6. PICK Q \in QQ : Len(Q) = n  BY <2>3
     <2>7. Q \in [1..n -> S]  BY <2>1, <2>6, LenProperties
     <2>8. Q \in Surjection(1..n,S)  BY <2>1, <2>6, <2>7  DEF Surjection
@@ -179,7 +179,7 @@ PROOF
   <1> DEFINE Q == << s0 >>
   <1> DEFINE LenQ == Len(Q)
   <1>1. LenQ = 1  OBVIOUS
-  <1>2. Q \in Seq({s0})  BY (*SeqDef,*) SMT 
+  <1>2. Q \in Seq({s0})  BY (*SeqDef,*) SMT
   <1>3. \A s \in {s0} : \E i \in 1..LenQ : Q[i] = s
     <2> SUFFICES \E i \in 1..LenQ : Q[i] = s0  OBVIOUS
     <2>1. 1 \in 1..LenQ
@@ -300,12 +300,12 @@ PROOF
 (*                                                                         *)
 (* `.  .'                                                                  *)
 (***************************************************************************)
-  
 
-THEOREM FiniteSetThm_Intersection == 
+
+THEOREM FiniteSetThm_Intersection ==
   ASSUME NEW A, IsFiniteSet(A), NEW B
   PROVE  /\ IsFiniteSet(A \cap B)
-         /\ IsFiniteSet(B \cap A) 
+         /\ IsFiniteSet(B \cap A)
 BY FiniteSetThm_Subset
 
 
@@ -317,9 +317,9 @@ BY FiniteSetThm_Subset
 (*                                                                         *)
 (* `.  .'                                                                  *)
 (***************************************************************************)
-  
 
-THEOREM FiniteSetThm_Difference == 
+
+THEOREM FiniteSetThm_Difference ==
   ASSUME NEW A, IsFiniteSet(A), NEW B
   PROVE  IsFiniteSet(A \ B)
 BY FiniteSetThm_Subset
@@ -339,7 +339,7 @@ BY FiniteSetThm_Subset
 (*                                                                         *)
 (* `.  .'                                                                  *)
 (***************************************************************************)
-(* Some trivial properties of Modulus Operator which will be used in 
+(* Some trivial properties of Modulus Operator which will be used in
 following proof are assumed as axioms for the time being *)
 AXIOM ModDistrPlus == \A a,b,c \in Nat : (a+b)%c =( (a%c) + (b%c) )
 AXIOM ModProp == \A a,b \in Nat : (a*b)%b = 0
@@ -355,12 +355,12 @@ PROOF
 
   <1>3. PICK M1 : M1 \in Surjection(1..n1,S1)  BY <1>1
   <1>4. PICK M2 : M2 \in Surjection(1..n2,S2)  BY <1>2
-  
+
   <1> HIDE DEF JectionThm_SurjProp_Qed
   <1>5. JectionThm_SurjProp_Qed(1..n1,S1,M1)  BY <1>3, JectionThm_SurjProp
   <1>6. JectionThm_SurjProp_Qed(1..n2,S2,M2)  BY <1>4, JectionThm_SurjProp
   <1> USE DEF JectionThm_SurjProp_Qed
-  
+
   (*************************************************************************)
   (* Construct the crossproduct set S3 and the surjection M3.  We use      *)
   (* standard row and column indexing to convert indexes in 1..n3 into a   *)
@@ -393,7 +393,7 @@ PROOF
     <2>5. M1[i1] \in S1  BY <2>1, <2>3
     <2>6. M2[i2] \in S2  BY <2>2, <2>4
     <2> QED BY <2>5, <2>6, <1>7, <1>9
-    
+
   (*************************************************************************)
   (* M3 is surjective.                                                     *)
   (*************************************************************************)
@@ -411,24 +411,24 @@ PROOF
       <3> QED BY <3>1, <3>3, SMT
     <2>21. i1 \in 1..n1 /\ i2 \in 1..n2
          BY <2>4, <2>5
-    <2>8. i1 = ((i3-1) % n1) + 1  
+    <2>8. i1 = ((i3-1) % n1) + 1
           <3>1. ((i3-1) % n1) + 1 = (((i1-1) + (i2-1)*n1 )%n1) +1
                 BY <2>6, SMT
           <3>2.  i1-1 \in Nat /\ (i2-1)*n1 \in Nat /\ n1 \in Nat /\ i2-1 \in Nat
                 BY SMT, <2>4, <2>5, <1>1
-          <3>3. (((i1-1) + (i2-1)*n1 )%n1)  =  ((i1-1)%n1) +  (((i2-1)*n1)%n1) 
-                BY  ModDistrPlus, <3>2   
+          <3>3. (((i1-1) + (i2-1)*n1 )%n1)  =  ((i1-1)%n1) +  (((i2-1)*n1)%n1)
+                BY  ModDistrPlus, <3>2
           <3>4. (((i2-1)*n1)%n1) = 0
-                BY <3>2, ModProp     
+                BY <3>2, ModProp
           <3>5. (i1-1)%n1 = i1-1
                 BY <2>4, Z3
-          <3>6. QED  
-                BY <3>1, <3>3, <3>4, <3>5, Z3     
-    <2>9. i2 = ((i3-1) \div n1) + 1  \* BY <2>6, SMT 
+          <3>6. QED
+                BY <3>1, <3>3, <3>4, <3>5, Z3
+    <2>9. i2 = ((i3-1) \div n1) + 1  \* BY <2>6, SMT
           <3>. QED
     <2>10. M3[i3] = <<M1[i1],M2[i2]>>  BY <2>7, <2>8, <2>9, <1>9
     <2> QED BY <2>3, <2>4, <2>5, <2>7, <2>10
- 
+
   <1>12. M3 \in Surjection(1..n3,S3)  BY <1>10, <1>11, JectionThm_IsSurj
   <1> QED BY <1>7, <1>12, FiniteSetThm_NatSurjection
 
@@ -458,12 +458,12 @@ PROOF
     (* establish this uniqueness).                                         *)
     (***********************************************************************)
     Size(T,i) == IsFiniteSet(T) /\ ExistsBijection(1..i,T)
-    
+
     (***********************************************************************)
     (* Inductive property.                                                 *)
     (***********************************************************************)
     Prop(i) == \A S1 : Size(S1,i) => IsFiniteSet(SUBSET S1)
-               
+
   <1>1. \A i \in Nat : Prop(i)
     (***********************************************************************)
     (* Base case.                                                          *)
@@ -473,18 +473,18 @@ PROOF
             OBVIOUS
       <3>2. Bijection(1..0,S1) # {}  BY <3>1, JectionThm_ExistsBij
       <3>3. PICK M1 : M1 \in Bijection(1..0,S1)  BY <3>1, <3>2
-      
+
       <3> HIDE DEF JectionThm_BijProp_Qed
       <3>4. JectionThm_BijProp_Qed(1..0,S1,M1)  BY <3>3, JectionThm_BijProp
       <3> USE DEF JectionThm_BijProp_Qed
-      
+
       <3>5. M1 \in [1..0 -> S1]  BY <3>4
       <3>6. \A s \in S1 : \E a \in 1..0 : M1[a] = s  BY <3>4
       <3>7. 1..0 = {}  BY SMT
       <3>8. S1 = {}  BY <3>6, <3>7
       <3>9. SUBSET S1 = {{}}  BY <3>8
       <3> QED BY <3>9, FiniteSetThm_Singleton
-    
+
     (***********************************************************************)
     (* Inductive case.                                                     *)
     (***********************************************************************)
@@ -497,15 +497,15 @@ PROOF
       (*********************************************************************)
       <3>2. Bijection(1..j,S1) # {}  BY <3>1, JectionThm_ExistsBij
       <3>3. PICK M1 : M1 \in Bijection(1..j,S1)  BY <3>1, <3>2
-      
+
       <3> HIDE DEF JectionThm_BijProp_Qed
       <3>4. JectionThm_BijProp_Qed(1..j,S1,M1)  BY <3>3, JectionThm_BijProp
       <3> USE DEF JectionThm_BijProp_Qed
-      
+
       <3>5. M1 \in [1..j -> S1]  BY <3>4
       <3>6. \A s \in S1 : \E a \in 1..j : M1[a] = s  BY <3>4
       <3>7. \A a,b \in 1..j : M1[a] = M1[b] => a = b  BY <3>4
-      
+
       (*********************************************************************)
       (* Construct a smaller set S2 by removing M1[j] from S1.  S2 is      *)
       (* finite and from M1 we construct a bijection M2 from 1..i to S2.   *)
@@ -519,7 +519,7 @@ PROOF
         <4>1. M2[a] = M1[a]  BY <3>11
         <4>2. M1[a] # M1[j]  BY <3>7, SMT
         <4>3. M1[a] \in S1  BY <3>5, SMT
-        <4> QED BY <4>1, <4>2, <4>3, <3>9 
+        <4> QED BY <4>1, <4>2, <4>3, <3>9
       <3>13. ASSUME NEW s \in S2  PROVE \E a \in 1..i : M2[a] = s
         <4>1. s \in S1  BY <3>9
         <4>2. PICK a \in 1..j : M1[a] = s  BY <4>1, <3>6
@@ -530,10 +530,10 @@ PROOF
       <3>14. ASSUME NEW a \in 1..i, NEW b \in 1..i, M2[a] = M2[b]  PROVE a = b
         <4>1. M1[a] = M1[b]  BY <3>11, <3>14
         <4>2. a \in 1..j  BY SMT
-        <4>3. b \in 1..j  BY SMT 
+        <4>3. b \in 1..j  BY SMT
         <4> QED BY <4>1, <4>2, <4>3, <3>7
       <3>15. M2 \in Bijection(1..i,S2)  BY <3>12, <3>13, <3>14, JectionThm_IsBij
-      
+
       (*********************************************************************)
       (* Apply the inductive hypothesis to establish SUBSET S2 is finite.  *)
       (* Hence we can pick a surjection N2 from 1..n2 to SUBSET S2.        *)
@@ -541,13 +541,13 @@ PROOF
       <3>16. IsFiniteSet(SUBSET S2)  BY <3>10, <3>15, <2>2, JectionThm_ExistsBij
       <3>17. PICK n2 \in Nat : Surjection(1..n2,SUBSET S2) # {}  BY <3>16, FiniteSetThm_NatSurjection
       <3>18. PICK N2 : N2 \in Surjection(1..n2,SUBSET S2)  BY <3>17
-      
+
       <3> HIDE DEF JectionThm_SurjProp_Qed
       <3>19. JectionThm_SurjProp_Qed(1..n2,SUBSET S2,N2)  BY <3>18, JectionThm_SurjProp
       <3> USE DEF JectionThm_SurjProp_Qed
 
       <3>20. N2 \in [1..n2 -> SUBSET S2]  BY <3>19
-      <3>21. \A s \in SUBSET S2 : \E a \in 1..n2 : N2[a] = s  BY <3>19 
+      <3>21. \A s \in SUBSET S2 : \E a \in 1..n2 : N2[a] = s  BY <3>19
 
       (*********************************************************************)
       (* From N2 we can construct a surjection N1 from 1..n1 to SUBSET S1. *)
@@ -581,15 +581,15 @@ PROOF
         <4> QED BY <4>1, <4>2
       <3>26. N1 \in Surjection(1..n1,SUBSET S1)  BY <3>24, <3>25, JectionThm_IsSurj
       <3> QED BY <3>26, FiniteSetThm_NatSurjection
-    
+
     <2> HIDE DEF Prop
     <2> QED BY <2>1, <2>2, NatInduction
-  
+
   <1> QED BY <1>1, FiniteSetThm_NatBijection
-      
-  
-  
-   
+
+
+
+
 
 
 (***************************************************************************)
@@ -608,7 +608,7 @@ PROOF
   <1>1. CASE a > b
     <2>1. a..b = {}  BY <1>1, SMT
     <2> QED BY <2>1, FiniteSetThm_Empty
-    
+
   <1>2. CASE a \leq b
     <2>1. PICK n \in Nat : n = (b-a)+1  BY <1>2, SMT
     <2>2. PICK M \in [1..n -> a..b] : M = [i \in 1..n |-> i+a-1]
@@ -618,7 +618,7 @@ PROOF
       <3>1. \A c \in a..b : (c-a)+1 \in 1..n  BY <2>1, SMT
       <3>2. \A c \in a..b : M[(c-a)+1] = ((c-a)+1)+a-1  BY <3>1, <2>2
       <3>3. \A c \in a..b : ((c-a)+1)+a-1 = c BY Z3T(60)
-      <3>4. \A c \in a..b : M[(c-a)+1] = c BY <3>2, <3>3      
+      <3>4. \A c \in a..b : M[(c-a)+1] = c BY <3>2, <3>3
       <3>5. QED BY <3>1, <3>4, JectionThm_IsSurj
     <2> QED BY <2>3, FiniteSetThm_NatSurjection
 
@@ -657,32 +657,32 @@ PROOF
     (* Size of set T.                                                      *)
     (***********************************************************************)
     Size(T)  == CHOOSE i \in Nat : ExistsBijection(1..i,T)
-    
+
     (***********************************************************************)
     (* Size function for subsets of S.                                     *)
     (***********************************************************************)
     SZ       == [ T \in SUBSET S |-> Size(T) ]
-    
+
     (***********************************************************************)
     (* Formula part of the CS property for element T.                      *)
     (***********************************************************************)
-    fn(CS,T) == IF T = {} THEN 0 ELSE 1 + CS[T \ {CHOOSE x : x \in T}] 
-    
+    fn(CS,T) == IF T = {} THEN 0 ELSE 1 + CS[T \ {CHOOSE x : x \in T}]
+
     (***********************************************************************)
     (* The CS property.                                                    *)
     (***********************************************************************)
     IsCS(CS) == CS = [T \in SUBSET S |-> fn(CS,T)]
-    
+
     (***********************************************************************)
     (* CS function for subsets of S.  Since this is defined as CHOOSE      *)
     (* something that satisfies the CS property, we do not know that the   *)
     (* CS function actually satisfies the CS property until we know that   *)
     (* there exists something that satisfies the CS property.              *)
     (***********************************************************************)
-    CS       == CHOOSE CS : IsCS(CS) 
-  
+    CS       == CHOOSE CS : IsCS(CS)
+
   <1> HIDE DEF SZ, CS, fn
-  
+
 
   (*************************************************************************)
   (* The SZ function satisfies the CS property.                            *)
@@ -708,7 +708,7 @@ PROOF
         <4>4. SZ[T] = 0  BY <4>2  DEF SZ
         <4>5. fn(SZ,T) = 0  BY <4>3  DEF fn
         <4> QED BY <4>4, <4>5
-        
+
       <3>2. ASSUME NEW i \in Nat, Prop(i)  PROVE Prop(i+1)
         (*******************************************************************)
         (* Inductive step.                                                 *)
@@ -731,15 +731,15 @@ PROOF
         <4>14. fn(SZ,T) = j  BY <4>1, <4>12, <4>13, SMT
         <4>15. SZ[T] = j  BY <4>7  DEF SZ
         <4> QED BY <4>14, <4>15
-        
+
       <3> HIDE DEF Prop
       <3> QED BY <3>1, <3>2, NatInduction
-    
+
     <2> SUFFICES ASSUME NEW T \in SUBSET S  PROVE SZ[T] = fn(SZ,T)  BY DEF SZ
     <2>2. PICK i \in Nat : ExistsBijection(1..i,T)  BY JectionThm_NatBijSubset
     <2> QED BY <2>1, <2>2
 
-    
+
   (*************************************************************************)
   (* Any two things that satisfy the CS property must be equal.            *)
   (*************************************************************************)
@@ -766,7 +766,7 @@ PROOF
         <4>3. fn(CS1,T) = 0  BY <4>2  DEF fn
         <4>4. fn(CS2,T) = 0  BY <4>2  DEF fn
         <4> QED BY <4>3, <4>4, <1>2
-        
+
       <3>2. ASSUME NEW i \in Nat, Prop(i)  PROVE Prop(i+1)
         (*******************************************************************)
         (* Inductive step.                                                 *)
@@ -786,15 +786,15 @@ PROOF
         <4>11. CS1[T] = 1 + CS1[U]  BY <4>6, <4>7, <4>8, <1>2  DEF fn
         <4>12. CS2[T] = 1 + CS2[U]  BY <4>6, <4>7, <4>8, <1>2  DEF fn
         <4> QED BY <4>10, <4>11, <4>12
-        
+
       <3> HIDE DEF Prop
       <3> QED BY <3>1, <3>2, NatInduction
-    
+
     <2> SUFFICES ASSUME NEW T \in SUBSET S  PROVE CS1[T] = CS2[T]  BY <1>2
     <2>2. PICK i \in Nat : ExistsBijection(1..i,T)  BY JectionThm_NatBijSubset
     <2> QED BY <2>1, <2>2
-  
-    
+
+
   (*************************************************************************)
   (* Since SZ satisfies the CS property, the CS function must satisfy the  *)
   (* CS property.  And it must be the same as SZ.                          *)
@@ -853,10 +853,10 @@ THEOREM FiniteSetThm_CardinalityNatBij ==
 (* `.  .'                                                                  *)
 (***************************************************************************)
 
-THEOREM FiniteSetThm_CardinalityEmpty == 
+THEOREM FiniteSetThm_CardinalityEmpty ==
   ASSUME NEW S, IsFiniteSet(S)
   PROVE  Cardinality(S)=0 <=> S={}
-PROOF 
+PROOF
 <1>1. ASSUME S={} PROVE Cardinality(S)=0
       BY <1>1 DEF Cardinality
 <1>2. ASSUME Cardinality(S)=0 PROVE S={}
@@ -865,9 +865,9 @@ PROOF
   <2>2. QED
     BY JectionThm_NatBijEmpty, <2>1
 <1>3. QED
-      BY <1>1, <1>2                  
+      BY <1>1, <1>2
 
-      
+
 (***************************************************************************)
 (* `.  .'                                                                  *)
 (*                                                                         *)
@@ -879,7 +879,7 @@ PROOF
 THEOREM FiniteSetThm_CardinalityRemoveElement ==
   ASSUME NEW S, IsFiniteSet(S), NEW x
   PROVE  /\ IsFiniteSet(S \ {x})
-         /\ Cardinality(S \ {x}) = 
+         /\ Cardinality(S \ {x}) =
             IF x \in S THEN Cardinality(S) - 1 ELSE Cardinality(S)
 <1>1. IsFiniteSet(S \ {x})
   BY FiniteSetThm_Subset
@@ -892,7 +892,7 @@ THEOREM FiniteSetThm_CardinalityRemoveElement ==
     BY FiniteSetThm_CardinalityNatBij DEF ExistsBijection
   <2>3. PICK cntx \in 1 .. Cardinality(S) : enumS[cntx] = x
     BY Blast, <1>2, <2>2, JectionThm_BijProp DEF JectionThm_BijProp_Qed
-  <2>. DEFINE enum == [i \in 1 .. Cardinality(S)-1 |-> 
+  <2>. DEFINE enum == [i \in 1 .. Cardinality(S)-1 |->
                          IF i < cntx THEN enumS[i] ELSE enumS[i+1]]
   <2>4. enum \in Bijection(1 .. Cardinality(S)-1, S \ {x})
     <3>1. /\ enumS \in [1 .. Cardinality(S) -> S]
@@ -938,18 +938,18 @@ THEOREM FiniteSetThm_CardinalityRemoveElement ==
 
 
 
-THEOREM FiniteSetThm_SetUnionElement == 
+THEOREM FiniteSetThm_SetUnionElement ==
   ASSUME NEW S, IsFiniteSet(S), NEW x
-  PROVE  /\ IsFiniteSet(S \cup {x}) 
-         /\ Cardinality(S \cup {x}) = 
+  PROVE  /\ IsFiniteSet(S \cup {x})
+         /\ Cardinality(S \cup {x}) =
             IF x \in S THEN Cardinality(S) ELSE Cardinality(S) + 1
 <1>1. IsFiniteSet(S \cup {x})
   BY FiniteSetThm_Singleton, FiniteSetThm_Union
 <1>2. ASSUME x \notin S PROVE Cardinality(S \cup {x}) = Cardinality(S) + 1
       <2>2. ExistsBijection(1..Cardinality(S),S)
             BY FiniteSetThm_CardinalityNatBij
-      <2>3. ExistsBijection(1..Cardinality(S)+1, S \cup {x})     
-            <3>1. PICK f : f \in Bijection(1..Cardinality(S),S) 
+      <2>3. ExistsBijection(1..Cardinality(S)+1, S \cup {x})
+            <3>1. PICK f : f \in Bijection(1..Cardinality(S),S)
                   BY <2>2 DEF ExistsBijection
             <3>2. DEFINE g == [i \in 1..(Cardinality(S)+1) |-> IF i < Cardinality(S)+1 THEN f[i] ELSE x]
             <3>3. g \in [1..Cardinality(S)+1->S\cup{x}]
@@ -962,36 +962,36 @@ THEOREM FiniteSetThm_SetUnionElement ==
                                     BY <3>1, JectionThm_BijProp DEF JectionThm_BijProp_Qed
                               <6>3.  i \in 1..Cardinality(S)
                                     BY <5>1, <5>2, FiniteSetThm_CardinalityType, SMT
-                              <6>4. f[i] \in S 
-                                    BY <6>2, <6>3      
+                              <6>4. f[i] \in S
+                                    BY <6>2, <6>3
                               <6>5. QED
                                     BY <6>3, <6>4
                         <5>3. CASE i = Cardinality(S)+1
                               <6>1. g[i]=x
                                     BY <5>3 DEF g
                               <6>2. QED
-                                    BY <6>1     
-                        <5>4 QED                              
+                                    BY <6>1
+                        <5>4 QED
                              BY <5>3, <5>2
                   <4>2. QED
-                        BY <4>1      
+                        BY <4>1
             <3>4. g \in Bijection(1..Cardinality(S)+1,S \cup {x})
                   <4>1. g \in Surjection(1..Cardinality(S)+1,S \cup {x})
                         <5>1. \A s \in S \cup {x} : \E t \in 1..Cardinality(S)+1 : g[t] = s
-                              <6>1. TAKE s \in S \cup {x} 
+                              <6>1. TAKE s \in S \cup {x}
                               <6>2. CASE s \in S
                                     <7>1. PICK i0 \in 1..Cardinality(S) : f[i0]=s
                                           BY <3>1, <6>2 DEF Bijection, Surjection
                                     <7>2. i0 \in 1..Cardinality(S)+1
                                           BY <7>1, FiniteSetThm_CardinalityType, SMT
                                     <7>3. g[i0]=s
-                                    
+
                                           <8>1. i0 < Cardinality(S)+1
                                                 BY <7>1, SMT, FiniteSetThm_CardinalityType
                                           <8>2. g[i0]=f[i0]
                                                 BY <8>1, <7>2 DEF g
                                           <8>3. QED
-                                                BY <8>2, <7>1           
+                                                BY <8>2, <7>1
                                     <7>. QED
                                          BY <7>2, <7>3
                               <6>3. CASE s=x
@@ -1001,12 +1001,12 @@ THEOREM FiniteSetThm_SetUnionElement ==
                                     <7>3. g[i1]=s
                                           BY <6>3, <7>2 DEF g
                                     <7>4. QED
-                                          BY <7>2, <7>3      
+                                          BY <7>2, <7>3
                               <6>4. QED
                                     BY <6>2, <6>3
                         <5>2. QED
                               BY <5>1, <3>3, JectionThm_IsSurj
-                              
+
                   <4>2. g \in Injection(1..Cardinality(S)+1,S \cup {x})
                         <5>1. \A a,b \in 1..Cardinality(S)+1 : g[a]=g[b] => a=b
                               <6>1. TAKE a \in 1..Cardinality(S)+1
@@ -1017,31 +1017,31 @@ THEOREM FiniteSetThm_SetUnionElement ==
                                                 <9>1. g[a] \notin S
                                                       BY <1>2, <8>1 DEF g
                                                 <9>2. QED
-                                                      BY <9>1, <7>1     
+                                                      BY <9>1, <7>1
                                           <8>2. ASSUME b=Cardinality(S)+1 PROVE FALSE
                                                 <9>1. g[b] \notin S
                                                       BY <1>2, <8>2 DEF g
                                                 <9>2. QED
                                                       BY <9>1, <7>1
                                           <8>3. a \in 1..Cardinality(S) /\ b \in 1..Cardinality(S)
-                                                BY <8>1, <8>2, <6>1, <6>2, SMT, FiniteSetThm_CardinalityType 
+                                                BY <8>1, <8>2, <6>1, <6>2, SMT, FiniteSetThm_CardinalityType
                                           <8>4. g[a]=f[a] /\ g[b]=f[b]
                                                 BY <8>3, FiniteSetThm_CardinalityType, SMT  DEF g
                                           <8>5. f[a]=f[b] => a=b
-                                                BY <8>3, <3>1 DEF Bijection, Injection 
+                                                BY <8>3, <3>1 DEF Bijection, Injection
                                           <8>6. QED
                                                BY <8>4, <8>5, <6>3
-                                                
+
                                     <7>2. CASE g[a] \in S /\ g[b]=x
                                           <8>1. FALSE
-                                                BY <7>2, <6>3, <1>2 
+                                                BY <7>2, <6>3, <1>2
                                           <8>2. QED
-                                                BY <8>1      
+                                                BY <8>1
                                     <7>3. CASE g[a]=x /\ g[b] \in S
                                           <8>1. FALSE
-                                                BY <7>3, <6>3, <1>2 
+                                                BY <7>3, <6>3, <1>2
                                           <8>2. QED
-                                                BY <8>1                                          
+                                                BY <8>1
                                     <7>4. CASE g[a]=x /\ g[b]=x
                                           <8>1. ASSUME a \in 1..Cardinality(S) PROVE FALSE
                                                 <9>1. g[a]=f[a]
@@ -1051,8 +1051,8 @@ THEOREM FiniteSetThm_SetUnionElement ==
                                                 <9>3. f[a] \in S
                                                       BY <9>2, <8>1
                                                 <9>4.  QED
-                                                      BY <9>1, <9>3, <1>2, <7>4     
-                                          <8>2. ASSUME b \in 1..Cardinality(S) PROVE FALSE      
+                                                      BY <9>1, <9>3, <1>2, <7>4
+                                          <8>2. ASSUME b \in 1..Cardinality(S) PROVE FALSE
                                                 <9>1. g[b]=f[b]
                                                       BY <8>2, FiniteSetThm_CardinalityType, SMT DEF g
                                                 <9>2. f \in [1..Cardinality(S) -> S]
@@ -1066,25 +1066,25 @@ THEOREM FiniteSetThm_SetUnionElement ==
                                           <8>4. b = Cardinality(S)+1
                                                 BY <8>2, <6>1, SMT, FiniteSetThm_CardinalityType
                                           <8>5. QED
-                                               BY <8>3, <8>4, <7>4      
+                                               BY <8>3, <8>4, <7>4
                                     <7>5. QED
                                           BY <7>1, <7>2, <7>3, <7>4, <3>3
                               <6>4. QED
                                     BY <6>3
-                                    
+
                         <5>2. QED
-                              BY <5>1, <3>3, JectionThm_IsInj 
+                              BY <5>1, <3>3, JectionThm_IsInj
                   <4>3. QED
                         BY <4>1, <4>2 DEF Bijection
             <3>5. QED
-                  BY <3>4 DEF ExistsBijection 
+                  BY <3>4 DEF ExistsBijection
       <2>4. Cardinality(S)+1 \in Nat
             <3>1. Cardinality(S) \in Nat
                   BY FiniteSetThm_CardinalityType
             <3>2. QED
-                  BY SMT, <3>1                  
+                  BY SMT, <3>1
       <2>5. QED
-            BY <2>3, <2>4, FiniteSetThm_NatBijCardinality    
+            BY <2>3, <2>4, FiniteSetThm_NatBijCardinality
 
 <1>3. ASSUME x \in S PROVE Cardinality(S \cup {x}) = Cardinality(S)
   BY <1>3
@@ -1103,7 +1103,7 @@ THEOREM FiniteSetThm_SetUnionElement ==
 (* `.  .'                                                                  *)
 (***************************************************************************)
 
-THEOREM FiniteSetThm_Induction == 
+THEOREM FiniteSetThm_Induction ==
   ASSUME NEW S, IsFiniteSet(S),
          NEW P(_), P({}),
          \A T : \A x : IsFiniteSet(T) /\ P(T) => P(T \cup {x})
@@ -1111,7 +1111,7 @@ THEOREM FiniteSetThm_Induction ==
 <1>.  DEFINE Q(n) == \A T : IsFiniteSet(T) /\ Cardinality(T)=n => P(T)
 <1>1. SUFFICES \A n \in Nat : Q(n)
   BY FiniteSetThm_CardinalityType
-<1>2. Q(0) 
+<1>2. Q(0)
   BY FiniteSetThm_CardinalityEmpty
 <1>3. ASSUME NEW n \in Nat, Q(n),
              NEW T, IsFiniteSet(T), Cardinality(T)=n+1
@@ -1142,17 +1142,17 @@ THEOREM FiniteSetThm_Induction ==
 (***************************************************************************)
 
 FiniteSubsetsOf(S) == { T \in SUBSET S : IsFiniteSet(T) }
-StrictSubsetOrdering(S) == { ss \in (SUBSET S) \X (SUBSET S) : 
+StrictSubsetOrdering(S) == { ss \in (SUBSET S) \X (SUBSET S) :
                                 ss[1] \subseteq ss[2] /\ ss[1] # ss[2] }
 
 (***************************************************************************************
 CARDINALITY UNION OF SETS : CARDINLATY(A\UNION B) = CARDINALITY(A)+Cardinality(B) - CARDINALITY(A\INTERSECT B)
-****************************************************************************************)      
+****************************************************************************************)
 
 
 THEOREM FiniteSetThm_UnionCardinality == \A A: \A B : IsFiniteSet(A)/\IsFiniteSet(B) => Cardinality(A \cup B) = Cardinality(A) + Cardinality(B) - Cardinality(A \cap B)
-PROOF 
-<1>1. TAKE A       
+PROOF
+<1>1. TAKE A
 <1>2. DEFINE P(B)== Cardinality(A \cup B) = Cardinality(A) + Cardinality(B) - Cardinality(A \cap B)
 
 <1>3. ASSUME IsFiniteSet(A) PROVE \A B : IsFiniteSet(B) => P(B)
@@ -1166,35 +1166,35 @@ PROOF
             <3>3. Cardinality(A \cup {}) \in Nat /\ Cardinality(A \cap {}) \in Nat /\ Cardinality({}) \in Nat /\ Cardinality(A) \in Nat
                   BY FiniteSetThm_Empty, <1>3, FiniteSetThm_CardinalityType
             <3>4.  QED
-                  BY <3>1, <3>2, <3>3, SMT       
+                  BY <3>1, <3>2, <3>3, SMT
       \*INDUCTION STEP
       <2>2. \A B : \A x : IsFiniteSet(B) => (P(B)=> P(B \cup {x}))
              <3>1. TAKE B
              <3>2. TAKE x
              <3>3. ASSUME IsFiniteSet(B) /\ P(B) PROVE P(B \cup {x})
                          <4>1. CASE x \in A /\ x \in B
-                               BY <3>3, <4>1 DEF P           
+                               BY <3>3, <4>1 DEF P
                          <4>2. CASE x \in A /\ x \notin B
                                <5>1. Cardinality(A \cup (B \cup {x}))= Cardinality(A \cup B)
                                      BY <4>2
                                <5>2. Cardinality(A \cup (B \cup {x}))= Cardinality(A) + Cardinality(B) - Cardinality(A \cap B)
                                      BY <5>1, <3>3 DEF P
                                <5>3. Cardinality(B \cup {x})-1= Cardinality(B)
-                                     BY <3>3, <4>2, FiniteSetThm_SetUnionElement, FiniteSetThm_CardinalityType        
+                                     BY <3>3, <4>2, FiniteSetThm_SetUnionElement, FiniteSetThm_CardinalityType
                                <5>4. Cardinality(A \cap (B \cup {x})) = Cardinality((A \cap B) \cup {x})
                                      BY <4>2
-                               <5>5. Cardinality((A \cap B) \cup {x}) = Cardinality(A \cap B)+1       
+                               <5>5. Cardinality((A \cap B) \cup {x}) = Cardinality(A \cap B)+1
                                      BY <3>3, <4>2, FiniteSetThm_SetUnionElement, FiniteSetThm_Intersection
                                <5>6. Cardinality(A \cap (B \cup {x})) = Cardinality(A \cap B)+1
                                      BY <5>4, <5>5
-                               <5>.  IsFiniteSet(A \cap (B \cup {x})) /\ IsFiniteSet(A \cap B) /\ IsFiniteSet(B \cup {x}) /\ IsFiniteSet(A \cup (B \cup {x})) 
+                               <5>.  IsFiniteSet(A \cap (B \cup {x})) /\ IsFiniteSet(A \cap B) /\ IsFiniteSet(B \cup {x}) /\ IsFiniteSet(A \cup (B \cup {x}))
                                      BY <3>3, <1>3, FiniteSetThm_Singleton, FiniteSetThm_SetUnionElement, FiniteSetThm_Intersection, FiniteSetThm_Union
                                <5>7. Cardinality(A \cap B)= Cardinality(A \cap (B \cup {x})) - 1
                                      BY <5>6, <3>3, FiniteSetThm_CardinalityType
                                <5>8. Cardinality(A \cup (B \cup {x})) = Cardinality(A) + (Cardinality(B \cup {x})-1) - (Cardinality(A \cap (B \cup {x})) - 1)
                                      BY <5>2, <5>3, <5>7
                                <5>9. QED
-                                     BY <5>8, SMT, FiniteSetThm_CardinalityType DEF P      
+                                     BY <5>8, SMT, FiniteSetThm_CardinalityType DEF P
                          <4>3. CASE x \notin A /\ x \in B
                                BY <3>3, <4>3 DEF P
                          <4>4. CASE x \notin A /\ x \notin B
@@ -1205,25 +1205,25 @@ PROOF
                                <5>3. Cardinality(A \cup (B \cup {x}))= Cardinality(A) + Cardinality(B) -Cardinality(A \cap B) +1
                                      BY <5>2, <3>3 DEF P
                                <5>4. Cardinality(B \cup {x})-1= Cardinality(B)
-                                     BY <3>3, <4>4, FiniteSetThm_SetUnionElement, FiniteSetThm_CardinalityType      
+                                     BY <3>3, <4>4, FiniteSetThm_SetUnionElement, FiniteSetThm_CardinalityType
                                <5>5. Cardinality(A \cap B)= Cardinality(A \cap (B \cup {x}))
                                      BY <4>4
                                <5>6. Cardinality(A \cup (B \cup {x}))= Cardinality(A) + (Cardinality(B \cup {x})-1) - Cardinality(A \cap (B \cup {x})) +1
                                      BY <5>3, <5>4, <5>5
-                               <5>.  IsFiniteSet(A \cap (B \cup {x})) /\ IsFiniteSet(A \cap B) /\ IsFiniteSet(B \cup {x}) /\ IsFiniteSet(A \cup (B \cup {x})) /\ IsFiniteSet(A) 
-                                     BY <3>3, <1>3, FiniteSetThm_Singleton, FiniteSetThm_SetUnionElement, FiniteSetThm_Intersection, FiniteSetThm_Union                                     
+                               <5>.  IsFiniteSet(A \cap (B \cup {x})) /\ IsFiniteSet(A \cap B) /\ IsFiniteSet(B \cup {x}) /\ IsFiniteSet(A \cup (B \cup {x})) /\ IsFiniteSet(A)
+                                     BY <3>3, <1>3, FiniteSetThm_Singleton, FiniteSetThm_SetUnionElement, FiniteSetThm_Intersection, FiniteSetThm_Union
                                <5>7.  QED
-                                     BY <5>6, SMT, FiniteSetThm_CardinalityType DEF P 
-                         <4>.  QED 
-                               BY <4>1, <4>2, <4>3, <4>4 
-                         
+                                     BY <5>6, SMT, FiniteSetThm_CardinalityType DEF P
+                         <4>.  QED
+                               BY <4>1, <4>2, <4>3, <4>4
+
              <3>4. QED
                    BY <3>3
-                              
+
       <2>.  HIDE DEF P
       <2>3. QED
-            BY  Blast, <2>1, <2>2, FiniteSetThm_Induction 
-<1>4. QED     
+            BY  Blast, <2>1, <2>2, FiniteSetThm_Induction
+<1>4. QED
       BY <1>3 DEF P
 
 
@@ -1232,10 +1232,10 @@ PROOF
 (*Cardinality of Subset <= Cardinality of Set                              *)
 (***************************************************************************)
 
-      
+
 THEOREM FiniteSetThm_SubsetCardinality == ASSUME NEW A, NEW B, IsFiniteSet(A), IsFiniteSet(B), B \subseteq A
                                           PROVE Cardinality(B) \leq Cardinality(A)
-PROOF 
+PROOF
 <1>1. B \in SUBSET A
       OBVIOUS
 <1>2. ExistsBijection(1..Cardinality(A), A)
@@ -1256,7 +1256,7 @@ PROOF
 (* CADRINALITY OF DIFFERENCE OF SETS : IsFiniteSet(S)=> Card(S\T) = Card(S) - Card(S \cap T) *)
 (*********************************************************************************************)
 
-THEOREM FiniteSetThm_DifferenceCardinality == ASSUME NEW A, NEW B, IsFiniteSet(A), IsFiniteSet(B) 
+THEOREM FiniteSetThm_DifferenceCardinality == ASSUME NEW A, NEW B, IsFiniteSet(A), IsFiniteSet(B)
                                               PROVE /\ IsFiniteSet(A\B)
                                                     /\ Cardinality(A\B)= Cardinality(A) - Cardinality(A \cap B)
 PROOF
@@ -1264,24 +1264,24 @@ PROOF
       <2>1. A\B \subseteq A
             OBVIOUS
       <2>2. QED
-            BY <2>1, FiniteSetThm_Subset   
-                      
+            BY <2>1, FiniteSetThm_Subset
+
 <1>2. Cardinality(A\B)= Cardinality(A) - Cardinality(A \cap B)
       <2>1. A \cup B= B \cup (A\B) /\ Cardinality(A\cup B)= Cardinality(B \cup (A\B))
             OBVIOUS
-      
+
       <2>2. Cardinality(A) + Cardinality(B) - Cardinality(A \cap B) = Cardinality(B \cup (A\B))
             BY <2>1, FiniteSetThm_UnionCardinality, <1>1
       <2>3. Cardinality(A) + Cardinality(B) - Cardinality(A \cap B) = Cardinality(B) + Cardinality(A\B) - Cardinality(B \cap (A\B))
             BY <2>2, FiniteSetThm_UnionCardinality, <1>1
       <2>4. /\IsFiniteSet(A \cap B) /\ IsFiniteSet(B \cap (A\B)) /\ B \cap (A\B) ={}
-            BY <2>1, FiniteSetThm_Intersection                 
-      <2>5. QED 
-            BY <1>1, <2>3, <2>4, FiniteSetThm_CardinalityEmpty, FiniteSetThm_CardinalityType, SMT     
-<1>3. QED      
+            BY <2>1, FiniteSetThm_Intersection
+      <2>5. QED
+            BY <1>1, <2>3, <2>4, FiniteSetThm_CardinalityEmpty, FiniteSetThm_CardinalityType, SMT
+<1>3. QED
       BY <1>1, <1>2
 
-      
+
 
 
 
@@ -1291,23 +1291,23 @@ PROOF
 
 THEOREM FiniteSetThm_BjectionCardinalityEqual == ASSUME NEW A, NEW B, IsFiniteSet(A), IsFiniteSet(B)
                                                  PROVE ExistsBijection(A,B) <=> Cardinality(A)=Cardinality(B)
-PROOF 
+PROOF
 <1>1. ASSUME ExistsBijection(A,B) PROVE Cardinality(A)=Cardinality(B)
       <2>1. ExistsBijection(1..Cardinality(A), A)
-            BY FiniteSetThm_CardinalityNatBij 
+            BY FiniteSetThm_CardinalityNatBij
       <2>2. ExistsBijection(1..Cardinality(A), B)
             BY <2>1, <1>1, JectionThm_ExistsBijTransitive
-      <2>3. QED     
-            BY <2>2, FiniteSetThm_NatBijCardinality, FiniteSetThm_CardinalityType                                          
+      <2>3. QED
+            BY <2>2, FiniteSetThm_NatBijCardinality, FiniteSetThm_CardinalityType
 <1>2. ASSUME Cardinality(A)=Cardinality(B) PROVE ExistsBijection(A, B)
       <2>1. ExistsBijection(A, 1..Cardinality(A))
-            BY FiniteSetThm_CardinalityNatBij, JectionThm_ExistsBijSymmetric 
+            BY FiniteSetThm_CardinalityNatBij, JectionThm_ExistsBijSymmetric
       <2>2. ExistsBijection(1..Cardinality(B), B)
             BY FiniteSetThm_CardinalityNatBij
       <2>3. QED
             BY <1>2, <2>1, <2>2, JectionThm_ExistsBijTransitive
-<1>3. QED 
-      BY <1>1, <1>2      
+<1>3. QED
+      BY <1>1, <1>2
 
 (****************************************************************************)
 (*  Finte UNION of Finite Sets is Finite                                    *)

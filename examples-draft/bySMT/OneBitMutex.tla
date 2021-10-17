@@ -16,20 +16,20 @@ Procs == 1..N
 
 (***************************************************************************
 --algorithm OneBitMutex
-    { variable x = [i \in Procs |-> FALSE];              
-       fair process (p \in Procs) 
+    { variable x = [i \in Procs |-> FALSE];
+       fair process (p \in Procs)
          variables unchecked = {};
                    other \in Procs ; \*  = CHOOSE i \in Procs \ {self} : TRUE;
-         { ncs:- while (TRUE) 
+         { ncs:- while (TRUE)
                   { e1: x[self] := TRUE ;
                         unchecked := Procs \ {self};
-                    e2: while (unchecked # {}) 
-                          { with (i \in unchecked) 
+                    e2: while (unchecked # {})
+                          { with (i \in unchecked)
                                { other := i;
                                  unchecked := unchecked \ {i};
                                 } ;
-                            if (x[other]) 
-                              { if (self > other) 
+                            if (x[other])
+                              { if (self > other)
                                   { e3: x[self] := FALSE;
                                     e4: await ~x[other];
                                         goto e1;
@@ -42,8 +42,8 @@ Procs == 1..N
                   }
          }
     }
- 
- 
+
+
 ****************************************************************************)
 \* BEGIN TRANSLATION
 VARIABLES x, pc, unchecked, other
@@ -128,14 +128,14 @@ Past(i, j) == \/ (pc[i] = "e2") /\ (j \notin unchecked[i])
 
 
 Inv == /\ TypeOK
-       /\ \A i \in Procs : 
-             /\ (pc[i] \in {"e2", "e5", "cs"}) => x[i] 
+       /\ \A i \in Procs :
+             /\ (pc[i] \in {"e2", "e5", "cs"}) => x[i]
              /\ \A j \in Procs \ {i} :
                    Past(i, j) => ~Past(j, i) /\ x[i]
 
 LiveInv == /\ Inv
            /\ \A i \in Procs : (pc[i] = "e4") => ~x[i]
-             
+
 Trying(i) == pc[i] \in {"e1", "e2", "e3", "e4", "e5"}
 InCS(i) == pc[i] = "cs"
 
@@ -146,7 +146,7 @@ StarvationFree == \A i \in Procs : Trying(i) ~> InCS(i)
 
 -----------------------------------------------------------------------------
 
-ASSUME NAssump == N \in Nat 
+ASSUME NAssump == N \in Nat
 
 THEOREM Spec => []Inv
 <1>. USE NAssump DEFS Inv, TypeOK, ProcSet, Past

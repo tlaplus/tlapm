@@ -13,7 +13,7 @@ CONSTANT Box(_)
 Diamond(a) == ~ Box(~a)
 LeadsTo(a, b) == Box(a => Diamond(b))
 
-THEOREM BoxForallCommute == 
+THEOREM BoxForallCommute ==
           ASSUME NEW S, NEW P(_)
           PROVE  (\A a \in S : Box(P(a))) <=> Box(\A a \in S : P(a))
 PROOF OMITTED
@@ -23,14 +23,14 @@ THEOREM DiamondExistsCommute ==
           PROVE  (\E a \in S : Diamond(P(a))) <=> Diamond(\E a \in S : P(a))
 <1>1. (\A a \in S : Box(~P(a))) <=> Box(\A a \in S : ~P(a))
   BY BoxForallCommute, TLA
-<1>2. QED 
+<1>2. QED
   BY <1>1, TLA DEF Diamond
 
 THEOREM LeadsToDisjunctive ==
          ASSUME NEW S, NEW P, NEW Q(_)
          PROVE  LeadsTo(P, \E a \in S : Q(a)) <=> (\E a \in S : LeadsTo(P, Q(a)))
 <1>1. (P => Diamond(\E a \in S : Q(a))) <=> (P =>  \E a \in S : Diamond(Q(a)))
-  BY DiamondExistsCommute, TLA 
+  BY DiamondExistsCommute, TLA
 <1>2. QED                                                                     PROOF
   (*************************************************************************)
   (* BY <1>1, PTL which (after expanding def of ~> and adding a [] in      *)
@@ -44,7 +44,7 @@ THEOREM LeadsToDisjunctive ==
   (* which LWB proves easily.                                              *)
   (*************************************************************************) OMITTED
 
-LEMMA EALeadsTo == 
+LEMMA EALeadsTo ==
         ASSUME NEW  S, NEW  H(_), NEW  G
         PROVE  LeadsTo(\E c \in S : H(c), G) <=> (\A c \in S : LeadsTo(H(c), G))
 <1> DEFINE P(c) == LeadsTo(H(c), G)
@@ -68,13 +68,13 @@ LEMMA EALeadsTo ==
     (*   a2 := G (ehc -> Fg) <-> G ahc  ;                                  *)
     (*   provable(a1 -> a2) ;                                              *)
     (* which LWB handles easily.                                           *)
-    (***********************************************************************) 
+    (***********************************************************************)
     OMITTED
-<1>3. Box(\A c \in S : H(c) => Diamond(G)) <=> (\A c \in S : Box(H(c) => Diamond(G))) 
+<1>3. Box(\A c \in S : H(c) => Diamond(G)) <=> (\A c \in S : Box(H(c) => Diamond(G)))
   BY BoxForallCommute, TLA
-<1>4. QED      
-  BY <1>2, <1>3, TLA DEF LeadsTo   
-  
+<1>4. QED
+  BY <1>2, <1>3, TLA DEF LeadsTo
+
 THEOREM LeadstoInduction ==
           ASSUME NEW  R, NEW  S, IsWellFoundedOn(R, S),
                  NEW  G, NEW  H(_),
@@ -86,7 +86,7 @@ THEOREM LeadstoInduction ==
      BY EALeadsTo, TLA
   <2> QED
     BY TLA
-    
+
 <1> DEFINE P(x) == LeadsTo(Box(~G) /\ H(x), FALSE)
 
 <1> SUFFICES P(c)                                                            PROOF
@@ -100,7 +100,7 @@ THEOREM LeadstoInduction ==
 
 <1>1. \A x \in S : (\A y \in SetLessThan(x, R, S) : P(y)) => P(x)
   <2> SUFFICES ASSUME NEW x \in S
-               PROVE  (\A y \in SetLessThan(x, R, S) : P(y)) => P(x)        
+               PROVE  (\A y \in SetLessThan(x, R, S) : P(y)) => P(x)
     BY TLA
   <2>1. LeadsTo(H(x), G \/ \E d \in SetLessThan(x, R, S) : H(d))
     BY TLA
@@ -125,12 +125,12 @@ THEOREM LeadstoInduction ==
     <3>3. QED
       BY <3>2, TLA DEF L, T
   <2>4. (\A y \in SetLessThan(x, R, S) : P(y)) =>
-           \E d \in SetLessThan(x, R, S) : 
-                        /\ LeadsTo(Box(~G) /\ H(x), Box(~G) /\ H(d)) 
+           \E d \in SetLessThan(x, R, S) :
+                        /\ LeadsTo(Box(~G) /\ H(x), Box(~G) /\ H(d))
                         /\ LeadsTo(Box(~G) /\ H(d), FALSE)
     BY <2>3, TLA
   <2>5. ASSUME NEW d
-        PROVE  /\ LeadsTo(Box(~G) /\ H(x), Box(~G) /\ H(d)) 
+        PROVE  /\ LeadsTo(Box(~G) /\ H(x), Box(~G) /\ H(d))
                /\ LeadsTo(Box(~G) /\ H(d), FALSE)
                => LeadsTo(Box(~G) /\ H(x), FALSE)                             PROOF
     (***********************************************************************)
@@ -146,10 +146,10 @@ THEOREM LeadstoInduction ==
 
 <1> HIDE DEF P
 
-<1>2. QED    
+<1>2. QED
   <2> DEFINE Foo(RR, SS) ==
              \A x \in SS :
-                 (\A y \in SetLessThan(x, RR, SS) : P(y)) => P(x)     
+                 (\A y \in SetLessThan(x, RR, SS) : P(y)) => P(x)
   <2>1.  ASSUME NEW RR, NEW SS,
                 IsWellFoundedOn(RR, SS),
                 Foo(RR, SS)
@@ -157,7 +157,7 @@ THEOREM LeadstoInduction ==
     BY ONLY <2>1, WFInduction, TLA
   <2>2.  Foo(R, S) /\ IsWellFoundedOn(R, S)
     BY <1>1, TLA
-  <2> HIDE DEF Foo 
+  <2> HIDE DEF Foo
   <2>3.  QED
    BY ONLY <2>1, <2>2, TLA
 
@@ -181,13 +181,13 @@ THEOREM FiniteSubsetsWellFounded ==
            \A S : IsWellFoundedOn(FiniteSubsetRel(S), FiniteSubsets(S))
 -----------------------------------------------------------------------------
 
-THEOREM Liveness == 
+THEOREM Liveness ==
           Spec => \A o \in Objects : LeadsTo((o \in entry), (o \in pool))
 
 (***************************************************************************)
 (* The following should be a []ASSUME/[]PROVE.                             *)
 (***************************************************************************)
-<1> SUFFICES ASSUME Box(Inv) /\ Box(Square(Next, vars)) 
+<1> SUFFICES ASSUME Box(Inv) /\ Box(Square(Next, vars))
                        /\ Weak(vars, Move) /\ Weak(vars, Remove),
                     NEW o \in Objects
              PROVE LeadsTo(o \in entry, o \in pool)
@@ -207,14 +207,14 @@ THEOREM Liveness ==
 <1>2. ASSUME NEW B \in BOOLEAN, NEW c \in FiniteSubsets(Objects)
   PROVE  LET S == FiniteSubsets(Objects)
              R == FiniteSubsetRel(Objects)
-             OE == (B => o \in entry) 
-             H(T) == OE /\ (exit = T) 
+             OE == (B => o \in entry)
+             H(T) == OE /\ (exit = T)
              G == H({})
          IN LeadsTo(H(c), G \/ \E d \in SetLessThan(c, R, S) : H(d))
   <2> DEFINE S == FiniteSubsets(Objects)
              R == FiniteSubsetRel(Objects)
-             OE == (B => o \in entry) 
-             H(T) == OE /\ (exit = T) 
+             OE == (B => o \in entry)
+             H(T) == OE /\ (exit = T)
              G == H({})
   <2>a. IsWellFoundedOn(R, S)
     BY ONLY FiniteSubsetsWellFounded
@@ -233,7 +233,7 @@ THEOREM Liveness ==
       (*****************************************************************)
       OMITTED
   <2>2. CASE c # {}
-    <3>1. LeadsTo(H(c), \E d \in SetLessThan(c, R, S) : H(d)) 
+    <3>1. LeadsTo(H(c), \E d \in SetLessThan(c, R, S) : H(d))
       (*****************************************************************)
       (* This is a WF1 proof.                                          *)
       (*****************************************************************)
@@ -242,19 +242,19 @@ THEOREM Liveness ==
       <4>1. P /\ Remove => Q'
         <5> SUFFICES ASSUME P /\ Remove
                      PROVE  Q'
-          OBVIOUS 
+          OBVIOUS
         <5>1. PICK x \in exit : exit' = exit \ {x}
            PROOF (* BY DEF Remove *) OMITTED
-        <5>2. IsFiniteSet(exit') 
+        <5>2. IsFiniteSet(exit')
            PROOF (* BY <5>1,  <1>1, RemoveElementFromFiniteSet DEF Inv *) OMITTED
-        <5>3. (exit' \subseteq exit) /\ (exit' # exit)  
-           PROOF (* BY <5>1*) OMITTED  
+        <5>3. (exit' \subseteq exit) /\ (exit' # exit)
+           PROOF (* BY <5>1*) OMITTED
         <5>4. exit' \in SetLessThan(c, R, S)
-           PROOF (* BY <5>2, <5>3 DEF SetLessThan, FiniteSubsets, FiniteSubsetRel *) OMITTED 
+           PROOF (* BY <5>2, <5>3 DEF SetLessThan, FiniteSubsets, FiniteSubsetRel *) OMITTED
         <5>5. QED
-           PROOF (* BY <5>1, <5>4  DEF Remove *) OMITTED 
+           PROOF (* BY <5>1, <5>4  DEF Remove *) OMITTED
       <4>2. P => P' \/ Q'
-        PROOF (* BY <4>1, <2>2, <1>1 DEF vars, Inv, Add, Move,  Next *) OMITTED 
+        PROOF (* BY <4>1, <2>2, <1>1 DEF vars, Inv, Add, Move,  Next *) OMITTED
       <4>3. P /\ Angle(Remove, vars) => Q'
         BY <4>1 DEF Angle
       <4>4. P => Enabled(Angle(Remove, vars))                      PROOF
@@ -304,13 +304,13 @@ THEOREM Liveness ==
   <2>1. LeadsTo(OE /\ ~(exit = {}), OE /\ (exit = {}))
     <3> DEFINE S == FiniteSubsets(Objects)
                R == FiniteSubsetRel(Objects)
-               H(T) == OE /\ (exit = T) 
+               H(T) == OE /\ (exit = T)
                G == H({})
     <3>1. IsWellFoundedOn(R, S)
       BY ONLY FiniteSubsetsWellFounded
     <3>2. ASSUME NEW c \in S
           PROVE  LeadsTo(H(c), G \/ \E d \in SetLessThan(c, R, S) : H(d))
-      BY <1>2, TLA   
+      BY <1>2, TLA
     <3> QED
       <4> HIDE DEF S, R, H, G
       <4>1. LeadsTo(\E c \in S : H(c), G)
@@ -335,18 +335,18 @@ THEOREM Liveness ==
     (* This is a proof by WF1.                                             *)
     (***********************************************************************)
     <3> DEFINE P == OE /\ (exit = {})
-    <3>1. P => P' \/ OX'                                                PROOF 
+    <3>1. P => P' \/ OX'                                                PROOF
       (*********************************************************************)
       (* BY ONLY <1>1 DEF Inv, Next, Add, Move, Remove, vars               *)
       (*  [Action reasoning]                                               *)
       (*********************************************************************)
       OMITTED
-    <3>2. P /\ Angle(Move, vars) => OX'                                PROOF 
+    <3>2. P /\ Angle(Move, vars) => OX'                                PROOF
       (*********************************************************************)
       (* BY ONLY <1>1 DEF Inv, Next, Move, vars [Action reasoning]         *)
       (*********************************************************************)
       OMITTED
-    <3>3. P => Enabled(Angle(Move, vars))                              PROOF 
+    <3>3. P => Enabled(Angle(Move, vars))                              PROOF
       (*********************************************************************)
       (* BY DEF ENABLED [Action reasoning]                                 *)
       (*********************************************************************)
@@ -369,7 +369,7 @@ THEOREM Liveness ==
       (* which LWB easily proves.                                          *)
       (*********************************************************************)
        OMITTED
-  <2>3. QED                                                             PROOF 
+  <2>3. QED                                                             PROOF
     (***********************************************************************)
     (* BY ONLY <2>1, <2>2, PTL DEF LeadsTo which is translated to:         *)
     (*   a1 := G(oe & (~xe) -> F(oe & xe)) ;                               *)
@@ -383,7 +383,7 @@ THEOREM Liveness ==
 <1>4. LeadsTo(Box(~OP) /\ OX, FALSE)
   <2>1. Box(~OP) /\ OX => Box(OX)
     <3>1. OX /\ ~OP' => OX'
-      PROOF (* BY <1>1 DEF Inv, Next, Add, Remove, Move, vars *) OMITTED 
+      PROOF (* BY <1>1 DEF Inv, Next, Add, Remove, Move, vars *) OMITTED
     <3>2. QED                                                          PROOF
       (*********************************************************************)
       (* BY ONLY <3>1, PTL translates to                                   *)
@@ -392,23 +392,23 @@ THEOREM Liveness ==
       (*   provable( (G a1) -> goal);                                      *)
       (*********************************************************************)
       OMITTED
-  <2> DEFINE H(T) == (exit = T) 
+  <2> DEFINE H(T) == (exit = T)
              G == H({})
-  <2>2. Box(OX) => LeadsTo(TRUE, G)   
+  <2>2. Box(OX) => LeadsTo(TRUE, G)
     <3> SUFFICES ASSUME Box(OX)
                  PROVE  LeadsTo(TRUE, G)
       BY TLA
     <3> DEFINE S == FiniteSubsets(Objects)
                R == FiniteSubsetRel(Objects)
     <3>1. IsWellFoundedOn(R, S)
-      BY ONLY FiniteSubsetsWellFounded 
+      BY ONLY FiniteSubsetsWellFounded
     <3>2. ASSUME NEW c \in S
           PROVE  LeadsTo(H(c), G \/ \E d \in SetLessThan(c, R, S) : H(d))
       BY <1>2, TLA
     <3> QED
       <4> HIDE DEF S, R, H, G
       <4>1. LeadsTo(\E c \in S : H(c), G)
-        BY ONLY <3>1, <3>2, LeadstoInduction, TLA 
+        BY ONLY <3>1, <3>2, LeadstoInduction, TLA
       <4>2. \E c \in S : H(c)
         PROOF (* BY ONLY <1>1 DEF H, S, FiniteSubsets, Inv *) OMITTED
       <4>3. QED                                                      PROOF
@@ -434,7 +434,7 @@ THEOREM Liveness ==
     (* which LWB proves.                                                   *)
     (***********************************************************************)
     OMITTED
-              
+
 <1>5. QED                                                                     PROOF
   (*************************************************************************)
   (* BY ONLY <1>3, <1>4, PTL DEF LeadsTo , which translates to             *)
@@ -444,7 +444,7 @@ THEOREM Liveness ==
   (*   goal := G(oe -> F op);                                              *)
   (*   provable((G a1) & (G a2) -> goal);                                  *)
   (* which LWB proves                                                      *)
-  (*************************************************************************) 
+  (*************************************************************************)
   OMITTED
 =============================================================================
 \* Modification History

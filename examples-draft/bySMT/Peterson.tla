@@ -106,10 +106,10 @@ MutualExclusion == ~ (pc[0] = "cs" /\ pc[1] = "cs")
 
 THEOREM Spec => []MutualExclusion
 <1>. USE DEF FullInv, TypeOK, I, Not, ProcSet
-<1>1. Init => FullInv 
+<1>1. Init => FullInv
   BY SMT DEF Init
 <1>2. FullInv /\ [Next]_vars => FullInv'
-  BY SMT DEF Next, vars, proc, a4, cs, a3b, a3a, a2, a1, a0 
+  BY SMT DEF Next, vars, proc, a4, cs, a3b, a3a, a2, a1, a0
 <1>3. FullInv => MutualExclusion
   BY SMT DEF MutualExclusion
 <1>4. QED

@@ -15,7 +15,7 @@ Max(S) == CHOOSE n \in S : \A m \in S : m =< n
 
 
 (* for any non-empty finite set of Ints, S,
-        Max(S) is in S, 
+        Max(S) is in S,
     and Max(S) is greater-equal than all elements of S *)
 LEMMA finite_Max ==
   ASSUME NEW S \in SUBSET Int, S # {}, IsFiniteSet(S)
@@ -59,7 +59,7 @@ LEMMA finite_Max ==
 <1>3. P(S)  BY <1>1, <1>2, FS_Induction, IsaM("blast")
 <1>. QED  BY <1>3 DEF P
 
-LEMMA leq_Max == 
+LEMMA leq_Max ==
   ASSUME NEW m \in Int, NEW S \in SUBSET Int, IsFiniteSet(S),
          NEW x \in S, m <= x
   PROVE  m <= Max(S)
@@ -79,10 +79,10 @@ LEMMA MaxTypeOK == \A S : S \in SUBSET Int /\ IsFiniteSet(S) => Max(S) \in Int
     BY DEF Max
   <1>1 ASSUME NEW n \in S
        PROVE n \in Int
-       OBVIOUS  
+       OBVIOUS
   <1> QED
     BY <1>1
-    
+
 (* For any finite subset of Ints, S, and any non-empty subset of S, T, Max(T) is less-than-or-equal Max(S) *)
 LEMMA subset_Max == \A S : S \in SUBSET Int /\ IsFiniteSet(S) => \A  T : T \in SUBSET S /\ T # {} => Max(T) <= Max(S)
   <1> SUFFICES ASSUME NEW S,
@@ -93,11 +93,11 @@ LEMMA subset_Max == \A S : S \in SUBSET Int /\ IsFiniteSet(S) => \A  T : T \in S
                       T # {}
                PROVE  Max(T) <= Max(S)
     OBVIOUS
-    
+
   <1>1 Max(T) \in T
     BY T \in SUBSET Int, FS_Subset, IsFiniteSet(T), finite_Max
 
-  <1>2 \A x \in T : \E y \in S : x <= y 
+  <1>2 \A x \in T : \E y \in S : x <= y
     <2> SUFFICES ASSUME NEW x \in T
                  PROVE  \E y \in S : x <= y
       OBVIOUS
@@ -110,7 +110,7 @@ LEMMA subset_Max == \A S : S \in SUBSET Int /\ IsFiniteSet(S) => \A  T : T \in S
 
   <1>3 \A x \in S : x <= Max(S)
     BY finite_Max
-  
+
   <1> QED
     BY <1>1, <1>2, <1>3
 
@@ -136,9 +136,9 @@ LEMMA finite_Min ==
                        /\ \A m \in T \cup {x} : m >= Min(T \cup {x})
     OBVIOUS
   <2>1. CASE T = {}
-    <3>1. Min(T \cup {x}) = x  
+    <3>1. Min(T \cup {x}) = x
         BY <2>1 DEF Min
-    <3>. QED  
+    <3>. QED
         BY <2>1, <3>1
   <2>2. T # {} => x >= Min(T) \/ x < Min(T)
     <3>1. T # {} => Min(T) \in Int  BY <1>2
@@ -151,7 +151,7 @@ LEMMA finite_Min ==
     <3>. HIDE DEF MT
     <3>3. Min(T \cup {x}) = MT
       BY <3>2 DEF Min
-    <3>. QED  
+    <3>. QED
         BY <3>2, <3>3
   <2>4. CASE T # {} /\ x < Min(T)
     <3>. DEFINE MT == Min(T)
@@ -169,10 +169,10 @@ LEMMA finite_Min ==
 <1>. QED  BY <1>3 DEF P
 
 LEMMA leq_Min ==
-  ASSUME NEW m \in Int, 
-         NEW S \in SUBSET Int, 
+  ASSUME NEW m \in Int,
+         NEW S \in SUBSET Int,
          IsFiniteSet(S),
-         NEW x \in S, 
+         NEW x \in S,
          m >= x
   PROVE  m >= Min(S)
  <1>1 /\ Min(S) \in Int
@@ -191,12 +191,12 @@ LEMMA MinTypeOK == \A S :  S \in SUBSET Int /\ IsFiniteSet(S) => Min(S) \in Int
     BY DEF Min
   <1>1 ASSUME NEW n \in S
        PROVE n \in Int
-       OBVIOUS  
+       OBVIOUS
   <1> QED
     BY <1>1
 
 
-LEMMA subset_Min == \A S : S \in SUBSET Int /\ IsFiniteSet(S) => \A  T : T \in SUBSET S /\ T # {} => Min(S) <=  Min(T) 
+LEMMA subset_Min == \A S : S \in SUBSET Int /\ IsFiniteSet(S) => \A  T : T \in SUBSET S /\ T # {} => Min(S) <=  Min(T)
  <1> SUFFICES ASSUME NEW S,
                       S \in SUBSET Int,
                       IsFiniteSet(S),
@@ -205,11 +205,11 @@ LEMMA subset_Min == \A S : S \in SUBSET Int /\ IsFiniteSet(S) => \A  T : T \in S
                       T # {}
                PROVE  Min(S) <= Min(T)
     OBVIOUS
-    
+
   <1>1 Min(T) \in T
     BY T \in SUBSET Int, FS_Subset, IsFiniteSet(T), finite_Min
 
-  <1>2 \A x \in T : \E y \in S : x >= y 
+  <1>2 \A x \in T : \E y \in S : x >= y
     <2> SUFFICES ASSUME NEW x \in T
                  PROVE  \E y \in S : x >= y
       OBVIOUS
@@ -222,7 +222,7 @@ LEMMA subset_Min == \A S : S \in SUBSET Int /\ IsFiniteSet(S) => \A  T : T \in S
 
   <1>3 \A x \in S : x >= Min(S)
     BY finite_Min
-  
+
   <1> QED
     BY <1>1, <1>2, <1>3
 

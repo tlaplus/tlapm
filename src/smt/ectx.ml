@@ -35,7 +35,7 @@ let bump (dx,cx) =
   let cx = Ctx.bump cx in
   (dx,cx)
 
-let update_defn_name id defn = 
+let update_defn_name id defn =
   match defn.core with
   | Recursive (h,s) -> Recursive (id @@ h,s) @@ defn
   | Operator (h,ex) -> Operator (id @@ h,ex) @@ defn
@@ -48,7 +48,7 @@ let update_hyp_name id h =
   | Flex nm -> Flex (id @@ nm) @@ h
   | Defn (def, w, v, e) ->
       Defn (update_defn_name id def,w,v,e) @@ h
-  | Fact _ -> 
+  | Fact _ ->
       (* Errors.bug "Backend.SMT.Ectx.adj: Fact not expected" *)
       h
 
@@ -67,30 +67,30 @@ let rec adjs ecx = function
       let ecx,vhs = adjs ecx hs in
       (ecx, vh :: vhs)
 
-let to_fresh bs = 
+let to_fresh bs =
   let bs = Smtcommons.unditto bs in
-  List.map begin fun (v, k, d) -> 
+  List.map begin fun (v, k, d) ->
     let d = match d with
     | Domain d -> Bounded (d,Visible)
     | No_domain -> Unbounded
     | Ditto -> Errors.bug "Backend.SMT.Ectx.to_fresh: Ditto not expected"
     in
     Fresh (v, Shape_expr, k, d) @@ v
-  end bs 
+  end bs
   |> List.mapi (fun i -> Expr.Subst.app_hyp (Expr.Subst.shift i))
 
 (** Hack to recognize bounded vars by [Shape_op 0] in [is_bounded]. Normally it is [Shape_expr]. *)
-let hack_bs hs = List.map begin fun h -> 
+let hack_bs hs = List.map begin fun h ->
   match h.core with
   | Fresh (v, s, k, d) -> Fresh (v, Shape_op 0, k, d) @@ h
   | _ -> h
   end hs
 
-let is_bounded_hyp = function 
+let is_bounded_hyp = function
   | Some {core = Fresh (_, Shape_op 0, _, Unbounded)} -> true                 (** Hack introduced by [to_fresh] *)
   | _ -> false
 
-let is_bounded dx n = 
+let is_bounded dx n =
   let h = Dq.nth ~backwards:true dx (n - 1) in
   is_bounded_hyp h
 
@@ -103,11 +103,11 @@ let adj_bs ecx bs =
   let (dx,cx),vhs = adjs ecx hs in
   let vs,hs = List.split vhs in
   let vs = List.map (Smtcommons.turn_first_char true) vs in
-  let ss = List.map begin fun h -> 
-    match Typ_t.optype h with 
-    | Some T.Int -> Axioms.SInt 
-    | Some (T.Ref (_,T.Int,_)) -> Axioms.SInt 
-    | Some T.Str -> Axioms.SStr 
+  let ss = List.map begin fun h ->
+    match Typ_t.optype h with
+    | Some T.Int -> Axioms.SInt
+    | Some (T.Ref (_,T.Int,_)) -> Axioms.SInt
+    | Some T.Str -> Axioms.SStr
     | Some (T.Ref (_,T.Str,_)) -> Axioms.SStr
     | _ -> Axioms.U
     end hs in
@@ -124,16 +124,16 @@ let smt_id (dx,cx) n =
 
 (** Reconstructs a [Ectx.t] context from scratch using hypotheses [hs].
     Add list of hyps [hs : hyp Dq.dq] to [cx : int Ctx.ctx] *)
-let rec from_hyps (ecx:t) (hs:hyp Deque.dq) : t = 
+let rec from_hyps (ecx:t) (hs:hyp Deque.dq) : t =
   match Dq.front hs with
   | None -> ecx
   | Some (h, hs) ->
       begin match h.core with
       | Fresh (nm, _, _, _)
       | Flex nm
-      | Defn ({core = Operator (nm, _) 
+      | Defn ({core = Operator (nm, _)
                     | Instance (nm, _)
-                    | Bpragma (nm,_,_) 
+                    | Bpragma (nm,_,_)
                     | Recursive (nm, _)}, _, _, _) ->
           let ecx,_ = adj ecx h in
           from_hyps ecx hs

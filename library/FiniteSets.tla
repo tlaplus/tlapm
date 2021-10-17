@@ -6,7 +6,7 @@ LOCAL INSTANCE Sequences
   (* export them.                                                          *)
   (*************************************************************************)
 
-IsFiniteSet(S) == 
+IsFiniteSet(S) ==
   (*************************************************************************)
   (* A set S is finite iff there is a finite sequence containing all its   *)
   (* elements.                                                             *)

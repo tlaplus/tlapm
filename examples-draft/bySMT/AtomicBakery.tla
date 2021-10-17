@@ -26,13 +26,13 @@ EXTENDS Naturals, TLAPS
 (* We first declare N to be the number of processes, and we assume that N  *)
 (* is a natural number.                                                    *)
 (***************************************************************************)
-CONSTANT N 
+CONSTANT N
 ASSUME N \in Nat
 
 (***************************************************************************)
 (* We define P to be the set {1, 2, ...  , N} of processes.                *)
 (***************************************************************************)
-P == 1..N 
+P == 1..N
 
 (***       this is a comment containing the PlusCal code ***
 
@@ -49,8 +49,8 @@ define { LL(j, i) == \/ num[j] < num[i]
        }
 
 process (p \in P)
-  variables unread \in SUBSET P, 
-            max \in Nat, 
+  variables unread \in SUBSET P,
+            max \in Nat,
             nxt \in P;
 {
 p1: while (TRUE) {
@@ -227,7 +227,7 @@ IInv(i) ==
 
 (***************************************************************************)
 (* Inv is the complete inductive invariant.                                *)
-(***************************************************************************)  
+(***************************************************************************)
 Inv == TypeOK /\ \A i \in P : IInv(i)
 -----------------------------------------------------------------------------
 (***************************************************************************)
@@ -240,13 +240,13 @@ Inv == TypeOK /\ \A i \in P : IInv(i)
 (* temporal reasoning.                                                     *)
 (***************************************************************************)
 THEOREM Spec => []MutualExclusion
-<1> USE N \in Nat DEFS P, Inv, IInv, TypeOK, After, LL, ProcSet 
+<1> USE N \in Nat DEFS P, Inv, IInv, TypeOK, After, LL, ProcSet
 <1>1. Init => Inv
   BY SMT DEF Init
 <1>2. Inv /\ [Next]_vars => Inv'
   BY SMTT(20) DEF Next,  p, p1, p2, p3, p4, p5, p6, cs, p7, vars
 <1>3. Inv => MutualExclusion
-  BY SMT DEFS MutualExclusion 
+  BY SMT DEFS MutualExclusion
 <1>4. QED
   PROOF OMITTED
 =============================================================================

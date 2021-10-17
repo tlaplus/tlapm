@@ -26,13 +26,13 @@ EXTENDS Naturals, TLAPS
 (* We first declare N to be the number of processes, and we assume that N  *)
 (* is a natural number.                                                    *)
 (***************************************************************************)
-CONSTANT N 
+CONSTANT N
 ASSUME N \in Nat
 
 (***************************************************************************)
 (* We define P to be the set {1, 2, ...  , N} of processes.                *)
 (***************************************************************************)
-P == 1..N 
+P == 1..N
 
 (***       this is a comment containing the PlusCal code ***
 
@@ -49,8 +49,8 @@ define { LL(j, i) == \/ num[j] < num[i]
        }
 
 process (p \in P)
-  variables unread \in SUBSET P, 
-            max \in Nat, 
+  variables unread \in SUBSET P,
+            max \in Nat,
             nxt \in P;
 {
 p1: while (TRUE) {
@@ -227,7 +227,7 @@ IInv(i) ==
 
 (***************************************************************************)
 (* Inv is the complete inductive invariant.                                *)
-(***************************************************************************)  
+(***************************************************************************)
 Inv == TypeOK /\ \A i \in P : IInv(i)
 -----------------------------------------------------------------------------
 (***************************************************************************)
@@ -254,7 +254,7 @@ THEOREM Spec => []Inv
     <3>2. CASE unread[self] # {}
       BY <2>2, <3>2 DEF p2
     <3>3. QED
-      BY <3>1, <3>2    
+      BY <3>1, <3>2
   <2>3. ASSUME NEW self \in P, p3(self) PROVE Inv'
     BY <2>3 DEF p3
   <2>4. ASSUME NEW self \in P, p4(self) PROVE Inv'
@@ -284,7 +284,7 @@ THEOREM Spec => []Inv
   <2>10. QED
     BY <2>1, <2>2, <2>3, <2>4, <2>5, <2>6, <2>7, <2>8, <2>9 DEF Next, p
 <1>3. Inv => MutualExclusion
-  BY DEFS Inv, After, MutualExclusion 
+  BY DEFS Inv, After, MutualExclusion
 <1>4. QED
   BY <1>1, <1>2, <1>3, PTL DEF Spec
 =============================================================================

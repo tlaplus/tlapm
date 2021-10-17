@@ -1,9 +1,9 @@
 (************************************************************************
 *
 *  why3_interface.ml
-*  
 *
-*  Created by Hernán Vanzetto on 
+*
+*  Created by Hernán Vanzetto on
 *  Copyright (c) 2013 __MyCompanyName__. All rights reserved.
 *
 ************************************************************************)
@@ -48,7 +48,7 @@ module Number = Why3.Number
   (* all the provers detected, from the config file *)
   (* let provers : Whyconf.config_prover Whyconf.Mprover.t =
     Whyconf.get_provers config in *)
-    
+
   (* One prover named Alt-Ergo in the config file *)
   let alt_ergo : Whyconf.config_prover =
     let fp = Whyconf.parse_filter_prover "Alt-Ergo" in
@@ -73,7 +73,7 @@ module Number = Why3.Number
         Exn_printer.exn_printer e;
       exit 1
   ;;
-  
+
   let int_theory : Th.theory = Env.find_theory env ["int"] "Int"
   (* let str_theory : Th.theory = Env.find_theory env ["string"] "String" *)
 
@@ -101,16 +101,16 @@ let type_to_sort = function
   | T.TyVar ([],a) -> sort_u
   | _ -> failwith "type_to_sort"
 
-let create_vars id ts t (* : Tm.term  *)= 
+let create_vars id ts t (* : Tm.term  *)=
   let ts = map type_to_sort ts in
   let t = type_to_sort t in
   match ts,t with
-  | [], _ -> 
+  | [], _ ->
       let fsym = Tm.create_fsymbol (Ident.id_fresh id) [] t in
       (fsym,t,Tm.fs_app fsym [] t)
-  (* | _, t' when Ty.ty_equal t' Ty.ty_bool -> 
-      Tm.ps_app (Tm.create_psymbol (Ident.id_fresh id) ts) 
-  | _, _ -> 
+  (* | _, t' when Ty.ty_equal t' Ty.ty_bool ->
+      Tm.ps_app (Tm.create_psymbol (Ident.id_fresh id) ts)
+  | _, _ ->
       Tm.create_fsymbol (Ident.id_fresh id) ts t *)
   | _ -> assert false
 
@@ -118,8 +118,8 @@ let var_terms = ref SMap.empty
 
 let rec to_why cx e : Tm.term =
 (* Util.eprintf "to_why: %a" (print_prop ()) (opaque cx e) ; *)
-  let tm_ix id = 
-    begin try 
+  let tm_ix id =
+    begin try
       let fsym,t,tm = SMap.find id !var_terms in
       tm
     with Not_found -> failwith "not a declared variable id" end
@@ -127,13 +127,13 @@ let rec to_why cx e : Tm.term =
   match e.core with
   | Ix n -> tm_ix (lookup_id cx n)
   | Opaque id -> tm_ix id
-  (* | Apply ({ core = Ix n }, es) -> 
+  (* | Apply ({ core = Ix n }, es) ->
       let es = map (to_why cx) es in
       proc_id_es cx e es *)
   (* | Apply ({ core = Opaque id }, es) ->  *)
   (* | FcnApp (f, es) -> *)
   (* | Dot (ex, h) -> *)
-  | Apply ({core = Internal op}, es) -> 
+  | Apply ({core = Internal op}, es) ->
       let es = map (to_why cx) es in
       begin match op, es with
       | B.Conj,      [e1 ; e2] -> Tm.t_and e1 e2
@@ -160,7 +160,7 @@ let rec to_why cx e : Tm.term =
       (* | B.Remainder, [e1 ; e2] ->  *)
       (* | B.Range,     [e1 ; e2] ->  *)
       (* | B.Uminus,    [ex] -> Tm.t_app_infer uminus_symbol es *)
-      
+
       (* | B.Seq,       [ex]     -> proc_op "Seq" es
       | B.Len,       [ex]     -> output (proc_op "Len" es)
       | B.SubSeq,    [ex;m;n] -> proc_op "SubSeq" es
@@ -170,8 +170,8 @@ let rec to_why cx e : Tm.term =
       | B.Cat,       [e1;e2]  -> proc_op "Cat" es
       | B.Append,    [e1;e2]  -> proc_op "Append" es
       | B.SelectSeq, [e1;e2]  -> proc_op "SelectSeq" es *)
-      
-      | _ -> 
+
+      | _ ->
           Errors.set (Internal op @@ e) "why_interface.ml: Arity mismatch";
           Util.eprintf ~at:(Internal op @@ e) "Arity mismatch" ;
           failwith "Backend.Smt.Smt.to_why"
@@ -184,7 +184,7 @@ let rec to_why cx e : Tm.term =
   (* | Quant (q, ((_, _, No_domain) :: _ as bs), ex) -> *)
   (* | Quant (q, ((h, _, No_domain) :: _ as bs), ex) ->
       let var_x : Tm.vsymbol =
-        Tm.create_vsymbol (Ident.id_fresh "x") Ty.ty_int 
+        Tm.create_vsymbol (Ident.id_fresh "x") Ty.ty_int
       in
       Tm.t_forall_close [h.core] [(*triggers*)] (to_why cx ex) *)
   (* | SetEnum [] ->  *)
@@ -201,7 +201,7 @@ let rec to_why cx e : Tm.term =
       assert false
 ;;
 
-let new_task fm (vs:Tm.lsymbol list) : Task.task = 
+let new_task fm (vs:Tm.lsymbol list) : Task.task =
   let t = Task.use_export None int_theory in
   let t = fold_left Task.add_param_decl t vs in
   let goal_id1 : Decl.prsymbol = Decl.create_prsymbol (Ident.id_fresh "goal1") in
@@ -210,24 +210,24 @@ let new_task fm (vs:Tm.lsymbol list) : Task.task =
 
 (* let term_lsymbols env = SMap.mapi (fun x _ -> x) env *)
 
-let rec normalize cx e = 
+let rec normalize cx e =
   match e.core with
-  | Apply ({core = Internal B.Mem}, [x ; {core = SetEnum [y]}]) -> 
+  | Apply ({core = Internal B.Mem}, [x ; {core = SetEnum [y]}]) ->
       let x = normalize cx x in
       let y = normalize cx y in
       (* map_exp normalize cx *) (Apply (Internal B.Eq |> noprops, [x;y]) |> noprops)
   | _ -> map_exp normalize cx e
-  
+
 
 let solve ((env:Typ_e.t),e) =
-  var_terms := fold_left begin fun m (h,ot) -> 
-    match ot with 
-    | None -> m 
+  var_terms := fold_left begin fun m (h,ot) ->
+    match ot with
+    | None -> m
     | Some t -> SMap.add (hyp_name h) (create_vars (hyp_name h) [] t) m
     end SMap.empty (Typ_e.to_list env) ;
   (* let vs : string list = map (fun (x,_) -> x) env in   *)
   (* let vs = map (fun (x,_) -> x) env in   *)
-  let vs = map (fun (x,(fsym,_,_)) -> fsym) (SMap.bindings !var_terms) in  
+  let vs = map (fun (x,(fsym,_,_)) -> fsym) (SMap.bindings !var_terms) in
   let e = normalize [] e in
   let fm = to_why (Typ_e.to_cx env) e in
   (* Util.eprintf "@[   Why3 formula:@ %a@]@." Pretty.print_term fm ; *)
@@ -235,25 +235,25 @@ let solve ((env:Typ_e.t),e) =
 
   let call_prover t =
     Call_provers.wait_on_call
-      (Driver.prove_task 
+      (Driver.prove_task
         ~command:alt_ergo.Whyconf.command
-        ~timelimit:5 
+        ~timelimit:5
         alt_ergo_driver t ()) ()
   in
   let r = call_prover t in
   if (r.Call_provers.pr_answer <> Valid) then begin
     (* Util.eprintf "@[   Decl:@ %a@]@." (Fmtutil.pp_print_delimited ~sep:Format.pp_print_cut Pretty.print_decl) (Task.task_decls t) ; *)
-    ifprint 0 "  !!! @[<hov3>Decl:@ %a@]@." 
-      (Fmtutil.pp_print_delimited ~sep:Format.pp_print_cut Pretty.print_decl) 
+    ifprint 0 "  !!! @[<hov3>Decl:@ %a@]@."
+      (Fmtutil.pp_print_delimited ~sep:Format.pp_print_cut Pretty.print_decl)
       (Task.local_decls t (Task.used_symbols (Task.used_theories t))) ;
     (* Util.eprintf "@[   Goal:@ %a@]@." Pretty.print_term (Task.task_goal_fmla t) ; *)
   end else () ;
 
-  ifprint 1 "   @[<hov4>VC:@ %a@]" 
-      (Fmtutil.pp_print_delimited ~sep:Format.pp_print_cut Pretty.print_decl) 
+  ifprint 1 "   @[<hov4>VC:@ %a@]"
+      (Fmtutil.pp_print_delimited ~sep:Format.pp_print_cut Pretty.print_decl)
       (Task.local_decls t (Task.used_symbols (Task.used_theories t))) ;
 
-  ifprint 1 "@[    ...alt-ergo answered %a in %5.3fs.@]" 
+  ifprint 1 "@[    ...alt-ergo answered %a in %5.3fs.@]"
     Call_provers.print_prover_answer r.Call_provers.pr_answer
     r.Call_provers.pr_time ;
 
