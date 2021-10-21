@@ -733,6 +733,6 @@ let pp_print_obligation ?solver:(solver="?") ?logic:(logic=AUFNIRA) ff ob =
   Format.fprintf ff "(exit)"
 
 
-(* REDIRECT! *)
+(* REDIRECT *)
 (*let encode_smtlib = pp_print_obligation ~logic:UFNIA*)
   *)
