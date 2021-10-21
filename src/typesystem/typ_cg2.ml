@@ -533,7 +533,7 @@ let rec cg_expr
                                     ix1;
                                     mk_ex op [
                                         sh_diff (sh1 x);
-                                        sh_diff (sh1 y)]])));])
+                                        sh_diff (sh1 y)]])))])
         | B.Uminus, [{core=Num (n, "")}] ->
             let z = fresh_tyterm () in
             e,

@@ -441,8 +441,7 @@ let rec cg_expr
                     cy;
                     mk_iseq (mk_var a1, Int);
                     mk_iseq (mk_var a2, Int);
-                    mk_eq_cond (t, Int);
-                    ])
+                    mk_eq_cond (t, Int)])
         | B.Uminus, [{core=Num (n, "")}] ->
             e,
             mk_eq (t, Int)

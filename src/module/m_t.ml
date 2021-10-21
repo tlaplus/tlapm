@@ -129,8 +129,7 @@ let hyps_of_modunit
             Fact (
                 Ix 1 @@ mu,
                 Hidden,
-                Always) @@ mu;
-            ]
+                Always) @@ mu]
     | Theorem (nm, sq, naxs, _, _, _) -> begin
         let rec drop sq = function
             | 0 -> sq
@@ -164,8 +163,7 @@ let hyps_of_modunit
             Fact (
                 Ix 1 @@ mu,
                 Hidden,
-                Always) @@ mu;
-            ]
+                Always) @@ mu]
         end
     | Mutate (`Use _, us) ->
         List.mapi begin
