@@ -636,7 +636,7 @@ let pp_print_obligation ?(solver="SMT") ff ob =
           begin match safe_downcast_ty1 ty2 with
           | None ->
               let ncx = bump cx in
-              fprintf ff "; omitted declaration (second-order)@.";
+              fprintf ff "; omitted declaration of '%s' (second-order)@." nm.core;
               pp_print_newline ff ();
               spin ncx hs
           | Some (Ty1 (ins, out)) ->
@@ -648,7 +648,7 @@ let pp_print_obligation ?(solver="SMT") ff ob =
 
         else
           let ncx = bump cx in
-          fprintf ff "; omitted declaration (missing type)@.";
+          fprintf ff "; omitted declaration of '%s' (missing type)@." nm.core;
           pp_print_newline ff ();
           spin ncx hs
   in
