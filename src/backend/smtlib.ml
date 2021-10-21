@@ -81,6 +81,9 @@ let bump cx =
 let lookup_id cx n =
   Ctx.string_of_ident (fst (Ctx.index cx n))
 
+let quoted_symbol s =
+  "|" ^ s ^ "|"
+
 
 (* {3 Expression Formatting} *)
 
@@ -234,7 +237,7 @@ and fmt_expr cx oe =
     Fu.Atm (fun ff ->
       let pats = get oe pattern_prop in
       let pp_print_pat ff es =
-        fprintf ff ":pattern@ %a"
+        fprintf ff ":pattern %a"
         (pp_print_sexpr (
           pp_print_delimited ~sep:pp_print_space (pp_box @@@ pp_print_expr cx))
         ) es
@@ -518,9 +521,10 @@ let pp_print_assert ?meta cx ff e =
           fprintf ff "assert@ %a"
           begin pp_box @@@ pp_print_sexpr
             begin fun ff e ->
-              fprintf ff "!@ %a@ :named@ %s"
+              fprintf ff "!@ %a@ :named %s"
               (pp_box @@@ pp_print_expr cx) e
-              ("name__" ^ format_smt m.name)
+              (*("name__" ^ format_smt m.name)*)
+              (quoted_symbol m.name)
             end
           end e
         end ff ();
@@ -589,14 +593,14 @@ let pp_print_obligation ?(solver="SMT") ff ob =
     | None ->
         cx
 
-    | Some ({ core = Fact (e, vis, _) } as h, hs) ->
+    | Some ({ core = Fact (e, vis, _) }, hs) ->
         let ncx = bump cx in
         begin if vis = Hidden then
           fprintf ff "; hidden fact@."
         else if is_sndord_fact e then
           fprintf ff "; omitted fact (second-order)@."
         else
-          pp_print_assert ?meta:(query h meta_prop) cx ff e
+          pp_print_assert ?meta:(query e meta_prop) cx ff e
         end;
         pp_print_newline ff ();
         spin ncx hs

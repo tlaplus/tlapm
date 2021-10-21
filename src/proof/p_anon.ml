@@ -217,6 +217,19 @@ class anon = object (self : 'self)
           (scx, st)
       | _ ->
           super#step scx st
+
+  (* Attach the original name of a fact to include it in the output file
+   * Added by adef *)
+  method usable scx us =
+    let facts =
+      List.map begin fun oe ->
+        match oe.core with
+        | Opaque s ->
+            assign oe meta_prop {hkind = Hypothesis; name = s}
+        | _ -> oe
+      end us.facts
+    in
+    super#usable scx {us with facts = facts}
 end
 
 let anon = new anon

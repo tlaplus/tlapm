@@ -134,8 +134,8 @@ let mk_decl smb =
 let mk_fact ~solver tla_axm =
   let e = get_axm ~solver tla_axm in
   let meta = { hkind = Axiom ; name = axm_desc tla_axm } in
+  let e = assign e meta_prop meta in
   let h = Fact (e, Visible, NotSet) %% [] in
-  let h = assign h meta_prop meta in
   (* The optional smb_prop annotation is used in Flattening
    * for detecting axiom instances *)
   let h = Option.fold (fun h -> assign h smb_prop) h (query e smb_prop) in
