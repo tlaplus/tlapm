@@ -227,7 +227,7 @@ let _simp_cc = function
           let ss,x =
             match r1,r2 with
             | Ex (cx1,e1), Ex (cx2,e2) -> [],x
-            | Ph (ss,p),Ph (ss',q) -> ss @ ss',x      												(** Does this case can happen? *)
+            | Ph (ss,p),Ph (ss',q) -> ss @ ss',x      												(** Can this case happen? *)
             | _,Ph (ss,p) -> ss,y
             | Ph (ss,p),_ -> ss,x
           in
@@ -277,7 +277,7 @@ let _simp_cc = function
             match r1,r2 with
             | Ex _, Ex _ -> [],x
             (* | Ex (cx1,e1), Ex (cx2,e2) -> [],x *)
-            | Ph (ss,p), Ph (ss',q) -> ss @ ss',x      												(** Does this case can happen? *)
+            | Ph (ss,p), Ph (ss',q) -> ss @ ss',x      												(** Can this case happen? *)
             | _, Ph (ss,p) -> ss,y
             | Ph (ss,p), _ -> ss,x
           in
