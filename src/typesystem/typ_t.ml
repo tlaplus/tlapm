@@ -107,7 +107,7 @@ let add_x_ctx x t cx =
         cx
 
 let add_x_ref x t = function
-      Ex (cx, e) ->
+    | Ex (cx, e) ->
         Ex (add_x_ctx x t cx, e)
     | p -> p
 

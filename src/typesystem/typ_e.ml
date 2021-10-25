@@ -94,7 +94,7 @@ let fresh_tyvar ?id (cx, e) =
     let z = "a" ^ string_of_int
         (incr ctr_types; !ctr_types) in
     let a, bvar = match id with
-          None -> z, false
+        | None -> z, false
         | Some id -> (z ^ id), true in
     type_equiv_singleton a;
     tyvar_assignment := SMap.add
@@ -177,7 +177,7 @@ let rec adj_hyps env hs = match Dq.front hs with
         let (env, ao) = adj_hyp env h in
         let (env, ass) = adj_hyps env hs in
         let ass = match ao with
-              None -> ass
+            | None -> ass
             | Some a -> ass @ [a] in
         (env, ass)
 
@@ -208,7 +208,7 @@ let to_list (env: t) =
 let _types (env: t) =
     List.fold_left
         (fun r -> function
-              _, None -> r
+            | _, None -> r
             | h, Some t -> t :: r)
         []
         (Dq.to_list env)
@@ -252,7 +252,7 @@ let subst
         (t: T.t) env =
     Dq.map
         (fun i -> function
-              h, None -> h, None
+            | h, None -> h, None
             | h, Some t' -> h, Some (T.subst a t t'))
         env
 
@@ -263,7 +263,7 @@ let vsubst
     (*
     Dq.map
         (fun i -> function
-              h, None -> h, None
+            | h, None -> h, None
             | h, Some t ->
                 h,
                 Some (
@@ -273,7 +273,7 @@ let vsubst
     *)
     Dq.map
         (fun i -> function
-              h, None -> h, None
+            | h, None -> h, None
             | h, Some t -> h, Some (T.vsubst a b t))
         env  (** CHECK *)
 
@@ -305,7 +305,7 @@ let to_cx env =
 let simplify env =
     Dq.map
         (fun i -> function
-              h, None -> h, None
+            | h, None -> h, None
             | h, Some t -> h, Some (T.simplify t))
         env
 
@@ -400,7 +400,7 @@ let finds env vs =
             if mem x vs
                 then (
                     match t with
-                          TyVar (_, a) -> a :: r
+                        | TyVar (_, a) -> a :: r
                         | _ -> r)
                 else r)
         [] env
@@ -409,7 +409,7 @@ let finds env vs =
         let find v env =
             try
                 (match assoc v env with
-                  TyVar a -> [a]
+                | TyVar a -> [a]
                 | _ -> [])
             with _ ->
                 [] in

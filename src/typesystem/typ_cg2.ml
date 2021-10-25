@@ -1371,7 +1371,7 @@ let rec cg_expr
                 env scx bs in
         let a2s = fold_left
             (fun r -> function
-                  Some a -> a :: r
+                | Some a -> a :: r
                 | None -> r)
             [] a2s in
 
@@ -1729,10 +1729,10 @@ and cg_hyps env scx hs =
         let _, hs, env, vs, cs = cg_hyps
             env scx hs in
         let vs = match v with
-              Some v -> v :: vs
+            | Some v -> v :: vs
             | None -> vs in
         let cs = match c with
-              Some c -> c :: cs
+            | Some c -> c :: cs
             | None -> cs in
         (scx,
          Dq.cons h hs,

@@ -983,10 +983,10 @@ and cg_hyps env scx hs =
         let _, hs, env, vs, cs = cg_hyps
             env scx hs in
         let vs = match v with
-              Some v -> v :: vs
+            | Some v -> v :: vs
             | None -> vs in
         let cs = match c with
-                Some c -> c :: cs
+              | Some c -> c :: cs
               | None -> cs in
         (scx,
          Dq.cons h hs,
