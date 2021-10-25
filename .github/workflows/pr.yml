@@ -20,7 +20,7 @@ jobs:
           DOWNLOADS: tlaps-1.5.0-x86_64-linux-gnu
     steps:
       ## Get TLAPS repository checked out.
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2
       ## Setup OCaml environment.
       - uses: ocaml/setup-ocaml@v2
         with:

@@ -80,7 +80,7 @@ jobs:
           TAG_REF_NAME: ${{ github.ref }}
           REPOSITORY_NAME: ${{ github.repository }}
       ## Get TLAPS repository checked out.
-      - uses: actions/checkout@master
+      - uses: actions/checkout@v2
       ## Setup OCaml environment.
       - uses: ocaml/setup-ocaml@v2
         with:
