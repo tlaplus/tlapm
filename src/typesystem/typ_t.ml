@@ -48,8 +48,8 @@ type t =
 and tref =
   | Ex of hyp list * expr
   | Ph of (ty_subst list * plhdr)
-and plhdr = string									(** Placeholder (for refinement predicates) *)
-and ty_subst = string * hyp list * expr * t		(** Delayed substitution *)
+and plhdr = string  (** Placeholder (for refinement predicates) *)
+and ty_subst = string * hyp list * expr * t  (** Delayed substitution *)
 
 let ctr_funarg = ref 0
 let fresh_tyterm () = "x" ^ string_of_int (incr ctr_funarg ; !ctr_funarg)
@@ -93,8 +93,8 @@ let dom_ss ss = map (fun (v,_,_,_) -> v) ss
   noprops (Apply (noprops (Internal B.Eq), [noprops (Ix 1) ; app_expr (shift 1) e]))) ss *)
 
 let map_subst_t f =
-	let proj4 (_,_,_,t) = t in
-	map (fun s -> f (proj4 s))
+    let proj4 (_,_,_,t) = t in
+    map (fun s -> f (proj4 s))
 
 (** Set of free type-variable identifiers *)
 let rec fv = function
@@ -297,7 +297,8 @@ and ss_eq ss ss' =
 and eq_ref r1 r2 =
   match r1,r2 with
   | Ex (_,p), Ex (_,q) ->
-      Expr.Eq.expr p q    																										(** Semantic equality: \A x. p(x) <=> q(x)   == Types.equiv t1 t2 *)
+      Expr.Eq.expr p q  (** Semantic equality:
+        \A x. p(x) <=> q(x)   == Types.equiv t1 t2 *)
   | Ph (ss,p), Ph (ss',q) ->
       ss_eq ss ss' && p = q
   | _ -> false
@@ -338,8 +339,8 @@ let rec unify_fails t1 t2 =
   | Ref (_,a,_), ((Int|Bool|Str) as b)
   | ((Int|Bool|Str) as b), Ref (_,a,_)
   | Ref (_,a,_), (Top as b)
-  | (Top as b), Ref (_,a,_)
-			-> not (eq a b) && not (is_tyvar a)
+  | (Top as b), Ref (_,a,_) ->
+        not (eq a b) && not (is_tyvar a)
   | TyVar _, _ -> false
   | _, TyVar _ -> false
   | Rec _, (Set _ | Func _)
@@ -543,7 +544,7 @@ and ref_to_base_ss ss = map (fun (v,cx,e,t) -> v,cx,e,ref_to_base t) ss
 
 (** Typing propositions (only for _ground_ types).
     From assignment [x : t], it constructs the typing proposition [x \in t'].
-  		[[x : t]] == x \in t'
+[[x : t]] == x \in t'
     It returns:
       [t']
       [cx']
@@ -573,44 +574,45 @@ let rec to_predtyp cx (x:expr) t =
   (* let ix2 = (Ix 2 |> mk) in *)
   match t with
   | TyAtom t' ->
-			TyAtom t', cx, Apply (Opaque t' |> mk, [x]) |> mk
-	(** [[x : a]] == a(x) *)
-	| TyVar ([],a) ->                   																				(** this case represent atomic types *)
+    TyAtom t', cx, Apply (Opaque t' |> mk, [x]) |> mk
+  (** [[x : a]] == a(x) *)
+  | TyVar ([],a) ->  (** this case represent atomic types *)
       TyVar ([],a), cx, Apply (Opaque a |> mk, [x]) |> mk
   | TyVar (ss,a) ->
       TyVar (ss,a), cx, Apply (Opaque a |> mk, [x]) |> mk        (** FIX *)
   | Top ->
       t, cx, Internal B.TRUE |> mk
-	(** [[x : Int]] == x \in Int *)
+  (** [[x : Int]] == x \in Int *)
   | Int ->
       t, cx, mem x (Internal B.Int |> mk)
-	(** [[x : Int]] == x \in BOOLEAN *)
+  (** [[x : Int]] == x \in BOOLEAN *)
   | Bool ->
       t, cx, mem x (Internal B.BOOLEAN |> mk)
   | Str ->
       t, cx, mem x (Internal B.STRING |> mk)
-	(** [[x : Set t]] == \A z \in x : [[z : t]] *)
+  (** [[x : Set t]] == \A z \in x : [[z : t]] *)
   | Set t ->
       let z = Smt.fresh_name () in
       let t,cx,ex = to_predtyp cx ix1 t in
       (* let ex = app_expr (bump (shift 1)) ex in *)
       t, cx, forall ~dom:x z (sh1 ex)
-	(** [[x : (y:t1) -> t2]] == /\ x = [y \in DOMAIN x |-> x[y]]
-	 														/\ \A y : y \in DOMAIN x <=> [[y : t1]]
-															/\ \A y : [[y : t1]] => [[x[y] : t2]] *)
+  (** [[x : (y:t1) -> t2]] == /\ x = [y \in DOMAIN x |-> x[y]]
+    /\ \A y : y \in DOMAIN x <=> [[y : t1]]
+    /\ \A y : [[y : t1]] => [[x[y] : t2]]
+  *)
   | Func (y,t1,t2) ->
       let b1,cx1,p1 = to_predtyp cx ix1 t1 in
       (* let b2,cx2,p2 = to_predtyp cx ix2 t2 in *)
       let b3,cx3,p3 = to_predtyp cx1 (FcnApp (x, [ix1]) %% []) t2 in
       Func ("",b1,b3), cx, lAnd [
-			  app B.Eq x (Fcn ([y %% [], Unknown, Domain (app1 B.DOMAIN x)],
-					FcnApp (sh1 x, [ix1]) %% []) %% []) ;
+        app B.Eq x (Fcn ([y %% [], Unknown, Domain (app1 B.DOMAIN x)],
+                    FcnApp (sh1 x, [ix1]) %% []) %% []) ;
         forall y (app B.Equiv (mem ix1 (app1 B.DOMAIN x)) (bmp 1 p1)) ;
         forall y (app B.Implies (bmp 1 p1) (bmp 1 p3))
         (* forall y (forall z (app B.Implies
           (app B.Conj (bmp 2 p1) (bmp 2 p2))
           (bmp 2 p3))) *)
-				]
+      ]
   | Ref (_,t,Ex (cx,e)) ->
       let t,cx,p = to_predtyp cx x t in
       t, cx, lAnd [p ; app_expr (scons x (shift 0)) e]

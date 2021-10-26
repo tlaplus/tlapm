@@ -385,7 +385,7 @@ let gen_smt_solve suffix exec desc fmt_expr meth ob org_ob f res_cont comm =
       ignore (Format.flush_str_formatter ());
       fmt_expr Format.str_formatter ob;
       Format.flush_str_formatter ()
-		in
+      in
     pp_print_ob ~comm:comm inc ob;
     output_string inc in_text;
     flush inc;

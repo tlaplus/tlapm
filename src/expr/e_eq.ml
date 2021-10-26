@@ -33,8 +33,8 @@ let rec expr e f = match e.core, f.core with
       expr p q && exprs es fs
   | Sequent s, Sequent t ->
       sequent s t
-	| Bang (e,ss), Bang (f,tt) ->
-		  expr e f && List.for_all2 sel ss tt
+  | Bang (e,ss), Bang (f,tt) ->
+      expr e f && List.for_all2 sel ss tt
   | With (e,_), With (f,_) ->
       expr e f
   | Let (xi, a), Let (phi, b) ->
@@ -153,7 +153,7 @@ and defn d e = match d.core, e.core with
   | Instance (_, i), Instance (_, j) ->
       instance i j
   | Bpragma (_, e, _), Bpragma (_, f, _) ->
-			expr e f
+      expr e f
   | _ -> false
 
 and sequent s t =
@@ -191,11 +191,11 @@ and sub ss tt =
     M.equal expr umap tmap
 
 and sel s t = match s, t with
-	| Sel_down, Sel_down -> true
-	| Sel_num n, Sel_num m -> n = m
-	| Sel_left, Sel_left
-	| Sel_right, Sel_right
-	| Sel_at, Sel_at -> true
-	| Sel_inst es, Sel_inst fs -> exprs es fs
-	| Sel_lab (s, es), Sel_lab (t, fs) -> s = t && exprs es fs
-	| _ -> false
+    | Sel_down, Sel_down -> true
+    | Sel_num n, Sel_num m -> n = m
+    | Sel_left, Sel_left
+    | Sel_right, Sel_right
+    | Sel_at, Sel_at -> true
+    | Sel_inst es, Sel_inst fs -> exprs es fs
+    | Sel_lab (s, es), Sel_lab (t, fs) -> s = t && exprs es fs
+    | _ -> false

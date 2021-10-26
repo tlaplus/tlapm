@@ -130,7 +130,7 @@ let smt_id id =
 
 let lookup_id (cx:hyp list) n =
   assert (n > 0 && n <= length cx) ;
-	hyp_name (nth cx (n - 1))
+    hyp_name (nth cx (n - 1))
 
 
 let fcnapp = "tla__fcnapp"
@@ -141,7 +141,7 @@ let is_nonbasic_var id =
     try ((String.sub id 0 (String.length nonbasic_prefix)) = nonbasic_prefix) with _ -> false
 
 (****************************************************************************)
-(* Formatting Properties 																										*)
+(* Formatting Properties *)
 (****************************************************************************)
 
 let applyint2u : unit pfuncs = Property.make "Backend.Smt.applyint2u"
@@ -513,11 +513,11 @@ let free_operators (sq:Expr.T.sequent) : string list =
     inherit [unit] Expr.Visit.iter as super
     method expr scx e =
       match e.core with
-		  | Ix n ->
-		      begin match (List.nth (to_cx (snd scx)) (n - 1)).core with
-		      | Defn ({core = Operator (h,_)},_,_,_) -> ops := h.core :: !ops
-		      | _ -> ()
-		      end
+      | Ix n -> begin
+        match (List.nth (to_cx (snd scx)) (n - 1)).core with
+        | Defn ({core = Operator (h,_)},_,_,_) -> ops := h.core :: !ops
+        | _ -> ()
+        end
       | _ -> super#expr scx e
     method hyp scx h = match h.core with
       | Defn (_, _, Hidden, _)                                                (** ignore these cases *)
@@ -542,13 +542,16 @@ let get_recid fs =
 
 
 (** Two records have the same type iff they have the same fields
-	(ignoring the fields position) *)
+(ignoring the fields position)
+*)
 let add_record_id fs =
   let id = get_recid fs in
   record_ids := SSMap.add fs id !record_ids ;
   id
 
-let tla_op_set = ref SSet.empty      																					(** Set of operators that appear in the obligation *)
+
+let tla_op_set = ref SSet.empty  (** Set of operators
+    that appear in the obligation *)
 let add_tla_op op = tla_op_set := SSet.add op !tla_op_set
 
 let chooses = ref SMap.empty
@@ -564,8 +567,8 @@ let add_choose s cx e =
         end
     | _ -> ()
 
-let skolem1_ids = ref SMap.empty																							(** Used for [Preprocess.abstract] *)
-let skolem2_ids = ref SMap.empty																							(** Used for [Preprocess.abstract] *)
+let skolem1_ids = ref SMap.empty  (** Used for [Preprocess.abstract] *)
+let skolem2_ids = ref SMap.empty  (** Used for [Preprocess.abstract] *)
 let record_signatures = ref []
 
 (****************************************************************************)
@@ -876,8 +879,8 @@ let list_minus xs ys = fold_left subtract xs ys
 
 (** from standard Option module *)
 let map_default f v = function
-	| None -> v
-	| Some v2 -> f v2
+    | None -> v
+    | Some v2 -> f v2
 
 let ph cx ff h = ignore (Expr.Fmt.pp_print_hyp cx ff h)
 
@@ -1189,7 +1192,7 @@ let rec fix3 d f (scx,hs,c) =
 (* (Util.eprintf "[*1]%d: %a" (Dq.size hs) Fu.pp_print_minimal (Fu.Big (fun ff -> ignore (Expr.Fmt.pp_print_sequent (hs, Ctx.dot) ff {context=hs;active=c})));
  Util.eprintf "[*2]%d: %a" (Dq.size hs) Fu.pp_print_minimal (Fu.Big (fun ff -> ignore (Expr.Fmt.pp_print_sequent (hs', Ctx.dot) ff {context=hs';active=c'})));
  assert false) *)
-			 fix3 (d-1) f (scx',hs',c')
+    fix3 (d - 1) f (scx', hs', c')
   end
 
 
@@ -1242,12 +1245,12 @@ let rec is_typhyp ?var (scx:hyp Dq.dq) e =
       true
   (** \A x : p(x) => op(x) \in S *)
   | Quant (Forall, [_,_,No_domain], {core = Apply ({core = Internal B.Implies}, [
-  		{core = Apply ({core = Opaque "boolify"}, [
-	  		{core = Apply ({core = Ix n}, [{core = Ix 1}])}
-		  	])};
-			{core = Apply ({core = Internal B.Mem},
-    		[{core = Apply ({core = Ix m}, [{core = Ix 1}])}; s])}
-			])}) ->
+      {core = Apply ({core = Opaque "boolify"}, [
+        {core = Apply ({core = Ix n}, [{core = Ix 1}])}
+        ])};
+      {core = Apply ({core = Internal B.Mem},
+        [{core = Apply ({core = Ix m}, [{core = Ix 1}])}; s])}
+        ])}) ->
       true
   | _ -> false
 
@@ -1282,17 +1285,17 @@ let rec_sort rs =
 let smt_backend_keys = [
   "u";"bool";"int";"str";"Int";"boolify";"bool2u";"int2u";"str2u";"u2int";"u2str";
   "tla__isAFcn";"tla__fcnapp";"tla__unspec";
-	"tla__STRING";"tla__BOOLEAN";"tla__SUBSET";"tla__UNION";"tla__DOMAIN";
-	"tla__subseteq";"tla__in";"tla__notin";"tla__setminus";"tla__cap";"tla__cup";
-	"tla__Int";"tla__Nat";"tla__Real";"tla__plus";"tla__minus";"tla__times";
-	"tla__exp";"tla__ratio";"tla__div";"tla__mod";"tla__lt";"tla__le";"tla__lt";
-	"tla__le";"tla__uminus";"tla__Range";"tla__Infinity";
-	"exp";"mod";
-	"tla__Seq";"tla__Len";"tla__BSeq";"tla__concat";"tla__Append";"tla__Head";
-	"tla__Tail";"tla__SubSeq";"tla__SelectSeq";
-	"tla__Cardinality";
+  "tla__STRING";"tla__BOOLEAN";"tla__SUBSET";"tla__UNION";"tla__DOMAIN";
+  "tla__subseteq";"tla__in";"tla__notin";"tla__setminus";"tla__cap";"tla__cup";
+  "tla__Int";"tla__Nat";"tla__Real";"tla__plus";"tla__minus";"tla__times";
+  "tla__exp";"tla__ratio";"tla__div";"tla__mod";"tla__lt";"tla__le";"tla__lt";
+  "tla__le";"tla__uminus";"tla__Range";"tla__Infinity";
+  "exp";"mod";
+  "tla__Seq";"tla__Len";"tla__BSeq";"tla__concat";"tla__Append";"tla__Head";
+  "tla__Tail";"tla__SubSeq";"tla__SelectSeq";
+  "tla__Cardinality";
   "tptp_plus";"tptp_minus";"tptp_times";"tptp_ratio";"tptp_div";"tptp_mod";
-	"tptp_exp";"tptp_ls";"tptp_le";"tptp_uminus";
+  "tptp_exp";"tptp_ls";"tptp_le";"tptp_uminus";
   ]
 
 
@@ -1305,11 +1308,12 @@ let smt_pickle isbounded id =
   begin match id with
   | "<=" | "<" -> id
   | _ ->
-    let id = if Str.string_match (Str.regexp "^[0-9].*") id 0 then "x"^id else id in 		(** identifiers cannot start with [0-9] *)
+    let id = if Str.string_match (Str.regexp "^[0-9].*") id 0 then "x"^id else id in
+        (** identifiers cannot start with [0-9] *)
     let rep s r id = Str.global_replace (Str.regexp s) r id in
     id
     |> Tla_parser.pickle
-    |> rep "'" "_" 																														(** Identifiers cannot contain "'" *)
+        |> rep "'" "_"  (** Identifiers cannot contain "'" *)
     (* |> rep "^max$" "max__"        (** max is a reserved word in Z3 v4.0 *) *)
     (* |> rep "^u$" "u__"            (** u is also a sort: not allowed in CVC3 *) *)
     (* |> rep "^status$" "X__status" (** keyword in Spass *) *)

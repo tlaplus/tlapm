@@ -56,17 +56,17 @@ let rec cg_expr (ts:C.cg_mode) (env:E.t) (t:T.t) (scx:unit Expr.Visit.scx) e : E
   match e.core with
   | Apply ({core = Opaque "boolify"}, [{core = Ix n}]) ->
       e, mk_eq_cond (t, Bool)
-	(** << G |- f(e1,...,en)^b : t >> ==
-			  \E a1...an,a'1...a'n .
-					/\   |- G(f) == (a1 -> (a2 -> (... -> (an -> Bool))))
-					/\ << G |- e_1 : a'1 >>
-					/\ ...
-					/\ << G |- e_n : a'n >>
-					/\ G |- a'1 <? a1
-	        /\ ...
-					/\ G |- a'n <? an
-				  /\   |- t == Bool *)
-	| Apply ({core = Opaque "boolify"}, [{core = Apply (f, es)}]) ->
+        (** << G |- f(e1,...,en)^b : t >> ==
+            \E a1...an,a'1...a'n .
+                /\   |- G(f) == (a1 -> (a2 -> (... -> (an -> Bool))))
+                /\ << G |- e_1 : a'1 >>
+                /\ ...
+                /\ << G |- e_n : a'n >>
+                /\ G |- a'1 <? a1
+                /\ ...
+                /\ G |- a'n <? an
+                /\   |- t == Bool *)
+  | Apply ({core = Opaque "boolify"}, [{core = Apply (f, es)}]) ->
       let ar = fresh_tyvar (E.to_cx env, e) in
       let a1s,t1s,es,cs = gen_tyvars ts env scx es in
       let a2s = List.map (fun e -> fresh_tyvar (E.to_cx env, e)) es in
@@ -78,19 +78,19 @@ let rec cg_expr (ts:C.cg_mode) (env:E.t) (t:T.t) (scx:unit Expr.Visit.scx) e : E
                   @ [ cf ; mk_eq_cond (t, Bool) ]))
 
   (* | Apply ({core = Opaque "boolify"}, [{core = Ix n} as ex]) ->
-			let id = Smtcommons.lookup_id (E.to_cx env) n in
+        let id = Smtcommons.lookup_id (E.to_cx env) n in
       ex, CConj (mk_eq (E.find id env, Bool) :: mk_eq_cond (t, Bool) :: [])
-	(** << G |- f(e1,...,en)^b : t >> ==
-			  \E a1...an,a'1...a'n .
-					/\   |- G(f) == (a1 -> (a2 -> (... -> (an -> Bool))))
-					/\ << G |- e_1 : a'1 >>
-					/\ ...
-					/\ << G |- e_n : a'n >>
-					/\ G |- a'1 <? a1
-	        /\ ...
-					/\ G |- a'n <? an
-				  /\   |- t == Bool *)
-	| Apply ({core = Opaque "boolify"}, [{core = Apply (f, es)}]) ->
+        (** << G |- f(e1,...,en)^b : t >> ==
+            \E a1...an,a'1...a'n .
+                /\   |- G(f) == (a1 -> (a2 -> (... -> (an -> Bool))))
+                /\ << G |- e_1 : a'1 >>
+                /\ ...
+                /\ << G |- e_n : a'n >>
+                /\ G |- a'1 <? a1
+                /\ ...
+                /\ G |- a'n <? an
+                /\   |- t == Bool *)
+  | Apply ({core = Opaque "boolify"}, [{core = Apply (f, es)}]) ->
       let ar = fresh_tyvar (E.to_cx env, e) in
       let a1s,t1s,es,cs = gen_tyvars ts env scx es in
       let a2s = List.map (fun e -> fresh_tyvar (E.to_cx env, e)) es in

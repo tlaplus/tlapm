@@ -32,8 +32,8 @@ let t1 =
   let test_case = create_expression test_string in
   let target_string = "<>[]ENABLED<<A>>_f => []<><<A>>_f" in
   let target_case = create_expression target_string in
-	Test.make_simple_test
-		~title:(title_fairness_group ^ test_string)
+    Test.make_simple_test
+        ~title:(title_fairness_group ^ test_string)
     ( fun () ->
       Assert.equal (prn_exp target_case)
         (prn_exp (expand_fairness ((),Deque.empty) test_case)))
@@ -43,8 +43,8 @@ let t2 =
   let test_case = create_expression test_string in
   let target_string = "[]<>ENABLED<<A>>_f => []<><<A>>_f" in
   let target_case = create_expression target_string in
-	Test.make_simple_test
-		~title:(title_fairness_group ^ test_string)
+    Test.make_simple_test
+        ~title:(title_fairness_group ^ test_string)
     ( fun () ->
       Assert.equal (prn_exp target_case)
         (prn_exp (expand_fairness ((),Deque.empty) test_case)))

@@ -35,8 +35,8 @@ let title_load_external_modules = title_complete_load ^
 let t1 =
   let test_case_list = [("a",["TLC"],"B")] in
   let test_case = create_test_case  test_case_list in
-	Test.make_simple_test
-		~title:(title_load_external_modules ^ " - load local module")
+    Test.make_simple_test
+        ~title:(title_load_external_modules ^ " - load local module")
     ( fun () ->
       let rfold = (Filename.concat (Filename.concat (Sys.getenv "RESOURCE_FOLDER") "module") "m_save") in
       Assert.is_true (List.exists (function
@@ -48,8 +48,8 @@ let t1 =
 let t2 =
   let test_case_list = [("a",["TLC"],"B")] in
   let test_case = create_test_case  test_case_list in
-	Test.make_simple_test
-		~title:(title_load_external_modules ^ " - load standard module")
+  Test.make_simple_test
+    ~title:(title_load_external_modules ^ " - load standard module")
     ( fun () ->
       Assert.is_true
       (Sm.mem "TLC" (complete_load test_case))

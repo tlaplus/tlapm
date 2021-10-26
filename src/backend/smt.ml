@@ -33,8 +33,8 @@ let map = List.map
 
 
 (****************************************************************************)
-(* Translation: mapping from basic TLA+ (purely first-order) to target 	    *)
-(*	 language (defined by [!Smt.mode]).																		  *)
+(* Translation: mapping from basic TLA+ (purely first-order) to target *)
+(* language (defined by [!Smt.mode]). *)
 (****************************************************************************)
 
 
@@ -94,7 +94,7 @@ let rec pp_apply (ecx:Ectx.t) ff op args =
       | B.UNION, [e]
       | B.DOMAIN, [e] -> nonatomic (Axioms.m_tla b) args
       | B.Mem, [ex ; ({core = Internal B.Int})]
-					when !Smt.mode = Smt.Fof || !Smt.mode = Smt.Spass ->
+            when !Smt.mode = Smt.Fof || !Smt.mode = Smt.Spass ->
           nonatomic "isint" [ex]
       | B.Mem, [e ; ({core = Internal B.Int})] when T.is_int (fst ecx) e ->
           atomic (m.op B.TRUE)
@@ -196,7 +196,7 @@ and fmt_expr (ecx:Ectx.t) e =
                                 (pp_print_expr sd cx) v
           in *)
           m.apply ff (sprintf "tla__record__%d" (Smt.get_recid fs))
-						(to_fol_expr ecx) es
+            (to_fol_expr ecx) es
           (* fprintf ff "(tla__record__%d %a)" (Smt.get_recid fs)
               (pp_print_delimited ~sep:pp_print_space (to_fol_expr ecx)) es *)
           (* List.iter print_pair rs; *)
@@ -212,7 +212,7 @@ and fmt_expr (ecx:Ectx.t) e =
         Fu.Atm (fun ff -> fprintf ff "%s" (Smt.mk_string s))
     | Num (n, "") when n.[0] = '-' ->
         Fu.Atm (fun ff -> m.uminus ff pp_print_string
-					(String.sub n 1 ((String.length n) - 1)))
+            (String.sub n 1 ((String.length n) - 1)))
     | Num (n, "") ->
         Fu.Atm (fun ff -> fprintf ff "%s" n)
     | Num _ -> unsupp "real numbers"
@@ -248,7 +248,7 @@ and pp_print_boundset ecx ff b =
       to_fol_expr ecx ff e
   | _ ->
       Errors.bug ~at:b
-				"Backend.SMT.pp_print_boundset: Fcn or SetOf without bounds"
+        "Backend.SMT.pp_print_boundset: Fcn or SetOf without bounds"
 
 and to_fol_expr ecx ff e =
   Fu.pp_print_minimal ff (fmt_expr ecx e)
@@ -256,10 +256,10 @@ and to_fol_expr ecx ff e =
 (****************************************************************************)
 
 let collect_data scx (hs,c) =
-  let ops = ref SMap.empty in   																							(** user operators: id |-> <<arity,arg_types,ret_type>> *)
-  let std = ref SSet.empty in   																							(** set of standard TLA+ operators *)
-  let strs = ref SSet.empty in  																							(** set of strings *)
-  let nums = ref SSet.empty in  																							(** set of numbers *)
+  let ops = ref SMap.empty in  (** user operators: id |-> <<arity,arg_types,ret_type>> *)
+  let std = ref SSet.empty in  (** set of standard TLA+ operators *)
+  let strs = ref SSet.empty in  (** set of strings *)
+  let nums = ref SSet.empty in  (** set of numbers *)
 
   let visitor = object (self : 'self)
     inherit [unit] Expr.Visit.iter as super
@@ -294,14 +294,14 @@ let collect_data scx (hs,c) =
           ops := SMap.add id' (ar,targs,"u") !ops;
           List.iter (self#expr scx) es
       | Ix n when not (Ectx.is_bounded (snd scx) n) ->
-					let sort = to_sort (T.lookup_type (snd scx) n) in
+          let sort = to_sort (T.lookup_type (snd scx) n) in
           let id' = Ectx.smt_id (Ectx.from_hyps Ectx.dot (snd scx)) n in
           ops := SMap.add id' (0,[],sort) !ops
       | Opaque id ->
-					let sort = to_sort (T.lookup_type_by_id (snd scx) id) in
-					let id' = Smt.smt_pickle false id in
+          let sort = to_sort (T.lookup_type_by_id (snd scx) id) in
+          let id' = Smt.smt_pickle false id in
 (* Util.eprintf "collect opaques: %a : %s : %s" (Expr.Fmt.pp_print_expr (snd scx, Ctx.dot)) e id' sort; *)
-					ops := SMap.add id' (0,[],sort) !ops											            (** CHECK: [id] may be a bounded and abstracted id *)
+          ops := SMap.add id' (0,[],sort) !ops  (** CHECK: [id] may be a bounded and abstracted id *)
       | Internal o ->
           begin try
             std := SSet.add (Axioms.m_tla o) !std
@@ -357,7 +357,8 @@ let collect_data scx (hs,c) =
           | _ -> ()
       end bs ;
       let hs = List.map begin
-        fun (v, k, _) -> Fresh (v, Shape_op 0, k, Unbounded) @@ v   					(** Hack to recognize bounded variables by [Shape_op 0] *)
+        fun (v, k, _) -> Fresh (v, Shape_op 0, k, Unbounded) @@ v
+            (** Hack to recognize bounded variables by [Shape_op 0] *)
       end bs in
       Expr.Visit.adjs scx hs
   end
@@ -368,7 +369,7 @@ let collect_data scx (hs,c) =
   (!ops,SSet.elements !std,strs,SSet.elements !nums)
 
 (****************************************************************************)
-(* Rewriting system																												  *)
+(* Rewriting system *)
 (****************************************************************************)
 
 
@@ -378,9 +379,9 @@ let rws = new Rewrite.rw
 
 (** Rewrite and simplify hypotheses [hs] + conclusion [c] *)
 let rw_hsc scx (hs,c) =
-  Smt.sf#reset ;   																														(** TODO: instead of resetting, [sf#add] only facts not already recorded. *)
+  Smt.sf#reset ;  (** TODO: instead of resetting, [sf#add] only facts not already recorded. *)
   ignore (Smt.sf#push (snd scx) hs) ;
-	let is_not_true e = not (Expr.Eq.expr e (Internal B.TRUE %% [])) in
+  let is_not_true e = not (Expr.Eq.expr e (Internal B.TRUE %% [])) in
   let hs = List.map begin fun h ->
       let h = rws#expr scx h in
       ignore (Smt.sf#push (snd scx) [h]) ;
@@ -392,10 +393,10 @@ let rw_hsc scx (hs,c) =
   in
   let c = rws#expr scx c in
   (* Smt.sf#pop nf; *)
-  (* let hs,c = to_list (skolemize {context=hs ; active=c}) in *)      				(** TODO: make Skolemization work at this point *)
+  (* let hs,c = to_list (skolemize {context=hs ; active=c}) in *)  (** TODO: make Skolemization work at this point *)
   List.iteri (fun i e -> Smt.ifprint 4 ">>>[%d] = %a" i
-    	(Expr.Fmt.pp_print_expr (snd scx, Ctx.dot)) e) (hs @ [c]) ;
-		Smt.ifprint 4 "\n" ;
+    (Expr.Fmt.pp_print_expr (snd scx, Ctx.dot)) e) (hs @ [c]) ;
+  Smt.ifprint 4 "\n" ;
   hs,c
 
 let rec fix2 d f (hs,c) =
@@ -405,10 +406,10 @@ let rec fix2 d f (hs,c) =
     && Expr.Eq.expr c c'
   in
   if d = 0 then failwith "backend/smt.ml: Cannot reach fixed point [fix2].\n"
-		else begin
-  		let hs',c' = f (hs,c) in
-			if eq (hs,c) (hs',c') then (hs,c) else fix2 (d-1) f (hs',c')
-		end
+    else begin
+      let hs',c' = f (hs,c) in
+      if eq (hs,c) (hs',c') then (hs,c) else fix2 (d-1) f (hs',c')
+    end
 
 let abstract_func = ref Preprocess.abstract
 
@@ -464,15 +465,15 @@ let postpreproc sq =
           super#expr scx e
     method hyp scx h =
       match h.core with
-      | Defn (_, _, Hidden, _)    																						(** ignore these cases *)
+      | Defn (_, _, Hidden, _)  (** ignore these cases *)
       | Fact (_, Hidden, _) ->
           (Expr.Visit.adj scx h, h)
       | _ -> super#hyp scx h
   end in
 
   let cx = sq.context in
-	(** 1. get type annotations from [sq.context] whose types are different from [u] *)
-	(** 2. for each pair (x,t) add a new hyp [to_typred x t]  *)
+  (** 1. get type annotations from [sq.context] whose types are different from [u] *)
+  (** 2. for each pair (x,t) add a new hyp [to_typred x t]  *)
 
   snd (visitor#sequent ((),cx) sq)
 
@@ -499,11 +500,11 @@ let add_patterns scx hs =
 
 let process_obligation sq =
 (* Util.eprintf "[0]: %a" Fu.pp_print_minimal (Fu.Big (fun ff -> ignore (E.pp_print_sequent (sq.context, Ctx.dot) ff sq))); *)
-  let ops = Smt.free_operators sq in 																		 			(** List of unexpanded operator identifiers *)
+  let ops = Smt.free_operators sq in  (** List of unexpanded operator identifiers *)
 
   let tx = Sys.time () in
   let scx,hs,c = sq
-    |> Preprocess.prepreproc																									(** Pre-preprocessing *)
+    |> Preprocess.prepreproc  (** Pre-preprocessing *)
 (* |> fun sq -> Util.eprintf "[1]: %a" Fu.pp_print_minimal (Fu.Big (fun ff -> ignore (E.pp_print_sequent (sq.context, Ctx.dot) ff sq))); sq *)
     |> Preprocess.skolemize                                                   (** Uncurry [conc] + Skolemize hyps and conc + deconj hyps *)
 (* |> fun sq -> Util.eprintf "[2]: %a" Fu.pp_print_minimal (Fu.Big (fun ff -> ignore (E.pp_print_sequent (sq.context, Ctx.dot) ff sq))); sq *)
@@ -511,23 +512,23 @@ let process_obligation sq =
 (* |> fun sq -> Util.eprintf "[3]: %a" Fu.pp_print_minimal (Fu.Big (fun ff -> ignore (E.pp_print_sequent (sq.context, Ctx.dot) ff sq))); sq *)
     |> Typ_system.type_construct                                              (** Type synthesis + type decoration *)
 (* |> fun sq -> Util.eprintf "[4]: %a" Fu.pp_print_minimal (Fu.Big (fun ff -> ignore (E.pp_print_sequent (sq.context, Ctx.dot) ff sq))); sq *)
-    |> postpreproc																														(** Post-preprocessing *)
+    |> postpreproc  (** Post-preprocessing *)
 (* |> fun sq -> Util.eprintf "[5]: %a" Fu.pp_print_minimal (Fu.Big (fun ff -> ignore (E.pp_print_sequent (sq.context, Ctx.dot) ff sq))); sq *)
     |> Smt.to_list
   in
 (* List.iteri (fun i e -> Util.eprintf "#[%d] = %a" i (E.pp_print_expr (snd scx, Ctx.dot)) e) (hs @ [c]) ; Util.eprintf "\n" ; *)
 
-	let hs,c = (hs,c)
-  	|> fix2 9 (to_basic scx)							 																		(** Normalization + Optimizations *)
-  	|> Fmt.lift_sq (snd scx)								                                  (** Insert sort-lifting functions [int2u] and [str2u] *)
-	|>> add_patterns (snd scx)					 																			(** Add SMTLIB pattern annotations to definitions of abstracted operators *)
-	in
+  let hs,c = (hs,c)
+    |> fix2 9 (to_basic scx)  (** Normalization + Optimizations *)
+    |> Fmt.lift_sq (snd scx)  (** Insert sort-lifting functions [int2u] and [str2u] *)
+    |>> add_patterns (snd scx)  (** Add SMTLIB pattern annotations to definitions of abstracted operators *)
+    in
 (* List.iteri (fun i e -> Util.eprintf "=[%d] = %a" i (E.pp_print_expr (snd scx, Ctx.dot)) e) (hs @ [c]) ; Util.eprintf "\n" ; *)
 
   Smt.ifprint 1 "** Preprocessing took %5.3fs%! (including type synthesis)"
-		(Sys.time () -. tx);
+    (Sys.time () -. tx);
 
-  List.iteri (fun i e -> Smt.ifprint 1 "*[%d] = %a" i 												(** Actual translation *)
+  List.iteri (fun i e -> Smt.ifprint 1 "*[%d] = %a" i  (** Actual translation *)
     (E.pp_print_expr (snd scx, Ctx.dot)) e) (hs @ [c]);
   Smt.ifprint 1 "\n";
 
@@ -591,12 +592,12 @@ let encode_smtlib ?solver:(mode="SMTLIB") ff ob =
 
   fprintf ff ";; Standard TLA+ operators\n";
   List.iter (fun (id,xs,r) -> fprintf ff "(declare-fun %s (%s) %s)\n"
-		id (String.concat " " (map m.print_sort xs)) (m.print_sort r)) std';
+    id (String.concat " " (map m.print_sort xs)) (m.print_sort r)) std';
 
   fprintf ff "\n;; Terms, predicates and strings\n";
   (* iter (fun (f,xs,r) -> fprintf ff "(declare-fun %s (%s) %s)" f (String.concat " " (map m.print_sort xs)) (m.print_sort r)) ops; *)
   SMap.iter (fun id (_,xs,r) -> fprintf ff "(declare-fun %s (%s) %s)\n"
-		id (String.concat " " xs) r) ops;
+    id (String.concat " " xs) r) ops;
   List.iter (fun s -> fprintf ff "(declare-fun %s () str)\n" s) strs;
 
   List.iter (fprintf ff "@[<hov2>(assert@ %s)@]") axioms;
@@ -621,10 +622,10 @@ let encode_fof ff ob =
   let ops,std,strs,nums = collect_data scx (hs,c) in
   let nums = map (fun n -> if n.[0] = '-'
       then Util.sprintf ~nonl:() "%a" (fun ff -> m.uminus ff pp_print_string)
-        		(String.sub n 1 ((String.length n) - 1))
+        (String.sub n 1 ((String.length n) - 1))
       else n
     ) nums
-	in
+  in
 
   let std',axioms = Axioms.build_tla_ops m std in
 
@@ -635,9 +636,9 @@ let encode_fof ff ob =
 
   let to_sort = (Axioms.smtlib_map).print_sort in                             (** Just for debugging information, print sorts as in SMT-LIB in comments. *)
   List.iter (fun (id,xs,r) -> fprintf ff "%%  %s : (%s) -> %s\n"
-		id (String.concat "," (map to_sort xs)) (to_sort r)) std';
+    id (String.concat "," (map to_sort xs)) (to_sort r)) std';
   SMap.iter (fun id (_,xs,r) -> fprintf ff "%%  %s : (%s) -> %s\n"
-		id (String.concat "," xs) r) ops;
+    id (String.concat "," xs) r) ops;
   List.iter (fun s -> fprintf ff "%%  %s : () -> str\n" s) strs;
   fprintf ff "\n";
 

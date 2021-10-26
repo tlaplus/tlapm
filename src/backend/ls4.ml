@@ -556,7 +556,7 @@ let visitor = object (self : 'self)
         | And | Refs -> " & "
         | Or -> " | "
         in
-	self#write_list scxp rep es
+        self#write_list scxp rep es
     | Apply (op, _) ->
             let s = Coalesce.coalesce scx e in
             self#expr scxp s

@@ -91,7 +91,7 @@ and pp_catom ppf env e sym t1 t2 =
     pp_env e E.ppt (env,t1) sym E.ppt (env,t2)
 and pp_env ppf = function
   | env ->
-			if env = E.empty then () else fprintf ppf "@[<hov>%a@, |-  @]" E.pp env
+    if env = E.empty then () else fprintf ppf "@[<hov>%a@, |-  @]" E.pp env
 
 let mk_atoms ccs = List.map (fun w -> CAtom w) ccs
 
@@ -205,7 +205,7 @@ let tcc_subst a t (op,env,r1,r2) =
   (op, E.subst a t env, T.subst_ref a t r1, T.subst_ref a t r2)
 
 (* let apply_substs_tccs tccs ss =
-		fold_left (fun tccs' (a,t) -> List.map (tcc_subst a t) tccs') tccs ss (** FIX: subst exprs *) *)
+    fold_left (fun tccs' (a,t) -> List.map (tcc_subst a t) tccs') tccs ss (** FIX: subst exprs *) *)
 
 (****************************************************************************)
 (* Atomic constraint simplification                                         *)
@@ -227,7 +227,8 @@ let _simp_cc = function
           let ss,x =
             match r1,r2 with
             | Ex (cx1,e1), Ex (cx2,e2) -> [],x
-            | Ph (ss,p),Ph (ss',q) -> ss @ ss',x      												(** Can this case happen? *)
+            | Ph (ss,p),Ph (ss',q) -> ss @ ss',x
+                (** Can this case happen? *)
             | _,Ph (ss,p) -> ss,y
             | Ph (ss,p),_ -> ss,x
           in
@@ -277,7 +278,8 @@ let _simp_cc = function
             match r1,r2 with
             | Ex _, Ex _ -> [],x
             (* | Ex (cx1,e1), Ex (cx2,e2) -> [],x *)
-            | Ph (ss,p), Ph (ss',q) -> ss @ ss',x      												(** Can this case happen? *)
+            | Ph (ss,p), Ph (ss',q) -> ss @ ss',x
+                (** Can this case happen? *)
             | _, Ph (ss,p) -> ss,y
             | Ph (ss,p), _ -> ss,x
           in
@@ -548,7 +550,7 @@ let new_ph info =
 
 let pp_cx ppf cx =
   Util.eprintf "@[<h>cx: %a@]"
-		(Fmtutil.pp_print_delimited Format.pp_print_string)
+    (Fmtutil.pp_print_delimited Format.pp_print_string)
     (mapi (fun i k -> Smtcommons.lookup_id cx (i+1)) cx)
 
 (* let pp_ph p (cx,ex) =

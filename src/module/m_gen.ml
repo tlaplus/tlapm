@@ -117,7 +117,7 @@ let p_collect_usables prf : Proof.T.usable list =
     method step scx st =
       let loc = Option.get (Util.query_locus st) in
       if toolbox_main (Loc.line loc.Loc.start)
-				then main_step := (step_name st) else ();
+        then main_step := (step_name st) else ();
       super#step scx st
     method proof scx prf =
       match prf.core with
@@ -126,10 +126,10 @@ let p_collect_usables prf : Proof.T.usable list =
             match e.core with
             | Opaque s when s.[0] = '<' ->
                 let parse_step s =
-									if Str.string_match (Str.regexp "<\\([0-9].*\\)>\\(.*\\)") s 0 then
+                    if Str.string_match (Str.regexp "<\\([0-9].*\\)>\\(.*\\)") s 0 then
                   (int_of_string (Str.matched_group 1 s), Str.matched_group 2 s)
-									else (0,"")
-								in
+                    else (0,"")
+                    in
                 let sn,sl = parse_step s in
                 if sn < (fst !main_step) then true else
                    sn = (fst !main_step) && String.compare sl (snd !main_step) <= 0
@@ -141,7 +141,7 @@ let p_collect_usables prf : Proof.T.usable list =
           let scx = self#steps scx inits in
           let loc = Option.get (Util.query_locus pq) in
           if toolbox_main ((Loc.line loc.Loc.start) - 1)
-						then main_step := (step_name q) else ();
+            then main_step := (step_name q) else ();
           self#proof scx pq
       | _ ->
           super#proof scx prf

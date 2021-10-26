@@ -44,9 +44,9 @@ let rec eboo e =
   | Apply ({core = Opaque "tla__isAFcn"} as o, [ex]) ->
       Apply (o, [nboo ex]) @@ e
   | Ix n ->
-	  e |> mk_bool
+      e |> mk_bool
   | Opaque s ->
-	  e |> mk_bool
+      e |> mk_bool
   | Apply ({core = Ix _ | Opaque _} as f, es) ->
       Apply (nboo f, map nboo es) |> mk |> mk_bool
   | FcnApp (f,es) ->

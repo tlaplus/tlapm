@@ -195,9 +195,9 @@ val flatten_disj : expr -> expr
 
 val fix : ?feq:(expr -> expr -> bool) -> int -> (expr list -> expr list) -> expr list -> expr list
 val fix3 : int ->
-	(((unit * hyp Deque.dq) * hyp Deque.dq * expr) -> ((unit * hyp Deque.dq) * hyp Deque.dq * expr)) ->
-	((unit * hyp Deque.dq) * hyp Deque.dq * expr) ->
-	((unit * hyp Deque.dq) * hyp Deque.dq * expr)
+    (((unit * hyp Deque.dq) * hyp Deque.dq * expr) -> ((unit * hyp Deque.dq) * hyp Deque.dq * expr)) ->
+    ((unit * hyp Deque.dq) * hyp Deque.dq * expr) ->
+    ((unit * hyp Deque.dq) * hyp Deque.dq * expr)
 val fix_sq : int -> (sequent -> sequent) -> sequent -> sequent
 val fix_sqs : int -> (sequent list -> sequent list) -> sequent list -> sequent list
 

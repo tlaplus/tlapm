@@ -59,8 +59,8 @@ let asrt = ["A";"B";"C"]
 let t1 =
   let test_case_list = [("a",[],"A");("b",["a"],"B");("c",["b";"a"],"C")] in
   let test_case = create_test_case  test_case_list in
-	Test.make_simple_test
-		~title:(title_schd_group1 ^ "c extends b before a and b extends a")
+    Test.make_simple_test
+        ~title:(title_schd_group1 ^ "c extends b before a and b extends a")
     ( fun () ->
       Assert.equal_int 3 (List.length (cmd (schedule test_case) 2));
       equal_list_string asrt (cmd (schedule test_case) 2 ) )
@@ -68,8 +68,8 @@ let t1 =
 let t2 =
   let test_case_list = [("a",[],"A");("b",["a"],"B");("c",["a";"b"],"C")] in
   let test_case = create_test_case  test_case_list in
-	Test.make_simple_test
-		~title:(title_schd_group1 ^ "c extends a before b and b extends a")
+    Test.make_simple_test
+        ~title:(title_schd_group1 ^ "c extends a before b and b extends a")
     ( fun () ->
       Assert.equal_int 3 (List.length (cmd (schedule test_case) 2));
       equal_list_string asrt (cmd (schedule test_case) 2 ) )
@@ -80,8 +80,8 @@ let t3 =
   let t3_str = " display dependency on local modules even if they have the same name as standard ones" in
   let test_case_list = [("a",["TLC"],"B")] in
   let test_case = create_test_case  test_case_list in
-	Test.make_simple_test
-		~title:(title_external_deps ^ t3_str)
+    Test.make_simple_test
+        ~title:(title_external_deps ^ t3_str)
     ( fun () ->
       Assert.is_true (
         Hs.exists (fun x -> x.core = "TLC")

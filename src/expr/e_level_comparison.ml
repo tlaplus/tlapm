@@ -544,7 +544,7 @@ class level_comparison = object (self : 'self)
       | Instance (_, i), Instance (_, j) ->
           self#instance cx1 cx2 i j
       | Bpragma (_, e, _), Bpragma (_, f, _) ->
-    			self#expr cx1 cx2 e f
+          self#expr cx1 cx2 e f
       | _ -> false
 
     (*

@@ -530,7 +530,7 @@ let rec fmt_expr (cx:Expr.Fmt.ctx) ew = match ew.core with
                   xs)
   | Dot (e, f) ->
       Fu.Op (".",
-					   (fun ff -> pp_print_string ff "."),
+        (fun ff -> pp_print_string ff "."),
              (16, 16),
              Fu.Infix (Fu.Left, fmt_expr cx e, Fu.Atm (fun ff -> pp_print_string ff f)))
   | Sub (q, e, f) ->
@@ -980,11 +980,11 @@ and pp_print_optype ff = function
 
 (**
   Refinements: In type [Ref(x,t,Ex(cx,ex))], variable [x] is implicitly the
-	  first element of [cx], that is, [x] bounds the first De Bruijn index
-	  (Ix 1) in [ex].
+  first element of [cx], that is, [x] bounds the first De Bruijn index
+  (Ix 1) in [ex].
   Functions: In type [Func(x,t1,t2)], if [t2] matches [Ref(y,t,Ex(cx,ex))],
-	  then [ex]'s context should be evaluated as "cx @ [x]", where [y] is
-	  already the first element of [cx].
+  then [ex]'s context should be evaluated as "cx @ [x]", where [y] is
+  already the first element of [cx].
   *)
 and ppt ppf (env,t) = match t with
   | Int -> fprintf ppf "Int"

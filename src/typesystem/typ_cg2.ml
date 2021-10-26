@@ -558,7 +558,7 @@ Util.eprintf "=== t: %a" E.ppt (env,t) ; *)
   (** << env |- (\A x \in S : op(x) \in T) : t >> ==
         \E a1,a2. /\ << env |- S : Set a1 >>
                   /\ << env |- T : Set a2 >>
-									/\ << env |- op : a1 -> a2 >>
+                  /\ << env |- op : a1 -> a2 >>
                   (* /\ |- env(op) == a1 -> a2  *)
                   /\ t == Bool *)
   | Quant (Forall, [h,k,Domain s1], {core = Apply ({core = Internal B.Mem},
@@ -579,21 +579,21 @@ Util.eprintf "=== t: %a" E.ppt (env,t) ; *)
   (** Typing hypothesis [\A x : p(x) => op(x) \in S] *)
   (** << env |- (\A x : p(x) => op(x) \in S) : t >> ==
         \E a1,a2. /\ << env |- S : Set a2 >>
-									/\ env(p) =?= a1 -> Bool
+            /\ env(p) =?= a1 -> Bool
                   /\ env(op) == (_ : {x:a1 | p(x)}) -> a2
-									(* /\ << env,x:a1 |- p(x) : Bool >>  *)
+            (* /\ << env,x:a1 |- p(x) : Bool >>  *)
                   (* /\ << env,x:a1 |- op(x) : a2 >> *)
                   /\ t == Bool *)
   | Quant (Forall, [h, k, No_domain], {core = Apply ({core = Internal B.Implies}, [
-			{core = Apply ({core = Opaque "boolify"}, [
-				{core = Apply ({core = Ix n} as p, [{core = Ix 1}])}
-				])};
-			{core = Apply ({core = Internal B.Mem},
-    		[{core = Apply ({core = Ix m} as q, [{core = Ix 1}])}; s])}
-			])})
+          {core = Apply ({core = Opaque "boolify"}, [
+            {core = Apply ({core = Ix n} as p, [{core = Ix 1}])}
+          ])};
+          {core = Apply ({core = Internal B.Mem},
+            [{core = Apply ({core = Ix m} as q, [{core = Ix 1}])}; s])}
+      ])})
     when mode = TypHyp (* TOFIX: and [x \notin FV(s)] *) ->
-			let app1 p = Apply (p, [ix1]) %% [] in
-			let boolify e = Apply (Opaque "boolify" %% [], [e]) %% [] in
+      let app1 p = Apply (p, [ix1]) %% [] in
+      let boolify e = Apply (Opaque "boolify" %% [], [e]) %% [] in
       let a1 = fresh_tyvar (E.to_cx env, p) in
       let a2 = fresh_tyvar (E.to_cx env, s) in
       let s,cs = cg_expr mode env (Set (mk_var a2)) scx s in
@@ -602,18 +602,18 @@ Util.eprintf "=== t: %a" E.ppt (env,t) ; *)
       let tp = E.find ip env in
       let tq = E.find iq env in
       let cp = mk_iseq (env, tp, Func ("", mk_var a1, Bool)) in
-			let ta = Ref (h.core, mk_var a1, Ex (add_x_ctx h.core (mk_var a1) (E.to_cx env), app1 (sh_diff p))) in
+      let ta = Ref (h.core, mk_var a1, Ex (add_x_ctx h.core (mk_var a1) (E.to_cx env), app1 (sh_diff p))) in
       let cq = mk_eq (env, tq, Func ("", ta, mk_var a2)) in
       let bs = [h, k, No_domain] in
-			let ex = app B.Implies (boolify (app1 p)) (app B.Mem (app1 q) s) in
+      let ex = app B.Implies (boolify (app1 p)) (app B.Mem (app1 q) s) in
       let ex = Quant (Forall, bs, ex) @@ e in
       ex, CExists ([a1;a2], CConj [ cp ; cs ; cq ; mk_eq_bool t ])
 
   (* | Quant (Forall, [h,k,No_domain], {core = Apply ({core = Internal B.Implies}, [
-			{core = Apply ({core = Ix _}, [{core = Ix 1}])} as px ;
-			{core = Apply ({core = Internal B.Mem},
-    		[{core = Apply ({core = Ix _}, [{core = Ix 1}])} as opx ; s])}
-			])})
+        {core = Apply ({core = Ix _}, [{core = Ix 1}])} as px ;
+            {core = Apply ({core = Internal B.Mem},
+            [{core = Apply ({core = Ix _}, [{core = Ix 1}])} as opx ; s])}
+        ])})
     when mode = TypHyp (* TOFIX: and [x \notin FV(s)] *) ->
       let a1 = fresh_tyvar (E.to_cx env, px) in
       let a2 = fresh_tyvar (E.to_cx env, s) in
@@ -621,7 +621,7 @@ Util.eprintf "=== t: %a" E.ppt (env,t) ; *)
       let env' = env $! local_env in
       let px,cp = cg_expr mode env' Bool scx px in
       let s,cs = cg_expr mode env (Set (mk_var a2)) scx s in
-			let opx,cop = cg_expr mode env' (mk_var a2) scx opx in
+      let opx,cop = cg_expr mode env' (mk_var a2) scx opx in
       let bs = [h,k,No_domain] in
       let ex = Quant (Forall, bs, app B.Implies px (app B.Mem opx s)) @@ e in
       ex, CExists ([a1;a2], CConj [ cp ; cs ; cop ; mk_eq_bool t ]) *)

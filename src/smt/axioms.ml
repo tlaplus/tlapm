@@ -389,19 +389,19 @@ let build_tla_ops (smap:t_map) std_set (* tuples record_ids *) =
       m_tla B.Lt,    [U;U], SBool, [ cond_arith_op_bool "tla_lt"  B.Lt ], [] ;
       m_tla B.Lteq,  [U;U], SBool, [ cond_arith_op_bool "tla_leq" B.Lteq ], [] ;
       m_tla B.Range, [U;U], U, [ forall [m,U ; n,U ; x,U]
-				  (equiv (mem x (app2 "tla__Range" m n))
-				         (implies (lAnd [isint m ; isint n]) (lAnd [isint x ; leq m x ; leq x n]))) ;
-				         ], [m_tla B.Mem;"isint";"tla__Range"] ;
+            (equiv (mem x (app2 "tla__Range" m n))
+            (implies (lAnd [isint m ; isint n]) (lAnd [isint x ; leq m x ; leq x n]))) ;
+        ], [m_tla B.Mem;"isint";"tla__Range"] ;
       m_tla B.Uminus, [U], U,   [ forall [n,U] (implies (isint n) (eq (app1 (m_tla B.Uminus) n) (m_uminus smap n))) ], [] ; *)
       "div",       [SInt;SInt], SInt,  [ forall [x,SInt ; y,SInt ; z,SInt]
-				  (implies (lt "0" y)
-				           (equiv (eq (app "div" [x ; y]) z)
+            (implies (lt "0" y)
+            (equiv (eq (app "div" [x ; y]) z)
                           (lAnd [ leq (app2_op B.Times y z) x ;
                                       leq x (app2_op B.Times y (app2_op B.Plus z "1"))]))) ], [] ;
       "mod",       [SInt;SInt], SInt,  [ forall [x,SInt ; y,SInt]
-				  (implies (lt "0" y)
-				           (eq (app "mod" [x ; y])
-				               (app2_op B.Minus x (app2_op B.Times (app "div" [x ; y]) y)) )) ], ["div"] ;
+            (implies (lt "0" y)
+            (eq (app "mod" [x ; y])
+            (app2_op B.Minus x (app2_op B.Times (app "div" [x ; y]) y)) )) ], ["div"] ;
   ] in
 
   let tla_ops_spass = [
@@ -472,7 +472,7 @@ let build_tla_ops (smap:t_map) std_set (* tuples record_ids *) =
           (eq
             (app "mod" [x ; y])
             (app2_op B.Minus x (app2_op B.Times (app "div" [x ; y]) y)) )) ], ["div"] ; *)
-			] end else []
+        ] end else []
   in
 
   let all_std_ops =
@@ -484,8 +484,8 @@ let build_tla_ops (smap:t_map) std_set (* tuples record_ids *) =
     (***  Operator name  X  argument sort list  X  return sort  X  associated axioms  X  dependent ops  *)
 
     (*
-		(* becareful! this encoding is weaker than the one below. *)
-		m_tla B.Int,   [], U, [
+    (* becareful! this encoding is weaker than the one below. *)
+    m_tla B.Int,   [], U, [
       forall [n,SInt] (pattern
         (mem (int2u n) (m_tla B.Int))
         [ mem (int2u n) (m_tla B.Int) ])
@@ -522,9 +522,9 @@ let build_tla_ops (smap:t_map) std_set (* tuples record_ids *) =
     m_tla B.Lteq,  [U;U], SBool, [ lift_arith_predicate (m_tla B.Lteq) B.Lteq ], ["int2u"] ;
     m_tla B.Range, [U;U], U,  [
       forall [m,SInt ; n,SInt ; z,U ] (pattern_z3
-	     (equiv (mem z (app2 (m_tla B.Range) (int2u m) (int2u n)))
-		    (exists [x,SInt] (lAnd [eq z (int2u x) ; leq m x ; leq x n])))
-	     [ mem z (app2 (m_tla B.Range) (int2u m) (int2u n)) ])
+      (equiv (mem z (app2 (m_tla B.Range) (int2u m) (int2u n)))
+      (exists [x,SInt] (lAnd [eq z (int2u x) ; leq m x ; leq x n])))
+      [ mem z (app2 (m_tla B.Range) (int2u m) (int2u n)) ])
       ;
       (** added sm 2019-02-20, fixed sm 2019-12-16:
           Range is injective when intervals are non-empty. *)
@@ -555,8 +555,8 @@ let build_tla_ops (smap:t_map) std_set (* tuples record_ids *) =
     (* forall x:U. mem x BOOLEAN => bool2u (boolify x) = x *)
     m_tla B.BOOLEAN, [], U, [
         forall [x,U] (pattern
-				(implies (mem x (m_tla B.BOOLEAN)) (eq (bool2u (boolify x)) x))
-				[ mem x (m_tla B.BOOLEAN) ]);
+            (implies (mem x (m_tla B.BOOLEAN)) (eq (bool2u (boolify x)) x))
+            [ mem x (m_tla B.BOOLEAN) ]);
         (* forall [x,U] (equiv
                 (mem x (m_tla B.BOOLEAN))
                 (lOr [boolify x ; neg (boolify x)]) ) ; *)
@@ -565,15 +565,15 @@ let build_tla_ops (smap:t_map) std_set (* tuples record_ids *) =
     (** CHANGED equiv for two implies *)
     (* m_tla B.BOOLEAN, [], U, [
       forall [x,U] (pattern
-				(implies (app1 "boolify" x) (mem x (m_tla B.BOOLEAN)))
-				[ mem x (m_tla B.BOOLEAN) ]) ;
+        (implies (app1 "boolify" x) (mem x (m_tla B.BOOLEAN)))
+        [ mem x (m_tla B.BOOLEAN) ]) ;
       forall [x,U] (pattern
-				(implies (neg (app1 "boolify" x)) (mem x (m_tla B.BOOLEAN)))
-				[ mem x (m_tla B.BOOLEAN) ]) ;
+        (implies (neg (app1 "boolify" x)) (mem x (m_tla B.BOOLEAN)))
+        [ mem x (m_tla B.BOOLEAN) ]) ;
       forall [x,U] (pattern
-				(implies
-					(mem x (m_tla B.BOOLEAN))
-        	(lOr [app1 "boolify" x ; neg (app1 "boolify" x)]))
+        (implies
+        (mem x (m_tla B.BOOLEAN))
+        (lOr [app1 "boolify" x ; neg (app1 "boolify" x)]))
         [mem x (m_tla B.BOOLEAN)] )
       (* forall [x,U] (equiv
              (mem x (m_tla B.BOOLEAN))
@@ -583,52 +583,52 @@ let build_tla_ops (smap:t_map) std_set (* tuples record_ids *) =
     m_tla B.STRING, [], U, [], [] ;
     (* m_tla B.Mem, [U;U], SBool, [], [] ; *)
     m_tla B.Mem,    [U;U], SBool, [
-			forall [s,U ; t,U] (implies
-				(forall [x,U] (equiv (mem x s) (mem x t))) (eq s t))
-			], [] ;   (** with set extensionality *)
+        forall [s,U ; t,U] (implies
+            (forall [x,U] (equiv (mem x s) (mem x t))) (eq s t))
+        ], [] ;   (** with set extensionality *)
     m_tla B.Subseteq, [U;U], SBool, [
-			forall [x,U;y,U] (implies
-				(app2 (m_tla B.Subseteq) x y)
-				(forall [z,U] (implies (mem z x) (mem z y))))
-			], [m_tla B.Mem] ;
+        forall [x,U;y,U] (implies
+            (app2 (m_tla B.Subseteq) x y)
+            (forall [z,U] (implies (mem z x) (mem z y))))
+        ], [m_tla B.Mem] ;
     m_tla B.SUBSET, [U], U, [
-			forall [s,U;t,U] (implies
-				(mem s (app1 (m_tla B.SUBSET) t))
-				(forall [x,U] (implies (mem x s) (mem x t))))
-			], [m_tla B.Mem] ;
+        forall [s,U;t,U] (implies
+            (mem s (app1 (m_tla B.SUBSET) t))
+            (forall [x,U] (implies (mem x s) (mem x t))))
+        ], [m_tla B.Mem] ;
     m_tla B.UNION, [U], U, [
-			forall [x,U;s,U] (implies
-				(mem x (app1 (m_tla B.UNION) s))
-				(exists [t,U] (lAnd [mem t s ; mem x t])))
-			], [m_tla B.Mem] ;
+        forall [x,U;s,U] (implies
+            (mem x (app1 (m_tla B.UNION) s))
+            (exists [t,U] (lAnd [mem t s ; mem x t])))
+        ], [m_tla B.Mem] ;
     m_tla B.Cap, [U;U], U, [
-			forall [x,U;s,U;t,U] (implies
-				(mem x (app2 (m_tla B.Cap) s t))
-				(lAnd [mem x s ; mem x t]))
-			], [m_tla B.Mem] ;
+        forall [x,U;s,U;t,U] (implies
+            (mem x (app2 (m_tla B.Cap) s t))
+            (lAnd [mem x s ; mem x t]))
+        ], [m_tla B.Mem] ;
     m_tla B.Cup, [U;U], U, [
-			forall [x,U;s,U;t,U] (implies
-				(mem x (app2 (m_tla B.Cup) s t))
-				(lOr [mem x s ; mem x t]))
-			], [m_tla B.Mem] ;
+        forall [x,U;s,U;t,U] (implies
+            (mem x (app2 (m_tla B.Cup) s t))
+            (lOr [mem x s ; mem x t]))
+        ], [m_tla B.Mem] ;
     m_tla B.Setminus, [U;U], U, [
-			forall [x,U;s,U;t,U] (implies
-				(mem x (app2 (m_tla B.Setminus) s t))
-				(lAnd [mem x s ; neg (mem x t)]))
-			], [m_tla B.Mem] ;
+        forall [x,U;s,U;t,U] (implies
+            (mem x (app2 (m_tla B.Setminus) s t))
+            (lAnd [mem x s ; neg (mem x t)]))
+        ], [m_tla B.Mem] ;
     "tla__emptyset", [], U, [
-			forall [x,U] (pattern
-				(equiv (mem x "tla__emptyset") (smap.op B.FALSE))
-				[mem x "tla__emptyset"])
-			], [m_tla B.Mem] ;
+        forall [x,U] (pattern
+            (equiv (mem x "tla__emptyset") (smap.op B.FALSE))
+            [mem x "tla__emptyset"])
+        ], [m_tla B.Mem] ;
     "tla__set_1", [U], U, [
-			forall [x,U;y,U] (equiv
-				(mem x (app "tla__set_1" [y])) (eq x y))
-			], [m_tla B.Mem] ;
+        forall [x,U;y,U] (equiv
+            (mem x (app "tla__set_1" [y])) (eq x y))
+        ], [m_tla B.Mem] ;
     "tla__set_2", [U;U], U, [
-			forall [x,U;y,U;z,U] (equiv
-				(mem x (app "tla__set_2" [y;z])) (lOr [eq x y; eq x z]))
-			], [m_tla B.Mem] ;
+        forall [x,U;y,U;z,U] (equiv
+            (mem x (app "tla__set_2" [y;z])) (lOr [eq x y; eq x z]))
+        ], [m_tla B.Mem] ;
     "tla__isAFcn",    [U], SBool, [], [] ;
       (* forall [x,U ; y,U] (implies (lAnd [ app1 "tla__isAFcn" x ; app1 "tla__isAFcn" y ; eq x y ])
                                   (lAnd [ eq (dom x) (dom y) ;
@@ -688,30 +688,30 @@ let build_tla_ops (smap:t_map) std_set (* tuples record_ids *) =
     (* "tla_dot_b", [U;SField], SBool, [], [] ; *)
 
     "tla__tuple0", [], U, [
-			(* eq (dom "tla__tuple0") "tla__emptyset" ;
+            (* eq (dom "tla__tuple0") "tla__emptyset" ;
             eq (app (m_tla B.Len) ["tla__tuple0"]) "0" ; *)
             forall [s,U] (equiv (eq s "tla__tuple0") (eq (dom s) "tla__emptyset")) ;    (* The empty tuple is the only function whose domain is the empty set. *)
             forall [s,U] (equiv (eq s "tla__tuple0") (eq (app (m_tla B.Len) [s]) "0")) ;
       ], [m_tla B.Mem ; m_tla B.DOMAIN ; "tla__emptyset" ; m_tla B.Len] ;
 
     m_tla B.Seq,       [U], U, [
-			(* forall [s,U ; t,U] (implies (mem s (app1 "Seq" t)) (eq (dom s) (app2 "tla__Range" (int2u "1") (int2u (app (m_tla B.Len) [s]))))) ; *)
-      forall [s,U ; t,U] (
-				equiv
-					(mem s (app1 (m_tla B.Seq) t))
+            (* forall [s,U ; t,U] (implies (mem s (app1 "Seq" t)) (eq (dom s) (app2 "tla__Range" (int2u "1") (int2u (app (m_tla B.Len) [s]))))) ; *)
+        forall [s,U ; t,U] (
+            equiv
+            (mem s (app1 (m_tla B.Seq) t))
           (lAnd [
-						leq "0" (app1 (m_tla B.Len) s) ;
-          	app1 "tla__isAFcn" s ;
+            leq "0" (app1 (m_tla B.Len) s) ;
+            app1 "tla__isAFcn" s ;
             eq (dom s) (app2 (m_tla B.Range) (int2u "1") (int2u (app (m_tla B.Len) [s]))) ;
             forall [i,SInt] (implies
-							(lAnd [leq "1" i ; leq i (app (m_tla B.Len) [s])])
-							(mem (fcnapp1 s (int2u i)) t)) ;
+                (lAnd [leq "1" i ; leq i (app (m_tla B.Len) [s])])
+                (mem (fcnapp1 s (int2u i)) t)) ;
             ])) ],
-			[m_tla B.Len ; m_tla B.DOMAIN ; Smt.fcnapp ; "int2u" ; "tla__isAFcn" ; m_tla B.Range] ;
+        [m_tla B.Len ; m_tla B.DOMAIN ; Smt.fcnapp ; "int2u" ; "tla__isAFcn" ; m_tla B.Range] ;
 
     m_tla B.Len, [U], SInt, [
-			forall [s,U;n,SInt] (implies (leq "0" n) (equiv
-				(eq (dom s) (app2 (m_tla B.Range) (int2u "1") (int2u n)))
+        forall [s,U;n,SInt] (implies (leq "0" n) (equiv
+            (eq (dom s) (app2 (m_tla B.Range) (int2u "1") (int2u n)))
         (eq (app1 (m_tla B.Len) s) n))) ;
       forall [s,U] (leq "0" (app1 (m_tla B.Len) s))
       ], [m_tla B.DOMAIN;m_tla B.Range;"int2u"] ;

@@ -47,8 +47,8 @@ let t1 =
     "[[f EXCEPT ![0] = 0] EXCEPT ![1] = 1]" in
   (* let x = normalize Deque.empty test_case in
   Printf.eprintf "compare: %d\n" (Pervasives.compare x target_case); *)
-	Test.make_simple_test
-		~title:(title_en_group ^ test_string)
+    Test.make_simple_test
+        ~title:(title_en_group ^ test_string)
     ( fun () ->
       Assert.equal (prn_exp target_case)
         (prn_exp (normalize Deque.empty test_case)))
@@ -58,8 +58,8 @@ let t2 =
   let test_case = create_expression test_string in
   let target_case = create_expression
     "[[[f EXCEPT ![0] = 10] EXCEPT ![1] = 1] EXCEPT ![0] = 0]" in
-	Test.make_simple_test
-		~title:(title_en_group ^ test_string)
+    Test.make_simple_test
+        ~title:(title_en_group ^ test_string)
     ( fun () ->
       Assert.equal (prn_exp target_case)
         (prn_exp (normalize Deque.empty test_case)))
@@ -69,8 +69,8 @@ let t3 =
   let test_case = create_expression test_string in
   let target_case = create_expression
     "[f EXCEPT ![0] = ([[f EXCEPT ![0] = 1] EXCEPT ![1] = 0][1])]" in
-	Test.make_simple_test
-		~title:(title_en_group ^ test_string)
+    Test.make_simple_test
+        ~title:(title_en_group ^ test_string)
     ( fun () ->
       Assert.equal (prn_exp target_case)
         (prn_exp (normalize Deque.empty test_case)))
@@ -80,8 +80,8 @@ let t4 =
   let test_case = create_expression test_string in
   let target_case = create_expression
     "[f EXCEPT ![([[f EXCEPT ![0] = 1] EXCEPT ![1] = 0][1])] = 2]" in
-	Test.make_simple_test
-		~title:(title_en_group ^ test_string)
+    Test.make_simple_test
+        ~title:(title_en_group ^ test_string)
     ( fun () ->
       Assert.equal (prn_exp target_case)
         (prn_exp (normalize Deque.empty test_case)))
@@ -91,8 +91,8 @@ let t5 =
   let test_case = create_expression test_string in
   let target_case = create_expression
     "[[[f EXCEPT !.a = 3] EXCEPT !.b = 2] EXCEPT !.c = 1]" in
-	Test.make_simple_test
-		~title:(title_en_group ^ test_string)
+    Test.make_simple_test
+        ~title:(title_en_group ^ test_string)
     ( fun () ->
       Assert.equal (prn_exp target_case)
         (prn_exp (normalize Deque.empty test_case)))
@@ -103,8 +103,8 @@ let t6 =
   let target_case = create_expression
     "[[arr EXCEPT ![x] = [arr[x] EXCEPT ![y] = foo]] EXCEPT ![u] = \
     [[arr EXCEPT ![x] = [arr[x] EXCEPT ![y] = foo]][u] EXCEPT ![v] = bar]]" in
-	Test.make_simple_test
-		~title:(title_en_group ^ test_string)
+    Test.make_simple_test
+        ~title:(title_en_group ^ test_string)
     ( fun () ->
       Assert.equal ~prn:prn_str (prn_exp target_case)
         (prn_exp (normalize Deque.empty test_case)))
@@ -122,8 +122,8 @@ the parser*)
     "f'[x']" in
   (* let x = normalize Deque.empty test_case in
   Printf.eprintf "compare: %d\n" (Pervasives.compare x target_case); *)
-	Test.make_simple_test
-		~title:(title_pr_group ^ test_string)
+  Test.make_simple_test
+    ~title:(title_pr_group ^ test_string)
     ( fun () ->
       Assert.equal (prn_exp target_case)
         (prn_exp (normalize Deque.empty test_case)))

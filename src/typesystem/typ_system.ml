@@ -468,8 +468,8 @@ let solve (env,c) =
   (**************************************************************************)
   Smt.ifprint 2 "-- Solving =?= and <? ------------------------------------------------------" ;
   let c = c
-    |> C.iseq_to_eq      																											(** replace =?= by == *)
-    |> C.issub_to_sub    																											(** replace <?  by <: *)
+    |> C.iseq_to_eq  (** replace =?= by == *)
+    |> C.issub_to_sub  (** replace <?  by <: *)
   in
   let env,c = solve_c' env c in
   let env,c = solve_and_update env c in
