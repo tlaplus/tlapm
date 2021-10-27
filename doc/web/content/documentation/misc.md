@@ -1,4 +1,4 @@
-## Tutorial for [IFM 2010](http://ifm2010.loria.fr/)
+## Tutorial for [IFM 2010](https://ifm2010.loria.fr)
 <div class="hr"></div>
 
 - [Slides of the presentation](../../doc/IFM2010/tutorial.pdf)

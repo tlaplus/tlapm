@@ -103,7 +103,7 @@ other programs). These solvers include:
 - an SMT solver (
   [`z3`](https://en.wikipedia.org/wiki/Z3_Theorem_Prover),
   [`cvc4`](https://cvc4.github.io),
-  [`veriT`](http://www.verit-solver.org), or other),
+  [`veriT`](https://www.verit-solver.org), or other),
 - the automated theorem prover [`zenon`](http://zenon-prover.org),
 - the proof assistant Isabelle with the [formalization of TLA+](
       https://members.loria.fr/SMerz/projects/tlaps/index.html)

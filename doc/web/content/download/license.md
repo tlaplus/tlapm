@@ -1,7 +1,7 @@
 ## Licence for the TLA+ Proof System (TLAPS)
 
-**Copyright © 2008–2020 [Inria](http://www.inria.fr) and [Microsoft Corporation](
-    http://www.microsoft.com)<br/>
+**Copyright © 2008–2020 [Inria](https://www.inria.fr) and [Microsoft Corporation](
+    https://www.microsoft.com)<br/>
 All rights reserved.**
 
 

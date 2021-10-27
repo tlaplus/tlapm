@@ -2,7 +2,7 @@
 <div class="hr"></div>
 
 The **TLA**+ **P**roof **S**ystem (TLAPS) mechanically checks
-[TLA+](http://research.microsoft.com/users/lamport/tla/tla.html) proofs.
+[TLA+](https://research.microsoft.com/users/lamport/tla/tla.html) proofs.
 
 TLA+ is a general-purpose formal specification language that is
 particularly useful for describing concurrent and distributed systems.
@@ -18,9 +18,9 @@ now suitable for verifying safety properties of non-trivial algorithms.
 (Only trivial temporal-logic reasoning that is easily checked by hand is
 needed for safety.) For examples, see the [proof of a Byzantine Paxos
 algorithm](
-    http://research.microsoft.com/en-us/um/people/lamport/tla/byzpaxos.html)
-and the [proof of a security
-architecture](http://research.microsoft.com/apps/pubs/default.aspx?id=144962).
+    https://research.microsoft.com/en-us/um/people/lamport/tla/byzpaxos.html)
+and the [proof of a security architecture](
+    https://research.microsoft.com/apps/pubs/default.aspx?id=144962).
 
 
 ### Get it
@@ -28,7 +28,7 @@ architecture](http://research.microsoft.com/apps/pubs/default.aspx?id=144962).
 
 The current version of TLAPS is 1.4.5. It can (and should) be used from
 the [Toolbox IDE](
-    http://research.microsoft.com/en-us/um/people/lamport/tla/toolbox.html).
+    https://research.microsoft.com/en-us/um/people/lamport/tla/toolbox.html).
 TLAPS is free software, distributed under the BSD [license](
     Download/License.html).
 You can obtain it in the [download section](download.html).

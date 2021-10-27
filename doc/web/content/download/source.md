@@ -61,12 +61,12 @@ Mandriva, CentOS, etc.</td>
 </tbody>
 </table>
 
-On MacOSX, you can use the package managers [Homebrew](http://brew.sh/)
-(`brew install objective-caml`) or [MacPorts](http://www.macports.org)
+On MacOSX, you can use the package managers [Homebrew](https://brew.sh)
+(`brew install objective-caml`) or [MacPorts](https://www.macports.org)
 (`port install ocaml`).
 
 If you want to install OCaml from source, consider using
-[OPAM](http://opam.ocaml.org).
+[OPAM](https://opam.ocaml.org).
 
 
 ### 3. Compile and Install Zenon
@@ -93,14 +93,14 @@ $ popd
 ### 4. Install Isabelle2011-1
 
 Follow the [instructions](
-    http://isabelle.in.tum.de/website-Isabelle2011-1/download.html)
+    https://isabelle.in.tum.de/website-Isabelle2011-1/download.html)
 on the Isabelle Web site. TLAPS actually does not need the full Isabelle2011-1
 distribution. If you want only the necessary components, run the following
 commands:
 
 ```
-$ wget http://isabelle.in.tum.de/website-Isabelle2011-1/dist/Isabelle2011-1.tar.gz
-$ wget http://isabelle.in.tum.de/website-Isabelle2011-1/dist/polyml-5.4.0.tar.gz
+$ wget https://isabelle.in.tum.de/website-Isabelle2011-1/dist/Isabelle2011-1.tar.gz
+$ wget https://isabelle.in.tum.de/website-Isabelle2011-1/dist/polyml-5.4.0.tar.gz
 $ tar -xzf -C /usr/local Isabelle2011-1.tar.gz
 $ tar -xzf -C /usr/local polyml-5.4.0.tar.gz
 ```

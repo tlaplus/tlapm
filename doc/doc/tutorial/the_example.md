@@ -2,25 +2,25 @@
 <div class="hr"></div>
 
 TLAPS is a proof system for checking TLA+ proofs. See the [TLA Home page](
-    http://research.microsoft.com/en-us/um/people/lamport/tla/tla.html)
+    https://research.microsoft.com/en-us/um/people/lamport/tla/tla.html)
 to learn about the TLA+ specification language. The proof language is a
 new addition to TLA+; it is described [here](
-    http://research.microsoft.com/en-us/um/people/lamport/tla/tla2.html).
+    https://research.microsoft.com/en-us/um/people/lamport/tla/tla2.html).
 However, this is a reference manual; you should try some examples before
 reading it.
 
 This tutorial consists of a simple example. If you have no experience
 with TLA+ or using theorem provers, you might start instead with the
 [TLA+ Hyperbook](
-    http://research.microsoft.com/en-us/um/people/lamport/tla/hyperbook.html)
+    https://research.microsoft.com/en-us/um/people/lamport/tla/hyperbook.html)
 or the [TLA+ Video Course](
-    http://lamport.azurewebsites.net/video/videos.html). This
+    https://lamport.azurewebsites.net/video/videos.html). This
 tutorial will introduce concepts of the [TLA+ proof language](
-    http://research.microsoft.com/en-us/um/people/lamport/tla/tla2.html)
+    https://research.microsoft.com/en-us/um/people/lamport/tla/tla2.html)
 as needed.
 
 The proof system is designed to be used with the [ToolBox](
-    http://research.microsoft.com/en-us/um/people/lamport/tla/toolbox.html)
+    https://research.microsoft.com/en-us/um/people/lamport/tla/toolbox.html)
 IDE. In this tutorial, we assume that you are using that IDE (even if we
 sometimes indicate how proofs can be run from the command line).
 
@@ -41,7 +41,7 @@ verifies the truth of the theorem.
 
 We shall illustrate the TLAPS by proving the correctness of the
 [Euclidean algorithm](
-    http://en.wikipedia.org/wiki/Euclidean_algorithm).
+    https://en.wikipedia.org/wiki/Euclidean_algorithm).
 
 
 ### The algorithm
