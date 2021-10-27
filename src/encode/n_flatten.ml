@@ -525,6 +525,11 @@ let treat_expr bps gtx e =
           let h = mk_flat_declaration bp in
           let h = assign h bp_prop bp in (* to find this hyp again later *)
           let axms = find_axms bp in
+          let instantiate bp e =
+            Option.fold begin fun e m ->
+              assign e meta_prop { m with name = m.name ^ " " ^ hyp_name h }
+            end (instantiate bp e) (query e meta_prop)
+          in
           let axms = List.map (instantiate bp) axms in
 
           (* So far the variables of axms and e' are calibrated for the same

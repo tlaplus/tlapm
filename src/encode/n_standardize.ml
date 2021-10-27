@@ -32,6 +32,8 @@ let mk_opq smb =
   let op = assign op smb_prop smb in
   op
 
+let err_count = ref 0
+
 
 (* {3 Main} *)
 
@@ -359,6 +361,23 @@ let visitor = object (self : 'self)
           let strlit = mk_smb (StrLit s) in
           let strlit_opq = mk_opq strlit in
           Apply (opq, [ e ; strlit_opq ]) %% []
+
+    | Case (ps, None) ->
+        let ps =
+          List.map begin fun (p, e) ->
+            (self#expr scx p, self#expr scx e)
+          end ps
+        in
+        let ty0 =
+          match get oe Props.tpars_prop with
+          | [ ty0 ] -> ty0
+          | _ -> error ~at:oe "Bad type annotation"
+        in
+        incr err_count;
+        let err = "incomplete_case_error_" ^ string_of_int !err_count in
+        let smb = mk_smb (Anon (err, Ty2 ([], ty0))) in
+        let opq = mk_opq smb in
+        Case (ps, Some opq) @@ oe
 
     | _ -> super#expr scx oe
 
