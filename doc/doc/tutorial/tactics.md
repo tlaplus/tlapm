@@ -55,7 +55,7 @@ three back-ends in succession: SMT, Zenon, and Isa.
 - [Zenon](http://zenon-prover.org/) is a tableaux-based prover for
   first-order logic; it is tried with a timeout of 10 seconds.
 - Isa is the automatic tactic `auto` of the
-  [Isabelle](http://www.cl.cam.ac.uk/research/hvg/isabelle/) prover;
+  [Isabelle](https://www.cl.cam.ac.uk/research/hvg/Isabelle/) prover;
   is tried with a timeout of 30 seconds.
 
 If Isabelle does not find a proof, TLAPS reports a failure on this
