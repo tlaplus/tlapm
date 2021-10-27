@@ -32,3 +32,6 @@ tlapm
 # created by the installer
 /test/bin/
 /test/lib/
+
+__pycache__/
+*.pyc
