@@ -3,10 +3,10 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="refresh"
-      content="0; url=http://lamport.azurewebsites.net/tla/hyperbook.html" />
+      content="0; url=https://lamport.azurewebsites.net/tla/hyperbook.html" />
 <title>Redirection</title>
 <meta name="robots" content="noindex,follow" />
 </head>
 <body>
 
-[Redirection](http://lamport.azurewebsites.net/tla/hyperbook.html)
+[Redirection](https://lamport.azurewebsites.net/tla/hyperbook.html)

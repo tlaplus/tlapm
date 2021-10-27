@@ -24,7 +24,7 @@ That obligation is then sent to a backend (
 [Zenon](
     http://zenon-prover.org),
 [Isabelle](
-    http://www.cl.cam.ac.uk/research/hvg/Isabelle/), SMT solvers
+    https://www.cl.cam.ac.uk/research/hvg/Isabelle/), SMT solvers
 – see the [tactics section](tactics.html)) that tries to prove it. The
 smaller the context is, the faster those backends are. Hence TLAPS tries
 to keep that context as small as possible. For example, the axioms about

@@ -9,14 +9,15 @@ The package:
 
 ### 1. Install Cygwin
 
-[Cygwin](http://www.cygwin.com) version 3.0.7 or later is required. You need to
+[Cygwin](https://www.cygwin.com) version 3.0.7 or later is required. You need to
 install the 32-bit version of Cygwin, even if your OS is 64-bit. This version of
 TLAPS does **not** work on 64-bit Cygwin.
 
 
 ### 2. Install the Cygwin packages   `make`, `perl`, `wget`
 
-Consult the [Cygwin manual](http://www.cygwin.com/cygwin-ug-net/setup-net.html)
+Consult the [Cygwin manual](
+    https://www.cygwin.com/cygwin-ug-net/setup-net.html)
 for instructions on how to install Cygwin packages. Installing these packages
 will bring in a number of other packages, which are also needed.
 
@@ -40,7 +41,7 @@ This will install the TLAPM binary in `/usr/local/bin` and some other data in
 ### 4. Set the Toolbox's library path
 
 We strongly recommend that you install the
-[Toolbox](http://lamport.azurewebsites.net/tla/toolbox.html) (version 1.6.0 or
+[Toolbox](https://lamport.azurewebsites.net/tla/toolbox.html) (version 1.6.0 or
 later). You will need to add the location of the `TLAPS.tla` file to the list of
 libraries used by the Toolbox. To do this, open the Toolbox and go to "File \>
 Preferences \> TLA+ Preferences". Add the directory where `TLAPS.tla` is located
@@ -82,7 +83,7 @@ default, Z3, is included in the installer). Note that some of our example files
 use CVC4 for a few proof obligations.
 
 To install CVC4, you should download it from [the CVC4 download page](
-    http://cvc4.cs.stanford.edu/downloads/builds/win64-opt/),
+    https://cvc4.cs.stanford.edu/downloads/builds/win64-opt/),
 then rename it and move it to `/usr/local/lib/tlaps/bin` with this command:
 
 ```

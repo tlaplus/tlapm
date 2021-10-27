@@ -83,7 +83,7 @@ solvers, and make sure that the executables are in your `$PATH`.
 The SMT backend identifier invokes the baseline SMT solver. By default
 this is the [Z3](https://github.com/Z3Prover/z3/wiki) solver, but you
 can change it to call any SMT solver that can read
-[SMT-LIB](http://smtlib.cs.uiowa.edu) format (version 2) input and can
+[SMT-LIB](https://smtlib.cs.uiowa.edu) format (version 2) input and can
 handle linear integer and real reasoning. In order to invoke this
 backend alone (without falling back to Zenon or Isabelle), use the SMT
 or SMTT identifiers in a USE or BY clause.

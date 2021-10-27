@@ -3,11 +3,11 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
 <meta http-equiv="refresh"
-      content="0; url=http://lamport.azurewebsites.net/video/videos.html" />
+      content="0; url=https://lamport.azurewebsites.net/video/videos.html" />
 <title>Redirection</title>
 <meta name="robots" content="noindex,follow" />
 </head>
 <body>
 
 
-[Redirection](http://lamport.azurewebsites.net/video/videos.html)
+[Redirection](https://lamport.azurewebsites.net/video/videos.html)

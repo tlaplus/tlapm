@@ -40,7 +40,7 @@ This will install the tlapm binary in `dir/bin` and some other data in
 ### 2. Set the toolbox's library path
 
 We strongly recommend that you install the
-[Toolbox](http://lamport.azurewebsites.net/tla/toolbox.html) (version
+[Toolbox](https://lamport.azurewebsites.net/tla/toolbox.html) (version
 1.6.0 or later). You will need to add the location of the `TLAPS.tla`
 file to the list of libraries used by the Toolbox. To do this, open the
 Toolbox and go to "File > Preferences > TLA+ Preferences". Add the
@@ -64,7 +64,7 @@ TLAPS (the default, Z3, is included in the installer). Note that some of
 our example files use CVC4 for a few proof obligations.
 
 To install CVC4, you should download it from [the CVC4 download
-page](http://cvc4.cs.stanford.edu/downloads/builds/x86_64-linux-opt/),
+page](https://cvc4.cs.stanford.edu/downloads/builds/x86_64-linux-opt/),
 then rename it and move it to `/usr/local/lib/tlaps/bin` with this
 command:
 
