@@ -49,6 +49,7 @@ type tla_smb =
   | FunSet
   | FunConstr
   | FunDom
+  | FunIm
   | FunApp
   | FunExcept
   (* Tuples *)
@@ -151,11 +152,16 @@ type tla_axm =
   | FunSetIntro
   | FunSetElim1
   | FunSetElim2
+  | FunSetImIntro
+  | FunSetSubs
   | FunDomDef
   | FunAppDef
   | FunExceptIsafcn
   | FunExceptDomDef
   | FunExceptAppDef
+  | FunImDef
+  | FunImIntro
+  | FunImElim
   (* Tuples *)
   | TupIsafcn of int
   | TupDomDef of int
@@ -224,6 +230,7 @@ let tla_smb_to_string = function
   | FunSet -> "FunSet"
   | FunConstr -> "FunConstr"
   | FunDom -> "FunDom"
+  | FunIm -> "FunIm"
   | FunApp -> "FunApp"
   | FunExcept -> "FunExcept"
   | Tuple n -> Format.sprintf "Tuple %d" n
@@ -310,11 +317,16 @@ let axm_desc = function
   | FunSetIntro -> "FunSetIntro"
   | FunSetElim1 -> "FunSetElim1"
   | FunSetElim2 -> "FunSetElim2"
+  | FunSetImIntro -> "FunSetImIntro"
+  | FunSetSubs -> "FunSetSubs"
   | FunDomDef -> "FunDomDef"
   | FunAppDef -> "FunAppDef"
   | FunExceptIsafcn -> "FunExceptIsafcn"
   | FunExceptDomDef -> "FunExceptDomDef"
   | FunExceptAppDef -> "FunExceptAppDef"
+  | FunImDef -> "FunImDef"
+  | FunImIntro -> "FunImIntro"
+  | FunImElim -> "FunImElim"
   | TupIsafcn n -> Format.sprintf "TupIsafcn %d" n
   | TupDomDef n -> Format.sprintf "TupDomDef %d" n
   | TupAppDef n -> Format.sprintf "TupAppDef %d" n

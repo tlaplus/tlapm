@@ -68,6 +68,7 @@ type tla_smb =
   | FunSet
   | FunConstr
   | FunDom
+  | FunIm
   | FunApp
   | FunExcept
   (* Tuples *)
@@ -171,11 +172,16 @@ type tla_axm =
   | FunSetIntro
   | FunSetElim1
   | FunSetElim2
+  | FunSetImIntro
+  | FunSetSubs
   | FunDomDef
   | FunAppDef
   | FunExceptIsafcn
   | FunExceptDomDef
   | FunExceptAppDef
+  | FunImDef
+  | FunImIntro
+  | FunImElim
   (* Tuples *)
   | TupIsafcn of int
   | TupDomDef of int

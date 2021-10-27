@@ -1243,6 +1243,14 @@ let fcnset_intro () =
       ; Ix 2 %% []
       ] %% []
     ] %% []
+  ] ; [
+    apps T.FunIsafcn
+    [ Ix 1 %% []
+    ] %% []
+  ; apps T.FunSet
+    [ Ix 3 %% []
+    ; Ix 2 %% []
+    ] %% []
   ] ]
   ( appb B.Implies
     [ List (And,
@@ -1364,6 +1372,63 @@ let fcnset_elim2 () =
         ; Ix 1 %% []
         ] %% []
       ; Ix 3 %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let fcnsetim_intro () =
+  quant Forall
+  [ "f" ] [ t_idv ]
+  ~pats:[ [
+    apps T.FunIsafcn
+    [ Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ apps T.FunIsafcn
+      [ Ix 1 %% []
+      ] %% []
+    ; apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.FunSet
+        [ apps T.FunDom
+          [ Ix 1 %% []
+          ] %% []
+        ; apps T.FunIm
+          [ Ix 1 %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let fcnset_subs () =
+  quant Forall
+  [ "a" ; "b" ; "c" ] [ t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.FunSet
+    [ Ix 3 %% []
+    ; Ix 2 %% []
+    ] %% []
+  ; apps T.FunSet
+    [ Ix 3 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ apps T.SubsetEq
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ; apps T.SubsetEq
+      [ apps T.FunSet
+        [ Ix 3 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ; apps T.FunSet
+        [ Ix 3 %% []
+        ; Ix 1 %% []
+        ] %% []
       ] %% []
     ] %% []
   ) %% []
@@ -1530,6 +1595,104 @@ let fcnexceptapp_def () =
           ] %% []
         ] %% []
       ] %% []
+    ] %% []
+  ) %% []
+
+let fcnim_def () =
+  quant Forall
+  [ "f" ; "x" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps T.FunIm
+      [ Ix 2 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.FunIm
+        [ Ix 2 %% []
+        ] %% []
+      ] %% []
+    ; quant Exists
+      [ "y" ] [ t_idv ]
+      ( appb B.Conj
+        [ apps T.Mem
+          [ Ix 1 %% []
+          ; apps T.FunDom
+            [ Ix 3 %% []
+            ] %% []
+          ] %% []
+        ; appb ~tys:[ t_idv ] B.Eq
+          [ Ix 2 %% []
+          ; apps T.FunApp
+            [ Ix 3 %% []
+            ; Ix 1 %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ) %% []
+    ] %% []
+  ) %% []
+
+let fcnim_intro () =
+  quant Forall
+  [ "f" ; "x" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.FunApp
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( apps T.Mem
+    [ apps T.FunApp
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ; apps T.FunIm
+      [ Ix 2 %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let fcnim_elim () =
+  quant Forall
+  [ "f" ; "x" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps T.FunIm
+      [ Ix 2 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.FunIm
+        [ Ix 2 %% []
+        ] %% []
+      ] %% []
+    ; quant Exists
+      [ "y" ] [ t_idv ]
+      ( appb B.Conj
+        [ apps T.Mem
+          [ Ix 1 %% []
+          ; apps T.FunDom
+            [ Ix 3 %% []
+            ] %% []
+          ] %% []
+        ; appb ~tys:[ t_idv ] B.Eq
+          [ Ix 2 %% []
+          ; apps T.FunApp
+            [ Ix 3 %% []
+            ; Ix 1 %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ) %% []
     ] %% []
   ) %% []
 
@@ -2554,11 +2717,16 @@ let get_axm ~solver tla_smb =
   | T.FunSetIntro -> fcnset_intro ()
   | T.FunSetElim1 -> fcnset_elim1 ()
   | T.FunSetElim2 -> fcnset_elim2 ()
+  | T.FunSetImIntro -> fcnsetim_intro ()
+  | T.FunSetSubs -> fcnset_subs ()
   | T.FunDomDef -> fcndom_def () |> mark T.FunConstr
   | T.FunAppDef -> fcnapp_def () |> mark T.FunConstr
   | T.FunExceptIsafcn -> fcnexcept_isafcn ()
   | T.FunExceptDomDef -> fcnexceptdom_def ()
   | T.FunExceptAppDef -> fcnexceptapp_def ()
+  | T.FunImDef -> fcnim_def ()
+  | T.FunImIntro -> fcnim_intro ()
+  | T.FunImElim -> fcnim_elim ()
   | T.TupIsafcn n -> tuple_isafcn n
   | T.TupDomDef n -> tupdom_def ~noarith ~t0p n
   | T.TupAppDef n -> tupapp_def ~noarith n

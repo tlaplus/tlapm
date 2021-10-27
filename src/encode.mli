@@ -63,6 +63,7 @@ module Table : sig
     | FunSet
     | FunConstr
     | FunDom
+    | FunIm
     | FunApp
     | FunExcept
     | Tuple of int

@@ -127,6 +127,8 @@ let untyped_data tla_smb =
       ("FunFcn",        [ t_cst t_idv ; t_una t_idv t_idv ],  t_idv)
   | FunDom ->
       ("FunDom",        [ t_cst t_idv ],                      t_idv)
+  | FunIm ->
+      ("FunIm",         [ t_cst t_idv ],                      t_idv)
   | FunApp ->
       ("FunApp",        [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   | FunExcept ->
@@ -291,8 +293,8 @@ let get_data tla_smb =
   | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet | NatSet | IntLit _
   | IntPlus | IntUminus | IntMinus | IntTimes | IntQuotient | IntRemainder
   | IntExp | IntLteq | IntLt | IntGteq | IntGt | IntRange | FunIsafcn | FunSet
-  | FunConstr | FunDom | FunApp | FunExcept | Tuple _ | Product _ | Rec _
-  | RecSet _ | SeqSeq | SeqLen | SeqBSeq | SeqCat | SeqAppend | SeqHead
+  | FunConstr | FunDom | FunIm | FunApp | FunExcept | Tuple _ | Product _
+  | Rec _ | RecSet _ | SeqSeq | SeqLen | SeqBSeq | SeqCat | SeqAppend | SeqHead
   | SeqTail | SeqSubSeq | SeqSelectSeq ->
       let (nm, tins, tout) = untyped_data tla_smb in
       { dat_name = "TLA__" ^ nm
@@ -352,6 +354,7 @@ let untyped_deps ~solver tla_smb s =
     | _ -> Params.debugging "t0+"
   in
   let effaxms = Params.debugging "effaxms" in
+  let efffcns = Params.debugging "efffcns" in
   begin match tla_smb with
   (* Logic *)
   | Choose ->
@@ -459,6 +462,9 @@ let untyped_deps ~solver tla_smb s =
   | FunIsafcn ->
       ([ Mem ; FunDom ; FunConstr ; FunApp ],
                                   [ FunExt ])
+  | FunSet when effaxms && efffcns ->
+      ([ Mem ; FunIsafcn ; FunDom ; FunApp ; FunIm ; SubsetEq ],
+                                  [ FunSetImIntro ; FunSetSubs ; FunSetElim1 ; FunSetElim2 ])
   | FunSet when effaxms ->
       ([ Mem ; FunIsafcn ; FunDom ; FunApp ],
                                   [ FunSetIntro ; FunSetElim1 ; FunSetElim2 ])
@@ -474,6 +480,10 @@ let untyped_deps ~solver tla_smb s =
   | FunExcept ->
       ([ Mem ; FunIsafcn ; FunDom ; FunApp ],
                                   [ FunExceptIsafcn ; FunExceptDomDef ; FunExceptAppDef ])
+  | FunIm when effaxms ->
+      ([ Mem ; FunDom ; FunApp ], [ FunImIntro ; FunImElim ])
+  | FunIm ->
+      ([ Mem ; FunDom ; FunApp ], [ FunImDef ])
   (* Tuples *)
   | Tuple 0 ->
       ([ FunIsafcn ],             [ TupIsafcn 0 ])
@@ -635,8 +645,8 @@ let get_deps ~solver tla_smb s =
   | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet | NatSet | IntLit _
   | IntPlus | IntUminus | IntMinus | IntTimes | IntQuotient | IntRemainder
   | IntExp | IntLteq | IntLt | IntGteq | IntGt | IntRange | FunIsafcn | FunSet
-  | FunConstr | FunDom | FunApp | FunExcept | Tuple _ | Product _ | Rec _
-  | RecSet _ | SeqSeq | SeqLen | SeqBSeq | SeqCat | SeqAppend | SeqHead
+  | FunConstr | FunDom | FunIm | FunApp | FunExcept | Tuple _ | Product _
+  | Rec _ | RecSet _ | SeqSeq | SeqLen | SeqBSeq | SeqCat | SeqAppend | SeqHead
   | SeqTail | SeqSubSeq | SeqSelectSeq ->
       let s, (smbs, axms) = untyped_deps ~solver tla_smb s in
       s,

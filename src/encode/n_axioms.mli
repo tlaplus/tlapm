@@ -84,12 +84,18 @@ val fcnset_def : unit -> expr
 val fcnset_intro : unit -> expr
 val fcnset_elim1 : unit -> expr
 val fcnset_elim2 : unit -> expr
+val fcnsetim_intro : unit -> expr
+val fcnset_subs : unit -> expr
 
 val fcnexcept_isafcn : unit -> expr
 
 val fcnexceptdom_def : unit -> expr
 
 val fcnexceptapp_def : unit -> expr
+
+val fcnim_def : unit -> expr
+val fcnim_intro : unit -> expr
+val fcnim_elim : unit -> expr
 
 (* {4 Strings} *)
 
