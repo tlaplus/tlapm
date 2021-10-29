@@ -897,6 +897,21 @@ let expand_enabled_cdot ob
     print_obl_and_msg ob (
         "Proof obligation before `Expr.Action.expand_action_operators`:\n");
     let expr = expr_from_obl ob in
+    (* Print syntax tree if requested. *)
+    if !Params.dumps_json_ast then begin
+        let visitor =
+            object (self: 'self)
+            inherit [unit] Expr.Visit.json_map
+            end in
+        let cx = ((), Deque.empty) in
+        let json_str = visitor#expr cx expr in
+        print_string (
+            "------------\n\
+            JSON output:\n\n" ^
+            json_str ^
+            "\n\n========\n\n")
+        end;
+    (* expand action operators *)
     let expr: Expr.T.expr = begin
         if expand_enabled || expand_cdot then begin
             let cx = Deque.empty in

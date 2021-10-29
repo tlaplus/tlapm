@@ -365,6 +365,9 @@ let () =
 let set_tlapm_cache_dir dir = cachedir := dir
 
 
+let dumps_json_ast = ref false
+
+
 let keep_going   = ref false
 let suppress_all = ref false
 let check        = ref false

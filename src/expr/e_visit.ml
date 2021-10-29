@@ -688,3 +688,573 @@ class virtual ['s] map_rename = object (self : 'self)
   method rename cx hyp name = (hyp, name)
 
 end
+
+
+let hyps_of_bounds bounds =
+    let make_fresh (name, kind, dom) =
+        Fresh (
+                name, Shape_expr,
+                kind, Unbounded)
+            @@ name in
+    List.map make_fresh bounds
+
+
+let arity_of_shape shape =
+    match shape with
+    | Shape_expr -> 0
+    | Shape_op arity ->
+        assert (arity > 0);
+        arity
+
+
+let format_parameter (name, shape) =
+    let arity = shape
+        |> arity_of_shape
+        |> string_of_int in
+    ("{" ^
+        "\"Name\": \"" ^ name.core ^
+            "\", " ^
+        "\"Arity\": " ^ arity ^
+    "}")
+
+
+let format_modal_op modal_op =
+    match modal_op with
+    | Box -> "[]"
+    | Dia -> "<>"
+
+
+class virtual ['s] json_map =
+    object (self: 'self)
+
+    method expr (scx: 's scx) oe =
+        match oe.core with
+        | Ix n ->
+            (* Ix n @@ oe *)
+            let cx = snd scx in
+            let hyp = E_t.get_val_from_id cx n in
+            let opaque = begin match hyp.core with
+                | Flex name -> name.core
+                | Fresh (name, _, _, _) -> name.core
+                | Defn (defn, _, _, _) ->
+                    begin match defn.core with
+                    | Recursive (name, _)
+                    | Operator (name, _)
+                    | Instance (name, _)
+                    | Bpragma (name, _, _) ->
+                        name.core
+                    end
+                | Fact (expr, _, _) ->
+                    assert false
+                end in
+            "{\"OpRef\": \"" ^ opaque ^ "\"}"
+        | Internal Conj ->
+            "{\"OpRef\": \"/\\\\\"}"
+        | Internal Disj ->
+            "{\"OpRef\": \"\\\\/\"}"
+        | Internal builtin ->
+            (* Internal b @@ oe *)
+            let form = Optable.standard_form builtin in
+            let opname = form.name in
+            "{\"OpRef\": \"" ^ opname ^ "\"}"
+        | Opaque name ->
+            "{\"OpRef\": \"" ^ name ^ "\"}"
+        | Bang (expr, sels) ->
+            let expr = self#expr scx expr in
+            let sels = List.map (self#sel scx) sels in
+            let sels = Fmtutil.comma sels in
+            ("{\"!\": {" ^
+                "\"Expr\": " ^ expr ^
+                    ", " ^
+                "\"Selectors\": [" ^ sels ^
+            "]}}")
+        | Lambda (names, expr) ->
+            let scx = self#adjs scx
+                (List.map
+                    (fun (v, shp) ->
+                        Fresh (
+                            v, shp, Unknown,
+                            Unbounded) @@ v)
+                    names) in
+            let expr = self#expr scx expr in
+            let names = names
+                |> List.map format_parameter
+                |> Fmtutil.comma in
+            ("{\"Lambda\": " ^
+                "\"Parameters\": [" ^ names ^
+                    "], " ^
+                "\"Expr\": " ^ expr ^
+            "}}")
+        | String value ->
+            "{\"String\": \"" ^ value ^ "\"}"
+        | Num (m, n) ->
+            "{\"Number\": [\"" ^ m ^ "\", \"" ^ n ^ "\"]}"
+        | Apply (op, exprs) ->
+            let operator = self#expr scx op in
+            let args = exprs
+                |> List.map (self#expr scx)
+                |> Fmtutil.comma
+                in
+            ("{\"Apply\": {" ^
+                "\"Operator\": " ^ operator ^
+                    ", " ^
+                "\"Operands\": [" ^ args ^
+            "]}}")
+        | Sequent sq ->
+            let sq = self#sequent scx sq in
+            "{\"Sequent\": " ^ sq ^ "}"
+        | With (expr, meth) ->
+            let expr = self#expr scx expr in
+            (* TODO: convert `meth` to string *)
+            "{\"WithMethod\": " ^ expr ^ "}"
+        | Let (defs, expr) ->
+            let (scx, defs) = self#defns scx defs in
+            let expr = self#expr scx expr in
+            ("{\"LET\": {" ^
+                "\"Definitions\": " ^ defs ^
+                    ", " ^
+                "\"Expr\": " ^ expr ^
+            "}}")
+        | If (e, f, g) ->
+            let if_ = self#expr scx e in
+            let then_ = self#expr scx f in
+            let else_ = self#expr scx g in
+            ("{\"IF\": {" ^
+                "\"If\": " ^ if_ ^
+                    ", " ^
+                "\"THEN\": " ^ then_ ^
+                    ", " ^
+                "\"ELSE\": " ^ else_ ^
+            "}}")
+        | List (op, exprs) ->
+            let operator = match op with
+                | And -> "And"
+                | Or -> "Or"
+                | Refs -> "Refs" in
+            let exprs = List.map (self#expr scx) exprs in
+            let exprs = Fmtutil.comma exprs in
+            ("{\"Junction\": {" ^
+                "\"Operator\": \"" ^ operator ^
+                    "\", " ^
+                "\"Expressions\": [" ^ exprs ^
+            "]}}")
+        | Quant (qtf, bounds, expr) ->
+            let (scx, bounds) = self#bounds scx bounds in
+            let expr = self#expr scx expr in
+            let quantifier = match qtf with
+                | Forall -> "\\A"
+                | Exists -> "\\E" in
+            ("{\"" ^ quantifier ^ "\": {" ^
+                "\"Bounds\": " ^ bounds ^
+                    ", " ^
+                "\"Expr\": " ^ expr ^
+            "}}")
+        | Tquant (qtf, vars, expr) ->
+            let mapper v = Flex v @@ v in
+            let hyps = List.map mapper vars in
+            let scx = self#adjs scx hyps in
+            let expr = self#expr scx expr in
+            let vars = List.map
+                (fun nm -> nm.core) vars in
+            let vars = Fmtutil.comma vars in
+            let quantifier = match qtf with
+                | Forall -> "\\AA"
+                | Exists -> "\\EE" in
+            ("{\"" ^ quantifier ^ "\": {" ^
+                "\"Variables\": " ^ vars ^
+                    ", " ^
+                "\"Expr\": " ^ expr ^
+            "}}")
+        | Choose (name, optdom, expr) ->
+            let optdom = Option.map
+                (self#expr scx) optdom in
+            (* no need for the domain to be
+            in the context *)
+            let hyp = Fresh (
+                name, Shape_expr,
+                Constant, Unbounded) @@ name in
+            let dom = match optdom with
+                | None -> ""
+                | Some dom -> dom in
+            let scx = self#adj scx hyp in
+            let expr = self#expr scx expr in
+            ("{\"CHOOSE\": {" ^
+                "\"Name\": " ^ name.core ^
+                    ", " ^
+                "\"Domain\": " ^ dom ^
+                    ", " ^
+                "\"Expr\": " ^ expr ^
+            "}}")
+        | SetSt (name, dom, expr) ->
+            let dom = self#expr scx dom in
+            (* no need for the domain to be
+            in the context *)
+            let fresh = Fresh (
+                name, Shape_expr,
+                Constant, Unbounded) @@ name in
+            let scx = self#adj scx fresh in
+            let expr = self#expr scx expr in
+            ("{\"SetSt\": {" ^
+                "\"Name\": \"" ^ name.core ^
+                    "\", " ^
+                "\"Domain\": " ^ dom ^
+                    ", " ^
+                "\"Expr\": " ^ expr ^
+            "}}")
+        | SetOf (expr, bounds) ->
+            let (scx, bounds) = self#bounds scx bounds in
+            let expr = self#expr scx expr in
+            ("{\"SetOf\": {" ^
+                "\"Bounds\": " ^ bounds ^
+                    ", " ^
+                "\"Expr\": " ^ expr ^
+            "}}")
+        | SetEnum exprs ->
+            let exprs = exprs
+                |> List.map (self#expr scx)
+                |> Fmtutil.comma in
+            "{\"SetEnum\": [" ^ exprs ^ "]}"
+        | Fcn (bounds, expr) ->
+            let (scx, bounds) = self#bounds scx bounds in
+            let expr = self#expr scx expr in
+            ("{\"Function\": {" ^
+                "\"Bounds\": " ^ bounds ^
+                    ", " ^
+                "\"Expr\": " ^ expr ^
+            "}}")
+        | FcnApp (fcn, exprs) ->
+            let fcn = self#expr scx fcn in
+            let exprs = exprs
+                |> List.map (self#expr scx)
+                |> Fmtutil.comma in
+            ("{\"FunctionApplication\": {" ^
+                "\"Function\": " ^ fcn ^
+                    ", " ^
+                "\"Expressions\": [" ^ exprs ^
+            "]}}")
+        | Arrow (a, b) ->
+            let a = self#expr scx a in
+            let b = self#expr scx b in
+            ("{\"->\": {" ^
+                "\"Domain\": " ^ a ^
+                    ", " ^
+                "\"Codomain\": " ^ b ^
+            "}}")
+        | Product exprs ->
+            let exprs = exprs
+                |> List.map (self#expr scx)
+                |> Fmtutil.comma in
+            "{\"\\X\": [" ^ exprs ^ "]}"
+        | Tuple exprs ->
+            let exprs = exprs
+                |> List.map (self#expr scx)
+                |> Fmtutil.comma in
+            "{\"<<\": [" ^ exprs ^ "]}"
+        | Rect fields ->
+            let mapper (s, e) = (s, self#expr scx e) in
+            let fields = fields
+                |> List.map mapper
+                |> List.map (fun (a, b) -> a ^ b)
+                |> Fmtutil.comma
+                in
+            "{\"SetOfRecords\": [" ^ fields ^ "]}"
+        | Record fields ->
+            let mapper (s, e) = (s, self#expr scx e) in
+            let fields = fields
+                |> List.map mapper
+                |> List.map (fun (a, b) -> a ^ b)
+                |> Fmtutil.comma
+                in
+            "{\"Record\": [" ^ fields ^ "]}"
+        | Except (expr, xs) ->
+            let expr = self#expr scx expr in
+            let xs = xs
+                |> List.map (self#exspec scx)
+                |> Fmtutil.comma in
+            ("{\"EXCEPT\": {" ^
+                "\"Expr\": " ^ expr ^
+                    ", " ^
+                "\"Changes\": " ^ xs ^
+            "}}")
+        | Dot (expr, field) ->
+            let expr = self#expr scx expr in
+            ("{\"Dot\": {" ^
+                "\"Expr\": " ^ expr ^
+                    ", " ^
+                "\"Field\": \"" ^ field ^
+            "\"}}")
+        | Sub (modal_op, action, subscript) ->
+            let operator = format_modal_op modal_op in
+            let action = self#expr scx action in
+            let subscript = self#expr scx subscript in
+            ("{\"Subscripted\": {" ^
+                "\"Operator\": \"" ^ operator ^
+                    "\", " ^
+                "\"Action\": " ^ action ^
+                    ", " ^
+                "\"Subscript\": " ^ subscript ^
+            "}}")
+        | Tsub (modal_op, action, subscript) ->
+            let operator = format_modal_op modal_op in
+            let action = self#expr scx action in
+            let subscript = self#expr scx subscript in
+            ("{\"TemporalSubscripted\": {" ^
+                "\"Operator\": \"" ^ operator ^
+                    "\", " ^
+                "\"Action\": " ^ action ^
+                    ", " ^
+                "\"Subscript\": " ^ subscript ^
+            "}}")
+        | Fair (fop, expr, subscript) ->
+            let operator = match fop with
+                | Weak -> "WF_"
+                | Strong -> "SF_" in
+            let expr = self#expr scx expr in
+            let subscript = self#expr scx subscript in
+            ("{\"Fairness\": {" ^
+                "\"Operator\": \"" ^ operator ^
+                    "\", " ^
+                "\"Action\": " ^ expr ^
+                    ", " ^
+                "\"Subscript\": " ^ subscript ^
+            "}}")
+        | Case (arms, other) ->
+            let mapper (e, f) = (
+                self#expr scx e, self#expr scx f) in
+            let arms = arms
+                |> List.map mapper
+                |> List.map (fun (a, b) -> a ^ b)
+                |> Fmtutil.comma
+                in
+            let other = Option.map
+                (self#expr scx) other in
+            let other = match other with
+                | Some other -> other
+                | None -> "" in
+            ("{\"CASE\": {" ^
+                "\"Arms\": [" ^ arms ^
+                    "], " ^
+                "\"Other\": " ^ other ^
+            "}}")
+        | At b ->
+            "\"@\""
+        | Parens (expr, pf) ->
+            let expr = self#expr scx expr in
+            begin match pf.core with
+            | Syntax ->
+                "{\"(\": " ^ expr ^ "}"
+            | Nlabel (name, args) ->
+                let args = args
+                    |> List.map (fun x -> x.core)
+                    |> Fmtutil.comma
+                    in
+                ("{\"::\": " ^
+                    "\"Expr\": " ^ expr ^
+                        ", " ^
+                    "\"Label\": " ^ name ^
+                        ", " ^
+                    "\"Args\": " ^ args ^
+                "}")
+            | Xlabel (name, []) ->
+                ("{\"::\": " ^
+                    "\"Expr\": " ^ expr ^
+                    "\"Label\": " ^ name ^
+                "}")
+            | Xlabel _ ->
+                failwith "the parser does not \
+                    give this case as output"
+            end
+
+    method sel scx selector =
+        match selector with
+        | Sel_inst args ->
+            let args = List.map
+                (self#expr scx) args in
+            "[" ^ Fmtutil.comma args ^ "]"
+        | Sel_lab (label, args) ->
+            let args = List.map
+                (self#expr scx) args in
+            ("{\"Label\": \"" ^
+                label ^ "\", " ^
+            "\"Arguments\": [" ^
+                (Fmtutil.comma args) ^
+            "]}")
+        | _ -> failwith "unimplemented"
+
+    method sequent scx sq =
+        let (scx, hyps) = self#hyps
+            scx sq.context in
+        let active = self#expr
+            scx sq.active in
+        ("{\"Sequent\": {" ^
+            "\"Hypotheses\": [" ^ hyps ^
+                "], " ^
+            "\"Goal\": " ^ active ^
+        "}}")
+
+    method defn scx df =
+        match df.core with
+        | Recursive (name, shape) ->
+            ("{\"Recursive\": \"" ^
+                (format_parameter (name, shape)) ^ "}")
+        | Operator (name, expr) ->
+            let expr = self#expr scx expr in
+            ("{\"==\": {" ^
+                "\"Name\": \"" ^ name.core ^
+                    "\", " ^
+                "\"Expr\": " ^ expr ^
+            "}}")
+        | Instance (name, inst) ->
+            let inst = self#instance scx inst in
+            ("{\"==\": {" ^
+                "\"Name\": \"" ^ name.core ^
+                    "\", " ^
+                "\"Expr\": " ^ inst ^
+            "}}")
+        | Bpragma(name, expr, pragma) ->
+            (* TODO: pragma info *)
+            let expr = self#expr scx expr in
+            ("{\"==\": {\"" ^
+                "\"Name\": " ^ name.core ^
+                    "\", " ^
+                "\"Expr\": " ^ expr ^
+            "}}")
+
+    method defns scx = function
+        | [] -> (scx, "")
+        | df :: dfs ->
+            let def = self#defn scx df in
+            let defn = Defn (
+                df, User, Visible, Local) @@ df in
+            let scx = self#adj scx defn in
+            let (scx, defs) = self#defns scx dfs in
+            let defstr = def ^ ", " ^ defs in
+            (scx, defstr)
+
+    method bounds scx bounds =
+        let hyps = hyps_of_bounds bounds in
+        let scx = self#adjs scx hyps in
+        let mapper (name, kind, dom) =
+            match dom with
+            | Domain expr ->
+                let expr = self#expr scx expr in
+                ("{\"Bound\": {" ^
+                    "\"Name\": \"" ^ name.core ^
+                        "\", " ^
+                    "\"Expr\": " ^ expr ^
+                "}}")
+            | Ditto ->
+                ("{\"Bound\": {" ^
+                    "\"Name\": \"" ^ name.core ^
+                        "\", " ^
+                    "\"Ditto\": \"true\"}")
+            | No_domain ->
+                ("{\"Bound\": {" ^
+                    "\"Name\": \"" ^ name.core ^
+                "\"}}") in
+        let bounds =
+            bounds
+            |> List.map mapper
+            |> Fmtutil.comma in
+        (scx, bounds)
+
+    method bound scx b =
+        self#bounds scx [b]
+
+    method exspec scx (trail, res) =
+        let do_trail = function
+            | Except_dot name ->
+                "{\".\": \"" ^ name ^ "\"}"
+            | Except_apply expr ->
+                let expr = self#expr scx expr in
+                "{\"[\": " ^ expr ^ "}"
+            in
+        let trail = List.map do_trail trail in
+        let trail = Fmtutil.join ", " trail in
+        let expr = self#expr scx res in
+        ("{\"Change\": {" ^
+            "\"Trail\": [" ^ trail ^
+                "], " ^
+            "\"Expr\": " ^ expr ^
+        "}}")
+
+    method instance scx inst =
+        let step scx name =
+            let fresh = Fresh (
+                name, Shape_expr,
+                Unknown, Unbounded) @@ name in
+            self#adj scx fresh in
+        let scx = List.fold_left
+            step scx inst.inst_args in
+        let mapper (name, expr) =
+            let expr = self#expr scx expr in
+            name.core ^ " <- " ^ expr in
+        let inst_sub = List.map
+            mapper inst.inst_sub in
+        let inst_sub = Fmtutil.comma inst_sub in
+        ("{\"INSTANCE\": {" ^
+            "\"ModuleName\": \"" ^ inst.inst_mod ^
+                "\", " ^
+            "\"WITH\": " ^ inst_sub ^
+        "}}")
+
+    method hyp scx h =
+        match h.core with
+        | Fresh (name, shape, loc, dom) ->
+            let dom = match dom with
+                | Unbounded -> ""
+                | Bounded (r, rvis) ->
+                    self#expr scx r
+                in
+            let hstr = (
+                "{\"Hypothesis\": {" ^
+                    "\"Name\": \"" ^ name.core ^
+                        "\", " ^
+                    "\"Domain\": " ^ dom ^
+                "}}") in
+            (self#adj scx h, hstr)
+        | Flex name ->
+            let hstr = (
+                "{\"VARIABLE\": \"" ^
+                name.core ^ "\"}") in
+            (self#adj scx h, hstr)
+        | Defn (df, wd, vis, ex) ->
+            let df = self#defn scx df in
+            let hstr = (
+                "{\"Hypothesis\": " ^
+                df ^ "}") in
+            (self#adj scx h, hstr)
+        | Fact (e, vis, tm) ->
+            let fact = self#expr scx e in
+            let hstr = (
+                "{\"Hypothesis\": " ^
+                fact ^ "}") in
+            (self#adj scx h, hstr)
+
+    method hyps scx hs =
+        match Dq.front hs with
+        | None -> (scx, "")
+        | Some (h, hs) ->
+            let (scx, h) = self#hyp scx h in
+            let (scx, hs) = self#hyps scx hs in
+            match hs with
+            | "" -> (scx, h)
+            | _ -> (scx, h ^ ", " ^ hs)
+
+    method adj (s, cx) h =
+        (s, Dq.snoc cx h)
+
+    method adjs scx = function
+        | [] -> scx
+        | h :: hs ->
+            self#adjs (self#adj scx h) hs
+end
+
+
+let json_of_ast cx expr =
+    let visitor =
+        object (self: 'self)
+        inherit [unit] json_map
+        end in
+    let scx = ((), cx) in
+    visitor#expr scx expr

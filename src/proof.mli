@@ -103,7 +103,20 @@ module Visit : sig
     method step   : 's scx -> step -> 's scx
     method usable : 's scx -> usable -> unit
   end
-end;;
+  class virtual ['s] json_map: object
+      inherit ['s] Expr.Visit.json_map
+      method proof:
+          's scx -> proof -> string
+      method steps:
+          's scx -> step list ->
+              's scx * string
+      method step:
+          's scx -> step ->
+              's scx * string
+      method usable:
+          's scx -> usable -> string
+  end
+end
 
 module Simplify : sig
   open Property

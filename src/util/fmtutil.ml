@@ -7,6 +7,47 @@
 
 open Format
 
+
+let _join
+        (separator: string)
+        (items: string list):
+            string =
+    if ((List.length items) < 2) then
+        failwith
+            "expected list length >= 2";
+    let step accum item =
+        accum ^ separator ^ item in
+    let accum = List.hd items in
+    let tail = List.tl items in
+    List.fold_left step accum tail
+
+
+let join
+        (separator: string)
+        (items: string list):
+            string =
+    (* Concatenate `items`.
+
+    Return the concatenation of `items`,
+    with `separator` inserted in-between.
+    Example:
+
+    ```ocaml
+    let items = ["a"; "b"] in
+    let separator = "," in
+    let s = join separator items in
+    assert s = "a, b"
+    ```
+    *)
+    match items with
+    | [] -> ""
+    | [item] -> item
+    | _ -> _join separator items
+
+
+let comma items = join "," items
+
+
 let pp_print_commasp ff () =
   pp_print_string ff "," ;
   pp_print_space ff ()
