@@ -458,6 +458,8 @@ let preprocess ~solver sq =
     else true
   in
 
+  let rwsetext = Params.debugging "rwsetext" in
+
   let rec repeat k f a =
     if k <= 0 then a
     else repeat (k - 1) f (f a)
@@ -473,6 +475,7 @@ let preprocess ~solver sq =
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
     |> repeat (if rw then 10 else 0) Encode.Rewrite.simplify_sets
+    |> repeat (if (not rw) && rwsetext then 1 else 0) Encode.Rewrite.apply_ext
     |> debug "Disambiguate and Simplify:"
     |> Encode.Standardize.main
     |> debug "Standardize:"

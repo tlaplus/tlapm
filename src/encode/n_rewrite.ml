@@ -569,7 +569,7 @@ let apply_ext_visitor = object (self : 'self)
   method expr (b, cx as scx) oe =
     match oe.core with
     | Apply ({ core = Internal (B.Eq | B.Neq as blt) } as op, [ e ; f ])
-      when eq_pol b blt
+      when (eq_pol b blt || Params.debugging "rwsetext")
       && (is_set e || is_set f)
       && (match query op Props.tpars_prop with
           Some [TAtm TAIdv] -> true | _ -> false) ->
