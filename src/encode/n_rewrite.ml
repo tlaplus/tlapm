@@ -549,7 +549,7 @@ let is_set e =
   | SetEnum _
   | SetSt _
   | SetOf _
-  | Apply ({ core = Internal (B.Cap | B.Cup | B.Setminus) }, [ _ ; _ ])
+  | Apply ({ core = Internal (B.Cap | B.Cup | B.Setminus | B.Range) }, [ _ ; _ ])
   | Product _
   | Arrow _
   | Rect _

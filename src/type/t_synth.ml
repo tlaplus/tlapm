@@ -245,7 +245,11 @@ and expr_aux scx oe =
   | Apply ({ core = Internal (B.Eq | B.Neq) } as op, [ e ; f ]) ->
       let e, ty01 = expr scx e in
       let f, ty02 = expr scx f in
-      if ty01 = ty02 then
+      if ty01 = ty02 && typelvl scx = 3 then
+        let op = assign op Props.tpars_prop [ ty01 ] in
+        let ret = Apply (op, [ e ; f ]) @@ oe in
+        (ret, TAtm TABol)
+      else if ty01 = ty02 && ty01 = TAtm TAInt && typelvl scx = 2 then
         let op = assign op Props.tpars_prop [ ty01 ] in
         let ret = Apply (op, [ e ; f ]) @@ oe in
         (ret, TAtm TABol)
