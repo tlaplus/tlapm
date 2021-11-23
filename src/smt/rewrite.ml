@@ -729,12 +729,17 @@ class rw = object (self : 'self)
         | B.Mem, _, _ ->
           rw_mem x y
 
-        | (B.Eq | B.Equiv), _, Choose (h, None, ex) ->
+        (*| (B.Eq | B.Equiv), _, Choose (h, None, ex) ->
     (* Util.eprintf "Choo: %a : %s" (print_prop ()) (sh1 (sh1 ex)) (typ_to_str e) ; *)
             (* add_choose (fresh_name ()) cx x ;  *)            (*** FIX CHOOSE determinacy ***)
           implies (exists ~id:h ex) (ex <~ x) |> self#expr scx
         | (B.Eq | B.Equiv), Choose _, _ ->
-          Apply (o, [y ; x]) |> mk |> self#expr scx
+          Apply (o, [y ; x]) |> mk |> self#expr scx*)
+        (* NOTE Disabled by adef
+         * The rule is unsound if applied in positive contexts
+         * For ex. if can be exploited to prove any X = CHOOSE v : TRUE
+         * It's safer to disable the rule than to implement polarities
+         * in all of the SMT code... *)
 
         | B.Equiv, If (c1,t,u), If (c2,v,w) when Expr.Eq.expr c1 c2 ->
           ifte c1 (equiv t v) (equiv u w) |> self#expr scx
