@@ -1040,8 +1040,13 @@ class rw = object (self : 'self)
             |> Smt.sf#simpl (snd scx)
           in
           ifte c ex (opq "tla__unspec" (f::es)) |> self#expr scx
-        | Except (f, [([Except_apply y], ex)]), [x] ->
-          let c1 = mem x (domain f)
+        | Except (ff, [([Except_apply y], ex)]), [x] ->
+          (* NOTE Fixed by adef: this rule used to specify
+           * unspec([ f EXCEPT ![y] = ex ], x) as unspec(f, x),
+           * which is incorrect and allows one to derive
+           * [ f EXCEPT ![y] = ex ][x] = f[x] when x # y
+           * without the condition x \in DOMAIN f *)
+          let c1 = mem x (domain ff)
             |> self#expr scx
             |> Smt.sf#simpl (snd scx)
           in
@@ -1052,10 +1057,10 @@ class rw = object (self : 'self)
           begin
             if is_true c1 then
               if is_true c2 then ex
-              else ifte c2 ex (fcnapp_u scx f x)
+              else ifte c2 ex (fcnapp_u scx ff x)
             else
               ifte c1
-                (ifte c2 ex (fcnapp_u scx f x))
+                (ifte c2 ex (fcnapp_u scx ff x))
                 (opq "tla__unspec" (f::es))
           end |> self#expr scx
 
