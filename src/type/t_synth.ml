@@ -1502,6 +1502,28 @@ and sequent scx sq =
           let scx, hs = hyps scx hs in
           (scx, Deque.cons h hs)
 
+    (* Special case: Type inference is activated for hidden constant defns *)
+    | Some ({ core = Defn ({ core = Operator (v, e) } as df, wd, Hidden, ex) } as h, hs)
+      when typelvl scx = 2
+        && begin match e.core with Lambda _ -> false | _ -> true end ->
+        let inferer = fun hx e -> snd (expr (fst scx, hx) e) in
+        let scx, df =
+          match T_hyps.search_type_hyp ~inferer ~pol:true (snd scx) (Sequent { context = hs ; active = sq.active } %% []) with
+          | Some (TAtm _ as ty0) ->
+              let v, scx = adj_ty0 scx v ty0 in
+              let v = force_idv ty0 v in
+              (scx, Operator (v, e) @@ df)
+          | Some ty0 ->
+              let v, scx = adj_ty0 scx v ty0 in
+              let v = assign v Props.ty0_prop (TAtm TAIdv) in
+              (scx, Operator (v, e) @@ df)
+          | None ->
+              defn ~ignore:true scx df
+        in
+        let h = Defn (df, wd, Hidden, ex) @@ h in
+        let scx, hs = hyps scx hs in
+        (scx, Deque.cons h hs)
+
     | Some ({ core = Defn (df, wd, vis, ex) } as h, hs) ->
         let ignore = match vis with Hidden -> true | _ -> false in
         let scx, df = defn ~ignore scx df in
