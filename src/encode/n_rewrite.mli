@@ -36,17 +36,15 @@ val elim_tuples : sequent -> sequent
 (** Reduce records to functions *) (* FIXME remove *)
 val elim_records : sequent -> sequent
 
-(** Apply extensionnality axioms to equalities *)
+(** Apply extensionality axioms to equalities; also simplifies subseteq *)
 val apply_ext : sequent -> sequent
 
-(** Simplify positive subset relations *)
-val simpl_subseteq : sequent -> sequent
-
-(** Simplify expressions of set theory *)
-val simplify_sets : sequent -> sequent
-(** NOTE Rewriting rules are applied bottom-up, and there may be
-    residual redexes.  The function itself terminates, but calling it
-    while there are possible reductions may not (Russell's paradox is
-    an example).
+(** Simplify expressions of set theory
+    @param limit specify the number of times expressions are parsed
+    @param rwlvl if 0: do nothing;
+                 1: only simplify set extensionality and subseteq;
+                 2: simplify all set expressions;
+                 3: like 2, but don't care about an expression's polarity
 *)
+val simplify_sets : ?limit:int -> ?rwlvl:int -> sequent -> sequent
 

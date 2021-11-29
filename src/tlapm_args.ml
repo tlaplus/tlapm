@@ -175,11 +175,10 @@ let init () =
                  * "t1"         set type level on 1
                  * "oldsmt"     use the old version of SMT (default)
                  * "newsmt"     use the new version of SMT
-                 * (no)rw       simplify expressions (rewriting)
                  * (no)smartflatten
-                 *              try to reuse previous results of flattening
-                 * "nonewqut"   don't apply simplifications that introduce quantifiers
-                 * "rwsetext"   always rewrite equalities between sets
+                 * "rwsetext"   simplify =- and \subseteq-statements between sets
+                 * "rw"         simplify expressions (implies rwsetext)
+                 * "rw+"        like rw, but less smart (may introduce quantifiers)
                  * "smt_prove_false"
                  *              replace the goal with FALSE to catch bugs
                  *)

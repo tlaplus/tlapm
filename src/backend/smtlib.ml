@@ -452,17 +452,11 @@ let preprocess ~solver sq =
     else 1
   in
 
-  let rw =
-         if Params.debugging "rw"   then true
-    else if Params.debugging "norw" then false
-    else true
-  in
-
-  let rwsetext = Params.debugging "rwsetext" in
-
-  let rec repeat k f a =
-    if k <= 0 then a
-    else repeat (k - 1) f (f a)
+  let rwlvl =
+         if Params.debugging "rw+"      then 3
+    else if Params.debugging "rw"       then 2
+    else if Params.debugging "rwsetext" then 1
+    else 0
   in
 
   let sq = sq
@@ -474,8 +468,7 @@ let preprocess ~solver sq =
     |> Encode.Rewrite.elim_compare
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
-    |> repeat (if rw then 10 else 0) Encode.Rewrite.simplify_sets
-    |> repeat (if (not rw) && rwsetext then 1 else 0) Encode.Rewrite.apply_ext
+    |> Encode.Rewrite.simplify_sets ~rwlvl
     |> debug "Disambiguate and Simplify:"
     |> Encode.Standardize.main
     |> debug "Standardize:"

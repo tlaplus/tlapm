@@ -21,10 +21,8 @@ module Rewrite : sig
   val elim_except : sequent -> sequent
   val elim_tuples : sequent -> sequent
   val elim_records : sequent -> sequent
-  val apply_ext : sequent -> sequent
-  val simpl_subseteq : sequent -> sequent
 
-  val simplify_sets : sequent -> sequent
+  val simplify_sets : ?limit:int -> ?rwlvl:int -> sequent -> sequent
 end
 
 module Table : sig
