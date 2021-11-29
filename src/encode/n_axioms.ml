@@ -142,6 +142,42 @@ let cast_inj ty0 =
         ] %% []
       ) %% []
 
+let cast_inj_alt ty0 =
+  match ty0 with
+  | TAtm TABol ->
+      appb B.Conj
+      [ appb ~tys:[ t_idv ] B.Eq
+        [ apps (T.Cast t_bol)
+          [ appb B.TRUE [] %% []
+          ] %% []
+        ; apps (T.True t_idv) [] %% []
+        ] %% []
+      ; appb ~tys:[ t_idv ] B.Neq
+        [ apps (T.Cast t_bol)
+          [ appb B.FALSE [] %% []
+          ] %% []
+        ; apps (T.True t_idv) [] %% []
+        ] %% []
+      ] %% []
+
+  | _ ->
+      quant Forall
+      [ "x" ] [ ty0 ]
+      ~pats:[ [
+        apps (T.Cast ty0)
+        [ Ix 1 %% []
+        ] %% []
+      ] ]
+      ( appb ~tys:[ ty0 ] B.Eq
+        [ Ix 1 %% []
+        ; apps (T.Proj ty0)
+          [ apps (T.Cast ty0)
+            [ Ix 1 %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ) %% []
+
 let type_guard ty0 =
   quant Forall
   [ "x" ] [ t_idv ]
@@ -496,16 +532,51 @@ let subseteq_elim () =
     ] %% []
   ) %% []
 
+let subseteq_antisym () =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.SubsetEq
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.SubsetEq
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ; apps T.SubsetEq
+        [ Ix 1 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ] %% []
+    ; appb ~tys:[ t_idv ] B.Eq
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
 let setenum_def n =
   quant Forall
   (gen "a" n @ [ "x" ]) (dupl t_idv (n+1))
-  ~pats:[ [
+  ~pats:([ [
     apps T.Mem
     [ Ix 1 %% []
     ; apps (T.SetEnum n)
       (ixi ~shift:1 n) %% []
     ] %% []
-  ] ]
+  ] ] @ List.init n begin fun i ->
+    [ apps (T.SetEnum n)
+      (ixi ~shift:1 n) %% []
+    ; appb ~tys:[ t_idv ] B.Eq
+      [ Ix 1 %% []
+      ; Ix (n - i + 1) %% []
+      ] %% []
+    ]
+  end)
   begin if (n = 0) then
     appb B.Neg
     [ apps T.Mem
@@ -533,6 +604,30 @@ let setenum_def n =
   end %% []
 
 let setenum_intro n =
+  begin if (n = 0) then
+    Internal B.TRUE %% []
+  else
+    quant Forall
+    (gen "a" n) (dupl t_idv n)
+    ~pats:[ [
+      apps (T.SetEnum n)
+      (ixi n) %% []
+    ] ]
+    begin
+      List.init n begin fun i ->
+        apps T.Mem
+        [ Ix (n - i) %% []
+        ; apps (T.SetEnum n)
+          (ixi n) %% []
+        ] %% []
+      end |>
+      function
+        | [e] -> e
+        | es -> List (And, es) %% []
+    end %% []
+  end
+
+let setenum_elim n =
   quant Forall
   (gen "a" n @ [ "x" ]) (dupl t_idv (n+1))
   ~pats:[ [
@@ -566,28 +661,6 @@ let setenum_intro n =
         | [e] -> e
         | es -> List (Or, es) %% []
     ] %% []
-  end %% []
-
-let setenum_elim n =
-  quant Forall
-  (gen "a" n) (dupl t_idv n)
-  ~pats:[ [
-    apps (T.SetEnum n)
-    (ixi n) %% []
-  ] ]
-  begin if (n = 0) then
-    Internal B.TRUE %% []
-  else
-    List.init n begin fun i ->
-      apps T.Mem
-      [ Ix (n-i) %% []
-      ; apps (T.SetEnum n)
-        (ixi n) %% []
-      ] %% []
-    end |>
-    function
-      | [e] -> e
-      | es -> List (And, es) %% []
   end %% []
 
 let union_def () =
@@ -629,34 +702,37 @@ let union_intro () =
   [ "a" ; "x" ; "y" ] [ t_idv ; t_idv ; t_idv ]
   ~pats:[ [
     apps T.Mem
+    [ Ix 2 %% []
+    ; apps T.Union
+      [ Ix 3 %% []
+      ] %% []
+    ] %% []
+  ; apps T.Mem
     [ Ix 1 %% []
     ; Ix 3 %% []
+    ] %% []
+  ] ; [
+    apps T.Mem
+    [ Ix 2 %% []
+    ; apps T.Union
+      [ Ix 3 %% []
+      ] %% []
     ] %% []
   ; apps T.Mem
     [ Ix 2 %% []
     ; Ix 1 %% []
     ] %% []
   ] ; [
-    apps T.Mem
+    apps T.Union
+    [ Ix 3 %% []
+    ] %% []
+  ; apps T.Mem
     [ Ix 1 %% []
     ; Ix 3 %% []
     ] %% []
   ; apps T.Mem
     [ Ix 2 %% []
-    ; apps T.Union
-      [ Ix 3 %% []
-      ] %% []
-    ] %% []
-  ] ; [
-    apps T.Mem
-    [ Ix 2 %% []
     ; Ix 1 %% []
-    ] %% []
-  ; apps T.Mem
-    [ Ix 2 %% []
-    ; apps T.Union
-      [ Ix 3 %% []
-      ] %% []
     ] %% []
   ] ]
   ( appb B.Implies
@@ -744,6 +820,39 @@ let subset_def () =
           ] %% []
         ] %% []
       ) %% []
+    ] %% []
+  ) %% []
+
+let subset_def_alt () =
+  quant Forall
+  [ "a" ; "x" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 1 %% []
+    ; apps T.Subset
+      [ Ix 2 %% []
+      ] %% []
+    ] %% []
+  ] ; [
+    apps T.Subset
+    [ Ix 2 %% []
+    ] %% []
+  ; apps T.SubsetEq
+    [ Ix 1 %% []
+    ; Ix 2 %% []
+    ] %% []
+  ] ]
+  ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.Subset
+        [ Ix 2 %% []
+        ] %% []
+      ] %% []
+    ; apps T.SubsetEq
+      [ Ix 1 %% []
+      ; Ix 2 %% []
+      ] %% []
     ] %% []
   ) %% []
 
@@ -838,6 +947,24 @@ let cup_def () =
       ; Ix 2 %% []
       ] %% []
     ] %% []
+  ] ; [
+    apps T.Cup
+    [ Ix 3 %% []
+    ; Ix 2 %% []
+    ] %% []
+  ; apps T.Mem
+    [ Ix 1 %% []
+    ; Ix 3 %% []
+    ] %% []
+  ] ; [
+    apps T.Cup
+    [ Ix 3 %% []
+    ; Ix 2 %% []
+    ] %% []
+  ; apps T.Mem
+    [ Ix 1 %% []
+    ; Ix 2 %% []
+    ] %% []
   ] ]
   ( appb B.Equiv
     [ apps T.Mem
@@ -871,6 +998,24 @@ let cap_def () =
       ; Ix 2 %% []
       ] %% []
     ] %% []
+  ] ; [
+    apps T.Cap
+    [ Ix 3 %% []
+    ; Ix 2 %% []
+    ] %% []
+  ; apps T.Mem
+    [ Ix 1 %% []
+    ; Ix 3 %% []
+    ] %% []
+  ] ; [
+    apps T.Cap
+    [ Ix 3 %% []
+    ; Ix 2 %% []
+    ] %% []
+  ; apps T.Mem
+    [ Ix 1 %% []
+    ; Ix 2 %% []
+    ] %% []
   ] ]
   ( appb B.Equiv
     [ apps T.Mem
@@ -903,6 +1048,24 @@ let setminus_def () =
       [ Ix 3 %% []
       ; Ix 2 %% []
       ] %% []
+    ] %% []
+  ] ; [
+    apps T.SetMinus
+    [ Ix 3 %% []
+    ; Ix 2 %% []
+    ] %% []
+  ; apps T.Mem
+    [ Ix 1 %% []
+    ; Ix 3 %% []
+    ] %% []
+  ] ; [
+    apps T.SetMinus
+    [ Ix 3 %% []
+    ; Ix 2 %% []
+    ] %% []
+  ; apps T.Mem
+    [ Ix 1 %% []
+    ; Ix 2 %% []
     ] %% []
   ] ]
   ( appb B.Equiv
@@ -941,6 +1104,15 @@ let setst_def () =
         [ Ix 2 %% []
         ; Ix 3 %% []
         ] %% []
+      ] %% []
+    ] ; [
+      apps T.SetSt
+      [ Ix 2 %% []
+      ; Ix 3 %% []
+      ] %% []
+    ; apps T.Mem
+      [ Ix 1 %% []
+      ; Ix 2 %% []
       ] %% []
     ] ]
     ( appb B.Equiv
@@ -2165,7 +2337,7 @@ let tupdom_def ~noarith ~t0p n =
       [ apps (T.Tuple n)
         (ixi n) %% []
       ] %% []
-    ; begin
+    ; (*begin
       if t0p then
         apps T.TIntRange
         [ apps (T.TIntLit 1) [] %% []
@@ -2190,7 +2362,16 @@ let tupdom_def ~noarith ~t0p n =
             ] %% []
           end
         ] %% []
-      end
+      end*)
+      apps (T.SetEnum n)
+      (List.init n begin fun i ->
+        if noarith then
+          apps (T.IntLit (i + 1)) [] %% []
+        else
+          apps (T.Cast t_int)
+          [ apps (T.TIntLit (i + 1)) [] %% []
+          ] %% []
+      end) %% []
     ] %% []
   ) %% []
 
@@ -2683,6 +2864,7 @@ let get_axm ~solver tla_smb =
   | T.UnionIntro -> union_intro ()
   | T.UnionElim -> union_elim ()
   | T.SubsetDef -> subset_def ()
+  | T.SubsetDefAlt -> subset_def_alt ()
   | T.SubsetIntro -> subset_intro ()
   | T.SubsetElim -> subset_elim ()
   | T.CupDef -> cup_def ()
@@ -2748,6 +2930,7 @@ let get_axm ~solver tla_smb =
   | T.TIntRangeDef -> t_intrange_def ~t0p
 
   | T.CastInj ty0 -> cast_inj ty0
+  | T.CastInjAlt ty0 -> cast_inj_alt ty0
   | T.TypeGuard ty0 -> type_guard ty0
   | T.TypeGuardIntro ty0 -> type_guard_intro ty0
   | T.TypeGuardElim ty0 -> type_guard_elim ty0

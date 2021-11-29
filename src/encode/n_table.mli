@@ -135,6 +135,7 @@ type tla_axm =
   | UnionIntro
   | UnionElim
   | SubsetDef
+  | SubsetDefAlt
   | SubsetIntro
   | SubsetElim
   | CupDef
@@ -210,6 +211,7 @@ type tla_axm =
 
     (* SPECIAL *)
   | CastInj of ty
+  | CastInjAlt of ty
   | TypeGuard of ty
   | TypeGuardIntro of ty
   | TypeGuardElim of ty

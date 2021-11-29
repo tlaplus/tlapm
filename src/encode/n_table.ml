@@ -115,6 +115,7 @@ type tla_axm =
   | UnionIntro
   | UnionElim
   | SubsetDef
+  | SubsetDefAlt
   | SubsetIntro
   | SubsetElim
   | CupDef
@@ -190,6 +191,7 @@ type tla_axm =
 
     (* SPECIAL *)
   | CastInj of ty
+  | CastInjAlt of ty
   | TypeGuard of ty
   | TypeGuardIntro of ty
   | TypeGuardElim of ty
@@ -283,6 +285,7 @@ let axm_desc = function
   | UnionIntro -> "UnionIntro"
   | UnionElim -> "UnionElim"
   | SubsetDef -> "SubsetDef"
+  | SubsetDefAlt -> "SubsetDefAlt"
   | SubsetIntro -> "SubsetIntro"
   | SubsetElim -> "SubsetElim"
   | CupDef -> "CupDef"
@@ -346,6 +349,7 @@ let axm_desc = function
   | TNatSetDef -> "TNatSetDef"
   | TIntRangeDef -> "TIntRangeDef"
   | CastInj ty -> "CastInj " ^ ty_to_string ty
+  | CastInjAlt ty -> "CastInjAlt " ^ ty_to_string ty
   | TypeGuard ty -> "TypeGuard " ^ ty_to_string ty
   | TypeGuardIntro ty -> "TypeGuardIntro " ^ ty_to_string ty
   | TypeGuardElim ty -> "TypeGuardElim " ^ ty_to_string ty

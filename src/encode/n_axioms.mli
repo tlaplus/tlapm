@@ -25,6 +25,7 @@ val get_axm : solver:string -> tla_axm -> expr
 (* {3 Special} *)
 
 val cast_inj : ty0 -> expr
+val cast_inj_alt : ty0 -> expr
 val type_guard : ty0 -> expr
 val type_guard_intro : ty0 -> expr
 val type_guard_elim : ty0 -> expr
@@ -45,6 +46,7 @@ val set_ext : unit -> expr
 val subseteq_def : unit -> expr
 val subseteq_intro : unit -> expr
 val subseteq_elim : unit -> expr
+val subseteq_antisym : unit -> expr
 
 val setenum_def : int -> expr
 val setenum_intro : int -> expr
@@ -55,6 +57,7 @@ val union_intro : unit -> expr
 val union_elim : unit -> expr
 
 val subset_def : unit -> expr
+val subset_def_alt : unit -> expr
 val subset_intro : unit -> expr
 val subset_elim : unit -> expr
 

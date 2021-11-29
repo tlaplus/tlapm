@@ -353,8 +353,7 @@ let untyped_deps ~solver tla_smb s =
     | true -> false
     | _ -> Params.debugging "t0+"
   in
-  let effaxms = Params.debugging "effaxms" in
-  let efffcns = Params.debugging "efffcns" in
+  let efffcns = false in
   begin match tla_smb with
   (* Logic *)
   | Choose ->
@@ -362,25 +361,17 @@ let untyped_deps ~solver tla_smb s =
   (* Set Theory *)
   | Mem ->
       ([],        [ (*SetExt*) ])
-  | SubsetEq when effaxms ->
-      ([ Mem ],   [ SubsetEqIntro ; SubsetEqElim ])
   | SubsetEq ->
-      ([ Mem ],   [ SubsetEqDef ])
-  | SetEnum n when effaxms ->
-      if (n = 0) then
-      ([ Mem ],   [ EnumDefIntro 0 ])
-      else
-      ([ Mem ],   [ EnumDefIntro n ; EnumDefElim n ])
+      ([ Mem ],   [ SubsetEqIntro ; SubsetEqElim ])
+  | SetEnum 0 ->
+      ([ Mem ],   [ EnumDefElim 0 ])
   | SetEnum n ->
-      ([ Mem ],   [ EnumDef n ])
-  | Union when effaxms ->
-      ([ Mem ],   [ UnionIntro ; UnionElim ])
+      ([ Mem ],   [ EnumDefIntro n ; EnumDefElim n ])
   | Union ->
-      ([ Mem ],   [ UnionDef ])
-  | Subset when effaxms ->
-      ([ Mem ],   [ SubsetIntro ; SubsetElim ])
+      ([ Mem ],   [ UnionIntro ; UnionElim ])
   | Subset ->
-      ([ Mem ],   [ SubsetDef ])
+      ([ Mem ; SubsetEq ],
+                  [ SubsetDefAlt ])
   | Cup ->
       ([ Mem ],   [ CupDef ])
   | Cap ->
@@ -389,10 +380,8 @@ let untyped_deps ~solver tla_smb s =
       ([ Mem ],   [ SetMinusDef ])
   | SetSt ->
       ([ Mem ],   [ SetStDef ])
-  | SetOf n when effaxms ->
-      ([ Mem ],   [ SetOfIntro n ; SetOfElim n ])
   | SetOf n ->
-      ([ Mem ],   [ SetOfDef n ])
+      ([ Mem ],   [ SetOfIntro n ; SetOfElim n ])
   (* Booleans *)
   | BoolSet ->
       ([], [])
@@ -462,15 +451,12 @@ let untyped_deps ~solver tla_smb s =
   | FunIsafcn ->
       ([ Mem ; FunDom ; FunConstr ; FunApp ],
                                   [ FunExt ])
-  | FunSet when effaxms && efffcns ->
+  | FunSet when efffcns ->
       ([ Mem ; FunIsafcn ; FunDom ; FunApp ; FunIm ; SubsetEq ],
                                   [ FunSetImIntro ; FunSetSubs ; FunSetElim1 ; FunSetElim2 ])
-  | FunSet when effaxms ->
-      ([ Mem ; FunIsafcn ; FunDom ; FunApp ],
-                                  [ FunSetIntro ; FunSetElim1 ; FunSetElim2 ])
   | FunSet ->
       ([ Mem ; FunIsafcn ; FunDom ; FunApp ],
-                                  [ FunSetDef ])
+                                  [ FunSetIntro ; FunSetElim1 ; FunSetElim2 ])
   | FunConstr ->
       ([ FunIsafcn ],             [ FunConstrIsafcn ])
   | FunDom ->
@@ -480,44 +466,41 @@ let untyped_deps ~solver tla_smb s =
   | FunExcept ->
       ([ Mem ; FunIsafcn ; FunDom ; FunApp ],
                                   [ FunExceptIsafcn ; FunExceptDomDef ; FunExceptAppDef ])
-  | FunIm when effaxms ->
-      ([ Mem ; FunDom ; FunApp ], [ FunImIntro ; FunImElim ])
   | FunIm ->
-      ([ Mem ; FunDom ; FunApp ], [ FunImDef ])
+      ([ Mem ; FunDom ; FunApp ], [ FunImIntro ; FunImElim ])
   (* Tuples *)
   | Tuple 0 ->
       ([ FunIsafcn ],             [ TupIsafcn 0 ])
   | Tuple n when n > 0 && noarith ->
-      ([ FunIsafcn ; FunDom ; FunApp ; IntRange ]
+      (*([ FunIsafcn ; FunDom ; FunApp ; IntRange ]*)
+      ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ]
        @ List.init n (fun i -> IntLit (i+1)),
                                   [ TupIsafcn n ; TupDomDef n ; TupAppDef n ])
   | Tuple n when n > 0 && t0p ->
-      ([ FunIsafcn ; FunDom ; FunApp ; TIntRange ],
+      (*([ FunIsafcn ; FunDom ; FunApp ; TIntRange ],*)
+      ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ; Cast (TAtm TAInt) ],
                                   [ TupIsafcn n ; TupDomDef n ; TupAppDef n ])
   | Tuple n when n > 0 ->
-      ([ FunIsafcn ; FunDom ; FunApp ; IntRange ; Cast (TAtm TAInt) ],
+      (*([ FunIsafcn ; FunDom ; FunApp ; IntRange ; Cast (TAtm TAInt) ],*)
+      ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ; Cast (TAtm TAInt) ],
                                   [ TupIsafcn n ; TupDomDef n ; TupAppDef n ])
-  | Product n when effaxms ->
+  | Product n ->
       ([ Mem ; Tuple n ; FunApp ]
        @ List.init n (fun i ->
          if noarith then IntLit (i + 1)
          else TIntLit (i + 1))
        @ (if noarith then [ Cast (TAtm TAInt) ] else []),
                                   [ ProductIntro n ; ProductElim n ])
-  | Product n ->
-      ([ Mem ; Tuple n ],         [ ProductDef n ])
   (* Records *)
   | Rec fs ->
       let n = List.length fs in
       ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ]
        @ List.map (fun s -> StrLit s) fs,
                                   [ RecIsafcn fs ; RecDomDef fs ; RecAppDef fs ])
-  | RecSet fs when effaxms ->
+  | RecSet fs ->
       ([ Mem ; Rec fs ; FunApp ]
        @ List.map (fun s -> StrLit s) fs,
                                   [ RecSetIntro fs ; RecSetElim fs ])
-  | RecSet fs ->
-      ([ Mem ; Rec fs ],          [ RecSetDef fs ])
   (* Sequences *)
   | SeqTail ->
       ([ Mem ; SeqSeq ],          [ SeqTailIsSeq ])
@@ -606,18 +589,7 @@ let typed_deps tla_smb s =
   fun x -> (s', x)
 
 let special_deps tla_smb =
-  let effaxms = Params.debugging "effaxms" in
   begin match tla_smb with
-  | Cast ty0 when effaxms ->
-      let tla_smbs =
-        match ty0 with
-        | TAtm TAIdv -> []
-        | TAtm TABol -> [ Mem ; BoolSet ; True (TAtm TAIdv) ]
-        | TAtm TAInt -> [ Mem ; IntSet ]
-        | TAtm TAStr -> [ Mem ; StrSet ]
-        | _ -> []
-      in
-      (tla_smbs @ [ Proj ty0 ], [ CastInj ty0 ; TypeGuardIntro ty0 ; TypeGuardElim ty0 ])
   | Cast ty0 ->
       let tla_smbs =
         match ty0 with
@@ -627,7 +599,7 @@ let special_deps tla_smb =
         | TAtm TAStr -> [ Mem ; StrSet ]
         | _ -> []
       in
-      (tla_smbs, [ CastInj ty0 ; TypeGuard ty0 ])
+      (tla_smbs @ [ Proj ty0 ], [ CastInjAlt ty0 ; TypeGuardIntro ty0 ; TypeGuardElim ty0 ])
   | Proj _ ->
       ([], [])
   | True ty0 ->

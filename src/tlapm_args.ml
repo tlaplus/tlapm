@@ -175,10 +175,6 @@ let init () =
                  * "t1"         set type level on 1
                  * "oldsmt"     use the old version of SMT (default)
                  * "newsmt"     use the new version of SMT
-                 * "(no)effaxms"
-                 *              use efficient axioms (more patterns)
-                 * "(no)efffcns"
-                 *              use efficient axioms for functions
                  * (no)rw       simplify expressions (rewriting)
                  * (no)smartflatten
                  *              try to reuse previous results of flattening
