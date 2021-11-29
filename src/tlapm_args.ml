@@ -175,7 +175,6 @@ let init () =
                  * "t1"         set type level on 1
                  * "oldsmt"     use the old version of SMT (default)
                  * "newsmt"     use the new version of SMT
-                 * (no)smartflatten
                  * "rwsetext"   simplify =- and \subseteq-statements between sets
                  * "rw"         simplify expressions (implies rwsetext)
                  * "rw+"        like rw, but less smart (may introduce quantifiers)

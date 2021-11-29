@@ -491,15 +491,11 @@ let same_app bp' bp =
   && List.for_all2 (compare_expr bp' bp) bp'.bp_ho_args bp.bp_ho_args
 
 let rec match_previous_bp bps bp =
-  if Params.debugging "nosmartflatten" && not (Params.debugging "smartflatten") then
-    None
-  else begin
-    match bps with
-    | [] -> None
-    | bp' :: bps ->
-        if same_app bp' bp then Some bp'
-        else match_previous_bp bps bp
-  end
+  match bps with
+  | [] -> None
+  | bp' :: bps ->
+      if same_app bp' bp then Some bp'
+      else match_previous_bp bps bp
 
 let treat_expr bps gtx e =
   let rec spin gtx' bps acc e =
