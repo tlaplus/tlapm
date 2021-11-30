@@ -18,7 +18,7 @@ val compose : sub -> sub -> sub
 val bumpn : int -> sub -> sub
 val bump : sub -> sub
 val app_ix : sub -> int wrapped -> expr
-val normalize : ?cx:hyp Deque.dq -> expr -> expr list -> expr
+val normalize : ?cx:hyp Deque.dq -> expr -> expr list -> expr_
 val app_expr : sub -> expr -> expr
 val app_exprs : sub -> expr list -> expr list
 val app_sel : sub -> sel -> sel

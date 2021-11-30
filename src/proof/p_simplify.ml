@@ -475,7 +475,7 @@ and expose_connective cx goal = match goal.core with
           | Some {core = Defn ({ core = Operator (_, bod) }, _, _, _)} ->
               let op = app_expr (shift n) bod in
               let op = Util.set_locus op (Util.get_locus goal) in
-              let goal = normalize ~cx:cx op args $$ op in
+              let goal = normalize ~cx:cx op args @@ op in
               expose_connective cx goal
           | Some h -> goal
           | _ ->

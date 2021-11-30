@@ -221,7 +221,7 @@ module Subst : sig
   val bump : sub -> sub
   val compose : sub -> sub -> sub
   val app_ix : sub -> int wrapped -> expr
-  val normalize : ?cx:hyp Deque.dq -> expr -> expr list -> expr
+  val normalize : ?cx:hyp Deque.dq -> expr -> expr list -> expr_
   val app_expr : sub -> expr -> expr
   val app_bdom : sub -> bound_domain -> bound_domain
   val app_bound : sub -> bound -> sub * bound

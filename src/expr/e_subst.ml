@@ -36,7 +36,7 @@ let rec app_expr s oe = begin match oe.core with
   | Ix n ->
       app_ix s (n @@ oe)
   | Apply (op, fs) ->
-      normalize (app_expr s op) (app_exprs s fs) $$ oe
+      normalize (app_expr s op) (app_exprs s fs) @@ oe
   | Bang (e, sels) ->
       Bang (app_expr s e, List.map (app_sel s) sels) @@ oe
   | Lambda (vs, e) ->
@@ -114,15 +114,15 @@ and normalize ?(cx = Deque.empty) op args = match op.core with
         failwith "Expr.Subst.normalize"
       end else begin
         let sub = List.fold_left ssnoc (shift 0) args in
-        app_expr sub e
+        (app_expr sub e).core
       end
   | Apply (op, oargs) ->
-      Apply (op, oargs @ args) %% []
-  | _ ->
-      begin match args with
-      | [] -> op
-      | _ -> Apply (op, args) %% []
-      end
+      Apply (op, oargs @ args)
+  | _ -> begin
+      match args with
+        | [] -> op.core (* NOTE The properties of op are lost! *)
+        | _ -> Apply (op, args)
+    end
 
 and app_sel s = function
   | Sel_inst args ->

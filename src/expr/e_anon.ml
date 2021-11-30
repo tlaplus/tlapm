@@ -33,7 +33,7 @@ let standard_form ~cx ~dep ~wd op args = match wd with
       if args = [] then
         (app_expr (shift dep) op).core @@ op
       else
-        normalize ~cx:cx (app_expr (shift dep) op) args $$ op
+        normalize ~cx:cx (app_expr (shift dep) op) args @@ op
   | _ ->
       if args = [] then
         Ix dep @@ op
