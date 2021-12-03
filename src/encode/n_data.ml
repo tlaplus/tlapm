@@ -489,7 +489,7 @@ let untyped_deps ~solver tla_smb s =
        @ List.init n (fun i ->
          if noarith then IntLit (i + 1)
          else TIntLit (i + 1))
-       @ (if noarith then [ Cast (TAtm TAInt) ] else []),
+       @ (if noarith then [] else [ Cast (TAtm TAInt) ]),
                                   [ ProductIntro n ; ProductElim n ])
   (* Records *)
   | Rec fs ->

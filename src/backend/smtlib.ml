@@ -182,7 +182,7 @@ let rec pp_apply cx ff op args =
       | _, _ ->
           (* assuming arity is always correct *)
           let mssg = "unknown native operator '" ^ Smb.get_name smb ^ "'" in
-          error mssg
+          error ~at:op mssg
       end
 
   | Opaque s ->
@@ -553,7 +553,11 @@ let pp_print_obligation ?(solver="SMT") ff ob =
   pp_print_newline ff ();
 
   (* Print options *)
-  fprintf ff "(set-logic UFNIA)@.";
+  let logic =
+    if Params.debugging "noarith" then "UF"
+    else "UFNIA"
+  in
+  fprintf ff "(set-logic %s)@." logic;
   pp_print_newline ff ();
 
   (* Print sorts *)
