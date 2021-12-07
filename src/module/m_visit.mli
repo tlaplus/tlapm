@@ -29,4 +29,12 @@ class map: object
         ctx * modunit_
     method anoninst: ctx -> Expr.T.instance -> export ->
         ctx * modunit_
+    method tla_module:
+        ctx -> mule -> ctx * mule
+    method tla_module_root:
+        mule -> mule
+    method tla_modules:
+        ctx -> mule list -> ctx * mule list
+    method tla_modules_root:
+        mule list -> mule list
 end
