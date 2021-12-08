@@ -35,6 +35,8 @@ let rec app_expr s oe = begin match oe.core with
       oe
   | Ix n ->
       app_ix s (n @@ oe)
+  | Apply (op, []) ->
+      app_expr s op $$ oe
   | Apply (op, fs) ->
       normalize (app_expr s op) (app_exprs s fs) @@ oe
   | Bang (e, sels) ->
