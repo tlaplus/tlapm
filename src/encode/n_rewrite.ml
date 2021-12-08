@@ -13,7 +13,7 @@ open Property
 open Expr.T
 open Type.T
 
-module Subst = Expr.Subst
+module Subst = N_subst
 module Visit = Expr.Visit
 module B = Builtin
 

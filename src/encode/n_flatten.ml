@@ -10,7 +10,7 @@ open Type.T
 open Property
 open Ext
 
-module Subst = Expr.Subst
+module Subst = N_subst
 module Is = Util.Coll.Is
 
 (** Outline of the algorithm:
