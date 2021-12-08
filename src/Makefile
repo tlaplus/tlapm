@@ -42,7 +42,7 @@ TYPE_PACK = \
 	type/t_t type/t_visit type/t_collect type/t_hyps type/t_synth
 
 ENCODE_PACK = \
-  encode/n_hints encode/n_rewrite \
+  encode/n_subst encode/n_hints encode/n_rewrite \
   encode/n_table encode/n_data encode/n_smb \
 	encode/n_axioms encode/n_standardize encode/n_axiomatize encode/n_flatten
 
