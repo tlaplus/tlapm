@@ -502,14 +502,13 @@ let untyped_deps ~solver tla_smb s =
        @ List.map (fun s -> StrLit s) fs,
                                   [ RecSetIntro fs ; RecSetElim fs ])
   (* Sequences *)
-  | SeqTail ->
-      ([ Mem ; SeqSeq ],          [ SeqTailIsSeq ])
   | SeqSeq
   | SeqLen
   | SeqBSeq
   | SeqCat
   | SeqAppend
   | SeqHead
+  | SeqTail
   | SeqSubSeq
   | SeqSelectSeq ->
       ([], [])

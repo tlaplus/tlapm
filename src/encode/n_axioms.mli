@@ -155,7 +155,31 @@ val recset_elim : string list -> expr
 
 (* {4 Sequences} *)
 
-val tail_isseq : unit -> expr
+val seqset_intro : noarith:bool -> expr
+val seqset_elim1 : noarith:bool -> expr
+val seqset_elim2 : noarith:bool -> expr
+
+val seqlen_def : unit -> expr
+
+val seqcat_isseq : unit -> expr
+val seqcatlen_def : noarith:bool -> expr
+val seqcatapp_def : noarith:bool -> expr
+
+val seqappend_isseq : unit -> expr
+val seqappendlen_def : noarith:bool -> expr
+val seqappendapp_def : noarith:bool -> expr
+
+val seqhead_def : noarith:bool -> expr
+
+val seqtail_isseq : unit -> expr
+val seqtaillen_def : noarith:bool -> expr
+val seqtailapp_def : noarith:bool -> expr
+
+val seqempty_isseq : unit -> expr
+val seqemptylen_def : noarith:bool -> expr
+
+val sequnit_isseq : unit -> expr
+val sequnitlen_def : noarith:bool -> expr
 
 
 (* {3 Typed Variants} *)

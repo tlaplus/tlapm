@@ -178,7 +178,24 @@ type tla_axm =
   | RecSetIntro of string list
   | RecSetElim of string list
   (* Sequences *)
+  | SeqSetIntro
+  | SeqSetElim1
+  | SeqSetElim2
+  | SeqLenDef
+  | SeqCatIsSeq
+  | SeqCatLen
+  | SeqCatApp
+  | SeqAppendIsSeq
+  | SeqAppendLen
+  | SeqAppendApp
+  | SeqHeadDef
   | SeqTailIsSeq
+  | SeqTailLen
+  | SeqTailApp
+  | SeqEmptyIsSeq
+  | SeqEmptyLen
+  | SeqUnitIsSeq
+  | SeqUnitLen
 
     (* TYPED *)
   (* Strings *)
@@ -342,7 +359,25 @@ let axm_desc = function
   | RecSetDef fs -> String.concat " " ( "RecSetDef" :: fs )
   | RecSetIntro fs -> String.concat " " ( "RecSetIntro" :: fs )
   | RecSetElim fs -> String.concat " " ( "RecSetElim" :: fs )
+  | SeqSetIntro -> "SeqSetIntro"
+  | SeqSetElim1 -> "SetSetElim1"
+  | SeqSetElim2 -> "SetSetElim2"
+  | SeqLenDef -> "SeqLenDef"
+  | SeqCatIsSeq -> "SeqCatIsSeq"
+  | SeqCatLen -> "SeqCatLen"
+  | SeqCatApp -> "SeqCatApp"
+  | SeqAppendIsSeq -> "SeqAppendIsSeq"
+  | SeqAppendLen -> "SeqAppendLen"
+  | SeqAppendApp -> "SeqAppendApp"
+  | SeqHeadDef -> "SeqHeadDef"
   | SeqTailIsSeq -> "SeqTailIsSeq"
+  | SeqTailLen -> "SeqTailLen"
+  | SeqTailApp -> "SeqTailApp"
+  | SeqEmptyIsSeq -> "SeqEmptyIsSeq"
+  | SeqEmptyLen -> "SeqEmptyLen"
+  | SeqUnitIsSeq -> "SeqUnitIsSeq"
+  | SeqUnitLen -> "SeqUnitLen"
+
   | TStrSetDef -> "TStrSetDef"
   | TStrLitDistinct (s1, s2) -> Format.sprintf "TStrLitDistinct %s %s" s1 s2
   | TIntSetDef -> "TIntSetDef"

@@ -2684,26 +2684,62 @@ let recset_elim fs =
 
 (* {4 Sequences} *)
 
-let tail_isseq () =
-  quant Forall
-  [ "s" ; "seq" ] [ t_idv ; t_idv ]
-  ( appb B.Implies
-    [ apps T.Mem
-      [ Ix 1 %% []
-      ; apps T.SeqSeq
-        [ Ix 2 %% []
-        ] %% []
-      ] %% []
-    ; apps T.Mem
-      [ apps T.SeqTail
-        [ Ix 1 %% []
-        ] %% []
-      ; apps T.SeqSeq
-        [ Ix 2 %% []
-        ] %% []
-      ] %% []
-    ] %% []
-  ) %% []
+let seqset_intro ~noarith =
+  Internal B.TRUE %% []
+
+let seqset_elim1 ~noarith =
+  Internal B.TRUE %% []
+
+let seqset_elim2 ~noarith =
+  Internal B.TRUE %% []
+
+let seqlen_def () =
+  Internal B.TRUE %% []
+
+let seqlenint_def =
+  Internal B.TRUE %% []
+
+let seqcat_isseq () =
+  Internal B.TRUE %% []
+
+let seqcatlen_def ~noarith =
+  Internal B.TRUE %% []
+
+let seqcatapp_def ~noarith =
+  Internal B.TRUE %% []
+
+let seqappend_isseq () =
+  Internal B.TRUE %% []
+
+let seqappendlen_def ~noarith =
+  Internal B.TRUE %% []
+
+let seqappendapp_def ~noarith =
+  Internal B.TRUE %% []
+
+let seqhead_def ~noarith =
+  Internal B.TRUE %% []
+
+let seqtail_isseq () =
+  Internal B.TRUE %% []
+
+let seqtaillen_def ~noarith =
+  Internal B.TRUE %% []
+
+let seqtailapp_def ~noarith =
+  Internal B.TRUE %% []
+
+let seqempty_isseq () =
+  Internal B.TRUE %% []
+
+let seqemptylen_def ~noarith =
+  Internal B.TRUE %% []
+
+let sequnit_isseq () =
+  Internal B.TRUE %% []
+
+let sequnitlen_def ~noarith =
+  Internal B.TRUE %% []
 
 
 (* {3 Typed Variants} *)
@@ -2921,7 +2957,25 @@ let get_axm ~solver tla_smb =
   | T.RecSetDef fs -> recset_def fs
   | T.RecSetIntro fs -> recset_intro fs
   | T.RecSetElim fs -> recset_elim fs
-  | T.SeqTailIsSeq -> tail_isseq ()
+
+  | T.SeqSetIntro -> seqset_intro ~noarith
+  | T.SeqSetElim1 -> seqset_elim1 ~noarith
+  | T.SeqSetElim2 -> seqset_elim2 ~noarith
+  | T.SeqLenDef -> seqlen_def ()
+  | T.SeqCatIsSeq -> seqcat_isseq ()
+  | T.SeqCatLen -> seqcatlen_def ~noarith
+  | T.SeqCatApp -> seqcatapp_def ~noarith
+  | T.SeqAppendIsSeq -> seqappend_isseq ()
+  | T.SeqAppendLen -> seqappendlen_def ~noarith
+  | T.SeqAppendApp -> seqappendapp_def ~noarith
+  | T.SeqHeadDef -> seqhead_def ~noarith
+  | T.SeqTailIsSeq -> seqtail_isseq ()
+  | T.SeqTailLen -> seqtaillen_def ~noarith
+  | T.SeqTailApp -> seqtailapp_def ~noarith
+  | T.SeqEmptyIsSeq -> seqempty_isseq ()
+  | T.SeqEmptyLen -> seqemptylen_def ~noarith
+  | T.SeqUnitIsSeq -> sequnit_isseq ()
+  | T.SeqUnitLen -> sequnitlen_def ~noarith
 
   | T.TStrSetDef -> t_strset_def ()
   | T.TStrLitDistinct (s1, s2) -> t_strlit_distinct s1 s2

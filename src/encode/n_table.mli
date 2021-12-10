@@ -198,7 +198,24 @@ type tla_axm =
   | RecSetIntro of string list
   | RecSetElim of string list
   (* Sequences *)
+  | SeqSetIntro
+  | SeqSetElim1
+  | SeqSetElim2
+  | SeqLenDef
+  | SeqCatIsSeq
+  | SeqCatLen
+  | SeqCatApp
+  | SeqAppendIsSeq
+  | SeqAppendLen
+  | SeqAppendApp
+  | SeqHeadDef
   | SeqTailIsSeq
+  | SeqTailLen
+  | SeqTailApp
+  | SeqEmptyIsSeq
+  | SeqEmptyLen
+  | SeqUnitIsSeq
+  | SeqUnitLen
 
     (* TYPED *)
   (* Strings *)
