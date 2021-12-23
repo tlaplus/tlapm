@@ -6,6 +6,7 @@ session "TLA+" = "Pure" +
   theories
     Constant (global)
     Zenon (global)
+(*    NewSMT (global)  *)
 
   document_files
     "root.tex"
