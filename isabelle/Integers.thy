@@ -419,7 +419,7 @@ lemmas int_leq_pp_def = nat_leq_def
   (* -- 'positive-positive' case, ie: both arguments are naturals *)
 
 axiomatization where
-  int_leq_pn_def [simp]: "\<lbrakk>a \<in> Nat; b \<in> Nat\<rbrakk> \<Longrightarrow> a \<le> -.b = FALSE"
+  int_leq_pn_def [simp]: "\<lbrakk>a \<in> Nat; b \<in> Nat\<rbrakk> \<Longrightarrow> a \<le> -.b = (a = 0 \<and> b = 0)"
 and
   int_leq_np_def [simp]: "\<lbrakk>a \<in> Nat; b \<in> Nat\<rbrakk> \<Longrightarrow> -.a \<le> b = TRUE"
 and
@@ -445,7 +445,7 @@ using assms by simp
 
 lemma neg_le_iff_le [simp]:
   "\<lbrakk>m \<in> Int; n \<in> Int \<rbrakk> \<Longrightarrow> -.n \<le> -.m = (m \<le> n)"
-by(rule intCases2[of m n], simp_all)
+  by (rule intCases2[of m n]) auto
 
 
 subsection \<open> Addition of integers \<close>
