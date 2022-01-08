@@ -196,14 +196,26 @@ let verit =
             "echo unknown"
 
 
-let spass_dfg = make_exec "SPASS" "SPASS -Auto -PGiven=0 -PProblem=0 -PStatistic=0 \"$file\"" "echo unknown"
-let spass_tptp = make_exec "SPASS" "SPASS -Auto -TPTP -PGiven=0 -PProblem=0 -PStatistic=0 \"$file\"" "echo unknown"
+let spass_dfg =
+  make_exec "SPASS"
+            "SPASS -Auto -PGiven=0 -PProblem=0 -PStatistic=0 \"$file\""
+            "echo unknown"
+let spass_tptp =
+  make_exec "SPASS"
+            "SPASS -Auto -TPTP -PGiven=0 -PProblem=0 -PStatistic=0 \"$file\""
+            "echo unknown"
 
 
-let eprover = make_exec "eprover" "eprover --auto --tstp-format --silent \"$file\"" "eprover --version"
+let eprover =
+  make_exec "eprover"
+            "eprover --auto --tstp-format --silent \"$file\""
+            "eprover --version"
 
 
-let ls4 = make_exec "ls4" "ptl_to_trp -i $file | ls4" "echo unknown"
+let ls4 =
+  make_exec "ls4"
+            "ptl_to_trp -i $file | ls4"
+            "echo unknown"
 
 
 let smt_logic = ref "UFNIA"
