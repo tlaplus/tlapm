@@ -164,10 +164,12 @@ let rec deref
                 | _ ->
                     recx cx ds begin fun cx ->
                         Errors.warning := true;
-                        Errors.set e ("!: is forbidden for this expression.\n");
+                        Errors.set e "!: is forbidden for \
+                            this expression.\n";
                         (* ((pp_print_expr cx ????? e)));*)
                         Util.eprintf ~at:orig_e
-                            "!: is forbidden for this expression:@\n%a"
+                            "!: is forbidden for \
+                            this expression:@\n%a"
                         (pp_print_expr cx) e;
                         failwith "Expr.Deref.deref: !:"
                     end
@@ -304,9 +306,11 @@ and deref_num cx (ds, e) n =
                             then begin
                                 Errors.warning := true;
                                 Errors.set e
-                                    "subexpression reference does not resolve to an expression";
+                                    "subexpression reference does \
+                                    not resolve to an expression";
                                 Util.eprintf ~at:e
-                                    "subexpression reference does not resolve to an expression";
+                                    "subexpression reference \
+                                    does not resolve to an expression";
                                 failwith "Expr.Deref.deref_num"
                                 end
                             else spin (k + 1) hs
@@ -316,12 +320,17 @@ and deref_num cx (ds, e) n =
             if has_negix se
                 then begin
                     Errors.warning := true;
-                    Errors.set e (
-                        "Subexpression of ASSUME/PROVE uses identifiers declared " ^
-                        "therein\n\nTlapm does not handle yet such subexpression namings.");
-                    Util.eprintf ~at:e "%s" (
-                        "subexpression of ASSUME/PROVE uses identifiers declared therein" ^
-                        "\nTlapm does not handle yet such subexpression namings.");
+                    Errors.set e
+                        "Subexpression of ASSUME/PROVE \
+                        uses identifiers declared \
+                        therein\n\n\
+                        Tlapm does not handle yet \
+                        such subexpression namings.";
+                    Util.eprintf ~at:e "%s"
+                        "subexpression of ASSUME/PROVE \
+                        uses identifiers declared therein \
+                        \nTlapm does not handle yet \
+                        such subexpression namings.";
                     failwith "Expr.Deref.deref_num"
                     end
                 else (ds, se)
@@ -442,11 +451,15 @@ and deref_inst cx e args =
         let al = List.length args in
         Errors.warning := true;
         Errors.set e  (Printf.sprintf
-            "Arity mismatch in subexpression instance.@\nExpected %d argument%s, but found%s %d."
+            "Arity mismatch in subexpression \
+            instance.@\nExpected %d argument%s, \
+            but found%s %d."
             bl (if bl = 1 then "" else "s")
             (if al < bl then " only" else "") al);
         Util.eprintf ~at:e
-            "Arity mismatch in subexpression instance.@\nExpected %d argument%s, but found%s %d."
+            "Arity mismatch in subexpression \
+            instance.@\nExpected %d argument%s, \
+            but found%s %d."
             bl (if bl = 1 then "" else "s")
             (if al < bl then " only" else "") al;
         failwith "Expr.Deref.deref_inst"
@@ -468,10 +481,14 @@ and deref_inst cx e args =
         | _ ->
             Errors.warning := true;
             Errors.set e (Printf.sprintf
-                "Arity mismatch in subexpression instance.@\nExpected 1 argument, but found %d."
+                "Arity mismatch in subexpression \
+                instance.@\nExpected 1 argument, \
+                but found %d."
                 (List.length args));
             Util.eprintf ~at:e
-                "Arity mismatch in subexpression instance.@\nExpected 1 argument, but found %d."
+                "Arity mismatch in subexpression \
+                instance.@\nExpected 1 argument, \
+                but found %d."
                 (List.length args);
             failwith "Expr.Deref.deref_inst"
         end
@@ -507,9 +524,12 @@ and deref_at cx (dslen, e) =
         | _ ->
             Errors.warning := true;
             Errors.set e
-                "Cannot abstract over bound variables in a non-binding expression";
+                "Cannot abstract over \
+                bound variables in \
+                a non-binding expression";
             Util.eprintf ~at:e
-                "Cannot abstract over bound variables in a non-binding expression";
+                "Cannot abstract over bound \
+                variables in a non-binding expression";
             failwith "Expr.Deref.deref_at" in
     let vsslen = List.length vss in
     let vssub = List.init
@@ -541,7 +561,8 @@ and deref_label cx (dslen, e) l largs =
                     largs <> [] then begin
                 Errors.warning := true;
                 Errors.set e (Printf.sprintf
-                    "Expected %d argument%s for labelled reference !%s, but found %d"
+                    "Expected %d argument%s for \
+                    labelled reference !%s, but found %d"
                     (List.length lpi)
                     (if lpi = []
                         then "s"
@@ -551,7 +572,8 @@ and deref_label cx (dslen, e) l largs =
                     l
                     (List.length largs));
                 Util.eprintf ~at:e
-                    "Expected %d argument%s for labelled reference !%s, but found %d"
+                    "Expected %d argument%s for \
+                    labelled reference !%s, but found %d"
                     (List.length lpi)
                     (if lpi = []
                         then "s"

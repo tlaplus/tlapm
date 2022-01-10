@@ -163,9 +163,11 @@ class anon_sg = object (self: 'self)
                             (snd scx) op pargs sels in
                         if Deref.is_badexp se then begin
                             Util.eprintf ~at:e
-                                "Could not resolve subexpression reference";
+                                "Could not resolve \
+                                subexpression reference";
                             Errors.set e (Printf.sprintf
-                                "Could not resolve subexpression reference");
+                                "Could not resolve \
+                                subexpression reference");
                             failwith "Expr.Anon: 2"
                         end;
                         Util.set_locus se (Util.get_locus e)
@@ -286,10 +288,12 @@ class anon_sg = object (self: 'self)
                         (hyp_is_named n.core) with
                     | None ->
                         Util.eprintf ~at:pf
-                            "Identifier \"%s\" in label parameters not found"
+                            "Identifier \"%s\" in \
+                            label parameters not found"
                             n.core;
                         Errors.set pf (Printf.sprintf
-                            "Identifier \"%s\" in label parameters not found"
+                            "Identifier \"%s\" in \
+                            label parameters not found"
                             n.core);
                         failwith "Expr.Anon"
                     | Some (dep, _) ->
