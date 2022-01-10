@@ -141,7 +141,7 @@ let rec deref
     | _ when has e atomic ->
         Errors.warning := true;
         Errors.set orig_e
-            ("Expression has no subexpressions");
+            "Expression has no subexpressions";
         Util.eprintf ~at:orig_e
             "Expression has no subexpressions";
         badexp
