@@ -47,16 +47,29 @@ m == INSTANCE MaxAsFSM WITH
 
 mIsMax == mX = Max(mA, mB)
 
+(*
+Helper lemma: we show here conditions under which the next step action is enabled.
+*)
 LEMMA mEnabledNext == mX = m!Null => ENABLED <<m!Next>>_mX
+  (* First we show that stuttering steps are not allowed by the action. *)
   <1>1. m!Next => <<m!Next>>_mX
         BY m!Assms DEF m!Next, m!Null
-  <1>3. SUFFICES ASSUME mX = m!Null
-                 PROVE ENABLED m!Next
+  (* This allows us to drop ... /\ mX # mX' in the goal. *)
+  <1>2. SUFFICES ASSUME mX = m!Null PROVE ENABLED m!Next
         BY <1>1, m!Assms, ExpandENABLED DEF m!Next, m!Null
-  <1>2. mX = m!Null => ENABLED m!Next
-        BY ENABLEDrewrites, m!Assms DEF m!Next
-  <1>q. QED BY <1>3, <1>2 
+  (* Finally by replacing all the occurences of `x' = Value'
+     with TRUE (by ENABLEDrewrites) we get
+     
+         mX = m!Null /\ \/ mA >  mB /\ TRUE
+                        \/ mA =< mB /\ TRUE
+     
+     which is TRUE by <1>2 (mX = m!Null) and mA, mB \in Nat.
+  *)
+  <1>3. QED BY <1>2, ENABLEDrewrites, m!Assms DEF m!Next
 
+(*
+Here is mEnabledNext proved by showing existence of the next step variables.
+*)
 LEMMA mEnabledNextViaExist == mX = m!Null => ENABLED <<m!Next>>_mX
   <1>1. mA \in Nat /\ mB \in Nat /\ m!Null \notin Nat
         BY m!Assms, NoSetContainsEverything DEF m!Null
@@ -193,5 +206,5 @@ THEOREM mSpecIsMaxAsProp == m!Spec => <>[]mIsMax
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Jan 13 19:25:11 EET 2022 by karolis
+\* Last modified Thu Jan 13 20:42:25 EET 2022 by karolis
 \* Created Sun Jan 09 08:26:46 EET 2022 by karolis
