@@ -60,12 +60,11 @@ THEOREM SpecLeadsToX == Spec => LeadsToX
 LeadsToStableX == <>[]x
 THEOREM SpecLeadsToStableX == Spec => LeadsToStableX
   <1>1. Spec => [](x => []x)
-        <2>1. Init => (x => []x) BY DEF Init
-        <2>2. x /\ [Next]_x => x' BY DEF Next
-        <2>3. QED BY <2>1, <2>2, PTL DEF Spec
+        <2>1. x /\ [Next]_x => x' BY DEF Next
+        <2>2. QED BY <2>1, PTL DEF Spec
   <1>2. QED BY <1>1, SpecLeadsToX, PTL DEF LeadsToStableX, LeadsToX
   
 =============================================================================
 \* Modification History
-\* Last modified Thu Jan 13 00:16:19 EET 2022 by karolis
+\* Last modified Thu Jan 13 17:17:31 EET 2022 by karolis
 \* Created Sat Jan 08 20:57:08 EET 2022 by karolis

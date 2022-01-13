@@ -20,14 +20,6 @@ EXTENDS Naturals, TLAPS
 Max(a, b) ==
   IF a > b THEN a ELSE b 
 
-MaxProps == \A a, b \in Nat:
-              /\ Max(a, b) >= a
-              /\ Max(a, b) >= b
-              /\ Max(a, b) \in Nat
-              /\ Max(a, b) \in {a, b}
-THEOREM MaxIsGEQ == MaxProps
-  BY DEF MaxProps, Max
-
 -----------------------------------------------------------------------------
 
 ---------- MODULE MaxAsFSM ---------------
@@ -55,6 +47,37 @@ m == INSTANCE MaxAsFSM WITH
 
 mIsMax == mX = Max(mA, mB)
 
+LEMMA mEnabledNext == mX = m!Null => ENABLED <<m!Next>>_mX
+  <1>1. m!Next => <<m!Next>>_mX
+        BY m!Assms DEF m!Next, m!Null
+  <1>3. SUFFICES ASSUME mX = m!Null
+                 PROVE ENABLED m!Next
+        BY <1>1, m!Assms, ExpandENABLED DEF m!Next, m!Null
+  <1>2. mX = m!Null => ENABLED m!Next
+        BY ENABLEDrewrites, m!Assms DEF m!Next
+  <1>q. QED BY <1>3, <1>2 
+
+LEMMA mEnabledNextViaExist == mX = m!Null => ENABLED <<m!Next>>_mX
+  <1>1. mA \in Nat /\ mB \in Nat /\ m!Null \notin Nat
+        BY m!Assms, NoSetContainsEverything DEF m!Null
+  (*
+  We use ExpandENABLED to replace the ENABLED  with an \E for the
+  next step variables. Thus, to show, that such next step exist.
+  *)
+  <1>2. SUFFICES ASSUME mX = m!Null
+                 PROVE \E x : ( /\ mX = m!Null
+                                /\ \/ mA > mB /\ x = mA
+                                   \/ mA =< mB /\ x = mB
+                              ) /\ x # mX
+        BY ExpandENABLED DEF m!Next
+  <1>3. CASE mA > mB
+        <2>1. WITNESS mA
+        <2>2. QED BY <2>1, <1>3, <1>2, <1>1
+  <1>4. CASE mA <= mB
+        <2>1. WITNESS mB
+        <2>2. QED BY <2>1, <1>4, <1>2, <1>1
+  <1>5. QED  BY <1>3, <1>4, m!Assms
+
 (*
 Helper invariant: the type correctness.
 *)
@@ -69,11 +92,9 @@ LEMMA mSpecTypeOK == m!Spec => []m!TypeOK
 Helper invariant: mIsMax is stable.
 *)
 LEMMA mSpecStableMax == m!Spec => [](mIsMax => []mIsMax)
-  <1>1. m!Init /\ mIsMax => mIsMax
-        OBVIOUS
-  <1>2. mIsMax /\ [m!Next]_mX => mIsMax'
+  <1>1. mIsMax /\ [m!Next]_mX => mIsMax'
         BY m!Assms DEF Max, mIsMax, m!Next
-  <1>q. QED BY <1>1, <1>2, PTL DEF m!Spec
+  <1>2. QED BY <1>1, PTL DEF m!Spec
 
 (*
 Helper invariant: Either X = Null XOR X = Max(A, B)
@@ -89,8 +110,8 @@ LEMMA mSpecXInv == m!Spec => []mXInv
         <2>0. SUFFICES ASSUME m!Init PROVE mXInv OBVIOUS
         <2>1. mX = m!Null BY <2>0 DEF m!Init
         <2>2. ~mIsMax
-              BY <2>1, m!Assms, NoSetContainsEverything, MaxIsGEQ
-              DEF mIsMax, MaxProps, m!Null  
+              BY <2>1, m!Assms, NoSetContainsEverything
+              DEF mIsMax, Max, m!Null  
         <2>q. QED BY <2>1, <2>2, <1>0, <1>x DEF mXInv
   <1>2. mXInv /\ [m!Next]_mX => mXInv'
         <2>1. SUFFICES ASSUME mXInv, m!Next PROVE mXInv'
@@ -105,7 +126,7 @@ LEMMA mSpecXInv == m!Spec => []mXInv
   <1>q. QED BY <1>1, <1>2, PTL DEF m!Spec
 
 (*
-Prove the that MaxAsFSM produces the same results as Max eventually.
+Prove that MaxAsFSM produces the same results as Max eventually.
 *)
 LEMMA mSpecEventuallyMax == m!Spec => <>mIsMax
   <1>1. mA \in Nat /\ mB \in Nat /\ m!Null \notin Nat
@@ -135,27 +156,9 @@ LEMMA mSpecEventuallyMax == m!Spec => <>mIsMax
         *)
         <2>1. m!Spec => []P
               <3>1. m!Init => P
-                    <4>1. SUFFICES ASSUME m!Init PROVE P OBVIOUS
-                    <4>2. SUFFICES ASSUME TRUE PROVE ENABLED <<m!Next>>_mX BY DEF P
-                    <4>3. mX = m!Null BY <4>1 DEF m!Init
-                    (*
-                    We use ExpandENABLED to replace the ENABLED in the WF condition
-                    with an \E for the next step variables. In this case, for the
-                    initial state (show that the second state exists).
-                    *)
-                    <4>4. SUFFICES ASSUME TRUE PROVE \E mX_1 : (
-                            /\ mX = m!Null
-                            /\ \/ mA >  mB /\ mX_1 = mA
-                               \/ mA =< mB /\ mX_1 = mB
-                          ) /\ ~mX_1 = mX
-                          BY ExpandENABLED DEF m!Next
-                    <4>5. CASE mA > mB
-                          <5>1. WITNESS mA
-                          <5>2. QED BY <5>1, <4>3, <1>1, <4>5
-                    <4>6. CASE mA <= mB
-                          <5>1. WITNESS mB
-                          <5>2. QED BY <5>1, <4>3, <1>1, <4>6
-                    <4>7. QED BY <4>5, <4>6, m!Assms
+                    <4>1. SUFFICES ASSUME m!Init PROVE ENABLED <<m!Next>>_mX BY DEF P
+                    <4>2. mX = m!Null BY <4>1 DEF m!Init
+                    <4>3. QED BY <4>2, mEnabledNext
               <3>2. m!TypeOK /\ mXInv /\ P /\ [m!Next]_mX /\ mXInv' => P'
                     <4>1. SUFFICES ASSUME m!TypeOK, mXInv, P, mX = mX' \/ m!Next, mXInv'
                                    PROVE P'
@@ -184,6 +187,7 @@ LEMMA mSpecEventuallyMax == m!Spec => <>mIsMax
                                       <7>1. WITNESS mB
                                       <7>2. QED BY <7>1, <6>1, <6>5, <1>1
                                 <6>6. QED  BY <6>4, <6>5, m!Assms
+                                (* TODO: Replace <6>3..6 with: <6>q. QED BY <6>1, mEnabledNext DEF P, m!Next ... *)
                           <5>2. CASE mX # mX'
                                 <6>1. mX' # m!Null BY <4>2, <5>2
                                 <6>2. QED BY <6>1, <4>1, <4>2 DEF P, mIsMax, mXInv
@@ -209,5 +213,5 @@ THEOREM mSpecIsMaxAsProp == m!Spec => <>[]mIsMax
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Jan 13 01:10:35 EET 2022 by karolis
+\* Last modified Thu Jan 13 19:09:26 EET 2022 by karolis
 \* Created Sun Jan 09 08:26:46 EET 2022 by karolis
