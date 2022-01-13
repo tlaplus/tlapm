@@ -166,28 +166,8 @@ LEMMA mSpecEventuallyMax == m!Spec => <>mIsMax
                     <4>2. CASE mX = m!Null
                           <5>1. CASE mX = mX'
                                 <6>1. mX' = m!Null BY <4>2, <5>1
-                                <6>2. SUFFICES ASSUME TRUE PROVE (ENABLED <<m!Next>>_mX)'
-                                      BY DEF P
-                                (*
-                                Here we prove ENABLED again with the ExpandENABLED directive,
-                                but in this case we have m!Next step, in which the target
-                                predicate mIsMax was not made true (so we have UNCHANGED mX).
-                                Thus we have to show we have yet another step possible. 
-                                *)
-                                <6>3. SUFFICES ASSUME TRUE PROVE \E mX_1 : (
-                                        /\ mX' = m!Null
-                                        /\ \/ mA > mB /\ mX_1 = mA
-                                           \/ mA =< mB /\ mX_1 = mB
-                                        ) /\ ~mX_1 = mX'
-                                      BY <6>3, ExpandENABLED DEF m!Next
-                                <6>4. CASE mA > mB
-                                      <7>1. WITNESS mA
-                                      <7>2. QED BY <7>1, <6>1, <6>4, <1>1
-                                <6>5. CASE mA <= mB
-                                      <7>1. WITNESS mB
-                                      <7>2. QED BY <7>1, <6>1, <6>5, <1>1
-                                <6>6. QED  BY <6>4, <6>5, m!Assms
-                                (* TODO: Replace <6>3..6 with: <6>q. QED BY <6>1, mEnabledNext DEF P, m!Next ... *)
+                                <6>2. SUFFICES ASSUME TRUE PROVE (ENABLED <<m!Next>>_mX)' BY DEF P
+                                <6>3. QED BY <5>1, <6>1, mEnabledNext, ExpandENABLED DEF m!Next
                           <5>2. CASE mX # mX'
                                 <6>1. mX' # m!Null BY <4>2, <5>2
                                 <6>2. QED BY <6>1, <4>1, <4>2 DEF P, mIsMax, mXInv
@@ -213,5 +193,5 @@ THEOREM mSpecIsMaxAsProp == m!Spec => <>[]mIsMax
 
 =============================================================================
 \* Modification History
-\* Last modified Thu Jan 13 19:09:26 EET 2022 by karolis
+\* Last modified Thu Jan 13 19:25:11 EET 2022 by karolis
 \* Created Sun Jan 09 08:26:46 EET 2022 by karolis
