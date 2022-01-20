@@ -89,14 +89,7 @@ type tla_smb =
   | SeqSelectSeq
 
     (* TYPED *)
-  (* Set Theory *)
-  | TMem of ty
-  (* Strings *)
-  | TStrSet
-  | TStrLit of string
   (* Arithmetic *)
-  | TIntSet
-  | TNatSet
   | TIntLit of int
   | TIntPlus
   | TIntUminus
@@ -109,7 +102,6 @@ type tla_smb =
   | TIntLt
   | TIntGteq
   | TIntGt
-  | TIntRange
 
     (* SPECIAL *)
   | Cast of ty
@@ -218,15 +210,6 @@ type tla_axm =
   | SeqTailApp
   | SeqTupTyping of int
   | SeqTupLen of int
-
-    (* TYPED *)
-  (* Strings *)
-  | TStrSetDef
-  | TStrLitDistinct of string * string
-  (* Arithmetic *)
-  | TIntSetDef
-  | TNatSetDef
-  | TIntRangeDef
 
     (* SPECIAL *)
   | CastInj of ty

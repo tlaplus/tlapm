@@ -176,38 +176,8 @@ let untyped_data tla_smb =
   end
 
 let typed_data tla_smb =
-  let t0p =
-    match Params.debugging "noarith" with
-    | true -> false
-    | _ -> Params.debugging "t0+"
-  in
   begin match tla_smb with
-  (* Set Theory *)
-  | TMem ty ->
-      ("TMem_" ^ ty_to_string ty,
-                        [ t_cst ty ; t_cst (TSet ty) ],       t_bol,
-      Mem)
-  (* Strings *)
-  | TStrSet ->
-      ("TStrSet",       [],                                   TSet t_str,
-      StrSet)
-  | TStrLit str ->
-      ("TStrLit_" ^ str,
-                        [],                                   t_str,
-      StrLit str)
   (* Arithmetic *)
-  | TIntSet when t0p ->
-      ("TIntSet",       [],                                   t_idv,
-      IntSet)
-  | TIntSet ->
-      ("TIntSet ",      [],                                   TSet t_int,
-      IntSet)
-  | TNatSet when t0p ->
-      ("TNatSet",       [],                                   t_idv,
-      NatSet)
-  | TNatSet ->
-      ("TNatSet",       [],                                   TSet t_int,
-      NatSet)
   | TIntLit n ->
       ("TIntLit_" ^ string_of_int n,
                         [],                                   t_int,
@@ -245,14 +215,6 @@ let typed_data tla_smb =
   | TIntGt ->
       ("TIntGt",        [ t_cst t_int ; t_cst t_int ],        t_bol,
       IntGt)
-  | TIntRange when t0p ->
-      ("Range_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_idv,
-      IntRange)
-  | TIntRange ->
-      ("Range_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        TSet t_int,
-      IntRange)
 
   | _ ->
       error "internal error"
@@ -291,9 +253,8 @@ let get_data tla_smb =
       ; dat_kind = Untyped
       ; dat_tver = None
       }
-  | TMem _ | TStrSet | TStrLit _ | TIntSet | TNatSet | TIntLit _ | TIntPlus
-  | TIntUminus | TIntMinus | TIntTimes | TIntQuotient | TIntRemainder | TIntExp
-  | TIntLteq | TIntLt | TIntGteq | TIntGt | TIntRange ->
+  | TIntLit _ | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient
+  | TIntRemainder | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt ->
       let (nm, tins, tout, tver) = typed_data tla_smb in
       { dat_name = "TLA__" ^ nm
       ; dat_ty2  = Ty2 (tins, tout)
@@ -546,39 +507,8 @@ let untyped_deps ~solver tla_smb s =
   fun x -> (s', x)
 
 let typed_deps tla_smb s =
-  let s' =
-    match tla_smb with
-    | TStrLit str ->
-        { s with t_strlits = Ss.add str s.t_strlits }
-    | _ -> s
-  in
-  let t0p =
-    match Params.debugging "noarith" with
-    | true -> false
-    | _ -> Params.debugging "t0+"
-  in
   begin match tla_smb with
-  (* Set Theory *)
-  | TMem ty ->
-      ([],                                    [ Typing (TMem ty) ])
-  (* Strings *)
-  | TStrSet ->
-      ([ TMem t_str ],                        [ TStrSetDef ])
-  | TStrLit str ->
-      let distincts =
-        Ss.fold (fun str2 -> List.cons (TStrLitDistinct (str, str2))) s.t_strlits []
-      in
-      ([], distincts)
   (* Arithmetic *)
-  | TIntSet when t0p ->
-      ([ Mem ; Cast t_int ; IntSet ],         [ TIntSetDef ; Typing TIntSet ])
-  | TIntSet ->
-      ([ TMem t_int ],                        [ TIntSetDef ])
-  | TNatSet when t0p ->
-      ([ Mem ; TIntLit 0 ; TIntLteq ; Cast t_int ; NatSet ],
-                                              [ TNatSetDef ; Typing TNatSet ])
-  | TNatSet ->
-      ([ TMem t_int ; TIntLit 0 ; TIntLteq ], [ TNatSetDef ])
   | TIntLit _ ->
       ([],                                    [])
   | TIntPlus ->
@@ -604,15 +534,10 @@ let typed_deps tla_smb s =
       ([ (*IntGteq*) IntLteq ],               [ Typing TIntLteq ])
   | TIntGt ->
       ([ (*IntGt*) IntLteq ],                 [ Typing TIntLteq ])
-  | TIntRange when t0p ->
-      ([ Mem ; Cast t_int ; TIntLteq ; IntRange ],
-                                              [ TIntRangeDef ; Typing TIntRange ])
-  | TIntRange ->
-      ([ TMem t_int ; TIntLteq ; IntRange ],  [ TIntRangeDef ])
   | _ ->
       error "internal error"
   end |>
-  fun x -> (s', x)
+  fun x -> (s, x)
 
 let special_deps tla_smb =
   begin match tla_smb with
@@ -652,9 +577,8 @@ let get_deps ~solver tla_smb s =
       { dat_deps = smbs
       ; dat_axms = axms
       }
-  | TMem _ | TStrSet | TStrLit _ | TIntSet | TNatSet | TIntLit _ | TIntPlus
-  | TIntUminus | TIntMinus | TIntTimes | TIntQuotient | TIntRemainder | TIntExp
-  | TIntLteq | TIntLt | TIntGteq | TIntGt | TIntRange ->
+  | TIntLit _ | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient
+  | TIntRemainder | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt ->
       let s, (smbs, axms) = typed_deps tla_smb s in
       s,
       { dat_deps = smbs

@@ -91,7 +91,7 @@ let seq xs ty1s e =
   Sequent { context = Deque.of_list hs ; active = e }
 
 
-(* {3 Untyped/Monosorted Variants} *)
+(* {3 Main} *)
 
 (* {4 Special} *)
 
@@ -3934,131 +3934,6 @@ let seqtuplen_def ~noarith n =
   ) %% []
 
 
-(* {3 Typed Variants} *)
-
-(* {4 Strings} *)
-
-let t_strset_def () =
-  quant Forall
-  [ "s" ] [ t_str ]
-  ~pats:[ [
-    apps (T.TMem t_str)
-    [ Ix 1 %% []
-    ; apps T.TStrSet [] %% []
-    ] %% []
-  ] ]
-  ( apps (T.TMem t_str)
-    [ Ix 1 %% []
-    ; apps T.TStrSet [] %% []
-    ] %% []
-  ) %% []
-
-let t_strlit_distinct s1 s2 =
-  appb ~tys:[ t_str ] B.Neq
-  [ apps (T.TStrLit s1) [] %% []
-  ; apps (T.TStrLit s2) [] %% []
-  ] %% []
-
-
-(* {4 Arithmetic} *)
-
-let t_intset_def ~t0p =
-  let cast_if_t0p = fun e ->
-    if t0p then
-      apps (T.Cast t_int) [ e ] %% []
-    else e
-  in
-  let mem_op =
-    if t0p then T.Mem
-    else (T.TMem t_int)
-  in
-  quant Forall
-  [ "n" ] [ t_int ]
-  ~pats:[ [
-    apps mem_op
-    [ Ix 1 %% [] |> cast_if_t0p
-    ; apps T.TIntSet [] %% []
-    ] %% []
-  ] ]
-  ( apps mem_op
-    [ Ix 1 %% [] |> cast_if_t0p
-    ; apps T.TIntSet [] %% []
-    ] %% []
-  ) %% []
-
-let t_natset_def ~t0p =
-  let cast_if_t0p = fun e ->
-    if t0p then
-      apps (T.Cast t_int) [ e ] %% []
-    else e
-  in
-  let mem_op =
-    if t0p then T.Mem
-    else (T.TMem t_int)
-  in
-  quant Forall
-  [ "n" ] [ t_int ]
-  ~pats:[ [
-    apps mem_op
-    [ Ix 1 %% [] |> cast_if_t0p
-    ; apps T.TNatSet [] %% []
-    ] %% []
-  ] ]
-  ( appb B.Equiv
-    [ apps mem_op
-      [ Ix 1 %% [] |> cast_if_t0p
-      ; apps T.TNatSet [] %% []
-      ] %% []
-    ; apps T.TIntLteq
-      [ apps (T.TIntLit 0) [] %% []
-      ; Ix 1 %% []
-      ] %% []
-    ] %% []
-  ) %% []
-
-let t_intrange_def ~t0p =
-  let cast_if_t0p = fun e ->
-    if t0p then
-      apps (T.Cast t_int) [ e ] %% []
-    else e
-  in
-  let mem_op =
-    if t0p then T.Mem
-    else (T.TMem t_int)
-  in
-  quant Forall
-  [ "m" ; "n" ; "p" ] [ t_int ; t_int ; t_int ]
-  ~pats:[ [
-    apps mem_op
-    [ Ix 1 %% [] |> cast_if_t0p
-    ; apps T.TIntRange
-      [ Ix 3 %% []
-      ; Ix 2 %% []
-      ] %% []
-    ] %% []
-  ] ]
-  ( appb B.Equiv
-    [ apps mem_op
-      [ Ix 1 %% [] |> cast_if_t0p
-      ; apps T.TIntRange
-        [ Ix 3 %% []
-        ; Ix 2 %% []
-        ] %% []
-      ] %% []
-    ; appb B.Conj
-      [ apps T.TIntLteq
-        [ Ix 3 %% []
-        ; Ix 1 %% []
-        ] %% []
-      ; apps T.TIntLteq
-        [ Ix 1 %% []
-        ; Ix 2 %% []
-        ] %% []
-      ] %% []
-    ] %% []
-  ) %% []
-
-
 (* {3 Get Axiom} *)
 
 (* These annotations are used to rewrite instances of an axiom schema.
@@ -4170,12 +4045,6 @@ let get_axm ~solver tla_smb =
   | T.SeqTailApp -> seqtailapp_def ~noarith
   | T.SeqTupTyping n -> seqtup_typing n
   | T.SeqTupLen n -> seqtuplen_def ~noarith n
-
-  | T.TStrSetDef -> t_strset_def ()
-  | T.TStrLitDistinct (s1, s2) -> t_strlit_distinct s1 s2
-  | T.TIntSetDef -> t_intset_def ~t0p
-  | T.TNatSetDef -> t_natset_def ~t0p
-  | T.TIntRangeDef -> t_intrange_def ~t0p
 
   | T.CastInj ty0 -> cast_inj ty0
   | T.CastInjAlt ty0 -> cast_inj_alt ty0

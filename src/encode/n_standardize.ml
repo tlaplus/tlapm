@@ -134,9 +134,6 @@ let visitor = object (self : 'self)
           | SubSeq,     None      -> SeqSubSeq
           | SelectSeq,  None      -> SeqSelectSeq
 
-          | STRING,     Some [ ]              -> TStrSet
-          | Int,        Some [ ]              -> TIntSet
-          | Nat,        Some [ ]              -> TNatSet
           | Plus,       Some [ TAtm TAInt ]   -> TIntPlus
           | Uminus,     Some [ TAtm TAInt ]   -> TIntUminus
           | Minus,      Some [ TAtm TAInt ]   -> TIntMinus
@@ -148,7 +145,6 @@ let visitor = object (self : 'self)
           | Lt,         Some [ TAtm TAInt ]   -> TIntLt
           | Gteq,       Some [ TAtm TAInt ]   -> TIntGteq
           | Gt,         Some [ TAtm TAInt ]   -> TIntGt
-          | Range,      Some [ ]              -> TIntRange
 
           | (Plus | Uminus | Minus | Times | Exp | Lteq | Lt | Gteq | Gt),
                         Some [ TAtm TARel ]   ->
@@ -229,14 +225,9 @@ let visitor = object (self : 'self)
           Apply (opq, (ds @ [ Lambda (bs, e) %% [] ])) %% []
 
     | String str ->
-        if has oe Props.tpars_prop then
-          let smb = mk_smb (TStrLit str) in
-          let opq = mk_opq smb in
-          opq
-        else
-          let smb = mk_smb (StrLit str) in
-          let opq = mk_opq smb in
-          opq
+        let smb = mk_smb (StrLit str) in
+        let opq = mk_opq smb in
+        opq
 
     | Num (m, "") ->
         if has oe Props.tpars_prop then

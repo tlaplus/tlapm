@@ -70,14 +70,7 @@ type tla_smb =
   | SeqSelectSeq
 
     (* TYPED *)
-  (* Set Theory *)
-  | TMem of ty
-  (* Strings *)
-  | TStrSet
-  | TStrLit of string
   (* Arithmetic *)
-  | TIntSet
-  | TNatSet
   | TIntLit of int
   | TIntPlus
   | TIntUminus
@@ -90,7 +83,6 @@ type tla_smb =
   | TIntLt
   | TIntGteq
   | TIntGt
-  | TIntRange
 
     (* SPECIAL *)
   | Cast of ty
@@ -199,15 +191,6 @@ type tla_axm =
   | SeqTupTyping of int
   | SeqTupLen of int
 
-    (* TYPED *)
-  (* Strings *)
-  | TStrSetDef
-  | TStrLitDistinct of string * string
-  (* Arithmetic *)
-  | TIntSetDef
-  | TNatSetDef
-  | TIntRangeDef
-
     (* SPECIAL *)
   | CastInj of ty
   | CastInjAlt of ty
@@ -267,11 +250,6 @@ let tla_smb_to_string = function
   | SeqTail -> "SeqTail"
   | SeqSubSeq -> "SeqSubSeq"
   | SeqSelectSeq -> "SeqSelectSeq"
-  | TMem ty -> "TMem " ^ ty_to_string ty
-  | TStrSet -> "TStrSet"
-  | TStrLit s -> Format.sprintf "TStrLit %s" s
-  | TIntSet -> "TIntSet"
-  | TNatSet -> "TNatSet"
   | TIntLit n -> Format.sprintf "TIntLit %d" n
   | TIntPlus -> "TIntPlus"
   | TIntUminus -> "TIntUminus"
@@ -284,7 +262,6 @@ let tla_smb_to_string = function
   | TIntLt -> "TIntLt"
   | TIntGteq -> "TIntGteq"
   | TIntGt -> "TIntGt"
-  | TIntRange -> "TIntRange"
   | Cast ty -> "Cast " ^ ty_to_string ty
   | Proj ty -> "Proj " ^ ty_to_string ty
   | True ty -> "True" ^ ty_to_string ty
@@ -382,11 +359,6 @@ let axm_desc = function
   | SeqTupTyping n -> Format.sprintf "SeqTupTyping %d" n
   | SeqTupLen n -> Format.sprintf "SeqTupLen %d" n
 
-  | TStrSetDef -> "TStrSetDef"
-  | TStrLitDistinct (s1, s2) -> Format.sprintf "TStrLitDistinct %s %s" s1 s2
-  | TIntSetDef -> "TIntSetDef"
-  | TNatSetDef -> "TNatSetDef"
-  | TIntRangeDef -> "TIntRangeDef"
   | CastInj ty -> "CastInj " ^ ty_to_string ty
   | CastInjAlt ty -> "CastInjAlt " ^ ty_to_string ty
   | TypeGuard ty -> "TypeGuard " ^ ty_to_string ty

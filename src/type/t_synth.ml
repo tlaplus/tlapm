@@ -613,11 +613,7 @@ and expr_aux scx oe =
       end
 
   | Internal B.BOOLEAN ->
-      if typelvl scx = 3 then
-        let ret = Internal B.BOOLEAN @@ oe in
-        let ret = assign ret Props.tpars_prop [ ] in
-        (ret, TSet (TAtm TABol))
-      else if typelvl scx = 2 then
+      if typelvl scx >= 2 then
         let ret = Internal B.BOOLEAN @@ oe in
         (ret, TSet (TAtm TABol))
       else
@@ -625,11 +621,7 @@ and expr_aux scx oe =
         (ret, TAtm TAIdv)
 
   | Internal B.STRING ->
-      if typelvl scx = 3 then
-        let ret = Internal B.STRING @@ oe in
-        let ret = assign ret Props.tpars_prop [ ] in
-        (ret, TSet (TAtm TAStr))
-      else if typelvl scx = 2 then
+      if typelvl scx >= 2 then
         let ret = Internal B.STRING @@ oe in
         (ret, TSet (TAtm TAStr))
       else
@@ -637,11 +629,7 @@ and expr_aux scx oe =
         (ret, TAtm TAIdv)
 
   | String s ->
-      if typelvl scx = 3 then
-        let ret = String s @@ oe in
-        let ret = assign ret Props.tpars_prop [ ] in
-        (ret, TAtm TAStr)
-      else if typelvl scx = 2 then
+      if typelvl scx >= 2 then
         let ret = String s @@ oe in
         (ret, TAtm TAStr)
       else
@@ -1046,7 +1034,6 @@ and expr_aux scx oe =
        * but axioms will differ *)
       if typelvl scx > 1 then
         let ret = Internal B.Nat @@ oe in
-        let ret = assign ret Props.tpars_prop [ ] in
         (ret, TSet (TAtm TAInt))
       else
         let ret = Internal B.Nat @@ oe in
@@ -1057,7 +1044,6 @@ and expr_aux scx oe =
        * but axioms will differ *)
       if typelvl scx > 1 then
         let ret = Internal B.Int @@ oe in
-        let ret = assign ret Props.tpars_prop [ ] in
         (ret, TSet (TAtm TAInt))
       else
         let ret = Internal B.Int @@ oe in
@@ -1152,15 +1138,9 @@ and expr_aux scx oe =
       let e, ty01 = expr scx e in
       let f, ty02 = expr scx f in
       begin match ty01, ty02 with
-      (* NOTE Same behavior for typelvl = 2, 3
-       * but types and axioms will differ *)
-      | TAtm TAInt, TAtm TAInt when typelvl scx > 1 ->
-          let op = assign op Props.tpars_prop [ ] in
-          let ret = Apply (op, [ e ; f ]) @@ oe in
-          (ret, TSet (TAtm TAInt))
-      (* NOTE Intervals are always sets of integers *)
       | _, _ when typelvl scx > 1 ->
           let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
+          (* NOTE Intervals are always sets of integers *)
           (ret, TSet (TAtm TAInt))
       | _, _ ->
           let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in

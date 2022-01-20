@@ -77,11 +77,6 @@ module Table : sig
     | SeqTail
     | SeqSubSeq
     | SeqSelectSeq
-    | TMem of ty
-    | TStrSet
-    | TStrLit of string
-    | TIntSet
-    | TNatSet
     | TIntLit of int
     | TIntPlus
     | TIntUminus
@@ -94,7 +89,6 @@ module Table : sig
     | TIntLt
     | TIntGteq
     | TIntGt
-    | TIntRange
     | Cast of ty
     | Proj of ty
     | True of ty

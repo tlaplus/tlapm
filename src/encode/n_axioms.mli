@@ -32,7 +32,7 @@ val type_guard_elim : ty0 -> expr
 val op_typing : tla_smb -> expr
 
 
-(* {3 Untyped/Monosorted Variants} *)
+(* {3 Main} *)
 
 (* {4 Logic} *)
 
@@ -182,18 +182,4 @@ val seqtailapp_def : noarith:bool -> expr
 
 val seqtup_typing : int -> expr
 val seqtuplen_def : noarith:bool -> int -> expr
-
-
-(* {3 Typed Variants} *)
-
-(* {4 Strings} *)
-
-val t_strset_def : unit -> expr
-val t_strlit_distinct : string -> string -> expr
-
-(* {4 Arithmetic} *)
-
-val t_intset_def : t0p:bool -> expr
-val t_natset_def : t0p:bool -> expr
-val t_intrange_def : t0p:bool -> expr
 
