@@ -202,20 +202,20 @@ type tla_axm =
   | SeqSetElim1
   | SeqSetElim2
   | SeqLenDef
-  | SeqCatIsSeq
+  | SeqCatTyping
   | SeqCatLen
-  | SeqCatApp
-  | SeqAppendIsSeq
+  | SeqCatApp1
+  | SeqCatApp2
+  | SeqAppendTyping
   | SeqAppendLen
-  | SeqAppendApp
+  | SeqAppendApp1
+  | SeqAppendApp2
   | SeqHeadDef
-  | SeqTailIsSeq
+  | SeqTailTyping
   | SeqTailLen
   | SeqTailApp
-  | SeqEmptyIsSeq
-  | SeqEmptyLen
-  | SeqUnitIsSeq
-  | SeqUnitLen
+  | SeqTupTyping of int
+  | SeqTupLen of int
 
     (* TYPED *)
   (* Strings *)

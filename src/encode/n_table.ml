@@ -182,20 +182,20 @@ type tla_axm =
   | SeqSetElim1
   | SeqSetElim2
   | SeqLenDef
-  | SeqCatIsSeq
+  | SeqCatTyping
   | SeqCatLen
-  | SeqCatApp
-  | SeqAppendIsSeq
+  | SeqCatApp1
+  | SeqCatApp2
+  | SeqAppendTyping
   | SeqAppendLen
-  | SeqAppendApp
+  | SeqAppendApp1
+  | SeqAppendApp2
   | SeqHeadDef
-  | SeqTailIsSeq
+  | SeqTailTyping
   | SeqTailLen
   | SeqTailApp
-  | SeqEmptyIsSeq
-  | SeqEmptyLen
-  | SeqUnitIsSeq
-  | SeqUnitLen
+  | SeqTupTyping of int
+  | SeqTupLen of int
 
     (* TYPED *)
   (* Strings *)
@@ -363,20 +363,20 @@ let axm_desc = function
   | SeqSetElim1 -> "SetSetElim1"
   | SeqSetElim2 -> "SetSetElim2"
   | SeqLenDef -> "SeqLenDef"
-  | SeqCatIsSeq -> "SeqCatIsSeq"
+  | SeqCatTyping -> "SeqCatTyping"
   | SeqCatLen -> "SeqCatLen"
-  | SeqCatApp -> "SeqCatApp"
-  | SeqAppendIsSeq -> "SeqAppendIsSeq"
+  | SeqCatApp1 -> "SeqCatApp1"
+  | SeqCatApp2 -> "SeqCatApp2"
+  | SeqAppendTyping -> "SeqAppendTyping"
   | SeqAppendLen -> "SeqAppendLen"
-  | SeqAppendApp -> "SeqAppendApp"
+  | SeqAppendApp1 -> "SeqAppendApp1"
+  | SeqAppendApp2 -> "SeqAppendApp2"
   | SeqHeadDef -> "SeqHeadDef"
-  | SeqTailIsSeq -> "SeqTailIsSeq"
+  | SeqTailTyping -> "SeqTailTyping"
   | SeqTailLen -> "SeqTailLen"
   | SeqTailApp -> "SeqTailApp"
-  | SeqEmptyIsSeq -> "SeqEmptyIsSeq"
-  | SeqEmptyLen -> "SeqEmptyLen"
-  | SeqUnitIsSeq -> "SeqUnitIsSeq"
-  | SeqUnitLen -> "SeqUnitLen"
+  | SeqTupTyping n -> Format.sprintf "SeqTupTyping %d" n
+  | SeqTupLen n -> Format.sprintf "SeqTupLen %d" n
 
   | TStrSetDef -> "TStrSetDef"
   | TStrLitDistinct (s1, s2) -> Format.sprintf "TStrLitDistinct %s %s" s1 s2

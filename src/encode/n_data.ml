@@ -469,21 +469,25 @@ let untyped_deps ~solver tla_smb s =
   | FunIm ->
       ([ Mem ; FunDom ; FunApp ], [ FunImIntro ; FunImElim ])
   (* Tuples *)
+  | Tuple 0 when noarith ->
+      ([ FunIsafcn ; IntLit 0 ; SeqSeq ; SeqLen ],
+                                  [ TupIsafcn 0 ; SeqTupTyping 0 ; SeqTupLen 0 ])
   | Tuple 0 ->
-      ([ FunIsafcn ],             [ TupIsafcn 0 ])
+      ([ FunIsafcn ; Cast (TAtm TAInt) ; SeqSeq ; SeqLen ],
+                                  [ TupIsafcn 0 ; SeqTupTyping 0 ; SeqTupLen 0 ])
   | Tuple n when n > 0 && noarith ->
       (*([ FunIsafcn ; FunDom ; FunApp ; IntRange ]*)
-      ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ]
+      ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ; Mem ; SeqSeq ; SeqLen ]
        @ List.init n (fun i -> IntLit (i+1)),
-                                  [ TupIsafcn n ; TupDomDef n ; TupAppDef n ])
+                                  [ TupIsafcn n ; TupDomDef n ; TupAppDef n ; SeqTupTyping n ; SeqTupLen n ])
   | Tuple n when n > 0 && t0p ->
       (*([ FunIsafcn ; FunDom ; FunApp ; TIntRange ],*)
-      ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ; Cast (TAtm TAInt) ],
-                                  [ TupIsafcn n ; TupDomDef n ; TupAppDef n ])
+      ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ; Cast (TAtm TAInt) ; Mem ; SeqSeq ; SeqLen ],
+                                  [ TupIsafcn n ; TupDomDef n ; TupAppDef n ; SeqTupTyping n ; SeqTupLen n ])
   | Tuple n when n > 0 ->
       (*([ FunIsafcn ; FunDom ; FunApp ; IntRange ; Cast (TAtm TAInt) ],*)
-      ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ; Cast (TAtm TAInt) ],
-                                  [ TupIsafcn n ; TupDomDef n ; TupAppDef n ])
+      ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ; Cast (TAtm TAInt) ; Mem ; SeqSeq ; SeqLen ],
+                                  [ TupIsafcn n ; TupDomDef n ; TupAppDef n ; SeqTupTyping n ; SeqTupLen n ])
   | Product n ->
       ([ Mem ; Tuple n ; FunApp ]
        @ List.init n (fun i ->
@@ -502,15 +506,46 @@ let untyped_deps ~solver tla_smb s =
        @ List.map (fun s -> StrLit s) fs,
                                   [ RecSetIntro fs ; RecSetElim fs ])
   (* Sequences *)
-  | SeqSeq
-  | SeqLen
-  | SeqBSeq
-  | SeqCat
-  | SeqAppend
-  | SeqHead
-  | SeqTail
+  | SeqSeq when noarith ->
+      ([ Mem ; SeqLen ; FunIsafcn ; FunDom ; FunApp ; IntSet ; NatSet ; IntRange ; IntLteq ; IntLit 1 ],
+                                  [ SeqSetIntro ; SeqSetElim1 ; SeqSetElim2 ])
+  | SeqLen when noarith ->
+      ([ Mem ; FunDom ; IntRange ; NatSet ; IntLit 1 ],
+                                  [ SeqLenDef ])
+  | SeqCat when noarith ->
+      ([ Mem ; SeqSeq ; SeqLen ; FunApp ; IntSet ; NatSet ; IntPlus ; IntLteq ; IntLit 1 ],
+                                  [ SeqCatTyping ; SeqCatLen ; SeqCatApp1 ; SeqCatApp2 ])
+  | SeqAppend when noarith ->
+      ([ Mem ; SeqSeq ; SeqLen ; FunApp ; IntSet ; NatSet ; IntPlus ; IntLteq ; IntLit 1 ],
+                                  [ SeqAppendTyping ; SeqAppendLen ; SeqAppendApp1 ; SeqAppendApp2 ])
+  | SeqHead when noarith ->
+      ([ FunApp ; IntLit 1 ],
+                                  [ SeqHeadDef ])
+  | SeqTail when noarith ->
+      ([ Mem ; SeqSeq ; SeqLen ; FunApp ; IntSet ; NatSet ; IntPlus ; IntMinus ; IntLteq ; IntLit 0 ; IntLit 1 ],
+                                  [ SeqTailTyping ; SeqTailLen ; SeqTailApp ])
+  | SeqSeq ->
+      ([ Mem ; SeqLen ; FunIsafcn ; FunDom ; FunApp ; IntSet ; NatSet ; IntRange ; Cast (TAtm TAInt) ; Proj (TAtm TAInt) ],
+                                  [ SeqSetIntro ; SeqSetElim1 ; SeqSetElim2 ])
+  | SeqLen ->
+      ([ FunDom ; IntRange ; Cast (TAtm TAInt) ],
+                                  [ SeqLenDef ])
+  | SeqCat ->
+      ([ Mem ; SeqSeq ; SeqLen ; FunApp ; NatSet ; Cast (TAtm TAInt) ; Proj (TAtm TAInt) ],
+                                  [ SeqCatTyping ; SeqCatLen ; SeqCatApp1 ; SeqCatApp2 ])
+  | SeqAppend ->
+      ([ Mem ; SeqSeq ; SeqLen ; FunApp ; NatSet ; Cast (TAtm TAInt) ; Proj (TAtm TAInt) ],
+                                  [ SeqAppendTyping ; SeqAppendLen ; SeqAppendApp1 ; SeqAppendApp2 ])
+  | SeqHead ->
+      ([ FunApp ; Cast (TAtm TAInt) ],
+                                  [ SeqHeadDef ])
+  | SeqTail ->
+      ([ Mem ; SeqSeq ; SeqLen ; FunApp ; NatSet ; Cast (TAtm TAInt) ; Proj (TAtm TAInt) ],
+                                  [ SeqTailTyping ; SeqTailLen ; SeqTailApp ])
   | SeqSubSeq
   | SeqSelectSeq ->
+      ([], [])
+  | SeqBSeq ->
       ([], [])
 
   | _ ->
