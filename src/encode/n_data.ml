@@ -95,29 +95,29 @@ let untyped_data tla_smb =
       ("IntLit_" ^ string_of_int n,
                         [],                                   t_idv)
   | IntPlus ->
-      ("Plus",          [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+      ("IntPlus",       [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   | IntUminus ->
-      ("Uminus",        [ t_cst t_idv ],                      t_idv)
+      ("IntUminus",     [ t_cst t_idv ],                      t_idv)
   | IntMinus ->
-      ("Minus",         [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+      ("IntMinus",      [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   | IntTimes ->
-      ("Times",         [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+      ("IntTimes",      [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   | IntQuotient ->
-      ("Quotient",      [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+      ("IntQuotient",   [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   | IntRemainder ->
-      ("Remainder",     [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+      ("IntRemainder",  [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   | IntExp ->
-      ("Exp",           [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+      ("IntExp",        [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   | IntLteq ->
-      ("Lteq",          [ t_cst t_idv ; t_cst t_idv ],        t_bol)
+      ("IntLteq",       [ t_cst t_idv ; t_cst t_idv ],        t_bol)
   | IntLt ->
-      ("Lt",            [ t_cst t_idv ; t_cst t_idv ],        t_bol)
+      ("IntLt",         [ t_cst t_idv ; t_cst t_idv ],        t_bol)
   | IntGteq ->
-      ("Gteq",          [ t_cst t_idv ; t_cst t_idv ],        t_bol)
+      ("IntGteq",       [ t_cst t_idv ; t_cst t_idv ],        t_bol)
   | IntGt ->
-      ("Gt",            [ t_cst t_idv ; t_cst t_idv ],        t_bol)
+      ("IntGt",         [ t_cst t_idv ; t_cst t_idv ],        t_bol)
   | IntRange ->
-      ("Range",         [ t_cst t_idv ; t_cst t_idv ],        t_idv)
+      ("IntRange",      [ t_cst t_idv ; t_cst t_idv ],        t_idv)
   (* Functions *)
   | FunIsafcn ->
       ("FunIsafcn",     [ t_cst t_idv ],                      t_bol)
@@ -213,48 +213,37 @@ let typed_data tla_smb =
                         [],                                   t_int,
       IntLit n)
   | TIntPlus ->
-      ("Plus_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int,
+      ("TIntPlus",      [ t_cst t_int ; t_cst t_int ],        t_int,
       IntPlus)
   | TIntUminus ->
-      ("Uminus_" ^ ty_to_string t_int,
-                        [ t_cst t_int ],                      t_int,
+      ("TIntUminus",    [ t_cst t_int ],                      t_int,
       IntUminus)
   | TIntMinus ->
-      ("Minus_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int,
+      ("TIntMinus",     [ t_cst t_int ; t_cst t_int ],        t_int,
       IntMinus)
   | TIntTimes ->
-      ("Times_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int,
+      ("TIntTimes",     [ t_cst t_int ; t_cst t_int ],        t_int,
       IntTimes)
   | TIntQuotient ->
-      ("Quotient_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int,
+      ("TIntQuotient",  [ t_cst t_int ; t_cst t_int ],        t_int,
       IntQuotient)
   | TIntRemainder ->
-      ("Remainder_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int,
+      ("TIntRemainder", [ t_cst t_int ; t_cst t_int ],        t_int,
       IntRemainder)
   | TIntExp ->
-      ("Exp_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_int,
+      ("TIntExp",       [ t_cst t_int ; t_cst t_int ],        t_int,
       IntExp)
   | TIntLteq ->
-      ("Lteq_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_bol,
+      ("TIntLteq",      [ t_cst t_int ; t_cst t_int ],        t_bol,
       IntLteq)
   | TIntLt ->
-      ("Lt_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_bol,
+      ("TIntLt",        [ t_cst t_int ; t_cst t_int ],        t_bol,
       IntLt)
   | TIntGteq ->
-      ("Gteq_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_bol,
+      ("TIntGteq",      [ t_cst t_int ; t_cst t_int ],        t_bol,
       IntGteq)
   | TIntGt ->
-      ("Gt_" ^ ty_to_string t_int,
-                        [ t_cst t_int ; t_cst t_int ],        t_bol,
+      ("TIntGt",        [ t_cst t_int ; t_cst t_int ],        t_bol,
       IntGt)
   | TIntRange when t0p ->
       ("Range_" ^ ty_to_string t_int,
@@ -405,7 +394,10 @@ let untyped_deps ~solver tla_smb s =
       let distincts =
         Is.fold (fun m -> List.cons (IntLitDistinct (m, n))) s.intlits []
       in
-      ([ Mem ; IntSet ; IntLit 0 ; IntLteq ], [ IntLitIsint n ; IntLitZeroCmp n ] @ distincts)
+      ([ Mem ; IntSet ; IntLit 0 ; IntLteq ] @
+        begin if n = 0 && noarith then [ IntLit 1 ] else [] end,
+                                              [ IntLitIsint n ; IntLitZeroCmp n ] @ distincts @
+                                              begin if n = 0 && noarith then [ NonNegIsPos ] else [] end)
   | IntPlus when noarith ->
       ([ Mem ; IntSet ; NatSet ],             [ IntPlusTyping ; NatPlusTyping ])
   | IntUminus when noarith ->
@@ -465,7 +457,7 @@ let untyped_deps ~solver tla_smb s =
       ([ Mem ; FunConstr ],       [ FunAppDef ])
   | FunExcept ->
       ([ Mem ; FunIsafcn ; FunDom ; FunApp ],
-                                  [ FunExceptIsafcn ; FunExceptDomDef ; FunExceptAppDef ])
+                                  [ FunExceptIsafcn ; FunExceptDomDef ; FunExceptAppDef1 ; FunExceptAppDef2 ])
   | FunIm ->
       ([ Mem ; FunDom ; FunApp ], [ FunImIntro ; FunImElim ])
   (* Tuples *)
@@ -633,7 +625,8 @@ let special_deps tla_smb =
         | TAtm TAStr -> [ Mem ; StrSet ]
         | _ -> []
       in
-      (tla_smbs @ [ Proj ty0 ], [ CastInjAlt ty0 ; TypeGuardIntro ty0 ; TypeGuardElim ty0 ])
+      (tla_smbs @ (if ty0 = TAtm TABol then [] else [ Proj ty0 ]),
+              [ CastInjAlt ty0 ; TypeGuardIntro ty0 ; TypeGuardElim ty0 ])
   | Proj _ ->
       ([], [])
   | True ty0 ->

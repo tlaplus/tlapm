@@ -163,6 +163,7 @@ type tla_axm =
   | NatPlusTyping
   | NatTimesTyping
   | IntRangeDef
+  | NonNegIsPos
   | LteqReflexive
   | LteqTransitive
   | LteqAntisym
@@ -179,7 +180,8 @@ type tla_axm =
   | FunAppDef
   | FunExceptIsafcn
   | FunExceptDomDef
-  | FunExceptAppDef
+  | FunExceptAppDef1
+  | FunExceptAppDef2
   | FunImDef
   | FunImIntro
   | FunImElim

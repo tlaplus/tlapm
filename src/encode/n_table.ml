@@ -143,6 +143,7 @@ type tla_axm =
   | NatPlusTyping
   | NatTimesTyping
   | IntRangeDef
+  | NonNegIsPos
   | LteqReflexive
   | LteqTransitive
   | LteqAntisym
@@ -159,7 +160,8 @@ type tla_axm =
   | FunAppDef
   | FunExceptIsafcn
   | FunExceptDomDef
-  | FunExceptAppDef
+  | FunExceptAppDef1
+  | FunExceptAppDef2
   | FunImDef
   | FunImIntro
   | FunImElim
@@ -328,6 +330,7 @@ let axm_desc = function
   | NatPlusTyping -> "NatPlusTyping"
   | NatTimesTyping -> "NatTimesTyping"
   | IntRangeDef -> "IntRangeDef"
+  | NonNegIsPos -> "NonNegIsPos"
   | LteqReflexive -> "LteqReflexive"
   | LteqTransitive -> "LteqTransitive"
   | LteqAntisym -> "LteqAntisym"
@@ -343,7 +346,8 @@ let axm_desc = function
   | FunAppDef -> "FunAppDef"
   | FunExceptIsafcn -> "FunExceptIsafcn"
   | FunExceptDomDef -> "FunExceptDomDef"
-  | FunExceptAppDef -> "FunExceptAppDef"
+  | FunExceptAppDef1 -> "FunExceptAppDef1"
+  | FunExceptAppDef2 -> "FunExceptAppDef2"
   | FunImDef -> "FunImDef"
   | FunImIntro -> "FunImIntro"
   | FunImElim -> "FunImElim"

@@ -94,7 +94,8 @@ val fcnexcept_isafcn : unit -> expr
 
 val fcnexceptdom_def : unit -> expr
 
-val fcnexceptapp_def : unit -> expr
+val fcnexceptapp1_def : unit -> expr
+val fcnexceptapp2_def : unit -> expr
 
 val fcnim_def : unit -> expr
 val fcnim_intro : unit -> expr
@@ -124,6 +125,8 @@ val intremainder_typing : unit -> expr
 val intexp_typing : unit -> expr
 val natplus_typing : unit -> expr
 val nattimes_typing : unit -> expr
+
+val nonneg_ispos : unit -> expr
 
 val lteq_reflexive : unit -> expr
 val lteq_transitive : unit -> expr

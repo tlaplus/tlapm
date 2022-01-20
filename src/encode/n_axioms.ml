@@ -215,50 +215,6 @@ let type_guard ty0 =
   ) %% []
 
 let type_guard_intro ty0 =
-  let p =
-    match ty0 with
-    | TAtm TAIdv ->
-        appb B.TRUE [] %% []
-    | TAtm TABol ->
-        apps T.Mem
-        [ Ix 1 %% []
-        ; apps T.BoolSet [] %% []
-        ] %% []
-    | TAtm TAInt ->
-        apps T.Mem
-        [ Ix 1 %% []
-        ; apps T.IntSet [] %% []
-        ] %% []
-    | TAtm TAStr ->
-        apps T.Mem
-        [ Ix 1 %% []
-        ; apps T.StrSet [] %% []
-        ] %% []
-    | _ -> error "Not implemented"
-  in
-  quant Forall
-  [ "x" ] [ t_idv ]
-  ~pats:[ [
-    p
-  ] ; [
-    apps (T.Proj ty0)
-    [ Ix 1 %% []
-    ] %% []
-  ] ]
-  ( appb B.Implies
-    [ p
-    ; appb ~tys:[ t_idv ] B.Eq
-      [ Ix 1 %% []
-      ; apps (T.Cast ty0)
-        [ apps (T.Proj ty0)
-          [ Ix 1 %% []
-          ] %% []
-        ] %% []
-      ] %% []
-    ] %% []
-  ) %% []
-
-let type_guard_elim ty0 =
   quant Forall
   [ "z" ] [ ty0 ]
   ~pats:[ [
@@ -292,6 +248,62 @@ let type_guard_elim ty0 =
         ] %% []
     | _ -> error "Not implemented"
     end
+  ) %% []
+
+let type_guard_elim ty0 =
+  let p =
+    match ty0 with
+    | TAtm TAIdv ->
+        appb B.TRUE [] %% []
+    | TAtm TABol ->
+        apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.BoolSet [] %% []
+        ] %% []
+    | TAtm TAInt ->
+        apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntSet [] %% []
+        ] %% []
+    | TAtm TAStr ->
+        apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.StrSet [] %% []
+        ] %% []
+    | _ -> error "Not implemented"
+  in
+  quant Forall
+  [ "x" ] [ t_idv ]
+  ~pats:[ [
+    p
+  ] ]
+  ( appb B.Implies
+    [ p
+    ; if ty0 = TAtm TABol then
+      appb B.Disj
+      [ appb ~tys:[ t_idv ] B.Eq
+        [ Ix 1 %% []
+        ; apps (T.Cast ty0)
+          [ appb B.TRUE [] %% []
+          ] %% []
+        ] %% []
+      ; appb ~tys:[ t_idv ] B.Eq
+        [ Ix 1 %% []
+        ; apps (T.Cast ty0)
+          [ appb B.FALSE [] %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    else
+      appb ~tys:[ t_idv ] B.Eq
+      [ Ix 1 %% []
+      ; apps (T.Cast ty0)
+        [ apps (T.Proj ty0)
+          [ Ix 1 %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ] %% []
   ) %% []
 
 let op_typing t_smb =
@@ -370,11 +382,6 @@ let choose_def () =
   [ Ty1 ([ t_idv ], t_bol) ]
   ( quant Forall
     [ "x" ] [ t_idv ]
-    ~pats:[ [
-      app (Ix 2 %% [])
-      [ Ix 1 %% []
-      ] %% []
-    ] ]
     ( appb B.Implies
       [ app (Ix 2 %% [])
         [ Ix 1 %% []
@@ -414,6 +421,7 @@ let choose_ext () =
       ] %% []
     ] %% []
   ) %% []
+
 
 (* {4 Sets} *)
 
@@ -562,21 +570,13 @@ let subseteq_antisym () =
 let setenum_def n =
   quant Forall
   (gen "a" n @ [ "x" ]) (dupl t_idv (n+1))
-  ~pats:([ [
+  ~pats:[ [
     apps T.Mem
     [ Ix 1 %% []
     ; apps (T.SetEnum n)
       (ixi ~shift:1 n) %% []
     ] %% []
-  ] ] @ List.init n begin fun i ->
-    [ apps (T.SetEnum n)
-      (ixi ~shift:1 n) %% []
-    ; appb ~tys:[ t_idv ] B.Eq
-      [ Ix 1 %% []
-      ; Ix (n - i + 1) %% []
-      ] %% []
-    ]
-  end)
+  ] ]
   begin if (n = 0) then
     appb B.Neg
     [ apps T.Mem
@@ -702,37 +702,37 @@ let union_intro () =
   [ "a" ; "x" ; "y" ] [ t_idv ; t_idv ; t_idv ]
   ~pats:[ [
     apps T.Mem
+    [ Ix 1 %% []
+    ; Ix 3 %% []
+    ] %% []
+  ; apps T.Mem
     [ Ix 2 %% []
     ; apps T.Union
       [ Ix 3 %% []
       ] %% []
-    ] %% []
-  ; apps T.Mem
-    [ Ix 1 %% []
-    ; Ix 3 %% []
     ] %% []
   ] ; [
     apps T.Mem
     [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ; apps T.Mem
+    [ Ix 2 %% []
     ; apps T.Union
       [ Ix 3 %% []
       ] %% []
     ] %% []
-  ; apps T.Mem
-    [ Ix 2 %% []
-    ; Ix 1 %% []
-    ] %% []
   ] ; [
-    apps T.Union
-    [ Ix 3 %% []
-    ] %% []
-  ; apps T.Mem
+    apps T.Mem
     [ Ix 1 %% []
     ; Ix 3 %% []
     ] %% []
   ; apps T.Mem
     [ Ix 2 %% []
     ; Ix 1 %% []
+    ] %% []
+  ; apps T.Union
+    [ Ix 3 %% []
     ] %% []
   ] ]
   ( appb B.Implies
@@ -834,12 +834,12 @@ let subset_def_alt () =
       ] %% []
     ] %% []
   ] ; [
-    apps T.Subset
-    [ Ix 2 %% []
-    ] %% []
-  ; apps T.SubsetEq
+    apps T.SubsetEq
     [ Ix 1 %% []
     ; Ix 2 %% []
+    ] %% []
+  ; apps T.Subset
+    [ Ix 2 %% []
     ] %% []
   ] ]
   ( appb B.Equiv
@@ -948,21 +948,21 @@ let cup_def () =
       ] %% []
     ] %% []
   ] ; [
-    apps T.Cup
-    [ Ix 3 %% []
-    ; Ix 2 %% []
-    ] %% []
-  ; apps T.Mem
+    apps T.Mem
     [ Ix 1 %% []
     ; Ix 3 %% []
     ] %% []
-  ] ; [
-    apps T.Cup
+  ; apps T.Cup
     [ Ix 3 %% []
     ; Ix 2 %% []
     ] %% []
-  ; apps T.Mem
+  ] ; [
+    apps T.Mem
     [ Ix 1 %% []
+    ; Ix 2 %% []
+    ] %% []
+  ; apps T.Cup
+    [ Ix 3 %% []
     ; Ix 2 %% []
     ] %% []
   ] ]
@@ -999,21 +999,21 @@ let cap_def () =
       ] %% []
     ] %% []
   ] ; [
-    apps T.Cap
-    [ Ix 3 %% []
-    ; Ix 2 %% []
-    ] %% []
-  ; apps T.Mem
+    apps T.Mem
     [ Ix 1 %% []
     ; Ix 3 %% []
     ] %% []
-  ] ; [
-    apps T.Cap
+  ; apps T.Cap
     [ Ix 3 %% []
     ; Ix 2 %% []
     ] %% []
-  ; apps T.Mem
+  ] ; [
+    apps T.Mem
     [ Ix 1 %% []
+    ; Ix 2 %% []
+    ] %% []
+  ; apps T.Cap
+    [ Ix 3 %% []
     ; Ix 2 %% []
     ] %% []
   ] ]
@@ -1050,21 +1050,21 @@ let setminus_def () =
       ] %% []
     ] %% []
   ] ; [
-    apps T.SetMinus
-    [ Ix 3 %% []
-    ; Ix 2 %% []
-    ] %% []
-  ; apps T.Mem
+    apps T.Mem
     [ Ix 1 %% []
     ; Ix 3 %% []
     ] %% []
-  ] ; [
-    apps T.SetMinus
+  ; apps T.SetMinus
     [ Ix 3 %% []
     ; Ix 2 %% []
     ] %% []
-  ; apps T.Mem
+  ] ; [
+    apps T.Mem
     [ Ix 1 %% []
+    ; Ix 2 %% []
+    ] %% []
+  ; apps T.SetMinus
+    [ Ix 3 %% []
     ; Ix 2 %% []
     ] %% []
   ] ]
@@ -1106,13 +1106,13 @@ let setst_def () =
         ] %% []
       ] %% []
     ] ; [
-      apps T.SetSt
-      [ Ix 2 %% []
-      ; Ix 3 %% []
-      ] %% []
-    ; apps T.Mem
+      apps T.Mem
       [ Ix 1 %% []
       ; Ix 2 %% []
+      ] %% []
+    ; apps T.SetSt
+      [ Ix 2 %% []
+      ; Ix 3 %% []
       ] %% []
     ] ]
     ( appb B.Equiv
@@ -1191,23 +1191,19 @@ let setof_intro n =
   ( quant Forall
     (gen "a" n @ gen "y" n) (dupl t_idv (n+n))
     ~pats:[ [
-      apps T.Mem
-      [ app (Ix (2*n+1) %% [])
-        (ixi n) %% []
-      ; apps (T.SetOf n)
-        (List.init n begin fun i ->
-          Ix (n-i+1) %% []
-        end @
-        [ Ix (n+2) %% []
-        ]) %% []
-      ] %% []
+      app (Ix (n+n+1) %% [])
+      (ixi n) %% []
+    ; apps (T.SetOf n)
+      (ixi ~shift:n n @
+      [ Ix (n+n+1) %% []
+      ]) %% []
     ] ]
     ( appb B.Implies
       [ List (And,
           List.init n begin fun i ->
             apps T.Mem
             [ Ix (n-i) %% []
-            ; Ix (2*n-i) %% []
+            ; Ix (n+n-i) %% []
             ] %% []
           end
         ) %% []
@@ -1215,10 +1211,8 @@ let setof_intro n =
         [ app (Ix (2*n+1) %% [])
           (ixi n) %% []
         ; apps (T.SetOf n)
-          (List.init n begin fun i ->
-            Ix (n-i+1) %% []
-          end @
-          [ Ix (n+2) %% []
+          (ixi ~shift:n n @
+          [ Ix (n+n+1) %% []
           ]) %% []
         ] %% []
       ] %% []
@@ -1235,9 +1229,7 @@ let setof_elim n =
       apps T.Mem
       [ Ix 1 %% []
       ; apps (T.SetOf n)
-        (List.init n begin fun i ->
-          Ix (n-i+1) %% []
-        end @
+        (ixi ~shift:1 n @
         [ Ix (n+2) %% []
         ]) %% []
       ] %% []
@@ -1246,9 +1238,7 @@ let setof_elim n =
       [ apps T.Mem
         [ Ix 1 %% []
         ; apps (T.SetOf n)
-          (List.init n begin fun i ->
-            Ix (n-i+1) %% []
-          end @
+          (ixi ~shift:1 n @
           [ Ix (n+2) %% []
           ]) %% []
         ] %% []
@@ -1258,12 +1248,12 @@ let setof_elim n =
             List.init n begin fun i ->
               apps T.Mem
               [ Ix (n-i) %% []
-              ; Ix (2*n-i+1) %% []
+              ; Ix (n+n-i+1) %% []
               ] %% []
             end @
             [ appb ~tys:[ t_idv ] B.Eq
               [ Ix (n+1) %% []
-              ; app (Ix (2*n+2) %% [])
+              ; app (Ix (n+n+2) %% [])
                 (ixi n) %% []
               ] %% []
             ]
@@ -1275,8 +1265,6 @@ let setof_elim n =
 
 
 (* {4 Functions} *)
-
-(* {3 Functions - Base Axioms} *)
 
 let fcn_ext () =
   quant Forall
@@ -1414,14 +1402,6 @@ let fcnset_intro () =
       [ Ix 3 %% []
       ; Ix 2 %% []
       ] %% []
-    ] %% []
-  ] ; [
-    apps T.FunIsafcn
-    [ Ix 1 %% []
-    ] %% []
-  ; apps T.FunSet
-    [ Ix 3 %% []
-    ; Ix 2 %% []
     ] %% []
   ] ]
   ( appb B.Implies
@@ -1611,11 +1591,9 @@ let fcndom_def () =
   ( quant Forall
     [ "a" ] [ t_idv ]
     ~pats:[ [
-      apps T.FunDom
-      [ apps T.FunConstr
-        [ Ix 1 %% []
-        ; Ix 2 %% []
-        ] %% []
+      apps T.FunConstr
+      [ Ix 1 %% []
+      ; Ix 2 %% []
       ] %% []
     ] ]
     ( appb ~tys:[ t_idv ] B.Eq
@@ -1642,6 +1620,15 @@ let fcnapp_def () =
         ; Ix 3 %% []
         ] %% []
       ; Ix 1 %% []
+      ] %% []
+    ] ; [
+      apps T.Mem
+      [ Ix 1 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ; apps T.FunConstr
+      [ Ix 2 %% []
+      ; Ix 3 %% []
       ] %% []
     ] ]
     ( appb B.Implies
@@ -1708,7 +1695,38 @@ let fcnexceptdom_def () =
     ] %% []
   ) %% []
 
-let fcnexceptapp_def () =
+let fcnexceptapp1_def () =
+  quant Forall
+  [ "f" ; "x" ; "y" ] [ t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.FunExcept
+    [ Ix 3 %% []
+    ; Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ apps T.Mem
+      [ Ix 2 %% []
+      ; apps T.FunDom
+        [ Ix 3 %% []
+        ] %% []
+      ] %% []
+    ; appb ~tys:[ t_idv ] B.Eq
+      [ apps T.FunApp
+        [ apps T.FunExcept
+          [ Ix 3 %% []
+          ; Ix 2 %% []
+          ; Ix 1 %% []
+          ] %% []
+        ; Ix 2 %% []
+        ] %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let fcnexceptapp2_def () =
   quant Forall
   [ "f" ; "x" ; "y" ; "z" ] [ t_idv ; t_idv ; t_idv ; t_idv ]
   ~pats:[ [
@@ -1718,6 +1736,16 @@ let fcnexceptapp_def () =
       ; Ix 3 %% []
       ; Ix 2 %% []
       ] %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ; [
+    apps T.FunExcept
+    [ Ix 4 %% []
+    ; Ix 3 %% []
+    ; Ix 2 %% []
+    ] %% []
+  ; apps T.FunApp
+    [ Ix 4 %% []
     ; Ix 1 %% []
     ] %% []
   ] ]
@@ -1936,41 +1964,29 @@ let intrange_def () =
       ] %% []
     ] %% []
   ] ]
-  ( (*appb B.Implies
-    [ appb B.Conj
-      [ apps T.Mem
+  ( appb B.Equiv
+    [ apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.IntRange
         [ Ix 3 %% []
-        ; apps T.IntSet [] %% []
-        ] %% []
-      ; apps T.Mem
-        [ Ix 2 %% []
-        ; apps T.IntSet [] %% []
+        ; Ix 2 %% []
         ] %% []
       ] %% []
-    ;*) appb B.Equiv
+    ; List (And,
       [ apps T.Mem
         [ Ix 1 %% []
-        ; apps T.IntRange
-          [ Ix 3 %% []
-          ; Ix 2 %% []
-          ] %% []
+        ; apps T.IntSet [] %% []
         ] %% []
-      ; List (And,
-        [ apps T.Mem
-          [ Ix 1 %% []
-          ; apps T.IntSet [] %% []
-          ] %% []
-        ; apps T.IntLteq
-          [ Ix 3 %% []
-          ; Ix 1 %% []
-          ] %% []
-        ; apps T.IntLteq
-          [ Ix 1 %% []
-          ; Ix 2 %% []
-          ] %% []
-        ]) %% []
-      ] %% []
-    (*] %% []*)
+      ; apps T.IntLteq
+        [ Ix 3 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ; apps T.IntLteq
+        [ Ix 1 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ]) %% []
+    ] %% []
   ) %% []
 
 let intlit_isint n =
@@ -2000,6 +2016,12 @@ let intlit_zerocmp n =
 let intplus_typing () =
   quant Forall
   [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.IntPlus
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
   ( appb B.Implies
     [ appb B.Conj
       [ apps T.Mem
@@ -2024,6 +2046,11 @@ let intplus_typing () =
 let intuminus_typing () =
   quant Forall
   [ "x" ] [ t_idv ]
+  ~pats:[ [
+    apps T.IntUminus
+    [ Ix 1 %% []
+    ] %% []
+  ] ]
   ( appb B.Implies
     [ apps T.Mem
       [ Ix 1 %% []
@@ -2041,6 +2068,12 @@ let intuminus_typing () =
 let intminus_typing () =
   quant Forall
   [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.IntMinus
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
   ( appb B.Implies
     [ appb B.Conj
       [ apps T.Mem
@@ -2065,6 +2098,12 @@ let intminus_typing () =
 let inttimes_typing () =
   quant Forall
   [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.IntTimes
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
   ( appb B.Implies
     [ appb B.Conj
       [ apps T.Mem
@@ -2089,6 +2128,12 @@ let inttimes_typing () =
 let intexp_typing () =
   quant Forall
   [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.IntExp
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
   ( appb B.Implies
     [ List (And,
       [ apps T.Mem
@@ -2097,7 +2142,6 @@ let intexp_typing () =
         ] %% []
       ; appb ~tys:[ t_idv ] B.Neq
         [ Ix 2 %% []
-          (* This axiom is only used when noarith = true *)
         ; apps (T.IntLit 0) [] %% []
         ] %% []
       ; apps T.Mem
@@ -2118,6 +2162,12 @@ let intexp_typing () =
 let intquotient_typing () =
   quant Forall
   [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.IntQuotient
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
   ( appb B.Implies
     [ List (And,
       [ apps T.Mem
@@ -2129,7 +2179,6 @@ let intquotient_typing () =
         ; apps T.IntSet [] %% []
         ] %% []
       ; apps T.IntLteq
-          (* This axiom is only used when noarith = true *)
         [ apps (T.IntLit 0) [] %% []
         ; Ix 1 %% []
         ] %% []
@@ -2147,6 +2196,12 @@ let intquotient_typing () =
 let intremainder_typing () =
   quant Forall
   [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.IntRemainder
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
   ( appb B.Implies
     [ List (And,
       [ apps T.Mem
@@ -2158,7 +2213,6 @@ let intremainder_typing () =
         ; apps T.IntSet [] %% []
         ] %% []
       ; apps T.IntLteq
-          (* This axiom is only used when noarith = true *)
         [ apps (T.IntLit 0) [] %% []
         ; Ix 1 %% []
         ] %% []
@@ -2182,6 +2236,12 @@ let intremainder_typing () =
 let natplus_typing () =
   quant Forall
   [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.IntPlus
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
   ( appb B.Implies
     [ appb B.Conj
       [ apps T.Mem
@@ -2206,6 +2266,12 @@ let natplus_typing () =
 let nattimes_typing () =
   quant Forall
   [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.IntTimes
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
   ( appb B.Implies
     [ appb B.Conj
       [ apps T.Mem
@@ -2223,6 +2289,33 @@ let nattimes_typing () =
         ; Ix 1 %% []
         ] %% []
       ; apps T.NatSet [] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let nonneg_ispos () =
+  quant Forall
+  [ "x" ] [ t_idv ]
+  ~pats:[ [
+    apps T.IntLteq
+    [ apps (T.IntLit 0) [] %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.IntLteq
+        [ apps (T.IntLit 0) [] %% []
+        ; Ix 1 %% []
+        ] %% []
+      ; appb ~tys:[ t_idv ] B.Neq
+        [ apps (T.IntLit 0) [] %% []
+        ; Ix 1 %% []
+        ] %% []
+      ] %% []
+    ; apps T.IntLteq
+      [ apps (T.IntLit 1) [] %% []
+      ; Ix 1 %% []
       ] %% []
     ] %% []
   ) %% []
@@ -2337,33 +2430,7 @@ let tupdom_def ~noarith ~t0p n =
       [ apps (T.Tuple n)
         (ixi n) %% []
       ] %% []
-    ; (*begin
-      if t0p then
-        apps T.TIntRange
-        [ apps (T.TIntLit 1) [] %% []
-        ; apps (T.TIntLit n) [] %% []
-        ] %% []
-      else
-        apps T.IntRange
-        [ begin
-          if noarith then
-            apps (T.IntLit 1) [] %% []
-          else
-            apps (T.Cast t_int)
-            [ apps (T.TIntLit 1) [] %% []
-            ] %% []
-          end
-        ; begin
-          if noarith then
-            apps (T.IntLit n) [] %% []
-          else
-            apps (T.Cast t_int)
-            [ apps (T.TIntLit n) [] %% []
-            ] %% []
-          end
-        ] %% []
-      end*)
-      apps (T.SetEnum n)
+    ; apps (T.SetEnum n)
       (List.init n begin fun i ->
         if noarith then
           apps (T.IntLit (i + 1)) [] %% []
@@ -4051,6 +4118,7 @@ let get_axm ~solver tla_smb =
   | T.NatPlusTyping -> natplus_typing ()
   | T.NatTimesTyping -> nattimes_typing ()
   | T.IntRangeDef -> intrange_def ()
+  | T.NonNegIsPos -> nonneg_ispos ()
   | T.LteqReflexive -> lteq_reflexive ()
   | T.LteqTransitive -> lteq_transitive ()
   | T.LteqAntisym -> lteq_antisym ()
@@ -4066,7 +4134,8 @@ let get_axm ~solver tla_smb =
   | T.FunAppDef -> fcnapp_def () |> mark T.FunConstr
   | T.FunExceptIsafcn -> fcnexcept_isafcn ()
   | T.FunExceptDomDef -> fcnexceptdom_def ()
-  | T.FunExceptAppDef -> fcnexceptapp_def ()
+  | T.FunExceptAppDef1 -> fcnexceptapp1_def ()
+  | T.FunExceptAppDef2 -> fcnexceptapp2_def ()
   | T.FunImDef -> fcnim_def ()
   | T.FunImIntro -> fcnim_intro ()
   | T.FunImElim -> fcnim_elim ()
