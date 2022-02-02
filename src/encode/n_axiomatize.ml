@@ -44,7 +44,7 @@ let error ?at mssg =
  * as builtins of the backends *)
 let is_native ~solver smb =
   begin match solver with
-  | "SMT" | "Z3" | "CVC4" ->
+  | "SMT" | "Z3" | "CVC4" | "veriT" ->
       begin match get_defn smb with
       | TIntLit _
       | TIntPlus

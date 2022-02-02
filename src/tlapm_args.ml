@@ -170,6 +170,7 @@ let init () =
                (* NOTE Available flags are (non-exhaustive list):
                  * "verbose"    display message between encoding steps
                  * "noarith"    don't use the primitive sort int of SMT-LIB (entails t0)
+                 * "lia"        encode linear arithmetic only
                  * "t0"         set type level on 0
                  * "t0+"        like t0 but allow int (default)
                  * "t1"         set type level on 1

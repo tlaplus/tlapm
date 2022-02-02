@@ -581,7 +581,11 @@ let encode_smtlib ?solver:(mode="SMTLIB") ff ob =
   fprintf ff ";;   generated from %s\n" (Util.location ~cap:false ob.obl);
   fprintf ff "\n";
 
-  fprintf ff "(set-logic UFNIA)\n"; (* This was formerly AUFNIRA. Arrays and real arithmetic are unimportant, but some obligations might be non-linear.  *)
+  let logic =
+    if Params.debugging "lia" then "UFLIA" (* added by adef *)
+    else "UFNIA" (* This was formerly AUFNIRA. Arrays and real arithmetic are unimportant, but some obligations might be non-linear.  *)
+  in
+  fprintf ff "(set-logic %s)\n" logic;
   List.iter (fprintf ff "(declare-sort %s 0)\n") sorts;
 
   fprintf ff ";; Standard TLA+ operators\n";
