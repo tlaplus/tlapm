@@ -337,10 +337,29 @@ let instantiate bp e =
   let lf_vars = bp.bp_lf_vars in
   let ctx = bp.bp_ctx in
 
-  let dummy = Opaque "IAmError" %% [] in
+  (* If the local context has depth 5, but only the vars 2 and 4 occur
+   * in the HO argument, then the following mapping is applied to it:
+     * 1 |-> X
+     * 2 |-> 1
+     * 3 |-> X
+     * 4 |-> 2
+     * 5 |-> X
+     * 6 |-> 3
+     * 7 |-> 4
+     * ...
+     * n |-> n-3
+   * Where 'X' is a dummy expression
+   * Other representation:
+     * cons(X, cons(1, cons(X, cons(2, cons(X, cons(3, cons(4, ..)))))))
+   *)
+
+  (* NOTE For safety, best to use a dummy that SMT does not support,
+   * in case it ends up in the final output *)
+  let dummy = Bang (Opaque "IAmError" %% [], []) %% [] in
   let maptos =
     List.init (local_sz ctx) (fun i -> i + 1) |> fun l ->
-    List.fold_right begin fun i (j, maptos) ->
+    (* fold left to iterate left-to-right *)
+    List.fold_left begin fun (j, maptos) i ->
       if List.mem i lf_vars then
         let j' = j + 1 in
         let e = Ix j' %% [] in
@@ -348,8 +367,8 @@ let instantiate bp e =
       else
         let e = dummy in
         (j, e :: maptos)
-    end l (0, []) |>
-    snd
+    end (0, []) l |>
+    snd |> List.rev
   in
   let shift = Subst.shift (List.length lf_vars) in
   let squash = List.fold_right Subst.scons maptos shift in
