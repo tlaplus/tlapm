@@ -39,6 +39,9 @@ val elim_records : sequent -> sequent
 (** Sort fields of records and record sets *)
 val sort_recfields : sequent -> sequent
 
+(** Simplify propositions involving ranges *)
+val simplify_range : sequent -> sequent
+
 (** Apply extensionality axioms to equalities; also simplifies subseteq *)
 val apply_ext : sequent -> sequent
 

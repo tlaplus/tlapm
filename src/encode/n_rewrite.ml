@@ -562,6 +562,31 @@ let sort_recfields sq =
   snd (sort_recfields_visitor#sequent cx sq)
 
 
+(* {3 Range Simplification} *)
+
+let simplify_range_visitor = object (self : 'self)
+  inherit [unit] Expr.Visit.map as super
+
+  method expr scx oe =
+    match oe.core with
+    | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = Apply ({ core = Internal B.Range } as rg, [ e2 ; e3 ]) } ])
+      when not (has op Props.tpars_prop) && not (has rg Props.tpars_prop) ->
+        let e1 = self#expr scx e1 in
+        let e2 = self#expr scx e2 in
+        let e3 = self#expr scx e3 in
+        List (And,
+        [ Apply (Internal B.Mem %% [], [ e1 ; Internal B.Int %% [] ]) %% []
+        ; Apply (Internal B.Lteq %% [], [ e2 ; e1 ]) %% []
+        ; Apply (Internal B.Lteq %% [], [ e1 ; e3 ]) %% []
+        ]) @@ oe
+    | _ -> super#expr scx oe
+end
+
+let simplify_range sq =
+  let cx = ((), Deque.empty) in
+  snd (simplify_range_visitor#sequent cx sq)
+
+
 (* {3 Apply Extensionnality} *)
 
 let is_set e =

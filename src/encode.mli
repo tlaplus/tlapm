@@ -17,12 +17,13 @@ module Rewrite : sig
   val elim_notmem : sequent -> sequent
   val elim_compare : sequent -> sequent
   val elim_except : sequent -> sequent
-  val sort_recfields : sequent -> sequent
   val elim_multiarg : sequent -> sequent
   val elim_except : sequent -> sequent
   val elim_tuples : sequent -> sequent
   val elim_records : sequent -> sequent
+  val sort_recfields : sequent -> sequent
 
+  val simplify_range : sequent -> sequent
   val simplify_sets : ?limit:int -> ?rwlvl:int -> sequent -> sequent
 end
 
