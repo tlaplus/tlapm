@@ -542,6 +542,26 @@ let elim_records sq =
   snd (elim_records_visitor#sequent cx sq)
 
 
+(* {3 Sort Record Fields} *)
+
+let cmp_fs (f1, e1) (f2, e2) =
+  Pervasives.compare f1 f2
+
+let sort_recfields_visitor = object (self : 'self)
+  inherit [unit] Expr.Visit.map as super
+
+  method expr scx oe =
+    match oe.core with
+    | Record fs -> Record (List.sort ~cmp:cmp_fs fs) @@ oe
+    | Rect fs -> Rect (List.sort ~cmp:cmp_fs fs) @@ oe
+    | _ -> super#expr scx oe
+end
+
+let sort_recfields sq =
+  let cx = ((), Deque.empty) in
+  snd (sort_recfields_visitor#sequent cx sq)
+
+
 (* {3 Apply Extensionnality} *)
 
 let is_set e =

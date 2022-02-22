@@ -468,6 +468,7 @@ let preprocess ~solver sq =
     |> Encode.Rewrite.elim_compare
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
+    |> Encode.Rewrite.sort_recfields
     |> Encode.Rewrite.simplify_sets ~rwlvl
     |> debug "Disambiguate and Simplify:"
     |> Encode.Standardize.main

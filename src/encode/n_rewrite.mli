@@ -36,6 +36,9 @@ val elim_tuples : sequent -> sequent
 (** Reduce records to functions *) (* FIXME remove *)
 val elim_records : sequent -> sequent
 
+(** Sort fields of records and record sets *)
+val sort_recfields : sequent -> sequent
+
 (** Apply extensionality axioms to equalities; also simplifies subseteq *)
 val apply_ext : sequent -> sequent
 
