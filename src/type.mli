@@ -13,6 +13,7 @@ module T : sig
     | TVar of string              (** Type variable *)
     | TAtm of atm                 (** Atomic type *)
     | TSet of ty                  (** Set-type *)
+    | TFSet of ty                 (** Finite Set-type *)
     | TFun of ty * ty             (** Function-type *)
     | TPrd of ty list             (** Product-type *)
     | TRec of (string * ty) list  (** Record-type *)

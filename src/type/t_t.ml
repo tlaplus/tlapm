@@ -15,6 +15,7 @@ type ty =
   | TVar of string              (** Type variable *)
   | TAtm of atm                 (** Atomic type *)
   | TSet of ty                  (** Set-type *)
+  | TFSet of ty                 (** Finite Set-type *)
   | TFun of ty * ty             (** Function-type *)
   | TPrd of ty list             (** Product-type *)
   | TRec of (string * ty) list  (** Record-type *)
@@ -124,6 +125,7 @@ let rec ty_to_string ty =
   | TVar a -> "Var" ^ a
   | TAtm a -> tyatom_to_string a
   | TSet ty -> "Set" ^ ty_to_string ty
+  | TFSet ty -> "FSet" ^ ty_to_string ty
   | TFun (ty1, ty2) -> "Fun" ^ ty_to_string ty1 ^ ty_to_string ty2
   | TPrd tys -> List.fold_left (fun s ty -> s ^ ty_to_string ty) "Prd" tys
   | TRec ftys -> List.fold_left (fun s (f, ty) -> s ^ f ^ ty_to_string ty) "Rec" ftys
