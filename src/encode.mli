@@ -34,6 +34,7 @@ module Table : sig
     | Mem
     | SubsetEq
     | SetEnum of int
+    | Add
     | Union
     | Subset
     | Cup
@@ -79,6 +80,8 @@ module Table : sig
     | SeqTail
     | SeqSubSeq
     | SeqSelectSeq
+    | FSIsFiniteSet
+    | FSCard
     | TIntLit of int
     | TIntPlus
     | TIntUminus
@@ -91,6 +94,15 @@ module Table : sig
     | TIntLt
     | TIntGteq
     | TIntGt
+    | TFSCard of ty
+    | TFSMem of ty
+    | TFSSubseteq of ty
+    | TFSEmpty of ty
+    | TFSSingleton of ty
+    | TFSAdd of ty
+    | TFSCup of ty
+    | TFSCap of ty
+    | TFSSetminus of ty
     | Cast of ty
     | Proj of ty
     | True of ty

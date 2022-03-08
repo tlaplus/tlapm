@@ -23,6 +23,8 @@ let t_bol = TAtm TABol
 let t_int = TAtm TAInt
 let t_str = TAtm TAStr
 
+let t_fs s = TFSet s
+
 let t_cst ty = Ty1 ([], ty)
 let t_una ty1 ty2 = Ty1 ([ ty1 ], ty2)
 let t_bin ty1 ty2 ty3 = Ty1 ([ ty1 ; ty2 ], ty3)
@@ -60,6 +62,8 @@ let untyped_data tla_smb =
   | SetEnum n ->
       ("SetEnum_" ^ string_of_int n,
                         List.init n (fun _ -> t_cst t_idv),   t_idv)
+  | Add ->
+      ("Add",           [ t_cst t_idv ],                      t_idv)
   | Union ->
       ("Union",         [ t_cst t_idv ],                      t_idv)
   | Subset ->
@@ -170,6 +174,11 @@ let untyped_data tla_smb =
                                                               t_idv)
   | SeqSelectSeq ->
       ("SelectSeq",     [ t_cst t_idv ; t_una t_idv t_idv ],  t_idv)
+  (* Finite Sets *)
+  | FSIsFiniteSet ->
+      ("IsFiniteSet",   [ t_cst t_idv ],                      t_bol)
+  | FSCard ->
+      ("Cardinality",   [ t_cst t_idv ],                      t_idv)
 
   | _ ->
       error "internal error"
@@ -215,6 +224,43 @@ let typed_data tla_smb =
   | TIntGt ->
       ("TIntGt",        [ t_cst t_int ; t_cst t_int ],        t_bol,
       IntGt)
+  (* Finite Sets *)
+  | TFSCard s ->
+      ("TFSCard_" ^ ty_to_string s,
+                        [ t_cst (t_fs s) ],                   t_int,
+      FSCard)
+  | TFSMem s ->
+      ("TFSMem_" ^ ty_to_string s,
+                        [ t_cst s ; t_cst (t_fs s) ],         t_bol,
+      Mem)
+  | TFSSubseteq s ->
+      ("TFSSubseteq_" ^ ty_to_string s,
+                        [ t_cst (t_fs s) ; t_cst (t_fs s) ],  t_bol,
+      SubsetEq)
+  | TFSEmpty s ->
+      ("TFSEmpty_" ^ ty_to_string s,
+                        [],                                   t_fs s,
+      SetEnum 0)
+  | TFSSingleton s ->
+      ("TFSSingleton_" ^ ty_to_string s,
+                        [ t_cst (t_fs s) ],                   t_fs s,
+      SetEnum 1)
+  | TFSAdd s ->
+      ("TFSAdd_" ^ ty_to_string s,
+                        [ t_cst s ; t_cst (t_fs s) ],         t_fs s,
+      Add)
+  | TFSCup s ->
+      ("TFSCup_" ^ ty_to_string s,
+                        [ t_cst (t_fs s) ; t_cst (t_fs s) ],  t_fs s,
+      Cup)
+  | TFSCap s ->
+      ("TFSCap_" ^ ty_to_string s,
+                        [ t_cst (t_fs s) ; t_cst (t_fs s) ],  t_fs s,
+      Cap)
+  | TFSSetminus s ->
+      ("TFSSetminus_" ^ ty_to_string s,
+                        [ t_cst (t_fs s) ; t_cst (t_fs s) ],  t_fs s,
+      SetMinus)
 
   | _ ->
       error "internal error"
@@ -240,13 +286,14 @@ let special_data tla_smb =
 
 let get_data tla_smb =
   match tla_smb with
-  | Choose | Mem | SubsetEq | SetEnum _ | Union | Subset | Cup | Cap | SetMinus
-  | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet | NatSet | IntLit _
-  | IntPlus | IntUminus | IntMinus | IntTimes | IntQuotient | IntRemainder
-  | IntExp | IntLteq | IntLt | IntGteq | IntGt | IntRange | FunIsafcn | FunSet
-  | FunConstr | FunDom | FunIm | FunApp | FunExcept | Tuple _ | Product _
-  | Rec _ | RecSet _ | SeqSeq | SeqLen | SeqBSeq | SeqCat | SeqAppend | SeqHead
-  | SeqTail | SeqSubSeq | SeqSelectSeq ->
+  | Choose | Mem | SubsetEq | SetEnum _ | Add | Union | Subset | Cup | Cap
+  | SetMinus | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet
+  | NatSet | IntLit _ | IntPlus | IntUminus | IntMinus | IntTimes
+  | IntQuotient | IntRemainder | IntExp | IntLteq | IntLt | IntGteq | IntGt
+  | IntRange | FunIsafcn | FunSet | FunConstr | FunDom | FunIm | FunApp
+  | FunExcept | Tuple _ | Product _ | Rec _ | RecSet _ | SeqSeq | SeqLen
+  | SeqBSeq | SeqCat | SeqAppend | SeqHead | SeqTail | SeqSubSeq
+  | SeqSelectSeq | FSIsFiniteSet | FSCard ->
       let (nm, tins, tout) = untyped_data tla_smb in
       { dat_name = "TLA__" ^ nm
       ; dat_ty2  = Ty2 (tins, tout)
@@ -254,7 +301,9 @@ let get_data tla_smb =
       ; dat_tver = None
       }
   | TIntLit _ | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient
-  | TIntRemainder | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt ->
+  | TIntRemainder | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt | TFSCard _
+  | TFSMem _ | TFSSubseteq _ | TFSEmpty _ | TFSSingleton _ | TFSAdd _ | TFSCup _
+  | TFSCap _ | TFSSetminus _ ->
       let (nm, tins, tout, tver) = typed_data tla_smb in
       { dat_name = "TLA__" ^ nm
       ; dat_ty2  = Ty2 (tins, tout)
@@ -565,20 +614,24 @@ let special_deps tla_smb =
 
 let get_deps ~solver tla_smb s =
   match tla_smb with
-  | Choose | Mem | SubsetEq | SetEnum _ | Union | Subset | Cup | Cap | SetMinus
-  | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet | NatSet | IntLit _
-  | IntPlus | IntUminus | IntMinus | IntTimes | IntQuotient | IntRemainder
-  | IntExp | IntLteq | IntLt | IntGteq | IntGt | IntRange | FunIsafcn | FunSet
-  | FunConstr | FunDom | FunIm | FunApp | FunExcept | Tuple _ | Product _
-  | Rec _ | RecSet _ | SeqSeq | SeqLen | SeqBSeq | SeqCat | SeqAppend | SeqHead
-  | SeqTail | SeqSubSeq | SeqSelectSeq ->
+  | Choose | Mem | SubsetEq | SetEnum _ | Add | Union | Subset | Cup | Cap
+  | SetMinus | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet
+  | NatSet | IntLit _ | IntPlus | IntUminus | IntMinus | IntTimes
+  | IntQuotient | IntRemainder | IntExp | IntLteq | IntLt | IntGteq | IntGt
+  | IntRange | FunIsafcn | FunSet | FunConstr | FunDom | FunIm | FunApp
+  | FunExcept | Tuple _ | Product _ | Rec _ | RecSet _ | SeqSeq | SeqLen
+  | SeqBSeq | SeqCat | SeqAppend | SeqHead | SeqTail | SeqSubSeq
+  | SeqSelectSeq | FSIsFiniteSet | FSCard ->
       let s, (smbs, axms) = untyped_deps ~solver tla_smb s in
       s,
       { dat_deps = smbs
       ; dat_axms = axms
       }
   | TIntLit _ | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient
-  | TIntRemainder | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt ->
+  | TIntRemainder | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt
+  | TFSCard _ | TFSMem _ | TFSSubseteq _ | TFSEmpty _ | TFSSingleton _
+  | TFSAdd _ | TFSCup _ | TFSCap _ | TFSSetminus _ ->
+
       let s, (smbs, axms) = typed_deps tla_smb s in
       s,
       { dat_deps = smbs

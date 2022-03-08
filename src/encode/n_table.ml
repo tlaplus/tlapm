@@ -16,6 +16,7 @@ type tla_smb =
   | Mem
   | SubsetEq
   | SetEnum of int
+  | Add (* unused *)
   | Union
   | Subset
   | Cup
@@ -68,6 +69,9 @@ type tla_smb =
   | SeqTail
   | SeqSubSeq
   | SeqSelectSeq
+  (* Finite Sets *)
+  | FSIsFiniteSet
+  | FSCard
 
     (* TYPED *)
   (* Arithmetic *)
@@ -83,6 +87,16 @@ type tla_smb =
   | TIntLt
   | TIntGteq
   | TIntGt
+  (* Finite Sets *)
+  | TFSCard of ty
+  | TFSMem of ty
+  | TFSSubseteq of ty
+  | TFSEmpty of ty
+  | TFSSingleton of ty
+  | TFSAdd of ty
+  | TFSCup of ty
+  | TFSCap of ty
+  | TFSSetminus of ty
 
     (* SPECIAL *)
   | Cast of ty
@@ -205,6 +219,7 @@ let tla_smb_to_string = function
   | Mem -> "Mem"
   | SubsetEq -> "SubsetEq"
   | SetEnum n -> Format.sprintf "SetEnum %d" n
+  | Add -> "Add"
   | Union -> "Union"
   | Subset -> "Subset"
   | Cup -> "Cup"
@@ -250,6 +265,8 @@ let tla_smb_to_string = function
   | SeqTail -> "SeqTail"
   | SeqSubSeq -> "SeqSubSeq"
   | SeqSelectSeq -> "SeqSelectSeq"
+  | FSIsFiniteSet -> "FSIsFiniteSet"
+  | FSCard -> "FSCard"
   | TIntLit n -> Format.sprintf "TIntLit %d" n
   | TIntPlus -> "TIntPlus"
   | TIntUminus -> "TIntUminus"
@@ -262,6 +279,15 @@ let tla_smb_to_string = function
   | TIntLt -> "TIntLt"
   | TIntGteq -> "TIntGteq"
   | TIntGt -> "TIntGt"
+  | TFSCard s -> "TFSCard_" ^ ty_to_string s
+  | TFSMem s -> "TFSMem_" ^ ty_to_string s
+  | TFSSubseteq s -> "TFSSubseteq_" ^ ty_to_string s
+  | TFSEmpty s -> "TFSEmpty_" ^ ty_to_string s
+  | TFSSingleton s -> "TFSSingleton_" ^ ty_to_string s
+  | TFSAdd s -> "TFSAdd_" ^ ty_to_string s
+  | TFSCup s -> "TFSCup_" ^ ty_to_string s
+  | TFSCap s -> "TFSCap_" ^ ty_to_string s
+  | TFSSetminus s -> "TFSSetminus_" ^ ty_to_string s
   | Cast ty -> "Cast " ^ ty_to_string ty
   | Proj ty -> "Proj " ^ ty_to_string ty
   | True ty -> "True" ^ ty_to_string ty

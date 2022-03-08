@@ -35,6 +35,7 @@ type tla_smb =
   | Mem
   | SubsetEq
   | SetEnum of int
+  | Add (* unused *)
   | Union
   | Subset
   | Cup
@@ -87,6 +88,9 @@ type tla_smb =
   | SeqTail
   | SeqSubSeq
   | SeqSelectSeq
+  (* Finite Sets *)
+  | FSIsFiniteSet
+  | FSCard
 
     (* TYPED *)
   (* Arithmetic *)
@@ -102,6 +106,16 @@ type tla_smb =
   | TIntLt
   | TIntGteq
   | TIntGt
+  (* Finite Sets *)
+  | TFSCard of ty
+  | TFSMem of ty
+  | TFSSubseteq of ty
+  | TFSEmpty of ty
+  | TFSSingleton of ty
+  | TFSAdd of ty
+  | TFSCup of ty
+  | TFSCap of ty
+  | TFSSetminus of ty
 
     (* SPECIAL *)
   | Cast of ty
