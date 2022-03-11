@@ -306,7 +306,48 @@ let type_guard_elim ty0 =
     ] %% []
   ) %% []
 
+let op_intquotient_typing () =
+  quant Forall
+  [ "x" ; "y" ] [ t_int ; t_int ]
+  ~pats:[ [
+    apps T.IntQuotient
+    [ apps (T.Cast t_int)
+      [ Ix 2 %% []
+      ] %% []
+    ; apps (T.Cast t_int)
+      [ Ix 1 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ apps T.TIntGt
+      [ Ix 1 %% []
+      ; apps (T.TIntLit 0) [] %% []
+      ] %% []
+    ; appb ~tys:[ t_idv ] B.Eq
+      [ apps T.IntQuotient
+        [ apps (T.Cast t_int)
+          [ Ix 2 %% []
+          ] %% []
+        ; apps (T.Cast t_int)
+          [ Ix 1 %% []
+          ] %% []
+        ] %% []
+      ; apps (T.Cast t_int)
+        [ apps T.TIntQuotient
+          [ Ix 2 %% []
+          ; Ix 1 %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
 let op_typing t_smb =
+  match t_smb with
+  | T.TIntQuotient -> op_intquotient_typing ()
+  | _ -> begin
+
   let t_dat = N_data.get_data t_smb in
   let i_smb = Option.get (t_dat.dat_tver) in
   let i_dat = N_data.get_data i_smb in
@@ -372,6 +413,8 @@ let op_typing t_smb =
       end
     ] %% []
   ) %% []
+
+  end
 
 
 (* {4 Logic} *)
@@ -2176,7 +2219,7 @@ let intquotient_typing () =
         ] %% []
       ; apps T.Mem
         [ Ix 1 %% []
-        ; apps T.IntSet [] %% []
+        ; apps T.NatSet [] %% []
         ] %% []
       ; apps T.IntLteq
         [ apps (T.IntLit 0) [] %% []
@@ -2188,7 +2231,7 @@ let intquotient_typing () =
         [ Ix 2 %% []
         ; Ix 1 %% []
         ] %% []
-      ; apps T.IntSet [] %% []
+      ; apps T.NatSet [] %% []
       ] %% []
     ] %% []
   ) %% []
@@ -2210,7 +2253,7 @@ let intremainder_typing () =
         ] %% []
       ; apps T.Mem
         [ Ix 1 %% []
-        ; apps T.IntSet [] %% []
+        ; apps T.NatSet [] %% []
         ] %% []
       ; apps T.IntLteq
         [ apps (T.IntLit 0) [] %% []

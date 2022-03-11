@@ -1125,10 +1125,11 @@ and expr_aux scx oe =
       let e, ty01 = expr scx e in
       let f, ty02 = expr scx f in
       begin match ty01, ty02 with
-      | TAtm TAInt, TAtm TAInt when typelvl scx > 1 ->
+      (* FIXME disabled because unsound Quotient and Remainder expect second arg to be < 0 *)
+      (*| TAtm TAInt, TAtm TAInt when typelvl scx > 1 ->
           let op = assign op Props.tpars_prop [ ] in
           let ret = Apply (op, [ e ; f ]) @@ oe in
-          (ret, TAtm TAInt)
+          (ret, TAtm TAInt)*)
       | _, _ ->
           let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
           (ret, TAtm TAIdv)

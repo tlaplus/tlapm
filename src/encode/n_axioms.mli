@@ -31,6 +31,12 @@ val type_guard_intro : ty0 -> expr
 val type_guard_elim : ty0 -> expr
 val op_typing : tla_smb -> expr
 
+(* FIXME The [op_typing] schema should be extended for dependent types
+ * but this will have to wait.  For now, the function will redirect to one
+ * of the special cases below. *)
+val op_intquotient_typing : unit -> expr
+
+
 
 (* {3 Main} *)
 

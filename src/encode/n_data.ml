@@ -417,9 +417,10 @@ let untyped_deps ~solver tla_smb s =
   | IntTimes when noarith ->
       ([ Mem ; IntSet ; NatSet ],             [ IntTimesTyping ; NatTimesTyping ])
   | IntQuotient when noarith ->
-      ([ Mem ; IntSet ; IntLteq ; IntLit 0 ], [ IntQuotientTyping ])
+      ([ Mem ; IntSet ; NatSet ; IntLteq ; IntLit 0 ],
+                                              [ IntQuotientTyping ])
   | IntRemainder when noarith ->
-      ([ Mem ; IntSet ; IntLteq ; IntLit 0 ; IntLit 1 ;
+      ([ Mem ; IntSet ; NatSet ; IntLteq ; IntLit 0 ; IntLit 1 ;
           IntRange ; IntMinus ],              [ IntRemainderTyping ])
   | IntExp when noarith ->
       ([ Mem ; IntSet ; IntLit 0 ],           [ IntExpTyping ])
