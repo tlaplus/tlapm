@@ -1,8 +1,8 @@
 (*  Title:      TLA+/CaseExpressions.thy
-    Author:     Stephan Merz, LORIA
-    Copyright (C) 2009-2021  INRIA and Microsoft Corporation
+    Author:     Stephan Merz, Inria Nancy
+    Copyright (C) 2009-2022  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2020
+    Version:    Isabelle2021-1
 *)
 
 section \<open> Case expressions \<close>
@@ -191,15 +191,15 @@ lemmas Case_simps [simp] = CaseArm_def Case_def CaseOther_def
 
 lemma
   "i=1 \<Longrightarrow> (CASE i=0 \<rightarrow> 2 \<box> i=1 \<rightarrow> 0 \<box> i=2 \<rightarrow> 1) = 0"
-by (simp add: two_def)
+  by simp
 
 lemma
- "i \<notin> {0,1,2} \<Rightarrow>  (CASE i=0 \<rightarrow> 2 \<box> i=1 \<rightarrow> 0 \<box> i=2 \<rightarrow> 1) = default"
-by auto
+  "i \<notin> {0,1,2} \<Rightarrow>  (CASE i=0 \<rightarrow> 2 \<box> i=1 \<rightarrow> 0 \<box> i=2 \<rightarrow> 1) = default"
+  by auto
 
 lemma
- "i \<notin> {0,1,2} \<Rightarrow>  (CASE i=0 \<rightarrow> 2 \<box> i=1 \<rightarrow> 0 \<box> i=2 \<rightarrow> 1 \<box> OTHER \<rightarrow> a) = a"
-by auto
+  "i \<notin> {0,1,2} \<Rightarrow>  (CASE i=0 \<rightarrow> 2 \<box> i=1 \<rightarrow> 0 \<box> i=2 \<rightarrow> 1 \<box> OTHER \<rightarrow> a) = a"
+  by auto
 
 **)
 

@@ -19,23 +19,23 @@ text \<open>
 \<close>
 
 definition Nibble
-(* where "Nibble \<equiv> {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}" *)
+(*  where "Nibble \<equiv> {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}" *)
   where "Nibble \<equiv> {0, 
                     1, 
-                    Succ[1], 
-                    Succ[Succ[1]], 
-                    Succ[Succ[Succ[1]]],
-                    Succ[Succ[Succ[Succ[1]]]],
-                    Succ[Succ[Succ[Succ[Succ[1]]]]],
-                    Succ[Succ[Succ[Succ[Succ[Succ[1]]]]]],
-                    Succ[Succ[Succ[Succ[Succ[Succ[Succ[1]]]]]]],
-                    Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[1]]]]]]]],
-                    Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[1]]]]]]]]],
-                    Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[1]]]]]]]]]],
-                    Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[1]]]]]]]]]]],
-                    Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[1]]]]]]]]]]]],
-                    Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[1]]]]]]]]]]]]],
-                    Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[Succ[1]]]]]]]]]]]]]]}"
+                    succ[1], 
+                    succ[succ[1]], 
+                    succ[succ[succ[1]]],
+                    succ[succ[succ[succ[1]]]],
+                    succ[succ[succ[succ[succ[1]]]]],
+                    succ[succ[succ[succ[succ[succ[1]]]]]],
+                    succ[succ[succ[succ[succ[succ[succ[1]]]]]]],
+                    succ[succ[succ[succ[succ[succ[succ[succ[1]]]]]]]],
+                    succ[succ[succ[succ[succ[succ[succ[succ[succ[1]]]]]]]]],
+                    succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[1]]]]]]]]]],
+                    succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[1]]]]]]]]]]],
+                    succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[1]]]]]]]]]]]],
+                    succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[1]]]]]]]]]]]]],
+                    succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[1]]]]]]]]]]]]]]}"
 
 definition char   (* -- @{text char} is intended to be applied to nibbles *)
 where "char(a,b) \<equiv> \<langle>a,b\<rangle>"
@@ -80,8 +80,8 @@ parse_ast_translation \<open>
     (* convert an ML integer to a nibble *)
     fun mkNibble n =
       if n = 0
-      then Ast.Constant "Peano.zero"
-      else Ast.Appl [Ast.Constant "Functions.fapply", Ast.Constant "Peano.Succ", mkNibble (n-1)];
+      then Ast.Constant "Integers.zero"
+      else Ast.Appl [Ast.Constant "Functions.fapply", Ast.Constant "Integers.succ", mkNibble (n-1)];
 
     (* convert an ML character to a TLA+ Char *)
     fun mkChar c =
@@ -139,14 +139,14 @@ oops
 print_ast_translation \<open>
   let
     (* convert a nibble to an ML integer *)
+    (* version to be used if 2 .. 15 are definitions, not abbreviations *)
     fun destNibble (Ast.Constant @{const_syntax "zero"}) = 0
       | destNibble (Ast.Constant @{const_syntax "one"}) = 1
       | destNibble (Ast.Appl [Ast.Constant @{const_syntax "Functions.fapply"}, 
-                              Ast.Constant @{const_syntax "Peano.Succ"}, nb])
+                              Ast.Constant @{const_syntax "Integers.succ"}, nb])
            = (destNibble nb) + 1
       | destNibble _ = raise Match
-
-    (* the following version should be used when 2 .. 15 are abbreviations, not definitions *)
+    (* version to be used when 2 .. 15 are abbreviations, not definitions *)
 (*
     fun destNibble (Ast.Constant @{const_syntax "zero"}) = 0
       | destNibble (Ast.Constant @{const_syntax "one"}) = 1
@@ -247,11 +247,11 @@ text \<open>
 (** Examples **
 
 lemma "(''foo'' :> 1 @@ ''bar'' :> TRUE) \<in> [''bar'' : BOOLEAN, ''foo'' : Nat]"
-by auto
+by auto   (* slow *)
 
 lemma "r \<in> [''bar'' : BOOLEAN, ''foo'' : Nat]
        \<Longrightarrow> [r EXCEPT ![''foo''] = 3] \<in> [''bar'' : BOOLEAN, ''foo'' : Nat]"
-by (force simp: two_def three_def)   (* "by auto" also works, but is slow *)
+by (force simp: two_def three_def)   (* even slower, "auto" also works *)
 
 lemma "(''a'' :> 1) \<noteq> (''b'' :> 1)"
 by simp
@@ -260,7 +260,7 @@ lemma "(''a'' :> 1 @@ ''b'' :> 2) \<noteq> (''a'' :> 1)"
 by simp
 
 lemma "(''a'' :> 1 @@ ''b'' :> 2) \<noteq> (''a'' :> 1 @@ ''b'' :> 3)"
-by (simp add: three_def)
+by (simp add: two_def three_def)
 
 lemma "(''a'' :> 1 @@ ''b'' :> 2) = (''b'' :> 2 @@ ''a'' :> 1)"
 by simp
@@ -278,7 +278,7 @@ by (simp add: two_def)
 
 end
 
-(* NB: Make sure that the following are proved automatically:
+(* NB: Make sure that the following is proved automatically once concatenation is defined:
 
 THEOREM Thm1 == "ab" = "a" \o "b"
 OBVIOUS
