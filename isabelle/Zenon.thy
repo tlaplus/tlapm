@@ -1,8 +1,7 @@
 (* Zenon.thy --- Support lemmas for Zenon proofs
  * Author: Damien Doligez <damien.doligez@inria.fr>
- * Copyright (C) 2008-2011  INRIA and Microsoft Corporation
- * Version:    Isabelle2011-1
- * Time-stamp: <2011-10-11 17:41:20 merz>
+ * Copyright (C) 2008-2022  INRIA and Microsoft Corporation
+ * Version:    Isabelle2021-1
  *)
 
 (* isabelle usedir -b Pure TLA+ *)
@@ -1090,7 +1089,7 @@ using zenon_sa_seq by (auto simp add: zenon_sa_def)
 
 lemma zenon_sa_diff_0a :
   "zenon_sa (zenon_sa (s1, e1), e2) ~= zenon_sa (<<>>, f2)"
-using zenon_sa_def zenon_sa_seq by auto
+using zenon_sa_seq by (auto simp: zenon_sa_def)
 
 lemma zenon_sa_diff_0b :
   "zenon_sa (<<>>, f2) ~= zenon_sa (zenon_sa (s1, e1), e2)"
@@ -1117,10 +1116,10 @@ lemma zenon_in_nat_0 : "~(0 \\in Nat) ==> FALSE"
 by blast
 
 lemma zenon_in_nat_1 : "~(1 \\in Nat) ==> FALSE"
-by blast
+by simp
 
 lemma zenon_in_nat_2 : "~(2 \\in Nat) ==> FALSE"
-by blast
+by (simp add: two_def)
 
 lemma zenon_in_nat_succ :
   "~(Succ[x] \\in Nat) ==> (~(x \\in Nat) ==> FALSE) ==> FALSE"
@@ -1175,7 +1174,10 @@ lemma zenon_range_1 : "isASeq (<<>>) & {} = Range (<<>>)" by auto
 lemma zenon_range_2 :
   assumes h: "(isASeq (s) & a = Range (s))"
   shows "(isASeq (Append (s, x)) & addElt (x, a) = Range (Append (s, x)))"
-using h by auto
+proof -
+  from assms have "succ[Len(s)] \<in> DOMAIN Append(s,x)" by auto
+  with assms show ?thesis by auto
+qed
 
 lemma zenon_set_rev_1 : "a = {} \\cup c ==> c = a" by auto
 
@@ -1207,7 +1209,8 @@ lemma zenon_all_rec_2 :
 by auto
 
 lemma zenon_tuple_acc_1 :
-  "isASeq (r) ==> Len (r) = n ==> x = Append (r, x) [Succ[n]]" by auto
+  "isASeq (r) ==> Len (r) = n ==> x = Append (r, x) [succ[n]]" 
+  by auto
 
 lemma zenon_tuple_acc_2 :
   "isASeq (r) ==> k \\in Nat ==> 0 < k ==> k \<le> Len (r) ==>
@@ -1215,32 +1218,52 @@ lemma zenon_tuple_acc_2 :
 using appendElt1 by auto
 
 definition zenon_ss :: "c \<Rightarrow> c"
-where "zenon_ss (n) \<equiv> IF n \\in Nat THEN Succ[n] ELSE 1"
+where "zenon_ss (n) \<equiv> IF n \\in Nat THEN succ[n] ELSE 1"
 
-lemma zenon_ss_nat : "zenon_ss(x) \\in Nat" by (auto simp add: zenon_ss_def)
+lemma zenon_ss_nat : "zenon_ss(x) \\in Nat"
+unfolding zenon_ss_def proof (rule condI)
+  assume "x \<in> Nat" thus "succ[x] \<in> Nat" by simp
+next
+  show "1 \<in> Nat" by simp
+qed
 
-lemma zenon_ss_1 : "Succ[0] = zenon_ss(0)" by (auto simp add: zenon_ss_def)
+lemma zenon_ss_1 : "succ[0] = zenon_ss(0)" by (simp add: zenon_ss_def)
 
-lemma zenon_ss_2 : "Succ[zenon_ss(x)] = zenon_ss(zenon_ss(x))" by (auto simp add: zenon_ss_def)
+lemma zenon_ss_2 : "succ[zenon_ss(x)] = zenon_ss(zenon_ss(x))"
+proof (cases "x \<in> Nat")
+  case True
+  then show ?thesis by (simp add: zenon_ss_def)
+next
+  case False
+  hence "zenon_ss(x) = 1" by (auto simp: zenon_ss_def)
+  thus ?thesis by (simp add: zenon_ss_def)
+qed
 
 lemma zenon_zero_lt : "0 < zenon_ss(x)"
-  by (simp add: zenon_ss_def, rule disjE [of "x \\in Nat" "x \\notin Nat"], rule excluded_middle, simp+)
+proof (cases "x \<in> Nat")
+  case True
+  then show ?thesis by (simp add: zenon_ss_def)
+next
+  case False
+  hence "zenon_ss(x) = 1" by (auto simp: zenon_ss_def)
+  then show ?thesis by simp
+qed
 
 lemma zenon_ss_le_sa_1 : "zenon_ss(0) <= Len (zenon_sa (s, x))"
-  by (auto simp add: zenon_ss_def zenon_sa_def, rule disjE [of "isASeq (s)" "~isASeq (s)"], rule excluded_middle, simp+)
+  by (cases "isASeq(s)") (auto simp: zenon_ss_def zenon_sa_def)
 
 lemma zenon_ss_le_sa_2 :
   fixes x y z
   assumes h0: "zenon_ss (x) <= Len (zenon_sa (s, y))"
   shows "zenon_ss (zenon_ss (x)) <= Len (zenon_sa (zenon_sa (s, y), z))"
 proof -
-  have h1: "Succ [Len (zenon_sa (s, y))] = Len (zenon_sa (zenon_sa (s, y), z))"
+  have h1: "succ [Len (zenon_sa (s, y))] = Len (zenon_sa (zenon_sa (s, y), z))"
   using zenon_sa_seq by (auto simp add: zenon_sa_def)
 
   have h2: "Len (zenon_sa (s, y)) \\in Nat"
-  using zenon_sa_seq by (rule LenInNat)
-  have h3: "Succ [zenon_ss (x)] \<le> Succ [Len (zenon_sa (s, y))]"
-  using zenon_ss_nat h2 h0 by (simp only: nat_Succ_leq_Succ)
+  using zenon_sa_seq by simp
+  have h3: "succ [zenon_ss (x)] \<le> succ [Len (zenon_sa (s, y))]"
+    using zenon_ss_nat h2 h0 by (intro int_succ_leq_succI) simp+
   show ?thesis
   using h3 by (auto simp add: zenon_ss_2 h1)
 qed
@@ -1250,8 +1273,8 @@ by auto
 
 lemma zenon_dom_app_2 :
   assumes h: "isASeq (s) & n = Len (s) & x = 1 .. Len (s)"
-  shows "isASeq (Append (s, y)) & Succ[n] = Len (Append (s, y))
-         & addElt (Succ[n], x) = 1 .. Len (Append (s, y))" (is "?a & ?b & ?c")
+  shows "isASeq (Append (s, y)) & succ[n] = Len (Append (s, y))
+         & addElt (succ[n], x) = 1 .. Len (Append (s, y))"
 using h by auto
 
 (* generic proof rules instantiated for small n *)
@@ -1272,7 +1295,7 @@ proof -
   let ?domsetrev = "{l1x}"
   let ?rngs = "<<s1x>>"
   let ?n0n = "0"
-  let ?n1n = "Succ[?n0n]"
+  let ?n1n = "succ[?n0n]"
   let ?indices = "{?n1n}"
   have hdomx : "?domsetrev = DOMAIN r"
   by (rule zenon_set_rev_1, (rule zenon_set_rev_2)+, rule zenon_set_rev_3,
@@ -1335,8 +1358,8 @@ proof -
   let ?domsetrev = "{l2x, l1x}"
   let ?rngs = "<<s1x, s2x>>"
   let ?n0n = "0"
-  let ?n1n = "Succ[?n0n]"
-  let ?n2n = "Succ[?n1n]"
+  let ?n1n = "succ[?n0n]"
+  let ?n2n = "succ[?n1n]"
   let ?indices = "{?n2n, ?n1n}"
   have hdomx : "?domsetrev = DOMAIN r"
   by (rule zenon_set_rev_1, (rule zenon_set_rev_2)+, rule zenon_set_rev_3,
@@ -1364,39 +1387,18 @@ proof -
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s1x = ?rngs[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n1n]] \\in ?rngs[?n1n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h1)
     next
       have hn: "l2x = ?doms[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s2x = ?rngs[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n2n]] \\in ?rngs[?n2n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h2)
-
     qed
   qed
 qed
@@ -1417,9 +1419,9 @@ proof -
   let ?domsetrev = "{l3x, l2x, l1x}"
   let ?rngs = "<<s1x, s2x, s3x>>"
   let ?n0n = "0"
-  let ?n1n = "Succ[?n0n]"
-  let ?n2n = "Succ[?n1n]"
-  let ?n3n = "Succ[?n2n]"
+  let ?n1n = "succ[?n0n]"
+  let ?n2n = "succ[?n1n]"
+  let ?n3n = "succ[?n2n]"
   let ?indices = "{?n3n, ?n2n, ?n1n}"
   have hdomx : "?domsetrev = DOMAIN r"
   by (rule zenon_set_rev_1, (rule zenon_set_rev_2)+, rule zenon_set_rev_3,
@@ -1447,53 +1449,23 @@ proof -
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s1x = ?rngs[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n1n]] \\in ?rngs[?n1n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h1)
     next
       have hn: "l2x = ?doms[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s2x = ?rngs[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n2n]] \\in ?rngs[?n2n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h2)
     next
       have hn: "l3x = ?doms[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s3x = ?rngs[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n3n]] \\in ?rngs[?n3n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h3)
 
@@ -1520,10 +1492,10 @@ proof -
   let ?domsetrev = "{l4x, l3x, l2x, l1x}"
   let ?rngs = "<<s1x, s2x, s3x, s4x>>"
   let ?n0n = "0"
-  let ?n1n = "Succ[?n0n]"
-  let ?n2n = "Succ[?n1n]"
-  let ?n3n = "Succ[?n2n]"
-  let ?n4n = "Succ[?n3n]"
+  let ?n1n = "succ[?n0n]"
+  let ?n2n = "succ[?n1n]"
+  let ?n3n = "succ[?n2n]"
+  let ?n4n = "succ[?n3n]"
   let ?indices = "{?n4n, ?n3n, ?n2n, ?n1n}"
   have hdomx : "?domsetrev = DOMAIN r"
   by (rule zenon_set_rev_1, (rule zenon_set_rev_2)+, rule zenon_set_rev_3,
@@ -1551,70 +1523,30 @@ proof -
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s1x = ?rngs[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n1n]] \\in ?rngs[?n1n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h1)
     next
       have hn: "l2x = ?doms[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s2x = ?rngs[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n2n]] \\in ?rngs[?n2n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h2)
     next
       have hn: "l3x = ?doms[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s3x = ?rngs[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n3n]] \\in ?rngs[?n3n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h3)
     next
       have hn: "l4x = ?doms[?n4n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s4x = ?rngs[?n4n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n4n]] \\in ?rngs[?n4n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h4)
 
@@ -1642,11 +1574,11 @@ proof -
   let ?domsetrev = "{l5x, l4x, l3x, l2x, l1x}"
   let ?rngs = "<<s1x, s2x, s3x, s4x, s5x>>"
   let ?n0n = "0"
-  let ?n1n = "Succ[?n0n]"
-  let ?n2n = "Succ[?n1n]"
-  let ?n3n = "Succ[?n2n]"
-  let ?n4n = "Succ[?n3n]"
-  let ?n5n = "Succ[?n4n]"
+  let ?n1n = "succ[?n0n]"
+  let ?n2n = "succ[?n1n]"
+  let ?n3n = "succ[?n2n]"
+  let ?n4n = "succ[?n3n]"
+  let ?n5n = "succ[?n4n]"
   let ?indices = "{?n5n, ?n4n, ?n3n, ?n2n, ?n1n}"
   have hdomx : "?domsetrev = DOMAIN r"
   by (rule zenon_set_rev_1, (rule zenon_set_rev_2)+, rule zenon_set_rev_3,
@@ -1674,87 +1606,37 @@ proof -
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s1x = ?rngs[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n1n]] \\in ?rngs[?n1n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h1)
     next
       have hn: "l2x = ?doms[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s2x = ?rngs[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n2n]] \\in ?rngs[?n2n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h2)
     next
       have hn: "l3x = ?doms[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s3x = ?rngs[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n3n]] \\in ?rngs[?n3n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h3)
     next
       have hn: "l4x = ?doms[?n4n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s4x = ?rngs[?n4n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n4n]] \\in ?rngs[?n4n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h4)
     next
       have hn: "l5x = ?doms[?n5n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s5x = ?rngs[?n5n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n5n]] \\in ?rngs[?n5n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h5)
 
@@ -1783,12 +1665,12 @@ proof -
   let ?domsetrev = "{l6x, l5x, l4x, l3x, l2x, l1x}"
   let ?rngs = "<<s1x, s2x, s3x, s4x, s5x, s6x>>"
   let ?n0n = "0"
-  let ?n1n = "Succ[?n0n]"
-  let ?n2n = "Succ[?n1n]"
-  let ?n3n = "Succ[?n2n]"
-  let ?n4n = "Succ[?n3n]"
-  let ?n5n = "Succ[?n4n]"
-  let ?n6n = "Succ[?n5n]"
+  let ?n1n = "succ[?n0n]"
+  let ?n2n = "succ[?n1n]"
+  let ?n3n = "succ[?n2n]"
+  let ?n4n = "succ[?n3n]"
+  let ?n5n = "succ[?n4n]"
+  let ?n6n = "succ[?n5n]"
   let ?indices = "{?n6n, ?n5n, ?n4n, ?n3n, ?n2n, ?n1n}"
   have hdomx : "?domsetrev = DOMAIN r"
   by (rule zenon_set_rev_1, (rule zenon_set_rev_2)+, rule zenon_set_rev_3,
@@ -1816,104 +1698,44 @@ proof -
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s1x = ?rngs[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n1n]] \\in ?rngs[?n1n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h1)
     next
       have hn: "l2x = ?doms[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s2x = ?rngs[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n2n]] \\in ?rngs[?n2n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h2)
     next
       have hn: "l3x = ?doms[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s3x = ?rngs[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n3n]] \\in ?rngs[?n3n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h3)
     next
       have hn: "l4x = ?doms[?n4n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s4x = ?rngs[?n4n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n4n]] \\in ?rngs[?n4n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h4)
     next
       have hn: "l5x = ?doms[?n5n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s5x = ?rngs[?n5n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n5n]] \\in ?rngs[?n5n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h5)
     next
       have hn: "l6x = ?doms[?n6n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s6x = ?rngs[?n6n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n6n]] \\in ?rngs[?n6n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h6)
 
@@ -1943,13 +1765,13 @@ proof -
   let ?domsetrev = "{l7x, l6x, l5x, l4x, l3x, l2x, l1x}"
   let ?rngs = "<<s1x, s2x, s3x, s4x, s5x, s6x, s7x>>"
   let ?n0n = "0"
-  let ?n1n = "Succ[?n0n]"
-  let ?n2n = "Succ[?n1n]"
-  let ?n3n = "Succ[?n2n]"
-  let ?n4n = "Succ[?n3n]"
-  let ?n5n = "Succ[?n4n]"
-  let ?n6n = "Succ[?n5n]"
-  let ?n7n = "Succ[?n6n]"
+  let ?n1n = "succ[?n0n]"
+  let ?n2n = "succ[?n1n]"
+  let ?n3n = "succ[?n2n]"
+  let ?n4n = "succ[?n3n]"
+  let ?n5n = "succ[?n4n]"
+  let ?n6n = "succ[?n5n]"
+  let ?n7n = "succ[?n6n]"
   let ?indices = "{?n7n, ?n6n, ?n5n, ?n4n, ?n3n, ?n2n, ?n1n}"
   have hdomx : "?domsetrev = DOMAIN r"
   by (rule zenon_set_rev_1, (rule zenon_set_rev_2)+, rule zenon_set_rev_3,
@@ -1977,121 +1799,51 @@ proof -
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s1x = ?rngs[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n1n]] \\in ?rngs[?n1n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h1)
     next
       have hn: "l2x = ?doms[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s2x = ?rngs[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n2n]] \\in ?rngs[?n2n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h2)
     next
       have hn: "l3x = ?doms[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s3x = ?rngs[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n3n]] \\in ?rngs[?n3n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h3)
     next
       have hn: "l4x = ?doms[?n4n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s4x = ?rngs[?n4n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n4n]] \\in ?rngs[?n4n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h4)
     next
       have hn: "l5x = ?doms[?n5n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s5x = ?rngs[?n5n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n5n]] \\in ?rngs[?n5n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h5)
     next
       have hn: "l6x = ?doms[?n6n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s6x = ?rngs[?n6n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n6n]] \\in ?rngs[?n6n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h6)
     next
       have hn: "l7x = ?doms[?n7n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s7x = ?rngs[?n7n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n7n]] \\in ?rngs[?n7n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h7)
 
