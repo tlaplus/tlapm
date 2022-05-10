@@ -182,6 +182,10 @@ let shp_to_ty1 = function
   | Shape_expr -> Ty1 ([], TAtm TAIdv)
   | Shape_op n -> Ty1 (List.init n (fun _ -> TAtm TAIdv), TAtm TAIdv)
 
+let is_lambda = function
+  | Lambda _ -> true
+  | _ -> false
+
 let map3 f l1 l2 l3 =
   List.map2 f l1 l2 |>
   List.map2 (|>) l3
@@ -1485,8 +1489,7 @@ and sequent scx sq =
 
     (* Special case: Type inference is activated for hidden constant defns *)
     | Some ({ core = Defn ({ core = Operator (v, e) } as df, wd, Hidden, ex) } as h, hs)
-      when typelvl scx = 2
-        && begin match e.core with Lambda _ -> false | _ -> true end ->
+      when typelvl scx = 2 && not (is_lambda e.core) ->
         let inferer = fun hx e -> snd (expr (fst scx, hx) e) in
         let scx, df =
           match T_hyps.search_type_hyp ~inferer ~pol:true (snd scx) (Sequent { context = hs ; active = sq.active } %% []) with
@@ -1495,7 +1498,7 @@ and sequent scx sq =
               let v = force_idv ty0 v in
               (scx, Operator (v, e) @@ df)
           | Some ty0 ->
-              let v, scx = adj_ty0 scx v ty0 in
+              let _, scx = adj_ty0 scx v ty0 in
               let v = assign v Props.ty0_prop (TAtm TAIdv) in
               (scx, Operator (v, e) @@ df)
           | None ->

@@ -481,7 +481,7 @@ let smt_solve ob org_ob f res_cont =
 ;;
 
 let cvc3_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt" Params.cvc4 "CVC4" (get_encode_smtlib ())
+  gen_smt_solve ".smt" Params.cvc4 "CVC4" (get_encode_smtlib () ~solver:"CVC4")
                 (Method.Cvc33 f) ob org_ob f res_cont ";;"
 ;;
 
@@ -496,7 +496,7 @@ let z3_solve ob org_ob f res_cont =
 ;;
 
 let verit_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt2" Params.verit "veriT" (get_encode_smtlib ())
+  gen_smt_solve ".smt2" Params.verit "veriT" (get_encode_smtlib () ~solver:"veriT")
                 (Method.Verit f) ob org_ob f res_cont ";;"
 ;;
 

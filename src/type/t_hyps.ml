@@ -52,6 +52,7 @@ let search_type_hyp ~inferer ~pol scx oe =
         end
 
     | Apply ({ core = Internal (B.Eq | B.Neq as b) }, [ { core = Ix n } ; e ])
+    | Apply ({ core = Internal (B.Eq | B.Neq as b) }, [ e ; { core = Ix n } ])
       when n = ix && ((pol && b = B.Neq) || (not pol && b = B.Eq)) ->
         begin try
           Lazy.from_val (Some (inferer scx e))

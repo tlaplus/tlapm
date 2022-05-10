@@ -352,7 +352,6 @@ let untyped_deps ~solver tla_smb s =
     | true -> false
     | _ -> Params.debugging "t0+"
   in
-  let efffcns = false in
   begin match tla_smb with
   (* Logic *)
   | Choose ->
@@ -454,9 +453,6 @@ let untyped_deps ~solver tla_smb s =
   | FunIsafcn ->
       ([ Mem ; FunDom ; FunConstr ; FunApp ],
                                   [ FunExt ])
-  | FunSet when efffcns ->
-      ([ Mem ; FunIsafcn ; FunDom ; FunApp ; FunIm ; SubsetEq ],
-                                  [ FunSetImIntro ; FunSetSubs ; FunSetElim1 ; FunSetElim2 ])
   | FunSet ->
       ([ Mem ; FunIsafcn ; FunDom ; FunApp ],
                                   [ FunSetIntro ; FunSetElim1 ; FunSetElim2 ])
@@ -496,7 +492,7 @@ let untyped_deps ~solver tla_smb s =
        @ List.init n (fun i ->
          if noarith then IntLit (i + 1)
          else TIntLit (i + 1))
-       @ (if noarith then [] else [ Cast (TAtm TAInt) ]),
+       @ (if noarith then [] else [ Cast (TAtm TAInt) ; Proj (TAtm TAInt) ]),
                                   [ ProductIntro n ; ProductElim n ])
   (* Records *)
   | Rec fs ->

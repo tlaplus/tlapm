@@ -93,8 +93,12 @@ let pp_box fmt ff x =
 let pp_print_sexpr fmt ff v =
   fprintf ff "@[<hov 2>(%a@])" fmt v
 
-let pp_print_sort ff ty =
-  pp_print_string ff (ty_to_string ty)
+let rec pp_print_sort ff ty =
+  begin match ty with
+  | TAtm TABol -> pp_print_string ff "Bool"
+  | TAtm TAInt -> pp_print_string ff "Int"
+  | _ -> pp_print_string ff (ty_to_string ty)
+  end
 
 let pp_print_binding ff (nm, ty) =
   fprintf ff "(%s %a)" nm pp_print_sort ty
@@ -448,7 +452,8 @@ let preprocess ~solver sq =
          if Params.debugging "noarith"  then 0
     else if Params.debugging "t0"       then 1
     else if Params.debugging "t0+"      then 2
-    else if Params.debugging "t1"       then 3
+    (*else if Params.debugging "t1"       then 3*)
+    (* NOTE type level 3 is but a dream *)
     else 1
   in
 
