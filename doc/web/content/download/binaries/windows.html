@@ -1,0 +1,201 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link
+rel="stylesheet" type="text/css"
+id="ss"
+href="../../../assets/css/common.css"
+/>
+<title>TLA+ Proof System</title>
+</head>
+<body>
+
+
+<div id="wrapper">
+  <div id="header">
+    <div id="title">
+      <a class="title"
+        href="../../Home.html">
+            TLA+ Proof System
+      </a>
+    </div>
+    <div class="logomsr">
+      <a href="https://www.msr-inria.inria.fr">
+        <img
+            src="../../../assets/images/logo-MS-Research-Inria-Joint-Centre-Small.png"
+            alt="Microsoft Research - Inria Joint Centre"
+            class="logo"
+        />
+      </a>
+    </div>
+  </div>
+  <ul id="nav">
+
+
+            <li>
+                <a class="off"
+                    href="../../Home.html">
+                    Home
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../../Download.html">
+                    Download
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../../Documentation.html">
+                    Documentation
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../../Community.html">
+                    Community
+                </a>
+            </li>
+            
+
+</ul>
+<div id="transp"></div>
+<div id="content" class="clearfix">
+  <div id="col_1">
+
+      <h2>Menu</h2>
+      <ul id="menu">
+
+            <li class="menuoff">
+                <a
+                    href="../../download/Binaries.html">
+                    Binaries
+                </a>
+            </li>
+            
+
+                <li class="indexoff">
+                    <a
+                        href="../../download/binaries/Windows.html">
+                        Windows
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../download/binaries/Linux.html">
+                        Linux
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../download/binaries/MacOS.html">
+                        MacOS
+                    </a>
+                </li>
+                
+
+            <li class="menuoff">
+                <a
+                    href="../../download/Source.html">
+                    Source
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../../download/What_s_new.html">
+                    What's new
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../../download/Unsupported.html">
+                    Unsupported
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../../download/License.html">
+                    License
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../../download/Previous_releases.html">
+                    Previous releases
+                </a>
+            </li>
+            
+
+</ul>
+</div>
+<div id="col_2">
+
+<h2 id="windows"><img src="images/windows_logo_only.png" class="blogo" alt="[Windows logo]" />Windows</h2>
+<p>The package:</p>
+<ul>
+<li>for 32-bit Cygwin: <a href="https://github.com/tlaplus/tlapm/releases/latest/download/tlaps-1.4.5-i686-cygwin-inst.exe"><code>tlaps-1.4.5-i686-cygwin-inst.exe</code></a></li>
+</ul>
+<h3 id="1-install-cygwin">1. Install Cygwin</h3>
+<p><a href="https://www.cygwin.com">Cygwin</a> version 3.0.7 or later is required. You need to install the 32-bit version of Cygwin, even if your OS is 64-bit. This version of TLAPS does <strong>not</strong> work on 64-bit Cygwin.</p>
+<h3 id="2-install-the-cygwin-packages---make-perl-wget">2. Install the Cygwin packages   <code>make</code>, <code>perl</code>, <code>wget</code></h3>
+<p>Consult the <a href="https://www.cygwin.com/cygwin-ug-net/setup-net.html">Cygwin manual</a> for instructions on how to install Cygwin packages. Installing these packages will bring in a number of other packages, which are also needed.</p>
+<h3 id="3-install-the-proof-system">3. Install the Proof System</h3>
+<p>Download the <a href="https://github.com/tlaplus/tlapm/releases/latest/download/tlaps-1.4.5-i686-cygwin-inst.exe">TLAPS installer</a> and run the following command in a Cygwin terminal, from the directory in which the package has been downloaded (usually <code>/cygdrive/c/Users/$USER/Downloads</code>):</p>
+<pre><code>$ ./tlaps-1.4.5-\*-cygwin-inst.exe
+</code></pre>
+<p>This will install the TLAPM binary in <code>/usr/local/bin</code> and some other data in <code>/usr/local/lib/tlaps</code>, including the <code>zenon</code>, <code>isabelle</code>, <code>z3</code>, <code>ls4</code>, and <code>translate</code> binaries.</p>
+<h3 id="4-set-the-toolboxs-library-path">4. Set the Toolbox's library path</h3>
+<p>We strongly recommend that you install the <a href="https://lamport.azurewebsites.net/tla/toolbox.html">Toolbox</a> (version 1.6.0 or later). You will need to add the location of the <code>TLAPS.tla</code> file to the list of libraries used by the Toolbox. To do this, open the Toolbox and go to "File &gt; Preferences &gt; TLA+ Preferences". Add the directory where <code>TLAPS.tla</code> is located to the list of library path locations. If you have the default installation, this directory is <code>C:\cygwin\usr\local\lib\tlaps\</code>.</p>
+<h3 id="5-set-the-windows-path">5. Set the Windows path</h3>
+<p>If TLAPM will be called from a Windows <a href="https://en.wikipedia.org/wiki/Run-time_environment">environment</a> (instead of a Cygwin environment), then certain directories need to be added to the Windows <a href="https://en.wikipedia.org/wiki/PATH_(variable)"><code>PATH</code> environment variable</a>. If you have the default installation, then these directories are:</p>
+<ul>
+<li><code>C:\cygwin\usr\local\bin</code></li>
+<li><code>C:\cygwin\usr\bin</code></li>
+<li><code>C:\cygwin\bin</code></li>
+</ul>
+<p>Relevant information about setting the path can be found in the <a href="https://cygwin.com/faq.html#faq.using.path">Cygwin documentation about paths</a>, and the <a href="https://cygwin.com/cygwin-ug-net/setup-env.html">Cygwin documentation about environment variables</a>. Within Cygwin, the previous paths are:</p>
+<ul>
+<li><code>/usr/local/bin</code></li>
+<li><code>/usr/bin</code></li>
+<li><code>/bin</code></li>
+</ul>
+<p>The <a href="https://cygwin.com/cygwin-ug-net/cygpath.html">tool <code>cygpath</code></a> may be useful for converting between path formats.</p>
+<h3 id="6-install-cvc4-optional">6. Install CVC4 (optional)</h3>
+<p>You may want to install CVC4 to use as an additional SMT back-end for TLAPS (the default, Z3, is included in the installer). Note that some of our example files use CVC4 for a few proof obligations.</p>
+<p>To install CVC4, you should download it from <a href="https://cvc4.cs.stanford.edu/downloads/builds/win64-opt/">the CVC4 download page</a>, then rename it and move it to <code>/usr/local/lib/tlaps/bin</code> with this command:</p>
+<pre><code>$ mv cvc4-1.7-win64-opt.exe /usr/local/lib/tlaps/bin/cvc4.exe
+</code></pre>
+<h3 id="uninstallation">Uninstallation</h3>
+<p>To uninstall TLAPS, open a cygwin terminal and type:</p>
+<pre><code>$ `tlapm --where`/un-inst
+</code></pre>
+<p>The uninstaller for an existing version of TLAPS is automatically run when the TLAPS installer (for any version of TLAPS, including the same version) tries to install into the same location. Because of this, <strong>never store any important files in the directory where TLAPS is installed</strong>.</p>
+
+
+    </div>
+  </div>
+</div>
+
+</script>
+</body>
+</html>

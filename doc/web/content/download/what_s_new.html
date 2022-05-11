@@ -1,0 +1,203 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link
+rel="stylesheet" type="text/css"
+id="ss"
+href="../../assets/css/common.css"
+/>
+<title>TLA+ Proof System</title>
+</head>
+<body>
+
+
+<div id="wrapper">
+  <div id="header">
+    <div id="title">
+      <a class="title"
+        href="../Home.html">
+            TLA+ Proof System
+      </a>
+    </div>
+    <div class="logomsr">
+      <a href="https://www.msr-inria.inria.fr">
+        <img
+            src="../../assets/images/logo-MS-Research-Inria-Joint-Centre-Small.png"
+            alt="Microsoft Research - Inria Joint Centre"
+            class="logo"
+        />
+      </a>
+    </div>
+  </div>
+  <ul id="nav">
+
+
+            <li>
+                <a class="off"
+                    href="../Home.html">
+                    Home
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../Download.html">
+                    Download
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../Documentation.html">
+                    Documentation
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../Community.html">
+                    Community
+                </a>
+            </li>
+            
+
+</ul>
+<div id="transp"></div>
+<div id="content" class="clearfix">
+  <div id="col_1">
+
+      <h2>Menu</h2>
+      <ul id="menu">
+
+            <li class="menuoff">
+                <a
+                    href="../download/Binaries.html">
+                    Binaries
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../download/Source.html">
+                    Source
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../download/What_s_new.html">
+                    What's new
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../download/Unsupported.html">
+                    Unsupported
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../download/License.html">
+                    License
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../download/Previous_releases.html">
+                    Previous releases
+                </a>
+            </li>
+            
+
+</ul>
+</div>
+<div id="col_2">
+
+<h3 id="whats-new-in-tlaps-version-tbd">What's new in TLAPS version TBD</h3>
+<p>When instantiating a version of the TLA+ module <code>TLAPS.tla</code> (i.e., using an <code>INSTANCE TLAPS</code> statement) that is from an earlier version of TLAPS, a warning may be raised about the expression level of declared operators within the scope of <code>ENABLED</code>. To avoid this warning, please use a newer version of the TLA+ module <code>TLAPS.tla</code>, for example the TLA+ module <code>TLAPS.tla</code> contained in this release of TLAPS. Installing TLAPS also copies the module <code>TLAPS.tla</code> to a path from where it is used. So if instantiating that "installed" copy of the file <code>TLAPS.tla</code>, then this warning would not arise.</p>
+<h3 id="whats-new-in-tlaps-version-145---february-2020">What's new in TLAPS version 1.4.5   <span style="font-size:80%;">(February 2020)</span></h3>
+<div class="hr"></div>
+
+<p>We switched to Z3 for the default SMT back-end prover and fixed a number of bugs (including some soundness bugs).</p>
+<h3 id="whats-new-in-tlaps-version-143---june-2015">What's new in TLAPS version 1.4.3   <span style="font-size:80%;">(June 2015)</span></h3>
+<div class="hr"></div>
+
+<p>Many bug fixes.</p>
+<h3 id="whats-new-in-tlaps-version-132---may-2014">What's new in TLAPS version 1.3.2   <span style="font-size:80%;">(May 2014)</span></h3>
+<div class="hr"></div>
+
+<p>We added a few definitions and theorems in <code>NaturalsInduction.tla</code> and changed the name of the <code>translate</code> utility to <code>ptl_to_trp</code> in order to avoid possible name clashes.</p>
+<h3 id="whats-new-in-tlaps-version-130---march-2014">What's new in TLAPS version 1.3.0   <span style="font-size:80%;">(March 2014)</span></h3>
+<div class="hr"></div>
+
+<p>We fixed some bugs, but the most important change is the addition of a back-end prover for temporal logic (LS4), invoked with the pragma <code>PTL</code> (Propositional Temporal Logic).</p>
+<h3 id="whats-new-in-tlaps-version-121---september-2013">What's new in TLAPS version 1.2.1   <span style="font-size:80%;">(September 2013)</span></h3>
+<div class="hr"></div>
+
+<h5 id="non-exhaustive-list">(non-exhaustive list)</h5>
+<h4 id="tla-proof-manager">TLA proof manager</h4>
+<ul>
+<li>New option: <code>--stretch</code> to adapt timeouts to the machine's speed</li>
+<li>Speed improvements for large multi-module specifications</li>
+<li>Many bug fixes</li>
+</ul>
+<h4 id="backend-provers">Backend provers</h4>
+<ul>
+<li>Removed Cooper's algorithm (everybody should use SMT instead)</li>
+<li>A new back-end for calling TPTP provers</li>
+<li>New option on Windows: <code>--fast-isabelle</code> to invoke Isabelle more efficiently</li>
+</ul>
+<h3 id="whats-new-in-tlaps-version-111---november-2012">What's new in TLAPS version 1.1.1   <span style="font-size:80%;">(November 2012)</span></h3>
+<div class="hr"></div>
+
+<h5 id="non-exhaustive-list-1">(non-exhaustive list)</h5>
+<h4 id="tla-proof-manager-1">TLA proof manager</h4>
+<ul>
+<li>Many bug fixes; robustness improvements</li>
+</ul>
+<h4 id="backend-provers-1">Backend provers</h4>
+<ul>
+<li>New translation for SMT back-ends (more robust and more effective)</li>
+</ul>
+<h3 id="whats-new-in-tlaps-version-10---january-2012">What's new in TLAPS version 1.0   <span style="font-size:80%;">(January 2012)</span></h3>
+<div class="hr"></div>
+
+<h5 id="non-exhaustive-list-2">(non-exhaustive list)</h5>
+<h4 id="tla-proof-manager-2">TLA proof manager</h4>
+<ul>
+<li>Overall efficiency improved (speed and robustness: minor bugs fixed)</li>
+<li>New way to call backend provers via TLA+ identifiers (see <a href="../documentation/tutorial/tactics.html">tactics</a>).</li>
+<li>Improved fingerprints (incremental saving, improved sharing, history).</li>
+<li>Implementation of Cooper's quantifier-elimination algorithm (tactic <code>SimpleArithmetic</code>) can now deal with abstract terms (e.g. prove that <code>f[x] + 1 &gt; f[x]</code> without unfolding the definition of <code>f</code>).</li>
+<li>Improved Toolbox integration.</li>
+<li>Improved reasons of failure messages.</li>
+</ul>
+<h4 id="backend-provers-2">Backend provers</h4>
+<ul>
+<li>New backend translator to SMTLIB2 standard smt input format.</li>
+<li>New backend translator to the Z3 smt-solver native input format.</li>
+<li>New backend translator to the Yices smt-solver native input format.</li>
+<li>Upgrade from Isabelle2009-1 to Isabelle2011-1.</li>
+</ul>
+
+
+    </div>
+  </div>
+</div>
+
+</script>
+</body>
+</html>

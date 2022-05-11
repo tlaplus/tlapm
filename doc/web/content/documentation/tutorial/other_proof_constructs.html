@@ -1,0 +1,457 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link
+rel="stylesheet" type="text/css"
+id="ss"
+href="../../../assets/css/common.css"
+/>
+<title>TLA+ Proof System</title>
+</head>
+<body>
+
+
+<div id="wrapper">
+  <div id="header">
+    <div id="title">
+      <a class="title"
+        href="../../Home.html">
+            TLA+ Proof System
+      </a>
+    </div>
+    <div class="logomsr">
+      <a href="https://www.msr-inria.inria.fr">
+        <img
+            src="../../../assets/images/logo-MS-Research-Inria-Joint-Centre-Small.png"
+            alt="Microsoft Research - Inria Joint Centre"
+            class="logo"
+        />
+      </a>
+    </div>
+  </div>
+  <ul id="nav">
+
+
+            <li>
+                <a class="off"
+                    href="../../Home.html">
+                    Home
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../../Download.html">
+                    Download
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../../Documentation.html">
+                    Documentation
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../../Community.html">
+                    Community
+                </a>
+            </li>
+            
+
+</ul>
+<div id="transp"></div>
+<div id="content" class="clearfix">
+  <div id="col_1">
+
+      <h2>Menu</h2>
+      <ul id="menu">
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/Tutorial.html">
+                    Tutorial
+                </a>
+            </li>
+            
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/The_example.html">
+                        The example
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/A_simple_proof.html">
+                        A simple proof
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/Hierarchical_proofs.html">
+                        Hierarchical proofs
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/Advanced_options.html">
+                        Advanced options
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/Other_proof_constructs.html">
+                        Other proof constructs
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/Tactics.html">
+                        Tactics
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/Practical_hints.html">
+                        Practical hints
+                    </a>
+                </li>
+                
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/Unsupported_features.html">
+                    Unsupported features
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/Publications.html">
+                    Publications
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/TLA+_Hyperbook.html">
+                    TLA+ Hyperbook
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/TLA+_Video_Course.html">
+                    TLA+ Video Course
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/Misc.html">
+                    Misc
+                </a>
+            </li>
+            
+
+</ul>
+</div>
+<div id="col_2">
+
+<h2 id="tla-proof-constructs">TLA+ proof constructs</h2>
+<div class="hr"></div>
+
+<h3 id="suffices"><code>SUFFICES</code></h3>
+<div class="hr"></div>
+
+<p>An ordinary expression or <code>ASSUME</code> ... <code>PROVE</code> ... in a step stands for an assertion of that step. Its subproof proves it, and the rest of the proof in the same level is allowed to use the assertion as an assumption. <code>SUFFICES</code> reverses these two roles. Succinctly, the following two proof fragments are equivalent.</p>
+<table class="none">
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td data-valign="top">
+
+<pre class="tla"><code>&lt;4&gt;1. t1
+  &lt;5&gt;1. s1
+  &lt;5&gt;2. s2
+  …
+  &lt;5&gt;m. <span class="purple">QED</span>
+&lt;4&gt;2. t2
+&lt;4&gt;3. t3
+…
+&lt;4&gt;n. <span class="purple">QED</span>
+</code></pre>
+</td>
+<td class="a"> </td>
+<td data-valign="top">
+
+<pre class="tla"><code>&lt;4&gt;1. <span class="purple">SUFFICES</span> t1
+  &lt;5&gt;1. t2
+  &lt;5&gt;2. t3
+  …
+  &lt;5&gt;n-1. <span class="purple">QED</span>
+&lt;4&gt;2. s1
+&lt;4&gt;3. s2
+…
+&lt;4&gt;m+1. <span class="purple">QED</span>
+</code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+
+<p>In the proof on the left-hand side above, <code>t1</code> is known in proof-steps <code>&lt;4&gt;2</code>, <code>&lt;4&gt;3</code>, ..., <code>&lt;4&gt;n</code>, while in the proof on the right-hand side, <code>t1</code> is known in proof-steps <code>&lt;5&gt;1</code>, <code>&lt;5&gt;2</code>, ..., <code>&lt;5&gt;n-1</code>. <code>SUFFICES</code> is mainly used to rephrase the sequent to be proved in a more perspicuous form. For example, suppose we have:</p>
+<pre class="tla"><code><span class="purple">VARIABLE</span> x
+A == /\ x = 1
+     /\ x&#39; = 2
+B == /\ x = 2
+     /\ x&#39; = 1
+Next == A \/ B
+Inv == x \in {1, 2}
+
+<span class="purple">THEOREM</span> Inv /\ Next =&gt; Inv&#39;
+&lt;1&gt;1. <span class="purple">ASSUME</span> Inv, Next <span class="purple">PROVE</span> Inv&#39;
+  &lt;2&gt;1. <span class="purple">ASSUME</span> A <span class="purple">PROVE</span> Inv&#39;
+  &lt;2&gt;2. <span class="purple">ASSUME</span> B <span class="purple">PROVE</span> Inv&#39;
+  &lt;2&gt;3. <span class="purple">QED</span> <span class="purple">BY</span> &lt;1&gt;1, &lt;2&gt;1, &lt;2&gt;2 <span class="purple">DEF</span> Next
+&lt;1&gt;2. <span class="purple">QED</span> <span class="purple">BY</span> &lt;1&gt;1
+</code></pre>
+<p>This proof is unnatural because of the nested occurrences of <code>ASSUME</code> ... <code>PROVE</code> ... . The point where <code>Next</code> needs to be expanded, in <code>&lt;2&gt;3</code>, is potentially far removed from its relevant assertion, <code>&lt;1&gt;1</code>. It would be better instead to rephrase the theorem as a conjunction and then derive the conjuncts with a <code>SUFFICES</code> as follows:</p>
+<pre class="tla"><code><span class="purple">THEOREM</span> Inv /\ Next =&gt; Inv&#39;
+&lt;1&gt;1. <span class="purple">SUFFICES</span> /\ Inv /\ A =&gt; Inv&#39;
+               /\ Inv /\ B =&gt; Inv&#39;
+  <span class="purple">BY</span> <span class="purple">DEF</span> Next
+&lt;1&gt;2. <span class="purple">ASSUME</span> Inv, A <span class="purple">PROVE</span> Inv&#39;
+&lt;1&gt;3. <span class="purple">ASSUME</span> Inv, B <span class="purple">PROVE</span> Inv&#39;
+&lt;1&gt;4. <span class="purple">QED</span> <span class="purple">BY</span> &lt;1&gt;2, &lt;1&gt;3
+</code></pre>
+<p>In this form, the definition of <code>Next</code> is cited right next to the assertion where it is relevant. In the rest of the proof after step <code>&lt;1&gt;1</code>, the definition of <code>Next</code> is irrelevant. The proof is also shallower because we change an instance of a <code>QED</code> step into a <code>BY</code> leaf proof. This kind of restatement of the current goal can make proofs much easier to read and maintain.</p>
+<p>(Strictly speaking, the <code>SUFFICES</code> step was not necessary in this simple proof because the <code>DEF Next</code> could have been folded into the proof of <code>&lt;1&gt;4</code>. However, in more complex proofs it is better to use <code>SUFFICES</code> as needed to rephrase the goal <em>up front</em>. These steps also serve as hints to the reader about the direction of the proof.)</p>
+<h3 id="have-take-and-witness"><code>HAVE</code>, <code>TAKE</code> and <code>WITNESS</code></h3>
+<div class="hr"></div>
+
+<p>TLAPS provides some shortcuts for proving implications and quantifications. They can be described with their equivalent <code>SUFFICES</code> construct:</p>
+<table data-rules="all" style="width:110%"
+       data-cellpadding="6px" border:"1px solid black">
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="header">
+<th style="width: 10px">goal</th>
+<th style="width: 10px">step</th>
+<th style="width: 10px">
+
+<p>equivalent <code>SUFFICES</code> step</p>
+</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td data-valign="top">
+
+<pre class="tla"><code>e =&gt; f
+</code></pre>
+</td>
+<td data-valign="top">
+
+<pre class="tla"><code>&lt;n&gt;l. <span class="purple">HAVE</span> g
+</code></pre>
+</td>
+<td data-valign="top">
+
+<pre class="tla"><code>&lt;n&gt;l. <span class="purple">SUFFICES</span> <span class="purple">ASSUME</span> g <span class="purple">PROVE</span> f
+    <span class="purple">OBVIOUS</span>
+</code></pre>
+</td>
+</tr>
+<tr class="even">
+<td data-valign="top">
+
+<pre class="tla"><code>\A x : P(x)
+</code></pre>
+</td>
+<td data-valign="top">
+
+<pre class="tla"><code>&lt;n&gt;l. <span class="purple">TAKE</span> y
+</code></pre>
+</td>
+<td data-valign="top">
+
+<pre class="tla"><code>&lt;n&gt;l. <span class="purple">SUFFICES</span> <span class="purple">ASSUME</span> <span class="purple">NEW</span> y <span class="purple">PROVE</span> P(y)
+    <span class="purple">OBVIOUS</span>
+</code></pre>
+</td>
+</tr>
+<tr class="odd">
+
+<td data-valign="top">
+
+<pre class="tla"><code>\A x \in S : P(x)
+</code></pre>
+</td>
+<td data-valign="top">
+
+<pre class="tla"><code>&lt;n&gt;l. <span class="purple">TAKE</span> y \in T
+</code></pre>
+</td>
+<td data-valign="top">
+
+<pre class="tla"><code>&lt;n&gt;l. <span class="purple">SUFFICES</span> <span class="purple">ASSUME</span> <span class="purple">NEW</span> y \in T
+               <span class="purple">PROVE</span> P(y)
+  <span class="purple">OBVIOUS</span>
+</code></pre>
+</td>
+</tr>
+<tr class="even">
+
+<td data-valign="top">
+
+<pre class="tla"><code>\E x : P(x)
+</code></pre>
+</td>
+<td data-valign="top">
+
+<pre class="tla"><code>&lt;n&gt;l. <span class="purple">WITNESS</span> e
+</code></pre>
+</td>
+<td data-valign="top">
+
+<pre class="tla"><code>&lt;n&gt;l. <span class="purple">SUFFICES</span> P(e)
+  <span class="purple">OBVIOUS</span>
+</code></pre>
+</td>
+<tr class="odd">
+<td data-valign="top">
+
+<pre class="tla"><code>\E x \in S : P(x)
+</code></pre>
+</td>
+<td data-valign="top">
+
+<pre class="tla"><code>&lt;n&gt;l. <span class="purple">WITNESS</span> e \in T
+</code></pre>
+</td>
+<td data-valign="top">
+
+<pre class="tla"><code>&lt;n&gt;l. <span class="purple">SUFFICES</span> <span class="purple">ASSUME</span> e \in T
+               <span class="purple">PROVE</span> P(e)
+  &lt;n+1&gt;1. e \in T
+    <span class="purple">OBVIOUS</span>
+  &lt;n+1&gt;2. <span class="purple">QED</span>
+    <span class="purple">BY</span> &lt;n+1&gt;1
+</code></pre>
+</td>
+</tr>
+</tbody>
+</table>
+
+<p>One important deficiency of <code>HAVE</code>, <code>TAKE</code> and <code>WITNESS</code> steps is that the precise form of the rephrased goal is not textually present in the proof. The (human) reader might get confused by long chains of these steps, especially if interleaved with other kinds of steps. These constructs should therefore be used sparingly, preferably only in the lowest levels of proof where there is some actual benefit in linearizing the proof.</p>
+<h3 id="pick"><code>PICK</code></h3>
+<div class="hr"></div>
+
+<p>An assumption of the form <code>\E x : P(x)</code> can be used by picking a fresh <code>x</code> for which <code>P(x)</code> is assumed. This is done using the step <code>PICK x : P(x)</code>. Note that <code>\E x : P(x)</code> need not be present exactly in the assumptions; this step accepts a subproof that supplies the justification for <code>\E x : P(x)</code>. Here is a somewhat contrived example:</p>
+<pre class="tla"><code><span class="purple">THEOREM</span> ~ \E x \in Nat : x + 1 = 0
+&lt;1&gt;1. <span class="purple">SUFFICES</span> <span class="purple">ASSUME</span> \E x \in Nat : x + 1 = 0
+               <span class="purple">PROVE</span>  FALSE
+  <span class="purple">OBVIOUS</span>
+  <span class="comment">(* new facts: \E x \in Nat : x + 1 = 0 *)</span>
+  <span class="comment">(* goal: FALSE *)</span>
+&lt;1&gt;2. <span class="purple">PICK</span> u \in Nat : u = -1
+  <span class="comment">(* goal: \E u \in Nat : u = -1 *)</span>
+  &lt;2&gt;1. \A n \in Nat : n + 1 = 0 =&gt; n = -1
+    <span class="purple">OBVIOUS</span>
+  &lt;2&gt;2. <span class="purple">QED</span> <span class="purple">BY</span> &lt;2&gt;1, &lt;1&gt;1
+  <span class="comment">(* new facts: u \in Nat, u = -1 *)</span>
+  <span class="comment">(* goal: FALSE *)</span>
+&lt;1&gt; <span class="purple">QED</span> <span class="purple">BY</span> -1 \notin Nat, &lt;1&gt;2
+</code></pre>
+<!--
+---- MODULE other_constructs ----
+EXTENDS TLAPS, Integers
+
+---- MODULE suffices ----
+\* suffices proof 1
+VARIABLE x
+A == /\ x = 1
+     /\ x' = 2
+B == /\ x = 2
+     /\ x' = 1
+Next == A \/ B
+Inv == x \in {1, 2}
+
+THEOREM Inv /\ Next => Inv'
+<1>1. ASSUME Inv, Next PROVE Inv'
+  <2>1. ASSUME A PROVE Inv'
+  <2>2. ASSUME B PROVE Inv'
+  <2>3. QED BY <1>1, <2>1, <2>2 DEF Next
+<1>2. QED BY <1>1
+
+\* suffices proof 2
+THEOREM Inv /\ Next => Inv'
+<1>1. SUFFICES /\ Inv /\ A => Inv'
+               /\ Inv /\ B => Inv'
+  BY DEF Next
+<1>2. ASSUME Inv, A PROVE Inv'
+<1>3. ASSUME Inv, B PROVE Inv'
+<1>4. QED BY <1>2, <1>3
+====
+
+\* pick example
+THEOREM ~ \E x \in Nat : x + 1 = 0
+<1>1. SUFFICES ASSUME \E x \in Nat : x + 1 = 0
+               PROVE  FALSE
+  OBVIOUS
+  (* new facts: \E x \in Nat : x + 1 = 0 *)
+  (* goal: FALSE *)
+<1>2. PICK u \in Nat : u = -1
+  (* goal: \E u \in Nat : u = -1 *)
+  <2>1. \A n \in Nat : n + 1 = 0 => n = -1
+    OBVIOUS
+  <2>2. QED BY <2>1, <1>1
+  (* new facts: u \in Nat, u = -1 *)
+  (* goal: FALSE *)
+<1> QED BY -1 \notin Nat, <1>2
+
+====
+-->
+
+
+
+    </div>
+  </div>
+</div>
+
+</script>
+</body>
+</html>

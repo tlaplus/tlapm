@@ -1,0 +1,455 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link
+rel="stylesheet" type="text/css"
+id="ss"
+href="../../../assets/css/common.css"
+/>
+<title>TLA+ Proof System</title>
+</head>
+<body>
+
+
+<div id="wrapper">
+  <div id="header">
+    <div id="title">
+      <a class="title"
+        href="../../Home.html">
+            TLA+ Proof System
+      </a>
+    </div>
+    <div class="logomsr">
+      <a href="https://www.msr-inria.inria.fr">
+        <img
+            src="../../../assets/images/logo-MS-Research-Inria-Joint-Centre-Small.png"
+            alt="Microsoft Research - Inria Joint Centre"
+            class="logo"
+        />
+      </a>
+    </div>
+  </div>
+  <ul id="nav">
+
+
+            <li>
+                <a class="off"
+                    href="../../Home.html">
+                    Home
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../../Download.html">
+                    Download
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../../Documentation.html">
+                    Documentation
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../../Community.html">
+                    Community
+                </a>
+            </li>
+            
+
+</ul>
+<div id="transp"></div>
+<div id="content" class="clearfix">
+  <div id="col_1">
+
+      <h2>Menu</h2>
+      <ul id="menu">
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/Tutorial.html">
+                    Tutorial
+                </a>
+            </li>
+            
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/The_example.html">
+                        The example
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/A_simple_proof.html">
+                        A simple proof
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/Hierarchical_proofs.html">
+                        Hierarchical proofs
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/Advanced_options.html">
+                        Advanced options
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/Other_proof_constructs.html">
+                        Other proof constructs
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/Tactics.html">
+                        Tactics
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/Practical_hints.html">
+                        Practical hints
+                    </a>
+                </li>
+                
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/Unsupported_features.html">
+                    Unsupported features
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/Publications.html">
+                    Publications
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/TLA+_Hyperbook.html">
+                    TLA+ Hyperbook
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/TLA+_Video_Course.html">
+                    TLA+ Video Course
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/Misc.html">
+                    Misc
+                </a>
+            </li>
+            
+
+</ul>
+</div>
+<div id="col_2">
+
+<h2 id="hierarchical-proofs">Hierarchical proofs</h2>
+<div class="hr"></div>
+
+<p>Our proof requires the following properties of GCDs, which for simplicity we just assume:</p>
+<pre class="tla"><code><span class="purple">AXIOM</span> GCDProperty1 == \A p \in Number : GCD(p, p) = p
+<span class="purple">AXIOM</span> GCDProperty2 == \A p, q \in Number : GCD(p, q) = GCD(q, p)
+<span class="purple">AXIOM</span> GCDProperty3 == \A p, q \in Number : (p &lt; q) =&gt; GCD(p, q) = GCD(p, q-p)
+</code></pre>
+<h3 id="known-and-usable-facts">Known and usable facts</h3>
+<div class="hr"></div>
+
+<p>At any point in a TLA+ proof, there is a current obligation that is to be proved. The obligation contains a <em>context</em> of <em>known</em> facts, definitions, and declarations, and a <em>goal</em>. The obligation claims that the goal is logically entailed by the context. Some of the facts and definitions in the context are marked as <em>usable</em> for reasoning, while the remaining facts and definitions are <em>hidden</em>. That obligation is then sent to a backend ( <a href="http://zenon-prover.org">Zenon</a>, <a href="https://www.cl.cam.ac.uk/research/hvg/Isabelle/">Isabelle</a>, SMT solvers – see the <a href="tactics.html">tactics section</a>) that tries to prove it. The smaller the context is, the faster those backends are. Hence TLAPS tries to keep that context as small as possible. For example, the axioms about GCD stated above are not directly usable by the backends: they are <em>known</em> but <em>not usable</em>. As we have seen in the <a href="a_simple_proof.html">simple proof section</a>, you have to explicitly USE or <em>cite</em> a fact in order for it to be included in the context of the obligation sent to backends. As an exception to this rule, <em>domain facts</em> of the form <code>x \in S</code> are always usable in a proof. (Such assumptions are typically introduced in an <code>ASSUME</code> … <code>PROVE</code> construct, most frequently in the form of an assumption <code>NEW x \in X</code>.) Moreover, <em>unnamed</em> proof steps (see below) are aways usable. The other known facts are hidden by default.</p>
+<p>Let us get back to our example. Now that we have proved that the initial state satisfies the invariant, let us prove that this invariant is preserved by the next-state relation <code>Next</code></p>
+<pre class="tla"><code><span class="purple">THEOREM</span> NextProperty == InductiveInvariant /\ Next =&gt; InductiveInvariant&#39;
+</code></pre>
+<h3 id="suffices">SUFFICES</h3>
+<div class="hr"></div>
+
+<p>Let us first simplify the goal to be proved by using a <code>SUFFICES</code> construct:</p>
+<pre class="tla"><code><span class="purple">THEOREM</span> NextProperty == InductiveInvariant /\ Next =&gt; InductiveInvariant&#39;
+&lt;1&gt; <span class="purple">SUFFICES</span> <span class="purple">ASSUME</span> InductiveInvariant, Next
+             <span class="purple">PROVE</span>  InductiveInvariant&#39;
+</code></pre>
+<p>This step asserts that it is sufficient to prove <code>InductiveInvariant'</code> while assuming <code>InductiveInvariant</code> and <code>Next</code>. Because the step is unnamed, both facts <code>InductiveInvariant</code> and <code>Next</code> are also made usable for the remainder of the proof. For more information about <code>SUFFICES</code>, see the section about <a href="other_proof_constructs.html">other proof constructs</a>.</p>
+<h3 id="use">USE</h3>
+<div class="hr"></div>
+
+<p>We'll need the definitions of <code>InductiveInvariant</code> and <code>Next</code> to be usable in the entire body of the proof. Hence, rather than making them usable with a <code>BY DEF</code> construct in each step, we can make them usable for all proof steps by using the <code>USE DEF</code> construct once, at the beginning of the proof:</p>
+<pre class="tla"><code><span class="purple">THEOREM</span> NextProperty == InductiveInvariant /\ Next =&gt; InductiveInvariant&#39;
+&lt;1&gt; <span class="purple">SUFFICES</span> <span class="purple">ASSUME</span> InductiveInvariant, Next
+             <span class="purple">PROVE</span>  InductiveInvariant&#39;
+&lt;1&gt; <span class="purple">USE</span> <span class="purple">DEF</span> InductiveInvariant, Next
+</code></pre>
+<p>The general form of a <code>USE</code> step is:</p>
+<pre class="tla"><code><span class="purple">USE</span> e_1, …, e_m <span class="purple">DEF</span> d_1, …, d_n
+</code></pre>
+<p>which asserts that the definitions <code>d_1</code>, … <code>d_n</code> are to be made usable, and the facts <code>e_1</code>, …, <code>e_m</code> are to be checked and then added to the context as usable. When checking these facts, all other known facts are temporarily considered to be usable, so it is possible to say <code>USE e /\ f</code> when <code>e</code> and <code>f</code> are in the context but hidden. Observe that the <code>USE</code> directive is syntactically similar to <code>BY</code>, but it obviously does not check if the current assertion follows from the cited facts.</p>
+<h3 id="the-qed-step">The QED step</h3>
+<div class="hr"></div>
+
+<p>To prove the theorem <code>NextProperty</code>, we have to reason by cases, and prove that <code>InductiveInvariant'</code> is true when one of the actions of <code>Next</code> is performed (i.e. when <code>x &lt; y</code> and also when <code>x &gt; y</code>). Let us write this outer level of the hierarchical proof:</p>
+<pre class="tla"><code><span class="purple">THEOREM</span> NextProperty == InductiveInvariant /\ Next =&gt; InductiveInvariant&#39;
+&lt;1&gt; <span class="purple">SUFFICES</span> <span class="purple">ASSUME</span> InductiveInvariant, Next
+             <span class="purple">PROVE</span>  InductiveInvariant&#39;
+&lt;1&gt; <span class="purple">USE</span> <span class="purple">DEF</span> InductiveInvariant, Next
+&lt;1&gt;1 (x &lt; y) \/ (y &lt; x)
+&lt;1&gt;a <span class="purple">CASE</span> x &lt; y
+&lt;1&gt;b <span class="purple">CASE</span> y &lt; x
+&lt;1&gt;2 <span class="purple">QED</span>
+  <span class="purple">BY</span> &lt;1&gt;1, &lt;1&gt;a, &lt;1&gt;b
+</code></pre>
+<p><code>&lt;1&gt;1</code>, <code>&lt;1&gt;a</code>, <code>&lt;1&gt;b</code> and <code>&lt;1&gt;2</code> are <em>step names</em> (the <code>&lt;1&gt;</code> part of the step name indicates the step's <em>level</em>, which is 1. The proof itself consists of four claims named by these step names (plus the two first unnamed steps); the first three are unjustified, while the last is justified by the cited facts <code>&lt;1&gt;1</code>, <code>&lt;1&gt;a</code> and <code>&lt;1&gt;b</code>. The <code>QED</code> step asserts the main goal of the theorem. Let us verify that it can be proved from steps <code>&lt;1&gt;1</code>, <code>&lt;1&gt;a</code> and <code>&lt;1&gt;b</code>:</p>
+<div class="bg">
+
+<table>
+<tbody>
+<tr class="odd">
+<td><a href="screenshots/qed.png"><img src="screenshots/qeds.png" alt="screenshot" /></a></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<p>After having asked TLAPS to prove the theorem, the QED step gets colored green. This means that facts mentioned by steps <code>&lt;1&gt;1</code>, <code>&lt;1&gt;a</code> and <code>&lt;1&gt;b</code> are sufficient to prove the theorem. But as you can see, those proof steps are colored yellow, which means that their proofs are omitted. (The Toolbox allows you to change what colors are used to indicate the proof status of a step, and also what proof statuses are displayed.) Let us now prove these proof steps.</p>
+<h3 id="non-qed-steps">Non-QED steps</h3>
+<div class="hr"></div>
+
+<p>First, the proofs of the <code>SUFFICES</code> step and step <code>&lt;1&gt;1</code> are obvious as you can see in the following screenshot. In particular, step <code>&lt;1&gt;1</code> follows from the usable fact <code>Next</code> introduced in the unnamed <code>SUFFICES</code> step and the definition of <code>Next</code>, which is also usable.</p>
+<div class="bg">
+
+<table>
+<tbody>
+<tr class="odd">
+<td><a href="screenshots/ops2.png"><img src="screenshots/ops2s.png" alt="screenshot" /></a></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<p>Let us now prove step <code>&lt;1&gt;a</code>. We subdivide this proof into two steps of level 2. The first step asserts that <code>y - x \in Number</code> and that <code>y</code> is not less than <code>x</code>. The second, <code>QED</code> step proves the main goal from the case assumption of step <code>&lt;1&gt;a</code>, the just established step <code>&lt;2&gt;1</code>, and axiom <code>GCDProperty3</code>.</p>
+<pre class="tla"><code><span class="purple">THEOREM</span> NextProperty == InductiveInvariant /\ Next =&gt; InductiveInvariant&#39;
+&lt;1&gt; <span class="purple">SUFFICES</span> <span class="purple">ASSUME</span> InductiveInvariant, Next
+             <span class="purple">PROVE</span>  InductiveInvariant&#39;
+  <span class="purple">OBVIOUS</span>
+&lt;1&gt; <span class="purple">USE</span> <span class="purple">DEF</span> InductiveInvariant, Next
+&lt;1&gt;1 (x &lt; y) \/ (y &lt; x)
+  <span class="purple">OBVIOUS</span>
+&lt;1&gt;a <span class="purple">CASE</span> x &lt; y
+  &lt;2&gt;1 (y - x \in Number) /\ ~(y &lt; x)
+  &lt;2&gt; <span class="purple">QED</span>
+    <span class="purple">BY</span> &lt;1&gt;a, &lt;2&gt;1, GCDProperty3
+&lt;1&gt;b <span class="purple">CASE</span> y &lt; x
+&lt;1&gt;2 <span class="purple">QED</span>
+  <span class="purple">BY</span> &lt;1&gt;1, &lt;1&gt;a, &lt;1&gt;b
+</code></pre>
+<div class="bg">
+
+<table>
+<tbody>
+<tr class="odd">
+<td><a href="screenshots/ops3.png"><img src="screenshots/ops3s.png" alt="screenshot" /></a></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<p>Let us now prove step <code>&lt;2&gt;1</code>. We have to use the case assumption <code>&lt;1&gt;a</code> and make the definition of <code>Number</code> usable:</p>
+<pre class="tla"><code>  &lt;2&gt;1 (y - x \in Number) /\ ~(y &lt; x)
+    <span class="purple">BY</span> &lt;1&gt;a <span class="purple">DEF</span> Number
+</code></pre>
+<p>The proof of the <code>y &lt; x</code> case is quite similar:</p>
+<pre class="tla"><code>&lt;1&gt;b <span class="purple">CASE</span> y &lt; x
+  &lt;2&gt;1 (x - y \in Number) /\ ~(x &lt; y)
+    <span class="purple">BY</span> &lt;1&gt;b <span class="purple">DEF</span> Number
+  &lt;2&gt;2 GCD(y&#39;, x&#39;) = GCD(y, x)
+    <span class="purple">BY</span> &lt;1&gt;b, &lt;2&gt;1, GCDProperty3
+  &lt;2&gt; <span class="purple">QED</span>
+    <span class="purple">BY</span> &lt;1&gt;b, &lt;2&gt;1, &lt;2&gt;2, GCDProperty2
+</code></pre>
+<p>Then theorem <code>NextProperty</code> is proved by TLAPS:</p>
+<div class="bg">
+
+<table>
+<tbody>
+<tr class="odd">
+<td><a href="screenshots/ops6.png"><img src="screenshots/ops6s.png" alt="screenshot" /></a></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="wrapping-up-the-proof">Wrapping up the proof</h3>
+<div class="hr"></div>
+
+<p>Now we have <code>InitProperty</code> and <code>NextProperty</code>, we can prove the main theorem.</p>
+<p>First we prove that a stuttering step (i.e. a step that leaves all variables unchanged) keeps the invariant unchanged. This is proved simply by checking that the definition of InductiveInvariant involves no variables other than <code>x</code> and <code>y</code>:</p>
+<pre class="tla"><code><span class="purple">THEOREM</span> Correctness == Spec =&gt; []ResultCorrect
+  &lt;1&gt;1 InductiveInvariant /\ <span class="purple">UNCHANGED</span> &lt;&lt;x,y&gt;&gt; =&gt; InductiveInvariant&#39;
+    <span class="purple">BY</span> <span class="purple">DEF</span> InductiveInvariant
+</code></pre>
+<p>Then we can prove that any process that follows the specification must keep <code>InductiveInvariant</code> true at all times, by using the previous step and the <code>InitProperty</code> and <code>NextProperty</code> theorems:</p>
+<pre class="tla"><code>  &lt;1&gt;2 Spec =&gt; []InductiveInvariant
+    <span class="purple">BY</span> InitProperty, NextProperty, &lt;1&gt;1 <span class="purple">DEF</span> Spec
+</code></pre>
+<p>Unfortunately, that doesn't work:</p>
+<div class="bg">
+
+<table>
+<tbody>
+<tr class="odd">
+<td><a href="screenshots/ops4.png"><img src="screenshots/ops4s.png" alt="screenshot" /></a></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<p>Indeed, none of the default back-end provers (SMT, Zenon, and Isabelle) can deal with temporal logic. But TLAPS includes an interface to a propositional temporal logic prover (LS4), which can be invoked by adding <code>PTL</code> to the set of usable facts. Since PTL is defined in the <code>TLAPS.tla</code> standard module, we have to explicitly extend the TLAPS module:</p>
+<pre class="tla"><code>-------------------- <span class="purple">MODULE</span> Euclid --------------------
+<span class="purple">EXTENDS</span> Integers, TLAPS
+</code></pre>
+<p>Then we can use the <code>PTL</code> backend to prove step <code>&lt;1&gt;2</code>:</p>
+<pre class="tla"><code>  &lt;1&gt;2 Spec =&gt; []InductiveInvariant
+    <span class="purple">BY</span> PTL, InitProperty, NextProperty, &lt;1&gt;1 <span class="purple">DEF</span> Spec
+</code></pre>
+<div class="bg">
+
+<table>
+<tbody>
+<tr class="odd">
+<td><a href="screenshots/ops5.png"><img src="screenshots/ops5s.png" alt="screenshot" /></a></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<p>Finally we prove that, at any point in time, our invariant entails the correctness of the result, then use that to prove the main theorem:</p>
+<pre class="tla"><code>  &lt;1&gt;3 InductiveInvariant =&gt; ResultCorrect
+    <span class="purple">BY</span> GCDProperty1 <span class="purple">DEF</span> InductiveInvariant, ResultCorrect
+  &lt;1&gt; <span class="purple">QED</span>
+    <span class="purple">BY</span> PTL, &lt;1&gt;2, &lt;1&gt;3
+</code></pre>
+<p>And this concludes the proof of correctness of Euclid's algorithm.</p>
+<h3 id="summary">Summary</h3>
+<div class="hr"></div>
+
+<p>This is the whole file, with the specification and proofs:</p>
+<pre class="tla"><code>-------------------- <span class="purple">MODULE</span> Euclid --------------------
+<span class="purple">EXTENDS</span> Integers, TLAPS
+
+p | q == \E d \in 1..q : q = p * d
+Divisors(q) == {d \in 1..q : d | q}
+Maximum(S) == <span class="purple">CHOOSE</span> x \in S : \A y \in S : x &gt;= y
+GCD(p,q) == Maximum(Divisors(p) \cap Divisors(q))
+Number == Nat \ {0}
+
+<span class="purple"><span class="purple">CONSTANT</span>S</span> M, N
+<span class="purple"><span class="purple">VARIABLE</span>S</span> x, y
+
+Init == (x = M) /\ (y = N)
+
+Next == \/ /\ x &lt; y
+           /\ y&#39; = y - x
+           /\ x&#39; = x
+        \/ /\ y &lt; x
+           /\ x&#39; = x-y
+           /\ y&#39; = y
+
+Spec == Init /\ [][Next]_&lt;&lt;x,y&gt;&gt;
+
+ResultCorrect == (x = y) =&gt; x = GCD(M, N)
+
+InductiveInvariant == /\ x \in Number
+                      /\ y \in Number
+                      /\ GCD(x, y) = GCD(M, N)
+
+<span class="purple">ASSUME</span> NumberAssumption == M \in Number /\ N \in Number
+
+<span class="purple">THEOREM</span> InitProperty == Init =&gt; InductiveInvariant
+  <span class="purple">BY</span> NumberAssumption <span class="purple">DEF</span> Init, InductiveInvariant
+
+<span class="purple">AXIOM</span> GCDProperty1 == \A p \in Number : GCD(p, p) = p
+<span class="purple">AXIOM</span> GCDProperty2 == \A p, q \in Number : GCD(p, q) = GCD(q, p)
+<span class="purple">AXIOM</span> GCDProperty3 == \A p, q \in Number : (p &lt; q) =&gt; GCD(p, q) = GCD(p, q-p)
+
+<span class="purple">THEOREM</span> NextProperty == InductiveInvariant /\ Next =&gt; InductiveInvariant&#39;
+&lt;1&gt; <span class="purple">SUFFICES</span> <span class="purple">ASSUME</span> InductiveInvariant, Next
+             <span class="purple">PROVE</span>  InductiveInvariant&#39;
+  <span class="purple">OBVIOUS</span>
+&lt;1&gt; <span class="purple">USE</span> <span class="purple">DEF</span> InductiveInvariant, Next
+&lt;1&gt;1 (x &lt; y) \/ (y &lt; x)
+  <span class="purple">OBVIOUS</span>
+&lt;1&gt;a <span class="purple">CASE</span> x &lt; y
+  &lt;2&gt;1 (y - x \in Number) /\ ~(y &lt; x)
+    <span class="purple">BY</span> &lt;1&gt;a <span class="purple">DEF</span> Number
+  &lt;2&gt; <span class="purple">QED</span>
+    <span class="purple">BY</span> &lt;1&gt;a, &lt;2&gt;1, GCDProperty3
+&lt;1&gt;b <span class="purple">CASE</span> y &lt; x
+  &lt;2&gt;1 (x - y \in Number) /\ ~(x &lt; y)
+    <span class="purple">BY</span> &lt;1&gt;b <span class="purple">DEF</span> Number
+  &lt;2&gt;2 GCD(y&#39;, x&#39;) = GCD(y, x)
+    <span class="purple">BY</span> &lt;1&gt;b, &lt;2&gt;1, GCDProperty3
+  &lt;2&gt; <span class="purple">QED</span>
+    <span class="purple">BY</span> &lt;1&gt;b, &lt;2&gt;1, &lt;2&gt;2, GCDProperty2
+&lt;1&gt;2 <span class="purple">QED</span>
+  <span class="purple">BY</span> &lt;1&gt;1, &lt;1&gt;a, &lt;1&gt;b
+
+<span class="purple">THEOREM</span> Correctness == Spec =&gt; []ResultCorrect
+  &lt;1&gt;1 InductiveInvariant /\ <span class="purple">UNCHANGED</span> &lt;&lt;x,y&gt;&gt; =&gt; InductiveInvariant&#39;
+    <span class="purple">BY</span> <span class="purple">DEF</span> InductiveInvariant
+  &lt;1&gt;2 Spec =&gt; []InductiveInvariant
+    <span class="purple">BY</span> PTL, InitProperty, NextProperty, &lt;1&gt;1 <span class="purple">DEF</span> Spec
+<span class="comment">(* hide @@
+  &lt;1&gt;2 Spec =&gt; []InductiveInvariant
+    <span class="purple">BY</span> InitProperty, NextProperty, &lt;1&gt;1 <span class="purple">DEF</span> Spec
+@@ show *)</span>
+  &lt;1&gt;3 InductiveInvariant =&gt; ResultCorrect
+    <span class="purple">BY</span> GCDProperty1 <span class="purple">DEF</span> InductiveInvariant, ResultCorrect
+  &lt;1&gt; <span class="purple">QED</span>
+    <span class="purple">BY</span> PTL, &lt;1&gt;2, &lt;1&gt;3
+
+=======================================================
+</code></pre>
+
+
+    </div>
+  </div>
+</div>
+
+</script>
+</body>
+</html>

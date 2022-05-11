@@ -1,0 +1,318 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link
+rel="stylesheet" type="text/css"
+id="ss"
+href="../../../assets/css/common.css"
+/>
+<title>TLA+ Proof System</title>
+</head>
+<body>
+
+
+<div id="wrapper">
+  <div id="header">
+    <div id="title">
+      <a class="title"
+        href="../../Home.html">
+            TLA+ Proof System
+      </a>
+    </div>
+    <div class="logomsr">
+      <a href="https://www.msr-inria.inria.fr">
+        <img
+            src="../../../assets/images/logo-MS-Research-Inria-Joint-Centre-Small.png"
+            alt="Microsoft Research - Inria Joint Centre"
+            class="logo"
+        />
+      </a>
+    </div>
+  </div>
+  <ul id="nav">
+
+
+            <li>
+                <a class="off"
+                    href="../../Home.html">
+                    Home
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../../Download.html">
+                    Download
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../../Documentation.html">
+                    Documentation
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../../Community.html">
+                    Community
+                </a>
+            </li>
+            
+
+</ul>
+<div id="transp"></div>
+<div id="content" class="clearfix">
+  <div id="col_1">
+
+      <h2>Menu</h2>
+      <ul id="menu">
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/Tutorial.html">
+                    Tutorial
+                </a>
+            </li>
+            
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/The_example.html">
+                        The example
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/A_simple_proof.html">
+                        A simple proof
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/Hierarchical_proofs.html">
+                        Hierarchical proofs
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/Advanced_options.html">
+                        Advanced options
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/Other_proof_constructs.html">
+                        Other proof constructs
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/Tactics.html">
+                        Tactics
+                    </a>
+                </li>
+                
+
+                <li class="indexoff">
+                    <a
+                        href="../../documentation/tutorial/Practical_hints.html">
+                        Practical hints
+                    </a>
+                </li>
+                
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/Unsupported_features.html">
+                    Unsupported features
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/Publications.html">
+                    Publications
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/TLA+_Hyperbook.html">
+                    TLA+ Hyperbook
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/TLA+_Video_Course.html">
+                    TLA+ Video Course
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../../documentation/Misc.html">
+                    Misc
+                </a>
+            </li>
+            
+
+</ul>
+</div>
+<div id="col_2">
+
+<h2 id="a-simple-proof">A simple proof</h2>
+<div class="hr"></div>
+
+<h3 id="the-invariant">The invariant</h3>
+<div class="hr"></div>
+
+<p>Intuitively, the theorem Correctness holds because the implementation guarantees the following <em>invariant</em></p>
+<pre class="tla"><code>InductiveInvariant == /\ x \in Number
+                      /\ y \in Number
+                      /\ GCD(x, y) = GCD(M, N)
+</code></pre>
+<p>That is, <code>InductiveInvariant</code> holds for the initial state (<em>i.e.</em>, the state specified by <code>Init</code>) and is preserved by the next-state relation <code>[Next]_&lt;&lt;x, y&gt;&gt;</code>.</p>
+<h3 id="checking-proofs">Checking proofs</h3>
+<div class="hr"></div>
+
+<p>First we need to assume that constants <code>M</code> and <code>N</code> are not equal to zero.</p>
+<pre class="tla"><code><span class="purple">ASSUME</span> NumberAssumption == M \in Number /\ N \in Number
+</code></pre>
+<p>Let us then prove that <code>InductiveInvariant</code> holds for the initial state.</p>
+<pre class="tla"><code><span class="purple">THEOREM</span> InitProperty == Init =&gt; InductiveInvariant
+</code></pre>
+<p>To check wether TLAPS can prove that theorem by itself, we declare its proof obvious.</p>
+<pre class="tla"><code><span class="purple">THEOREM</span> InitProperty == Init =&gt; InductiveInvariant
+  <span class="purple">OBVIOUS</span>
+</code></pre>
+<p>We can now ask TLAPS to prove that theorem, by right-clicking on the line of the theorem (or use the <code>ctrl+G,ctrl+G / cmd-G,cmd-G</code> shortcut), as shown in the following screenshot:</p>
+<div class="bg">
+
+<table>
+<tbody>
+<tr class="odd">
+<td><a href="screenshots/prove1.png"><img src="screenshots/prove1s.png" alt="screenshot" /></a></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<p>But TLAPS does not know how to prove the proof obligation corresponding to that proof. As you can see in the following screenshot, it prints that obligation and reports failures of three backends, Zenon, Isabelle, and SMT. The default behavior of TLAPS is to send obligations first to an SMT solver (by default Z3), then if that fails to the automatic prover Zenon, then if Zenon fails to Isabelle (with the tactic "auto"). See the <a href="tactics.html">tactics section</a> to learn more about this process.</p>
+<div class="bg">
+
+<table>
+<tbody>
+<tr class="odd">
+<td><a href="screenshots/prove2.png"><img src="screenshots/prove2s.png" alt="screenshot" /></a></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="using-facts-and-definitions">Using facts and definitions</h3>
+<div class="hr"></div>
+
+<p>As you can see, the obligation cannot be proved because TLAPS treats the symbols <code>Init</code> and <code>InductiveInvariant</code> as opaque identifiers unless it is explicitly instructed to expand their definitions using the directive <code>DEF</code>. The main purpose of this treatment of definitions is to make proof-checking tractable, because expanding definitions can arbitrarily increase the size of expressions. Explicit use of definitions is also a good hint to the (human) reader to look only at the listed definitions to understand a proof step. In that precise case, we can ask TLAPS to expand definitions of <code>Init</code> and <code>InductiveInvariant</code>, by replacing the proof <code>OBVIOUS</code> by the proof <code>BY DEF Init, InductiveInvariant</code>. You can see that, in the obligation sent to the backends, the definitions of <code>Init</code> and <code>InductiveInvariant</code> have been expanded:</p>
+<div class="bg">
+
+<table>
+<tbody>
+<tr class="odd">
+<td><a href="screenshots/prove3.png"><img src="screenshots/prove3s.png" alt="screenshot" /></a></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<p>Unfortunately, the theorem is still colored red, meaning that none of the back-ends could prove that obligation. As with definitions, we have to specify which facts are <em>usable</em>. In this case, we have to make the fact NumberAssumption usable by changing the proof to:</p>
+<pre class="tla"><code><span class="purple">THEOREM</span> InitProperty == Init =&gt; InductiveInvariant
+  <span class="purple">BY</span> NumberAssumption <span class="purple">DEF</span> Init, InductiveInvariant
+</code></pre>
+<p>The general form of a BY proof is:</p>
+<pre class="tla"><code><span class="purple">BY</span> e_1, …, e_m <span class="purple">DEF</span> d_1, …, d_n
+</code></pre>
+<p>which claims that the assertion follows by assuming <code>e_1</code>, …, <code>e_m</code> and expanding the definitions <code>d_1</code>, …, <code>d_n</code>. It is the job of TLAPS to then check this claim, and also to check that the cited facts <code>e_1</code>, …, <code>e_m</code> are indeed true.</p>
+<p>Finally, SMT succeeds in proving that obligation and the theorem gets colored green:</p>
+<div class="bg">
+
+<table>
+<tbody>
+<tr class="odd">
+<td><a href="screenshots/prove4.png"><img src="screenshots/prove4s.png" alt="screenshot" /></a></td>
+</tr>
+</tbody>
+</table>
+</div>
+
+<h3 id="summary">Summary</h3>
+<div class="hr"></div>
+
+<pre class="tla"><code>-------------------- <span class="purple">MODULE</span> Euclid --------------------
+<span class="purple">EXTENDS</span> Integers
+
+p | q == \E d \in 1..q : q = p * d
+Divisors(q) == {d \in 1..q : d | q}
+Maximum(S) == <span class="purple">CHOOSE</span> x \in S : \A y \in S : x &gt;= y
+GCD(p,q) == Maximum(Divisors(p) \cap Divisors(q))
+Number == Nat \ {0}
+
+<span class="purple"><span class="purple">CONSTANT</span>S</span> M, N
+<span class="purple"><span class="purple">VARIABLE</span>S</span> x, y
+
+Init == (x = M) /\ (y = N)
+
+Next == \/ /\ x &lt; y
+           /\ y&#39; = y - x
+           /\ x&#39; = x
+        \/ /\ y &lt; x
+           /\ x&#39; = x-y
+           /\ y&#39; = y
+
+Spec == Init /\ [][Next]_&lt;&lt;x,y&gt;&gt;
+
+ResultCorrect == (x = y) =&gt; x = GCD(M, N)
+
+InductiveInvariant == /\ x \in Number
+                      /\ y \in Number
+                      /\ GCD(x, y) = GCD(M, N)
+
+<span class="purple">ASSUME</span> NumberAssumption == M \in Number /\ N \in Number
+
+<span class="purple">THEOREM</span> InitProperty == Init =&gt; InductiveInvariant
+  <span class="purple">BY</span> NumberAssumption <span class="purple">DEF</span> Init, InductiveInvariant
+
+<span class="purple">THEOREM</span> Correctness == Spec =&gt; []ResultCorrect
+
+=======================================================
+</code></pre>
+
+
+    </div>
+  </div>
+</div>
+
+</script>
+</body>
+</html>

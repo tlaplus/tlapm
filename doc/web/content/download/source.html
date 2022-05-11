@@ -1,0 +1,236 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en-US" lang="en-US">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<link
+rel="stylesheet" type="text/css"
+id="ss"
+href="../../assets/css/common.css"
+/>
+<title>TLA+ Proof System</title>
+</head>
+<body>
+
+
+<div id="wrapper">
+  <div id="header">
+    <div id="title">
+      <a class="title"
+        href="../Home.html">
+            TLA+ Proof System
+      </a>
+    </div>
+    <div class="logomsr">
+      <a href="https://www.msr-inria.inria.fr">
+        <img
+            src="../../assets/images/logo-MS-Research-Inria-Joint-Centre-Small.png"
+            alt="Microsoft Research - Inria Joint Centre"
+            class="logo"
+        />
+      </a>
+    </div>
+  </div>
+  <ul id="nav">
+
+
+            <li>
+                <a class="off"
+                    href="../Home.html">
+                    Home
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../Download.html">
+                    Download
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../Documentation.html">
+                    Documentation
+                </a>
+            </li>
+            
+
+            <li>
+                <a class="off"
+                    href="../Community.html">
+                    Community
+                </a>
+            </li>
+            
+
+</ul>
+<div id="transp"></div>
+<div id="content" class="clearfix">
+  <div id="col_1">
+
+      <h2>Menu</h2>
+      <ul id="menu">
+
+            <li class="menuoff">
+                <a
+                    href="../download/Binaries.html">
+                    Binaries
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../download/Source.html">
+                    Source
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../download/What_s_new.html">
+                    What's new
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../download/Unsupported.html">
+                    Unsupported
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../download/License.html">
+                    License
+                </a>
+            </li>
+            
+
+            <li class="menuoff">
+                <a
+                    href="../download/Previous_releases.html">
+                    Previous releases
+                </a>
+            </li>
+            
+
+</ul>
+</div>
+<div id="col_2">
+
+<h2 id="generic-instructions">Generic Instructions</h2>
+<p>These instructions apply to any UNIX-like system, including GNU/Linux, most BSD variants, Solaris, Cygwin on Windows, MacOSX, etc.</p>
+<p>Notes for Windows users:</p>
+<ul>
+<li>TLAPS requires Cygwin 3.0.7 or later. At this time it works only with the 32-bit version of cygwin.</li>
+<li>The following Cygwin packages are required for the instructions below: <code>gcc4</code>, <code>make</code>, <code>wget</code>, <code>perl</code>. Install them using Cygwin's <code>setup.exe</code>.</li>
+</ul>
+<p>TLAPS tarball: <a href="https://github.com/tlaplus/tlapm/archive/v1.4.5.tar.gz">tlaps-1.4.5.tar.gz</a></p>
+<h3 id="1-unpack-tlaps-tarball">1. Unpack TLAPS tarball</h3>
+<p>You can unpack TLAPS by running the following command:</p>
+<pre><code>$ tar -xzf tlaps-1.4.5.tar.gz
+</code></pre>
+<p>This creates a directory named <code>tlaps-1.4.5</code> that contains four subdirectories: <code>tlapm</code>, <code>zenon</code>, <code>isabelle</code> and <code>emacs</code>.</p>
+<h3 id="2-install-ocaml">2. Install OCaml</h3>
+<p>TLAPS is implemented in OCaml and requires version 4.04.2 or higher. You can follow any of the suggestions on <a href="https://ocaml.org/docs/install.html">the offical OCaml release page</a> to install OCaml. On Windows/Cygwin, OCaml can be installed directly from Cygwin's <code>setup.exe</code>. On most modern GNU/Linux distributions, OCaml is already packaged. Here are the commands for the common Linux distributions:</p>
+<table style="margin-left: 2em;">
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<tbody>
+<tr class="odd">
+<td style="padding-right: 3em">Debian, Ubuntu, etc.</td>
+<td><code>apt-get install ocaml</code></td>
+</tr>
+<tr class="even">
+<td data-valign="top">Redhat, Fedora, SuSe,<br />
+Mandriva, CentOS, etc.</td>
+<td data-valign="top"><code>yum install ocaml</code></td>
+</tr>
+<tr class="odd">
+<td data-valign="top">Gentoo</td>
+<td data-valign="top"><code>emerge ocaml</code></td>
+</tr>
+<tr class="even">
+<td data-valign="top">Arch Linux</td>
+<td data-valign="top"><code>pacman install ocaml</code></td>
+</tr>
+</tbody>
+</table>
+
+<p>On MacOSX, you can use the package managers <a href="https://brew.sh">Homebrew</a> (<code>brew install objective-caml</code>) or <a href="https://www.macports.org">MacPorts</a> (<code>port install ocaml</code>).</p>
+<p>If you want to install OCaml from source, consider using <a href="https://opam.ocaml.org">OPAM</a>.</p>
+<h3 id="3-compile-and-install-zenon">3. Compile and Install Zenon</h3>
+<p>Run the following commands.</p>
+<pre><code>$ pushd tlaps-1.4.5/zenon
+$ ./configure &amp;&amp; make &amp;&amp; make install
+$ popd
+</code></pre>
+<p>By default, the above will try to install in <code>/usr/local</code>. If you don't have write access to that directory, or would rather install Zenon elsewhere, such as in <code>$HOME/bin</code>, run the following:</p>
+<pre><code>$ pushd tlaps-1.4.5/zenon
+$ ./configure --prefix $HOME &amp;&amp; make &amp;&amp; make install
+$ popd
+</code></pre>
+<h3 id="4-install-isabelle2011-1">4. Install Isabelle2011-1</h3>
+<p>Follow the <a href="https://isabelle.in.tum.de/website-Isabelle2011-1/download.html">instructions</a> on the Isabelle Web site. TLAPS actually does not need the full Isabelle2011-1 distribution. If you want only the necessary components, run the following commands:</p>
+<pre><code>$ wget https://isabelle.in.tum.de/website-Isabelle2011-1/dist/Isabelle2011-1.tar.gz
+$ wget https://isabelle.in.tum.de/website-Isabelle2011-1/dist/polyml-5.4.0.tar.gz
+$ tar -xzf -C /usr/local Isabelle2011-1.tar.gz
+$ tar -xzf -C /usr/local polyml-5.4.0.tar.gz
+</code></pre>
+<p>You may replace <code>/usr/local</code> above by any other directory. For example, to install Isabelle2011-1 in your <code>$HOME</code>, use <code>-C $HOME</code> instead of <code>-C /usr/local</code>.</p>
+<p>Note that the <code>isabelle</code> and <code>isabelle-process</code> executables (found in <code>/usr/local/Isabelle/bin</code> or <code>$HOME/Isabelle/bin</code>), or symbolic links to them, must be in your <code>$PATH</code> for TLAPS to work.</p>
+<p>You may delete the <code>Isabelle2011-1.tar.gz</code> and <code>polyml-5.4.0.tar.gz</code> files after the above steps.</p>
+<h3 id="5-compile-isabelletla">5. Compile Isabelle/TLA+</h3>
+<p>Run the following commands.</p>
+<pre><code>$ pushd /usr/local/Isabelle/src/Pure
+$ isabelle make
+$ popd
+$ pushd tlaps-1.4.5/isabelle
+$ make
+$ popd
+</code></pre>
+<p>(Replace <code>/usr/local</code> above with wherever you installed Isabelle in the previous step.)</p>
+<h3 id="6-compile-the-tla-proof-manager-tlapm">6. Compile the <strong>TLA</strong><sup>+</sup> <strong>P</strong>roof <strong>M</strong>anager (TLAPM)</h3>
+<p>Run the following commands.</p>
+<pre><code>$ pushd tlaps-1.4.5/tlapm
+$ ./configure &amp;&amp; make all
+$ sudo make install
+$ popd
+</code></pre>
+<p>By default, the above will try to install TLAPM in <code>/usr/local</code>. If you don't have write access to that directory, or would rather install the <code>TLAPM</code> elsewhere, such as in <code>$HOME/bin</code>, run the following:</p>
+<pre><code>$ pushd tlaps-1.4.5/tlapm
+$ ./configure --prefix $HOME &amp;&amp; make all
+$ make install
+$ popd
+</code></pre>
+<h3 id="7-verify-the-installation">7. Verify the installation</h3>
+<p>Run the following command:</p>
+<pre><code>$ tlapm --config
+</code></pre>
+<p>It should report the versions of <code>zenon</code> and <code>isabelle</code> you installed in earlier steps.</p>
+<p>You can also test the <code>TLAPS</code> on any of the examples in the <code>/usr/local/lib/tlaps/examples</code> directory (which you can easily refer to using the option <code>-I +examples</code> to <code>tlapm</code>). For instance:</p>
+<pre><code>$ tlapm -C -I +examples/cantor Cantor1.tla
+</code></pre>
+<p>You will see a lot of output from Isabelle, the most important being the message at the end stating that all obligations were proved. For more information on how to use TLAPS, read the <a href="../documentation/tutorial.html">tutorial</a>.</p>
+<h3 id="8-update-paths">8. Update paths</h3>
+<p>The environment variable <code>PATH</code> may need to be updated, depending on the operating system and where <code>tlapm</code> has been installed.</p>
+<p>Note that for calling <code>tlapm</code> from a Windows environment when it has been installed inside Cygwin, the Windows environment path needs to be updated too. For more details on that, see the section on setting the Windows path in the page about <a href="binaries/windows.html">Windows installation</a>.</p>
+
+
+    </div>
+  </div>
+</div>
+
+</script>
+</body>
+</html>
