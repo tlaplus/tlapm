@@ -1188,7 +1188,7 @@ and expr_aux scx oe =
   | Apply ({ core = Internal B.SelectSeq } as op, [ e ; f ]) ->
       let e, ty0 = expr scx e in
       let f, ty1 = earg scx f in
-      let ret = Apply (op, [ force_idv ty0 e ; force_arg (Ty1 ([ TAtm TAIdv ], TAtm TAIdv)) ty1 f ]) @@ oe in
+      let ret = Apply (op, [ force_idv ty0 e ; force_arg (Ty1 ([ TAtm TAIdv ], TAtm TABol)) ty1 f ]) @@ oe in
       (ret, TAtm TAIdv)
 
   (* The code may wrap `e` like this to prevent infinite loops.

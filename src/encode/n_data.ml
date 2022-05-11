@@ -508,42 +508,51 @@ let untyped_deps ~solver tla_smb s =
   | SeqSeq when noarith ->
       ([ Mem ; SeqLen ; FunIsafcn ; FunDom ; FunApp ; IntSet ; NatSet ; IntRange ; IntLteq ; IntLit 1 ],
                                   [ SeqSetIntro ; SeqSetElim1 ; SeqSetElim2 ])
+  | SeqSeq ->
+      ([ Mem ; SeqLen ; FunIsafcn ; FunDom ; FunApp ; IntSet ; NatSet ; IntRange ; Cast (TAtm TAInt) ; Proj (TAtm TAInt) ],
+                                  [ SeqSetIntro ; SeqSetElim1 ; SeqSetElim2 ])
   | SeqLen when noarith ->
       ([ Mem ; FunDom ; IntRange ; NatSet ; IntLit 1 ],
+                                  [ SeqLenDef ])
+  | SeqLen ->
+      ([ FunDom ; IntRange ; Cast (TAtm TAInt) ],
                                   [ SeqLenDef ])
   | SeqCat when noarith ->
       ([ Mem ; SeqSeq ; SeqLen ; FunApp ; IntSet ; NatSet ; IntPlus ; IntLteq ; IntLit 1 ],
                                   [ SeqCatTyping ; SeqCatLen ; SeqCatApp1 ; SeqCatApp2 ])
+  | SeqCat ->
+      ([ Mem ; SeqSeq ; SeqLen ; FunApp ; NatSet ; Cast (TAtm TAInt) ; Proj (TAtm TAInt) ],
+                                  [ SeqCatTyping ; SeqCatLen ; SeqCatApp1 ; SeqCatApp2 ])
   | SeqAppend when noarith ->
       ([ Mem ; SeqSeq ; SeqLen ; FunApp ; IntSet ; NatSet ; IntPlus ; IntLteq ; IntLit 1 ],
+                                  [ SeqAppendTyping ; SeqAppendLen ; SeqAppendApp1 ; SeqAppendApp2 ])
+  | SeqAppend ->
+      ([ Mem ; SeqSeq ; SeqLen ; FunApp ; NatSet ; Cast (TAtm TAInt) ; Proj (TAtm TAInt) ],
                                   [ SeqAppendTyping ; SeqAppendLen ; SeqAppendApp1 ; SeqAppendApp2 ])
   | SeqHead when noarith ->
       ([ FunApp ; IntLit 1 ],
                                   [ SeqHeadDef ])
-  | SeqTail when noarith ->
-      ([ Mem ; SeqSeq ; SeqLen ; FunApp ; IntSet ; NatSet ; IntPlus ; IntMinus ; IntLteq ; IntLit 0 ; IntLit 1 ],
-                                  [ SeqTailTyping ; SeqTailLen ; SeqTailApp ])
-  | SeqSeq ->
-      ([ Mem ; SeqLen ; FunIsafcn ; FunDom ; FunApp ; IntSet ; NatSet ; IntRange ; Cast (TAtm TAInt) ; Proj (TAtm TAInt) ],
-                                  [ SeqSetIntro ; SeqSetElim1 ; SeqSetElim2 ])
-  | SeqLen ->
-      ([ FunDom ; IntRange ; Cast (TAtm TAInt) ],
-                                  [ SeqLenDef ])
-  | SeqCat ->
-      ([ Mem ; SeqSeq ; SeqLen ; FunApp ; NatSet ; Cast (TAtm TAInt) ; Proj (TAtm TAInt) ],
-                                  [ SeqCatTyping ; SeqCatLen ; SeqCatApp1 ; SeqCatApp2 ])
-  | SeqAppend ->
-      ([ Mem ; SeqSeq ; SeqLen ; FunApp ; NatSet ; Cast (TAtm TAInt) ; Proj (TAtm TAInt) ],
-                                  [ SeqAppendTyping ; SeqAppendLen ; SeqAppendApp1 ; SeqAppendApp2 ])
   | SeqHead ->
       ([ FunApp ; Cast (TAtm TAInt) ],
                                   [ SeqHeadDef ])
+  | SeqTail when noarith ->
+      ([ Mem ; SeqSeq ; SeqLen ; FunApp ; IntSet ; NatSet ; IntPlus ; IntMinus ; IntLteq ; IntLit 0 ; IntLit 1 ],
+                                  [ SeqTailTyping ; SeqTailLen ; SeqTailApp ])
   | SeqTail ->
       ([ Mem ; SeqSeq ; SeqLen ; FunApp ; NatSet ; Cast (TAtm TAInt) ; Proj (TAtm TAInt) ],
                                   [ SeqTailTyping ; SeqTailLen ; SeqTailApp ])
-  | SeqSubSeq
+  | SeqSubSeq when noarith ->
+      ([ Mem ; SeqSeq ; SeqLen ; FunApp ; IntSet ; IntPlus ; IntMinus ; IntLteq ; IntLit 0 ; IntLit 1 ],
+                                  [ SeqSubseqTyping ; SeqSubseqLen ; SeqSubseqApp ])
+  | SeqSubSeq ->
+      ([ Mem ; SeqSeq ; SeqLen ; FunApp ; IntSet ; Cast (TAtm TAInt) ; Proj (TAtm TAInt) ],
+                                  [ SeqSubseqTyping ; SeqSubseqLen ; SeqSubseqApp ])
+  | SeqSelectSeq when noarith ->
+      ([ Mem ; SeqSeq ; SeqLen ; SeqAppend ; FunApp ; FunDom ; IntSet ; NatSet ; Tuple 0 ; IntLteq ],
+                                  [ SeqSelectseqTyping ; SeqSelectseqLen ; SeqSelectseqNil ; SeqSelectseqApp ; SeqSelectseqAppend ])
   | SeqSelectSeq ->
-      ([], [])
+      ([ Mem ; SeqSeq ; SeqLen ; SeqAppend ; FunApp ; FunDom ; IntSet ; NatSet ; Tuple 0 ; Proj (TAtm TAInt) ],
+                                  [ SeqSelectseqTyping ; SeqSelectseqLen ; SeqSelectseqNil ; SeqSelectseqApp ; SeqSelectseqAppend ])
   | SeqBSeq ->
       ([], [])
 

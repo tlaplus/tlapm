@@ -186,6 +186,15 @@ val seqtail_typing : noarith:bool -> expr
 val seqtaillen_def : noarith:bool -> expr
 val seqtailapp_def : noarith:bool -> expr
 
+val seqsubseq_typing : noarith:bool -> expr
+val seqsubseqlen_def : noarith:bool -> expr
+val seqsubseqapp_def : noarith:bool -> expr
+
+val seqselectseq_typing : unit -> expr
+val seqselectseqlen_def : noarith:bool -> expr
+val seqselectseqnil_def : unit -> expr
+val seqselectseqappend_def : unit -> expr
+
 val seqtup_typing : int -> expr
 val seqtuplen_def : noarith:bool -> int -> expr
 

@@ -222,6 +222,14 @@ type tla_axm =
   | SeqTailTyping
   | SeqTailLen
   | SeqTailApp
+  | SeqSubseqTyping
+  | SeqSubseqLen
+  | SeqSubseqApp
+  | SeqSelectseqTyping
+  | SeqSelectseqLen
+  | SeqSelectseqNil
+  | SeqSelectseqApp
+  | SeqSelectseqAppend
   | SeqTupTyping of int
   | SeqTupLen of int
 

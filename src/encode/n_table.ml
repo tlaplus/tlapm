@@ -202,6 +202,14 @@ type tla_axm =
   | SeqTailTyping
   | SeqTailLen
   | SeqTailApp
+  | SeqSubseqTyping
+  | SeqSubseqLen
+  | SeqSubseqApp
+  | SeqSelectseqTyping
+  | SeqSelectseqLen
+  | SeqSelectseqNil
+  | SeqSelectseqApp
+  | SeqSelectseqAppend
   | SeqTupTyping of int
   | SeqTupLen of int
 
@@ -382,6 +390,14 @@ let axm_desc = function
   | SeqTailTyping -> "SeqTailTyping"
   | SeqTailLen -> "SeqTailLen"
   | SeqTailApp -> "SeqTailApp"
+  | SeqSubseqTyping -> "SeqSubseqTyping"
+  | SeqSubseqLen -> "SeqSubseqLen"
+  | SeqSubseqApp -> "SeqSubseqApp"
+  | SeqSelectseqTyping -> "SeqSelectseqTyping"
+  | SeqSelectseqLen -> "SeqSelectseqLen"
+  | SeqSelectseqNil -> "SeqSelectseqNil"
+  | SeqSelectseqApp -> "SeqSelectseqApp"
+  | SeqSelectseqAppend -> "SeqSelectseqAppend"
   | SeqTupTyping n -> Format.sprintf "SeqTupTyping %d" n
   | SeqTupLen n -> Format.sprintf "SeqTupLen %d" n
 

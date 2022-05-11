@@ -3915,6 +3915,580 @@ let seqtailapp_def ~noarith =
     ] %% []
   ) %% []
 
+let seqsubseq_typing ~noarith =
+  quant Forall
+  [ "a" ; "s" ; "x" ; "y" ] [ t_idv ; t_idv ; if noarith then t_idv else t_int ; if noarith then t_idv else t_int ]
+  ~pats:[ [
+    apps T.Mem
+    [ Ix 3 %% []
+    ; apps T.SeqSeq
+      [ Ix 4 %% []
+      ] %% []
+    ] %% []
+  ; apps T.SeqSubSeq
+    [ Ix 3 %% []
+    ; if noarith then
+      Ix 2 %% []
+    else
+      apps (T.Cast t_int)
+      [ Ix 2 %% []
+      ] %% []
+    ; if noarith then
+      Ix 1 %% []
+    else
+      apps (T.Cast t_int)
+      [ Ix 1 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ List (And,
+      [ apps T.Mem
+        [ Ix 3 %% []
+        ; apps T.SeqSeq
+          [ Ix 4 %% []
+          ] %% []
+        ] %% []
+      ] @
+      (if noarith then
+        [ apps T.Mem
+          [ Ix 2 %% []
+          ; apps T.IntSet [] %% []
+          ] %% []
+        ; apps T.Mem
+          [ Ix 1 %% []
+          ; apps T.IntSet [] %% []
+          ] %% []
+        ]
+      else []) @
+      [ if noarith then
+        apps T.IntLteq
+        [ apps (T.IntLit 1) [] %% []
+        ; Ix 2 %% []
+        ] %% []
+      else
+        apps T.TIntLteq
+        [ apps (T.TIntLit 1) [] %% []
+        ; Ix 2 %% []
+        ] %% []
+      ; if noarith then
+        apps T.IntLteq
+        [ Ix 1 %% []
+        ; apps T.SeqLen
+          [ Ix 3 %% []
+          ] %% []
+        ] %% []
+      else
+        apps T.TIntLteq
+        [ Ix 1 %% []
+        ; apps (T.Proj t_int)
+          [ apps T.SeqLen
+            [ Ix 3 %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ]) %% []
+    ; apps T.Mem
+      [ apps T.SeqSubSeq
+        [ Ix 3 %% []
+        ; if noarith then
+          Ix 2 %% []
+        else
+          apps (T.Cast t_int)
+          [ Ix 2 %% []
+          ] %% []
+        ; if noarith then
+          Ix 1 %% []
+        else
+          apps (T.Cast t_int)
+          [ Ix 1 %% []
+          ] %% []
+        ] %% []
+      ; apps T.SeqSeq
+        [ Ix 4 %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let seqsubseqlen_def ~noarith =
+  quant Forall
+  [ "s" ; "x" ; "y" ] [ t_idv ; if noarith then t_idv else t_int ; if noarith then t_idv else t_int ]
+  ~pats:[ [
+    apps T.SeqSubSeq
+    [ Ix 3 %% []
+    ; if noarith then
+      Ix 2 %% []
+    else
+      apps (T.Cast t_int)
+      [ Ix 2 %% []
+      ] %% []
+    ; if noarith then
+      Ix 1 %% []
+    else
+      apps (T.Cast t_int)
+      [ Ix 1 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( if noarith then
+    appb B.Implies
+    [ appb B.Conj
+      [ apps T.Mem
+        [ Ix 2 %% []
+        ; apps T.IntSet [] %% []
+        ] %% []
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntSet [] %% []
+        ] %% []
+      ] %% []
+    ; List (And,
+      [ appb B.Implies
+        [ apps T.IntLteq
+          [ Ix 2 %% []
+          ; apps T.IntPlus
+            [ Ix 1 %% []
+            ; apps (T.IntLit 1) [] %% []
+            ] %% []
+          ] %% []
+        ; appb ~tys:[ t_idv ] B.Eq
+          [ apps T.SeqLen
+            [ apps T.SeqSubSeq
+              [ Ix 3 %% []
+              ; Ix 2 %% []
+              ; Ix 1 %% []
+              ] %% []
+            ] %% []
+          ; apps T.IntMinus
+            [ apps T.IntPlus
+              [ Ix 1 %% []
+              ; apps (T.IntLit 1) [] %% []
+              ] %% []
+            ; Ix 2 %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ; appb B.Implies
+        [ appb B.Neg
+          [ apps T.IntLteq
+            [ Ix 2 %% []
+            ; apps T.IntPlus
+              [ Ix 1 %% []
+              ; apps (T.IntLit 1) [] %% []
+              ] %% []
+            ] %% []
+          ] %% []
+        ; appb ~tys:[ t_idv ] B.Eq
+          [ apps T.SeqLen
+            [ apps T.SeqSubSeq
+              [ Ix 3 %% []
+              ; Ix 2 %% []
+              ; Ix 1 %% []
+              ] %% []
+            ] %% []
+          ; apps (T.IntLit 0) [] %% []
+          ] %% []
+        ] %% []
+      ]) %% []
+    ] %% []
+  else
+    List (And,
+    [ appb B.Implies
+      [ apps T.TIntLteq
+        [ Ix 2 %% []
+        ; apps T.TIntPlus
+          [ Ix 1 %% []
+          ; apps (T.TIntLit 1) [] %% []
+          ] %% []
+        ] %% []
+      ; appb ~tys:[ t_idv ] B.Eq
+        [ apps T.SeqLen
+          [ apps T.SeqSubSeq
+            [ Ix 3 %% []
+            ; apps (T.Cast t_int)
+              [ Ix 2 %% []
+              ] %% []
+            ; apps (T.Cast t_int)
+              [ Ix 1 %% []
+              ] %% []
+            ] %% []
+          ] %% []
+        ; apps (T.Cast t_int)
+          [ apps T.TIntMinus
+            [ apps T.TIntPlus
+              [ Ix 1 %% []
+              ; apps (T.TIntLit 1) [] %% []
+              ] %% []
+            ; Ix 2 %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ; appb B.Implies
+      [ apps T.TIntGt
+        [ Ix 2 %% []
+        ; apps T.TIntPlus
+          [ Ix 1 %% []
+          ; apps (T.TIntLit 1) [] %% []
+          ] %% []
+        ] %% []
+      ; appb ~tys:[ t_idv ] B.Eq
+        [ apps T.SeqLen
+          [ apps T.SeqSubSeq
+            [ Ix 3 %% []
+            ; apps (T.Cast t_int)
+              [ Ix 2 %% []
+              ] %% []
+            ; apps (T.Cast t_int)
+              [ Ix 1 %% []
+              ] %% []
+            ] %% []
+          ] %% []
+        ; apps (T.Cast t_int)
+          [ apps (T.TIntLit 0) [] %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ]) %% []
+  ) %% []
+
+let seqsubseqapp_def ~noarith =
+  quant Forall
+  [ "s" ; "x" ; "y" ; "z" ] [ t_idv ; if noarith then t_idv else t_int ; if noarith then t_idv else t_int ; if noarith then t_idv else t_int ]
+  ~pats:[ [
+    apps T.FunApp
+    [ apps T.SeqSubSeq
+      [ Ix 4 %% []
+      ; if noarith then
+        Ix 3 %% []
+      else
+        apps (T.Cast t_int)
+        [ Ix 3 %% []
+        ] %% []
+      ; if noarith then
+        Ix 2 %% []
+      else
+        apps (T.Cast t_int)
+        [ Ix 2 %% []
+        ] %% []
+      ] %% []
+    ; if noarith then
+      Ix 1 %% []
+    else
+      apps (T.Cast t_int)
+      [ Ix 1 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ List (And,
+      (if noarith then
+        [ apps T.Mem
+          [ Ix 3 %% []
+          ; apps T.IntSet [] %% []
+          ] %% []
+        ; apps T.Mem
+          [ Ix 2 %% []
+          ; apps T.IntSet [] %% []
+          ] %% []
+        ; apps T.Mem
+          [ Ix 1 %% []
+          ; apps T.IntSet [] %% []
+          ] %% []
+        ]
+      else []) @
+      [ if noarith then
+        apps T.IntLteq
+        [ apps (T.IntLit 1) [] %% []
+        ; Ix 3 %% []
+        ] %% []
+      else
+        apps T.TIntLteq
+        [ apps (T.TIntLit 1) [] %% []
+        ; Ix 3 %% []
+        ] %% []
+      ; if noarith then
+        apps T.IntLteq
+        [ apps (T.IntLit 1) [] %% []
+        ; Ix 1 %% []
+        ] %% []
+      else
+        apps T.TIntLteq
+        [ apps (T.TIntLit 1) [] %% []
+        ; Ix 1 %% []
+        ] %% []
+      ; if noarith then
+        apps T.IntLteq
+        [ Ix 1 %% []
+        ; apps T.IntMinus
+          [ apps T.IntPlus
+            [ Ix 2 %% []
+            ; apps (T.IntLit 1) [] %% []
+            ] %% []
+          ; Ix 3 %% []
+          ] %% []
+        ] %% []
+      else
+        apps T.TIntLteq
+        [ Ix 1 %% []
+        ; apps T.TIntMinus
+          [ apps T.TIntPlus
+            [ Ix 2 %% []
+            ; apps (T.TIntLit 1) [] %% []
+            ] %% []
+          ; Ix 3 %% []
+          ] %% []
+        ] %% []
+      ]) %% []
+    ; appb ~tys:[ t_idv ] B.Eq
+      [ apps T.FunApp
+        [ apps T.SeqSubSeq
+          [ Ix 4 %% []
+          ; if noarith then
+            Ix 3 %% []
+          else
+            apps (T.Cast t_int)
+            [ Ix 3 %% []
+            ] %% []
+          ; if noarith then
+            Ix 2 %% []
+          else
+            apps (T.Cast t_int)
+            [ Ix 2 %% []
+            ] %% []
+          ] %% []
+        ; if noarith then
+          Ix 1 %% []
+        else
+          apps (T.Cast t_int)
+          [ Ix 1 %% []
+          ] %% []
+        ] %% []
+      ; apps T.FunApp
+        [ Ix 4 %% []
+        ; if noarith then
+          apps T.IntMinus
+          [ apps T.IntPlus
+            [ Ix 1 %% []
+            ; Ix 3 %% []
+            ] %% []
+          ; apps (T.IntLit 1) [] %% []
+          ] %% []
+        else
+          apps (T.Cast t_int)
+          [ apps T.TIntMinus
+            [ apps T.TIntPlus
+              [ Ix 1 %% []
+              ; Ix 3 %% []
+              ] %% []
+            ; apps (T.TIntLit 1) [] %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let seqselectseq_typing () =
+  seq
+  [ "T" ] [ Ty1 ([ t_idv ], t_bol) ]
+  ( quant Forall
+    [ "a" ; "s" ] [ t_idv ; t_idv ]
+    ~pats:[ [
+      apps T.Mem
+      [ Ix 1 %% []
+      ; apps T.SeqSeq
+        [ Ix 2 %% []
+        ] %% []
+      ] %% []
+    ; apps T.SeqSelectSeq
+      [ Ix 1 %% []
+      ; Ix 3 %% []
+      ] %% []
+    ] ]
+    ( appb B.Implies
+      [ apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.SeqSeq
+          [ Ix 2 %% []
+          ] %% []
+        ] %% []
+      ; apps T.Mem
+        [ apps T.SeqSelectSeq
+          [ Ix 1 %% []
+          ; Ix 3 %% []
+          ] %% []
+        ; apps T.SeqSeq
+          [ Ix 2 %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ) %% []
+  ) %% []
+
+let seqselectseqlen_def ~noarith =
+  seq
+  [ "T" ] [ Ty1 ([ t_idv ], t_idv) ]
+  ( quant Forall
+    [ "s" ] [ t_idv ]
+    ~pats:[ [
+      apps T.SeqSelectSeq
+      [ Ix 1 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ] ]
+    ( appb B.Implies
+      [ apps T.Mem
+        [ apps T.SeqLen
+          [ Ix 1 %% []
+          ] %% []
+        ; apps T.NatSet [] %% []
+        ] %% []
+      ; if noarith then
+        apps T.IntLteq
+        [ apps T.SeqLen
+          [ apps T.SeqSelectSeq
+            [ Ix 1 %% []
+            ; Ix 2 %% []
+            ] %% []
+          ] %% []
+        ; apps T.SeqLen
+          [ Ix 1 %% []
+          ] %% []
+        ] %% []
+      else
+        apps T.TIntLteq
+        [ apps (T.Proj t_int)
+          [ apps T.SeqLen
+            [ apps T.SeqSelectSeq
+              [ Ix 1 %% []
+              ; Ix 2 %% []
+              ] %% []
+            ] %% []
+          ] %% []
+        ; apps (T.Proj t_int)
+          [ apps T.SeqLen
+            [ Ix 1 %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ) %% []
+  ) %% []
+
+let seqselectseqnil_def () =
+  seq
+  [ "T" ] [ Ty1 ([ t_idv ], t_idv) ]
+  ( appb ~tys:[ t_idv ] B.Eq
+    [ apps T.SeqSelectSeq
+      [ apps (T.Tuple 0) [] %% []
+      ; Ix 1 %% []
+      ] %% []
+    ; apps (T.Tuple 0) [] %% []
+    ] %% []
+  ) %% []
+
+let seqselectseqapp_def () =
+  seq
+  [ "T" ] [ Ty1 ([ t_idv ], t_idv) ]
+  ( quant Forall
+    [ "s" ; "x" ] [ t_idv ; t_idv ]
+    ~pats:[ [
+      apps T.FunApp
+      [ apps T.SeqSelectSeq
+        [ Ix 2 %% []
+        ; Ix 3 %% []
+        ] %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] ]
+    ( appb B.Implies
+      [ apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.FunDom
+          [ apps T.SeqSelectSeq
+            [ Ix 2 %% []
+            ; Ix 3 %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ; Apply (
+        Ix 3 %% [],
+        [ apps T.FunApp
+          [ apps T.SeqSelectSeq
+            [ Ix 2 %% []
+            ; Ix 3 %% []
+            ] %% []
+          ; Ix 1 %% []
+          ] %% []
+        ]) %% []
+      ] %% []
+    ) %% []
+  ) %% []
+
+let seqselectseqappend_def () =
+  seq
+  [ "T" ] [ Ty1 ([ t_idv ], t_idv) ]
+  ( quant Forall
+    [ "s" ; "x" ] [ t_idv ; t_idv ]
+    ~pats:[ [
+      apps T.SeqSelectSeq
+      [ apps T.SeqAppend
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ; Ix 3 %% []
+      ] %% []
+    ] ]
+    ( List (And,
+      [ appb B.Implies
+        [ Apply (
+          Ix 3 %% [],
+          [ Ix 1 %% []
+          ]) %% []
+        ; appb ~tys:[ t_idv ] B.Eq
+          [ apps T.SeqSelectSeq
+            [ apps T.SeqAppend
+              [ Ix 2 %% []
+              ; Ix 1 %% []
+              ] %% []
+            ; Ix 3 %% []
+            ] %% []
+          ; apps T.SeqAppend
+            [ apps T.SeqSelectSeq
+              [ Ix 2 %% []
+              ; Ix 3 %% []
+              ] %% []
+            ; Ix 1 %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ; appb B.Implies
+        [ appb B.Neg
+          [ Apply (
+            Ix 3 %% [],
+            [ Ix 1 %% []
+            ]) %% []
+          ] %% []
+        ; appb ~tys:[ t_idv ] B.Eq
+          [ apps T.SeqSelectSeq
+            [ apps T.SeqAppend
+              [ Ix 2 %% []
+              ; Ix 1 %% []
+              ] %% []
+            ; Ix 3 %% []
+            ] %% []
+          ; apps T.SeqSelectSeq
+            [ Ix 2 %% []
+            ; Ix 3 %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ]) %% []
+    ) %% []
+  ) %% []
+
 let seqtup_typing n =
   quant Forall
   ([ "a" ] @ gen "x" n) (dupl t_idv (n + 1))
@@ -4086,6 +4660,14 @@ let get_axm ~solver tla_smb =
   | T.SeqTailTyping -> seqtail_typing ~noarith
   | T.SeqTailLen -> seqtaillen_def ~noarith
   | T.SeqTailApp -> seqtailapp_def ~noarith
+  | T.SeqSubseqTyping -> seqsubseq_typing ~noarith
+  | T.SeqSubseqLen -> seqsubseqlen_def ~noarith
+  | T.SeqSubseqApp -> seqsubseqapp_def ~noarith
+  | T.SeqSelectseqTyping -> seqselectseq_typing () |> mark T.SeqSelectSeq
+  | T.SeqSelectseqLen -> seqselectseqlen_def ~noarith |> mark T.SeqSelectSeq
+  | T.SeqSelectseqNil -> seqselectseqnil_def () |> mark T.SeqSelectSeq
+  | T.SeqSelectseqApp -> seqselectseqapp_def () |> mark T.SeqSelectSeq
+  | T.SeqSelectseqAppend -> seqselectseqappend_def () |> mark T.SeqSelectSeq
   | T.SeqTupTyping n -> seqtup_typing n
   | T.SeqTupLen n -> seqtuplen_def ~noarith n
 
