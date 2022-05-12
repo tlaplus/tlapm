@@ -10,9 +10,9 @@ jobs:
       matrix:
         operating-system: [macos-latest, ubuntu-latest]
         ocaml-compiler: [
-            '4.08.1',
-            '4.13.0',
-            '4.14.0',
+            '0',
+            '1',
+            '2',
             ]
         include:
         - operating-system: macos-latest
@@ -26,9 +26,16 @@ jobs:
       ## Get TLAPS repository checked out.
       - uses: actions/checkout@v2
       ## Setup OCaml environment.
+      - name: Get OCaml version
+        run: |
+            INDEX=${{ matrix.ocaml-compiler }}
+            OCAML_VERSION=`python .github/workflows/ocaml_versions.py $INDEX`
+            echo "OCAML_VERSION=$OCAML_VERSION" \
+            >> $GITHUB_ENV
+            echo "OCAML_VERSION = $OCAML_VERSION"
       - uses: ocaml/setup-ocaml@v2
         with:
-          ocaml-compiler: ${{ matrix.ocaml-compiler }}
+          ocaml-compiler: ${{ env.OCAML_VERSION }}
       ## The TLAPM test suite requires the kaputt package.
       - name: Install OCaml dependencies
         run: opam install kaputt
