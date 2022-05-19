@@ -21,10 +21,12 @@ let unix_kill pid =
 
 
 let ps_list = [
-  "cygwin", "ps -l", format_of_string " PID PPID PGID WINPID",
+  "cygwin", "LINES=200 COLUMNS=200 ps -l",
+    format_of_string " PID PPID PGID WINPID",
     format_of_string "%_c %d %d %_d %d", win_kill;
 
-  "unix", "ps x -o pid,ppid,pid", format_of_string " PID PPID PID",
+  "unix", "LINES=200 COLUMNS=200 ps x -o pid,ppid,pid",
+    format_of_string " PID PPID PID",
     format_of_string" %d %d %d", unix_kill;
 ]
 
