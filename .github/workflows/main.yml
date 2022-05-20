@@ -11,7 +11,7 @@ jobs:
             matrix:
                 operating-system: [
                     macos-latest,
-                    ubuntu-latest]
+                    ubuntu-22.04]
                 ocaml-compiler: [
                     '0',
                     '1',
@@ -57,7 +57,7 @@ jobs:
                 PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make test
             - name: Run all `tlapm` tests
               if: >-
-                matrix.operating-system == 'ubuntu-latest' &&
+                matrix.operating-system == 'ubuntu-22.04' &&
                 matrix.ocaml-compiler == '2'
               run: |
                 ls -lah
@@ -69,6 +69,6 @@ jobs:
                 PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH tlapm --version
                 PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make testall
             - name: Print Test Results
-              if: matrix.operating-system == 'ubuntu-latest'
+              if: matrix.operating-system == 'ubuntu-22.04'
               run: |
                 cat test/tests.log
