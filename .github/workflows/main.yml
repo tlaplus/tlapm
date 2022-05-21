@@ -3,62 +3,9 @@ on:
     push:
     schedule:
         - cron: '42 5 5 * *'
-# The `release` job creates an empty Github
-# (draft) release before the `publish` job
-# below builds and uploads installers into
-# the release.
-#
-# This complexity is required because the
-# standard Github release action cannot be
-# executed as part of the matrix job
-# (the first runner to create the release wins
-# but the others fail).
-#
-# In other words, we need a single runner to
-# create the release to which all runners
-# will upload their assets (installers).
-#
-# Things would be simpler if e.g. Linux could
-# build the installers for all platforms.
 jobs:
-    release:
-        name: Create Github Release
-        runs-on: ubuntu-latest
-        steps:
-            - name: Get current date
-              id: date
-              run: echo "::set-output name=date::$(date +'%Y%m%d%H%M')"
-            - name: Create Github Release
-              id: create_release
-              uses: actions/create-release@v1.1.4
-              env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                tag_name: ${{steps.date.outputs.date}}
-                release_name: ${{steps.date.outputs.date}}
-                draft: false
-                prerelease: true
-            # Remember the release URL and ID so
-            # the runners executing `publish` below
-            # know where to upload assets.
-            - name: Output Release URL and ID File
-              run: |
-                echo "${{ steps.create_release.outputs.upload_url }}" \
-                    > release_url.txt
-                echo "${{steps.date.outputs.date}}" > release_id.txt
-            - name: Save Release URL File for publish
-              uses: actions/upload-artifact@v1
-              with:
-                name: release_url
-                path: release_url.txt
-            - name: Save Release ID File for publish
-              uses: actions/upload-artifact@v1
-              with:
-                name: release_id
-                path: release_id.txt
-    publish:
-        name: Build and Test
-        needs: [release]
+    test:
+        name: Build TLAPS installer and test it
         runs-on: ${{ matrix.operating-system }}
         strategy:
             matrix:
@@ -75,23 +22,6 @@ jobs:
               uses: actions/setup-python@v2
               with:
                 python-version: '3.10'
-            # Read "Output Release URL and
-            # ID File" of `release` job above.
-            - name: Load Release URL File from release job
-              uses: actions/download-artifact@v1
-              with:
-                name: release_url
-            - name: Get Release File Name & Upload URL
-              id: get_release_info
-              run: |
-                echo ::set-output \
-                    name=file_name::${REPOSITORY_NAME##*/}-${TAG_REF_NAME##*/v}
-                        # RepositoryName-v1.0.0
-                value=`cat release_url/release_url.txt`
-                echo ::set-output name=upload_url::$value
-              env:
-                TAG_REF_NAME: ${{ github.ref }}
-                REPOSITORY_NAME: ${{ github.repository }}
             - uses: actions/checkout@v2
             - name: Get OCaml version
               run: |
@@ -104,11 +34,6 @@ jobs:
             - uses: ocaml/setup-ocaml@v2
               with:
                 ocaml-compiler: ${{ env.OCAML_VERSION }}
-            - uses: actions/cache@v2
-              id: cache
-              with:
-                path: ${{ matrix.DOWNLOADS }}
-                key: ${{ matrix.DOWNLOADS }}
             - name: Build installer of TLAPS
               run: |
                 eval $(opam env)
@@ -130,17 +55,6 @@ jobs:
               run: |
                 eval $(opam env)
                 PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make test
-            - name: Upload Release Asset
-              if: matrix.ocaml-compiler == '2'
-              id: upload-release-asset
-              uses: actions/upload-release-asset@v1.0.1
-              env:
-                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                upload_url: ${{ steps.get_release_info.outputs.upload_url }}
-                asset_path: tools/installer/${{ matrix.INSTALLER }}
-                asset_name: ${{ matrix.INSTALLER }}
-                asset_content_type: application/octet-stream
             - name: Run all `tlapm` tests
               if: >-
                 matrix.operating-system == 'ubuntu-latest' &&

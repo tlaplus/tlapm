@@ -1,0 +1,139 @@
+name: Upload installer of TLA Proof Manager
+on:
+    push:
+        branches: release_installer_on_github
+jobs:
+    release:
+            # This task creates a release on GitHub,
+            # named by timestamp.
+            #
+            # This release is to where each runner from
+            # the matrix below uploads the installer that
+            # it builds.
+            #
+            # In case of failure in any of those runners,
+            # re-running this release can be necessary,
+            # depending on the sequence of previous runs.
+            #
+            # The reason is that repetition can result in
+            # an attempt to re-upload an installer that
+            # has already been uploaded by a previous run.
+        name: Create Github Release
+        runs-on: ubuntu-latest
+        steps:
+            - name: Get current date
+              id: date
+              run: |
+                echo "::set-output name=date::$(date +'%Y%m%d%H%M')"
+            - name: Create Github Release
+              id: create_release
+              uses: actions/create-release@v1.1.4
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                tag_name: ${{steps.date.outputs.date}}
+                release_name: ${{steps.date.outputs.date}}
+                draft: false
+                prerelease: true
+            # Remember the release URL and ID so
+            # the runners executing `publish` below
+            # know where to upload assets.
+            - name: Output Release URL and ID File
+              run: |
+                echo "${{ steps.create_release.outputs.upload_url }}" \
+                    > release_url.txt
+                echo "${{steps.date.outputs.date}}" > release_id.txt
+            - name: Save Release URL File for publish
+              uses: actions/upload-artifact@v1
+              with:
+                name: release_url
+                path: release_url.txt
+            - name: Save Release ID File for publish
+              uses: actions/upload-artifact@v1
+              with:
+                name: release_id
+                path: release_id.txt
+    publish:
+        name: Create TLAPS installer, and upload it to GitHub release
+            # fast testing *does* commence below
+        needs: [release]
+        runs-on: ${{ matrix.operating-system }}
+        strategy:
+            matrix:
+                operating-system: [
+                    macos-latest,
+                    ubuntu-latest]
+                ocaml-compiler: [
+                    '2',
+                    ]
+        steps:
+            - name: Set up Python
+              uses: actions/setup-python@v2
+              with:
+                python-version: '3.10'
+            # Read "Output Release URL and
+            # ID File" of `release` job above.
+            - name: Load Release URL File from release job
+              uses: actions/download-artifact@v1
+              with:
+                name: release_url
+            - name: Get Release File Name & Upload URL
+              id: get_release_info
+              run: |
+                echo ::set-output \
+                    name=file_name::${REPOSITORY_NAME##*/}-${TAG_REF_NAME##*/v}
+                        # RepositoryName-v1.0.0
+                value=`cat release_url/release_url.txt`
+                echo ::set-output name=upload_url::$value
+              env:
+                TAG_REF_NAME: ${{ github.ref }}
+                REPOSITORY_NAME: ${{ github.repository }}
+            - uses: actions/checkout@v2
+            - name: Get OCaml version
+              run: |
+                INDEX=${{ matrix.ocaml-compiler }}
+                OCAML_VERSION=\
+                `python .github/workflows/ocaml_versions.py $INDEX`
+                echo "OCAML_VERSION=$OCAML_VERSION" \
+                >> $GITHUB_ENV
+                echo "OCAML_VERSION = $OCAML_VERSION"
+            - uses: ocaml/setup-ocaml@v2
+              with:
+                ocaml-compiler: ${{ env.OCAML_VERSION }}
+            - name: Define TLAPS-related env vars
+              run: |
+                python .github/workflows/setup_shell_env.py \
+                    >> $GITHUB_ENV
+            - uses: actions/cache@v2
+              id: cache
+              with:
+                path: ${{ env.DOWNLOADS }}
+                key: ${{ env.DOWNLOADS }}
+            - name: Build installer of TLAPS
+              run: |
+                eval $(opam env)
+                ./configure
+                cd tools/installer
+                ./tlaps-release.sh
+            - name: Run installer of TLAPS
+              run: |
+                cd tools/installer
+                ./${{ env.INSTALLER }} -d ../..
+            - name: Install dependencies for testing
+              run: |
+                opam install kaputt
+            - name: Run a subset of `tlapm` tests
+              run: |
+                eval $(opam env)
+                PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make test
+            - name: Upload Release Asset
+              if: matrix.ocaml-compiler == '2'
+              id: upload-release-asset
+              uses: actions/upload-release-asset@v1.0.1
+              env:
+                GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                upload_url: ${{ steps.get_release_info.outputs.upload_url }}
+                asset_path: tools/installer/${{ env.INSTALLER }}
+                asset_name: ${{ env.INSTALLER }}
+                asset_content_type: application/octet-stream
