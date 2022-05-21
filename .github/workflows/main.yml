@@ -62,7 +62,9 @@ jobs:
         runs-on: ${{ matrix.operating-system }}
         strategy:
             matrix:
-                operating-system: [macos-latest, ubuntu-latest]
+                operating-system: [
+                    macos-latest,
+                    ubuntu-latest]
                 ocaml-compiler: [
                     '0',
                     '1',
