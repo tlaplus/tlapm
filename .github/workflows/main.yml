@@ -107,10 +107,6 @@ jobs:
             - uses: ocaml/setup-ocaml@v2
               with:
                 ocaml-compiler: ${{ env.OCAML_VERSION }}
-            - name: Install OCaml dependencies
-              run: |
-                opam install kaputt
-                    # required by the test suite
             - uses: actions/cache@v2
               id: cache
               with:
@@ -126,6 +122,9 @@ jobs:
               run: |
                 cd tools/installer
                 ./${{ matrix.INSTALLER }} -d ../..
+            - name: Install dependencies for testing
+              run: |
+                opam install kaputt
             - name: Run a subset of `tlapm` tests
               run: |
                 eval $(opam env)
