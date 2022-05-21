@@ -46,8 +46,13 @@ jobs:
                 cd tools/installer
                 ./tlaps-release.sh
                 ./${{ matrix.INSTALLER }} -d ../..
-                cd ../..
+            - name: Run a subset of `tlapm` tests
+              run: |
+                eval $(opam env)
                 PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make test
+            - name: Run all `tlapm` tests
+              run: |
+                eval $(opam env)
                 make
                 PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make testall
             - name: Print Test Results
