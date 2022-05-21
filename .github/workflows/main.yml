@@ -132,8 +132,7 @@ jobs:
                 asset_path: tools/installer/${{ matrix.INSTALLER }}
                 asset_name: ${{ matrix.INSTALLER }}
                 asset_content_type: application/octet-stream
-            # Run the full test suite.
-            - name: Test TLAPM installer
+            - name: Run all `tlapm` tests
               if: >-
                 matrix.operating-system == 'ubuntu-latest' &&
                 matrix.ocaml-compiler == '2'
