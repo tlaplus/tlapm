@@ -25,7 +25,8 @@ jobs:
             - name: Get OCaml version
               run: |
                 INDEX=${{ matrix.ocaml-compiler }}
-                OCAML_VERSION=`python .github/workflows/ocaml_versions.py $INDEX`
+                OCAML_VERSION=\
+                `python .github/workflows/ocaml_versions.py $INDEX`
                 echo "OCAML_VERSION=$OCAML_VERSION" \
                 >> $GITHUB_ENV
                 echo "OCAML_VERSION = $OCAML_VERSION"

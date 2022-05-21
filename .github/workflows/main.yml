@@ -43,7 +43,8 @@ jobs:
             # know where to upload assets.
             - name: Output Release URL and ID File
               run: |
-                echo "${{ steps.create_release.outputs.upload_url }}" > release_url.txt
+                echo "${{ steps.create_release.outputs.upload_url }}" \
+                    > release_url.txt
                 echo "${{steps.date.outputs.date}}" > release_id.txt
             - name: Save Release URL File for publish
               uses: actions/upload-artifact@v1
@@ -84,7 +85,9 @@ jobs:
             - name: Get Release File Name & Upload URL
               id: get_release_info
               run: |
-                echo ::set-output name=file_name::${REPOSITORY_NAME##*/}-${TAG_REF_NAME##*/v} # RepositoryName-v1.0.0
+                echo ::set-output \
+                    name=file_name::${REPOSITORY_NAME##*/}-${TAG_REF_NAME##*/v}
+                        # RepositoryName-v1.0.0
                 value=`cat release_url/release_url.txt`
                 echo ::set-output name=upload_url::$value
               env:
@@ -94,7 +97,8 @@ jobs:
             - name: Get OCaml version
               run: |
                 INDEX=${{ matrix.ocaml-compiler }}
-                OCAML_VERSION=`python .github/workflows/ocaml_versions.py $INDEX`
+                OCAML_VERSION=\
+                `python .github/workflows/ocaml_versions.py $INDEX`
                 echo "OCAML_VERSION=$OCAML_VERSION" \
                 >> $GITHUB_ENV
                 echo "OCAML_VERSION = $OCAML_VERSION"
