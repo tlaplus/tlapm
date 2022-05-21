@@ -44,7 +44,8 @@ jobs:
         with:
           path: ${{ matrix.DOWNLOADS }}
           key: ${{ matrix.DOWNLOADS }}
-      # Create the installer and run the 'fast' test suite as smoke tests before
+      # Create the installer and
+      # run the 'fast' test suite as smoke tests before
       # installers are uploaded to the Github release.
       - name: Build and Test TLAPM installer
         run: |

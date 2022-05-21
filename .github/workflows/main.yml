@@ -5,13 +5,23 @@ on:
         - cron: '42 5 5 * *'
 
 
-# The 'release' job creates an empty Github (draft) release before the 'publish' job
-# below builds and uploads installers into the release.  This complexity is required
-# because the standard Github release action cannot be executed as part of the matrix
-# job (the first runner to create the release wins but the others fail).  In other words,
-# we need a single runner to create the release to which all runners will upload their
-# assets (installers).  Things would be simpler if e.g. Linux could build the installers
-# for all platforms.
+# The 'release' job creates an empty Github
+# (draft) release before the 'publish' job
+# below builds and uploads installers into
+# the release.
+#
+# This complexity is required because the
+# standard Github release action cannot be
+# executed as part of the matrix job
+# (the first runner to create the release wins
+# but the others fail).
+#
+# In other words, we need a single runner to
+# create the release to which all runners
+# will upload their assets (installers).
+#
+# Things would be simpler if e.g. Linux could
+# build the installers for all platforms.
 jobs:
   release:
     name: Create Github Release
@@ -30,7 +40,8 @@ jobs:
         release_name: ${{steps.date.outputs.date}}
         draft: false
         prerelease: true
-    # Remember the release URL and ID so the runners executing 'publish' below
+    # Remember the release URL and ID so
+    # the runners executing 'publish' below
     # know where to upload assets.
     - name: Output Release URL and ID File
       run: |
@@ -68,7 +79,8 @@ jobs:
           INSTALLER: tlaps-1.5.0-x86_64-linux-gnu-inst.bin
           DOWNLOADS: tlaps-1.5.0-x86_64-linux-gnu
     steps:
-      # See "Output Release URL and ID File" of 'release' job above.
+      # See "Output Release URL and
+      # ID File" of 'release' job above.
       - name: Load Release URL File from release job
         uses: actions/download-artifact@v1
         with:
@@ -103,8 +115,10 @@ jobs:
         with:
           path: ${{ matrix.DOWNLOADS }}
           key: ${{ matrix.DOWNLOADS }}
-      # Create the installer and run the 'fast' test suite as smoke tests before
-      # installers are uploaded to the Github release.
+      # Create the installer and run the 'fast'
+      # test suite as smoke tests before
+      # installers are uploaded to
+      # the Github release.
       - name: Build and Test TLAPM installer
         run: |
             eval $(opam env)
