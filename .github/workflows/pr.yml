@@ -1,63 +1,61 @@
 name: Build and Package TLA Proof Manager
 on: [pull_request]
-
 jobs:
-  test:
-    name: Build and Test
-    runs-on: ${{ matrix.operating-system }}
-    strategy:
-      fail-fast: false
-      matrix:
-        operating-system: [macos-latest, ubuntu-latest]
-        ocaml-compiler: [
-            '0',
-            '1',
-            '2',
-            ]
-        include:
-        - operating-system: macos-latest
-          INSTALLER: tlaps-1.5.0-i386-darwin-inst.bin
-          DOWNLOADS: tlaps-1.5.0-i386-darwin-inst
-
-        - operating-system: ubuntu-latest
-          INSTALLER: tlaps-1.5.0-x86_64-linux-gnu-inst.bin
-          DOWNLOADS: tlaps-1.5.0-x86_64-linux-gnu
-    steps:
-      # Get TLAPS repository checked out.
-      - uses: actions/checkout@v2
-      # Setup OCaml environment.
-      - name: Get OCaml version
-        run: |
-            INDEX=${{ matrix.ocaml-compiler }}
-            OCAML_VERSION=`python .github/workflows/ocaml_versions.py $INDEX`
-            echo "OCAML_VERSION=$OCAML_VERSION" \
-            >> $GITHUB_ENV
-            echo "OCAML_VERSION = $OCAML_VERSION"
-      - uses: ocaml/setup-ocaml@v2
-        with:
-          ocaml-compiler: ${{ env.OCAML_VERSION }}
-      # The TLAPM test suite requires the kaputt package.
-      - name: Install OCaml dependencies
-        run: opam install kaputt
-      - uses: actions/cache@v2
-        id: cache
-        with:
-          path: ${{ matrix.DOWNLOADS }}
-          key: ${{ matrix.DOWNLOADS }}
-      # Create the installer and
-      # run the 'fast' test suite as smoke tests before
-      # installers are uploaded to the Github release.
-      - name: Build and Test TLAPM installer
-        run: |
-            eval $(opam env)
-            ./configure
-            cd tools/installer
-            ./tlaps-release.sh
-            ./${{ matrix.INSTALLER }} -d ../..
-            cd ../..
-            PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make test
-            make
-            PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make testall
-      - name: Print Test Results
-        if: matrix.operating-system == 'ubuntu-latest'
-        run: cat test/tests.log
+    test:
+        name: Build and Test
+        runs-on: ${{ matrix.operating-system }}
+        strategy:
+            fail-fast: false
+            matrix:
+                operating-system: [macos-latest, ubuntu-latest]
+                ocaml-compiler: [
+                    '0',
+                    '1',
+                    '2',
+                    ]
+                include:
+                - operating-system: macos-latest
+                  INSTALLER: tlaps-1.5.0-i386-darwin-inst.bin
+                  DOWNLOADS: tlaps-1.5.0-i386-darwin-inst
+                - operating-system: ubuntu-latest
+                  INSTALLER: tlaps-1.5.0-x86_64-linux-gnu-inst.bin
+                  DOWNLOADS: tlaps-1.5.0-x86_64-linux-gnu
+        steps:
+            # Get TLAPS repository checked out.
+            - uses: actions/checkout@v2
+            # Setup OCaml environment.
+            - name: Get OCaml version
+              run: |
+                INDEX=${{ matrix.ocaml-compiler }}
+                OCAML_VERSION=`python .github/workflows/ocaml_versions.py $INDEX`
+                echo "OCAML_VERSION=$OCAML_VERSION" \
+                >> $GITHUB_ENV
+                echo "OCAML_VERSION = $OCAML_VERSION"
+            - uses: ocaml/setup-ocaml@v2
+              with:
+                ocaml-compiler: ${{ env.OCAML_VERSION }}
+            # The TLAPM test suite requires the kaputt package.
+            - name: Install OCaml dependencies
+              run: opam install kaputt
+            - uses: actions/cache@v2
+              id: cache
+              with:
+                path: ${{ matrix.DOWNLOADS }}
+                key: ${{ matrix.DOWNLOADS }}
+            # Create the installer and
+            # run the 'fast' test suite as smoke tests before
+            # installers are uploaded to the Github release.
+            - name: Build and Test TLAPM installer
+              run: |
+                eval $(opam env)
+                ./configure
+                cd tools/installer
+                ./tlaps-release.sh
+                ./${{ matrix.INSTALLER }} -d ../..
+                cd ../..
+                PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make test
+                make
+                PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make testall
+            - name: Print Test Results
+              if: matrix.operating-system == 'ubuntu-latest'
+              run: cat test/tests.log
