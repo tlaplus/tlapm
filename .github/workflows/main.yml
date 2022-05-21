@@ -101,9 +101,10 @@ jobs:
             - uses: ocaml/setup-ocaml@v2
               with:
                 ocaml-compiler: ${{ env.OCAML_VERSION }}
-            # The TLAPM test suite requires the kaputt package.
             - name: Install OCaml dependencies
-              run: opam install kaputt
+              run: |
+                opam install kaputt
+                    # required by the test suite
             - uses: actions/cache@v2
               id: cache
               with:
