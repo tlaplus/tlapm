@@ -3,8 +3,8 @@ on:
     push:
     schedule:
         - cron: '42 5 5 * *'
-# The 'release' job creates an empty Github
-# (draft) release before the 'publish' job
+# The `release` job creates an empty Github
+# (draft) release before the `publish` job
 # below builds and uploads installers into
 # the release.
 #
@@ -39,7 +39,7 @@ jobs:
                 draft: false
                 prerelease: true
             # Remember the release URL and ID so
-            # the runners executing 'publish' below
+            # the runners executing `publish` below
             # know where to upload assets.
             - name: Output Release URL and ID File
               run: |
@@ -75,8 +75,8 @@ jobs:
                       INSTALLER: tlaps-1.5.0-x86_64-linux-gnu-inst.bin
                       DOWNLOADS: tlaps-1.5.0-x86_64-linux-gnu
         steps:
-            # See "Output Release URL and
-            # ID File" of 'release' job above.
+            # Read "Output Release URL and
+            # ID File" of `release` job above.
             - name: Load Release URL File from release job
               uses: actions/download-artifact@v1
               with:
