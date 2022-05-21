@@ -52,7 +52,6 @@ jobs:
     needs: [release]
     runs-on: ${{ matrix.operating-system }}
     strategy:
-      fail-fast: false
       matrix:
         operating-system: [macos-latest, ubuntu-latest]
         ocaml-compiler: [
@@ -131,9 +130,6 @@ jobs:
         if: >-
             matrix.operating-system == 'ubuntu-latest' &&
             matrix.ocaml-compiler == '2'
-        ## The test suite has known failures, thus keep going until the
-        ## test suite has been fixed (TODO).
-        continue-on-error: true
         run: |
             ls -lah
             eval $(opam env)
