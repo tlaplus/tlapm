@@ -90,9 +90,7 @@ jobs:
               env:
                 TAG_REF_NAME: ${{ github.ref }}
                 REPOSITORY_NAME: ${{ github.repository }}
-            # Get TLAPS repository checked out.
             - uses: actions/checkout@v2
-            # Setup OCaml environment.
             - name: Get OCaml version
               run: |
                 INDEX=${{ matrix.ocaml-compiler }}
