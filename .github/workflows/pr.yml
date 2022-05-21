@@ -23,9 +23,9 @@ jobs:
           INSTALLER: tlaps-1.5.0-x86_64-linux-gnu-inst.bin
           DOWNLOADS: tlaps-1.5.0-x86_64-linux-gnu
     steps:
-      ## Get TLAPS repository checked out.
+      # Get TLAPS repository checked out.
       - uses: actions/checkout@v2
-      ## Setup OCaml environment.
+      # Setup OCaml environment.
       - name: Get OCaml version
         run: |
             INDEX=${{ matrix.ocaml-compiler }}
@@ -36,7 +36,7 @@ jobs:
       - uses: ocaml/setup-ocaml@v2
         with:
           ocaml-compiler: ${{ env.OCAML_VERSION }}
-      ## The TLAPM test suite requires the kaputt package.
+      # The TLAPM test suite requires the kaputt package.
       - name: Install OCaml dependencies
         run: opam install kaputt
       - uses: actions/cache@v2
@@ -44,8 +44,8 @@ jobs:
         with:
           path: ${{ matrix.DOWNLOADS }}
           key: ${{ matrix.DOWNLOADS }}
-      ## Create the installer and run the 'fast' test suite as smoke tests before
-      ## installers are uploaded to the Github release.
+      # Create the installer and run the 'fast' test suite as smoke tests before
+      # installers are uploaded to the Github release.
       - name: Build and Test TLAPM installer
         run: |
             eval $(opam env)
