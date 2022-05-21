@@ -60,4 +60,5 @@ jobs:
                 PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make testall
             - name: Print Test Results
               if: matrix.operating-system == 'ubuntu-latest'
-              run: cat test/tests.log
+              run: |
+                cat test/tests.log
