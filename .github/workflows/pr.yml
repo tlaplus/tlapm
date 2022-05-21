@@ -42,12 +42,15 @@ jobs:
               with:
                 path: ${{ matrix.DOWNLOADS }}
                 key: ${{ matrix.DOWNLOADS }}
-            - name: Build and Test TLAPM installer
+            - name: Build installer of TLAPS
               run: |
                 eval $(opam env)
                 ./configure
                 cd tools/installer
                 ./tlaps-release.sh
+            - name: Run installer of TLAPS
+              run: |
+                cd tools/installer
                 ./${{ matrix.INSTALLER }} -d ../..
             - name: Run a subset of `tlapm` tests
               run: |

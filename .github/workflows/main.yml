@@ -122,6 +122,9 @@ jobs:
                 ./configure
                 cd tools/installer
                 ./tlaps-release.sh
+            - name: Run installer of TLAPS
+              run: |
+                cd tools/installer
                 ./${{ matrix.INSTALLER }} -d ../..
             - name: Run a subset of `tlapm` tests
               run: |
