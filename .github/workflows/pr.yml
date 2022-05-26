@@ -4,6 +4,8 @@ on:
     push:
         paths:
             - '.github/workflows/pr.yml'
+    schedule:
+        - cron: '42 5 20 * *'
 jobs:
     test:
         name: Build and Test
