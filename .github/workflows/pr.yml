@@ -1,5 +1,9 @@
 name: Build and Package TLA Proof Manager
-on: [pull_request]
+on:
+    pull_request:
+    push:
+        paths:
+            - '.github/workflows/pr.yml'
 jobs:
     test:
         name: Build and Test
