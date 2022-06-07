@@ -167,17 +167,7 @@ class virtual ['hyp] map = object (self : 'self)
   method usable scx us =
     let usdef dw =
       match dw.core with
-      | Dvar v ->
-            begin
-            let opaque = Opaque v @@ dw in
-            let opaque = self#expr scx opaque in
-            match opaque.core with
-            | Opaque _ -> [Dvar v @@ dw]
-            | _ -> Errors.bug ~at:dw
-                ("unexpected result from `self#expr` \
-                for the identifier `" ^ v ^
-                "` in a `BY DEF`")
-            end
+      | Dvar v -> [Dvar v @@ dw]
       | Dx n -> [{dw with core = Dx n}]
     in
     { facts = List.map (self#expr scx) us.facts ;
