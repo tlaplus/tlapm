@@ -83,10 +83,12 @@ val sequent : scx -> sequent -> scx * sequent
     @param typelvl set the level of typing.
         typelvl=0: only Idv and Bool (pure TLA+)
         typelvl=1: allow Int for constants, insert casts
-        typelvl=2: allow Int for all operators, try to simplify casts
+        typelvl=2: allow Int and FS for all operators, try to simplify casts
         typelvl=3: allow all types and casts
+    @param fsenable enable annotations for finite sets (exclusive to CVC4)
 *)
 val main :
   ?typelvl:int ->
+  ?fsenable:bool ->
   sequent -> sequent
 

@@ -64,6 +64,9 @@ type builtin =
   | Tail
   | SubSeq
   | SelectSeq
+    (* finite sets *)
+  | IsFiniteSet
+  | Card
     (* tlc *)
   | OneArg
   | Extend

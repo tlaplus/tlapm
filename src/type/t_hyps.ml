@@ -45,7 +45,7 @@ let search_type_hyp ~inferer ~pol scx oe =
         begin try
           begin
           match inferer scx e with
-          | TSet ty0 -> Lazy.from_val (Some ty0)
+          | TSet ty0 | TFSet ty0 -> Lazy.from_val (Some ty0)
           | _ -> Lazy.from_val None
           end
         with _ -> Lazy.from_val None
@@ -58,6 +58,10 @@ let search_type_hyp ~inferer ~pol scx oe =
           Lazy.from_val (Some (inferer scx e))
         with _ -> Lazy.from_val None
         end
+
+    | Apply ({ core = Internal B.IsFiniteSet }, [ { core = Ix n } ])
+      when n = ix && not pol ->
+        Lazy.from_val (Some (TFSet (TAtm TAIdv)))
 
     | Apply ({ core = Internal (B.Disj | B.Conj as b) }, [ e ; f ])
       when (pol && b = B.Disj) || (not pol && b = B.Conj) ->

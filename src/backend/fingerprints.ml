@@ -182,6 +182,8 @@ let builtin_to_int bi =
   | Builtin.ToString -> 67
   | Builtin.Unprimable -> 68
   | Builtin.Irregular -> 69
+  | Builtin.IsFiniteSet -> 70
+  | Builtin.Card -> 71
 ;;
 
 let bullet_to_int b =

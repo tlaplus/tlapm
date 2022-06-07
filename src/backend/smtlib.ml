@@ -97,6 +97,7 @@ let rec pp_print_sort ff ty =
   begin match ty with
   | TAtm TABol -> pp_print_string ff "Bool"
   | TAtm TAInt -> pp_print_string ff "Int"
+  | TFSet s -> fprintf ff "(Set %a)" pp_print_sort s
   | _ -> pp_print_string ff (ty_to_string ty)
   end
 
@@ -180,6 +181,57 @@ let rec pp_apply cx ff op args =
       | T.TIntGt,         [ e ; f ] ->
           pp_print_sexpr begin fun ff (e, f) ->
             fprintf ff ">@ %a@ %a"
+            (pp_box @@@ pp_print_expr cx) e
+            (pp_box @@@ pp_print_expr cx) f
+          end ff (e, f)
+      | T.TFSCard _,          [ e ] ->
+          pp_print_sexpr begin fun ff e ->
+            fprintf ff "card@ %a"
+            (pp_box @@@ pp_print_expr cx) e
+          end ff e
+      | T.TFSMem _,           [ e ; f ] ->
+          pp_print_sexpr begin fun ff (e, f) ->
+            fprintf ff "member@ %a@ %a"
+            (pp_box @@@ pp_print_expr cx) e
+            (pp_box @@@ pp_print_expr cx) f
+          end ff (e, f)
+      | T.TFSSubseteq _,      [ e ; f ] ->
+          pp_print_sexpr begin fun ff (e, f) ->
+            fprintf ff "subset@ %a@ %a"
+            (pp_box @@@ pp_print_expr cx) e
+            (pp_box @@@ pp_print_expr cx) f
+          end ff (e, f)
+      | T.TFSEmpty s,         [ ] ->
+          pp_print_sexpr begin fun ff () ->
+            fprintf ff "as emptyset (Set %a)"
+            pp_print_sort s
+          end ff ()
+      | T.TFSSingleton _,     [ e ] ->
+          pp_print_sexpr begin fun ff e ->
+            fprintf ff "singleton@ %a"
+            (pp_box @@@ pp_print_expr cx) e
+          end ff e
+      | T.TFSAdd _,           [ e ; f ] ->
+          pp_print_sexpr begin fun ff (e, f) ->
+            fprintf ff "insert@ %a@ %a"
+            (pp_box @@@ pp_print_expr cx) e
+            (pp_box @@@ pp_print_expr cx) f
+          end ff (e, f)
+      | T.TFSCup _,           [ e ; f ] ->
+          pp_print_sexpr begin fun ff (e, f) ->
+            fprintf ff "union@ %a@ %a"
+            (pp_box @@@ pp_print_expr cx) e
+            (pp_box @@@ pp_print_expr cx) f
+          end ff (e, f)
+      | T.TFSCap _,           [ e ; f ] ->
+          pp_print_sexpr begin fun ff (e, f) ->
+            fprintf ff "intersection@ %a@ %a"
+            (pp_box @@@ pp_print_expr cx) e
+            (pp_box @@@ pp_print_expr cx) f
+          end ff (e, f)
+      | T.TFSSetminus _,      [ e ; f ] ->
+          pp_print_sexpr begin fun ff (e, f) ->
+            fprintf ff "setminus@ %a@ %a"
             (pp_box @@@ pp_print_expr cx) e
             (pp_box @@@ pp_print_expr cx) f
           end ff (e, f)
@@ -464,11 +516,15 @@ let preprocess ~solver sq =
     else 0
   in
 
+  let fsenable =
+    Params.debugging "fs" && solver = "CVC4"
+  in
+
   let sq = sq
     (*|> Encode.Hints.main*) (* TODO *)
     |> debug "Original Obligation:"
     |> Encode.Rewrite.elim_flex
-    |> Type.Synthesize.main ~typelvl
+    |> Type.Synthesize.main ~typelvl ~fsenable
     |> Encode.Rewrite.elim_notmem
     |> Encode.Rewrite.elim_compare
     |> Encode.Rewrite.elim_multiarg
@@ -496,7 +552,7 @@ let collect_sorts sq =
     end srts Ss.empty
   in
   let srts = Ss.diff srts (Ss.of_list [
-    "Bool" ; "Int" ; "Real"
+    "Bool" ; "Int" ; "Real" ; ty_to_string (TFSet (TAtm TAIdv))
   ]) in
   Ss.elements srts
 
@@ -563,6 +619,10 @@ let pp_print_obligation ?(solver="SMT") ff ob =
     if Params.debugging "noarith" then "UF"
     else if Params.debugging "lia" || solver = "veriT" then "UFLIA"
     else "UFNIA"
+  in
+  let logic =
+    if solver = "CVC4" && Params.debugging "fs" then logic ^ "FS"
+    else logic
   in
   fprintf ff "(set-logic %s)@." logic;
   pp_print_newline ff ();

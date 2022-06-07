@@ -174,11 +174,13 @@ let init () =
                  * "t0"         set type level on 0
                  * "t0+"        like t0 but allow int (default)
                  * "t1"         set type level on 1
+                 * "fs"         enable CVC4 finite sets
                  * "oldsmt"     use the old version of SMT (default)
                  * "newsmt"     use the new version of SMT
                  * "rwsetext"   simplify =- and \subseteq-statements between sets
                  * "rw"         simplify expressions (implies rwsetext)
                  * "rw+"        like rw, but less smart (may introduce quantifiers)
+                 * "ext"        heuristic for extentionality instanciation
                  * "smt_prove_false"
                  *              replace the goal with FALSE to catch bugs
                  *)

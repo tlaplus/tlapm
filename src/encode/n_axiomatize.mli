@@ -30,7 +30,7 @@ open N_smb
 type ecx
 
 (** The initial context may contain some mandatory new declarations *)
-val init_ecx : ecx
+val init_ecx : solver:string -> ecx
 
 
 (* {3 Main} *)

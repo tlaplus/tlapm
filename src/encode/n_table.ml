@@ -94,6 +94,7 @@ type tla_smb =
   | TFSEmpty of ty
   | TFSSingleton of ty
   | TFSAdd of ty
+  | TFSSetEnum of int * ty
   | TFSCup of ty
   | TFSCap of ty
   | TFSSetminus of ty
@@ -103,6 +104,8 @@ type tla_smb =
   | Proj of ty
   | True of ty
   | Anon of string * ty2
+  | ExtTrigEq of ty
+  | ExtTrig
 
 type tla_axm =
     (* UNTYPED *)
@@ -212,6 +215,30 @@ type tla_axm =
   | SeqSelectseqAppend
   | SeqTupTyping of int
   | SeqTupLen of int
+  (* Finite Sets *)
+  | FSSubseteqIsFinite
+  | FSEnumIsFinite of int
+  | FSSubsetIsFinite
+  | FSUnionIsFinite
+  | FSSetStIsFinite
+  | FSSetOfIsFinite of int
+  | FSCupIsFinite
+  | FSCapIsFinite
+  | FSSetminusIsFinite
+  | FSProductIsFinite of int
+  | FSRectIsFinite of string list
+  | FSRangeIsFinite
+  | FSCardTyping
+  | FSSubseteqCard
+  | FSEmptyCard
+  | FSSingletonCard
+  | FSCupCard
+  | FSCapCard
+  | FSSetminusCard
+  | FSProductCard of int
+  | FSRectCard of string list
+  | FSRangeCard
+
 
     (* SPECIAL *)
   | CastInj of ty
@@ -220,6 +247,11 @@ type tla_axm =
   | TypeGuardIntro of ty
   | TypeGuardElim of ty
   | Typing of tla_smb (** Only for typed symbols *)
+  | ExtTrigEqDef of ty
+  | ExtTrigEqTrigger of ty
+  | DisjointTrigger
+  | EmptyComprehensionTrigger
+  | ExtTrigEqCardPropagate
 
 
 let tla_smb_to_string = function
@@ -293,6 +325,7 @@ let tla_smb_to_string = function
   | TFSEmpty s -> "TFSEmpty_" ^ ty_to_string s
   | TFSSingleton s -> "TFSSingleton_" ^ ty_to_string s
   | TFSAdd s -> "TFSAdd_" ^ ty_to_string s
+  | TFSSetEnum (n, s) -> "TFSSetEnum_" ^ string_of_int n ^ "_" ^ ty_to_string s
   | TFSCup s -> "TFSCup_" ^ ty_to_string s
   | TFSCap s -> "TFSCap_" ^ ty_to_string s
   | TFSSetminus s -> "TFSSetminus_" ^ ty_to_string s
@@ -300,6 +333,8 @@ let tla_smb_to_string = function
   | Proj ty -> "Proj " ^ ty_to_string ty
   | True ty -> "True" ^ ty_to_string ty
   | Anon (s, ty2) -> "Anon " ^ s ^ " " ^ ty2_to_string ty2
+  | ExtTrigEq ty -> "ExtTrigEq_" ^ ty_to_string ty
+  | ExtTrig -> "ExtTrig"
 
 let axm_desc = function
   | ChooseDef -> "ChooseDef"
@@ -400,6 +435,28 @@ let axm_desc = function
   | SeqSelectseqAppend -> "SeqSelectseqAppend"
   | SeqTupTyping n -> Format.sprintf "SeqTupTyping %d" n
   | SeqTupLen n -> Format.sprintf "SeqTupLen %d" n
+  | FSSubseteqIsFinite -> "FSSubseteqIsFinite"
+  | FSEnumIsFinite n -> Format.sprintf "FSEnumIsFinite %d" n
+  | FSSubsetIsFinite -> "FSSubsetIsFinite"
+  | FSUnionIsFinite -> "FSUnionIsFinite"
+  | FSSetStIsFinite -> "FSSetStIsFinite"
+  | FSSetOfIsFinite n -> Format.sprintf "FSSetOfIsFinite %d" n
+  | FSCupIsFinite -> "FSCupIsFinite"
+  | FSCapIsFinite -> "FSCapIsFinite"
+  | FSSetminusIsFinite -> "FSSetminusIsFinite"
+  | FSProductIsFinite n -> Format.sprintf"FSProductIsFinite %d" n
+  | FSRectIsFinite fs -> String.concat " " ("FSRectIsFinite" :: fs)
+  | FSRangeIsFinite -> "FSRangeIsFinite"
+  | FSCardTyping -> "FSCardTyping"
+  | FSSubseteqCard -> "FSSubseteqCard"
+  | FSEmptyCard -> "FSEmptyCard"
+  | FSSingletonCard -> "FSSingletonCard"
+  | FSCupCard -> "FSCupCard"
+  | FSCapCard -> "FSCapCard"
+  | FSSetminusCard -> "FSSetminusCard"
+  | FSProductCard n -> Format.sprintf "FSProductCard %d" n
+  | FSRectCard fs -> String.concat " " ("FSRectCard" :: fs)
+  | FSRangeCard -> "FSRangeCard"
 
   | CastInj ty -> "CastInj " ^ ty_to_string ty
   | CastInjAlt ty -> "CastInjAlt " ^ ty_to_string ty
@@ -407,4 +464,9 @@ let axm_desc = function
   | TypeGuardIntro ty -> "TypeGuardIntro " ^ ty_to_string ty
   | TypeGuardElim ty -> "TypeGuardElim " ^ ty_to_string ty
   | Typing tla_smb -> "Typing " ^ tla_smb_to_string tla_smb
+  | ExtTrigEqDef ty -> "ExtTrigEqDef " ^ ty_to_string ty
+  | ExtTrigEqTrigger ty -> "ExtTrigEqTrigger " ^ ty_to_string ty
+  | DisjointTrigger -> "DisjointTrigger"
+  | EmptyComprehensionTrigger -> "EmptyComprehensionTrigger"
+  | ExtTrigEqCardPropagate -> "ExtTrigEqCardPropagate"
 

@@ -200,6 +200,10 @@ let type_guard ty0 =
         [ Ix 1 %% []
         ; apps T.StrSet [] %% []
         ] %% []
+    | TFSet (TAtm TAIdv) ->
+        apps T.FSIsFiniteSet
+        [ Ix 1 %% []
+        ] %% []
     | _ -> error "Not implemented"
     end
     ; quant Exists
@@ -246,6 +250,12 @@ let type_guard_intro ty0 =
           ] %% []
         ; apps T.StrSet [] %% []
         ] %% []
+    | TFSet (TAtm TAIdv) ->
+        apps T.FSIsFiniteSet
+        [ apps (T.Cast ty0)
+          [ Ix 1 %% []
+          ] %% []
+        ] %% []
     | _ -> error "Not implemented"
     end
   ) %% []
@@ -269,6 +279,10 @@ let type_guard_elim ty0 =
         apps T.Mem
         [ Ix 1 %% []
         ; apps T.StrSet [] %% []
+        ] %% []
+    | TFSet (TAtm TAIdv) ->
+        apps T.FSIsFiniteSet
+        [ Ix 1 %% []
         ] %% []
     | _ -> error "Not implemented"
   in
@@ -343,8 +357,39 @@ let op_intquotient_typing () =
     ] %% []
   ) %% []
 
+let op_fsenum_typing n ty0 =
+  if n = 0 then
+    appb ~tys:[ t_idv ] B.Eq
+    [ apps (T.SetEnum 0) [] %% []
+    ; apps (T.Cast (TFSet ty0))
+      [ apps (T.TFSEmpty ty0) [] %% []
+      ] %% []
+    ] %% []
+  else
+    quant Forall
+    (gen "a" n) (dupl t_idv n)
+    ~pats:[ [
+      apps (T.SetEnum n)
+      (ixi n) %% []
+    ] ]
+    ( appb ~tys:[ t_idv ] B.Eq
+      [ apps (T.SetEnum n)
+        (ixi n) %% []
+      ; apps (T.Cast (TFSet ty0))
+        [ List.fold_right begin fun e1 e2 ->
+          apps (T.TFSAdd ty0)
+          [ e1 ; e2 ] %% []
+        end
+        (ixi ~shift:1 (n - 1))
+        (apps (T.TFSSingleton ty0) [ Ix 1 %% [] ] %% [])
+        ] %% []
+      ] %% []
+    ) %% []
+
+
 let op_typing t_smb =
   match t_smb with
+  | T.TFSSetEnum (n, ty0) -> op_fsenum_typing n ty0
   | T.TIntQuotient -> op_intquotient_typing ()
   | _ -> begin
 
@@ -416,6 +461,115 @@ let op_typing t_smb =
 
   end
 
+let exttrigeq_def ty0 =
+  let actual_ty0 =
+    match ty0 with
+    | TAtm (TAInt | TABol) -> ty0
+    | _ -> t_idv
+  in
+  quant Forall
+  [ "x" ; "y" ] [ actual_ty0 ; actual_ty0 ]
+  ~pats:[ [
+    apps (T.ExtTrigEq ty0)
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Equiv
+    [ apps (T.ExtTrigEq ty0)
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ; appb ~tys:[ actual_ty0 ] B.Eq
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let exttrigeq_trigger ty0 =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps (T.ExtTrigEq (TSet ty0))
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( apps T.ExtTrig
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ) %% []
+
+let disjoint_trigger () =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Cap
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( apps T.ExtTrig
+    [ apps T.Cap
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ; apps (T.SetEnum 0) [] %% []
+    ] %% []
+  ) %% []
+
+let emptycomprehension_trigger () =
+  seq
+  [ "P" ] [ Ty1 ([ t_idv ], t_bol) ]
+  ( quant Forall
+    [ "a" ] [ t_idv ]
+    ~pats:[ [
+      apps T.SetSt
+      [ Ix 1 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ] ]
+    ( apps T.ExtTrig
+      [ apps T.SetSt
+        [ Ix 1 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ; apps (T.SetEnum 0) [] %% []
+      ] %% []
+    ) %% []
+  ) %% []
+
+let exttrigeq_card () =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps (T.ExtTrigEq (TAtm TAIdv))
+    [ apps T.FSCard
+      [ Ix 2 %% []
+      ] %% []
+    ; apps T.FSCard
+      [ Ix 1 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ apps (T.ExtTrigEq (TSet (TAtm TAIdv)))
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ; apps (T.ExtTrigEq (TAtm TAIdv))
+      [ apps T.FSCard
+        [ Ix 2 %% []
+        ] %% []
+      ; apps T.FSCard
+        [ Ix 1 %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
 
 (* {4 Logic} *)
 
@@ -468,9 +622,16 @@ let choose_ext () =
 
 (* {4 Sets} *)
 
-let set_ext () =
+let set_ext ~ext =
   quant Forall
   [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ?pats:(if ext then Some [ [
+    apps T.ExtTrig
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  else None)
   ( appb B.Implies
     [ quant Forall
       [ "z" ] [ t_idv ]
@@ -4551,6 +4712,944 @@ let seqtuplen_def ~noarith n =
   ) %% []
 
 
+(* {4 Finite Sets} *)
+
+let subseteq_isfs () =
+  quant Forall
+  [ "a" ; "b" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.SubsetEq
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.FSIsFiniteSet
+        [ Ix 1 %% []
+        ] %% []
+      ; apps T.SubsetEq
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ] %% []
+    ; apps T.FSIsFiniteSet
+      [ Ix 2 %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let enum_isfs n =
+  if n = 0 then
+    apps T.FSIsFiniteSet
+    [ apps (T.SetEnum 0) [] %% []
+    ] %% []
+  else
+    quant Forall
+    (gen "a" n) (dupl t_idv n)
+    ~pats:[ [
+      apps (T.SetEnum n)
+      (ixi n) %% []
+    ] ]
+    ( apps T.FSIsFiniteSet
+      [ apps (T.SetEnum n)
+        (ixi n) %% []
+      ] %% []
+    ) %% []
+
+let subset_isfs () =
+  quant Forall
+  [ "a" ] [ t_idv ]
+  ~pats:[ [
+    apps T.Subset
+    [ Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ apps T.FSIsFiniteSet
+      [ Ix 1 %% []
+      ] %% []
+    ; apps T.FSIsFiniteSet
+      [ apps T.Subset
+        [ Ix 1 %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let union_isfs () =
+  quant Forall
+  [ "a" ] [ t_idv ]
+  ~pats:[ [
+    apps T.Union
+    [ Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.FSIsFiniteSet
+        [ Ix 1 %% []
+        ] %% []
+      ; quant Forall
+        [ "x" ] [ t_idv ]
+        ( appb B.Implies
+          [ apps T.Mem
+            [ Ix 1 %% []
+            ; Ix 2 %% []
+            ] %% []
+          ; apps T.FSIsFiniteSet
+            [ Ix 1 %% []
+            ] %% []
+          ] %% []
+        ) %% []
+      ] %% []
+    ; apps T.FSIsFiniteSet
+      [ apps T.Union
+        [ Ix 1 %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let setst_isfs () =
+  seq
+  [ "P" ]
+  [ Ty1 ([ t_idv ], t_bol) ]
+  ( quant Forall
+    [ "a" ] [ t_idv ]
+    ~pats:[ [
+      apps T.SetSt
+      [ Ix 1 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ] ]
+    ( appb B.Implies
+      [ apps T.FSIsFiniteSet
+        [ Ix 1 %% []
+        ] %% []
+      ; apps T.FSIsFiniteSet
+        [ apps T.SetSt
+          [ Ix 1 %% []
+          ; Ix 2 %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ) %% []
+  ) %% []
+
+let setof_isfs n =
+  seq
+  [ "F" ]
+  [ Ty1 (dupl t_idv n, t_idv) ]
+  ( quant Forall
+    (gen "a" n) (dupl t_idv n)
+    ~pats:[ [
+      apps (T.SetOf n)
+      (ixi n @
+      [ Ix (n + 1) %% []
+      ]) %% []
+    ] ]
+    ( appb B.Implies
+      [ if n = 1 then
+        apps T.FSIsFiniteSet
+        [ Ix 1 %% []
+        ] %% []
+      else
+        List (And, List.init n begin fun i ->
+          apps T.FSIsFiniteSet
+          [ Ix (i + 1) %% []
+          ] %% []
+        end) %% []
+      ; apps T.FSIsFiniteSet
+        [ apps (T.SetOf n)
+          (ixi n @
+          [ Ix (n + 1) %% []
+          ]) %% []
+        ] %% []
+      ] %% []
+    ) %% []
+  ) %% []
+
+let cup_isfs () =
+  quant Forall
+  [ "a" ; "b" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Cup
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.FSIsFiniteSet
+        [ Ix 2 %% []
+        ] %% []
+      ; apps T.FSIsFiniteSet
+        [ Ix 1 %% []
+        ] %% []
+      ] %% []
+    ; apps T.FSIsFiniteSet
+      [ apps T.Cup
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let cap_isfs () =
+  quant Forall
+  [ "a" ; "b" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Cap
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ appb B.Disj
+      [ apps T.FSIsFiniteSet
+        [ Ix 2 %% []
+        ] %% []
+      ; apps T.FSIsFiniteSet
+        [ Ix 1 %% []
+        ] %% []
+      ] %% []
+    ; apps T.FSIsFiniteSet
+      [ apps T.Cap
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let setminus_isfs () =
+  quant Forall
+  [ "a" ; "b" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.SetMinus
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ apps T.FSIsFiniteSet
+      [ Ix 2 %% []
+      ] %% []
+    ; apps T.FSIsFiniteSet
+      [ apps T.SetMinus
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let product_isfs n =
+  if n = 0 then
+    apps T.FSIsFiniteSet
+    [ apps (T.Product 0) [] %% []
+    ] %% []
+  else
+    quant Forall
+    (gen "a" n) (dupl t_idv n)
+    ~pats:[ [
+      apps (T.Product n)
+      (ixi n) %% []
+    ] ]
+    ( appb B.Implies
+      [ if n = 1 then
+        apps T.FSIsFiniteSet
+        [ Ix 1 %% []
+        ] %% []
+      else
+        List (And, List.init n begin fun i ->
+          apps T.FSIsFiniteSet
+          [ Ix (i + 1) %% []
+          ] %% []
+        end) %% []
+      ; apps T.FSIsFiniteSet
+        [ apps (T.Product n)
+          (ixi n) %% []
+        ] %% []
+      ] %% []
+    ) %% []
+
+let rect_isfs fs =
+  let n = List.length fs in
+  quant Forall
+  (gen "a" n) (dupl t_idv n)
+  ~pats:[ [
+    apps (T.RecSet fs)
+    (ixi n) %% []
+  ] ]
+  ( appb B.Implies
+    [ if n = 1 then
+      apps T.FSIsFiniteSet
+      [ Ix 1 %% []
+      ] %% []
+    else
+      List (And, List.init n begin fun i ->
+        apps T.FSIsFiniteSet
+        [ Ix (i + 1) %% []
+        ] %% []
+      end) %% []
+    ; apps T.FSIsFiniteSet
+      [ apps (T.RecSet fs)
+        (ixi n) %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let range_isfs () =
+  quant Forall
+  [ "a" ; "b" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.IntRange
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.Mem
+        [ Ix 2 %% []
+        ; apps T.IntSet [] %% []
+        ] %% []
+      ; apps T.Mem
+        [ Ix 1 %% []
+        ; apps T.IntSet [] %% []
+        ] %% []
+      ] %% []
+    ; apps T.FSIsFiniteSet
+      [ apps T.IntRange
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let card_typing () =
+  quant Forall
+  [ "a" ] [ t_idv ]
+  ~pats:[ [
+    apps T.FSCard
+    [ Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ apps T.FSIsFiniteSet
+      [ Ix 1 %% []
+      ] %% []
+    ; apps T.Mem
+      [ apps T.FSCard
+        [ Ix 1 %% []
+        ] %% []
+      ; apps T.NatSet [] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let subseteq_card ~noarith =
+  quant Forall
+  [ "a" ; "b" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.SubsetEq
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.FSIsFiniteSet
+        [ Ix 1 %% []
+        ] %% []
+      ; apps T.SubsetEq
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ] %% []
+    ; List (And,
+      [ if noarith then
+        apps T.IntLteq
+        [ apps T.FSCard
+          [ Ix 2 %% []
+          ] %% []
+        ; apps T.FSCard
+          [ Ix 1 %% []
+          ] %% []
+        ] %% []
+      else
+        apps T.TIntLteq
+        [ apps (T.Proj t_int)
+          [ apps T.FSCard
+            [ Ix 2 %% []
+            ] %% []
+          ] %% []
+        ; apps (T.Proj t_int)
+          [ apps T.FSCard
+            [ Ix 1 %% []
+            ] %% []
+          ] %%  []
+        ] %% []
+      ; appb B.Implies
+        [ if noarith then
+          appb ~tys:[ t_idv ] B.Eq
+          [ apps T.FSCard
+            [ Ix 2 %% []
+            ] %% []
+          ; apps T.FSCard
+            [ Ix 1 %% []
+            ] %% []
+          ] %% []
+        else
+          appb ~tys:[ t_int ] B.Eq
+          [ apps (T.Proj t_int)
+            [ apps T.FSCard
+              [ Ix 2 %% []
+              ] %% []
+            ] %% []
+          ; apps (T.Proj t_int)
+            [ apps T.FSCard
+              [ Ix 1 %% []
+              ] %% []
+            ] %% []
+          ] %% []
+        ; appb ~tys:[ t_idv ] B.Eq
+          [ Ix 2 %% []
+          ; Ix 1 %% []
+          ] %% []
+        ] %% []
+      ]) %% []
+    ] %% []
+  ) %% []
+
+let empty_card ~noarith =
+  appb ~tys:[ t_idv ] B.Eq
+  [ apps T.FSCard
+    [ apps (T.SetEnum 0) [] %% []
+    ] %% []
+  ; if noarith then
+    apps (T.IntLit 0) [] %% []
+  else
+    apps (T.Cast t_int)
+    [ apps (T.TIntLit 0) [] %% []
+    ] %% []
+  ] %% []
+
+let singleton_card ~noarith =
+  quant Forall
+  [ "x" ] [ t_idv ]
+  ~pats:[ [
+    apps (T.SetEnum 1)
+    [ Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb ~tys:[ t_idv ] B.Eq
+    [ apps T.FSCard
+      [ apps (T.SetEnum 1)
+        [ Ix 1 %% []
+        ] %% []
+      ] %% []
+    ; if noarith then
+      apps (T.IntLit 1) [] %% []
+    else
+      apps (T.Cast t_int)
+      [ apps (T.TIntLit 1) [] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let cup_card ~noarith =
+  quant Forall
+  [ "a" ; "b" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.FSCard
+    [ apps T.Cup
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.FSIsFiniteSet
+        [ Ix 2 %% []
+        ] %% []
+      ; apps T.FSIsFiniteSet
+        [ Ix 1 %% []
+        ] %% []
+      ] %% []
+    ; appb ~tys:[ t_idv ] B.Eq
+      [ apps T.FSCard
+        [ apps T.Cup
+          [ Ix 2 %% []
+          ; Ix 1 %% []
+          ] %% []
+        ] %% []
+      ; if noarith then
+        apps T.IntMinus
+        [ apps T.IntPlus
+          [ apps T.FSCard
+            [ Ix 2 %% []
+            ] %% []
+          ; apps T.FSCard
+            [ Ix 1 %% []
+            ] %% []
+          ] %% []
+        ; apps T.FSCard
+          [ apps T.Cap
+            [ Ix 2 %% []
+            ; Ix 1 %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      else
+        apps (T.Cast t_int)
+        [ apps T.TIntMinus
+          [ apps T.TIntPlus
+            [ apps (T.Proj t_int)
+              [ apps T.FSCard
+                [ Ix 2 %% []
+                ] %% []
+              ] %% []
+            ; apps (T.Proj t_int)
+              [ apps T.FSCard
+                [ Ix 1 %% []
+                ] %% []
+              ] %% []
+            ] %% []
+          ; apps (T.Proj t_int)
+            [ apps T.FSCard
+              [ apps T.Cap
+                [ Ix 2 %% []
+                ; Ix 1 %% []
+                ] %% []
+              ] %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let cap_card ~noarith =
+  quant Forall
+  [ "a" ; "b" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.FSCard
+    [ apps T.Cap
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( List (And,
+    [ appb B.Implies
+      [ apps T.FSIsFiniteSet
+        [ Ix 2 %% []
+        ] %% []
+      ; appb ~tys:[ t_idv ] B.Eq
+        [ apps T.FSCard
+          [ apps T.Cap
+            [ Ix 2 %% []
+            ; Ix 1 %% []
+            ] %% []
+          ] %% []
+        ; if noarith then
+          apps T.IntMinus
+          [ apps T.FSCard
+            [ Ix 2 %% []
+            ] %% []
+          ; apps T.FSCard
+            [ apps T.SetMinus
+              [ Ix 2 %% []
+              ; Ix 1 %% []
+              ] %% []
+            ] %% []
+          ] %% []
+        else
+          apps (T.Cast t_int)
+          [ apps T.TIntMinus
+            [ apps (T.Proj t_int)
+              [ apps T.FSCard
+                [ Ix 2 %% []
+                ] %% []
+              ] %% []
+            ; apps (T.Proj t_int)
+              [ apps T.FSCard
+                [ apps T.SetMinus
+                  [ Ix 2 %% []
+                  ; Ix 1 %% []
+                  ] %% []
+                ] %% []
+              ] %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ; appb B.Implies
+      [ apps T.FSIsFiniteSet
+        [ Ix 1 %% []
+        ] %% []
+      ; appb ~tys:[ t_idv ] B.Eq
+        [ apps T.FSCard
+          [ apps T.Cap
+            [ Ix 2 %% []
+            ; Ix 1 %% []
+            ] %% []
+          ] %% []
+        ; if noarith then
+          apps T.IntMinus
+          [ apps T.FSCard
+            [ Ix 1 %% []
+            ] %% []
+          ; apps T.FSCard
+            [ apps T.SetMinus
+              [ Ix 1 %% []
+              ; Ix 2 %% []
+              ] %% []
+            ] %% []
+          ] %% []
+        else
+          apps (T.Cast t_int)
+          [ apps T.TIntMinus
+            [ apps (T.Proj t_int)
+              [ apps T.FSCard
+                [ Ix 1 %% []
+                ] %% []
+              ] %% []
+            ; apps (T.Proj t_int)
+              [ apps T.FSCard
+                [ apps T.SetMinus
+                  [ Ix 1 %% []
+                  ; Ix 2 %% []
+                  ] %% []
+                ] %% []
+              ] %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ]) %% []
+  ) %% []
+
+let setminus_card ~noarith =
+  quant Forall
+  [ "a" ; "b" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.FSCard
+    [ apps T.SetMinus
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ apps T.FSIsFiniteSet
+      [ Ix 2 %% []
+      ] %% []
+    ; appb ~tys:[ t_idv ] B.Eq
+      [ apps T.FSCard
+        [ apps T.SetMinus
+          [ Ix 2 %% []
+          ; Ix 1 %% []
+          ] %% []
+        ] %% []
+      ; if noarith then
+        apps T.IntMinus
+        [ apps T.FSCard
+          [ Ix 2 %% []
+          ] %% []
+        ; apps T.FSCard
+          [ apps T.Cap
+            [ Ix 2 %% []
+            ; Ix 1 %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      else
+        apps (T.Cast t_int)
+        [ apps T.TIntMinus
+          [ apps (T.Proj t_int)
+            [ apps T.FSCard
+              [ Ix 2 %% []
+              ] %% []
+            ] %% []
+          ; apps (T.Proj t_int)
+            [ apps T.FSCard
+              [ apps T.Cap
+                [ Ix 2 %% []
+                ; Ix 1 %% []
+                ] %% []
+              ] %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let product_card ~noarith n =
+  if n = 0 then
+    appb ~tys:[ t_idv ] B.Eq
+    [ apps T.FSCard
+      [ apps (T.Product 0) [] %% []
+      ] %% []
+    ; if noarith then
+      apps (T.IntLit 1) [] %% []
+    else
+      apps (T.Cast t_int)
+      [ apps (T.TIntLit 1) [] %% []
+      ] %% []
+    ] %% []
+  else
+    quant Forall
+    (gen "a" n) (dupl t_idv n)
+    ~pats:[ [
+      apps T.FSCard
+      [ apps (T.Product n)
+        (ixi n) %% []
+      ] %% []
+    ] ]
+    ( appb B.Implies
+      [ if n = 1 then
+        apps T.FSIsFiniteSet
+        [ Ix 1 %% []
+        ] %% []
+      else
+        List (And, List.init n begin fun i ->
+          apps T.FSIsFiniteSet
+          [ Ix (n - i) %% []
+          ] %% []
+        end) %% []
+      ; appb ~tys:[ t_idv ] B.Eq
+        [ apps T.FSCard
+          [ apps (T.Product n)
+            (ixi n) %% []
+          ] %% []
+        ; if noarith then
+          List.fold_right begin fun e1 e2 ->
+            apps T.IntTimes
+            [ apps T.FSCard
+              [ e1
+              ] %% []
+            ; e2
+            ] %% []
+          end (ixi (n-1)) (apps T.FSCard [ Ix n %% [] ] %% [])
+        else
+          apps (T.Cast t_int)
+          [ List.fold_right begin fun e1 e2 ->
+              apps T.TIntTimes
+              [ apps (T.Proj t_int)
+                [ apps T.FSCard
+                  [ e1
+                  ] %% []
+                ] %% []
+              ; e2
+              ] %% []
+            end (ixi (n-1)) (apps (T.Proj t_int) [ apps T.FSCard [ Ix n %% [] ] %% [] ] %% [])
+          ] %% []
+        ] %% []
+      ] %% []
+    ) %% []
+
+let rect_card ~noarith fs =
+  let n = List.length fs in
+  quant Forall
+  (gen "a" n) (dupl t_idv n)
+  ~pats:[ [
+    apps T.FSCard
+    [ apps (T.RecSet fs)
+      (ixi n) %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ if n = 1 then
+      apps T.FSIsFiniteSet
+      [ Ix 1 %% []
+      ] %% []
+    else
+      List (And, List.init n begin fun i ->
+        apps T.FSIsFiniteSet
+        [ Ix (n - i) %% []
+        ] %% []
+      end) %% []
+    ; appb ~tys:[ t_idv ] B.Eq
+      [ apps T.FSCard
+        [ apps (T.RecSet fs)
+          (ixi n) %% []
+        ] %% []
+      ; if noarith then
+        List.fold_right begin fun e1 e2 ->
+          apps T.IntTimes
+          [ apps T.FSCard
+            [ e1
+            ] %% []
+          ; e2
+          ] %% []
+        end (ixi (n-1)) (apps T.FSCard [ Ix n %% [] ] %% [])
+      else
+        apps (T.Cast t_int)
+        [ List.fold_right begin fun e1 e2 ->
+            apps T.TIntTimes
+            [ apps (T.Proj t_int)
+              [ apps T.FSCard
+                [ e1
+                ] %% []
+              ] %% []
+            ; e2
+            ] %% []
+          end (ixi (n-1)) (apps (T.Proj t_int) [ apps T.FSCard [ Ix n %% [] ] %% [] ] %% [])
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let range_card ~noarith =
+  if noarith then
+    quant Forall
+    [ "a" ; "b" ] [ t_idv ; t_idv ]
+    ~pats:[ [
+      apps T.FSCard
+      [ apps T.IntRange
+        [ Ix 2 %% []
+        ; Ix 1 %% []
+        ] %% []
+      ] %% []
+    ] ]
+    ( appb B.Implies
+      [ appb B.Conj
+        [ apps T.Mem
+          [ Ix 2 %% []
+          ; apps T.IntSet [] %% []
+          ] %% []
+        ; apps T.Mem
+          [ Ix 1 %% []
+          ; apps T.IntSet [] %% []
+          ] %% []
+        ] %% []
+      ; List (And,
+        [ appb B.Implies
+          [ apps T.IntLteq
+            [ Ix 2 %% []
+            ; Ix 1 %% []
+            ] %% []
+          ; appb ~tys:[ t_idv ] B.Eq
+            [ apps T.FSCard
+              [ apps T.IntRange
+                [ Ix 2 %% []
+                ; Ix 1 %% []
+                ] %% []
+              ] %% []
+            ; apps T.IntPlus
+              [ apps T.IntMinus
+                [ Ix 1 %% []
+                ; Ix 2 %% []
+                ] %% []
+              ; apps (T.IntLit 1) [] %% []
+              ] %% []
+            ] %% []
+          ] %% []
+        ; appb B.Implies
+          [ appb B.Neg
+            [ apps T.IntLteq
+              [ Ix 2 %% []
+              ; Ix 1 %% []
+              ] %% []
+            ] %% []
+          ; appb ~tys:[ t_idv ] B.Eq
+            [ apps T.FSCard
+              [ apps T.IntRange
+                [ Ix 2 %% []
+                ; Ix 1 %% []
+                ] %% []
+              ] %% []
+            ; apps (T.IntLit 0) [] %% []
+            ] %% []
+          ] %% []
+        ]) %% []
+      ] %% []
+    ) %% []
+  else
+    quant Forall
+    [ "a" ; "b" ] [ t_int ; t_int ]
+    ~pats:[ [
+      apps T.FSCard
+      [ apps T.IntRange
+        [ apps (T.Cast t_int)
+          [ Ix 2 %% []
+          ] %% []
+        ; apps (T.Cast t_int)
+          [ Ix 1 %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ] ]
+    ( List (And,
+      [ appb B.Implies
+        [ apps T.TIntLteq
+          [ Ix 2 %% []
+          ; Ix 1 %% []
+          ] %% []
+        ; appb ~tys:[ t_idv ] B.Eq
+          [ apps T.FSCard
+            [ apps T.IntRange
+              [ apps (T.Cast t_int)
+                [ Ix 2 %% []
+                ] %% []
+              ; apps (T.Cast t_int)
+                [ Ix 1 %% []
+                ] %% []
+              ] %% []
+            ] %% []
+          ; apps (T.Cast t_int)
+            [ apps T.TIntPlus
+              [ apps T.TIntMinus
+                [ Ix 1 %% []
+                ; Ix 2 %% []
+                ] %% []
+              ; apps (T.TIntLit 1) [] %% []
+              ] %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ; appb B.Implies
+        [ apps T.TIntGt
+          [ Ix 2 %% []
+          ; Ix 1 %% []
+          ] %% []
+        ; appb ~tys:[ t_idv ] B.Eq
+          [ apps T.FSCard
+            [ apps T.IntRange
+              [ apps (T.Cast t_int)
+                [ Ix 2 %% []
+                ] %% []
+              ; apps (T.Cast t_int)
+                [ Ix 1 %% []
+                ] %% []
+              ] %% []
+            ] %% []
+          ; apps (T.Cast t_int)
+            [ apps (T.TIntLit 0) [] %% []
+            ] %% []
+          ] %% []
+        ] %% []
+      ]) %% []
+    ) %% []
+
+let fsproduct_card n =
+  Internal B.TRUE %% []
+
+let fsrect_card fs =
+  Internal B.TRUE %% []
+
+let fsrange_card () =
+  Internal B.TRUE %% []
+
+
 (* {3 Get Axiom} *)
 
 (* These annotations are used to rewrite instances of an axiom schema.
@@ -4570,10 +5669,13 @@ let get_axm ~solver tla_smb =
     | true -> false
     | _ -> Params.debugging "t0+"
   in
+  let ext =
+    Params.debugging "ext"
+  in
   match tla_smb with
   | T.ChooseDef -> choose_def () |> mark T.Choose
   | T.ChooseExt -> choose_ext ()
-  | T.SetExt -> set_ext ()
+  | T.SetExt -> set_ext ~ext
   | T.SubsetEqDef -> subseteq_def ()
   | T.SubsetEqIntro -> subseteq_intro ()
   | T.SubsetEqElim -> subseteq_elim ()
@@ -4671,10 +5773,38 @@ let get_axm ~solver tla_smb =
   | T.SeqTupTyping n -> seqtup_typing n
   | T.SeqTupLen n -> seqtuplen_def ~noarith n
 
+  | T.FSSubseteqIsFinite -> subseteq_isfs ()
+  | T.FSEnumIsFinite n -> enum_isfs n
+  | T.FSSubsetIsFinite -> subset_isfs ()
+  | T.FSUnionIsFinite -> union_isfs ()
+  | T.FSSetStIsFinite -> setst_isfs () |> mark T.SetSt
+  | T.FSSetOfIsFinite n -> setof_isfs n |> mark (T.SetOf n)
+  | T.FSCupIsFinite -> cup_isfs ()
+  | T.FSCapIsFinite -> cap_isfs ()
+  | T.FSSetminusIsFinite -> setminus_isfs ()
+  | T.FSProductIsFinite n -> product_isfs n
+  | T.FSRectIsFinite fs -> rect_isfs fs
+  | T.FSRangeIsFinite -> range_isfs ()
+  | T.FSCardTyping -> card_typing ()
+  | T.FSSubseteqCard -> subseteq_card ~noarith
+  | T.FSEmptyCard -> empty_card ~noarith
+  | T.FSSingletonCard -> singleton_card ~noarith
+  | T.FSCupCard -> cup_card ~noarith
+  | T.FSCapCard -> cap_card ~noarith
+  | T.FSSetminusCard -> setminus_card ~noarith
+  | T.FSProductCard n -> product_card ~noarith n
+  | T.FSRectCard fs -> rect_card ~noarith fs
+  | T.FSRangeCard -> range_card ~noarith
+
   | T.CastInj ty0 -> cast_inj ty0
   | T.CastInjAlt ty0 -> cast_inj_alt ty0
   | T.TypeGuard ty0 -> type_guard ty0
   | T.TypeGuardIntro ty0 -> type_guard_intro ty0
   | T.TypeGuardElim ty0 -> type_guard_elim ty0
   | T.Typing tla_smb -> op_typing tla_smb
+  | T.ExtTrigEqDef ty0 -> exttrigeq_def ty0
+  | T.ExtTrigEqTrigger ty0 -> exttrigeq_trigger ty0
+  | T.DisjointTrigger -> disjoint_trigger ()
+  | T.EmptyComprehensionTrigger -> emptycomprehension_trigger () |> mark T.SetSt
+  | T.ExtTrigEqCardPropagate -> exttrigeq_card ()
 

@@ -113,6 +113,7 @@ type tla_smb =
   | TFSEmpty of ty
   | TFSSingleton of ty
   | TFSAdd of ty
+  | TFSSetEnum of int * ty
   | TFSCup of ty
   | TFSCap of ty
   | TFSSetminus of ty
@@ -122,6 +123,8 @@ type tla_smb =
   | Proj of ty
   | True of ty
   | Anon of string * ty2
+  | ExtTrigEq of ty
+  | ExtTrig
 
 (** Inventory of the axioms that may be used in the Zipperposition encoding. *)
 type tla_axm =
@@ -232,6 +235,29 @@ type tla_axm =
   | SeqSelectseqAppend
   | SeqTupTyping of int
   | SeqTupLen of int
+  (* Finite Sets *)
+  | FSSubseteqIsFinite
+  | FSEnumIsFinite of int
+  | FSSubsetIsFinite
+  | FSUnionIsFinite
+  | FSSetStIsFinite
+  | FSSetOfIsFinite of int
+  | FSCupIsFinite
+  | FSCapIsFinite
+  | FSSetminusIsFinite
+  | FSProductIsFinite of int
+  | FSRectIsFinite of string list
+  | FSRangeIsFinite
+  | FSCardTyping
+  | FSSubseteqCard
+  | FSEmptyCard
+  | FSSingletonCard
+  | FSCupCard
+  | FSCapCard
+  | FSSetminusCard
+  | FSProductCard of int
+  | FSRectCard of string list
+  | FSRangeCard
 
     (* SPECIAL *)
   | CastInj of ty
@@ -240,6 +266,11 @@ type tla_axm =
   | TypeGuardIntro of ty
   | TypeGuardElim of ty
   | Typing of tla_smb (** Only for typed symbols *)
+  | ExtTrigEqDef of ty
+  | ExtTrigEqTrigger of ty
+  | DisjointTrigger
+  | EmptyComprehensionTrigger
+  | ExtTrigEqCardPropagate
 
 
 val tla_smb_to_string : tla_smb -> string

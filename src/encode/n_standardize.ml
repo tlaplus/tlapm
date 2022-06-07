@@ -34,6 +34,19 @@ let mk_opq smb =
 
 let err_count = ref 0
 
+let is_set e =
+  match e.core with
+  | Apply ({ core = Opaque s } as op, _) when has op smb_prop ->
+      let smb = get op smb_prop in
+      begin match get_defn smb with
+      | SetEnum _ | Add | Union | Subset | Cup | Cap | SetMinus | SetSt
+      | SetOf _ | BoolSet | StrSet | IntSet | NatSet | IntRange | FunSet
+      | Product _ | RecSet _ | SeqSeq ->
+          true
+      | _ -> false
+      end
+  | _ -> false
+
 
 (* {3 Main} *)
 
@@ -90,6 +103,25 @@ let visitor = object (self : 'self)
         let opq = mk_opq smb $$ op in
         Apply (opq, es) @@ oe
 
+    | Apply ({ core = Internal (B.Eq | B.Neq as b) } as op, [ e ; f ]) when Params.debugging "ext" ->
+        let e = self#expr scx e in
+        let f = self#expr scx f in
+        let ty0 =
+          match query op Props.tpars_prop with
+          | Some [ TAtm TAIdv ] | None when is_set e || is_set f -> Format.eprintf "OK@."; TSet (TAtm TAIdv)
+          | Some [ ty0 ] -> ty0
+          | None -> TAtm TAIdv
+          | Some _ -> failwith "bad type annotation"
+        in
+        let smb = mk_smb (ExtTrigEq ty0) in
+        let opq = mk_opq smb $$ op in
+        Apply (opq, [ e ; f ]) @@ oe |> fun e ->
+          begin match b with
+          | B.Eq -> e
+          | B.Neq -> Apply (Internal B.Neg %% [], [ e ]) @@ oe
+          | _ -> failwith ""
+          end
+
     | Internal (B.TRUE | B.FALSE
                | B.Implies | B.Equiv | B.Conj | B.Disj
                | B.Neg | B.Eq | B.Neq
@@ -133,6 +165,8 @@ let visitor = object (self : 'self)
           | Tail,       None      -> SeqTail
           | SubSeq,     None      -> SeqSubSeq
           | SelectSeq,  None      -> SeqSelectSeq
+          | Card,       None      -> FSCard
+          | IsFiniteSet,  None    -> FSIsFiniteSet
 
           | Plus,       Some [ TAtm TAInt ]   -> TIntPlus
           | Uminus,     Some [ TAtm TAInt ]   -> TIntUminus
@@ -145,6 +179,13 @@ let visitor = object (self : 'self)
           | Lt,         Some [ TAtm TAInt ]   -> TIntLt
           | Gteq,       Some [ TAtm TAInt ]   -> TIntGteq
           | Gt,         Some [ TAtm TAInt ]   -> TIntGt
+
+          | Card,       Some [ s ]            -> TFSCard s
+          | Mem,        Some [ s ]            -> TFSMem s
+          | Subseteq,   Some [ s ]            -> TFSSubseteq s
+          | Cup,        Some [ s ]            -> TFSCup s
+          | Cap,        Some [ s ]            -> TFSCap s
+          | Setminus,   Some [ s ]            -> TFSSetminus s
 
           | (Plus | Uminus | Minus | Times | Exp | Lteq | Lt | Gteq | Gt),
                         Some [ TAtm TARel ]   ->
@@ -181,13 +222,34 @@ let visitor = object (self : 'self)
           end ([]) es |>
           fun (r_es) -> (List.rev r_es)
         in
-        if has oe Props.tpars_prop then
-          error ~at:oe "T1 not implemented"
-        else
-          let n = List.length es in
-          let smb = mk_smb (SetEnum n) in
-          let opq = mk_opq smb in
-          Apply (opq, es) @@ oe
+        begin
+          match query oe Props.tpars_prop with
+          | Some [ ty0 ] -> begin
+            match List.rev es with
+            | [] ->
+                let smb = mk_smb (TFSEmpty ty0) in
+                let opq = mk_opq smb in
+                Apply (opq, es) @@ oe
+            | e :: r_es ->
+                let e =
+                  let smb = mk_smb (TFSSingleton ty0) in
+                  let opq = mk_opq smb in
+                  Apply (opq, [ e ]) %% []
+                in
+                List.fold_right begin fun e1 e2 ->
+                  let smb = mk_smb (TFSAdd ty0) in
+                  let opq = mk_opq smb in
+                  Apply (opq, [ e1 ; e2 ]) %% []
+                end r_es e $$ oe
+          end
+          | None -> begin
+            let n = List.length es in
+            let smb = mk_smb (SetEnum n) in
+            let opq = mk_opq smb in
+            Apply (opq, es) @@ oe
+          end
+          | _ -> error ~at:oe "Bad type annotation"
+        end
 
     | SetSt (v, e1, e2) ->
         let e1 = self#expr scx e1 in

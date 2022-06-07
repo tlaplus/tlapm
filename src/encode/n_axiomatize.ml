@@ -24,7 +24,7 @@ end)
 
 type ecx = s * SmbSet.t * TlaAxmSet.t
 
-let init_ecx =
+let pre_init_ecx =
   let init_smbs =
     [] |>
     List.map mk_smb |>
@@ -56,7 +56,17 @@ let is_native ~solver smb =
       | TIntLteq
       | TIntLt
       | TIntGteq
-      | TIntGt -> true
+      | TIntGt
+      | TFSCard _
+      | TFSMem _
+      | TFSSubseteq _
+      | TFSEmpty _
+      | TFSSingleton _
+      | TFSAdd _
+      | TFSSetEnum _
+      | TFSCup _
+      | TFSCap _
+      | TFSSetminus _ -> true
       | _ -> false
       end
   | _ -> false
@@ -90,6 +100,27 @@ let add_smb ~solver smb ecx =
       ecx
   in
   spin ecx (SmbSet.singleton smb)
+
+let init_ecx ~solver =
+  begin
+    if solver = "CVC4" && Params.debugging "fs" then
+      (*[ TFSCard (TAtm TAIdv)
+      ; TFSMem (TAtm TAIdv)
+      ; TFSSubseteq (TAtm TAIdv)
+      ; TFSEmpty (TAtm TAIdv)
+      ; TFSSingleton (TAtm TAIdv)
+      ; TFSAdd (TAtm TAIdv)
+      ; TFSCup (TAtm TAIdv)
+      ; TFSCap (TAtm TAIdv)
+      ; TFSSetminus (TAtm TAIdv)
+      ]*)
+      []
+    else if Params.debugging "ext" then
+      [ SetEnum 0 ]
+    else []
+  end |>
+  List.map mk_smb |>
+  List.fold_left (fun ecx smb -> add_smb ~solver smb ecx) pre_init_ecx
 
 let collect_visitor = object (self : 'self)
   inherit [string, ecx] Expr.Visit.fold as super
@@ -195,7 +226,7 @@ let assemble ~solver (_, decls, axms) sq =
 (* {3 Main} *)
 
 let main ~solver sq =
-  let ecx = init_ecx in
+  let ecx = init_ecx ~solver in
   let ecx = collect ~solver ecx sq in
   let sq = assemble ~solver ecx sq in
   sq

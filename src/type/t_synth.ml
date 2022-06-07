@@ -24,13 +24,15 @@ let error ?at mssg =
 
 type options =
   { typelvl : int
+  ; fsenable : bool
   }
 
 type scx = options * hyp Deque.dq
 
-let init = { typelvl = 0 }, Deque.empty
+let init = { typelvl = 0 ; fsenable = false }, Deque.empty
 
 let typelvl (ops, _ : scx) = ops.typelvl
+let fsenable (ops, _ : scx) = ops.fsenable
 
 let adj_ty0 (ops, hx : scx) v ty0 =
   let v = assign v Props.ty0_prop ty0 in
@@ -108,14 +110,14 @@ let lookup_ty2 scx n =
 
 (* {3 Helpers} *)
 
-let force_idv ~typelvl ty0 e =
+let force_idv ~typelvl ~fsenable ty0 e =
   if typelvl = 2 then
     match ty0, query e Props.sproj_prop with
     | TAtm TAIdv, _ -> e
-    | TAtm (TAInt | TABol), Some ty0' when ty0 = ty0' ->
-        remove e Props.sproj_prop
     | TAtm (TAInt | TABol), _ ->
         assign e Props.icast_prop ty0
+    | TFSet _, _ when fsenable ->
+        assign e Props.icast_prop (TFSet (TAtm TAIdv))
     | _ -> e
   else
     match ty0, query e Props.sproj_prop with
@@ -128,20 +130,22 @@ let force_idv ~typelvl ty0 e =
 let force_bool ty0 e =
   match ty0 with
   | TAtm TABol -> e
-  | _ -> assign e Props.bproj_prop ty0
+  | TAtm _ -> assign e Props.bproj_prop ty0
+  | TFSet _ when Params.debugging "fs" -> assign e Props.bproj_prop ty0
+  | _ -> assign e Props.bproj_prop (TAtm TAIdv)
 
-let force ~typelvl = function
-  | TAtm TAIdv -> force_idv ~typelvl
+let force ~typelvl ~fsenable = function
+  | TAtm TAIdv -> force_idv ~typelvl ~fsenable
   | TAtm TABol -> force_bool
   | _ -> failwith "Bad argument to force"
 
 let idv_or_bol = function TAtm (TAIdv | TABol) -> true | _ -> false
 
-let force_arg ~typelvl ty11 ty12 ea =
+let force_arg ~typelvl ~fsenable ty11 ty12 ea =
   match ty11, ty12 with
   | Ty1 ([], ty01), Ty1 ([], ty02)
     when idv_or_bol ty01 ->
-      force ~typelvl ty01 ty02 ea
+      force ~typelvl ~fsenable ty01 ty02 ea
   | Ty1 (ty01s, ty02), Ty1 (ty03s, ty04)
     when List.length ty01s = List.length ty03s
       && List.for_all idv_or_bol ty03s && idv_or_bol ty02 ->
@@ -156,19 +160,19 @@ let force_arg ~typelvl ty11 ty12 ea =
         Apply (
           Expr.Subst.app_expr (Expr.Subst.shift n) ea,
           List.mapi begin fun i (ty01, ty03) ->
-            force ~typelvl ty03 ty01 (Ix (n - i) %% [])
+            force ~typelvl ~fsenable ty03 ty01 (Ix (n - i) %% [])
           end (List.combine ty01s ty03s)
         ) %% [] |>
         Expr.Subst.app_expr (Expr.Subst.shift 0) (* force normalize *)
       in
-      Lambda (vs, force ~typelvl ty02 ty04 ea) %% []
+      Lambda (vs, force ~typelvl ~fsenable ty02 ty04 ea) %% []
   | _ ->
       error ~at:ea "Impossible operator conversion"
 
 (* Expressions for which a sort was infered but that cannot be encoded
  * into an expression of that sort (for some reason) need to be marked
  * as 'projected' into that sort. *)
-let proj ~typelvl ty0 e =
+let proj ~typelvl ~fsenable ty0 e =
   if typelvl = 2 then
     match ty0 with
     | TAtm (TAInt) ->
@@ -207,9 +211,9 @@ let rec expr scx oe =
   (oe, ty0)
 
 and expr_aux scx oe =
-  let force_idv ty x = force_idv ~typelvl:(typelvl scx) ty x in
-  let force_arg ty x = force_arg ~typelvl:(typelvl scx) ty x in
-  let proj ty x = proj ~typelvl:(typelvl scx) ty x in
+  let force_idv ty x = force_idv ~typelvl:(typelvl scx) ~fsenable:(fsenable scx) ty x in
+  let force_arg ty x = force_arg ~typelvl:(typelvl scx) ~fsenable:(fsenable scx) ty x in
+  let proj ty x = proj ~typelvl:(typelvl scx) ~fsenable:(fsenable scx) ty x in
   match oe.core with
   | Ix n ->
       let ty0 = lookup_ty0 scx n in
@@ -325,16 +329,31 @@ and expr_aux scx oe =
           | Domain e, _ ->
               let e, ty01 = expr scx e in (* eval in top context *)
               begin match ty01 with
-              | TSet ty02 when typelvl scx = 3 ->
+              | TSet ty02 | TFSet ty02 when typelvl scx = 3 ->
                   let v, scx' = adj_ty0 scx' v ty02 in
                   let dom = Domain (assign e Props.mpars_prop ty02) in
                   (scx', (v, k, dom) :: r_bs, Some ty02)
-              | TSet (TAtm _ as ty02) when typelvl scx = 2 ->
+              | TSet (TFSet _ as ty02) when typelvl scx = 2 && fsenable scx ->
                   let v, scx' = adj_ty0 scx' v ty02 in
                   let dom = Domain (force_idv ty01 e) in
                   let v = force_idv ty02 v in
                   (scx', (v, k, dom) :: r_bs, Some ty02)
-              | TSet ty02 when typelvl scx = 2 ->
+              | TFSet (TFSet _ as ty02) when typelvl scx = 2 && fsenable scx ->
+                  let v, scx' = adj_ty0 scx' v ty02 in
+                  let dom = Domain (assign e Props.mpars_prop ty02) in
+                  let v = force_idv (TFSet (TAtm TAIdv)) v in
+                  (scx', (v, k, dom) :: r_bs, Some ty02)
+              | TFSet (TAtm _ as ty02) when typelvl scx = 2 && fsenable scx ->
+                  let v, scx' = adj_ty0 scx' v ty02 in
+                  let dom = Domain (assign e Props.mpars_prop ty02) in
+                  let v = force_idv ty02 v in
+                  (scx', (v, k, dom) :: r_bs, Some ty02)
+              | TSet (TAtm _ as ty02) | TFSet (TAtm _ as ty02) when typelvl scx = 2 ->
+                  let v, scx' = adj_ty0 scx' v ty02 in
+                  let dom = Domain (force_idv ty01 e) in
+                  let v = force_idv ty02 v in
+                  (scx', (v, k, dom) :: r_bs, Some ty02)
+              | TSet ty02 | TFSet ty02 when typelvl scx = 2 ->
                   let _, scx' = adj_ty0 scx' v ty02 in
                   let v = assign v Props.ty0_prop (TAtm TAIdv) in
                   let dom = Domain (force_idv ty01 e) in
@@ -364,6 +383,10 @@ and expr_aux scx oe =
               let inferer = fun hx e -> snd (expr (fst scx, hx) e) in
               begin match T_hyps.search_type_hyp ~inferer ~pol:pol (snd scx') e' with
               | Some (TAtm _ as ty02) ->
+                  let v, scx' = adj_ty0 scx' v ty02 in
+                  let v = force_idv ty02 v in
+                  (scx', (v, k, dom) :: r_bs, Some ty02)
+              | Some (TFSet _ as ty02) when fsenable scx ->
                   let v, scx' = adj_ty0 scx' v ty02 in
                   let v = force_idv ty02 v in
                   (scx', (v, k, dom) :: r_bs, Some ty02)
@@ -397,13 +420,19 @@ and expr_aux scx oe =
   | Choose (v, Some d, e) ->
       let d, ty01 = expr scx d in
       begin match ty01 with
-      | TSet ty02 when typelvl scx = 3 ->
+      | TSet ty02 | TFSet ty02 when typelvl scx = 3 ->
           let v, scx = adj_ty0 scx v ty02 in
           let e, ty03 = expr scx e in
           let ret = Choose (v, Some d, force_bool ty03 e) @@ oe in
           let ret = assign ret Props.mpars_prop ty02 in
           (ret, TAtm TAIdv)
-      | TSet (TAtm _ as ty02) when typelvl scx = 2 ->
+      | TSet (TAtm _ as ty02) | TFSet (TAtm _ as ty02) when typelvl scx = 2 ->
+          let v, scx = adj_ty0 scx v ty02 in
+          let e, ty03 = expr scx e in
+          let v = force_idv ty02 v in
+          let ret = Choose (v, Some d, force_bool ty03 e) @@ oe in
+          (ret, TAtm TAIdv)
+      | TSet (TFSet _ as ty02) | TFSet (TFSet _ as ty02) when typelvl scx = 2 && fsenable scx ->
           let v, scx = adj_ty0 scx v ty02 in
           let e, ty03 = expr scx e in
           let v = force_idv ty02 v in
@@ -426,9 +455,14 @@ and expr_aux scx oe =
       let e, ty01 = expr scx e in
       let f, ty02 = expr scx f in
       begin match ty01, ty02 with
-      | ty03, TSet ty04 when typelvl scx = 3 && ty03 = ty04->
+      | ty03, TSet ty04 | ty03, TFSet ty04 when typelvl scx = 3 && ty03 = ty04->
           let op = assign op Props.tpars_prop [ ty03 ] in
           let ret = Apply (op, [ e ; f ]) @@ oe in
+          (ret, TAtm TABol)
+      | ty03, TFSet _ when typelvl scx = 2 && fsenable scx ->
+          let op = assign op Props.tpars_prop [ TAtm TAIdv ] in
+          (* Under typelvl=2, exprs of type TFSet(X) are encoded as TFSet(Idv) *)
+          let ret = Apply (op, [ force_idv ty03 e ; f ]) @@ oe in
           (ret, TAtm TABol)
       | _, _ ->
           let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
@@ -439,12 +473,16 @@ and expr_aux scx oe =
       let e, ty01 = expr scx e in
       let f, ty02 = expr scx f in
       begin match ty01, ty02 with
-      | TSet ty03, TSet ty04 when typelvl scx = 3 && ty03 = ty04 ->
+      | TSet ty03, TSet ty04 | TFSet ty03, TFSet ty04 when typelvl scx = 3 && ty03 = ty04 ->
           let op = assign op Props.tpars_prop [ ty03 ] in
           let ret = Apply (op, [ e ; f ]) @@ oe in
           (ret, TAtm TABol)
       | TSet ty03, TSet ty04 when typelvl scx = 2 && ty03 = ty04 ->
           let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
+          (ret, TAtm TABol)
+      | TFSet ty03, TFSet ty04 when typelvl scx = 2 && fsenable scx && ty03 = ty04 ->
+          let op = assign op Props.tpars_prop [ TAtm TAIdv ] in
+          let ret = Apply (op, [ e ; f ]) @@ oe in
           (ret, TAtm TABol)
       | _, _ ->
           let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
@@ -458,6 +496,10 @@ and expr_aux scx oe =
           let ret = SetEnum es @@ oe in
           let ret = assign ret Props.tpars_prop [ TAtm TAIdv ] in
           (ret, TSet (TAtm TAIdv))
+      | [] when typelvl scx = 2 && fsenable scx ->
+          let ret = SetEnum es @@ oe in
+          let ret = assign ret Props.tpars_prop [ TAtm TAIdv ] in
+          (ret, TFSet (TAtm TAIdv))
       | [] when typelvl scx = 2 ->
           let ret = SetEnum es @@ oe in
           (ret, TSet (TAtm TAIdv))
@@ -465,6 +507,14 @@ and expr_aux scx oe =
           let ret = SetEnum es @@ oe in
           let ret = assign ret Props.tpars_prop [ ty03 ] in
           (ret, TSet ty03)
+      | ty03 :: ty04s when typelvl scx = 2 && List.for_all ((=) ty03) ty04s && fsenable scx ->
+          let ret = SetEnum (List.map2 force_idv ty01s es) @@ oe in
+          let ret = assign ret Props.tpars_prop [ TAtm TAIdv ] in
+          (ret, TFSet ty03)
+      | _ when typelvl scx = 2 && fsenable scx ->
+          let ret = SetEnum (List.map2 force_idv ty01s es) @@ oe in
+          let ret = assign ret Props.tpars_prop [ TAtm TAIdv ] in
+          (ret, TFSet (TAtm TAIdv))
       | ty03 :: ty04s when typelvl scx = 2 && List.for_all ((=) ty03) ty04s ->
           let ret = SetEnum (List.map2 force_idv ty01s es) @@ oe in
           (ret, TSet ty03)
@@ -483,6 +533,9 @@ and expr_aux scx oe =
       | TSet (TSet ty02) when typelvl scx = 2 ->
           let ret = Apply (op, [ force_idv ty01 e ]) @@ oe in
           (ret, TSet ty02)
+      | TFSet (TFSet ty02) when typelvl scx = 2 ->
+          let ret = Apply (op, [ force_idv ty01 e ]) @@ oe in
+          (ret, TFSet ty02)
       | _ ->
           let ret = Apply (op, [ force_idv ty01 e ]) @@ oe in
           (ret, TAtm TAIdv)
@@ -498,6 +551,9 @@ and expr_aux scx oe =
       | TSet ty02 when typelvl scx = 2 ->
           let ret = Apply (op, [ force_idv ty01 e ]) @@ oe in
           (ret, TSet (TSet ty02))
+      | TFSet ty02 when typelvl scx = 2 ->
+          let ret = Apply (op, [ force_idv ty01 e ]) @@ oe in
+          (ret, TFSet (TFSet ty02))
       | _ ->
           let ret = Apply (op, [ force_idv ty01 e ]) @@ oe in
           (ret, TAtm TAIdv)
@@ -517,6 +573,11 @@ and expr_aux scx oe =
           let f, ty03 = expr scx f in
           let ret = SetSt (v, force_idv ty01 e, force_bool ty03 f) @@ oe in
           (ret, TSet ty02)
+      | TFSet ty02 when typelvl scx = 2 ->
+          let v, scx = adj_ty0 scx v (TAtm TAIdv) in
+          let f, ty03 = expr scx f in
+          let ret = SetSt (v, force_idv ty01 e, force_bool ty03 f) @@ oe in
+          (ret, TFSet ty02)
       | _ ->
           let v, scx = adj_ty0 scx v (TAtm TAIdv) in
           let f, ty03 = expr scx f in
@@ -525,6 +586,7 @@ and expr_aux scx oe =
       end
 
   | SetOf (e, bs) ->
+      (* FIXME extend for finite sets *)
       (* Either all domains are sets and none is converted, or one is not a set
        * and all are converted. *)
       let doms, ty01s, _ =
@@ -611,6 +673,13 @@ and expr_aux scx oe =
       | TSet ty03, TSet ty04 when typelvl scx = 2 && ty03 = ty04 ->
           let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
           (ret, TSet ty03)
+      | TFSet ty03, TFSet ty04 when typelvl scx = 2 && ty03 = ty04 && fsenable scx ->
+          let op = assign op Props.tpars_prop [ TAtm TAIdv ] in
+          let ret = Apply (op, [ e ; f ]) @@ oe in
+          (ret, TFSet ty03)
+      | TFSet ty03, TFSet ty04 when typelvl scx = 2 && ty03 = ty04 ->
+          let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
+          (ret, TFSet ty03)
       | _, _ ->
           let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
           (ret, TAtm TAIdv)
@@ -619,7 +688,7 @@ and expr_aux scx oe =
   | Internal B.BOOLEAN ->
       if typelvl scx >= 2 then
         let ret = Internal B.BOOLEAN @@ oe in
-        (ret, TSet (TAtm TABol))
+        (ret, TFSet (TAtm TABol))
       else
         let ret = Internal B.BOOLEAN @@ oe in
         (ret, TAtm TAIdv)
@@ -1146,7 +1215,7 @@ and expr_aux scx oe =
       | _, _ when typelvl scx > 1 ->
           let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
           (* NOTE Intervals are always sets of integers *)
-          (ret, TSet (TAtm TAInt))
+          (ret, TFSet (TAtm TAInt))
       | _, _ ->
           let ret = Apply (op, [ force_idv ty01 e ; force_idv ty02 f ]) @@ oe in
           (ret, TAtm TAIdv)
@@ -1190,6 +1259,27 @@ and expr_aux scx oe =
       let f, ty1 = earg scx f in
       let ret = Apply (op, [ force_idv ty0 e ; force_arg (Ty1 ([ TAtm TAIdv ], TAtm TABol)) ty1 f ]) @@ oe in
       (ret, TAtm TAIdv)
+
+  | Apply ({ core = Internal B.IsFiniteSet } as op, [ e ]) ->
+      let e, ty01 = expr scx e in
+      let ret = Apply (op, [ force_idv ty01 e ]) @@ oe in
+      (ret, TAtm TABol)
+
+  | Apply ({ core = Internal B.Card } as op, [ e ]) ->
+      let e, ty01 = expr scx e in
+      begin match ty01 with
+      | TFSet ty02 when typelvl scx = 2 && fsenable scx ->
+          let op = assign op Props.tpars_prop [ TAtm TAIdv ] in
+          let ret = Apply (op, [ e ]) @@ oe in
+          (ret, TAtm TAInt)
+      | TFSet ty02 when typelvl scx > 1 ->
+          let ret = Apply (op, [ force_idv ty01 e ]) @@ oe in
+          let ret = proj (TAtm TAInt) ret in
+          (ret, TAtm TAInt)
+      | _ ->
+          let ret = Apply (op, [ force_idv ty01 e ]) @@ oe in
+          (ret, TAtm TAIdv)
+      end
 
   (* The code may wrap `e` like this to prevent infinite loops.
    * Do not remove! *)
@@ -1394,7 +1484,7 @@ and defns scx dfs =
       (scx, df :: dfs)
 
 and sequent scx sq =
-  let force_idv ty x = force_idv ~typelvl:(typelvl scx) ty x in
+  let force_idv ty x = force_idv ~typelvl:(typelvl scx) ~fsenable:(fsenable scx) ty x in
 
   let rec hyps scx hs =
     match Deque.front hs with
@@ -1407,7 +1497,7 @@ and sequent scx sq =
           | Bounded (e, Visible) ->
               let e, ty0 = expr scx e in
               begin match ty0 with
-              | TSet ty01 when typelvl scx = 3 ->
+              | TSet ty01 | TFSet ty01 when typelvl scx = 3 ->
                   let v, scx = adj_ty0 scx v ty01 in
                   let b = Bounded (assign e Props.mpars_prop ty01, Visible) in
                   (v, scx, b)
@@ -1416,7 +1506,12 @@ and sequent scx sq =
                   let b = Bounded (force_idv ty0 e, Visible) in
                   let v = force_idv ty01 v in
                   (v, scx, b)
-              | TSet ty01 when typelvl scx = 2 ->
+              | TFSet (TAtm _ as ty01) when typelvl scx = 2 && fsenable scx ->
+                  let v, scx = adj_ty0 scx v ty01 in
+                  let b = Bounded (assign e Props.mpars_prop ty01, Visible) in
+                  let v = force_idv ty01 v in
+                  (v, scx, b)
+              | TSet ty01 | TFSet ty01 when typelvl scx = 2 ->
                   let _, scx = adj_ty0 scx v ty01 in
                   let v = assign v Props.ty0_prop (TAtm TAIdv) in
                   let b = Bounded (force_idv ty0 e, Visible) in
@@ -1432,6 +1527,10 @@ and sequent scx sq =
               | Some (TAtm _ as ty01) ->
                   let v, scx = adj_ty0 scx v ty01 in
                   let v = force_idv ty01 v in
+                  (v, scx, b)
+              | Some (TFSet _ as ty01) when fsenable scx ->
+                  let v, scx = adj_ty0 scx v ty01 in
+                  let v = force_idv (TFSet (TAtm TAIdv)) v in
                   (v, scx, b)
               | Some ty01 ->
                   let _, scx = adj_ty0 scx v ty01 in
@@ -1469,6 +1568,12 @@ and sequent scx sq =
               let h = Flex (force_idv ty01 v) @@ h in
               let scx, hs = hyps scx hs in
               (scx, Deque.cons h hs)
+          | Some (TFSet _) when fsenable scx ->
+              let v, scx = adj_ty0 scx v (TFSet (TAtm TAIdv)) in
+              let v = force_idv (TFSet (TAtm TAIdv)) v in
+              let h = Flex (force_idv (TFSet (TAtm TAIdv)) v) @@ h in
+              let scx, hs = hyps scx hs in
+              (scx, Deque.cons h hs)
           | Some ty01 ->
               let _, scx = adj_ty0 scx v ty01 in
               let v = assign v Props.ty0_prop (TAtm TAIdv) in
@@ -1496,6 +1601,10 @@ and sequent scx sq =
           | Some (TAtm _ as ty0) ->
               let v, scx = adj_ty0 scx v ty0 in
               let v = force_idv ty0 v in
+              (scx, Operator (v, e) @@ df)
+          | Some (TFSet _) when fsenable scx ->
+              let v, scx = adj_ty0 scx v (TFSet (TAtm TAIdv)) in
+              let v = force_idv (TFSet (TAtm TAIdv)) v in
               (scx, Operator (v, e) @@ df)
           | Some ty0 ->
               let _, scx = adj_ty0 scx v ty0 in
@@ -1534,10 +1643,11 @@ and sequent scx sq =
   (scx, { context = hs ; active = force_bool ty0 e })
 
 
-let main ?(typelvl=1) sq =
+let main ?(typelvl=1) ?(fsenable=false) sq =
   let ops, cx = init in
   let ops =
     { typelvl = typelvl
+    ; fsenable = fsenable
     }
   in
   snd (sequent (ops, cx) sq)

@@ -188,9 +188,11 @@ let elim_flex_visitor = object (self : 'self)
   method expr scx oe =
     match oe.core with
     | Opaque s when is_prime s ->
+        begin try (* FIXME bad bug, fix then remove the exception handling *)
         let s = mk_prime (remove_prime s) in
         let n, _ = Option.get (Deque.find ~backwards:true (snd scx) (fun h -> hyp_name h = s)) in
         Ix (n + 1) %% []
+        with _ -> oe end
     | _ -> super#expr scx oe
 
   (* See the sequent method for elim_bounds_visitor *)

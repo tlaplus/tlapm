@@ -249,6 +249,9 @@ let standard_form b =
   | SubSeq        -> nonfix "SubSeq" (Some SubSeq)
   | SelectSeq     -> nonfix "SelectSeq" (Some SelectSeq)
 
+  | IsFiniteSet   -> nonfix "IsFiniteSet" (Some IsFiniteSet)
+  | Card          -> nonfix "Card" (Some Card)
+
   | OneArg        -> { (lookup ":>") with defn = Some OneArg }
   | Extend        -> { (lookup "@@") with defn = Some Extend }
   | Print         -> nonfix "Print" (Some Print)

@@ -28,6 +28,8 @@ type builtin =
     (* sequences *)
   | Seq | Len | BSeq | Cat | Append | Head
   | Tail | SubSeq | SelectSeq
+    (* finite sets *)
+  | IsFiniteSet | Card
     (* tlc *)
   | OneArg | Extend | Print | PrintT | Assert
   | JavaTime | TLCGet | TLCSet | Permutations
@@ -93,6 +95,8 @@ let builtin_to_string = function
   | Tail -> "Tail"
   | SubSeq -> "SubSeq"
   | SelectSeq -> "SelectSeq"
+  | IsFiniteSet -> "IsFiniteSet"
+  | Card -> "Card"
   | OneArg -> "OneArg"
   | Extend -> "Extend"
   | Print -> "Print"

@@ -24,6 +24,9 @@ val reals       : mule
 (** sequences *)
 val sequences   : mule
 
+(** finite sets *)
+val finitesets  : mule
+
 (** TLC *)
 val tlc         : mule
 

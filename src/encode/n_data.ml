@@ -243,7 +243,7 @@ let typed_data tla_smb =
       SetEnum 0)
   | TFSSingleton s ->
       ("TFSSingleton_" ^ ty_to_string s,
-                        [ t_cst (t_fs s) ],                   t_fs s,
+                        [ t_cst s ],                          t_fs s,
       SetEnum 1)
   | TFSAdd s ->
       ("TFSAdd_" ^ ty_to_string s,
@@ -261,6 +261,10 @@ let typed_data tla_smb =
       ("TFSSetminus_" ^ ty_to_string s,
                         [ t_cst (t_fs s) ; t_cst (t_fs s) ],  t_fs s,
       SetMinus)
+  | TFSSetEnum (n, s) ->
+      ("TFSSetEnum_" ^ string_of_int n ^ "_" ^ ty_to_string s,
+                        [],                                   t_idv,
+      SetEnum n)
 
   | _ ->
       error "internal error"
@@ -279,6 +283,18 @@ let special_data tla_smb =
                         [],                                   ty)
   | Anon (s, Ty2 (ty1s, ty0)) ->
       ("Anon_" ^ s,     ty1s,                                 ty0)
+  | ExtTrigEq ty ->
+      let actual_ty =
+        match ty with
+        (* Modify this if exprs of type 'ty' are actually translated
+         * as SMT terms of the corresponding type *)
+        | TAtm (TAInt | TABol) -> ty
+        | _ -> t_idv
+      in
+      ("TrigEq_" ^ ty_to_string ty,
+                        [ t_cst actual_ty ; t_cst actual_ty ],    t_bol)
+  | ExtTrig ->
+      ("SetExtTrigger", [ t_cst t_idv ; t_cst t_idv ],        t_bol)
 
   | _ ->
       error "internal error"
@@ -302,15 +318,15 @@ let get_data tla_smb =
       }
   | TIntLit _ | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient
   | TIntRemainder | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt | TFSCard _
-  | TFSMem _ | TFSSubseteq _ | TFSEmpty _ | TFSSingleton _ | TFSAdd _ | TFSCup _
-  | TFSCap _ | TFSSetminus _ ->
+  | TFSMem _ | TFSSubseteq _ | TFSEmpty _ | TFSSingleton _ | TFSAdd _
+  | TFSSetEnum _ | TFSCup _ | TFSCap _ | TFSSetminus _ ->
       let (nm, tins, tout, tver) = typed_data tla_smb in
       { dat_name = "TLA__" ^ nm
       ; dat_ty2  = Ty2 (tins, tout)
       ; dat_kind = Typed
       ; dat_tver = Some tver
       }
-  | Cast _ | Proj _ | True _ | Anon _ ->
+  | Cast _ | Proj _ | True _ | Anon _ | ExtTrigEq _ | ExtTrig ->
       let (nm, tins, tout) = special_data tla_smb in
       { dat_name = "TLA__" ^ nm
       ; dat_ty2  = Ty2 (tins, tout)
@@ -325,12 +341,14 @@ type s =
   { strlits : Ss.t
   ; intlits : Is.t
   ; t_strlits : Ss.t
+  ; fs_mem : tla_smb list (* to re-trigger smbs with FS dependencies *)
   }
 
 let init =
   { strlits = Ss.empty
   ; intlits = Is.empty
   ; t_strlits = Ss.empty
+  ; fs_mem = []
   }
 
 let untyped_deps ~solver tla_smb s =
@@ -340,6 +358,9 @@ let untyped_deps ~solver tla_smb s =
         { s with strlits = Ss.add str s.strlits }
     | IntLit n ->
         { s with intlits = Is.add n s.intlits }
+    | FSIsFiniteSet | FSCard | Mem | SubsetEq | SetEnum _ | Union | Subset | Cup | Cap | SetMinus | SetSt | SetOf _ | IntRange | Product _ | RecSet _ when not (List.mem tla_smb s.fs_mem) ->
+        (* FIXME only add smbs of the untyped category here! *)
+        { s with fs_mem = tla_smb :: s.fs_mem }
     | _ -> s
   in
   let noarith =
@@ -352,34 +373,135 @@ let untyped_deps ~solver tla_smb s =
     | true -> false
     | _ -> Params.debugging "t0+"
   in
+  let fs_enable =
+    List.mem FSIsFiniteSet s.fs_mem
+    || List.mem FSCard s.fs_mem
+  in
+  let fs_cvc4 =
+    (not noarith) && fs_enable && Params.debugging "fs" && solver = "CVC4"
+  in
+  let ext =
+    match solver with
+    | "SMT" | "Z3" | "CVC4" -> Params.debugging "ext"
+    | _ -> false
+  in
   begin match tla_smb with
   (* Logic *)
   | Choose ->
       ([], [ ChooseDef (*; ChooseExt*) ])
   (* Set Theory *)
+  | Mem when fs_cvc4 ->
+      ([ TFSMem (TAtm TAIdv) ],
+                  [])
+  | Mem when ext ->
+      ([ ExtTrig ],
+                  [ SetExt ])
   | Mem ->
-      ([],        [ (*SetExt*) ])
+      ([],        [])
+  | SubsetEq when fs_cvc4 ->
+      ([ Mem ; FSIsFiniteSet ; FSCard ; TFSSubseteq (TAtm TAIdv) ],
+                  [ SubsetEqIntro ; SubsetEqElim ; FSSubseteqIsFinite ; FSSubseteqCard ])
+  | SubsetEq when fs_enable && noarith ->
+      ([ Mem ; FSIsFiniteSet ; FSCard ; IntLteq ],
+                  [ SubsetEqIntro ; SubsetEqElim ; FSSubseteqIsFinite ; FSSubseteqCard ])
+  | SubsetEq when fs_enable ->
+      ([ Mem ; FSIsFiniteSet ; FSCard ],
+                  [ SubsetEqIntro ; SubsetEqElim ; FSSubseteqIsFinite ; FSSubseteqCard ])
   | SubsetEq ->
       ([ Mem ],   [ SubsetEqIntro ; SubsetEqElim ])
+  | SetEnum 0 when fs_cvc4 ->
+      ([ Mem ; FSIsFiniteSet ; TFSEmpty (TAtm TAIdv) ],
+                  [ EnumDefElim 0 ; FSEnumIsFinite 0 ])
+  | SetEnum 0 when fs_enable && noarith ->
+      ([ Mem ; FSIsFiniteSet ; IntLit 0 ],
+                  [ EnumDefElim 0 ; FSEnumIsFinite 0 ; FSEmptyCard ])
+  | SetEnum 0 when fs_enable ->
+      ([ Mem ; FSIsFiniteSet ; Cast (TAtm TAInt) ],
+                  [ EnumDefElim 0 ; FSEnumIsFinite 0 ; FSEmptyCard ])
   | SetEnum 0 ->
       ([ Mem ],   [ EnumDefElim 0 ])
+  | SetEnum n when fs_cvc4 ->
+      ([ Mem ; FSIsFiniteSet ; TFSSetEnum (n, TAtm TAIdv) ],
+                  [ EnumDefIntro n ; EnumDefElim n ; FSEnumIsFinite n ])
+  | SetEnum 1 when fs_enable && noarith ->
+      ([ Mem ; FSIsFiniteSet ; IntLit 1 ],
+                  [ EnumDefIntro 1 ; EnumDefElim 1 ; FSEnumIsFinite 1 ; FSSingletonCard ])
+  | SetEnum 1 when fs_enable ->
+      ([ Mem ; FSIsFiniteSet ; Cast (TAtm TAInt) ],
+                  [ EnumDefIntro 1 ; EnumDefElim 1 ; FSEnumIsFinite 1 ; FSSingletonCard ])
+  | SetEnum n when fs_enable ->
+      ([ Mem ; FSIsFiniteSet ],
+                  [ EnumDefIntro n ; EnumDefElim n ; FSEnumIsFinite n ])
   | SetEnum n ->
       ([ Mem ],   [ EnumDefIntro n ; EnumDefElim n ])
+  | Union when fs_enable ->
+      ([ Mem ; FSIsFiniteSet ],
+                  [ UnionIntro ; UnionElim ; FSUnionIsFinite ])
   | Union ->
       ([ Mem ],   [ UnionIntro ; UnionElim ])
+  | Subset when fs_enable ->
+      ([ Mem ; SubsetEq ; FSIsFiniteSet ],
+                  [ SubsetDefAlt ; FSSubsetIsFinite ])
   | Subset ->
       ([ Mem ; SubsetEq ],
                   [ SubsetDefAlt ])
+  | Cup when fs_cvc4 ->
+      ([ Mem ; Cap ; FSIsFiniteSet ; FSCard ; TFSCup (TAtm TAIdv) ],
+                  [ CupDef ; FSCupIsFinite ; FSCupCard ])
+  | Cup when fs_enable && noarith ->
+      ([ Mem ; Cap ; IntMinus ; IntPlus ; FSIsFiniteSet ; FSCard ],
+                  [ CupDef ; FSCupIsFinite ; FSCupCard ])
+  | Cup when fs_enable ->
+      ([ Mem ; Cap ; FSIsFiniteSet ; FSCard ],
+                  [ CupDef ; FSCupIsFinite ; FSCupCard ])
   | Cup ->
       ([ Mem ],   [ CupDef ])
+  | Cap when fs_cvc4 ->
+      ([ Mem ; SetMinus ; FSIsFiniteSet ; FSCard ; TFSCap (TAtm TAIdv) ],
+                  [ CapDef ; FSCapIsFinite ; FSCapCard ])
+  | Cap when fs_enable && noarith ->
+      ([ Mem ; SetMinus ; IntMinus ; FSIsFiniteSet ; FSCard ],
+                  [ CapDef ; FSCapIsFinite ; FSCapCard ])
+  | Cap when fs_enable && ext ->
+      ([ Mem ; SetMinus ; FSIsFiniteSet ; FSCard ; SetEnum 0 ; ExtTrig ],
+                  [ CapDef ; FSCapIsFinite ; FSCapCard ; DisjointTrigger ])
+  | Cap when fs_enable ->
+      ([ Mem ; SetMinus ; FSIsFiniteSet ; FSCard ],
+                  [ CapDef ; FSCapIsFinite ; FSCapCard ])
+  | Cap when ext ->
+      ([ Mem ; SetEnum 0 ; ExtTrig ],
+                  [ CapDef ; DisjointTrigger ])
   | Cap ->
       ([ Mem ],   [ CapDef ])
+  | SetMinus when fs_cvc4 ->
+      ([ Mem ; Cap ; FSIsFiniteSet ; FSCard ; TFSSetminus (TAtm TAIdv) ],
+                  [ SetMinusDef ; FSSetminusIsFinite ; FSSetminusCard ])
+  | SetMinus when fs_enable ->
+      ([ Mem ; Cap ; FSIsFiniteSet ; FSCard ],
+                  [ SetMinusDef ; FSSetminusIsFinite ; FSSetminusCard ])
+  | SetMinus when fs_enable && noarith ->
+      ([ Mem ; Cap ; IntMinus ; FSIsFiniteSet ; FSCard ],
+                  [ SetMinusDef ; FSSetminusIsFinite ; FSSetminusCard ])
   | SetMinus ->
       ([ Mem ],   [ SetMinusDef ])
+  | SetSt when fs_enable && ext ->
+      ([ Mem ; FSIsFiniteSet ; SetEnum 0 ; ExtTrig ],
+                  [ SetStDef ; FSSetStIsFinite ; EmptyComprehensionTrigger ])
+  | SetSt when fs_enable ->
+      ([ Mem ; FSIsFiniteSet ],
+                  [ SetStDef ; FSSetStIsFinite ])
+  | SetSt when ext ->
+      ([ Mem ; SetEnum 0 ; ExtTrig ],
+                  [ SetStDef ; EmptyComprehensionTrigger ])
   | SetSt ->
       ([ Mem ],   [ SetStDef ])
+  | SetOf n when fs_enable ->
+      ([ Mem ; FSIsFiniteSet ],
+                  [ SetOfIntro n ; SetOfElim n ; FSSetOfIsFinite n ])
   | SetOf n ->
       ([ Mem ],   [ SetOfIntro n ; SetOfElim n ])
+  | Add ->
+      ([], [])
   (* Booleans *)
   | BoolSet ->
       ([], [])
@@ -447,6 +569,12 @@ let untyped_deps ~solver tla_smb s =
       ([ Cast (TAtm TAInt) ; TIntGteq ],      [ Typing TIntGteq ])
   | IntGt ->
       ([ Cast (TAtm TAInt) ; TIntGt ],        [ Typing TIntGt ])
+  | IntRange when fs_enable && noarith ->
+      ([ Mem ; IntSet ; IntLteq ; IntPlus ; IntMinus ; Cast (TAtm TAInt) ; Proj (TAtm TAInt) ; FSIsFiniteSet ; FSCard ],
+                                              [ IntRangeDef ; FSRangeIsFinite ; FSRangeCard ])
+  | IntRange when fs_enable ->
+      ([ Mem ; IntSet ; IntLteq ; FSIsFiniteSet ; FSCard ],
+                                              [ IntRangeDef ; FSRangeIsFinite ; FSRangeCard ])
   | IntRange ->
       ([ Mem ; IntSet ; IntLteq ],            [ IntRangeDef ])
   (* Functions *)
@@ -487,6 +615,13 @@ let untyped_deps ~solver tla_smb s =
       (*([ FunIsafcn ; FunDom ; FunApp ; IntRange ; Cast (TAtm TAInt) ],*)
       ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ; Cast (TAtm TAInt) ; Mem ; SeqSeq ; SeqLen ],
                                   [ TupIsafcn n ; TupDomDef n ; TupAppDef n ; SeqTupTyping n ; SeqTupLen n ])
+  | Product n when fs_enable ->
+      ([ Mem ; Tuple n ; FunApp ; FSIsFiniteSet ; FSCard ]
+       @ List.init n (fun i ->
+         if noarith then IntLit (i + 1)
+         else TIntLit (i + 1))
+       @ (if noarith then [ IntTimes ] else [ Cast (TAtm TAInt) ]),
+                                  [ ProductIntro n ; ProductElim n ; FSProductIsFinite n ; FSProductCard n ])
   | Product n ->
       ([ Mem ; Tuple n ; FunApp ]
        @ List.init n (fun i ->
@@ -500,6 +635,11 @@ let untyped_deps ~solver tla_smb s =
       ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ]
        @ List.map (fun s -> StrLit s) fs,
                                   [ RecIsafcn fs ; RecDomDef fs ; RecAppDef fs ])
+  | RecSet fs when fs_enable ->
+      ([ Mem ; Rec fs ; FunApp ; FSIsFiniteSet ; FSCard ]
+       @ List.map (fun s -> StrLit s) fs
+       @ (if noarith then [ IntTimes ] else [ Cast (TAtm TAInt) ; Proj (TAtm TAInt) ]),
+                                  [ RecSetIntro fs ; RecSetElim fs ; FSRectIsFinite fs ; FSRectCard fs ])
   | RecSet fs ->
       ([ Mem ; Rec fs ; FunApp ]
        @ List.map (fun s -> StrLit s) fs,
@@ -555,6 +695,18 @@ let untyped_deps ~solver tla_smb s =
                                   [ SeqSelectseqTyping ; SeqSelectseqLen ; SeqSelectseqNil ; SeqSelectseqApp ; SeqSelectseqAppend ])
   | SeqBSeq ->
       ([], [])
+  (* Finite Sets *)
+  | FSIsFiniteSet ->
+      ([], [])
+  | FSCard when fs_cvc4 ->
+      ([ Mem ; FSIsFiniteSet ; NatSet ; TFSCard (TAtm TAIdv) ],
+                                  [ FSCardTyping ])
+  | FSCard when ext ->
+      ([ Mem ; FSIsFiniteSet ; NatSet ; ExtTrigEq (TAtm TAIdv) ; ExtTrigEq (TSet (TAtm TAIdv)) ],
+                                  [ FSCardTyping ; ExtTrigEqCardPropagate ])
+  | FSCard ->
+      ([ Mem ; FSIsFiniteSet ; NatSet ],
+                                  [ FSCardTyping ])
 
   | _ ->
       error "internal error"
@@ -589,6 +741,29 @@ let typed_deps tla_smb s =
       ([ (*IntGteq*) IntLteq ],               [ Typing TIntLteq ])
   | TIntGt ->
       ([ (*IntGt*) IntLteq ],                 [ Typing TIntLteq ])
+  (* Finite Sets *)
+  | TFSCard s ->
+      ([ FSCard ; Cast (TFSet s) ; Cast (TAtm TAInt) ],
+                                              [ Typing (TFSCard s) ])
+  | TFSMem s ->
+      ([ Mem ; Cast (TFSet s) ],              [ Typing (TFSMem s) ])
+  | TFSSubseteq s ->
+      ([ SubsetEq ; Cast (TFSet s) ],         [ Typing (TFSSubseteq s) ])
+  | TFSEmpty s ->
+      ([ SetEnum 0 ; Cast (TFSet s) ],        [ Typing (TFSEmpty s) ])
+  | TFSSingleton s ->
+      ([ SetEnum 1 ; Cast (TFSet s) ],        [ Typing (TFSSingleton s) ])
+  | TFSAdd s ->
+      ([], [])
+  | TFSSetEnum (n, s) ->
+      ([ SetEnum n ; Cast (TFSet s) ],        [ Typing (TFSSetEnum (n, s)) ])
+  | TFSCup s ->
+      ([ Cup ; Cast (TFSet s) ],              [ Typing (TFSCup s) ])
+  | TFSCap s ->
+      ([ Cap ; Cast (TFSet s) ],              [ Typing (TFSCap s) ])
+  | TFSSetminus s ->
+      ([ SetMinus ; Cast (TFSet s) ],         [ Typing (TFSSetminus s) ])
+
   | _ ->
       error "internal error"
   end |>
@@ -603,6 +778,7 @@ let special_deps tla_smb =
         | TAtm TABol -> [ Mem ; BoolSet ; True (TAtm TAIdv) ]
         | TAtm TAInt -> [ Mem ; IntSet ]
         | TAtm TAStr -> [ Mem ; StrSet ]
+        | TFSet s    -> [ FSIsFiniteSet ]
         | _ -> []
       in
       (tla_smbs @ (if ty0 = TAtm TABol then [] else [ Proj ty0 ]),
@@ -612,6 +788,12 @@ let special_deps tla_smb =
   | True ty0 ->
       ([], [])
   | Anon _ ->
+      ([], [])
+  | ExtTrigEq (TSet ty01 as ty0) ->
+      ([ ExtTrig ],           [ ExtTrigEqDef ty0 ; ExtTrigEqTrigger ty01 ])
+  | ExtTrigEq ty0 ->
+      ([],                    [ ExtTrigEqDef ty0 ])
+  | ExtTrig ->
       ([], [])
   | _ ->
       error "internal error"
@@ -627,23 +809,34 @@ let get_deps ~solver tla_smb s =
   | IntRange | FunIsafcn | FunSet | FunConstr | FunDom | FunIm | FunApp
   | FunExcept | Tuple _ | Product _ | Rec _ | RecSet _ | SeqSeq | SeqLen
   | SeqBSeq | SeqCat | SeqAppend | SeqHead | SeqTail | SeqSubSeq
-  | SeqSelectSeq | FSIsFiniteSet | FSCard ->
+  | SeqSelectSeq ->
       let s, (smbs, axms) = untyped_deps ~solver tla_smb s in
       s,
       { dat_deps = smbs
       ; dat_axms = axms
       }
+  | FSIsFiniteSet | FSCard ->
+      let s, (smbs, axms) =
+        List.fold_left begin fun (s, (smbs, axms)) tla_smb ->
+          let s, (smbs', axms') = untyped_deps ~solver tla_smb s in
+          s, (smbs' @ smbs, axms' @ axms)
+        end (s, ([], [])) (tla_smb :: s.fs_mem)
+      in
+      s,
+      { dat_deps = smbs
+      ; dat_axms = axms
+      }
   | TIntLit _ | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient
-  | TIntRemainder | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt
-  | TFSCard _ | TFSMem _ | TFSSubseteq _ | TFSEmpty _ | TFSSingleton _
-  | TFSAdd _ | TFSCup _ | TFSCap _ | TFSSetminus _ ->
+  | TIntRemainder | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt | TFSCard _
+  | TFSMem _ | TFSSubseteq _ | TFSEmpty _ | TFSSingleton _ | TFSAdd _
+  | TFSSetEnum _ | TFSCup _ | TFSCap _ | TFSSetminus _ ->
 
       let s, (smbs, axms) = typed_deps tla_smb s in
       s,
       { dat_deps = smbs
       ; dat_axms = axms
       }
-  | Cast _ | Proj _ | True _ | Anon _ ->
+  | Cast _ | Proj _ | True _ | Anon _ | ExtTrigEq _ | ExtTrig ->
       let s, (smbs, axms) = special_deps tla_smb s in
       s,
       { dat_deps = smbs

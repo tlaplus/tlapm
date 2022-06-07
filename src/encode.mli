@@ -100,6 +100,7 @@ module Table : sig
     | TFSEmpty of ty
     | TFSSingleton of ty
     | TFSAdd of ty
+    | TFSSetEnum of int * ty
     | TFSCup of ty
     | TFSCap of ty
     | TFSSetminus of ty
@@ -107,6 +108,8 @@ module Table : sig
     | Proj of ty
     | True of ty
     | Anon of string * ty2
+    | ExtTrigEq of ty
+    | ExtTrig
 end
 
 module Smb : sig

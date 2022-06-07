@@ -129,6 +129,23 @@ let sequences =
   end in
   m
 
+let finitesets =
+  let (_, m, _) = M_elab.normalize Sm.empty Deque.empty begin
+    stm {
+      name = "FiniteSets" @@ st ;
+      extendees = [] ;
+      instancees = [] ;
+      defdepth = 0 ;
+      important = false ;
+      body = [
+        unary   "IsFiniteSet" B.IsFiniteSet ;
+        unary   "Cardinality" B.Card
+      ] ;
+      stage = Special ;
+    }
+  end in
+  m
+
 let tlc =
   let (_, m, _) = M_elab.normalize Sm.empty Deque.empty begin
     stm {
@@ -225,6 +242,9 @@ let tlapm =
         unary   "Builtins!Tail"          B.Tail ;
         ternary "Builtins!Subseq"        B.SubSeq ;
         binary  "Builtins!Select"        B.SelectSeq ;
+        (* finite sets *)
+        unary   "Builtins!IsFiniteSet"   B.IsFiniteSet ;
+        unary   "Builtins!Card"          B.Card ;
         (* tlc *)
         binary  "Builtins!Single"        B.OneArg ;
         binary  "Builtins!Join"          B.Extend ;
@@ -250,4 +270,4 @@ let initctx =
   List.fold_left
     (fun mx m -> Sm.add m.core.name.core m mx)
     Sm.empty
-    [ naturals ; integers ; reals ; sequences ; tlc ; tlapm ]
+    [ naturals ; integers ; reals ; sequences ; finitesets ; tlc ; tlapm ]

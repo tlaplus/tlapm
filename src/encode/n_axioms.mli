@@ -35,6 +35,13 @@ val op_typing : tla_smb -> expr
  * but this will have to wait.  For now, the function will redirect to one
  * of the special cases below. *)
 val op_intquotient_typing : unit -> expr
+val op_fsenum_typing : int -> ty0 -> expr (* This one is different, bc enum_n doesn't have an equivalent in CVC4's FS theory *)
+
+val exttrigeq_def : ty0 -> expr
+val exttrigeq_trigger : ty0 -> expr
+val disjoint_trigger : unit -> expr
+val emptycomprehension_trigger : unit -> expr
+val exttrigeq_card : unit -> expr
 
 
 
@@ -47,7 +54,7 @@ val choose_ext : unit -> expr
 
 (* {4 Sets} *)
 
-val set_ext : unit -> expr
+val set_ext : ext:bool -> expr
 
 val subseteq_def : unit -> expr
 val subseteq_intro : unit -> expr
@@ -197,4 +204,35 @@ val seqselectseqappend_def : unit -> expr
 
 val seqtup_typing : int -> expr
 val seqtuplen_def : noarith:bool -> int -> expr
+
+(* {4 Finite Sets} *)
+
+val subseteq_isfs : unit -> expr
+val enum_isfs : int -> expr
+val subset_isfs : unit -> expr
+val union_isfs : unit -> expr
+val setst_isfs : unit -> expr
+val setof_isfs : int -> expr
+val cup_isfs : unit -> expr
+val cap_isfs : unit -> expr
+val setminus_isfs : unit -> expr
+val product_isfs : int -> expr
+val rect_isfs : string list -> expr
+val range_isfs : unit -> expr
+
+val card_typing : unit -> expr
+
+val subseteq_card : noarith:bool -> expr
+val empty_card : noarith:bool -> expr
+val singleton_card : noarith:bool -> expr
+val cup_card : noarith:bool -> expr
+val cap_card : noarith:bool -> expr
+val setminus_card : noarith:bool -> expr
+val product_card : noarith:bool -> int -> expr
+val rect_card : noarith:bool -> string list -> expr
+val range_card : noarith:bool -> expr
+
+val fsproduct_card : int -> expr (* FIXME not linked *)
+val fsrect_card : string list -> expr (* FIXME not linked *)
+val fsrange_card : unit -> expr (* FIXME not linked *)
 
