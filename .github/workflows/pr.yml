@@ -15,14 +15,11 @@ jobs:
                     '1',
                     '2',
                     ]
-                include:
-                - operating-system: macos-latest
-                  INSTALLER: tlaps-1.5.0-i386-darwin-inst.bin
-                  DOWNLOADS: tlaps-1.5.0-i386-darwin
-                - operating-system: ubuntu-latest
-                  INSTALLER: tlaps-1.5.0-x86_64-linux-gnu-inst.bin
-                  DOWNLOADS: tlaps-1.5.0-x86_64-linux-gnu
         steps:
+            - name: Set up Python
+              uses: actions/setup-python@v2
+              with:
+                python-version: '3.10'
             - uses: actions/checkout@v2
             - name: Get OCaml version
               run: |
@@ -35,11 +32,15 @@ jobs:
             - uses: ocaml/setup-ocaml@v2
               with:
                 ocaml-compiler: ${{ env.OCAML_VERSION }}
+            - name: Define TLAPS-related env vars
+              run: |
+                python .github/workflows/setup_shell_env.py \
+                    >> $GITHUB_ENV
             - uses: actions/cache@v2
               id: cache
               with:
-                path: ${{ matrix.DOWNLOADS }}
-                key: ${{ matrix.DOWNLOADS }}
+                path: ${{ env.DOWNLOADS }}
+                key: ${{ env.DOWNLOADS }}
             - name: Build installer of TLAPS
               run: |
                 eval $(opam env)
@@ -49,7 +50,7 @@ jobs:
             - name: Run installer of TLAPS
               run: |
                 cd tools/installer
-                ./${{ matrix.INSTALLER }} -d ../..
+                ./${{ env.INSTALLER }} -d ../..
             - name: Install dependencies for testing
               run: |
                 opam install kaputt

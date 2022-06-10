@@ -70,14 +70,11 @@ jobs:
                     '1',
                     '2',
                     ]
-                include:
-                    - operating-system: macos-latest
-                      INSTALLER: tlaps-1.5.0-i386-darwin-inst.bin
-                      DOWNLOADS: tlaps-1.5.0-i386-darwin
-                    - operating-system: ubuntu-latest
-                      INSTALLER: tlaps-1.5.0-x86_64-linux-gnu-inst.bin
-                      DOWNLOADS: tlaps-1.5.0-x86_64-linux-gnu
         steps:
+            - name: Set up Python
+              uses: actions/setup-python@v2
+              with:
+                python-version: '3.10'
             # Read "Output Release URL and
             # ID File" of `release` job above.
             - name: Load Release URL File from release job
@@ -118,10 +115,14 @@ jobs:
                 ./configure
                 cd tools/installer
                 ./tlaps-release.sh
+            - name: Define TLAPS-related env vars
+              run: |
+                python .github/workflows/setup_shell_env.py \
+                    >> $GITHUB_ENV
             - name: Run installer of TLAPS
               run: |
                 cd tools/installer
-                ./${{ matrix.INSTALLER }} -d ../..
+                ./${{ env.INSTALLER }} -d ../..
             - name: Install dependencies for testing
               run: |
                 opam install kaputt
