@@ -18,7 +18,7 @@ jobs:
                 include:
                 - operating-system: macos-latest
                   INSTALLER: tlaps-1.5.0-i386-darwin-inst.bin
-                  DOWNLOADS: tlaps-1.5.0-i386-darwin-inst
+                  DOWNLOADS: tlaps-1.5.0-i386-darwin
                 - operating-system: ubuntu-latest
                   INSTALLER: tlaps-1.5.0-x86_64-linux-gnu-inst.bin
                   DOWNLOADS: tlaps-1.5.0-x86_64-linux-gnu
