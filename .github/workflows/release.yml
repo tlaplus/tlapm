@@ -3,6 +3,8 @@ on:
     push:
         branches:
             - release_installer_on_github
+        paths:
+            - '.github/workflows/release.yml'
 jobs:
     release:
             # This task creates a release on GitHub,
