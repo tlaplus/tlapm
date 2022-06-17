@@ -1,7 +1,8 @@
 name: Upload installer of TLA Proof Manager
 on:
     push:
-        branches: release_installer_on_github
+        branches:
+            - release_installer_on_github
 jobs:
     release:
             # This task creates a release on GitHub,
