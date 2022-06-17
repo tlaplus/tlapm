@@ -38,9 +38,20 @@ def _make_shell_definitions(kv: dict) -> str:
     `kv=dict(NAME='value')`,
     returns the string`"NAME='value'"`.
     """
+    any_blanks = any(map(
+        _contains_blanks,
+        kv.values()))
+    if any_blanks:
+        raise ValueError(kv)
     return '\n'.join(
-        f"{name}='{value}'"
+        f'{name}={value}'
         for name, value in kv.items())
+
+
+def _contains_blanks(value: str) -> bool:
+    """Return `True` if blankspace in `value`."""
+    value_ = ''.join(value.split())
+    return len(value) != len(value_)
 
 
 if __name__ == '__main__':
