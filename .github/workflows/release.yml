@@ -5,6 +5,8 @@ on:
             - release_installer_on_github
         paths:
             - '.github/workflows/release.yml'
+    schedule:
+        - cron: '42 5 25 2,7 *'
 jobs:
     release:
             # This task creates a release on GitHub,
