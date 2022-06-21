@@ -72,3 +72,10 @@ jobs:
               if: matrix.operating-system == 'ubuntu-latest'
               run: |
                 cat test/tests.log
+            - name: show logs for each test file
+              if: failure()
+              run: |
+                find test -type f \
+                    -name '*.err' -o \
+                    -name '*.out' \
+                    -exec cat '{}' \;
