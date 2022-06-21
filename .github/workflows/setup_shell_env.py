@@ -23,8 +23,9 @@ def _env_vars(tlapm_version: str) -> dict:
         raise ValueError(
             'unexpected operating system: '
             f'{sys.platform = }')
-    downloads =  f'tlaps-{tlapm_version}-{tail}'
-    installer = f'{downloads}-inst.bin'
+    prefix = f'tlaps-{tlapm_version}-{tail}'
+    installer = f'{prefix}-inst.bin'
+    downloads = f'{prefix}/download'
     return dict(
         TLAPM_VERSION=tlapm_version,
         INSTALLER=installer,
