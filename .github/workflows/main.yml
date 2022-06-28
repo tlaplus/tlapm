@@ -69,7 +69,7 @@ jobs:
                 PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH tlapm --version
                 PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make testall
             - name: Print Test Results
-              if: matrix.operating-system == 'ubuntu-latest'
+              if: always()
               run: |
                 cat test/tests.log
             - name: show logs for each test file
