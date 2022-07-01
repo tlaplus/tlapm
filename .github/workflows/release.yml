@@ -2,7 +2,7 @@ name: Upload installer of TLA Proof Manager
 on:
     push:
         branches:
-            - release_installer_on_github
+            - ci_run_branch_release_installer_on_github
         paths:
             - '.github/workflows/release.yml'
     schedule:
