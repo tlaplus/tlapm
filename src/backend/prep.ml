@@ -983,10 +983,10 @@ let normalize_expand ob fpout thyout record
     let ob = normalize_expr ob in
     try
         let ob = expand_enabled_cdot
-            ob expand_enabled expand_cdot autouse
-            apply_lambdify enabled_axioms enabled_rewrites
-            enabled_rules level_comparison
-            used_identifiers in
+            ob ~expand_enabled ~expand_cdot ~autouse
+            ~apply_lambdify ~enabled_axioms ~enabled_rewrites
+            ~enabled_rules ~level_comparison
+            ~used_identifiers in
         (ob, true)
     with Failure msg ->
         (* `msg` is the message from soundness checks,
