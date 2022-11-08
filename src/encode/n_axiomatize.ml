@@ -177,7 +177,7 @@ let assemble_visitor = object (self : 'self)
 
   method expr (solver, hx as scx) oe =
     begin match oe.core with
-    | Opaque _ when has oe smb_prop && not (is_native solver (get oe smb_prop)) ->
+    | Opaque _ when has oe smb_prop && not (is_native ~solver (get oe smb_prop)) ->
         let smb = get oe smb_prop in
         let s = get_name smb in
         let is_fresh_s = fun h ->
