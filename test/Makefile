@@ -31,9 +31,13 @@ stest:
 junit:
 	./TOOLS/do_junit_tests regression_tests
 
-.PHONY: smt
-smt:
-	./TOOLS/do_tests smt_tests
+.PHONY: unit
+unit:
+	./TOOLS/do_tests unit
+
+.PHONY: bugs
+bugs:
+	./TOOLS/do_tests bugs
 
 clean:
 	find . \( \
