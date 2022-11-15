@@ -497,7 +497,7 @@ let gen_smt_solve suffix exec desc fmt_expr meth ob org_ob f res_cont comm =
 (* FIXME Remove all the oldsmt code *)
 let get_encode_smtlib () =
   if Params.debugging "oldsmt" then Smt.encode_smtlib
-  else Smt.encode_smtlib
+  else Smtlib.pp_print_obligation
 
 (* FIXME *)
 let get_encode_fof () =
