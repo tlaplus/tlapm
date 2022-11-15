@@ -66,6 +66,7 @@ EXPR_PACK = \
   expr/e_fmt \
   expr/e_subst \
   expr/e_visit \
+  expr/e_collect \
   expr/e_levels \
   expr/e_constness \
   expr/e_substitutive \

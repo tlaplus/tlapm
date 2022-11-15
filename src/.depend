@@ -280,6 +280,20 @@ expr/e_visit.cmx: expr/e_visit.mlt \
     expr/e_subst.cmx \
     util/deque.cmx \
     expr/e_visit.cmi
+expr/e_collect.cmo: expr/e_collect.mlt \
+    util/util.cmi \
+    util/property.cmi \
+    expr/e_visit.cmi \
+    expr/e_t.cmi \
+    util/deque.cmi \
+    expr/e_collect.cmi
+expr/e_collect.cmx: expr/e_collect.mlt \
+    util/util.cmx \
+    util/property.cmx \
+    expr/e_visit.cmx \
+    expr/e_t.cmx \
+    util/deque.cmx \
+    expr/e_collect.cmi
 expr/e_levels.cmo: expr/e_levels.mlt \
     util/util.cmi \
     util/property.cmi \
@@ -568,6 +582,7 @@ expr.cmo: expr.mlt \
     expr/e_elab.cmi \
     expr/e_deref.cmi \
     expr/e_constness.cmi \
+    expr/e_collect.cmi \
     expr/e_anon.cmi \
     expr/e_action.cmi \
     expr.cmi
@@ -587,6 +602,7 @@ expr.cmx: expr.mlt \
     expr/e_elab.cmx \
     expr/e_deref.cmx \
     expr/e_constness.cmx \
+    expr/e_collect.cmx \
     expr/e_anon.cmx \
     expr/e_action.cmx \
     expr.cmi
@@ -663,7 +679,6 @@ proof/p_visit.cmo: proof/p_visit.mlt \
     proof/p_t.cmi \
     util/ext.cmi \
     expr.cmi \
-    errors.cmi \
     util/deque.cmi \
     proof/p_visit.cmi
 proof/p_visit.cmx: proof/p_visit.mlt \
@@ -671,7 +686,6 @@ proof/p_visit.cmx: proof/p_visit.mlt \
     proof/p_t.cmx \
     util/ext.cmx \
     expr.cmx \
-    errors.cmx \
     util/deque.cmx \
     proof/p_visit.cmi
 proof/p_gen.cmo: proof/p_gen.mlt \
@@ -1965,6 +1979,10 @@ expr/e_subst.cmi : \
     expr/e_fmt.cmi \
     util/deque.cmi
 expr/e_visit.cmi : \
+    util/util.cmi \
+    expr/e_t.cmi \
+    util/deque.cmi
+expr/e_collect.cmi : \
     util/util.cmi \
     expr/e_t.cmi \
     util/deque.cmi
