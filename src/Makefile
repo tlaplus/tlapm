@@ -29,6 +29,7 @@ BACKEND_PACK = \
   backend/fingerprints \
   backend/fpfile \
   backend/smt \
+  backend/smtlib \
   backend/prep
 
 MODULE_PACK = \
@@ -122,6 +123,7 @@ SMT_DIR = \
   smt/axioms
 
 # FIXME remove useless files: dumpfp abstractor method_old backend/cooper
+# FIXME remove files from the old SMT backend: backend/smt SMT_DIR
 MODULES = \
   sysconf \
   util/ext \
@@ -166,6 +168,7 @@ MODULES = \
   tlapm_args \
   tlapm
 
+# FIXME remove smt
 INC0 = \
   -I ../backend \
   -I ../frontend \
