@@ -451,6 +451,9 @@ module Subst: sig
     val scons:
         expr -> sub ->
             sub
+    val ssnoc:
+        sub -> expr ->
+            sub
     val bumpn:
         int -> sub ->
             sub
@@ -487,6 +490,9 @@ module Subst: sig
     val app_sequent:
         sub -> sequent ->
             sequent
+    val app_hyps:
+        sub -> hyp Deque.dq ->
+            sub * hyp Deque.dq
     val app_hyp:
         sub -> hyp ->
             hyp
