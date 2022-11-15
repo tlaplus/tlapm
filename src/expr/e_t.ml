@@ -402,6 +402,15 @@ let bounds_of_parameters
     List.map f param_names
 
 
+type meta = {
+  hkind : hyp_kind ;
+  name : string ;
+}
+and hyp_kind = Axiom | Hypothesis | Goal
+
+let meta_prop = make "Expr.T.meta_prop"
+
+
 module type Name_type_sig =
 sig
     type t

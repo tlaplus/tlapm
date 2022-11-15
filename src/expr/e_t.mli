@@ -208,6 +208,16 @@ val bounds_of_parameters:
     (hint * shape) list -> bounds
 
 
+(** Name and kind of a fact *)
+type meta = {
+  hkind : hyp_kind ;
+  name : string ;
+}
+and hyp_kind = Axiom | Hypothesis | Goal
+
+(** Attached to the expression part of a fact, in a sequent *)
+val meta_prop : meta pfuncs
+
 module type Node_factory_sig =
 sig
     type t

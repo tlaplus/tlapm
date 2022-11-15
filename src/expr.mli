@@ -180,6 +180,14 @@ module T: sig
   val bounds_of_parameters:
       (hint * shape) list -> bounds
 
+  (** Fact name and kind *)
+  type meta = {
+    hkind : hyp_kind ;
+    name : string ;
+  }
+  and hyp_kind = Axiom | Hypothesis | Goal
+  val meta_prop : meta pfuncs
+
 
   module type Node_factory_sig =
   sig
