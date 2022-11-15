@@ -662,6 +662,7 @@ let thy_temp ob tac tempname thyout =
   thy_header ~verbose:false tempname thyout;
   let obid = Option.get ob.id in
   let obfp = Option.default "no fingerprint" ob.fingerprint in
+  Printf.fprintf thyout "(* Generated from %s *)\n" (Util.location ~cap:false ob.obl);
   Printf.fprintf thyout "lemma ob'%d: (* %s *)\n" obid obfp;
   let ff = Format.formatter_of_out_channel thyout in
   begin try
