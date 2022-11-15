@@ -81,6 +81,13 @@ EXPR_PACK = \
   expr/e_action \
   expr/e_level_comparison
 
+TYPE_PACK = \
+  type/t_t \
+  type/t_visit \
+  type/t_collect \
+  type/t_hyps \
+  type/t_synth
+
 TYPESYSTEM_DIR = \
   typesystem/typ_t \
   typesystem/typ_e \
@@ -131,6 +138,8 @@ MODULES = \
   method_prs \
   ${PROOF_PACK} \
   proof \
+  ${TYPE_PACK} \
+  type \
   ${SMT_DIR} \
   util/timing \
   ${FRONTEND_PACK} \
@@ -151,6 +160,7 @@ INC0 = \
   -I ../proof \
   -I ../util \
   -I ../pars \
+  -I ../type \
   -I ../typesystem \
   -I ../smt
 

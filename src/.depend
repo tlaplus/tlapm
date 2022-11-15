@@ -808,6 +808,98 @@ proof.cmx: proof.mlt \
     proof/p_fmt.cmx \
     proof/p_anon.cmx \
     proof.cmi
+type/t_t.cmo: type/t_t.mlt \
+    util/util.cmi \
+    util/property.cmi \
+    util/fmtutil.cmi \
+    type/t_t.cmi
+type/t_t.cmx: type/t_t.mlt \
+    util/util.cmx \
+    util/property.cmx \
+    util/fmtutil.cmx \
+    type/t_t.cmi
+type/t_visit.cmo: type/t_visit.mlt \
+    type/t_t.cmi \
+    util/property.cmi \
+    util/ext.cmi \
+    expr.cmi \
+    errors.cmi \
+    util/deque.cmi \
+    builtin.cmi \
+    type/t_visit.cmi
+type/t_visit.cmx: type/t_visit.mlt \
+    type/t_t.cmx \
+    util/property.cmx \
+    util/ext.cmx \
+    expr.cmx \
+    errors.cmx \
+    util/deque.cmx \
+    builtin.cmx \
+    type/t_visit.cmi
+type/t_collect.cmo: type/t_collect.mlt \
+    type/t_t.cmi \
+    util/property.cmi \
+    util/ext.cmi \
+    expr.cmi \
+    util/deque.cmi \
+    type/t_collect.cmi
+type/t_collect.cmx: type/t_collect.mlt \
+    type/t_t.cmx \
+    util/property.cmx \
+    util/ext.cmx \
+    expr.cmx \
+    util/deque.cmx \
+    type/t_collect.cmi
+type/t_hyps.cmo: type/t_hyps.mlt \
+    type/t_t.cmi \
+    util/property.cmi \
+    util/ext.cmi \
+    expr.cmi \
+    util/deque.cmi \
+    builtin.cmi \
+    type/t_hyps.cmi
+type/t_hyps.cmx: type/t_hyps.mlt \
+    type/t_t.cmx \
+    util/property.cmx \
+    util/ext.cmx \
+    expr.cmx \
+    util/deque.cmx \
+    builtin.cmx \
+    type/t_hyps.cmi
+type/t_synth.cmo: type/t_synth.mlt \
+    util/util.cmi \
+    type/t_t.cmi \
+    type/t_hyps.cmi \
+    util/property.cmi \
+    util/ext.cmi \
+    expr.cmi \
+    util/deque.cmi \
+    builtin.cmi \
+    type/t_synth.cmi
+type/t_synth.cmx: type/t_synth.mlt \
+    util/util.cmx \
+    type/t_t.cmx \
+    type/t_hyps.cmx \
+    util/property.cmx \
+    util/ext.cmx \
+    expr.cmx \
+    util/deque.cmx \
+    builtin.cmx \
+    type/t_synth.cmi
+type.cmo: type.mlt \
+    type/t_visit.cmi \
+    type/t_t.cmi \
+    type/t_synth.cmi \
+    type/t_hyps.cmi \
+    type/t_collect.cmi \
+    type.cmi
+type.cmx: type.mlt \
+    type/t_visit.cmx \
+    type/t_t.cmx \
+    type/t_synth.cmx \
+    type/t_hyps.cmx \
+    type/t_collect.cmx \
+    type.cmi
 smt/smtcommons.cmo: smt/smtcommons.mlt \
     util/util.cmi \
     tla_parser.cmi \
@@ -2081,6 +2173,29 @@ proof.cmi : \
     expr.cmi \
     util/deque.cmi \
     ctx.cmi
+type/t_t.cmi : \
+    util/util.cmi \
+    util/property.cmi
+type/t_visit.cmi : \
+    type/t_t.cmi \
+    expr.cmi \
+    util/deque.cmi
+type/t_collect.cmi : \
+    type/t_t.cmi \
+    expr.cmi
+type/t_hyps.cmi : \
+    type/t_t.cmi \
+    expr.cmi \
+    util/deque.cmi
+type/t_synth.cmi : \
+    util/util.cmi \
+    type/t_t.cmi \
+    expr.cmi
+type.cmi : \
+    util/util.cmi \
+    util/property.cmi \
+    expr.cmi \
+    util/deque.cmi
 smt/smtcommons.cmi : \
     util/property.cmi \
     expr.cmi \
