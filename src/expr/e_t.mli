@@ -218,6 +218,23 @@ and hyp_kind = Axiom | Hypothesis | Goal
 (** Attached to the expression part of a fact, in a sequent *)
 val meta_prop : meta pfuncs
 
+(** SMT-LIB pattern *)
+type pat = expr list
+
+(** Attached to the body of a quantified expression *)
+val pattern_prop :
+    pat list pfuncs
+
+val add_pats :
+    expr -> pat list -> expr
+val remove_pats :
+    expr -> expr
+
+val map_pats :
+    (pat -> pat) -> expr -> expr
+val fold_pats :
+    (pat -> 'a -> 'a) -> expr -> 'a -> 'a
+
 module type Node_factory_sig =
 sig
     type t

@@ -188,6 +188,19 @@ module T: sig
   and hyp_kind = Axiom | Hypothesis | Goal
   val meta_prop : meta pfuncs
 
+  (** SMT-LIB patterns *)
+  type pat = expr list
+  val pattern_prop :
+      pat list pfuncs
+  val add_pats :
+      expr -> pat list -> expr
+  val remove_pats :
+      expr -> expr
+  val map_pats :
+      (pat -> pat) -> expr -> expr
+  val fold_pats :
+      (pat -> 'a -> 'a) -> expr -> 'a -> 'a
+
 
   module type Node_factory_sig =
   sig

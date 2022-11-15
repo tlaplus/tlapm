@@ -411,6 +411,33 @@ and hyp_kind = Axiom | Hypothesis | Goal
 let meta_prop = make "Expr.T.meta_prop"
 
 
+type pat = expr list
+
+let pattern_prop = make "Expr.T.pattern_prop"
+
+
+let add_pats oe pats =
+  match query oe pattern_prop with
+  | Some pats' -> assign oe pattern_prop (pats @ pats')
+  | None -> assign oe pattern_prop pats
+
+
+let remove_pats oe =
+  remove oe pattern_prop
+
+
+let map_pats f oe =
+  match query oe pattern_prop with
+  | None -> oe
+  | Some pats -> assign oe pattern_prop (List.map f pats)
+
+
+let fold_pats f oe a =
+  match query oe pattern_prop with
+  | None -> a
+  | Some pats -> List.fold_right f pats a
+
+
 module type Name_type_sig =
 sig
     type t
