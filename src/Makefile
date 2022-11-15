@@ -30,6 +30,7 @@ BACKEND_PACK = \
   backend/fpfile \
   backend/smt \
   backend/smtlib \
+  backend/thf \
   backend/prep
 
 MODULE_PACK = \

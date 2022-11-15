@@ -1780,11 +1780,71 @@ backend/smt.cmx: backend/smt.mlt \
     smt/boolify.cmx \
     smt/axioms.cmx \
     backend/smt.cmi
+backend/smtlib.cmo: backend/smtlib.mlt \
+    util/util.cmi \
+    type.cmi \
+    tla_parser.cmi \
+    util/property.cmi \
+    proof.cmi \
+    params.cmi \
+    util/fmtutil.cmi \
+    util/ext.cmi \
+    expr.cmi \
+    encode.cmi \
+    util/deque.cmi \
+    ctx.cmi \
+    builtin.cmi \
+    backend/smtlib.cmi
+backend/smtlib.cmx: backend/smtlib.mlt \
+    util/util.cmx \
+    type.cmx \
+    tla_parser.cmx \
+    util/property.cmx \
+    proof.cmx \
+    params.cmx \
+    util/fmtutil.cmx \
+    util/ext.cmx \
+    expr.cmx \
+    encode.cmx \
+    util/deque.cmx \
+    ctx.cmx \
+    builtin.cmx \
+    backend/smtlib.cmi
+backend/thf.cmo: backend/thf.mlt \
+    util/util.cmi \
+    type.cmi \
+    util/property.cmi \
+    proof.cmi \
+    params.cmi \
+    util/fmtutil.cmi \
+    util/ext.cmi \
+    expr.cmi \
+    encode.cmi \
+    util/deque.cmi \
+    ctx.cmi \
+    builtin.cmi \
+    backend/thf.cmi
+backend/thf.cmx: backend/thf.mlt \
+    util/util.cmx \
+    type.cmx \
+    util/property.cmx \
+    proof.cmx \
+    params.cmx \
+    util/fmtutil.cmx \
+    util/ext.cmx \
+    expr.cmx \
+    encode.cmx \
+    util/deque.cmx \
+    ctx.cmx \
+    builtin.cmx \
+    backend/thf.cmi
 backend/prep.cmo: backend/prep.mlt \
     backend/zenon.cmi \
     util/util.cmi \
     backend/types.cmi \
     backend/toolbox.cmi \
+    backend/thf.cmi \
+    backend/smtlib.cmi \
     backend/smt.cmi \
     backend/schedule.cmi \
     util/property.cmi \
@@ -1810,6 +1870,8 @@ backend/prep.cmx: backend/prep.mlt \
     util/util.cmx \
     backend/types.cmx \
     backend/toolbox.cmx \
+    backend/thf.cmx \
+    backend/smtlib.cmx \
     backend/smt.cmx \
     backend/schedule.cmx \
     util/property.cmx \
@@ -2510,6 +2572,10 @@ backend/fpfile.cmi : \
     backend/types.cmi \
     method.cmi
 backend/smt.cmi : \
+    proof.cmi
+backend/smtlib.cmi : \
+    proof.cmi
+backend/thf.cmi : \
     proof.cmi
 backend/prep.cmi : \
     backend/types.cmi \
