@@ -19,7 +19,14 @@ module HC = struct
   let compare x y = Stdlib.compare x.core y.core
 end
 
+module IC = struct
+  type t = int
+  let compare x y = Pervasives.compare x y
+end
+
 module Coll = struct
+  module Im = Map.Make (IC)
+  module Is = Set.Make (IC)
   module Sm = Map.Make (String)
   module Ss = Set.Make (String)
   module Sh = Weak.Make (struct
