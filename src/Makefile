@@ -88,6 +88,18 @@ TYPE_PACK = \
   type/t_hyps \
   type/t_synth
 
+ENCODE_PACK = \
+  encode/n_subst \
+  encode/n_hints \
+  encode/n_rewrite \
+  encode/n_table \
+  encode/n_data \
+  encode/n_smb \
+  encode/n_axioms \
+  encode/n_standardize \
+  encode/n_axiomatize \
+  encode/n_flatten
+
 TYPESYSTEM_DIR = \
   typesystem/typ_t \
   typesystem/typ_e \
@@ -140,6 +152,8 @@ MODULES = \
   proof \
   ${TYPE_PACK} \
   type \
+  ${ENCODE_PACK} \
+  encode \
   ${SMT_DIR} \
   util/timing \
   ${FRONTEND_PACK} \
@@ -161,6 +175,7 @@ INC0 = \
   -I ../util \
   -I ../pars \
   -I ../type \
+  -I ../encode \
   -I ../typesystem \
   -I ../smt
 

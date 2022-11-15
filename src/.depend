@@ -900,6 +900,198 @@ type.cmx: type.mlt \
     type/t_hyps.cmx \
     type/t_collect.cmx \
     type.cmi
+encode/n_subst.cmo: encode/n_subst.mlt \
+    util/util.cmi \
+    util/property.cmi \
+    util/fmtutil.cmi \
+    util/ext.cmi \
+    expr.cmi \
+    util/deque.cmi \
+    ctx.cmi \
+    encode/n_subst.cmi
+encode/n_subst.cmx: encode/n_subst.mlt \
+    util/util.cmx \
+    util/property.cmx \
+    util/fmtutil.cmx \
+    util/ext.cmx \
+    expr.cmx \
+    util/deque.cmx \
+    ctx.cmx \
+    encode/n_subst.cmi
+encode/n_hints.cmo: encode/n_hints.mlt \
+    util/property.cmi \
+    util/ext.cmi \
+    expr.cmi \
+    util/deque.cmi \
+    builtin.cmi \
+    encode/n_hints.cmi
+encode/n_hints.cmx: encode/n_hints.mlt \
+    util/property.cmx \
+    util/ext.cmx \
+    expr.cmx \
+    util/deque.cmx \
+    builtin.cmx \
+    encode/n_hints.cmi
+encode/n_rewrite.cmo: encode/n_rewrite.mlt \
+    type.cmi \
+    util/property.cmi \
+    params.cmi \
+    encode/n_subst.cmi \
+    util/ext.cmi \
+    expr.cmi \
+    util/deque.cmi \
+    builtin.cmi \
+    encode/n_rewrite.cmi
+encode/n_rewrite.cmx: encode/n_rewrite.mlt \
+    type.cmx \
+    util/property.cmx \
+    params.cmx \
+    encode/n_subst.cmx \
+    util/ext.cmx \
+    expr.cmx \
+    util/deque.cmx \
+    builtin.cmx \
+    encode/n_rewrite.cmi
+encode/n_table.cmo: encode/n_table.mlt \
+    type.cmi \
+    encode/n_table.cmi
+encode/n_table.cmx: encode/n_table.mlt \
+    type.cmx \
+    encode/n_table.cmi
+encode/n_data.cmo: encode/n_data.mlt \
+    util/util.cmi \
+    type.cmi \
+    params.cmi \
+    encode/n_table.cmi \
+    encode/n_data.cmi
+encode/n_data.cmx: encode/n_data.mlt \
+    util/util.cmx \
+    type.cmx \
+    params.cmx \
+    encode/n_table.cmx \
+    encode/n_data.cmi
+encode/n_smb.cmo: encode/n_smb.mlt \
+    type.cmi \
+    util/property.cmi \
+    encode/n_table.cmi \
+    encode/n_data.cmi \
+    util/ext.cmi \
+    encode/n_smb.cmi
+encode/n_smb.cmx: encode/n_smb.mlt \
+    type.cmx \
+    util/property.cmx \
+    encode/n_table.cmx \
+    encode/n_data.cmx \
+    util/ext.cmx \
+    encode/n_smb.cmi
+encode/n_axioms.cmo: encode/n_axioms.mlt \
+    type.cmi \
+    util/property.cmi \
+    params.cmi \
+    encode/n_table.cmi \
+    encode/n_smb.cmi \
+    encode/n_data.cmi \
+    util/ext.cmi \
+    expr.cmi \
+    util/deque.cmi \
+    builtin.cmi \
+    encode/n_axioms.cmi
+encode/n_axioms.cmx: encode/n_axioms.mlt \
+    type.cmx \
+    util/property.cmx \
+    params.cmx \
+    encode/n_table.cmx \
+    encode/n_smb.cmx \
+    encode/n_data.cmx \
+    util/ext.cmx \
+    expr.cmx \
+    util/deque.cmx \
+    builtin.cmx \
+    encode/n_axioms.cmi
+encode/n_standardize.cmo: encode/n_standardize.mlt \
+    type.cmi \
+    util/property.cmi \
+    encode/n_table.cmi \
+    encode/n_smb.cmi \
+    util/ext.cmi \
+    expr.cmi \
+    util/deque.cmi \
+    builtin.cmi \
+    encode/n_standardize.cmi
+encode/n_standardize.cmx: encode/n_standardize.mlt \
+    type.cmx \
+    util/property.cmx \
+    encode/n_table.cmx \
+    encode/n_smb.cmx \
+    util/ext.cmx \
+    expr.cmx \
+    util/deque.cmx \
+    builtin.cmx \
+    encode/n_standardize.cmi
+encode/n_axiomatize.cmo: encode/n_axiomatize.mlt \
+    type.cmi \
+    util/property.cmi \
+    encode/n_table.cmi \
+    encode/n_smb.cmi \
+    encode/n_data.cmi \
+    encode/n_axioms.cmi \
+    util/ext.cmi \
+    expr.cmi \
+    util/deque.cmi \
+    encode/n_axiomatize.cmi
+encode/n_axiomatize.cmx: encode/n_axiomatize.mlt \
+    type.cmx \
+    util/property.cmx \
+    encode/n_table.cmx \
+    encode/n_smb.cmx \
+    encode/n_data.cmx \
+    encode/n_axioms.cmx \
+    util/ext.cmx \
+    expr.cmx \
+    util/deque.cmx \
+    encode/n_axiomatize.cmi
+encode/n_flatten.cmo: encode/n_flatten.mlt \
+    util/util.cmi \
+    type.cmi \
+    util/property.cmi \
+    encode/n_subst.cmi \
+    encode/n_smb.cmi \
+    util/fmtutil.cmi \
+    util/ext.cmi \
+    expr.cmi \
+    util/deque.cmi \
+    ctx.cmi \
+    encode/n_flatten.cmi
+encode/n_flatten.cmx: encode/n_flatten.mlt \
+    util/util.cmx \
+    type.cmx \
+    util/property.cmx \
+    encode/n_subst.cmx \
+    encode/n_smb.cmx \
+    util/fmtutil.cmx \
+    util/ext.cmx \
+    expr.cmx \
+    util/deque.cmx \
+    ctx.cmx \
+    encode/n_flatten.cmi
+encode.cmo: encode.mlt \
+    encode/n_table.cmi \
+    encode/n_standardize.cmi \
+    encode/n_smb.cmi \
+    encode/n_rewrite.cmi \
+    encode/n_hints.cmi \
+    encode/n_flatten.cmi \
+    encode/n_axiomatize.cmi \
+    encode.cmi
+encode.cmx: encode.mlt \
+    encode/n_table.cmx \
+    encode/n_standardize.cmx \
+    encode/n_smb.cmx \
+    encode/n_rewrite.cmx \
+    encode/n_hints.cmx \
+    encode/n_flatten.cmx \
+    encode/n_axiomatize.cmx \
+    encode.cmi
 smt/smtcommons.cmo: smt/smtcommons.mlt \
     util/util.cmi \
     tla_parser.cmi \
@@ -2196,6 +2388,41 @@ type.cmi : \
     util/property.cmi \
     expr.cmi \
     util/deque.cmi
+encode/n_subst.cmi : \
+    util/property.cmi \
+    expr.cmi \
+    util/deque.cmi
+encode/n_hints.cmi : \
+    expr.cmi
+encode/n_rewrite.cmi : \
+    expr.cmi
+encode/n_table.cmi : \
+    type.cmi
+encode/n_data.cmi : \
+    type.cmi \
+    encode/n_table.cmi
+encode/n_smb.cmi : \
+    type.cmi \
+    util/property.cmi \
+    encode/n_table.cmi \
+    encode/n_data.cmi
+encode/n_axioms.cmi : \
+    type.cmi \
+    encode/n_table.cmi \
+    expr.cmi
+encode/n_standardize.cmi : \
+    type.cmi \
+    expr.cmi
+encode/n_axiomatize.cmi : \
+    util/property.cmi \
+    encode/n_smb.cmi \
+    expr.cmi
+encode/n_flatten.cmi : \
+    expr.cmi
+encode.cmi : \
+    type.cmi \
+    util/property.cmi \
+    expr.cmi
 smt/smtcommons.cmi : \
     util/property.cmi \
     expr.cmi \
