@@ -599,9 +599,38 @@ module Visit: sig
     method hyp      : 's scx -> hyp -> 's scx
     method hyps     : 's scx -> hyp Deque.dq -> 's scx
   end
+  class virtual ['s, 'a] foldmap : object
+    method expr     : 's scx -> 'a -> expr -> 'a * expr
+    method pform    : 's scx -> 'a -> pform -> 'a * pform
+    method sel      : 's scx -> 'a -> sel -> 'a * sel
+    method sequent  : 's scx -> 'a -> sequent -> 's scx * 'a * sequent
+    method defn     : 's scx -> 'a -> defn -> 'a * defn
+    method defns    : 's scx -> 'a -> defn list -> 's scx * 'a * defn list
+    method bounds   : 's scx -> 'a -> bound list -> 's scx * 'a * bound list
+    method bound    : 's scx -> 'a -> bound -> 's scx * 'a * bound
+    method exspec   : 's scx -> 'a -> exspec -> 'a * exspec
+    method instance : 's scx -> 'a -> instance -> 'a * instance
+    method hyp      : 's scx -> 'a -> hyp -> 's scx * 'a * hyp
+    method hyps     : 's scx -> 'a -> hyp Deque.dq -> 's scx * 'a * hyp Deque.dq
+  end
+  class virtual ['s, 'a] fold : object
+    method expr     : 's scx -> 'a -> expr -> 'a
+    method pform    : 's scx -> 'a -> pform -> 'a
+    method sel      : 's scx -> 'a -> sel -> 'a
+    method sequent  : 's scx -> 'a -> sequent -> 's scx * 'a
+    method defn     : 's scx -> 'a -> defn -> 'a
+    method defns    : 's scx -> 'a -> defn list -> 's scx * 'a
+    method bounds   : 's scx -> 'a -> bound list -> 's scx * 'a
+    method bound    : 's scx -> 'a -> bound -> 's scx * 'a
+    method exspec   : 's scx -> 'a -> exspec -> 'a
+    method instance : 's scx -> 'a -> instance -> 'a
+    method hyp      : 's scx -> 'a -> hyp -> 's scx * 'a
+    method hyps     : 's scx -> 'a -> hyp Deque.dq -> 's scx * 'a
+  end
   class virtual ['s] map_visible_hyp : ['s] map
   class virtual ['s] iter_visible_hyp : ['s] iter
-
+  class virtual ['s, 'a] foldmap_visible_hyp : ['s, 'a] foldmap
+  class virtual ['s, 'a] fold_visible_hyp : ['s, 'a] fold
   class virtual ['s] map_rename : object
       inherit ['s] map
       method rename : ctx -> hyp -> Util.hint -> hyp * Util.hint
