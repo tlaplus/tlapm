@@ -332,6 +332,7 @@ module T: sig
   val get_val_from_id: 'hyp Deque.dq -> int -> 'hyp
   val name_of_ix:
       int -> ctx -> hint
+  val hyp_hint : hyp -> hint
   val hyp_name: hyp -> string
 
   val print_cx: ctx -> unit

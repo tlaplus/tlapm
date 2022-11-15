@@ -1313,7 +1313,7 @@ let name_of_ix
             that refers to Fact."
 
 
-let hyp_name h = match h.core with
+let hyp_hint h = match h.core with
     | Fresh (nm, _, _, _)
     | Flex nm
     | Defn ({core =
@@ -1322,8 +1322,10 @@ let hyp_name h = match h.core with
             | Bpragma(nm,_,_)
             | Recursive (nm, _)},
             _, _, _)
-        -> nm.core
-    | Fact (_, _,_) -> "??? FACT ???"
+        -> nm
+    | Fact (_, _,_) -> "??? FACT ???" %% []
+
+let hyp_name h = (hyp_hint h).core
 
 
 let visibility_to_string = function

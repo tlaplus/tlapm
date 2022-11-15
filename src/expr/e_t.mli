@@ -362,6 +362,8 @@ val name_of_ix:
     int -> ctx -> hint
 
 (* fmt.ml *)
+val hyp_hint :
+    hyp_ Property.wrapped -> hint
 val hyp_name:
     hyp_ Property.wrapped -> string
 
