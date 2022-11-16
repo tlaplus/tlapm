@@ -413,13 +413,13 @@ let print_obl_and_msg
 
 
 let pp_print_ob ?comm:(c=";;") chan ob =
-  output_string chan (Printf.sprintf "%s Proof obligation:\n%s" c c);
+  output_string chan (Printf.sprintf "%s Proof obligation:\n" c);
   let ob_buf = Buffer.create 2000 in
   let fmt = Format.formatter_of_buffer ob_buf in
   Proof.Fmt.pp_print_obligation fmt ob;
   Format.pp_print_flush fmt ();
-  let replace inp out = Str.global_replace (Str.regexp_string inp) out in
-  let ob_str = replace "\n" ("\n"^c^" ") (Buffer.contents ob_buf) in
+  let pat = Str.regexp "^" in
+  let ob_str = Str.global_replace pat (c ^ "\t") (Buffer.contents ob_buf) in
   output_string chan ob_str;
   output_string chan "\n"
 
