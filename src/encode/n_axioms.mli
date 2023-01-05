@@ -36,6 +36,12 @@ val op_typing : tla_smb -> expr
  * of the special cases below. *)
 val op_intquotient_typing : unit -> expr
 
+val exttrigeq_def : ty0 -> expr
+val exttrigeq_trigger : ty0 -> expr
+val disjoint_trigger : unit -> expr
+val emptycomprehension_trigger : unit -> expr
+val exttrigeq_card : unit -> expr
+
 
 
 (* {3 Main} *)
@@ -47,7 +53,7 @@ val choose_ext : unit -> expr
 
 (* {4 Sets} *)
 
-val set_ext : unit -> expr
+val set_ext : ext:bool -> expr
 
 val subseteq_def : unit -> expr
 val subseteq_intro : unit -> expr

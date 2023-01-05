@@ -122,6 +122,8 @@ type tla_smb =
   | Proj of ty
   | True of ty
   | Anon of string * ty2
+  | ExtTrigEq of ty
+  | ExtTrig
 
 (** Inventory of the axioms that may be used in the Zipperposition encoding. *)
 type tla_axm =
@@ -240,6 +242,11 @@ type tla_axm =
   | TypeGuardIntro of ty
   | TypeGuardElim of ty
   | Typing of tla_smb (** Only for typed symbols *)
+  | ExtTrigEqDef of ty
+  | ExtTrigEqTrigger of ty
+  | DisjointTrigger
+  | EmptyComprehensionTrigger
+  | ExtTrigEqCardPropagate
 
 
 val tla_smb_to_string : tla_smb -> string

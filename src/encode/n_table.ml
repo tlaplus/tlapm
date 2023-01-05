@@ -103,6 +103,8 @@ type tla_smb =
   | Proj of ty
   | True of ty
   | Anon of string * ty2
+  | ExtTrigEq of ty
+  | ExtTrig
 
 type tla_axm =
     (* UNTYPED *)
@@ -220,6 +222,11 @@ type tla_axm =
   | TypeGuardIntro of ty
   | TypeGuardElim of ty
   | Typing of tla_smb (** Only for typed symbols *)
+  | ExtTrigEqDef of ty
+  | ExtTrigEqTrigger of ty
+  | DisjointTrigger
+  | EmptyComprehensionTrigger
+  | ExtTrigEqCardPropagate
 
 
 let tla_smb_to_string = function
@@ -300,6 +307,8 @@ let tla_smb_to_string = function
   | Proj ty -> "Proj " ^ ty_to_string ty
   | True ty -> "True" ^ ty_to_string ty
   | Anon (s, ty2) -> "Anon " ^ s ^ " " ^ ty2_to_string ty2
+  | ExtTrigEq ty -> "ExtTrigEq " ^ ty_to_string ty
+  | ExtTrig -> "ExtTrig"
 
 let axm_desc = function
   | ChooseDef -> "ChooseDef"
@@ -407,4 +416,9 @@ let axm_desc = function
   | TypeGuardIntro ty -> "TypeGuardIntro " ^ ty_to_string ty
   | TypeGuardElim ty -> "TypeGuardElim " ^ ty_to_string ty
   | Typing tla_smb -> "Typing " ^ tla_smb_to_string tla_smb
+  | ExtTrigEqDef ty -> "ExtTrigEqDef " ^ ty_to_string ty
+  | ExtTrigEqTrigger ty -> "ExtTrigEqTrigger " ^ ty_to_string ty
+  | DisjointTrigger -> "DisjointTrigger"
+  | EmptyComprehensionTrigger -> "EmptyComprehensionTrigger"
+  | ExtTrigEqCardPropagate -> "ExtTrigEqCardPropagate"
 

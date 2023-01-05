@@ -416,6 +416,89 @@ let op_typing t_smb =
 
   end
 
+let exttrigeq_def ty0 =
+  let actual_ty =
+    match ty0 with
+    | TAtm (TAInt | TABol) -> ty0
+    | _ -> t_idv
+  in
+  quant Forall
+  [ "x" ; "y" ] [ actual_ty ; actual_ty ]
+  ~pats:[ [
+    apps (T.ExtTrigEq ty0)
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb B.Equiv
+    [ apps (T.ExtTrigEq ty0)
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ; appb ~tys:[ actual_ty ] B.Eq
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let exttrigeq_trigger ty0 =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps (T.ExtTrigEq (TSet ty0))
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( apps T.ExtTrig
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ) %% []
+
+let disjoint_trigger () =
+  quant Forall
+  [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.Cap
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( apps T.ExtTrig
+    [ apps T.Cap
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ; apps (T.SetEnum 0) [] %% []
+    ] %% []
+  ) %% []
+
+let emptycomprehension_trigger () =
+  seq
+  [ "P" ] [ Ty1 ([ t_idv ], t_bol) ]
+  ( quant Forall
+    [ "a" ] [ t_idv ]
+    ~pats:[ [
+      apps T.SetSt
+      [ Ix 1 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ] ]
+    ( apps T.ExtTrig
+      [ apps T.SetSt
+        [ Ix 1 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ; apps (T.SetEnum 0) [] %% []
+      ] %% []
+    ) %% []
+  ) %% []
+
+let exttrigeq_card () =
+  Internal B.TRUE %% []
+
 
 (* {4 Logic} *)
 
@@ -468,9 +551,16 @@ let choose_ext () =
 
 (* {4 Sets} *)
 
-let set_ext () =
+let set_ext ~ext =
   quant Forall
   [ "x" ; "y" ] [ t_idv ; t_idv ]
+  ?pats:(if ext then Some [ [
+    apps T.ExtTrig
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  else None)
   ( appb B.Implies
     [ quant Forall
       [ "z" ] [ t_idv ]
@@ -4570,10 +4660,15 @@ let get_axm ~solver tla_smb =
     | true -> false
     | _ -> Params.debugging "t0+"
   in
+  let ext =
+    match solver with
+    | "SMT" | "Z3" | "CVC4" | "CVC5" | "veriT" -> Params.debugging "ext"
+    | _ -> false
+  in
   match tla_smb with
   | T.ChooseDef -> choose_def () |> mark T.Choose
   | T.ChooseExt -> choose_ext ()
-  | T.SetExt -> set_ext ()
+  | T.SetExt -> set_ext ~ext
   | T.SubsetEqDef -> subseteq_def ()
   | T.SubsetEqIntro -> subseteq_intro ()
   | T.SubsetEqElim -> subseteq_elim ()
@@ -4677,4 +4772,9 @@ let get_axm ~solver tla_smb =
   | T.TypeGuardIntro ty0 -> type_guard_intro ty0
   | T.TypeGuardElim ty0 -> type_guard_elim ty0
   | T.Typing tla_smb -> op_typing tla_smb
+  | T.ExtTrigEqDef ty0 -> exttrigeq_def ty0
+  | T.ExtTrigEqTrigger ty0 -> exttrigeq_trigger ty0
+  | T.DisjointTrigger -> disjoint_trigger ()
+  | T.EmptyComprehensionTrigger -> emptycomprehension_trigger ()
+  | T.ExtTrigEqCardPropagate -> exttrigeq_card ()
 

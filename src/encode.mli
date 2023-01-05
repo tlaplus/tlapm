@@ -107,6 +107,8 @@ module Table : sig
     | Proj of ty
     | True of ty
     | Anon of string * ty2
+    | ExtTrigEq of ty
+    | ExtTrig
 end
 
 module Smb : sig

@@ -279,6 +279,18 @@ let special_data tla_smb =
                         [],                                   ty)
   | Anon (s, Ty2 (ty1s, ty0)) ->
       ("Anon_" ^ s,     ty1s,                                 ty0)
+  | ExtTrigEq ty ->
+          (* get the sort as it will appear in SMT *)
+          let actual_ty =
+              match ty with
+              | TAtm (TAInt | TABol) -> ty
+              | _ -> t_idv
+          in
+          ("TrigEq_" ^ ty_to_string ty,
+                        [ t_cst actual_ty ; t_cst actual_ty ],  t_bol)
+  | ExtTrig ->
+          ("SetExtTrigger",
+                        [ t_cst t_idv ; t_cst t_idv ],        t_bol)
 
   | _ ->
       error "internal error"
@@ -310,7 +322,7 @@ let get_data tla_smb =
       ; dat_kind = Typed
       ; dat_tver = Some tver
       }
-  | Cast _ | Proj _ | True _ | Anon _ ->
+  | Cast _ | Proj _ | True _ | Anon _ | ExtTrigEq _ | ExtTrig ->
       let (nm, tins, tout) = special_data tla_smb in
       { dat_name = "TLA__" ^ nm
       ; dat_ty2  = Ty2 (tins, tout)
@@ -352,11 +364,19 @@ let untyped_deps ~solver tla_smb s =
     | true -> false
     | _ -> Params.debugging "t0+"
   in
+  let ext =
+      match solver with
+      | "SMT" | "Z3" | "CVC4" | "CVC5" | "veriT" -> Params.debugging "ext"
+      | _ -> false
+  in
   begin match tla_smb with
   (* Logic *)
   | Choose ->
       ([], [ ChooseDef (*; ChooseExt*) ])
   (* Set Theory *)
+  | Mem when ext ->
+      ([ ExtTrig ],
+                  [ SetExt ])
   | Mem ->
       ([],        [ (*SetExt*) ])
   | SubsetEq ->
@@ -372,10 +392,16 @@ let untyped_deps ~solver tla_smb s =
                   [ SubsetDefAlt ])
   | Cup ->
       ([ Mem ],   [ CupDef ])
+  | Cap when ext ->
+          ([ Mem ; SetEnum 0 ; ExtTrig ],
+                  [ CapDef ; DisjointTrigger ])
   | Cap ->
       ([ Mem ],   [ CapDef ])
   | SetMinus ->
       ([ Mem ],   [ SetMinusDef ])
+  | SetSt when ext ->
+      ([ Mem ; SetEnum 0; ExtTrig ],
+                  [ SetStDef ; EmptyComprehensionTrigger ])
   | SetSt ->
       ([ Mem ],   [ SetStDef ])
   | SetOf n ->
@@ -613,6 +639,12 @@ let special_deps tla_smb =
       ([], [])
   | Anon _ ->
       ([], [])
+  | ExtTrigEq (TSet ty01 as ty0) ->
+      ([ ExtTrig ],       [ ExtTrigEqDef ty0 ; ExtTrigEqTrigger ty01 ])
+  | ExtTrigEq ty0 ->
+      ([],                [ ExtTrigEqDef ty0 ])
+  | ExtTrig ->
+      ([], [])
   | _ ->
       error "internal error"
   end |>
@@ -643,7 +675,7 @@ let get_deps ~solver tla_smb s =
       { dat_deps = smbs
       ; dat_axms = axms
       }
-  | Cast _ | Proj _ | True _ | Anon _ ->
+  | Cast _ | Proj _ | True _ | Anon _ | ExtTrigEq _ | ExtTrig ->
       let s, (smbs, axms) = special_deps tla_smb s in
       s,
       { dat_deps = smbs

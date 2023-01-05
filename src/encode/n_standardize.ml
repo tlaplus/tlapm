@@ -34,6 +34,19 @@ let mk_opq smb =
 
 let err_count = ref 0
 
+let is_set e =
+  match e.core with
+  | Apply ({ core = Opaque s } as op, _) when has op smb_prop ->
+      let smb = get op smb_prop in
+      begin match get_defn smb with
+      | SetEnum _ | Union | Subset | Cup | Cap | SetMinus | SetSt
+      | SetOf _ | BoolSet | StrSet | IntSet | NatSet | IntRange | FunSet
+      | Product _ | RecSet _ | SeqSeq ->
+          true
+      | _ -> false
+      end
+  | _ -> false
+
 
 (* {3 Main} *)
 
@@ -89,6 +102,25 @@ let visitor = object (self : 'self)
         let smb = mk_smb (Anon (s, upcast_ty2 ty1)) in
         let opq = mk_opq smb $$ op in
         Apply (opq, es) @@ oe
+
+    | Apply ({ core = Internal (B.Eq | B.Neq as b) } as op, [ e ; f ]) when Params.debugging "ext" ->
+        let e = self#expr scx e in
+        let f = self#expr scx f in
+        let ty0 =
+          match query op Props.tpars_prop with
+          | Some [ TAtm TAIdv ] | None when is_set e || is_set f -> TSet (TAtm TAIdv)
+          | Some [ ty0 ] -> ty0
+          | None -> TAtm TAIdv
+          | Some _ -> failwith "bad type annotation"
+        in
+        let smb = mk_smb (ExtTrigEq ty0) in
+        let opq = mk_opq smb $$ op in
+        Apply (opq, [ e ; f ]) @@ oe |> fun e ->
+          begin match b with
+          | B.Eq -> e
+          | B.Neq -> Apply (Internal B.Neg %% [], [ e ]) @@ oe
+          | _ -> failwith ""
+          end
 
     | Internal (B.TRUE | B.FALSE
                | B.Implies | B.Equiv | B.Conj | B.Disj
