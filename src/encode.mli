@@ -109,6 +109,7 @@ module Table : sig
     | Anon of string * ty2
     | ExtTrigEq of ty
     | ExtTrig
+    | IsSetOf
 end
 
 module Smb : sig

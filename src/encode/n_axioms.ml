@@ -496,6 +496,42 @@ let emptycomprehension_trigger () =
     ) %% []
   ) %% []
 
+let assert_issetof n =
+  seq [ "P" ] [ Ty1 ([ t_idv ], t_idv) ]
+  ( quant Forall
+    [ "a" ] [ t_idv ]
+    ~pats:[ [
+      apps (T.SetOf n)
+      [ Ix 1 %% []
+      ; Ix 2 %% []
+      ] %% []
+    ] ]
+    ( apps T.IsSetOf
+      [ apps (T.SetOf n)
+        [ Ix 1 %% []
+        ; Ix 2 %% []
+        ] %% []
+      ] %% []
+    ) %% []
+  ) %% []
+
+let compare_setof_trigger () =
+  quant Forall
+  [ "a" ; "b" ] [ t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.IsSetOf
+    [ Ix 2 %% []
+    ] %% []
+  ; apps T.IsSetOf
+    [ Ix 1 %% []
+    ] %% []
+  ] ]
+  ( apps T.ExtTrig
+    [ Ix 2 %% []
+    ; Ix 1 %% []
+    ] %% []
+  ) %% []
+
 let exttrigeq_card () =
   Internal B.TRUE %% []
 
@@ -4778,5 +4814,7 @@ let get_axm ~solver tla_smb =
   | T.ExtTrigEqTrigger ty0 -> exttrigeq_trigger ty0
   | T.DisjointTrigger -> disjoint_trigger ()
   | T.EmptyComprehensionTrigger -> emptycomprehension_trigger ()
+  | T.AssertIsSetOf n -> assert_issetof n |> mark (T.SetOf n)
+  | T.CompareSetOfTrigger -> compare_setof_trigger ()
   | T.ExtTrigEqCardPropagate -> exttrigeq_card ()
 

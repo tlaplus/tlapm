@@ -291,6 +291,8 @@ let special_data tla_smb =
   | ExtTrig ->
           ("SetExtTrigger",
                         [ t_cst t_idv ; t_cst t_idv ],        t_bol)
+  | IsSetOf ->
+          ("IsSetOf",   [ t_cst t_idv ],                      t_bol)
 
   | _ ->
       error "internal error"
@@ -322,7 +324,7 @@ let get_data tla_smb =
       ; dat_kind = Typed
       ; dat_tver = Some tver
       }
-  | Cast _ | Proj _ | True _ | Anon _ | ExtTrigEq _ | ExtTrig ->
+  | Cast _ | Proj _ | True _ | Anon _ | ExtTrigEq _ | ExtTrig | IsSetOf ->
       let (nm, tins, tout) = special_data tla_smb in
       { dat_name = "TLA__" ^ nm
       ; dat_ty2  = Ty2 (tins, tout)
@@ -406,6 +408,9 @@ let untyped_deps ~solver tla_smb s =
                   [ SetStDef ; EmptyComprehensionTrigger ])
   | SetSt ->
       ([ Mem ],   [ SetStDef ])
+  | SetOf n when ext ->
+      ([ Mem ; IsSetOf ],
+                  [ SetOfIntro n ; SetOfElim n ; AssertIsSetOf n ; CompareSetOfTrigger ])
   | SetOf n ->
       ([ Mem ],   [ SetOfIntro n ; SetOfElim n ])
   (* Booleans *)
@@ -647,6 +652,8 @@ let special_deps tla_smb =
       ([],                [ ExtTrigEqDef ty0 ])
   | ExtTrig ->
       ([], [])
+  | IsSetOf ->
+      ([], [])
   | _ ->
       error "internal error"
   end |>
@@ -677,7 +684,7 @@ let get_deps ~solver tla_smb s =
       { dat_deps = smbs
       ; dat_axms = axms
       }
-  | Cast _ | Proj _ | True _ | Anon _ | ExtTrigEq _ | ExtTrig ->
+  | Cast _ | Proj _ | True _ | Anon _ | ExtTrigEq _ | ExtTrig | IsSetOf ->
       let s, (smbs, axms) = special_deps tla_smb s in
       s,
       { dat_deps = smbs

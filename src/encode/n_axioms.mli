@@ -40,6 +40,8 @@ val exttrigeq_def : ty0 -> expr
 val exttrigeq_trigger : ty0 -> expr
 val disjoint_trigger : unit -> expr
 val emptycomprehension_trigger : unit -> expr
+val assert_issetof : int -> expr
+val compare_setof_trigger : unit -> expr
 val exttrigeq_card : unit -> expr
 
 
