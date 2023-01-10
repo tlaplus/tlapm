@@ -365,8 +365,10 @@ let untyped_deps ~solver tla_smb s =
     | _ -> Params.debugging "t0+"
   in
   let ext =
+    if Params.debugging "noext" then false
+    else
       match solver with
-      | "SMT" | "Z3" | "CVC4" | "CVC5" | "veriT" -> Params.debugging "ext"
+      | "SMT" | "Z3" | "CVC4" | "CVC5" | "veriT" -> true
       | _ -> false
   in
   begin match tla_smb with

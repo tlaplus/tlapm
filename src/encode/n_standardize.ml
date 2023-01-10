@@ -103,7 +103,7 @@ let visitor = object (self : 'self)
         let opq = mk_opq smb $$ op in
         Apply (opq, es) @@ oe
 
-    | Apply ({ core = Internal (B.Eq | B.Neq as b) } as op, [ e ; f ]) when Params.debugging "ext" ->
+    | Apply ({ core = Internal (B.Eq | B.Neq as b) } as op, [ e ; f ]) ->
         let e = self#expr scx e in
         let f = self#expr scx f in
         let ty0 =

@@ -4661,9 +4661,11 @@ let get_axm ~solver tla_smb =
     | _ -> Params.debugging "t0+"
   in
   let ext =
-    match solver with
-    | "SMT" | "Z3" | "CVC4" | "CVC5" | "veriT" -> Params.debugging "ext"
-    | _ -> false
+    if Params.debugging "noext" then false
+    else
+      match solver with
+      | "SMT" | "Z3" | "CVC4" | "CVC5" | "veriT" -> true
+      | _ -> false
   in
   match tla_smb with
   | T.ChooseDef -> choose_def () |> mark T.Choose
