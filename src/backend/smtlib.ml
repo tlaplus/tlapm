@@ -559,8 +559,8 @@ let pp_print_obligation ?(solver="SMT") ff ob =
   (* Print options *)
   let logic =
     if Params.debugging "noarith" then "UF"
-    else if Params.debugging "lia" || solver = "veriT" then "UFLIA"
-    else "UFNIA"
+    else if solver = "veriT" then "UFLIA"
+    else !Params.smt_logic (* default: UFNIA *)
   in
   fprintf ff "(set-logic %s)@." logic;
   pp_print_newline ff ();
