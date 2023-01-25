@@ -93,6 +93,7 @@ let visitor = object (self : 'self)
 
     | Opaque s ->
         let ty2 = Ty2 ([], TAtm TAIdv) in
+        let s = "OPAQUE_" ^ s in
         let smb = mk_smb (Anon (s, ty2)) in
         let opq = mk_opq smb $$ oe in
         opq
@@ -103,7 +104,7 @@ let visitor = object (self : 'self)
         let opq = mk_opq smb $$ op in
         Apply (opq, es) @@ oe
 
-    | Apply ({ core = Internal (B.Eq | B.Neq as b) } as op, [ e ; f ]) ->
+    | Apply ({ core = Internal (B.Eq | B.Neq as b) } as op, [ e ; f ]) when not (Params.debugging "noext") ->
         let e = self#expr scx e in
         let f = self#expr scx f in
         let ty0 =
