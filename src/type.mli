@@ -1,5 +1,5 @@
 (*
- * Copyright (C) 2012  INRIA and Microsoft Corporation
+ * Copyright (C) 2022  INRIA and Microsoft Corporation
  *)
 
 (** Packaging Module for TLA+'s Type System *)

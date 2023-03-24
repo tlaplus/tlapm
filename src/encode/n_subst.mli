@@ -2,7 +2,7 @@
  * encode/subst.ml --- substitutions
  *
  *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+ * Copyright (C) 2022  INRIA and Microsoft Corporation
  *)
 
 (* NOTE This is a duplicate of the Expr.Subst module,

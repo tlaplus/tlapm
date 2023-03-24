@@ -2,7 +2,7 @@
  * encode/smb.mli --- symbols for expressions in standard form
  *
  *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+ * Copyright (C) 2022  INRIA and Microsoft Corporation
  *)
 
 (** Symbols offer a common representation for TLA+ operators, builtins, and

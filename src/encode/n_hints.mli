@@ -2,7 +2,7 @@
  * encode/hints.mli --- add generic with-patterns on quantified forms
  *
  *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+ * Copyright (C) 2022  INRIA and Microsoft Corporation
  *)
 
 (** The idea is to detect a unary predicate with a certain name "With(X)".
