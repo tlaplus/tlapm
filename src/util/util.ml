@@ -21,7 +21,7 @@ end
 
 module IC = struct
   type t = int
-  let compare x y = Pervasives.compare x y
+  let compare x y = Stdlib.compare x y
 end
 
 module Coll = struct
