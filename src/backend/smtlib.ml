@@ -43,7 +43,7 @@ let repls =
   ; '%',  "percentsign_"
   ; '^', "circumflexaccent_"
   ; '&',  "ampersand_"
-  ; '@',  "atsign"
+  ; '@',  "atsign_"
   ; '#',  "pound_"
   ; '$',  "dollarsign_"
   ; '(',  "leftparenthesis_"
