@@ -47,7 +47,7 @@ let apps tla_smb es =
   app opq es
 
 let quant q xs ty0s ?pats e =
-  if List.length xs > 0 then
+  if xs <> [] then
     let xs =
       List.map2 begin fun x ty0 ->
         (assign (x %% []) Props.ty0_prop ty0, Constant, No_domain)
