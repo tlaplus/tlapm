@@ -37,7 +37,7 @@ end)
 
 module Tm = Map.Make (struct
   type t = ty
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
 end)
 
 let upcast_ty1 ty = Ty1 ([], ty)
