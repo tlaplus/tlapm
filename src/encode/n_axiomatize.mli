@@ -2,7 +2,7 @@
  * encode/axiomatize.mli --- add axioms in a sequent
  *
  *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+ * Copyright (C) 2022  INRIA and Microsoft Corporation
  *)
 
 open Property

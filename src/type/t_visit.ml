@@ -131,7 +131,7 @@ class virtual ['s, 'a] foldmap = object (self : 'self)
             get oe Props.ty2_prop |>
             downcast_ty1 |>
             downcast_ty0
-          with _ ->
+          with Invalid_type_downcast ->
             let mssg = "Expected constant opaque opaque '" ^ o ^ "'" in
             error ~at:oe mssg
           else
@@ -403,23 +403,6 @@ class virtual ['s, 'a] foldmap = object (self : 'self)
             iter3 (fun e -> check0 ~at:e) es ty02s ty01s;
             (a, Product es @@ oe, TPrd ty02s)
         end
-    (* FIXME *)
-    (*
-    | Rect fs ->
-        let a, fs = List.fold_left begin fun (a, fs) (s, e) ->
-          let a, e = self#expr scx a e in
-          (a, (s, e) :: fs)
-        end (a, []) fs in
-        let fs = List.rev fs in
-        (a, Rect fs @@ oe)
-    | Record fs ->
-        let a, fs = List.fold_left begin fun (a, fs) (s, e) ->
-          let a, e = self#expr scx a e in
-          (a, (s, e) :: fs)
-        end (a, []) fs in
-        let fs = List.rev fs in
-        (a, Record fs @@ oe)
-    *)
     | Except (e, xs) ->
         let a, e, ty01 = self#expr scx a e in
         let a, xs, exty02ss =

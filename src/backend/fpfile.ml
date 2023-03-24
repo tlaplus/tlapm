@@ -117,7 +117,7 @@ module V13 = struct
      - any number of (Digest.t, sti list) pairs
   *)
 
-  let version = 13
+  let version = 14
 
 end
 

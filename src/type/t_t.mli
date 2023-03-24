@@ -93,7 +93,7 @@ end
 
 (* {3 Pretty-printing} *)
 
-(** String representation; no whitespaces *)
+(** String representation used for identifiers (no whitespaces) *)
 val ty_to_string : ty -> string
 val ty1_to_string : ty1 -> string
 val ty2_to_string : ty2 -> string

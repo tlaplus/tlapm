@@ -3,7 +3,7 @@
 EXTENDS TLAPS
 
 (** Usable theorems quantify on fst-order operators.  This may become a problem
-    for encodings into a fst-order logic like SMT-LIB.  This test exploits a
+    for encodings into a fst-order logic like SMT-LIB.  This test reveals a
     flaw in the current SMT encoding that relies on the treatment of fst-order
     and snd-order operators.
 *)

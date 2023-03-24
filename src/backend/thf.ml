@@ -22,7 +22,6 @@ let error ?at mssg =
   (*Errors.bug ?at mssg*)
   failwith mssg
 
-(* FIXME remove *)
 let primed s = s ^ "__prime"
 
 
@@ -34,15 +33,16 @@ let init_cx = Ctx.dot
  * capitalized.  All variables get a prefix to ensure that. *)
 
 let repls =
-  [ '\\', "backslash_"
+  [ '_',  "underscore_"
+  ; '\\', "backslash_"
   ; '+',  "plussign_"
   ; '-',  "hyphen_"
   ; '*',  "asterisk_"
   ; '/',  "slash_"
   ; '%',  "percentsign_"
-  ; '^', "circumflexaccent_"
+  ; '^',  "circumflexaccent_"
   ; '&',  "ampersand_"
-  ; '@',  "atsign"
+  ; '@',  "atsign_"
   ; '#',  "pound_"
   ; '$',  "dollarsign_"
   ; '(',  "leftparenthesis_"
@@ -55,7 +55,7 @@ let repls =
   ; '<',  "lessthansign_"
   ; '>',  "greaterthansign_"
   ; '=',  "equalsign_"
-  ; ' ',  "space"
+  ; ' ',  "space_"
   ]
 
 let escaped =
@@ -165,7 +165,7 @@ let rec pp_print_thf_atomic cx ff oe =
        * Would be cleaner to eliminate these beforehand *)
       let s =
         match String.split_on_char '#' s with
-        | [ s ; "prime" ] -> primed s
+        | [ s ; "prime" ] -> primed (format_g s)
         | _ ->
             (* Allowing this would make the encoding unsound, as
              * Zipperposition may just take undeclared identifiers

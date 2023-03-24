@@ -33,9 +33,8 @@ let maybe_assign prop =
 
 let app ?tys op es =
   let op = maybe_assign Props.tpars_prop op tys in
-  match es with
-  | [] -> Apply (op, []) (* Don't loose op properties *)
-  | _ -> Apply (op, es)
+  (* `app op []` is `Apply(op, [])` so that properties of op are not lost *)
+  Apply (op, es)
 
 let appb ?tys b es =
   app ?tys (Internal b %% []) es

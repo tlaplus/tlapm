@@ -122,13 +122,13 @@ end
 
 let rec ty_to_string ty =
   match ty with
-  | TVar a -> "Var" ^ a
+  | TVar a -> "Var$" ^ a ^ "$"
   | TAtm a -> tyatom_to_string a
-  | TSet ty -> "Set" ^ ty_to_string ty
-  | TFSet ty -> "FSet" ^ ty_to_string ty
-  | TFun (ty1, ty2) -> "Fun" ^ ty_to_string ty1 ^ ty_to_string ty2
-  | TPrd tys -> List.fold_left (fun s ty -> s ^ ty_to_string ty) "Prd" tys
-  | TRec ftys -> List.fold_left (fun s (f, ty) -> s ^ f ^ ty_to_string ty) "Rec" ftys
+  | TSet ty -> "Set$" ^ ty_to_string ty ^ "$"
+  | TFSet ty -> "FSet$" ^ ty_to_string ty ^ "$"
+  | TFun (ty1, ty2) -> "Fun$" ^ ty_to_string ty1 ^ ty_to_string ty2 ^ "$"
+  | TPrd tys -> ( List.fold_left (fun s ty -> s ^ ty_to_string ty) "Prd$" tys ) ^ "$"
+  | TRec ftys -> ( List.fold_left (fun s (f, ty) -> s ^ "!" ^ f ^ ty_to_string ty) "Rec" ftys ) ^ "$"
 and tyatom_to_string a =
   match a with
   | TAIdv -> "Idv"

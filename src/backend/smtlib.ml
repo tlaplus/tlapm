@@ -2,10 +2,8 @@
  * backend/smtlib.ml --- direct translation to SMT-LIB
  *
  *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+ * Copyright (C) 2022  INRIA and Microsoft Corporation
  *)
-
-(* FIXME a lot of this must be out of date *)
 
 open Format
 
@@ -35,13 +33,14 @@ let primed s = s ^ "__prime"
 (* {3 Context} *)
 
 let repls =
-  [ '\\', "backslash_"
+  [ '_',  "underscore_"
+  ; '\\', "backslash_"
   ; '+',  "plussign_"
   ; '-',  "hyphen_"
   ; '*',  "asterisk_"
   ; '/',  "slash_"
   ; '%',  "percentsign_"
-  ; '^', "circumflexaccent_"
+  ; '^',  "circumflexaccent_"
   ; '&',  "ampersand_"
   ; '@',  "atsign_"
   ; '#',  "pound_"
@@ -190,7 +189,7 @@ let rec pp_apply cx ff op args =
   | Opaque s ->
       begin match args with
       | [] ->
-          (* FIXME Ad hoc trick that formats primed variables.
+          (* FIXME This code formats primed variables.
            * Would be cleaner to eliminate these beforehand *)
           let s =
             match String.split_on_char '#' s with
@@ -286,19 +285,6 @@ and fmt_expr cx oe =
 
       | Some ({ core = Flex nm }, hs) ->
           error ~at:oe "Nested variable declaration not supported"
-          (*let ty = get nm Props.ty0_prop in
-          let ncx, nm = adj cx nm in
-          Fu.Atm begin fun ff ->
-            pp_print_sexpr begin fun ff (nm, ty, e) ->
-              fprintf ff "forall@ %a@ %a"
-              (pp_print_sexpr begin fun ff (nm, ty) ->
-                fprintf ff "%a %a"
-                pp_print_binding (nm, ty)
-                pp_print_binding (primed nm, ty)
-              end) (nm, ty)
-              (pp_box @@@ pp_print_expr ncx) e
-            end ff (nm, ty, Sequent { sq with context = hs } @@ oe)
-          end*)
 
       | Some ({ core = Fresh (nm, _, _, _) }, hs) ->
           (* NOTE Second-order quantification rejected *)
