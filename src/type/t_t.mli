@@ -98,6 +98,7 @@ val ty_to_string : ty -> string
 val ty1_to_string : ty1 -> string
 val ty2_to_string : ty2 -> string
 
+(** Human-readable representation *)
 val pp_print_ty0 : Format.formatter -> ty0 -> unit
 val pp_print_ty1 : Format.formatter -> ty1 -> unit
 val pp_print_ty2 : Format.formatter -> ty2 -> unit
