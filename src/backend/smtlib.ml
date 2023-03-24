@@ -194,7 +194,7 @@ let rec pp_apply cx ff op args =
            * Would be cleaner to eliminate these beforehand *)
           let s =
             match String.split_on_char '#' s with
-            | [ s ; "prime" ] -> primed s
+            | [ s ; "prime" ] -> primed (format_smt s)
             | _ -> s
           in
           pp_print_string ff (format_smt s)
