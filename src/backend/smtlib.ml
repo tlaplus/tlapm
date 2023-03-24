@@ -124,7 +124,7 @@ let rec pp_apply cx ff op args =
           pp_print_int ff n
       | T.TIntPlus,       [ e ; f ] ->
           pp_print_sexpr begin fun ff (e, f) ->
-            fprintf ff "+@ %a %a"
+            fprintf ff "+@ %a@ %a"
             (pp_box @@@ pp_print_expr cx) e
             (pp_box @@@ pp_print_expr cx) f
           end ff (e, f)
