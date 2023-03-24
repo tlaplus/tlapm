@@ -32,7 +32,7 @@ and ty2 = Ty2 of ty1 list * ty  (** Snd-order operator type *)
 
 module Ts = Set.Make (struct
   type t = ty
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
 end)
 
 module Tm = Map.Make (struct
