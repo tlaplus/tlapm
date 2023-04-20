@@ -2639,6 +2639,43 @@ let tupapp_def ~noarith n =
     ) %% []
   ) %% []
 
+let tupexcept_def ~noarith n i =
+  quant Forall
+  (gen "x" n @ [ "x" ]) (dupl t_idv (n+1))
+  ~pats:[ [
+    apps T.FunExcept
+    [ apps (T.Tuple n)
+      (ixi ~shift:1 n) %% []
+    ; begin
+      if noarith then
+        apps (T.IntLit (i + 1)) [] %% []
+      else
+        apps (T.Cast t_int)
+        [ apps (T.TIntLit (i + 1)) [] %% []
+        ] %% []
+      end
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb ~tys:[ t_idv ] B.Eq
+    [ apps T.FunExcept
+      [ apps (T.Tuple n)
+        (ixi ~shift:1 n) %% []
+      ; begin
+        if noarith then
+          apps (T.IntLit (i + 1)) [] %% []
+        else
+          apps (T.Cast t_int)
+          [ apps (T.TIntLit (i + 1)) [] %% []
+          ] %% []
+        end
+      ; Ix 1 %% []
+      ] %% []
+    ; apps (T.Tuple n)
+      (ixi ~shift:(n-i+2) (i-1) @ [ Ix 1 %% [] ] @ ixi ~shift:1 (n-i)) %% []
+    ] %% []
+  ) %% []
+
 let productset_def n =
   quant Forall
   (gen "s" n @ [ "t" ]) (dupl t_idv (n + 1))
@@ -2810,6 +2847,31 @@ let recapp_def fs =
       ; Ix (n - i) %% []
       ] %% []
     end fs) %% []
+  ) %% []
+
+let recexcept_def fs i =
+  let n = List.length fs in
+  let s = List.nth fs (i-1) in
+  quant Forall
+  (gen "x" n @ [ "x" ]) (dupl t_idv (n+1))
+  ~pats:[ [
+    apps T.FunExcept
+    [ apps (T.Rec fs)
+      (ixi ~shift:1 n) %% []
+    ; apps (T.StrLit s) [] %% []
+    ; Ix 1 %% []
+    ] %% []
+  ] ]
+  ( appb ~tys:[ t_idv ] B.Eq
+    [ apps T.FunExcept
+      [ apps (T.Rec fs)
+        (ixi ~shift:1 n) %% []
+      ; apps (T.StrLit s) [] %% []
+      ; Ix 1 %% []
+      ] %% []
+    ; apps (T.Rec fs)
+      (ixi ~shift:(n-i+2) (i-1) @ [ Ix 1 %% [] ] @ ixi ~shift:1 (n-i)) %% []
+    ] %% []
   ) %% []
 
 let recset_def fs =
@@ -4766,12 +4828,14 @@ let get_axm ~solver tla_smb =
   | T.TupIsafcn n -> tuple_isafcn n
   | T.TupDomDef n -> tupdom_def ~noarith ~t0p n
   | T.TupAppDef n -> tupapp_def ~noarith n
+  | T.TupExcept (n, i) -> tupexcept_def ~noarith n i
   | T.ProductDef n -> productset_def n
   | T.ProductIntro n -> productset_intro n
   | T.ProductElim n -> productset_elim ~noarith n
   | T.RecIsafcn fs -> record_isafcn fs
   | T.RecDomDef fs -> recdom_def fs
   | T.RecAppDef fs -> recapp_def fs
+  | T.RecExcept (fs, s) -> recexcept_def fs s
   | T.RecSetDef fs -> recset_def fs
   | T.RecSetIntro fs -> recset_intro fs
   | T.RecSetElim fs -> recset_elim fs

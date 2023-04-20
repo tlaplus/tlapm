@@ -198,6 +198,7 @@ type tla_axm =
   | TupIsafcn of int
   | TupDomDef of int
   | TupAppDef of int
+  | TupExcept of int * int
   | ProductDef of int
   | ProductIntro of int
   | ProductElim of int
@@ -205,6 +206,7 @@ type tla_axm =
   | RecIsafcn of string list
   | RecDomDef of string list
   | RecAppDef of string list
+  | RecExcept of string list * int
   | RecSetDef of string list
   | RecSetIntro of string list
   | RecSetElim of string list

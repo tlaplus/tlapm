@@ -154,6 +154,8 @@ val tupdom_def : noarith:bool -> t0p:bool -> int -> expr
 
 val tupapp_def : noarith:bool -> int -> expr
 
+val tupexcept_def : noarith:bool -> int -> int -> expr
+
 val productset_def : int -> expr
 val productset_intro : int -> expr
 val productset_elim : noarith:bool -> int -> expr
@@ -165,6 +167,8 @@ val record_isafcn : string list -> expr
 val recdom_def : string list -> expr
 
 val recapp_def : string list -> expr
+
+val recexcept_def : string list -> int -> expr
 
 val recset_def : string list -> expr
 val recset_intro : string list -> expr

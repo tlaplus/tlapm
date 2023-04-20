@@ -339,12 +339,18 @@ type s =
   { strlits : Ss.t
   ; intlits : Is.t
   ; t_strlits : Ss.t
+  ; except : bool
+  ; tups : int list
+  ; recs : (string list) list
   }
 
 let init =
   { strlits = Ss.empty
   ; intlits = Is.empty
   ; t_strlits = Ss.empty
+  ; except = false
+  ; tups = []
+  ; recs = []
   }
 
 let untyped_deps ~solver tla_smb s =
@@ -354,6 +360,12 @@ let untyped_deps ~solver tla_smb s =
         { s with strlits = Ss.add str s.strlits }
     | IntLit n ->
         { s with intlits = Is.add n s.intlits }
+    | FunExcept ->
+        { s with except = true }
+    | Tuple n ->
+        { s with tups = n :: s.tups }
+    | Rec fs ->
+        { s with recs = fs :: s.recs }
     | _ -> s
   in
   let noarith =
@@ -496,8 +508,10 @@ let untyped_deps ~solver tla_smb s =
   | FunApp ->
       ([ Mem ; FunConstr ],       [ FunAppDef ])
   | FunExcept ->
+      let axms_tups = List.map (fun n -> List.init n (fun i -> TupExcept (n, i+1))) s.tups |> List.concat in
+      let axms_recs = List.map (fun fs -> List.init (List.length fs) (fun i -> RecExcept (fs, i+1))) s.recs |> List.concat in
       ([ Mem ; FunIsafcn ; FunDom ; FunApp ],
-                                  [ FunExceptIsafcn ; FunExceptDomDef ; FunExceptAppDef1 ; FunExceptAppDef2 ])
+                                  [ FunExceptIsafcn ; FunExceptDomDef ; FunExceptAppDef1 ; FunExceptAppDef2 ] @ axms_tups @ axms_recs)
   | FunIm ->
       ([ Mem ; FunDom ; FunApp ], [ FunImIntro ; FunImElim ])
   (* Tuples *)
@@ -508,18 +522,18 @@ let untyped_deps ~solver tla_smb s =
       ([ FunIsafcn ; Cast (TAtm TAInt) ; SeqSeq ; SeqLen ],
                                   [ TupIsafcn 0 ; SeqTupTyping 0 ; SeqTupLen 0 ])
   | Tuple n when n > 0 && noarith ->
-      (*([ FunIsafcn ; FunDom ; FunApp ; IntRange ]*)
+      let axms_except = if s.except then List.init n (fun i -> TupExcept (n, i+1)) else [] in
       ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ; Mem ; SeqSeq ; SeqLen ]
        @ List.init n (fun i -> IntLit (i+1)),
-                                  [ TupIsafcn n ; TupDomDef n ; TupAppDef n ; SeqTupTyping n ; SeqTupLen n ])
+                                  [ TupIsafcn n ; TupDomDef n ; TupAppDef n ; SeqTupTyping n ; SeqTupLen n ] @ axms_except)
   | Tuple n when n > 0 && t0p ->
-      (*([ FunIsafcn ; FunDom ; FunApp ; TIntRange ],*)
+      let axms_except = if s.except then List.init n (fun i -> TupExcept (n, i+1)) else [] in
       ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ; Cast (TAtm TAInt) ; Mem ; SeqSeq ; SeqLen ],
-                                  [ TupIsafcn n ; TupDomDef n ; TupAppDef n ; SeqTupTyping n ; SeqTupLen n ])
+                                  [ TupIsafcn n ; TupDomDef n ; TupAppDef n ; SeqTupTyping n ; SeqTupLen n ] @ axms_except)
   | Tuple n when n > 0 ->
-      (*([ FunIsafcn ; FunDom ; FunApp ; IntRange ; Cast (TAtm TAInt) ],*)
+      let axms_except = if s.except then List.init n (fun i -> TupExcept (n, i+1)) else [] in
       ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ; Cast (TAtm TAInt) ; Mem ; SeqSeq ; SeqLen ],
-                                  [ TupIsafcn n ; TupDomDef n ; TupAppDef n ; SeqTupTyping n ; SeqTupLen n ])
+                                  [ TupIsafcn n ; TupDomDef n ; TupAppDef n ; SeqTupTyping n ; SeqTupLen n ] @ axms_except)
   | Product n ->
       ([ Mem ; Tuple n ; FunApp ]
        @ List.init n (fun i ->
@@ -530,9 +544,10 @@ let untyped_deps ~solver tla_smb s =
   (* Records *)
   | Rec fs ->
       let n = List.length fs in
+      let axms_except = if s.except then List.init (List.length fs) (fun i -> RecExcept (fs, i+1)) else [] in
       ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ]
        @ List.map (fun s -> StrLit s) fs,
-                                  [ RecIsafcn fs ; RecDomDef fs ; RecAppDef fs ])
+                                  [ RecIsafcn fs ; RecDomDef fs ; RecAppDef fs ] @ axms_except)
   | RecSet fs ->
       ([ Mem ; Rec fs ; FunApp ]
        @ List.map (fun s -> StrLit s) fs,

@@ -178,6 +178,7 @@ type tla_axm =
   | TupIsafcn of int
   | TupDomDef of int
   | TupAppDef of int
+  | TupExcept of int * int
   | ProductDef of int
   | ProductIntro of int
   | ProductElim of int
@@ -185,6 +186,7 @@ type tla_axm =
   | RecIsafcn of string list
   | RecDomDef of string list
   | RecAppDef of string list
+  | RecExcept of string list * int
   | RecSetDef of string list
   | RecSetIntro of string list
   | RecSetElim of string list
@@ -378,12 +380,14 @@ let axm_desc = function
   | TupIsafcn n -> Format.sprintf "TupIsafcn %d" n
   | TupDomDef n -> Format.sprintf "TupDomDef %d" n
   | TupAppDef n -> Format.sprintf "TupAppDef %d" n
+  | TupExcept (n, i) -> Format.sprintf "TupExcept %d %d" n i
   | ProductDef n -> Format.sprintf "ProductDef %d" n
   | ProductIntro n -> Format.sprintf "ProductIntro %d" n
   | ProductElim n -> Format.sprintf "ProductElim %d" n
   | RecIsafcn fs -> String.concat " " ( "RecIsafcn" :: fs )
   | RecDomDef fs -> String.concat " " ( "RecDomDef" :: fs )
   | RecAppDef fs -> String.concat " " ( "RecAppDef" :: fs )
+  | RecExcept (fs, i) -> String.concat " " ( "RecExcept" :: (fs @ [ string_of_int i ]))
   | RecSetDef fs -> String.concat " " ( "RecSetDef" :: fs )
   | RecSetIntro fs -> String.concat " " ( "RecSetIntro" :: fs )
   | RecSetElim fs -> String.concat " " ( "RecSetElim" :: fs )
