@@ -35,6 +35,7 @@ val op_typing : tla_smb -> expr
  * but this will have to wait.  For now, the function will redirect to one
  * of the special cases below. *)
 val op_intquotient_typing : unit -> expr
+val op_intremainder_typing : unit -> expr
 
 val exttrigeq_def : ty0 -> expr
 val exttrigeq_trigger : ty0 -> expr

@@ -342,9 +342,47 @@ let op_intquotient_typing () =
     ] %% []
   ) %% []
 
+let op_intremainder_typing () =
+  quant Forall
+  [ "x" ; "y" ] [ t_int ; t_int ]
+  ~pats:[ [
+    apps T.IntRemainder
+    [ apps (T.Cast t_int)
+      [ Ix 2 %% []
+      ] %% []
+    ; apps (T.Cast t_int)
+      [ Ix 1 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ apps T.TIntGt
+      [ Ix 1 %% []
+      ; apps (T.TIntLit 0) [] %% []
+      ] %% []
+    ; appb ~tys:[ t_idv ] B.Eq
+      [ apps T.IntRemainder
+        [ apps (T.Cast t_int)
+          [ Ix 2 %% []
+          ] %% []
+        ; apps (T.Cast t_int)
+          [ Ix 1 %% []
+          ] %% []
+        ] %% []
+      ; apps (T.Cast t_int)
+        [ apps T.TIntRemainder
+          [ Ix 2 %% []
+          ; Ix 1 %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
 let op_typing t_smb =
   match t_smb with
   | T.TIntQuotient -> op_intquotient_typing ()
+  | T.TIntRemainder -> op_intremainder_typing ()
   | _ -> begin
 
   let t_dat = N_data.get_data t_smb in
