@@ -14,45 +14,39 @@ module Constness = E_constness
 module Fmt = E_fmt
 
 
-let desugar =
-  let current_at = ref None in
-  let at_expand = object (self : 'self)
-    inherit [unit] Visit.map as super
+let current_at = ref None
 
-    method expr scx e = match e.core with
-      | At true -> begin
-          match !current_at with
-            | Some (e, dep) ->
-                let shf = Deque.size (snd scx) - dep in
-                if shf = 0 then e else app_expr (shift shf) e
-            | None ->
-                e
-        end
-      | Except (f, xs) ->
-          let at_save = !current_at in
-          let f = self#expr scx f in
-          let f = List.fold_left begin
-            fun f (trail, bod) ->
-              let (trail, at) = List.fold_left begin
-                fun (trail, f) -> function
-                  | Except_dot x -> (Except_dot x :: trail, { f with core = Dot (f, x) })
-                  | Except_apply k ->
-                      let k = self#expr scx k in
-                      (Except_apply k :: trail, { f with core = FcnApp (f, [k]) })
-              end ([], f) trail in
-              let trail = List.rev trail in
-              let () = current_at := Some (at, Deque.size (snd scx)) in
-              let bod = self#expr scx bod in
-              let () = current_at := at_save in
-              {e with core = Except (f, [(trail, bod)])}
-          end f xs in
-          f
-      | _ ->
-          super#expr scx e
-  end in
-  fun e ->
-    current_at := None ;
-    at_expand#expr ((), Deque.empty) e
+let desugar self_expr super_expr scx e =
+  match e.core with
+  | At true ->
+    begin match !current_at with
+    | Some (e, dep) ->
+      let shf = Deque.size (snd scx) - dep in
+      if shf = 0 then e else app_expr (shift shf) e
+    | None -> e
+    end
+  | Except (f, xs) ->
+    let f = self_expr scx f in
+    List.fold_left begin
+      fun f (trail, bod) ->
+        let (trail, at) =
+          List.fold_left begin
+            fun (trail, f) ex ->
+              match ex with
+              | Except_dot x ->
+                (Except_dot x :: trail, {f with core = Dot (f, x)})
+              | Except_apply k ->
+                let k = self_expr scx k in
+                (Except_apply k :: trail, {f with core = FcnApp (f, [k])})
+          end ([], f) trail
+        in
+        let at_save = !current_at in
+        current_at := Some (at, Deque.size (snd scx));
+        let bod = self_expr scx bod in
+        current_at := at_save;
+        {e with core = Except (f, [(List.rev trail, bod)])}
+    end f xs
+  | _ -> super_expr scx e
 
 let non_temporal =
   let visitor = object (self : 'self)
