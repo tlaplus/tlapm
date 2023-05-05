@@ -5,8 +5,10 @@ Copyright (C) 2008-2010  INRIA and Microsoft Corporation
 open Deque
 open E_t
 
+val desugar : (string list E_visit.scx -> expr -> expr) ->
+              (string list E_visit.scx -> expr -> expr) ->
+              string list E_visit.scx -> expr -> expr
 
-val desugar : expr -> expr
   (* moved to action frontend *)
 (* val prime_normalize : hyp Deque.dq -> expr -> expr *)
 val normalize : hyp Deque.dq -> expr -> expr
