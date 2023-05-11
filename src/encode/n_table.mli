@@ -187,10 +187,12 @@ type tla_axm =
   | FunSetSubs
   | FunDomDef
   | FunAppDef
+  | FunTyping
   | FunExceptIsafcn
   | FunExceptDomDef
   | FunExceptAppDef1
   | FunExceptAppDef2
+  | FunExceptTyping
   | FunImDef
   | FunImIntro
   | FunImElim

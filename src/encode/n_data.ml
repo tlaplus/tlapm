@@ -339,6 +339,8 @@ type s =
   { strlits : Ss.t
   ; intlits : Is.t
   ; t_strlits : Ss.t
+  ; funconstr : bool
+  ; funset : bool
   ; except : bool
   ; tups : int list
   ; recs : (string list) list
@@ -348,6 +350,8 @@ let init =
   { strlits = Ss.empty
   ; intlits = Is.empty
   ; t_strlits = Ss.empty
+  ; funconstr = false
+  ; funset = false
   ; except = false
   ; tups = []
   ; recs = []
@@ -360,6 +364,10 @@ let untyped_deps ~solver tla_smb s =
         { s with strlits = Ss.add str s.strlits }
     | IntLit n ->
         { s with intlits = Is.add n s.intlits }
+    | FunConstr ->
+        { s with funconstr = true }
+    | FunSet ->
+        { s with funset = true }
     | FunExcept ->
         { s with except = true }
     | Tuple n ->
@@ -500,9 +508,11 @@ let untyped_deps ~solver tla_smb s =
                                   [ FunExt ])
   | FunSet ->
       ([ Mem ; FunIsafcn ; FunDom ; FunApp ],
-                                  [ FunSetIntro ; FunSetElim1 ; FunSetElim2 ])
+                                  [ FunSetIntro ; FunSetElim1 ; FunSetElim2 ] @
+                                  (if s.funconstr then [ FunTyping ] else []))
   | FunConstr ->
-      ([ FunIsafcn ],             [ FunConstrIsafcn ])
+      ([ FunIsafcn ],             [ FunConstrIsafcn ] @
+                                  (if s.funset then [ FunTyping ] else []))
   | FunDom ->
       ([ FunConstr ],             [ FunDomDef ])
   | FunApp ->

@@ -1403,7 +1403,17 @@ let setof_intro n =
       (ixi ~shift:n n @
       [ Ix (n+n+1) %% []
       ]) %% []
-    ] ]
+    ] ; [
+      apps (T.SetOf n)
+      (ixi ~shift:n n @
+      [ Ix (n+n+1) %% []
+      ]) %% []
+    ] @ List.init n begin fun i ->
+      apps T.Mem
+      [ Ix (n-i) %% []
+      ; Ix (n+n-i) %% []
+      ] %% []
+    end ]
     ( appb B.Implies
       [ List (And,
           List.init n begin fun i ->
@@ -1858,6 +1868,51 @@ let fcnapp_def () =
     ) %% []
   ) %% []
 
+let fcnconstr_typing () =
+  seq
+  [ "F" ] [ Ty1 ([ t_idv ], t_idv) ]
+  ( quant Forall
+    [ "a" ; "b" ] [ t_idv ; t_idv ]
+    ~pats:[ [
+      apps T.FunConstr
+      [ Ix 2 %% []
+      ; Ix 3 %% []
+      ] %% []
+    ; apps T.FunSet
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] ]
+    ( appb B.Implies
+      [ quant Forall
+        [ "x" ] [ t_idv ]
+        ( appb B.Implies
+          [ apps T.Mem
+            [ Ix 1 %% []
+            ; Ix 3 %% []
+            ] %% []
+          ; apps T.Mem
+            [ app (Ix 4 %% [])
+              [ Ix 1 %% []
+              ] %% []
+            ; Ix 2 %% []
+            ] %% []
+          ] %% []
+        ) %% []
+      ; apps T.Mem
+        [ apps T.FunConstr
+          [ Ix 2 %% []
+          ; Ix 3 %% []
+          ] %% []
+        ; apps T.FunSet
+          [ Ix 2 %% []
+          ; Ix 1 %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ) %% []
+  ) %% []
+
 let fcnexcept_isafcn () =
   quant Forall
   [ "f" ; "x" ; "y" ] [ t_idv ; t_idv ; t_idv ]
@@ -1999,6 +2054,57 @@ let fcnexceptapp2_def () =
             ; Ix 1 %% []
             ] %% []
           ] %% []
+        ] %% []
+      ] %% []
+    ] %% []
+  ) %% []
+
+let fcnexcept_typing () =
+  quant Forall
+  [ "f" ; "x" ; "y" ; "a" ; "b" ] [ t_idv ; t_idv ; t_idv ; t_idv ; t_idv ]
+  ~pats:[ [
+    apps T.FunExcept
+    [ Ix 5 %% []
+    ; Ix 4 %% []
+    ; Ix 3 %% []
+    ] %% []
+  ; apps T.Mem
+    [ Ix 5 %% []
+    ; apps T.FunSet
+      [ Ix 2 %% []
+      ; Ix 1 %% []
+      ] %% []
+    ] %% []
+  ] ]
+  ( appb B.Implies
+    [ appb B.Conj
+      [ apps T.Mem
+        [ Ix 5 %% []
+        ; apps T.FunSet
+          [ Ix 2 %% []
+          ; Ix 1 %% []
+          ] %% []
+        ] %% []
+      ; appb B.Implies
+        [ apps T.Mem
+          [ Ix 4 %% []
+          ; Ix 2 %% []
+          ] %% []
+        ; apps T.Mem
+          [ Ix 3 %% []
+          ; Ix 1 %% []
+          ] %% []
+        ] %% []
+      ] %% []
+    ; apps T.Mem
+      [ apps T.FunExcept
+        [ Ix 5 %% []
+        ; Ix 4 %% []
+        ; Ix 3 %% []
+        ] %% []
+      ; apps T.FunSet
+        [ Ix 2 %% []
+        ; Ix 1 %% []
         ] %% []
       ] %% []
     ] %% []
@@ -4778,7 +4884,7 @@ let seqtuplen_def ~noarith n =
 
 (* {3 Get Axiom} *)
 
-(* These annotations are used to rewrite instances of an axiom schema.
+(* These annotations are used to identify axiom schemas.
  * See {!N_flatten}. *)
 let mark tla_smb e =
   let smb = mk_smb tla_smb in
@@ -4856,10 +4962,12 @@ let get_axm ~solver tla_smb =
   | T.FunSetSubs -> fcnset_subs ()
   | T.FunDomDef -> fcndom_def () |> mark T.FunConstr
   | T.FunAppDef -> fcnapp_def () |> mark T.FunConstr
+  | T.FunTyping -> fcnconstr_typing () |> mark T.FunConstr
   | T.FunExceptIsafcn -> fcnexcept_isafcn ()
   | T.FunExceptDomDef -> fcnexceptdom_def ()
   | T.FunExceptAppDef1 -> fcnexceptapp1_def ()
   | T.FunExceptAppDef2 -> fcnexceptapp2_def ()
+  | T.FunExceptTyping -> fcnexcept_typing ()
   | T.FunImDef -> fcnim_def ()
   | T.FunImIntro -> fcnim_intro ()
   | T.FunImElim -> fcnim_elim ()

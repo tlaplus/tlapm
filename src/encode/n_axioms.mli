@@ -77,9 +77,7 @@ val subset_intro : unit -> expr
 val subset_elim : unit -> expr
 
 val cup_def : unit -> expr
-
 val cap_def : unit -> expr
-
 val setminus_def : unit -> expr
 
 val setst_def : unit -> expr
@@ -93,10 +91,9 @@ val setof_elim : int -> expr
 val fcn_ext : unit -> expr
 
 val fcnconstr_isafcn : unit -> expr
-
 val fcndom_def : unit -> expr
-
 val fcnapp_def : unit -> expr
+val fcnconstr_typing : unit -> expr
 
 val fcnset_def : unit -> expr
 val fcnset_intro : unit -> expr
@@ -106,11 +103,10 @@ val fcnsetim_intro : unit -> expr
 val fcnset_subs : unit -> expr
 
 val fcnexcept_isafcn : unit -> expr
-
 val fcnexceptdom_def : unit -> expr
-
 val fcnexceptapp1_def : unit -> expr
 val fcnexceptapp2_def : unit -> expr
+val fcnexcept_typing : unit -> expr
 
 val fcnim_def : unit -> expr
 val fcnim_intro : unit -> expr
@@ -150,11 +146,8 @@ val lteq_antisym : unit -> expr
 (* {4 Tuples} *)
 
 val tuple_isafcn : int -> expr
-
 val tupdom_def : noarith:bool -> t0p:bool -> int -> expr
-
 val tupapp_def : noarith:bool -> int -> expr
-
 val tupexcept_def : noarith:bool -> int -> int -> expr
 
 val productset_def : int -> expr
@@ -164,11 +157,8 @@ val productset_elim : noarith:bool -> int -> expr
 (* {4 Records} *)
 
 val record_isafcn : string list -> expr
-
 val recdom_def : string list -> expr
-
 val recapp_def : string list -> expr
-
 val recexcept_def : string list -> int -> expr
 
 val recset_def : string list -> expr

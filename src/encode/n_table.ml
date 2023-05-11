@@ -167,10 +167,12 @@ type tla_axm =
   | FunSetSubs
   | FunDomDef
   | FunAppDef
+  | FunTyping
   | FunExceptIsafcn
   | FunExceptDomDef
   | FunExceptAppDef1
   | FunExceptAppDef2
+  | FunExceptTyping
   | FunImDef
   | FunImIntro
   | FunImElim
@@ -370,10 +372,12 @@ let axm_desc = function
   | FunSetSubs -> "FunSetSubs"
   | FunDomDef -> "FunDomDef"
   | FunAppDef -> "FunAppDef"
+  | FunTyping -> "FunTyping"
   | FunExceptIsafcn -> "FunExceptIsafcn"
   | FunExceptDomDef -> "FunExceptDomDef"
   | FunExceptAppDef1 -> "FunExceptAppDef1"
   | FunExceptAppDef2 -> "FunExceptAppDef2"
+  | FunExceptTyping -> "FunExceptTyping"
   | FunImDef -> "FunImDef"
   | FunImIntro -> "FunImIntro"
   | FunImElim -> "FunImElim"
