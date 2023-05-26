@@ -531,7 +531,7 @@ let iter_file f ic =
 
 let translate v ic =
   match v with
-  | FP13 fps -> fptbl := fps; iter_file add_v13l ic;
+  | FP13 fps -> fptbl := fps; iter_file (fun x -> add_v13l x []) ic;
   | _ -> assert false
 
 

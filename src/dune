@@ -1,0 +1,13 @@
+(executable
+  (name tlapm)
+  (libraries unix str)
+  (foreign_stubs (language c) (names sysconf_stubs)))
+
+(ocamllex alexer)
+
+(include_subdirs unqualified)
+
+(env
+  (dev
+    (flags (:standard -w +a-4-7-9-27-29-30-32..42-44-45-48-50-52-60-66..70))))
+
