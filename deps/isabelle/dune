@@ -8,7 +8,7 @@
 
 (data_only_dirs Isabelle)
 
-; Blocked by <https://github.com/ocaml/dune/issues/7831>
+; TODO: Blocked by <https://github.com/ocaml/dune/issues/7831>
 ; (install
 ;  (section lib)
 ;  (dirs "Isabelle"))
