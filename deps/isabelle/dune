@@ -3,5 +3,12 @@
 ; The generated heaps (Pure and TLA+) are in Isabelle/heaps/polyml-*/.
 (rule
  (deps "Makefile")
- (targets "Isabelle")
- (action (run "make" "-C" ".")))
+ (targets (dir "Isabelle") "Isabelle.sexp")
+ (action (run "make" "-C" "." "Isabelle.sexp")))
+
+(data_only_dirs Isabelle)
+
+; Blocked by <https://github.com/ocaml/dune/issues/7831>
+; (install
+;  (section lib)
+;  (dirs "Isabelle"))

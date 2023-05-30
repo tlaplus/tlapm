@@ -1,5 +1,6 @@
 (executable
   (name tlapm)
+  (public_name tlapm)
   (libraries unix str)
   (foreign_stubs (language c) (names sysconf_stubs)))
 
