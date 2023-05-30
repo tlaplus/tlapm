@@ -6,4 +6,4 @@
 
 (install
  (section libexec)
- (files ls4))
+ (files (ls4 as bin/ls4)))

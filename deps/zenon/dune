@@ -6,4 +6,4 @@
 
 (install
  (section libexec)
- (files zenon))
+ (files (zenon as bin/zenon)))

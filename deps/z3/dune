@@ -6,4 +6,4 @@
 
 (install
  (section libexec)
- (files z3))
+ (files (z3 as bin/z3)))
