@@ -3,7 +3,7 @@ import argparse
 
 
 OCAML_VERSIONS = [
-    '4.08.2',
+    '4.08.1',
     '4.13.0',
     '4.14.0',
     ]
