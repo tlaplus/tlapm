@@ -8,7 +8,6 @@
 
 (data_only_dirs Isabelle)
 
-; TODO: Blocked by <https://github.com/ocaml/dune/issues/7831>
-; (install
-;  (section lib)
-;  (dirs "Isabelle"))
+(install
+ (section (site (tlapm backends)))
+ (dirs "Isabelle"))

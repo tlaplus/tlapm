@@ -663,7 +663,6 @@ proof/p_visit.cmo: proof/p_visit.mlt \
     proof/p_t.cmi \
     util/ext.cmi \
     expr.cmi \
-    errors.cmi \
     util/deque.cmi \
     proof/p_visit.cmi
 proof/p_visit.cmx: proof/p_visit.mlt \
@@ -671,7 +670,6 @@ proof/p_visit.cmx: proof/p_visit.mlt \
     proof/p_t.cmx \
     util/ext.cmx \
     expr.cmx \
-    errors.cmx \
     util/deque.cmx \
     proof/p_visit.cmi
 proof/p_gen.cmo: proof/p_gen.mlt \
@@ -1836,6 +1834,10 @@ module.cmx: module.mlt \
     module/m_elab.cmx \
     module/m_dep.cmx \
     module.cmi
+dune_site_mock/setup_paths.cmo: dune_site_mock/setup_paths.mlt \
+    dune_site_mock/setup_paths.cmi
+dune_site_mock/setup_paths.cmx: dune_site_mock/setup_paths.mlt \
+    dune_site_mock/setup_paths.cmi
 tlapm_args.cmo: tlapm_args.mlt \
     version.cmi \
     params.cmi \
@@ -1857,6 +1859,7 @@ tlapm.cmo: tlapm.mlt \
     tlapm_args.cmi \
     tla_parser.cmi \
     util/timing.cmi \
+    dune_site_mock/setup_paths.cmi \
     backend/schedule.cmi \
     util/property.cmi \
     proof.cmi \
@@ -1882,6 +1885,7 @@ tlapm.cmx: tlapm.mlt \
     tlapm_args.cmx \
     tla_parser.cmx \
     util/timing.cmx \
+    dune_site_mock/setup_paths.cmx \
     backend/schedule.cmx \
     util/property.cmx \
     proof.cmx \
@@ -2217,5 +2221,6 @@ module.cmi : \
     expr.cmi \
     util/deque.cmi \
     ctx.cmi
+dune_site_mock/setup_paths.cmi :
 tlapm_args.cmi :
 tlapm.cmi :

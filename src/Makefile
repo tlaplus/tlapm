@@ -139,10 +139,12 @@ MODULES = \
   backend \
   ${MODULE_PACK} \
   module \
+  dune_site_mock/setup_paths \
   tlapm_args \
   tlapm
 
 INC0 = \
+  -I ../dune_site_mock \
   -I ../backend \
   -I ../frontend \
   -I ../expr \
