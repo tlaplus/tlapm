@@ -8,4 +8,4 @@
  (action
   (setenv USE_TLAPM %{exe:../src/tlapm.exe}
   (setenv USE_LIB ../library
-   (run "./TOOLS/do_tests" ".")))))
+   (run "./TOOLS/do_tests" %{env:TEST_CASE=.})))))
