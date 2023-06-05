@@ -68,12 +68,26 @@ type executable =
 
 type exec = executable ref
 
-let mydir = Filename.dirname Sys.executable_name
-let auxdir = Filename.concat library_path "bin"
-let extrapath = sprintf ":%s:%s" mydir auxdir
+(* If the backends site is not available ([]), then look for executables in the PATH,
+   otherwise we are in the dune-based build and should look for the backends in the
+   specified site locations. *)
+let path =
+  match Setup_paths.Sites.backends with
+  | [] ->
+    let mydir = Filename.dirname Sys.executable_name in
+    let auxdir = Filename.concat library_path "bin" in
+    let extrapath = sprintf ":%s:%s" mydir auxdir in
+    let path = Sys.getenv "PATH" in
+      sprintf "%s%s" path extrapath
+  | backends_site ->
+    let site_bin bs = Filename.concat bs "bin" in
+    let site_isa bs = Filename.concat (Filename.concat bs "Isabelle") "bin" in
+    let site_paths bs = [site_bin bs; site_isa bs] in
+    let path_elems = List.concat (List.map site_paths backends_site) in
+      sprintf "%s:%s" (String.concat ":" path_elems) (Sys.getenv "PATH")
+
 let path_prefix =
-  let path = Sys.getenv "PATH" in
-  sprintf "PATH='%s%s';" path extrapath
+  sprintf "PATH='%s';" path
 
 let get_exec e =
   match !e with
@@ -100,7 +114,7 @@ let get_exec e =
         let msg1 = sprintf "Executable %S not found" exec in
         let msg2 =
           if Filename.is_relative exec
-          then sprintf " in this PATH:\n%s%s\n" (Sys.getenv "PATH") extrapath
+          then sprintf " in this PATH:\n%s\n" path
           else "."
         in
         let msg = msg1 ^ msg2 in

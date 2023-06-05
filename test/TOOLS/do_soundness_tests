@@ -3,7 +3,21 @@
 
 BASEDIR="`pwd`"
 TOOLDIR="$BASEDIR/TOOLS"
-export TLAPM="$BASEDIR/../tlapm --threads 4 -I $BASEDIR/../library"
+
+if [ -z "$USE_TLAPM" ]; then
+  TLAPM_BIN=$BASEDIR/../tlapm
+else
+  TLAPM_BIN="`realpath $USE_TLAPM`"
+fi
+
+if [ -z "$USE_LIB" ]; then
+  LIBRARY_DIR=$BASEDIR/../library
+else
+  LIBRARY_DIR="`realpath $USE_LIB`"
+fi
+
+
+export TLAPM="$TLAPM_BIN --threads 4 -I $LIBRARY_DIR"
 
 # create output folder
 juDIR=$BASEDIR/test_reports/tmp

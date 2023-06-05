@@ -4,13 +4,25 @@
 
 BASEDIR="`pwd`"
 TOOLDIR="$BASEDIR/TOOLS"
-ARGS="$BASEDIR/../library"
 
-if [ "$1" = "smt_tests" ]
-  then export ARGS="$ARGS --method smt"
+if [ -z "$USE_TLAPM" ]; then
+  TLAPM_BIN=$BASEDIR/../tlapm
+else
+  TLAPM_BIN="`realpath $USE_TLAPM`"
 fi
 
-export TLAPM="$BASEDIR/../tlapm -I $ARGS"
+if [ -z "$USE_LIB" ]; then
+  LIBRARY_DIR=$BASEDIR/../library
+else
+  LIBRARY_DIR="`realpath $USE_LIB`"
+fi
+
+ARGS="-I $LIBRARY_DIR"
+if [ "$1" = "smt_tests" ]; then
+  ARGS="$ARGS --method smt"
+fi
+
+export TLAPM="$TLAPM_BIN $ARGS"
 export STRETCH=${STRETCH:-5}
 export LOGFILE="$BASEDIR/tests.log"
 export PATH=$BASEDIR/lib/tlaps/bin/:$PATH

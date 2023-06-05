@@ -12,6 +12,7 @@
 
 /_build/
 /.vscode/
+/tlapm.opam
 
 /Makefile
 /config.log
