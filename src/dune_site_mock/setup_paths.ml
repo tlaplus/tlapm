@@ -5,4 +5,5 @@ Hence this file inicates (by returning empty list) the absense of the dune-site-
 *)
 module Sites = struct
   let backends : string list = []
+  let stdlib : string list = []
 end

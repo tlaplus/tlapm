@@ -51,7 +51,7 @@ let noproving = ref false (* Don't send any obligation to the back-ends. *)
 let printallobs = ref false
 (* print unnormalized and normalized versions of obligations in toolbox mode *)
 
-
+(* The default library path. The relative paths (-I +some) are based on this. *)
 let library_path =
   let d = Sys.executable_name in
   let d = Filename.dirname (Filename.dirname d) in
@@ -253,7 +253,10 @@ let set_smt_logic logic = smt_logic := logic
 
 let max_threads = ref nprocs
 
-let rev_search_path = ref [library_path]
+(* The actual list if paths at which the library TLA files are searched. *)
+let rev_search_path = ref (library_path :: Setup_paths.Sites.stdlib)
+
+(* Additional paths are added to the search list by keeping the base path as the first one. *)
 let add_search_dir dir =
   let dir =
     if dir.[0] = '+'
