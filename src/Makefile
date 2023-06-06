@@ -112,6 +112,7 @@ MODULES = \
   version \
   loc \
   toolbox_msg \
+  dune_site_mock/setup_paths \
   params \
   ${PARS_PACK} \
   pars \
@@ -139,7 +140,6 @@ MODULES = \
   backend \
   ${MODULE_PACK} \
   module \
-  dune_site_mock/setup_paths \
   tlapm_args \
   tlapm
 
