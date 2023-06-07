@@ -18,6 +18,10 @@ jobs:
                     '2',
                     ]
         steps:
+            - name: Install deps
+              run: |
+                sudo apt-get update
+                sudo apt-get install --yes time
             - name: Set up Python
               uses: actions/setup-python@v2
               with:
