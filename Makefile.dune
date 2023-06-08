@@ -5,8 +5,7 @@ PREFIX?=$(OPAM_SWITCH_PREFIX)
 all: build
 
 opam-deps:
-	# TODO: opam install ./ --deps-only
-	opam install --yes dune dune-site
+	opam install ./ --deps-only
 
 build:
 	dune build
