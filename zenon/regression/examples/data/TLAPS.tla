@@ -1,1 +1,1 @@
-../TLAPS.tla
+../../../../library/TLAPS.tla

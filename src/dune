@@ -1,3 +1,7 @@
+(env
+  (_
+    (flags (:standard -w +a-4-7-9-27-29-30-32..42-44-45-48-50-52-60-66..70))))
+
 (executable
   (name tlapm)
   (public_name tlapm)
@@ -14,8 +18,4 @@
 (dirs (:standard \ dune_site_mock)) ; To avoid including the mocked Setup_paths module.
 
 (include_subdirs unqualified)
-
-(env
-  (dev
-    (flags (:standard -w +a-4-7-9-27-29-30-32..42-44-45-48-50-52-60-66..70))))
 

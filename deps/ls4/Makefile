@@ -16,7 +16,7 @@ $(LS4_BASE_NAME): v$(LS4_VERS).zip
 	make -C $(LS4_BASE_NAME)/core
 
 ls4: $(LS4_BASE_NAME)
-	cp $</core/ls4 ./
+	cp -f $</core/ls4 ./
 
 clean:
 	rm -rf ls4 $(LS4_BASE_NAME) v$(LS4_VERS).zip

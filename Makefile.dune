@@ -10,6 +10,9 @@ opam-deps:
 
 build:
 	dune build
+	if [ -z "`grep 'Makefile.post-install' tlapm.opam`" ] ; then \
+	 	sed -i '/"dune" "install"/a \ \ ["%{make}%" "-C" "%{lib}%/tlapm" "-f" "Makefile.post-install"]' tlapm.opam; \
+	fi
 
 check: test
 
@@ -18,7 +21,7 @@ test:
 
 install:
 	dune install --prefix=$(PREFIX)
-	make -f $(PREFIX)/lib/tlapm/Makefile.post-install -C $(PREFIX)/lib/tlapm/
+	make -C $(PREFIX)/lib/tlapm/ -f Makefile.post-install
 
 release:
 	rm -rf $(RELEASE_NAME) $(RELEASE_NAME).tar.gz

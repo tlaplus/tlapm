@@ -12,7 +12,7 @@ $(Z3_BASE_NAME): $(Z3_BASE_NAME).zip
 	unzip $<
 
 z3: $(Z3_BASE_NAME)
-	cp $</bin/z3 ./
+	cp -f $</bin/z3 ./
 
 clean:
 	rm -rf z3 $(Z3_BASE_NAME) $(Z3_BASE_NAME).zip
