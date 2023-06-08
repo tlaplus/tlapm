@@ -1,0 +1,31 @@
+RELEASE_NAME:=tlaps-$(shell git describe --tags)-$(shell uname -m)-$(shell uname -s | tr '[:upper:]' '[:lower:]')
+
+PREFIX?=$(OPAM_SWITCH_PREFIX)
+
+all: build
+
+opam-deps:
+	# TODO: opam install ./ --deps-only
+	opam install --yes dune dune-site
+
+build:
+	dune build
+
+check: test
+
+test:
+	dune runtest
+
+install:
+	dune install --prefix=$(PREFIX)
+	make -f $(PREFIX)/lib/tlapm/Makefile.post-install -C $(PREFIX)/lib/tlapm/
+
+release:
+	rm -rf $(RELEASE_NAME) $(RELEASE_NAME).tar.gz
+	dune install --relocatable --prefix $(RELEASE_NAME)
+	make -C $(RELEASE_NAME)/lib/tlapm -f Makefile.post-install
+	tar -czf $(RELEASE_NAME).tar.gz $(RELEASE_NAME)
+	rm -rf $(RELEASE_NAME)
+
+.PHONY: all build check test install release
+

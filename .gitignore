@@ -11,8 +11,10 @@
 .DS_Store
 
 /_build/
+/_build_cache/
 /.vscode/
 /tlapm.opam
+/tlaps-*.tar.gz
 
 /Makefile
 /config.log

@@ -3,11 +3,13 @@
 ; The generated heaps (Pure and TLA+) are in Isabelle/heaps/polyml-*/.
 (rule
  (deps "Makefile")
- (targets (dir "Isabelle") "Isabelle.sexp")
- (action (run "make" "-C" "." "Isabelle.sexp")))
-
-(data_only_dirs Isabelle)
+ (targets (dir Isabelle) "Isabelle.no-links" "Isabelle.post-install")
+ (action (run "make" "-C" "." "Isabelle.no-links" "Isabelle.post-install")))
 
 (install
  (section (site (tlapm backends)))
- (dirs "Isabelle"))
+ (dirs Isabelle))
+
+(install
+ (section (site (tlapm backends)))
+ (files ("Isabelle.post-install" as "Isabelle.post-install")))
