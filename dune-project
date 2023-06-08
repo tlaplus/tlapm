@@ -36,6 +36,3 @@
   (lib backends) ; will contain all the provers, approx lib/tlapm/backends/.
   (lib stdlib))  ; TLA files composing the StdLib.
  (depends ocaml dune-site))
-
-; TODO: https://github.com/ocaml/dune/tree/main/example/with-configure-step.t
-;       to derive the current os to name the release?
