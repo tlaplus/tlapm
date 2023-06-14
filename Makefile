@@ -29,5 +29,8 @@ release:
 	tar -czf $(RELEASE_NAME).tar.gz $(RELEASE_NAME)
 	rm -rf $(RELEASE_NAME)
 
-.PHONY: all build check test install release
+clean:
+	dune clean
+
+.PHONY: all build check test install release clean
 

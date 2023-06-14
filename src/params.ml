@@ -429,7 +429,7 @@ let external_tool_config force (name, tool) =
 let configuration toolbox force =
   let lines =
     [ "version == \"" ^ rawversion () ^ "\""
-    ; "built_with == \"OCaml " ^ Config.ocaml_version ^ "\""
+    ; "built_with == \"OCaml " ^ Sys.ocaml_version ^ "\""
     ; "tlapm_executable == \"" ^ Sys.executable_name ^ "\""
     ; "max_threads == " ^ string_of_int !max_threads
     ; "library_path == \"" ^ String.escaped library_path ^ "\"" ]

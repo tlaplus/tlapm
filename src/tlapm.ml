@@ -552,7 +552,7 @@ let init () =
   Random.self_init();
   Printexc.record_backtrace true;
   Format.pp_set_max_indent Format.err_formatter 35;
-  if Config.debug then
+  if Params.debugging "main" then
     main (Tlapm_args.init ())
   else
     try main (Tlapm_args.init ()) with

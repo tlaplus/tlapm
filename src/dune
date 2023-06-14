@@ -15,7 +15,5 @@
  (module setup_paths)
  (sites tlapm))
 
-(dirs (:standard \ dune_site_mock)) ; To avoid including the mocked Setup_paths module.
-
 (include_subdirs unqualified)
 
