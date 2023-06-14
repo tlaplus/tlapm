@@ -5,9 +5,16 @@
 (executable
   (name tlapm)
   (public_name tlapm)
-  (modules (:standard setup_paths))
-  (libraries unix str dune-site)
-  (foreign_stubs (language c) (names sysconf_stubs)))
+  (modules tlapm)
+  (libraries tlapm_lib))
+
+(library
+ (name tlapm_lib)
+ (modules (:standard \ tlapm test_schedule why3_interface abstractor))
+ (libraries unix str dune-site)
+ (foreign_stubs (language c) (names sysconf_stubs))
+ (inline_tests)
+ (preprocess (pps ppx_inline_test)))
 
 (ocamllex alexer)
 
