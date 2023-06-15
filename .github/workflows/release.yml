@@ -127,9 +127,6 @@ jobs:
               run: |
                 ./tools/installer/\
                 ${{ env.INSTALLER }} -d .
-            - name: Install dependencies for testing
-              run: |
-                opam install kaputt
             - name: Run a subset of `tlapm` tests
               run: |
                 eval $(opam env)

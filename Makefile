@@ -18,6 +18,9 @@ check: test
 test:
 	dune runtest
 
+test-inline:
+	dune runtest src
+
 install:
 	dune install --prefix=$(PREFIX)
 	make -C $(PREFIX)/lib/tlapm/ -f Makefile.post-install
@@ -32,5 +35,5 @@ release:
 clean:
 	dune clean
 
-.PHONY: all build check test install release clean
+.PHONY: all build check test test-inline install release clean
 

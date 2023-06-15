@@ -92,3 +92,73 @@ let schedule mcx =
   end (Sm.empty, []) order in
   let order = List.rev order in
   (mc, order)
+
+
+let%test_module _ = (module struct
+  let sexp_of_string = Sexplib.Std.sexp_of_string
+  let sexp_of_list = Sexplib.Std.sexp_of_list
+  let sexp_of_int = Sexplib.Std.sexp_of_int
+  let compare_string = Base.compare_string
+  let compare_list = Base.compare_list
+  let compare_int = Base.compare_int
+
+  module B = Builtin
+
+  let stloc =
+    { Loc.file = "<Test>" ;
+      Loc.start = Loc.dummy ;
+      Loc.stop = Loc.dummy }
+
+  let stm x = Util.locate x stloc
+  let st = stm ()
+
+  let nullary what op =
+    Definition (Operator (what @@ st, Apply (Internal op @@ st, []) @@ st)
+      @@ st, Builtin, Visible, Export) @@ st
+
+  let create_test_case ls =
+    List.fold_left begin
+      fun acc (nm,depls,df) ->
+        let m = begin
+          stm {
+            name = noprops nm ;
+            extendees = List.map (function x -> noprops x) depls ;
+            instancees = [] ;
+            defdepth = 0 ;
+            important = true ;
+            body = [ noprops (Variables [noprops df]) ];
+            stage = Parsed ;
+          }
+        end in
+        Sm.add m.core.name.core m acc
+    end Sm.empty ls
+
+  let cmd (_,modlist) n = List.flatten (
+          List.map (function
+        | {core=Variables(varlist);props=_}
+          -> List.map (function x -> x.core) varlist
+        | _ -> failwith "not supported"
+      ) ((List.nth modlist n).core.body))
+
+  let asrt = ["A";"B";"C"]
+
+  let%test_unit "t1" =
+    let test_case_list = [("a",[],"A");("b",["a"],"B");("c",["b";"a"],"C")] in
+    let test_case = create_test_case  test_case_list in
+      [%test_eq: int] 3 (List.length (cmd (schedule test_case) 2));
+      [%test_eq: string list] asrt (cmd (schedule test_case) 2 )
+
+  let%test_unit "t2" =
+    let test_case_list = [("a",[],"A");("b",["a"],"B");("c",["a";"b"],"C")] in
+    let test_case = create_test_case  test_case_list in
+      [%test_eq: int] 3 (List.length (cmd (schedule test_case) 2));
+      [%test_eq: string list] asrt (cmd (schedule test_case) 2 )
+
+  let%test "t3" = (* display dependency on local modules even if they have the same name as standard ones *)
+    let test_case_list = [("a",["TLC"],"B")] in
+    let test_case = create_test_case  test_case_list in
+      Hs.exists
+        (fun x -> x.core = "TLC")
+        (let (e, _, _) = (external_deps (Sm.find "a" test_case)) in e)
+
+end)
