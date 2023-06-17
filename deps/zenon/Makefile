@@ -2,6 +2,7 @@ OS_TYPE=$(patsubst CYGWIN%,Cygwin,$(shell uname))
 
 ZENON_SRC=zenon-src
 
+# While the values are the same in all OS types, we keep them here to state supported OS types.
 ifeq ($(OS_TYPE),Linux)
 	ZENON_EXEC=zenon
 endif
@@ -9,7 +10,7 @@ ifeq ($(OS_TYPE),Darwin)
 	ZENON_EXEC=zenon
 endif
 ifeq ($(OS_TYPE),Cygwin)
-	ZENON_EXEC=zenon.exe
+	ZENON_EXEC=zenon
 endif
 
 all: zenon
