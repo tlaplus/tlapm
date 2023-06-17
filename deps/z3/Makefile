@@ -27,6 +27,7 @@ $(Z3_BASE_NAME): $(Z3_BASE_NAME).zip
 
 z3: $(Z3_BASE_NAME)
 	cp -f $</bin/$(Z3_EXEC) $@
+	chmod ugo+x $@
 
 clean:
 	rm -rf z3 $(Z3_BASE_NAME) $(Z3_BASE_NAME).zip
