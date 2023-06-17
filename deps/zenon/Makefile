@@ -23,5 +23,6 @@ zenon:
 clean:
 	rm -rf zenon zenon-install
 	make -C $(ZENON_SRC) clean
+	rm -f $(ZENON_SRC)/config.ml
 
 .PHONY: all clean
