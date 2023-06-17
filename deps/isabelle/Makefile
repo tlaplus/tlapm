@@ -1,6 +1,14 @@
+UNAME := $(shell uname)
+
 ISABELLE_VSN:=Isabelle2011-1
-ISABELLE_TGZ:=$(ISABELLE_VSN)_bundle_x86-linux.tar.gz
-ISABELLE_URL:=http://isabelle.in.tum.de/website-$(ISABELLE_VSN)/dist/$(ISABELLE_TGZ)
+ifeq ($(UNAME), Linux)
+	ISABELLE_ARCHIVE:=$(ISABELLE_VSN)_bundle_x86-linux.tar.gz
+endif
+ifeq ($(UNAME), Darwin)
+	ISABELLE_ARCHIVE:=$(ISABELLE_VSN).dmg
+endif
+ISABELLE_URL:=http://isabelle.in.tum.de/website-$(ISABELLE_VSN)/dist/$(ISABELLE_ARCHIVE)
+
 ISABELLE_DIR:=Isabelle
 ISABELLE_EXE:=$(shell pwd)/$(ISABELLE_DIR)/bin/isabelle
 ISABELLE_OUT:=$(shell pwd)/$(ISABELLE_DIR)/heaps
@@ -13,24 +21,38 @@ CACHE_DIR:=$(INSIDE_DUNE)/../../_build_cache
 
 all: $(ISABELLE_DIR)
 
-$(CACHE_DIR)/$(ISABELLE_TGZ):
+$(CACHE_DIR)/$(ISABELLE_ARCHIVE):
 	mkdir -p $(CACHE_DIR)
 	cd $(CACHE_DIR) && wget -q $(ISABELLE_URL)
 
-$(ISABELLE_TGZ): $(CACHE_DIR)/$(ISABELLE_TGZ)
+$(ISABELLE_ARCHIVE): $(CACHE_DIR)/$(ISABELLE_ARCHIVE)
 	rm -f $@
 	ln -s $< $@
 
 .PRECIOUS: $(ISABELLE_DIR)
-$(ISABELLE_DIR): $(ISABELLE_TGZ)
+$(ISABELLE_DIR): $(ISABELLE_ARCHIVE)
+ifeq ($(UNAME), Linux)
 	rm -rf $(ISABELLE_DIR)
 	tar -xzf $<
 	mv $(ISABELLE_VSN) $(ISABELLE_DIR)
+endif
+ifeq ($(UNAME), Darwin)
+	echo $(ISABELLE_DIR)
+	rm -rf $(ISABELLE_DIR)
+	mkdir $(ISABELLE_DIR)
+	hdiutil attach $<
+	cp -R /Volumes/$(ISABELLE_VSN)/$(ISABELLE_VSN).app/Contents/Resources/$(ISABELLE_VSN)/* $(ISABELLE_DIR)
+endif
+	# these lines above do not work because I am lost in all these directories: 
+	# ISABELLE_DIR contains .dmg and not what I expect
 	cd $(ISABELLE_DIR) && rm -rf contrib/ProofGeneral* doc heaps/*/HOL lib/{classes,fonts,logo}
 	cd $(ISABELLE_DIR) && cp etc/settings etc/settings.orig && echo "ISABELLE_OUTPUT=$(ISABELLE_OUT)" >> etc/settings
 	cd $(ISABELLE_DIR) && cp -r $(DUNE_SOURCEROOT)/isabelle src/TLA+
 	cd $(ISABELLE_DIR)/src/TLA+ && $(ISABELLE_EXE) usedir -b Pure TLA+
 	cd $(ISABELLE_DIR) && rm etc/settings && mv etc/settings.orig etc/settings
+ifeq ($(UNAME), Darwin)
+	hdiutil umount /Volumes/$(ISABELLE_VSN)
+endif
 
 .PRECIOUS: $(ISABELLE_DIR).tar.gz
 $(ISABELLE_DIR).tar.gz: $(ISABELLE_DIR)
