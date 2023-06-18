@@ -46,7 +46,8 @@ ifeq ($(ISABELLE_ARCHIVE_TYPE),dmg)
 	rm -rf isabelle-dmg
 	hdiutil attach "$<" -quiet -readonly -nobrowse -mountpoint "$(shell pwd)/isabelle-dmg"
 	cp -a "isabelle-dmg/$(ISABELLE_VSN).app/Contents/Resources/$(ISABELLE_VSN)" "$@"
-	hdiutil detach "$(shell pwd)" -quiet
+	hdiutil detach "$(shell pwd)/isabelle-dmg" -quiet
+	rm -rf isabelle-dmg
 endif
 
 # Build the TLA+ theory.
