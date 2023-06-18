@@ -4,17 +4,7 @@
 BASEDIR="`pwd`"
 TOOLDIR="$BASEDIR/TOOLS"
 
-if [ -z "$USE_TLAPM" ]; then
-  TLAPM_BIN=$BASEDIR/../tlapm
-else
-  TLAPM_BIN="`realpath $USE_TLAPM`"
-fi
-
-if [ -z "$USE_LIB" ]; then
-  LIBRARY_DIR=$BASEDIR/../library
-else
-  LIBRARY_DIR="`realpath $USE_LIB`"
-fi
+. $TOOLDIR/env_setup
 
 export TLAPM="pkill -f cvc3 | $TLAPM_BIN --stretch 10 --threads 4 -I $LIBRARY_DIR"
 
