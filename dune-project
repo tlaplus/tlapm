@@ -1,4 +1,4 @@
-(lang dune 3.7)
+(lang dune 3.8)
 
 (using dune_site 0.1)
 
@@ -35,4 +35,9 @@
  (sites
   (lib backends) ; will contain all the provers, approx lib/tlapm/backends/.
   (lib stdlib))  ; TLA files composing the StdLib.
- (depends ocaml dune-site))
+ (depends
+  ocaml
+  dune-site
+  sexplib
+  ppx_inline_test
+  ppx_assert))

@@ -25,9 +25,12 @@ authors: [
 homepage: "https://github.com/tlaplus/tlapm"
 bug-reports: "https://github.com/tlaplus/tlapm/issues"
 depends: [
-  "dune" {>= "3.7"}
+  "dune" {>= "3.8"}
   "ocaml"
   "dune-site"
+  "sexplib"
+  "ppx_inline_test"
+  "ppx_assert"
   "odoc" {with-doc}
 ]
 build: [
