@@ -13,6 +13,7 @@ def _main():
     print(shell_definitions)
 
 
+# TODO: Decide, how TLAPM version should be extracted.
 def _env_vars(tlapm_version: str) -> dict:
     """Return values for environment variables."""
     if sys.platform == 'darwin':
@@ -24,7 +25,7 @@ def _env_vars(tlapm_version: str) -> dict:
             'unexpected operating system: '
             f'{sys.platform = }')
     downloads =  f'tlaps-{tlapm_version}-{tail}'
-    installer = f'{downloads}-inst.bin'
+    installer = f'{downloads}.tar.gz'
     return dict(
         TLAPM_VERSION=tlapm_version,
         INSTALLER=installer,

@@ -1,6 +1,19 @@
-RELEASE_NAME=tlaps-$(shell git describe --tags)-$(shell uname -m)-$(shell uname -s | tr '[:upper:]' '[:lower:]')
+OS_TYPE=$(patsubst CYGWIN%,Cygwin,$(shell uname))
 
-PREFIX?=$(OPAM_SWITCH_PREFIX)
+ifeq ($(OS_TYPE),Linux)
+	HOST_OS=linux-gnu
+endif
+ifeq ($(OS_TYPE),Darwin)
+	HOST_OS=darwin
+endif
+ifeq ($(OS_TYPE),Cygwin)
+	HOST_OS=cygwin
+endif
+HOST_CPU=$(shell uname -m)
+RELEASE_VERSION=$(shell git describe --tags)
+RELEASE_NAME=tlaps-$(RELEASE_VERSION)-$(HOST_CPU)-$(HOST_OS)
+
+PREFIX=$(OPAM_SWITCH_PREFIX)
 
 all: build
 
