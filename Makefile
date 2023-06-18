@@ -21,6 +21,9 @@ test:
 test-inline:
 	dune runtest src
 
+test-fast-basic:
+	make -C test fast/basic
+
 install:
 	dune install --prefix=$(PREFIX)
 	make -C $(PREFIX)/lib/tlapm/ -f Makefile.post-install
@@ -35,5 +38,5 @@ release:
 clean:
 	dune clean
 
-.PHONY: all build check test test-inline install release clean
+.PHONY: all build check test test-inline test-fast-basic install release clean
 
