@@ -2,9 +2,9 @@
 ; The source code for the TLA+ theory is in the $PROJECT_ROOT/isabelle directory.
 ; The generated heaps (Pure and TLA+) are in Isabelle/heaps/polyml-*/.
 (rule
- (deps "Makefile")
+ (deps "Makefile" (source_tree theories))
  (targets (dir Isabelle) "Isabelle.no-links" "Isabelle.post-install")
- (action (run "make" "-C" "." "Isabelle.no-links" "Isabelle.post-install")))
+ (action (run "make" "-C" "." "PROJECT_ROOT=%{project_root}" "Isabelle.no-links" "Isabelle.post-install")))
 
 (install
  (section (site (tlapm backends)))

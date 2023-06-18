@@ -1,45 +1,75 @@
-ISABELLE_VSN:=Isabelle2011-1
-ISABELLE_TGZ:=$(ISABELLE_VSN)_bundle_x86-linux.tar.gz
-ISABELLE_URL:=http://isabelle.in.tum.de/website-$(ISABELLE_VSN)/dist/$(ISABELLE_TGZ)
-ISABELLE_DIR:=Isabelle
-ISABELLE_EXE:=$(shell pwd)/$(ISABELLE_DIR)/bin/isabelle
-ISABELLE_OUT:=$(shell pwd)/$(ISABELLE_DIR)/heaps
+OS_TYPE=$(patsubst CYGWIN%,Cygwin,$(shell uname))
+
+ISABELLE_VSN=Isabelle2011-1
+
+ifeq ($(OS_TYPE),Linux)
+	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_bundle_x86-linux.tar.gz
+	ISABELLE_ARCHIVE_TYPE=tgz
+endif
+ifeq ($(OS_TYPE),Darwin)
+	ISABELLE_ARCHIVE=$(ISABELLE_VSN).dmg
+	ISABELLE_ARCHIVE_TYPE=dmg
+endif
+ifeq ($(OS_TYPE),Cygwin)
+	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_bundle_x86-cygwin.tar.gz
+	ISABELLE_ARCHIVE_TYPE=tgz
+endif
+
+ISABELLE_URL=http://isabelle.in.tum.de/website-$(ISABELLE_VSN)/dist/$(ISABELLE_ARCHIVE)
+ISABELLE_DIR=Isabelle
 
 # Some defaults, for the case if makefile is called not by the dune build system.
-INSIDE_DUNE?=tmp
-DUNE_SOURCEROOT?=../../
-CACHE_DIR:=$(INSIDE_DUNE)/../../_build_cache
+PROJECT_ROOT=../..
+CACHE_DIR=$(PROJECT_ROOT)/_build_cache
 
 
-all: $(ISABELLE_DIR)
+all: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+ $(ISABELLE_DIR).no-links Isabelle.post-install
 
-$(CACHE_DIR)/$(ISABELLE_TGZ):
+# Download the isabelle archive to the cache.
+$(CACHE_DIR)/$(ISABELLE_ARCHIVE):
 	mkdir -p $(CACHE_DIR)
 	cd $(CACHE_DIR) && wget -q $(ISABELLE_URL)
 
-$(ISABELLE_TGZ): $(CACHE_DIR)/$(ISABELLE_TGZ)
+# Take the Isabelle archive from the cache.
+$(ISABELLE_ARCHIVE): $(CACHE_DIR)/$(ISABELLE_ARCHIVE)
 	rm -f $@
 	ln -s $< $@
 
-.PRECIOUS: $(ISABELLE_DIR)
-$(ISABELLE_DIR): $(ISABELLE_TGZ)
+# Extract the isabelle archive.
+$(ISABELLE_DIR): $(ISABELLE_ARCHIVE)
+ifeq ($(ISABELLE_ARCHIVE_TYPE),tgz)
 	rm -rf $(ISABELLE_DIR)
 	tar -xzf $<
 	mv $(ISABELLE_VSN) $(ISABELLE_DIR)
-	cd $(ISABELLE_DIR) && rm -rf contrib/ProofGeneral* doc heaps/*/HOL lib/{classes,fonts,logo}
-	cd $(ISABELLE_DIR) && cp etc/settings etc/settings.orig && echo "ISABELLE_OUTPUT=$(ISABELLE_OUT)" >> etc/settings
-	cd $(ISABELLE_DIR) && cp -r $(DUNE_SOURCEROOT)/isabelle src/TLA+
-	cd $(ISABELLE_DIR)/src/TLA+ && $(ISABELLE_EXE) usedir -b Pure TLA+
-	cd $(ISABELLE_DIR) && rm etc/settings && mv etc/settings.orig etc/settings
+endif
+ifeq ($(ISABELLE_ARCHIVE_TYPE),dmg)
+	rm -rf isabelle-dmg
+	hdiutil attach "$<" -quiet -readonly -nobrowse -mountpoint "$(shell pwd)/isabelle-dmg"
+	cp -a "isabelle-dmg/$(ISABELLE_VSN).app/Contents/Resources/$(ISABELLE_VSN)" "$@"
+	hdiutil detach "$(shell pwd)" -quiet
+endif
 
-.PRECIOUS: $(ISABELLE_DIR).tar.gz
-$(ISABELLE_DIR).tar.gz: $(ISABELLE_DIR)
-	tar -czf $@ $<
+# Build the TLA+ theory.
+.PRECIOUS: $(ISABELLE_DIR)/src/TLA+
+$(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
+	cd $(ISABELLE_DIR) \
+		&& rm -rf contrib/ProofGeneral* doc heaps/*/HOL lib/{classes,fonts,logo}
+	cd $(ISABELLE_DIR) \
+		&& HEAPS_PATH=$(shell pwd)/$(ISABELLE_DIR)/heaps \
+		&& cp etc/settings etc/settings.orig \
+		&& echo "ISABELLE_OUTPUT=$$HEAPS_PATH" >> etc/settings
+	mkdir -p $(ISABELLE_DIR)/src/TLA+ \
+		&& cp -a theories/TLA+/* $(ISABELLE_DIR)/src/TLA+/
+	cd $(ISABELLE_DIR)/src/TLA+ \
+		&& ../../bin/isabelle usedir -b Pure TLA+
+	cd $(ISABELLE_DIR) \
+		&& rm etc/settings \
+		&& mv etc/settings.orig etc/settings
 
 # TODO: This is is a workaround to eliminate symlinks to directories
 # 		until https://github.com/ocaml/dune/issues/7831 is resolved.
 .PRECIOUS: $(ISABELLE_DIR).no-links
-$(ISABELLE_DIR).no-links: $(ISABELLE_DIR)
+$(ISABELLE_DIR).no-links: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+
 	rm -rf $@
 	cd $< && rm ./contrib/jre1.6.0_27_x86-linux/jre1.6.0_27/man/ja
 	cd $< && rm ./contrib/polyml-5.4.0/src
@@ -52,4 +82,7 @@ Isabelle.post-install: $(ISABELLE_DIR).no-links
 	echo "FILES=$(shell find $(ISABELLE_DIR) -type f -executable)" > $@
 	echo "all:\n\t chmod +x \$$(FILES)" >> $@
 
-.PHONY: all
+clean:
+	rm -rf $(ISABELLE_ARCHIVE) $(ISABELLE_DIR) $(ISABELLE_DIR).no-links Isabelle.post-install
+
+.PHONY: all clean

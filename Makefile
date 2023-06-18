@@ -1,4 +1,4 @@
-RELEASE_NAME:=tlaps-$(shell git describe --tags)-$(shell uname -m)-$(shell uname -s | tr '[:upper:]' '[:lower:]')
+RELEASE_NAME=tlaps-$(shell git describe --tags)-$(shell uname -m)-$(shell uname -s | tr '[:upper:]' '[:lower:]')
 
 PREFIX?=$(OPAM_SWITCH_PREFIX)
 
