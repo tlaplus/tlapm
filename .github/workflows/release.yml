@@ -105,10 +105,6 @@ jobs:
             - uses: ocaml/setup-ocaml@v2
               with:
                 ocaml-compiler: ${{ env.OCAML_VERSION }}
-            - name: Define TLAPS-related env vars
-              run: |
-                python .github/workflows/setup_shell_env.py \
-                    >> $GITHUB_ENV
             # - uses: actions/cache@v3
             #   id: cache
             #   with:
@@ -120,6 +116,7 @@ jobs:
                 opam install ./ --deps-only --yes
                 make
                 make release
+                echo "TLAPM_RELEASE_FILE=$(make release-print-file)" >> "$GITHUB_ENV"
             - name: Run a subset of `tlapm` tests
               run: |
                 eval $(opam env)
@@ -132,6 +129,6 @@ jobs:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
                 upload_url: ${{ steps.get_release_info.outputs.upload_url }}
-                asset_path: ${{ env.INSTALLER }}
-                asset_name: ${{ env.INSTALLER }}
+                asset_path: ${{ env.TLAPM_RELEASE_FILE }}
+                asset_name: ${{ env.TLAPM_RELEASE_FILE }}
                 asset_content_type: application/octet-stream
