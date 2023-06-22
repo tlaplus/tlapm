@@ -129,6 +129,6 @@ jobs:
                 GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
               with:
                 upload_url: ${{ steps.get_release_info.outputs.upload_url }}
-                asset_path: ${{ env.TLAPM_RELEASE_FILE }}
+                asset_path: _build/${{ env.TLAPM_RELEASE_FILE }}
                 asset_name: ${{ env.TLAPM_RELEASE_FILE }}
                 asset_content_type: application/octet-stream

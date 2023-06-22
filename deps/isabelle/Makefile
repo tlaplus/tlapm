@@ -6,14 +6,17 @@ ISABELLE_VSN=Isabelle2011-1
 ifeq ($(OS_TYPE),Linux)
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_bundle_x86-linux.tar.gz
 	ISABELLE_ARCHIVE_TYPE=tgz
+	FIND_EXEC=-executable
 endif
 ifeq ($(OS_TYPE),Darwin)
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN).dmg
 	ISABELLE_ARCHIVE_TYPE=dmg
+	FIND_EXEC=-perm +111
 endif
 ifeq ($(OS_TYPE),Cygwin)
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_bundle_x86-cygwin.tar.gz
 	ISABELLE_ARCHIVE_TYPE=tgz
+	FIND_EXEC=-executable
 endif
 
 ISABELLE_URL=http://isabelle.in.tum.de/website-$(ISABELLE_VSN)/dist/$(ISABELLE_ARCHIVE)
@@ -58,7 +61,7 @@ $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 		&& rm -rf contrib/ProofGeneral* doc heaps/*/HOL lib/{classes,fonts,logo}
 	cd $(ISABELLE_DIR) \
 		&& HEAPS_PATH=$(shell pwd)/$(ISABELLE_DIR)/heaps \
-		&& if [ "$(HOST_CPU)" = "x86_64" ] ; then sed -i 's/^ML_PLATFORM=.*$$/ML_PLATFORM="$${ISABELLE_PLATFORM64:-$$ISABELLE_PLATFORM}"/' etc/settings ; fi \
+		&& if [ "$(HOST_CPU)" = "x86_64" ] ; then sed -i -e 's/^ML_PLATFORM=.*$$/ML_PLATFORM="$${ISABELLE_PLATFORM64:-$$ISABELLE_PLATFORM}"/' etc/settings ; fi \
 		&& cp etc/settings etc/settings.target \
 		&& echo "ISABELLE_OUTPUT=$$HEAPS_PATH" >> etc/settings
 	mkdir -p $(ISABELLE_DIR)/src/TLA+ \
@@ -76,15 +79,15 @@ $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 .PRECIOUS: $(ISABELLE_DIR).no-links
 $(ISABELLE_DIR).no-links: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+
 	rm -rf $@
-	cd $< && rm ./contrib/jre1.6.0_27_x86-linux/jre1.6.0_27/man/ja
-	cd $< && rm ./contrib/polyml-5.4.0/src
-	cd $< && rm ./contrib/polyml && mv ./contrib/polyml-5.4.0 ./contrib/polyml
+	cd $< && rm -f ./contrib/jre1.6.0_27_x86-linux/jre1.6.0_27/man/ja
+	cd $< && rm -f ./contrib/polyml-5.4.0/src
+	cd $< && rm -f ./contrib/polyml && mv ./contrib/polyml-5.4.0 ./contrib/polyml
 	touch $@
 
 # TODO: This is a workaround, because the dune install removes all the executable
 # 		flags (or sets on all the files). Here we generate a script to restore the flags.
 Isabelle.post-install: $(ISABELLE_DIR).no-links
-	echo "FILES=$(shell find $(ISABELLE_DIR) -type f -executable)" > $@
+	echo "FILES=$(shell find $(ISABELLE_DIR) -type f $(FIND_EXEC))" > $@
 	echo "all:\n\t chmod +x \$$(FILES)" >> $@
 
 clean:
