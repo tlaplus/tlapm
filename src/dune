@@ -12,8 +12,8 @@
  (name tlapm_lib)
  (modules (:standard \ tlapm test_schedule why3_interface abstractor))
  (libraries
-  unix str dune-site  ; main deps.
-  sexplib)            ; for inline tests only (ppx_assert).
+  unix str dune-site dune-build-info  ; main deps.
+  sexplib)                            ; for inline tests only (ppx_assert).
  (foreign_stubs (language c) (names sysconf_stubs))
  (inline_tests (deps "../test/resources/module/m_save/TLC.tla"))
  (preprocess (pps ppx_inline_test ppx_assert)))

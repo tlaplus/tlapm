@@ -252,8 +252,8 @@ let init () =
   end ;
   check_zenon_ver () ;
   if !Params.toolbox then begin
-    Printf.printf "\n\\* TLAPM version %d.%d.%d\n"
-                  Version.major Version.minor Version.micro;
+    Printf.printf "\n\\* TLAPM version %s\n"
+                  (Params.rawversion ());
     let tm = Unix.localtime (Unix.gettimeofday ()) in
     Printf.printf "\\* launched at %04d-%02d-%02d %02d:%02d:%02d"
                   (tm.Unix.tm_year + 1900) (tm.Unix.tm_mon + 1) tm.Unix.tm_mday

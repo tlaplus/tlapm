@@ -38,6 +38,7 @@
  (depends
   ocaml
   dune-site
+  dune-build-info
   sexplib
   ppx_inline_test
   ppx_assert))

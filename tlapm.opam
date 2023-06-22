@@ -28,6 +28,7 @@ depends: [
   "dune" {>= "3.8"}
   "ocaml"
   "dune-site"
+  "dune-build-info"
   "sexplib"
   "ppx_inline_test"
   "ppx_assert"
