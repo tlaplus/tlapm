@@ -1,4 +1,5 @@
 OS_TYPE=$(patsubst CYGWIN%,Cygwin,$(shell uname))
+HOST_CPU=$(shell uname -m)
 
 ISABELLE_VSN=Isabelle2011-1
 
@@ -57,15 +58,18 @@ $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 		&& rm -rf contrib/ProofGeneral* doc heaps/*/HOL lib/{classes,fonts,logo}
 	cd $(ISABELLE_DIR) \
 		&& HEAPS_PATH=$(shell pwd)/$(ISABELLE_DIR)/heaps \
-		&& cp etc/settings etc/settings.orig \
+		&& if [ "$(HOST_CPU)" = "x86_64" ] ; then sed -i 's/^ML_PLATFORM=.*$$/ML_PLATFORM="$${ISABELLE_PLATFORM64:-$$ISABELLE_PLATFORM}"/' etc/settings ; fi \
+		&& cp etc/settings etc/settings.target \
 		&& echo "ISABELLE_OUTPUT=$$HEAPS_PATH" >> etc/settings
 	mkdir -p $(ISABELLE_DIR)/src/TLA+ \
 		&& cp -a theories/TLA+/* $(ISABELLE_DIR)/src/TLA+/
+	cd $(ISABELLE_DIR)/src/Pure \
+		&& ../../bin/isabelle make
 	cd $(ISABELLE_DIR)/src/TLA+ \
 		&& ../../bin/isabelle usedir -b Pure TLA+
 	cd $(ISABELLE_DIR) \
 		&& rm etc/settings \
-		&& mv etc/settings.orig etc/settings
+		&& mv etc/settings.target etc/settings
 
 # TODO: This is is a workaround to eliminate symlinks to directories
 # 		until https://github.com/ocaml/dune/issues/7831 is resolved.

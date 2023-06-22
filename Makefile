@@ -34,6 +34,9 @@ test:
 test-inline:
 	dune runtest src
 
+test-fast:
+	make -C test fast
+
 test-fast-basic:
 	make -C test fast/basic
 
@@ -51,5 +54,5 @@ release:
 clean:
 	dune clean
 
-.PHONY: all build check test test-inline test-fast-basic install release clean
+.PHONY: all build check test test-inline test-fast test-fast-basic install release clean
 
