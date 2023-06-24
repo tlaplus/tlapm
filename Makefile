@@ -48,11 +48,15 @@ install:
 	make -C $(PREFIX)/lib/tlapm/ -f Makefile.post-install
 
 release:
-	rm -rf _build/tlaps-release-dir
+	rm -rf _build/tlaps-release-dir _build/tlaps-release-version
 	dune install --relocatable --prefix _build/tlaps-release-dir
+	make -C _build/tlaps-release-dir/lib/tlapm -f Makefile.post-install
+	cd test && env \
+		USE_TLAPM=../_build/tlaps-release-dir/bin/tlapm \
+		USE_LIB=../_build/tlaps-release-dir/lib/tlapm/stdlib \
+		./TOOLS/do_tests fast/basic
 	RELEASE_VERSION="$$(_build/tlaps-release-dir/bin/tlapm --version)" \
 		&& rm -rf _build/$(RELEASE_FILE) \
-		&& make -C _build/tlaps-release-dir/lib/tlapm -f Makefile.post-install \
 		&& mv _build/tlaps-release-dir _build/$(RELEASE_NAME) \
 		&& (cd _build/ && tar -czf $(RELEASE_FILE) $(RELEASE_NAME)) \
 		&& rm -rf _build/$(RELEASE_NAME) \
