@@ -22,12 +22,6 @@ opam-deps:
 
 build:
 	dune build
-	if [ -z "`grep 'Makefile.post-install' tlapm.opam`" ] ; then \
-		rm -f tlapm.opam.tmp && \
-		mv tlapm.opam tlapm.opam.tmp && \
-		cat tlapm.opam.tmp | awk '/"dune" "install"/{print; print "  [\"%{make}%\" \"-C\" \"%{lib}%/tlapm\" \"-f\" \"Makefile.post-install\"]" ; next} //{print}' > tlapm.opam && \
-		rm -f tlapm.opam.tmp ; \
-	fi
 
 check: test
 

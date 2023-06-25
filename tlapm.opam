@@ -34,7 +34,8 @@ depends: [
   "ppx_assert"
   "odoc" {with-doc}
 ]
-build: [
+dev-repo: "git+https://github.com/tlaplus/tlapm.git"
+build: [ # This is to override the build step, add the invocation of `Makefile.post-install`.
   ["dune" "subst"] {dev}
   [
     "dune"
@@ -51,4 +52,3 @@ build: [
   ["dune" "install" "-p" name "--create-install-files" name]
   ["%{make}%" "-C" "%{lib}%/tlapm" "-f" "Makefile.post-install"]
 ]
-dev-repo: "git+https://github.com/tlaplus/tlapm.git"
