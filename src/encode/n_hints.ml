@@ -47,7 +47,7 @@ let mk_patterns k xs =
   [ withs ]
 
 (** Effectively add a pattern "With(x)" for every bound variable "x".
-    Only negative binders that require instanciation are affected.
+    Only negative binders that require instantiation are affected.
 *)
 let visitor = object (self : 'self)
   inherit [bool] Expr.Visit.map as super
