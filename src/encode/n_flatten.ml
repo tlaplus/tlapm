@@ -497,7 +497,7 @@ let compare_expr bp' bp e1 e2 =
       when List.length vs1 = List.length vs2 ->
         comp (s + List.length vs1) e1 e2
     | List (bl1, es1), List (bl2, es2) ->
-        bl1 = bl2 && List.for_all2 (comp s) es1 es2
+        bl1 = bl2 && List.length es1 = List.length es2 && List.for_all2 (comp s) es1 es2
     | _, _ ->
         false
   in
