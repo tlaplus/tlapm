@@ -5,8 +5,6 @@
  * Copyright (C) 2022  INRIA and Microsoft Corporation
  *)
 
-open Expr.T
-open Type.T
 
 open Ext
 open Property
