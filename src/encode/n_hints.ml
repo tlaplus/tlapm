@@ -11,7 +11,7 @@ open Expr.T
 
 let with_id = "With"
 
-(** Spli [hs] into [lhs] and [rhs] where [lhs] ends with
+(** Split [hs] into [lhs] and [rhs] where [lhs] ends with
     the declaration of a "With(X)" predicate
 *)
 let search_with hs =
