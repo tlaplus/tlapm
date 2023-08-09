@@ -5,8 +5,6 @@
  * Copyright (C) 2022  INRIA and Microsoft Corporation
  *)
 
-open Expr.T
-open Type.T
 
 open Ext
 open Property
@@ -1002,7 +1000,7 @@ let simplify_sets_visitor = object (self : 'self)
 
     (* x \in a1 \X .. \X an
      *    -->
-     * x[1] \in a1 /\ .. /\ x[n] \in an /\ x = << x[1], .., x[n] >> *)
+     * x = << x[1], .., x[n] >> /\ x[1] \in a1 /\ .. /\ x[n] \in an  *)
     | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = Product es } ])
       when not (has op Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
@@ -1165,7 +1163,7 @@ let simplify_sets_visitor = object (self : 'self)
 
     (* x \in Nat    when x : int
      *    -->
-     * x \in Int /\ 0 <= x *)
+     * 0 <= x *)
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Internal B.Nat } as op2 ])
       when (query op2 Props.tpars_prop = Some [])
         && ((query op1 Props.tpars_prop = Some [ TAtm TAInt ])
