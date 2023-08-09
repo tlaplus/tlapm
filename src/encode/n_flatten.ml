@@ -464,33 +464,33 @@ let rewrite_expr bp s e =
 
 (* {3 Main} *)
 
-let compare_expr bp' bp e1 e2 =
-  (* Compare e1 and e2 in their respective original contexts bp' and bp
+let compare_expr bp1 bp2 e1 e2 =
+  (* Compare e1 and e2 in their respective original contexts bp1 and bp2
    * (field bp_ctx).
    * Global variables must match, but since the contexts are desynchronized,
    * only the names are compared (same for function {!same_app} below.)
-   * Variables that are bound locally in bp' or bp do not need to match. *)
-  let lsz = local_sz bp.bp_ctx in
-  let lsz' = local_sz bp'.bp_ctx in
+   * Variables that are bound locally in bp1 or bp2 do not need to match. *)
+  let lsz1 = local_sz bp1.bp_ctx in
+  let lsz2 = local_sz bp2.bp_ctx in
   let rec comp s e1 e2 =
     match e1.core, e2.core with
     | Ix m, Ix n ->
         if m <= s && n <= s then
           m = n
-        else if m > s && (m - s) <= lsz'
-             && n > s && (n - s) <= lsz then
+        else if m > s && (m - s) <= lsz1
+             && n > s && (n - s) <= lsz2 then
           true
-        else if m > s && (m - s) > lsz'
-             && n > s && (n - s) > lsz then
-          let h1 = get_hyp bp'.bp_ctx (m - s) in
-          let h2 = get_hyp bp.bp_ctx (n - s) in
+        else if m > s && (m - s) > lsz1
+             && n > s && (n - s) > lsz2 then
+          let h1 = get_hyp bp1.bp_ctx (m - s) in
+          let h2 = get_hyp bp2.bp_ctx (n - s) in
           hyp_name h1 = hyp_name h2
         else
           false
     | Opaque s1, Opaque s2 ->
         s1 = s2
     | Apply (op1, es1), Apply (op2, es2) ->
-        comp s op1 op2 && List.for_all2 (comp s) es1 es2
+        comp s op1 op2 && List.length es1 = List.length es2 && List.for_all2 (comp s) es1 es2
     | Internal b1, Internal b2 ->
         b1 = b2
     | Lambda (vs1, e1), Lambda (vs2, e2)

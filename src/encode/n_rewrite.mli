@@ -50,7 +50,6 @@ val apply_ext : sequent -> sequent
     @param rwlvl if 0: do nothing;
                  1: only simplify set extensionality and subseteq;
                  2: simplify all set expressions;
-                 3: like 2, but don't care about an expression's polarity
 *)
 val simplify_sets : ?limit:int -> ?rwlvl:int -> sequent -> sequent
 
