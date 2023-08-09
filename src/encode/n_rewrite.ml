@@ -1165,7 +1165,7 @@ let simplify_sets_visitor = object (self : 'self)
 
     (* x \in Nat    when x : int
      *    -->
-     * x \in Int /\ 0 <= x *)
+     * 0 <= x *)
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Internal B.Nat } as op2 ])
       when (query op2 Props.tpars_prop = Some [])
         && ((query op1 Props.tpars_prop = Some [ TAtm TAInt ])
