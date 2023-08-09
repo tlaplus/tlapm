@@ -1000,7 +1000,7 @@ let simplify_sets_visitor = object (self : 'self)
 
     (* x \in a1 \X .. \X an
      *    -->
-     * x[1] \in a1 /\ .. /\ x[n] \in an /\ x = << x[1], .., x[n] >> *)
+     * x = << x[1], .., x[n] >> /\ x[1] \in a1 /\ .. /\ x[n] \in an  *)
     | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = Product es } ])
       when not (has op Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
