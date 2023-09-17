@@ -96,8 +96,8 @@ let rec make_case accu e =
 
 let compare_cases (cs1, _, _) (cs2, _, _) =
   try
-    Pervasives.compare (Hashtbl.find constructor_table cs1).cd_num
-                       (Hashtbl.find constructor_table cs2).cd_num
+    Stdlib.compare (Hashtbl.find constructor_table cs1).cd_num
+                   (Hashtbl.find constructor_table cs2).cd_num
   with Not_found -> raise Empty
 ;;
 
