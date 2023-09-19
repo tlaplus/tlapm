@@ -41,4 +41,8 @@
   dune-build-info
   sexplib
   ppx_inline_test
-  ppx_assert))
+  ppx_assert)
+ (depopts
+  lsp         ; https://github.com/ocaml/ocaml-lsp
+  fiber       ; TODO: Do we need it for lsp? Probably not.
+  eio_main))  ; https://github.com/ocaml-multicore/eio, only available on OCaml version >= 5.
