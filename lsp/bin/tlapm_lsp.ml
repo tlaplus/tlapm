@@ -2,15 +2,37 @@ module Tlapm_lsp_lib = Tlapm_lsp_lib
 
 module LspServer = struct
 
+  let lsp_packet_handler (packet : Jsonrpc.Packet.t) write_fun =
+    Eio.traceln "Got LSP Packet";
+    write_fun packet (* // TODO: That's just echo. *)
+
+  let rec lsp_stream_handler buf_r buf_w =
+    let open Tlapm_lsp_lib.EioLspParser in
+    let write_fun out_packet =
+      match write buf_w out_packet with
+      | IoOk () ->
+        Eio.Buf_write.flush buf_w
+      | IoErr exn ->
+        Eio.traceln "IO Error reading packet: %s" (Printexc.to_string exn)
+      in
+    match read buf_r with
+      | IoOk (Some packet) ->
+        lsp_packet_handler packet write_fun;
+        lsp_stream_handler buf_r buf_w
+      | IoOk None ->
+        Eio.traceln "No packet was read."
+      | IoErr exn ->
+        Eio.traceln "IO Error reading packet: %s" (Printexc.to_string exn)
+
+
   let err_handler =
     Eio.traceln "Error handling connection: %a" Fmt.exn
 
   let req_handler flow _addr =
     Eio.traceln "Server: got connection from client";
-    let x = Eio.Buf_read.of_flow flow ~max_size:100 in
-    let ml = Eio.Buf_read.line x in
-    let mf = Eio.Buf_read.take 10 x in
-    Eio.Flow.copy_string (Printf.sprintf "Hello from server: line=%s - fixed(10)=%S\n" ml mf) flow
+    let buf_r = Eio.Buf_read.of_flow flow ~max_size:1024 in
+    Eio.Buf_write.with_flow flow @@ fun buf_w ->
+      lsp_stream_handler buf_r buf_w
 
   let switch (net: 'a Eio.Net.ty Eio.Std.r) port stop_promise sw =
     Eio.traceln "Switch started";
