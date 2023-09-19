@@ -1,0 +1,5 @@
+(executable
+ (name tlapm_lsp)
+ (public_name tlapm_lsp)
+ (optional) ; Only build, if eio is available, which is only the case for ocaml > 5.
+ (libraries tlapm_lsp_lib eio_main))

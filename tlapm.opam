@@ -34,6 +34,7 @@ depends: [
   "ppx_assert"
   "odoc" {with-doc}
 ]
+depopts: ["lsp" "fiber" "eio_main"]
 dev-repo: "git+https://github.com/tlaplus/tlapm.git"
 build: [ # This is to override the build step, add the invocation of `Makefile.post-install`.
   ["dune" "subst"] {dev}
