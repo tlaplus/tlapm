@@ -21,7 +21,10 @@ opam-deps:
 	opam install ./ --deps-only --yes --working-dir
 
 opam-deps-opt:
-	opam install eio_main fiber lsp --yes --working-dir	# TODO: Remove fiber.
+	opam install eio_main lsp --yes --working-dir
+
+opan-deps-dev:
+	opam install ocamlformat
 
 opam-deps-dev:
 	opam install ocamlformat ocaml-lsp-server
