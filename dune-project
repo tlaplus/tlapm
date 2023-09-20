@@ -40,6 +40,7 @@
   dune-site
   dune-build-info
   sexplib
+  cmdliner
   ppx_inline_test
   ppx_assert)
  (depopts
