@@ -1,3 +1,7 @@
+type trace_fun = string -> unit
+type input_chan = Eio.Buf_read.t * trace_fun
+type output_chan = Eio.Buf_write.t * trace_fun
+
 module IoState = struct
   type 'a t = ('a, exn) result
 
@@ -11,23 +15,26 @@ module IoState = struct
 end
 
 module IoChan = struct
-  type output = Eio.Buf_write.t
-  type input = Eio.Buf_read.t
+  type input = input_chan
+  type output = output_chan
 
-  let read_line (buf : input) : string option IoState.t =
+  let read_line ((buf, trace) : input) : string option IoState.t =
     let line = Eio.Buf_read.line buf in
+    let () = trace line in
     Ok (Some line)
 
-  let read_exactly (buf : input) (n : int) : string option IoState.t =
+  let read_exactly ((buf, trace) : input) (n : int) : string option IoState.t =
     let data = Eio.Buf_read.take n buf in
+    let () = trace data in
     Ok (Some data)
 
-  let rec write (buf : output) (lines : string list) : unit IoState.t =
+  let rec write ((buf, trace) : output) (lines : string list) : unit IoState.t =
     match lines with
     | [] -> Ok ()
     | line :: tail ->
+        let () = trace line in
         let () = Eio.Buf_write.string buf line in
-        write buf tail
+        write (buf, trace) tail
 end
 
 module LspIo = Lsp.Io.Make (IoState) (IoChan)
