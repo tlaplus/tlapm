@@ -1,4 +1,4 @@
 (library
  (name tlapm_lsp_lib)
  (optional) ; Only build, if eio is available, which is only the case for ocaml > 5.
- (libraries tlapm_lib lsp eio_main))
+ (libraries tlapm_lib lsp eio_main dune-build-info))
