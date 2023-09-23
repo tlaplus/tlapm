@@ -1,4 +1,3 @@
-import * as path from 'path';
 import * as vscode from 'vscode';
 import { Executable, LanguageClient, LanguageClientOptions, ServerOptions, TransportKind } from 'vscode-languageclient/node';
 
@@ -10,18 +9,14 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.showInformationMessage('Key there from tlapm-lsp-test!');
 	}));
 
-	const serverPath = '/home/karolis/CODE/pub/tlapm-lsp/_build/default/lsp/bin/tlapm_lsp.exe';
-	let serverOptions: Executable = {
-		command: serverPath + ' --trace 2>/tmp/lsp-log-tlapm',
+	const serverPath = context.asAbsolutePath('../../../_build/default/lsp/bin/tlapm_lsp.exe');
+	const logPath = context.asAbsolutePath('tlapm_lsp.log');
+	const serverOptions: Executable = {
+		command: serverPath,
 		transport: TransportKind.stdio,
-		args: [],
-		// args: [
-		// 	'--stdio',
-		// 	// '--trace',
-		// ],
-		options: { shell: true } // TODO: Remove.
+		args: ['--log-io', '--log-to=' + logPath],
 	};
-	let clientOptions: LanguageClientOptions = {
+	const clientOptions: LanguageClientOptions = {
 		documentSelector: [{ scheme: 'file', language: 'tlaplus' }],
 	};
 	client = new LanguageClient(
