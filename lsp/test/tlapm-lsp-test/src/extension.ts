@@ -9,6 +9,8 @@ export function activate(context: vscode.ExtensionContext) {
 		vscode.window.showInformationMessage('Key there from tlapm-lsp-test!');
 	}));
 
+	pocTestCases();
+
 	const serverPath = context.asAbsolutePath('../../../_build/default/lsp/bin/tlapm_lsp.exe');
 	const logPath = context.asAbsolutePath('tlapm_lsp.log');
 	const serverOptions: Executable = {
@@ -34,4 +36,14 @@ export function deactivate() {
 		return undefined;
 	}
 	return client.stop();
+}
+
+function pocTestCases() {
+	const poController = vscode.tests.createTestController(
+		'tlapm_proof_obligations',
+		'TLA Proof Obligations'
+	);
+	const poExampleItem = poController.createTestItem("some", "My Proof Obligation", undefined);
+	poExampleItem.range = new vscode.Range(new vscode.Position(1, 3), new vscode.Position(1, 7));
+	poController.items.add(poExampleItem);
 }
