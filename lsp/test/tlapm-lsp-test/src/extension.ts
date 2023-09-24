@@ -5,9 +5,6 @@ let client: LanguageClient;
 
 export function activate(context: vscode.ExtensionContext) {
 	console.log('Congratulations, your extension "tlapm-lsp-test" is now active!');
-	context.subscriptions.push(vscode.commands.registerCommand('tlapm-lsp-test.helloWorld', () => {
-		vscode.window.showInformationMessage('Key there from tlapm-lsp-test!');
-	}));
 
 	pocTestCases();
 
