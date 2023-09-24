@@ -11,3 +11,8 @@ It is responsible for:
 
 The test folder contains a VSCode extension / LSP client. It is meant only for testing,
 the real integration should be done in the TLA+ VSCode extension.
+
+See:
+  - Dafny plugin. It shows all the obligations as testcases.
+    <https://github.com/dafny-lang/ide-vscode>
+    <https://github.com/dafny-lang/dafny/tree/master/Source/DafnyLanguageServer>
