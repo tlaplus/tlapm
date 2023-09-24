@@ -11,7 +11,7 @@ let trace_fun trace direction =
   | false, _ -> fun _ -> ()
 
 (** Process an LSP packet stream. *)
-let rec lsp_stream_handler input_chan output_chan =
+let rec lsp_stream_handler input_chan output_chan docs =
   let open Tlapm_lsp_codec in
   let writer out_packet =
     let buf_w, _ = output_chan in
@@ -22,8 +22,8 @@ let rec lsp_stream_handler input_chan output_chan =
   in
   match read input_chan with
   | Ok (Some packet) ->
-      Tlapm_lsp_packets.handle_jsonrpc_packet packet writer;
-      lsp_stream_handler input_chan output_chan
+      let docs' = Tlapm_lsp_packets.handle_jsonrpc_packet packet writer docs in
+      lsp_stream_handler input_chan output_chan docs'
   | Ok None -> Eio.traceln "No packet was read."
   | Error exn ->
       Eio.traceln "IO Error reading packet: %s" (Printexc.to_string exn)
@@ -36,7 +36,7 @@ let flow_handler trace input_flow output_flow =
   let write_fun buf_w =
     let input_chan = (buf_r, trace_fun trace `Input) in
     let output_chan = (buf_w, trace_fun trace `Output) in
-    lsp_stream_handler input_chan output_chan
+    lsp_stream_handler input_chan output_chan Tlapm_lsp_docs.empty
   in
   Eio.Buf_write.with_flow output_flow write_fun
 
