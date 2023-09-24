@@ -101,7 +101,7 @@ let handle_jsonrpc_req_initialize (jsonrpc_req : Jsonrpc.Request.t) params
   in
   print_ci params;
   let supported_commands =
-    [ "tlapm-lsp-test.prover-info"; "tlapm-lsp-test.prove-step" ]
+    [ "tlapm-lsp-test.prover-info"; "tlapm-lsp-test.prove-step.lsp" ]
   in
   let capabilities =
     ServerCapabilities.create
@@ -155,7 +155,7 @@ let handle_jsonrpc_req_exec_cmd (jsonrpc_req : Jsonrpc.Request.t)
       Eio.traceln "COMMAND: prover-info";
       reply_ok jsonrpc_req writer (`String "OK");
       state
-  | "tlapm-lsp-test.prove-step" ->
+  | "tlapm-lsp-test.prove-step.lsp" ->
       (* TODO: Args are passed from the codeAction. *)
       Eio.traceln "COMMAND: prove-step";
       reply_ok jsonrpc_req writer (`String "OK");
@@ -184,7 +184,7 @@ let handle_jsonrpc_req_code_action (jsonrpc_req : Jsonrpc.Request.t)
     Lsp.Types.CodeAction.create ~title:"Prover code action"
       ~diagnostics:[ someActionDiag ]
       ~command:
-        (Command.create ~command:"tlapm-lsp-test.prove-step"
+        (Command.create ~command:"tlapm-lsp-test.prove-step.lsp"
            ~title:"Prove it as an action!"
            ~arguments:[ `String "important_arg" ]
            ())
