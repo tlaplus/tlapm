@@ -3,5 +3,5 @@
 val handle_jsonrpc_packet :
   Jsonrpc.Packet.t ->
   (Jsonrpc.Packet.t -> unit) ->
-  Tlapm_lsp_docs.t ->
-  Tlapm_lsp_docs.t
+  Tlapm_lsp_state.t ->
+  Tlapm_lsp_state.t
