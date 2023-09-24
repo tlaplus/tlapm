@@ -1,3 +1,18 @@
+(** Helper to send responses to requests. *)
+let reply_ok (jsonrpc_req : Jsonrpc.Request.t) writer payload =
+  let open Jsonrpc in
+  let response = Response.ok jsonrpc_req.id payload in
+  let packet = Packet.Response response in
+  writer packet
+
+(** Helper to send responses to requests. *)
+let reply_error (jsonrpc_req : Jsonrpc.Request.t) writer code message =
+  let open Jsonrpc in
+  let error = Response.Error.make ~code ~message () in
+  let response = Response.error jsonrpc_req.id error in
+  let packet = Jsonrpc.Packet.Response response in
+  writer packet
+
 (** Dispatch notification packets. *)
 let handle_jsonrpc_notif jsonrpc_notif _writer state =
   let open Lsp.Types in
@@ -83,11 +98,7 @@ let handle_jsonrpc_req_initialize (jsonrpc_req : Jsonrpc.Request.t) params
       ()
   in
   let respInfo = InitializeResult.create ~capabilities ~serverInfo () in
-  let response =
-    Jsonrpc.Response.ok jsonrpc_req.id (InitializeResult.yojson_of_t respInfo)
-  in
-  let packet = Jsonrpc.Packet.Response response in
-  let () = writer packet in
+  reply_ok jsonrpc_req writer (InitializeResult.yojson_of_t respInfo);
   state
 
 let handle_jsonrpc_req_shutdown (_jsonrpc_req : Jsonrpc.Request.t) state =
@@ -97,25 +108,17 @@ let handle_jsonrpc_req_shutdown (_jsonrpc_req : Jsonrpc.Request.t) state =
 let handle_jsonrpc_req_unknown (jsonrpc_req : Jsonrpc.Request.t) message writer
     state =
   Eio.traceln "Received unknown JsonRPC request, method=%s" jsonrpc_req.method_;
-  let open Jsonrpc in
-  let error =
-    Response.Error.make ~code:Response.Error.Code.MethodNotFound ~message ()
-  in
-  let response = Response.error jsonrpc_req.id error in
-  let packet = Jsonrpc.Packet.Response response in
-  let () = writer packet in
+  let open Jsonrpc.Response.Error in
+  reply_error jsonrpc_req writer Code.MethodNotFound message;
   state
 
 (* {"jsonrpc":"2.0","id":1,"method":"workspace/executeCommand","params":{"command":"tlapm-lsp-test.prover-info","arguments":[]}} *)
 let handle_jsonrpc_req_exec_cmd (jsonrpc_req : Jsonrpc.Request.t)
     (params : Lsp.Types.ExecuteCommandParams.t) writer state =
-  let open Jsonrpc in
   match params.command with
   | "tlapm-lsp-test.prover-info" ->
       Eio.traceln "COMMAND: prover-info";
-      let response = Response.ok jsonrpc_req.id (`String "OK") in
-      let packet = Jsonrpc.Packet.Response response in
-      let () = writer packet in
+      reply_ok jsonrpc_req writer (`String "OK");
       state
   | unknown ->
       handle_jsonrpc_req_unknown jsonrpc_req
