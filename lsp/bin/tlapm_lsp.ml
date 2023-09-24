@@ -22,6 +22,16 @@ let run transport log_to log_io =
       let with_log_chan log_chan =
         let my_traceln =
           { Eio.Debug.traceln = (fun ?__POS__:_ fmt -> Fmt.epr (fmt ^^ "@.")) }
+          (* TODO: Try to reuse the original traceln function. Types don't match in the following.
+             let x = Eio.traceln in
+             {
+               Eio.Debug.traceln =
+                 (fun ?__POS__:pos fmt ->
+                   let f = Fmt.epr fmt in
+                   match pos with
+                   | None -> x (Fmt.epr fmt)
+                   | Some p -> x ?__POS__:p f);
+             } *)
         in
         let debug = Eio.Stdenv.debug env in
         Eio.Fiber.with_binding debug#traceln my_traceln (fun _ ->
