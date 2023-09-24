@@ -14,10 +14,17 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "keybindings":[
+      {
+        "command": "tlapm-lsp-test.prover-info",
+        "key": "ctrl+g ctrl+g"
+      }
+    ],
     "commands": [
       {
-        "command": "tlapm-lsp-test.helloWorld",
-        "title": "Hello World"
+        "command": "tlapm-lsp-test.prover-info",
+        "title": "TLAPM: Prover info",
+        "when": "editorLangId == tlaplus"
       }
     ]
   },

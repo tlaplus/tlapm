@@ -63,9 +63,15 @@ let handle_jsonrpc_req_initialize (jsonrpc_req : Jsonrpc.Request.t) params
         Eio.traceln "CONN: Client INFO, name=%s, version=%s" ci.name ci_version
   in
   print_ci params;
+  let supported_commands = [ "tlapm-lsp-test.prover-info" ] in
   let capabilities =
     ServerCapabilities.create
-      ~textDocumentSync:(`TextDocumentSyncKind TextDocumentSyncKind.Full) ()
+      ~textDocumentSync:(`TextDocumentSyncKind TextDocumentSyncKind.Full)
+      ~executeCommandProvider:
+        (* TODO: workDoneProgress:false *)
+        (ExecuteCommandOptions.create ~commands:supported_commands
+           ~workDoneProgress:false ())
+      ()
   in
   let server_version =
     match Build_info.V1.version () with
@@ -88,17 +94,33 @@ let handle_jsonrpc_req_shutdown (_jsonrpc_req : Jsonrpc.Request.t) state =
   Eio.traceln "CONN: Shutdown";
   Tlapm_lsp_state.shutdown state
 
-let handle_jsonrpc_req_unknown (jsonrpc_req : Jsonrpc.Request.t) writer state =
+let handle_jsonrpc_req_unknown (jsonrpc_req : Jsonrpc.Request.t) message writer
+    state =
   Eio.traceln "Received unknown JsonRPC request, method=%s" jsonrpc_req.method_;
   let open Jsonrpc in
   let error =
-    Response.Error.make ~code:Response.Error.Code.MethodNotFound
-      ~message:"method not supported" ()
+    Response.Error.make ~code:Response.Error.Code.MethodNotFound ~message ()
   in
   let response = Response.error jsonrpc_req.id error in
   let packet = Jsonrpc.Packet.Response response in
   let () = writer packet in
   state
+
+(* {"jsonrpc":"2.0","id":1,"method":"workspace/executeCommand","params":{"command":"tlapm-lsp-test.prover-info","arguments":[]}} *)
+let handle_jsonrpc_req_exec_cmd (jsonrpc_req : Jsonrpc.Request.t)
+    (params : Lsp.Types.ExecuteCommandParams.t) writer state =
+  let open Jsonrpc in
+  match params.command with
+  | "tlapm-lsp-test.prover-info" ->
+      Eio.traceln "COMMAND: prover-info";
+      let response = Response.ok jsonrpc_req.id (`String "OK") in
+      let packet = Jsonrpc.Packet.Response response in
+      let () = writer packet in
+      state
+  | unknown ->
+      handle_jsonrpc_req_unknown jsonrpc_req
+        (Printf.sprintf "command unknown: %s" unknown)
+        writer state
 
 (** Dispatch request packets. *)
 let handle_jsonrpc_request (jsonrpc_req : Jsonrpc.Request.t) writer state =
@@ -106,8 +128,11 @@ let handle_jsonrpc_request (jsonrpc_req : Jsonrpc.Request.t) writer state =
   match Lsp.Client_request.of_jsonrpc jsonrpc_req with
   | Ok (E (Initialize (params : InitializeParams.t))) ->
       handle_jsonrpc_req_initialize jsonrpc_req params writer state
+  | Ok (E (ExecuteCommand params)) ->
+      handle_jsonrpc_req_exec_cmd jsonrpc_req params writer state
   | Ok (E Shutdown) -> handle_jsonrpc_req_shutdown jsonrpc_req state
-  | _ -> handle_jsonrpc_req_unknown jsonrpc_req writer state
+  | _ ->
+      handle_jsonrpc_req_unknown jsonrpc_req "method not supported" writer state
 
 (* Dispatch client responses to our requests. *)
 let handle_jsonrpc_response _jsonrpc_resp state = state
