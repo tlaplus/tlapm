@@ -1,7 +1,9 @@
-type mode = Initializing | Ready | Shutdown
-type t = { mode : mode; docs : Tlapm_lsp_docs.t }
+module Docs = Tlapm_lsp_docs
 
-let empty = { mode = Initializing; docs = Tlapm_lsp_docs.empty }
+type mode = Initializing | Ready | Shutdown
+type t = { mode : mode; docs : Docs.t }
+
+let empty = { mode = Initializing; docs = Docs.empty }
 
 let ready st =
   match st.mode with
@@ -27,3 +29,26 @@ let handle_if_ready_silent st f =
   | Error err ->
       Eio.traceln "Ignoring request: %s" err;
       st
+
+(* ********************** Test cases ********************** *)
+
+let%test_unit "basics" =
+  let st = empty in
+  let () =
+    match handle_if_ready st (fun docs -> docs) with
+    | Ok _ -> failwith "should fail"
+    | Error _ -> ()
+  in
+  let st = ready st in
+  let st =
+    match handle_if_ready st (fun docs -> docs) with
+    | Ok st -> st
+    | Error e -> failwith e
+  in
+  let st = shutdown st in
+  let () =
+    match handle_if_ready st (fun docs -> docs) with
+    | Ok _ -> failwith "should fail"
+    | Error _ -> ()
+  in
+  ()
