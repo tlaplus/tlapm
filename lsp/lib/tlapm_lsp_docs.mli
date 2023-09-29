@@ -17,3 +17,6 @@ val rem : t -> tk -> t
 
 val get_opt : t -> tk -> (string * int) option
 (** Lookup document's last revision. *)
+
+val get_vsn_opt : t -> tk -> int -> string option
+(** Lookup specific document revision. *)

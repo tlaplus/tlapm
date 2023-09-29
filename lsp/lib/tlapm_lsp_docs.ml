@@ -23,3 +23,10 @@ let get_opt docs uri =
   | None -> None
   | Some { versions = [] } -> None
   | Some { versions = v :: _ } -> Some (v.text, v.version)
+
+let get_vsn_opt docs uri vsn =
+  match Docs.find_opt uri docs with
+  | None -> None
+  | Some { versions } ->
+      let matching v = if v.version = vsn then Some v.text else None in
+      List.find_map matching versions
