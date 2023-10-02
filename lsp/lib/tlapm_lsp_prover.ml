@@ -50,9 +50,7 @@ module ToolboxProtocol = struct
         obl : string option;
       }
 
-  type parser_state =
-    | Empty
-    | Begin
+  type parser_part_msg =
     | PartWarning of { msg : string option }
     | PartError of { url : string option; msg : string option }
     | PartObligationsNumber of int option
@@ -69,6 +67,15 @@ module ToolboxProtocol = struct
       }
     | PartUnknown
 
+  type parser_state =
+    | Empty
+    | Begin
+    | PartMsg of {
+        field : string option;
+        acc_val : string;
+        acc_msg : parser_part_msg;
+      }
+
   let match_line line =
     let re = Str.regexp "^@!!\\([a-z]*\\):\\(.*\\)$" in
     match Str.string_match re line 0 with
@@ -80,54 +87,49 @@ module ToolboxProtocol = struct
 
   let parse_start = Empty
 
-  (* TODO: Handle multiline fields. *)
   let parse_line line acc stream =
-    match (acc, line) with
-    | Empty, "@!!BEGIN" -> Begin
-    | Empty, _ -> Empty
-    | Begin, "@!!type:warning" -> PartWarning { msg = None }
-    | Begin, "@!!type:error" -> PartError { msg = None; url = None }
-    | Begin, "@!!type:obligationsnumber" -> PartObligationsNumber None
-    | Begin, "@!!type:obligation" ->
-        PartObligation
-          {
-            id = None;
-            loc = None;
-            status = None;
-            fp = None;
-            prover = None;
-            meth = None;
-            reason = None;
-            already = None;
-            obl = None;
-          }
-    | Begin, _ -> PartUnknown
-    | PartWarning { msg = Some msg }, "@!!END" ->
-        Eio.Stream.add stream (TlapmWarning { msg });
-        Empty
-    | PartWarning w, _ -> (
-        match match_line line with
-        | Some ("msg", v) -> PartWarning { msg = Some v }
-        | Some (_, _) -> PartWarning w
-        | None -> PartWarning w)
-    | PartError { msg = Some msg; url = Some url }, "@!!END" ->
-        Eio.Stream.add stream (TlapmError { msg; url });
-        Empty
-    | PartError e, _ -> (
-        match match_line line with
-        | Some ("msg", v) -> PartError { e with msg = Some v }
-        | Some ("url", v) -> PartError { e with url = Some v }
-        | Some (_, _) -> PartError e
-        | None -> PartError e)
-    | PartObligationsNumber (Some count), "@!!END" ->
-        Eio.Stream.add stream (TlapmObligationsNumber count);
-        Empty
-    | PartObligationsNumber e, _ -> (
-        match match_line line with
-        | Some ("count", v) -> PartObligationsNumber (int_of_string_opt v)
-        | Some (_, _) -> PartObligationsNumber e
-        | None -> PartObligationsNumber e)
-    | ( PartObligation
+    let new_msg m = PartMsg { field = None; acc_val = ""; acc_msg = m } in
+    let set_field n v = function
+      | PartWarning w -> (
+          match n with
+          | "msg" -> PartWarning { msg = Some v }
+          | _ -> PartWarning w)
+      | PartError e -> (
+          match n with
+          | "msg" -> PartError { e with msg = Some v }
+          | "url" -> PartError { e with url = Some v }
+          | _ -> PartError e)
+      | PartObligationsNumber e -> (
+          match n with
+          | "count" -> PartObligationsNumber (int_of_string_opt v)
+          | _ -> PartObligationsNumber e)
+      | PartObligation o -> (
+          match n with
+          | "id" -> PartObligation { o with id = int_of_string_opt v }
+          | "loc" -> PartObligation { o with loc = tlapm_loc_of_string_opt v }
+          | "status" ->
+              PartObligation
+                { o with status = Some (tlapm_obl_state_of_string v) }
+          | "fp" -> PartObligation { o with fp = Some v }
+          | "prover" -> PartObligation { o with prover = Some v }
+          | "meth" -> PartObligation { o with meth = Some v }
+          | "reason" -> PartObligation { o with reason = Some v }
+          | "already" ->
+              PartObligation { o with already = bool_of_string_opt v }
+          | "obl" -> PartObligation { o with obl = Some v }
+          | _ -> PartObligation o)
+      | PartUnknown -> PartUnknown
+    in
+    let msg_of_part = function
+      | PartWarning { msg = Some msg } -> Some (TlapmWarning { msg })
+      | PartWarning _ -> None
+      | PartError { msg = Some msg; url = Some url } ->
+          Some (TlapmError { msg; url })
+      | PartError _ -> None
+      | PartObligationsNumber (Some count) ->
+          Some (TlapmObligationsNumber count)
+      | PartObligationsNumber _ -> None
+      | PartObligation
           {
             id = Some id;
             loc = Some loc;
@@ -138,31 +140,58 @@ module ToolboxProtocol = struct
             reason;
             already;
             obl;
-          },
-        "@!!END" ) ->
-        Eio.Stream.add stream
-          (TlapmObligation
-             { id; loc; status; fp; prover; meth; reason; already; obl });
+          } ->
+          Some
+            (TlapmObligation
+               { id; loc; status; fp; prover; meth; reason; already; obl })
+      | PartObligation _ -> None
+      | PartUnknown -> None
+    in
+    match (acc, line) with
+    | Empty, "@!!BEGIN" -> Begin
+    | Empty, _ -> Empty
+    | Begin, "@!!type:warning" -> new_msg (PartWarning { msg = None })
+    | Begin, "@!!type:error" -> new_msg (PartError { msg = None; url = None })
+    | Begin, "@!!type:obligationsnumber" -> new_msg (PartObligationsNumber None)
+    | Begin, "@!!type:obligation" ->
+        new_msg
+          (PartObligation
+             {
+               id = None;
+               loc = None;
+               status = None;
+               fp = None;
+               prover = None;
+               meth = None;
+               reason = None;
+               already = None;
+               obl = None;
+             })
+    | Begin, _ -> new_msg PartUnknown
+    | PartMsg { field; acc_val; acc_msg }, "@!!END" ->
+        let maybe_out_msg =
+          match field with
+          | Some f -> msg_of_part (set_field f acc_val acc_msg)
+          | None -> msg_of_part acc_msg
+        in
+        (match maybe_out_msg with
+        | Some out_msg -> Eio.Stream.add stream out_msg
+        | None -> ());
         Empty
-    | PartObligation o, _ -> (
+    | (PartMsg { field; acc_val; acc_msg } as msg), _ -> (
         match match_line line with
-        | Some ("id", v) -> PartObligation { o with id = int_of_string_opt v }
-        | Some ("loc", v) ->
-            PartObligation { o with loc = tlapm_loc_of_string_opt v }
-        | Some ("status", v) ->
-            PartObligation
-              { o with status = Some (tlapm_obl_state_of_string v) }
-        | Some ("fp", v) -> PartObligation { o with fp = Some v }
-        | Some ("prover", v) -> PartObligation { o with prover = Some v }
-        | Some ("meth", v) -> PartObligation { o with meth = Some v }
-        | Some ("reason", v) -> PartObligation { o with reason = Some v }
-        | Some ("already", v) ->
-            PartObligation { o with already = bool_of_string_opt v }
-        | Some ("obl", v) -> PartObligation { o with obl = Some v }
-        | Some (_, _) -> PartObligation o
-        | None -> PartObligation o)
-    | _, "@!!END" -> Empty
-    | _, _ -> acc
+        | Some (k, v) -> (
+            match field with
+            | Some f ->
+                let acc_msg' = set_field f acc_val acc_msg in
+                PartMsg { field = Some k; acc_val = v; acc_msg = acc_msg' }
+            | None -> PartMsg { field = Some k; acc_val = v; acc_msg })
+        | None -> (
+            match field with
+            | Some _ ->
+                let acc_val' = acc_val ^ "\n" ^ line in
+                PartMsg { field; acc_val = acc_val'; acc_msg }
+            | None -> msg))
 end
 
 (* ***** Prover process management ****************************************** *)
@@ -330,11 +359,17 @@ let start_async st doc_uri doc_vsn line_from line_till =
 
 (* ********************** Test cases ********************** *)
 
-let%test_unit "parse_line_warning" =
+let%test_unit "parse_line-warning" =
   let open ToolboxProtocol in
   let stream = Eio.Stream.create 10 in
   let lines =
-    [ "@!!BEGIN"; "@!!type:obligationsnumber"; "@!!count:17"; "@!!END" ]
+    [
+      (* keep it multiline*)
+      "@!!BEGIN";
+      "@!!type:obligationsnumber";
+      "@!!count:17";
+      "@!!END";
+    ]
   in
   match
     List.fold_left (fun acc l -> parse_line l acc stream) parse_start lines
@@ -344,6 +379,44 @@ let%test_unit "parse_line_warning" =
       | 1 -> (
           match Eio.Stream.take stream with
           | TlapmObligationsNumber 17 -> ()
+          | _ -> failwith "unexpected msg")
+      | _ -> failwith "unexpected msg count")
+  | _ -> failwith "unexpected parser state"
+
+let%test_unit "parse_line-multiline" =
+  let open ToolboxProtocol in
+  let stream = Eio.Stream.create 10 in
+  let lines =
+    [
+      "@!!BEGIN";
+      "@!!type:obligation";
+      "@!!id:2";
+      "@!!loc:10:3:10:10";
+      "@!!status:failed";
+      "@!!prover:isabelle";
+      "@!!meth:auto; time-limit: 30; time-used: 0.0 (0%)";
+      "@!!reason:false";
+      "@!!already:false";
+      "@!!obl:";
+      "ASSUME NEW CONSTANT A";
+      "PROVE  \\A x \\in A : A \\in x";
+      "";
+      "@!!END";
+    ]
+  in
+  match
+    List.fold_left (fun acc l -> parse_line l acc stream) parse_start lines
+  with
+  | Empty -> (
+      match Eio.Stream.length stream with
+      | 1 -> (
+          let obl =
+            "\nASSUME NEW CONSTANT A\nPROVE  \\A x \\in A : A \\in x\n"
+          in
+          match Eio.Stream.take stream with
+          | TlapmObligation { obl = Some o; _ } when o = obl -> ()
+          | TlapmObligation { obl = Some o; _ } ->
+              failwith (Format.sprintf "unexpected: %s" o)
           | _ -> failwith "unexpected msg")
       | _ -> failwith "unexpected msg count")
   | _ -> failwith "unexpected parser state"
