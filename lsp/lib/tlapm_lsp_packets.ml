@@ -1,3 +1,5 @@
+(* cSpell:words sprintf *)
+
 (** Helper to send responses to requests. *)
 let reply_ok (jsonrpc_req : Jsonrpc.Request.t) writer payload =
   let open Jsonrpc in
@@ -34,15 +36,15 @@ let handle_jsonrpc_notif jsonrpc_notif writer state =
                  ~end_:(Position.create ~line:1 ~character:7))
             ()
         in
-        let dpar =
+        let d_par =
           PublishDiagnosticsParams.create ~diagnostics:[ some ] ~uri
             ~version:vsn ()
         in
-        let diag = Lsp.Server_notification.PublishDiagnostics dpar in
-        let dpkg =
+        let diag = Lsp.Server_notification.PublishDiagnostics d_par in
+        let d_pkg =
           Jsonrpc.Packet.Notification (Lsp.Server_notification.to_jsonrpc diag)
         in
-        writer dpkg
+        writer d_pkg
       in
       let with_docs docs =
         send_diags ();

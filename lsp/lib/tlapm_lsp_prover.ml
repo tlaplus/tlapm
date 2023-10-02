@@ -1,3 +1,5 @@
+(* cSpell:words obligationsnumber Printexc sprintf getcwd *)
+
 module Docs = Tlapm_lsp_docs
 
 (* ***** Types and parsers for them ***************************************** *)
@@ -196,15 +198,7 @@ end
 
 (* ***** Prover process management ****************************************** *)
 
-(* Environment for the parser. Introduced mainly to make it testable. *)
-module type ProverEnv = sig
-  val tlapm_exe : unit -> (string, string) result
-  val have_error : Lsp.Types.Range.t -> string -> unit
-end
-
-(** Default implementation for ProverEnv *)
-module DefaultPE : ProverEnv = struct
-  (*
+(**
   Returns tha tlapm executable path or error, if there is no such in known places.
   If installed, both files are in the same dir:
     - .../bin/tlapm
@@ -216,35 +210,30 @@ module DefaultPE : ProverEnv = struct
     - .../src/tlapm.exe
     - .../lsp/lib/.tlapm_lsp_lib.inline-tests/inline_test_runner_tlapm_lsp_lib.exe
   *)
-  let tlapm_exe () =
-    let open Filename in
-    let this_exe = Sys.executable_name in
-    let this_abs =
-      match is_relative this_exe with
-      | true -> concat current_dir_name this_exe
-      | false -> this_exe
-    in
-    let tlapm_in_bin = concat (dirname this_abs) "tlapm" in
-    let tlapm_in_src =
-      let base_dir = dirname @@ dirname @@ dirname this_abs in
-      concat (concat base_dir "src") "tlapm.exe"
-    in
-    let tlapm_in_tst =
-      let base_dir = dirname @@ dirname @@ dirname @@ dirname this_abs in
-      concat (concat base_dir "src") "tlapm.exe"
-    in
-    let paths_to_check = [ tlapm_in_bin; tlapm_in_src; tlapm_in_tst ] in
-    match List.find_opt Sys.file_exists paths_to_check with
-    | Some path -> Ok path
-    | None ->
-        Error
-          ("tlapm not found, expected it among as: "
-          ^ String.concat ", " paths_to_check)
-
-  let have_error _r _m =
-    (* TODO: Update the docs *)
-    ()
-end
+let tlapm_exe () =
+  let open Filename in
+  let this_exe = Sys.executable_name in
+  let this_abs =
+    match is_relative this_exe with
+    | true -> concat current_dir_name this_exe
+    | false -> this_exe
+  in
+  let tlapm_in_bin = concat (dirname this_abs) "tlapm" in
+  let tlapm_in_src =
+    let base_dir = dirname @@ dirname @@ dirname this_abs in
+    concat (concat base_dir "src") "tlapm.exe"
+  in
+  let tlapm_in_tst =
+    let base_dir = dirname @@ dirname @@ dirname @@ dirname this_abs in
+    concat (concat base_dir "src") "tlapm.exe"
+  in
+  let paths_to_check = [ tlapm_in_bin; tlapm_in_src; tlapm_in_tst ] in
+  match List.find_opt Sys.file_exists paths_to_check with
+  | Some path -> Ok path
+  | None ->
+      Error
+        ("tlapm not found, expected it among as: "
+        ^ String.concat ", " paths_to_check)
 
 (* Currently forked tlapm process. *)
 type tf = {
@@ -339,10 +328,9 @@ let start_async_with_text st doc_uri _doc_vsn doc_text line_from line_till
   { st with forked = Some forked }
 
 (* Run the tlapm prover, cancel the preceding one, if any. *)
-let start_async' st ?(pe = (module DefaultPE : ProverEnv)) doc_uri doc_vsn
-    line_from line_till =
-  let module PE = (val pe : ProverEnv) in
-  match PE.tlapm_exe () with
+let start_async st doc_uri doc_vsn line_from line_till
+    ?(tlapm_locator = tlapm_exe) () =
+  match tlapm_locator () with
   | Ok executable -> (
       match Docs.get_vsn_opt st.docs doc_uri doc_vsn with
       | Some doc_text ->
@@ -352,10 +340,6 @@ let start_async' st ?(pe = (module DefaultPE : ProverEnv)) doc_uri doc_vsn
                line_till executable)
       | None -> Error "Document not found")
   | Error reason -> Error reason
-
-(* The public version, just to avoid exposing the ProverEnv module type. *)
-let start_async st doc_uri doc_vsn line_from line_till =
-  start_async' st doc_uri doc_vsn line_from line_till
 
 (* ********************** Test cases ********************** *)
 
@@ -432,18 +416,12 @@ let%test_unit "basics" =
   let docs = Docs.add docs du dv "any\ncontent" in
   let stream = Eio.Stream.create 10 in
   let pr = create sw fs mgr stream docs in
-  let errs = ref [] in
-  let pe =
-    (module struct
-      let tlapm_exe () =
-        let cwd = Sys.getcwd () in
-        Ok (Filename.concat cwd "../test/tlapm_mock.sh")
-
-      let have_error _r m = errs := m :: !errs
-    end : ProverEnv)
+  let tlapm_locator () =
+    let cwd = Sys.getcwd () in
+    Ok (Filename.concat cwd "../test/tlapm_mock.sh")
   in
   let _docs =
-    match start_async' pr ~pe du dv 3 7 with
+    match start_async pr du dv 3 7 ~tlapm_locator () with
     | Ok docs -> docs
     | Error e -> failwith e
   in

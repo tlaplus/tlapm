@@ -39,4 +39,11 @@ val create :
   t
 
 val start_async :
-  t -> Tlapm_lsp_docs.tk -> int -> int -> int -> (t, string) result
+  t ->
+  Tlapm_lsp_docs.tk ->
+  int ->
+  int ->
+  int ->
+  ?tlapm_locator:(unit -> (string, string) result) ->
+  unit ->
+  (t, string) result
