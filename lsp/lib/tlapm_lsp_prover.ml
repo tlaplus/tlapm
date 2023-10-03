@@ -28,6 +28,12 @@ module ToolboxProtocol = struct
 
   type tlapm_loc = (int * int) * (int * int)
 
+  let range_of_loc (((fl, fc), (tl, tc)) : tlapm_loc) =
+    let open Lsp.Types in
+    Range.create
+      ~start:(Position.create ~line:fl ~character:fc)
+      ~end_:(Position.create ~line:tl ~character:tc)
+
   let tlapm_loc_of_string_opt s =
     match String.split_on_char ':' s with
     | [ fl; fc; tl; tc ] ->
@@ -51,6 +57,7 @@ module ToolboxProtocol = struct
         already : bool option;
         obl : string option;
       }
+  (* TODO: | TlapmTerminated *)
 
   type parser_part_msg =
     | PartWarning of { msg : string option }
@@ -406,6 +413,7 @@ let%test_unit "parse_line-multiline" =
   | _ -> failwith "unexpected parser state"
 
 let%test_unit "basics" =
+  (* TODO: Test timing and cancellation. *)
   Eio_main.run @@ fun env ->
   Eio.Switch.run @@ fun sw ->
   let fs = Eio.Stdenv.fs env in
