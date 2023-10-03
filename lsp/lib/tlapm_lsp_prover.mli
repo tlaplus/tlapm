@@ -1,5 +1,6 @@
 type t
 
+(** Types representing messages from the prover. *)
 module ToolboxProtocol : sig
   type tlapm_obl_state =
     | ToBeProved
@@ -12,6 +13,8 @@ module ToolboxProtocol : sig
     | Unknown of string
 
   type tlapm_loc = (int * int) * (int * int)
+
+  val range_of_loc : tlapm_loc -> Lsp.Types.Range.t
 
   type tlapm_msg =
     | TlapmWarning of { msg : string }
@@ -37,6 +40,10 @@ val create :
   ToolboxProtocol.tlapm_msg Eio.Stream.t ->
   Tlapm_lsp_docs.t ->
   t
+(** Create a tlapm process manager. *)
+
+val cancel_all : t -> t
+(** Cancel all the ongoing proof processes, await for their termination. *)
 
 val start_async :
   t ->
@@ -47,3 +54,4 @@ val start_async :
   ?tlapm_locator:(unit -> (string, string) result) ->
   unit ->
   (t, string) result
+(** Start new proof process after canceling the existing processes. *)
