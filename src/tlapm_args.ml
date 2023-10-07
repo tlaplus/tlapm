@@ -185,6 +185,9 @@ let init () =
               "<int> line to prove";
     "--wait", Arg.Set_int wait,
               "<time> wait for <time> before printing obligations in progress";
+    "--stdin", Arg.Set use_stdin, " \
+        read the tla file from stdin instead of file system. \
+        Only applies if single tla file is provided as input.";
     "--noproving", Arg.Set noproving,
                    " do not prove, report fingerprinted results only";
     blank;
@@ -261,5 +264,8 @@ let init () =
     Printf.printf " with command line:\n\\*";
     Array.iter (fun s -> Printf.printf " %s" (quote_if_needed s)) Sys.argv;
     Printf.printf "\n\n%!"
+  end;
+  if (List.length !mods) <> 1 then begin
+    use_stdin := false
   end;
   !mods

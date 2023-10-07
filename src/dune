@@ -27,3 +27,5 @@
 
 (include_subdirs unqualified)
 
+(cram
+ (deps %{bin:tlapm}))
