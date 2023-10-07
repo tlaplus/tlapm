@@ -184,7 +184,7 @@ module ToolboxProtocol = struct
           | None -> msg_of_part acc_msg
         in
         (match maybe_out_msg with
-        | Some out_msg -> Eio.Stream.add stream out_msg
+        | Some out_msg -> stream out_msg
         | None -> ());
         Empty
     | (PartMsg { field; acc_val; acc_msg } as msg), _ -> (
@@ -253,7 +253,7 @@ type t = {
   sw : Eio.Switch.t;
   fs : Eio__.Fs.dir_ty Eio.Path.t;
   mgr : Eio_unix.Process.mgr_ty Eio.Process.mgr;
-  stream : ToolboxProtocol.tlapm_msg Eio.Stream.t;
+  stream : ToolboxProtocol.tlapm_msg -> unit;
   docs : Docs.t;
   forked : tf option;
 }
@@ -300,7 +300,7 @@ let fork_read sw stream r w cancel =
   let fib_cancel () = Eio.Promise.await cancel in
   Eio.Fiber.fork_promise ~sw @@ fun () ->
   Eio.Fiber.first fib_read fib_cancel;
-  Eio.Stream.add stream TlapmTerminated;
+  stream TlapmTerminated;
   Eio.traceln "TLAPM main fiber completed"
 
 (** Start the TLAPM process and attach the reader fiber to it. *)
@@ -324,7 +324,6 @@ let start_async_with_text st doc_uri _doc_vsn doc_text line_from line_till
       "--stdin";
       mod_name;
     ]
-    (* TODO: Add support for the stdin option.  *)
   in
   let proc =
     Eio.Process.spawn st.mgr ~sw:st.sw ~executable ~cwd:mod_dir ~stdin ~stdout:w
@@ -354,6 +353,7 @@ let start_async st doc_uri doc_vsn line_from line_till
 let%test_unit "parse_line-warning" =
   let open ToolboxProtocol in
   let stream = Eio.Stream.create 10 in
+  let stream_add = Eio.Stream.add stream in
   let lines =
     [
       (* keep it multiline*)
@@ -364,7 +364,7 @@ let%test_unit "parse_line-warning" =
     ]
   in
   match
-    List.fold_left (fun acc l -> parse_line l acc stream) parse_start lines
+    List.fold_left (fun acc l -> parse_line l acc stream_add) parse_start lines
   with
   | Empty -> (
       match Eio.Stream.length stream with
@@ -378,6 +378,7 @@ let%test_unit "parse_line-warning" =
 let%test_unit "parse_line-multiline" =
   let open ToolboxProtocol in
   let stream = Eio.Stream.create 10 in
+  let stream_add = Eio.Stream.add stream in
   let lines =
     [
       "@!!BEGIN";
@@ -397,7 +398,7 @@ let%test_unit "parse_line-multiline" =
     ]
   in
   match
-    List.fold_left (fun acc l -> parse_line l acc stream) parse_start lines
+    List.fold_left (fun acc l -> parse_line l acc stream_add) parse_start lines
   with
   | Empty -> (
       match Eio.Stream.length stream with
@@ -425,7 +426,8 @@ let%test_module "Mocked TLAPM" =
       let dv = 1 in
       let docs = Docs.add docs du dv "any\ncontent" in
       let stream = Eio.Stream.create 10 in
-      let pr = create sw fs mgr stream docs in
+      let stream_add = Eio.Stream.add stream in
+      let pr = create sw fs mgr stream_add docs in
       let tlapm_locator () =
         let cwd = Sys.getcwd () in
         Ok (Filename.concat cwd "../test/tlapm_mock.sh")

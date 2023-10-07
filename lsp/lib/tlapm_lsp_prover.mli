@@ -38,7 +38,7 @@ val create :
   Eio.Switch.t ->
   Eio__.Fs.dir_ty Eio.Path.t ->
   Eio_unix.Process.mgr_ty Eio.Process.mgr ->
-  ToolboxProtocol.tlapm_msg Eio.Stream.t ->
+  (ToolboxProtocol.tlapm_msg -> unit) ->
   Tlapm_lsp_docs.t ->
   t
 (** Create a tlapm process manager. *)
