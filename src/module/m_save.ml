@@ -28,7 +28,7 @@ let clocking cl fn x =
         fn x
 
 
-let file_search fh =
+let file_search' fh =
     if Filename.is_implicit fh.core then
         let rec scan = function
             | [] -> None
@@ -43,6 +43,13 @@ let file_search fh =
             Some fh
         else None
 
+let use_stdin_prop = Property.make "use_stdin"
+
+let file_search fh =
+    match Property.has fh use_stdin_prop with
+    | true -> Some fh
+    | false -> file_search' fh
+
 
 let really_parse_file fn =
     match file_search fn with
@@ -52,7 +59,10 @@ let really_parse_file fn =
             fn.core;
         failwith "Module.Parser.parse_file"
     | Some fn ->
-        let (flex, _) = Alexer.lex fn.core in
+        let (flex, _) = match Property.has fn use_stdin_prop with
+            | true -> Alexer.lex_channel fn.core Stdlib.stdin
+            | false -> Alexer.lex fn.core
+        in
         let hparse = use parse in
         match P.run hparse ~init:Tla_parser.init ~source:flex with
         | None ->

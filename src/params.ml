@@ -48,6 +48,9 @@ let safefp = ref false
 let wait = ref 3
 (* Wait time before sending a "being proved" message to the toolbox. *)
 
+let use_stdin = ref false
+(* Read the document from stdin, if only one file is provided as an input. *)
+
 let noproving = ref false (* Don't send any obligation to the back-ends. *)
 
 let printallobs = ref false

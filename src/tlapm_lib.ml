@@ -478,9 +478,17 @@ let read_new_modules mcx fs =
   (* Read the files with names in the list of strings `fs`. *)
   List.fold_left begin
     fun (mcx, mods) fn ->
+      let hint = Util.locate fn Loc.unknown in
+      (* Params.use_stdin is only set, if a single file is passed to the tlapm.
+         Bellow we set the use_stdin_prop property for the single input file only.
+         This way the file passed explicitly will be read from stdin and all the files
+         referenced from it will be searched in a file system, as usual. *)
+      let hint = match !Params.use_stdin with
+      | true -> Property.assign hint Module.Save.use_stdin_prop ()
+      | false -> hint
+      in
       let mule =
-        Module.Save.parse_file ~clock:Clocks.parsing
-                               (Util.locate fn Loc.unknown)
+        Module.Save.parse_file ~clock:Clocks.parsing hint
       in
       (* set a flag for each module of the new modules that it is important *)
       mule.core.important <- true ;

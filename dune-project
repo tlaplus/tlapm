@@ -10,6 +10,8 @@
 
 (source (github tlaplus/tlapm))
 
+(cram enable)
+
 (package
  (name tlapm)
  (synopsis "TLA+ Proof Manager")
