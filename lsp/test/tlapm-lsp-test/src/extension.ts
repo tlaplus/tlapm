@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { Executable, LanguageClient, LanguageClientOptions, TransportKind } from 'vscode-languageclient/node';
+import { Executable, LanguageClient, LanguageClientOptions, TransportKind, VersionedTextDocumentIdentifier } from 'vscode-languageclient/node';
 
 let client: LanguageClient;
 
@@ -10,14 +10,10 @@ export function activate(context: vscode.ExtensionContext) {
 
 	context.subscriptions.push(vscode.commands.registerTextEditorCommand('tlapm-lsp-test.prove-step', (te, ed, args) => {
 		console.log("CMD: tlapm-lsp-test.prove-step invoked.");
-		vscode.commands.executeCommand("tlapm-lsp-test.prove-step.lsp", [
-			{
-				uri: te.document.uri,
-				version: te.document.version,
-				cursor: te.selection.active,
-				selection: {from: te.selection.start, till: te.selection.end}
-			}
-		]);
+		vscode.commands.executeCommand("tlapm-lsp-test.prove-step.lsp",
+			{ uri: te.document.uri.toString(), version: te.document.version } as VersionedTextDocumentIdentifier,
+			{ start: te.selection.start, end: te.selection.end } as vscode.Range,
+		);
 	}));
 
 	const serverPath = context.asAbsolutePath('../../../_build/default/lsp/bin/tlapm_lsp.exe');
