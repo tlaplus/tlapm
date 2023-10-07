@@ -183,9 +183,7 @@ module ToolboxProtocol = struct
           | Some f -> msg_of_part (set_field f acc_val acc_msg)
           | None -> msg_of_part acc_msg
         in
-        (match maybe_out_msg with
-        | Some out_msg -> stream out_msg
-        | None -> ());
+        (match maybe_out_msg with Some out_msg -> stream out_msg | None -> ());
         Empty
     | (PartMsg { field; acc_val; acc_msg } as msg), _ -> (
         match match_line line with
