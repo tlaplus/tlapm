@@ -15,6 +15,7 @@ module ToolboxProtocol : sig
   type tlapm_loc = (int * int) * (int * int)
 
   val range_of_loc : tlapm_loc -> Lsp.Types.Range.t
+  val loc_of_range : Lsp.Types.Range.t -> tlapm_loc
 
   type tlapm_msg =
     | TlapmWarning of { msg : string }

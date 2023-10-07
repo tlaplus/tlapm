@@ -15,6 +15,8 @@ type t = {
 }
 
 module PacketsCB = struct
+  module LT = Lsp.Types
+
   type cb_t = t
 
   let ready st =
@@ -29,10 +31,16 @@ module PacketsCB = struct
     | Ready -> { st with mode = Shutdown }
     | Shutdown -> st
 
+  let lsp_send st p =
+    st.output (Some p);
+    st
+
   let with_docs' st f =
     match st.mode with
     | Initializing -> Error "initializing"
-    | Ready -> Ok { st with docs = f st.docs }
+    | Ready ->
+        let st', docs' = f (st, st.docs) in
+        Ok { st' with docs = docs' }
     | Shutdown -> Error "going to shutdown"
 
   let with_docs st f =
@@ -41,6 +49,13 @@ module PacketsCB = struct
     | Error err ->
         Eio.traceln "Ignoring request: %s" err;
         st
+
+  let prove_step st (uri : LT.DocumentUri.t) (vsn : int) (range : LT.Range.t) =
+    Eio.traceln "PROVE_STEP: %s#%d lines %d--%d"
+      (LT.DocumentUri.to_string uri)
+      vsn range.start.line range.end_.line;
+    (* TODO: Implement. *)
+    st
 
   let%test_unit "basics" =
     let st =
@@ -73,9 +88,7 @@ end
 
 module Packets = Tlapm_lsp_packets.Make (PacketsCB)
 
-let handle_lsp_packet p st =
-  let writer o = st.output (Some o) in
-  Some (Packets.handle_jsonrpc_packet p writer st)
+let handle_lsp_packet p st = Some (Packets.handle_jsonrpc_packet p st)
 
 let handle_tlapm_msg _ref _msg st =
   (* TODO: Implement. *)

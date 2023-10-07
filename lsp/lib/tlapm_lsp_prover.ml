@@ -31,8 +31,12 @@ module ToolboxProtocol = struct
   let range_of_loc (((fl, fc), (tl, tc)) : tlapm_loc) =
     let open Lsp.Types in
     Range.create
-      ~start:(Position.create ~line:fl ~character:fc)
-      ~end_:(Position.create ~line:tl ~character:tc)
+      ~start:(Position.create ~line:(fl - 1) ~character:(fc - 1))
+      ~end_:(Position.create ~line:(tl - 1) ~character:(tc - 1))
+
+  let loc_of_range (range : Lsp.Types.Range.t) =
+    ( (range.start.line + 1, range.start.character + 1),
+      (range.end_.line + 1, range.end_.character + 1) )
 
   let tlapm_loc_of_string_opt s =
     match String.split_on_char ':' s with
