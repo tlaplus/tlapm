@@ -1,4 +1,4 @@
-(* cSpell:words obligationsnumber Printexc sprintf getcwd *)
+(* cSpell:words obligationsnumber Printexc sprintf getcwd nonblocking *)
 
 module Docs = Tlapm_lsp_docs
 
@@ -57,7 +57,7 @@ module ToolboxProtocol = struct
         already : bool option;
         obl : string option;
       }
-  (* TODO: | TlapmTerminated *)
+    | TlapmTerminated
 
   type parser_part_msg =
     | PartWarning of { msg : string option }
@@ -266,7 +266,7 @@ let cancel_all st =
   match st.forked with
   | None -> st
   | Some { proc; complete; cancel } ->
-      Eio.Process.signal proc Sys.sigint;
+      Eio.Process.signal proc Sys.sigkill;
       (match Eio.Process.await proc with
       | `Exited x -> Eio.traceln "[TLAPM] Process exited %d" x
       | `Signaled x ->
@@ -300,6 +300,7 @@ let fork_read sw stream r w cancel =
   let fib_cancel () = Eio.Promise.await cancel in
   Eio.Fiber.fork_promise ~sw @@ fun () ->
   Eio.Fiber.first fib_read fib_cancel;
+  Eio.Stream.add stream TlapmTerminated;
   Eio.traceln "TLAPM main fiber completed"
 
 (** Start the TLAPM process and attach the reader fiber to it. *)
@@ -412,25 +413,116 @@ let%test_unit "parse_line-multiline" =
       | _ -> failwith "unexpected msg count")
   | _ -> failwith "unexpected parser state"
 
-let%test_unit "basics" =
-  (* TODO: Test timing and cancellation. *)
-  Eio_main.run @@ fun env ->
-  Eio.Switch.run @@ fun sw ->
-  let fs = Eio.Stdenv.fs env in
-  let mgr = Eio.Stdenv.process_mgr env in
-  let docs = Docs.empty in
-  let du = Lsp.Types.DocumentUri.of_path "TimingExit0.tla" in
-  let dv = 1 in
-  let docs = Docs.add docs du dv "any\ncontent" in
-  let stream = Eio.Stream.create 10 in
-  let pr = create sw fs mgr stream docs in
-  let tlapm_locator () =
-    let cwd = Sys.getcwd () in
-    Ok (Filename.concat cwd "../test/tlapm_mock.sh")
-  in
-  let _docs =
-    match start_async pr du dv 3 7 ~tlapm_locator () with
-    | Ok docs -> docs
-    | Error e -> failwith e
-  in
-  ()
+let%test_module "Mocked TLAPM" =
+  (module struct
+    let test_case doc_name timeout assert_fun =
+      Eio_main.run @@ fun env ->
+      Eio.Switch.run @@ fun sw ->
+      let fs = Eio.Stdenv.fs env in
+      let mgr = Eio.Stdenv.process_mgr env in
+      let docs = Docs.empty in
+      let du = Lsp.Types.DocumentUri.of_path doc_name in
+      let dv = 1 in
+      let docs = Docs.add docs du dv "any\ncontent" in
+      let stream = Eio.Stream.create 10 in
+      let pr = create sw fs mgr stream docs in
+      let tlapm_locator () =
+        let cwd = Sys.getcwd () in
+        Ok (Filename.concat cwd "../test/tlapm_mock.sh")
+      in
+      let clock = Eio.Stdenv.clock env in
+      let ts_start = Eio.Time.now clock in
+      let pr =
+        match start_async pr du dv 3 7 ~tlapm_locator () with
+        | Ok pr -> pr
+        | Error e -> failwith e
+      in
+      let _pr = assert_fun pr clock stream in
+      let ts_end = Eio.Time.now clock in
+      let () =
+        match ts_end -. ts_start < timeout with
+        | true -> ()
+        | false -> failwith "timeout expired"
+      in
+      ()
+
+    (* Check a document which outputs a warning then sleeps for 3s and then
+       outputs another. We will cancel it in 0.5s, only the first warning
+       should be received, and the overall time should be less than a second. *)
+    let%test_unit "Mocked: CancelTiming" =
+      test_case "CancelTiming.tla" 1.0 @@ fun pr clock stream ->
+      let () = Eio.Time.sleep clock 0.5 in
+      let _pr = cancel_all pr in
+      let () =
+        match Eio.Stream.length stream with
+        | 2 -> ()
+        | l -> failwith (Format.sprintf "expected 2 events, got %d" l)
+      in
+      let () =
+        match Eio.Stream.take_nonblocking stream with
+        | Some (TlapmWarning { msg = "message before delay" }) -> ()
+        | _ -> failwith "expected warning msg"
+      in
+      let () =
+        match Eio.Stream.take_nonblocking stream with
+        | Some TlapmTerminated -> ()
+        | _ -> failwith "expected termination msg"
+      in
+      pr
+
+    (* Check if abnormal tlapm termination don't cause any side effects.
+       We con't sleep or cancel a process here, just wait for expected messages. *)
+    let%test_unit "Mocked: AbnormalExit" =
+      test_case "AbnormalExit.tla" 1.0 @@ fun pr _clock stream ->
+      let () =
+        match Eio.Stream.take stream with
+        | TlapmWarning { msg = "this run is going to fail" } -> ()
+        | _ -> failwith "expected warning msg"
+      in
+      let () =
+        match Eio.Stream.take stream with
+        | TlapmTerminated -> ()
+        | _ -> failwith "expected termination msg"
+      in
+      pr
+
+    (* Check if output of running tlapm on a document with no proofs works. *)
+    let%test_unit "Mocked: Empty" =
+      test_case "Empty.tla" 1.0 @@ fun pr _clock stream ->
+      let () =
+        match Eio.Stream.take stream with
+        | TlapmObligationsNumber 0 -> ()
+        | _ -> failwith "expected 0 obligations"
+      in
+      let () =
+        match Eio.Stream.take stream with
+        | TlapmTerminated -> ()
+        | _ -> failwith "expected termination msg"
+      in
+      pr
+
+    (* Check if output of running tlapm on a document with some proofs works. *)
+    let%test_unit "Mocked: Some" =
+      test_case "Some.tla" 1.0 @@ fun pr _clock stream ->
+      let () =
+        match Eio.Stream.take stream with
+        | TlapmObligation { status = ToBeProved; _ } -> ()
+        | _ -> failwith "expected obligation"
+      in
+      let () =
+        match Eio.Stream.take stream with
+        | TlapmObligationsNumber 1 -> ()
+        | _ -> failwith "expected 1 obligations"
+      in
+      let () =
+        match Eio.Stream.take stream with
+        | TlapmObligation { status = Proved; _ } -> ()
+        | _ -> failwith "expected obligation"
+      in
+      let () =
+        match Eio.Stream.take stream with
+        | TlapmTerminated -> ()
+        | _ -> failwith "expected termination msg"
+      in
+      pr
+  end)
