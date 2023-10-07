@@ -9,25 +9,37 @@ if [ "$1" != "--toolbox" ] ; then
     exit 2
 fi
 
-# We differentiate the testcases by the last argument, which is usually a TLA file.
-last_arg=${@: -1}
-case "$last_arg" in
-    TimingExit0.tla)
-        echo Starting...
-        sleep 1; echo First proof done
-        sleep 1; echo Second proof fone
-        sleep 1; echo All proofs OK.
-        exit 0
-        ;;
-    TimingExit1.tla)
-        echo Starting...
-        sleep 1; echo First proof done
-        sleep 1; echo Second proof fone
-        sleep 1; echo All proofs OK.
-        exit 1
-        ;;
-    Empty.tla)
-    cat << EOF
+################################################################################
+function CancelTiming() {
+cat << EOF
+@!!BEGIN
+@!!type:warning
+@!!msg:message before delay
+@!!END
+EOF
+sleep 3 # NOTE: This.
+cat << EOF
+@!!BEGIN
+@!!type:warning
+@!!msg:message after delay
+@!!END
+EOF
+}
+
+################################################################################
+function AbnormalExit() {
+cat << EOF
+@!!BEGIN
+@!!type:warning
+@!!msg:this run is going to fail
+@!!END
+EOF
+exit 1 # NOTE: This.
+}
+
+################################################################################
+function Empty() {
+cat << EOF
 \* TLAPM version 1.5.0
 \* launched at 2023-09-30 23:39:35 with command line:
 \* tlapm --toolbox 0 0 Empty.tla
@@ -42,8 +54,10 @@ case "$last_arg" in
 File "./Empty.tla", line 1, character 1 to line 5, character 4:
 [INFO]: All 0 obligation proved.
 EOF
-    ;;
-    Some.tla)
+}
+
+################################################################################
+function Some() {
 cat << EOF
 \* TLAPM version 1.5.0
 \* launched at 2023-09-30 23:43:15 with command line:
@@ -79,7 +93,16 @@ cat << EOF
 File "./Some.tla", line 1, character 1 to line 6, character 4:
 [INFO]: All 1 obligation proved.
 EOF
-    ;;
+}
+
+################################################################################
+# We differentiate the testcases by the last argument, which is usually a TLA file.
+last_arg=${@: -1}
+case "$last_arg" in
+    CancelTiming.tla) CancelTiming ;;
+    AbnormalExit.tla) AbnormalExit ;;
+    Empty.tla) Empty ;;
+    Some.tla) Some ;;
     *)
         echo "ERROR: Unexpected testcase, last_arg=$last_arg."
         exit 2

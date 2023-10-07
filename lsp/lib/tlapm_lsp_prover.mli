@@ -31,6 +31,7 @@ module ToolboxProtocol : sig
         already : bool option;
         obl : string option;
       }
+    | TlapmTerminated
 end
 
 val create :
