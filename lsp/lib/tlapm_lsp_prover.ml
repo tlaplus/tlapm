@@ -5,6 +5,36 @@ let read_buf_max_size = 1024 * 1024
 
 module Docs = Tlapm_lsp_docs
 
+module TlapmRange = struct
+  (* LSP ranges are 0-based and TLAPM is 1-based. *)
+  type t = TlapmRange of (int * int) * (int * int)
+
+  let line_from (TlapmRange ((fl, _), _)) = fl
+  let line_till (TlapmRange (_, (tl, _))) = tl
+
+  let as_lsp_range (TlapmRange ((fl, fc), (tl, tc))) =
+    let open Lsp.Types in
+    Range.create
+      ~start:(Position.create ~line:(fl - 1) ~character:(fc - 1))
+      ~end_:(Position.create ~line:(tl - 1) ~character:(tc - 1))
+
+  let of_lines fl tl = TlapmRange ((fl, 1), (tl, 1))
+
+  let of_lsp_range (range : Lsp.Types.Range.t) =
+    TlapmRange
+      ( (range.start.line + 1, range.start.character + 1),
+        (range.end_.line + 1, range.end_.character + 1) )
+
+  let of_string_opt s =
+    match String.split_on_char ':' s with
+    | [ fl; fc; tl; tc ] ->
+        Some
+          (TlapmRange
+             ( (int_of_string fl, int_of_string fc),
+               (int_of_string tl, int_of_string tc) ))
+    | _ -> None
+end
+
 (* ***** Types and parsers for them ***************************************** *)
 
 module ToolboxProtocol = struct
@@ -29,33 +59,13 @@ module ToolboxProtocol = struct
     | "trivial" -> Trivial
     | _ -> Unknown s
 
-  type tlapm_loc = (int * int) * (int * int)
-
-  let range_of_loc (((fl, fc), (tl, tc)) : tlapm_loc) =
-    let open Lsp.Types in
-    Range.create
-      ~start:(Position.create ~line:(fl - 1) ~character:(fc - 1))
-      ~end_:(Position.create ~line:(tl - 1) ~character:(tc - 1))
-
-  let loc_of_range (range : Lsp.Types.Range.t) =
-    ( (range.start.line + 1, range.start.character + 1),
-      (range.end_.line + 1, range.end_.character + 1) )
-
-  let tlapm_loc_of_string_opt s =
-    match String.split_on_char ':' s with
-    | [ fl; fc; tl; tc ] ->
-        Some
-          ( (int_of_string fl, int_of_string fc),
-            (int_of_string tl, int_of_string tc) )
-    | _ -> None
-
   type tlapm_msg =
     | TlapmWarning of { msg : string }
     | TlapmError of { url : string; msg : string }
     | TlapmObligationsNumber of int
     | TlapmObligation of {
         id : int;
-        loc : tlapm_loc;
+        loc : TlapmRange.t;
         status : tlapm_obl_state;
         fp : string option;
         prover : string option;
@@ -72,7 +82,7 @@ module ToolboxProtocol = struct
     | PartObligationsNumber of int option
     | PartObligation of {
         id : int option;
-        loc : tlapm_loc option;
+        loc : TlapmRange.t option;
         status : tlapm_obl_state option;
         fp : string option;
         prover : string option;
@@ -122,7 +132,7 @@ module ToolboxProtocol = struct
       | PartObligation o -> (
           match n with
           | "id" -> PartObligation { o with id = int_of_string_opt v }
-          | "loc" -> PartObligation { o with loc = tlapm_loc_of_string_opt v }
+          | "loc" -> PartObligation { o with loc = TlapmRange.of_string_opt v }
           | "status" ->
               PartObligation
                 { o with status = Some (tlapm_obl_state_of_string v) }
@@ -308,8 +318,8 @@ let fork_read sw stream r w cancel =
   Eio.traceln "[TLAPM] main fiber completed"
 
 (** Start the TLAPM process and attach the reader fiber to it. *)
-let start_async_with_text st doc_uri _doc_vsn doc_text line_from line_till
-    events_adder executable =
+let start_async_with_exec st doc_uri _doc_vsn doc_text range events_adder
+    executable =
   let mod_path = Lsp.Types.DocumentUri.to_path doc_uri in
   let mod_dir =
     let open Eio.Path in
@@ -323,8 +333,8 @@ let start_async_with_text st doc_uri _doc_vsn doc_text line_from line_till
       (* First arg s ignored, id executable is specified. *)
       executable;
       "--toolbox";
-      string_of_int line_from;
-      string_of_int line_till;
+      string_of_int (TlapmRange.line_from range);
+      string_of_int (TlapmRange.line_till range);
       "--stdin";
       mod_name;
     ]
@@ -342,15 +352,15 @@ let start_async_with_text st doc_uri _doc_vsn doc_text line_from line_till
   { st with forked = Some forked }
 
 (* Run the tlapm prover, cancel the preceding one, if any. *)
-let start_async st doc_uri doc_vsn doc_text line_from line_till events_adder
+let start_async st doc_uri doc_vsn doc_text range events_adder
     ?(tlapm_locator = tlapm_exe) () =
   Eio.traceln "[TLAPM][I]\n%s" doc_text;
   match tlapm_locator () with
   | Ok executable ->
       let st' = cancel_all st in
       Ok
-        (start_async_with_text st' doc_uri doc_vsn doc_text line_from line_till
-           events_adder executable)
+        (start_async_with_exec st' doc_uri doc_vsn doc_text range events_adder
+           executable)
   | Error reason -> Error reason
 
 (* ********************** Test cases ********************** *)
@@ -439,7 +449,10 @@ let%test_module "Mocked TLAPM" =
       let clock = Eio.Stdenv.clock env in
       let ts_start = Eio.Time.now clock in
       let pr =
-        match start_async pr du dv dt 3 7 events_adder ~tlapm_locator () with
+        match
+          start_async pr du dv dt (TlapmRange.of_lines 3 7) events_adder
+            ~tlapm_locator ()
+        with
         | Ok pr -> pr
         | Error e -> failwith e
       in
