@@ -6,6 +6,9 @@ type t
 type tk = Lsp.Types.DocumentUri.t
 (** Key type to identify documents. *)
 
+type tv = { text : string; version : int; in_use : bool; p_ref : int }
+(** Info on a single revision of a document. *)
+
 val empty : t
 (** Create new empty document store. *)
 
@@ -20,6 +23,9 @@ val get_opt : t -> tk -> (string * int) option
 
 val get_vsn_opt : t -> tk -> int -> string option
 (** Lookup specific document revision. *)
+
+val with_doc_vsn : t -> tk -> int -> (tv -> tv * 'a) -> 'a option * t
+(** Execute action on a specific version of a document. *)
 
 val next_p_ref_opt : t -> tk -> int -> t * (int * string) option
 (** Increment the prover ref for the specified doc/vsn. *)
