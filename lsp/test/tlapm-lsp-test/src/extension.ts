@@ -16,12 +16,14 @@ export function activate(context: vscode.ExtensionContext) {
 		);
 	}));
 
-	const serverPath = context.asAbsolutePath('../../../_build/default/lsp/bin/tlapm_lsp.exe');
+	// `tlapm` (and `tlapm_lsp`) should be installed to the opam switch.
+	// You can do that by running `make install` at the root project dir.
+	const serverPath = 'opam';
 	const logPath = context.asAbsolutePath('tlapm_lsp.log');
 	const serverOptions: Executable = {
 		command: serverPath,
 		transport: TransportKind.stdio,
-		args: ['--log-io', '--log-to=' + logPath],
+		args: ['exec', 'tlapm_lsp', '--', '--log-io', '--log-to=' + logPath],
 	};
 	const clientOptions: LanguageClientOptions = {
 		documentSelector: [{ scheme: 'file', language: 'tlaplus' }],
