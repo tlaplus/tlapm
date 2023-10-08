@@ -160,8 +160,7 @@ let handle_tlapm_msg ((uri, vsn, p_ref) : doc_ref) msg st =
             let some =
               Diagnostic.create ~message:"OBLIGATION"
                 ~range:(Prover.TlapmRange.as_lsp_range loc)
-                ~severity:(Lsp.Types.DiagnosticSeverity.Information)
-                ()
+                ~severity:Lsp.Types.DiagnosticSeverity.Information ()
             in
             let d_par =
               PublishDiagnosticsParams.create ~diagnostics:[ some ] ~uri
