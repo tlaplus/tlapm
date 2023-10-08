@@ -1,5 +1,8 @@
 (* cSpell:words obligationsnumber Printexc sprintf getcwd nonblocking *)
 
+(** Max size for the read buffer, a line should fit into it.*)
+let read_buf_max_size = 1024 * 1024
+
 module Docs = Tlapm_lsp_docs
 
 (* ***** Types and parsers for them ***************************************** *)
@@ -284,24 +287,25 @@ let fork_read sw stream r w cancel =
     Eio.Flow.close w;
     let rec read_fun' br acc =
       let line = Eio.Buf_read.line br in
+      Eio.traceln "[TLAPM][O] %s" line;
       let acc' = ToolboxProtocol.parse_line line acc stream in
       if Eio.Buf_read.at_end_of_input br then () else read_fun' br acc'
     in
     let read_fun br = read_fun' br ToolboxProtocol.parse_start in
     let read_result =
-      Eio.Buf_read.parse ~initial_size:5 ~max_size:200 read_fun r
+      Eio.Buf_read.parse ~initial_size:5 ~max_size:read_buf_max_size read_fun r
     in
     (match read_result with
-    | Ok () -> Eio.traceln "TLAPM process completed."
-    | Error (`Msg msg) -> Eio.traceln "TLAPM process failed with: %s" msg);
+    | Ok () -> Eio.traceln "[TLAPM] process completed."
+    | Error (`Msg msg) -> Eio.traceln "[TLAPM] process failed with: %s" msg);
     Eio.Flow.close r;
-    Eio.traceln "TLAPM read fiber completed."
+    Eio.traceln "[TLAPM] read fiber completed."
   in
   let fib_cancel () = Eio.Promise.await cancel in
   Eio.Fiber.fork_promise ~sw @@ fun () ->
   Eio.Fiber.first fib_read fib_cancel;
   stream TlapmTerminated;
-  Eio.traceln "TLAPM main fiber completed"
+  Eio.traceln "[TLAPM] main fiber completed"
 
 (** Start the TLAPM process and attach the reader fiber to it. *)
 let start_async_with_text st doc_uri _doc_vsn doc_text line_from line_till
@@ -317,7 +321,7 @@ let start_async_with_text st doc_uri _doc_vsn doc_text line_from line_till
   let proc_args =
     [
       (* First arg s ignored, id executable is specified. *)
-      "tlapm";
+      executable;
       "--toolbox";
       string_of_int line_from;
       string_of_int line_till;
@@ -325,9 +329,12 @@ let start_async_with_text st doc_uri _doc_vsn doc_text line_from line_till
       mod_name;
     ]
   in
+  Eio.traceln "[TLAPM] cwd=%s, command: %s"
+    (Eio.Path.native_exn mod_dir)
+    (String.concat " " proc_args);
   let proc =
     Eio.Process.spawn st.mgr ~sw:st.sw ~executable ~cwd:mod_dir ~stdin ~stdout:w
-      proc_args
+      ~stderr:w proc_args
   in
   let cancel_p, cancel_r = Eio.Promise.create () in
   let complete = fork_read st.sw events_adder r w cancel_p in
@@ -337,8 +344,7 @@ let start_async_with_text st doc_uri _doc_vsn doc_text line_from line_till
 (* Run the tlapm prover, cancel the preceding one, if any. *)
 let start_async st doc_uri doc_vsn doc_text line_from line_till events_adder
     ?(tlapm_locator = tlapm_exe) () =
-  Eio.traceln "---------------> prover on text: \n%s" doc_text;
-  (* TODO: Remove the line above. *)
+  Eio.traceln "[TLAPM][I]\n%s" doc_text;
   match tlapm_locator () with
   | Ok executable ->
       let st' = cancel_all st in
@@ -523,6 +529,19 @@ let%test_module "Mocked TLAPM" =
         match Eio.Stream.take stream with
         | TlapmTerminated -> ()
         | _ -> failwith "expected termination msg"
+      in
+      pr
+
+    (* Check if STDIN is passed properly to the TLAPM process. *)
+    let%test_unit "Mocked: Echo" =
+      test_case "Echo.tla" 1.0 @@ fun pr _clock stream ->
+      let () =
+        match Eio.Stream.take stream with
+        | TlapmWarning { msg } -> (
+            match msg with
+            | "\nany\ncontent" -> ()
+            | _ -> failwith (Format.sprintf "unexpected msg=%S" msg))
+        | _ -> failwith "expected obligation"
       in
       pr
   end)

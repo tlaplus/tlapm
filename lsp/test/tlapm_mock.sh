@@ -96,6 +96,20 @@ EOF
 }
 
 ################################################################################
+function Echo() {
+cat <<-EOF
+@!!BEGIN
+@!!type:warning
+@!!msg:
+EOF
+cat # pipe stdin to stdout.
+cat << EOF
+
+@!!END
+EOF
+}
+
+################################################################################
 # We differentiate the testcases by the last argument, which is usually a TLA file.
 last_arg=${@: -1}
 case "$last_arg" in
@@ -103,6 +117,7 @@ case "$last_arg" in
     AbnormalExit.tla) AbnormalExit ;;
     Empty.tla) Empty ;;
     Some.tla) Some ;;
+    Echo.tla) Echo ;;
     *)
         echo "ERROR: Unexpected testcase, last_arg=$last_arg."
         exit 2
