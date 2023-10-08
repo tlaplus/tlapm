@@ -1,4 +1,4 @@
-module Docs = Map.Make (Lsp.Types.DocumentUri)
+module DocMap = Map.Make (Lsp.Types.DocumentUri)
 
 type tv = {
   text : string; (* Contents if the file at the specific version. *)
@@ -9,9 +9,9 @@ type tv = {
 
 type td = { versions : tv list }
 type tk = Lsp.Types.DocumentUri.t
-type t = td Docs.t
+type t = td DocMap.t
 
-let empty = Docs.empty
+let empty = DocMap.empty
 
 let add docs uri vsn txt =
   let rev = { text = txt; version = vsn; in_use = false; p_ref = 0 } in
@@ -20,26 +20,40 @@ let add docs uri vsn txt =
     | None -> Some { versions = [ rev ] }
     | Some d -> Some { versions = rev :: drop_unused d.versions }
   in
-  Docs.update uri upd docs
+  DocMap.update uri upd docs
 
-let rem docs uri = Docs.remove uri docs
+let rem docs uri = DocMap.remove uri docs
 
 let get_opt docs uri =
-  match Docs.find_opt uri docs with
+  match DocMap.find_opt uri docs with
   | None -> None
   | Some { versions = [] } -> None
   | Some { versions = v :: _ } -> Some (v.text, v.version)
 
 let get_vsn_opt docs uri vsn =
-  match Docs.find_opt uri docs with
+  match DocMap.find_opt uri docs with
   | None -> None
   | Some { versions } ->
       let matching v = if v.version = vsn then Some v.text else None in
       List.find_map matching versions
 
+let with_doc_vsn docs uri vsn f =
+  match DocMap.find_opt uri docs with
+  | None -> (None, docs)
+  | Some { versions } ->
+      let update acc v =
+        if v.version = vsn then
+          let v', ret = f v in
+          (Some ret, v')
+        else (acc, v)
+      in
+      let res, versions' = List.fold_left_map update None versions in
+      let docs' = DocMap.add uri { versions = versions' } docs in
+      (res, docs')
+
 (* Increment the prover reference p_ref for the specified document / version. *)
-let next_p_ref_opt (docs : td Docs.t) uri vsn =
-  match Docs.find_opt uri docs with
+let next_p_ref_opt (docs : td DocMap.t) uri vsn =
+  match DocMap.find_opt uri docs with
   | None -> (docs, None)
   | Some { versions = [] } -> (docs, None)
   | Some { versions } ->
@@ -52,6 +66,6 @@ let next_p_ref_opt (docs : td Docs.t) uri vsn =
       in
       let result, versions' = List.fold_left_map f None versions in
       let docs' =
-        Docs.update uri (fun _ -> Some { versions = versions' }) docs
+        DocMap.update uri (fun _ -> Some { versions = versions' }) docs
       in
       (docs', result)

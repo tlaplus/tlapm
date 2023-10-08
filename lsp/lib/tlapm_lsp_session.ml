@@ -20,6 +20,32 @@ type t = {
   prov : Prover.t;
 }
 
+let with_docs' st f =
+  match st.mode with
+  | Initializing -> Error "initializing"
+  | Ready ->
+      let st', docs' = f (st, st.docs) in
+      Ok { st' with docs = docs' }
+  | Shutdown -> Error "going to shutdown"
+
+let with_docs st f =
+  match with_docs' st f with
+  | Ok st' -> st'
+  | Error err ->
+      Eio.traceln "Ignoring request: %s" err;
+      st
+
+let with_doc_vsn st uri vsn f =
+  with_docs st @@ fun (st', docs) ->
+  let st_opt, docs = Docs.with_doc_vsn docs uri vsn @@ fun v -> f v st' in
+  match st_opt with
+  | Some st'' -> (st'', docs)
+  | None ->
+      Eio.traceln "[WARN] Document not found by uri=%s vsn=%d"
+        (Lsp.Types.DocumentUri.to_string uri)
+        vsn;
+      (st', docs)
+
 module PacketsCB = struct
   module LT = Lsp.Types
 
@@ -41,20 +67,7 @@ module PacketsCB = struct
     st.output_adder (Some p);
     st
 
-  let with_docs' st f =
-    match st.mode with
-    | Initializing -> Error "initializing"
-    | Ready ->
-        let st', docs' = f (st, st.docs) in
-        Ok { st' with docs = docs' }
-    | Shutdown -> Error "going to shutdown"
-
-  let with_docs st f =
-    match with_docs' st f with
-    | Ok st' -> st'
-    | Error err ->
-        Eio.traceln "Ignoring request: %s" err;
-        st
+  let with_docs = with_docs
 
   let prove_step st (uri : LT.DocumentUri.t) (vsn : int) (range : LT.Range.t) =
     Eio.traceln "PROVE_STEP: %s#%d lines %d--%d"
@@ -138,10 +151,31 @@ let handle_tlapm_msg ((uri, vsn, p_ref) : doc_ref) msg st =
       (* TODO: Implement. *)
       Eio.traceln "---> TlapmObligationsNumber";
       Some st
-  | TlapmObligation _ ->
-      (* TODO: Implement. *)
-      Eio.traceln "---> TlapmObligation";
-      Some st
+  | TlapmObligation { id; loc; _ } ->
+      Eio.traceln "---> TlapmObligation, id=%d" id;
+      Some
+        ( with_doc_vsn st uri vsn @@ fun v st' ->
+          let send_diags () =
+            (* TODO: Reorganize this. *)
+            let some =
+              Diagnostic.create ~message:"OBLIGATION"
+                ~range:(Prover.TlapmRange.as_lsp_range loc)
+                ~severity:(Lsp.Types.DiagnosticSeverity.Information)
+                ()
+            in
+            let d_par =
+              PublishDiagnosticsParams.create ~diagnostics:[ some ] ~uri
+                ~version:vsn ()
+            in
+            let d_ntf = Lsp.Server_notification.PublishDiagnostics d_par in
+            let d_pkg =
+              Jsonrpc.Packet.Notification
+                (Lsp.Server_notification.to_jsonrpc d_ntf)
+            in
+            st'.output_adder (Some d_pkg)
+          in
+          send_diags ();
+          (v, st') )
   | TlapmTerminated ->
       (* TODO: Implement. *)
       Eio.traceln "---> TlapmTerminated";
