@@ -1,8 +1,17 @@
 (** State of a single session/connection with the LSP client. *)
 
+type doc_ref = Lsp.Types.DocumentUri.t * int * int
+
 type events =
   | LspEOF
   | LspPacket of Jsonrpc.Packet.t
-  | TlapmEvent of int * Tlapm_lsp_prover.ToolboxProtocol.tlapm_msg
+  | TlapmEvent of doc_ref * Tlapm_lsp_prover.ToolboxProtocol.tlapm_msg
 
-val run : (unit -> events) -> (Jsonrpc.Packet.t option -> unit) -> unit
+val run :
+  (unit -> events) ->
+  (events -> unit) ->
+  (Jsonrpc.Packet.t option -> unit) ->
+  Eio.Switch.t ->
+  Eio__.Fs.dir_ty Eio.Path.t ->
+  Eio_unix.Process.mgr_ty Eio.Process.mgr ->
+  unit

@@ -255,19 +255,17 @@ type t = {
   sw : Eio.Switch.t;
   fs : Eio__.Fs.dir_ty Eio.Path.t;
   mgr : Eio_unix.Process.mgr_ty Eio.Process.mgr;
-  stream : ToolboxProtocol.tlapm_msg -> unit;
-  docs : Docs.t;
   forked : tf option;
 }
 
 (** Create instance of a prover process manager. *)
-let create sw fs mgr stream docs = { sw; fs; mgr; stream; docs; forked = None }
+let create sw fs mgr = { sw; fs; mgr; forked = None }
 
 (** Cancel (all) the preceding prover instances. *)
 let cancel_all st =
   match st.forked with
   | None -> st
-  | Some { proc; complete; cancel } ->
+  | Some { proc; complete; cancel; _ } ->
       Eio.Process.signal proc Sys.sigkill;
       (match Eio.Process.await proc with
       | `Exited x -> Eio.traceln "[TLAPM] Process exited %d" x
@@ -307,7 +305,7 @@ let fork_read sw stream r w cancel =
 
 (** Start the TLAPM process and attach the reader fiber to it. *)
 let start_async_with_text st doc_uri _doc_vsn doc_text line_from line_till
-    executable =
+    events_adder executable =
   let mod_path = Lsp.Types.DocumentUri.to_path doc_uri in
   let mod_dir =
     let open Eio.Path in
@@ -332,22 +330,21 @@ let start_async_with_text st doc_uri _doc_vsn doc_text line_from line_till
       proc_args
   in
   let cancel_p, cancel_r = Eio.Promise.create () in
-  let complete = fork_read st.sw st.stream r w cancel_p in
+  let complete = fork_read st.sw events_adder r w cancel_p in
   let forked = { proc; complete; cancel = cancel_r } in
   { st with forked = Some forked }
 
 (* Run the tlapm prover, cancel the preceding one, if any. *)
-let start_async st doc_uri doc_vsn line_from line_till
+let start_async st doc_uri doc_vsn doc_text line_from line_till events_adder
     ?(tlapm_locator = tlapm_exe) () =
+  Eio.traceln "---------------> prover on text: \n%s" doc_text;
+  (* TODO: Remove the line above. *)
   match tlapm_locator () with
-  | Ok executable -> (
-      match Docs.get_vsn_opt st.docs doc_uri doc_vsn with
-      | Some doc_text ->
-          let st' = cancel_all st in
-          Ok
-            (start_async_with_text st' doc_uri doc_vsn doc_text line_from
-               line_till executable)
-      | None -> Error "Document not found")
+  | Ok executable ->
+      let st' = cancel_all st in
+      Ok
+        (start_async_with_text st' doc_uri doc_vsn doc_text line_from line_till
+           events_adder executable)
   | Error reason -> Error reason
 
 (* ********************** Test cases ********************** *)
@@ -423,13 +420,12 @@ let%test_module "Mocked TLAPM" =
       Eio.Switch.run @@ fun sw ->
       let fs = Eio.Stdenv.fs env in
       let mgr = Eio.Stdenv.process_mgr env in
-      let docs = Docs.empty in
       let du = Lsp.Types.DocumentUri.of_path doc_name in
       let dv = 1 in
-      let docs = Docs.add docs du dv "any\ncontent" in
-      let stream = Eio.Stream.create 10 in
-      let stream_add = Eio.Stream.add stream in
-      let pr = create sw fs mgr stream_add docs in
+      let dt = "any\ncontent" in
+      let events = Eio.Stream.create 10 in
+      let events_adder = Eio.Stream.add events in
+      let pr = create sw fs mgr in
       let tlapm_locator () =
         let cwd = Sys.getcwd () in
         Ok (Filename.concat cwd "../test/tlapm_mock.sh")
@@ -437,11 +433,11 @@ let%test_module "Mocked TLAPM" =
       let clock = Eio.Stdenv.clock env in
       let ts_start = Eio.Time.now clock in
       let pr =
-        match start_async pr du dv 3 7 ~tlapm_locator () with
+        match start_async pr du dv dt 3 7 events_adder ~tlapm_locator () with
         | Ok pr -> pr
         | Error e -> failwith e
       in
-      let _pr = assert_fun pr clock stream in
+      let _pr = assert_fun pr clock events in
       let ts_end = Eio.Time.now clock in
       let () =
         match ts_end -. ts_start < timeout with

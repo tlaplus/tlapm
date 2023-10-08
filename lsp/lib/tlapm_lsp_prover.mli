@@ -39,8 +39,6 @@ val create :
   Eio.Switch.t ->
   Eio__.Fs.dir_ty Eio.Path.t ->
   Eio_unix.Process.mgr_ty Eio.Process.mgr ->
-  (ToolboxProtocol.tlapm_msg -> unit) ->
-  Tlapm_lsp_docs.t ->
   t
 (** Create a tlapm process manager. *)
 
@@ -51,8 +49,10 @@ val start_async :
   t ->
   Tlapm_lsp_docs.tk ->
   int ->
+  string ->
   int ->
   int ->
+  (ToolboxProtocol.tlapm_msg -> unit) ->
   ?tlapm_locator:(unit -> (string, string) result) ->
   unit ->
   (t, string) result
