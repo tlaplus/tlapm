@@ -1,5 +1,12 @@
 type t
 
+module TlapmRange : sig
+  type t
+
+  val as_lsp_range : t -> Lsp.Types.Range.t
+  val of_lsp_range : Lsp.Types.Range.t -> t
+end
+
 (** Types representing messages from the prover. *)
 module ToolboxProtocol : sig
   type tlapm_obl_state =
@@ -12,18 +19,13 @@ module ToolboxProtocol : sig
     | Trivial
     | Unknown of string
 
-  type tlapm_loc = (int * int) * (int * int)
-
-  val range_of_loc : tlapm_loc -> Lsp.Types.Range.t
-  val loc_of_range : Lsp.Types.Range.t -> tlapm_loc
-
   type tlapm_msg =
     | TlapmWarning of { msg : string }
     | TlapmError of { url : string; msg : string }
     | TlapmObligationsNumber of int
     | TlapmObligation of {
         id : int;
-        loc : tlapm_loc;
+        loc : TlapmRange.t;
         status : tlapm_obl_state;
         fp : string option;
         prover : string option;
@@ -50,8 +52,7 @@ val start_async :
   Tlapm_lsp_docs.tk ->
   int ->
   string ->
-  int ->
-  int ->
+  TlapmRange.t ->
   (ToolboxProtocol.tlapm_msg -> unit) ->
   ?tlapm_locator:(unit -> (string, string) result) ->
   unit ->

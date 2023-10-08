@@ -64,13 +64,13 @@ module PacketsCB = struct
     let st = { st with docs } in
     match next_p_ref_opt with
     | Some (p_ref, doc_text) -> (
-        (* TODO: Check if line numbers are 0/1 based. *)
         let prov_events e =
           st.event_adder (TlapmEvent ((uri, vsn, p_ref), e))
         in
         match
-          Prover.start_async st.prov uri vsn doc_text range.start.line
-            range.end_.line prov_events ()
+          Prover.start_async st.prov uri vsn doc_text
+            (Prover.TlapmRange.of_lsp_range range)
+            prov_events ()
         with
         | Ok prov' -> { st with prov = prov' }
         | Error msg ->
