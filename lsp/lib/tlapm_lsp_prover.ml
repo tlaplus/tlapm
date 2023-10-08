@@ -3,8 +3,6 @@
 (** Max size for the read buffer, a line should fit into it.*)
 let read_buf_max_size = 1024 * 1024
 
-module Docs = Tlapm_lsp_docs
-
 module TlapmRange = struct
   (* LSP ranges are 0-based and TLAPM is 1-based. *)
   type t = TlapmRange of (int * int) * (int * int)
@@ -59,21 +57,23 @@ module ToolboxProtocol = struct
     | "trivial" -> Trivial
     | _ -> Unknown s
 
+  type tlapm_obligation = {
+    id : int;
+    loc : TlapmRange.t;
+    status : tlapm_obl_state;
+    fp : string option;
+    prover : string option;
+    meth : string option;
+    reason : string option;
+    already : bool option;
+    obl : string option;
+  }
+
   type tlapm_msg =
     | TlapmWarning of { msg : string }
     | TlapmError of { url : string; msg : string }
     | TlapmObligationsNumber of int
-    | TlapmObligation of {
-        id : int;
-        loc : TlapmRange.t;
-        status : tlapm_obl_state;
-        fp : string option;
-        prover : string option;
-        meth : string option;
-        reason : string option;
-        already : bool option;
-        obl : string option;
-      }
+    | TlapmObligation of tlapm_obligation
     | TlapmTerminated
 
   type parser_part_msg =

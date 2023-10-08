@@ -19,21 +19,23 @@ module ToolboxProtocol : sig
     | Trivial
     | Unknown of string
 
+  type tlapm_obligation = {
+    id : int;
+    loc : TlapmRange.t;
+    status : tlapm_obl_state;
+    fp : string option;
+    prover : string option;
+    meth : string option;
+    reason : string option;
+    already : bool option;
+    obl : string option;
+  }
+
   type tlapm_msg =
     | TlapmWarning of { msg : string }
     | TlapmError of { url : string; msg : string }
     | TlapmObligationsNumber of int
-    | TlapmObligation of {
-        id : int;
-        loc : TlapmRange.t;
-        status : tlapm_obl_state;
-        fp : string option;
-        prover : string option;
-        meth : string option;
-        reason : string option;
-        already : bool option;
-        obl : string option;
-      }
+    | TlapmObligation of tlapm_obligation
     | TlapmTerminated
 end
 
@@ -49,7 +51,7 @@ val cancel_all : t -> t
 
 val start_async :
   t ->
-  Tlapm_lsp_docs.tk ->
+  Lsp.Types.DocumentUri.t ->
   int ->
   string ->
   TlapmRange.t ->

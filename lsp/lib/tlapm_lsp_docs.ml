@@ -1,10 +1,13 @@
 module DocMap = Map.Make (Lsp.Types.DocumentUri)
+module OblMap = Map.Make (Int)
+open Tlapm_lsp_prover.ToolboxProtocol
 
 type tv = {
   text : string; (* Contents if the file at the specific version. *)
   version : int;
   in_use : bool;
-  p_ref : int; (* Increased with each launch of the prover. *)
+  proof_ref : int; (* Increased with each launch of the prover. *)
+  obligations : tlapm_obligation OblMap.t;
 }
 
 type td = { versions : tv list }
@@ -14,7 +17,15 @@ type t = td DocMap.t
 let empty = DocMap.empty
 
 let add docs uri vsn txt =
-  let rev = { text = txt; version = vsn; in_use = false; p_ref = 0 } in
+  let rev =
+    {
+      text = txt;
+      version = vsn;
+      in_use = false;
+      proof_ref = 0;
+      obligations = OblMap.empty;
+    }
+  in
   let drop_unused = List.filter (fun dd -> dd.in_use) in
   let upd = function
     | None -> Some { versions = [ rev ] }
@@ -59,9 +70,9 @@ let next_p_ref_opt (docs : td DocMap.t) uri vsn =
   | Some { versions } ->
       let f acc v =
         match v with
-        | { version = vv; p_ref; text; _ } when vv = vsn ->
-            let next_p_ref = p_ref + 1 in
-            (Some (next_p_ref, text), { v with p_ref = next_p_ref })
+        | { version = vv; proof_ref; text; _ } when vv = vsn ->
+            let next_proof_ref = proof_ref + 1 in
+            (Some (next_proof_ref, text), { v with proof_ref = next_proof_ref })
         | _ -> (acc, v)
       in
       let result, versions' = List.fold_left_map f None versions in

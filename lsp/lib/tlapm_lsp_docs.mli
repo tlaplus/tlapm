@@ -1,12 +1,21 @@
 (** Here we maintain a list of documents and their revisions. *)
 
+module OblMap : Map.S with type key = int
+open Tlapm_lsp_prover.ToolboxProtocol
+
 type t
 (** A document store type. *)
 
 type tk = Lsp.Types.DocumentUri.t
 (** Key type to identify documents. *)
 
-type tv = { text : string; version : int; in_use : bool; p_ref : int }
+type tv = {
+  text : string;
+  version : int;
+  in_use : bool;
+  proof_ref : int;
+  obligations : tlapm_obligation OblMap.t;
+}
 (** Info on a single revision of a document. *)
 
 val empty : t
