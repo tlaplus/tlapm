@@ -1,17 +1,23 @@
 module Docs = Tlapm_lsp_docs
+module Prover = Tlapm_lsp_prover
+
+(* A reference to a doc_uri * version * prover launch counter. *)
+type doc_ref = Lsp.Types.DocumentUri.t * int * int
 
 type events =
   | LspEOF
   | LspPacket of Jsonrpc.Packet.t
-  | TlapmEvent of int * Tlapm_lsp_prover.ToolboxProtocol.tlapm_msg
+  | TlapmEvent of doc_ref * Tlapm_lsp_prover.ToolboxProtocol.tlapm_msg
 
 type mode = Initializing | Ready | Shutdown
 
 type t = {
-  events : unit -> events;
-  output : Jsonrpc.Packet.t option -> unit;
+  event_taker : unit -> events;
+  event_adder : events -> unit;
+  output_adder : Jsonrpc.Packet.t option -> unit;
   mode : mode;
   docs : Docs.t;
+  prov : Prover.t;
 }
 
 module PacketsCB = struct
@@ -32,7 +38,7 @@ module PacketsCB = struct
     | Shutdown -> st
 
   let lsp_send st p =
-    st.output (Some p);
+    st.output_adder (Some p);
     st
 
   let with_docs' st f =
@@ -54,16 +60,39 @@ module PacketsCB = struct
     Eio.traceln "PROVE_STEP: %s#%d lines %d--%d"
       (LT.DocumentUri.to_string uri)
       vsn range.start.line range.end_.line;
-    (* TODO: Implement. *)
-    st
+    let docs, next_p_ref_opt = Docs.next_p_ref_opt st.docs uri vsn in
+    let st = { st with docs } in
+    match next_p_ref_opt with
+    | Some (p_ref, doc_text) -> (
+        (* TODO: Check if line numbers are 0/1 based. *)
+        let prov_events e =
+          st.event_adder (TlapmEvent ((uri, vsn, p_ref), e))
+        in
+        match
+          Prover.start_async st.prov uri vsn doc_text range.start.line
+            range.end_.line prov_events ()
+        with
+        | Ok prov' -> { st with prov = prov' }
+        | Error msg ->
+            Eio.traceln "failed to launch prover: %s" msg;
+            st)
+    | None ->
+        Eio.traceln "cannot find doc/vsn";
+        st
 
   let%test_unit "basics" =
+    Eio_main.run @@ fun env ->
+    Eio.Switch.run @@ fun sw ->
+    let fs = Eio.Stdenv.fs env in
+    let proc_mgr = Eio.Stdenv.process_mgr env in
     let st =
       {
         mode = Initializing;
-        output = (fun _ -> ());
-        events = (fun () -> LspEOF);
+        event_taker = (fun () -> LspEOF);
+        event_adder = (fun _ -> ());
+        output_adder = (fun _ -> ());
         docs = Docs.empty;
+        prov = Prover.create sw fs proc_mgr;
       }
     in
     let () =
@@ -90,9 +119,33 @@ module Packets = Tlapm_lsp_packets.Make (PacketsCB)
 
 let handle_lsp_packet p st = Some (Packets.handle_jsonrpc_packet p st)
 
-let handle_tlapm_msg _ref _msg st =
-  (* TODO: Implement. *)
-  Some st
+let handle_tlapm_msg ((uri, vsn, p_ref) : doc_ref) msg st =
+  let open Prover.ToolboxProtocol in
+  let open Lsp.Types in
+  Eio.traceln "handle_tlapm_msg: uri=%s, vsn=%d, p_ref=%d"
+    (DocumentUri.to_string uri)
+    vsn p_ref;
+  match msg with
+  | TlapmWarning { msg = tw_msg } ->
+      (* TODO: Implement. *)
+      Eio.traceln "---> TlapmWarning: %s" tw_msg;
+      Some st
+  | TlapmError { msg = te_msg; _ } ->
+      (* TODO: Implement. *)
+      Eio.traceln "---> TlapmError: %s" te_msg;
+      Some st
+  | TlapmObligationsNumber _ ->
+      (* TODO: Implement. *)
+      Eio.traceln "---> TlapmObligationsNumber";
+      Some st
+  | TlapmObligation _ ->
+      (* TODO: Implement. *)
+      Eio.traceln "---> TlapmObligation";
+      Some st
+  | TlapmTerminated ->
+      (* TODO: Implement. *)
+      Eio.traceln "---> TlapmTerminated";
+      Some st
 
 let handle_event e st =
   match e with
@@ -103,18 +156,20 @@ let handle_event e st =
 (* The main event processing loop.
    At the exit we send EOF to the output thread. *)
 let rec loop st =
-  match handle_event (st.events ()) st with
+  match handle_event (st.event_taker ()) st with
   | Some st' -> loop st'
-  | None -> st.output None
+  | None -> st.output_adder None
 
 (** Entry point to run the session as a fiber. *)
-let run event_taker output_adder =
+let run event_taker event_adder output_adder sw fs proc_mgr =
   let st =
     {
       mode = Initializing;
-      events = event_taker;
-      output = output_adder;
+      event_taker;
+      event_adder;
+      output_adder;
       docs = Docs.empty;
+      prov = Prover.create sw fs proc_mgr;
     }
   in
   loop st

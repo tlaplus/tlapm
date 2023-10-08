@@ -49,7 +49,7 @@ let flow_handler_fib_lsp_reader trace input_flow event_adder () =
   read_loop ()
 
 (** Configures the IO for the given input/output flows. *)
-let flow_handler trace input_flow output_flow =
+let flow_handler trace input_flow output_flow sw fs proc_mgr =
   let events = Eio.Stream.create 100 in
   let event_adder e = Eio.Stream.add events e in
   let event_taker () = Eio.Stream.take events in
@@ -58,7 +58,9 @@ let flow_handler trace input_flow output_flow =
   let output_taker () = Eio.Stream.take output in
   Eio.Fiber.all
     [
-      (fun () -> Tlapm_lsp_session.run event_taker output_adder);
+      (fun () ->
+        Tlapm_lsp_session.run event_taker event_adder output_adder sw fs
+          proc_mgr);
       flow_handler_fib_lsp_reader trace input_flow event_adder;
       flow_handler_fib_lsp_writer trace output_flow output_taker;
     ]
@@ -66,32 +68,39 @@ let flow_handler trace input_flow output_flow =
 (** StdIO specifics. *)
 module OnStdio = struct
   let run trace env =
-    let switch_fun _sw =
-      flow_handler trace (Eio.Stdenv.stdin env) (Eio.Stdenv.stdout env)
+    let fs = Eio.Stdenv.fs env in
+    let proc_mgr = Eio.Stdenv.process_mgr env in
+    let switch_fun sw =
+      flow_handler trace (Eio.Stdenv.stdin env) (Eio.Stdenv.stdout env) sw fs
+        proc_mgr
     in
     Eio.Switch.run switch_fun
 end
 
 (** Socket-specifics. *)
 module OnSocket = struct
-  let req_handler trace flow _addr =
+  let req_handler trace sw fs proc_mgr flow _addr =
     Eio.traceln "Server: got connection from client";
-    flow_handler trace flow flow
+    flow_handler trace flow flow sw fs proc_mgr
 
-  let switch (net : 'a Eio.Net.ty Eio.Std.r) port trace stop_promise sw =
+  let switch (net : 'a Eio.Net.ty Eio.Std.r) port trace stop_promise fs proc_mgr
+      sw =
     Eio.traceln "Socket switch started";
     let on_error = Eio.traceln "Error handling connection: %a" Fmt.exn in
     let addr = `Tcp (Eio.Net.Ipaddr.V4.loopback, port) in
     let sock = Eio.Net.listen net ~sw ~reuse_addr:true ~backlog:5 addr in
     let stopResult =
-      Eio.Net.run_server sock (req_handler trace) ~on_error
-        ?stop:(Some stop_promise)
+      Eio.Net.run_server sock
+        (req_handler trace sw fs proc_mgr)
+        ~on_error ?stop:(Some stop_promise)
     in
     Eio.traceln "StopResult=%s" stopResult
 
   let run port trace env stop_promise =
     let net = Eio.Stdenv.net env in
-    Eio.Switch.run @@ switch net port trace stop_promise
+    let fs = Eio.Stdenv.fs env in
+    let proc_mgr = Eio.Stdenv.process_mgr env in
+    Eio.Switch.run @@ switch net port trace stop_promise fs proc_mgr
 end
 
 (** Entry point. *)
