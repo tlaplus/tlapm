@@ -75,8 +75,7 @@ let send_diagnostics st uri vsn os ns =
 
 let send_diagnostics_if_changed st uri vsn res =
   match res with
-  | Some (Some (os, ns)) -> send_diagnostics st uri vsn os ns
-  | Some None -> ()
+  | Some (os, ns) -> send_diagnostics st uri vsn os ns
   | None -> ()
 
 module PacketsCB = struct
@@ -106,11 +105,11 @@ module PacketsCB = struct
     Eio.traceln "PROVE_STEP: %s#%d lines %d--%d"
       (LT.DocumentUri.to_string uri)
       vsn range.start.line range.end_.line;
-    let next_p_ref_opt, docs = Docs.prepare_proof st.docs uri vsn in
+    let docs, next_p_ref_opt = Docs.prepare_proof st.docs uri vsn in
     let st = { st with docs } in
     match next_p_ref_opt with
     | Some (p_ref, doc_text, proof_res) -> (
-        send_diagnostics_if_changed st uri vsn proof_res;
+        send_diagnostics_if_changed st uri vsn (Some proof_res);
         let prov_events e =
           st.event_adder (TlapmEvent ((uri, vsn, p_ref), e))
         in
@@ -175,7 +174,7 @@ let handle_tlapm_msg ((uri, vsn, p_ref) : doc_ref) msg st =
   match msg with
   | TlapmNotif notif ->
       Eio.traceln "---> TlapmNotif: %s" notif.msg;
-      let res, docs = Docs.add_notif st.docs uri vsn p_ref notif in
+      let docs, res = Docs.add_notif st.docs uri vsn p_ref notif in
       send_diagnostics_if_changed st uri vsn res;
       Some { st with docs }
   | TlapmObligationsNumber _ ->
@@ -184,7 +183,7 @@ let handle_tlapm_msg ((uri, vsn, p_ref) : doc_ref) msg st =
       Some st
   | TlapmObligation obl ->
       Eio.traceln "---> TlapmObligation, id=%d" obl.id;
-      let res, docs = Docs.add_obl st.docs uri vsn p_ref obl in
+      let docs, res = Docs.add_obl st.docs uri vsn p_ref obl in
       send_diagnostics_if_changed st uri vsn res;
       Some { st with docs }
   | TlapmTerminated ->

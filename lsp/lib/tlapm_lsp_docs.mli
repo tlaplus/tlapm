@@ -8,7 +8,7 @@ type t
 type tk = Lsp.Types.DocumentUri.t
 (** Key type to identify documents. *)
 
-type proof_res = (tlapm_obligation list * tlapm_notif list) option option
+type proof_res = tlapm_obligation list * tlapm_notif list
 (** Result of an update, returns an actual list of obligations and errors. *)
 
 val empty : t
@@ -20,17 +20,14 @@ val add : t -> tk -> int -> string -> t
 val rem : t -> tk -> t
 (** Remove a document with all its revisions. *)
 
-val get_opt : t -> tk -> (string * int) option
-(** Lookup document's last revision. *)
-
-val prepare_proof : t -> tk -> int -> (int * string * proof_res) option * t
+val prepare_proof : t -> tk -> int -> t * (int * string * proof_res) option
 (** Increment the prover ref for the specified doc/vsn. *)
 
-val add_obl : t -> tk -> int -> int -> tlapm_obligation -> proof_res * t
+val add_obl : t -> tk -> int -> int -> tlapm_obligation -> t * proof_res option
 (** Record obligation for the document, clear all the intersecting ones. *)
 
-val add_notif : t -> tk -> int -> int -> tlapm_notif -> proof_res * t
+val add_notif : t -> tk -> int -> int -> tlapm_notif -> t * proof_res option
 (** Record obligation for the document, clear all the intersecting ones. *)
 
-val get_proof_res : t -> tk -> int -> proof_res * t
+val get_proof_res : t -> tk -> int -> t * proof_res option
 (** Get the latest actual proof results. Cleanup them, if needed. *)
