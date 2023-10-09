@@ -1,10 +1,10 @@
-(* cSpell:words obligationsnumber Printexc sprintf getcwd nonblocking *)
+(* cSpell:words obligationsnumber Printexc sprintf getcwd nonblocking submatches *)
 
 (** Max size for the read buffer, a line should fit into it.*)
 let read_buf_max_size = 1024 * 1024
 
 module TlapmRange = struct
-  (* LSP ranges are 0-based and TLAPM is 1-based. *)
+  (* LSP ranges are 0-based and TLAPM is 1-based. In LSP the last char is exclusive. *)
   type t = TlapmRange of (int * int) * (int * int)
 
   let line_from (TlapmRange ((fl, _), _)) = fl
@@ -14,14 +14,14 @@ module TlapmRange = struct
     let open Lsp.Types in
     Range.create
       ~start:(Position.create ~line:(fl - 1) ~character:(fc - 1))
-      ~end_:(Position.create ~line:(tl - 1) ~character:(tc - 1))
+      ~end_:(Position.create ~line:(tl - 1) ~character:tc)
 
   let of_lines fl tl = TlapmRange ((fl, 1), (tl, 1))
 
   let of_lsp_range (range : Lsp.Types.Range.t) =
     TlapmRange
       ( (range.start.line + 1, range.start.character + 1),
-        (range.end_.line + 1, range.end_.character + 1) )
+        (range.end_.line + 1, range.end_.character) )
 
   let of_string_opt s =
     match String.split_on_char ':' s with
@@ -31,6 +31,18 @@ module TlapmRange = struct
              ( (int_of_string fl, int_of_string fc),
                (int_of_string tl, int_of_string tc) ))
     | _ -> None
+
+  let as_string (TlapmRange ((fl, fc), (tl, tc))) : string =
+    Format.sprintf "%d:%d:%d:%d" fl fc tl tc
+
+  let of_unknown = TlapmRange ((1, 1), (1, 4))
+
+  let intersects a b =
+    let lfa = line_from a in
+    let lta = line_till a in
+    let lfb = line_from b in
+    let ltb = line_till b in
+    lfa <= ltb && lfb <= lta
 end
 
 (* ***** Types and parsers for them ***************************************** *)
@@ -69,9 +81,17 @@ module ToolboxProtocol = struct
     obl : string option;
   }
 
+  type tlapm_notif_severity = TlapmNotifError | TlapmNotifWarning
+
+  type tlapm_notif = {
+    loc : TlapmRange.t;
+    sev : tlapm_notif_severity;
+    msg : string;
+    url : string option;
+  }
+
   type tlapm_msg =
-    | TlapmWarning of { msg : string }
-    | TlapmError of { url : string; msg : string }
+    | TlapmNotif of tlapm_notif
     | TlapmObligationsNumber of int
     | TlapmObligation of tlapm_obligation
     | TlapmTerminated
@@ -103,6 +123,7 @@ module ToolboxProtocol = struct
       }
 
   let match_line line =
+    (* TODO: Use Re2 in all the places. *)
     let re = Str.regexp "^@!!\\([a-z]*\\):\\(.*\\)$" in
     match Str.string_match re line 0 with
     | true ->
@@ -111,6 +132,54 @@ module ToolboxProtocol = struct
         Some (k, v)
     | false -> None
 
+  let rec guess_notif_loc' str = function
+    | [] -> (TlapmRange.of_unknown, String.trim str)
+    | `A :: others -> (
+        let re =
+          Str.regexp
+            "^File \"\\(.*\\)\", line \\([0-9]+\\), character \\([0-9]+\\) to \
+             line \\([0-9]+\\), character \\([0-9]+\\) :\n\
+             \\(.*\\)"
+        in
+        match Str.string_match re str 0 with
+        | true ->
+            (* TODO: Match file with the main document. *)
+            let _file = Str.matched_group 1 str in
+            let line_from = Str.matched_group 2 str in
+            let char_from = Str.matched_group 3 str in
+            let line_till = Str.matched_group 4 str in
+            let char_till = Str.matched_group 5 str in
+            let rest_msg = Str.matched_group 6 str in
+            ( TlapmRange.TlapmRange
+                ( (int_of_string line_from, int_of_string char_from),
+                  (int_of_string line_till, int_of_string char_till) ),
+              String.trim rest_msg )
+        | false -> guess_notif_loc' str others)
+    | `B :: others -> (
+        let re_opts = { Re2.Options.default with dot_nl = true } in
+        let re =
+          Re2.create_exn
+            {|^File "(.*)", line ([0-9]+), characters ([0-9]+)-([0-9]+)\n(.*)|}
+            ~options:re_opts
+        in
+        match Re2.find_submatches re str with
+        | Ok
+            [|
+              _all_match;
+              Some _file;
+              Some line;
+              Some char_from;
+              Some char_till;
+              Some rest_msg;
+            |] ->
+            ( TlapmRange.TlapmRange
+                ( (int_of_string line, int_of_string char_from),
+                  (int_of_string line, int_of_string char_till) ),
+              String.trim rest_msg )
+        | Ok _ -> guess_notif_loc' str others
+        | Error _ -> guess_notif_loc' str others)
+
+  let guess_notif_loc str = guess_notif_loc' str [ `A; `B ]
   let parse_start = Empty
 
   let parse_line line acc stream =
@@ -147,10 +216,13 @@ module ToolboxProtocol = struct
       | PartUnknown -> PartUnknown
     in
     let msg_of_part = function
-      | PartWarning { msg = Some msg } -> Some (TlapmWarning { msg })
+      | PartWarning { msg = Some msg } ->
+          let loc, msg = guess_notif_loc msg in
+          Some (TlapmNotif { loc; sev = TlapmNotifWarning; msg; url = None })
       | PartWarning _ -> None
-      | PartError { msg = Some msg; url = Some url } ->
-          Some (TlapmError { msg; url })
+      | PartError { msg = Some msg; url } ->
+          let loc, msg = guess_notif_loc msg in
+          Some (TlapmNotif { loc; sev = TlapmNotifError; msg; url })
       | PartError _ -> None
       | PartObligationsNumber (Some count) ->
           Some (TlapmObligationsNumber count)
@@ -365,7 +437,7 @@ let start_async st doc_uri doc_vsn doc_text range events_adder
 
 (* ********************** Test cases ********************** *)
 
-let%test_unit "parse_line-warning" =
+let%test_unit "parse_line-obl-num" =
   let open ToolboxProtocol in
   let stream = Eio.Stream.create 10 in
   let stream_add = Eio.Stream.add stream in
@@ -429,6 +501,64 @@ let%test_unit "parse_line-multiline" =
       | _ -> failwith "unexpected msg count")
   | _ -> failwith "unexpected parser state"
 
+let%test_unit "parse-warning-loc" =
+  let open ToolboxProtocol in
+  let stream = Eio.Stream.create 10 in
+  let stream_add = Eio.Stream.add stream in
+  let expected_msg1 =
+    "Warning: module name \"bbb\" does not match file name \"aaa.tla\"."
+  in
+  let expected_msg2 = "Operator \"prover\" not found" in
+  let lines =
+    [
+      "@!!BEGIN";
+      "@!!type:warning";
+      "@!!msg:File \"aaa.tla\", line 1, character 1 to line 17, character 4 :";
+      expected_msg1;
+      "@!!END";
+      "@!!BEGIN";
+      "@!!type:warning";
+      "@!!msg:File \"aaa.tla\", line 5, characters 9-14";
+      "";
+      expected_msg2;
+      "";
+      "@!!END";
+    ]
+  in
+  match
+    List.fold_left (fun acc l -> parse_line l acc stream_add) parse_start lines
+  with
+  | Empty -> (
+      match Eio.Stream.length stream with
+      | 2 -> (
+          (match Eio.Stream.take stream with
+          | TlapmNotif
+              {
+                msg;
+                loc = TlapmRange ((1, 1), (17, 4));
+                sev = TlapmNotifWarning;
+                url = None;
+              }
+            when msg = expected_msg1 ->
+              ()
+          | _ -> failwith "unexpected msg1");
+          match Eio.Stream.take stream with
+          | TlapmNotif
+              {
+                msg;
+                loc = TlapmRange ((5, 9), (5, 14));
+                sev = TlapmNotifWarning;
+                url = None;
+              }
+            when msg = expected_msg2 ->
+              ()
+          | TlapmNotif { msg; loc; _ } ->
+              failwith
+                (Format.sprintf "msg=%S, loc=%s" msg (TlapmRange.as_string loc))
+          | _ -> failwith "unexpected msg2")
+      | _ -> failwith "unexpected msg count")
+  | _ -> failwith "unexpected parser state"
+
 let%test_module "Mocked TLAPM" =
   (module struct
     let test_case doc_name timeout assert_fun =
@@ -479,7 +609,7 @@ let%test_module "Mocked TLAPM" =
       in
       let () =
         match Eio.Stream.take_nonblocking stream with
-        | Some (TlapmWarning { msg = "message before delay" }) -> ()
+        | Some (TlapmNotif { msg = "message before delay"; _ }) -> ()
         | _ -> failwith "expected warning msg"
       in
       let () =
@@ -495,7 +625,7 @@ let%test_module "Mocked TLAPM" =
       test_case "AbnormalExit.tla" 1.0 @@ fun pr _clock stream ->
       let () =
         match Eio.Stream.take stream with
-        | TlapmWarning { msg = "this run is going to fail" } -> ()
+        | TlapmNotif { msg = "this run is going to fail"; _ } -> ()
         | _ -> failwith "expected warning msg"
       in
       let () =
@@ -550,9 +680,9 @@ let%test_module "Mocked TLAPM" =
       test_case "Echo.tla" 1.0 @@ fun pr _clock stream ->
       let () =
         match Eio.Stream.take stream with
-        | TlapmWarning { msg } -> (
+        | TlapmNotif { msg; _ } -> (
             match msg with
-            | "\nany\ncontent" -> ()
+            | "any\ncontent" -> ()
             | _ -> failwith (Format.sprintf "unexpected msg=%S" msg))
         | _ -> failwith "expected obligation"
       in

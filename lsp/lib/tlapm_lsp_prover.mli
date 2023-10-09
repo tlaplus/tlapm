@@ -5,6 +5,7 @@ module TlapmRange : sig
 
   val as_lsp_range : t -> Lsp.Types.Range.t
   val of_lsp_range : Lsp.Types.Range.t -> t
+  val intersects : t -> t -> bool
 end
 
 (** Types representing messages from the prover. *)
@@ -31,9 +32,17 @@ module ToolboxProtocol : sig
     obl : string option;
   }
 
+  type tlapm_notif_severity = TlapmNotifError | TlapmNotifWarning
+
+  type tlapm_notif = {
+    loc : TlapmRange.t;
+    sev : tlapm_notif_severity;
+    msg : string;
+    url : string option;
+  }
+
   type tlapm_msg =
-    | TlapmWarning of { msg : string }
-    | TlapmError of { url : string; msg : string }
+    | TlapmNotif of tlapm_notif
     | TlapmObligationsNumber of int
     | TlapmObligation of tlapm_obligation
     | TlapmTerminated

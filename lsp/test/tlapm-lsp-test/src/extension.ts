@@ -1,3 +1,5 @@
+// cSpell:words tlaplus opam tlapm
+
 import * as vscode from 'vscode';
 import { Executable, LanguageClient, LanguageClientOptions, TransportKind, VersionedTextDocumentIdentifier } from 'vscode-languageclient/node';
 

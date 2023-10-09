@@ -1,6 +1,5 @@
 (** Here we maintain a list of documents and their revisions. *)
 
-module OblMap : Map.S with type key = int
 open Tlapm_lsp_prover.ToolboxProtocol
 
 type t
@@ -9,14 +8,8 @@ type t
 type tk = Lsp.Types.DocumentUri.t
 (** Key type to identify documents. *)
 
-type tv = {
-  text : string;
-  version : int;
-  in_use : bool;
-  proof_ref : int;
-  obligations : tlapm_obligation OblMap.t;
-}
-(** Info on a single revision of a document. *)
+type proof_res = (tlapm_obligation list * tlapm_notif list) option option
+(** Result of an update, returns an actual list of obligations and errors. *)
 
 val empty : t
 (** Create new empty document store. *)
@@ -30,11 +23,14 @@ val rem : t -> tk -> t
 val get_opt : t -> tk -> (string * int) option
 (** Lookup document's last revision. *)
 
-val get_vsn_opt : t -> tk -> int -> string option
-(** Lookup specific document revision. *)
-
-val with_doc_vsn : t -> tk -> int -> (tv -> tv * 'a) -> 'a option * t
-(** Execute action on a specific version of a document. *)
-
-val next_p_ref_opt : t -> tk -> int -> t * (int * string) option
+val prepare_proof : t -> tk -> int -> (int * string * proof_res) option * t
 (** Increment the prover ref for the specified doc/vsn. *)
+
+val add_obl : t -> tk -> int -> int -> tlapm_obligation -> proof_res * t
+(** Record obligation for the document, clear all the intersecting ones. *)
+
+val add_notif : t -> tk -> int -> int -> tlapm_notif -> proof_res * t
+(** Record obligation for the document, clear all the intersecting ones. *)
+
+val get_proof_res : t -> tk -> int -> proof_res * t
+(** Get the latest actual proof results. Cleanup them, if needed. *)

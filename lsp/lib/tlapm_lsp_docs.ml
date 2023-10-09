@@ -1,29 +1,47 @@
+module OblRef = struct
+  type t = int * int
+
+  let compare (p_ref_a, obl_id_a) (p_ref_b, obl_id_b) =
+    let p_ref_cmp = Stdlib.compare p_ref_a p_ref_b in
+    if p_ref_cmp = 0 then Stdlib.compare obl_id_a obl_id_b else p_ref_cmp
+end
+
 module DocMap = Map.Make (Lsp.Types.DocumentUri)
-module OblMap = Map.Make (Int)
+module OblMap = Map.Make (OblRef)
+open Tlapm_lsp_prover
 open Tlapm_lsp_prover.ToolboxProtocol
 
 type tv = {
   text : string; (* Contents if the file at the specific version. *)
   version : int;
-  in_use : bool;
-  proof_ref : int; (* Increased with each launch of the prover. *)
-  obligations : tlapm_obligation OblMap.t;
+  in_use : bool; (* TODO: Is it needed? *)
+  p_ref : int;
+  (* Increased with each launch of the prover. *)
+  (* TODO: Change to a list of ongoing proofs. *)
+  nts_pref : int; (* Indicates, which proof run produced the errors. *)
+  nts : tlapm_notif list;
+      (* TODO: Get rid of nts_pref since this is handled in `prepare_proof'? *)
+  obs : tlapm_obligation OblMap.t;
 }
 
 type td = { versions : tv list }
 type tk = Lsp.Types.DocumentUri.t
 type t = td DocMap.t
+type proof_res = (tlapm_obligation list * tlapm_notif list) option option
 
 let empty = DocMap.empty
 
 let add docs uri vsn txt =
+  (* TODO: Inherit and/or cleanup the obligations/warnings. *)
   let rev =
     {
       text = txt;
       version = vsn;
       in_use = false;
-      proof_ref = 0;
-      obligations = OblMap.empty;
+      p_ref = 0;
+      nts_pref = 0;
+      nts = [];
+      obs = OblMap.empty;
     }
   in
   let drop_unused = List.filter (fun dd -> dd.in_use) in
@@ -41,13 +59,6 @@ let get_opt docs uri =
   | Some { versions = [] } -> None
   | Some { versions = v :: _ } -> Some (v.text, v.version)
 
-let get_vsn_opt docs uri vsn =
-  match DocMap.find_opt uri docs with
-  | None -> None
-  | Some { versions } ->
-      let matching v = if v.version = vsn then Some v.text else None in
-      List.find_map matching versions
-
 let with_doc_vsn docs uri vsn f =
   match DocMap.find_opt uri docs with
   | None -> (None, docs)
@@ -62,21 +73,37 @@ let with_doc_vsn docs uri vsn f =
       let docs' = DocMap.add uri { versions = versions' } docs in
       (res, docs')
 
-(* Increment the prover reference p_ref for the specified document / version. *)
-let next_p_ref_opt (docs : td DocMap.t) uri vsn =
-  match DocMap.find_opt uri docs with
-  | None -> (docs, None)
-  | Some { versions = [] } -> (docs, None)
-  | Some { versions } ->
-      let f acc v =
-        match v with
-        | { version = vv; proof_ref; text; _ } when vv = vsn ->
-            let next_proof_ref = proof_ref + 1 in
-            (Some (next_proof_ref, text), { v with proof_ref = next_proof_ref })
-        | _ -> (acc, v)
-      in
-      let result, versions' = List.fold_left_map f None versions in
-      let docs' =
-        DocMap.update uri (fun _ -> Some { versions = versions' }) docs
-      in
-      (docs', result)
+let prepare_proof docs uri vsn =
+  with_doc_vsn docs uri vsn @@ fun v ->
+  let v = { v with p_ref = v.p_ref + 1; nts = [] } in
+  let obs_list = List.map snd (OblMap.to_list v.obs) in
+  (v, (v.p_ref, v.text, Some (Some (obs_list, v.nts))))
+
+let add_obl docs uri vsn p_ref (obl : tlapm_obligation) =
+  with_doc_vsn docs uri vsn @@ fun v ->
+  if v.p_ref = p_ref then
+    let drop_older_intersecting (o_pr, _o_id) (o : tlapm_obligation) =
+      o_pr = p_ref || not (TlapmRange.intersects obl.loc o.loc)
+    in
+    let obs = OblMap.add (p_ref, obl.id) obl v.obs in
+    let obs = OblMap.filter drop_older_intersecting obs in
+    let obs_list = List.map snd (OblMap.to_list obs) in
+    ({ v with obs }, Some (obs_list, v.nts))
+  else (v, None)
+
+let add_notif docs uri vsn p_ref notif =
+  with_doc_vsn docs uri vsn @@ fun v ->
+  if v.p_ref = p_ref then
+    let nts = if v.nts_pref = p_ref then v.nts else [] in
+    let nts = notif :: nts in
+    let obs_list = List.map snd (OblMap.to_list v.obs) in
+    ({ v with nts; nts_pref = p_ref }, Some (obs_list, nts))
+  else (v, None)
+
+let get_proof_res docs uri vsn =
+  with_doc_vsn docs uri vsn @@ fun v ->
+  (* TODO: Update the proof state if missing. Then return it.
+      - Clean obl/err markers starting at the first changed line.
+      - Update derived obl markers based on the parser's output.
+  *)
+  (v, None)
