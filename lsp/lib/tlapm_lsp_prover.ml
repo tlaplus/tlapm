@@ -5,37 +5,37 @@ let read_buf_max_size = 1024 * 1024
 
 module TlapmRange = struct
   (* LSP ranges are 0-based and TLAPM is 1-based. In LSP the last char is exclusive. *)
-  type t = TlapmRange of (int * int) * (int * int)
+  type t = R of (int * int) * (int * int)
+  type p = P of int * int
 
-  let line_from (TlapmRange ((fl, _), _)) = fl
-  let line_till (TlapmRange (_, (tl, _))) = tl
+  let line_from (R ((fl, _), _)) = fl
+  let line_till (R (_, (tl, _))) = tl
 
-  let as_lsp_range (TlapmRange ((fl, fc), (tl, tc))) =
+  let as_lsp_range (R ((fl, fc), (tl, tc))) =
     let open Lsp.Types in
     Range.create
       ~start:(Position.create ~line:(fl - 1) ~character:(fc - 1))
       ~end_:(Position.create ~line:(tl - 1) ~character:tc)
 
-  let of_lines fl tl = TlapmRange ((fl, 1), (tl, 1))
+  let of_lines fl tl = R ((fl, 1), (tl, 1))
 
   let of_lsp_range (range : Lsp.Types.Range.t) =
-    TlapmRange
-      ( (range.start.line + 1, range.start.character + 1),
-        (range.end_.line + 1, range.end_.character) )
+    let f = (range.start.line + 1, range.start.character + 1) in
+    let t = (range.end_.line + 1, range.end_.character) in
+    R (f, t)
 
   let of_string_opt s =
     match String.split_on_char ':' s with
     | [ fl; fc; tl; tc ] ->
-        Some
-          (TlapmRange
-             ( (int_of_string fl, int_of_string fc),
-               (int_of_string tl, int_of_string tc) ))
+        let f = (int_of_string fl, int_of_string fc) in
+        let t = (int_of_string tl, int_of_string tc) in
+        Some (R (f, t))
     | _ -> None
 
-  let as_string (TlapmRange ((fl, fc), (tl, tc))) : string =
+  let as_string (R ((fl, fc), (tl, tc))) : string =
     Format.sprintf "%d:%d:%d:%d" fl fc tl tc
 
-  let of_unknown = TlapmRange ((1, 1), (1, 4))
+  let of_unknown = R ((1, 1), (1, 4))
 
   let intersects a b =
     let lfa = line_from a in
@@ -43,6 +43,43 @@ module TlapmRange = struct
     let lfb = line_from b in
     let ltb = line_till b in
     lfa <= ltb && lfb <= lta
+
+  let before (P (pl, pc)) (R ((fl, fc), _)) =
+    match Stdlib.compare pl fl with
+    | 0 -> Stdlib.compare pc fc < 0
+    | l_diff -> l_diff < 0
+
+  let first_diff_pos a b =
+    let len = min (String.length a) (String.length b) in
+    let rec count i l c =
+      let ai = String.get a i in
+      let bi = String.get b i in
+      if i = len then P (l, c)
+      else if ai = bi then
+        let l, c =
+          match bi with '\n' -> (l + 1, 1) | '\r' -> (l, c) | _ -> (l, c + 1)
+        in
+        count (i + 1) l c
+      else P (l, c)
+    in
+    count 0 1 1
+
+  let%test_module "before" =
+    (module struct
+      let%test _ = before (P (3, 5)) (R ((5, 3), (5, 7)))
+      let%test _ = before (P (3, 5)) (R ((3, 6), (5, 7)))
+      let%test _ = not (before (P (3, 5)) (R ((3, 5), (5, 7))))
+      let%test _ = not (before (P (3, 5)) (R ((2, 5), (5, 7))))
+    end)
+
+  let%test_module "first_diff_pos" =
+    (module struct
+      let%test "first" = P (1, 1) = first_diff_pos "hello" "bye"
+      let%test "second" = P (1, 2) = first_diff_pos "hello" "hallo"
+      let%test "next_ln" = P (2, 1) = first_diff_pos "sa\nme" "sa\ny"
+      let%test "line_len_a" = P (1, 3) = first_diff_pos "same" "sa\n"
+      let%test "line_len_b" = P (1, 3) = first_diff_pos "sa\n" "same"
+    end)
 end
 
 (* ***** Types and parsers for them ***************************************** *)
@@ -150,7 +187,7 @@ module ToolboxProtocol = struct
             let line_till = Str.matched_group 4 str in
             let char_till = Str.matched_group 5 str in
             let rest_msg = Str.matched_group 6 str in
-            ( TlapmRange.TlapmRange
+            ( TlapmRange.R
                 ( (int_of_string line_from, int_of_string char_from),
                   (int_of_string line_till, int_of_string char_till) ),
               String.trim rest_msg )
@@ -172,7 +209,7 @@ module ToolboxProtocol = struct
               Some char_till;
               Some rest_msg;
             |] ->
-            ( TlapmRange.TlapmRange
+            ( TlapmRange.R
                 ( (int_of_string line, int_of_string char_from),
                   (int_of_string line, int_of_string char_till) ),
               String.trim rest_msg )
@@ -535,7 +572,7 @@ let%test_unit "parse-warning-loc" =
           | TlapmNotif
               {
                 msg;
-                loc = TlapmRange ((1, 1), (17, 4));
+                loc = R ((1, 1), (17, 4));
                 sev = TlapmNotifWarning;
                 url = None;
               }
@@ -546,7 +583,7 @@ let%test_unit "parse-warning-loc" =
           | TlapmNotif
               {
                 msg;
-                loc = TlapmRange ((5, 9), (5, 14));
+                loc = R ((5, 9), (5, 14));
                 sev = TlapmNotifWarning;
                 url = None;
               }
