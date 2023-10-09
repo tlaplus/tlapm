@@ -1,3 +1,5 @@
+(* cSpell:words sprintf *)
+
 module Docs = Tlapm_lsp_docs
 module Prover = Tlapm_lsp_prover
 
@@ -35,16 +37,47 @@ let with_docs st f =
       Eio.traceln "Ignoring request: %s" err;
       st
 
-let with_doc_vsn st uri vsn f =
-  with_docs st @@ fun (st', docs) ->
-  let st_opt, docs = Docs.with_doc_vsn docs uri vsn @@ fun v -> f v st' in
-  match st_opt with
-  | Some st'' -> (st'', docs)
-  | None ->
-      Eio.traceln "[WARN] Document not found by uri=%s vsn=%d"
-        (Lsp.Types.DocumentUri.to_string uri)
-        vsn;
-      (st', docs)
+let send_diagnostics st uri vsn os ns =
+  (* TODO: Use DiagnosticTag to mark diagnostics as proof obligations? Only a fixed set of tags seems to be supported. *)
+  let open Prover.ToolboxProtocol in
+  let open Lsp.Types in
+  let diagnostics_o =
+    List.map
+      (fun (o : tlapm_obligation) ->
+        Diagnostic.create ~message:"OBLIGATION"
+          ~range:(Prover.TlapmRange.as_lsp_range o.loc)
+          ~severity:Lsp.Types.DiagnosticSeverity.Information ~source:"TLAPM" ())
+      os
+  in
+  let diagnostics_n =
+    List.map
+      (fun (n : tlapm_notif) ->
+        let severity =
+          match n.sev with
+          | TlapmNotifError -> Lsp.Types.DiagnosticSeverity.Error
+          | TlapmNotifWarning -> Lsp.Types.DiagnosticSeverity.Warning
+        in
+        Diagnostic.create
+          ~message:(Format.sprintf "ERR: %s" n.msg)
+          ~range:(Prover.TlapmRange.as_lsp_range n.loc)
+          ~severity ())
+      ns
+  in
+  let diagnostics = List.concat [ diagnostics_o; diagnostics_n ] in
+  let d_par =
+    PublishDiagnosticsParams.create ~diagnostics ~uri ~version:vsn ()
+  in
+  let d_ntf = Lsp.Server_notification.PublishDiagnostics d_par in
+  let d_pkg =
+    Jsonrpc.Packet.Notification (Lsp.Server_notification.to_jsonrpc d_ntf)
+  in
+  st.output_adder (Some d_pkg)
+
+let send_diagnostics_if_changed st uri vsn res =
+  match res with
+  | Some (Some (os, ns)) -> send_diagnostics st uri vsn os ns
+  | Some None -> ()
+  | None -> ()
 
 module PacketsCB = struct
   module LT = Lsp.Types
@@ -73,10 +106,11 @@ module PacketsCB = struct
     Eio.traceln "PROVE_STEP: %s#%d lines %d--%d"
       (LT.DocumentUri.to_string uri)
       vsn range.start.line range.end_.line;
-    let docs, next_p_ref_opt = Docs.next_p_ref_opt st.docs uri vsn in
+    let next_p_ref_opt, docs = Docs.prepare_proof st.docs uri vsn in
     let st = { st with docs } in
     match next_p_ref_opt with
-    | Some (p_ref, doc_text) -> (
+    | Some (p_ref, doc_text, proof_res) -> (
+        send_diagnostics_if_changed st uri vsn proof_res;
         let prov_events e =
           st.event_adder (TlapmEvent ((uri, vsn, p_ref), e))
         in
@@ -139,44 +173,22 @@ let handle_tlapm_msg ((uri, vsn, p_ref) : doc_ref) msg st =
     (DocumentUri.to_string uri)
     vsn p_ref;
   match msg with
-  | TlapmWarning { msg = tw_msg } ->
-      (* TODO: Implement. *)
-      Eio.traceln "---> TlapmWarning: %s" tw_msg;
-      Some st
-  | TlapmError { msg = te_msg; _ } ->
-      (* TODO: Implement. *)
-      Eio.traceln "---> TlapmError: %s" te_msg;
-      Some st
+  | TlapmNotif notif ->
+      Eio.traceln "---> TlapmNotif: %s" notif.msg;
+      let res, docs = Docs.add_notif st.docs uri vsn p_ref notif in
+      send_diagnostics_if_changed st uri vsn res;
+      Some { st with docs }
   | TlapmObligationsNumber _ ->
       (* TODO: Implement. *)
       Eio.traceln "---> TlapmObligationsNumber";
       Some st
-  | TlapmObligation { id; loc; _ } ->
-      Eio.traceln "---> TlapmObligation, id=%d" id;
-      Some
-        ( with_doc_vsn st uri vsn @@ fun v st' ->
-          let send_diags () =
-            (* TODO: Reorganize this. *)
-            let some =
-              Diagnostic.create ~message:"OBLIGATION"
-                ~range:(Prover.TlapmRange.as_lsp_range loc)
-                ~severity:Lsp.Types.DiagnosticSeverity.Information ()
-            in
-            let d_par =
-              PublishDiagnosticsParams.create ~diagnostics:[ some ] ~uri
-                ~version:vsn ()
-            in
-            let d_ntf = Lsp.Server_notification.PublishDiagnostics d_par in
-            let d_pkg =
-              Jsonrpc.Packet.Notification
-                (Lsp.Server_notification.to_jsonrpc d_ntf)
-            in
-            st'.output_adder (Some d_pkg)
-          in
-          send_diags ();
-          (v, st') )
+  | TlapmObligation obl ->
+      Eio.traceln "---> TlapmObligation, id=%d" obl.id;
+      let res, docs = Docs.add_obl st.docs uri vsn p_ref obl in
+      send_diagnostics_if_changed st uri vsn res;
+      Some { st with docs }
   | TlapmTerminated ->
-      (* TODO: Implement. *)
+      (* TODO: Implement: mark revision unused? *)
       Eio.traceln "---> TlapmTerminated";
       Some st
 

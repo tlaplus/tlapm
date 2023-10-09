@@ -40,28 +40,7 @@ module Make (CB : Callbacks) = struct
         let vsn = params.textDocument.version in
         let text = params.textDocument.text in
         Eio.traceln "DOCUMENT[Open]: %s => %s" (DocumentUri.to_string uri) text;
-        let send_diags cb_st =
-          let some =
-            Diagnostic.create ~message:"Hey from prover!"
-              ~range:
-                (Range.create
-                   ~start:(Position.create ~line:1 ~character:3)
-                   ~end_:(Position.create ~line:1 ~character:7))
-              ()
-          in
-          let d_par =
-            PublishDiagnosticsParams.create ~diagnostics:[ some ] ~uri
-              ~version:vsn ()
-          in
-          let diag = Lsp.Server_notification.PublishDiagnostics d_par in
-          let d_pkg =
-            Jsonrpc.Packet.Notification
-              (Lsp.Server_notification.to_jsonrpc diag)
-          in
-          CB.lsp_send cb_st d_pkg
-        in
         CB.with_docs cb_state @@ fun (cb_st, docs) ->
-        let cb_st = send_diags cb_st in
         let docs = Tlapm_lsp_docs.add docs uri vsn text in
         (cb_st, docs)
     | Ok (TextDocumentDidChange params) -> (
