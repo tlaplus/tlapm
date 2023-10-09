@@ -18,9 +18,7 @@ type tv = {
   p_ref : int;
   (* Increased with each launch of the prover. *)
   (* TODO: Change to a list of ongoing proofs. *)
-  nts_pref : int; (* Indicates, which proof run produced the errors. *)
   nts : tlapm_notif list;
-      (* TODO: Get rid of nts_pref since this is handled in `prepare_proof'? *)
   obs : tlapm_obligation OblMap.t;
 }
 
@@ -39,7 +37,6 @@ let add docs uri vsn txt =
       version = vsn;
       in_use = false;
       p_ref = 0;
-      nts_pref = 0;
       nts = [];
       obs = OblMap.empty;
     }
@@ -94,10 +91,9 @@ let add_obl docs uri vsn p_ref (obl : tlapm_obligation) =
 let add_notif docs uri vsn p_ref notif =
   with_doc_vsn docs uri vsn @@ fun v ->
   if v.p_ref = p_ref then
-    let nts = if v.nts_pref = p_ref then v.nts else [] in
-    let nts = notif :: nts in
+    let nts = notif :: v.nts in
     let obs_list = List.map snd (OblMap.to_list v.obs) in
-    ({ v with nts; nts_pref = p_ref }, Some (obs_list, nts))
+    ({ v with nts }, Some (obs_list, nts))
   else (v, None)
 
 let get_proof_res docs uri vsn =

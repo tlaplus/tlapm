@@ -1,11 +1,14 @@
 type t
 
 module TlapmRange : sig
+  type p
   type t
 
   val as_lsp_range : t -> Lsp.Types.Range.t
   val of_lsp_range : Lsp.Types.Range.t -> t
   val intersects : t -> t -> bool
+  val before : p -> t -> bool
+  val first_diff_pos : string -> string -> p
 end
 
 (** Types representing messages from the prover. *)
