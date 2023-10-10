@@ -32,9 +32,10 @@ module TlapmRange = struct
         Some (R (f, t))
     | _ -> None
 
-  let as_string (R ((fl, fc), (tl, tc))) : string =
+  let string_of_range (R ((fl, fc), (tl, tc))) : string =
     Format.sprintf "%d:%d:%d:%d" fl fc tl tc
 
+  let string_of_pos (P (l, c)) = Format.sprintf "%d:%d" l c
   let of_unknown = R ((1, 1), (1, 4))
 
   let intersects a b =
@@ -591,7 +592,7 @@ let%test_unit "parse-warning-loc" =
               ()
           | TlapmNotif { msg; loc; _ } ->
               failwith
-                (Format.sprintf "msg=%S, loc=%s" msg (TlapmRange.as_string loc))
+                (Format.sprintf "msg=%S, loc=%s" msg (TlapmRange.string_of_range loc))
           | _ -> failwith "unexpected msg2")
       | _ -> failwith "unexpected msg count")
   | _ -> failwith "unexpected parser state"

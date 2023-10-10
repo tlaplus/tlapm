@@ -1,5 +1,3 @@
-(* TODO: Cleanup after edit don't work. *)
-
 (* Max number of unprocessed/pending versions to keep. *)
 let keep_vsn_count = 50
 
@@ -43,7 +41,7 @@ type td =
 
 type tk = Lsp.Types.DocumentUri.t
 type t = td DocMap.t
-type proof_res = tlapm_obligation list * tlapm_notif list
+type proof_res = int * tlapm_obligation list * tlapm_notif list
 
 let empty = DocMap.empty
 
@@ -61,6 +59,17 @@ let add docs uri vsn txt =
   DocMap.update uri upd docs
 
 let rem docs uri = DocMap.remove uri docs
+
+let latest_vsn docs uri =
+  match DocMap.find_opt uri docs with
+  | None -> None
+  | Some (TD { actual; pending = []; _ }) -> (
+      match actual with
+      | Some (TA { doc_vsn; _ }) ->
+          let (TV doc_vsn) = doc_vsn in
+          Some doc_vsn.version
+      | None -> None)
+  | Some (TD { pending = TV dv :: _; _ }) -> Some dv.version
 
 let with_actual (TD doc) uri docs f act pending =
   let doc = TD { doc with pending; actual = Some act } in
@@ -81,7 +90,7 @@ let with_doc_vsn docs uri vsn f =
       let merge_into (TV v) (TA a) =
         let (TV a_doc_vsn) = a.doc_vsn in
         let diff_pos = TlapmRange.first_diff_pos a_doc_vsn.text v.text in
-        let before_change = TlapmRange.before diff_pos in
+        let before_change loc = not (TlapmRange.before diff_pos loc) in
         let obs =
           OblMap.filter
             (fun _ (o : tlapm_obligation) -> before_change o.loc)
@@ -117,7 +126,7 @@ let with_doc_vsn docs uri vsn f =
 
 let proof_res (TA a) =
   let obs_list = List.map snd (OblMap.to_list a.obs) in
-  (obs_list, a.nts)
+  (a.p_ref, obs_list, a.nts)
 
 (* Push specific version to the actual, increase the proof_rec and clear the notifications. *)
 let prepare_proof docs uri vsn : t * (int * string * proof_res) option =
@@ -150,3 +159,8 @@ let add_notif docs uri vsn p_ref notif =
 
 let get_proof_res docs uri vsn =
   with_doc_vsn docs uri vsn @@ fun doc act -> (doc, act, Some (proof_res act))
+
+let get_proof_res_latest docs uri =
+  match latest_vsn docs uri with
+  | None -> (docs, None)
+  | Some latest_vsn -> get_proof_res docs uri latest_vsn

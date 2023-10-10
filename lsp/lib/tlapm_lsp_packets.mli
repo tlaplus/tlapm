@@ -11,6 +11,9 @@ module type Callbacks = sig
   val lsp_send : cb_t -> Jsonrpc.Packet.t -> cb_t
   val with_docs : cb_t -> (cb_t * Docs.t -> cb_t * Docs.t) -> cb_t
   val prove_step : cb_t -> LT.DocumentUri.t -> int -> LT.Range.t -> cb_t
+
+  val latest_diagnostics :
+    cb_t -> LT.DocumentUri.t -> cb_t * (int * LT.Diagnostic.t list)
 end
 
 module Make (CB : Callbacks) : sig

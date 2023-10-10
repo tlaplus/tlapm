@@ -6,6 +6,8 @@ module TlapmRange : sig
 
   val as_lsp_range : t -> Lsp.Types.Range.t
   val of_lsp_range : Lsp.Types.Range.t -> t
+  val string_of_range : t -> string
+  val string_of_pos : p -> string
   val intersects : t -> t -> bool
   val before : p -> t -> bool
   val first_diff_pos : string -> string -> p
