@@ -10,6 +10,9 @@ module type Callbacks = sig
   val lsp_send : cb_t -> Jsonrpc.Packet.t -> cb_t
   val with_docs : cb_t -> (cb_t * Docs.t -> cb_t * Docs.t) -> cb_t
   val prove_step : cb_t -> LT.DocumentUri.t -> int -> LT.Range.t -> cb_t
+
+  val latest_diagnostics :
+    cb_t -> LT.DocumentUri.t -> cb_t * (int * LT.Diagnostic.t list)
 end
 
 module Make (CB : Callbacks) = struct
@@ -133,6 +136,18 @@ module Make (CB : Callbacks) = struct
     Eio.traceln "CONN: Shutdown";
     CB.shutdown cb_state
 
+  (* TODO: It looks like VSCode don't update the diagnostics. *)
+  let handle_jsonrpc_req_diagnostics (jsonrpc_req : Jsonrpc.Request.t) uri
+      cb_state =
+    let cb_state, (p_ref, items) = CB.latest_diagnostics cb_state uri in
+    let report =
+      LT.FullDocumentDiagnosticReport.create ~items
+        ~resultId:(string_of_int p_ref) ()
+    in
+    reply_ok jsonrpc_req
+      (LT.FullDocumentDiagnosticReport.yojson_of_t report)
+      cb_state
+
   let handle_jsonrpc_req_unknown (jsonrpc_req : Jsonrpc.Request.t) message
       cb_state =
     Eio.traceln "Received unknown JsonRPC request, method=%s, error=%s"
@@ -226,9 +241,25 @@ module Make (CB : Callbacks) = struct
     | Ok (E Shutdown) -> handle_jsonrpc_req_shutdown jsonrpc_req cb_state
     | Ok (E (UnknownRequest unknown)) -> (
         match unknown.meth with
-        | "textDocument/diagnostic" ->
-            (* TODO: Handle the diagnostic pull. *)
-            cb_state
+        | "textDocument/diagnostic" -> (
+            match unknown.params with
+            | Some params -> (
+                match params with
+                | `Assoc xs ->
+                    let text_doc_js = List.assoc "textDocument" xs in
+                    let text_doc_id =
+                      LT.TextDocumentIdentifier.t_of_yojson text_doc_js
+                    in
+                    handle_jsonrpc_req_diagnostics jsonrpc_req text_doc_id.uri
+                      cb_state
+                | `List _xs ->
+                    reply_error jsonrpc_req
+                      Jsonrpc.Response.Error.Code.InvalidParams "params missing"
+                      cb_state)
+            | None ->
+                reply_error jsonrpc_req
+                  Jsonrpc.Response.Error.Code.InvalidParams "params missing"
+                  cb_state)
         | _ ->
             handle_jsonrpc_req_unknown jsonrpc_req
               "unknown method not supported" cb_state)

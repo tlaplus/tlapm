@@ -37,8 +37,7 @@ let with_docs st f =
       Eio.traceln "Ignoring request: %s" err;
       st
 
-let send_diagnostics st uri vsn os ns =
-  (* TODO: Use DiagnosticTag to mark diagnostics as proof obligations? Only a fixed set of tags seems to be supported. *)
+let make_diagnostics os ns =
   let open Prover.ToolboxProtocol in
   let open Lsp.Types in
   let diagnostics_o =
@@ -63,7 +62,11 @@ let send_diagnostics st uri vsn os ns =
           ~severity ())
       ns
   in
-  let diagnostics = List.concat [ diagnostics_o; diagnostics_n ] in
+  List.concat [ diagnostics_o; diagnostics_n ]
+
+let send_diagnostics st uri vsn os ns =
+  let open Lsp.Types in
+  let diagnostics = make_diagnostics os ns in
   let d_par =
     PublishDiagnosticsParams.create ~diagnostics ~uri ~version:vsn ()
   in
@@ -75,7 +78,7 @@ let send_diagnostics st uri vsn os ns =
 
 let send_diagnostics_if_changed st uri vsn res =
   match res with
-  | Some (os, ns) -> send_diagnostics st uri vsn os ns
+  | Some (_id, os, ns) -> send_diagnostics st uri vsn os ns
   | None -> ()
 
 module PacketsCB = struct
@@ -125,6 +128,14 @@ module PacketsCB = struct
     | None ->
         Eio.traceln "cannot find doc/vsn";
         st
+
+  let latest_diagnostics st uri =
+    Eio.traceln "PULL_DIAGS: %s" (LT.DocumentUri.to_string uri);
+    let docs, proof_res_opt = Docs.get_proof_res_latest st.docs uri in
+    let st = { st with docs } in
+    match proof_res_opt with
+    | None -> (st, (0, []))
+    | Some (p_ref, os, ns) -> (st, (p_ref, make_diagnostics os ns))
 
   let%test_unit "basics" =
     Eio_main.run @@ fun env ->
