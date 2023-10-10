@@ -45,9 +45,9 @@ module TlapmRange = struct
     let ltb = line_till b in
     lfa <= ltb && lfb <= lta
 
-  let before (P (pl, pc)) (R ((fl, fc), _)) =
-    match Stdlib.compare pl fl with
-    | 0 -> Stdlib.compare pc fc < 0
+  let before (P (pl, pc)) (R (_, (tl, tc))) =
+    match Stdlib.compare pl tl with
+    | 0 -> Stdlib.compare pc tc < 0
     | l_diff -> l_diff < 0
 
   let first_diff_pos a b =
@@ -67,10 +67,10 @@ module TlapmRange = struct
 
   let%test_module "before" =
     (module struct
-      let%test _ = before (P (3, 5)) (R ((5, 3), (5, 7)))
-      let%test _ = before (P (3, 5)) (R ((3, 6), (5, 7)))
-      let%test _ = not (before (P (3, 5)) (R ((3, 5), (5, 7))))
-      let%test _ = not (before (P (3, 5)) (R ((2, 5), (5, 7))))
+      let%test _ = before (P (3, 5)) (R ((1, 1), (5, 3)))
+      let%test _ = before (P (3, 5)) (R ((1, 1), (3, 6)))
+      let%test _ = not (before (P (3, 5)) (R ((1, 1), (3, 5))))
+      let%test _ = not (before (P (3, 5)) (R ((1, 1), (2, 5))))
     end)
 
   let%test_module "first_diff_pos" =
@@ -106,6 +106,18 @@ module ToolboxProtocol = struct
     | "interrupted" -> Interrupted
     | "trivial" -> Trivial
     | _ -> Unknown s
+
+  (* NOTE: Strings don't have to match with the ones above. *)
+  let tlapm_obl_state_to_string (s : tlapm_obl_state) : string =
+    match s with
+    | ToBeProved -> "to be proved"
+    | BeingProved -> "being proved"
+    | Normalized -> "normalized"
+    | Proved -> "proved"
+    | Failed -> "failed"
+    | Interrupted -> "interrupted"
+    | Trivial -> "trivial"
+    | Unknown s -> "unknown state: " ^ s
 
   type tlapm_obligation = {
     id : int;
@@ -216,8 +228,25 @@ module ToolboxProtocol = struct
               String.trim rest_msg )
         | Ok _ -> guess_notif_loc' str others
         | Error _ -> guess_notif_loc' str others)
+    | `C :: others -> (
+        (* Messages like this: `File "aaa.tla", line 5, character 22` *)
+        let re_opts = { Re2.Options.default with dot_nl = true } in
+        let re =
+          Re2.create_exn
+            {|^File "(.*)", line ([0-9]+), character ([0-9]+)\n(.*)|}
+            ~options:re_opts
+        in
+        match Re2.find_submatches re str with
+        | Ok [| _all_match; Some _file; Some line; Some char; Some rest_msg |]
+          ->
+            ( TlapmRange.R
+                ( (int_of_string line, int_of_string char),
+                  (int_of_string line, int_of_string char + 4) ),
+              String.trim rest_msg )
+        | Ok _ -> guess_notif_loc' str others
+        | Error _ -> guess_notif_loc' str others)
 
-  let guess_notif_loc str = guess_notif_loc' str [ `A; `B ]
+  let guess_notif_loc str = guess_notif_loc' str [ `A; `B; `C ]
   let parse_start = Empty
 
   let parse_line line acc stream =
@@ -547,6 +576,7 @@ let%test_unit "parse-warning-loc" =
     "Warning: module name \"bbb\" does not match file name \"aaa.tla\"."
   in
   let expected_msg2 = "Operator \"prover\" not found" in
+  let expected_msg3 = "Unexpected {" in
   let lines =
     [
       "@!!BEGIN";
@@ -561,6 +591,11 @@ let%test_unit "parse-warning-loc" =
       expected_msg2;
       "";
       "@!!END";
+      "@!!BEGIN";
+      "@!!type:warning";
+      "@!!msg:File \"aaa.tla\", line 5, character 22";
+      expected_msg3;
+      "@!!END";
     ]
   in
   match
@@ -568,7 +603,7 @@ let%test_unit "parse-warning-loc" =
   with
   | Empty -> (
       match Eio.Stream.length stream with
-      | 2 -> (
+      | 3 -> (
           (match Eio.Stream.take stream with
           | TlapmNotif
               {
@@ -580,7 +615,7 @@ let%test_unit "parse-warning-loc" =
             when msg = expected_msg1 ->
               ()
           | _ -> failwith "unexpected msg1");
-          match Eio.Stream.take stream with
+          (match Eio.Stream.take stream with
           | TlapmNotif
               {
                 msg;
@@ -594,7 +629,18 @@ let%test_unit "parse-warning-loc" =
               failwith
                 (Format.sprintf "msg=%S, loc=%s" msg
                    (TlapmRange.string_of_range loc))
-          | _ -> failwith "unexpected msg2")
+          | _ -> failwith "unexpected msg2");
+          match Eio.Stream.take stream with
+          | TlapmNotif
+              {
+                msg;
+                loc = R ((5, 22), (5, 26));
+                sev = TlapmNotifWarning;
+                url = None;
+              }
+            when msg = expected_msg3 ->
+              ()
+          | _ -> failwith "unexpected msg3")
       | _ -> failwith "unexpected msg count")
   | _ -> failwith "unexpected parser state"
 

@@ -32,5 +32,5 @@ val add_notif : t -> tk -> int -> int -> tlapm_notif -> t * proof_res option
 val get_proof_res : t -> tk -> int -> t * proof_res option
 (** Get the latest actual proof results. Cleanup them, if needed. *)
 
-val get_proof_res_latest : t -> tk -> t * proof_res option
+val get_proof_res_latest : t -> tk -> t * int option * proof_res option
 (** Get the latest actual proof results. Cleanup them, if needed. *)

@@ -162,5 +162,7 @@ let get_proof_res docs uri vsn =
 
 let get_proof_res_latest docs uri =
   match latest_vsn docs uri with
-  | None -> (docs, None)
-  | Some latest_vsn -> get_proof_res docs uri latest_vsn
+  | None -> (docs, None, None)
+  | Some latest_vsn ->
+      let docs, res = get_proof_res docs uri latest_vsn in
+      (docs, Some latest_vsn, res)
