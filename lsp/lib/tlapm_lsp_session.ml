@@ -59,6 +59,9 @@ let make_diagnostics os ns =
           "Obligation: "
           ^ Prover.ToolboxProtocol.tlapm_obl_state_to_string o.status
         in
+        let message =
+          match o.obl with None -> message | Some obl -> message ^ "\n" ^ obl
+        in
         Diagnostic.create ~message
           ~range:(Prover.TlapmRange.as_lsp_range o.loc)
           ~severity:Lsp.Types.DiagnosticSeverity.Information
