@@ -1,5 +1,15 @@
 (* cSpell:words sprintf *)
 
+(* TODO: Notes on the presentation.
+   See DocumentHighlight -- <https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#documentHighlightOptions>
+   Also:
+     - executeCommandProvider
+     - diagnosticProvider (why the diagnostics are not cleared?)
+     - semanticTokens?
+         <https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#semanticTokensClientCapabilities>
+         <https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_semanticTokens>
+*)
+
 let diagnostic_source = "TLAPM"
 
 module Docs = Tlapm_lsp_docs
@@ -45,7 +55,11 @@ let make_diagnostics os ns =
   let diagnostics_o =
     List.map
       (fun (o : tlapm_obligation) ->
-        Diagnostic.create ~message:"OBLIGATION"
+        let message =
+          "Obligation: "
+          ^ Prover.ToolboxProtocol.tlapm_obl_state_to_string o.status
+        in
+        Diagnostic.create ~message
           ~range:(Prover.TlapmRange.as_lsp_range o.loc)
           ~severity:Lsp.Types.DiagnosticSeverity.Information
           ~source:diagnostic_source ())
@@ -59,8 +73,7 @@ let make_diagnostics os ns =
           | TlapmNotifError -> Lsp.Types.DiagnosticSeverity.Error
           | TlapmNotifWarning -> Lsp.Types.DiagnosticSeverity.Warning
         in
-        Diagnostic.create
-          ~message:(Format.sprintf "ERR: %s" n.msg)
+        Diagnostic.create ~message:n.msg
           ~range:(Prover.TlapmRange.as_lsp_range n.loc)
           ~severity ~source:diagnostic_source ())
       ns
@@ -134,11 +147,22 @@ module PacketsCB = struct
 
   let latest_diagnostics st uri =
     Eio.traceln "PULL_DIAGS: %s" (LT.DocumentUri.to_string uri);
-    let docs, proof_res_opt = Docs.get_proof_res_latest st.docs uri in
+    let docs, vsn_opt, proof_res_opt = Docs.get_proof_res_latest st.docs uri in
     let st = { st with docs } in
-    match proof_res_opt with
-    | None -> (st, (0, []))
-    | Some (p_ref, os, ns) -> (st, (p_ref, make_diagnostics os ns))
+    (* Clear the the diagnostics sent by the server, otherwise
+       they will be duplicated with the response to this one.
+       TODO: That's probably wrong place for doing that.
+       TODO: The diagnostics are still duplicated in some cases,
+             e.g. when pull is done and then the same obl proved by command.
+       TODO: Maybe we should reply here with an empty response, but resend
+             the server-sent notification.
+    *)
+    (* send_diagnostics st uri 0 [] []; *)
+    (match (vsn_opt, proof_res_opt) with
+    | None, _ -> send_diagnostics st uri 0 [] []
+    | Some vsn, None -> send_diagnostics st uri vsn [] []
+    | Some vsn, Some (_p_ref, os, ns) -> send_diagnostics st uri vsn os ns);
+    (st, (0, []))
 
   let diagnostic_source = diagnostic_source
 

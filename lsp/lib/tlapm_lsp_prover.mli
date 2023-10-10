@@ -25,6 +25,8 @@ module ToolboxProtocol : sig
     | Trivial
     | Unknown of string
 
+  val tlapm_obl_state_to_string : tlapm_obl_state -> string
+
   type tlapm_obligation = {
     id : int;
     loc : TlapmRange.t;

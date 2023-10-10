@@ -1,3 +1,5 @@
+(* cSpell:words cmdliner signum Open_wronly Open_creat *)
+
 open Cmdliner
 
 let transport_of_args tr_stdio tr_socket =
