@@ -13,6 +13,8 @@ module type Callbacks = sig
 
   val latest_diagnostics :
     cb_t -> LT.DocumentUri.t -> cb_t * (int * LT.Diagnostic.t list)
+
+  val diagnostic_source : string
 end
 
 module Make (CB : Callbacks) = struct
@@ -109,7 +111,7 @@ module Make (CB : Callbacks) = struct
              ~workDoneProgress:false ())
         ~diagnosticProvider:
           (`DiagnosticOptions
-            (DiagnosticOptions.create ~identifier:"TLAPM"
+            (DiagnosticOptions.create ~identifier:CB.diagnostic_source
                ~interFileDependencies:false ~workspaceDiagnostics:false
                ~workDoneProgress:false ()))
         ~codeActionProvider:
