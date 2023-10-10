@@ -14,6 +14,8 @@ module type Callbacks = sig
 
   val latest_diagnostics :
     cb_t -> LT.DocumentUri.t -> cb_t * (int * LT.Diagnostic.t list)
+
+  val diagnostic_source : string
 end
 
 module Make (CB : Callbacks) : sig

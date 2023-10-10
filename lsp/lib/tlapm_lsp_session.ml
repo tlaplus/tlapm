@@ -1,5 +1,7 @@
 (* cSpell:words sprintf *)
 
+let diagnostic_source = "TLAPM"
+
 module Docs = Tlapm_lsp_docs
 module Prover = Tlapm_lsp_prover
 
@@ -45,7 +47,8 @@ let make_diagnostics os ns =
       (fun (o : tlapm_obligation) ->
         Diagnostic.create ~message:"OBLIGATION"
           ~range:(Prover.TlapmRange.as_lsp_range o.loc)
-          ~severity:Lsp.Types.DiagnosticSeverity.Information ~source:"TLAPM" ())
+          ~severity:Lsp.Types.DiagnosticSeverity.Information
+          ~source:diagnostic_source ())
       os
   in
   let diagnostics_n =
@@ -59,7 +62,7 @@ let make_diagnostics os ns =
         Diagnostic.create
           ~message:(Format.sprintf "ERR: %s" n.msg)
           ~range:(Prover.TlapmRange.as_lsp_range n.loc)
-          ~severity ())
+          ~severity ~source:diagnostic_source ())
       ns
   in
   List.concat [ diagnostics_o; diagnostics_n ]
@@ -136,6 +139,8 @@ module PacketsCB = struct
     match proof_res_opt with
     | None -> (st, (0, []))
     | Some (p_ref, os, ns) -> (st, (p_ref, make_diagnostics os ns))
+
+  let diagnostic_source = diagnostic_source
 
   let%test_unit "basics" =
     Eio_main.run @@ fun env ->
