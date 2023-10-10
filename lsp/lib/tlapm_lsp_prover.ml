@@ -592,7 +592,8 @@ let%test_unit "parse-warning-loc" =
               ()
           | TlapmNotif { msg; loc; _ } ->
               failwith
-                (Format.sprintf "msg=%S, loc=%s" msg (TlapmRange.string_of_range loc))
+                (Format.sprintf "msg=%S, loc=%s" msg
+                   (TlapmRange.string_of_range loc))
           | _ -> failwith "unexpected msg2")
       | _ -> failwith "unexpected msg count")
   | _ -> failwith "unexpected parser state"
