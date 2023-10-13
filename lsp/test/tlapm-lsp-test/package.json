@@ -16,7 +16,7 @@
   "contributes": {
     "keybindings":[
       {
-        "command": "tlapm-lsp-test.prove-step",
+        "command": "tlaplus.tlaps.check-step",
         "key": "ctrl+g ctrl+g"
       }
     ],
@@ -27,7 +27,7 @@
         "when": "editorLangId == tlaplus"
       },
       {
-        "command": "tlapm-lsp-test.prove-step",
+        "command": "tlaplus.tlaps.check-step",
         "title": "TLAPM: Prove current step",
         "when": "editorLangId == tlaplus"
       }
