@@ -20,6 +20,9 @@ all: build
 opam-deps:
 	opam install ./ --deps-only --yes --working-dir
 
+opam-deps-dev:
+	opam install ocamlformat ocaml-lsp-server
+
 build:
 	dune build
 
