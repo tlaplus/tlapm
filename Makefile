@@ -21,10 +21,7 @@ opam-deps:
 	opam install ./ --deps-only --yes --working-dir
 
 opam-deps-opt:
-	opam install eio_main lsp --yes --working-dir
-
-opan-deps-dev:
-	opam install ocamlformat
+	opam install eio_main lsp --yes
 
 opam-deps-dev:
 	opam install ocamlformat ocaml-lsp-server
