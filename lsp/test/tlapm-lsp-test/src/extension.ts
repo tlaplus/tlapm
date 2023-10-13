@@ -10,9 +10,9 @@ export function activate(context: vscode.ExtensionContext) {
 
 	pocTestCases();
 
-	context.subscriptions.push(vscode.commands.registerTextEditorCommand('tlapm-lsp-test.prove-step', (te, ed, args) => {
-		console.log("CMD: tlapm-lsp-test.prove-step invoked.");
-		vscode.commands.executeCommand("tlapm-lsp-test.prove-step.lsp",
+	context.subscriptions.push(vscode.commands.registerTextEditorCommand('tlaplus.tlaps.check-step', (te, ed, args) => {
+		console.log("CMD: tlaplus.tlaps.check-step invoked.");
+		vscode.commands.executeCommand("tlaplus.tlaps.check-step.lsp",
 			{ uri: te.document.uri.toString(), version: te.document.version } as VersionedTextDocumentIdentifier,
 			{ start: te.selection.start, end: te.selection.end } as vscode.Range,
 		);

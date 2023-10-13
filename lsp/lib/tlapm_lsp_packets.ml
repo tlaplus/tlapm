@@ -1,4 +1,4 @@
-(* cSpell:words sprintf *)
+(* cSpell:words sprintf tlaplus *)
 module Docs = Tlapm_lsp_docs
 module LT = Lsp.Types
 
@@ -101,7 +101,7 @@ module Make (CB : Callbacks) = struct
     in
     print_ci params;
     let supported_commands =
-      [ "tlapm-lsp-test.prover-info"; "tlapm-lsp-test.prove-step.lsp" ]
+      [ "tlapm-lsp-test.prover-info"; "tlaplus.tlaps.check-step.lsp" ]
     in
     let capabilities =
       ServerCapabilities.create
@@ -159,12 +159,12 @@ module Make (CB : Callbacks) = struct
 
   (* Example request:
      {"jsonrpc":"2.0","id":6,"method":"workspace/executeCommand","params":{
-      "command":"tlapm-lsp-test.prove-step.lsp",
+      "command":"tlaplus.tlaps.check-step.lsp",
       "arguments":[
         {"uri":"file:///home/.../aaa.tla","version":1},
         {"start":{"line":2,"character":15},"end":{"line":2,"character":15}} ]}}
   *)
-  let handle_prove_step (jsonrpc_req : Jsonrpc.Request.t)
+  let handle_check_step (jsonrpc_req : Jsonrpc.Request.t)
       (params : LT.ExecuteCommandParams.t) cb_state =
     Eio.traceln "COMMAND: prove-step";
     match params.arguments with
@@ -188,8 +188,8 @@ module Make (CB : Callbacks) = struct
     | "tlapm-lsp-test.prover-info" ->
         Eio.traceln "COMMAND: prover-info";
         reply_ok jsonrpc_req (`String "OK") cb_state
-    | "tlapm-lsp-test.prove-step.lsp" ->
-        handle_prove_step jsonrpc_req params cb_state
+    | "tlaplus.tlaps.check-step.lsp" ->
+        handle_check_step jsonrpc_req params cb_state
     | unknown ->
         handle_jsonrpc_req_unknown jsonrpc_req
           (Printf.sprintf "command unknown: %s" unknown)
@@ -214,7 +214,7 @@ module Make (CB : Callbacks) = struct
       Lsp.Types.CodeAction.create ~title:"Prover code action"
         ~diagnostics:[ someActionDiag ]
         ~command:
-          (Command.create ~command:"tlapm-lsp-test.prove-step.lsp"
+          (Command.create ~command:"tlaplus.tlaps.check-step.lsp"
              ~title:"Prove it as an action!"
              ~arguments:[ `String "important_arg" ]
              ())
