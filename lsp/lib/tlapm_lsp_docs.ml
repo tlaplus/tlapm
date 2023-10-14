@@ -1,3 +1,5 @@
+(* cSpell:words printexc *)
+
 (* Max number of unprocessed/pending versions to keep. *)
 let keep_vsn_count = 50
 
@@ -28,6 +30,7 @@ type ta =
   | TA of {
       doc_vsn : tv;
       p_ref : int;
+      mule : (Tlapm_lib.Module.T.mule, exn) result option;
       nts : tlapm_notif list;
       obs : tlapm_obligation OblMap.t;
     }
@@ -85,7 +88,14 @@ let with_doc_vsn docs uri vsn f =
   | None -> (docs, None)
   | Some (TD ({ pending; actual; _ } as doc)) -> (
       let fresh_active (TV v) =
-        TA { doc_vsn = TV v; p_ref = 0; obs = OblMap.empty; nts = [] }
+        TA
+          {
+            doc_vsn = TV v;
+            p_ref = 0;
+            mule = None;
+            obs = OblMap.empty;
+            nts = [];
+          }
       in
       let merge_into (TV v) (TA a) =
         let (TV a_doc_vsn) = a.doc_vsn in
@@ -117,12 +127,62 @@ let with_doc_vsn docs uri vsn f =
           match selected with
           | None -> (docs, None)
           | Some selected ->
-              let act =
+              let (TA act') =
                 match actual with
                 | None -> fresh_active selected
                 | Some act -> merge_into selected act
               in
+              let act = TA { act' with mule = None } in
               with_actual (TD doc) uri docs f act pending))
+
+let analyze_mule (mule : Tlapm_lib.Module.T.mule) =
+  let open Tlapm_lib in
+  let mule_ = Property.unwrap mule in
+  let _ =
+    List.fold_left
+      (fun acc u ->
+        let open Tlapm_lib.Module.T in
+        match Property.unwrap u with
+        | Constants _ -> acc
+        | Recursives _ -> acc
+        | Variables _ -> acc
+        | Definition _ -> acc
+        | Axiom _ -> acc
+        | Theorem (name, _b, _c, _d, _e, _f) ->
+            (match name with
+            | None -> Eio.traceln "-----------> TH.name=None"
+            | Some n ->
+                Eio.traceln "-----------> TH.name=%s" (Property.unwrap n));
+            acc
+        | Submod _ -> acc
+        | Mutate _ -> acc
+        | Anoninst _ -> acc)
+      () mule_.body
+  in
+  ()
+
+let try_parse_anyway uri act =
+  let (TA a) = act in
+  let (TV v) = a.doc_vsn in
+  match
+    (* TODO: Call the parser under a mutex. *)
+    Tlapm_lib.module_of_string v.text (Lsp.Types.DocumentUri.to_path uri)
+  with
+  | mule ->
+      Eio.traceln "-----------> Document parsed";
+      analyze_mule mule;
+      (* TODO: Fix it. *)
+      TA { a with mule = Some (Ok mule) }
+  | exception e ->
+      (* TODO: Get the errors. *)
+      Eio.traceln "-----------> Document parsing failed: %s"
+        (Printexc.to_string e);
+      TA { a with mule = Some (Error e) }
+
+let try_parse uri act =
+  match act with
+  | TA { mule = None; _ } -> try_parse_anyway uri act
+  | TA { mule = Some _; _ } -> act
 
 let proof_res (TA a) =
   let obs_list = List.map snd (OblMap.to_list a.obs) in
@@ -131,11 +191,15 @@ let proof_res (TA a) =
 (* Push specific version to the actual, increase the proof_rec and clear the notifications. *)
 let prepare_proof docs uri vsn : t * (int * string * proof_res) option =
   with_doc_vsn docs uri vsn @@ fun (TD doc') (TA act') ->
-  let next_p_ref = doc'.last_p_ref + 1 in
-  let doc = TD { doc' with last_p_ref = next_p_ref } in
-  let act = TA { act' with p_ref = next_p_ref; nts = [] } in
-  let (TV doc_vsn') = act'.doc_vsn in
-  (doc, act, Some (next_p_ref, doc_vsn'.text, proof_res act))
+  let (TA act') = try_parse uri (TA act') in
+  match act'.mule with
+  | None | Some (Error _) -> (TD doc', TA act', None)
+  | Some (Ok _) ->
+      let next_p_ref = doc'.last_p_ref + 1 in
+      let doc = TD { doc' with last_p_ref = next_p_ref } in
+      let act = TA { act' with p_ref = next_p_ref; nts = [] } in
+      let (TV doc_vsn') = act'.doc_vsn in
+      (doc, act, Some (next_p_ref, doc_vsn'.text, proof_res act))
 
 let add_obl docs uri vsn p_ref (obl : tlapm_obligation) =
   with_doc_vsn docs uri vsn @@ fun (TD doc') (TA act') ->
@@ -158,7 +222,9 @@ let add_notif docs uri vsn p_ref notif =
   else (TD doc', TA act', None)
 
 let get_proof_res docs uri vsn =
-  with_doc_vsn docs uri vsn @@ fun doc act -> (doc, act, Some (proof_res act))
+  with_doc_vsn docs uri vsn @@ fun doc act ->
+  let act = try_parse uri act in
+  (doc, act, Some (proof_res act))
 
 let get_proof_res_latest docs uri =
   match latest_vsn docs uri with
