@@ -4,6 +4,8 @@
 
 module Module = Module
 module Property = Property
+module Util = Util
+module Loc = Loc
 
 val main : string list -> unit
 val init : unit -> unit

@@ -10,6 +10,8 @@ open Util.Coll
 module P = Tla_parser.P
 module Module = Module
 module Property = Property
+module Util = Util
+module Loc = Loc
 
 open Proof.T
 

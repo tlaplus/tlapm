@@ -127,18 +127,18 @@ module PacketsCB = struct
     Eio.traceln "PROVE_STEP: %s#%d lines %d--%d"
       (LT.DocumentUri.to_string uri)
       vsn range.start.line range.end_.line;
-    let docs, next_p_ref_opt = Docs.prepare_proof st.docs uri vsn in
+    let docs, next_p_ref_opt =
+      Docs.prepare_proof st.docs uri vsn (Prover.TlapmRange.of_lsp_range range)
+    in
     let st = { st with docs } in
     match next_p_ref_opt with
-    | Some (p_ref, doc_text, proof_res) -> (
+    | Some (p_ref, doc_text, p_range, proof_res) -> (
         send_diagnostics_if_changed st uri vsn (Some proof_res);
         let prov_events e =
           st.event_adder (TlapmEvent ((uri, vsn, p_ref), e))
         in
         match
-          Prover.start_async st.prov uri vsn doc_text
-            (Prover.TlapmRange.of_lsp_range range)
-            prov_events ()
+          Prover.start_async st.prov uri vsn doc_text p_range prov_events ()
         with
         | Ok prov' -> { st with prov = prov' }
         | Error msg ->

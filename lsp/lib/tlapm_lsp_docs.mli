@@ -1,6 +1,7 @@
 (** Here we maintain a list of documents and their revisions. *)
 
 open Tlapm_lsp_prover.ToolboxProtocol
+open Tlapm_lsp_prover
 
 type t
 (** A document store type. *)
@@ -20,7 +21,12 @@ val add : t -> tk -> int -> string -> t
 val rem : t -> tk -> t
 (** Remove a document with all its revisions. *)
 
-val prepare_proof : t -> tk -> int -> t * (int * string * proof_res) option
+val prepare_proof :
+  t ->
+  tk ->
+  int ->
+  TlapmRange.t ->
+  t * (int * string * TlapmRange.t * proof_res) option
 (** Increment the prover ref for the specified doc/vsn. *)
 
 val add_obl : t -> tk -> int -> int -> tlapm_obligation -> t * proof_res option

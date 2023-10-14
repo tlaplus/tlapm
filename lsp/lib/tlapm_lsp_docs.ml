@@ -36,10 +36,18 @@ module TA = struct
     mule : (Tlapm_lib.Module.T.mule, exn) result option;
     nts : tlapm_notif list;
     obs : tlapm_obligation OblMap.t;
+    thr : TlapmRange.t list; (* Theorem ranges. *)
   }
 
   let make tv =
-    { doc_vsn = tv; p_ref = 0; mule = None; obs = OblMap.empty; nts = [] }
+    {
+      doc_vsn = tv;
+      p_ref = 0;
+      mule = None;
+      nts = [];
+      obs = OblMap.empty;
+      thr = [];
+    }
 end
 
 (** Represents a document identified by its uri. It can contain multiple versions and all the related info. *)
@@ -134,31 +142,26 @@ let with_doc_vsn docs uri vsn f =
               let act = { act with mule = None } in
               with_actual doc uri docs f act pending))
 
-let analyze_mule (mule : Tlapm_lib.Module.T.mule) =
+let rec collect_thm_ranges ?(acc = []) (mule : Tlapm_lib.Module.T.mule) =
   let open Tlapm_lib in
+  let open Tlapm_lsp_prover in
   let mule_ = Property.unwrap mule in
-  let _ =
-    List.fold_left
-      (fun acc u ->
-        let open Tlapm_lib.Module.T in
-        match Property.unwrap u with
-        | Constants _ -> acc
-        | Recursives _ -> acc
-        | Variables _ -> acc
-        | Definition _ -> acc
-        | Axiom _ -> acc
-        | Theorem (name, _b, _c, _d, _e, _f) ->
-            (match name with
-            | None -> Eio.traceln "-----------> TH.name=None"
-            | Some n ->
-                Eio.traceln "-----------> TH.name=%s" (Property.unwrap n));
-            acc
-        | Submod _ -> acc
-        | Mutate _ -> acc
-        | Anoninst _ -> acc)
-      () mule_.body
-  in
-  ()
+  List.fold_left
+    (fun acc u ->
+      let open Tlapm_lib.Module.T in
+      match Property.unwrap u with
+      | Constants _ -> acc
+      | Recursives _ -> acc
+      | Variables _ -> acc
+      | Definition _ -> acc
+      | Axiom _ -> acc
+      | Theorem (_name, _sq, _naxs, _prf, _prf_orig, _sum) -> (
+          let r = TlapmRange.of_locus_opt (Util.query_locus u) in
+          match r with None -> acc | Some r -> r :: acc)
+      | Submod sm -> collect_thm_ranges ~acc sm
+      | Mutate _ -> acc
+      | Anoninst _ -> acc)
+    acc mule_.body
 
 let try_parse_anyway uri (act : TA.t) =
   let v = act.doc_vsn in
@@ -168,9 +171,8 @@ let try_parse_anyway uri (act : TA.t) =
   with
   | mule ->
       Eio.traceln "-----------> Document parsed";
-      analyze_mule mule;
-      (* TODO: Fix it. *)
-      { act with mule = Some (Ok mule) }
+      let thr = collect_thm_ranges mule in
+      { act with mule = Some (Ok mule); thr }
   | exception e ->
       (* TODO: Get the errors. *)
       Eio.traceln "-----------> Document parsing failed: %s"
@@ -187,7 +189,8 @@ let proof_res (act : TA.t) =
   (act.p_ref, obs_list, act.nts)
 
 (* Push specific version to the actual, increase the proof_rec and clear the notifications. *)
-let prepare_proof docs uri vsn : t * (int * string * proof_res) option =
+let prepare_proof docs uri vsn range :
+    t * (int * string * TlapmRange.t * proof_res) option =
   with_doc_vsn docs uri vsn @@ fun (doc : TD.t) (act : TA.t) ->
   let act = try_parse uri act in
   match act.mule with
@@ -196,13 +199,14 @@ let prepare_proof docs uri vsn : t * (int * string * proof_res) option =
       let next_p_ref = doc.last_p_ref + 1 in
       let doc = { doc with last_p_ref = next_p_ref } in
       let act = { act with p_ref = next_p_ref; nts = [] } in
-      (doc, act, Some (next_p_ref, act.doc_vsn.text, proof_res act))
+      let p_range = TlapmRange.covered_or_empty range act.thr in
+      (doc, act, Some (next_p_ref, act.doc_vsn.text, p_range, proof_res act))
 
 let add_obl docs uri vsn p_ref (obl : tlapm_obligation) =
   with_doc_vsn docs uri vsn @@ fun (doc : TD.t) (act : TA.t) ->
   if act.p_ref = p_ref then
     let drop_older_intersecting (o_pr, _o_id) (o : tlapm_obligation) =
-      o_pr = p_ref || not (TlapmRange.intersects obl.loc o.loc)
+      o_pr = p_ref || not (TlapmRange.lines_intersect obl.loc o.loc)
     in
     let obs = OblMap.add (p_ref, obl.id) obl act.obs in
     let obs = OblMap.filter drop_older_intersecting obs in
