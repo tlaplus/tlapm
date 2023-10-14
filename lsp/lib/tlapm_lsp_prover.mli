@@ -6,10 +6,13 @@ module TlapmRange : sig
 
   val as_lsp_range : t -> Lsp.Types.Range.t
   val of_lsp_range : Lsp.Types.Range.t -> t
+  val of_locus : Tlapm_lib.Loc.locus -> t option
+  val of_locus_opt : Tlapm_lib.Loc.locus option -> t option
   val string_of_range : t -> string
   val string_of_pos : p -> string
-  val intersects : t -> t -> bool
+  val lines_intersect : t -> t -> bool
   val before : p -> t -> bool
+  val covered_or_empty : t -> t list -> t
   val first_diff_pos : string -> string -> p
 end
 

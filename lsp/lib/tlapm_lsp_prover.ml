@@ -32,13 +32,27 @@ module TlapmRange = struct
         Some (R (f, t))
     | _ -> None
 
+  let of_locus (locus : Tlapm_lib.Loc.locus) =
+    match (locus.start, locus.stop) with
+    | Actual start_pt, Actual stop_pt ->
+        Some (R ((start_pt.line, start_pt.col), (stop_pt.line, stop_pt.col)))
+    | Dummy, _ | _, Dummy -> None
+
+  let of_locus_opt (locus : Tlapm_lib.Loc.locus option) =
+    match locus with None -> None | Some locus -> of_locus locus
+
   let string_of_range (R ((fl, fc), (tl, tc))) : string =
     Format.sprintf "%d:%d:%d:%d" fl fc tl tc
 
   let string_of_pos (P (l, c)) = Format.sprintf "%d:%d" l c
+
+  (* Where to show the location of error for which the location is unknown. *)
   let of_unknown = R ((1, 1), (1, 4))
 
-  let intersects a b =
+  (* To pass it to TLAPM for checking all the document. *)
+  let of_undefined = R ((0, 0), (0, 0))
+
+  let lines_intersect a b =
     let lfa = line_from a in
     let lta = line_till a in
     let lfb = line_from b in
@@ -49,6 +63,20 @@ module TlapmRange = struct
     match Stdlib.compare pl tl with
     | 0 -> Stdlib.compare pc tc < 0
     | l_diff -> l_diff < 0
+
+  let covered_or_empty q rs =
+    match List.filter (lines_intersect q) rs with
+    | [] -> of_undefined
+    | matching ->
+        List.fold_left
+          (fun acc m ->
+            let (R (acc_f, acc_t)) = acc in
+            let (R (m_f, m_t)) = m in
+            (* TODO: Calculate the characters as well. *)
+            let from = (min (fst acc_f) (fst m_f), 0) in
+            let till = (max (fst acc_t) (fst m_t), 0) in
+            R (from, till))
+          q matching
 
   let first_diff_pos a b =
     let len = min (String.length a) (String.length b) in
