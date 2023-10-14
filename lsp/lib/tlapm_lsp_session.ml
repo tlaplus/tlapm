@@ -62,10 +62,19 @@ let make_diagnostics os ns =
         let message =
           match o.obl with None -> message | Some obl -> message ^ "\n" ^ obl
         in
-        Diagnostic.create ~message
-          ~range:(Prover.TlapmRange.as_lsp_range o.loc)
-          ~severity:Lsp.Types.DiagnosticSeverity.Information
-          ~source:diagnostic_source ())
+        let severity =
+          match o.status with
+          | ToBeProved -> Lsp.Types.DiagnosticSeverity.Hint
+          | BeingProved -> Lsp.Types.DiagnosticSeverity.Hint
+          | Normalized -> Lsp.Types.DiagnosticSeverity.Hint
+          | Proved -> Lsp.Types.DiagnosticSeverity.Information
+          | Failed -> Lsp.Types.DiagnosticSeverity.Error
+          | Interrupted -> Lsp.Types.DiagnosticSeverity.Error
+          | Trivial -> Lsp.Types.DiagnosticSeverity.Information
+          | Unknown _ -> Lsp.Types.DiagnosticSeverity.Error
+        in
+        let range = Prover.TlapmRange.as_lsp_range o.loc in
+        Diagnostic.create ~message ~range ~severity ~source:diagnostic_source ())
       os
   in
   let diagnostics_n =
