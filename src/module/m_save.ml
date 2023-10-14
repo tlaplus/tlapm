@@ -43,12 +43,16 @@ let file_search' fh =
             Some fh
         else None
 
-let use_stdin_prop = Property.make "use_stdin"
+type module_content = Channel of in_channel | String of string | Filesystem
+
+let module_content_prop = Property.make "module_content"
 
 let file_search fh =
-    match Property.has fh use_stdin_prop with
-    | true -> Some fh
-    | false -> file_search' fh
+    match Property.query fh module_content_prop with
+    | Some (Channel _)
+    | Some (String _) -> Some fh
+    | Some Filesystem
+    | None -> file_search' fh
 
 
 let really_parse_file fn =
@@ -59,9 +63,11 @@ let really_parse_file fn =
             fn.core;
         failwith "Module.Parser.parse_file"
     | Some fn ->
-        let (flex, _) = match Property.has fn use_stdin_prop with
-            | true -> Alexer.lex_channel fn.core Stdlib.stdin
-            | false -> Alexer.lex fn.core
+        let (flex, _) = match Property.query fn module_content_prop with
+            | Some (Channel ch) -> Alexer.lex_channel fn.core ch
+            | Some (String str) -> Alexer.lex_string str
+            | Some Filesystem
+            | None -> Alexer.lex fn.core
         in
         let hparse = use parse in
         match P.run hparse ~init:Tla_parser.init ~source:flex with

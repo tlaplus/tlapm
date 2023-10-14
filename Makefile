@@ -21,10 +21,10 @@ opam-deps:
 	opam install ./ --deps-only --yes --working-dir
 
 opam-deps-opt:
-	opam install eio_main lsp --yes
+	opam install --yes eio_main lsp
 
 opam-deps-dev:
-	opam install ocamlformat ocaml-lsp-server
+	opam install --yes ocamlformat ocaml-lsp-server
 
 build:
 	dune build

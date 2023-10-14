@@ -8,6 +8,8 @@ open Util.Coll
 
 
 module P = Tla_parser.P
+module Module = Module
+module Property = Property
 
 open Proof.T
 
@@ -484,7 +486,7 @@ let read_new_modules mcx fs =
          This way the file passed explicitly will be read from stdin and all the files
          referenced from it will be searched in a file system, as usual. *)
       let hint = match !Params.use_stdin with
-      | true -> Property.assign hint Module.Save.use_stdin_prop ()
+      | true -> Property.assign hint Module.Save.module_content_prop (Module.Save.Channel Stdlib.stdin)
       | false -> hint
       in
       let mule =
@@ -591,3 +593,8 @@ let init () =
        end;
        exit 3
 
+let module_of_string (content : string) (fn : string) : Module.T.mule =
+    let hint = Util.locate fn Loc.unknown in
+    let hint = Property.assign hint Module.Save.module_content_prop (Module.Save.String content) in
+    let mule = Module.Save.parse_file ~clock:Clocks.parsing hint in
+    mule
