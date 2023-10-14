@@ -51,6 +51,8 @@ module ToolboxProtocol : sig
     url : string option;
   }
 
+  val notif_of_loc_msg : string option -> string -> tlapm_notif
+
   type tlapm_msg =
     | TlapmNotif of tlapm_notif
     | TlapmObligationsNumber of int

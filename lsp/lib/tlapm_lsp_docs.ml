@@ -1,7 +1,8 @@
-(* cSpell:words printexc recursives submod anoninst *)
+(* cSpell:words printexc recursives submod anoninst naxs *)
 
 (* Max number of unprocessed/pending versions to keep. *)
 let keep_vsn_count = 50
+let prover_mutex = Eio.Mutex.create ()
 
 module OblRef = struct
   type t = int * int
@@ -33,7 +34,7 @@ module TA = struct
   type t = {
     doc_vsn : TV.t;
     p_ref : int;
-    mule : (Tlapm_lib.Module.T.mule, exn) result option;
+    mule : (Tlapm_lib.Module.T.mule, unit) result option;
     nts : tlapm_notif list;
     obs : tlapm_obligation OblMap.t;
     thr : TlapmRange.t list; (* Theorem ranges. *)
@@ -163,21 +164,25 @@ let rec collect_thm_ranges ?(acc = []) (mule : Tlapm_lib.Module.T.mule) =
       | Anoninst _ -> acc)
     acc mule_.body
 
-let try_parse_anyway uri (act : TA.t) =
+let try_parse_anyway_locked uri (act : TA.t) =
   let v = act.doc_vsn in
   match
-    (* TODO: Call the parser under a mutex. *)
     Tlapm_lib.module_of_string v.text (Lsp.Types.DocumentUri.to_path uri)
   with
-  | mule ->
-      Eio.traceln "-----------> Document parsed";
+  | Ok mule ->
       let thr = collect_thm_ranges mule in
-      { act with mule = Some (Ok mule); thr }
-  | exception e ->
-      (* TODO: Get the errors. *)
-      Eio.traceln "-----------> Document parsing failed: %s"
-        (Printexc.to_string e);
-      { act with mule = Some (Error e) }
+      { act with mule = Some (Ok mule); thr; nts = [] }
+  | Error (loc_opt, msg) ->
+      {
+        act with
+        mule = Some (Error ());
+        thr = [];
+        nts = [ ToolboxProtocol.notif_of_loc_msg loc_opt msg ];
+      }
+
+let try_parse_anyway uri act =
+  Eio.Mutex.use_rw ~protect:true prover_mutex @@ fun () ->
+  try_parse_anyway_locked uri act
 
 let try_parse uri (act : TA.t) =
   match act with

@@ -275,6 +275,16 @@ module ToolboxProtocol = struct
         | Error _ -> guess_notif_loc' str others)
 
   let guess_notif_loc str = guess_notif_loc' str [ `A; `B; `C ]
+
+  let notif_of_loc_msg loc_opt msg =
+    let sev = TlapmNotifWarning in
+    let url = None in
+    match loc_opt with
+    | None -> { sev; loc = TlapmRange.of_unknown; msg; url }
+    | Some loc_str ->
+        let loc, _empty_msg = guess_notif_loc loc_str in
+        { sev; loc; msg; url }
+
   let parse_start = Empty
 
   let parse_line line acc stream =

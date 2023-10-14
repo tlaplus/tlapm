@@ -595,8 +595,17 @@ let init () =
        end;
        exit 3
 
-let module_of_string (content : string) (fn : string) : Module.T.mule =
+(* Access to this function has to be synchronized. *)
+let module_of_string (content : string) (fn : string) : (Module.T.mule, (string option* string)) result =
+    Errors.reset ();
     let hint = Util.locate fn Loc.unknown in
     let hint = Property.assign hint Module.Save.module_content_prop (Module.Save.String content) in
-    let mule = Module.Save.parse_file ~clock:Clocks.parsing hint in
-    mule
+    match Module.Save.parse_file ~clock:Clocks.parsing hint with
+    | mule ->
+        Ok mule
+    | exception e ->
+        (match !Errors.loc, !Errors.msg with
+         | Some l, Some m -> Error (Some l, m)
+         | None, Some m -> Error (None, m)
+         | Some l, None -> Error (Some l, Printexc.to_string e)
+         | None, None -> Error (None, Printexc.to_string e))
