@@ -16,3 +16,7 @@ See:
   - Dafny plugin. It shows all the obligations as testcases.
     <https://github.com/dafny-lang/ide-vscode>
     <https://github.com/dafny-lang/dafny/tree/master/Source/DafnyLanguageServer>
+  - VSCode Decorators: https://github.com/microsoft/vscode-extension-samples/blob/main/decorator-sample/README.md
+    https://vscode.rocks/decorations/
+    Gutter -- the left side of the editor.
+
