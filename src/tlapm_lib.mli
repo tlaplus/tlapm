@@ -4,6 +4,8 @@
 
 module Module = Module
 module Property = Property
+module Proof = Proof
+module Expr = Expr
 module Util = Util
 module Loc = Loc
 

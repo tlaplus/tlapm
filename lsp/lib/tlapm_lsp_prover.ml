@@ -10,14 +10,15 @@ module TlapmRange = struct
 
   let line_from (R ((fl, _), _)) = fl
   let line_till (R (_, (tl, _))) = tl
+  let from (R ((fl, fc), _)) = P (fl, fc)
+  let till (R (_, (tl, tc))) = P (tl, tc)
+  let p_add (P (l, c)) al ac = P (l + al, c + ac)
 
   let as_lsp_range (R ((fl, fc), (tl, tc))) =
     let open Lsp.Types in
     Range.create
       ~start:(Position.create ~line:(fl - 1) ~character:(fc - 1))
       ~end_:(Position.create ~line:(tl - 1) ~character:tc)
-
-  let of_lines fl tl = R ((fl, 1), (tl, 1))
 
   let of_lsp_range (range : Lsp.Types.Range.t) =
     let f = (range.start.line + 1, range.start.character + 1) in
@@ -28,18 +29,22 @@ module TlapmRange = struct
     match String.split_on_char ':' s with
     | [ fl; fc; tl; tc ] ->
         let f = (int_of_string fl, int_of_string fc) in
-        let t = (int_of_string tl, int_of_string tc) in
+        let t = (int_of_string tl, int_of_string tc - 1) in
         Some (R (f, t))
     | _ -> None
 
   let of_locus (locus : Tlapm_lib.Loc.locus) =
     match (locus.start, locus.stop) with
     | Actual start_pt, Actual stop_pt ->
-        Some (R ((start_pt.line, start_pt.col), (stop_pt.line, stop_pt.col)))
+        Some
+          (R ((start_pt.line, start_pt.col), (stop_pt.line, stop_pt.col - 1)))
     | Dummy, _ | _, Dummy -> None
 
   let of_locus_opt (locus : Tlapm_lib.Loc.locus option) =
     match locus with None -> None | Some locus -> of_locus locus
+
+  let of_lines fl tl = R ((fl, 1), (tl, 1))
+  let of_points (P (fl, fc)) (P (tl, tc)) = R ((fl, fc), (tl, tc))
 
   let string_of_range (R ((fl, fc), (tl, tc))) : string =
     Format.sprintf "%d:%d:%d:%d" fl fc tl tc

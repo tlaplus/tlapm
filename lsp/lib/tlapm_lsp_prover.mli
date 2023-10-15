@@ -4,10 +4,14 @@ module TlapmRange : sig
   type p
   type t
 
+  val from : t -> p
+  val till : t -> p
+  val p_add : p -> int -> int -> p
   val as_lsp_range : t -> Lsp.Types.Range.t
   val of_lsp_range : Lsp.Types.Range.t -> t
   val of_locus : Tlapm_lib.Loc.locus -> t option
   val of_locus_opt : Tlapm_lib.Loc.locus option -> t option
+  val of_points : p -> p -> t
   val string_of_range : t -> string
   val string_of_pos : p -> string
   val lines_intersect : t -> t -> bool

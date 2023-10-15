@@ -3,13 +3,20 @@
 open Tlapm_lsp_prover.ToolboxProtocol
 open Tlapm_lsp_prover
 
+module ProofStep : sig
+  type t
+
+  val yojson_of_t : t -> Yojson.Safe.t option
+end
+
 type t
 (** A document store type. *)
 
 type tk = Lsp.Types.DocumentUri.t
 (** Key type to identify documents. *)
 
-type proof_res = int * tlapm_obligation list * tlapm_notif list
+type proof_res =
+  int * tlapm_obligation list * tlapm_notif list * ProofStep.t list
 (** Result of an update, returns an actual list of obligations and errors. *)
 
 val empty : t
