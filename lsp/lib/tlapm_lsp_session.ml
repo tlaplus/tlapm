@@ -14,6 +14,7 @@ let diagnostic_source = "TLAPM"
 
 module Docs = Tlapm_lsp_docs
 module Prover = Tlapm_lsp_prover
+module LspT = Lsp.Types
 
 (* A reference to a doc_uri * version * prover launch counter. *)
 type doc_ref = Lsp.Types.DocumentUri.t * int * int
@@ -104,13 +105,35 @@ let send_diagnostics st uri vsn os ns =
   in
   st.output_adder (Some d_pkg)
 
-let send_diagnostics_if_changed st uri vsn res =
+let send_proof_state_markers st uri pss =
+  let jsonrpc_notif =
+    Jsonrpc.Notification.create
+      ~params:
+        (`List
+          [
+            LspT.DocumentUri.yojson_of_t uri;
+            `List
+              (List.filter_map
+                 (fun ps -> ps)
+                 (List.map Docs.ProofStep.yojson_of_t pss));
+          ])
+      ~method_:"tlaplus/tlaps/proofStates" ()
+  in
+  let lsp_notif = Lsp.Server_notification.UnknownNotification jsonrpc_notif in
+  let lsp_packet =
+    Jsonrpc.Packet.Notification (Lsp.Server_notification.to_jsonrpc lsp_notif)
+  in
+  st.output_adder (Some lsp_packet)
+
+let send_proof_info st uri vsn res =
   match res with
-  | Some (_id, os, ns) -> send_diagnostics st uri vsn os ns
+  | Some (_id, os, ns, pss) ->
+      send_diagnostics st uri vsn os ns;
+      send_proof_state_markers st uri pss
   | None -> ()
 
 module PacketsCB = struct
-  module LT = Lsp.Types
+  module LspT = Lsp.Types
 
   type cb_t = t
 
@@ -132,9 +155,10 @@ module PacketsCB = struct
 
   let with_docs = with_docs
 
-  let prove_step st (uri : LT.DocumentUri.t) (vsn : int) (range : LT.Range.t) =
+  let prove_step st (uri : LspT.DocumentUri.t) (vsn : int)
+      (range : LspT.Range.t) =
     Eio.traceln "PROVE_STEP: %s#%d lines %d--%d"
-      (LT.DocumentUri.to_string uri)
+      (LspT.DocumentUri.to_string uri)
       vsn range.start.line range.end_.line;
     let docs, next_p_ref_opt =
       Docs.prepare_proof st.docs uri vsn (Prover.TlapmRange.of_lsp_range range)
@@ -142,7 +166,7 @@ module PacketsCB = struct
     let st = { st with docs } in
     match next_p_ref_opt with
     | Some (p_ref, doc_text, p_range, proof_res) -> (
-        send_diagnostics_if_changed st uri vsn (Some proof_res);
+        send_proof_info st uri vsn (Some proof_res);
         let prov_events e =
           st.event_adder (TlapmEvent ((uri, vsn, p_ref), e))
         in
@@ -158,22 +182,13 @@ module PacketsCB = struct
         st
 
   let latest_diagnostics st uri =
-    Eio.traceln "PULL_DIAGS: %s" (LT.DocumentUri.to_string uri);
+    Eio.traceln "PULL_DIAGS: %s" (LspT.DocumentUri.to_string uri);
     let docs, vsn_opt, proof_res_opt = Docs.get_proof_res_latest st.docs uri in
     let st = { st with docs } in
-    (* Clear the the diagnostics sent by the server, otherwise
-       they will be duplicated with the response to this one.
-       TODO: That's probably wrong place for doing that.
-       TODO: The diagnostics are still duplicated in some cases,
-             e.g. when pull is done and then the same obl proved by command.
-       TODO: Maybe we should reply here with an empty response, but resend
-             the server-sent notification.
-    *)
-    (* send_diagnostics st uri 0 [] []; *)
     (match (vsn_opt, proof_res_opt) with
-    | None, _ -> send_diagnostics st uri 0 [] []
-    | Some vsn, None -> send_diagnostics st uri vsn [] []
-    | Some vsn, Some (_p_ref, os, ns) -> send_diagnostics st uri vsn os ns);
+    | None, _ -> send_proof_info st uri 0 (Some (0, [], [], []))
+    | Some vsn, None -> send_proof_info st uri vsn (Some (0, [], [], []))
+    | Some vsn, Some p_res -> send_proof_info st uri vsn (Some p_res));
     (st, (0, []))
 
   let diagnostic_source = diagnostic_source
@@ -227,7 +242,7 @@ let handle_tlapm_msg ((uri, vsn, p_ref) : doc_ref) msg st =
   | TlapmNotif notif ->
       Eio.traceln "---> TlapmNotif: %s" notif.msg;
       let docs, res = Docs.add_notif st.docs uri vsn p_ref notif in
-      send_diagnostics_if_changed st uri vsn res;
+      send_proof_info st uri vsn res;
       Some { st with docs }
   | TlapmObligationsNumber _ ->
       (* TODO: Implement. *)
@@ -236,7 +251,7 @@ let handle_tlapm_msg ((uri, vsn, p_ref) : doc_ref) msg st =
   | TlapmObligation obl ->
       Eio.traceln "---> TlapmObligation, id=%d" obl.id;
       let docs, res = Docs.add_obl st.docs uri vsn p_ref obl in
-      send_diagnostics_if_changed st uri vsn res;
+      send_proof_info st uri vsn res;
       Some { st with docs }
   | TlapmTerminated ->
       (* TODO: Implement: mark revision unused? *)

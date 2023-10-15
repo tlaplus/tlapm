@@ -1,6 +1,5 @@
-(* cSpell:words sprintf tlaplus *)
 module Docs = Tlapm_lsp_docs
-module LT = Lsp.Types
+module LspT = Lsp.Types
 
 module type Callbacks = sig
   type cb_t
@@ -9,10 +8,10 @@ module type Callbacks = sig
   val shutdown : cb_t -> cb_t
   val lsp_send : cb_t -> Jsonrpc.Packet.t -> cb_t
   val with_docs : cb_t -> (cb_t * Docs.t -> cb_t * Docs.t) -> cb_t
-  val prove_step : cb_t -> LT.DocumentUri.t -> int -> LT.Range.t -> cb_t
+  val prove_step : cb_t -> LspT.DocumentUri.t -> int -> LspT.Range.t -> cb_t
 
   val latest_diagnostics :
-    cb_t -> LT.DocumentUri.t -> cb_t * (int * LT.Diagnostic.t list)
+    cb_t -> LspT.DocumentUri.t -> cb_t * (int * LspT.Diagnostic.t list)
 
   val diagnostic_source : string
 end
@@ -138,16 +137,19 @@ module Make (CB : Callbacks) = struct
     Eio.traceln "CONN: Shutdown";
     CB.shutdown cb_state
 
-  (* TODO: It looks like VSCode don't update the diagnostics. *)
+  (* It looks like VSCode treats the diagnostics returned in response to this call
+     as different from those pushed by the server using notifications. To avoid
+     duplicated diagnostics we respond always to this request with an empty set,
+     and update the diagnostics by sending asynchronous notification. *)
   let handle_jsonrpc_req_diagnostics (jsonrpc_req : Jsonrpc.Request.t) uri
       cb_state =
     let cb_state, (p_ref, items) = CB.latest_diagnostics cb_state uri in
     let report =
-      LT.FullDocumentDiagnosticReport.create ~items
+      LspT.FullDocumentDiagnosticReport.create ~items
         ~resultId:(string_of_int p_ref) ()
     in
     reply_ok jsonrpc_req
-      (LT.FullDocumentDiagnosticReport.yojson_of_t report)
+      (LspT.FullDocumentDiagnosticReport.yojson_of_t report)
       cb_state
 
   let handle_jsonrpc_req_unknown (jsonrpc_req : Jsonrpc.Request.t) message
@@ -165,14 +167,14 @@ module Make (CB : Callbacks) = struct
         {"start":{"line":2,"character":15},"end":{"line":2,"character":15}} ]}}
   *)
   let handle_check_step (jsonrpc_req : Jsonrpc.Request.t)
-      (params : LT.ExecuteCommandParams.t) cb_state =
+      (params : LspT.ExecuteCommandParams.t) cb_state =
     Eio.traceln "COMMAND: prove-step";
     match params.arguments with
     | Some [ uri_vsn_arg; range_arg ] ->
         let uri_vsn =
-          LT.VersionedTextDocumentIdentifier.t_of_yojson uri_vsn_arg
+          LspT.VersionedTextDocumentIdentifier.t_of_yojson uri_vsn_arg
         in
-        let range = LT.Range.t_of_yojson range_arg in
+        let range = LspT.Range.t_of_yojson range_arg in
         CB.prove_step cb_state uri_vsn.uri uri_vsn.version range
     | Some _ ->
         reply_error jsonrpc_req Jsonrpc.Response.Error.Code.InvalidParams
@@ -228,37 +230,6 @@ module Make (CB : Callbacks) = struct
     (* TODO: Actually resolve the code actions. *)
     reply_ok jsonrpc_req (`String "OK") cb_state
 
-  (* TODO: Thats experiment. *)
-  let tmp_send_proof_state (cb_state : CB.cb_t) uri =
-    let range =
-      LT.Range.create
-        ~start:(LT.Position.create ~line:1 ~character:3)
-        ~end_:(LT.Position.create ~line:2 ~character:5)
-    in
-    let jrn =
-      Jsonrpc.Notification.create
-        ~params:
-          (`List
-            [
-              LT.DocumentUri.yojson_of_t uri;
-              `List
-                [
-                  `Assoc
-                    [
-                      ("range", LT.Range.yojson_of_t range);
-                      ("state", `String "proved");
-                      ("hover", `String "Congrats!");
-                    ];
-                ];
-            ])
-        ~method_:"tlaplus/tlaps/proofStates" ()
-    in
-    let ntf = Lsp.Server_notification.UnknownNotification jrn in
-    let pkt =
-      Jsonrpc.Packet.Notification (Lsp.Server_notification.to_jsonrpc ntf)
-    in
-    CB.lsp_send cb_state pkt
-
   (** Dispatch request packets. *)
   let handle_jsonrpc_request (jsonrpc_req : Jsonrpc.Request.t) cb_state =
     let open Lsp.Types in
@@ -281,10 +252,7 @@ module Make (CB : Callbacks) = struct
                 | `Assoc xs ->
                     let text_doc_js = List.assoc "textDocument" xs in
                     let text_doc_id =
-                      LT.TextDocumentIdentifier.t_of_yojson text_doc_js
-                    in
-                    let cb_state =
-                      tmp_send_proof_state cb_state text_doc_id.uri
+                      LspT.TextDocumentIdentifier.t_of_yojson text_doc_js
                     in
                     handle_jsonrpc_req_diagnostics jsonrpc_req text_doc_id.uri
                       cb_state
