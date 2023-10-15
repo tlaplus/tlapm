@@ -228,6 +228,37 @@ module Make (CB : Callbacks) = struct
     (* TODO: Actually resolve the code actions. *)
     reply_ok jsonrpc_req (`String "OK") cb_state
 
+  (* TODO: Thats experiment. *)
+  let tmp_send_proof_state (cb_state : CB.cb_t) uri =
+    let range =
+      LT.Range.create
+        ~start:(LT.Position.create ~line:1 ~character:3)
+        ~end_:(LT.Position.create ~line:2 ~character:5)
+    in
+    let jrn =
+      Jsonrpc.Notification.create
+        ~params:
+          (`List
+            [
+              LT.DocumentUri.yojson_of_t uri;
+              `List
+                [
+                  `Assoc
+                    [
+                      ("range", LT.Range.yojson_of_t range);
+                      ("state", `String "proved");
+                      ("hover", `String "Congrats!");
+                    ];
+                ];
+            ])
+        ~method_:"tlaplus/tlaps/proofStates" ()
+    in
+    let ntf = Lsp.Server_notification.UnknownNotification jrn in
+    let pkt =
+      Jsonrpc.Packet.Notification (Lsp.Server_notification.to_jsonrpc ntf)
+    in
+    CB.lsp_send cb_state pkt
+
   (** Dispatch request packets. *)
   let handle_jsonrpc_request (jsonrpc_req : Jsonrpc.Request.t) cb_state =
     let open Lsp.Types in
@@ -251,6 +282,9 @@ module Make (CB : Callbacks) = struct
                     let text_doc_js = List.assoc "textDocument" xs in
                     let text_doc_id =
                       LT.TextDocumentIdentifier.t_of_yojson text_doc_js
+                    in
+                    let cb_state =
+                      tmp_send_proof_state cb_state text_doc_id.uri
                     in
                     handle_jsonrpc_req_diagnostics jsonrpc_req text_doc_id.uri
                       cb_state
