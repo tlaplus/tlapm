@@ -1,15 +1,3 @@
-(* cSpell:words sprintf *)
-
-(* TODO: Notes on the presentation.
-   See DocumentHighlight -- <https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#documentHighlightOptions>
-   Also:
-     - executeCommandProvider
-     - diagnosticProvider (why the diagnostics are not cleared?)
-     - semanticTokens?
-         <https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#semanticTokensClientCapabilities>
-         <https://microsoft.github.io/language-server-protocol/specifications/lsp/3.17/specification/#textDocument_semanticTokens>
-*)
-
 let diagnostic_source = "TLAPM"
 
 module Docs = Tlapm_lsp_docs
@@ -115,7 +103,7 @@ let send_proof_state_markers st uri pss =
             `List
               (List.filter_map
                  (fun ps -> ps)
-                 (List.map Docs.ProofStep.yojson_of_t pss));
+                 (List.map Docs.PS.yojson_of_t pss));
           ])
       ~method_:"tlaplus/tlaps/proofStates" ()
   in

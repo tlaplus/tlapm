@@ -1,4 +1,4 @@
-(* cSpell:words printexc recursives submod anoninst naxs pcase *)
+(* cSpell:words recursives submod anoninst naxs pcase *)
 
 (* Max number of unprocessed/pending versions to keep. *)
 let keep_vsn_count = 50
@@ -12,14 +12,23 @@ module OblRef = struct
     if p_ref_cmp = 0 then Stdlib.compare obl_id_a obl_id_b else p_ref_cmp
 end
 
-module DocMap = Map.Make (Lsp.Types.DocumentUri)
-module OblMap = Map.Make (OblRef)
 module LspT = Lsp.Types
+module DocMap = Map.Make (LspT.DocumentUri)
+module OblMap = Map.Make (OblRef)
 open Tlapm_lsp_prover
 open Tlapm_lsp_prover.ToolboxProtocol
 
 (* Proof step, as it is displayed in the editor. *)
-module ProofStep = struct
+module PS : sig
+  type t
+
+  val of_module : Tlapm_lib.Module.T.mule -> t list
+  val with_tlapm_obligation : t list -> tlapm_obligation -> t list
+  val with_tlapm_obligations : t list -> tlapm_obligation OblMap.t -> t list
+  val locate_proof_range : t list -> TlapmRange.t -> TlapmRange.t
+  val flatten : t list -> t list
+  val yojson_of_t : t -> Yojson.Safe.t option
+end = struct
   type s = Proved | Failed | Omitted | Missing | Pending | Progress
 
   let s_of_tlapm_obl_state = function
@@ -106,8 +115,6 @@ module ProofStep = struct
   let q_range prop = TlapmRange.of_locus_opt (Tlapm_lib.Util.query_locus prop)
 
   let rec of_provable stm_range seq_range (proof : Tlapm_lib.Proof.T.proof) =
-    (* let seq_range = q_range sequent.active in *)
-    (* TODO: Consider the obligation loc. *)
     let sub, min_st, obl_loc = of_proof proof in
     let hdr_loc =
       match (stm_range, seq_range) with
@@ -157,27 +164,16 @@ module ProofStep = struct
     | Proof.T.Forget _ -> []
 
   and of_qed_step (qed_step : Tlapm_lib.Proof.T.qed_step) =
-    let loc = q_range qed_step in
-    let hdr_loc =
-      match loc with
-      | Some loc ->
-          let loc_from = TlapmRange.from loc in
-          let loc_till = TlapmRange.p_add loc_from 0 (String.length "QED") in
-          Some (TlapmRange.of_points loc_from loc_till)
-      | None -> None
-    in
     match Tlapm_lib.Property.unwrap qed_step with
     | Tlapm_lib.Proof.T.Qed proof ->
-        (* TODO: QED has no locus, for some reason. Try to take proof loc at least. *)
-        let hdr_loc =
-          match hdr_loc with
-          | None -> q_range proof
-          | Some hdr_loc -> Some hdr_loc
-        in
-        let sub, state, obl_loc = of_proof proof in
-        [ { loc; hdr_loc; obl_loc; state; sub } ]
+        let open Tlapm_lib in
+        let qed_loc = Property.query qed_step Proof.Parser.qed_loc_prop in
+        let qed_range = TlapmRange.of_locus_opt qed_loc in
+        [ of_provable (q_range qed_step) qed_range proof ]
 
-  and of_module ?(acc = []) (mule : Tlapm_lib.Module.T.mule) =
+  and of_module (mule : Tlapm_lib.Module.T.mule) = of_module_rec ~acc:[] mule
+
+  and of_module_rec ?(acc = []) (mule : Tlapm_lib.Module.T.mule) =
     let open Tlapm_lib in
     let mule_ = Property.unwrap mule in
     List.fold_left
@@ -192,7 +188,7 @@ module ProofStep = struct
         | Theorem (_name, sq, _naxs, prf, _prf_orig, _sum) ->
             let ps = of_provable (q_range mod_unit) (q_range sq.active) prf in
             ps :: acc
-        | Submod sm -> of_module ~acc sm
+        | Submod sm -> of_module_rec ~acc sm
         | Mutate _ -> acc
         | Anoninst _ -> acc)
       acc mule_.body
@@ -217,29 +213,76 @@ module ProofStep = struct
           else with_opt_min_s ps sub_min_s
     in
     List.map upd pss
+
+  let with_tlapm_obligations (pss : t list) (obs : tlapm_obligation OblMap.t) =
+    OblMap.fold (fun _ ob pss -> with_tlapm_obligation pss ob) obs pss
+
+  let locate_proof_range (pss : t list) (input : TlapmRange.t) : TlapmRange.t =
+    let rec collect pss =
+      List.flatten
+        (List.filter_map
+           (fun ps ->
+             match ps.loc with
+             | None -> None
+             | Some ps_loc -> (
+                 match TlapmRange.lines_intersect ps_loc input with
+                 | true -> (
+                     match collect ps.sub with
+                     | [] -> Some [ ps_loc ]
+                     | sub_locs -> Some sub_locs)
+                 | false -> None))
+           pss)
+    in
+    let pss_locs = collect pss in
+    TlapmRange.covered_or_empty input pss_locs
 end
+
+type proof_res = int * tlapm_obligation list * tlapm_notif list * PS.t list
 
 (** Versions that are collected after the last prover launch or client
     asks for diagnostics. We store some limited number of versions here,
     just to cope with async events from the client. *)
-module TV = struct
+module TV : sig
+  type t
+
+  val make : string -> int -> t
+  val text : t -> string
+  val version : t -> int
+  val diff_pos : t -> t -> TlapmRange.p
+end = struct
   type t = {
     text : string; (* Contents if the file at the specific version. *)
     version : int;
   }
 
   let make txt vsn = { text = txt; version = vsn }
+  let text tv = tv.text
+  let version tv = tv.version
+  let diff_pos a b = TlapmRange.first_diff_pos a.text b.text
 end
 
 (** Actual state of the document. *)
-module TA = struct
+module TA : sig
+  type t
+
+  val make : TV.t -> t
+  val vsn : t -> int
+  val text : t -> string
+  val merge_into : t -> TV.t -> t
+  val try_parse : t -> LspT.DocumentUri.t -> t
+  val proof_res : t -> proof_res
+  val prepare_proof : t -> LspT.DocumentUri.t -> int -> t option
+  val locate_proof_range : t -> TlapmRange.t -> TlapmRange.t
+  val add_obl : t -> int -> tlapm_obligation -> t option
+  val add_notif : t -> int -> tlapm_notif -> t option
+end = struct
   type t = {
     doc_vsn : TV.t;
     p_ref : int;
     mule : (Tlapm_lib.Module.T.mule, unit) result option;
     nts : tlapm_notif list;
     obs : tlapm_obligation OblMap.t;
-    pss : ProofStep.t list;
+    pss : PS.t list;
   }
 
   let make tv =
@@ -251,37 +294,147 @@ module TA = struct
       obs = OblMap.empty;
       pss = [];
     }
+
+  let vsn act = TV.version act.doc_vsn
+  let text act = TV.text act.doc_vsn
+
+  let merge_into (act : t) (v : TV.t) =
+    let diff_pos = TV.diff_pos act.doc_vsn v in
+    let before_change loc = not (TlapmRange.before diff_pos loc) in
+    let obs =
+      OblMap.filter
+        (fun _ (o : tlapm_obligation) -> before_change o.loc)
+        act.obs
+    in
+    let nts =
+      List.filter (fun (n : tlapm_notif) -> before_change n.loc) act.nts
+    in
+    { act with doc_vsn = v; mule = None; obs; nts; pss = [] }
+
+  let try_parse_anyway_locked uri (act : t) =
+    let v = act.doc_vsn in
+    match
+      Tlapm_lib.module_of_string (TV.text v) (LspT.DocumentUri.to_path uri)
+    with
+    | Ok mule ->
+        let pss = PS.of_module mule in
+        let pss = PS.with_tlapm_obligations pss act.obs in
+        { act with mule = Some (Ok mule); pss; nts = [] }
+    | Error (loc_opt, msg) ->
+        {
+          act with
+          mule = Some (Error ());
+          nts = [ ToolboxProtocol.notif_of_loc_msg loc_opt msg ];
+        }
+
+  let try_parse_anyway uri act =
+    Eio.Mutex.use_rw ~protect:true prover_mutex @@ fun () ->
+    try_parse_anyway_locked uri act
+
+  let try_parse (act : t) uri =
+    match act with
+    | { mule = None; _ } -> try_parse_anyway uri act
+    | { mule = Some _; _ } -> act
+
+  let proof_res (act : t) =
+    let obs_list = List.map snd (OblMap.to_list act.obs) in
+    (act.p_ref, obs_list, act.nts, PS.flatten act.pss)
+
+  let prepare_proof (act : t) uri next_p_ref =
+    let act = try_parse act uri in
+    match act.mule with
+    | None | Some (Error ()) -> None
+    | Some (Ok _mule) -> Some { act with p_ref = next_p_ref; nts = [] }
+
+  let locate_proof_range act range = PS.locate_proof_range act.pss range
+
+  let add_obl (act : t) (p_ref : int) (obl : tlapm_obligation) =
+    if act.p_ref = p_ref then
+      let drop_older_intersecting (o_pr, _o_id) (o : tlapm_obligation) =
+        o_pr = p_ref || not (TlapmRange.lines_intersect obl.loc o.loc)
+      in
+      let obs = OblMap.add (p_ref, obl.id) obl act.obs in
+      let obs = OblMap.filter drop_older_intersecting obs in
+      let pss = PS.with_tlapm_obligation act.pss obl in
+      Some { act with obs; pss }
+    else None
+
+  let add_notif (act : t) p_ref notif =
+    if act.p_ref = p_ref then
+      let nts = notif :: act.nts in
+      Some { act with nts; obs = OblMap.empty }
+    else None
 end
 
 (** Represents a document identified by its uri. It can contain multiple versions and all the related info. *)
-module TD = struct
+module TD : sig
+  type t
+
+  val make : TV.t -> t
+  val add : t -> TV.t -> t
+  val latest_vsn : t -> int
+  val set_actual_vsn : t -> int -> t option
+  val with_actual : t -> (t -> TA.t -> t * TA.t * 'a) -> t * 'a
+  val next_p_ref : t -> t * int
+end = struct
   type t = {
     pending : TV.t list; (* All the received but not yet processed versions. *)
-    actual : TA.t option; (* Already processed version. *)
+    actual : TA.t; (* Already processed version. *)
     last_p_ref : int; (* Counter for the proof runs. *)
   }
 
-  let make tv = { pending = [ tv ]; actual = None; last_p_ref = 0 }
+  let make tv = { pending = []; actual = TA.make tv; last_p_ref = 0 }
+
+  let add doc tv =
+    let drop_till = TV.version tv - keep_vsn_count in
+    let drop_unused = List.filter (fun pv -> TV.version pv < drop_till) in
+    { doc with pending = tv :: drop_unused doc.pending }
+
+  let latest_vsn doc =
+    match doc.pending with
+    | [] -> TA.vsn doc.actual
+    | latest :: _ -> TV.version latest
+
+  let set_actual_vsn doc vsn =
+    if TA.vsn doc.actual = vsn then Some doc
+    else
+      let rec drop_after_vsn = function
+        | [] -> (None, [])
+        | (pv : TV.t) :: pvs ->
+            if TV.version pv = vsn then (Some pv, [])
+            else
+              let res, pvs = drop_after_vsn pvs in
+              (res, pv :: pvs)
+      in
+      let selected, pending = drop_after_vsn doc.pending in
+      match selected with
+      | None -> None
+      | Some selected ->
+          let actual = TA.merge_into doc.actual selected in
+          Some { doc with actual; pending }
+
+  let with_actual doc f =
+    let doc, act, res = f doc doc.actual in
+    let doc = { doc with actual = act } in
+    (doc, res)
+
+  let next_p_ref doc =
+    let next = doc.last_p_ref + 1 in
+    ({ doc with last_p_ref = next }, next)
 end
 
-type tk = Lsp.Types.DocumentUri.t
+type tk = LspT.DocumentUri.t
 type t = TD.t DocMap.t
-
-type proof_res =
-  int * tlapm_obligation list * tlapm_notif list * ProofStep.t list
 
 let empty = DocMap.empty
 
 (* Just record the text. It will be processed later, when a prover
    command or diagnostics query is issued by the client. *)
 let add docs uri vsn txt =
-  let rev = TV.make txt vsn in
-  let drop_unused =
-    List.filter (fun (pv : TV.t) -> pv.version < vsn - keep_vsn_count)
-  in
+  let tv = TV.make txt vsn in
   let upd = function
-    | None -> Some (TD.make rev)
-    | Some (d : TD.t) -> Some { d with pending = rev :: drop_unused d.pending }
+    | None -> Some (TD.make tv)
+    | Some (doc : TD.t) -> Some (TD.add doc tv)
   in
   DocMap.update uri upd docs
 
@@ -290,139 +443,49 @@ let rem docs uri = DocMap.remove uri docs
 let latest_vsn docs uri =
   match DocMap.find_opt uri docs with
   | None -> None
-  | Some TD.{ actual; pending = []; _ } -> (
-      match actual with
-      | Some { doc_vsn; _ } -> Some doc_vsn.version
-      | None -> None)
-  | Some TD.{ pending = dv :: _; _ } -> Some dv.version
-
-let with_actual doc uri docs f act pending =
-  let doc = TD.{ doc with pending; actual = Some act } in
-  let doc, act, res = f doc act in
-  let doc = TD.{ doc with actual = Some act } in
-  let docs = DocMap.add uri doc docs in
-  (docs, res)
+  | Some doc -> Some (TD.latest_vsn doc)
 
 (* Here we merge pending versions with the actual and then run
    the supplied function on the prepared doc info. *)
 let with_doc_vsn docs uri vsn f =
   match DocMap.find_opt uri docs with
   | None -> (docs, None)
-  | Some (TD.{ pending; actual; _ } as doc) -> (
-      let fresh_active v = TA.make v in
-      let merge_into (v : TV.t) (a : TA.t) =
-        let diff_pos = TlapmRange.first_diff_pos a.doc_vsn.text v.text in
-        let before_change loc = not (TlapmRange.before diff_pos loc) in
-        let obs =
-          OblMap.filter
-            (fun _ (o : tlapm_obligation) -> before_change o.loc)
-            a.obs
-        in
-        let nts =
-          List.filter (fun (n : tlapm_notif) -> before_change n.loc) a.nts
-        in
-        { a with doc_vsn = v; obs; nts }
-      in
-      let rec drop_after_vsn = function
-        | [] -> (None, [])
-        | (pv : TV.t) :: pvs ->
-            if pv.version = vsn then (Some pv, [])
-            else
-              let res, pvs = drop_after_vsn pvs in
-              (res, pv :: pvs)
-      in
-      match actual with
-      | Some ({ doc_vsn = adv; _ } as actual) when adv.version = vsn ->
-          with_actual doc uri docs f actual pending
-      | _ -> (
-          let selected, pending = drop_after_vsn pending in
-          match selected with
-          | None -> (docs, None)
-          | Some selected ->
-              let act =
-                match actual with
-                | None -> fresh_active selected
-                | Some act -> merge_into selected act
-              in
-              let act = { act with mule = None } in
-              with_actual doc uri docs f act pending))
-
-let try_parse_anyway_locked uri (act : TA.t) =
-  let v = act.doc_vsn in
-  match
-    Tlapm_lib.module_of_string v.text (Lsp.Types.DocumentUri.to_path uri)
-  with
-  | Ok mule ->
-      let pss = ProofStep.of_module mule in
-      let pss =
-        (* Apply retained obligation states. *)
-        OblMap.fold
-          (fun _ ob pss -> ProofStep.with_tlapm_obligation pss ob)
-          act.obs pss
-      in
-      { act with mule = Some (Ok mule); pss; nts = [] }
-  | Error (loc_opt, msg) ->
-      {
-        act with
-        mule = Some (Error ());
-        nts = [ ToolboxProtocol.notif_of_loc_msg loc_opt msg ];
-      }
-
-let try_parse_anyway uri act =
-  Eio.Mutex.use_rw ~protect:true prover_mutex @@ fun () ->
-  try_parse_anyway_locked uri act
-
-let try_parse uri (act : TA.t) =
-  match act with
-  | { mule = None; _ } -> try_parse_anyway uri act
-  | { mule = Some _; _ } -> act
-
-let proof_res (act : TA.t) =
-  let obs_list = List.map snd (OblMap.to_list act.obs) in
-  (act.p_ref, obs_list, act.nts, ProofStep.flatten act.pss)
+  | Some doc -> (
+      match TD.set_actual_vsn doc vsn with
+      | None -> (docs, None)
+      | Some doc ->
+          let doc, res = TD.with_actual doc f in
+          let docs = DocMap.add uri doc docs in
+          (docs, res))
 
 (* Push specific version to the actual, increase the proof_rec and clear the notifications. *)
 let prepare_proof docs uri vsn range :
     t * (int * string * TlapmRange.t * proof_res) option =
   with_doc_vsn docs uri vsn @@ fun (doc : TD.t) (act : TA.t) ->
-  let act = try_parse uri act in
-  match act.mule with
-  | None | Some (Error _) -> (doc, act, None)
-  | Some (Ok _) ->
-      let next_p_ref = doc.last_p_ref + 1 in
-      let doc = { doc with last_p_ref = next_p_ref } in
-      let act = { act with p_ref = next_p_ref; nts = [] } in
-      let pss_locs = List.map (fun (ps : ProofStep.t) -> ps.loc) act.pss in
-      let pss_locs = List.filter_map (fun ps -> ps) pss_locs in
-      (* TODO: Locate properly the most detailed proof step here. *)
-      let p_range = TlapmRange.covered_or_empty range pss_locs in
-      (doc, act, Some (next_p_ref, act.doc_vsn.text, p_range, proof_res act))
+  let next_doc, next_p_ref = TD.next_p_ref doc in
+  match TA.prepare_proof act uri next_p_ref with
+  | None -> (doc, act, None)
+  | Some act ->
+      let p_range = TA.locate_proof_range act range in
+      let res = (next_p_ref, TA.text act, p_range, TA.proof_res act) in
+      (next_doc, act, Some res)
 
 let add_obl docs uri vsn p_ref (obl : tlapm_obligation) =
   with_doc_vsn docs uri vsn @@ fun (doc : TD.t) (act : TA.t) ->
-  if act.p_ref = p_ref then
-    let drop_older_intersecting (o_pr, _o_id) (o : tlapm_obligation) =
-      o_pr = p_ref || not (TlapmRange.lines_intersect obl.loc o.loc)
-    in
-    let obs = OblMap.add (p_ref, obl.id) obl act.obs in
-    let obs = OblMap.filter drop_older_intersecting obs in
-    let pss = ProofStep.with_tlapm_obligation act.pss obl in
-    let act = { act with obs; pss } in
-    (doc, act, Some (proof_res act))
-  else (doc, act, None)
+  match TA.add_obl act p_ref obl with
+  | None -> (doc, act, None)
+  | Some act -> (doc, act, Some (TA.proof_res act))
 
 let add_notif docs uri vsn p_ref notif =
   with_doc_vsn docs uri vsn @@ fun (doc : TD.t) (act : TA.t) ->
-  if act.p_ref = p_ref then
-    let nts = notif :: act.nts in
-    let act = { act with nts; obs = OblMap.empty } in
-    (doc, act, Some (proof_res act))
-  else (doc, act, None)
+  match TA.add_notif act p_ref notif with
+  | None -> (doc, act, None)
+  | Some act -> (doc, act, Some (TA.proof_res act))
 
 let get_proof_res docs uri vsn =
   with_doc_vsn docs uri vsn @@ fun doc act ->
-  let act = try_parse uri act in
-  (doc, act, Some (proof_res act))
+  let act = TA.try_parse act uri in
+  (doc, act, Some (TA.proof_res act))
 
 let get_proof_res_latest docs uri =
   match latest_vsn docs uri with
