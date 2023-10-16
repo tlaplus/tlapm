@@ -1,4 +1,4 @@
-(* cSpell:words obligationsnumber Printexc sprintf getcwd nonblocking submatches *)
+(* cSpell:words obligationsnumber getcwd nonblocking submatches *)
 
 (** Max size for the read buffer, a line should fit into it.*)
 let read_buf_max_size = 1024 * 1024

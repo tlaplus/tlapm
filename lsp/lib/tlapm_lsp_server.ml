@@ -1,4 +1,4 @@
-(* cSpell:words Printexc Ipaddr *)
+(* cSpell:words ipaddr *)
 
 let max_size = 50 * 1024 * 1024
 (* 50 MB should be enough. *)
