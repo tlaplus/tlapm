@@ -470,6 +470,15 @@ let prepare_proof docs uri vsn range :
       let res = (next_p_ref, TA.text act, p_range, TA.proof_res act) in
       (next_doc, act, Some res)
 
+(* Calculate proof range by user selection. *)
+let suggest_proof_range docs uri range : t * (int * TlapmRange.t) option =
+  match latest_vsn docs uri with
+  | None -> (docs, None)
+  | Some vsn ->
+      with_doc_vsn docs uri vsn @@ fun (doc : TD.t) (act : TA.t) ->
+      let p_range = TA.locate_proof_range act range in
+      (doc, act, Some (vsn, p_range))
+
 let add_obl docs uri vsn p_ref (obl : tlapm_obligation) =
   with_doc_vsn docs uri vsn @@ fun (doc : TD.t) (act : TA.t) ->
   match TA.add_obl act p_ref obl with

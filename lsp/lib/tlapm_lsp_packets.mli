@@ -12,6 +12,12 @@ module type Callbacks = sig
   val with_docs : cb_t -> (cb_t * Docs.t -> cb_t * Docs.t) -> cb_t
   val prove_step : cb_t -> LspT.DocumentUri.t -> int -> LspT.Range.t -> cb_t
 
+  val suggest_proof_range :
+    cb_t ->
+    LspT.DocumentUri.t ->
+    LspT.Range.t ->
+    cb_t * (int * LspT.Range.t) option
+
   val latest_diagnostics :
     cb_t -> LspT.DocumentUri.t -> cb_t * (int * LspT.Diagnostic.t list)
 
