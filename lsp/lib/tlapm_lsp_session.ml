@@ -169,6 +169,15 @@ module PacketsCB = struct
         Eio.traceln "cannot find doc/vsn";
         st
 
+  let suggest_proof_range st uri range =
+    let range = Prover.TlapmRange.of_lsp_range range in
+    let docs, res = Docs.suggest_proof_range st.docs uri range in
+    let st = { st with docs } in
+    match res with
+    | None -> (st, None)
+    | Some (vsn, p_range) ->
+        (st, Some (vsn, Prover.TlapmRange.as_lsp_range p_range))
+
   let latest_diagnostics st uri =
     Eio.traceln "PULL_DIAGS: %s" (LspT.DocumentUri.to_string uri);
     let docs, vsn_opt, proof_res_opt = Docs.get_proof_res_latest st.docs uri in

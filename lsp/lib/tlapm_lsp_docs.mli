@@ -35,6 +35,10 @@ val prepare_proof :
   t * (int * string * TlapmRange.t * proof_res) option
 (** Increment the prover ref for the specified doc/vsn. *)
 
+val suggest_proof_range :
+  t -> tk -> TlapmRange.t -> t * (int * TlapmRange.t) option
+(** Suggest proof range based on the user selection. *)
+
 val add_obl : t -> tk -> int -> int -> tlapm_obligation -> t * proof_res option
 (** Record obligation for the document, clear all the intersecting ones. *)
 

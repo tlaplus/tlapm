@@ -10,6 +10,12 @@ module type Callbacks = sig
   val with_docs : cb_t -> (cb_t * Docs.t -> cb_t * Docs.t) -> cb_t
   val prove_step : cb_t -> LspT.DocumentUri.t -> int -> LspT.Range.t -> cb_t
 
+  val suggest_proof_range :
+    cb_t ->
+    LspT.DocumentUri.t ->
+    LspT.Range.t ->
+    cb_t * (int * LspT.Range.t) option
+
   val latest_diagnostics :
     cb_t -> LspT.DocumentUri.t -> cb_t * (int * LspT.Diagnostic.t list)
 
@@ -115,9 +121,10 @@ module Make (CB : Callbacks) = struct
                ~workDoneProgress:false ()))
         ~codeActionProvider:
           (`CodeActionOptions
-            (CodeActionOptions.create ~resolveProvider:true
+            (CodeActionOptions.create ~resolveProvider:false
                ~workDoneProgress:false
-               ~codeActionKinds:[ CodeActionKind.Other "proof-state" ]
+               ~codeActionKinds:
+                 [ CodeActionKind.Other "tlaplus.tlaps.check-step.ca" ]
                ()))
         ()
     in
@@ -185,7 +192,7 @@ module Make (CB : Callbacks) = struct
 
   (* {"jsonrpc":"2.0","id":1,"method":"workspace/executeCommand","params":{"command":"tlapm-lsp-test.prover-info","arguments":[]}} *)
   let handle_jsonrpc_req_exec_cmd (jsonrpc_req : Jsonrpc.Request.t)
-      (params : Lsp.Types.ExecuteCommandParams.t) cb_state =
+      (params : LspT.ExecuteCommandParams.t) cb_state =
     match params.command with
     | "tlapm-lsp-test.prover-info" ->
         Eio.traceln "COMMAND: prover-info";
@@ -202,33 +209,42 @@ module Make (CB : Callbacks) = struct
     - Code actions can be used for proof decomposition, probably.
   *)
   let handle_jsonrpc_req_code_action (jsonrpc_req : Jsonrpc.Request.t)
-      (_params : Lsp.Types.CodeActionParams.t) cb_state =
-    let open Lsp.Types in
-    let someActionDiag =
-      Diagnostic.create ~message:"Hey from prover as an action!"
-        ~range:
-          (Range.create
-             ~start:(Position.create ~line:2 ~character:13)
-             ~end_:(Position.create ~line:2 ~character:17))
-        ()
-    in
-    let someAction =
-      Lsp.Types.CodeAction.create ~title:"Prover code action"
-        ~diagnostics:[ someActionDiag ]
-        ~command:
-          (Command.create ~command:"tlaplus.tlaps.check-step.lsp"
-             ~title:"Prove it as an action!"
-             ~arguments:[ `String "important_arg" ]
-             ())
-        ()
-    in
-    let acts = Some [ `CodeAction someAction ] in
-    reply_ok jsonrpc_req (Lsp.Types.CodeActionResult.yojson_of_t acts) cb_state
-
-  let handle_jsonrpc_req_code_action_resolve (jsonrpc_req : Jsonrpc.Request.t)
-      (_params : Lsp.Types.CodeAction.t) cb_state =
-    (* TODO: Actually resolve the code actions. *)
-    reply_ok jsonrpc_req (`String "OK") cb_state
+      (params : LspT.CodeActionParams.t) cb_state =
+    let user_range = params.range in
+    let uri = params.textDocument.uri in
+    let cb_state, res = CB.suggest_proof_range cb_state uri user_range in
+    match res with
+    | None ->
+        reply_ok jsonrpc_req (LspT.CodeActionResult.yojson_of_t None) cb_state
+    | Some (version, p_range) ->
+        let l_from = p_range.start.line + 1 in
+        let l_till = p_range.end_.line + 1 in
+        let title =
+          match l_from = l_till with
+          | true -> (
+              match l_from with
+              | 0 -> "Check all document proofs"
+              | _ -> Format.sprintf "Check proof on line %d" l_from)
+          | false -> Format.sprintf "Check proofs on lines %d-%d" l_from l_till
+        in
+        let uri_vsn =
+          LspT.VersionedTextDocumentIdentifier.create ~uri ~version
+        in
+        let check_step_ca =
+          LspT.CodeAction.create ~title
+            ~command:
+              (LspT.Command.create ~command:"tlaplus.tlaps.check-step.lsp"
+                 ~title
+                 ~arguments:
+                   [
+                     LspT.VersionedTextDocumentIdentifier.yojson_of_t uri_vsn;
+                     LspT.Range.yojson_of_t p_range;
+                   ]
+                 ())
+            ()
+        in
+        let acts = Some [ `CodeAction check_step_ca ] in
+        reply_ok jsonrpc_req (LspT.CodeActionResult.yojson_of_t acts) cb_state
 
   (** Dispatch request packets. *)
   let handle_jsonrpc_request (jsonrpc_req : Jsonrpc.Request.t) cb_state =
@@ -240,8 +256,6 @@ module Make (CB : Callbacks) = struct
         handle_jsonrpc_req_exec_cmd jsonrpc_req params cb_state
     | Ok (E (CodeAction params)) ->
         handle_jsonrpc_req_code_action jsonrpc_req params cb_state
-    | Ok (E (CodeActionResolve params)) ->
-        handle_jsonrpc_req_code_action_resolve jsonrpc_req params cb_state
     | Ok (E Shutdown) -> handle_jsonrpc_req_shutdown jsonrpc_req cb_state
     | Ok (E (UnknownRequest unknown)) -> (
         match unknown.meth with

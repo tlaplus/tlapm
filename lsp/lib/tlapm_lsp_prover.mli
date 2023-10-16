@@ -6,6 +6,8 @@ module TlapmRange : sig
 
   val from : t -> p
   val till : t -> p
+  val line_from : t -> int
+  val line_till : t -> int
   val p_add : p -> int -> int -> p
   val as_lsp_range : t -> Lsp.Types.Range.t
   val of_lsp_range : Lsp.Types.Range.t -> t
