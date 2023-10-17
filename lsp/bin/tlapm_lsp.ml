@@ -1,6 +1,8 @@
-(* cSpell:words cmdliner signum Open_wronly Open_creat *)
+(* cSpell:words cmdliner signum Open_wronly Open_creat fprintf kdprintf *)
 
 open Cmdliner
+
+let traceln_mutex = Mutex.create ()
 
 let transport_of_args tr_stdio tr_socket =
   let open Tlapm_lsp_lib.Server in
@@ -22,21 +24,31 @@ let run transport log_to log_io =
     let with_log_stderr () = Eio.Switch.run main_switch in
     let with_log_file log_file =
       let with_log_chan log_chan =
-        let my_traceln =
-          { Eio.Debug.traceln = (fun ?__POS__:_ fmt -> Fmt.epr (fmt ^^ "@.")) }
-          (* TODO: Try to reuse the original traceln function. Types don't match in the following.
-             let x = Eio.traceln in
-             {
-               Eio.Debug.traceln =
-                 (fun ?__POS__:pos fmt ->
-                   let f = Fmt.epr fmt in
-                   match pos with
-                   | None -> x (Fmt.epr fmt)
-                   | Some p -> x ?__POS__:p f);
-             } *)
+        (* This is mostly a copy of default_traceln from eio/core/debug.ml,
+           just modified to take a specific out channel instead of stderr. *)
+        let traceln_impl ?__POS__:pos fmt =
+          let k go =
+            let b = Buffer.create 512 in
+            let f = Format.formatter_of_buffer b in
+            go f;
+            Option.iter
+              (fun (file, line, _, _) -> Format.fprintf f " [%s:%d]" file line)
+              pos;
+            Format.pp_close_box f ();
+            Format.pp_print_flush f ();
+            let msg = Buffer.contents b in
+            let lines = String.split_on_char '\n' msg in
+            Mutex.lock traceln_mutex;
+            Fun.protect ~finally:(fun () -> Mutex.unlock traceln_mutex)
+            @@ fun () ->
+            List.iter (Printf.fprintf log_chan "+%s\n") lines;
+            flush log_chan
+          in
+          Format.kdprintf k ("@[" ^^ fmt)
         in
+        let traceln_bnd = { Eio.Debug.traceln = traceln_impl } in
         let debug = Eio.Stdenv.debug env in
-        Eio.Fiber.with_binding debug#traceln my_traceln (fun _ ->
+        Eio.Fiber.with_binding debug#traceln traceln_bnd (fun _ ->
             Format.pp_set_formatter_out_channel Format.err_formatter log_chan;
             Eio.Switch.run main_switch)
       in
