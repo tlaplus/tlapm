@@ -206,38 +206,36 @@ module ToolboxProtocol = struct
       }
 
   let match_line line =
-    (* TODO: Use Re2 in all the places. *)
-    let re = Str.regexp "^@!!\\([a-z]*\\):\\(.*\\)$" in
-    match Str.string_match re line 0 with
-    | true ->
-        let k = Str.matched_group 1 line in
-        let v = Str.matched_group 2 line in
-        Some (k, v)
-    | false -> None
+    let re = Re2.create_exn {|^@!!([a-z]*):(.*)$|} in
+    match Re2.find_submatches re line with
+    | Ok [| _all_match; Some k; Some v |] -> Some (k, v)
+    | Ok _ -> failwith "impossible"
+    | Error _ -> None
 
   let rec guess_notif_loc' str = function
     | [] -> (TlapmRange.of_unknown, String.trim str)
     | `A :: others -> (
         let re =
-          Str.regexp
-            "^File \"\\(.*\\)\", line \\([0-9]+\\), character \\([0-9]+\\) to \
-             line \\([0-9]+\\), character \\([0-9]+\\) :\n\
-             \\(.*\\)"
+          Re2.create_exn
+            {|^File "(.*)", line ([0-9]+), character ([0-9]+) to line ([0-9]+), character ([0-9]+) :\n(.*)$|}
         in
-        match Str.string_match re str 0 with
-        | true ->
-            (* TODO: Match file with the main document. *)
-            let _file = Str.matched_group 1 str in
-            let line_from = Str.matched_group 2 str in
-            let char_from = Str.matched_group 3 str in
-            let line_till = Str.matched_group 4 str in
-            let char_till = Str.matched_group 5 str in
-            let rest_msg = Str.matched_group 6 str in
+        match Re2.find_submatches re str with
+        | Ok
+            [|
+              _all_match;
+              Some _File;
+              Some line_from;
+              Some char_from;
+              Some line_till;
+              Some char_till;
+              Some rest_msg;
+            |] ->
             ( TlapmRange.R
                 ( (int_of_string line_from, int_of_string char_from),
                   (int_of_string line_till, int_of_string char_till) ),
               String.trim rest_msg )
-        | false -> guess_notif_loc' str others)
+        | Ok _ -> failwith "impossible"
+        | Error _ -> guess_notif_loc' str others)
     | `B :: others -> (
         let re_opts = { Re2.Options.default with dot_nl = true } in
         let re =
@@ -259,7 +257,7 @@ module ToolboxProtocol = struct
                 ( (int_of_string line, int_of_string char_from),
                   (int_of_string line, int_of_string char_till) ),
               String.trim rest_msg )
-        | Ok _ -> guess_notif_loc' str others
+        | Ok _ -> failwith "impossible"
         | Error _ -> guess_notif_loc' str others)
     | `C :: others -> (
         (* Messages like this: `File "aaa.tla", line 5, character 22` *)
@@ -276,7 +274,7 @@ module ToolboxProtocol = struct
                 ( (int_of_string line, int_of_string char),
                   (int_of_string line, int_of_string char + 4) ),
               String.trim rest_msg )
-        | Ok _ -> guess_notif_loc' str others
+        | Ok _ -> failwith "impossible"
         | Error _ -> guess_notif_loc' str others)
 
   let guess_notif_loc str = guess_notif_loc' str [ `A; `B; `C ]
