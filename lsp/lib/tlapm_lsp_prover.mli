@@ -9,6 +9,10 @@ module TlapmRange : sig
   val line_from : t -> int
   val line_till : t -> int
   val p_add : p -> int -> int -> p
+  val p_less : p -> p -> bool
+  val p_leq : p -> p -> bool
+  val p_min : p -> p -> p
+  val p_max : p -> p -> p
   val as_lsp_range : t -> Lsp.Types.Range.t
   val of_lsp_range : Lsp.Types.Range.t -> t
   val of_locus : Tlapm_lib.Loc.locus -> t option
@@ -16,9 +20,11 @@ module TlapmRange : sig
   val of_points : p -> p -> t
   val string_of_range : t -> string
   val string_of_pos : p -> string
-  val lines_intersect : t -> t -> bool
   val before : p -> t -> bool
-  val covered_or_empty : t -> t list -> t
+  val intersect : t -> t -> bool
+  val lines_intersect : t -> t -> bool
+  val lines_covered : t -> t -> bool
+  val lines_covered_or_all : t -> t list -> t
   val first_diff_pos : string -> string -> p
 end
 

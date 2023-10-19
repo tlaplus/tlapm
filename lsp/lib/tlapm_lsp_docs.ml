@@ -219,22 +219,26 @@ end = struct
 
   let locate_proof_range (pss : t list) (input : TlapmRange.t) : TlapmRange.t =
     let rec collect pss =
-      List.flatten
-        (List.filter_map
-           (fun ps ->
-             match ps.loc with
-             | None -> None
-             | Some ps_loc -> (
-                 match TlapmRange.lines_intersect ps_loc input with
-                 | true -> (
-                     match collect ps.sub with
-                     | [] -> Some [ ps_loc ]
-                     | sub_locs -> Some sub_locs)
-                 | false -> None))
-           pss)
+      let for_each_ps_with_loc ps ps_loc =
+        match TlapmRange.lines_intersect ps_loc input with
+        | true -> (
+            match collect ps.sub with
+            | [] -> Some [ ps_loc ]
+            | first :: _ as sub_locs -> (
+                match TlapmRange.(line_from input < line_from first) with
+                | true -> Some [ ps_loc ]
+                | false -> Some sub_locs))
+        | false -> None
+      in
+      let for_each_ps ps =
+        match ps.loc with
+        | None -> None
+        | Some ps_loc -> for_each_ps_with_loc ps ps_loc
+      in
+      List.flatten (List.filter_map for_each_ps pss)
     in
     let pss_locs = collect pss in
-    TlapmRange.covered_or_empty input pss_locs
+    TlapmRange.lines_covered_or_all input pss_locs
 end
 
 type proof_res = int * tlapm_obligation list * tlapm_notif list * PS.t list
@@ -300,7 +304,7 @@ end = struct
 
   let merge_into (act : t) (v : TV.t) =
     let diff_pos = TV.diff_pos act.doc_vsn v in
-    let before_change loc = not (TlapmRange.before diff_pos loc) in
+    let before_change = TlapmRange.before diff_pos in
     let obs =
       OblMap.filter
         (fun _ (o : tlapm_obligation) -> before_change o.loc)
