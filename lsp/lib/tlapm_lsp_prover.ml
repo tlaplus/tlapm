@@ -14,6 +14,19 @@ module TlapmRange = struct
   let till (R (_, (tl, tc))) = P (tl, tc)
   let p_add (P (l, c)) al ac = P (l + al, c + ac)
 
+  let p_less (P (al, ac)) (P (bl, bc)) =
+    match Stdlib.compare al bl with
+    | 0 -> Stdlib.compare ac bc < 0
+    | l_diff -> l_diff < 0
+
+  let p_leq (P (al, ac)) (P (bl, bc)) =
+    match Stdlib.compare al bl with
+    | 0 -> Stdlib.compare ac bc <= 0
+    | l_diff -> l_diff < 0
+
+  let p_min a b = if p_less a b then a else b
+  let p_max a b = if p_less a b then b else a
+
   let as_lsp_range (R ((fl, fc), (tl, tc))) =
     let open Lsp.Types in
     Range.create
@@ -55,8 +68,15 @@ module TlapmRange = struct
   let of_unknown = R ((1, 1), (1, 4))
 
   (* To pass it to TLAPM for checking all the document. *)
-  let of_undefined = R ((0, 0), (0, 0))
+  let of_all = R ((0, 0), (0, 0))
 
+  (** [before p r] means range [r] is before point [p]. *)
+  let before p r = p_less (till r) p
+
+  (* [intersect a b] is true, if ranges [a] and [b] overlaps. *)
+  let intersect a b = p_leq (from a) (till b) && p_leq (from b) (till a)
+
+  (* [lines_intersect a b] is true is line ranges for [a] and [b] intersect. *)
   let lines_intersect a b =
     let lfa = line_from a in
     let lta = line_till a in
@@ -64,23 +84,23 @@ module TlapmRange = struct
     let ltb = line_till b in
     lfa <= ltb && lfb <= lta
 
-  let before (P (pl, pc)) (R (_, (tl, tc))) =
-    match Stdlib.compare pl tl with
-    | 0 -> Stdlib.compare pc tc < 0
-    | l_diff -> l_diff < 0
+  (* [lines_covered a b] is true if lines of [a] are fully covered by [b], i.e. [a] is inside of [b]. *)
+  let lines_covered a b =
+    let lfa = line_from a in
+    let lta = line_till a in
+    let lfb = line_from b in
+    let ltb = line_till b in
+    lfb <= lfa && lta <= ltb
 
-  let covered_or_empty q rs =
+  let lines_covered_or_all q rs =
     match List.filter (lines_intersect q) rs with
-    | [] -> of_undefined
+    | [] -> of_all
     | matching ->
         List.fold_left
           (fun acc m ->
-            let (R (acc_f, acc_t)) = acc in
-            let (R (m_f, m_t)) = m in
-            (* TODO: Calculate the characters as well. *)
-            let from = (min (fst acc_f) (fst m_f), 0) in
-            let till = (max (fst acc_t) (fst m_t), 0) in
-            R (from, till))
+            let from = p_min (from acc) (from m) in
+            let till = p_max (till acc) (till m) in
+            of_points from till)
           q matching
 
   let first_diff_pos a b =
@@ -100,10 +120,10 @@ module TlapmRange = struct
 
   let%test_module "before" =
     (module struct
-      let%test _ = before (P (3, 5)) (R ((1, 1), (5, 3)))
-      let%test _ = before (P (3, 5)) (R ((1, 1), (3, 6)))
+      let%test _ = not (before (P (3, 5)) (R ((1, 1), (5, 3))))
+      let%test _ = not (before (P (3, 5)) (R ((1, 1), (3, 6))))
       let%test _ = not (before (P (3, 5)) (R ((1, 1), (3, 5))))
-      let%test _ = not (before (P (3, 5)) (R ((1, 1), (2, 5))))
+      let%test _ = before (P (3, 5)) (R ((1, 1), (2, 5)))
     end)
 
   let%test_module "first_diff_pos" =
@@ -113,6 +133,20 @@ module TlapmRange = struct
       let%test "next_ln" = P (2, 1) = first_diff_pos "sa\nme" "sa\ny"
       let%test "line_len_a" = P (1, 3) = first_diff_pos "same" "sa\n"
       let%test "line_len_b" = P (1, 3) = first_diff_pos "sa\n" "same"
+    end)
+
+  let%test_module "lines_covered_or_all" =
+    (module struct
+      let some = R ((10, 5), (11, 20))
+      let before1 = R ((1, 1), (2, 10))
+      let on_from = R ((9, 1), (10, 6))
+      let on_till = R ((10, 20), (15, 8))
+      let within = R ((10, 20), (11, 10))
+      let%test _ = of_all = lines_covered_or_all some [ before1 ]
+      let%test _ = some = lines_covered_or_all some [ within ]
+
+      let%test _ =
+        R ((9, 1), (15, 8)) = lines_covered_or_all some [ on_from; on_till ]
     end)
 end
 
