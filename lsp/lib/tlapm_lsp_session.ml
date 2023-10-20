@@ -242,18 +242,20 @@ let handle_tlapm_msg ((uri, vsn, p_ref) : doc_ref) msg st =
       send_proof_info st uri vsn res;
       Some { st with docs }
   | TlapmObligationsNumber _ ->
-      (* TODO: Implement. *)
       Eio.traceln "---> TlapmObligationsNumber";
-      Some st
+      let docs, res = Docs.obl_num st.docs uri vsn p_ref in
+      send_proof_info st uri vsn res;
+      Some { st with docs }
   | TlapmObligation obl ->
       Eio.traceln "---> TlapmObligation, id=%d" obl.id;
       let docs, res = Docs.add_obl st.docs uri vsn p_ref obl in
       send_proof_info st uri vsn res;
       Some { st with docs }
   | TlapmTerminated ->
-      (* TODO: Implement: mark revision unused? *)
       Eio.traceln "---> TlapmTerminated";
-      Some st
+      let docs, res = Docs.terminated st.docs uri vsn p_ref in
+      send_proof_info st uri vsn res;
+      Some { st with docs }
 
 let handle_event e st =
   match e with
