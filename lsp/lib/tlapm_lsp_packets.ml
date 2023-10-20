@@ -105,9 +105,7 @@ module Make (CB : Callbacks) = struct
             ci_version
     in
     print_ci params;
-    let supported_commands =
-      [ "tlapm-lsp-test.prover-info"; "tlaplus.tlaps.check-step.lsp" ]
-    in
+    let supported_commands = [ "tlaplus.tlaps.check-step.lsp" ] in
     let capabilities =
       ServerCapabilities.create
         ~textDocumentSync:(`TextDocumentSyncKind TextDocumentSyncKind.Full)
@@ -190,13 +188,16 @@ module Make (CB : Callbacks) = struct
         reply_error jsonrpc_req Jsonrpc.Response.Error.Code.InvalidParams
           "arguments missing" cb_state
 
-  (* {"jsonrpc":"2.0","id":1,"method":"workspace/executeCommand","params":{"command":"tlapm-lsp-test.prover-info","arguments":[]}} *)
+  (* Example request:
+     {"jsonrpc":"2.0",
+      "id":1,
+      "method":"workspace/executeCommand",
+      "params":{
+        "command":"...",
+        "arguments":[...]}} *)
   let handle_jsonrpc_req_exec_cmd (jsonrpc_req : Jsonrpc.Request.t)
       (params : LspT.ExecuteCommandParams.t) cb_state =
     match params.command with
-    | "tlapm-lsp-test.prover-info" ->
-        Eio.traceln "COMMAND: prover-info";
-        reply_ok jsonrpc_req (`String "OK") cb_state
     | "tlaplus.tlaps.check-step.lsp" ->
         handle_check_step jsonrpc_req params cb_state
     | unknown ->
