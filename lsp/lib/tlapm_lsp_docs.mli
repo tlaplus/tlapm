@@ -39,11 +39,17 @@ val suggest_proof_range :
   t -> tk -> TlapmRange.t -> t * (int * TlapmRange.t) option
 (** Suggest proof range based on the user selection. *)
 
+val obl_num : t -> tk -> int -> int -> t * proof_res option
+(** We got the obligation number for the current proof invocation. *)
+
 val add_obl : t -> tk -> int -> int -> tlapm_obligation -> t * proof_res option
 (** Record obligation for the document, clear all the intersecting ones. *)
 
 val add_notif : t -> tk -> int -> int -> tlapm_notif -> t * proof_res option
 (** Record obligation for the document, clear all the intersecting ones. *)
+
+val terminated : t -> tk -> int -> int -> t * proof_res option
+(** Cleanup the incomplete proof states on termination of the prover. *)
 
 val get_proof_res : t -> tk -> int -> t * proof_res option
 (** Get the latest actual proof results. Cleanup them, if needed. *)

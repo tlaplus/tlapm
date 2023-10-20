@@ -277,8 +277,10 @@ module TA : sig
   val proof_res : t -> proof_res
   val prepare_proof : t -> LspT.DocumentUri.t -> int -> t option
   val locate_proof_range : t -> TlapmRange.t -> TlapmRange.t
+  val obl_num : t -> int -> t option
   val add_obl : t -> int -> tlapm_obligation -> t option
   val add_notif : t -> int -> tlapm_notif -> t option
+  val terminated : t -> int -> t option
 end = struct
   type t = {
     doc_vsn : TV.t;
@@ -352,6 +354,12 @@ end = struct
 
   let locate_proof_range act range = PS.locate_proof_range act.pss range
 
+  let obl_num (act : t) p_ref =
+    if act.p_ref = p_ref then
+      (* TODO: Handle the work progress based on this. *)
+      Some act
+    else None
+
   let add_obl (act : t) (p_ref : int) (obl : tlapm_obligation) =
     if act.p_ref = p_ref then
       let drop_older_intersecting (o_pr, _o_id) (o : tlapm_obligation) =
@@ -367,6 +375,12 @@ end = struct
     if act.p_ref = p_ref then
       let nts = notif :: act.nts in
       Some { act with nts; obs = OblMap.empty }
+    else None
+
+  let terminated (act : t) p_ref =
+    if act.p_ref = p_ref then
+      (* TODO: Reply the corresponding LSP command here. *)
+      Some act
     else None
 end
 
@@ -483,6 +497,12 @@ let suggest_proof_range docs uri range : t * (int * TlapmRange.t) option =
       let p_range = TA.locate_proof_range act range in
       (doc, act, Some (vsn, p_range))
 
+let obl_num docs uri vsn p_ref =
+  with_doc_vsn docs uri vsn @@ fun (doc : TD.t) (act : TA.t) ->
+  match TA.obl_num act p_ref with
+  | None -> (doc, act, None)
+  | Some act -> (doc, act, Some (TA.proof_res act))
+
 let add_obl docs uri vsn p_ref (obl : tlapm_obligation) =
   with_doc_vsn docs uri vsn @@ fun (doc : TD.t) (act : TA.t) ->
   match TA.add_obl act p_ref obl with
@@ -492,6 +512,12 @@ let add_obl docs uri vsn p_ref (obl : tlapm_obligation) =
 let add_notif docs uri vsn p_ref notif =
   with_doc_vsn docs uri vsn @@ fun (doc : TD.t) (act : TA.t) ->
   match TA.add_notif act p_ref notif with
+  | None -> (doc, act, None)
+  | Some act -> (doc, act, Some (TA.proof_res act))
+
+let terminated docs uri vsn p_ref =
+  with_doc_vsn docs uri vsn @@ fun (doc : TD.t) (act : TA.t) ->
+  match TA.terminated act p_ref with
   | None -> (doc, act, None)
   | Some act -> (doc, act, Some (TA.proof_res act))
 
