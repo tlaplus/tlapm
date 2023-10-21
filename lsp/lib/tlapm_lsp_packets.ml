@@ -2,22 +2,19 @@ module Docs = Tlapm_lsp_docs
 module LspT = Lsp.Types
 
 module type Callbacks = sig
-  type cb_t
+  type t
 
-  val ready : cb_t -> cb_t
-  val shutdown : cb_t -> cb_t
-  val lsp_send : cb_t -> Jsonrpc.Packet.t -> cb_t
-  val with_docs : cb_t -> (cb_t * Docs.t -> cb_t * Docs.t) -> cb_t
-  val prove_step : cb_t -> LspT.DocumentUri.t -> int -> LspT.Range.t -> cb_t
+  val ready : t -> t
+  val shutdown : t -> t
+  val lsp_send : t -> Jsonrpc.Packet.t -> t
+  val with_docs : t -> (t * Docs.t -> t * Docs.t) -> t
+  val prove_step : t -> LspT.DocumentUri.t -> int -> LspT.Range.t -> t
 
   val suggest_proof_range :
-    cb_t ->
-    LspT.DocumentUri.t ->
-    LspT.Range.t ->
-    cb_t * (int * LspT.Range.t) option
+    t -> LspT.DocumentUri.t -> LspT.Range.t -> t * (int * LspT.Range.t) option
 
   val latest_diagnostics :
-    cb_t -> LspT.DocumentUri.t -> cb_t * (int * LspT.Diagnostic.t list)
+    t -> LspT.DocumentUri.t -> t * (int * LspT.Diagnostic.t list)
 
   val diagnostic_source : string
 end
@@ -111,7 +108,7 @@ module Make (CB : Callbacks) = struct
         ~textDocumentSync:(`TextDocumentSyncKind TextDocumentSyncKind.Full)
         ~executeCommandProvider:
           (ExecuteCommandOptions.create ~commands:supported_commands
-             ~workDoneProgress:false ())
+             ~workDoneProgress:true ())
         ~diagnosticProvider:
           (`DiagnosticOptions
             (DiagnosticOptions.create ~identifier:CB.diagnostic_source
@@ -180,7 +177,10 @@ module Make (CB : Callbacks) = struct
           LspT.VersionedTextDocumentIdentifier.t_of_yojson uri_vsn_arg
         in
         let range = LspT.Range.t_of_yojson range_arg in
-        CB.prove_step cb_state uri_vsn.uri uri_vsn.version range
+        let cb_state =
+          CB.prove_step cb_state uri_vsn.uri uri_vsn.version range
+        in
+        reply_ok jsonrpc_req `Null cb_state
     | Some _ ->
         reply_error jsonrpc_req Jsonrpc.Response.Error.Code.InvalidParams
           "single argument object expected" cb_state
