@@ -286,14 +286,7 @@ let handle_tlapm_msg ((uri, vsn, p_ref) : doc_ref) msg st =
       Some { st with docs }
   | TlapmObligationsNumber obl_num ->
       Eio.traceln "---> TlapmObligationsNumber";
-      let st =
-        try progress_obl_num st p_ref obl_num
-        with e ->
-          Eio.traceln "EXCEPTION %s" (Printexc.to_string e);
-          st
-      in
-      Eio.traceln "---> TlapmObligationsNumber -- done";
-      (* TODO: Cleanup. *)
+      let st = progress_obl_num st p_ref obl_num in
       Some st
   | TlapmObligation obl ->
       Eio.traceln "---> TlapmObligation, id=%d" obl.id;
