@@ -5,7 +5,7 @@ It is responsible for:
   - Parsing the document structure to locate features related to proofs, e.g.:
       - proof obligation by cursor position, possibly collecting all the subtree of obligations.
   - Running the `tlapm` on specific obligations and reporting the results.
-  - TODO: Show progress of the tlapm.
+  - Show progress of the tlapm, allow cancel it.
   - TODO: Proof re-numbering.
   - TODO: Proof decomposition.
   - TODO: Easier experimentation on missing facts.

@@ -74,8 +74,6 @@ let progress_proof_ended st p_ref =
   let progress, st = Progress.proof_ended st.progress p_ref st in
   { st with progress }
 
-(* TODO: {"jsonrpc":"2.0","method":"window/workDoneProgress/cancel","params":{"token":"tlapm_lsp-p_ref-1"}} *)
-
 let make_diagnostics os ns =
   let open Prover.ToolboxProtocol in
   let open Lsp.Types in
@@ -211,6 +209,13 @@ module Handlers = Tlapm_lsp_handlers.Make (struct
     | None ->
         Eio.traceln "cannot find doc/vsn";
         st
+
+  let cancel st (progress_token : LspT.ProgressToken.t) =
+    match Progress.is_latest st.progress progress_token with
+    | true ->
+        let prov = Prover.cancel_all st.prov in
+        { st with prov }
+    | false -> st
 
   let suggest_proof_range st uri range =
     let range = Prover.TlapmRange.of_lsp_range range in

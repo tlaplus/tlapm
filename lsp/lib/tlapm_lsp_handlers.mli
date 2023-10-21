@@ -11,6 +11,7 @@ module type Callbacks = sig
   val lsp_send : t -> Jsonrpc.Packet.t -> t
   val with_docs : t -> (t * Docs.t -> t * Docs.t) -> t
   val prove_step : t -> LspT.DocumentUri.t -> int -> LspT.Range.t -> t
+  val cancel : t -> LspT.ProgressToken.t -> t
 
   val suggest_proof_range :
     t -> LspT.DocumentUri.t -> LspT.Range.t -> t * (int * LspT.Range.t) option

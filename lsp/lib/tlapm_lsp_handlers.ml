@@ -9,6 +9,7 @@ module type Callbacks = sig
   val lsp_send : t -> Jsonrpc.Packet.t -> t
   val with_docs : t -> (t * Docs.t -> t * Docs.t) -> t
   val prove_step : t -> LspT.DocumentUri.t -> int -> LspT.Range.t -> t
+  val cancel : t -> LspT.ProgressToken.t -> t
 
   val suggest_proof_range :
     t -> LspT.DocumentUri.t -> LspT.Range.t -> t * (int * LspT.Range.t) option
@@ -79,6 +80,9 @@ module Make (CB : Callbacks) = struct
         in
         Eio.traceln "CONN: Set trace: %s -- ignored" level;
         cb_state
+    | Ok (WorkDoneProgressCancel params) ->
+        Eio.traceln "WORK_DONE[CANCEL]";
+        CB.cancel cb_state params.token
     | Ok (UnknownNotification _params) ->
         Eio.traceln "Unknown notification: %s" jsonrpc_notif.method_;
         cb_state
