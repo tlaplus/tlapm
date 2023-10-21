@@ -393,7 +393,7 @@ end = struct
 
   let terminated (act : t) p_ref =
     if act.p_ref = p_ref then
-      (* TODO: Reply the corresponding LSP command here. *)
+      (* TODO: Mark intermediate obligation states as interrupted? *)
       Some act
     else None
 end

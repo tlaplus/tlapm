@@ -3,6 +3,8 @@
     VSCode don't support the client-initiated workDoneProgress
     with LSP. *)
 
+module LspT = Lsp.Types
+
 type t
 
 val make : unit -> t
@@ -15,8 +17,10 @@ module type Callbacks = sig
   val lsp_send : t -> Jsonrpc.Packet.t -> t
 end
 
-(* TODO: Handle the cancelation. *)
 module Make (CB : Callbacks) : sig
+  val is_latest : t -> LspT.ProgressToken.t -> bool
+  (** Checks if the token is of the last progress.  *)
+
   val proof_started : t -> int -> CB.t -> t * CB.t
   (** Called when new TLAPM run is initiated. *)
 

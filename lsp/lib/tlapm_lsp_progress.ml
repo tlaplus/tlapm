@@ -23,12 +23,12 @@ let percentage pr =
   | Some 0 -> 100
   | Some obl_count -> pr.obl_done * 100 / obl_count
 
-let token p_ref = `String (Format.sprintf "tlapm_lsp-p_ref-%d" p_ref)
+let make_token p_ref = `String (Format.sprintf "tlapm_lsp-p_ref-%d" p_ref)
 
 let reset p_ref ended =
   {
     p_ref;
-    token = token p_ref;
+    token = make_token p_ref;
     started = ended;
     ended;
     obl_count = None;
@@ -93,6 +93,8 @@ module Make (CB : Callbacks) = struct
     CB.lsp_send cb_state rpc_packet
 
   (* --------------- The main functionality. --------------- *)
+
+  let is_latest pr token = make_token pr.p_ref = token
 
   (* End the previous progress bar, if not ended yet, and create a new one. *)
   let proof_started pr p_ref cb_state =
