@@ -186,6 +186,17 @@ module ToolboxProtocol = struct
     | Trivial -> "trivial"
     | Unknown s -> "unknown state: " ^ s
 
+  let tlapm_obl_state_is_terminal (s : tlapm_obl_state) : bool =
+    match s with
+    | ToBeProved -> false
+    | BeingProved -> false
+    | Normalized -> false
+    | Proved -> true
+    | Failed -> true
+    | Interrupted -> false
+    | Trivial -> true
+    | Unknown _ -> false
+
   type tlapm_obligation = {
     id : int;
     loc : TlapmRange.t;

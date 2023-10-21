@@ -1,5 +1,42 @@
 module LspT = Lsp.Types
 
+type t = {
+  p_ref : int;
+  token : LspT.ProgressToken.t;
+  started : bool;
+  ended : bool;
+  obl_count : int option; (* Total number of proof obligations. *)
+  obl_done : int; (* Number of obligations already checked. *)
+}
+
+let title = "Checking TLA+ proofs"
+
+let message pr =
+  match pr.obl_count with
+  | None -> "Obligation count unknown."
+  | Some total ->
+      Format.sprintf "%d of %d obligations checked" pr.obl_done total
+
+let percentage pr =
+  match pr.obl_count with
+  | None -> 0
+  | Some 0 -> 100
+  | Some obl_count -> pr.obl_done * 100 / obl_count
+
+let token p_ref = `String (Format.sprintf "tlapm_lsp-p_ref-%d" p_ref)
+
+let reset p_ref ended =
+  {
+    p_ref;
+    token = token p_ref;
+    started = ended;
+    ended;
+    obl_count = None;
+    obl_done = 0;
+  }
+
+let make () = reset 0 true
+
 module type Callbacks = sig
   type t
 
@@ -8,42 +45,6 @@ module type Callbacks = sig
 end
 
 module Make (CB : Callbacks) = struct
-  type t = {
-    p_ref : int;
-    token : LspT.ProgressToken.t;
-    started : bool;
-    ended : bool;
-    obl_count : int option; (* Total number of proof obligations. *)
-    obl_done : int; (* Number of obligations already checked. *)
-  }
-
-  let title = "Checking TLA+ proofs"
-
-  let message pr =
-    match pr.obl_count with
-    | None -> "Obligation count unknown."
-    | Some total ->
-        Format.sprintf "%d of %d obligations checked" total pr.obl_done
-
-  let percentage pr =
-    match pr.obl_count with
-    | None -> 0
-    | Some obl_count -> pr.obl_done * 100 / obl_count
-
-  let token p_ref = `String (Format.sprintf "tlapm_lsp-p_ref-%d" p_ref)
-
-  let reset p_ref ended =
-    {
-      p_ref;
-      token = token p_ref;
-      started = ended;
-      ended;
-      obl_count = None;
-      obl_done = 0;
-    }
-
-  let make () = reset 0 true
-
   (* --------------- Functions creating LSP packets. --------------- *)
 
   let lsp_req_create pr =
@@ -118,7 +119,7 @@ module Make (CB : Callbacks) = struct
       (pr, cb_state)
     else (pr, cb_state)
 
-  let obl_progress pr p_ref obl_done cb_state =
+  let obl_changed pr p_ref obl_done cb_state =
     if
       p_ref = pr.p_ref && pr.started && (not pr.ended)
       && obl_done <> pr.obl_done
@@ -154,12 +155,12 @@ let%test_module "progress reporting tests" =
 
     let%test_unit "basic" =
       let cb = TestCB.fresh in
-      let pr = TestPr.make () in
+      let pr = make () in
       let p_ref = 1 in
       let pr, cb = TestPr.proof_started pr p_ref cb in
       let pr, cb = TestPr.obl_num pr p_ref 10 cb in
-      let pr, cb = TestPr.obl_progress pr p_ref 5 cb in
-      let pr, cb = TestPr.obl_progress pr p_ref 10 cb in
+      let pr, cb = TestPr.obl_changed pr p_ref 5 cb in
+      let pr, cb = TestPr.obl_changed pr p_ref 10 cb in
       let _pr, cb = TestPr.proof_ended pr p_ref cb in
       match List.length cb.sent with
       | 5 -> ()
