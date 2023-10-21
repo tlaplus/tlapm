@@ -4,26 +4,23 @@ module Docs = Tlapm_lsp_docs
 module LspT = Lsp.Types
 
 module type Callbacks = sig
-  type cb_t
+  type t
 
-  val ready : cb_t -> cb_t
-  val shutdown : cb_t -> cb_t
-  val lsp_send : cb_t -> Jsonrpc.Packet.t -> cb_t
-  val with_docs : cb_t -> (cb_t * Docs.t -> cb_t * Docs.t) -> cb_t
-  val prove_step : cb_t -> LspT.DocumentUri.t -> int -> LspT.Range.t -> cb_t
+  val ready : t -> t
+  val shutdown : t -> t
+  val lsp_send : t -> Jsonrpc.Packet.t -> t
+  val with_docs : t -> (t * Docs.t -> t * Docs.t) -> t
+  val prove_step : t -> LspT.DocumentUri.t -> int -> LspT.Range.t -> t
 
   val suggest_proof_range :
-    cb_t ->
-    LspT.DocumentUri.t ->
-    LspT.Range.t ->
-    cb_t * (int * LspT.Range.t) option
+    t -> LspT.DocumentUri.t -> LspT.Range.t -> t * (int * LspT.Range.t) option
 
   val latest_diagnostics :
-    cb_t -> LspT.DocumentUri.t -> cb_t * (int * LspT.Diagnostic.t list)
+    t -> LspT.DocumentUri.t -> t * (int * LspT.Diagnostic.t list)
 
   val diagnostic_source : string
 end
 
 module Make (CB : Callbacks) : sig
-  val handle_jsonrpc_packet : Jsonrpc.Packet.t -> CB.cb_t -> CB.cb_t
+  val handle_jsonrpc_packet : Jsonrpc.Packet.t -> CB.t -> CB.t
 end

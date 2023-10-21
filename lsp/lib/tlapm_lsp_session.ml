@@ -120,10 +120,12 @@ let send_proof_info st uri vsn res =
       send_proof_state_markers st uri pss
   | None -> ()
 
+type t' = t
+
 module PacketsCB = struct
   module LspT = Lsp.Types
 
-  type cb_t = t
+  type t = t'
 
   let ready st =
     match st.mode with
