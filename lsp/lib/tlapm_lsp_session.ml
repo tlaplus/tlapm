@@ -18,6 +18,8 @@ type t = {
   event_taker : unit -> events;
   event_adder : events -> unit;
   output_adder : Jsonrpc.Packet.t option -> unit;
+  last_req_id : int;
+  progress : Tlapm_lsp_progress.t;
   mode : mode;
   docs : Docs.t;
   prov : Prover.t;
@@ -38,11 +40,47 @@ let with_docs st f =
       Eio.traceln "Ignoring request: %s" err;
       st
 
+(* For callbacks. *)
+let lsp_send st p =
+  st.output_adder (Some p);
+  st
+
+(* For callbacks. *)
+type t' = t
+
+module Progress = Tlapm_lsp_progress.Make (struct
+  type t = t'
+
+  let lsp_send = lsp_send
+
+  let next_req_id st =
+    let next = st.last_req_id + 1 in
+    (`Int next, { st with last_req_id = next })
+end)
+
+let progress_proof_started st p_ref =
+  let progress, st = Progress.proof_started st.progress p_ref st in
+  { st with progress }
+
+let progress_obl_num st p_ref obl_num =
+  let progress, st = Progress.obl_num st.progress p_ref obl_num st in
+  { st with progress }
+
+let progress_obl_changed st p_ref obl_done =
+  let progress, st = Progress.obl_changed st.progress p_ref obl_done st in
+  { st with progress }
+
+let progress_proof_ended st p_ref =
+  let progress, st = Progress.proof_ended st.progress p_ref st in
+  { st with progress }
+
+(* TODO: {"jsonrpc":"2.0","method":"window/workDoneProgress/cancel","params":{"token":"tlapm_lsp-p_ref-1"}} *)
+
 let make_diagnostics os ns =
   let open Prover.ToolboxProtocol in
   let open Lsp.Types in
   let diagnostics_o =
-    List.map
+    List.filter_map
       (fun (o : tlapm_obligation) ->
         let message =
           "Obligation: "
@@ -53,17 +91,21 @@ let make_diagnostics os ns =
         in
         let severity =
           match o.status with
-          | ToBeProved -> Lsp.Types.DiagnosticSeverity.Hint
-          | BeingProved -> Lsp.Types.DiagnosticSeverity.Hint
-          | Normalized -> Lsp.Types.DiagnosticSeverity.Hint
-          | Proved -> Lsp.Types.DiagnosticSeverity.Information
-          | Failed -> Lsp.Types.DiagnosticSeverity.Error
-          | Interrupted -> Lsp.Types.DiagnosticSeverity.Error
-          | Trivial -> Lsp.Types.DiagnosticSeverity.Information
-          | Unknown _ -> Lsp.Types.DiagnosticSeverity.Error
+          | ToBeProved -> None
+          | BeingProved -> None
+          | Normalized -> None
+          | Proved -> None
+          | Failed -> Some Lsp.Types.DiagnosticSeverity.Error
+          | Interrupted -> Some Lsp.Types.DiagnosticSeverity.Error
+          | Trivial -> None
+          | Unknown _ -> Some Lsp.Types.DiagnosticSeverity.Error
         in
-        let range = Prover.TlapmRange.as_lsp_range o.loc in
-        Diagnostic.create ~message ~range ~severity ~source:diagnostic_source ())
+        match severity with
+        | None -> None
+        | Some severity ->
+            let range = Prover.TlapmRange.as_lsp_range o.loc in
+            let source = diagnostic_source in
+            Some (Diagnostic.create ~message ~range ~severity ~source ()))
       os
   in
   let diagnostics_n =
@@ -115,14 +157,15 @@ let send_proof_state_markers st uri pss =
 
 let send_proof_info st uri vsn res =
   match res with
-  | Some (_id, os, ns, pss) ->
-      send_diagnostics st uri vsn os ns;
+  | Some (Docs.ProofRes.{ p_ref; obs; nts; pss } as proof_res) ->
+      let st =
+        progress_obl_changed st p_ref (Docs.ProofRes.obs_done proof_res)
+      in
+      send_diagnostics st uri vsn obs nts;
       send_proof_state_markers st uri pss
   | None -> ()
 
-type t' = t
-
-module PacketsCB = struct
+module Handlers = Tlapm_lsp_handlers.Make (struct
   module LspT = Lsp.Types
 
   type t = t'
@@ -139,10 +182,7 @@ module PacketsCB = struct
     | Ready -> { st with mode = Shutdown }
     | Shutdown -> st
 
-  let lsp_send st p =
-    st.output_adder (Some p);
-    st
-
+  let lsp_send = lsp_send
   let with_docs = with_docs
 
   let prove_step st (uri : LspT.DocumentUri.t) (vsn : int)
@@ -156,6 +196,7 @@ module PacketsCB = struct
     let st = { st with docs } in
     match next_p_ref_opt with
     | Some (p_ref, doc_text, p_range, proof_res) -> (
+        let st = progress_proof_started st p_ref in
         send_proof_info st uri vsn (Some proof_res);
         let prov_events e =
           st.event_adder (TlapmEvent ((uri, vsn, p_ref), e))
@@ -185,8 +226,8 @@ module PacketsCB = struct
     let docs, vsn_opt, proof_res_opt = Docs.get_proof_res_latest st.docs uri in
     let st = { st with docs } in
     (match (vsn_opt, proof_res_opt) with
-    | None, _ -> send_proof_info st uri 0 (Some (0, [], [], []))
-    | Some vsn, None -> send_proof_info st uri vsn (Some (0, [], [], []))
+    | None, _ -> send_proof_info st uri 0 (Some Docs.ProofRes.empty)
+    | Some vsn, None -> send_proof_info st uri vsn (Some Docs.ProofRes.empty)
     | Some vsn, Some p_res -> send_proof_info st uri vsn (Some p_res));
     (st, (0, []))
 
@@ -203,6 +244,8 @@ module PacketsCB = struct
         event_taker = (fun () -> LspEOF);
         event_adder = (fun _ -> ());
         output_adder = (fun _ -> ());
+        last_req_id = 0;
+        progress = Tlapm_lsp_progress.make ();
         docs = Docs.empty;
         prov = Prover.create sw fs proc_mgr;
       }
@@ -225,11 +268,9 @@ module PacketsCB = struct
       | Error _ -> ()
     in
     ()
-end
+end)
 
-module Packets = Tlapm_lsp_packets.Make (PacketsCB)
-
-let handle_lsp_packet p st = Some (Packets.handle_jsonrpc_packet p st)
+let handle_lsp_packet p st = Some (Handlers.handle_jsonrpc_packet p st)
 
 let handle_tlapm_msg ((uri, vsn, p_ref) : doc_ref) msg st =
   let open Prover.ToolboxProtocol in
@@ -243,11 +284,17 @@ let handle_tlapm_msg ((uri, vsn, p_ref) : doc_ref) msg st =
       let docs, res = Docs.add_notif st.docs uri vsn p_ref notif in
       send_proof_info st uri vsn res;
       Some { st with docs }
-  | TlapmObligationsNumber _ ->
+  | TlapmObligationsNumber obl_num ->
       Eio.traceln "---> TlapmObligationsNumber";
-      let docs, res = Docs.obl_num st.docs uri vsn p_ref in
-      send_proof_info st uri vsn res;
-      Some { st with docs }
+      let st =
+        try progress_obl_num st p_ref obl_num
+        with e ->
+          Eio.traceln "EXCEPTION %s" (Printexc.to_string e);
+          st
+      in
+      Eio.traceln "---> TlapmObligationsNumber -- done";
+      (* TODO: Cleanup. *)
+      Some st
   | TlapmObligation obl ->
       Eio.traceln "---> TlapmObligation, id=%d" obl.id;
       let docs, res = Docs.add_obl st.docs uri vsn p_ref obl in
@@ -255,6 +302,7 @@ let handle_tlapm_msg ((uri, vsn, p_ref) : doc_ref) msg st =
       Some { st with docs }
   | TlapmTerminated ->
       Eio.traceln "---> TlapmTerminated";
+      let st = progress_proof_ended st p_ref in
       let docs, res = Docs.terminated st.docs uri vsn p_ref in
       send_proof_info st uri vsn res;
       Some { st with docs }
@@ -280,6 +328,8 @@ let run event_taker event_adder output_adder sw fs proc_mgr =
       event_taker;
       event_adder;
       output_adder;
+      last_req_id = 0;
+      progress = Tlapm_lsp_progress.make ();
       docs = Docs.empty;
       prov = Prover.create sw fs proc_mgr;
     }

@@ -41,6 +41,7 @@ module ToolboxProtocol : sig
     | Unknown of string
 
   val tlapm_obl_state_to_string : tlapm_obl_state -> string
+  val tlapm_obl_state_is_terminal : tlapm_obl_state -> bool
 
   type tlapm_obligation = {
     id : int;

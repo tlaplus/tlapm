@@ -15,8 +15,18 @@ type t
 type tk = Lsp.Types.DocumentUri.t
 (** Key type to identify documents. *)
 
-type proof_res = int * tlapm_obligation list * tlapm_notif list * PS.t list
 (** Result of an update, returns an actual list of obligations and errors. *)
+module ProofRes : sig
+  type t = {
+    p_ref : int;
+    obs : tlapm_obligation list;
+    nts : tlapm_notif list;
+    pss : PS.t list;
+  }
+
+  val empty : t
+  val obs_done : t -> int
+end
 
 val empty : t
 (** Create new empty document store. *)
@@ -32,27 +42,24 @@ val prepare_proof :
   tk ->
   int ->
   TlapmRange.t ->
-  t * (int * string * TlapmRange.t * proof_res) option
+  t * (int * string * TlapmRange.t * ProofRes.t) option
 (** Increment the prover ref for the specified doc/vsn. *)
 
 val suggest_proof_range :
   t -> tk -> TlapmRange.t -> t * (int * TlapmRange.t) option
 (** Suggest proof range based on the user selection. *)
 
-val obl_num : t -> tk -> int -> int -> t * proof_res option
-(** We got the obligation number for the current proof invocation. *)
-
-val add_obl : t -> tk -> int -> int -> tlapm_obligation -> t * proof_res option
+val add_obl : t -> tk -> int -> int -> tlapm_obligation -> t * ProofRes.t option
 (** Record obligation for the document, clear all the intersecting ones. *)
 
-val add_notif : t -> tk -> int -> int -> tlapm_notif -> t * proof_res option
+val add_notif : t -> tk -> int -> int -> tlapm_notif -> t * ProofRes.t option
 (** Record obligation for the document, clear all the intersecting ones. *)
 
-val terminated : t -> tk -> int -> int -> t * proof_res option
+val terminated : t -> tk -> int -> int -> t * ProofRes.t option
 (** Cleanup the incomplete proof states on termination of the prover. *)
 
-val get_proof_res : t -> tk -> int -> t * proof_res option
+val get_proof_res : t -> tk -> int -> t * ProofRes.t option
 (** Get the latest actual proof results. Cleanup them, if needed. *)
 
-val get_proof_res_latest : t -> tk -> t * int option * proof_res option
+val get_proof_res_latest : t -> tk -> t * int option * ProofRes.t option
 (** Get the latest actual proof results. Cleanup them, if needed. *)

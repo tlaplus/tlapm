@@ -241,7 +241,23 @@ end = struct
     TlapmRange.lines_covered_or_all input pss_locs
 end
 
-type proof_res = int * tlapm_obligation list * tlapm_notif list * PS.t list
+module ProofRes = struct
+  type t = {
+    p_ref : int;
+    obs : tlapm_obligation list;
+    nts : tlapm_notif list;
+    pss : PS.t list;
+  }
+
+  let empty = { p_ref = 0; obs = []; nts = []; pss = [] }
+
+  let obs_done t =
+    List.fold_left
+      (fun acc ob ->
+        if ToolboxProtocol.tlapm_obl_state_is_terminal ob.status then acc + 1
+        else acc)
+      0 t.obs
+end
 
 (** Versions that are collected after the last prover launch or client
     asks for diagnostics. We store some limited number of versions here,
@@ -274,10 +290,9 @@ module TA : sig
   val text : t -> string
   val merge_into : t -> TV.t -> t
   val try_parse : t -> LspT.DocumentUri.t -> t
-  val proof_res : t -> proof_res
+  val proof_res : t -> ProofRes.t
   val prepare_proof : t -> LspT.DocumentUri.t -> int -> t option
   val locate_proof_range : t -> TlapmRange.t -> TlapmRange.t
-  val obl_num : t -> int -> t option
   val add_obl : t -> int -> tlapm_obligation -> t option
   val add_notif : t -> int -> tlapm_notif -> t option
   val terminated : t -> int -> t option
@@ -342,9 +357,14 @@ end = struct
     | { mule = None; _ } -> try_parse_anyway uri act
     | { mule = Some _; _ } -> act
 
-  let proof_res (act : t) =
+  let proof_res (act : t) : ProofRes.t =
     let obs_list = List.map snd (OblMap.to_list act.obs) in
-    (act.p_ref, obs_list, act.nts, PS.flatten act.pss)
+    {
+      p_ref = act.p_ref;
+      obs = obs_list;
+      nts = act.nts;
+      pss = PS.flatten act.pss;
+    }
 
   let prepare_proof (act : t) uri next_p_ref =
     let act = try_parse act uri in
@@ -353,12 +373,6 @@ end = struct
     | Some (Ok _mule) -> Some { act with p_ref = next_p_ref; nts = [] }
 
   let locate_proof_range act range = PS.locate_proof_range act.pss range
-
-  let obl_num (act : t) p_ref =
-    if act.p_ref = p_ref then
-      (* TODO: Handle the work progress based on this. *)
-      Some act
-    else None
 
   let add_obl (act : t) (p_ref : int) (obl : tlapm_obligation) =
     if act.p_ref = p_ref then
@@ -478,7 +492,7 @@ let with_doc_vsn docs uri vsn f =
 
 (* Push specific version to the actual, increase the proof_rec and clear the notifications. *)
 let prepare_proof docs uri vsn range :
-    t * (int * string * TlapmRange.t * proof_res) option =
+    t * (int * string * TlapmRange.t * ProofRes.t) option =
   with_doc_vsn docs uri vsn @@ fun (doc : TD.t) (act : TA.t) ->
   let next_doc, next_p_ref = TD.next_p_ref doc in
   match TA.prepare_proof act uri next_p_ref with
@@ -496,12 +510,6 @@ let suggest_proof_range docs uri range : t * (int * TlapmRange.t) option =
       with_doc_vsn docs uri vsn @@ fun (doc : TD.t) (act : TA.t) ->
       let p_range = TA.locate_proof_range act range in
       (doc, act, Some (vsn, p_range))
-
-let obl_num docs uri vsn p_ref =
-  with_doc_vsn docs uri vsn @@ fun (doc : TD.t) (act : TA.t) ->
-  match TA.obl_num act p_ref with
-  | None -> (doc, act, None)
-  | Some act -> (doc, act, Some (TA.proof_res act))
 
 let add_obl docs uri vsn p_ref (obl : tlapm_obligation) =
   with_doc_vsn docs uri vsn @@ fun (doc : TD.t) (act : TA.t) ->
