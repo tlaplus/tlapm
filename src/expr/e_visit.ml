@@ -658,94 +658,58 @@ let set_to_list table =
     Stdlib.List.of_seq seq
 
 
-let collect_unprimed_vars cx e =
-    let unprimed_vars = Hashtbl.create 16 in
+let collect_identifiers cx e =
+    (* Return a `string list` of all declared and
+    defined identifiers in the context `cx` and the expression `e`.
+    *)
+    let identifiers = Hashtbl.create 16 in
+    let add_id v = Hashtbl.replace identifiers v.core () in
+    let add_ids vs = List.iter add_id vs in
     let visitor =
         object (self: 'self)
-        inherit [bool] iter_visible_hyp as super
+        inherit [unit] iter as super
 
-        method expr (((prime_scope: bool), cx) as scx) e =
-            match e.core with
-            | Apply ({core=Internal Prime}, _) ->
-                assert (not prime_scope)
-            | Ix n ->
-                assert (n >= 1);
-                assert (not prime_scope);
-                let hyp = E_t.get_val_from_id cx n in
-                begin match hyp.core with
-                    | Flex name ->
-                        let var_name = name.core in
-                        Hashtbl.replace unprimed_vars var_name ()
-                    | _ -> ()
-                end
-            | Apply ({core=Internal ENABLED}, _) ->
-                if (not prime_scope) then
-                    self#expr scx e
-            | Apply ({core=Internal Cdot}, [arg1; _]) ->
-                assert (not prime_scope);
-                self#expr scx arg1
-            | Apply ({core=Internal UNCHANGED}, [arg]) ->
-                assert (not prime_scope);
-                self#expr scx arg
-            | Sub (_, action, subscript) ->
-                assert (not prime_scope);
-                self#expr scx action;
-                self#expr scx subscript
-            | _ -> super#expr scx e
-    end
-    in
-    let prime_scope = false in
-    let scx = (prime_scope, cx) in
+        method expr scx oe =
+            let vs = match oe.core with
+                | Lambda (vs, _) -> List.map (fun (v, _) -> v) vs
+                | Tquant (_, vs, _) -> vs
+                | Choose (v, _, _) -> [v]
+                | SetSt (v, _, _) -> [v]
+                | _ -> [] in
+            add_ids vs;
+            super#expr scx oe
+
+        method defn scx df =
+            let v = match df.core with
+                | Recursive (nm, _) -> nm
+                | Operator (nm, _) -> nm
+                | Bpragma (nm, _, _) -> nm
+                | Instance (nm, _) -> nm in
+            add_id v;
+            super#defn scx df
+
+        method bounds scx bs =
+            let vs = List.map (fun (v, _, _) -> v) bs in
+            add_ids vs;
+            super#bounds scx bs
+
+        method instance scx i =
+            assert false  (* called after `Module.Elab`
+                expands `INSTANCE` *)
+
+        method hyp scx h =
+            begin match h.core with
+            | Fresh (nm, _, _, _) -> add_id nm
+            | Flex nm -> add_id nm
+            | Defn _ -> ()  (* handled in the method `self#defn` *)
+            | Fact _ -> () end;
+            super#hyp scx h
+        end in
+    let scx = ((), Deque.empty) in
+    ignore (visitor#hyps scx cx);
+    let scx = ((), cx) in
     visitor#expr scx e;
-    set_to_list unprimed_vars
-
-
-let collect_primed_vars cx e =
-    let primed_vars = Hashtbl.create 16 in
-    let visitor =
-        object (self: 'self)
-        inherit [bool] iter_visible_hyp as super
-
-        method expr (((prime_scope: bool), cx) as scx) e =
-            match e.core with
-            | Apply ({core=Internal Prime}, [arg]) ->
-                assert (not prime_scope);
-                self#expr (true, cx) arg
-            | Ix n ->
-                begin
-                assert (n >= 1);
-                let hyp = E_t.get_val_from_id cx n in
-                match hyp.core with
-                    | Flex name ->
-                        let var_name = name.core in
-                        if (prime_scope &&
-                                not (Hashtbl.mem primed_vars var_name)) then
-                            Hashtbl.add primed_vars var_name ()
-                    | _ -> ()
-                end
-            | Apply ({core=Internal ENABLED}, _) ->
-                assert (not prime_scope)
-            | Apply ({core=Internal Cdot}, [_; arg2]) ->
-                assert (not prime_scope);
-                self#expr scx arg2
-            | Apply ({core=Internal UNCHANGED}, [arg]) ->
-                assert (not prime_scope);
-                let prime_scope_ = true in
-                let scx_ = (prime_scope_, cx) in
-                self#expr scx_ arg
-            | Sub (_, action, subscript) ->
-                assert (not prime_scope);
-                self#expr scx action;
-                let prime_scope_ = true in
-                let scx_ = (prime_scope_, cx) in
-                self#expr scx_ subscript
-            | _ -> super#expr scx e
-    end
-    in
-    let prime_scope = false in
-    let scx = (prime_scope, cx) in
-    visitor#expr scx e;
-    set_to_list primed_vars
+    set_to_list identifiers
 
 
 class virtual ['s] map_rename = object (self : 'self)

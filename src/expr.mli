@@ -579,7 +579,9 @@ module Visit: sig
       method rename : ctx -> hyp -> Util.hint -> hyp * Util.hint
       method renames : ctx -> hyp list -> Util.hints -> hyp list * Util.hints
   end
-end
+
+  val collect_identifiers: ctx -> expr -> string list
+end;;
 
 module Eq: sig
     open T
@@ -718,17 +720,17 @@ end
 
 module Action: sig
     open T
-    val invert_renaming:
-        ctx -> expr ->
-            expr
-    val implication_to_enabled:
-        ctx -> expr ->
-            expr
+
+    val invert_renaming: ctx -> expr -> expr
+    val enabled_axioms: ctx -> expr -> expr
+    val enabled_rewrites: ctx -> expr -> expr
+    val enabled_rules: ctx -> expr -> expr
     val lambdify:
         ctx -> expr ->
         lambdify_enabled:bool ->
         lambdify_cdot:bool ->
         autouse:bool ->
+        used_identifiers: string list ->
             expr
     val quantify:
         ctx -> expr ->
@@ -740,6 +742,7 @@ module Action: sig
         expand_enabled:bool ->
         expand_cdot:bool ->
         autouse:bool ->
+        used_identifiers: string list ->
             expr
 end
 
@@ -768,78 +771,32 @@ module LevelComparison: sig
     open Util
     open T
     class level_comparison : object
-        method compare:
-            ctx -> ctx ->
-            expr -> expr ->
-                bool
-        method expr:
-            ctx -> ctx ->
-            expr -> expr ->
-                bool
-        method exprs:
-            ctx -> ctx ->
-            expr list -> expr list ->
-                bool
-        method bounds_cx:
-            ctx -> bounds ->
-                ctx
-        method bounds:
-            ctx -> ctx ->
-            bounds -> bounds ->
-                bool
-        method bound:
-            ctx -> ctx ->
-            bound -> bound ->
-                bool
-        method bdom:
-            ctx -> ctx ->
-            bound_domain -> bound_domain ->
-                bool
-        method opt_expr:
-            ctx -> ctx ->
-            expr option -> expr option ->
-                bool
-        method defns_cx:
-            ctx -> defn list -> ctx
-        method defns:
-            ctx -> ctx ->
-            defn list -> defn list ->
-                bool
-        method defn:
-            ctx -> ctx ->
-            defn -> defn ->
-                bool
-        method sequent:
-            ctx -> ctx ->
-            sequent -> sequent ->
-                bool
-        method context:
-            ctx -> ctx ->
-            ctx -> ctx ->
-                bool
-        method hyps_cx:
-            ctx -> ctx ->
-                ctx
-        method hyp:
-            ctx -> ctx ->
-            hyp -> hyp ->
-                bool
-        method hyp_cx:
-            ctx -> hyp ->
-                ctx
-        method instance:
-            ctx -> ctx ->
-            instance -> instance ->
-                bool
-        method sub:
-            ctx -> ctx ->
-            (hint * expr) list ->
-            (hint * expr) list ->
-                bool
-        method sel:
-            ctx -> ctx ->
-            sel -> sel ->
-                bool
+        method compare : ctx -> ctx -> ctx -> expr -> expr -> bool
+
+        method expr : ctx -> ctx -> expr -> expr -> bool
+        method exprs : ctx -> ctx -> expr list -> expr list -> bool
+
+        method bounds_cx : ctx -> bounds -> ctx
+        method bounds : ctx -> ctx -> bounds -> bounds -> bool
+        method bound : ctx -> ctx -> bound -> bound -> bool
+        method bdom : ctx -> ctx -> bound_domain -> bound_domain -> bool
+
+        method opt_expr : ctx -> ctx -> expr option -> expr option -> bool
+
+        method defns_cx : ctx -> defn list -> ctx
+        method defns : ctx -> ctx -> defn list -> defn list -> bool
+        method defn : ctx -> ctx -> defn -> defn -> bool
+
+        method sequent : ctx -> ctx -> sequent -> sequent -> bool
+        method context : ctx -> ctx -> ctx -> ctx -> bool
+        method hyps_cx : ctx -> ctx -> ctx
+        method hyp : ctx -> ctx -> hyp -> hyp -> bool
+        method hyp_cx : ctx -> hyp -> ctx
+
+        method instance : ctx -> ctx -> instance -> instance -> bool
+        method sub : ctx -> ctx ->
+            (hint * expr) list -> (hint * expr) list -> bool
+        method sel : ctx -> ctx -> sel -> sel -> bool
     end
 
     val check_level_change:
