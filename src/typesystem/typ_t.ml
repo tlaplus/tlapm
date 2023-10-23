@@ -1475,7 +1475,6 @@ let rec is_int scx e =
         end
     | Apply ({core=Internal B.Uminus}, [ex]) ->
         is_int scx ex
-    | Apply ({core=Internal B.Len}, _) -> true
     | If (_, t, f) ->
         is_int scx t &&
         is_int scx f
