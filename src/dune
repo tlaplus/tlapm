@@ -1,13 +1,29 @@
+(env
+  (_
+    (flags (:standard -w +a-4-7-9-27-29-30-32..42-44-45-48-50-52-60-66..70))))
+
 (executable
   (name tlapm)
-  (libraries unix str)
-  (foreign_stubs (language c) (names sysconf_stubs)))
+  (public_name tlapm)
+  (modules tlapm)
+  (libraries tlapm_lib)
+  (promote (until-clean))) ; Required to get `tlapm --version` during a release.
+
+(library
+ (name tlapm_lib)
+ (modules (:standard \ tlapm test_schedule why3_interface abstractor))
+ (libraries
+  unix str dune-site dune-build-info  ; main deps.
+  sexplib)                            ; for inline tests only (ppx_assert).
+ (foreign_stubs (language c) (names sysconf_stubs))
+ (inline_tests (deps "../test/resources/module/m_save/TLC.tla"))
+ (preprocess (pps ppx_inline_test ppx_assert)))
 
 (ocamllex alexer)
 
-(include_subdirs unqualified)
+(generate_sites_module
+ (module setup_paths)
+ (sites tlapm))
 
-(env
-  (dev
-    (flags (:standard -w +a-4-7-9-27-29-30-32..42-44-45-48-50-52-60-66..70))))
+(include_subdirs unqualified)
 

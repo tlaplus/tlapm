@@ -210,3 +210,75 @@ let replace_at scx e r =
   will_replace := Some r.core;
   let res = replace_at_aux scx e in
   will_replace := None; res
+
+
+let%test_module _ = (module struct
+  let sexp_of_string = Sexplib.Std.sexp_of_string
+  let compare_string = Base.compare_string
+
+  let parse_expr = Tla_parser.P.use (E_parser.expr true)
+  let nullctx = (Deque.empty, Ctx.dot)
+
+  let create_expression str =
+    let (flex, _) = Alexer.lex_string str in
+    match Tla_parser.P.run parse_expr ~init:Tla_parser.init ~source:flex with
+      | Some e -> e
+      | None -> failwith "cannot parse test string"
+
+  let prn_exp exp =
+    Tla_parser.Fu.pp_print_minimal
+    Format.str_formatter (E_fmt.fmt_expr nullctx exp);
+    Format.flush_str_formatter ()
+
+  let prn_str str = str
+
+  let%test_unit "test_case_1" =
+    let (flex, _) = Alexer.lex_string "[f EXCEPT ![0] = 0, ![1] = 1][0] = f[0]" in
+      match Tla_parser.P.run parse_expr ~init:Tla_parser.init ~source:flex with
+      | Some e -> ()
+      | None -> failwith "cannot parse test string"
+
+  let%test_unit "t1" =
+    let test_case = create_expression "[f EXCEPT ![0] = 0, ![1] = 1]" in
+    let target_case = create_expression "[[f EXCEPT ![0] = 0] EXCEPT ![1] = 1]" in
+      [%test_eq: string] (prn_exp target_case) (prn_exp (normalize Deque.empty test_case))
+
+  let%test_unit "t2" =
+    let test_case = create_expression "[[f EXCEPT ![0] = 10, ![1] = 1] EXCEPT ![0] = 0]" in
+    let target_case = create_expression "[[[f EXCEPT ![0] = 10] EXCEPT ![1] = 1] EXCEPT ![0] = 0]" in
+      [%test_eq: string] (prn_exp target_case) (prn_exp (normalize Deque.empty test_case))
+
+  let%test_unit "t3" =
+    let test_case = create_expression "[f EXCEPT ![0] = ([f EXCEPT ![0] = 1, ![1] = 0][1])]" in
+    let target_case = create_expression "[f EXCEPT ![0] = ([[f EXCEPT ![0] = 1] EXCEPT ![1] = 0][1])]" in
+      [%test_eq: string] (prn_exp target_case) (prn_exp (normalize Deque.empty test_case))
+
+  let%test_unit "t4" =
+    let test_case = create_expression "[f EXCEPT ![([f EXCEPT ![0] = 1, ![1] = 0][1])] = 2]" in
+    let target_case = create_expression "[f EXCEPT ![([[f EXCEPT ![0] = 1] EXCEPT ![1] = 0][1])] = 2]" in
+      [%test_eq: string] (prn_exp target_case) (prn_exp (normalize Deque.empty test_case))
+
+  let%test_unit "t5" =
+    let test_case = create_expression "[f EXCEPT !.a = 3, !.b = 2, !.c = 1]" in
+    let target_case = create_expression "[[[f EXCEPT !.a = 3] EXCEPT !.b = 2] EXCEPT !.c = 1]" in
+      [%test_eq: string] (prn_exp target_case) (prn_exp (normalize Deque.empty test_case))
+
+  let%test_unit "t6" =
+    let test_string = "[[arr EXCEPT ![x][y] = foo] EXCEPT ![u][v] = bar]" in
+    let test_case = create_expression test_string in
+    let target_case = create_expression
+      "[[arr EXCEPT ![x] = [arr[x] EXCEPT ![y] = foo]] EXCEPT ![u] = \
+      [[arr EXCEPT ![x] = [arr[x] EXCEPT ![y] = foo]][u] EXCEPT ![v] = bar]]" in
+        [%test_eq: string] (prn_exp target_case) (prn_exp (normalize Deque.empty test_case))
+
+  (*
+  let%test_unit "t7" [@tags "disabled"] = (* doesnt work because we need to anonimie the created expressions from the parser*)
+    let test_string = "f[x]'" in
+    let test_case = create_expression test_string in
+    let target_case = create_expression "f'[x']" in
+    (* let x = normalize Deque.empty test_case in
+       Printf.eprintf "compare: %d\n" (Pervasives.compare x target_case); *)
+      [%test_eq: string] (prn_exp target_case) (prn_exp (normalize Deque.empty test_case))
+  *)
+
+end)

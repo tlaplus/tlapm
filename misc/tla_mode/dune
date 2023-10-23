@@ -1,0 +1,3 @@
+(install
+ (section lib)
+ (files ("tla-mode.el" as "emacs/tla-mode/tla-mode.el")))
