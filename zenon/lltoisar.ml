@@ -21,7 +21,7 @@ let dict_empty = Dict.empty;;
 
 module Int = struct
   type t = int;;
-  let compare = Pervasives.compare;;
+  let compare = Stdlib.compare;;
 end;;
 module Hypdict = Map.Make (Int);;
 
@@ -973,7 +973,7 @@ let rec get_nary_rules accu prf =
 let add_nary_rules oc lemmas =
   let f lem = get_nary_rules [] lem.proof in
   let rules = List.flatten (List.map f lemmas) in
-  let rules1 = Misc.list_sort_unique Pervasives.compare rules in
+  let rules1 = Misc.list_sort_unique Stdlib.compare rules in
   let f r =
     match r with
     | Nary_case (n, oth) -> Isar_case.print_case "have" n oth oc
