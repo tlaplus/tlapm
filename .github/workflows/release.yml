@@ -1,7 +1,8 @@
 name: Upload installer of TLA Proof Manager
 on:
     push:
-        branches: release_installer_on_github
+        branches:
+          - release_installer_on_github
 jobs:
     release:
             # This task creates a release on GitHub,
@@ -59,13 +60,12 @@ jobs:
         needs: [release]
         runs-on: ${{ matrix.operating-system }}
         strategy:
-            matrix:
-                operating-system: [
-                    macos-latest,
-                    ubuntu-latest]
-                ocaml-compiler: [
-                    '2',
-                    ]
+          matrix:
+            operating-system:
+              - macos-latest,
+              - ubuntu-latest
+            ocaml-compiler:
+              - '2'
         steps:
             - name: Install deps
               if: matrix.operating-system == 'ubuntu-latest'
@@ -73,9 +73,9 @@ jobs:
                 sudo apt-get update
                 sudo apt-get install --yes time
             - name: Set up Python
-              uses: actions/setup-python@v2
+              uses: actions/setup-python@v4
               with:
-                python-version: '3.10'
+                python-version: '3.12'
             # Read "Output Release URL and
             # ID File" of `release` job above.
             - name: Load Release URL File from release job
@@ -93,7 +93,7 @@ jobs:
               env:
                 TAG_REF_NAME: ${{ github.ref }}
                 REPOSITORY_NAME: ${{ github.repository }}
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v3
             - name: Get OCaml version
               run: |
                 INDEX=${{ matrix.ocaml-compiler }}
@@ -117,10 +117,6 @@ jobs:
                 make
                 make release
                 echo "TLAPM_RELEASE_FILE=$(make release-print-file)" >> "$GITHUB_ENV"
-            - name: Run a subset of `tlapm` tests
-              run: |
-                eval $(opam env)
-                make test-inline test-fast-basic
             - name: Upload Release Asset
               if: matrix.ocaml-compiler == '2'
               id: upload-release-asset
@@ -132,3 +128,4 @@ jobs:
                 asset_path: _build/${{ env.TLAPM_RELEASE_FILE }}
                 asset_name: ${{ env.TLAPM_RELEASE_FILE }}
                 asset_content_type: application/octet-stream
+

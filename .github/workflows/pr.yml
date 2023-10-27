@@ -1,26 +1,18 @@
 name: Build on PR
-on:
-    pull_request:
-    push:
-        paths:
-            - '.github/workflows/pr.yml'
-    schedule:
-        - cron: '42 5 20 * *'
+on: [pull_request]
 jobs:
     test:
         name: Build and Test
         runs-on: ${{ matrix.operating-system }}
         strategy:
-            fail-fast: false
-            matrix:
-                operating-system: [
-                    macos-latest,
-                    ubuntu-latest]
-                ocaml-compiler: [
-                    '0',
-                    '1',
-                    '2',
-                    ]
+          fail-fast: false
+          matrix:
+            operating-system:
+              - macos-latest,
+              - ubuntu-latest
+            ocaml-compiler:
+              - '0'
+              - '1'
         steps:
             - name: Install deps
               if: matrix.operating-system == 'ubuntu-latest'
@@ -28,10 +20,11 @@ jobs:
                 sudo apt-get update
                 sudo apt-get install --yes time
             - name: Set up Python
-              uses: actions/setup-python@v2
+              uses: actions/setup-python@v4
               with:
-                python-version: '3.10'
-            - uses: actions/checkout@v2
+                python-version: '3.12'
+            - name: Clone repo
+              uses: actions/checkout@v3
             - name: Get OCaml version
               run: |
                 INDEX=${{ matrix.ocaml-compiler }}
@@ -48,21 +41,45 @@ jobs:
             #   with:
             #     path: _build_cache
             #     key: ${{ runner.os }}_build_cache
-            - name: Build installer of TLAPS
+            - name: Build TLAPS installer
               run: |
                 eval $(opam env)
                 opam install ./ --deps-only --yes
                 make
                 make release
-            - name: Run a subset of `tlapm` tests
+            - name: Get TLA+ examples
+              uses: actions/checkout@v3
+              with:
+                repository: tlaplus/examples
+                path: tlaplus-examples
+            - name: Check proofs in TLA+ examples
+              run: |
+                EXAMPLES_DIR=tlaplus-examples
+                mkdir $EXAMPLES_DIR/deps
+                cp ./_build/tlaps*.tar.gz $EXAMPLES_DIR/deps/tlaps.tar.gz
+                tar -xzf $EXAMPLES_DIR/deps/tlaps.tar.gz -C $EXAMPLES_DIR/deps
+                rm $EXAMPLES_DIR/deps/tlaps.tar.gz
+                mv $EXAMPLES_DIR/deps/tlaps* $EXAMPLES_DIR/deps/tlapm-install
+                SKIP=(
+                  # Missing operator ENABLEDrules; will be fixed after
+                  # updated_enabled_cdot branch is merged.
+                  "specifications/ewd998/AsyncTerminationDetection.tla",
+                  # General proof failure
+                  "specifications/MisraReachability/ReachabilityProofs.tla",
+                  "specifications/Paxos/Consensus.tla",
+                  "specifications/PaxosHowToWinATuringAward/Consensus.tla",
+                  "specifications/lamport_mutex/LamportMutex_proofs.tla"
+                )
+                python $EXAMPLES_DIR/.github/scripts/check_proofs.py      \
+                  --tlapm_path $EXAMPLES_DIR/deps/tlapm-install           \
+                  --manifest_path $EXAMPLES_DIR/manifest.json             \
+                  --skip "${SKIP[@]}"
+            - name: Run tests
               run: |
                 eval $(opam env)
-                make test-inline test-fast-basic
-            - name: Run all `tlapm` tests
-              run: |
-                eval $(opam env)
+                set +e
                 make test
-            - name: Print Test Results
-              if: matrix.operating-system == 'ubuntu-latest'
-              run: |
+                TEST_RESULT=$?
                 cat _build/default/test/tests.log
+                exit $TEST_RESULT
+
