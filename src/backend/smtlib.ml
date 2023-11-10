@@ -33,7 +33,7 @@ let primed s = s ^ "__prime"
 (* {3 Context} *)
 
 let repls =
-  [ '_',  "underscore_"
+  [ '_',  "__" (* keep the tempfiles readable *)
   ; '\\', "backslash_"
   ; '+',  "plussign_"
   ; '-',  "hyphen_"

@@ -29,34 +29,7 @@ let primed s = s ^ "__prime"
 
 let init_cx = Ctx.dot
 
-(* NOTE Global variables must be uncapitalized, local variables must be
- * capitalized.  All variables get a prefix to ensure that. *)
-
-let repls =
-  [ '_',  "underscore_"
-  ; '\\', "backslash_"
-  ; '+',  "plussign_"
-  ; '-',  "hyphen_"
-  ; '*',  "asterisk_"
-  ; '/',  "slash_"
-  ; '%',  "percentsign_"
-  ; '^',  "circumflexaccent_"
-  ; '&',  "ampersand_"
-  ; '@',  "atsign_"
-  ; '#',  "pound_"
-  ; '$',  "dollarsign_"
-  ; '(',  "leftparenthesis_"
-  ; ')',  "rightparenthesis_"
-  ; '|',  "verticalbar_"
-  ; '.',  "period_"
-  ; ':',  "colon_"
-  ; '?',  "questionmark_"
-  ; '!',  "exclamationmark_"
-  ; '<',  "lessthansign_"
-  ; '>',  "greaterthansign_"
-  ; '=',  "equalsign_"
-  ; ' ',  "space_"
-  ]
+let repls = Smtlib.repls
 
 let escaped =
   List.fold_right begin fun (c, repl) ->
