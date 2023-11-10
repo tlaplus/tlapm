@@ -92,7 +92,6 @@ TYPE_PACK = \
 
 ENCODE_PACK = \
   encode/n_subst \
-  encode/n_hints \
   encode/n_rewrite \
   encode/n_table \
   encode/n_data \

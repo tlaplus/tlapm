@@ -918,20 +918,6 @@ encode/n_subst.cmx: encode/n_subst.mlt \
     util/deque.cmx \
     ctx.cmx \
     encode/n_subst.cmi
-encode/n_hints.cmo: encode/n_hints.mlt \
-    util/property.cmi \
-    util/ext.cmi \
-    expr.cmi \
-    util/deque.cmi \
-    builtin.cmi \
-    encode/n_hints.cmi
-encode/n_hints.cmx: encode/n_hints.mlt \
-    util/property.cmx \
-    util/ext.cmx \
-    expr.cmx \
-    util/deque.cmx \
-    builtin.cmx \
-    encode/n_hints.cmi
 encode/n_rewrite.cmo: encode/n_rewrite.mlt \
     type.cmi \
     util/property.cmi \
@@ -1011,6 +997,7 @@ encode/n_axioms.cmx: encode/n_axioms.mlt \
 encode/n_standardize.cmo: encode/n_standardize.mlt \
     type.cmi \
     util/property.cmi \
+    params.cmi \
     encode/n_table.cmi \
     encode/n_smb.cmi \
     util/ext.cmi \
@@ -1021,6 +1008,7 @@ encode/n_standardize.cmo: encode/n_standardize.mlt \
 encode/n_standardize.cmx: encode/n_standardize.mlt \
     type.cmx \
     util/property.cmx \
+    params.cmx \
     encode/n_table.cmx \
     encode/n_smb.cmx \
     util/ext.cmx \
@@ -1079,7 +1067,6 @@ encode.cmo: encode.mlt \
     encode/n_standardize.cmi \
     encode/n_smb.cmi \
     encode/n_rewrite.cmi \
-    encode/n_hints.cmi \
     encode/n_flatten.cmi \
     encode/n_axiomatize.cmi \
     encode.cmi
@@ -1088,7 +1075,6 @@ encode.cmx: encode.mlt \
     encode/n_standardize.cmx \
     encode/n_smb.cmx \
     encode/n_rewrite.cmx \
-    encode/n_hints.cmx \
     encode/n_flatten.cmx \
     encode/n_axiomatize.cmx \
     encode.cmi
@@ -2454,8 +2440,6 @@ encode/n_subst.cmi : \
     util/property.cmi \
     expr.cmi \
     util/deque.cmi
-encode/n_hints.cmi : \
-    expr.cmi
 encode/n_rewrite.cmi : \
     expr.cmi
 encode/n_table.cmi : \
