@@ -15,10 +15,6 @@ module Subst = N_subst
 module Visit = Expr.Visit
 module B = Builtin
 
-(* TODO Type preservation for elim_except, elim_multiarg, elim_tuples *)
-(* Need to think about a different use of type annotations for tuples
- * before that. *)
-
 
 (* {3 Helpers} *)
 
@@ -601,21 +597,26 @@ let is_set e =
   | _ ->
           false
 
-let eq_pol b = function
-  | B.Eq -> b
-  | B.Neq -> not b
-  | _ -> failwith "eq_pol"
+type pol =
+  | Positive
+  | Negative
+  | Neither
+
+let inv = function
+  | Positive -> Negative
+  | Negative -> Positive
+  | Neither -> Neither
 
 let apply_ext_visitor = object (self : 'self)
-  inherit [bool] Expr.Visit.map as super
+  inherit [pol] Expr.Visit.map as super
 
-  method expr (b, hx as scx) oe =
+  method expr (pol, hx as scx) oe =
     match oe.core with
     (* x = y
      *    -->
      * \A z : z \in x <=> z \in y *)
     | Apply ({ core = Internal (B.Eq | B.Neq as blt) } as op, [ e ; f ])
-      when eq_pol b blt
+      when ((pol = Positive && blt = B.Eq) || (pol = Negative && blt = B.Neq))
       && (match query op Props.tpars_prop with
           | Some [TAtm TAIdv] -> is_set e || is_set f
           | Some [TSet _] -> true
@@ -658,7 +659,7 @@ let apply_ext_visitor = object (self : 'self)
      *    -->
      * \A z : z \in x => z \in y *)
     | Apply ({ core = Internal B.Subseteq } as op, [ e ; f ])
-      when b ->
+      when pol = Positive ->
         let e = self#expr scx e in
         let f = self#expr scx f in
         let q = Forall in
@@ -683,17 +684,15 @@ let apply_ext_visitor = object (self : 'self)
         ) @@ oe
 
     | Apply ({ core = Internal B.Implies } as op, [ e ; f ]) ->
-        let e = self#expr (not b, hx) e in
+        let e = self#expr (inv pol, hx) e in
         let f = self#expr scx f in
         Apply (op, [ e ; f ]) @@ oe
-    | Apply ({ core = Internal B.Neg } as op, [ e ]) ->
-        let e = self#expr (not b, hx) e in
-        Apply (op, [ e ]) @@ oe
+
     | Apply ({ core = Internal B.Equiv } as op, [ e ; f ]) ->
-        let e1 = self#expr (not b, hx) e in
-        let f1 = self#expr (b, hx) f in
-        let e2 = self#expr (b, hx) e in
-        let f2 = self#expr (not b, hx) f in
+        let e1 = self#expr (inv pol, hx) e in
+        let f1 = self#expr (pol, hx) f in
+        let e2 = self#expr (pol, hx) e in
+        let f2 = self#expr (inv pol, hx) f in
         Apply (
           Internal B.Conj @@ op,
           [ Apply (
@@ -708,16 +707,29 @@ let apply_ext_visitor = object (self : 'self)
             ]) %% []
           ]) @@ oe
 
+    | Apply ({ core = Internal (B.Conj | B.Disj) } as op, [ e ; f ]) ->
+        let e = self#expr (pol, hx) e in
+        let f = self#expr (pol, hx) f in
+        Apply (op, [ e ; f ]) @@ oe
+
+    | Apply ({ core = Internal B.Neg } as op, [ e ]) ->
+        let e = self#expr (inv pol, hx) e in
+        Apply (op, [ e ]) @@ oe
+
+    | Apply (op, es) ->
+        let es = List.map (self#expr (Neither, hx)) es in
+        Apply (op, es) @@ oe
+
     | _ -> super#expr scx oe
 
-  method sequent (b, hx) sq =
-    let (_, hx), hs = self#hyps (not b, hx) sq.context in
-    let e = self#expr (b, hx) sq.active in
-    (b, hx), { context = hs ; active = e }
+  method sequent (pol, hx) sq =
+    let (_, hx), hs = self#hyps (inv pol, hx) sq.context in
+    let e = self#expr (pol, hx) sq.active in
+    (pol, hx), { context = hs ; active = e }
 end
 
 let apply_ext sq =
-  let cx = (true, Deque.empty) in
+  let cx = (Positive, Deque.empty) in
   snd (apply_ext_visitor#sequent cx sq)
 
 
@@ -729,9 +741,9 @@ let subst a b =
   Subst.normalize lam [b] @@ a
 
 let simplify_sets_visitor = object (self : 'self)
-  inherit [bool] Expr.Visit.map as super
+  inherit [pol] Expr.Visit.map as super
 
-  method expr (b, hx as scx) oe =
+  method expr (pol, hx as scx) oe =
     match oe.core with
     (* x \in { a1, .., an }
      *    -->
@@ -763,7 +775,7 @@ let simplify_sets_visitor = object (self : 'self)
      *    -->
      * \A y : y \in x => y \in a *)
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.SUBSET } as op2, [ e2 ]) } ])
-      when ((not (Params.debugging "nonewqut")) || b)
+      when ((not (Params.debugging "nonewqut")) || pol = Positive)
       && not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
         let e2 = self#expr scx e2 in
@@ -791,7 +803,7 @@ let simplify_sets_visitor = object (self : 'self)
      *    -->
      * \E y : y \in a /\ x \in y *)
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.UNION } as op2, [ e2 ]) } ])
-      when ((not (Params.debugging "nonewqut")) || (not b))
+      when ((not (Params.debugging "nonewqut")) || pol = Negative)
       && not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
         let e2 = self#expr scx e2 in
@@ -908,7 +920,7 @@ let simplify_sets_visitor = object (self : 'self)
      *    -->
      * \E y1, .., yn : y1 \in a1 /\ .. /\ yn \in an /\ x = F(y1, .., yn) *)
     | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = SetOf (e2, bs) } ])
-      when ((not (Params.debugging "nonewqut")) || (not b))
+      when ((not (Params.debugging "nonewqut")) || pol = Negative)
       && not (has op Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
         let scx', bs = self#bounds scx bs in
@@ -955,7 +967,7 @@ let simplify_sets_visitor = object (self : 'self)
     (* FIXME This rule inserts an Opaque "IsAFcn" which is recognized later
      * during standardization. Careful when modifying! *)
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Arrow (e2, e3) } ])
-      when ((not (Params.debugging "nonewqut")) || b)
+      when ((not (Params.debugging "nonewqut")) || pol = Positive)
       && not (has op1 Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
         let e2 = self#expr scx e2 in
@@ -1182,7 +1194,7 @@ let simplify_sets_visitor = object (self : 'self)
      *    -->
      * \A z : z \in x <=> z \in y *)
     | Apply ({ core = Internal (B.Eq | B.Neq as blt) } as op, [ e ; f ])
-      when eq_pol b blt
+      when ((pol = Positive && blt = B.Eq) || (pol = Negative && blt = B.Neq))
       && (match query op Props.tpars_prop with
           | Some [TAtm TAIdv] -> is_set e || is_set f
           | Some [TSet _] -> true
@@ -1225,7 +1237,7 @@ let simplify_sets_visitor = object (self : 'self)
      *    -->
      * \A z : z \in x => z \in y *)
     | Apply ({ core = Internal B.Subseteq } as op, [ e ; f ])
-      when b ->
+      when pol = Positive ->
         let e = self#expr scx e in
         let f = self#expr scx f in
         let q = Forall in
@@ -1250,17 +1262,15 @@ let simplify_sets_visitor = object (self : 'self)
         ) @@ oe
 
     | Apply ({ core = Internal B.Implies } as op, [ e ; f ]) ->
-        let e = self#expr (not b, hx) e in
+        let e = self#expr (inv pol, hx) e in
         let f = self#expr scx f in
         Apply (op, [ e ; f ]) @@ oe
-    | Apply ({ core = Internal B.Neg } as op, [ e ]) ->
-        let e = self#expr (not b, hx) e in
-        Apply (op, [ e ]) @@ oe
+
     | Apply ({ core = Internal B.Equiv } as op, [ e ; f ]) ->
-        let e1 = self#expr (not b, hx) e in
-        let f1 = self#expr (b, hx) f in
-        let e2 = self#expr (b, hx) e in
-        let f2 = self#expr (not b, hx) f in
+        let e1 = self#expr (inv pol, hx) e in
+        let f1 = self#expr (pol, hx) f in
+        let e2 = self#expr (pol, hx) e in
+        let f2 = self#expr (inv pol, hx) f in
         Apply (
           Internal B.Conj @@ op,
           [ Apply (
@@ -1275,12 +1285,20 @@ let simplify_sets_visitor = object (self : 'self)
             ]) %% []
           ]) @@ oe
 
+    | Apply ({ core = Internal B.Neg } as op, [ e ]) ->
+        let e = self#expr (inv pol, hx) e in
+        Apply (op, [ e ]) @@ oe
+
+    | Apply (op, es) ->
+        let es = List.map (self#expr (Neither, hx)) es in
+        Apply (op, es) @@ oe
+
     | _ -> super#expr scx oe
 
-  method sequent (b, hx) sq =
-    let (_, hx), hs = self#hyps (not b, hx) sq.context in
-    let e = self#expr (b, hx) sq.active in
-    (b, hx), { context = hs ; active = e }
+  method sequent (pol, hx) sq =
+    let (_, hx), hs = self#hyps (inv pol, hx) sq.context in
+    let e = self#expr (pol, hx) sq.active in
+    (pol, hx), { context = hs ; active = e }
 end
 
 let rec repeat k f x =
@@ -1288,7 +1306,7 @@ let rec repeat k f x =
   else repeat (k - 1) f (f x)
 
 let simplify_sets ?(limit=10) ?(rwlvl=2) sq =
-  let cx = (true, Deque.empty) in
+  let cx = (Positive, Deque.empty) in
   if rwlvl = 0 then sq
   else if rwlvl = 1 then
     snd (apply_ext_visitor#sequent cx sq)
