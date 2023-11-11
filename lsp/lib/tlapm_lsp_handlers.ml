@@ -298,7 +298,13 @@ module Make (CB : Callbacks) = struct
   let handle_jsonrpc_packet (packet : Jsonrpc.Packet.t) state =
     match packet with
     | Notification notif -> handle_jsonrpc_notif notif state
-    | Request req -> handle_jsonrpc_request req state
+    | Request req -> (
+        try handle_jsonrpc_request req state
+        with exc ->
+          let open Jsonrpc.Response.Error in
+          let exc_str = Printexc.to_string exc in
+          Eio.traceln "LSP request failed with exception %s" exc_str;
+          reply_error req Code.InternalError exc_str state)
     | Response resp -> handle_jsonrpc_response resp state
     | Batch_call sub_packets ->
         let fold_fun state_acc sub_pkg =
