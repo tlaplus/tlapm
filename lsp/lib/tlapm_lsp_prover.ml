@@ -106,15 +106,16 @@ module TlapmRange = struct
   let first_diff_pos a b =
     let len = min (String.length a) (String.length b) in
     let rec count i l c =
-      let ai = String.get a i in
-      let bi = String.get b i in
       if i = len then P (l, c)
-      else if ai = bi then
-        let l, c =
-          match bi with '\n' -> (l + 1, 1) | '\r' -> (l, c) | _ -> (l, c + 1)
-        in
-        count (i + 1) l c
-      else P (l, c)
+      else
+        let ai = String.get a i in
+        let bi = String.get b i in
+        if ai = bi then
+          let l, c =
+            match bi with '\n' -> (l + 1, 1) | '\r' -> (l, c) | _ -> (l, c + 1)
+          in
+          count (i + 1) l c
+        else P (l, c)
     in
     count 0 1 1
 
@@ -133,6 +134,8 @@ module TlapmRange = struct
       let%test "next_ln" = P (2, 1) = first_diff_pos "sa\nme" "sa\ny"
       let%test "line_len_a" = P (1, 3) = first_diff_pos "same" "sa\n"
       let%test "line_len_b" = P (1, 3) = first_diff_pos "sa\n" "same"
+      let%test "index_bounds_1" = P (1, 3) = first_diff_pos "mod" "mo"
+      let%test "index_bounds_2" = P (1, 3) = first_diff_pos "mo" "mod"
     end)
 
   let%test_module "lines_covered_or_all" =
