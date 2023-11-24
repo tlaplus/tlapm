@@ -317,7 +317,7 @@ and fmt_expr cx oe =
   | List (Refs, []) ->
       error ~at:oe "Empty LIST expression"
 
-  | List (Refs, [e]) ->
+  | List (q, [e]) ->
       fmt_expr cx e
 
   | List (q, es) ->
