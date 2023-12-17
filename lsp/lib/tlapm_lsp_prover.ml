@@ -507,7 +507,7 @@ let cancel_all st =
   match st.forked with
   | None -> st
   | Some { proc; complete; cancel; _ } ->
-      Eio.Process.signal proc Sys.sigkill;
+      Eio.Process.signal proc Sys.sigint;
       (match Eio.Process.await proc with
       | `Exited x -> Eio.traceln "[TLAPM] Process exited %d" x
       | `Signaled x ->
@@ -765,7 +765,7 @@ let%test_module "Mocked TLAPM" =
       let () =
         match ts_end -. ts_start < timeout with
         | true -> ()
-        | false -> failwith "timeout expired"
+        | false -> failwith (Format.sprintf "timeout %f expired in %f" timeout (ts_end -. ts_start))
       in
       ()
 

@@ -46,7 +46,7 @@ end = struct
     | Missing -> "Proof missing."
     | Omitted -> "Proof omitted."
     | Progress -> "Proving in progress."
-    | Pending -> "Proof pending, press ctrl+g+g."
+    | Pending -> "Proof pending."
     | Proved -> "Proof checked successfully."
 
   let order_of_s = function

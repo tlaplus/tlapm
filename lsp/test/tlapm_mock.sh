@@ -4,6 +4,8 @@
 ## That's a tlapm mock for some of the tlapm_lsp_parser test cases.
 ##
 
+trap '{ echo "Interrupted."; exit 1; }' SIGINT
+
 if [ "$1" != "--toolbox" ] ; then
     echo "ERROR: Expected --toolbox as a first argument."
     exit 2
@@ -17,7 +19,8 @@ cat << EOF
 @!!msg:message before delay
 @!!END
 EOF
-sleep 3 # NOTE: This.
+# Sleep has to be split in order to stip it faster.
+for i in {1..30} ; do sleep 0.1; done
 cat << EOF
 @!!BEGIN
 @!!type:warning
