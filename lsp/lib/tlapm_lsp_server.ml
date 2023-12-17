@@ -1,7 +1,10 @@
 (* cSpell:words ipaddr *)
 
+(** 50 MB should be enough. *)
 let max_size = 50 * 1024 * 1024
-(* 50 MB should be enough. *)
+
+(** The proof info updates are aggregated for 0.5s before sending them to IDE. *)
+let timer_tick_period = 0.5
 
 type transport = Stdio | Socket of int
 
@@ -49,13 +52,18 @@ let flow_handler_fib_lsp_reader trace input_flow event_adder () =
   read_loop ()
 
 (** Configures the IO for the given input/output flows. *)
-let flow_handler trace input_flow output_flow sw fs proc_mgr =
+let flow_handler trace input_flow output_flow sw fs clock proc_mgr =
   let events = Eio.Stream.create 100 in
   let event_adder e = Eio.Stream.add events e in
   let event_taker () = Eio.Stream.take events in
   let output = Eio.Stream.create 100 in
   let output_adder e = Eio.Stream.add output e in
   let output_taker () = Eio.Stream.take output in
+  let rec timer () =
+    Eio.Time.sleep clock timer_tick_period;
+    event_adder Tlapm_lsp_session.TimerTick;
+    timer ()
+  in
   Eio.Fiber.all
     [
       (fun () ->
@@ -63,35 +71,37 @@ let flow_handler trace input_flow output_flow sw fs proc_mgr =
           proc_mgr);
       flow_handler_fib_lsp_reader trace input_flow event_adder;
       flow_handler_fib_lsp_writer trace output_flow output_taker;
+      timer;
     ]
 
 (** StdIO specifics. *)
 module OnStdio = struct
   let run trace env =
     let fs = Eio.Stdenv.fs env in
+    let clock = Eio.Stdenv.clock env in
     let proc_mgr = Eio.Stdenv.process_mgr env in
     let switch_fun sw =
       flow_handler trace (Eio.Stdenv.stdin env) (Eio.Stdenv.stdout env) sw fs
-        proc_mgr
+        clock proc_mgr
     in
     Eio.Switch.run switch_fun
 end
 
 (** Socket-specifics. *)
 module OnSocket = struct
-  let req_handler trace sw fs proc_mgr flow _addr =
+  let req_handler trace sw fs clock proc_mgr flow _addr =
     Eio.traceln "Server: got connection from client";
-    flow_handler trace flow flow sw fs proc_mgr
+    flow_handler trace flow flow sw fs clock proc_mgr
 
-  let switch (net : 'a Eio.Net.ty Eio.Std.r) port trace stop_promise fs proc_mgr
-      sw =
+  let switch (net : 'a Eio.Net.ty Eio.Std.r) port trace stop_promise fs clock
+      proc_mgr sw =
     Eio.traceln "Socket switch started";
     let on_error = Eio.traceln "Error handling connection: %a" Fmt.exn in
     let addr = `Tcp (Eio.Net.Ipaddr.V4.loopback, port) in
     let sock = Eio.Net.listen net ~sw ~reuse_addr:true ~backlog:5 addr in
     let stopResult =
       Eio.Net.run_server sock
-        (req_handler trace sw fs proc_mgr)
+        (req_handler trace sw fs clock proc_mgr)
         ~on_error ?stop:(Some stop_promise)
     in
     Eio.traceln "StopResult=%s" stopResult
@@ -99,8 +109,9 @@ module OnSocket = struct
   let run port trace env stop_promise =
     let net = Eio.Stdenv.net env in
     let fs = Eio.Stdenv.fs env in
+    let clock = Eio.Stdenv.clock env in
     let proc_mgr = Eio.Stdenv.process_mgr env in
-    Eio.Switch.run @@ switch net port trace stop_promise fs proc_mgr
+    Eio.Switch.run @@ switch net port trace stop_promise fs clock proc_mgr
 end
 
 (** Entry point. *)

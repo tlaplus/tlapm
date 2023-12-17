@@ -765,7 +765,10 @@ let%test_module "Mocked TLAPM" =
       let () =
         match ts_end -. ts_start < timeout with
         | true -> ()
-        | false -> failwith (Format.sprintf "timeout %f expired in %f" timeout (ts_end -. ts_start))
+        | false ->
+            failwith
+              (Format.sprintf "timeout %f expired in %f" timeout
+                 (ts_end -. ts_start))
       in
       ()
 

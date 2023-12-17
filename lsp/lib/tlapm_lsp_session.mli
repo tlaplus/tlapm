@@ -6,6 +6,7 @@ type events =
   | LspEOF
   | LspPacket of Jsonrpc.Packet.t
   | TlapmEvent of doc_ref * Tlapm_lsp_prover.ToolboxProtocol.tlapm_msg
+  | TimerTick
 
 val run :
   (unit -> events) ->

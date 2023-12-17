@@ -3,14 +3,16 @@ let diagnostic_source = "TLAPM"
 module Docs = Tlapm_lsp_docs
 module Prover = Tlapm_lsp_prover
 module LspT = Lsp.Types
+module DocUriSet = Set.Make (LspT.DocumentUri)
 
 (* A reference to a doc_uri * version * prover launch counter. *)
-type doc_ref = Lsp.Types.DocumentUri.t * int * int
+type doc_ref = LspT.DocumentUri.t * int * int
 
 type events =
   | LspEOF
   | LspPacket of Jsonrpc.Packet.t
   | TlapmEvent of doc_ref * Tlapm_lsp_prover.ToolboxProtocol.tlapm_msg
+  | TimerTick
 
 type mode = Initializing | Ready | Shutdown
 
@@ -22,7 +24,8 @@ type t = {
   progress : Tlapm_lsp_progress.t;
   mode : mode;
   docs : Docs.t;
-  prov : Prover.t;
+  prov : Prover.t; (* Prover that is currently running. *)
+  delayed : DocUriSet.t; (* Docs which have delayed proof info updates. *)
 }
 
 let with_docs' st f =
@@ -76,7 +79,7 @@ let progress_proof_ended st p_ref =
 
 let make_diagnostics os ns =
   let open Prover.ToolboxProtocol in
-  let open Lsp.Types in
+  let open LspT in
   let diagnostics_o =
     List.filter_map
       (fun (o : tlapm_obligation) ->
@@ -93,10 +96,10 @@ let make_diagnostics os ns =
           | BeingProved -> None
           | Normalized -> None
           | Proved -> None
-          | Failed -> Some Lsp.Types.DiagnosticSeverity.Error
-          | Interrupted -> Some Lsp.Types.DiagnosticSeverity.Error
+          | Failed -> Some DiagnosticSeverity.Error
+          | Interrupted -> Some DiagnosticSeverity.Error
           | Trivial -> None
-          | Unknown _ -> Some Lsp.Types.DiagnosticSeverity.Error
+          | Unknown _ -> Some DiagnosticSeverity.Error
         in
         match severity with
         | None -> None
@@ -111,8 +114,8 @@ let make_diagnostics os ns =
       (fun (n : tlapm_notif) ->
         let severity =
           match n.sev with
-          | TlapmNotifError -> Lsp.Types.DiagnosticSeverity.Error
-          | TlapmNotifWarning -> Lsp.Types.DiagnosticSeverity.Warning
+          | TlapmNotifError -> DiagnosticSeverity.Error
+          | TlapmNotifWarning -> DiagnosticSeverity.Warning
         in
         Diagnostic.create ~message:n.msg
           ~range:(Prover.TlapmRange.as_lsp_range n.loc)
@@ -122,7 +125,7 @@ let make_diagnostics os ns =
   List.concat [ diagnostics_o; diagnostics_n ]
 
 let send_diagnostics st uri vsn os ns =
-  let open Lsp.Types in
+  let open LspT in
   let diagnostics = make_diagnostics os ns in
   let d_par =
     PublishDiagnosticsParams.create ~diagnostics ~uri ~version:vsn ()
@@ -160,11 +163,25 @@ let send_proof_info st uri vsn res =
         progress_obl_changed st p_ref (Docs.ProofRes.obs_done proof_res)
       in
       send_diagnostics st uri vsn obs nts;
-      send_proof_state_markers st uri pss
-  | None -> ()
+      send_proof_state_markers st uri pss;
+      let delayed = DocUriSet.remove uri st.delayed in
+      { st with delayed }
+  | None -> st
+
+let send_latest_proof_info st uri =
+  let docs, vsn_opt, proof_res_opt = Docs.get_proof_res_latest st.docs uri in
+  let st = { st with docs } in
+  match (vsn_opt, proof_res_opt) with
+  | None, _ -> send_proof_info st uri 0 (Some Docs.ProofRes.empty)
+  | Some vsn, None -> send_proof_info st uri vsn (Some Docs.ProofRes.empty)
+  | Some vsn, Some p_res -> send_proof_info st uri vsn (Some p_res)
+
+let delay_proof_info st uri =
+  let delayed = DocUriSet.add uri st.delayed in
+  { st with delayed }
 
 module Handlers = Tlapm_lsp_handlers.Make (struct
-  module LspT = Lsp.Types
+  module LspT = LspT
 
   type t = t'
 
@@ -195,7 +212,7 @@ module Handlers = Tlapm_lsp_handlers.Make (struct
     match next_p_ref_opt with
     | Some (p_ref, doc_text, p_range, proof_res) -> (
         let st = progress_proof_started st p_ref in
-        send_proof_info st uri vsn (Some proof_res);
+        let st = send_proof_info st uri vsn (Some proof_res) in
         let prov_events e =
           st.event_adder (TlapmEvent ((uri, vsn, p_ref), e))
         in
@@ -228,12 +245,7 @@ module Handlers = Tlapm_lsp_handlers.Make (struct
 
   let latest_diagnostics st uri =
     Eio.traceln "PULL_DIAGS: %s" (LspT.DocumentUri.to_string uri);
-    let docs, vsn_opt, proof_res_opt = Docs.get_proof_res_latest st.docs uri in
-    let st = { st with docs } in
-    (match (vsn_opt, proof_res_opt) with
-    | None, _ -> send_proof_info st uri 0 (Some Docs.ProofRes.empty)
-    | Some vsn, None -> send_proof_info st uri vsn (Some Docs.ProofRes.empty)
-    | Some vsn, Some p_res -> send_proof_info st uri vsn (Some p_res));
+    let st = send_latest_proof_info st uri in
     (st, (0, []))
 
   let diagnostic_source = diagnostic_source
@@ -253,6 +265,7 @@ module Handlers = Tlapm_lsp_handlers.Make (struct
         progress = Tlapm_lsp_progress.make ();
         docs = Docs.empty;
         prov = Prover.create sw fs proc_mgr;
+        delayed = DocUriSet.empty;
       }
     in
     let () =
@@ -279,37 +292,50 @@ let handle_lsp_packet p st = Some (Handlers.handle_jsonrpc_packet p st)
 
 let handle_tlapm_msg ((uri, vsn, p_ref) : doc_ref) msg st =
   let open Prover.ToolboxProtocol in
-  let open Lsp.Types in
+  let open LspT in
   Eio.traceln "handle_tlapm_msg: uri=%s, vsn=%d, p_ref=%d"
     (DocumentUri.to_string uri)
     vsn p_ref;
   match msg with
   | TlapmNotif notif ->
       Eio.traceln "---> TlapmNotif: %s" notif.msg;
-      let docs, res = Docs.add_notif st.docs uri vsn p_ref notif in
-      send_proof_info st uri vsn res;
-      Some { st with docs }
+      let docs, _res = Docs.add_notif st.docs uri vsn p_ref notif in
+      let st = { st with docs } in
+      let st = delay_proof_info st uri in
+      Some st
   | TlapmObligationsNumber obl_num ->
       Eio.traceln "---> TlapmObligationsNumber";
       let st = progress_obl_num st p_ref obl_num in
       Some st
   | TlapmObligation obl ->
       Eio.traceln "---> TlapmObligation, id=%d" obl.id;
-      let docs, res = Docs.add_obl st.docs uri vsn p_ref obl in
-      send_proof_info st uri vsn res;
-      Some { st with docs }
+      let docs, _res = Docs.add_obl st.docs uri vsn p_ref obl in
+      let st = { st with docs } in
+      let st = delay_proof_info st uri in
+      Some st
   | TlapmTerminated ->
       Eio.traceln "---> TlapmTerminated";
       let st = progress_proof_ended st p_ref in
       let docs, res = Docs.terminated st.docs uri vsn p_ref in
-      send_proof_info st uri vsn res;
-      Some { st with docs }
+      let st = { st with docs } in
+      let st = send_proof_info st uri vsn res in
+      Some st
+
+let handle_timer_tick st =
+  let ff uri stAcc =
+    Eio.traceln "Sending delayed proof info for %s "
+      (LspT.DocumentUri.to_string uri);
+    send_latest_proof_info stAcc uri
+  in
+  let st = DocUriSet.fold ff st.delayed st in
+  Some { st with delayed = DocUriSet.empty }
 
 let handle_event e st =
   match e with
   | LspEOF -> None
   | LspPacket p -> handle_lsp_packet p st
   | TlapmEvent (ref, msg) -> handle_tlapm_msg ref msg st
+  | TimerTick -> handle_timer_tick st
 
 (* The main event processing loop.
    At the exit we send EOF to the output thread. *)
@@ -330,6 +356,7 @@ let run event_taker event_adder output_adder sw fs proc_mgr =
       progress = Tlapm_lsp_progress.make ();
       docs = Docs.empty;
       prov = Prover.create sw fs proc_mgr;
+      delayed = DocUriSet.empty;
     }
   in
   loop st
