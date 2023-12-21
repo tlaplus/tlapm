@@ -12,7 +12,7 @@ module Error : sig
   val err_add_expecting : string -> error -> error
   val err_set_unexpected : string -> error -> error
   val print_error : ?verbose:bool -> Stdlib.out_channel -> error -> unit
-end;;
+end
 
 module Intf : sig
   module type Tok = sig
@@ -30,7 +30,7 @@ module Intf : sig
     val below : prec -> prec -> bool
     val conflict : prec -> prec -> bool
   end
-end;;
+end
 
 module LazyList : sig
   type +'a llist
@@ -57,7 +57,7 @@ module LazyList : sig
   val fold_right : ('a -> 'b -> 'b) -> 'a llist -> 'b -> 'b
   val unfold : 'a -> ('a -> ('b * 'a) option) -> 'b llist
   val make : (unit -> 'a option) -> 'a llist
-end;;
+end
 
 module Pco : sig
   module type Make_sig = sig
@@ -153,5 +153,4 @@ module Pco : sig
 
   module Make (Tok : Intf.Tok) (Prec : Intf.Prec) :
     Make_sig with module Tok = Tok and module Prec = Prec
-  ;;
-end;;
+end

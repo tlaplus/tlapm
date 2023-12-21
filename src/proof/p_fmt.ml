@@ -55,7 +55,7 @@ let prmeth what ff =
     Method.pp_print_method ff m;
   in
   Option.iter (List.iter f) (query what Props.meth)
-;;
+
 
 let is_omitted prf = match prf.core with
   | Omitted _ -> true

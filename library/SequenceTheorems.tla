@@ -22,18 +22,18 @@ THEOREM ElementOfSeq ==
    ASSUME NEW S, NEW seq \in Seq(S),
           NEW n \in 1..Len(seq)
    PROVE  seq[n] \in S
- 
+
 THEOREM EmptySeq ==
    ASSUME NEW S
    PROVE /\ << >> \in Seq(S)
          /\ Len(<< >>) = 0
          /\ \A seq \in Seq(S) : (seq # << >>) => (Len(seq) \in Nat \ {0})
 
-THEOREM LenProperties == 
+THEOREM LenProperties ==
   ASSUME NEW S, NEW seq \in Seq(S)
   PROVE  /\ Len(seq) \in Nat
          /\ seq \in [1..Len(seq) -> S]
-         /\ DOMAIN seq = 1 .. Len(seq) 
+         /\ DOMAIN seq = 1 .. Len(seq)
 
 THEOREM IsASeq ==
   ASSUME NEW n \in Nat, NEW e(_), NEW S,
@@ -151,9 +151,9 @@ THEOREM SubSeqOfSubSeq ==
 (* Adjacent subsequences can be concatenated to obtain a longer subsequence. *)
 (*****************************************************************************)
 THEOREM ConcatAdjacentSubSeq ==
-  ASSUME NEW S, NEW seq \in Seq(S), 
-         NEW m \in 1 .. Len(seq)+1, 
-         NEW k \in m-1 .. Len(seq), 
+  ASSUME NEW S, NEW seq \in Seq(S),
+         NEW m \in 1 .. Len(seq)+1,
+         NEW k \in m-1 .. Len(seq),
          NEW n \in k .. Len(seq)
   PROVE  SubSeq(seq, m, k) \o SubSeq(seq, k+1, n) = SubSeq(seq, m, n)
 
@@ -196,7 +196,7 @@ THEOREM AppendInjective ==
   ASSUME NEW S, NEW e \in S, NEW s \in Seq(S), NEW f \in S, NEW t \in Seq(S)
   PROVE  Append(s,e) = Append(t,f) <=> s = t /\ e = f
 
-THEOREM SequenceEmptyOrAppend == 
+THEOREM SequenceEmptyOrAppend ==
   ASSUME NEW S, NEW seq \in Seq(S), seq # << >>
   PROVE \E s \in Seq(S), elt \in S : seq = Append(s, elt)
 
@@ -205,14 +205,14 @@ THEOREM SequenceEmptyOrAppend ==
 (***************************************************************************)
 
 THEOREM SequencesInductionAppend ==
-  ASSUME NEW P(_), NEW S, 
+  ASSUME NEW P(_), NEW S,
          P(<< >>),
          \A s \in Seq(S), e \in S : P(s) => P(Append(s,e))
   PROVE  \A seq \in Seq(S) : P(seq)
 
 THEOREM SequencesInductionTail ==
   ASSUME NEW S,  NEW P(_),
-         P(<< >>), 
+         P(<< >>),
          \A s \in Seq(S) : (s # << >>) /\ P(Tail(s)) => P(s)
   PROVE  \A s \in Seq(S) : P(s)
 
@@ -221,11 +221,11 @@ THEOREM SequencesInductionTail ==
 (*                          RANGE OF SEQUENCE                              *)
 (***************************************************************************)
 
-THEOREM RangeOfSeq == 
+THEOREM RangeOfSeq ==
   ASSUME NEW S, NEW seq \in Seq(S)
   PROVE  Range(seq) \in SUBSET S
 
-THEOREM RangeEquality == 
+THEOREM RangeEquality ==
   ASSUME NEW S, NEW seq \in Seq(S)
   PROVE Range(seq) = { seq[i] : i \in 1 .. Len(seq) }
 
@@ -234,7 +234,7 @@ THEOREM SeqOfRange ==
   PROVE  seq \in Seq(Range(seq))
 
 (* The range of the concatenation of two sequences is the union of the ranges *)
-THEOREM RangeConcatenation == 
+THEOREM RangeConcatenation ==
   ASSUME NEW S, NEW s1 \in Seq(S), NEW s2 \in Seq(S)
   PROVE  Range(s1 \o s2) = Range(s1) \cup Range(s2)
 
@@ -248,7 +248,7 @@ LEMMA EmptySingletonIsInjective ==
 
 LEMMA ConcatInjectiveSeq ==
   ASSUME NEW S, NEW s \in Seq(S), NEW t \in Seq(S)
-  PROVE  IsInjective(s \o t) <=> 
+  PROVE  IsInjective(s \o t) <=>
          IsInjective(s) /\ IsInjective(t) /\ Range(s) \cap Range(t) = {}
 
 LEMMA AppendInjectiveSeq ==

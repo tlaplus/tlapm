@@ -1,17 +1,16 @@
-(*
- * tlapm_args.ml --- arguments for tlapm
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Command-line arguments to `tlapm`.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Params
+
 
 let show_config = ref false
 let show_version () =
   print_endline (rawversion ()) ;
   exit 0
+
 
 let set_debug_flags flgs =
   let flgs = Ext.split flgs ',' in
@@ -21,7 +20,7 @@ let set_debug_flags flgs =
     | _ -> add_debug_flag flg
   in
   List.iter f flgs
-;;
+
 
 let set_max_threads n =
   if n < 0 then raise (Arg.Bad "--threads requires a positive argument") ;
@@ -47,7 +46,7 @@ let set_target_line s =
 let set_default_method meth =
   try set_default_method meth
   with Failure msg -> raise (Arg.Bad ("--method: " ^ msg))
-;;
+
 
 (* FIXME use Arg.parse instead *)
 let parse_args args opts mods usage_fmt =
@@ -72,8 +71,8 @@ let set_nofp_end e =
 
 let print_fp fic =
   Backend.Fpfile.print fic;
-  exit 0;
-;;
+  exit 0
+
 
 let use_fp fic =
   fpf_in := Some fic
@@ -100,8 +99,8 @@ let erase_fp backend =
      let msg = "Valid arguments for --erasefp are {zenon,isabelle,cooper}" in
      raise (Arg.Bad msg);
   end;
-  exit 0;
-;;
+  exit 0
+
 
 let deprecated flag nargs =
   let f _ = Printf.eprintf "Warning: %s is deprecated (ignored)\n%!" flag in
@@ -111,7 +110,7 @@ let deprecated flag nargs =
   | _ ->
      let args = Array.to_list (Array.make nargs (Arg.String f)) in
      flag, Arg.Tuple args, ""
-;;
+
 
 let quote_if_needed s =
   let check c =
@@ -124,7 +123,7 @@ let quote_if_needed s =
     try String.iter check s; s
     with Exit -> Filename.quote s
   end
-;;
+
 
 let init () =
   let mods = ref [] in
@@ -253,8 +252,8 @@ let init () =
   end ;
   check_zenon_ver () ;
   if !Params.toolbox then begin
-    Printf.printf "\n\\* TLAPM version %d.%d.%d\n"
-                  Version.major Version.minor Version.micro;
+    Printf.printf "\n\\* TLAPM version %s\n"
+                  (Params.rawversion ());
     let tm = Unix.localtime (Unix.gettimeofday ()) in
     Printf.printf "\\* launched at %04d-%02d-%02d %02d:%02d:%02d"
                   (tm.Unix.tm_year + 1900) (tm.Unix.tm_mon + 1) tm.Unix.tm_mday

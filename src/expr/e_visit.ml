@@ -1,34 +1,210 @@
-(*
- * expr/visit.ml --- default visitor for expressions
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Visitor for expressions.
 
-(** default visitors *)
-
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 
 open E_t
+open E_t.From_hint
 
 module Dq = Deque
 
-let hyp_rename v h = begin match h.core with
-  | Fresh (_, shp, k, dom) ->
-      Fresh (v, shp, k, dom)
-  | Flex _ ->
-      Flex v
-  | Defn (df, wd, vis, ex) ->
-      Defn ({ df with core = match df.core with
-                | Recursive (_, shp) -> Recursive (v, shp)
-                | Operator (_, e) -> Operator (v, e)
-                | Instance (_, i) -> Instance (v, i)
-                | Bpragma (_, e, l) -> Bpragma (v, e, l)},
-            wd, vis, ex)
-  | Fact (e, vis, tm) ->
-      Fact (e, vis, tm)
-end @@ h
+
+let hyp_rename v h = begin
+    match h.core with
+    | Fresh (_, shp, k, dom) ->
+        Fresh (v, shp, k, dom)
+    | Flex _ ->
+        Flex v
+    | Defn (df, wd, vis, ex) ->
+        let core = match df.core with
+            | Recursive (_, shp) -> Recursive (v, shp)
+            | Operator (_, e) -> Operator (v, e)
+            | Instance (_, i) -> Instance (v, i)
+            | Bpragma (_, e, l) -> Bpragma (v, e, l) in
+        Defn ({df with core}, wd, vis, ex)
+    | Fact (e, vis, tm) ->
+        Fact (e, vis, tm)
+    end @@ h
+
+
+let hyp_of_bound_full
+        ((name, kind, dom): bound):
+            hyp =
+    (* Return declaration for single bound.
+
+    There are 3 cases of domain:
+    - domain present ->
+        bounded hypothesis with
+        visible domain bound
+    - no domain ->
+        unbounded hypothesis
+    - ditto ->
+        raise error
+
+    Related functions:
+    - `hyps_of_bounds_full`
+    - `hyps_of_bounds_unditto`
+    *)
+    match dom with
+    | Domain d ->
+        make_bounded_fresh name d
+    | No_domain ->
+        make_fresh name kind
+    | Ditto -> Errors.bug "\
+        E_visit.hyp_of_bound_full: \
+        Ditto not expected"
+
+
+let hyps_of_bounds
+        (bs: bounds): hyp list =
+    (* Return declarations made from bounds.
+
+    These declarations introduce nullary operators.
+    The signatures of these operators are represented
+    using the constructor `Shape_expr`.
+
+    WARNING: This function is incorrect,
+    because domain-bounds are ignored,
+    and instead `Unbounded` is used.
+    This function is called only from
+    code that worked in this way
+    before the refactoring.
+
+    Related function:
+        `hyps_of_bounds_as_arity_0`
+    *)
+    let f (name, kind, dom) =
+        make_fresh name kind in
+    List.map f bs
+
+
+let hyps_of_bounds_full
+        (bs: bounds): hyp list =
+    (* Map bounds to hypotheses.
+
+    Domain-bounds are copied to hypotheses.
+    Bounds are **not** shifted,
+    so the resulting list of hypotheses
+    cannot be inserted directly into
+    a context.
+
+    Use the function `hyps_of_bounds_unditto`
+    to remove dittos, and shift bounds.
+
+    Dittos raise an exception.
+
+    Read also the function `hyp_of_bound_full`.
+    *)
+    List.map hyp_of_bound_full bs
+
+
+let shifter n d =
+    E_subst.app_expr (E_subst.shift n) d
+
+
+let hyps_of_bounds_unditto
+        (bs: bounds): hyp list =
+    (* Return hypotheses from bounds.
+
+    The hypotheses are created by
+    repeating all dittos (for domain
+    bounds), and shifting any
+    De Bruijn indices that appear
+    in expressions of domain bounds.
+
+    Related function:
+        `Expr.T.unditto`
+    *)
+    let bs = unditto bs in
+    let mapper n (v, k, dom) =
+        match dom with
+        | Domain d ->
+            let d = shifter n d in
+            let bound = (
+                v, k, Domain d) in
+            hyp_of_bound_full bound
+        | No_domain ->
+            let bound = (v, k, dom) in
+            hyp_of_bound_full bound
+        | Ditto -> assert false
+        in
+    List.mapi mapper bs
+
+
+let hyps_of_bounds_as_arity_0
+    (* Return declarations made from bounds.
+
+    These declarations introduce nullary operators.
+    The signatures of these operators are represented
+    as `Shape_op 0`, using the constructor `Shape_op`.
+    This is the only difference of this function
+    from the function `hyps_of_bounds`.
+
+    WARNING: This function is incorrect,
+    because domain-bounds are ignored,
+    and instead `Unbounded` is used.
+    This function is called only from
+    code that worked in this way
+    before the refactoring.
+    *)
+        (bs: bounds): hyp list =
+    let make_fresh (id, kind, dom) =
+        let name = id in
+        let fresh = Fresh (
+            name, Shape_op 0,
+            kind, Unbounded) in
+        fresh @@ name in
+    List.map make_fresh bs
+
+
+let map_bound_domains
+        (mapper: expr -> expr)
+        (bs: bounds):
+            bounds =
+    let step (v, k, dom) =
+        match dom with
+        | Domain d ->
+            let d = mapper d in
+            (v, k, Domain d)
+        | _ -> (v, k, dom)
+        in
+    List.map step bs
+
+
+let map_bounds
+        (name_mapper: Util.hint -> Util.hint)
+        (domain_mapper: expr -> expr)
+        (bs: bounds):
+            bounds =
+    let mapper (v, k, dom) =
+        let v = name_mapper v in
+        match dom with
+        | Domain d ->
+            let d =
+                domain_mapper d in
+            (v, k, Domain d)
+        | _ -> (v, k, dom)
+        in
+    List.map mapper bs
+
+
+let rename_bound
+        (b: bound)
+        (new_name: Util.hint):
+            bound =
+    let (name, k, dom) = b in
+    (new_name, k, dom)
+
+
+let rename_bounds
+        (bs: bounds)
+        (new_names: Util.hints):
+            bounds =
+    List.map2 rename_bound
+        bs new_names
+
 
 type 's scx = 's * hyp Deque.dq
 
@@ -39,6 +215,23 @@ let rec adjs scx = function
   | [] -> scx
   | h :: hs ->
       adjs (adj scx h) hs
+
+
+let adj_unboundeds_unchecked scx bounds =
+    (* Declare `bounds` in context of `scx`.
+
+    WARNING: The declarations added to the
+    context do **not** have domain-bounds.
+    This function does **not** check whether
+    any domain-bounds are present in `bounds`
+    (hence the "unchecked" in
+    the function's name).
+    *)
+    let step scx (name, kind, dom) =
+        let fresh = make_fresh name kind in
+        adj scx fresh in
+    List.fold_left step scx bounds
+
 
 class virtual ['s] map = object (self : 'self)
 
@@ -84,15 +277,16 @@ class virtual ['s] map = object (self : 'self)
     | Choose (v, optdom, e) ->
         let optdom = Option.map (self#expr scx) optdom in
         let h = match optdom with
-          | None -> Fresh (v, Shape_expr, Constant, Unbounded) @@ v
-          | Some dom -> Fresh (v, Shape_expr, Constant, Bounded (dom, Visible)) @@ v
+          | None -> make_fresh v Constant
+          | Some dom -> make_bounded_fresh v dom
         in
         let scx = self#adj scx h in
         let e = self#expr scx e in
         Choose (v, optdom, e) @@ oe
     | SetSt (v, dom, e) ->
         let dom = self#expr scx dom in
-        let scx = self#adj scx (Fresh (v, Shape_expr, Constant, Bounded (dom, Visible)) @@ v) in
+        let fresh = make_bounded_fresh v dom in
+        let scx = self#adj scx fresh in
         let e = self#expr scx e in
         SetSt (v, dom, e) @@ oe
     | SetOf (e, bs) ->
@@ -172,9 +366,7 @@ class virtual ['s] map = object (self : 'self)
         | Domain d -> (v, k, Domain (self#expr scx d))
         | _ -> (v, k, dom)
     end bs in
-    let hs = List.map begin
-      fun (v, k, _) -> Fresh (v, Shape_expr, k, Unbounded) @@ v
-    end bs in
+    let hs = hyps_of_bounds bs in
     let scx = self#adjs scx hs in
     (scx, bs)
 
@@ -193,7 +385,8 @@ class virtual ['s] map = object (self : 'self)
   method instance scx i =
     let scx = List.fold_left begin
       fun scx v ->
-        self#adj scx (Fresh (v, Shape_expr, Unknown, Unbounded) @@ v)
+        let fresh = make_fresh v Unknown in
+        self#adj scx fresh
     end scx i.inst_args in
     { i with inst_sub = List.map (fun (v, e) -> (v, self#expr scx e)) i.inst_sub }
 
@@ -264,26 +457,27 @@ class virtual ['s] iter = object (self : 'self)
         self#expr scx a ;
         self#expr scx b ;
         self#expr scx c
-    | List (q, es) ->
+    | List (_, es) ->
         List.iter (self#expr scx) es
-    | Quant (q, bs, e) ->
+    | Quant (_, bs, e) ->
         let scx = self#bounds scx bs in
         self#expr scx e
-    | Tquant (q, vs, e) ->
+    | Tquant (_, vs, e) ->
         let scx = adjs scx (List.map (fun v -> Flex v @@ v) vs) in
         self#expr scx e
     | Choose (v, optdom, e) ->
         let h = match optdom with
-          | None -> Fresh (v, Shape_expr, Constant, Unbounded) @@ v
+          | None -> make_fresh v Constant
           | Some dom ->
-              self#expr scx dom ;
-              Fresh (v, Shape_expr, Constant, Bounded (dom, Visible)) @@ v
+              self#expr scx dom;
+              make_bounded_fresh v dom
         in
         let scx = adj scx h in
         self#expr scx e
     | SetSt (v, dom, e) ->
-        self#expr scx dom ;
-        let scx = adj scx (Fresh (v, Shape_expr, Constant, Bounded (dom, Visible)) @@ v) in
+        self#expr scx dom;
+        let fresh = make_bounded_fresh v dom in
+        let scx = adj scx fresh in
         self#expr scx e
     | SetOf (e, bs) ->
         let scx = self#bounds scx bs in
@@ -363,9 +557,7 @@ class virtual ['s] iter = object (self : 'self)
         | Domain d -> self#expr scx d
         | _ -> ()
     end bs ;
-    let hs = List.map begin
-      fun (v, k, _) -> Fresh (v, Shape_expr, k, Unbounded) @@ v
-    end bs in
+    let hs = hyps_of_bounds bs in
     adjs scx hs
 
   method bound scx b =
@@ -382,19 +574,18 @@ class virtual ['s] iter = object (self : 'self)
   method instance scx i =
     let scx = List.fold_left begin
       fun scx v ->
-        adj scx (Fresh (v, Shape_expr, Unknown, Unbounded) @@ v)
+        let fresh = make_fresh v Unknown in
+        adj scx fresh
     end scx i.inst_args in
     List.iter (fun (_, e) -> self#expr scx e) i.inst_sub
 
   method hyp scx h =
     begin
       match h.core with
-        | Fresh (nm, _, lc, e) -> begin
-            match e with
-              | Bounded (dom, _) -> self#expr scx dom
-              | Unbounded -> ()
-          end
-        | Flex s ->
+        | Fresh (_, _, _, Bounded (dom, _)) ->
+            self#expr scx dom
+        | Fresh (_, _, _, Unbounded)
+        | Flex _ ->
             ()
         | Defn (df, _, _, _) ->
             ignore (self#defn scx df)
@@ -445,12 +636,10 @@ class virtual ['s] iter_visible_hyp = object (self : 'self)
     method hyp scx h =
       begin
         match h.core with
-          | Fresh (nm, _, lc, e) -> begin
-              match e with
-                | Bounded (dom, _) -> self#expr scx dom
-                | Unbounded -> ()
-            end
-          | Flex s ->
+          | Fresh (_, _, _, Bounded (dom, _)) ->
+              self#expr scx dom
+          | Fresh (_, _, _, Unbounded)
+          | Flex _ ->
               ()
           | Defn (_, _, Hidden, _)
           | Fact (_, Hidden, _) ->
@@ -587,8 +776,8 @@ class virtual ['s] map_rename = object (self : 'self)
     | Choose (v, optdom, e) ->
         let optdom = Option.map (self#expr scx) optdom in
         let h = match optdom with
-          | None -> Fresh (v, Shape_expr, Constant, Unbounded) @@ v
-          | Some dom -> Fresh (v, Shape_expr, Constant, Bounded (dom, Visible)) @@ v
+          | None -> make_fresh v Constant
+          | Some dom -> make_bounded_fresh v dom
         in
         let (h, v) = self#rename cx h v in
         let scx = self#adj scx h in
@@ -596,7 +785,7 @@ class virtual ['s] map_rename = object (self : 'self)
         Choose (v, optdom, e) @@ oe
     | SetSt (v, dom, e) ->
         let dom = self#expr scx dom in
-        let hyp = Fresh (v, Shape_expr, Constant, Bounded (dom, Visible)) @@ v in
+        let hyp = make_bounded_fresh v dom in
         let (hyp, v) = self#rename cx hyp v in
         let scx = self#adj scx hyp in
         let e = self#expr scx e in
@@ -635,13 +824,10 @@ class virtual ['s] map_rename = object (self : 'self)
         | Domain d -> (v, k, Domain (self#expr scx d))
         | _ -> (v, k, dom)
     end bs in
-    let hs = List.map begin
-      fun (v, k, _) -> Fresh (v, Shape_expr, k, Unbounded) @@ v
-    end bs in
-    let names = List.map (fun (v, _, _) -> v) bs in
+    let hs = hyps_of_bounds bs in
+    let names = names_of_bounds bs in
     let (hs, names) = self#renames cx hs names in
-    let bs = List.map2 (fun (v, k, dom) name -> (name, k, dom))
-        bs names in
+    let bs = rename_bounds bs names in
     let scx = self#adjs scx hs in
     (scx, bs)
 
@@ -651,7 +837,8 @@ class virtual ['s] map_rename = object (self : 'self)
     (*
     let scx = List.fold_left begin
       fun scx v ->
-        self#adj scx (Fresh (v, Shape_expr, Unknown, Unbounded) @@ v)
+        let fresh = make_fresh v Unknown in
+        self#adj scx fresh
     end scx i.inst_args in
     { i with inst_sub = List.map (fun (v, e) -> (v, self#expr scx e)) i.inst_sub }
     *)

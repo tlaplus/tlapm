@@ -1,13 +1,12 @@
-(*
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Interface to Isabelle.
 
-(** This file contains functions to handle isabelle theories, which
-    are used in two ways:
-    1. to use Isabelle as a back-end to prove obligations
-    2. to use Isabelle to check proofs output by TLAPM and Zenon.
+This file contains functions to handle isabelle theories, which
+are used in two ways:
+1. to use Isabelle as a back-end to prove obligations
+2. to use Isabelle to check proofs output by TLAPM and Zenon.
+
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
 *)
-
 open Ext
 open Property
 
@@ -22,10 +21,9 @@ open Proof.T
 module B = Builtin
 
 type ctx = int Ctx.ctx
-let dot : ctx = Ctx.dot
-let bump : ctx -> ctx = Ctx.bump
-let length : ctx -> int = Ctx.length
-
+let dot: ctx = Ctx.dot
+let bump: ctx -> ctx = Ctx.bump
+let length: ctx -> int = Ctx.length
 
 let emitted_assumptions = ref false
 
@@ -33,7 +31,7 @@ let cook x = "is" ^ pickle x
 
 let adj cx v =
   let cx = Ctx.push cx (pickle v.core) in
-  (cx, Ctx.string_of_ident (fst (Ctx.top cx)))
+  (cx, Ctx.string_of_ident (Ctx.front cx))
 
 let rec adjs cx = function
   | [] -> (cx, [])
@@ -47,7 +45,7 @@ let lookup_id cx n =
   let id = Ctx.string_of_ident (fst (Ctx.index cx n)) in
   id
 
-let crypthash (cx : ctx) e =
+let crypthash (cx: ctx) e =
   let s =
     let b = Buffer.create 10 in
     let fmt = Format.formatter_of_buffer b in
@@ -63,9 +61,9 @@ let print_shape ff shp =
   | Shape_op (n) ->
      for _i = 1 to n do fprintf ff "c => "; done;
      fprintf ff "c";
-;;
 
-exception Unsupported of string;;
+
+exception Unsupported of string
 let failwith_unsupp op = failwith ("Unsupported operator `" ^ op ^ "`.\n")
 
 
@@ -334,7 +332,9 @@ and fmt_expr sd cx e = match e.core with
                 fprintf ff "setOfAll(%a, %%%s. %a)"
                   (pp_print_expr sd cx) dom
                   v (pp_print_expr sd ecx) e)
-  | SetOf (_, _ :: _) -> raise (Unsupported "SetOf (tuple)")
+  | SetOf (_, _ :: _) ->
+    raise (Unsupported
+        "SetOf (multiple declared constants)")
   | SetOf _ -> assert false
   | SetEnum es ->
       Fu.Atm (fun ff ->
@@ -346,7 +346,9 @@ and fmt_expr sd cx e = match e.core with
                 fprintf ff "[%a %s %a]"
                   (pp_print_bound sd cx) b "\\<mapsto>"
                   (pp_print_expr sd ecx) e)
-  | Fcn _ -> raise (Unsupported "function (tuple)")
+  | Fcn _ ->
+    raise (Unsupported
+        "function (multiple declared constants)")
   | FcnApp (f, [e]) ->
       Fu.Atm begin
         fun ff ->
@@ -537,7 +539,7 @@ and pp_print_sequent_outer cx ff sq = match Deque.front sq.context with
                * | _ ->
                *     failwith "Backend.Isabelle.pp_print_sequent"
                *)
-        |  Defn ({ core = Bpragma _ } , _, _, _) -> cx
+        | Defn ({ core = Bpragma _ } , _, _, _) -> cx
     end
 
 and pp_print_sequent_inner cx ff sq = match Deque.front sq.context with
@@ -617,8 +619,8 @@ let thy_header ?(verbose=true) modname oc =
             Printf.fprintf oc "  %s [%s] : \"%s\"\n" axname cookie axbod
     end ax_table;
   end;
-  Printf.fprintf oc "\n";
-;;
+  Printf.fprintf oc "\n"
+
 
 let thy_init modname thy =
   begin try Sys.remove thy with _ -> () end ;
@@ -626,7 +628,7 @@ let thy_init modname thy =
   let thyout = open_out thy in
   thy_header modname thyout;
   thyout
-;;
+
 
 let thy_write thyout ob proof =
   let obid = Option.get ob.id in
@@ -648,14 +650,14 @@ let thy_write thyout ob proof =
                    "ML_command {* writeln \"*** TLAPS EXIT %d\"; *} qed\n"
                    obid;
   with Failure msg ->
-    Errors.warn "Proof of obligation %d cannot be checked:\n%s\n" obid msg;
-;;
+    Errors.warn "Proof of obligation %d cannot be checked:\n%s\n" obid msg
+
 
 let thy_close thy thyout =
   Printf.fprintf thyout "end\n";
   close_out thyout;
-  Util.printf "(* created new %S *)" thy;
-;;
+  Util.printf "(* created new %S *)" thy
+
 
 (* Make theory file for proving (isabelle as normal back-end). *)
 (* FIXME get rid of the buffer and write directly to the file *)
@@ -680,8 +682,8 @@ let thy_temp ob tac tempname thyout =
   else
     Printf.fprintf thyout "by %s\n" tac;
   Printf.fprintf thyout "qed\n";
-  Printf.fprintf thyout "end\n";
-;;
+  Printf.fprintf thyout "end\n"
+
 
 let success_banner modname nmiss =
   let allobs =
@@ -699,7 +701,7 @@ let success_banner modname nmiss =
                 (if nmiss = 1 then "" else "s") modname;
     Util.printf ">>> Rerun tlapm with the --summary flag for details."
   end
-;;
+
 
 let parsed_re = Str.regexp "^ *\\*\\*\\* TLAPS PARSED"
 let enter_re = Str.regexp "\\*\\*\\* TLAPS ENTER \\([0-9]+\\)"
@@ -708,7 +710,7 @@ let failure_location_re = Str.regexp "^ *\\*\\*\\*.*(line \\([0-9]+\\) of"
 
 type isa_msg = Input of string | Output of string
 
-module IntSet = Set.Make (struct type t = int let compare = (-) end);;
+module IntSet = Set.Make (struct type t = int let compare = (-) end)
 
 let find_obid linenum thy =
   let ic = open_in thy in
@@ -731,7 +733,7 @@ let find_obid linenum thy =
   match int_of_string !curobl with
   | 0 -> None
   | x -> Some x
-;;
+
 
 (* Check the [thy] file with Isabelle and report any problems. *)
 let recheck (modname, nmiss, thy) =
@@ -758,7 +760,7 @@ let recheck (modname, nmiss, thy) =
   let failure_line = ref (-1) in
   let inprog = ref IntSet.empty in
   let finished = ref IntSet.empty in
-  let report (errfn : (_, _, _, _, _, _) format6 -> _) msg =
+  let report (errfn: (_, _, _, _, _, _) format6 -> _) msg =
     if IntSet.cardinal !inprog > 0 && !failure_line <= 0 then begin
       let f x accu = (Printf.sprintf "%d" x) :: accu in
       let obls = IntSet.fold f !inprog [] in
@@ -853,5 +855,4 @@ let recheck (modname, nmiss, thy) =
       Errors.warn "Warning: Isabelle/TLA+ returned non-zero exit code";
     List.iter (fun fn -> fn ()) !teardown;
     if !failure_line = 0 then success_banner modname nmiss;
-  end;
-;;
+  end

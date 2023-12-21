@@ -1,11 +1,9 @@
-(*
- * backend/smt/smtcommons.ml --- SMT backend commons
- *
- * Authors: Hernán Vanzetto <hernan.vanzetto@inria.fr>
- *
- * Copyright (C) 2011-2012  INRIA and Microsoft Corporation
- *)
+(* SMT backend commons.
 
+Authors: Hernán Vanzetto <hernan.vanzetto@inria.fr>
+
+Copyright (C) 2011-2012  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 
@@ -127,18 +125,21 @@ let smt_id id =
   |> Tla_parser.pickle
   |> rep "'" "__"
 
+
 let lookup_id (cx:hyp list) n =
-  assert (n > 0 && n <= length cx) ;
-	hyp_name (nth cx (n - 1))
+    assert (n > 0 && n <= length cx);
+    hyp_name (nth cx (n - 1))
+
 
 let fcnapp = "tla__fcnapp"
+
 
 let nonbasic_prefix = "a__"
 let is_nonbasic_var id =
     try ((String.sub id 0 (String.length nonbasic_prefix)) = nonbasic_prefix) with _ -> false
 
 (****************************************************************************)
-(* Formatting Properties 																										*)
+(* Formatting Properties *)
 (****************************************************************************)
 
 let applyint2u : unit pfuncs = Property.make "Backend.Smt.applyint2u"
@@ -165,22 +166,8 @@ let get_pattern x = Property.get x pattern_prop
 
 (****************************************************************************)
 
-let rec unditto = function
-  | (_, _, Domain d) as b1 :: (h,k,Ditto) :: bs ->
-      b1 :: unditto ((h,k,Domain d) :: bs)
-  | b :: bs -> b :: unditto bs
-  | [] -> []
-
 let add_bs_ctx bs cx : hyp list =
-  let bs = unditto bs in
-  let hyps = mapi begin
-    fun n (v, k, dom) ->
-      (* let v = assign v boundvar () in *)
-      match dom with
-      | No_domain -> Fresh (v, Shape_expr, k, Unbounded) @@ v
-      | Domain d -> Fresh (v, Shape_expr, k, Bounded (app_expr (shift n) d, Visible)) @@ v
-      | _ -> assert false
-  end bs in
+  let hyps = Expr.Visit.hyps_of_bounds_unditto bs in
   rev hyps @ cx
 
 let rec n_to_list = function
@@ -256,9 +243,11 @@ let rec unroll_seq sq =
       begin match h.core with
         | Fresh (v, Shape_expr, kn, ran)
         | Fresh (v, Shape_op 0, kn, ran) ->
-            let ran = match ran with
-              | Bounded (ran, Visible) -> Domain ran
-              | _ -> No_domain
+            let bound = match ran with
+              | Bounded (range, Visible) ->
+                From_hint.make_bounded v kn range
+              | _ ->
+                From_hint.make_unbounded v kn
             in
             let ex = unroll_seq sq in
             let hs,c = deimpl ex in
@@ -267,14 +256,14 @@ let rec unroll_seq sq =
               | [h] -> app B.Implies [h ; c]
               | hs -> app B.Implies [List (And, hs) %% [] ; c]
             in
-            Quant (Forall, [v, kn, ran], ex) @@ nowhere
+            From_hint.make_forall [bound] ex
         | Fresh _ ->
             failwith "smt/smtcommons.ml: encountered sequent-order sequent"
         | Flex v ->
             let v_prime = (v.core ^ "'") @@ v in
-            Quant (Forall, [ v, Constant, No_domain
-                           ; v_prime, Constant, No_domain ],
-                   unroll_seq (app_sequent (shift 1) sq)) @@ nowhere
+            let bounds = From_hint.make_const_decls [v; v_prime] in
+            let predicate = unroll_seq (app_sequent (shift 1) sq) in
+            From_hint.make_forall bounds predicate
         | Fact (e, Visible, _) ->
             let hs = deconj e in
             let c = unroll_seq (app_sequent (shift (-1)) sq) in
@@ -333,7 +322,7 @@ let map_exp g cx e =
       | (v, k, Domain d) -> (v, k, Domain (g cx d))
       | b -> b
       end
-    (unditto bs)
+    (Expr.T.unditto bs)
   in
   let iter_es es = List.map (fun e -> g cx e) es in
   match e.core with
@@ -400,7 +389,7 @@ let e_map (ff:'a -> 'a -> 'a) (base:'a) (g:hyp list -> expr -> 'a) (cx:hyp list)
       | (_, _, Domain d) -> d :: r
       | b -> r
       end []
-    (unditto bs)
+    (Expr.T.unditto bs)
     |> map_es
   in
   match e.core with
@@ -510,11 +499,11 @@ let free_operators (sq:Expr.T.sequent) : string list =
     inherit [unit] Expr.Visit.iter as super
     method expr scx e =
       match e.core with
-		  | Ix n ->
-		      begin match (List.nth (to_cx (snd scx)) (n - 1)).core with
-		      | Defn ({core = Operator (h,_)},_,_,_) -> ops := h.core :: !ops
-		      | _ -> ()
-		      end
+      | Ix n -> begin
+        match (List.nth (to_cx (snd scx)) (n - 1)).core with
+        | Defn ({core = Operator (h,_)},_,_,_) -> ops := h.core :: !ops
+        | _ -> ()
+        end
       | _ -> super#expr scx e
     method hyp scx h = match h.core with
       | Defn (_, _, Hidden, _)                                                (** ignore these cases *)
@@ -537,14 +526,18 @@ let get_recid fs =
     (* record_ids := SSMap.add fs id !record_ids ; *)
     id
 
+
 (** Two records have the same type iff they have the same fields
-	(ignoring the fields position) *)
+(ignoring the fields position)
+*)
 let add_record_id fs =
   let id = get_recid fs in
   record_ids := SSMap.add fs id !record_ids ;
   id
 
-let tla_op_set = ref SSet.empty      																					(** Set of operators that appear in the obligation *)
+
+let tla_op_set = ref SSet.empty  (** Set of operators
+    that appear in the obligation *)
 let add_tla_op op = tla_op_set := SSet.add op !tla_op_set
 
 let chooses = ref SMap.empty
@@ -560,8 +553,8 @@ let add_choose s cx e =
         end
     | _ -> ()
 
-let skolem1_ids = ref SMap.empty																							(** Used for [Preprocess.abstract] *)
-let skolem2_ids = ref SMap.empty																							(** Used for [Preprocess.abstract] *)
+let skolem1_ids = ref SMap.empty  (** Used for [Preprocess.abstract] *)
+let skolem2_ids = ref SMap.empty  (** Used for [Preprocess.abstract] *)
 let record_signatures = ref []
 
 (****************************************************************************)
@@ -872,8 +865,8 @@ let list_minus xs ys = fold_left subtract xs ys
 
 (** from standard Option module *)
 let map_default f v = function
-	| None -> v
-	| Some v2 -> f v2
+    | None -> v
+    | Some v2 -> f v2
 
 let ph cx ff h = ignore (Expr.Fmt.pp_print_hyp cx ff h)
 
@@ -994,10 +987,8 @@ and fv_bounds scx bs =
     end bs
     |> List.flatten
   in
-  let hs = List.map begin
-    fun (v, k, _) -> Fresh (v, Shape_expr, k, Unbounded) @@ v
-  end bs in
-  let vs = List.map (fun (v, _, _) -> v.core) bs in
+  let hs = Expr.Visit.hyps_of_bounds bs in
+  let vs = Expr.T.strings_of_bounds bs in
   let scx = adjs scx hs in
   (scx, vs, fbs)
 and fv_exspec scx (trail, res) =
@@ -1117,7 +1108,9 @@ let rec renameb cx e =
     let ren v = if SSet.mem v.core (allids cx) then (v.core^"_1") @@ v else v in
     match e.core with
     | Quant (q, bs, ex) ->
-        let bs = List.map (fun (v,k,d) -> ren v,k,d) bs in
+        let names = Expr.T.names_of_bounds bs in
+        let names = List.map ren names in
+        let bs = Expr.Visit.rename_bounds bs names in
         (* Quant (q, (* map_exp_bs renameb cx *) bs, renameb (add_bs_ctx bs cx) ex) @@ e *)
         map_exp renameb cx (Quant (q, bs, ex) @@ e)
     | _ -> map_exp renameb cx e
@@ -1156,6 +1149,7 @@ let flatten_disj e =
 
 (****************************************************************************)
 
+
 let rec fix ?feq:(xeq=Expr.Eq.expr) c f xs =
   let rec eqq xs ys = match xs, ys with
   | x :: xs, y :: ys -> if xeq x y then eqq xs ys else false
@@ -1165,7 +1159,9 @@ let rec fix ?feq:(xeq=Expr.Eq.expr) c f xs =
   if c = 0 then (failwith "smt/smtcommons.ml: Cannot reach fixed point [fix].\n") else
   (let ys = f xs in if eqq xs ys then xs else fix (c-1) f ys)
 
+
 module Fu = Fmtutil.Minimal (Tla_parser.Prec)
+
 
 let rec fix3 d f (scx,hs,c) =
   let eq (scx,hs,c) (scx',hs',c') =
@@ -1182,8 +1178,9 @@ let rec fix3 d f (scx,hs,c) =
 (* (Util.eprintf "[*1]%d: %a" (Dq.size hs) Fu.pp_print_minimal (Fu.Big (fun ff -> ignore (Expr.Fmt.pp_print_sequent (hs, Ctx.dot) ff {context=hs;active=c})));
  Util.eprintf "[*2]%d: %a" (Dq.size hs) Fu.pp_print_minimal (Fu.Big (fun ff -> ignore (Expr.Fmt.pp_print_sequent (hs', Ctx.dot) ff {context=hs';active=c'})));
  assert false) *)
-			 fix3 (d-1) f (scx',hs',c')
+    fix3 (d - 1) f (scx', hs', c')
   end
+
 
 let rec fix_sq d f sq =
 (* Util.eprintf "[-]%d: %a" (Dq.size hs) Fu.pp_print_minimal (Fu.Big (fun ff -> ignore (Expr.Fmt.pp_print_sequent (hs, Ctx.dot) ff {context=hs;active=c}))); *)
@@ -1195,6 +1192,7 @@ let rec fix_sq d f sq =
      else fix_sq (d-1) f sq'
   end
 
+
 let rec fix_sqs d f sqs =
   if d = 0 then (failwith "smt/smtcommons.ml: Cannot reach fixed point [fix_sqs].\n") else
   begin
@@ -1203,6 +1201,7 @@ let rec fix_sqs d f sqs =
      then sqs
      else fix_sqs (d-1) f sqs'
   end
+
 
 (****************************************************************************)
 
@@ -1226,20 +1225,21 @@ let rec is_typhyp ?var (scx:hyp Dq.dq) e =
           (match var with None -> true | Some v -> idx = v) &&
           not (List.mem idx (fv_expr ((),scx) y))
       end
-  (** \A x \in S : op(x) \in T *)
+  (** \A x \in S:  op(x) \in T *)
   | Quant (Forall, [h,_,Domain s], {core = Apply ({core = Internal B.Mem},
       [{core = Apply ({core = Ix _}, [{core = Ix 1}])} ; t])}) ->
       true
-  (** \A x : p(x) => op(x) \in S *)
+  (** \A x:  p(x) => op(x) \in S *)
   | Quant (Forall, [_,_,No_domain], {core = Apply ({core = Internal B.Implies}, [
-  		{core = Apply ({core = Opaque "boolify"}, [
-	  		{core = Apply ({core = Ix n}, [{core = Ix 1}])}
-		  	])};
-			{core = Apply ({core = Internal B.Mem},
-    		[{core = Apply ({core = Ix m}, [{core = Ix 1}])}; s])}
-			])}) ->
+      {core = Apply ({core = Opaque "boolify"}, [
+        {core = Apply ({core = Ix n}, [{core = Ix 1}])}
+        ])};
+      {core = Apply ({core = Internal B.Mem},
+        [{core = Apply ({core = Ix m}, [{core = Ix 1}])}; s])}
+        ])}) ->
       true
   | _ -> false
+
 
 (** unbound [bs] *)
 let rec unb bs =
@@ -1261,44 +1261,113 @@ let rec unb bs =
     | [] -> [],[]
     | _ -> assert false
 
+
 let rec_sort rs =
-  let compare (h,t) (i,u) = String.compare h i in
-  List.sort ~cmp:compare rs
+    let compare (h, t) (i, u) = String.compare h i in
+    List.sort ~cmp:compare rs
+
 
 (** Keywords *)
 let smt_backend_keys = [
-  "u";"bool";"int";"str";"Int";"boolify";"bool2u";"int2u";"str2u";"u2int";"u2str";
-  "tla__isAFcn";"tla__fcnapp";"tla__unspec";
-	"tla__STRING";"tla__BOOLEAN";"tla__SUBSET";"tla__UNION";"tla__DOMAIN";
-	"tla__subseteq";"tla__in";"tla__notin";"tla__setminus";"tla__cap";"tla__cup";
-	"tla__Int";"tla__Nat";"tla__Real";"tla__plus";"tla__minus";"tla__times";
-	"tla__exp";"tla__ratio";"tla__div";"tla__mod";"tla__lt";"tla__le";"tla__lt";
-	"tla__le";"tla__uminus";"tla__Range";"tla__Infinity";
-	"exp";"mod";
-	"tla__Seq";"tla__Len";"tla__BSeq";"tla__concat";"tla__Append";"tla__Head";
-	"tla__Tail";"tla__SubSeq";"tla__SelectSeq";
-	"tla__Cardinality";
-  "tptp_plus";"tptp_minus";"tptp_times";"tptp_ratio";"tptp_div";"tptp_mod";
-	"tptp_exp";"tptp_ls";"tptp_le";"tptp_uminus";
-  ]
-;;
+    "u";
+    "bool";
+    "int";
+    "str";
+    "Int";
+    "boolify";
+    "bool2u";
+    "int2u";
+    "str2u";
+    "u2int";
+    "u2str";
+    "tla__isAFcn";
+    "tla__fcnapp";
+    "tla__unspec";
+    "tla__STRING";
+    "tla__BOOLEAN";
+    "tla__SUBSET";
+    "tla__UNION";
+    "tla__DOMAIN";
+    "tla__subseteq";
+    "tla__in";
+    "tla__notin";
+    "tla__setminus";
+    "tla__cap";
+    "tla__cup";
+    "tla__Int";
+    "tla__Nat";
+    "tla__Real";
+    "tla__plus";
+    "tla__minus";
+    "tla__times";
+    "tla__exp";
+    "tla__ratio";
+    "tla__div";
+    "tla__mod";
+    "tla__lt";
+    "tla__le";
+    "tla__lt";
+    "tla__le";
+    "tla__uminus";
+    "tla__Range";
+    "tla__Infinity";
+    "exp";
+    "mod";
+    "tla__Seq";
+    "tla__Len";
+    "tla__BSeq";
+    "tla__concat";
+    "tla__Append";
+    "tla__Head";
+    "tla__Tail";
+    "tla__SubSeq";
+    "tla__SelectSeq";
+    "tla__Cardinality";
+    "tptp_plus";
+    "tptp_minus";
+    "tptp_times";
+    "tptp_ratio";
+    "tptp_div";
+    "tptp_mod";
+    "tptp_exp";
+    "tptp_ls";
+    "tptp_le";
+    "tptp_uminus";
+    ]
+
 
 let is_smt_kwd x = List.mem x smt_backend_keys
 
+
 let smt_pickle isbounded id =
-  if id = "_" then (failwith "SMT bug: identifier \"_\"") else
-  if is_smt_kwd id then id else
-  begin match id with
-  | "<=" | "<" -> id
-  | _ ->
-    let id = if Str.string_match (Str.regexp "^[0-9].*") id 0 then "x"^id else id in 		(** identifiers cannot start with [0-9] *)
-    let rep s r id = Str.global_replace (Str.regexp s) r id in
-    id
-    |> Tla_parser.pickle
-    |> rep "'" "_" 																														(** Identifiers cannot contain "'" *)
-    (* |> rep "^max$" "max__"        (** max is a reserved word in Z3 v4.0 *) *)
-    (* |> rep "^u$" "u__"            (** u is also a sort: not allowed in CVC3 *) *)
-    (* |> rep "^status$" "X__status" (** keyword in Spass *) *)
-    (* |> rep "^repeat$" "tla_repeat" (** keyword in Spass *) *)
-    |> turn_first_char isbounded
-  end
+    if id = "_" then (failwith "SMT bug: identifier \"_\"") else
+    if is_smt_kwd id then id else
+    begin match id with
+    | "<="
+    | "<" -> id
+    | _ ->
+        let id = if Str.string_match (Str.regexp "^[0-9].*") id 0 then
+                "x"^id
+            else
+                id in
+            (** identifiers cannot start with [0-9] *)
+        let rep s r id = Str.global_replace (Str.regexp s) r id in
+        id
+        |> Tla_parser.pickle
+        |> rep "'" "_"  (** Identifiers cannot contain "'" *)
+        (*
+        |> rep "^max$" "max__"  (** max is
+            a reserved word in Z3 v4.0 *)
+        *)
+        (*
+        |> rep "^u$" "u__"  (** u is also a sort:
+            not allowed in CVC3 *)
+        *)
+        (*
+        |> rep "^status$" "X__status"  (** keyword in Spass *)
+        *)
+        (*
+        |> rep "^repeat$" "tla_repeat"  (** keyword in Spass *)
+        *)
+        |> turn_first_char isbounded
+    end

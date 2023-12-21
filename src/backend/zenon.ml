@@ -1,8 +1,7 @@
-(*
- * backend/zenon.ml --- Zenon interaction
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Interface to Zenon.
+
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 
 (** Zenon backend *)
 
@@ -27,10 +26,13 @@ include (Isabelle : sig
            val cook : string -> string
            val lookup_id : ctx -> int -> string
            val crypthash : ctx -> expr -> string
+           val extend_bound:
+              ctx -> bound ->
+              ctx * (string * Expr.T.kind * Expr.T.bound_domain)
          end)
 
-exception Unsupported of string;;
-let unsupp o = raise (Unsupported o);;
+exception Unsupported of string
+let unsupp o = raise (Unsupported o)
 let failwith_unsupp op = failwith ("Unsupported operator `" ^ op ^ "`.\n")
 
 let rec pp_apply sd cx ff op args = match op.core with
@@ -324,7 +326,8 @@ and fmt_expr sd cx e =
                     (pp_print_boundset sd cx) (b @@ e)
                     (pp_print_boundvar cx) b
                     (pp_print_expr sd ecx) e)
-    | SetOf _ -> unsupp "Setof (tuple)"
+    | SetOf _ ->
+        unsupp "Setof (multiple declared constants)"
     | SetEnum [] -> Fu.Atm (fun ff -> fprintf ff "TLA.emptyset")
     | SetEnum es ->
         Fu.Big (fun ff ->
@@ -339,7 +342,8 @@ and fmt_expr sd cx e =
                     (pp_print_boundset sd cx) (b @@ e)
                     (pp_print_boundvar cx) b
                     (pp_print_expr sd ecx) e)
-    | Fcn _ -> unsupp "Fcn (tuple)"
+    | Fcn _ ->
+        unsupp "Fcn (multiple declared constants)"
     | FcnApp (f, [e]) ->
         Fu.Atm begin
           fun ff ->
@@ -434,10 +438,6 @@ and fmt_expr sd cx e =
     | Parens (e, _) ->
         fmt_expr sd cx e
 
-and extend_bound cx (v, kn, ran) =
-  let (cx, v) = adj cx v in
-    (cx, (v, kn, ran))
-
 and pp_print_boundvar cx ff (v, _, _) = pp_print_string ff v
 
 and pp_print_boundset sd cx ff b = match b.core with
@@ -488,7 +488,6 @@ and pp_print_sequent cx ff sq =
   | Some ({core = Fact (_, Hidden, _)}, hs) ->
      let ncx = bump cx in
      pp_print_sequent ncx ff {sq with context = hs}
-;;
 
 let pp_print_obligation ff ob =
   fprintf ff ";; obligation #%d@\n" (Option.get ob.id);
@@ -496,4 +495,3 @@ let pp_print_obligation ff ob =
     pp_print_sequent dot ff ob.obl.core;
   with Unsupported msg ->
     failwith ("Zenon: unsupported operator " ^ msg)
-;;

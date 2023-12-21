@@ -104,7 +104,7 @@ THEOREM Spec => []MutualExclusion
 <1>1. Init => Inv
   BY DEFS Init, Inv, TypeOK, I
 <1>2. Inv /\ [Next]_vars => Inv'
-  BY SMT DEFS Inv, TypeOK, I, Next, proc, a0, a1, a2, a3a, a3b, cs, a4, Not, vars 
+  BY SMT DEFS Inv, TypeOK, I, Next, proc, a0, a1, a2, a3a, a3b, cs, a4, Not, vars
 <1>3. Inv => MutualExclusion
   BY DEFS Inv, I, MutualExclusion, Not
 <1>4. QED

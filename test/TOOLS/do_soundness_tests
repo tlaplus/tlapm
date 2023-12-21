@@ -3,7 +3,10 @@
 
 BASEDIR="`pwd`"
 TOOLDIR="$BASEDIR/TOOLS"
-export TLAPM="$BASEDIR/../tlapm --threads 4 -I $BASEDIR/../library"
+
+. $TOOLDIR/env_setup
+
+export TLAPM="$TLAPM_BIN --threads 4 -I $LIBRARY_DIR"
 
 # create output folder
 juDIR=$BASEDIR/test_reports/tmp

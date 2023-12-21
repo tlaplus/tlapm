@@ -1,9 +1,8 @@
 (*
- * alexer.mll --- lexer
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+alexer.mll --- lexer
+
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 {
 
   open Lexing
@@ -311,6 +310,5 @@ and comment depth = parse
         Error.print_error stderr e;
         None
     in (LazyList.make next, Loc.locus_of_position lb.lex_curr_p)
-  ;;
 
 }

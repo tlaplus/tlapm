@@ -1,0 +1,3 @@
+all:
+	chmod +x backends/bin/*
+	make -C backends -f Isabelle.post-install

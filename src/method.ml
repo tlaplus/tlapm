@@ -5,7 +5,7 @@
 let default_zenon_timeout = 10.
 let default_ls4_timeout = 10.
 let default_isabelle_timeout = 30.
-let default_isabelle_tactic = "auto";;
+let default_isabelle_tactic = "auto"
 let default_yices_timeout = 30.
 let default_z3_timeout = 5.
 let default_cvc3_timeout = 5.
@@ -40,7 +40,7 @@ type t =
   | ENABLEDaxioms
   | LevelComparison
   | Trivial
-;;
+
 
 let timeout m =
   match m with
@@ -101,7 +101,7 @@ let scale_time m s =
   | ENABLEDaxioms -> ENABLEDaxioms
   | LevelComparison -> LevelComparison
   | Trivial -> Trivial
-;;
+
 
 open Format
 
@@ -134,11 +134,11 @@ let pp_print_tactic ff m =
   | ENABLEDaxioms -> fprintf ff "(enabledaxioms)"
   | LevelComparison -> fprintf ff "(levelcomparison)"
   | Trivial -> fprintf ff "(trivial)"
-;;
+
 
 let pp_print_method ff meth =
   fprintf ff "@[<h>(*{ by %a }*)@]" pp_print_tactic meth
-;;
+
 
 let prover_meth_of_tac tac =
   match tac with
@@ -174,4 +174,3 @@ type result =
   | Timedout
   | Interrupted
   | NotTried of string
-;;

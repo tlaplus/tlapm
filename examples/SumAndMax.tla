@@ -23,7 +23,7 @@ EXTENDS Integers, TLAPS
 (* \leq i < N, upon termination the predicate sum \leq N * max is          *)
 (* satisfied.                                                              *)
 (***************************************************************************)
- 
+
 CONSTANT N
 ASSUME NType == N \in Nat
 CONSTANT a

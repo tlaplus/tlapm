@@ -1,10 +1,7 @@
-(*
- * loc.ml --- source locations
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Source locations.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 type pt_ = { line : int ;
               bol : int ;
               col : int ;

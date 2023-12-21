@@ -1,4 +1,4 @@
------------------------------ MODULE SnapSpec ----------------------------- 
+----------------------------- MODULE SnapSpec -----------------------------
 CONSTANT Proc, Val
 
 PUnion(Q) == UNION {Q[p] : p \in Proc}
@@ -7,11 +7,11 @@ PUnion(Q) == UNION {Q[p] : p \in Proc}
 --algorithm SnapSpec
 { variables  myVals = [i \in Proc |-> {}],
              nextout = [i \in Proc |-> {}];
-  process (Pr \in Proc) 
+  process (Pr \in Proc)
      variable out = {};
      { A: while (TRUE)
            {    with (v \in Val) { myVals[self] := myVals[self] \cup {v} };
-             B: with (V \in {W \in SUBSET PUnion(myVals) : 
+             B: with (V \in {W \in SUBSET PUnion(myVals) :
                                 /\ myVals[self] \subseteq W
                                 /\ PUnion(nextout) \subseteq W })
                  { nextout[self] := V };
@@ -82,11 +82,11 @@ TypeOK == /\ myVals \in [Proc -> SUBSET Val]
 (* action that describes the extra step the BegSpec allows.                *)
 (***************************************************************************)
 BigNext == \/ Next
-           \/ \E p \in Proc : 
+           \/ \E p \in Proc :
               /\ pc[p] = "A"
               /\ \E P \in SUBSET (Proc \ {p}) :
                     /\ \A q \in P : pc[q] = "C"
-                    /\ pc' = [q \in Proc |-> IF q \in P THEN "B" 
+                    /\ pc' = [q \in Proc |-> IF q \in P THEN "B"
                                                         ELSE pc[q]]
                     /\ UNCHANGED << myVals, nextout,  out>>
 

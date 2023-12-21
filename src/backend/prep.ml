@@ -1,6 +1,7 @@
-(*
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Preparation of proof obligations, and calls to backends.
+
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 
 (** Backend preparations *)
 
@@ -14,7 +15,7 @@ open Proof.T
 
 open Types
 
-(*let debug = Printf.eprintf;;*)
+(* let debug = Printf.eprintf *)
 
 (*
 let debug_time name f x =
@@ -26,7 +27,6 @@ let debug_time name f x =
   with e ->
     Printf.eprintf "%s raises; time: %f\n%!" name (Sys.time () -. t0);
     raise e
-;;
 *)
 
 let vprintf fmt =
@@ -56,7 +56,6 @@ let expand_defs ?(what = fun _ -> true) ob =
 (*
 let expand_defs ?(what = fun _ -> true) ob =
   debug_time "expand_defs" (fun () -> expand_defs ~what ob) ()
-;;
 *)
 
 (*****************************************************************************)
@@ -163,7 +162,7 @@ let mk_timec ob org_ob warnings timeout (prover, tac) =
     Toolbox.toolbox_print (Lazy.force org_ob) "being proved" prover tac timeout None true None
                           warnings None;
     Schedule.Continue ((fun () -> Schedule.Timeout), timeout)
-;;
+
 
 let mk_donec finished cleanup res_cont warnings =
   fun result time_used ->
@@ -175,7 +174,7 @@ let mk_donec finished cleanup res_cont warnings =
     | Schedule.Stopped_timeout ->
        !cleanup ();
        res_cont warnings Method.Timedout (Some time_used)
-;;
+
 
 let mk_temps cleanup suffix =
   let (inf, inc) = Util.temp_file cleanup suffix in
@@ -187,7 +186,7 @@ let mk_temps cleanup suffix =
   in
   Util.add_hook cleanup f ();
   (inf, inc, outf, outc)
-;;
+
 
 let zenon_prove ob org_ob time res_cont =
   let cleanup = ref (fun () -> ()) in
@@ -232,7 +231,7 @@ let zenon_prove ob org_ob time res_cont =
     !cleanup ();
     let w = Errors.get_warnings () in
     Schedule.Immediate (res_cont w (Method.NotTried msg) None)
-;;
+
 
 let ls4_prove ob org_ob time res_cont =
   let cleanup = ref (fun () -> ()) in
@@ -270,7 +269,7 @@ let ls4_prove ob org_ob time res_cont =
     !cleanup ();
     let w = Errors.get_warnings () in
     Schedule.Immediate (res_cont w (Method.NotTried msg) None)
-;;
+
 
 let isabelle_prove ob org_ob tmo tac res_cont =
   let cleanup = ref (fun () -> ()) in
@@ -317,7 +316,7 @@ let isabelle_prove ob org_ob tmo tac res_cont =
     !cleanup ();
     let w = Errors.get_warnings () in
     Schedule.Immediate (res_cont w (Method.NotTried msg) None)
-;;
+
 
 (****************************************************************************)
 
@@ -373,9 +372,9 @@ let pp_print_ob ?comm:(c=";;") chan ob =
   output_string chan "\n"
 
 
-let spass_unsat_re = Str.regexp "SPASS beiseite: Proof found";;
-let eprover_unsat_re = Str.regexp "SZS status Theorem";;
-let generic_unsat_re = Str.regexp "^unsat";;
+let spass_unsat_re = Str.regexp "SPASS beiseite: Proof found"
+let eprover_unsat_re = Str.regexp "SZS status Theorem"
+let generic_unsat_re = Str.regexp "^unsat"
 
 let gen_smt_solve suffix exec desc fmt_expr meth ob org_ob f res_cont comm =
   let cleanup = ref (fun () -> ()) in
@@ -387,7 +386,7 @@ let gen_smt_solve suffix exec desc fmt_expr meth ob org_ob f res_cont comm =
       ignore (Format.flush_str_formatter ());
       fmt_expr Format.str_formatter ob;
       Format.flush_str_formatter ()
-		in
+      in
     pp_print_ob ~comm:comm inc ob;
     output_string inc in_text;
     flush inc;
@@ -441,42 +440,42 @@ let gen_smt_solve suffix exec desc fmt_expr meth ob org_ob f res_cont comm =
     in
     let msg = "Unexpected error in SMT back-end" in
     Schedule.Immediate (res_cont w (Method.NotTried msg) None)
-;;
+
 
 let smt_solve ob org_ob f res_cont =
   gen_smt_solve ".smt" Params.smt "default SMT solver" Smt.encode_smtlib
                 (Method.Smt3 f) ob org_ob f res_cont ";;"
-;;
+
 
 let cvc3_solve ob org_ob f res_cont =
   gen_smt_solve ".smt" Params.cvc4 "CVC4" Smt.encode_smtlib
                 (Method.Cvc33 f) ob org_ob f res_cont ";;"
-;;
+
 
 let yices_solve ob org_ob f res_cont =
   gen_smt_solve ".ys" Params.yices "Yices" Smt.encode_smtlib
                 (Method.Yices3 f) ob org_ob f res_cont ";;"
-;;
+
 
 let z3_solve ob org_ob f res_cont =
   gen_smt_solve ".smt2" Params.z3 "Z3" (Smt.encode_smtlib ~solver:"Z3")
                 (Method.Z33 f) ob org_ob f res_cont ";;"
-;;
+
 
 let verit_solve ob org_ob f res_cont =
   gen_smt_solve ".smt2" Params.verit "veriT" Smt.encode_smtlib
                 (Method.Verit f) ob org_ob f res_cont ";;"
-;;
+
 
 let spass_solve ob org_ob f res_cont =
   gen_smt_solve ".tptp" Params.spass_tptp "Spass" Smt.encode_fof
                 (Method.Spass f) ob org_ob f res_cont "%%"
-;;
+
 
 let tptp_solve ob org_ob f res_cont =
   gen_smt_solve ".tptp" Params.eprover "Tptp" Smt.encode_fof
                 (Method.Tptp f) ob org_ob f res_cont "% "
-;;
+
 
 (*****************************************************************************)
 
@@ -549,7 +548,7 @@ let trivial ob =
         proof = "";
         results = [res];
       }
-;;
+
 
 (******************************************************************************)
 
@@ -581,7 +580,7 @@ let get_prover_name m =
   | Method.ENABLEDaxioms -> "ENABLEDaxioms"
   | Method.LevelComparison -> "LevelComparison"
   | Method.Trivial -> "Trivial"
-;;
+
 
 let already_processed ob meth =
   let fp = Option.get ob.fingerprint in
@@ -620,7 +619,7 @@ let already_processed ob meth =
     | (Some st, others) -> (None, [st])
     *)
   end
-;;
+
 
 (*******************************************************************)
 
@@ -773,7 +772,7 @@ let prove_with ob org_ob meth save =  (* FIXME add success fuction *)
   | Method.Fail ->
      vprintf "(* ... failing *)\n" ;
      Schedule.Immediate false
-;;
+
 
 (*****************************************************************************)
 
@@ -818,8 +817,8 @@ let save_result fpout thyout record (r: package) =
                 proved, so that they are not added to the `IntSet` `proved`.
                 *)
         in
-    List.iter f r.results;
-;;
+    List.iter f r.results
+
 
 (*
 type Proot.T.obligation = {
@@ -1025,10 +1024,10 @@ let normalize_expand ob fpout thyout record
         let ob = {ob with obl = {ob.obl with core = new_seq}} in
         (ob, false)
     end
-;;
+
 
 (*
-let normalize ob = debug_time "normalize" normalize ob;;
+let normalize ob = debug_time "normalize" normalize ob
 *)
 
 (*****************************************************************************)
@@ -1198,8 +1197,8 @@ let compute_meth def args usept =
        | (defpt, _) :: _ -> defpt
      in
      Errors.err ~at:defpt "Missing prover name";
-     failwith "error in prover specification";
-;;
+     failwith "error in prover specification"
+
 
 let find_meth ob =
   match query ob.obl Proof.T.Props.meth with
@@ -1286,7 +1285,7 @@ let find_meth ob =
      let obl = sq @@ ob.obl in
      let obl = assign obl Proof.T.Props.meth meths in
      { ob with obl = obl }
-;;
+
 
 let really_ship ob org_ob meth fpout thyout record =
   if !Params.printallobs then begin
@@ -1313,7 +1312,7 @@ let really_ship ob org_ob meth fpout thyout record =
     in
     prove_with ob org_ob meth save
   end
-;;
+
 
 (* TODO: constness visitor also called in frontends *)
 let add_constness ob =
@@ -1324,18 +1323,17 @@ let add_constness ob =
   match visitor#expr ((), Deque.empty) e with
   | {core = Expr.T.Sequent sq} -> {ob with obl = sq @@ ob.obl}
   | _ -> assert false
-;;
+
 
 let is_success st =
   match st with
   | Triv -> true  (* FIXME assert false -- trivial results are not in FP *)
   | NTriv (RSucc, _) -> true
   | _ -> false
-;;
+
 
 let is_trivial x =
   try ignore (Lazy.force x); true with Nontrivial -> false
-;;
 
 
 (* This function is called on every obligation in the range selected by the
@@ -1515,7 +1513,7 @@ let ship ob fpout thyout record =
     List.map (fun x -> fun () -> prep_meth x) meths
   with Failure msg -> []
   end
-;;
+
 
 let make_task fpout thyout record ob =
   match ob.id with
@@ -1529,4 +1527,3 @@ let make_task fpout thyout record ob =
      Util.eprintf ~at:ob.obl "%s@\n  @[<b0>%t@]@." msg pr_obl;
      (0, [])
   | Some id -> (id, ship ob fpout thyout record)
-;;

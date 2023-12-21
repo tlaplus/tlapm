@@ -9,5 +9,5 @@ ocamlc -c folex.ml
 ocamlc -c foyacc.ml
 ocamlc -c main.ml
 
-ocamlc -o translate fofunctions.cmo folex.cmo foyacc.cmo main.cmo 
+ocamlc -o translate fofunctions.cmo folex.cmo foyacc.cmo main.cmo
 cp translate fotranslate

@@ -16,22 +16,7 @@ open P_t
 let at_nowhere = At false @@ nowhere
 
 let hyps_of bs =
-  let rec unditto fbs prevdom = function
-    | [] -> List.rev fbs
-    | (v, k, (Domain d as prevdom) as b) :: bs ->
-        unditto (b :: fbs) prevdom bs
-    | (v, k, Ditto) :: bs ->
-        unditto ((v, k, prevdom) :: fbs) prevdom bs
-    | b :: bs ->
-        unditto (b :: fbs) prevdom bs
-  in
-  let bs = unditto [] No_domain bs in
-  let hyps = List.mapi begin
-    fun n (v, k, dom) -> match dom with
-      | No_domain -> Fresh (v, Shape_expr, k, Unbounded) @@ v
-      | Domain d -> Fresh (v, Shape_expr, k, Bounded (app_expr (shift n) d, Visible)) @@ v
-      | _ -> assert false
-  end bs in
+  let hyps = Expr.Visit.hyps_of_bounds_unditto bs in
   Deque.of_list hyps
 
 (* the following at_expand function is not efficient because it reparses the proof tree *)
@@ -247,14 +232,16 @@ and simplify_step cx goal st time_flag =
                   let aux =
                     match b, gb with
                     | (_, _, No_domain), (_, _, No_domain) -> aux
-                    | (v, _, Domain dom), (_, _, Domain gdom) ->
+                    | (v, _, Domain dom),
+                      (_, _, Domain gdom) ->
                         if Expr.Eq.expr dom gdom then aux else
                           let sub =
                             Apply (Internal Builtin.Subseteq @@ v, [
                                      gdom ; dom
                                    ]) @@ v
                           in sub :: aux
-                    | (v, _, No_domain), (gv, _, Domain gdom) ->
+                    | (v, _, No_domain),
+                      (gv, _, Domain gdom) ->
                         let msg = Util.sprintf
                            "@.@[<b0>%s (%s)@ %s (%s \\in %a)@]@."
                            "Error: the TAKE argument" v.core
@@ -262,7 +249,8 @@ and simplify_step cx goal st time_flag =
                            (Expr.Fmt.pp_print_expr (cx, Ctx.dot)) gdom
                          in
                          failwith msg
-                    | (v, _, Domain dom), (gv, _, No_domain) ->
+                    | (v, _, Domain dom),
+                      (gv, _, No_domain) ->
                         let msg =
                           Util.sprintf "@.@[<b0>%s (%s \\in %a)@ %s (%s)@]@."
                               "Error: the TAKE argument" v.core

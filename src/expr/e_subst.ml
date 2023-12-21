@@ -1,16 +1,14 @@
-(*
- * expr/subst.ml --- expressions (substitution)
- *
- *
- * Copyright (C) 2008-2019  INRIA and Microsoft Corporation
- *)
+(* Substitution within expressions.
 
+Copyright (C) 2008-2019  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 open E_t
 
 module Dq = Deque
-module Fmt = E_fmt;;
+module Fmt = E_fmt
+
 
 type sub =
   | Shift of int

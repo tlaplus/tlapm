@@ -1,10 +1,9 @@
 (*
- * module/elab.ml --- modules (elaboration)
+ * module/m_elab.ml --- elaborating modules
  *
  *
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
-
 open Ext
 open Format
 open Fmtutil
@@ -19,9 +18,12 @@ open Proof.T
 
 open M_t
 
-(*let debug = Printf.eprintf;;*)
+
+(* let debug = Printf.eprintf *)
+
 
 (******************************************************************************)
+
 
 let localize_axioms body =
   let rec spin prefix = function
@@ -72,7 +74,7 @@ let localize_axioms body =
 
 (******************************************************************************)
 
-let salt_counter = ref 0;;
+let salt_counter = ref 0
 let salt oname =
   incr salt_counter;
   (oname.core ^ "$" ^ string_of_int !salt_counter) @@ oname
@@ -164,7 +166,7 @@ let assert_instance_substitutes_declared_identifiers
 
 let extend_context
         (cx: Expr.T.ctx)
-        (instance_args: hint list):
+        (instance_args: hints):
             Expr.T.ctx =
     (* Extend the context `cx` with the parameters that occur in the
     `WITH` of the statement `INSTANCE ModuleName WITH ...`.

@@ -1,9 +1,7 @@
-(*
- * expr/fmt.ml --- expressions (formatting)
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Formatting of expressions.
+
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 
 (* START dflags
  *
@@ -22,13 +20,14 @@ open Format
 open Fmtutil
 open Tla_parser
 
+
 type ctx = hyp Deque.dq * int Ctx.ctx
 
 let is_letter c =
   match c with
   | 'A'..'Z' | 'a'..'z' -> true
   | _ -> false
-;;
+
 
 let pp_print_var ff v = pp_print_string ff v.core
 
@@ -44,6 +43,22 @@ let rec adjs cx = function
       let (cx, v) = adj cx v in
       let (cx, vs) = adjs cx vs in
       (cx, v :: vs)
+
+let extend_bound ?(prevdom=None) cx (v, _, dom) =
+  let (ecx, v) = adj cx v in
+  let dom = match dom with
+    | Ditto -> prevdom
+    | No_domain -> None
+    | Domain d -> Some d
+  in
+  (ecx, (v, dom))
+
+let rec extend_bounds ?(prevdom=None) cx = function
+  | [] -> (cx, [])
+  | b :: bs ->
+      let (cx, b) = extend_bound ~prevdom:prevdom cx b in
+      let (cx, bs) = extend_bounds ~prevdom:(snd b) cx bs in
+      (cx, b :: bs)
 
 let is_hidden h = match h.core with
   | Defn (_, _, us, _)
@@ -545,22 +560,6 @@ and pp_print_chunk cx ff (vs, dom) =
     | Ditto ->
         fprintf ff "@[<hov0>%a@ \\in ??????@]"
           (pp_print_delimited pp_print_string) vs
-
-and extend_bound ?(prevdom=None) cx (v, _, dom) =
-  let (ecx, v) = adj cx v in
-  let dom = match dom with
-    | Ditto -> prevdom
-    | No_domain -> None
-    | Domain d -> Some d
-  in
-  (ecx, (v, dom))
-
-and extend_bounds ?(prevdom=None) cx = function
-  | [] -> (cx, [])
-  | b :: bs ->
-      let (cx, b) = extend_bound ~prevdom:prevdom cx b in
-      let (cx, bs) = extend_bounds ~prevdom:(snd b) cx bs in
-      (cx, b :: bs)
 
 and pp_print_bound cx ff (v, e) = match e with
   | None -> pp_print_string ff v

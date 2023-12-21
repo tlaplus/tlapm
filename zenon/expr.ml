@@ -364,7 +364,7 @@ let hash = get_hash;;
 let equal = (==);;
 let compare x y =
   match compare (hash x) (hash y) with
-  | 0 -> if equal x y then 0 else Pervasives.compare x y
+  | 0 -> if equal x y then 0 else Stdlib.compare x y
   | x when x < 0 -> -1
   | _ -> 1
 ;;

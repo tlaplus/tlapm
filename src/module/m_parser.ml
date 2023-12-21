@@ -1,10 +1,7 @@
-(*
- * module/parser.ml --- modules (parsing)
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Parsing of modules.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 
@@ -15,6 +12,7 @@ open Expr.T
 open Expr.Parser
 
 open M_t
+
 
 let with_meth e meth = match meth with
   | Some meth -> { e with core = With (e, meth) }

@@ -1,12 +1,10 @@
-(*
- * error.mli --- errors
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Parsing errors.
 
-(** Errors *)
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 
+
+(** Types of errors. *)
 type error                          (** The abstract type of errors *)
 type t = error                      (** convenience *)
 

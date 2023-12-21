@@ -41,9 +41,9 @@ InitiateProbe ==
    - the token is black.
    Note that the last two conditions will result in an
    inconclusive round, since the token will be black.
-   The token will be stained if node i is black, otherwise 
+   The token will be stained if node i is black, otherwise
    its color is unchanged. Node i will be made white. *)
-PassToken(i) == 
+PassToken(i) ==
   /\ tpos = i
   /\ ~ active[i] \/ color[i] = "black" \/ tcolor = "black"
   /\ tpos' = i-1
@@ -122,7 +122,7 @@ AllNodesTerminateIfNoMessages ==
 (***************************************************************************)
 (* Dijkstra's invariant                                                    *)
 (***************************************************************************)
-Inv == 
+Inv ==
   \/ P0:: \A i \in Nodes : tpos < i => ~ active[i]
   \/ P1:: \E j \in 0 .. tpos : color[j] = "black"
   \/ P2:: tcolor = "black"
@@ -135,7 +135,7 @@ LEMMA TypeOK_inv == Spec => []TypeOK
 <1>1. Init => TypeOK
   BY DEF Init
 <1>2. TypeOK /\ [Next]_vars => TypeOK'
-(* FIXME: Although each of the steps below is proved instantly, 
+(* FIXME: Although each of the steps below is proved instantly,
    the attempt to prove the assertion all at once fails??
   BY NAssumption DEF Next, vars, TypeOK, Nodes, Color, Controlled, Environment,
                      InitiateProbe, PassToken, SendMsg, Deactivate
@@ -145,11 +145,11 @@ LEMMA TypeOK_inv == Spec => []TypeOK
                PROVE  TypeOK'
     OBVIOUS
   <2>1. CASE InitiateProbe
-    BY <2>1 DEF InitiateProbe 
+    BY <2>1 DEF InitiateProbe
   <2>2. ASSUME NEW i \in Nodes \ {0},
                PassToken(i)
         PROVE  TypeOK'
-    BY <2>2 DEF PassToken 
+    BY <2>2 DEF PassToken
   <2>3. ASSUME NEW i \in Nodes,
                Deactivate(i)
         PROVE  TypeOK'
@@ -188,34 +188,34 @@ THEOREM Spec => []TerminationDetection
 
 
 
-(* If the one-line proof of step <1>1 above is too obscure, 
+(* If the one-line proof of step <1>1 above is too obscure,
     here is a more detailed, hierarchical proof of the same property. *)
 LEMMA Inv_implies_Termination == Inv => TerminationDetection
-<1>1. ASSUME tpos = 0, 
-             tcolor = "white", 
-             color[0] = "white", 
+<1>1. ASSUME tpos = 0,
+             tcolor = "white",
+             color[0] = "white",
              ~ active[0],
              Inv
       PROVE  \A i \in Nodes : ~ active[i]
 
 (* first of all, let's establish which case of the invariant we're in: *)
-    <2>1. ~ Inv!P2 (* = ~ tcolor = "black" *) 
+    <2>1. ~ Inv!P2 (* = ~ tcolor = "black" *)
         BY <1>1
     <2>2. ~ Inv!P1 (* = ~ \E j \in 0 .. tpos : color[j] = "black" *)
-        BY <1>1 
+        BY <1>1
     <2>3. Inv!P0  (* = \A i \in Nodes : tpos < i => ~ active[i] *)
         BY Inv, <2>1, <2>2 DEF Inv
-    
+
     <2>.  TAKE i \in Nodes
-    
+
     <2>4. CASE i = 0  BY <2>4, <1>1
-    
+
     <2>5. CASE i \in 1 .. N-1
         <3>1. tpos < i  BY tpos=0, <2>5, NAssumption
         <3>. QED  BY <3>1, <2>3
-    
+
     <2>. QED  BY <2>4, <2>5 DEF Nodes
-    
+
 <1>. QED
   BY <1>1 DEF TerminationDetection, terminationDetected
 

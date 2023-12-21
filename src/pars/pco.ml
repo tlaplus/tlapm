@@ -1,9 +1,7 @@
-(*
- * pars/pco.ml --- parsers (based on lazy lists)
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Parser combinators (based on lazy lists).
+
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 
 (** Parsers implementation *)
 
@@ -457,10 +455,9 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
     (pst.source, pst.lastpos, pst.ustate)
 
   let restore (s, l, u) pst =
-    pst.source <- s ;
-    pst.lastpos <- l ;
-    pst.ustate <- u ;
-  ;;
+    pst.source <- s;
+    pst.lastpos <- l;
+    pst.ustate <- u
 
   let lookahead ap = Prs begin
     fun pst ->

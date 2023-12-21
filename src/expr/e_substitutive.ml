@@ -1,6 +1,4 @@
-(*
-    expr/e_substitutive.ml --- compute substitutivity information
-*)
+(* Compute substitutivity information. *)
 open Ext
 open Property
 

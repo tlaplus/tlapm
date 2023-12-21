@@ -1,8 +1,0 @@
-(* -*- mode: tuareg; -*- *)
-(* variables provided by configure *)
-
-let ocaml_version = "@OCAMLCVER@" ;;
-
-let debug = "@enable_debugging@" = "yes" ;;
-
-let exe = "@EXE@" ;;

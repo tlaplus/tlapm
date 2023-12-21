@@ -56,7 +56,7 @@ THEOREM Fun_InverseProperties ==
 (***************************************************************************)
 THEOREM Fun_IsInj ==
   ASSUME NEW S, NEW T, NEW F \in [S -> T],
-         \A a,b \in S : F[a] = F[b] => a = b 
+         \A a,b \in S : F[a] = F[b] => a = b
   PROVE  F \in Injection(S,T)
 
 THEOREM Fun_IsSurj ==
@@ -275,7 +275,7 @@ THEOREM Fun_ExistsBijSymmetric ==
   PROVE  ExistsBijection(T,S)
 
 THEOREM Fun_ExistsBijTransitive ==
-  ASSUME NEW S, NEW T, NEW U, ExistsBijection(S,T), ExistsBijection(T,U)  
+  ASSUME NEW S, NEW T, NEW U, ExistsBijection(S,T), ExistsBijection(T,U)
   PROVE  ExistsBijection(S,U)
 
 
@@ -364,12 +364,12 @@ THEOREM Fun_CantorBernsteinSchroeder ==
 (* `.  .'                                                                  *)
 (***************************************************************************)
 
-THEOREM Fun_ExistInjAndSurjThenBij == 
+THEOREM Fun_ExistInjAndSurjThenBij ==
   ASSUME NEW S, NEW T,
          ExistsInjection(S,T), ExistsSurjection(S,T)
   PROVE  ExistsBijection(S,T)
 
-THEOREM Fun_ExistSurjAndSurjThenBij == 
+THEOREM Fun_ExistSurjAndSurjThenBij ==
   ASSUME NEW S, NEW T,
          ExistsSurjection(S,T), ExistsSurjection(T,S)
   PROVE  ExistsBijection(S,T)

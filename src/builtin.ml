@@ -1,9 +1,7 @@
-(*
- * builtin.ml --- builtin ordinary operators
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Builtin ordinary operators of TLA+.
+
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 
 (** The TLA+ builtin operators *)
 type builtin =

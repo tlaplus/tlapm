@@ -1,14 +1,10 @@
-(*
- * expr/elab.ml --- elaborate expressions
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Elaborate expressions
 
-(** Expression elaborater *)
-
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Deque
 open E_t
+
 
 val desugar : expr -> expr
   (* moved to action frontend *)

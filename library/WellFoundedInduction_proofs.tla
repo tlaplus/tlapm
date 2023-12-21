@@ -30,7 +30,7 @@ EXTENDS NaturalsInduction, TLAPS
 (* R and S \X S are disjoint sets.                                         *)
 (***************************************************************************)
 IsTransitivelyClosedOn(R, S) ==
-   \A i, j, k \in S : (<<i, j>> \in R)  /\ (<<j, k>> \in  R)  
+   \A i, j, k \in S : (<<i, j>> \in R)  /\ (<<j, k>> \in  R)
                          => (<<i, k>> \in R)
 (***************************************************************************)
 (* If we think of R as a less-than relation, then R is well founded on S   *)
@@ -40,7 +40,7 @@ IsTransitivelyClosedOn(R, S) ==
 (*                                                                         *)
 (* A S with a well-founded ordering is often called well-ordered.          *)
 (***************************************************************************)
-IsWellFoundedOn(R, S) == 
+IsWellFoundedOn(R, S) ==
     ~ \E f \in [Nat -> S] : \A n \in Nat : <<f[n+1], f[n]>> \in R
 
 LEMMA EmptyIsWellFounded == \A S : IsWellFoundedOn({}, S)
@@ -78,7 +78,7 @@ SetLessThan(x, R, S) ==  {y \in S : <<y, x>> \in R}
 (***************************************************************************)
 
 THEOREM WFMin ==
-         ASSUME NEW R, NEW S, 
+         ASSUME NEW R, NEW S,
                 IsWellFoundedOn(R, S),
                 NEW T, T \subseteq S, T # {}
          PROVE  \E x \in T : \A y \in T : ~ (<<y, x>> \in R)
@@ -92,7 +92,7 @@ THEOREM WFMin ==
   <2>1. NatInductiveDefHypothesis(f, f0, Def)
     BY DEF NatInductiveDefHypothesis
   <2>. QED
-    BY <2>1, NatInductiveDef   
+    BY <2>1, NatInductiveDef
 <1>2. f \in [Nat -> T]
   <2>1. f0 \in T
     OBVIOUS
@@ -100,9 +100,9 @@ THEOREM WFMin ==
     OBVIOUS
   <2>. QED
     BY <1>1, <2>1, <2>2, NatInductiveDefType, Isa
-<1>3. ASSUME NEW n \in Nat 
-      PROVE  <<f[n+1], f[n]>> \in R 
-  (* FIXME: SMT backend raises exception "Index past end of list" 
+<1>3. ASSUME NEW n \in Nat
+      PROVE  <<f[n+1], f[n]>> \in R
+  (* FIXME: SMT backend raises exception "Index past end of list"
   BY <1>1, <1>2 DEF NatInductiveDefConclusion
   *)
   <2>. /\ n+1 \in Nat
@@ -198,8 +198,8 @@ THEOREM WFInduction ==
 (* well-founded relation by applying the special case to its transitive    *)
 (* closure.                                                                *)
 (***************************************************************************)
-WFDefOn(R, S, Def(_,_)) == 
-   \A g, h : 
+WFDefOn(R, S, Def(_,_)) ==
+   \A g, h :
       \A x \in S :
          (\A y \in SetLessThan(x, R, S) : g[y] = h[y])
            => (Def(g,x) = Def(h,x))
@@ -209,7 +209,7 @@ OpDefinesFcn(f, S, Def(_,_)) ==
 
 WFInductiveDefines(f, S, Def(_,_)) ==
      f = [x \in S |-> Def(f, x)]
-                                          
+
 WFInductiveUnique(S, Def(_,_)) ==
   \A g, h : /\ WFInductiveDefines(g, S, Def)
             /\ WFInductiveDefines(h, S, Def)
@@ -284,7 +284,7 @@ LEMMA WFInductiveDefLemma ==
      <3>2. \A z \in SetLessThan(y, R, S) : ff[z] = g[z]
        BY <2>1, SetLessTransitive DEF LT
      <3>3. QED
-       BY <3>1, <3>2, Zenon DEF WFDefOn      
+       BY <3>1, <3>2, Zenon DEF WFDefOn
   <2>5. WFInductiveDefines(g, LT(x), Def)
     BY <2>3, <2>4 DEF WFInductiveDefines, LT
   <2>6. WFInductiveDefines(F(x), LT(x), Def)
@@ -308,14 +308,14 @@ LEMMA WFInductiveDefLemma ==
 (* transitively closed, then prove some relevant properties.               *)
 (***************************************************************************)
 TransitiveClosureOn(R,S) ==
-   { ss \in S \X S : 
+   { ss \in S \X S :
         \A U \in SUBSET (S \X S) :
            /\ R \cap S \X S \subseteq U
            /\ IsTransitivelyClosedOn(U, S)
-           => ss \in U }  
+           => ss \in U }
 
 LEMMA TransitiveClosureThm ==
-         \A R, S : 
+         \A R, S :
            /\ R \cap S \X S \subseteq TransitiveClosureOn(R, S)
            /\ IsTransitivelyClosedOn(TransitiveClosureOn(R, S), S)
 <1> TAKE R, S
@@ -463,14 +463,14 @@ THEOREM WFInductiveDef ==
 <1> DEFINE TC == TransitiveClosureOn(R, S)
 <1>1. IsTransitivelyClosedOn(TC, S)
   BY TransitiveClosureThm
-<1>2. IsWellFoundedOn(TC, S) 
+<1>2. IsWellFoundedOn(TC, S)
   BY TransitiveClosureWF
 <1>3. WFDefOn(TC, S, Def)
   <2>1. \A x \in S : SetLessThan(x, R, S) \subseteq SetLessThan(x, TC, S)
     BY TransitiveClosureThm DEF SetLessThan
   <2>2. QED
     BY <2>1, Zenon DEF WFDefOn
-<1>4. QED 
+<1>4. QED
  BY <1>1, <1>2, <1>3, WFInductiveDefLemma
 
 (***************************************************************************)
@@ -478,7 +478,7 @@ THEOREM WFInductiveDef ==
 (* function satisfies its recursion equation.  The following result allows *)
 (* us to deduce the range of this function.                                *)
 (***************************************************************************)
-THEOREM WFInductiveDefType == 
+THEOREM WFInductiveDefType ==
           ASSUME NEW Def(_,_), NEW f, NEW R, NEW S, NEW T,
                  T # {},
                  IsWellFoundedOn(R, S),
@@ -488,7 +488,7 @@ THEOREM WFInductiveDefType ==
           PROVE  f \in [S -> T]
 <1>1. \A s \in S : f[s] \in T
   <2>1. SUFFICES ASSUME NEW s \in S,
-                      \A x \in SetLessThan(s, R, S) : f[x] \in T 
+                      \A x \in SetLessThan(s, R, S) : f[x] \in T
                PROVE  f[s] \in T
     BY ONLY <2>1, IsWellFoundedOn(R, S), WFInduction, IsaM("auto")
   <2>2. PICK t0 : t0 \in T
@@ -506,8 +506,8 @@ THEOREM WFInductiveDefType ==
     BY <2>3, <2>4 DEF WFInductiveDefines, WFDefOn
 <1>2. QED
   BY <1>1 DEF WFInductiveDefines
- 
- ---------------------------------------------------------------------------- 
+
+ ----------------------------------------------------------------------------
 (***************************************************************************)
 (* Below are some theorems that allow us to derive some useful             *)
 (* well-founded relations from a given well-founded relation.  First, we   *)
@@ -523,16 +523,16 @@ OpToRel(_\prec_, S) == {ss \in S \X S : ss[1] \prec ss[2]}
 THEOREM NatLessThanWellFounded == IsWellFoundedOn(OpToRel(<,Nat), Nat)
 <1> DEFINE R == OpToRel(<,Nat)
 <1>1. SUFFICES ASSUME NEW ff \in [Nat -> Nat],
-                      \A n \in Nat : ff[n+1] < ff[n] 
-               PROVE  FALSE 
-  BY Zenon DEF IsWellFoundedOn, OpToRel                      
+                      \A n \in Nat : ff[n+1] < ff[n]
+               PROVE  FALSE
+  BY Zenon DEF IsWellFoundedOn, OpToRel
 
-<1> DEFINE P(n) == \E f \in [Nat -> Nat] : 
-                      /\ \A m \in Nat : <<f[m+1], f[m]>> \in R 
+<1> DEFINE P(n) == \E f \in [Nat -> Nat] :
+                      /\ \A m \in Nat : <<f[m+1], f[m]>> \in R
                       /\ f[0] = n
 <1>2. P(ff[0])
   BY <1>1, Isa DEF OpToRel
-<1>3. ASSUME NEW n \in Nat, 
+<1>3. ASSUME NEW n \in Nat,
                  \A m \in 0..(n-1) : ~ P(m)
       PROVE  ~ P(n)
   <2> SUFFICES ASSUME NEW f \in [Nat -> Nat],
@@ -572,7 +572,7 @@ THEOREM NatLessThanWellFounded == IsWellFoundedOn(OpToRel(<,Nat), Nat)
 (***************************************************************************)
 PreImage(f(_), S, R) == {ss \in S \X S : <<f(ss[1]), f(ss[2])>> \in R}
 
-THEOREM PreImageWellFounded == 
+THEOREM PreImageWellFounded ==
           ASSUME NEW S, NEW T, NEW R, NEW f(_),
                  \A s \in S : f(s) \in T,
                  IsWellFoundedOn(R, T)
@@ -593,13 +593,13 @@ THEOREM PreImageWellFounded ==
 (* of two well-ordered sets is well-ordered.                               *)
 (***************************************************************************)
 LexPairOrdering(R1, R2, S1, S2) ==
-     {ss \in (S1 \X S2) \X (S1 \X S2) : 
+     {ss \in (S1 \X S2) \X (S1 \X S2) :
          \/ <<ss[1][1], ss[2][1]>> \in R1
          \/ /\ ss[1][1] = ss[2][1]
             /\ <<ss[1][2], ss[2][2]>> \in R2}
-                           
+
 THEOREM WFLexPairOrdering ==
-          ASSUME NEW R1, NEW R2, NEW S1, NEW S2, 
+          ASSUME NEW R1, NEW R2, NEW S1, NEW S2,
                  IsWellFoundedOn(R1, S1),
                  IsWellFoundedOn(R2, S2)
           PROVE  IsWellFoundedOn(LexPairOrdering(R1, R2, S1, S2), S1 \X S2)
@@ -639,7 +639,7 @@ THEOREM WFLexPairOrdering ==
 (***************************************************************************)
 LexProductOrdering(R, S, n) ==
    { ff \in [1..n -> S] \X [1..n -> S] :
-       \E j \in 1..n : 
+       \E j \in 1..n :
           /\ \A i \in 1..(j-1) : ff[1][i] = ff[2][i]
           /\ <<ff[1][j], ff[2][j]>> \in R }
 

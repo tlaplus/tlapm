@@ -2,13 +2,12 @@
  * Copyright (C) 2011  INRIA and Microsoft Corporation
  *)
 module T : sig
-  open Property;;
-  open Expr.T;;
+  open Property
+  open Expr.T
   type omission =
     | Implicit
     | Explicit
     | Elsewhere of Loc.locus
-  ;;
   type proof = proof_ wrapped
   and proof_ =
     | Obvious
@@ -37,18 +36,16 @@ module T : sig
   and use_def =
     | Dvar of string
     | Dx   of int
-  ;;
-  type obligation_kind = Ob_main | Ob_support | Ob_error of string;;
+  type obligation_kind = Ob_main | Ob_support | Ob_error of string
   type obligation = {
     id  : int option;
     obl : sequent wrapped;
     fingerprint : string option;
     kind : obligation_kind;
-  };;
+  }
   type stepno =
     | Named   of int * string * bool
     | Unnamed of int * int
-  ;;
   module Props : sig
     val step : stepno Property.pfuncs
     val goal : sequent pfuncs
@@ -58,11 +55,11 @@ module T : sig
     val orig_step : step Property.pfuncs
     val orig_proof : proof Property.pfuncs
     val use_location : Loc.locus Property.pfuncs
-  end;;
-  val string_of_stepno : ?anonid:bool -> stepno -> string;;
-  val get_qed_proof : qed_step_ Property.wrapped -> proof;;
-  val step_number : stepno -> int;;
-end;;
+  end
+  val string_of_stepno: ?anonid:bool -> stepno -> string
+  val get_qed_proof: qed_step_ Property.wrapped -> proof
+  val step_number: stepno -> int
+end
 
 module Fmt : sig
   open Ctx
@@ -72,7 +69,7 @@ module Fmt : sig
   val pp_print_step : Expr.Fmt.ctx -> Format.formatter -> step -> Expr.Fmt.ctx
   val pp_print_usable : Expr.Fmt.ctx -> Format.formatter -> usable -> unit
   val string_of_step : Expr.T.hyp Deque.dq  -> step -> string
-end;;
+end
 
 module Subst : sig
   open Expr.Subst
@@ -81,7 +78,7 @@ module Subst : sig
   val app_step : sub -> step -> sub * step
   val app_inits : sub -> step list -> sub * step list
   val app_usable : sub -> usable -> usable
-end;;
+end
 
 module Visit : sig
   open Deque
@@ -103,7 +100,7 @@ module Visit : sig
     method step   : 's scx -> step -> 's scx
     method usable : 's scx -> usable -> unit
   end
-end;;
+end
 
 module Simplify : sig
   open Property
@@ -111,12 +108,12 @@ module Simplify : sig
   open Expr.T
   open T
   val simplify : hyp dq -> expr -> proof -> time -> proof
-end;;
+end
 
 module Anon : sig
   class anon : [string list] Visit.map
   val anon : anon
-end;;
+end
 
 module Gen : sig
   open Deque
@@ -143,11 +140,11 @@ module Gen : sig
   }
   val get_stats   : unit -> stats
   val reset_stats : unit -> unit
-end;;
+end
 
 module Parser : sig
   type supp = Emit | Suppress
   val usebody : T.usable Tla_parser.lprs
   val proof : T.proof Tla_parser.lprs
   val suppress : supp Tla_parser.lprs
-end;;
+end

@@ -27,20 +27,20 @@ ToSet(s) ==
   (*************************************************************************)
   { s[i] : i \in DOMAIN s }
 
-SetToSeq(S) == 
+SetToSeq(S) ==
   (**************************************************************************)
   (* Convert a set to some sequence that contains all the elements of the   *)
   (* set exactly once, and contains no other elements.                      *)
   (**************************************************************************)
   CHOOSE f \in [1..Cardinality(S) -> S] : IsInjective(f)
 
-TupleOf(set, n) == 
+TupleOf(set, n) ==
   (***************************************************************************)
   (* TupleOf(s, 3) = s \X s \X s                                             *)
   (***************************************************************************)
   [1..n -> set]
 
-SeqOf(set, n) == 
+SeqOf(set, n) ==
   (***************************************************************************)
   (* All sequences up to length n with all elements in set.  Includes empty  *)
   (* sequence.                                                               *)
@@ -53,7 +53,7 @@ BoundedSeq(S, n) ==
   (* the unbounded version of BoundedSeq.                                    *)
   (***************************************************************************)
   SeqOf(S, n)
-  
+
 -----------------------------------------------------------------------------
 
 Contains(s, e) ==
@@ -80,7 +80,7 @@ ReplaceAll(s, old, new) ==
   (* Equals the sequence s except that all occurrences of element old are  *)
   (* replaced with the element new.                                        *)
   (*************************************************************************)
-  LET F[i \in 0..Len(s)] == 
+  LET F[i \in 0..Len(s)] ==
         IF i = 0 THEN << >>
                  ELSE IF s[i] = old THEN Append(F[i-1], new)
                                     ELSE Append(F[i-1], s[i])
@@ -104,8 +104,8 @@ ReplaceAt(s, i, e) ==
   (* Replaces the element at position i with the element e.                 *)
   (**************************************************************************)
   [s EXCEPT ![i] = e]
-  
-RemoveAt(s, i) == 
+
+RemoveAt(s, i) ==
   (**************************************************************************)
   (* Replaces the element at position i shortening the length of s by one.  *)
   (**************************************************************************)
@@ -116,10 +116,10 @@ RemoveAt(s, i) ==
 Cons(elt, seq) ==
   (*************************************************************************)
   (* The sequence formed by prepending elt to seq.                         *)
-  (*************************************************************************) 
+  (*************************************************************************)
   <<elt>> \o seq
 
-Front(s) == 
+Front(s) ==
   (**************************************************************************)
   (* The sequence formed by removing its last element.                      *)
   (**************************************************************************)
@@ -163,7 +163,7 @@ IsStrictSuffix(s, t) ==
 
 -----------------------------------------------------------------------------
 
-SeqMod(a, b) == 
+SeqMod(a, b) ==
   (***************************************************************************)
   (*   Range(a % b) = 0..b-1, but DOMAIN seq = 1..Len(seq).                  *)
   (*   So to do modular arithmetic on sequences we need to                   *)
@@ -172,7 +172,7 @@ SeqMod(a, b) ==
   IF a % b = 0 THEN b ELSE a % b
 
 (*
-ReduceSeq(op(_, _), seq, acc) == 
+ReduceSeq(op(_, _), seq, acc) ==
   (***************************************************************************)
   (* We can't just apply ReduceSet to the Range(seq) because the same        *)
   (* element might appear twice in the sequence.                             *)

@@ -1,11 +1,9 @@
-(*
- * backend/smt/lift.ml --- Apply lifting functions (int2u and str2u)
- *
- * Authors: Hernán Vanzetto <hernan.vanzetto@inria.fr>
- *
- * Copyright (C) 2011-2012  INRIA and Microsoft Corporation
- *)
+(* Apply lifting functions (`int2u` and `str2u`).
 
+Authors: Hernán Vanzetto <hernan.vanzetto@inria.fr>
+
+Copyright (C) 2011-2012  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 
@@ -24,7 +22,7 @@ module B = Builtin
 open Typ_t
 
 (** [boolify] already applied by [Boolify.mk_bool] *)
-let ( <<< ) e prop : expr = 
+let ( <<< ) e prop : expr =
 (* Util.eprintf "%a <<< %s" (print_prop ()) e prop.rep ; *)
   match prop with
   | "int2u"   -> Apply (Opaque "int2u" |> noprops, [e]) |> noprops
@@ -34,8 +32,8 @@ let ( <<< ) e prop : expr =
 
 (** Assigns properties [fmtasint], [fmtasint] and ["int2u"] to sub-expressions in [scx,e]
     [req] = required type for expression [scx,e]
-    - Require a [Bool] only when the argument of the expression allows it. For 
-      example, not for the If condition. This will apply [u2bool] only to the 
+    - Require a [Bool] only when the argument of the expression allows it. For
+      example, not for the If condition. This will apply [u2bool] only to the
       correct cases. No SMT term will be declared as [Bool].
     - Require [Int] only when the expression is known to be integer.
     - If the expression is known to be integer, then format it as integer.
@@ -52,37 +50,37 @@ let rec lift req scx e : Expr.T.expr =
   let fcnapp f es = FcnApp (f, es) |> mk in
 
   let typ scx e = Option.default Top (Typ_t.get_type scx e) in
-  let t = match typ scx e with 
-    | Int -> Int 
-    | Ref (_,Int,_) -> Int 
+  let t = match typ scx e with
+    | Int -> Int
+    | Ref (_,Int,_) -> Int
     | Str -> Str
     | Ref (_,Str,_) -> Str
-    | Bool -> Bool 
-    | _ -> Top 
+    | Bool -> Bool
+    | _ -> Top
   in
 
   match e.core with
-  | Ix _ -> 
+  | Ix _ ->
       lift_term t req e
-  | Opaque _ -> 
+  | Opaque _ ->
       lift_term t req e
-  | Apply ({core = Opaque "tla__fcnapp_i"} as p, es) -> 
+  | Apply ({core = Opaque "tla__fcnapp_i"} as p, es) ->
       let e = apps p (List.map (lift Top scx) es) in
       if req = Int then e else e <<< "int2u"
-  | Apply ({core = Opaque id}, es) when Smtcommons.is_smt_kwd id -> 
+  | Apply ({core = Opaque id}, es) when Smtcommons.is_smt_kwd id ->
       apps (Opaque id %% []) (List.map (lift Top scx) es)
-  (* | Apply ({core = Opaque ("<="|"<")} as p, es) -> 
+  (* | Apply ({core = Opaque ("<="|"<")} as p, es) ->
       apps (p <<< "fmtasint") (List.map (lift Int scx) es) *)
-  | Apply (({core = Ix _ | Opaque _} as f), es) -> 
+  | Apply (({core = Ix _ | Opaque _} as f), es) ->
       let e = apps f (List.map (lift Top scx) es) in
       lift_term t req e
   | FcnApp (f, es) ->
       let e = fcnapp (lift Top scx f) (List.map (lift Top scx) es) in
       lift_term t req e
-  | Dot (ex, h) -> 
+  | Dot (ex, h) ->
       let e = Dot (lift Top scx ex, h) |> mk in
       lift_term t req e
-  | Apply ({core = Internal op} as o, es) -> 
+  | Apply ({core = Internal op} as o, es) ->
       begin match op, es with
       | B.Mem, [x ; {core = Internal B.Int}] when Typ_t.is_int scx x ->
           Internal B.TRUE %% []
@@ -90,9 +88,9 @@ let rec lift req scx e : Expr.T.expr =
           (* let x = if Typ_t.is_int scx x then x <<< "fmtasint" else x in *)
           (* apps (o <<< "fmtasint") [lift Int scx x ; y] *)
       (* | B.Eq, [{core = Internal B.TRUE | Internal B.FALSE} as e1 ; e2]
-      | B.Eq, [e1 ; {core = Internal B.TRUE | Internal B.FALSE} as e2] -> 
+      | B.Eq, [e1 ; {core = Internal B.TRUE | Internal B.FALSE} as e2] ->
           apply B.Equiv (lift Bool scx e1) (lift Bool scx e2) *)
-      | B.Eq, [e1 ; e2] -> 
+      | B.Eq, [e1 ; e2] ->
           let t1 = typ scx e1 in
           let t2 = typ scx e2 in
 (* Util.eprintf "lift %a\t%a" Typ_e.ppt (Typ_e.empty,req) (Typ_e.pp_print_expr (scx, Ctx.dot)) e ; *)
@@ -106,7 +104,7 @@ let rec lift req scx e : Expr.T.expr =
       | B.Conj,    [e1 ; e2]
       | B.Disj,    [e1 ; e2]
       | B.Implies, [e1 ; e2]
-      | B.Equiv,   [e1 ; e2] -> 
+      | B.Equiv,   [e1 ; e2] ->
           let e1 = lift Bool scx e1 in
           let e2 = lift Bool scx e2 in
           apply op e1 e2
@@ -114,9 +112,9 @@ let rec lift req scx e : Expr.T.expr =
       | B.DOMAIN, [ex]      -> app1 op (lift Top scx ex)
       | B.Mem,    [e1 ; e2]
       | B.Range,  [e1 ; e2] -> apply op (lift Top scx e1) (lift Top scx e2)
-      | B.Lteq,   [e1 ; e2] 
-      | B.Lt,     [e1 ; e2] 
-      | B.Gteq,   [e1 ; e2] 
+      | B.Lteq,   [e1 ; e2]
+      | B.Lt,     [e1 ; e2]
+      | B.Gteq,   [e1 ; e2]
       | B.Gt,     [e1 ; e2] ->
           (* apps (o <<< "fmtasint") [lift Int scx e1 ; lift Int scx e2] *)
           begin match typ scx e1, typ scx e2 with
@@ -126,12 +124,12 @@ let rec lift req scx e : Expr.T.expr =
           | _ ->          apps o [lift Top scx e1 ; lift Top scx e2]
           end
       | B.Plus,      [e1 ; e2]
-      | B.Minus,     [e1 ; e2] 
-      | B.Times,     [e1 ; e2] 
-      | B.Ratio,     [e1 ; e2] 
-      | B.Quotient,  [e1 ; e2] 
-      | B.Remainder, [e1 ; e2] 
-      | B.Exp,       [e1 ; e2] 
+      | B.Minus,     [e1 ; e2]
+      | B.Times,     [e1 ; e2]
+      | B.Ratio,     [e1 ; e2]
+      | B.Quotient,  [e1 ; e2]
+      | B.Remainder, [e1 ; e2]
+      | B.Exp,       [e1 ; e2]
           ->
           begin match req, Typ_t.is_int scx e1 && Typ_t.is_int scx e2 with
           | Top, true -> apps (o <<< "fmtasint") [lift Int scx e1 ; lift Int scx e2] <<< "int2u"
@@ -140,15 +138,15 @@ let rec lift req scx e : Expr.T.expr =
           end
       (* | B.Exp, [e1 ; e2] ->
           apps o [lift Top scx e1 ; lift Top scx e2]         *)
-      | B.Uminus, [ex] -> 
+      | B.Uminus, [ex] ->
           begin match req, Typ_t.is_int scx ex with
           | Top, true -> apps (o <<< "fmtasint") [lift Int scx ex] <<< "int2u"
           | _, true   -> apps (o <<< "fmtasint") [lift Int scx ex]
           | _         -> apps o [lift Top scx ex]
           end
-      | B.Prime, [ex] -> 
+      | B.Prime, [ex] ->
           app1 op (lift req scx ex)
-      (* | B.Prime, [{core = Ix _ | Opaque _} as ex] -> 
+      (* | B.Prime, [{core = Ix _ | Opaque _} as ex] ->
           app1 op (lift req scx ex) *)
 
       | B.Seq,       [ex]      -> app1 op (lift Top scx ex)
@@ -161,7 +159,7 @@ let rec lift req scx e : Expr.T.expr =
       | B.SelectSeq, [e1 ; e2] -> apply op (lift Top scx e1) (lift Top scx e2)
       | B.SubSeq,    [e1;e2;e3]-> apps (Internal op |> mk) (List.map (lift Top scx) es)
 
-      (* 
+      (*
       | B.OneArg,    [e ; f] -> proc_out "oneArg" es
       | B.Extend,    [e ; f] -> proc_out "extend" es
       | B.Print,     [e ; v] -> proc_out "Print" es
@@ -176,18 +174,18 @@ let rec lift req scx e : Expr.T.expr =
       | B.Any,       []      -> prefix "Any"
       | B.ToString,  [v]     -> proc_out "ToString" es *)
 
-      | _ -> 
+      | _ ->
           Errors.set (Internal op |> mk) "lift.ml: Arity mismatch";
           Util.eprintf ~at:(Internal op |> mk) "Arity mismatch or expression not normalized" ;
           failwith "Backend.Smt.Fmt.lift"
       end
-  | Internal B.TRUE | Internal B.FALSE -> 
+  | Internal B.TRUE | Internal B.FALSE ->
       e
-  | Num (m, "") -> 
+  | Num (m, "") ->
       if req = Int then e else e <<< "int2u"
-  (* | Internal B.Infinity -> 
+  (* | Internal B.Infinity ->
       if req = Top then e <<< "int2u" else e *)
-  | String _ -> 
+  | String _ ->
       if req = Str then e else e <<< "str2u"
   | If (c, t, f) ->
       let t1 = typ scx t in
@@ -214,30 +212,30 @@ let rec lift req scx e : Expr.T.expr =
       in
       let e = If (c, lift t1 scx t, lift t2 scx f) |> mk in
       begin match prop with Some p -> e <<< p | None -> e end
-  | List (b, es) -> 
+  | List (b, es) ->
       List (b, List.map (lift Bool scx) es) |> mk
-  | Quant (q, bs, ex) ->      
+  | Quant (q, bs, ex) ->
       (* let bs,ds = Smtcommons.unb bs in
       let ex = match q, ds with
         | _, [] -> ex
-        | Forall, _ -> 
+        | Forall, _ ->
             let ds = flatten_conj (List (And, ds) %% []) in
-            apply B.Implies ds ex 
-        | Exists, _ -> 
+            apply B.Implies ds ex
+        | Exists, _ ->
             let ds = flatten_conj (List (And, ds) %% []) in
-            apply B.Conj ds ex 
+            apply B.Conj ds ex
       in       *)
       (** Assumption: all [Quant]'s have [No_domain] after normalization. *)
       let scx, bs = lift_bs scx bs in
       Quant (q, bs, lift Bool scx ex) |> mk
-  | Record es -> 
+  | Record es ->
       Record (List.map (fun (f,e) -> f, lift Top scx e) es) |> mk
-  | Tuple es -> 
+  | Tuple es ->
       (* add_tuple (List.map (fun e -> if typ scx e = Int then Int else Top) es) ; *)
       Tuple (List.map (fun e -> lift (* (if typ scx e = Int then Int else Top) *)Top scx e) es) |> mk
-  | _ -> 
+  | _ ->
       e
-and lift_term t req e = 
+and lift_term t req e =
 (* Util.eprintf "lift %a-%a\t%a" Typ_e.ppt (Typ_e.empty,t) Typ_e.ppt (Typ_e.empty,req) (Typ_e.pp_print_expr (Deque.empty, Ctx.dot)) e ; *)
   begin match t, req with
   | Int, Top  -> e <<< "fmtasint" <<< "int2u"
@@ -247,17 +245,10 @@ and lift_term t req e =
   | _          -> e
   end
 and lift_bs scx bs =
-  let bs = List.map begin
-    fun (v, k, dom) -> match dom with
-      | Domain d -> (v, k, Domain (lift Top scx d))
-      | _ -> (v, k, dom)
-  end bs in
-  let hs = List.map begin
-    fun (v, k, _) -> Fresh (v, Shape_expr, k, Unbounded) @@ v
-  end bs in
+  let bs = Expr.Visit.map_bound_domains
+    (fun d -> lift Top scx d) bs in
+  let hs = Expr.Visit.hyps_of_bounds bs in
   let scx = Expr.Visit.adjs ((),scx) hs in
   (snd scx, bs)
-and lift_sq scx (hs,c) = 
+and lift_sq scx (hs,c) =
   List.map (lift Bool scx) hs, lift Bool scx c
-
-

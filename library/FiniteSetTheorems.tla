@@ -221,7 +221,7 @@ THEOREM FS_BoundedSetOfNaturals ==
 (* `.  .'                                                                  *)
 (***************************************************************************)
 
-THEOREM FS_Induction == 
+THEOREM FS_Induction ==
   ASSUME NEW S, IsFiniteSet(S),
          NEW P(_), P({}),
          ASSUME NEW T, NEW x, IsFiniteSet(T), P(T), x \notin T
@@ -239,7 +239,7 @@ THEOREM FS_Induction ==
 (***************************************************************************)
 
 FiniteSubsetsOf(S) == { T \in SUBSET S : IsFiniteSet(T) }
-StrictSubsetOrdering(S) == { ss \in (SUBSET S) \X (SUBSET S) : 
+StrictSubsetOrdering(S) == { ss \in (SUBSET S) \X (SUBSET S) :
                                 ss[1] \subseteq ss[2] /\ ss[1] # ss[2] }
 
 LEMMA FS_FiniteSubsetsOfFinite ==
@@ -298,9 +298,9 @@ THEOREM FS_Union ==
 (*                                                                         *)
 (* `.  .'                                                                  *)
 (***************************************************************************)
-THEOREM FS_MajoritiesIntersect == 
-  ASSUME NEW U, NEW S, NEW T, IsFiniteSet(U), 
-         S \subseteq U, T \subseteq U, 
+THEOREM FS_MajoritiesIntersect ==
+  ASSUME NEW U, NEW S, NEW T, IsFiniteSet(U),
+         S \subseteq U, T \subseteq U,
          Cardinality(S) + Cardinality(T) > Cardinality(U)
   PROVE  S \cap T # {}
 
@@ -312,9 +312,9 @@ THEOREM FS_MajoritiesIntersect ==
 (*                                                                         *)
 (* `.  .'                                                                  *)
 (***************************************************************************)
-  
 
-THEOREM FS_Intersection == 
+
+THEOREM FS_Intersection ==
   ASSUME NEW S, IsFiniteSet(S), NEW T
   PROVE  /\ IsFiniteSet(S \cap T)
          /\ IsFiniteSet(T \cap S)
@@ -329,7 +329,7 @@ THEOREM FS_Intersection ==
 (*                                                                         *)
 (* `.  .'                                                                  *)
 (***************************************************************************)
-THEOREM FS_Difference == 
+THEOREM FS_Difference ==
   ASSUME NEW S, NEW T, IsFiniteSet(S)
   PROVE /\ IsFiniteSet(S \ T)
         /\ Cardinality(S \ T) = Cardinality(S) - Cardinality(S \cap T)
@@ -372,7 +372,7 @@ THEOREM FS_SUBSET ==
   ASSUME NEW S, IsFiniteSet(S)
   PROVE  /\ IsFiniteSet(SUBSET S)
          /\ Cardinality(SUBSET S) = 2^Cardinality(S)
-   
+
 =============================================================================
 \* Modification History
 \* Last modified Wed Jan 08 17:43:30 CET 2020 by merz

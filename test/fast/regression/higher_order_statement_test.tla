@@ -3,9 +3,9 @@ EXTENDS Integers, TLAPS
 
 NatInductiveDefConclusion(f, f0, Def(_,_)) ==
      f = [i \in Nat |-> IF i = 0 THEN f0 ELSE Def(f[i-1], i)]
-NatInductiveDefHypothesis(f, f0, Def(_,_)) == 
+NatInductiveDefHypothesis(f, f0, Def(_,_)) ==
    (f =  CHOOSE g : g = [i \in Nat |-> IF i = 0 THEN f0 ELSE Def(g[i-1], i)])
-   
+
 THEOREM NatInductiveDef ==
           ASSUME NEW Def(_,_)
           PROVE  \A f, f0 : NatInductiveDefHypothesis(f, f0, Def)

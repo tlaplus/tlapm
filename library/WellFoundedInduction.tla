@@ -30,7 +30,7 @@ EXTENDS NaturalsInduction
 (* R and S \X S are disjoint sets.                                         *)
 (***************************************************************************)
 IsTransitivelyClosedOn(R, S) ==
-   \A i, j, k \in S : (<<i, j>> \in R)  /\ (<<j, k>> \in  R)  
+   \A i, j, k \in S : (<<i, j>> \in R)  /\ (<<j, k>> \in  R)
                          => (<<i, k>> \in R)
 (***************************************************************************)
 (* If we think of R as a less-than relation, then R is well founded on S   *)
@@ -40,7 +40,7 @@ IsTransitivelyClosedOn(R, S) ==
 (*                                                                         *)
 (* A S with a well-founded ordering is often called well-ordered.          *)
 (***************************************************************************)
-IsWellFoundedOn(R, S) == 
+IsWellFoundedOn(R, S) ==
     ~ \E f \in [Nat -> S] : \A n \in Nat : <<f[n+1], f[n]>> \in R
 
 LEMMA EmptyIsWellFounded == \A S : IsWellFoundedOn({}, S)
@@ -69,7 +69,7 @@ SetLessThan(x, R, S) ==  {y \in S : <<y, x>> \in R}
 (***************************************************************************)
 
 THEOREM WFMin ==
-         ASSUME NEW R, NEW S, 
+         ASSUME NEW R, NEW S,
                 IsWellFoundedOn(R, S),
                 NEW T, T \subseteq S, T # {}
          PROVE  \E x \in T : \A y \in T : ~ (<<y, x>> \in R)
@@ -127,8 +127,8 @@ THEOREM WFInduction ==
 (* well-founded relation by applying the special case to its transitive    *)
 (* closure.                                                                *)
 (***************************************************************************)
-WFDefOn(R, S, Def(_,_)) == 
-   \A g, h : 
+WFDefOn(R, S, Def(_,_)) ==
+   \A g, h :
       \A x \in S :
          (\A y \in SetLessThan(x, R, S) : g[y] = h[y])
            => (Def(g,x) = Def(h,x))
@@ -138,7 +138,7 @@ OpDefinesFcn(f, S, Def(_,_)) ==
 
 WFInductiveDefines(f, S, Def(_,_)) ==
      f = [x \in S |-> Def(f, x)]
-                                          
+
 WFInductiveUnique(S, Def(_,_)) ==
   \A g, h : /\ WFInductiveDefines(g, S, Def)
             /\ WFInductiveDefines(h, S, Def)
@@ -165,14 +165,14 @@ LEMMA WFInductiveDefLemma ==
 (* transitively closed, then prove some relevant properties.               *)
 (***************************************************************************)
 TransitiveClosureOn(R,S) ==
-   { ss \in S \X S : 
+   { ss \in S \X S :
         \A U \in SUBSET (S \X S) :
            /\ R \cap S \X S \subseteq U
            /\ IsTransitivelyClosedOn(U, S)
-           => ss \in U }  
+           => ss \in U }
 
 LEMMA TransitiveClosureThm ==
-         \A R, S : 
+         \A R, S :
            /\ R \cap S \X S \subseteq TransitiveClosureOn(R, S)
            /\ IsTransitivelyClosedOn(TransitiveClosureOn(R, S), S)
 
@@ -238,7 +238,7 @@ THEOREM WFInductiveDef ==
 (* function satisfies its recursion equation.  The following result allows *)
 (* us to deduce the range of this function.                                *)
 (***************************************************************************)
-THEOREM WFInductiveDefType == 
+THEOREM WFInductiveDefType ==
           ASSUME NEW Def(_,_), NEW f, NEW R, NEW S, NEW T,
                  T # {},
                  IsWellFoundedOn(R, S),
@@ -246,8 +246,8 @@ THEOREM WFInductiveDefType ==
                  WFInductiveDefines(f, S, Def),
                  \A g \in [S -> T], s \in S : Def(g, s) \in T
           PROVE  f \in [S -> T]
- 
- ---------------------------------------------------------------------------- 
+
+ ----------------------------------------------------------------------------
 (***************************************************************************)
 (* Below are some theorems that allow us to derive some useful             *)
 (* well-founded relations from a given well-founded relation.  First, we   *)
@@ -270,7 +270,7 @@ THEOREM NatLessThanWellFounded == IsWellFoundedOn(OpToRel(<,Nat), Nat)
 (***************************************************************************)
 PreImage(f(_), S, R) == {ss \in S \X S : <<f(ss[1]), f(ss[2])>> \in R}
 
-THEOREM PreImageWellFounded == 
+THEOREM PreImageWellFounded ==
           ASSUME NEW S, NEW T, NEW R, NEW f(_),
                  \A s \in S : f(s) \in T,
                  IsWellFoundedOn(R, T)
@@ -281,13 +281,13 @@ THEOREM PreImageWellFounded ==
 (* of two well-ordered sets is well-ordered.                               *)
 (***************************************************************************)
 LexPairOrdering(R1, R2, S1, S2) ==
-     {ss \in (S1 \X S2) \X (S1 \X S2) : 
+     {ss \in (S1 \X S2) \X (S1 \X S2) :
          \/ <<ss[1][1], ss[2][1]>> \in R1
          \/ /\ ss[1][1] = ss[2][1]
             /\ <<ss[1][2], ss[2][2]>> \in R2}
-                           
+
 THEOREM WFLexPairOrdering ==
-          ASSUME NEW R1, NEW R2, NEW S1, NEW S2, 
+          ASSUME NEW R1, NEW R2, NEW S1, NEW S2,
                  IsWellFoundedOn(R1, S1),
                  IsWellFoundedOn(R2, S2)
           PROVE  IsWellFoundedOn(LexPairOrdering(R1, R2, S1, S2), S1 \X S2)
@@ -301,7 +301,7 @@ THEOREM WFLexPairOrdering ==
 (***************************************************************************)
 LexProductOrdering(R, S, n) ==
    { ff \in [1..n -> S] \X [1..n -> S] :
-       \E j \in 1..n : 
+       \E j \in 1..n :
           /\ \A i \in 1..(j-1) : ff[1][i] = ff[2][i]
           /\ <<ff[1][j], ff[2][j]>> \in R }
 

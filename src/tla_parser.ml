@@ -202,7 +202,42 @@ let str = scan begin
     | _ -> None
 end
 
-let pragma p = punct "(*{" >>> p <<< punct "}*)"
+
+let comma_symbol = punct ","
+let hint = locate anyident
+
+
+let comma element =
+    sep comma_symbol element
+
+
+let comma1 element =
+    sep1 comma_symbol element
+
+
+(* Numeral `1` omitted because
+there are no empty sequences of names.
+*)
+let names = comma1 hint
+
+
+let underscore = punct "_"
+let begin_tuple = punct "<<"
+let end_tuple = punct ">>"
+let colon = punct ":"
+let mapsto = punct "|->"
+let delimit left x right =
+    let start = punct left in
+    let close = punct right in
+    start >>> x <<< close
+let paren x = delimit "(" x ")"
+let brace x = delimit "{" x "}"
+let bracket x = delimit "[" x "]"
+let bracket_sub x = delimit "[" x "]_"
+let angle x = delimit "<<" x ">>"
+let angle_sub x = delimit "<<" x ">>_"
+let pragma p = delimit "(*{" p "}*)"
+
 
 (*****************************************************************)
 
@@ -258,7 +293,7 @@ let charname c =
   | '~'  -> Some "tild_"
   | 'a'..'z' | 'A'..'Z' | '0'..'9' -> None
   | _ -> assert false
-;;
+
 
 let has_special_chars s =
   try
@@ -267,7 +302,7 @@ let has_special_chars s =
     done;
     false
   with Exit -> true
-;;
+
 
 let isabelle_tlaplus_keys = [
     (* Isabelle/TLA+ types and definitions -- see tools/all_defs.sml *)
@@ -301,16 +336,16 @@ let isabelle_tlaplus_keys = [
     "type"; "types"; "upair"; "upto"; "var"; "xcpt"; "xnum";
     "xstr";
   ]
-;;
+
 
 (* FIXME this list is obviously incomplete *)
 let other_keys = [
   "O";      (* "apparently illegal" [Kaustuv, commit 16156] *)
   "max";    (* reserved word in Z3 v4.0 *)
   "status"; (* keyword in Spass *)
-];;
+]
 
-module SS = Set.Make (String);;
+module SS = Set.Make (String)
 
 let forbidden =
   let f set str = SS.add str set in
@@ -318,13 +353,13 @@ let forbidden =
   let res = List.fold_left f res Isabelle_keywords.v in
   let res = List.fold_left f res other_keys in
   res
-;;
+
 
 let is_nonletter c =
   match c with
   | 'a'..'z' | 'A'..'Z' -> false
   | _ -> true
-;;
+
 
 let pickle id =
   (* uncomment this to detect double-pickling
@@ -347,4 +382,3 @@ let pickle id =
   end else begin
     id
   end
-;;

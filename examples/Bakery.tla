@@ -50,13 +50,13 @@ EXTENDS Naturals, TLAPS
 (* We first declare N to be the number of processes, and we assume that N  *)
 (* is a natural number.                                                    *)
 (***************************************************************************)
-CONSTANT N 
+CONSTANT N
 ASSUME N \in Nat
 
 (***************************************************************************)
 (* We define P to be the set {1, 2, ...  , N} of processes.                *)
 (***************************************************************************)
-P == 1..N 
+P == 1..N
 
 (***       this is a comment containing the PlusCal code ***
 
@@ -83,14 +83,14 @@ define { LL(j, i) == \/ num[j] < num[i]
 (* in P, where self is the current process.                                *)
 (***************************************************************************)
 process (p \in P)
-  variables unread \in SUBSET P, 
-            max \in Nat, 
+  variables unread \in SUBSET P,
+            max \in Nat,
             nxt \in P;
 {
 p1: while (TRUE) {
       unread := P \ {self} ;
       max := 0;
-      either { 
+      either {
         flag[self] := ~ flag[self] ;
         goto p1 }
       or { flag[self] := TRUE } ;
@@ -105,7 +105,7 @@ p3:   with (repeat \in BOOLEAN, k \in Nat) {
          else { with (i \in {j \in Nat : j > max}) {num[self] := i } } ;
        } ;
 p4:   unread := P \ {self} ;
-      either { 
+      either {
         flag[self] := ~ flag[self];
         goto p4 }
       or  { flag[self] := FALSE } ;
@@ -120,9 +120,9 @@ cs:   skip ;    \* the critical section;
 p7:   with (repeat \in BOOLEAN, k \in Nat) {
          if (repeat) { num[self] := k ;
                        goto p7 }
-         else { num[self] := 0 } 
-       } 
- }}  
+         else { num[self] := 0 }
+       }
+ }}
 }
 ****     this ends the comment containg the pluscal code      **********)
 
@@ -279,10 +279,10 @@ After(i, j) ==  /\ num[j] > 0
 (* is in its critical section, no other process is.                        *)
 (***************************************************************************)
 IInv(i) ==
-  /\ /\ (pc[i] \in {"p1", "p2"}) => (num[i] = 0) 
+  /\ /\ (pc[i] \in {"p1", "p2"}) => (num[i] = 0)
      /\  (num[i] = 0) => (pc[i] \in {"p1", "p2", "p3", "p7"})
   /\ /\ flag[i] => (pc[i] \in {"p1", "p2", "p3", "p4"})
-     /\ (pc[i] \in {"p2", "p3"}) => flag[i] 
+     /\ (pc[i] \in {"p2", "p3"}) => flag[i]
   /\ (pc[i] \in {"p5", "p6"}) =>
         \A j \in (P \ unread[i]) \ {i} : After(j, i)
   /\ /\ (pc[i] = "p6")
@@ -294,7 +294,7 @@ IInv(i) ==
 
 (***************************************************************************)
 (* Inv is the complete inductive invariant.                                *)
-(***************************************************************************)  
+(***************************************************************************)
 Inv == TypeOK /\ \A i \in P : IInv(i)
 -----------------------------------------------------------------------------
 (***************************************************************************)
@@ -305,7 +305,7 @@ Inv == TypeOK /\ \A i \in P : IInv(i)
 (* which Inv is true leaves Inv true.                                      *)
 (***************************************************************************)
 THEOREM Spec => []MutualExclusion
-<1> USE N \in Nat DEFS P, ProcSet, Inv \*, IInv, TypeOK, After, LL 
+<1> USE N \in Nat DEFS P, ProcSet, Inv \*, IInv, TypeOK, After, LL
 <1>1. Init => Inv
   BY DEF Init, IInv, TypeOK, After, LL
 <1>2. Inv /\ [Next]_vars => Inv'
@@ -358,8 +358,8 @@ THEOREM Spec => []MutualExclusion
     BY <2>9 DEF vars, TypeOK, IInv, After, LL
   <2>. QED
     BY <2>1, <2>2, <2>3, <2>4, <2>5, <2>6, <2>7, <2>8, <2>9 DEF Next, p
-  
+
 <1>3. Inv => MutualExclusion
-  BY DEF TypeOK, IInv, After, LL, MutualExclusion 
+  BY DEF TypeOK, IInv, After, LL, MutualExclusion
 <1>. QED  BY <1>1, <1>2, <1>3, PTL DEF Spec
 =============================================================================

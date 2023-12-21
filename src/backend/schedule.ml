@@ -4,20 +4,22 @@
 
 (* scheduler for back-end provers *)
 
-open Unix;;
+open Unix
 
 type task = int * (unit -> computation) list
 
 and computation =
-  | Immediate of bool    (* already computed, argument is success *)
-  | Todo of command      (* must launch process *)
+  | Immediate of bool  (* already computed, argument is success *)
+  | Todo of command  (* must launch process *)
 
 and command = {
-  line : string;         (* shell command line *)
-  timeout : float;       (* delay before running timec *)
-  timec : timeout_cont;  (* function to call after timeout *)
-  donec : result -> float -> bool;
-    (* function to call when finished; float is time used; returns success *)
+    line: string;  (* shell command line *)
+    timeout: float;  (* delay before running timec *)
+    timec: timeout_cont;  (* function to call after timeout *)
+    donec: result -> float -> bool;
+        (* function to call when finished;
+        float is time used;
+        returns success *)
 }
 
 and timeout_cont = unit -> continue
@@ -30,28 +32,28 @@ and result =
   | Finished
   | Stopped_kill
   | Stopped_timeout
-;;
+
 
 type process = {
-  refid : int;
-  pid : int;
-  ofd : file_descr;
-  start_time : float;
-  dl : float;
-  tc : timeout_cont;
-  dc : result -> float -> bool;
-  rest : (unit -> computation) list;
-};;
+    refid: int;
+    pid: int;
+    ofd: file_descr;
+    start_time: float;
+    dl: float;
+    tc: timeout_cont;
+    dc: result -> float -> bool;
+    rest: (unit -> computation) list;
+}
 
-let temp_buf = Bytes.create 4096;;
+let temp_buf = Bytes.create 4096
 let read_to_stdout fd =
   try
     let r = Unix.read fd temp_buf 0 (Bytes.length temp_buf) in
     if r = 0 then raise End_of_file;
     output Stdlib.stdout temp_buf 0 r;
-    flush Stdlib.stdout;
+    flush Stdlib.stdout
   with Unix_error _ -> raise End_of_file
-;;
+
 
 (* Take a computation, launch the process and return the corresponding
    [process] record. *)
@@ -59,7 +61,7 @@ let launch refid cmd t =
   System.harvest_zombies ();
   if !Params.verbose then begin
     Printf.eprintf "launching process: \"%s\"\n" cmd.line;
-    flush Stdlib.stderr;
+    flush Stdlib.stderr
   end;
   let (pid, out_read) = System.launch_process cmd.line in
   let start_time = gettimeofday () in
@@ -73,7 +75,7 @@ let launch refid cmd t =
     dc = cmd.donec;
     rest = t;
   }
-;;
+
 
 (* Launch the first process of [comps], if any. *)
 let rec start_process refid comps =
@@ -85,22 +87,22 @@ let rec start_process refid comps =
      | Immediate true -> []
      | Todo cmd -> [launch refid cmd t]
      end
-;;
+
 
 (* Kill the process (or not, if reason = Finished) and return the success
    code from its "done" continuation. *)
 let kill_process now reason d =
   if reason <> Finished then begin
-    System.kill_tree d.pid;
+    System.kill_tree d.pid
   end;
   close d.ofd;
   d.dc reason (now -. d.start_time)
-;;
+
 
 let kill_and_start_next now reason d =
   let success = kill_process now reason d in
   if success then ([], []) else ([], [(d.refid, d.rest)])
-;;
+
 
 (* This function launches the proof tasks and calls their continuation
    functions when their deadlines expire and when they terminate.
@@ -117,7 +119,7 @@ let run max_threads tl =
     (* "stop" command *)
     if Toolbox.is_stopped () then begin
       List.iter (fun d -> ignore (kill_process now Stopped_kill d)) running;
-      raise Exit;
+      raise Exit
     end;
     (* toolbox "kill" command *)
     let kills = Toolbox.get_kills () in
@@ -174,12 +176,11 @@ let run max_threads tl =
       let running = List.flatten newruns in
       let tl = List.flatten addtasks @ tl in
 
-      spin running tl;
+      spin running tl
     end (* else we are done. *)
   in
   try
     spin [] tl;
-    System.harvest_zombies ();
+    System.harvest_zombies ()
   with Exit ->
-    System.harvest_zombies ();
-;;
+    System.harvest_zombies ()

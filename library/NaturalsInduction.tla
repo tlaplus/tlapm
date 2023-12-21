@@ -19,10 +19,10 @@ EXTENDS Integers
 (* For predicates P defined by a moderately complex operator, it is often  *)
 (* useful to hide the operator definition before using this theorem. That  *)
 (* is, you first define a suitable operator P (not necessarily by that     *)
-(* name), prove the two hypotheses of the theorem, and then hide the       *) 
+(* name), prove the two hypotheses of the theorem, and then hide the       *)
 (* definition of P when using the theorem.                                 *)
 (***************************************************************************)
-THEOREM NatInduction == 
+THEOREM NatInduction ==
   ASSUME NEW P(_),
          P(0),
          \A n \in Nat : P(n) => P(n+1)
@@ -31,7 +31,7 @@ THEOREM NatInduction ==
 (***************************************************************************)
 (* A useful corollary of NatInduction                                      *)
 (***************************************************************************)
-THEOREM DownwardNatInduction == 
+THEOREM DownwardNatInduction ==
   ASSUME NEW P(_), NEW m \in Nat, P(m),
          \A n \in 1 .. m : P(n) => P(n-1)
   PROVE  P(0)
@@ -64,9 +64,9 @@ THEOREM SmallestNatural ==
 (* definition of f[n] depends only on arguments smaller than n.            *)
 (***************************************************************************)
 THEOREM RecursiveFcnOfNat ==
-  ASSUME NEW Def(_,_), 
+  ASSUME NEW Def(_,_),
          ASSUME NEW n \in Nat, NEW g, NEW h,
-                \A i \in 0..(n-1) : g[i] = h[i] 
+                \A i \in 0..(n-1) : g[i] = h[i]
          PROVE  Def(g, n) = Def(h, n)
   PROVE  LET f[n \in Nat] == Def(f, n)
          IN  f = [n \in Nat |-> Def(f, n)]
@@ -75,7 +75,7 @@ THEOREM RecursiveFcnOfNat ==
 (* The following theorem NatInductiveDef is what you use to justify a      *)
 (* function defined by primitive recursion over the naturals.              *)
 (***************************************************************************)
-NatInductiveDefHypothesis(f, f0, Def(_,_)) == 
+NatInductiveDefHypothesis(f, f0, Def(_,_)) ==
    (f =  CHOOSE g : g = [i \in Nat |-> IF i = 0 THEN f0 ELSE Def(g[i-1], i)])
 NatInductiveDefConclusion(f, f0, Def(_,_)) ==
      f = [i \in Nat |-> IF i = 0 THEN f0 ELSE Def(f[i-1], i)]
@@ -111,11 +111,11 @@ THEOREM RecursiveFcnOfNatUnique ==
          f = [n \in Nat |-> Def(f,n)],
          g = [n \in Nat |-> Def(g,n)],
          ASSUME NEW n \in Nat, NEW ff, NEW gg,
-                \A i \in 0..(n-1) : ff[i] = gg[i] 
+                \A i \in 0..(n-1) : ff[i] = gg[i]
          PROVE  Def(ff, n) = Def(gg, n)
   PROVE  f = g
 
-THEOREM NatInductiveUnique == 
+THEOREM NatInductiveUnique ==
   ASSUME NEW Def(_,_), NEW f, NEW g, NEW f0,
          NatInductiveDefConclusion(f, f0, Def),
          NatInductiveDefConclusion(g, f0, Def)
@@ -126,11 +126,11 @@ THEOREM NatInductiveUnique ==
 (* functions defined over intervals of natural numbers.                    *)
 (***************************************************************************)
 
-FiniteNatInductiveDefHypothesis(f, c, Def(_,_), m, n) == 
+FiniteNatInductiveDefHypothesis(f, c, Def(_,_), m, n) ==
    (f =  CHOOSE g : g = [i \in m..n |-> IF i = m THEN c ELSE Def(g[i-1], i)])
 FiniteNatInductiveDefConclusion(f, c, Def(_,_), m, n) ==
      f = [i \in m..n |-> IF i = m THEN c ELSE Def(f[i-1], i)]
-                                       
+
 THEOREM FiniteNatInductiveDef ==
   ASSUME NEW Def(_,_), NEW f, NEW c, NEW m \in Nat, NEW n \in Nat,
          FiniteNatInductiveDefHypothesis(f, c, Def, m, n)
@@ -142,7 +142,7 @@ THEOREM FiniteNatInductiveDefType ==
          \A v \in S, i \in (m+1) .. n : Def(v,i) \in S
   PROVE  f \in [m..n -> S]
 
-THEOREM FiniteNatInductiveUnique == 
+THEOREM FiniteNatInductiveUnique ==
   ASSUME NEW Def(_,_), NEW f, NEW g, NEW c, NEW m \in Nat, NEW n \in Nat,
          FiniteNatInductiveDefConclusion(f, c, Def, m, n),
          FiniteNatInductiveDefConclusion(g, c, Def, m, n)
@@ -158,7 +158,7 @@ factorial[n \in Nat] == IF n = 0 THEN 1 ELSE n * factorial[n-1]
 
 THEOREM FactorialDefConclusion == NatInductiveDefConclusion(factorial, 1, LAMBDA v,n : n*v)
 <1>1. NatInductiveDefHypothesis(factorial, 1, LAMBDA v,n : n*v)
-  BY DEF NatInductiveDefHypothesis, factorial 
+  BY DEF NatInductiveDefHypothesis, factorial
 <1>2. QED
   BY <1>1, NatInductiveDef
 

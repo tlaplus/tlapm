@@ -1,0 +1,9 @@
+; Download the Z3 prover.
+(rule
+ (deps "Makefile")
+ (targets z3)
+ (action (run "make" "-C" "." "z3")))
+
+(install
+ (section (site (tlapm backends)))
+ (files (z3 as bin/z3)))

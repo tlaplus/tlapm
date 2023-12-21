@@ -1,19 +1,21 @@
-(*
- * expr/fmt.ml --- formatting expressions
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Formatting of expressions.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Tla_parser
 open E_t
 open Ctx
+
 
 type ctx = hyp Deque.dq * int Ctx.ctx
 val bump : ctx -> ctx
 
 val adj : ctx -> Util.hint -> ctx * string
-val adjs : ctx -> Util.hint list -> ctx * string list
+val adjs : ctx -> Util.hints -> ctx * string list
+
+val is_letter: char -> bool
+val is_hidden: hyp -> bool
+val elide: hyp -> bool
 
 val fmt_expr : ?temp:bool -> ctx -> expr -> Fu.exp
 
@@ -28,6 +30,7 @@ val extend_bounds :
 
 val pp_print_shape : Format.formatter -> shape -> unit
 
+val pp_print_var: Format.formatter -> Util.hint -> unit
 val pp_print_bound :
   ctx -> Format.formatter -> string * expr option -> unit
 val pp_print_expr : ?temp:bool ->  ctx -> Format.formatter -> expr -> unit

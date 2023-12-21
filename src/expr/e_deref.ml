@@ -1,10 +1,7 @@
-(*
- * expr/deref.ml --- dereferencing subexpression references
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Dereferencing subexpression references.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 
@@ -12,7 +9,8 @@ open E_t
 open E_subst
 open E_fmt
 
-module Visit = E_visit;;
+module Visit = E_visit
+
 
 let atomic : unit pfuncs = Property.make "Expr.Deref.atom"
 
@@ -345,11 +343,11 @@ and deref_inst cx e args =  match e.core with
         (if al < bl then " only" else "") al ;
       failwith "Expr.Deref.deref_inst"
   | Tquant (q, vs, qe) ->
-      let bs = List.map (fun v -> (v, State, No_domain)) vs in
+      let bs = E_t.bounds_of_variables vs in
       let e = Quant (q, bs, qe) @@ e in
       deref_inst cx e args
   | Lambda (vss, le) ->
-      let bs = List.map (fun (v, sh) -> (v, Unknown, No_domain)) vss in
+      let bs = E_t.bounds_of_parameters vss in
       let e = Quant (Forall, bs, le) @@ e in
       deref_inst cx e args
   | ( SetSt (_, _, bod)
@@ -377,7 +375,12 @@ and deref_at cx (dslen, e) =
       | Fcn (bs, qe)
       | SetOf (qe, bs)
       ) ->
-        List.map (fun (v, _, _) -> (v, Shape_expr)) bs
+        let hs = Visit.hyps_of_bounds bs in
+        let first_two hyp =
+            match hyp.core with
+            | Fresh (a, b, _, _) -> (a, b)
+            | _ -> assert false in
+        List.map first_two hs
     | Tquant (_, vs, _) ->
         List.map (fun v -> (v, Shape_expr)) vs
     | Lambda (vss, _) ->
@@ -433,8 +436,10 @@ and deref_label cx (dslen, e) l largs =
               let e = Let ([df], e) @@ e in
               reify_cx cx e
           | Some (cx, {core = Fresh (v, _, _, _)}) ->
-              let e = Quant (Forall, [v, Constant, No_domain], e) @@ e in
-              reify_cx cx e
+              let bounds = [E_t.From_hint.make_const_decl v] in
+              let forall = E_t.From_hint.make_forall bounds e in
+              let forall = forall $$ e in
+              reify_cx cx forall
           | Some (cx, _) ->
               let e = app_expr (shift (-1)) e in
               reify_cx cx e

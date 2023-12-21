@@ -523,28 +523,14 @@ let apply_conj (args: expr list): expr = match args with
         noprops conj
 
 
-let mk_bounds
-        (fresh_names: string list):
-            E_t.bounds =
-    let mk_bound_hint (name: string): Util.hint =
-        noprops name in
-    let mk_bound (name: string): E_t.bound =
-        let a = mk_bound_hint name in
-        let b = Constant in
-        let c = No_domain in
-        (a, b, c)
-    in
-    List.map mk_bound fresh_names
-
-
 let annotate_bounds bounds signature =
     let params = List.map (fun (p, _) -> p) signature in
     let annotate_bound (bound: E_t.bound) (h: Util.hint) =
-        let (name, b, c) = bound in
+        let name = E_t.name_of_bound bound in
         assert (has_variable_name h);
         let flex_name = get_variable_name h in
         let name = assign name variable_name flex_name in
-        let bound = (name, b, c) in
+        let bound = Visit.rename_bound bound name in
         bound in
     List.map2 annotate_bound bounds params
 
@@ -564,7 +550,7 @@ let make_quantifier
         expr  (* no bound constants *)
     else begin
         let temp_names = temp_bound :: fresh_names in
-        let bounds = mk_bounds temp_names in
+        let bounds = E_t.From_string.make_const_decls temp_names in
         (*
         (* This call to `app_expr` is present in `Expr.Action` and
         `Expr.Action_iter`.
@@ -638,17 +624,17 @@ class inverse_mapping =
         | Quant (Exists, bounds, expr) when has_is_enabled e ->
             (* map `bounds_` *)
             let rename_bound bound =
-                let (name, b, c) = bound in
+                let name = E_t.name_of_bound bound in
                 assert (has_variable_name name);
                 let flex_name = get_variable_name name in
                 let flex_name = List.hd (String.split_on_char '#' flex_name) in
                 let flex_name = flex_name ^ "__Primed" in
-                let name = noprops flex_name in
+                let new_name = noprops flex_name in
                 (* Could assign param name.
                 The param name is known by the index in the parameter list,
                 so normalization of signature could be re-applied.
                 *)
-                (name, b, c) in
+                Visit.rename_bound bound new_name in
             let bounds_ = List.map rename_bound bounds in
             (* `expr` has indices referring to the bounds,
             so no renaming needed there
@@ -1085,7 +1071,7 @@ class replace_action_operators_with_quantifiers =
         let replace_with_quantifier op_name signature expr =
             assert ((List.length signature) >= 1);
             let fresh_names = List.map (fun (h, _) -> h.core) signature in
-            let bounds = mk_bounds fresh_names in
+            let bounds = E_t.From_string.make_const_decls fresh_names in
             let bounds = annotate_bounds bounds signature in
             let scope = true in
             let cx_ =

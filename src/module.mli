@@ -3,15 +3,15 @@
  *)
 
 module T : sig
-  open Property;;
-  open Util;;
-  open Expr.T;;
-  open Proof.T;;
+  open Property
+  open Util
+  open Expr.T
+  open Proof.T
   type mule = mule_ wrapped
   and mule_ = {
     name              : hint ;
-    extendees         : hint list ;
-    instancees        : hint list ;
+    extendees         : hints ;
+    instancees        : hints ;
       (* only external instancees *)
     body              : modunit list ;
     defdepth          : int ;
@@ -22,7 +22,7 @@ module T : sig
   and modunit_ =
     | Constants  of (hint * shape) list
     | Recursives of (hint * shape) list
-    | Variables  of hint list
+    | Variables  of hints
     | Definition of defn * wheredef * visibility * export
     | Axiom      of hint option * expr
     | Theorem    of hint option * sequent * int * proof * proof * summary
@@ -46,27 +46,24 @@ module T : sig
               }
   and status =
     | Unchecked | Proved | Certified | Incomplete
-  ;;
-  type modctx = mule Coll.Sm.t;;
-  val empty_summary : summary;;
-  val cat_summary : summary -> summary -> summary;;
-  val hyps_of_modunit : modunit -> Expr.T.hyp_ Property.wrapped list;;
-  val hyp_size : modunit -> int;;
-  val salt_prop : unit Property.pfuncs;;
-end;;
+  type modctx = mule Coll.Sm.t
+  val empty_summary: summary
+  val cat_summary: summary -> summary -> summary
+  val hyps_of_modunit: modunit -> Expr.T.hyp_ Property.wrapped list
+  val hyp_size: modunit -> int
+  val salt_prop: unit Property.pfuncs
+end
 
 module Fmt : sig
   open Ctx
   open T
   val pp_print_modunit :
     ?force:bool -> Expr.Fmt.ctx -> Format.formatter -> modunit -> Expr.Fmt.ctx
-  ;;
   val pp_print_module :
     ?force:bool -> Expr.Fmt.ctx -> Format.formatter -> mule -> unit
-  ;;
-  val pp_print_modctx : Format.formatter -> modctx -> unit;;
-  val summary : mule -> unit;;
-end;;
+  val pp_print_modctx: Format.formatter -> modctx -> unit
+  val summary: mule -> unit
+end
 
 module Standard : sig
   open T
@@ -77,21 +74,20 @@ module Standard : sig
   val sequences   : mule
   val tlc         : mule
   val initctx  : modctx
-end;;
+end
 
 module Gen : sig
   open Proof.T
   open T
   val generate : Expr.T.hyp Deque.dq -> mule -> mule * obligation list * summary
   val collect_usables : mule -> usable option
-end;;
+end
 
 module Flatten : sig
   val flatten :
     T.modctx -> T.mule -> Util.Coll.Ss.t ->
       (T.mule_ Property.wrapped * Util.Coll.Ss.t)
-  ;;
-end;;
+end
 
 module Elab : sig
   open Deque
@@ -101,35 +97,34 @@ module Elab : sig
 
   val normalize :
     modctx -> Expr.T.hyp Deque.dq -> mule -> modctx * mule * summary
-  ;;
-end;;
+end
 
 module Dep : sig
   open Util.Coll
 
   val external_deps : T.mule_ Property.wrapped ->
-    Hs.t * Hs.t * T.mule Sm.t;;
-  val schedule : T.modctx -> T.modctx * T.mule list;;
-end;;
+    Hs.t * Hs.t * T.mule Sm.t
+  val schedule: T.modctx -> T.modctx * T.mule list
+end
 
 module Save : sig
   open T
   val parse_file    : ?clock:Timing.clock -> Util.hint -> mule
   val store_module  : ?clock:Timing.clock -> mule -> unit
   val complete_load : ?clock:Timing.clock -> ?root:string -> modctx -> modctx
-end;;
+end
 
 module Parser : sig
   open Tla_parser
   open T
   val parse : mule lprs
-end;;
+end
 
 module Globalness : sig
   open T
   val is_global : 'a Property.wrapped -> bool
   val globalness : mule -> mule
-end;;
+end
 
 module Subst : sig
     open Expr.Subst
@@ -139,7 +134,7 @@ module Subst : sig
     val app_modunits: sub -> modunit list -> sub * modunit list
     val app_modunit: sub -> modunit -> sub * modunit
     val app_mule: sub -> mule -> mule
-end;;
+end
 
 module Visit : sig
     open Expr.T
@@ -155,7 +150,7 @@ module Visit : sig
             ctx * modunit
         method constants: ctx -> (hint * shape) list ->
             ctx * modunit_
-        method variables: ctx -> hint list ->
+        method variables: ctx -> hints ->
             ctx * modunit_
         method recursives: ctx -> (hint * shape) list ->
             ctx * modunit_
@@ -173,4 +168,4 @@ module Visit : sig
         method anoninst: ctx -> Expr.T.instance -> export ->
             ctx * modunit_
     end
-end;;
+end
