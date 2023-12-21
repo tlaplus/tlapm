@@ -320,7 +320,7 @@ THEOREM Inv /\ Next => Inv'
              /\ IsFiniteSet(S))'
         <4>1. (S \subseteq Nat \ {0})'
           BY \A i, j \in S : j > i => j - i \in Nat \ {0},
-             <1>1, Zenon DEF Inv, TypeOK, lbl
+             <1>1 DEF Inv, TypeOK, lbl
         <4>2. (S # {})'
           BY <1>1, InputAssump, GCD1, GCD2, GCD3, CardThm, FiniteSetThm, Z3
           DEF Inv, TypeOK, CorrectTermination, lbl
@@ -360,14 +360,12 @@ THEOREM Inv /\ Next => Inv'
 (*|*) <3>3. QED
 (*|*)   BY <3>1, <3>2
     <2>3. CorrectTermination'
-      <3>1. ASSUME Cardinality(S) = 1
-            PROVE  GCD (S) = CHOOSE t \in S : TRUE
-        <4>1. PICK t \in S : S = {t}
-          BY <3>1, CardThm DEF Inv, TypeOK
-        <4>. QED  
-          BY <4>1, GCD2, Zenon DEF Inv, TypeOK
+      <3>1. Cardinality (S) = 1 => S = {CHOOSE t \in S : TRUE}
+        BY CardThm DEF Inv, TypeOK
+      <3>2. Cardinality (S) = 1 => GCD (S) = CHOOSE t \in S : TRUE
+        BY <3>1, GCD2 DEF Inv, TypeOK
       <3> QED
-        BY <1>1, <3>1, InputAssump, GCD1, GCD2, GCD3, CardThm, FiniteSetThm, Z3
+        BY <1>1, <3>2, InputAssump, GCD1, GCD2, GCD3, CardThm, FiniteSetThm, Z3
         DEF Inv, TypeOK, CorrectTermination, lbl
     <2>4. QED
       BY <2>1, <2>2, <2>3 DEF Inv
