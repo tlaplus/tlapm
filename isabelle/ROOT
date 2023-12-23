@@ -1,7 +1,7 @@
 (* build the session using "isabelle build -b -D ." *)
 chapter "TLA+"
 session "TLA+" = "Pure" +
-  options [document=pdf, document_output = "output", document_variants="document:outline=/proof"]
+  options [document_output = "output", document_variants="document:outline=/proof"]
 
   theories
     Constant (global)

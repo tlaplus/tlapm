@@ -65,8 +65,8 @@ $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 		&& cp -a theories/TLA+/* $(ISABELLE_DIR)/src/TLA+/ \
 		&& chmod -R u+w $(ISABELLE_DIR)/src/TLA+/
 	cd $(ISABELLE_DIR)/ \
-		&& ./bin/isabelle build -b -v -d src/Pure -o system_heaps Pure \
-		&& ./bin/isabelle build -b -v -d src/TLA+ -o system_heaps TLA+
+		&& ./bin/isabelle build -o system_heaps -o document=false -b -v -d src/Pure Pure \
+		&& ./bin/isabelle build -o system_heaps -o document=false -b -c -v -d src/TLA+ TLA+
 	cd $(ISABELLE_DIR) \
 		&& rm etc/settings \
 		&& mv etc/settings.target etc/settings

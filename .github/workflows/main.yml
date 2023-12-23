@@ -22,7 +22,7 @@ jobs:
               if: matrix.operating-system == 'ubuntu-latest'
               run: |
                 sudo apt-get update
-                sudo apt-get install --yes time texlive-latex-base texlive-plain-generic
+                sudo apt-get install --yes time
             - name: Set up Python
               uses: actions/setup-python@v2
               with:
