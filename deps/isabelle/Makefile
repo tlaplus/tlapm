@@ -55,7 +55,7 @@ endif
 .PRECIOUS: $(ISABELLE_DIR)/src/TLA+
 $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 	cd $(ISABELLE_DIR) \
-		&& rm -rf contrib/ProofGeneral* doc heaps/*/HOL lib/{classes,fonts,logo}
+		&& rm -rf contrib/ProofGeneral* doc heaps/*/HOL
 	cd $(ISABELLE_DIR) \
 		&& HEAPS_PATH=$(shell pwd)/$(ISABELLE_DIR)/heaps \
 		&& if [ "$(HOST_CPU)" = "x86_64" ] ; then sed -i -e 's/^ML_PLATFORM=.*$$/ML_PLATFORM="$${ISABELLE_PLATFORM64:-$$ISABELLE_PLATFORM}"/' etc/settings ; fi \
