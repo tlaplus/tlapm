@@ -31,7 +31,7 @@ PROJECT_ROOT=../..
 CACHE_DIR=$(PROJECT_ROOT)/_build_cache
 
 
-all: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+ $(ISABELLE_DIR).no-links Isabelle.post-install
+all: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+ $(ISABELLE_DIR).no-links Isabelle.exec-files
 
 # Download the isabelle archive to the cache.
 $(CACHE_DIR)/$(ISABELLE_ARCHIVE):
@@ -81,11 +81,10 @@ $(ISABELLE_DIR).no-links: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+
 
 # TODO: This is a workaround, because the dune install removes all the executable
 # 		flags (or sets on all the files). Here we generate a script to restore the flags.
-Isabelle.post-install: $(ISABELLE_DIR).no-links
-	echo "FILES=$(shell find $(ISABELLE_DIR) -type f $(FIND_EXEC))" > $@
-	echo "all:\n\t chmod +x \$$(FILES)" >> $@
+Isabelle.exec-files: $(ISABELLE_DIR).no-links
+	echo "$(shell find $(ISABELLE_DIR) -type f $(FIND_EXEC))" > $@
 
 clean:
-	rm -rf $(ISABELLE_ARCHIVE) $(ISABELLE_DIR) $(ISABELLE_DIR).no-links Isabelle.post-install
+	rm -rf $(ISABELLE_ARCHIVE) $(ISABELLE_DIR) $(ISABELLE_DIR).no-links Isabelle.exec-files
 
 .PHONY: all clean
