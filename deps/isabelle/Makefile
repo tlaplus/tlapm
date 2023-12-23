@@ -10,7 +10,7 @@ ifeq ($(OS_TYPE),Linux)
 endif
 ifeq ($(OS_TYPE),Darwin)
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_macos.tar.gz
-	ISABELLE_ARCHIVE_TYPE=dmg
+	ISABELLE_ARCHIVE_TYPE=tgz
 	FIND_EXEC=-perm +111
 endif
 ifeq ($(OS_TYPE),Cygwin)
@@ -46,13 +46,6 @@ ifeq ($(ISABELLE_ARCHIVE_TYPE),tgz)
 	rm -rf $(ISABELLE_DIR)
 	tar -xzf $<
 	mv $(ISABELLE_VSN) $(ISABELLE_DIR)
-endif
-ifeq ($(ISABELLE_ARCHIVE_TYPE),dmg)
-	rm -rf isabelle-dmg
-	hdiutil attach "$<" -quiet -readonly -nobrowse -mountpoint "$(shell pwd)/isabelle-dmg"
-	cp -a "isabelle-dmg/$(ISABELLE_VSN).app/Contents/Resources/$(ISABELLE_VSN)" "$@"
-	hdiutil detach "$(shell pwd)/isabelle-dmg" -quiet
-	rm -rf isabelle-dmg
 endif
 
 # Build the TLA+ theory.
