@@ -6,17 +6,20 @@ ISABELLE_VSN=Isabelle2023
 ifeq ($(OS_TYPE),Linux)
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_linux.tar.gz
 	ISABELLE_ARCHIVE_TYPE=tgz
+	ISABELLE_ARCHIVE_DIR=$(ISABELLE_VSN)
 	FIND_EXEC=-executable
 endif
 ifeq ($(OS_TYPE),Darwin)
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_macos.tar.gz
 	ISABELLE_ARCHIVE_TYPE=tgz
+	ISABELLE_ARCHIVE_DIR=$(ISABELLE_VSN).app
 	FIND_EXEC=-perm +111
 endif
 ifeq ($(OS_TYPE),Cygwin)
 	# TODO: Fix this.
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_bundle_x86-cygwin.tar.gz
 	ISABELLE_ARCHIVE_TYPE=tgz
+	ISABELLE_ARCHIVE_DIR=$(ISABELLE_VSN)
 	FIND_EXEC=-executable
 endif
 
@@ -45,7 +48,7 @@ $(ISABELLE_DIR): $(ISABELLE_ARCHIVE)
 ifeq ($(ISABELLE_ARCHIVE_TYPE),tgz)
 	rm -rf $(ISABELLE_DIR)
 	tar -xzf $<
-	mv $(ISABELLE_VSN) $(ISABELLE_DIR)
+	mv $(ISABELLE_ARCHIVE_DIR) $(ISABELLE_DIR)
 endif
 
 # Build the TLA+ theory.
