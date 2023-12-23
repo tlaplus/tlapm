@@ -1,19 +1,20 @@
 OS_TYPE=$(patsubst CYGWIN%,Cygwin,$(shell uname))
 HOST_CPU=$(shell uname -m)
 
-ISABELLE_VSN=Isabelle2011-1
+ISABELLE_VSN=Isabelle2020
 
 ifeq ($(OS_TYPE),Linux)
-	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_bundle_x86-linux.tar.gz
+	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_linux.tar.gz
 	ISABELLE_ARCHIVE_TYPE=tgz
 	FIND_EXEC=-executable
 endif
 ifeq ($(OS_TYPE),Darwin)
-	ISABELLE_ARCHIVE=$(ISABELLE_VSN).dmg
+	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_macos.tar.gz
 	ISABELLE_ARCHIVE_TYPE=dmg
 	FIND_EXEC=-perm +111
 endif
 ifeq ($(OS_TYPE),Cygwin)
+	# TODO: Fix this.
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_bundle_x86-cygwin.tar.gz
 	ISABELLE_ARCHIVE_TYPE=tgz
 	FIND_EXEC=-executable
@@ -66,10 +67,9 @@ $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 		&& echo "ISABELLE_OUTPUT=$$HEAPS_PATH" >> etc/settings
 	mkdir -p $(ISABELLE_DIR)/src/TLA+ \
 		&& cp -a theories/TLA+/* $(ISABELLE_DIR)/src/TLA+/
-	cd $(ISABELLE_DIR)/src/Pure \
-		&& ../../bin/isabelle make
-	cd $(ISABELLE_DIR)/src/TLA+ \
-		&& ../../bin/isabelle usedir -b Pure TLA+
+	cd $(ISABELLE_DIR)/ \
+		&& ./bin/isabelle build -b -v -d src/Pure -o system_heaps Pure \
+		&& ./bin/isabelle build -b -v -d src/TLA+ -o system_heaps TLA+
 	cd $(ISABELLE_DIR) \
 		&& rm etc/settings \
 		&& mv etc/settings.target etc/settings
@@ -79,9 +79,8 @@ $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 .PRECIOUS: $(ISABELLE_DIR).no-links
 $(ISABELLE_DIR).no-links: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+
 	rm -rf $@
-	cd $< && rm -f ./contrib/jre1.6.0_27_x86-linux/jre1.6.0_27/man/ja
-	cd $< && rm -f ./contrib/polyml-5.4.0/src
-	cd $< && rm -f ./contrib/polyml && mv ./contrib/polyml-5.4.0 ./contrib/polyml
+	cd $< && rm -f ./contrib/jdk-11.0.5+10/x86_64-linux/jre
+	cd $< && rm -f ./contrib/jdk-11.0.5+10/x86_64-linux/man/ja
 	touch $@
 
 # TODO: This is a workaround, because the dune install removes all the executable
