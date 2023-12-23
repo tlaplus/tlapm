@@ -1,4 +1,4 @@
-.PHONY: rebuild heap-only
+.PHONY: rebuild clean
 
 # Generate theory information (in HTML and PDF formats) as well as the main
 # heap file for the TLA+ object logic. By default these will be generated
@@ -7,7 +7,7 @@
 # file etc/settings beneath the Isabelle home (i.e., where the Isabelle
 # distribution is installed).
 rebuild:
-	isabelle usedir -b -i true -d pdf Pure TLA+
+	isabelle build -b -v -D .
 
-heap-only:
-	isabelle build -v -d . -b TLA+
+clean:
+	rm -rf output/

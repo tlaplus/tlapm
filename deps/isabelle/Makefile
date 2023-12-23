@@ -1,7 +1,7 @@
 OS_TYPE=$(patsubst CYGWIN%,Cygwin,$(shell uname))
 HOST_CPU=$(shell uname -m)
 
-ISABELLE_VSN=Isabelle2020
+ISABELLE_VSN=Isabelle2023
 
 ifeq ($(OS_TYPE),Linux)
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_linux.tar.gz
@@ -59,7 +59,8 @@ $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 		&& cp etc/settings etc/settings.target \
 		&& echo "ISABELLE_OUTPUT=$$HEAPS_PATH" >> etc/settings
 	mkdir -p $(ISABELLE_DIR)/src/TLA+ \
-		&& cp -a theories/TLA+/* $(ISABELLE_DIR)/src/TLA+/
+		&& cp -a theories/TLA+/* $(ISABELLE_DIR)/src/TLA+/ \
+		&& chmod -R u+w $(ISABELLE_DIR)/src/TLA+/
 	cd $(ISABELLE_DIR)/ \
 		&& ./bin/isabelle build -b -v -d src/Pure -o system_heaps Pure \
 		&& ./bin/isabelle build -b -v -d src/TLA+ -o system_heaps TLA+
@@ -72,8 +73,7 @@ $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 .PRECIOUS: $(ISABELLE_DIR).no-links
 $(ISABELLE_DIR).no-links: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+
 	rm -rf $@
-	cd $< && rm -f ./contrib/jdk-11.0.5+10/x86_64-linux/jre
-	cd $< && rm -f ./contrib/jdk-11.0.5+10/x86_64-linux/man/ja
+	cd $< && rm -rf ./contrib/e-2.6-1/src/lib/
 	touch $@
 
 # TODO: This is a workaround, because the dune install removes all the executable
