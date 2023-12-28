@@ -77,6 +77,15 @@ $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 $(ISABELLE_DIR).no-links: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+
 	rm -rf $@
 	cd $< && rm -rf ./contrib/e-2.6-1/src/lib/
+ifeq ($(OS_TYPE),Darwin)
+	cd $< && cd contrib/jdk-17.0.7/arm64-darwin/ \
+		&& (find . -type link | xargs rm) \
+		&& mv zulu-17.jdk/Contents/Home/* ./
+	cd $< && cd contrib/jdk-17.0.7/x86_64-darwin/ \
+		&& (find . -type link | xargs rm) \
+		&& mv zulu-17.jdk/Contents/Home/* ./
+	cd $< && rm -rf contrib/vscodium-1.70.1
+endif
 	touch $@
 
 # TODO: This is a workaround, because the dune install removes all the executable
