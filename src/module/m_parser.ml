@@ -67,7 +67,7 @@ let rec modunit = lazy begin
            [ Theorem (nm, { bod with active = with_meth bod.active meth }, 0, prf, prf, empty_summary) ]) ;
 
     enabled (punct "----" <*> kwd "MODULE")
-      >*> use parse <$> (fun m -> [ Submod m ]) ;
+      >*> use parse <$> (fun m -> m.core.important <- true; [ Submod m ]) ;
 
     punct "----" <!> [] ;
   ]
@@ -99,7 +99,7 @@ and parse_ = lazy begin
     ; extendees = extends
     ; instancees = []
     ; defdepth = 0
-    ; important = (* false *) true  (* to simplify proofs of submodules *)
+    ; important = false
     ; body = List.concat mus
     ; stage = Parsed }
   end
