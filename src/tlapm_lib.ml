@@ -91,7 +91,10 @@ let handle_abort _ =
     Util.eprintf ~prefix:"FATAL: " ">>> Interrupted -- aborting <<<" ;
   if !Params.stats then
     Clocks.report () ;
-  Stdlib.exit 255
+  if Backend.Interrupted.mark_interrupted () then
+    (* Keep going on the first SigINT to shutdown
+       gracefully. Exit on the repeated signal. *)
+    Stdlib.exit 255
 
 
 module IntSet = Set.Make (struct type t = int let compare = (-) end)
@@ -233,7 +236,7 @@ let process_obs
     Fpfile.fp_close_and_consolidate fpf fpout;
     Clocks.stop ();
     (* `--noproving` command line option or TLA+ Toolbox has sent "stop" *)
-    if not (!Params.noproving || (Toolbox.is_stopped ())) then begin
+    if not (!Params.noproving || (Toolbox.is_stopped ()) || (Backend.Interrupted.is_interrupted ()) ) then begin
     (* Check proof results for each obligation, output summary *)
     if !Params.toolbox then begin
         let untreated = ref [] in
@@ -467,7 +470,7 @@ let process_module
             } in
         Array.fill fin.final_obs 0 (Array.length fin.final_obs) dummy_ob;
 
-        if t.core.important && not (Toolbox.is_stopped ()) then begin
+        if t.core.important && not (Toolbox.is_stopped () || Backend.Interrupted.is_interrupted ()) then begin
             Clocks.start Clocks.check ;
             let modname = t.core.name.core in
             let nmiss = List.length missing in

@@ -68,3 +68,5 @@ module Toolbox: sig
     val print_message_url:
         string -> string -> unit
 end
+
+module Interrupted = Interrupted
