@@ -73,6 +73,7 @@ and expr_ =
   | Let of defn list * expr
     (* rigid quantification `\E` or `\A` *)
   | Quant of quantifier * bounds * expr
+  | QuantTuply of quantifier * tuply_bounds * expr
     (* temporal quantification `\EE` or `\AA` *)
   | Tquant of quantifier * hints * expr
     (* Two cases (unbounded and bounded `CHOOSE`):
@@ -90,6 +91,32 @@ and expr_ =
       ```
     *)
   | Choose of hint * expr option * expr
+    (* Two cases (unbounded and bounded `CHOOSE`
+    with tuple declaration):
+
+    - `CHOOSE <<x, ..., y>>:  pred`, for example:
+      ```ocaml
+      let x = noprops "x" in
+      let y = noprops "y" in
+      let names = [x; y] in
+      Choose (names, None, pred)
+      ```
+
+    - `CHOOSE <<x, ..., y>> \in S:  pred`,
+      for example:
+      ```ocaml
+      let x = noprops "x" in
+      let y = noprops "y" in
+      let names = [x; y] in
+      Choose (names, Some S, pred)
+      ```
+
+    Use this constructor *only* when
+    tuply declarations are present.
+    Otherwise, use the constructor `Choose`.
+    *)
+  | ChooseTuply of
+        hints * expr option * expr
     (* `{x \in S:  P(x)}`
     axiom scheme of separation
 
@@ -104,6 +131,16 @@ and expr_ =
     3. predicate (`P(x)` above)
     *)
   | SetSt of hint * expr * expr
+    (* `{<<x, ..., y>> \in S:  P(x)}`
+
+    Elements:
+    1. list of declared identifiers
+       (`x`, ..., `y` above),
+    2. set (`S` above) that bounds the
+       values of the tuple of identifiers
+    3. predicate (`P(x)` above)
+    *)
+  | SetStTuply of hints * expr * expr
     (* `{f(x):  x \in S}`
     axiom scheme of replacement
 
@@ -112,6 +149,7 @@ and expr_ =
     specifically page 301.
     *)
   | SetOf of expr * bounds
+  | SetOfTuply of expr * tuply_bounds
     (* `{1, 2}`
     set enumeration
 
@@ -126,6 +164,7 @@ and expr_ =
   | Tuple of expr list
     (* Function constructor `[x \in S |-> e]` *)
   | Fcn of bounds * expr
+  | FcnTuply of tuply_bounds * expr
     (* `f[x]` *)
   | FcnApp of expr * expr list
     (* Set of functions `[A -> B]` *)
@@ -181,6 +220,12 @@ and expoint =
 (** Bound variables *)
 and bounds = bound list
 and bound = hint * kind * bound_domain
+and tuply_bounds = tuply_bound list
+and tuply_bound =
+    tuply_name * bound_domain
+and tuply_name =
+  | Bound_name of hint
+  | Bound_names of hints
 and bound_domain =
   | No_domain
   | Domain of expr
@@ -300,6 +345,15 @@ and hyp_ =
       - domain bound `hdom`
     *)
   | Fresh of hint * shape * kind * hdom
+    (* "tuple" of declared identifiers
+
+    <<x, ..., y>> \in S
+
+    where:
+    - x, ..., y are stored in the `hints`, and
+    - S is stored in `hdom`
+    *)
+  | FreshTuply of hints * hdom
     (* declared variable named `hint.core` *)
   | Flex of hint
     (* operator definition in module or `LET` scope *)
@@ -366,6 +420,32 @@ let unditto (bounds: bounds): bounds =
         | [] ->
             List.rev out in
     unditto [] No_domain bounds
+
+
+let unditto_tuply
+        (bounds: tuply_bounds):
+            tuply_bounds =
+    let rec unditto out prevdom bs =
+        let recurse b bs prevdom =
+            let out = b :: out in
+            unditto out prevdom bs in
+        match bs with
+        | (_, (Domain d as prevdom) as b) :: bs ->
+            recurse b bs prevdom
+        | (v, Ditto) :: bs ->
+            let b = (v, prevdom) in
+            recurse b bs prevdom
+        | (_, No_domain as b) :: bs ->
+            recurse b bs prevdom
+        | [] ->
+            List.rev out in
+    unditto [] No_domain bounds
+
+
+let name_of_tuply (t: tuply_name): hint =
+    match t with
+    | Bound_name name -> name
+    | Bound_names _ -> assert false
 
 
 let name_of_bound ((name, _, _): bound): hint =
@@ -479,6 +559,12 @@ sig
         bounds -> expr -> expr
     val make_forall:
         bounds -> expr -> expr
+    val make_tuply_exists:
+        tuply_bounds -> expr ->
+        expr
+    val make_tuply_forall:
+        tuply_bounds -> expr ->
+        expr
     val make_temporal_exists:
         t list -> expr -> expr
     val make_temporal_forall:
@@ -488,11 +574,22 @@ sig
     val make_bounded_choose:
         t -> expr -> expr ->
         expr
+    val make_tuply_choose:
+        t list -> expr -> expr
+    val make_bounded_tuply_choose:
+        t list -> expr ->
+        expr -> expr
     val make_setst:
         t -> expr ->
         expr -> expr
+    val make_tuply_setst:
+        t list -> expr ->
+        expr -> expr
     val make_setof:
         expr -> bounds -> expr
+    val make_tuply_setof:
+        expr -> tuply_bounds ->
+        expr
     val make_setenum:
         expr list -> expr
     val make_product:
@@ -501,6 +598,9 @@ sig
         expr list -> expr
     val make_fcn:
         bounds -> expr -> expr
+    val make_tuply_fcn:
+        tuply_bounds -> expr ->
+        expr
     val make_fcn_domain:
         expr -> expr
     val make_fcn_app:
@@ -559,12 +659,25 @@ sig
     val make_bounded:
         t -> kind -> expr ->
         bound
+    val make_unbounded_name_decl:
+        t -> tuply_bound
+    val make_bounded_name_decl:
+        t -> expr -> tuply_bound
+    val make_tuply_decl:
+        t list -> tuply_bound
+    val make_bounded_tuply_decl:
+        t list -> expr ->
+        tuply_bound
     val make_fresh:
         t -> kind -> hyp
     val make_bounded_fresh:
         t -> expr -> hyp
     val make_fresh_with_arity:
         t -> kind -> int -> hyp
+    val make_tuply_fresh:
+        t list -> hyp
+    val make_bounded_tuply_fresh:
+        t list -> expr -> hyp
 end
 
 
@@ -777,6 +890,34 @@ struct
             Forall bounds predicate
 
 
+    let make_tuply_quantifier
+            (quantifier: quantifier)
+            (bounds: tuply_bounds)
+            (predicate: expr):
+                expr =
+        let quant_ = QuantTuply (
+            quantifier,
+            bounds,
+            predicate) in
+        noprops quant_
+
+
+    let make_tuply_exists
+            (bounds: tuply_bounds)
+            (predicate: expr):
+                expr =
+        make_tuply_quantifier
+            Exists bounds predicate
+
+
+    let make_tuply_forall
+            (bounds: tuply_bounds)
+            (predicate: expr):
+                expr =
+        make_tuply_quantifier
+            Forall bounds predicate
+
+
     let make_temporal_quantifier
             (quantifier: quantifier)
             (names: t list)
@@ -832,6 +973,33 @@ struct
         noprops choose_
 
 
+    let make_tuply_choose
+            (names: t list)
+            (predicate: expr):
+                expr =
+        let names = List.map
+            hint_of names in
+        let choose_ = ChooseTuply (
+            names,
+            None,
+            predicate) in
+        noprops choose_
+
+
+    let make_bounded_tuply_choose
+            (names: t list)
+            (bound: expr)
+            (predicate: expr):
+                expr =
+        let names = List.map
+            hint_of names in
+        let choose_ = ChooseTuply (
+            names,
+            Some bound,
+            predicate) in
+        noprops choose_
+
+
     let make_setst
             (name: t)
             (bound: expr)
@@ -845,11 +1013,34 @@ struct
         noprops setst_
 
 
+    let make_tuply_setst
+            (names: t list)
+            (bound: expr)
+            (predicate: expr):
+                expr =
+        let names = List.map
+            hint_of names in
+        let setst_ = SetStTuply (
+            names,
+            bound,
+            predicate) in
+        noprops setst_
+
+
     let make_setof
             (expr: expr)
             (bounds: bounds):
                 expr =
         let setof_ = SetOf (
+            expr, bounds) in
+        noprops setof_
+
+
+    let make_tuply_setof
+            (expr: expr)
+            (bounds: tuply_bounds):
+                expr =
+        let setof_ = SetOfTuply (
             expr, bounds) in
         noprops setof_
 
@@ -880,6 +1071,15 @@ struct
             (value: expr):
                 expr =
         let func_ = Fcn (
+            bounds, value) in
+        noprops func_
+
+
+    let make_tuply_fcn
+            (bounds: tuply_bounds)
+            (value: expr):
+                expr =
+        let func_ = FcnTuply (
             bounds, value) in
         noprops func_
 
@@ -1172,6 +1372,42 @@ struct
         (name, kind, Domain bound)
 
 
+    let make_unbounded_name_decl
+            (name: t):
+                tuply_bound =
+        let name = hint_of name in
+        (Bound_name name,
+         No_domain)
+
+
+    let make_bounded_name_decl
+            (name: t)
+            (domain: expr):
+                tuply_bound =
+        let name = hint_of name in
+        (Bound_name name,
+         Domain domain)
+
+
+    let make_tuply_decl
+            (names: t list):
+                tuply_bound =
+        let names = List.map
+            hint_of names in
+        (Bound_names names,
+         No_domain)
+
+
+    let make_bounded_tuply_decl
+            (names: t list)
+            (domain: expr):
+                tuply_bound =
+        let names = List.map
+            hint_of names in
+        (Bound_names names,
+         Domain domain)
+
+
     let make_fresh
             (name: t)
             (kind: kind):
@@ -1248,6 +1484,59 @@ struct
             kind,
             Unbounded) in
         fresh @@ name
+
+
+    let make_tuply_fresh
+            (names: t list):
+                hyp =
+        (* Return tuply declaration.
+
+        WARNING: The properties of the
+        *first* item of `names` are
+        copied to the returned
+        hypothesis.
+        *)
+        let names = List.map
+            hint_of names in
+        let fresh = FreshTuply (
+            names, Unbounded) in
+        let h = List.hd names in
+        fresh @@ h
+
+
+    let make_bounded_tuply_fresh
+            (names: t list)
+            (domain: expr):
+                hyp =
+        (* Bounded declaration.
+
+        The declaration is tuply,
+        in that multiple
+        identifiers are declared,
+        as a tuple, with the
+        meaning this has in
+        TLA+ syntax.
+
+        The returned declaration
+        has visible domain-bound.
+        To create a declaration
+        with hidden domain-bound,
+        use the relevant
+        data constructors.
+
+        WARNING: The properties
+        of the *first* item of
+        `names` are copied to
+        the returned hypothesis.
+        *)
+        let names = List.map
+            hint_of names in
+        let d = Bounded (
+            domain, Visible) in
+        let fresh = FreshTuply (
+            names, d) in
+        let h = List.hd names in
+        fresh @@ h
 end
 
 
@@ -1307,10 +1596,25 @@ let name_of_ix
             failwith "`RECURSIVE`\
                 declaration found"
         end
+    | FreshTuply _ ->
+        failwith "Found \
+            positional index \
+            that refers to \
+            tuply declaration."
     | Fact _ ->
         failwith "Found \
             positional index \
             that refers to Fact."
+
+
+let pformat_tuply (names: hints): string =
+    (* String of `names` with TLA+ tuple syntax. *)
+    let accum = "<<" in
+    let step accum name =
+        accum ^ ", " ^ name.core in
+    let accum = List.fold_left
+        step accum names in
+    accum ^ ">>"
 
 
 let hyp_name h = match h.core with
@@ -1323,6 +1627,8 @@ let hyp_name h = match h.core with
             | Recursive (nm, _)},
             _, _, _)
         -> nm.core
+    | FreshTuply (names, _) ->
+        pformat_tuply names
     | Fact (_, _,_) -> "??? FACT ???"
 
 
@@ -1360,6 +1666,11 @@ let print_cx cx =
                 let visible = describe_domain_bound dom in
                 ("Constant operator `" ^ name.core ^
                  "` (" ^ visible ^ ")\n")
+            | FreshTuply (names, dom) ->
+                let tuply = pformat_tuply names in
+                let visible = describe_domain_bound dom in
+                ("Constant tuply declaration of " ^
+                tuply ^ "` (" ^ visible ^ ")\n")
             | Defn (df, _, visibility, _) ->
                 let visible = visibility_to_string
                     visibility in

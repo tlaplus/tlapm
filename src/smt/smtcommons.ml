@@ -831,6 +831,8 @@ let allids cx =
               _, _, _)
         -> SSet.add nm.core r
       | Fact (_, _, _) -> r
+      | FreshTuply _ ->
+        assert false  (* unexpected case *)
     end SSet.empty cx
 
 let subtract xs x = fold_left (fun r a -> if x = a then r else r @ [a]) [] xs
@@ -972,6 +974,12 @@ and fv_expr scx e : string list =
         @ (match oth with Some e -> fv_expr scx e | None -> [])
   | Parens (e, pf) ->
       fv_expr scx e
+  | QuantTuply _
+  | ChooseTuply _
+  | SetStTuply _
+  | SetOfTuply _
+  | FcnTuply _ ->
+      assert false
   | _ -> []
 and fv_sel scx = function
   | Sel_inst args ->
