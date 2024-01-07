@@ -562,11 +562,11 @@ let start_async_with_exec st doc_uri _doc_vsn doc_text range events_adder
     [
       (* First arg s ignored, if executable is specified. *)
       executable;
-      (* "--verbose"; *)
-      "--printallobs";
       "--toolbox";
       string_of_int (TlapmRange.line_from range);
       string_of_int (TlapmRange.line_till range);
+      (* "--verbose"; *)
+      "--printallobs";
       "--stdin";
       mod_name;
     ]
