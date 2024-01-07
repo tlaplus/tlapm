@@ -262,6 +262,8 @@ class virtual ['s] level_computation = object (self : 'self)
                     let hyp_scx = E_t.scx_front scx n in
                     let (_, e_) = self#hyp hyp_scx hyp in
                     get_level_info e_
+                | FreshTuply _ ->
+                    assert false  (* not implemented *)
                 | Fact (e_, _, _) ->
                     (*
                     E_t.print_cx cx;
@@ -908,6 +910,12 @@ class virtual ['s] level_computation = object (self : 'self)
             let new_parens = Parens (e_, pf_) in
             let new_e = new_parens @@ e in
             assign new_e exprlevel e_level_info
+        | QuantTuply _
+        | ChooseTuply _
+        | SetStTuply _
+        | SetOfTuply _
+        | FcnTuply _ ->
+            assert false  (* not implemented *)
         in
         e_
         end
@@ -986,6 +994,8 @@ class virtual ['s] level_computation = object (self : 'self)
                 let level_args = StringSet.singleton name.core in
                 LevelInfo (level, weights, level_args)
                 end
+            | FreshTuply _ ->
+                assert false  (* not implemented *)
             (* defined operator of any arity *)
             | Defn (df, _, _, _) ->
                 let df_ = self#defn scx df in
@@ -1013,6 +1023,8 @@ class virtual ['s] level_computation = object (self : 'self)
                 in
                 let h = Fresh (nm, shp, lc, dom) @@ h in
                 (adj scx h, h)
+            | FreshTuply _ ->
+                assert false  (* not implemented *)
             | Flex s ->
                 let h = Flex s @@ h in
                 (adj scx h, h)

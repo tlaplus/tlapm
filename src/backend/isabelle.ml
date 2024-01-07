@@ -459,6 +459,11 @@ and fmt_expr sd cx e = match e.core with
       Errors.bug ~at:e "Backend.Isabelle: @"
   | Parens (e, _) ->
       fmt_expr sd cx e
+  | QuantTuply _
+  | ChooseTuply _
+  | SetStTuply _
+  | SetOfTuply _
+  | FcnTuply _ -> assert false
 
 and extend_bound cx (v, kn, dom) =
   let (cx, v) = adj cx v in
@@ -537,6 +542,7 @@ and pp_print_sequent_outer cx ff sq = match Deque.front sq.context with
                *     failwith "Backend.Isabelle.pp_print_sequent"
                *)
         | Defn ({ core = Bpragma _ } , _, _, _) -> cx
+        | FreshTuply _ -> assert false  (* unexpected case *)
     end
 
 and pp_print_sequent_inner cx ff sq = match Deque.front sq.context with
@@ -575,6 +581,7 @@ and pp_print_sequent_inner cx ff sq = match Deque.front sq.context with
             let ncx = Ctx.bump cx in
             pp_print_sequent_inner ncx ff { sq with context = hs }
         | Defn (df, _, _, _) -> raise (Unsupported "Inner definition")
+        | FreshTuply _ -> assert false  (* unexpected case *)
     end
 
 type obx = obligation * string list * int * int

@@ -49,6 +49,7 @@ let update_hyp_name id h =
   | Fact _ ->
       (* Errors.bug "Backend.SMT.Ectx.adj: Fact not expected" *)
       h
+  | FreshTuply _ -> assert false  (* unexpected case *)
 
 let adj (dx,cx) h =
   let id = hyp_name h in
@@ -128,4 +129,5 @@ let rec from_hyps (ecx:t) (hs:hyp Deque.dq) : t =
           from_hyps ecx hs
       | Fact _ ->
           from_hyps (bump ecx) hs
+      | FreshTuply _ -> assert false  (* unexpected case *)
       end

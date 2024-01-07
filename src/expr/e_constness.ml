@@ -54,6 +54,12 @@ class virtual const_visitor = object (self : 'self)
             end
         in
         assign e isconst (sq_const sq.context)
+    | QuantTuply _
+    | ChooseTuply _
+    | SetStTuply _
+    | SetOfTuply _
+    | FcnTuply _ ->
+        assert false
     | _ ->
         let e = super#expr scx e in
         let cx = snd scx in
@@ -178,6 +184,12 @@ class virtual const_visitor = object (self : 'self)
                   | None -> true
                   | Some e -> is_const e
               end
+          | QuantTuply _
+          | ChooseTuply _
+          | SetStTuply _
+          | SetOfTuply _
+          | FcnTuply _ ->
+              assert false  (* not implemented *)
         in
         assign e isconst const
 
