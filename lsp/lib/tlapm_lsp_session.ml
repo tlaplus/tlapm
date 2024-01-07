@@ -24,8 +24,10 @@ type t = {
   progress : Tlapm_lsp_progress.t;
   mode : mode;
   docs : Docs.t;
-  prov : Prover.t; (* Prover that is currently running. *)
-  delayed : DocUriSet.t; (* Docs which have delayed proof info updates. *)
+  prov : Prover.t;  (** Prover that is currently running. *)
+  delayed : DocUriSet.t;  (** Docs which have delayed proof info updates. *)
+  current_obl : Tlapm_lsp_structs.Location.t option;
+      (** The obligation that is currently selected. We will send state updates for it. *)
 }
 
 let with_docs' st f =
@@ -176,6 +178,23 @@ let send_latest_proof_info st uri =
   | Some vsn, None -> send_proof_info st uri vsn (Some Docs.ProofRes.empty)
   | Some vsn, Some p_res -> send_proof_info st uri vsn (Some p_res)
 
+let send_obligation_proof_state st =
+  let open Tlapm_lsp_structs in
+  let maybe_st =
+    with_docs' st @@ fun (st, docs) ->
+    let docs, notif_data =
+      match st.current_obl with
+      | None -> (docs, None)
+      | Some loc ->
+          let tlapm_range = Prover.TlapmRange.of_lsp_range loc.range in
+          Docs.get_obligation_state_latest docs loc.uri tlapm_range
+    in
+    let notif_packet = TlapsProofObligationState.to_jsonrpc_packet notif_data in
+    st.output_adder (Some notif_packet);
+    (st, docs)
+  in
+  match maybe_st with Ok st -> st | Error _ -> st
+
 let delay_proof_info st uri =
   let delayed = DocUriSet.add uri st.delayed in
   { st with delayed }
@@ -243,6 +262,12 @@ module Handlers = Tlapm_lsp_handlers.Make (struct
     | Some (vsn, p_range) ->
         (st, Some (vsn, Prover.TlapmRange.as_lsp_range p_range))
 
+  let track_obligation_proof_state (st : t) uri range =
+    let open Tlapm_lsp_structs in
+    let st = { st with current_obl = Some (Location.make ~uri ~range) } in
+    let st = send_obligation_proof_state st in
+    st
+
   let latest_diagnostics st uri =
     Eio.traceln "PULL_DIAGS: %s" (LspT.DocumentUri.to_string uri);
     let st = send_latest_proof_info st uri in
@@ -266,6 +291,7 @@ module Handlers = Tlapm_lsp_handlers.Make (struct
         docs = Docs.empty;
         prov = Prover.create sw fs proc_mgr;
         delayed = DocUriSet.empty;
+        current_obl = None;
       }
     in
     let () =
@@ -328,6 +354,11 @@ let handle_timer_tick st =
     send_latest_proof_info stAcc uri
   in
   let st = DocUriSet.fold ff st.delayed st in
+  let st =
+    match DocUriSet.is_empty st.delayed with
+    | true -> st
+    | false -> send_obligation_proof_state st
+  in
   Some { st with delayed = DocUriSet.empty }
 
 let handle_event e st =
@@ -357,6 +388,7 @@ let run event_taker event_adder output_adder sw fs proc_mgr =
       docs = Docs.empty;
       prov = Prover.create sw fs proc_mgr;
       delayed = DocUriSet.empty;
+      current_obl = None;
     }
   in
   loop st

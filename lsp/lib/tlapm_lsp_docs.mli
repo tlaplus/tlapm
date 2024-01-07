@@ -63,3 +63,18 @@ val get_proof_res : t -> tk -> int -> t * ProofRes.t option
 
 val get_proof_res_latest : t -> tk -> t * int option * ProofRes.t option
 (** Get the latest actual proof results. Cleanup them, if needed. *)
+
+val get_obligation_state :
+  t ->
+  tk ->
+  int ->
+  TlapmRange.t ->
+  t * Tlapm_lsp_structs.TlapsProofObligationState.t option
+(** Get the current proof state for the specific obligation. *)
+
+val get_obligation_state_latest :
+  t ->
+  tk ->
+  TlapmRange.t ->
+  t * Tlapm_lsp_structs.TlapsProofObligationState.t option
+(** Get the current proof state for the specific obligation at the latest version of the document. *)

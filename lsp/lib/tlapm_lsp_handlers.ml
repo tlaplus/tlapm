@@ -14,6 +14,9 @@ module type Callbacks = sig
   val suggest_proof_range :
     t -> LspT.DocumentUri.t -> LspT.Range.t -> t * (int * LspT.Range.t) option
 
+  val track_obligation_proof_state :
+    t -> LspT.DocumentUri.t -> LspT.Range.t -> t
+
   val latest_diagnostics :
     t -> LspT.DocumentUri.t -> t * (int * LspT.Diagnostic.t list)
 
@@ -217,6 +220,7 @@ module Make (CB : Callbacks) = struct
       (params : LspT.CodeActionParams.t) cb_state =
     let user_range = params.range in
     let uri = params.textDocument.uri in
+    let cb_state = CB.track_obligation_proof_state cb_state uri user_range in
     let cb_state, res = CB.suggest_proof_range cb_state uri user_range in
     match res with
     | None ->

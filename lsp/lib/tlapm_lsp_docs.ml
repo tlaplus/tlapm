@@ -4,30 +4,76 @@
 let keep_vsn_count = 50
 let prover_mutex = Eio.Mutex.create ()
 
+(** Obligation reference consists of the proof session reference (p_ref)
+    and the obligation id (obl_id) as assigned by the TLAPS. This reference
+    is unique across proof attempts.
+    *)
 module OblRef = struct
-  type t = int * int
+  type t = { p_ref : int; obl_id : int }
 
-  let compare (p_ref_a, obl_id_a) (p_ref_b, obl_id_b) =
-    let p_ref_cmp = Stdlib.compare p_ref_a p_ref_b in
-    if p_ref_cmp = 0 then Stdlib.compare obl_id_a obl_id_b else p_ref_cmp
+  let make ~p_ref ~obl_id = { p_ref; obl_id }
+
+  let compare a b =
+    let p_ref_cmp = Stdlib.compare a.p_ref b.p_ref in
+    if p_ref_cmp = 0 then Stdlib.compare a.obl_id b.obl_id else p_ref_cmp
 end
 
 module LspT = Lsp.Types
 module DocMap = Map.Make (LspT.DocumentUri)
 module OblMap = Map.Make (OblRef)
+module StrMap = Map.Make (String)
 open Tlapm_lsp_prover
 open Tlapm_lsp_prover.ToolboxProtocol
 
-(* Proof step, as it is displayed in the editor. *)
+(** OblInfo collects related tlapm_obligation events into a single place.
+    It maintains the general obligation info (initial) and the latest
+    state for each of the provers.
+    *)
+module OblInfo = struct
+  type t = {
+    initial : tlapm_obligation;
+    by_prover : tlapm_obligation StrMap.t;
+    latest_prover : string option;
+  }
+
+  let make obl =
+    { initial = obl; by_prover = StrMap.empty; latest_prover = None }
+
+  let add_obl obl (oi : t) =
+    match obl.prover with
+    | None -> oi
+    | Some prover ->
+        let by_prover = StrMap.add prover obl oi.by_prover in
+        { oi with by_prover; latest_prover = Some prover }
+
+  let latest (oi : t) =
+    match oi.latest_prover with
+    | None -> oi.initial
+    | Some prover -> StrMap.find prover oi.by_prover
+
+  let loc (oi : t) = oi.initial.loc
+end
+
+(** Proof step, as it is displayed in the editor.
+    The proof steps are obtained by parsing the the TLAPS source file.
+    Later the proof obligation info is added to the tree as they are
+    obtained from the prover.
+    *)
 module PS : sig
   type t
 
   val of_module : Tlapm_lib.Module.T.mule -> t list
-  val with_tlapm_obligation : t list -> tlapm_obligation -> t list
-  val with_tlapm_obligations : t list -> tlapm_obligation OblMap.t -> t list
+  val with_tlapm_obligation : t list -> OblInfo.t -> t list
+  val with_tlapm_obligations : t list -> OblInfo.t OblMap.t -> t list
   val locate_proof_range : t list -> TlapmRange.t -> TlapmRange.t
+  val find_proof_step : t list -> TlapmRange.t -> t option
   val flatten : t list -> t list
   val yojson_of_t : t -> Yojson.Safe.t option
+
+  val tlaps_proof_obligation_state_of_t :
+    LspT.DocumentUri.t ->
+    t ->
+    Tlapm_lsp_structs.TlapsProofObligationState.t option
 end = struct
   type s = Proved | Failed | Omitted | Missing | Pending | Progress
 
@@ -72,6 +118,7 @@ end = struct
     loc : TlapmRange.t option; (* Location if the entire step. *)
     hdr_loc : TlapmRange.t option; (* The location of the proof sequent.*)
     obl_loc : TlapmRange.t option; (* Where the obligation exists. *)
+    obl_info : OblInfo.t option; (* The corresponding obligation info. *)
     state : s;
     sub : t list;
   }
@@ -109,6 +156,28 @@ end = struct
         in
         Some obj
 
+  let tlaps_proof_obligation_state_of_t uri ps =
+    let open Tlapm_lsp_structs in
+    match (ps.loc, ps.obl_info) with
+    | None, _ -> None
+    | _, None -> None
+    | Some ps_loc, Some oi ->
+        let some_str s = match s with None -> "?" | Some s -> s in
+        let location =
+          Location.make ~uri ~range:(TlapmRange.as_lsp_range ps_loc)
+        in
+        let obligation = some_str oi.initial.obl in
+        let results =
+          List.map
+            (fun (_, o) ->
+              let status = message_of_s (s_of_tlapm_obl_state o.status) in
+              let duration = 0 (* TODO: Track the timing. *) in
+              TlapsProofObligationResult.make ~prover:(some_str o.prover)
+                ~meth:(some_str o.meth) ~status ~duration ~obligation:o.obl)
+            (StrMap.to_list oi.by_prover)
+        in
+        Some (TlapsProofObligationState.make ~location ~obligation ~results)
+
   let rec flatten pss =
     List.flatten (List.map (fun ps -> ps :: flatten ps.sub) pss)
 
@@ -126,7 +195,7 @@ end = struct
       | None, Some seq_r -> Some seq_r
       | None, None -> None
     in
-    { loc = stm_range; hdr_loc; obl_loc; state = min_st; sub }
+    { loc = stm_range; hdr_loc; obl_loc; obl_info = None; state = min_st; sub }
 
   and of_proof (proof : Tlapm_lib.Proof.T.proof) =
     let open Tlapm_lib in
@@ -193,29 +262,28 @@ end = struct
         | Anoninst _ -> acc)
       acc mule_.body
 
-  let rec with_tlapm_obligation (pss : t list) (obl : tlapm_obligation) =
+  let rec with_tlapm_obligation (pss : t list) (oi : OblInfo.t) =
     let with_opt_min_s ps opt_sub_min_s =
       match opt_sub_min_s with
       | None -> ps
       | Some sub_min_s -> { ps with state = sub_min_s }
     in
     let upd ps =
-      let sub = with_tlapm_obligation ps.sub obl in
+      let sub = with_tlapm_obligation ps.sub oi in
       let sub_min_s = min_s_of_t_list sub in
       let ps = { ps with sub } in
       match ps.obl_loc with
       | None -> with_opt_min_s ps sub_min_s
       | Some ps_obl_loc ->
-          if TlapmRange.from ps_obl_loc = TlapmRange.from obl.loc then
-            with_opt_min_s
-              { ps with state = s_of_tlapm_obl_state obl.status }
-              sub_min_s
+          if TlapmRange.from ps_obl_loc = TlapmRange.from (OblInfo.loc oi) then
+            let state = s_of_tlapm_obl_state (OblInfo.latest oi).status in
+            with_opt_min_s { ps with state; obl_info = Some oi } sub_min_s
           else with_opt_min_s ps sub_min_s
     in
     List.map upd pss
 
-  let with_tlapm_obligations (pss : t list) (obs : tlapm_obligation OblMap.t) =
-    OblMap.fold (fun _ ob pss -> with_tlapm_obligation pss ob) obs pss
+  let with_tlapm_obligations (pss : t list) (ois : OblInfo.t OblMap.t) =
+    OblMap.fold (fun _ ob pss -> with_tlapm_obligation pss ob) ois pss
 
   let locate_proof_range (pss : t list) (input : TlapmRange.t) : TlapmRange.t =
     let rec collect pss =
@@ -239,8 +307,30 @@ end = struct
     in
     let pss_locs = collect pss in
     TlapmRange.lines_covered_or_all input pss_locs
+
+  let find_proof_step (pss : t list) (input : TlapmRange.t) =
+    let rec find_first pss =
+      let for_each_ps_with_loc ps ps_loc =
+        match TlapmRange.lines_intersect ps_loc input with
+        | true -> (
+            match find_first ps.sub with
+            | None -> Some ps
+            | Some first -> Some first)
+        | false -> None
+      in
+      let for_each_ps ps =
+        match ps.loc with
+        | None -> None
+        | Some ps_loc -> for_each_ps_with_loc ps ps_loc
+      in
+      List.find_map for_each_ps pss
+    in
+    find_first pss
 end
 
+(** Proof results of a document. Includes the errors returned from the prover
+    as well as all the proof steps with their current state.
+    *)
 module ProofRes = struct
   type t = {
     p_ref : int;
@@ -261,7 +351,8 @@ end
 
 (** Versions that are collected after the last prover launch or client
     asks for diagnostics. We store some limited number of versions here,
-    just to cope with async events from the client. *)
+    just to cope with async events from the client.
+    *)
 module TV : sig
   type t
 
@@ -293,6 +384,7 @@ module TA : sig
   val proof_res : t -> ProofRes.t
   val prepare_proof : t -> LspT.DocumentUri.t -> int -> t option
   val locate_proof_range : t -> TlapmRange.t -> TlapmRange.t
+  val get_obligation_state : t -> TlapmRange.t -> PS.t option
   val add_obl : t -> int -> tlapm_obligation -> t option
   val add_notif : t -> int -> tlapm_notif -> t option
   val terminated : t -> int -> t option
@@ -301,9 +393,14 @@ end = struct
     doc_vsn : TV.t;
     p_ref : int;
     mule : (Tlapm_lib.Module.T.mule, unit) result option;
-    nts : tlapm_notif list;
-    obs : tlapm_obligation OblMap.t;
+    nts : tlapm_notif list;  (** Parsing errors and warnings. *)
+    ois : OblInfo.t OblMap.t;
+        (** A set of obligation results.
+            It is set to empty, if any tlapm_notif is received. *)
     pss : PS.t list;
+        (** Parsed document structure, a tree of proof steps.
+            It is obtained by parsing the document and then updated
+            when obligation proof states are received from the prover. *)
   }
 
   let make tv =
@@ -312,25 +409,26 @@ end = struct
       p_ref = 0;
       mule = None;
       nts = [];
-      obs = OblMap.empty;
+      ois = OblMap.empty;
       pss = [];
     }
 
   let vsn act = TV.version act.doc_vsn
   let text act = TV.text act.doc_vsn
 
+  (** Merge new version of the text (TV) into the existing actual version of the document. *)
   let merge_into (act : t) (v : TV.t) =
     let diff_pos = TV.diff_pos act.doc_vsn v in
     let before_change = TlapmRange.before diff_pos in
-    let obs =
+    let ois =
       OblMap.filter
-        (fun _ (o : tlapm_obligation) -> before_change o.loc)
-        act.obs
+        (fun _ (oi : OblInfo.t) -> before_change (OblInfo.loc oi))
+        act.ois
     in
     let nts =
       List.filter (fun (n : tlapm_notif) -> before_change n.loc) act.nts
     in
-    { act with doc_vsn = v; mule = None; obs; nts; pss = [] }
+    { act with doc_vsn = v; mule = None; ois; nts; pss = [] }
 
   let try_parse_anyway_locked uri (act : t) =
     let v = act.doc_vsn in
@@ -339,7 +437,7 @@ end = struct
     with
     | Ok mule ->
         let pss = PS.of_module mule in
-        let pss = PS.with_tlapm_obligations pss act.obs in
+        let pss = PS.with_tlapm_obligations pss act.ois in
         { act with mule = Some (Ok mule); pss; nts = [] }
     | Error (loc_opt, msg) ->
         {
@@ -358,7 +456,8 @@ end = struct
     | { mule = Some _; _ } -> act
 
   let proof_res (act : t) : ProofRes.t =
-    let obs_list = List.map snd (OblMap.to_list act.obs) in
+    let latest_obl (_, oi) = OblInfo.latest oi in
+    let obs_list = List.map latest_obl (OblMap.to_list act.ois) in
     {
       p_ref = act.p_ref;
       obs = obs_list;
@@ -373,22 +472,30 @@ end = struct
     | Some (Ok _mule) -> Some { act with p_ref = next_p_ref; nts = [] }
 
   let locate_proof_range act range = PS.locate_proof_range act.pss range
+  let get_obligation_state act range = PS.find_proof_step act.pss range
 
   let add_obl (act : t) (p_ref : int) (obl : tlapm_obligation) =
     if act.p_ref = p_ref then
-      let drop_older_intersecting (o_pr, _o_id) (o : tlapm_obligation) =
-        o_pr = p_ref || not (TlapmRange.lines_intersect obl.loc o.loc)
+      let drop_older_intersecting (oRef : OblRef.t) (o : OblInfo.t) =
+        oRef.p_ref = p_ref
+        || not (TlapmRange.lines_intersect obl.loc (OblInfo.loc o))
       in
-      let obs = OblMap.add (p_ref, obl.id) obl act.obs in
-      let obs = OblMap.filter drop_older_intersecting obs in
-      let pss = PS.with_tlapm_obligation act.pss obl in
-      Some { act with obs; pss }
+      let oi_ref = OblRef.make ~p_ref ~obl_id:obl.id in
+      let oi =
+        match OblMap.find_opt oi_ref act.ois with
+        | None -> OblInfo.make obl
+        | Some oi -> OblInfo.add_obl obl oi
+      in
+      let ois = OblMap.add oi_ref oi act.ois in
+      let ois = OblMap.filter drop_older_intersecting ois in
+      let pss = PS.with_tlapm_obligation act.pss oi in
+      Some { act with ois; pss }
     else None
 
   let add_notif (act : t) p_ref notif =
     if act.p_ref = p_ref then
       let nts = notif :: act.nts in
-      Some { act with nts; obs = OblMap.empty }
+      Some { act with nts; ois = OblMap.empty }
     else None
 
   let terminated (act : t) p_ref =
@@ -540,3 +647,20 @@ let get_proof_res_latest docs uri =
   | Some latest_vsn ->
       let docs, res = get_proof_res docs uri latest_vsn in
       (docs, Some latest_vsn, res)
+
+let get_obligation_state docs uri vsn range =
+  with_doc_vsn docs uri vsn @@ fun doc act ->
+  let act = TA.try_parse act uri in
+  let res =
+    match TA.get_obligation_state act range with
+    | None -> None
+    | Some ps -> PS.tlaps_proof_obligation_state_of_t uri ps
+  in
+  (doc, act, res)
+
+let get_obligation_state_latest docs uri range =
+  match latest_vsn docs uri with
+  | None -> (docs, None)
+  | Some latest_vsn ->
+      let docs, res = get_obligation_state docs uri latest_vsn range in
+      (docs, res)

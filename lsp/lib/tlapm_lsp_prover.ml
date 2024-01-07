@@ -1,5 +1,7 @@
 (* cSpell:words obligationsnumber getcwd nonblocking submatches *)
 
+(* TODO: Use `opam exec -- tlapm --noproving --printallobs --toolbox 0 0 SetSum_proofs.tla`. *)
+
 (** Max size for the read buffer, a line should fit into it.*)
 let read_buf_max_size = 1024 * 1024
 
@@ -558,8 +560,10 @@ let start_async_with_exec st doc_uri _doc_vsn doc_text range events_adder
   let r, w = Eio.Process.pipe st.mgr ~sw:st.sw in
   let proc_args =
     [
-      (* First arg s ignored, id executable is specified. *)
+      (* First arg s ignored, if executable is specified. *)
       executable;
+      (* "--verbose"; *)
+      "--printallobs";
       "--toolbox";
       string_of_int (TlapmRange.line_from range);
       string_of_int (TlapmRange.line_till range);
