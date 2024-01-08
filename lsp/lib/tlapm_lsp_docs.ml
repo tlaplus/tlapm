@@ -170,10 +170,13 @@ end = struct
         let results =
           List.map
             (fun (_, o) ->
+              let prover = some_str o.prover in
               let status = message_of_s (s_of_tlapm_obl_state o.status) in
-              let duration = 0 (* TODO: Track the timing. *) in
-              TlapsProofObligationResult.make ~prover:(some_str o.prover)
-                ~meth:(some_str o.meth) ~status ~duration ~obligation:o.obl)
+              let meth = some_str o.meth in
+              let reason = o.reason in
+              let obligation = o.obl in
+              TlapsProofObligationResult.make ~prover ~meth ~status ~reason
+                ~obligation)
             (StrMap.to_list oi.by_prover)
         in
         Some (TlapsProofObligationState.make ~location ~obligation ~results)

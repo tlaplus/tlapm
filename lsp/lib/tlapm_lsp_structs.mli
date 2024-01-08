@@ -12,7 +12,7 @@ module TlapsProofObligationResult : sig
     prover : string;
     meth : string;
     status : string;
-    duration : int;
+    reason : string option;
     obligation : string option;
   }
 
@@ -20,7 +20,7 @@ module TlapsProofObligationResult : sig
     prover:string ->
     meth:string ->
     status:string ->
-    duration:int ->
+    reason:string option ->
     obligation:string option ->
     t
 

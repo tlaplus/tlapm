@@ -20,7 +20,7 @@ end
     prover: string;
     meth: string;
     status: string;
-    duration: number;
+    reason: string | null;
     obligation: string | null; // Non-null, if prover failed.
   }
   ```
@@ -30,22 +30,22 @@ module TlapsProofObligationResult = struct
     prover : string;
     meth : string;
     status : string;
-    duration : int;  (** In millis. *)
+    reason : string option;
     obligation : string option;
   }
 
-  let make ~prover ~meth ~status ~duration ~obligation =
-    { prover; meth; status; duration; obligation }
+  let make ~prover ~meth ~status ~reason ~obligation =
+    { prover; meth; status; reason; obligation }
 
   let yojson_of_t (t : t) =
+    let opt_str o = match o with None -> `Null | Some s -> `String s in
     `Assoc
       [
         ("prover", `String t.prover);
         ("meth", `String t.meth);
         ("status", `String t.status);
-        ("duration", `Int t.duration);
-        ( "obligation",
-          match t.obligation with None -> `Null | Some str -> `String str );
+        ("reason", opt_str t.reason);
+        ("obligation", opt_str t.obligation);
       ]
 end
 
