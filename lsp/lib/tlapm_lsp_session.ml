@@ -148,7 +148,7 @@ let send_proof_state_markers st uri pss =
             `List
               (List.filter_map
                  (fun ps -> ps)
-                 (List.map Docs.PS.yojson_of_t pss));
+                 (List.map Docs.Proof_step.yojson_of_t pss));
           ])
       ~method_:"tlaplus/tlaps/proofStates" ()
   in
@@ -160,9 +160,9 @@ let send_proof_state_markers st uri pss =
 
 let send_proof_info st uri vsn res =
   match res with
-  | Some (Docs.ProofRes.{ p_ref; obs; nts; pss } as proof_res) ->
+  | Some (Docs.Doc_proof_res.{ p_ref; obs; nts; pss } as proof_res) ->
       let st =
-        progress_obl_changed st p_ref (Docs.ProofRes.obs_done proof_res)
+        progress_obl_changed st p_ref (Docs.Doc_proof_res.obs_done proof_res)
       in
       send_diagnostics st uri vsn obs nts;
       send_proof_state_markers st uri pss;
@@ -174,8 +174,8 @@ let send_latest_proof_info st uri =
   let docs, vsn_opt, proof_res_opt = Docs.get_proof_res_latest st.docs uri in
   let st = { st with docs } in
   match (vsn_opt, proof_res_opt) with
-  | None, _ -> send_proof_info st uri 0 (Some Docs.ProofRes.empty)
-  | Some vsn, None -> send_proof_info st uri vsn (Some Docs.ProofRes.empty)
+  | None, _ -> send_proof_info st uri 0 (Some Docs.Doc_proof_res.empty)
+  | Some vsn, None -> send_proof_info st uri vsn (Some Docs.Doc_proof_res.empty)
   | Some vsn, Some p_res -> send_proof_info st uri vsn (Some p_res)
 
 let send_obligation_proof_state st =

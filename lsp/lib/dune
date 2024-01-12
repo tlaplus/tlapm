@@ -8,3 +8,5 @@
   (deps "../test/tlapm_mock.sh" "../../src/tlapm.exe"))
  (preprocess
   (pps ppx_inline_test)))
+
+(include_subdirs qualified)
