@@ -10,4 +10,4 @@ type t
 val make : string -> int -> t
 val text : t -> string
 val version : t -> int
-val diff_pos : t -> t -> TlapmRange.p
+val diff_pos : t -> t -> TlapmRange.Position.t

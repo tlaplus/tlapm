@@ -65,7 +65,7 @@ let really_parse_file fn =
     | Some fn ->
         let (flex, _) = match Property.query fn module_content_prop with
             | Some (Channel ch) -> Alexer.lex_channel fn.core ch
-            | Some (String str) -> Alexer.lex_string str
+            | Some (String str) -> Alexer.lex_string ~fn:fn.core str
             | Some Filesystem
             | None -> Alexer.lex fn.core
         in

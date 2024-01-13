@@ -7,7 +7,7 @@ type t = {
   p_ref : int;
   mule : (Tlapm_lib.Module.T.mule, unit) result option;
   nts : tlapm_notif list;  (** Parsing errors and warnings. *)
-  ois : Obl_info.t OblMap.t;
+  ois : Obl_proofs.t OblMap.t;
       (** A set of obligation results.
           It is set to empty, if any tlapm_notif is received. *)
   pss : Proof_step.t list;
@@ -35,7 +35,7 @@ let merge_into (act : t) (v : Doc_vsn.t) =
   let before_change = TlapmRange.before diff_pos in
   let ois =
     OblMap.filter
-      (fun _ (oi : Obl_info.t) -> before_change (Obl_info.loc oi))
+      (fun _ (oi : Obl_proofs.t) -> before_change (Obl_proofs.loc oi))
       act.ois
   in
   let nts =
@@ -69,7 +69,7 @@ let try_parse (act : t) uri =
   | { mule = Some _; _ } -> act
 
 let proof_res (act : t) : Doc_proof_res.t =
-  let latest_obl (_, oi) = Obl_info.latest oi in
+  let latest_obl (_, oi) = Obl_proofs.latest oi in
   let obs_list = List.map latest_obl (OblMap.to_list act.ois) in
   {
     p_ref = act.p_ref;
@@ -89,15 +89,15 @@ let get_obligation_state act range = Proof_step.find_proof_step act.pss range
 
 let add_obl (act : t) (p_ref : int) (obl : tlapm_obligation) =
   if act.p_ref = p_ref then
-    let drop_older_intersecting (oRef : OblRef.t) (o : Obl_info.t) =
+    let drop_older_intersecting (oRef : OblRef.t) (o : Obl_proofs.t) =
       oRef.p_ref = p_ref
-      || not (TlapmRange.lines_intersect obl.loc (Obl_info.loc o))
+      || not (TlapmRange.lines_intersect obl.loc (Obl_proofs.loc o))
     in
     let oi_ref = OblRef.make ~p_ref ~obl_id:obl.id in
     let oi =
       match OblMap.find_opt oi_ref act.ois with
-      | None -> Obl_info.make obl
-      | Some oi -> Obl_info.add_obl obl oi
+      | None -> Obl_proofs.make obl
+      | Some oi -> Obl_proofs.add_obl obl oi
     in
     let ois = OblMap.add oi_ref oi act.ois in
     let ois = OblMap.filter drop_older_intersecting ois in

@@ -8,6 +8,7 @@ module Proof = Proof
 module Expr = Expr
 module Util = Util
 module Loc = Loc
+module Backend = Backend
 
 val main : string list -> unit
 val init : unit -> unit

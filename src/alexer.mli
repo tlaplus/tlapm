@@ -19,4 +19,4 @@ val lex:
 NOTE: does not handle the beginning-of-file stuff.
 *)
 val lex_string:
-    string -> Token.token LazyList.t * Loc.locus
+    ?fn:string -> string -> Token.token LazyList.t * Loc.locus

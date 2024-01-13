@@ -10,8 +10,8 @@ open Tlapm_lsp_prover
 type t
 
 val of_module : Tlapm_lib.Module.T.mule -> t list
-val with_tlapm_obligation : t list -> Obl_info.t -> t list
-val with_tlapm_obligations : t list -> Obl_info.t OblMap.t -> t list
+val with_tlapm_obligation : t list -> Obl_proofs.t -> t list
+val with_tlapm_obligations : t list -> Obl_proofs.t OblMap.t -> t list
 val locate_proof_range : t list -> TlapmRange.t -> TlapmRange.t
 val find_proof_step : t list -> TlapmRange.t -> t option
 val flatten : t list -> t list

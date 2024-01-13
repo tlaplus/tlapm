@@ -1,31 +1,32 @@
 type t
 
 module TlapmRange : sig
-  type p
+  module Position : sig
+    type t
+
+    val compare : t -> t -> int
+  end
+
   type t
 
-  val from : t -> p
-  val till : t -> p
+  val from : t -> Position.t
+  val till : t -> Position.t
   val line_from : t -> int
   val line_till : t -> int
-  val p_add : p -> int -> int -> p
-  val p_less : p -> p -> bool
-  val p_leq : p -> p -> bool
-  val p_min : p -> p -> p
-  val p_max : p -> p -> p
   val as_lsp_range : t -> Lsp.Types.Range.t
   val of_lsp_range : Lsp.Types.Range.t -> t
   val of_locus : Tlapm_lib.Loc.locus -> t option
   val of_locus_opt : Tlapm_lib.Loc.locus option -> t option
-  val of_points : p -> p -> t
+  val of_points : Position.t -> Position.t -> t
   val string_of_range : t -> string
-  val string_of_pos : p -> string
-  val before : p -> t -> bool
+  val string_of_pos : Position.t -> string
+  val compare : t -> t -> int
+  val before : Position.t -> t -> bool
   val intersect : t -> t -> bool
   val lines_intersect : t -> t -> bool
   val lines_covered : t -> t -> bool
   val lines_covered_or_all : t -> t list -> t
-  val first_diff_pos : string -> string -> p
+  val first_diff_pos : string -> string -> Position.t
 end
 
 (** Types representing messages from the prover. *)
