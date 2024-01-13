@@ -271,6 +271,10 @@ let add_search_dir dir =
   if List.for_all (fun lp -> lp <> dir) !rev_search_path then
     rev_search_path := library_path :: dir :: List.tl !rev_search_path
 
+(* Reset the search path to the specified list. *)
+let set_search_path dirs =
+  rev_search_path := library_path :: List.concat [dirs; Setup_paths.Sites.stdlib]
+
 let output_dir = ref "."
 
 let default_method =

@@ -87,6 +87,7 @@ val fpf_in: string option ref
 val summary: bool ref
 val stats: bool ref
 val add_search_dir: string -> unit
+val set_search_path: string list -> unit
 val keep_going: bool ref  (* FIXME check still used ? *)
 val suppress_all: bool ref
 val set_smt_logic: string -> unit
