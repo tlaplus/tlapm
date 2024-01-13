@@ -23,7 +23,7 @@ ifeq ($(OS_TYPE),Cygwin)
 	FIND_EXEC=-executable
 endif
 
-ISABELLE_URL=http://isabelle.in.tum.de/website-$(ISABELLE_VSN)/dist/$(ISABELLE_ARCHIVE)
+ISABELLE_URL=https://isabelle.in.tum.de/website-$(ISABELLE_VSN)/dist/$(ISABELLE_ARCHIVE)
 ISABELLE_DIR=Isabelle
 
 # Some defaults, for the case if makefile is called not by the dune build system.
