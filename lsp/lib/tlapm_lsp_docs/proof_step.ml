@@ -116,34 +116,47 @@ let rec flatten pss =
 
 let q_range prop = TlapmRange.of_locus_opt (Tlapm_lib.Util.query_locus prop)
 
-let rec of_provable stm_range seq_range (proof : Tlapm_lib.Proof.T.proof)
-    obs_map =
-  let sub, min_st, obl_loc = of_proof proof obs_map in
-  let hdr_loc =
-    match (stm_range, seq_range) with
-    | Some stm_r, Some seq_r ->
-        Some
-          (TlapmRange.of_points (TlapmRange.from stm_r) (TlapmRange.till seq_r))
-    | Some stm_r, None -> Some stm_r
-    | None, Some seq_r -> Some seq_r
-    | None, None -> None
-  in
-  let obl_parsed =
-    match obl_loc with
-    | None -> Obl_parsed.make None
-    | Some obl_loc -> Obl_parsed.make (RangeMap.find_opt obl_loc obs_map)
-  in
-  {
-    loc = stm_range;
-    hdr_loc;
-    obl_loc;
-    obl_parsed;
-    obl_proofs = None;
-    state = min_st;
-    sub;
-  }
+type of_module_t = {
+  file : string;
+  obs_map : Tlapm_lib.Proof.T.obligation RangeMap.t;
+}
 
-and of_proof (proof : Tlapm_lib.Proof.T.proof) obs_map =
+let rec of_provable stm_range seq_range (proof : Tlapm_lib.Proof.T.proof) acc =
+  (* Here we have to check the file of the proof. After the document was parsed and
+     normalized, proofs from other documents are included here as well. *)
+  match Tlapm_lib.Util.query_locus proof with
+  | Some proof_loc when proof_loc.file = acc.file ->
+      let sub, min_st, obl_loc = of_proof proof acc in
+      let hdr_loc =
+        match (stm_range, seq_range) with
+        | Some stm_r, Some seq_r ->
+            Some
+              (TlapmRange.of_points (TlapmRange.from stm_r)
+                 (TlapmRange.till seq_r))
+        | Some stm_r, None -> Some stm_r
+        | None, Some seq_r -> Some seq_r
+        | None, None -> None
+      in
+      let obl_parsed =
+        match obl_loc with
+        | None -> Obl_parsed.make None
+        | Some obl_loc ->
+            Obl_parsed.make (RangeMap.find_opt obl_loc acc.obs_map)
+      in
+      [
+        {
+          loc = stm_range;
+          hdr_loc;
+          obl_loc;
+          obl_parsed;
+          obl_proofs = None;
+          state = min_st;
+          sub;
+        };
+      ]
+  | _ -> []
+
+and of_proof (proof : Tlapm_lib.Proof.T.proof) acc =
   let open Tlapm_lib in
   let obl_loc = q_range proof in
   match Property.unwrap proof with
@@ -151,55 +164,66 @@ and of_proof (proof : Tlapm_lib.Proof.T.proof) obs_map =
   | Proof.T.Omitted _ -> ([], Omitted, obl_loc)
   | Proof.T.By (_, _) -> ([], Pending, obl_loc)
   | Proof.T.Steps (steps, qed_step) -> (
-      let sub = List.map (fun s -> of_step s obs_map) steps in
-      let qed = of_qed_step qed_step obs_map in
+      let sub = List.map (fun s -> of_step s acc) steps in
+      let qed = of_qed_step qed_step acc in
       let sub = List.flatten (sub @ [ qed ]) in
       match min_s_of_t_list sub with
       | None -> (sub, Failed, obl_loc)
       | Some min_s -> (sub, min_s, obl_loc))
   | Proof.T.Error _ -> ([], Failed, obl_loc)
 
-and of_step (step : Tlapm_lib.Proof.T.step) obs_map =
+and of_step (step : Tlapm_lib.Proof.T.step) acc =
   let open Tlapm_lib in
   match Property.unwrap step with
   | Proof.T.Hide _ -> []
   | Proof.T.Define _ -> []
   | Proof.T.Assert (sequent, proof) ->
-      [ of_provable (q_range step) (q_range sequent.active) proof obs_map ]
+      of_provable (q_range step) (q_range sequent.active) proof acc
   | Proof.T.Suffices (sequent, proof) ->
-      [ of_provable (q_range step) (q_range sequent.active) proof obs_map ]
+      of_provable (q_range step) (q_range sequent.active) proof acc
   | Proof.T.Pcase (expr, proof) ->
-      [ of_provable (q_range step) (q_range expr) proof obs_map ]
+      of_provable (q_range step) (q_range expr) proof acc
   | Proof.T.Pick (_bounds, expr, proof) ->
-      [ of_provable (q_range step) (q_range expr) proof obs_map ]
+      of_provable (q_range step) (q_range expr) proof acc
   | Proof.T.Use (_, _) -> []
   | Proof.T.Have _ -> []
   | Proof.T.Take _ -> []
   | Proof.T.Witness _ -> [] (* TODO: Form a step for this. *)
   | Proof.T.Forget _ -> []
 
-and of_qed_step (qed_step : Tlapm_lib.Proof.T.qed_step) obs_map =
+and of_qed_step (qed_step : Tlapm_lib.Proof.T.qed_step) acc =
   match Tlapm_lib.Property.unwrap qed_step with
   | Tlapm_lib.Proof.T.Qed proof ->
       let open Tlapm_lib in
       let qed_loc = Property.query qed_step Proof.Parser.qed_loc_prop in
       let qed_range = TlapmRange.of_locus_opt qed_loc in
-      [ of_provable (q_range qed_step) qed_range proof obs_map ]
+      of_provable (q_range qed_step) qed_range proof acc
 
 and of_module (mule : Tlapm_lib.Module.T.mule) =
   match mule.core.stage with
   | Final fin ->
+      let file =
+        match Tlapm_lib.Util.query_locus mule with
+        | None -> failwith "of_module, has no file location"
+        | Some m_locus -> m_locus.file
+      in
       let obs = fin.final_obs in
       let obs_map =
         RangeMap.of_list
           (List.filter_map
              (fun (o : Tlapm_lib.Proof.T.obligation) ->
-               match q_range o.obl with
+               (* Keep only the obligations from the current file. *)
+               match Tlapm_lib.Util.query_locus o.obl with
                | None -> None
-               | Some o_range -> Some (o_range, o))
+               | Some o_locus -> (
+                   match TlapmRange.of_locus o_locus with
+                   | Some o_range ->
+                       if o_locus.file = file then Some (o_range, o) else None
+                   | None -> None))
              (Array.to_list obs))
       in
-      of_module_rec ~acc:[] mule obs_map
+      let acc = { file; obs_map } in
+      of_module_rec ~acc:[] mule acc
   | Parsed -> failwith "of_module, parsed"
   | _ -> failwith "of_module, non final"
 
@@ -219,7 +243,7 @@ and of_module_rec ?(acc = []) (mule : Tlapm_lib.Module.T.mule) obs_map =
           let ps =
             of_provable (q_range mod_unit) (q_range sq.active) prf obs_map
           in
-          ps :: acc
+          List.append ps acc
       | Submod sm -> of_module_rec ~acc sm obs_map
       | Mutate _ -> acc
       | Anoninst _ -> acc)
