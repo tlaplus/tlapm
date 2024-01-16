@@ -14,6 +14,7 @@ module Proof = Proof
 module Expr = Expr
 module Util = Util
 module Loc = Loc
+module Ctx = Ctx
 module Backend = Backend
 
 open Proof.T

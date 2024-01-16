@@ -223,31 +223,31 @@ and of_module (mule : Tlapm_lib.Module.T.mule) =
              (Array.to_list obs))
       in
       let acc = { file; obs_map } in
-      of_module_rec ~acc:[] mule acc
+      of_module_rec [] mule acc
   | Parsed -> failwith "of_module, parsed"
   | _ -> failwith "of_module, non final"
 
-and of_module_rec ?(acc = []) (mule : Tlapm_lib.Module.T.mule) obs_map =
+and of_module_rec pss (mule : Tlapm_lib.Module.T.mule) acc =
   let open Tlapm_lib in
   let mule_ = Property.unwrap mule in
   List.fold_left
-    (fun acc mod_unit ->
+    (fun pss mod_unit ->
       let open Tlapm_lib.Module.T in
       match Property.unwrap mod_unit with
-      | Constants _ -> acc
-      | Recursives _ -> acc
-      | Variables _ -> acc
-      | Definition _ -> acc
-      | Axiom _ -> acc
-      | Theorem (_name, sq, _naxs, prf, _prf_orig, _sum) ->
+      | Constants _ -> pss
+      | Recursives _ -> pss
+      | Variables _ -> pss
+      | Definition _ -> pss
+      | Axiom _ -> pss
+      | Theorem (_name, sq, _naxs, _prf, prf_orig, _sum) ->
           let ps =
-            of_provable (q_range mod_unit) (q_range sq.active) prf obs_map
+            of_provable (q_range mod_unit) (q_range sq.active) prf_orig acc
           in
-          List.append ps acc
-      | Submod sm -> of_module_rec ~acc sm obs_map
-      | Mutate _ -> acc
-      | Anoninst _ -> acc)
-    acc mule_.body
+          List.append pss ps
+      | Submod sm -> of_module_rec pss sm acc
+      | Mutate _ -> pss
+      | Anoninst _ -> pss)
+    pss mule_.body
 
 let rec with_tlapm_obligation (pss : t list) (oi : Obl_proofs.t) =
   (* Here we derive a state for a structured proof step as a worst state of its steps. *)
@@ -315,46 +315,146 @@ let find_proof_step (pss : t list) (input : TlapmRange.t) =
   in
   find_first pss
 
-let%test_unit "some" =
+let%test_module "experiment with visitors" =
+  (module struct
+    class p_visitor =
+      object (self : 'self)
+        inherit [string] Tlapm_lib.Proof.Visit.map as super
+
+        val ps : t =
+          {
+            sub = [];
+            loc = None;
+            state = Omitted;
+            hdr_loc = None;
+            obl_loc = None;
+            obl_proofs = None;
+            obl_parsed = Obl_parsed.make None;
+          }
+
+        (* The entry point. *)
+        method visit (prf : Tlapm_lib.Proof.T.proof) =
+          let _ = self#proof ("-", Tlapm_lib.Util.Deque.empty) prf in
+          ps
+
+        method! private proof (ident, cx) prf =
+          Format.printf "%sP_Visit.proof\n" ident;
+          super#proof (ident ^ " ", cx) prf
+
+        method! private step (ident, cx) st =
+          Format.printf "%sP_Visit.step\n" ident;
+          let (_, cx), st = super#step (ident ^ " ", cx) st in
+          ((ident, cx), st)
+      end
+
+    class m_visitor mod_file =
+      object (self : 'self)
+        inherit Tlapm_lib.Module.Visit.map as super
+        val mutable pss : t list = []
+
+        (* The entry point. *)
+        method visit (mule : Tlapm_lib.Module.T.mule) =
+          let cx = Tlapm_lib.Util.Deque.empty in
+          let _ = self#module_units cx mule.core.body in
+          pss
+
+        (* Only consider element form the current file. *)
+        method! private module_unit cx mu =
+          match Tlapm_lib.Util.query_locus mu with
+          | None -> (cx, mu)
+          | Some loc -> (
+              match loc.file = mod_file with
+              | true -> super#module_unit cx mu
+              | false -> (cx, mu))
+
+        (* Each theorem is a proof step, which might have other sub-steps. *)
+        method! private theorem cx name sq naxs prf prf_orig summ =
+          Format.printf "M_Visit.theorem s\n";
+          let p_visitor = new p_visitor in
+          let _ = p_visitor#visit prf_orig in
+          super#theorem cx name sq naxs prf prf_orig summ
+
+        (* Process modules recursively, collect steps into a single list. *)
+        method! private submod cx tla_module =
+          let _ = self#module_units cx tla_module.core.body in
+          super#submod cx tla_module
+      end
+
+    (* TODO: Incomplete: Check if
+       - Theorems are found.
+       - steps are determined.
+       - Submodules handled.
+       - Extended modules not included.
+    *)
+    let%test_unit "determine proof steps" =
+      let mod_file = "test_obl_expand.tla" in
+      let mod_text =
+        String.concat "\n"
+          [
+            "---- MODULE test_obl_expand ----";
+            "EXTENDS FiniteSetTheorems";
+            "THEOREM FALSE";
+            "    <1>1. TRUE";
+            "    <1>2. TRUE";
+            "    <1>3. TRUE";
+            "    <1>q. QED BY <1>1, <1>2, <1>3";
+            "THEOREM FALSE";
+            "    <1>q. QED";
+            "       <2>1. TRUE";
+            "       <2>q. QED BY <2>1";
+            "  ----- MODULE sub ------";
+            "  VARIABLE X";
+            "  LEMMA X = X";
+            "  =======================";
+            "====";
+          ]
+      in
+      Format.printf "\n\n";
+      let mule = Result.get_ok (Tlapm_lib.module_of_string mod_text mod_file) in
+      let m_visitor = new m_visitor mod_file in
+      let _pss = m_visitor#visit mule in
+      ()
+  end)
+
+let%test_unit "determine proof steps" =
   let mod_file = "test_obl_expand.tla" in
   let mod_text =
     String.concat "\n"
       [
         "---- MODULE test_obl_expand ----";
+        "EXTENDS FiniteSetTheorems";
         "THEOREM FALSE";
         "    <1>1. TRUE";
-        "    <1>q. QED BY <1>1";
+        "    <1>2. TRUE";
+        "    <1>3. TRUE";
+        "    <1>q. QED BY <1>1, <1>2, <1>3";
+        "THEOREM FALSE";
+        "    <1>q. QED";
+        "       <2>1. TRUE";
+        "       <2>q. QED BY <2>1";
+        "  ----- MODULE sub ------";
+        "  VARIABLE X";
+        "  LEMMA X = X";
+        "  =======================";
         "====";
       ]
   in
   let mule = Result.get_ok (Tlapm_lib.module_of_string mod_text mod_file) in
-  let rec print_rec prefix no ps =
-    let prefix = Format.sprintf "%s.%d" prefix no in
-    let obl_str =
-      match Obl_parsed.text_normalized ps.obl_parsed with
-      | None -> "none"
-      | Some o -> o
-    in
-    let obl_loc =
-      match ps.obl_loc with
-      | None -> "none"
-      | Some l -> TlapmRange.string_of_range l
-    in
-    let hdr_loc =
-      match ps.hdr_loc with
-      | None -> "none"
-      | Some l -> TlapmRange.string_of_range l
-    in
-    Format.printf "%s [hdr=%s, obl=%s] %s --> %s\n" prefix hdr_loc obl_loc
-      (Obl_parsed.type_str ps.obl_parsed)
-      obl_str;
-    List.iteri (print_rec prefix) ps.sub
-  in
   let pss = of_module mule in
-  List.iteri (print_rec "test") pss;
   match flatten pss with
-  | [ _theorem; _step11; step1q; _step1q_by ] -> (
-      match Obl_parsed.text_normalized step1q.obl_parsed with
+  | [
+   _th1;
+   _th1_11;
+   _th1_12;
+   _th1_13;
+   _th1_1q;
+   _th2;
+   _th2_1q;
+   _th2_1q_21;
+   _th2_1q_2q;
+   _th3;
+  ] -> (
+      match Obl_parsed.text_normalized _th2_1q_2q.obl_parsed with
       | Some "ASSUME TRUE \nPROVE  FALSE" -> ()
       | Some s -> failwith (Format.sprintf "Unexpected %s" s)
       | None -> failwith "Unexpected none")
