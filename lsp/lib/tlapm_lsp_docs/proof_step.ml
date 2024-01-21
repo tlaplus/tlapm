@@ -1,430 +1,349 @@
+(* TODO: Obligation index
+     - by FP is needed to move the results to the next version of the document.
+     - by Loc -- to update with the events from the prover.
+     - by the step tree -- to serialize that to the decorator entries.
+    So:
+     - let's use the Hash table for the FP.
+     - Use a lazy Hash table by Loc.
+     - Attach refs to the step tree.
+     - Use parent ref to propagate the derived status up?
+     - Add conversion to the decorators directly here (ingle tree traversal).
+*)
 open Util
 open Tlapm_lsp_prover
 open Tlapm_lsp_prover.ToolboxProtocol
+open Tlapm_lib.Backend
 
-type s = Proved | Failed | Omitted | Missing | Pending | Progress
+(** We categorize the proof steps just to make the presentation in the UI clearer. *)
+module Kind = struct
+  type t = Module | Struct | Leaf
 
-let s_of_tlapm_obl_state = function
-  | ToolboxProtocol.ToBeProved -> Progress
-  | ToolboxProtocol.BeingProved -> Pending
-  | ToolboxProtocol.Normalized -> Progress
-  | ToolboxProtocol.Proved -> Proved
-  | ToolboxProtocol.Failed -> Failed
-  | ToolboxProtocol.Interrupted -> Failed
-  | ToolboxProtocol.Trivial -> Proved
-  | ToolboxProtocol.Unknown _ -> Failed
-
-let message_of_s = function
-  | Failed -> "Proof failed."
-  | Missing -> "Proof missing."
-  | Omitted -> "Proof omitted."
-  | Progress -> "Proving in progress."
-  | Pending -> "Proof pending."
-  | Proved -> "Proof checked successfully."
-
-let order_of_s = function
-  | Failed -> 0
-  | Missing -> 1
-  | Omitted -> 2
-  | Progress -> 3
-  | Pending -> 4
-  | Proved -> 5
-
-let s_of_order = function
-  | 0 -> Failed
-  | 1 -> Missing
-  | 2 -> Omitted
-  | 3 -> Progress
-  | 4 -> Pending
-  | 5 -> Proved
-  | _ -> failwith "Impossible order"
-
-let min_of_s a b = s_of_order (min (order_of_s a) (order_of_s b))
+  let to_string = function
+    | Module -> "module"
+    | Struct -> "struct"
+    | Leaf -> "leaf"
+end
 
 type t = {
-  loc : TlapmRange.t option; (* Location if the entire step. *)
-  hdr_loc : TlapmRange.t option; (* The location of the proof sequent.*)
-  obl_loc : TlapmRange.t option; (* Where the obligation exists. *)
-  obl_parsed : Obl_parsed.t; (* Obligation from the parser, if exist. *)
-  obl_proofs : Obl_proofs.t option; (* The corresponding obligation info. *)
-  state : s;
-  sub : t list;
+  kind : Kind.t; (* Kind/Type of this proof step. *)
+  status_parsed : Proof_status.t option; (* Status derived at the parse time.*)
+  status_derived : Proof_status.t; (* Derived status. *)
+  step_loc : TlapmRange.t; (* Location if the entire step. *)
+  head_loc : TlapmRange.t; (* The location of the proof sequent. *)
+  obs : Obl.t RangeMap.t; (* Obligations associated with this step. *)
+  sub : t list; (* Sub-steps, if any. *)
 }
 
-let min_s_of_t_list sub =
-  match sub with
-  | [] -> None
-  | (first : t) :: _ ->
-      let state =
-        List.fold_left
-          (fun st (sub : t) -> min_of_s st sub.state)
-          first.state sub
+(* Derived status is always a minimum of the parsed, the obligations and the sub-steps. *)
+let derived_status parsed obs sub =
+  let parsed = Option.value ~default:Proof_status.top parsed in
+  let ps_min = Proof_status.min in
+  let acc =
+    RangeMap.fold (fun _ obl acc -> ps_min acc (Obl.status obl)) obs parsed
+  in
+  List.fold_left (fun acc sub -> ps_min acc sub.status_derived) acc sub
+
+(* Takes step parameters and a set of remaining unassigned obligations,
+   constructs the proof step and returns obligations that left unassigned. *)
+let make ~kind ?status_parsed ~step_loc ?head_loc ~sub obs_map =
+  let intersects_with_step obl_loc _ = TlapmRange.intersect obl_loc step_loc in
+  let obs, obs_map = RangeMap.partition intersects_with_step obs_map in
+  let head_loc =
+    (* Take the beginning of the first line, if header location is unknown. *)
+    match head_loc with
+    | Some head_loc -> head_loc
+    | None -> TlapmRange.(of_points (from step_loc) (from step_loc))
+  in
+  let status_derived = derived_status status_parsed obs sub in
+  let ps =
+    { kind; status_parsed; status_derived; step_loc; head_loc; obs; sub }
+  in
+  (ps, obs_map)
+
+let as_lsp_tlaps_proof_state_marker ps =
+  let range = TlapmRange.as_lsp_range ps.head_loc in
+  let state = Proof_status.to_string ps.status_derived in
+  let hover = Proof_status.to_message ps.status_derived in
+  Tlapm_lsp_structs.TlapsProofStateMarker.make ~range ~state ~hover
+
+let as_lsp_tlaps_proof_step_details uri ps =
+  let kind = Kind.to_string ps.kind in
+  let location =
+    LspT.Location.create ~uri ~range:(TlapmRange.as_lsp_range ps.step_loc)
+  in
+  let obligations =
+    List.map
+      (fun (_, o) -> Obl.as_lsp_tlaps_proof_obligation_state o)
+      (RangeMap.to_list ps.obs)
+  in
+  Tlapm_lsp_structs.TlapsProofStepDetails.make ~kind ~location ~obligations
+
+(* Recursively collect all the fingerprinted obligations.
+   This is used to transfer proof state from the
+   previous to the new document version. *)
+let obl_by_fp ps =
+  let tbl = Hashtbl.create 1024 in
+  match ps with
+  | None -> tbl
+  | Some ps ->
+      let rec traverse ps =
+        let add_by_fp (o : Obl.t) =
+          match Obl.fingerprint o with
+          | None -> ()
+          | Some fp -> Hashtbl.add tbl fp o
+        in
+        RangeMap.iter (fun _ o -> add_by_fp o) ps.obs;
+        List.iter traverse ps.sub
       in
-      Some state
+      traverse ps;
+      tbl
 
-let yojson_of_s = function
-  | Proved -> `String "proved"
-  | Failed -> `String "failed"
-  | Omitted -> `String "omitted"
-  | Missing -> `String "missing"
-  | Pending -> `String "pending"
-  | Progress -> `String "progress"
+(** Just make a flat list of all the proof steps. *)
+let flatten ps =
+  let rec traverse ps = ps :: List.flatten (List.map traverse ps.sub) in
+  match ps with None -> [] | Some ps -> traverse ps
 
-let yojson_of_t (t : t) =
-  match t.hdr_loc with
+(** Iterate over the proof steps. *)
+let fold f acc ps =
+  let rec fold_rec acc ps =
+    let acc = f acc ps in
+    List.fold_left fold_rec acc ps.sub
+  in
+  match ps with None -> acc | Some ps -> fold_rec acc ps
+
+(** Iterate over obligations of a particular proof step. *)
+let fold_obs f acc ps = RangeMap.fold (fun _ obl acc -> f acc obl) ps.obs acc
+
+(* TODO: Make it more local? *)
+let opt_range prop = TlapmRange.of_locus_opt (Tlapm_lib.Util.query_locus prop)
+let get_range prop = Option.get (opt_range prop)
+
+module Acc = struct
+  type t = { file : string; obs_map : Obl.t RangeMap.t }
+
+  let some (x, acc) = (Some x, acc)
+  let for_file file acc = file = acc.file
+end
+
+let if_in_file wrapped file fn =
+  match Tlapm_lib.Util.query_locus wrapped with
+  | Some loc when loc.file = file -> fn (TlapmRange.of_locus_must loc)
+  | Some _ -> None
   | None -> None
-  | Some hdr_loc ->
-      let obj =
-        `Assoc
-          [
-            ("range", LspT.Range.yojson_of_t (TlapmRange.as_lsp_range hdr_loc));
-            ("state", yojson_of_s t.state);
-            ("hover", `String (message_of_s t.state));
-          ]
-      in
-      Some obj
 
-let tlaps_proof_obligation_state_of_t uri ps =
-  let open Tlapm_lsp_structs in
-  match ps.loc with
-  | None -> None
-  | Some ps_loc ->
-      let some_str s = match s with None -> "?" | Some s -> s in
-      let location =
-        Location.make ~uri ~range:(TlapmRange.as_lsp_range ps_loc)
-      in
-      let obligation = some_str (Obl_parsed.text_normalized ps.obl_parsed) in
-      let results =
-        match ps.obl_proofs with
-        | None -> []
-        | Some oi ->
-            List.map
-              (fun (_, o) ->
-                let prover = some_str o.prover in
-                let status = message_of_s (s_of_tlapm_obl_state o.status) in
-                let meth = some_str o.meth in
-                let reason = o.reason in
-                let obligation = o.obl in
-                TlapsProofObligationResult.make ~prover ~meth ~status ~reason
-                  ~obligation)
-              (StrMap.to_list oi.by_prover)
-      in
-      Some (TlapsProofObligationState.make ~location ~obligation ~results)
+let if_in_file_acc wrapped acc fn =
+  match Tlapm_lib.Util.query_locus wrapped with
+  | Some loc when Acc.for_file loc.file acc ->
+      fn (TlapmRange.of_locus_must loc) acc
+  | Some _ -> (None, acc)
+  | None -> (None, acc)
 
-let rec flatten pss =
-  List.flatten (List.map (fun ps -> ps :: flatten ps.sub) pss)
-
-let q_range prop = TlapmRange.of_locus_opt (Tlapm_lib.Util.query_locus prop)
-
-type of_module_t = {
-  file : string;
-  obs_map : Tlapm_lib.Proof.T.obligation RangeMap.t;
-}
-
-let rec of_provable stm_range seq_range (proof : Tlapm_lib.Proof.T.proof) acc =
-  (* Here we have to check the file of the proof. After the document was parsed and
-     normalized, proofs from other documents are included here as well. *)
-  match Tlapm_lib.Util.query_locus proof with
-  | Some proof_loc when proof_loc.file = acc.file ->
-      let sub, min_st, obl_loc = of_proof proof acc in
-      let hdr_loc =
-        match (stm_range, seq_range) with
-        | Some stm_r, Some seq_r ->
-            Some
-              (TlapmRange.of_points (TlapmRange.from stm_r)
-                 (TlapmRange.till seq_r))
-        | Some stm_r, None -> Some stm_r
-        | None, Some seq_r -> Some seq_r
-        | None, None -> None
-      in
-      let obl_parsed =
-        match obl_loc with
-        | None -> Obl_parsed.make None
-        | Some obl_loc ->
-            Obl_parsed.make (RangeMap.find_opt obl_loc acc.obs_map)
-      in
-      [
-        {
-          loc = stm_range;
-          hdr_loc;
-          obl_loc;
-          obl_parsed;
-          obl_proofs = None;
-          state = min_st;
-          sub;
-        };
-      ]
-  | _ -> []
-
-and of_proof (proof : Tlapm_lib.Proof.T.proof) acc =
+let rec of_proof step_loc sq_range (proof : Tlapm_lib.Proof.T.proof) acc :
+    t * Acc.t =
   let open Tlapm_lib in
-  let obl_loc = q_range proof in
-  match Property.unwrap proof with
-  | Proof.T.Obvious -> ([], Pending, obl_loc)
-  | Proof.T.Omitted _ -> ([], Omitted, obl_loc)
-  | Proof.T.By (_, _) -> ([], Pending, obl_loc)
-  | Proof.T.Steps (steps, qed_step) -> (
-      let sub = List.map (fun s -> of_step s acc) steps in
-      let qed = of_qed_step qed_step acc in
-      let sub = List.flatten (sub @ [ qed ]) in
-      match min_s_of_t_list sub with
-      | None -> (sub, Failed, obl_loc)
-      | Some min_s -> (sub, min_s, obl_loc))
-  | Proof.T.Error _ -> ([], Failed, obl_loc)
+  let kind, sub, status_parsed, acc =
+    match Property.unwrap proof with
+    | Proof.T.Obvious -> (Kind.Leaf, [], None, acc)
+    | Proof.T.Omitted _ -> (Kind.Leaf, [], Some Proof_status.Omitted, acc)
+    | Proof.T.By (_, _) -> (Kind.Leaf, [], None, acc)
+    | Proof.T.Steps (steps, qed_step) ->
+        let acc, sub =
+          List.fold_left_map
+            (fun acc s ->
+              let s, acc = of_step s acc in
+              (acc, s))
+            acc steps
+        in
+        let sub = List.filter_map Fun.id sub in
+        let qed, acc = of_qed_step qed_step acc in
+        let sub = sub @ [ qed ] in
+        (Kind.Struct, sub, None, acc)
+    | Proof.T.Error _ -> (Kind.Leaf, [], Some Proof_status.Failed, acc)
+  in
+  let head_loc =
+    match sq_range with
+    | Some sq_range ->
+        Some TlapmRange.(of_points (from step_loc) (till sq_range))
+    | None -> None
+  in
+  let st, obs_map =
+    make ~kind ?status_parsed ~step_loc ?head_loc ~sub acc.obs_map
+  in
+  (st, { acc with obs_map })
 
-and of_step (step : Tlapm_lib.Proof.T.step) acc =
+and of_step (step : Tlapm_lib.Proof.T.step) acc : t option * Acc.t =
   let open Tlapm_lib in
   match Property.unwrap step with
-  | Proof.T.Hide _ -> []
-  | Proof.T.Define _ -> []
+  | Proof.T.Hide _ -> (None, acc)
+  | Proof.T.Define _ -> (None, acc)
   | Proof.T.Assert (sequent, proof) ->
-      of_provable (q_range step) (q_range sequent.active) proof acc
+      Acc.some (of_proof (get_range step) (opt_range sequent.active) proof acc)
   | Proof.T.Suffices (sequent, proof) ->
-      of_provable (q_range step) (q_range sequent.active) proof acc
+      Acc.some (of_proof (get_range step) (opt_range sequent.active) proof acc)
   | Proof.T.Pcase (expr, proof) ->
-      of_provable (q_range step) (q_range expr) proof acc
+      Acc.some (of_proof (get_range step) (opt_range expr) proof acc)
   | Proof.T.Pick (_bounds, expr, proof) ->
-      of_provable (q_range step) (q_range expr) proof acc
-  | Proof.T.Use (_, _) -> []
-  | Proof.T.Have _ -> []
-  | Proof.T.Take _ -> []
-  | Proof.T.Witness _ -> [] (* TODO: Form a step for this. *)
-  | Proof.T.Forget _ -> []
+      Acc.some (of_proof (get_range step) (opt_range expr) proof acc)
+  | Proof.T.Use (_, _) -> (None, acc)
+  | Proof.T.Have _ -> (None, acc)
+  | Proof.T.Take _ -> (None, acc)
+  | Proof.T.Witness _ -> (None, acc) (* TODO: Form a step for this. *)
+  | Proof.T.Forget _ -> (None, acc)
 
-and of_qed_step (qed_step : Tlapm_lib.Proof.T.qed_step) acc =
+and of_qed_step (qed_step : Tlapm_lib.Proof.T.qed_step) acc : t * Acc.t =
   match Tlapm_lib.Property.unwrap qed_step with
   | Tlapm_lib.Proof.T.Qed proof ->
       let open Tlapm_lib in
       let qed_loc = Property.query qed_step Proof.Parser.qed_loc_prop in
       let qed_range = TlapmRange.of_locus_opt qed_loc in
-      of_provable (q_range qed_step) qed_range proof acc
+      of_proof (get_range qed_step) qed_range proof acc
 
-and of_module (mule : Tlapm_lib.Module.T.mule) =
+(* This is internal function for traversing the modules and module units recursively. *)
+let rec of_submod (mule : Tlapm_lib.Module.T.mule) (acc : Acc.t) :
+    t option * Acc.t =
+  let open Tlapm_lib in
+  if_in_file_acc mule acc @@ fun step_loc acc ->
+  let mule = Property.unwrap mule in
+  let mu_step mu (sub, acc) =
+    let st, acc = of_mod_unit mu acc in
+    let sub = match st with None -> sub | Some st -> st :: sub in
+    (sub, acc)
+  in
+  let sub, acc = List.fold_right mu_step mule.body ([], acc) in
+  match sub with
+  | [] -> (None, acc)
+  | _ ->
+      let st, obs_map = make ~kind:Kind.Module ~step_loc ~sub acc.obs_map in
+      (Some st, { acc with obs_map })
+
+and of_mod_unit (mod_unit : Tlapm_lib.Module.T.modunit) acc : t option * Acc.t =
+  let open Tlapm_lib in
+  let open Tlapm_lib.Module.T in
+  if_in_file_acc mod_unit acc @@ fun mod_unit_loc acc ->
+  match Property.unwrap mod_unit with
+  | Constants _ -> (None, acc)
+  | Recursives _ -> (None, acc)
+  | Variables _ -> (None, acc)
+  | Definition _ -> (None, acc)
+  | Axiom _ -> (None, acc)
+  | Theorem (_name, sq, _naxs, _prf, prf_orig, _sum) ->
+      Acc.some (of_proof mod_unit_loc (opt_range sq.active) prf_orig acc)
+  | Submod sm -> of_submod sm acc
+  | Mutate _ -> (None, acc)
+  | Anoninst _ -> (None, acc)
+
+(* This is the entry point for creating proof steps from a module.
+   It will return None, if the module has no provable statements.
+   Otherwise it will return a proof step representing all the module
+   with all the sub-steps for the theorems, and so on. *)
+let of_module (mule : Tlapm_lib.Module.T.mule) prev : t option =
   match mule.core.stage with
   | Final fin ->
+      let prev_obs = obl_by_fp prev in
       let file =
         match Tlapm_lib.Util.query_locus mule with
         | None -> failwith "of_module, has no file location"
         | Some m_locus -> m_locus.file
       in
-      let obs = fin.final_obs in
-      let obs_map =
-        RangeMap.of_list
-          (List.filter_map
-             (fun (o : Tlapm_lib.Proof.T.obligation) ->
-               (* Keep only the obligations from the current file. *)
-               match Tlapm_lib.Util.query_locus o.obl with
-               | None -> None
-               | Some o_locus -> (
-                   match TlapmRange.of_locus o_locus with
-                   | Some o_range ->
-                       if o_locus.file = file then Some (o_range, o) else None
-                   | None -> None))
-             (Array.to_list obs))
+      let mule_obl (o : Tlapm_lib.Proof.T.obligation) =
+        (* Keep only the obligations from the current file. *)
+        if_in_file o.obl file @@ fun o_range ->
+        (* We will use the fingerprints to retain the
+           proof status between the modifications. *)
+        let o =
+          match o.fingerprint with
+          | None -> Fingerprints.write_fingerprint o
+          | Some _ -> o
+        in
+        let o = Obl.of_parsed_obligation (Some o) Proof_status.Pending in
+        let o = Obl.with_proof_state_from o (Hashtbl.find_opt prev_obs) in
+        Some (o_range, o)
       in
-      let acc = { file; obs_map } in
-      of_module_rec [] mule acc
+      let obs = fin.final_obs in
+      let obs = List.filter_map mule_obl (Array.to_list obs) in
+      let obs_map = RangeMap.of_list obs in
+      let acc = Acc.{ file; obs_map } in
+      let step_opt, acc = of_submod mule acc in
+      assert (RangeMap.is_empty acc.obs_map);
+      step_opt
   | Parsed -> failwith "of_module, parsed"
   | _ -> failwith "of_module, non final"
 
-and of_module_rec pss (mule : Tlapm_lib.Module.T.mule) acc =
-  let open Tlapm_lib in
-  let mule_ = Property.unwrap mule in
-  List.fold_left
-    (fun pss mod_unit ->
-      let open Tlapm_lib.Module.T in
-      match Property.unwrap mod_unit with
-      | Constants _ -> pss
-      | Recursives _ -> pss
-      | Variables _ -> pss
-      | Definition _ -> pss
-      | Axiom _ -> pss
-      | Theorem (_name, sq, _naxs, _prf, prf_orig, _sum) ->
-          let ps =
-            of_provable (q_range mod_unit) (q_range sq.active) prf_orig acc
-          in
-          List.append pss ps
-      | Submod sm -> of_module_rec pss sm acc
-      | Mutate _ -> pss
-      | Anoninst _ -> pss)
-    pss mule_.body
-
-let rec with_tlapm_obligation (pss : t list) (oi : Obl_proofs.t) =
-  (* Here we derive a state for a structured proof step as a worst state of its steps. *)
-  let with_opt_min_s ps opt_sub_min_s =
-    match opt_sub_min_s with
-    | None -> ps
-    | Some sub_min_s -> { ps with state = sub_min_s }
-  in
-  let upd ps =
-    let sub = with_tlapm_obligation ps.sub oi in
-    let sub_min_s = min_s_of_t_list sub in
-    let ps = { ps with sub } in
-    match ps.obl_loc with
-    | None -> with_opt_min_s ps sub_min_s
-    | Some ps_obl_loc ->
-        if TlapmRange.from ps_obl_loc = TlapmRange.from (Obl_proofs.loc oi) then
-          let state = s_of_tlapm_obl_state (Obl_proofs.latest oi).status in
-          with_opt_min_s { ps with state; obl_proofs = Some oi } sub_min_s
-        else with_opt_min_s ps sub_min_s
-  in
-  List.map upd pss
-
-let with_tlapm_obligations (pss : t list) (ois : Obl_proofs.t OblMap.t) =
-  OblMap.fold (fun _ ob pss -> with_tlapm_obligation pss ob) ois pss
-
-let locate_proof_range (pss : t list) (input : TlapmRange.t) : TlapmRange.t =
-  let rec collect pss =
-    let for_each_ps_with_loc ps ps_loc =
-      match TlapmRange.lines_intersect ps_loc input with
-      | true -> (
-          match collect ps.sub with
-          | [] -> Some [ ps_loc ]
-          | first :: _ as sub_locs -> (
-              match TlapmRange.(line_from input < line_from first) with
-              | true -> Some [ ps_loc ]
-              | false -> Some sub_locs))
-      | false -> None
-    in
-    let for_each_ps ps =
-      match ps.loc with
-      | None -> None
-      | Some ps_loc -> for_each_ps_with_loc ps ps_loc
-    in
-    List.flatten (List.filter_map for_each_ps pss)
-  in
-  let pss_locs = collect pss in
-  TlapmRange.lines_covered_or_all input pss_locs
-
-let find_proof_step (pss : t list) (input : TlapmRange.t) =
-  let rec find_first pss =
-    let for_each_ps_with_loc ps ps_loc =
-      match TlapmRange.lines_intersect ps_loc input with
-      | true -> (
-          match find_first ps.sub with
-          | None -> Some ps
-          | Some first -> Some first)
-      | false -> None
-    in
-    let for_each_ps ps =
-      match ps.loc with
-      | None -> None
-      | Some ps_loc -> for_each_ps_with_loc ps ps_loc
-    in
-    List.find_map for_each_ps pss
-  in
-  find_first pss
-
-let%test_module "experiment with visitors" =
-  (module struct
-    class p_visitor =
-      object (self : 'self)
-        inherit [string] Tlapm_lib.Proof.Visit.map as super
-
-        val ps : t =
-          {
-            sub = [];
-            loc = None;
-            state = Omitted;
-            hdr_loc = None;
-            obl_loc = None;
-            obl_proofs = None;
-            obl_parsed = Obl_parsed.make None;
-          }
-
-        (* The entry point. *)
-        method visit (prf : Tlapm_lib.Proof.T.proof) =
-          let _ = self#proof ("-", Tlapm_lib.Util.Deque.empty) prf in
-          ps
-
-        method! private proof (ident, cx) prf =
-          Format.printf "%sP_Visit.proof\n" ident;
-          super#proof (ident ^ " ", cx) prf
-
-        method! private step (ident, cx) st =
-          Format.printf "%sP_Visit.step\n" ident;
-          let (_, cx), st = super#step (ident ^ " ", cx) st in
-          ((ident, cx), st)
-      end
-
-    class m_visitor mod_file =
-      object (self : 'self)
-        inherit Tlapm_lib.Module.Visit.map as super
-        val mutable pss : t list = []
-
-        (* The entry point. *)
-        method visit (mule : Tlapm_lib.Module.T.mule) =
-          let cx = Tlapm_lib.Util.Deque.empty in
-          let _ = self#module_units cx mule.core.body in
-          pss
-
-        (* Only consider element form the current file. *)
-        method! private module_unit cx mu =
-          match Tlapm_lib.Util.query_locus mu with
-          | None -> (cx, mu)
-          | Some loc -> (
-              match loc.file = mod_file with
-              | true -> super#module_unit cx mu
-              | false -> (cx, mu))
-
-        (* Each theorem is a proof step, which might have other sub-steps. *)
-        method! private theorem cx name sq naxs prf prf_orig summ =
-          Format.printf "M_Visit.theorem s\n";
-          let p_visitor = new p_visitor in
-          let _ = p_visitor#visit prf_orig in
-          super#theorem cx name sq naxs prf prf_orig summ
-
-        (* Process modules recursively, collect steps into a single list. *)
-        method! private submod cx tla_module =
-          let _ = self#module_units cx tla_module.core.body in
-          super#submod cx tla_module
-      end
-
-    (* TODO: Incomplete: Check if
-       - Theorems are found.
-       - steps are determined.
-       - Submodules handled.
-       - Extended modules not included.
-    *)
-    let%test_unit "determine proof steps" =
-      let mod_file = "test_obl_expand.tla" in
-      let mod_text =
-        String.concat "\n"
-          [
-            "---- MODULE test_obl_expand ----";
-            "EXTENDS FiniteSetTheorems";
-            "THEOREM FALSE";
-            "    <1>1. TRUE";
-            "    <1>2. TRUE";
-            "    <1>3. TRUE";
-            "    <1>q. QED BY <1>1, <1>2, <1>3";
-            "THEOREM FALSE";
-            "    <1>q. QED";
-            "       <2>1. TRUE";
-            "       <2>q. QED BY <2>1";
-            "  ----- MODULE sub ------";
-            "  VARIABLE X";
-            "  LEMMA X = X";
-            "  =======================";
-            "====";
-          ]
+let with_prover_result (ps : t option) p_ref (pr : tlapm_obligation) =
+  let rec traverse (ps : t) (pr : tlapm_obligation) =
+    if TlapmRange.intersect ps.step_loc pr.loc then
+      let apply_to_sub acc sub_ps =
+        match acc with
+        | true -> (* Already found previously. *) (acc, sub_ps)
+        | false -> (
+            (* Not found yet, try the depth-first search. *)
+            match traverse sub_ps pr with
+            | None -> (acc, sub_ps)
+            | Some sub_ps -> (true, sub_ps))
       in
-      Format.printf "\n\n";
-      let mule = Result.get_ok (Tlapm_lib.module_of_string mod_text mod_file) in
-      let m_visitor = new m_visitor mod_file in
-      let _pss = m_visitor#visit mule in
-      ()
-  end)
+      let found, sub = List.fold_left_map apply_to_sub false ps.sub in
+      let ps =
+        match found with
+        | true -> { ps with sub }
+        | false ->
+            let upd o = Some (Obl.with_prover_obligation p_ref pr o) in
+            let obs = RangeMap.update pr.loc upd ps.obs in
+            { ps with obs }
+      in
+      let status_derived = derived_status ps.status_parsed ps.obs ps.sub in
+      Some { ps with status_derived }
+    else None
+  in
+  match ps with
+  | None -> None
+  | Some ps -> (
+      match traverse ps pr with None -> Some ps | Some ps -> Some ps)
+
+(* Find the deepest proof step that intersects line-wise with the specified position. *)
+let locate_proof_step (ps : t option) (position : TlapmRange.Position.t) :
+    t option =
+  let rec traverse ps =
+    if TlapmRange.line_covered ps.step_loc position then
+      match List.find_map traverse ps.sub with
+      | None -> Some ps
+      | Some sub_ps -> Some sub_ps
+    else None
+  in
+  match ps with None -> None | Some ps -> traverse ps
+
+let locate_proof_range (ps : t option) (range : TlapmRange.t) : TlapmRange.t =
+  let ps_from = locate_proof_step ps (TlapmRange.from range) in
+  let ps_till = locate_proof_step ps (TlapmRange.till range) in
+  match (ps_from, ps_till) with
+  | None, None -> TlapmRange.of_all
+  | Some ps_from, None -> ps_from.step_loc
+  | None, Some ps_till -> ps_till.step_loc
+  | Some ps_from, Some ps_till ->
+      TlapmRange.join ps_from.step_loc ps_till.step_loc
 
 let%test_unit "determine proof steps" =
   let mod_file = "test_obl_expand.tla" in
   let mod_text =
+    (*
+XXXXXXXX[0]: |obs|=4, loc=1:1:16:4
+XXXXXXXX[1]: |obs|=0, loc=3:1:7:16
+XXXXXXXX[2]: |obs|=0, loc=4:5:4:14
+XXXXXXXX[3]: |obs|=0, loc=5:5:5:14
+XXXXXXXX[4]: |obs|=0, loc=6:5:6:14
+XXXXXXXX[5]: |obs|=1, loc=7:5:7:16
+XXXXXXXX[6]: |obs|=0, loc=8:1:11:19
+XXXXXXXX[7]: |obs|=0, loc=9:5:11:19
+XXXXXXXX[8]: |obs|=0, loc=10:8:10:17
+XXXXXXXX[9]: |obs|=1, loc=11:8:11:19
+XXXXXXXX[10]: |obs|=0, loc=12:3:15:25
+XXXXXXXX[11]: |obs|=0, loc=14:3:14:13
+*)
     String.concat "\n"
       [
         "---- MODULE test_obl_expand ----";
         "EXTENDS FiniteSetTheorems";
         "THEOREM FALSE";
-        "    <1>1. TRUE";
+        "    <1>1. TRUE OBVIOUS";
         "    <1>2. TRUE";
         "    <1>3. TRUE";
         "    <1>q. QED BY <1>1, <1>2, <1>3";
@@ -440,21 +359,33 @@ let%test_unit "determine proof steps" =
       ]
   in
   let mule = Result.get_ok (Tlapm_lib.module_of_string mod_text mod_file) in
-  let pss = of_module mule in
-  match flatten pss with
+  let ps = of_module mule None in
+  match flatten ps with
   | [
-   _th1;
-   _th1_11;
-   _th1_12;
-   _th1_13;
-   _th1_1q;
-   _th2;
-   _th2_1q;
-   _th2_1q_21;
-   _th2_1q_2q;
-   _th3;
-  ] -> (
-      match Obl_parsed.text_normalized _th2_1q_2q.obl_parsed with
+      _m_test_obl_expand;
+      _th1;
+      _th1_11;
+      _th1_12;
+      _th1_13;
+      _th1_1q;
+      _th2;
+      _th2_1q;
+      _th2_1q_21;
+      _th2_1q_2q;
+      _m_sub;
+      _th3;
+    ] as all -> (
+      (* TODO: Cleanup logs. *)
+      (* TODO: In the QED step, the step location is only till the "BY", excludes all the arguments in the proof. *)
+      List.iteri
+        (fun i ps ->
+          Format.printf "XXXXXXXX[%d]: |obs|=%d, loc=%s\n" i
+            (RangeMap.cardinal ps.obs)
+            (TlapmRange.string_of_range ps.step_loc))
+        all;
+      assert (RangeMap.cardinal _th2_1q_2q.obs = 1);
+      let _, _th2_1q_2q_obl = RangeMap.choose _th2_1q_2q.obs in
+      match Obl.text_normalized _th2_1q_2q_obl with
       | Some "ASSUME TRUE \nPROVE  FALSE" -> ()
       | Some s -> failwith (Format.sprintf "Unexpected %s" s)
       | None -> failwith "Unexpected none")

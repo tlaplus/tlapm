@@ -9,15 +9,19 @@ open Tlapm_lsp_prover
 
 type t
 
-val of_module : Tlapm_lib.Module.T.mule -> t list
-val with_tlapm_obligation : t list -> Obl_proofs.t -> t list
-val with_tlapm_obligations : t list -> Obl_proofs.t OblMap.t -> t list
-val locate_proof_range : t list -> TlapmRange.t -> TlapmRange.t
-val find_proof_step : t list -> TlapmRange.t -> t option
-val flatten : t list -> t list
-val yojson_of_t : t -> Yojson.Safe.t option
+val of_module : Tlapm_lib.Module.T.mule -> t option -> t option
 
-val tlaps_proof_obligation_state_of_t :
-  LspT.DocumentUri.t ->
-  t ->
-  Tlapm_lsp_structs.TlapsProofObligationState.t option
+val with_prover_result :
+  t option -> int -> ToolboxProtocol.tlapm_obligation -> t option
+
+val locate_proof_step : t option -> TlapmRange.Position.t -> t option
+val locate_proof_range : t option -> TlapmRange.t -> TlapmRange.t
+val flatten : t option -> t list
+val fold : ('a -> t -> 'a) -> 'a -> t option -> 'a
+val fold_obs : ('a -> Obl.t -> 'a) -> 'a -> t -> 'a
+
+val as_lsp_tlaps_proof_state_marker :
+  t -> Tlapm_lsp_structs.TlapsProofStateMarker.t
+
+val as_lsp_tlaps_proof_step_details :
+  LspT.DocumentUri.t -> t -> Tlapm_lsp_structs.TlapsProofStepDetails.t

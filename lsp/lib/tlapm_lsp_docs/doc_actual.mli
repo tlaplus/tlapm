@@ -6,15 +6,15 @@ open Tlapm_lsp_prover.ToolboxProtocol
 
 type t
 
-val make : Doc_vsn.t -> t
+val make : LspT.DocumentUri.t -> Doc_vsn.t -> t option -> t
 val vsn : t -> int
 val text : t -> string
-val merge_into : t -> Doc_vsn.t -> t
-val try_parse : t -> LspT.DocumentUri.t -> t
 val proof_res : t -> Doc_proof_res.t
-val prepare_proof : t -> LspT.DocumentUri.t -> int -> t option
 val locate_proof_range : t -> TlapmRange.t -> TlapmRange.t
-val get_obligation_state : t -> TlapmRange.t -> Proof_step.t option
+val get_obligation_state : t -> TlapmRange.Position.t -> Proof_step.t option
+
+(* TODO: Rename all the following: prover_obl ... *)
+val prepare_proof : t -> int -> t option
 val add_obl : t -> int -> tlapm_obligation -> t option
 val add_notif : t -> int -> tlapm_notif -> t option
 val terminated : t -> int -> t option

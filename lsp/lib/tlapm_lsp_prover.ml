@@ -20,6 +20,7 @@ module TlapmRange = struct
     val leq : t -> t -> bool
     val min : t -> t -> t
     val max : t -> t -> t
+    val line : t -> int
   end = struct
     type t = P of int * int
 
@@ -45,6 +46,7 @@ module TlapmRange = struct
 
     let min a b = if less a b then a else b
     let max a b = if less a b then b else a
+    let line (P (l, _)) = l
   end
 
   type t = R of (int * int) * (int * int)
@@ -89,8 +91,11 @@ module TlapmRange = struct
   let of_locus_opt (locus : Tlapm_lib.Loc.locus option) =
     match locus with None -> None | Some locus -> of_locus locus
 
+  let of_locus_must (locus : Tlapm_lib.Loc.locus) = Option.get (of_locus locus)
   let of_lines fl tl = R ((fl, 1), (tl, 1))
   let of_points f t = R (Position.as_pair f, Position.as_pair t)
+
+  let join (R (f, _)) (R (_, t)) = R (f, t)
 
   let string_of_range (R ((fl, fc), (tl, tc))) : string =
     Format.sprintf "%d:%d:%d:%d" fl fc tl tc
@@ -106,17 +111,22 @@ module TlapmRange = struct
   (** [before p r] means range [r] is before point [p]. *)
   let before p r = Position.less (till r) p
 
-  (* [intersect a b] is true, if ranges [a] and [b] overlaps. *)
+  (** [intersect a b] is true, if ranges [a] and [b] overlaps. *)
   let intersect a b =
     Position.leq (from a) (till b) && Position.leq (from b) (till a)
 
-  (* [lines_intersect a b] is true is line ranges for [a] and [b] intersect. *)
+  (** [lines_intersect a b] is true is line ranges for [a] and [b] intersect. *)
   let lines_intersect a b =
     let lfa = line_from a in
     let lta = line_till a in
     let lfb = line_from b in
     let ltb = line_till b in
     lfa <= ltb && lfb <= lta
+
+  (** [line_covered r p] is true, if the line of position [p] intersects with the range [r] lines. *)
+  let line_covered r p =
+    let l = Position.line p in
+    line_from r <= l && l <= line_till r
 
   (* [lines_covered a b] is true if lines of [a] are fully covered by [b], i.e. [a] is inside of [b]. *)
   let lines_covered a b =
@@ -126,6 +136,7 @@ module TlapmRange = struct
     let ltb = line_till b in
     lfb <= lfa && lta <= ltb
 
+  (* TODO: Is it used? *)
   let lines_covered_or_all q rs =
     match List.filter (lines_intersect q) rs with
     | [] -> of_all
@@ -137,6 +148,7 @@ module TlapmRange = struct
             of_points from till)
           q matching
 
+  (* TODO: Not used anymore? *)
   let first_diff_pos a b =
     let len = min (String.length a) (String.length b) in
     let rec count i l c =

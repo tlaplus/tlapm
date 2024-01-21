@@ -1,13 +1,16 @@
 open Util
 
 type t = {
+  uri : LspT.DocumentUri.t;
   pending : Doc_vsn.t list;
-      (* All the received but not yet processed versions. *)
-  actual : Doc_actual.t; (* Already processed version. *)
-  last_p_ref : int; (* Counter for the proof runs. *)
+      (** All the received but not yet processed versions. *)
+  actual : Doc_actual.t;  (** Already processed version. *)
+  last_p_ref : int;
+      (** Counter for the proof runs. TODO: Move it to the session. *)
 }
 
-let make tv = { pending = []; actual = Doc_actual.make tv; last_p_ref = 0 }
+let make uri tv =
+  { uri; pending = []; actual = Doc_actual.make uri tv None; last_p_ref = 0 }
 
 let add doc tv =
   let drop_till = Doc_vsn.version tv - keep_vsn_count in
@@ -34,7 +37,7 @@ let set_actual_vsn doc vsn =
     match selected with
     | None -> None
     | Some selected ->
-        let actual = Doc_actual.merge_into doc.actual selected in
+        let actual = Doc_actual.make doc.uri selected (Some doc.actual) in
         Some { doc with actual; pending }
 
 let with_actual doc f =

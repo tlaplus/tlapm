@@ -1,5 +1,3 @@
-let diagnostic_source = "TLAPM"
-
 module Docs = Tlapm_lsp_docs
 module Prover = Tlapm_lsp_prover
 module LspT = Lsp.Types
@@ -26,7 +24,7 @@ type t = {
   docs : Docs.t;
   prov : Prover.t;  (** Prover that is currently running. *)
   delayed : DocUriSet.t;  (** Docs which have delayed proof info updates. *)
-  current_obl : Tlapm_lsp_structs.Location.t option;
+  current_obl : LspT.Location.t option;
       (** The obligation that is currently selected. We will send state updates for it. *)
 }
 
@@ -79,56 +77,8 @@ let progress_proof_ended st p_ref =
   let progress, st = Progress.proof_ended st.progress p_ref st in
   { st with progress }
 
-let make_diagnostics os ns =
-  let open Prover.ToolboxProtocol in
+let send_diagnostics diagnostics st uri vsn =
   let open LspT in
-  let diagnostics_o =
-    List.filter_map
-      (fun (o : tlapm_obligation) ->
-        let message =
-          "Obligation: "
-          ^ Prover.ToolboxProtocol.tlapm_obl_state_to_string o.status
-        in
-        let message =
-          match o.obl with None -> message | Some obl -> message ^ "\n" ^ obl
-        in
-        let severity =
-          match o.status with
-          | ToBeProved -> None
-          | BeingProved -> None
-          | Normalized -> None
-          | Proved -> None
-          | Failed -> Some DiagnosticSeverity.Error
-          | Interrupted -> Some DiagnosticSeverity.Error
-          | Trivial -> None
-          | Unknown _ -> Some DiagnosticSeverity.Error
-        in
-        match severity with
-        | None -> None
-        | Some severity ->
-            let range = Prover.TlapmRange.as_lsp_range o.loc in
-            let source = diagnostic_source in
-            Some (Diagnostic.create ~message ~range ~severity ~source ()))
-      os
-  in
-  let diagnostics_n =
-    List.map
-      (fun (n : tlapm_notif) ->
-        let severity =
-          match n.sev with
-          | TlapmNotifError -> DiagnosticSeverity.Error
-          | TlapmNotifWarning -> DiagnosticSeverity.Warning
-        in
-        Diagnostic.create ~message:n.msg
-          ~range:(Prover.TlapmRange.as_lsp_range n.loc)
-          ~severity ~source:diagnostic_source ())
-      ns
-  in
-  List.concat [ diagnostics_o; diagnostics_n ]
-
-let send_diagnostics st uri vsn os ns =
-  let open LspT in
-  let diagnostics = make_diagnostics os ns in
   let d_par =
     PublishDiagnosticsParams.create ~diagnostics ~uri ~version:vsn ()
   in
@@ -138,17 +88,15 @@ let send_diagnostics st uri vsn os ns =
   in
   st.output_adder (Some d_pkg)
 
-let send_proof_state_markers st uri pss =
+let send_proof_state_markers marks st uri =
+  let open Tlapm_lsp_structs in
   let jsonrpc_notif =
     Jsonrpc.Notification.create
       ~params:
         (`List
           [
             LspT.DocumentUri.yojson_of_t uri;
-            `List
-              (List.filter_map
-                 (fun ps -> ps)
-                 (List.map Docs.Proof_step.yojson_of_t pss));
+            `List (List.map TlapsProofStateMarker.yojson_of_t marks);
           ])
       ~method_:"tlaplus/tlaps/proofStates" ()
   in
@@ -160,12 +108,16 @@ let send_proof_state_markers st uri pss =
 
 let send_proof_info st uri vsn res =
   match res with
-  | Some (Docs.Doc_proof_res.{ p_ref; obs; nts; pss } as proof_res) ->
+  | Some res ->
       let st =
-        progress_obl_changed st p_ref (Docs.Doc_proof_res.obs_done proof_res)
+        (* TODO: This is incorrect in general. Have to change the TLAPS toolbox protocol to count the finished steps. *)
+        progress_obl_changed st
+          (Docs.Doc_proof_res.p_ref res)
+          (Docs.Doc_proof_res.obs_done res)
       in
-      send_diagnostics st uri vsn obs nts;
-      send_proof_state_markers st uri pss;
+      let diags, marks = Docs.Doc_proof_res.as_lsp res in
+      send_diagnostics diags st uri vsn;
+      send_proof_state_markers marks st uri;
       let delayed = DocUriSet.remove uri st.delayed in
       { st with delayed }
   | None -> st
@@ -187,9 +139,10 @@ let send_obligation_proof_state st =
       | None -> (docs, None)
       | Some loc ->
           let tlapm_range = Prover.TlapmRange.of_lsp_range loc.range in
-          Docs.get_obligation_state_latest docs loc.uri tlapm_range
+          let position = Prover.TlapmRange.from tlapm_range in
+          Docs.get_obligation_state_latest docs loc.uri position
     in
-    let notif_packet = TlapsProofObligationState.to_jsonrpc_packet notif_data in
+    let notif_packet = TlapsProofStepDetails.to_jsonrpc_packet notif_data in
     st.output_adder (Some notif_packet);
     (st, docs)
   in
@@ -264,7 +217,9 @@ module Handlers = Tlapm_lsp_handlers.Make (struct
 
   let track_obligation_proof_state (st : t) uri range =
     let open Tlapm_lsp_structs in
-    let st = { st with current_obl = Some (Location.make ~uri ~range) } in
+    let st =
+      { st with current_obl = Some (LspT.Location.create ~uri ~range) }
+    in
     let st = send_obligation_proof_state st in
     st
 
@@ -273,7 +228,7 @@ module Handlers = Tlapm_lsp_handlers.Make (struct
     let st = send_latest_proof_info st uri in
     (st, (0, []))
 
-  let diagnostic_source = diagnostic_source
+  let diagnostic_source = Const.diagnostic_source
 
   let%test_unit "basics" =
     Eio_main.run @@ fun env ->

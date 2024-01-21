@@ -1,20 +1,7 @@
 module LspT = Lsp.Types
 
-module Location : sig
-  type t = { uri : LspT.DocumentUri.t; range : LspT.Range.t }
-
-  val make : uri:LspT.DocumentUri.t -> range:LspT.Range.t -> t
-  val yojson_of_t : t -> Yojson.Safe.t
-end
-
 module TlapsProofObligationResult : sig
-  type t = {
-    prover : string;
-    meth : string;
-    status : string;
-    reason : string option;
-    obligation : string option;
-  }
+  type t
 
   val make :
     prover:string ->
@@ -28,18 +15,34 @@ module TlapsProofObligationResult : sig
 end
 
 module TlapsProofObligationState : sig
-  type t = {
-    location : Location.t;
-    obligation : string;
-    results : TlapsProofObligationResult.t list;
-  }
+  type t
 
   val make :
-    location:Location.t ->
-    obligation:string ->
+    range:LspT.Range.t ->
+    normalized:string option ->
     results:TlapsProofObligationResult.t list ->
+    t
+
+  val yojson_of_t : t -> Yojson.Safe.t
+end
+
+module TlapsProofStepDetails : sig
+  type t
+
+  val make :
+    kind:string ->
+    location:LspT.Location.t ->
+    obligations:TlapsProofObligationState.t list ->
     t
 
   val yojson_of_t : t option -> Yojson.Safe.t
   val to_jsonrpc_packet : t option -> Jsonrpc.Packet.t
+end
+
+(** This is the structure used to create proof step decorators in the client. *)
+module TlapsProofStateMarker : sig
+  type t
+
+  val make : range:LspT.Range.t -> state:string -> hover:string -> t
+  val yojson_of_t : t -> Yojson.Safe.t
 end

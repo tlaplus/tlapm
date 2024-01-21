@@ -17,13 +17,17 @@ module TlapmRange : sig
   val of_lsp_range : Lsp.Types.Range.t -> t
   val of_locus : Tlapm_lib.Loc.locus -> t option
   val of_locus_opt : Tlapm_lib.Loc.locus option -> t option
+  val of_locus_must : Tlapm_lib.Loc.locus -> t
   val of_points : Position.t -> Position.t -> t
+  val of_all : t
+  val join : t -> t -> t
   val string_of_range : t -> string
   val string_of_pos : Position.t -> string
   val compare : t -> t -> int
   val before : Position.t -> t -> bool
   val intersect : t -> t -> bool
   val lines_intersect : t -> t -> bool
+  val line_covered : t -> Position.t -> bool
   val lines_covered : t -> t -> bool
   val lines_covered_or_all : t -> t list -> t
   val first_diff_pos : string -> string -> Position.t

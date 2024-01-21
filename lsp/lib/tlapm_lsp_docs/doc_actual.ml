@@ -2,113 +2,98 @@ open Util
 open Tlapm_lsp_prover
 open Tlapm_lsp_prover.ToolboxProtocol
 
+(* Separated form the type [t] to have the value lazily evaluated. *)
+module Parsed = struct
+  type t = {
+    nts : tlapm_notif list;
+    ps : Proof_step.t option;
+        (** Parsed document structure, a tree of proof steps.
+          It is obtained by parsing the document and then updated
+          when obligation proof states are received from the prover. *)
+  }
+
+  let make ~uri ~(doc_vsn : Doc_vsn.t) ~(ps_prev : Proof_step.t option) =
+    match
+      Eio.Mutex.use_rw ~protect:true prover_mutex @@ fun () ->
+      Tlapm_lib.module_of_string (Doc_vsn.text doc_vsn)
+        (LspT.DocumentUri.to_path uri)
+    with
+    | Ok mule ->
+        let ps = Proof_step.of_module mule ps_prev in
+        { nts = []; ps }
+    | Error (loc_opt, msg) ->
+        let nts = [ ToolboxProtocol.notif_of_loc_msg loc_opt msg ] in
+        { nts; ps = None }
+
+  let ps_if_ready (p : t Lazy.t) =
+    match Lazy.is_val p with false -> None | true -> (Lazy.force p).ps
+end
+
 type t = {
   doc_vsn : Doc_vsn.t;
   p_ref : int;
-  mule : (Tlapm_lib.Module.T.mule, unit) result option;
-  nts : tlapm_notif list;  (** Parsing errors and warnings. *)
-  ois : Obl_proofs.t OblMap.t;
-      (** A set of obligation results.
-          It is set to empty, if any tlapm_notif is received. *)
-  pss : Proof_step.t list;
-      (** Parsed document structure, a tree of proof steps.
-          It is obtained by parsing the document and then updated
-          when obligation proof states are received from the prover. *)
+  ps_prev : Proof_step.t option;
+      (** Proof steps from the previous version, if there was any.*)
+  parsed : Parsed.t Lazy.t;
+      (** Parsed document and information derived from it. *)
 }
 
-let make tv =
-  {
-    doc_vsn = tv;
-    p_ref = 0;
-    mule = None;
-    nts = [];
-    ois = OblMap.empty;
-    pss = [];
-  }
+(** Create new actual document based on the document version [doc_vsn]
+    and port the current state from the previous actual document
+    [prev_act], if provided. *)
+let make uri doc_vsn prev_act =
+  match prev_act with
+  | None ->
+      (* There is no previous active document, we will not try
+         to move the proof state from there. *)
+      let parsed = lazy (Parsed.make ~uri ~doc_vsn ~ps_prev:None) in
+      { doc_vsn; p_ref = 0; ps_prev = None; parsed }
+  | Some prev_act ->
+      (* We have the previous actual document, thus either use its
+         parsed data, or the data it got from its previous. *)
+      let ps_prev =
+        match Parsed.ps_if_ready prev_act.parsed with
+        | None -> prev_act.ps_prev
+        | some -> some
+      in
+      let parsed = lazy (Parsed.make ~uri ~doc_vsn ~ps_prev) in
+      { doc_vsn; p_ref = prev_act.p_ref; ps_prev; parsed }
 
 let vsn act = Doc_vsn.version act.doc_vsn
 let text act = Doc_vsn.text act.doc_vsn
 
-(** Merge new version of the text (Doc_vsn) into the existing actual version of the document. *)
-let merge_into (act : t) (v : Doc_vsn.t) =
-  let diff_pos = Doc_vsn.diff_pos act.doc_vsn v in
-  let before_change = TlapmRange.before diff_pos in
-  let ois =
-    OblMap.filter
-      (fun _ (oi : Obl_proofs.t) -> before_change (Obl_proofs.loc oi))
-      act.ois
-  in
-  let nts =
-    List.filter (fun (n : tlapm_notif) -> before_change n.loc) act.nts
-  in
-  { act with doc_vsn = v; mule = None; ois; nts; pss = [] }
-
-let try_parse_anyway_locked uri (act : t) =
-  let v = act.doc_vsn in
-  match
-    Tlapm_lib.module_of_string (Doc_vsn.text v) (LspT.DocumentUri.to_path uri)
-  with
-  | Ok mule ->
-      let pss = Proof_step.of_module mule in
-      let pss = Proof_step.with_tlapm_obligations pss act.ois in
-      { act with mule = Some (Ok mule); pss; nts = [] }
-  | Error (loc_opt, msg) ->
-      {
-        act with
-        mule = Some (Error ());
-        nts = [ ToolboxProtocol.notif_of_loc_msg loc_opt msg ];
-      }
-
-let try_parse_anyway uri act =
-  Eio.Mutex.use_rw ~protect:true prover_mutex @@ fun () ->
-  try_parse_anyway_locked uri act
-
-let try_parse (act : t) uri =
-  match act with
-  | { mule = None; _ } -> try_parse_anyway uri act
-  | { mule = Some _; _ } -> act
-
 let proof_res (act : t) : Doc_proof_res.t =
-  let latest_obl (_, oi) = Obl_proofs.latest oi in
-  let obs_list = List.map latest_obl (OblMap.to_list act.ois) in
-  {
-    p_ref = act.p_ref;
-    obs = obs_list;
-    nts = act.nts;
-    pss = Proof_step.flatten act.pss;
-  }
+  let parsed = Lazy.force act.parsed in
+  Doc_proof_res.make act.p_ref parsed.nts parsed.ps
 
-let prepare_proof (act : t) uri next_p_ref =
-  let act = try_parse act uri in
-  match act.mule with
-  | None | Some (Error ()) -> None
-  | Some (Ok _mule) -> Some { act with p_ref = next_p_ref; nts = [] }
+let prepare_proof (act : t) next_p_ref =
+  (* Force it to be parsed, then prepare for the next proof session. *)
+  match (Lazy.force act.parsed).ps with
+  | None -> None
+  | Some _ -> Some { act with p_ref = next_p_ref }
 
-let locate_proof_range act range = Proof_step.locate_proof_range act.pss range
-let get_obligation_state act range = Proof_step.find_proof_step act.pss range
+let locate_proof_range (act : t) range =
+  let parsed = Lazy.force act.parsed in
+  Proof_step.locate_proof_range parsed.ps range
+
+let get_obligation_state act range =
+  let parsed = Lazy.force act.parsed in
+  Proof_step.locate_proof_step parsed.ps range
 
 let add_obl (act : t) (p_ref : int) (obl : tlapm_obligation) =
   if act.p_ref = p_ref then
-    let drop_older_intersecting (oRef : OblRef.t) (o : Obl_proofs.t) =
-      oRef.p_ref = p_ref
-      || not (TlapmRange.lines_intersect obl.loc (Obl_proofs.loc o))
-    in
-    let oi_ref = OblRef.make ~p_ref ~obl_id:obl.id in
-    let oi =
-      match OblMap.find_opt oi_ref act.ois with
-      | None -> Obl_proofs.make obl
-      | Some oi -> Obl_proofs.add_obl obl oi
-    in
-    let ois = OblMap.add oi_ref oi act.ois in
-    let ois = OblMap.filter drop_older_intersecting ois in
-    let pss = Proof_step.with_tlapm_obligation act.pss oi in
-    Some { act with ois; pss }
+    let parsed = Lazy.force act.parsed in
+    let ps = Proof_step.with_prover_result parsed.ps p_ref obl in
+    let parsed = Lazy.from_val { parsed with ps } in
+    Some { act with parsed }
   else None
 
 let add_notif (act : t) p_ref notif =
   if act.p_ref = p_ref then
-    let nts = notif :: act.nts in
-    Some { act with nts; ois = OblMap.empty }
+    let parsed = Lazy.force act.parsed in
+    let nts = notif :: parsed.nts in
+    let parsed = Lazy.from_val { parsed with nts } in
+    Some { act with parsed }
   else None
 
 let terminated (act : t) p_ref =

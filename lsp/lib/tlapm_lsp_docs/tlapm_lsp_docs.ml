@@ -2,6 +2,7 @@ open Util
 open Tlapm_lsp_prover.ToolboxProtocol
 open Tlapm_lsp_prover
 module Proof_step = Proof_step
+module Proof_status = Proof_status
 module Doc_proof_res = Doc_proof_res
 
 type tk = LspT.DocumentUri.t
@@ -14,7 +15,7 @@ let empty = DocMap.empty
 let add docs uri vsn txt =
   let tv = Doc_vsn.make txt vsn in
   let upd = function
-    | None -> Some (Doc.make tv)
+    | None -> Some (Doc.make uri tv)
     | Some (doc : Doc.t) -> Some (Doc.add doc tv)
   in
   DocMap.update uri upd docs
@@ -44,7 +45,7 @@ let prepare_proof docs uri vsn range :
     t * (int * string * TlapmRange.t * Doc_proof_res.t) option =
   with_doc_vsn docs uri vsn @@ fun (doc : Doc.t) (act : Doc_actual.t) ->
   let next_doc, next_p_ref = Doc.next_p_ref doc in
-  match Doc_actual.prepare_proof act uri next_p_ref with
+  match Doc_actual.prepare_proof act next_p_ref with
   | None -> (doc, act, None)
   | Some act ->
       let p_range = Doc_actual.locate_proof_range act range in
@@ -82,7 +83,6 @@ let terminated docs uri vsn p_ref =
 
 let get_proof_res docs uri vsn =
   with_doc_vsn docs uri vsn @@ fun doc act ->
-  let act = Doc_actual.try_parse act uri in
   (doc, act, Some (Doc_actual.proof_res act))
 
 let get_proof_res_latest docs uri =
@@ -94,11 +94,10 @@ let get_proof_res_latest docs uri =
 
 let get_obligation_state docs uri vsn range =
   with_doc_vsn docs uri vsn @@ fun doc act ->
-  let act = Doc_actual.try_parse act uri in
   let res =
     match Doc_actual.get_obligation_state act range with
     | None -> None
-    | Some ps -> Proof_step.tlaps_proof_obligation_state_of_t uri ps
+    | Some ps -> Some (Proof_step.as_lsp_tlaps_proof_step_details uri ps)
   in
   (doc, act, res)
 
