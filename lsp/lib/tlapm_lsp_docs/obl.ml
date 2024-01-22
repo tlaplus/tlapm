@@ -1,7 +1,17 @@
 open Util
 open Tlapm_lsp_prover.ToolboxProtocol
 
+module Role = struct
+  type t =
+    | Main  (** Main obligation for a proof step. *)
+    | Aux  (** Auxiliary, created by the prover in the BY clause. *)
+    | Unknown  (** Initially all the obligations are of unknown role. *)
+    | Unexpected
+        (** Was not received from the parser, but got later from the prover. *)
+end
+
 type t = {
+  role : Role.t;
   (* The obligation as received from the parser. *)
   parsed : Tlapm_lib.Proof.T.obligation option;
   (* The following work as a cache. *)
@@ -29,6 +39,7 @@ let of_parsed_obligation parsed status =
   let parsed_text_plain = lazy (Option.map obl_to_str parsed) in
   let parsed_text_normalized = lazy (Option.map obl_to_normalized_str parsed) in
   {
+    role = Role.Unknown;
     parsed;
     parsed_text_plain;
     parsed_text_normalized;
@@ -37,6 +48,9 @@ let of_parsed_obligation parsed status =
     latest_prover = None;
     status;
   }
+
+let with_role role obl = { obl with role }
+let role obl = obl.role
 
 (* Should exist in any case. *)
 let loc obl =
@@ -77,6 +91,7 @@ let with_prover_obligation p_ref tlapm_obl (obl : t option) =
     match obl with
     | None ->
         {
+          role = Role.Unexpected;
           parsed = None;
           parsed_text_plain = lazy None;
           parsed_text_normalized = lazy None;

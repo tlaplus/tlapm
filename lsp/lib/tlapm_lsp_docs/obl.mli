@@ -1,14 +1,21 @@
 open Util
 
+module Role : sig
+  type t = Main | Aux | Unknown | Unexpected
+end
+
 type t
 
 val of_parsed_obligation :
   Tlapm_lib.Proof.T.obligation option -> Proof_status.t -> t
 
+val with_role : Role.t -> t -> t
+
 val with_prover_obligation :
   int -> Tlapm_lsp_prover.ToolboxProtocol.tlapm_obligation -> t option -> t
 
 val with_proof_state_from : t -> (string -> t option) -> t
+val role : t -> Role.t
 val loc : t -> Tlapm_lsp_prover.TlapmRange.t
 val fingerprint : t -> string option
 val status : t -> Proof_status.t

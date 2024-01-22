@@ -1,14 +1,3 @@
-(* TODO: Obligation index
-     - by FP is needed to move the results to the next version of the document.
-     - by Loc -- to update with the events from the prover.
-     - by the step tree -- to serialize that to the decorator entries.
-    So:
-     - let's use the Hash table for the FP.
-     - Use a lazy Hash table by Loc.
-     - Attach refs to the step tree.
-     - Use parent ref to propagate the derived status up?
-     - Add conversion to the decorators directly here (ingle tree traversal).
-*)
 open Util
 open Tlapm_lsp_prover
 open Tlapm_lsp_prover.ToolboxProtocol
@@ -25,12 +14,31 @@ module Kind = struct
 end
 
 type t = {
-  kind : Kind.t; (* Kind/Type of this proof step. *)
-  status_parsed : Proof_status.t option; (* Status derived at the parse time.*)
-  status_derived : Proof_status.t; (* Derived status. *)
-  step_loc : TlapmRange.t; (* Location if the entire step. *)
-  head_loc : TlapmRange.t; (* The location of the proof sequent. *)
-  obs : Obl.t RangeMap.t; (* Obligations associated with this step. *)
+  kind : Kind.t;
+      (** Kind/Type of this proof step.
+          We want to show the proof steps differently based in its type. *)
+  status_parsed : Proof_status.t option;
+      (** Status derived at the parse time, if any.
+          This is for the omitted or error cases. *)
+  status_derived : Proof_status.t;
+      (** Derived status.
+          Here we sum-up the states from all the related obligations and sub-steps. *)
+  step_loc : TlapmRange.t;
+      (** Location if the entire step.
+          This doesn't include the BY statement, but includes
+          the sub-steps and the BY proof excluding the used facts. *)
+  head_loc : TlapmRange.t;
+      (** The location of the proof sequent.
+          It is always contained within the [step_loc].
+          This is shown as a step in the UI. *)
+  full_loc : TlapmRange.t;
+      (** [step_loc] plus all the BY facts included.
+          If an obligation is in [full_loc] but not in the [step_loc],
+          we consider it supplementary (will be shown a bit more hidden). *)
+  obs : Obl.t RangeMap.t;
+      (** Obligations associated with this step.
+          Here we include all the obligations fitting into [full_loc],
+          but not covered by any of the [sub] steps. *)
   sub : t list; (* Sub-steps, if any. *)
 }
 
@@ -45,9 +53,22 @@ let derived_status parsed obs sub =
 
 (* Takes step parameters and a set of remaining unassigned obligations,
    constructs the proof step and returns obligations that left unassigned. *)
-let make ~kind ?status_parsed ~step_loc ?head_loc ~sub obs_map =
-  let intersects_with_step obl_loc _ = TlapmRange.intersect obl_loc step_loc in
-  let obs, obs_map = RangeMap.partition intersects_with_step obs_map in
+let make ~kind ?status_parsed ~step_loc ?head_loc ~full_loc ~sub obs_map =
+  let intersects_with_full_loc obl_loc _ =
+    TlapmRange.intersect obl_loc full_loc
+  in
+  let intersects_with_step_loc obl_loc =
+    TlapmRange.intersect obl_loc step_loc
+  in
+  let obs, obs_map = RangeMap.partition intersects_with_full_loc obs_map in
+  let obs =
+    RangeMap.mapi
+      (fun obl_range obl ->
+        match intersects_with_step_loc obl_range with
+        | true -> Obl.with_role Obl.Role.Main obl
+        | false -> Obl.with_role Obl.Role.Aux obl)
+      obs
+  in
   let head_loc =
     (* Take the beginning of the first line, if header location is unknown. *)
     match head_loc with
@@ -56,7 +77,16 @@ let make ~kind ?status_parsed ~step_loc ?head_loc ~sub obs_map =
   in
   let status_derived = derived_status status_parsed obs sub in
   let ps =
-    { kind; status_parsed; status_derived; step_loc; head_loc; obs; sub }
+    {
+      kind;
+      status_parsed;
+      status_derived;
+      step_loc;
+      head_loc;
+      full_loc;
+      obs;
+      sub;
+    }
   in
   (ps, obs_map)
 
@@ -69,7 +99,7 @@ let as_lsp_tlaps_proof_state_marker ps =
 let as_lsp_tlaps_proof_step_details uri ps =
   let kind = Kind.to_string ps.kind in
   let location =
-    LspT.Location.create ~uri ~range:(TlapmRange.as_lsp_range ps.step_loc)
+    LspT.Location.create ~uri ~range:(TlapmRange.as_lsp_range ps.full_loc)
   in
   let obligations =
     List.map
@@ -141,11 +171,25 @@ let if_in_file_acc wrapped acc fn =
 let rec of_proof step_loc sq_range (proof : Tlapm_lib.Proof.T.proof) acc :
     t * Acc.t =
   let open Tlapm_lib in
-  let kind, sub, status_parsed, acc =
+  let kind, sub, status_parsed, suppl_loc, acc =
     match Property.unwrap proof with
-    | Proof.T.Obvious -> (Kind.Leaf, [], None, acc)
-    | Proof.T.Omitted _ -> (Kind.Leaf, [], Some Proof_status.Omitted, acc)
-    | Proof.T.By (_, _) -> (Kind.Leaf, [], None, acc)
+    | Proof.T.Obvious -> (Kind.Leaf, [], None, None, acc)
+    | Proof.T.Omitted _omission ->
+        (* TODO: Distinguish the implicit/explicit. *)
+        (Kind.Leaf, [], Some Proof_status.Omitted, None, acc)
+    | Proof.T.By (usable, _only) ->
+        let join_ranges base list =
+          List.fold_left
+            (fun acc d ->
+              match opt_range d with
+              | None -> acc
+              | Some r -> TlapmRange.join acc r)
+            base list
+        in
+        let suppl_range = step_loc in
+        let suppl_range = join_ranges suppl_range usable.defs in
+        let suppl_range = join_ranges suppl_range usable.facts in
+        (Kind.Leaf, [], None, Some suppl_range, acc)
     | Proof.T.Steps (steps, qed_step) ->
         let acc, sub =
           List.fold_left_map
@@ -157,8 +201,13 @@ let rec of_proof step_loc sq_range (proof : Tlapm_lib.Proof.T.proof) acc :
         let sub = List.filter_map Fun.id sub in
         let qed, acc = of_qed_step qed_step acc in
         let sub = sub @ [ qed ] in
-        (Kind.Struct, sub, None, acc)
-    | Proof.T.Error _ -> (Kind.Leaf, [], Some Proof_status.Failed, acc)
+        let suppl_loc =
+          List.fold_left
+            (fun acc sub_ps -> TlapmRange.join acc sub_ps.full_loc)
+            step_loc sub
+        in
+        (Kind.Struct, sub, None, Some suppl_loc, acc)
+    | Proof.T.Error _ -> (Kind.Leaf, [], Some Proof_status.Failed, None, acc)
   in
   let head_loc =
     match sq_range with
@@ -166,8 +215,13 @@ let rec of_proof step_loc sq_range (proof : Tlapm_lib.Proof.T.proof) acc :
         Some TlapmRange.(of_points (from step_loc) (till sq_range))
     | None -> None
   in
+  let full_loc =
+    match suppl_loc with
+    | None -> step_loc
+    | Some suppl_loc -> TlapmRange.join step_loc suppl_loc
+  in
   let st, obs_map =
-    make ~kind ?status_parsed ~step_loc ?head_loc ~sub acc.obs_map
+    make ~kind ?status_parsed ~step_loc ?head_loc ~full_loc ~sub acc.obs_map
   in
   (st, { acc with obs_map })
 
@@ -213,7 +267,9 @@ let rec of_submod (mule : Tlapm_lib.Module.T.mule) (acc : Acc.t) :
   match sub with
   | [] -> (None, acc)
   | _ ->
-      let st, obs_map = make ~kind:Kind.Module ~step_loc ~sub acc.obs_map in
+      let st, obs_map =
+        make ~kind:Kind.Module ~step_loc ~full_loc:step_loc ~sub acc.obs_map
+      in
       (Some st, { acc with obs_map })
 
 and of_mod_unit (mod_unit : Tlapm_lib.Module.T.modunit) acc : t option * Acc.t =
@@ -271,7 +327,7 @@ let of_module (mule : Tlapm_lib.Module.T.mule) prev : t option =
 
 let with_prover_result (ps : t option) p_ref (pr : tlapm_obligation) =
   let rec traverse (ps : t) (pr : tlapm_obligation) =
-    if TlapmRange.intersect ps.step_loc pr.loc then
+    if TlapmRange.intersect ps.full_loc pr.loc then
       let apply_to_sub acc sub_ps =
         match acc with
         | true -> (* Already found previously. *) (acc, sub_ps)
@@ -303,7 +359,7 @@ let with_prover_result (ps : t option) p_ref (pr : tlapm_obligation) =
 let locate_proof_step (ps : t option) (position : TlapmRange.Position.t) :
     t option =
   let rec traverse ps =
-    if TlapmRange.line_covered ps.step_loc position then
+    if TlapmRange.line_covered ps.full_loc position then
       match List.find_map traverse ps.sub with
       | None -> Some ps
       | Some sub_ps -> Some sub_ps
@@ -316,28 +372,14 @@ let locate_proof_range (ps : t option) (range : TlapmRange.t) : TlapmRange.t =
   let ps_till = locate_proof_step ps (TlapmRange.till range) in
   match (ps_from, ps_till) with
   | None, None -> TlapmRange.of_all
-  | Some ps_from, None -> ps_from.step_loc
-  | None, Some ps_till -> ps_till.step_loc
+  | Some ps_from, None -> ps_from.full_loc
+  | None, Some ps_till -> ps_till.full_loc
   | Some ps_from, Some ps_till ->
-      TlapmRange.join ps_from.step_loc ps_till.step_loc
+      TlapmRange.join ps_from.full_loc ps_till.full_loc
 
 let%test_unit "determine proof steps" =
   let mod_file = "test_obl_expand.tla" in
   let mod_text =
-    (*
-XXXXXXXX[0]: |obs|=4, loc=1:1:16:4
-XXXXXXXX[1]: |obs|=0, loc=3:1:7:16
-XXXXXXXX[2]: |obs|=0, loc=4:5:4:14
-XXXXXXXX[3]: |obs|=0, loc=5:5:5:14
-XXXXXXXX[4]: |obs|=0, loc=6:5:6:14
-XXXXXXXX[5]: |obs|=1, loc=7:5:7:16
-XXXXXXXX[6]: |obs|=0, loc=8:1:11:19
-XXXXXXXX[7]: |obs|=0, loc=9:5:11:19
-XXXXXXXX[8]: |obs|=0, loc=10:8:10:17
-XXXXXXXX[9]: |obs|=1, loc=11:8:11:19
-XXXXXXXX[10]: |obs|=0, loc=12:3:15:25
-XXXXXXXX[11]: |obs|=0, loc=14:3:14:13
-*)
     String.concat "\n"
       [
         "---- MODULE test_obl_expand ----";
@@ -375,15 +417,22 @@ XXXXXXXX[11]: |obs|=0, loc=14:3:14:13
       _m_sub;
       _th3;
     ] as all -> (
-      (* TODO: Cleanup logs. *)
-      (* TODO: In the QED step, the step location is only till the "BY", excludes all the arguments in the proof. *)
       List.iteri
         (fun i ps ->
-          Format.printf "XXXXXXXX[%d]: |obs|=%d, loc=%s\n" i
+          Format.printf
+            "Step[%d]: |obs|=%d, full_loc=%s, step_loc=%s head_loc=%s\n" i
             (RangeMap.cardinal ps.obs)
-            (TlapmRange.string_of_range ps.step_loc))
+            (TlapmRange.string_of_range ps.full_loc)
+            (TlapmRange.string_of_range ps.step_loc)
+            (TlapmRange.string_of_range ps.head_loc))
         all;
-      assert (RangeMap.cardinal _th2_1q_2q.obs = 1);
+      assert (RangeMap.cardinal _th2_1q_2q.obs = 2);
+      assert (
+        RangeMap.cardinal
+          (RangeMap.filter
+             (fun _ o -> Obl.role o = Obl.Role.Main)
+             _th2_1q_2q.obs)
+        = 1);
       let _, _th2_1q_2q_obl = RangeMap.choose _th2_1q_2q.obs in
       match Obl.text_normalized _th2_1q_2q_obl with
       | Some "ASSUME TRUE \nPROVE  FALSE" -> ()

@@ -95,7 +95,10 @@ module TlapmRange = struct
   let of_lines fl tl = R ((fl, 1), (tl, 1))
   let of_points f t = R (Position.as_pair f, Position.as_pair t)
 
-  let join (R (f, _)) (R (_, t)) = R (f, t)
+  let join (R (af, at)) (R (bf, bt)) =
+    let f = Position.min (Position.of_pair af) (Position.of_pair bf) in
+    let t = Position.max (Position.of_pair at) (Position.of_pair bt) in
+    of_points f t
 
   let string_of_range (R ((fl, fc), (tl, tc))) : string =
     Format.sprintf "%d:%d:%d:%d" fl fc tl tc
