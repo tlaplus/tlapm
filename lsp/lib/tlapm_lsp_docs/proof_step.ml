@@ -178,7 +178,7 @@ let rec of_proof step_loc sq_range (proof : Tlapm_lib.Proof.T.proof) acc :
         (* TODO: Distinguish the implicit/explicit. *)
         (Kind.Leaf, [], Some Proof_status.Omitted, None, acc)
     | Proof.T.By (usable, _only) ->
-        let join_ranges base list =
+        let wrapped_join_ranges base list =
           List.fold_left
             (fun acc d ->
               match opt_range d with
@@ -187,8 +187,8 @@ let rec of_proof step_loc sq_range (proof : Tlapm_lib.Proof.T.proof) acc :
             base list
         in
         let suppl_range = step_loc in
-        let suppl_range = join_ranges suppl_range usable.defs in
-        let suppl_range = join_ranges suppl_range usable.facts in
+        let suppl_range = wrapped_join_ranges suppl_range usable.defs in
+        let suppl_range = wrapped_join_ranges suppl_range usable.facts in
         (Kind.Leaf, [], None, Some suppl_range, acc)
     | Proof.T.Steps (steps, qed_step) ->
         let acc, sub =
@@ -225,6 +225,14 @@ let rec of_proof step_loc sq_range (proof : Tlapm_lib.Proof.T.proof) acc :
   in
   (st, { acc with obs_map })
 
+and of_implicit_proof_step step_loc suppl_locs (acc : Acc.t) : t * Acc.t =
+  let full_loc = List.fold_left TlapmRange.join step_loc suppl_locs in
+  let st, obs_map =
+    make ~kind:Kind.Leaf ~step_loc ~head_loc:step_loc ~full_loc ~sub:[]
+      acc.obs_map
+  in
+  (st, { acc with obs_map })
+
 and of_step (step : Tlapm_lib.Proof.T.step) acc : t option * Acc.t =
   let open Tlapm_lib in
   match Property.unwrap step with
@@ -239,9 +247,17 @@ and of_step (step : Tlapm_lib.Proof.T.step) acc : t option * Acc.t =
   | Proof.T.Pick (_bounds, expr, proof) ->
       Acc.some (of_proof (get_range step) (opt_range expr) proof acc)
   | Proof.T.Use (_, _) -> (None, acc)
-  | Proof.T.Have _ -> (None, acc)
-  | Proof.T.Take _ -> (None, acc)
-  | Proof.T.Witness _ -> (None, acc) (* TODO: Form a step for this. *)
+  | Proof.T.Have expr ->
+      let suppl_locs = List.filter_map opt_range [ expr ] in
+      Acc.some (of_implicit_proof_step (get_range step) suppl_locs acc)
+  | Proof.T.Take bounds ->
+      let suppl_locs =
+        List.filter_map (fun (hint, _, _) -> opt_range hint) bounds
+      in
+      Acc.some (of_implicit_proof_step (get_range step) suppl_locs acc)
+  | Proof.T.Witness exprs ->
+      let suppl_locs = List.filter_map opt_range exprs in
+      Acc.some (of_implicit_proof_step (get_range step) suppl_locs acc)
   | Proof.T.Forget _ -> (None, acc)
 
 and of_qed_step (qed_step : Tlapm_lib.Proof.T.qed_step) acc : t * Acc.t =
