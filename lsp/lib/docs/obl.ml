@@ -176,8 +176,8 @@ let as_lsp_tlaps_proof_obligation_state obl =
         let meth = some_str o.meth in
         let reason = o.reason in
         let obligation = o.obl in
-        Structs.TlapsProofObligationResult.make ~prover ~meth ~status
-          ~reason ~obligation)
+        Structs.TlapsProofObligationResult.make ~prover ~meth ~status ~reason
+          ~obligation)
       (StrMap.to_list obl.by_prover)
   in
   Structs.TlapsProofObligationState.make ~range ~normalized ~results

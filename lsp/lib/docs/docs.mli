@@ -2,7 +2,6 @@
 
 open Prover.ToolboxProtocol
 open Prover
-
 module LspT := Lsp.Types
 
 module Proof_step : sig
@@ -85,8 +84,5 @@ val get_obligation_state :
 (** Get the current proof state for the specific obligation. *)
 
 val get_obligation_state_latest :
-  t ->
-  tk ->
-  TlapmRange.Position.t ->
-  t * Structs.TlapsProofStepDetails.t option
+  t -> tk -> TlapmRange.Position.t -> t * Structs.TlapsProofStepDetails.t option
 (** Get the current proof state for the specific obligation at the latest version of the document. *)

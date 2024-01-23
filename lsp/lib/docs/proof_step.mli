@@ -19,9 +19,7 @@ val locate_proof_range : t option -> TlapmRange.t -> TlapmRange.t
 val flatten : t option -> t list
 val fold : ('a -> t -> 'a) -> 'a -> t option -> 'a
 val fold_obs : ('a -> Obl.t -> 'a) -> 'a -> t -> 'a
-
-val as_lsp_tlaps_proof_state_marker :
-  t -> Structs.TlapsProofStateMarker.t
+val as_lsp_tlaps_proof_state_marker : t -> Structs.TlapsProofStateMarker.t
 
 val as_lsp_tlaps_proof_step_details :
   LspT.DocumentUri.t -> t -> Structs.TlapsProofStepDetails.t

@@ -2,9 +2,7 @@
     This module contains only the generic server-related functions.
     *)
 
-
 type transport = Stdio | Socket of int
 
 val run :
   transport -> bool -> Eio_unix.Stdenv.base -> string Eio.Std.Promise.t -> unit
-
