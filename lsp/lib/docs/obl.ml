@@ -54,15 +54,13 @@ let role obl = obl.role
 
 (* Should exist in any case. *)
 let loc obl =
-  let open Prover in
   match obl.parsed with
   | None ->
       (match obl.latest_prover with
       | None -> failwith "there should be either parsed info or prover result"
       | Some prover -> StrMap.find prover obl.by_prover)
         .loc
-  | Some parsed ->
-      TlapmRange.of_locus_must (Tlapm_lib.Util.get_locus parsed.obl)
+  | Some parsed -> Range.of_locus_must (Tlapm_lib.Util.get_locus parsed.obl)
 
 let fingerprint obl =
   match obl.parsed with None -> None | Some obl -> obl.fingerprint
@@ -146,7 +144,6 @@ let with_proof_state_from obl by_fp =
   | Some _ -> obl
 
 let as_lsp_diagnostic (obl : t) =
-  let open Prover in
   match Proof_status.is_diagnostic obl.status with
   | true ->
       let message = "Obligation: " ^ latest_status_msg obl in
@@ -156,14 +153,13 @@ let as_lsp_diagnostic (obl : t) =
         | Some obl_text -> message ^ "\n" ^ obl_text
       in
       let severity = LspT.DiagnosticSeverity.Error in
-      let range = TlapmRange.as_lsp_range (loc obl) in
+      let range = Range.as_lsp_range (loc obl) in
       let source = Const.diagnostic_source in
       Some (LspT.Diagnostic.create ~message ~range ~severity ~source ())
   | false -> None
 
 let as_lsp_tlaps_proof_obligation_state obl =
-  let open Prover in
-  let range = TlapmRange.as_lsp_range (loc obl) in
+  let range = Range.as_lsp_range (loc obl) in
   let normalized = text_normalized obl in
   let results =
     let some_str s = match s with None -> "?" | Some s -> s in

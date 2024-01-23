@@ -30,14 +30,13 @@ let as_lsp pr =
   let notif_diags =
     List.map
       (fun (ntf : ToolboxProtocol.tlapm_notif) ->
-        let open Prover in
         let severity =
           match ntf.sev with
           | TlapmNotifError -> LspT.DiagnosticSeverity.Error
           | TlapmNotifWarning -> LspT.DiagnosticSeverity.Warning
         in
         LspT.Diagnostic.create ~message:ntf.msg
-          ~range:(TlapmRange.as_lsp_range ntf.loc)
+          ~range:(Range.as_lsp_range ntf.loc)
           ~severity ~source:Const.diagnostic_source ())
       pr.nts
   in

@@ -8,205 +8,6 @@ let read_buf_max_size = 1024 * 1024
 module LspT = Lsp.Types
 module Progress = Progress
 
-module TlapmRange = struct
-  (* LSP ranges are 0-based and TLAPM is 1-based. In LSP the last char is exclusive. *)
-
-  module Position : sig
-    type t
-
-    val make : int -> int -> t
-    val of_pair : int * int -> t
-    val as_pair : t -> int * int
-    val as_string : t -> string
-    val compare : t -> t -> int
-    val less : t -> t -> bool
-    val leq : t -> t -> bool
-    val min : t -> t -> t
-    val max : t -> t -> t
-    val line : t -> int
-  end = struct
-    type t = P of int * int
-
-    let make l c = P (l, c)
-    let of_pair (l, c) = P (l, c)
-    let as_pair (P (l, c)) = (l, c)
-    let as_string (P (l, c)) = Format.sprintf "%d:%d" l c
-
-    (* Implement Map.OrderedType *)
-    let compare (P (al, ac)) (P (bl, bc)) =
-      let l = Stdlib.compare al bl in
-      if l = 0 then Stdlib.compare ac bc else l
-
-    let less (P (al, ac)) (P (bl, bc)) =
-      match Stdlib.compare al bl with
-      | 0 -> Stdlib.compare ac bc < 0
-      | l_diff -> l_diff < 0
-
-    let leq (P (al, ac)) (P (bl, bc)) =
-      match Stdlib.compare al bl with
-      | 0 -> Stdlib.compare ac bc <= 0
-      | l_diff -> l_diff < 0
-
-    let min a b = if less a b then a else b
-    let max a b = if less a b then b else a
-    let line (P (l, _)) = l
-  end
-
-  type t = R of (int * int) * (int * int)
-
-  let line_from (R ((fl, _), _)) = fl
-  let line_till (R (_, (tl, _))) = tl
-  let from (R ((fl, fc), _)) = Position.make fl fc
-  let till (R (_, (tl, tc))) = Position.make tl tc
-
-  (* Implement Map.OrderedType *)
-  let compare (R (af, at)) (R (bf, bt)) =
-    let f = Position.compare (Position.of_pair af) (Position.of_pair bf) in
-    if f = 0 then Position.compare (Position.of_pair at) (Position.of_pair bt)
-    else f
-
-  let as_lsp_range (R ((fl, fc), (tl, tc))) =
-    let open LspT in
-    Range.create
-      ~start:(Position.create ~line:(fl - 1) ~character:(fc - 1))
-      ~end_:(Position.create ~line:(tl - 1) ~character:tc)
-
-  let of_lsp_range (range : LspT.Range.t) =
-    let f = (range.start.line + 1, range.start.character + 1) in
-    let t = (range.end_.line + 1, range.end_.character) in
-    R (f, t)
-
-  let of_string_opt s =
-    match String.split_on_char ':' s with
-    | [ fl; fc; tl; tc ] ->
-        let f = (int_of_string fl, int_of_string fc) in
-        let t = (int_of_string tl, int_of_string tc - 1) in
-        Some (R (f, t))
-    | _ -> None
-
-  let of_locus (locus : Tlapm_lib.Loc.locus) =
-    match (locus.start, locus.stop) with
-    | Actual start_pt, Actual stop_pt ->
-        Some
-          (R ((start_pt.line, start_pt.col), (stop_pt.line, stop_pt.col - 1)))
-    | Dummy, _ | _, Dummy -> None
-
-  let of_locus_opt (locus : Tlapm_lib.Loc.locus option) =
-    match locus with None -> None | Some locus -> of_locus locus
-
-  let of_locus_must (locus : Tlapm_lib.Loc.locus) = Option.get (of_locus locus)
-  let of_lines fl tl = R ((fl, 1), (tl, 1))
-  let of_points f t = R (Position.as_pair f, Position.as_pair t)
-
-  let join (R (af, at)) (R (bf, bt)) =
-    let f = Position.min (Position.of_pair af) (Position.of_pair bf) in
-    let t = Position.max (Position.of_pair at) (Position.of_pair bt) in
-    of_points f t
-
-  let string_of_range (R ((fl, fc), (tl, tc))) : string =
-    Format.sprintf "%d:%d:%d:%d" fl fc tl tc
-
-  let string_of_pos p = Position.as_string p
-
-  (* Where to show the location of error for which the location is unknown. *)
-  let of_unknown = R ((1, 1), (1, 4))
-
-  (* To pass it to TLAPM for checking all the document. *)
-  let of_all = R ((0, 0), (0, 0))
-
-  (** [before p r] means range [r] is before point [p]. *)
-  let before p r = Position.less (till r) p
-
-  (** [intersect a b] is true, if ranges [a] and [b] overlaps. *)
-  let intersect a b =
-    Position.leq (from a) (till b) && Position.leq (from b) (till a)
-
-  (** [lines_intersect a b] is true is line ranges for [a] and [b] intersect. *)
-  let lines_intersect a b =
-    let lfa = line_from a in
-    let lta = line_till a in
-    let lfb = line_from b in
-    let ltb = line_till b in
-    lfa <= ltb && lfb <= lta
-
-  (** [line_covered r p] is true, if the line of position [p] intersects with the range [r] lines. *)
-  let line_covered r p =
-    let l = Position.line p in
-    line_from r <= l && l <= line_till r
-
-  (* [lines_covered a b] is true if lines of [a] are fully covered by [b], i.e. [a] is inside of [b]. *)
-  let lines_covered a b =
-    let lfa = line_from a in
-    let lta = line_till a in
-    let lfb = line_from b in
-    let ltb = line_till b in
-    lfb <= lfa && lta <= ltb
-
-  (* TODO: Is it used? *)
-  let lines_covered_or_all q rs =
-    match List.filter (lines_intersect q) rs with
-    | [] -> of_all
-    | matching ->
-        List.fold_left
-          (fun acc m ->
-            let from = Position.min (from acc) (from m) in
-            let till = Position.max (till acc) (till m) in
-            of_points from till)
-          q matching
-
-  (* TODO: Not used anymore? *)
-  let first_diff_pos a b =
-    let len = min (String.length a) (String.length b) in
-    let rec count i l c =
-      if i = len then Position.make l c
-      else
-        let ai = String.get a i in
-        let bi = String.get b i in
-        if ai = bi then
-          let l, c =
-            match bi with '\n' -> (l + 1, 1) | '\r' -> (l, c) | _ -> (l, c + 1)
-          in
-          count (i + 1) l c
-        else Position.make l c
-    in
-    count 0 1 1
-
-  let%test_module "before" =
-    (module struct
-      let p35 = Position.make 3 5
-      let%test _ = not (before p35 (R ((1, 1), (5, 3))))
-      let%test _ = not (before p35 (R ((1, 1), (3, 6))))
-      let%test _ = not (before p35 (R ((1, 1), (3, 5))))
-      let%test _ = before p35 (R ((1, 1), (2, 5)))
-    end)
-
-  let%test_module "first_diff_pos" =
-    (module struct
-      let test_fun a b = Position.as_pair (first_diff_pos a b)
-      let%test "first" = (1, 1) = test_fun "hello" "bye"
-      let%test "second" = (1, 2) = test_fun "hello" "hallo"
-      let%test "next_ln" = (2, 1) = test_fun "sa\nme" "sa\ny"
-      let%test "line_len_a" = (1, 3) = test_fun "same" "sa\n"
-      let%test "line_len_b" = (1, 3) = test_fun "sa\n" "same"
-      let%test "index_bounds_1" = (1, 3) = test_fun "mod" "mo"
-      let%test "index_bounds_2" = (1, 3) = test_fun "mo" "mod"
-    end)
-
-  let%test_module "lines_covered_or_all" =
-    (module struct
-      let some = R ((10, 5), (11, 20))
-      let before1 = R ((1, 1), (2, 10))
-      let on_from = R ((9, 1), (10, 6))
-      let on_till = R ((10, 20), (15, 8))
-      let within = R ((10, 20), (11, 10))
-      let%test _ = of_all = lines_covered_or_all some [ before1 ]
-      let%test _ = some = lines_covered_or_all some [ within ]
-
-      let%test _ =
-        R ((9, 1), (15, 8)) = lines_covered_or_all some [ on_from; on_till ]
-    end)
-end
-
 (* ***** Types and parsers for them ***************************************** *)
 
 module ToolboxProtocol = struct
@@ -256,7 +57,7 @@ module ToolboxProtocol = struct
 
   type tlapm_obligation = {
     id : int;
-    loc : TlapmRange.t;
+    loc : Range.t;
     status : tlapm_obl_state;
     fp : string option;
     prover : string option;
@@ -269,7 +70,7 @@ module ToolboxProtocol = struct
   type tlapm_notif_severity = TlapmNotifError | TlapmNotifWarning
 
   type tlapm_notif = {
-    loc : TlapmRange.t;
+    loc : Range.t;
     sev : tlapm_notif_severity;
     msg : string;
     url : string option;
@@ -287,7 +88,7 @@ module ToolboxProtocol = struct
     | PartObligationsNumber of int option
     | PartObligation of {
         id : int option;
-        loc : TlapmRange.t option;
+        loc : Range.t option;
         status : tlapm_obl_state option;
         fp : string option;
         prover : string option;
@@ -315,7 +116,7 @@ module ToolboxProtocol = struct
     | Error _ -> None
 
   let rec guess_notif_loc' str = function
-    | [] -> (TlapmRange.of_unknown, String.trim str)
+    | [] -> (Range.of_unknown, String.trim str)
     | `A :: others -> (
         let re =
           Re2.create_exn
@@ -332,9 +133,9 @@ module ToolboxProtocol = struct
               Some char_till;
               Some rest_msg;
             |] ->
-            ( TlapmRange.R
-                ( (int_of_string line_from, int_of_string char_from),
-                  (int_of_string line_till, int_of_string char_till) ),
+            ( Range.of_ints ~lf:(int_of_string line_from)
+                ~cf:(int_of_string char_from) ~lt:(int_of_string line_till)
+                ~ct:(int_of_string char_till),
               String.trim rest_msg )
         | Ok _ -> failwith "impossible"
         | Error _ -> guess_notif_loc' str others)
@@ -355,9 +156,9 @@ module ToolboxProtocol = struct
               Some char_till;
               Some rest_msg;
             |] ->
-            ( TlapmRange.R
-                ( (int_of_string line, int_of_string char_from),
-                  (int_of_string line, int_of_string char_till) ),
+            ( Range.of_ints ~lf:(int_of_string line)
+                ~cf:(int_of_string char_from) ~lt:(int_of_string line)
+                ~ct:(int_of_string char_till),
               String.trim rest_msg )
         | Ok _ -> failwith "impossible"
         | Error _ -> guess_notif_loc' str others)
@@ -372,9 +173,9 @@ module ToolboxProtocol = struct
         match Re2.find_submatches re str with
         | Ok [| _all_match; Some _file; Some line; Some char; Some rest_msg |]
           ->
-            ( TlapmRange.R
-                ( (int_of_string line, int_of_string char),
-                  (int_of_string line, int_of_string char + 4) ),
+            ( Range.of_ints ~lf:(int_of_string line) ~cf:(int_of_string char)
+                ~lt:(int_of_string line)
+                ~ct:(int_of_string char + 4),
               String.trim rest_msg )
         | Ok _ -> failwith "impossible"
         | Error _ -> guess_notif_loc' str others)
@@ -385,7 +186,7 @@ module ToolboxProtocol = struct
     let sev = TlapmNotifWarning in
     let url = None in
     match loc_opt with
-    | None -> { sev; loc = TlapmRange.of_unknown; msg; url }
+    | None -> { sev; loc = Range.of_unknown; msg; url }
     | Some loc_str ->
         let loc, _empty_msg = guess_notif_loc loc_str in
         { sev; loc; msg; url }
@@ -411,7 +212,7 @@ module ToolboxProtocol = struct
       | PartObligation o -> (
           match n with
           | "id" -> PartObligation { o with id = int_of_string_opt v }
-          | "loc" -> PartObligation { o with loc = TlapmRange.of_string_opt v }
+          | "loc" -> PartObligation { o with loc = Range.of_string_opt v }
           | "status" ->
               PartObligation
                 { o with status = Some (tlapm_obl_state_of_string v) }
@@ -615,8 +416,8 @@ let start_async_with_exec st doc_uri _doc_vsn doc_text range events_adder
       (* First arg s ignored, if executable is specified. *)
       executable;
       "--toolbox";
-      string_of_int (TlapmRange.line_from range);
-      string_of_int (TlapmRange.line_till range);
+      string_of_int (Range.line_from range);
+      string_of_int (Range.line_till range);
       (* "--verbose"; *)
       "--printallobs";
       "--stdin";
@@ -749,41 +550,26 @@ let%test_unit "parse-warning-loc" =
   | Empty -> (
       match Eio.Stream.length stream with
       | 3 -> (
+          let expected_loc1 = Range.of_ints ~lf:1 ~cf:1 ~lt:17 ~ct:4 in
+          let expected_loc2 = Range.of_ints ~lf:5 ~cf:9 ~lt:5 ~ct:14 in
+          let expected_loc3 = Range.of_ints ~lf:5 ~cf:22 ~lt:5 ~ct:26 in
           (match Eio.Stream.take stream with
-          | TlapmNotif
-              {
-                msg;
-                loc = R ((1, 1), (17, 4));
-                sev = TlapmNotifWarning;
-                url = None;
-              }
-            when msg = expected_msg1 ->
+          | TlapmNotif { msg; loc; sev = TlapmNotifWarning; url = None }
+            when msg = expected_msg1 && loc = expected_loc1 ->
               ()
           | _ -> failwith "unexpected msg1");
           (match Eio.Stream.take stream with
-          | TlapmNotif
-              {
-                msg;
-                loc = R ((5, 9), (5, 14));
-                sev = TlapmNotifWarning;
-                url = None;
-              }
-            when msg = expected_msg2 ->
+          | TlapmNotif { msg; loc; sev = TlapmNotifWarning; url = None }
+            when msg = expected_msg2 && loc = expected_loc2 ->
               ()
           | TlapmNotif { msg; loc; _ } ->
               failwith
                 (Format.sprintf "msg=%S, loc=%s" msg
-                   (TlapmRange.string_of_range loc))
+                   (Range.string_of_range loc))
           | _ -> failwith "unexpected msg2");
           match Eio.Stream.take stream with
-          | TlapmNotif
-              {
-                msg;
-                loc = R ((5, 22), (5, 26));
-                sev = TlapmNotifWarning;
-                url = None;
-              }
-            when msg = expected_msg3 ->
+          | TlapmNotif { msg; loc; sev = TlapmNotifWarning; url = None }
+            when msg = expected_msg3 && loc = expected_loc3 ->
               ()
           | _ -> failwith "unexpected msg3")
       | _ -> failwith "unexpected msg count")
@@ -810,7 +596,7 @@ let%test_module "Mocked TLAPM" =
       let ts_start = Eio.Time.now clock in
       let pr =
         match
-          start_async pr du dv dt (TlapmRange.of_lines 3 7) events_adder
+          start_async pr du dv dt (Range.of_lines 3 7) events_adder
             ~tlapm_locator ()
         with
         | Ok pr -> pr

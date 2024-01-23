@@ -16,7 +16,7 @@ val with_prover_obligation :
 
 val with_proof_state_from : t -> (string -> t option) -> t
 val role : t -> Role.t
-val loc : t -> Prover.TlapmRange.t
+val loc : t -> Range.t
 val fingerprint : t -> string option
 val status : t -> Proof_status.t
 val text_plain : t -> string option

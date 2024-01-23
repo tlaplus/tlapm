@@ -33,39 +33,6 @@ module Progress : sig
   end
 end
 
-module TlapmRange : sig
-  module Position : sig
-    type t
-
-    val compare : t -> t -> int
-  end
-
-  type t
-
-  val from : t -> Position.t
-  val till : t -> Position.t
-  val line_from : t -> int
-  val line_till : t -> int
-  val as_lsp_range : t -> LspT.Range.t
-  val of_lsp_range : LspT.Range.t -> t
-  val of_locus : Tlapm_lib.Loc.locus -> t option
-  val of_locus_opt : Tlapm_lib.Loc.locus option -> t option
-  val of_locus_must : Tlapm_lib.Loc.locus -> t
-  val of_points : Position.t -> Position.t -> t
-  val of_all : t
-  val join : t -> t -> t
-  val string_of_range : t -> string
-  val string_of_pos : Position.t -> string
-  val compare : t -> t -> int
-  val before : Position.t -> t -> bool
-  val intersect : t -> t -> bool
-  val lines_intersect : t -> t -> bool
-  val line_covered : t -> Position.t -> bool
-  val lines_covered : t -> t -> bool
-  val lines_covered_or_all : t -> t list -> t
-  val first_diff_pos : string -> string -> Position.t
-end
-
 (** Types representing messages from the prover. *)
 module ToolboxProtocol : sig
   type tlapm_obl_state =
@@ -83,7 +50,7 @@ module ToolboxProtocol : sig
 
   type tlapm_obligation = {
     id : int;
-    loc : TlapmRange.t;
+    loc : Range.t;
     status : tlapm_obl_state;
     fp : string option;
     prover : string option;
@@ -96,7 +63,7 @@ module ToolboxProtocol : sig
   type tlapm_notif_severity = TlapmNotifError | TlapmNotifWarning
 
   type tlapm_notif = {
-    loc : TlapmRange.t;
+    loc : Range.t;
     sev : tlapm_notif_severity;
     msg : string;
     url : string option;
@@ -126,7 +93,7 @@ val start_async :
   LspT.DocumentUri.t ->
   int ->
   string ->
-  TlapmRange.t ->
+  Range.t ->
   (ToolboxProtocol.tlapm_msg -> unit) ->
   ?tlapm_locator:(unit -> (string, string) result) ->
   unit ->

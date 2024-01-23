@@ -136,8 +136,8 @@ let send_obligation_proof_state st =
       match st.current_obl with
       | None -> (docs, None)
       | Some loc ->
-          let tlapm_range = Prover.TlapmRange.of_lsp_range loc.range in
-          let position = Prover.TlapmRange.from tlapm_range in
+          let tlapm_range = Range.of_lsp_range loc.range in
+          let position = Range.from tlapm_range in
           Docs.get_obligation_state_latest docs loc.uri position
     in
     let notif_packet = TlapsProofStepDetails.to_jsonrpc_packet notif_data in
@@ -176,7 +176,7 @@ module SessionHandlers = Handlers.Make (struct
       (LspT.DocumentUri.to_string uri)
       vsn range.start.line range.end_.line;
     let docs, next_p_ref_opt =
-      Docs.prepare_proof st.docs uri vsn (Prover.TlapmRange.of_lsp_range range)
+      Docs.prepare_proof st.docs uri vsn (Range.of_lsp_range range)
     in
     let st = { st with docs } in
     match next_p_ref_opt with
@@ -205,13 +205,12 @@ module SessionHandlers = Handlers.Make (struct
     | false -> st
 
   let suggest_proof_range st uri range =
-    let range = Prover.TlapmRange.of_lsp_range range in
+    let range = Range.of_lsp_range range in
     let docs, res = Docs.suggest_proof_range st.docs uri range in
     let st = { st with docs } in
     match res with
     | None -> (st, None)
-    | Some (vsn, p_range) ->
-        (st, Some (vsn, Prover.TlapmRange.as_lsp_range p_range))
+    | Some (vsn, p_range) -> (st, Some (vsn, Range.as_lsp_range p_range))
 
   let track_obligation_proof_state (st : t) uri range =
     let st =

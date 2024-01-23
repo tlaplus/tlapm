@@ -1,6 +1,5 @@
 open Util
 open Prover.ToolboxProtocol
-open Prover
 module Proof_step = Proof_step
 module Proof_status = Proof_status
 module Doc_proof_res = Doc_proof_res
@@ -42,7 +41,7 @@ let with_doc_vsn docs uri vsn f =
 
 (* Push specific version to the actual, increase the proof_rec and clear the notifications. *)
 let prepare_proof docs uri vsn range :
-    t * (int * string * TlapmRange.t * Doc_proof_res.t) option =
+    t * (int * string * Range.t * Doc_proof_res.t) option =
   with_doc_vsn docs uri vsn @@ fun (doc : Doc.t) (act : Doc_actual.t) ->
   let next_doc, next_p_ref = Doc.next_p_ref doc in
   match Doc_actual.prepare_proof act next_p_ref with
@@ -55,7 +54,7 @@ let prepare_proof docs uri vsn range :
       (next_doc, act, Some res)
 
 (* Calculate proof range by user selection. *)
-let suggest_proof_range docs uri range : t * (int * TlapmRange.t) option =
+let suggest_proof_range docs uri range : t * (int * Range.t) option =
   match latest_vsn docs uri with
   | None -> (docs, None)
   | Some vsn ->

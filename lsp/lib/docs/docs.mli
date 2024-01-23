@@ -1,7 +1,6 @@
 (** Here we maintain a list of documents and their revisions. *)
 
 open Prover.ToolboxProtocol
-open Prover
 module LspT := Lsp.Types
 
 module Proof_step : sig
@@ -50,12 +49,11 @@ val prepare_proof :
   t ->
   tk ->
   int ->
-  TlapmRange.t ->
-  t * (int * string * TlapmRange.t * Doc_proof_res.t) option
+  Range.t ->
+  t * (int * string * Range.t * Doc_proof_res.t) option
 (** Increment the prover ref for the specified doc/vsn. *)
 
-val suggest_proof_range :
-  t -> tk -> TlapmRange.t -> t * (int * TlapmRange.t) option
+val suggest_proof_range : t -> tk -> Range.t -> t * (int * Range.t) option
 (** Suggest proof range based on the user selection. *)
 
 val add_obl :
@@ -79,10 +77,10 @@ val get_obligation_state :
   t ->
   tk ->
   int ->
-  TlapmRange.Position.t ->
+  Range.Position.t ->
   t * Structs.TlapsProofStepDetails.t option
 (** Get the current proof state for the specific obligation. *)
 
 val get_obligation_state_latest :
-  t -> tk -> TlapmRange.Position.t -> t * Structs.TlapsProofStepDetails.t option
+  t -> tk -> Range.Position.t -> t * Structs.TlapsProofStepDetails.t option
 (** Get the current proof state for the specific obligation at the latest version of the document. *)

@@ -3,11 +3,9 @@
     just to cope with async events from the client.
     *)
 
-open Prover
-
 type t
 
 val make : string -> int -> t
 val text : t -> string
 val version : t -> int
-val diff_pos : t -> t -> TlapmRange.Position.t
+val diff_pos : t -> t -> Range.Position.t
