@@ -1,11 +1,13 @@
 (** State of a single session/connection with the LSP client. *)
 
-type doc_ref = Lsp.Types.DocumentUri.t * int * int
+module LspT := Lsp.Types
+
+type doc_ref = LspT.DocumentUri.t * int * int
 
 type events =
   | LspEOF
   | LspPacket of Jsonrpc.Packet.t
-  | TlapmEvent of doc_ref * Tlapm_lsp_prover.ToolboxProtocol.tlapm_msg
+  | TlapmEvent of doc_ref * Prover.ToolboxProtocol.tlapm_msg
   | TimerTick
 
 val run :

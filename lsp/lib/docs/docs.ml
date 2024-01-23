@@ -1,6 +1,6 @@
 open Util
-open Tlapm_lsp_prover.ToolboxProtocol
-open Tlapm_lsp_prover
+open Prover.ToolboxProtocol
+open Prover
 module Proof_step = Proof_step
 module Proof_status = Proof_status
 module Doc_proof_res = Doc_proof_res

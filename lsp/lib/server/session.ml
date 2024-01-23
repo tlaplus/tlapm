@@ -1,5 +1,3 @@
-module Docs = Tlapm_lsp_docs
-module Prover = Tlapm_lsp_prover
 module LspT = Lsp.Types
 module DocUriSet = Set.Make (LspT.DocumentUri)
 
@@ -9,7 +7,7 @@ type doc_ref = LspT.DocumentUri.t * int * int
 type events =
   | LspEOF
   | LspPacket of Jsonrpc.Packet.t
-  | TlapmEvent of doc_ref * Tlapm_lsp_prover.ToolboxProtocol.tlapm_msg
+  | TlapmEvent of doc_ref * Prover.ToolboxProtocol.tlapm_msg
   | TimerTick
 
 type mode = Initializing | Ready | Shutdown
@@ -19,7 +17,7 @@ type t = {
   event_adder : events -> unit;
   output_adder : Jsonrpc.Packet.t option -> unit;
   last_req_id : int;
-  progress : Tlapm_lsp_progress.t;
+  progress : Prover.Progress.t;
   mode : mode;
   docs : Docs.t;
   prov : Prover.t;  (** Prover that is currently running. *)
@@ -51,7 +49,7 @@ let lsp_send st p =
 (* For callbacks. *)
 type t' = t
 
-module Progress = Tlapm_lsp_progress.Make (struct
+module Progress = Prover.Progress.Make (struct
   type t = t'
 
   let lsp_send = lsp_send
@@ -89,7 +87,7 @@ let send_diagnostics diagnostics st uri vsn =
   st.output_adder (Some d_pkg)
 
 let send_proof_state_markers marks st uri =
-  let open Tlapm_lsp_structs in
+  let open Structs in
   let jsonrpc_notif =
     Jsonrpc.Notification.create
       ~params:
@@ -131,7 +129,7 @@ let send_latest_proof_info st uri =
   | Some vsn, Some p_res -> send_proof_info st uri vsn (Some p_res)
 
 let send_obligation_proof_state st =
-  let open Tlapm_lsp_structs in
+  let open Structs in
   let maybe_st =
     with_docs' st @@ fun (st, docs) ->
     let docs, notif_data =
@@ -152,7 +150,7 @@ let delay_proof_info st uri =
   let delayed = DocUriSet.add uri st.delayed in
   { st with delayed }
 
-module Handlers = Tlapm_lsp_handlers.Make (struct
+module SessionHandlers = Handlers.Make (struct
   module LspT = LspT
 
   type t = t'
@@ -216,7 +214,6 @@ module Handlers = Tlapm_lsp_handlers.Make (struct
         (st, Some (vsn, Prover.TlapmRange.as_lsp_range p_range))
 
   let track_obligation_proof_state (st : t) uri range =
-    let open Tlapm_lsp_structs in
     let st =
       { st with current_obl = Some (LspT.Location.create ~uri ~range) }
     in
@@ -242,7 +239,7 @@ module Handlers = Tlapm_lsp_handlers.Make (struct
         event_adder = (fun _ -> ());
         output_adder = (fun _ -> ());
         last_req_id = 0;
-        progress = Tlapm_lsp_progress.make ();
+        progress = Prover.Progress.make ();
         docs = Docs.empty;
         prov = Prover.create sw fs proc_mgr;
         delayed = DocUriSet.empty;
@@ -269,7 +266,7 @@ module Handlers = Tlapm_lsp_handlers.Make (struct
     ()
 end)
 
-let handle_lsp_packet p st = Some (Handlers.handle_jsonrpc_packet p st)
+let handle_lsp_packet p st = Some (SessionHandlers.handle_jsonrpc_packet p st)
 
 let handle_tlapm_msg ((uri, vsn, p_ref) : doc_ref) msg st =
   let open Prover.ToolboxProtocol in
@@ -339,7 +336,7 @@ let run event_taker event_adder output_adder sw fs proc_mgr =
       event_adder;
       output_adder;
       last_req_id = 0;
-      progress = Tlapm_lsp_progress.make ();
+      progress = Prover.Progress.make ();
       docs = Docs.empty;
       prov = Prover.create sw fs proc_mgr;
       delayed = DocUriSet.empty;

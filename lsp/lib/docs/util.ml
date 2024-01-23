@@ -20,4 +20,4 @@ module LspT = Lsp.Types
 module DocMap = Map.Make (LspT.DocumentUri)
 module OblMap = Map.Make (OblRef)
 module StrMap = Map.Make (String)
-module RangeMap = Map.Make (Tlapm_lsp_prover.TlapmRange)
+module RangeMap = Map.Make (Prover.TlapmRange)

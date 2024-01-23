@@ -1,1 +1,1 @@
-module Server = Tlapm_lsp_server
+module Server = Server

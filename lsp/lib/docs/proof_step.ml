@@ -1,6 +1,6 @@
 open Util
-open Tlapm_lsp_prover
-open Tlapm_lsp_prover.ToolboxProtocol
+open Prover
+open Prover.ToolboxProtocol
 open Tlapm_lib.Backend
 
 (** We categorize the proof steps just to make the presentation in the UI clearer. *)
@@ -94,7 +94,7 @@ let as_lsp_tlaps_proof_state_marker ps =
   let range = TlapmRange.as_lsp_range ps.head_loc in
   let state = Proof_status.to_string ps.status_derived in
   let hover = Proof_status.to_message ps.status_derived in
-  Tlapm_lsp_structs.TlapsProofStateMarker.make ~range ~state ~hover
+  Structs.TlapsProofStateMarker.make ~range ~state ~hover
 
 let as_lsp_tlaps_proof_step_details uri ps =
   let kind = Kind.to_string ps.kind in
@@ -106,7 +106,7 @@ let as_lsp_tlaps_proof_step_details uri ps =
       (fun (_, o) -> Obl.as_lsp_tlaps_proof_obligation_state o)
       (RangeMap.to_list ps.obs)
   in
-  Tlapm_lsp_structs.TlapsProofStepDetails.make ~kind ~location ~obligations
+  Structs.TlapsProofStepDetails.make ~kind ~location ~obligations
 
 (* Recursively collect all the fingerprinted obligations.
    This is used to transfer proof state from the
@@ -416,7 +416,7 @@ let%test_unit "determine proof steps" =
         "====";
       ]
   in
-  let mule = Result.get_ok (Tlapm_lib.module_of_string mod_text mod_file) in
+  let mule = Result.get_ok (Parser.module_of_string mod_text mod_file) in
   let ps = of_module mule None in
   match flatten ps with
   | [

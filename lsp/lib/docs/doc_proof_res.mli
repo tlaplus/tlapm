@@ -7,15 +7,12 @@ open Util
 type t
 
 val make :
-  int ->
-  Tlapm_lsp_prover.ToolboxProtocol.tlapm_notif list ->
-  Proof_step.t option ->
-  t
+  int -> Prover.ToolboxProtocol.tlapm_notif list -> Proof_step.t option -> t
 
 val empty : t
 
 val as_lsp :
-  t -> LspT.Diagnostic.t list * Tlapm_lsp_structs.TlapsProofStateMarker.t list
+  t -> LspT.Diagnostic.t list * Structs.TlapsProofStateMarker.t list
 
 (* TODO: The following should be removed when the progress reporting is reorganized. *)
 val p_ref : t -> int

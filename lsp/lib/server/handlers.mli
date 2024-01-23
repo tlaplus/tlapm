@@ -1,7 +1,6 @@
 (** Here we have all the TLAPM specific LSP action handlers. *)
 
-module Docs = Tlapm_lsp_docs
-module LspT = Lsp.Types
+module LspT := Lsp.Types
 
 module type Callbacks = sig
   type t

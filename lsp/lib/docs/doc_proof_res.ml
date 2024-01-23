@@ -1,4 +1,4 @@
-open Tlapm_lsp_prover
+open Prover
 open Util
 
 type t = {
@@ -30,7 +30,7 @@ let as_lsp pr =
   let notif_diags =
     List.map
       (fun (ntf : ToolboxProtocol.tlapm_notif) ->
-        let open Tlapm_lsp_prover in
+        let open Prover in
         let severity =
           match ntf.sev with
           | TlapmNotifError -> LspT.DiagnosticSeverity.Error

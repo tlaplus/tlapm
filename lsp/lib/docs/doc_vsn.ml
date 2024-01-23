@@ -1,4 +1,4 @@
-open Tlapm_lsp_prover
+open Prover
 
 type t = {
   text : string; (* Contents if the file at the specific version. *)

@@ -3,7 +3,7 @@
     just to cope with async events from the client.
     *)
 
-open Tlapm_lsp_prover
+open Prover
 
 type t
 

@@ -1,4 +1,4 @@
-open Tlapm_lsp_prover
+open Prover
 
 type t = Proved | Failed | Omitted | Missing | Pending | Progress
 

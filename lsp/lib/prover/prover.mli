@@ -1,4 +1,37 @@
+module LspT := Lsp.Types
+
 type t
+
+module Progress : sig
+  type t
+
+  val make : unit -> t
+  (** Create new instance of progress tracker. *)
+
+  module type Callbacks = sig
+    type t
+
+    val next_req_id : t -> Jsonrpc.Id.t * t
+    val lsp_send : t -> Jsonrpc.Packet.t -> t
+  end
+
+  module Make (CB : Callbacks) : sig
+    val is_latest : t -> LspT.ProgressToken.t -> bool
+    (** Checks if the token is of the last progress.  *)
+
+    val proof_started : t -> int -> CB.t -> t * CB.t
+    (** Called when new TLAPM run is initiated. *)
+
+    val obl_num : t -> int -> int -> CB.t -> t * CB.t
+    (** Called when a number of obligations is received from the TLAPM. *)
+
+    val obl_changed : t -> int -> int -> CB.t -> t * CB.t
+    (** Called when some proof obligation state change is received from TLAPM. *)
+
+    val proof_ended : t -> int -> CB.t -> t * CB.t
+    (** Called when the TLAPM terminates. *)
+  end
+end
 
 module TlapmRange : sig
   module Position : sig
@@ -13,8 +46,8 @@ module TlapmRange : sig
   val till : t -> Position.t
   val line_from : t -> int
   val line_till : t -> int
-  val as_lsp_range : t -> Lsp.Types.Range.t
-  val of_lsp_range : Lsp.Types.Range.t -> t
+  val as_lsp_range : t -> LspT.Range.t
+  val of_lsp_range : LspT.Range.t -> t
   val of_locus : Tlapm_lib.Loc.locus -> t option
   val of_locus_opt : Tlapm_lib.Loc.locus option -> t option
   val of_locus_must : Tlapm_lib.Loc.locus -> t
@@ -90,7 +123,7 @@ val cancel_all : t -> t
 
 val start_async :
   t ->
-  Lsp.Types.DocumentUri.t ->
+  LspT.DocumentUri.t ->
   int ->
   string ->
   TlapmRange.t ->

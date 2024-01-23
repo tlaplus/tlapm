@@ -1,8 +1,8 @@
 (** Actual state of the document. *)
 
 open Util
-open Tlapm_lsp_prover
-open Tlapm_lsp_prover.ToolboxProtocol
+open Prover
+open Prover.ToolboxProtocol
 
 type t
 

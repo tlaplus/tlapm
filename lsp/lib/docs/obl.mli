@@ -12,11 +12,11 @@ val of_parsed_obligation :
 val with_role : Role.t -> t -> t
 
 val with_prover_obligation :
-  int -> Tlapm_lsp_prover.ToolboxProtocol.tlapm_obligation -> t option -> t
+  int -> Prover.ToolboxProtocol.tlapm_obligation -> t option -> t
 
 val with_proof_state_from : t -> (string -> t option) -> t
 val role : t -> Role.t
-val loc : t -> Tlapm_lsp_prover.TlapmRange.t
+val loc : t -> Prover.TlapmRange.t
 val fingerprint : t -> string option
 val status : t -> Proof_status.t
 val text_plain : t -> string option
@@ -28,7 +28,7 @@ val as_lsp_diagnostic : t -> LspT.Diagnostic.t option
 (** Convert to the LSP data structures. *)
 
 val as_lsp_tlaps_proof_obligation_state :
-  t -> Tlapm_lsp_structs.TlapsProofObligationState.t
+  t -> Structs.TlapsProofObligationState.t
 (** Convert to the LSP data structures. *)
 
 (* TODO: Remove afer progress reworked. *)

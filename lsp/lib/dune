@@ -6,7 +6,7 @@
  (libraries tlapm_lib lsp eio_main dune-build-info re2)
  (inline_tests
   (deps "../test/tlapm_mock.sh" "../../src/tlapm.exe")
-  ; (flags -only-test tlapm_lsp_docs/proof_step.ml -verbose)
+  ; (flags -only-test docs/proof_step.ml -verbose)
   )
  (preprocess
   (pps ppx_inline_test)))

@@ -5,6 +5,9 @@
 (** Max size for the read buffer, a line should fit into it.*)
 let read_buf_max_size = 1024 * 1024
 
+module LspT = Lsp.Types
+module Progress = Progress
+
 module TlapmRange = struct
   (* LSP ranges are 0-based and TLAPM is 1-based. In LSP the last char is exclusive. *)
 
@@ -63,12 +66,12 @@ module TlapmRange = struct
     else f
 
   let as_lsp_range (R ((fl, fc), (tl, tc))) =
-    let open Lsp.Types in
+    let open LspT in
     Range.create
       ~start:(Position.create ~line:(fl - 1) ~character:(fc - 1))
       ~end_:(Position.create ~line:(tl - 1) ~character:tc)
 
-  let of_lsp_range (range : Lsp.Types.Range.t) =
+  let of_lsp_range (range : LspT.Range.t) =
     let f = (range.start.line + 1, range.start.character + 1) in
     let t = (range.end_.line + 1, range.end_.character) in
     R (f, t)
@@ -599,7 +602,7 @@ let fork_read sw stream r w cancel =
 (** Start the TLAPM process and attach the reader fiber to it. *)
 let start_async_with_exec st doc_uri _doc_vsn doc_text range events_adder
     executable =
-  let mod_path = Lsp.Types.DocumentUri.to_path doc_uri in
+  let mod_path = LspT.DocumentUri.to_path doc_uri in
   let mod_dir =
     let open Eio.Path in
     st.fs / Filename.dirname mod_path
@@ -793,7 +796,7 @@ let%test_module "Mocked TLAPM" =
       Eio.Switch.run @@ fun sw ->
       let fs = Eio.Stdenv.fs env in
       let mgr = Eio.Stdenv.process_mgr env in
-      let du = Lsp.Types.DocumentUri.of_path doc_name in
+      let du = LspT.DocumentUri.of_path doc_name in
       let dv = 1 in
       let dt = "any\ncontent" in
       let events = Eio.Stream.create 10 in

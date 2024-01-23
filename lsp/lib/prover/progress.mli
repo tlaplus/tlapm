@@ -3,7 +3,7 @@
     VSCode don't support the client-initiated workDoneProgress
     with LSP. *)
 
-module LspT = Lsp.Types
+module LspT := Lsp.Types
 
 type t
 

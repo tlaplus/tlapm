@@ -1,4 +1,6 @@
-module LspT = Lsp.Types
+(** Extensions to the LSP protocol. *)
+
+module LspT := Lsp.Types
 
 module TlapsProofObligationResult : sig
   type t

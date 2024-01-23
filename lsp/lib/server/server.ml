@@ -1,5 +1,7 @@
 (* cSpell:words ipaddr *)
 
+module Structs = Structs
+
 (** 50 MB should be enough. *)
 let max_size = 50 * 1024 * 1024
 
@@ -20,7 +22,7 @@ let flow_handler_fib_lsp_writer trace output_flow output_taker () =
   let output_chan = (buf_w, trace_fun trace `Output) in
   let write_packet out_packet =
     let buf_w, _ = output_chan in
-    match Tlapm_lsp_codec.write output_chan out_packet with
+    match Codec.write output_chan out_packet with
     | Ok () -> Eio.Buf_write.flush buf_w
     | Error exn ->
         Eio.traceln "IO Error reading packet: %s" (Printexc.to_string exn)
@@ -38,15 +40,15 @@ let flow_handler_fib_lsp_reader trace input_flow event_adder () =
   let buf_r = Eio.Buf_read.of_flow input_flow ~max_size in
   let input_chan = (buf_r, trace_fun trace `Input) in
   let rec read_loop () =
-    match Tlapm_lsp_codec.read input_chan with
+    match Codec.read input_chan with
     | Ok (Some packet) ->
-        event_adder (Tlapm_lsp_session.LspPacket packet);
+        event_adder (Session.LspPacket packet);
         read_loop ()
     | Ok None ->
-        event_adder Tlapm_lsp_session.LspEOF;
+        event_adder Session.LspEOF;
         Eio.traceln "No packet was read."
     | Error exn ->
-        event_adder Tlapm_lsp_session.LspEOF;
+        event_adder Session.LspEOF;
         Eio.traceln "IO Error reading packet: %s" (Printexc.to_string exn)
   in
   read_loop ()
@@ -61,14 +63,13 @@ let flow_handler trace input_flow output_flow sw fs clock proc_mgr =
   let output_taker () = Eio.Stream.take output in
   let rec timer () =
     Eio.Time.sleep clock timer_tick_period;
-    event_adder Tlapm_lsp_session.TimerTick;
+    event_adder Session.TimerTick;
     timer ()
   in
   Eio.Fiber.all
     [
       (fun () ->
-        Tlapm_lsp_session.run event_taker event_adder output_adder sw fs
-          proc_mgr);
+        Session.run event_taker event_adder output_adder sw fs proc_mgr);
       flow_handler_fib_lsp_reader trace input_flow event_adder;
       flow_handler_fib_lsp_writer trace output_flow output_taker;
       timer;

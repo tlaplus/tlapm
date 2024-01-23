@@ -1,5 +1,5 @@
 open Util
-open Tlapm_lsp_prover.ToolboxProtocol
+open Prover.ToolboxProtocol
 
 module Role = struct
   type t =
@@ -54,7 +54,7 @@ let role obl = obl.role
 
 (* Should exist in any case. *)
 let loc obl =
-  let open Tlapm_lsp_prover in
+  let open Prover in
   match obl.parsed with
   | None ->
       (match obl.latest_prover with
@@ -77,7 +77,7 @@ let latest_status_msg obl =
   match obl.latest_prover with
   | None -> Proof_status.to_message obl.status
   | Some prover ->
-      Tlapm_lsp_prover.ToolboxProtocol.tlapm_obl_state_to_string
+      Prover.ToolboxProtocol.tlapm_obl_state_to_string
         (StrMap.find prover obl.by_prover).status
 
 let latest_obl_text obl =
@@ -146,7 +146,7 @@ let with_proof_state_from obl by_fp =
   | Some _ -> obl
 
 let as_lsp_diagnostic (obl : t) =
-  let open Tlapm_lsp_prover in
+  let open Prover in
   match Proof_status.is_diagnostic obl.status with
   | true ->
       let message = "Obligation: " ^ latest_status_msg obl in
@@ -162,7 +162,7 @@ let as_lsp_diagnostic (obl : t) =
   | false -> None
 
 let as_lsp_tlaps_proof_obligation_state obl =
-  let open Tlapm_lsp_prover in
+  let open Prover in
   let range = TlapmRange.as_lsp_range (loc obl) in
   let normalized = text_normalized obl in
   let results =
@@ -176,15 +176,15 @@ let as_lsp_tlaps_proof_obligation_state obl =
         let meth = some_str o.meth in
         let reason = o.reason in
         let obligation = o.obl in
-        Tlapm_lsp_structs.TlapsProofObligationResult.make ~prover ~meth ~status
+        Structs.TlapsProofObligationResult.make ~prover ~meth ~status
           ~reason ~obligation)
       (StrMap.to_list obl.by_prover)
   in
-  Tlapm_lsp_structs.TlapsProofObligationState.make ~range ~normalized ~results
+  Structs.TlapsProofObligationState.make ~range ~normalized ~results
 
 (* TODO: That's a workaround for the progress calc. Should be removed later. *)
 let is_state_terminal_in_p_ref p_ref obl =
-  let is_term = Tlapm_lsp_prover.ToolboxProtocol.tlapm_obl_state_is_terminal in
+  let is_term = Prover.ToolboxProtocol.tlapm_obl_state_is_terminal in
   if obl.p_ref = p_ref then
     match obl.latest_prover with
     | None -> false

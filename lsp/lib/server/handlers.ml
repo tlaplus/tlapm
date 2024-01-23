@@ -1,4 +1,3 @@
-module Docs = Tlapm_lsp_docs
 module LspT = Lsp.Types
 
 module type Callbacks = sig
@@ -41,7 +40,7 @@ module Make (CB : Callbacks) = struct
 
   (** Dispatch notification packets. *)
   let handle_jsonrpc_notif jsonrpc_notif cb_state =
-    let open Lsp.Types in
+    let open LspT in
     match Lsp.Client_notification.of_jsonrpc jsonrpc_notif with
     | Ok Initialized ->
         Eio.traceln "CONN: Initialized";
@@ -52,7 +51,7 @@ module Make (CB : Callbacks) = struct
         let text = params.textDocument.text in
         Eio.traceln "DOCUMENT[Open]: %s => %s" (DocumentUri.to_string uri) text;
         CB.with_docs cb_state @@ fun (cb_st, docs) ->
-        let docs = Tlapm_lsp_docs.add docs uri vsn text in
+        let docs = Docs.add docs uri vsn text in
         (cb_st, docs)
     | Ok (TextDocumentDidChange params) -> (
         let uri = params.textDocument.uri in
@@ -63,12 +62,11 @@ module Make (CB : Callbacks) = struct
               (DocumentUri.to_string uri)
               text;
             CB.with_docs cb_state @@ fun (cb_st, docs) ->
-            (cb_st, Tlapm_lsp_docs.add docs uri vsn text)
+            (cb_st, Docs.add docs uri vsn text)
         | _ -> failwith "incremental changes not supported")
     | Ok (TextDocumentDidClose params) ->
         let uri = params.textDocument.uri in
-        CB.with_docs cb_state @@ fun (cb_st, docs) ->
-        (cb_st, Tlapm_lsp_docs.rem docs uri)
+        CB.with_docs cb_state @@ fun (cb_st, docs) -> (cb_st, Docs.rem docs uri)
     | Ok (DidSaveTextDocument params) ->
         let uri = params.textDocument.uri in
         Eio.traceln "DOCUMENT[Save]: %s" (DocumentUri.to_string uri);
@@ -99,7 +97,7 @@ module Make (CB : Callbacks) = struct
 
   let handle_jsonrpc_req_initialize (jsonrpc_req : Jsonrpc.Request.t) params
       cb_state =
-    let open Lsp.Types in
+    let open LspT in
     let print_ci (params : InitializeParams.t) =
       match params.clientInfo with
       | None -> ()
@@ -257,7 +255,7 @@ module Make (CB : Callbacks) = struct
 
   (** Dispatch request packets. *)
   let handle_jsonrpc_request (jsonrpc_req : Jsonrpc.Request.t) cb_state =
-    let open Lsp.Types in
+    let open LspT in
     match Lsp.Client_request.of_jsonrpc jsonrpc_req with
     | Ok (E (Initialize (params : InitializeParams.t))) ->
         handle_jsonrpc_req_initialize jsonrpc_req params cb_state

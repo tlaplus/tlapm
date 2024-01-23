@@ -1,6 +1,5 @@
 open Util
-open Tlapm_lsp_prover
-open Tlapm_lsp_prover.ToolboxProtocol
+open Prover.ToolboxProtocol
 
 (* Separated form the type [t] to have the value lazily evaluated. *)
 module Parsed = struct
@@ -15,14 +14,14 @@ module Parsed = struct
   let make ~uri ~(doc_vsn : Doc_vsn.t) ~(ps_prev : Proof_step.t option) =
     match
       Eio.Mutex.use_rw ~protect:true prover_mutex @@ fun () ->
-      Tlapm_lib.module_of_string (Doc_vsn.text doc_vsn)
+      Parser.module_of_string (Doc_vsn.text doc_vsn)
         (LspT.DocumentUri.to_path uri)
     with
     | Ok mule ->
         let ps = Proof_step.of_module mule ps_prev in
         { nts = []; ps }
     | Error (loc_opt, msg) ->
-        let nts = [ ToolboxProtocol.notif_of_loc_msg loc_opt msg ] in
+        let nts = [ Prover.ToolboxProtocol.notif_of_loc_msg loc_opt msg ] in
         { nts; ps = None }
 
   let ps_if_ready (p : t Lazy.t) =

@@ -1,14 +1,12 @@
 (** Here we maintain a list of documents and their revisions. *)
 
-open Tlapm_lsp_prover.ToolboxProtocol
-open Tlapm_lsp_prover
-open Util
+open Prover.ToolboxProtocol
+open Prover
+
+module LspT := Lsp.Types
 
 module Proof_step : sig
   type t
-
-  (* val as_lsp_tlaps_proof_state_marker :
-     t -> Tlapm_lsp_structs.TlapsProofStateMarker.t *)
 end
 
 module Proof_status : sig
@@ -20,7 +18,7 @@ end
 type t
 (** A document store type. *)
 
-type tk = Lsp.Types.DocumentUri.t
+type tk = LspT.DocumentUri.t
 (** Key type to identify documents. *)
 
 (** Result of an update, returns an actual list of obligations and errors. *)
@@ -28,15 +26,12 @@ module Doc_proof_res : sig
   type t
 
   val make :
-    int ->
-    Tlapm_lsp_prover.ToolboxProtocol.tlapm_notif list ->
-    Proof_step.t option ->
-    t
+    int -> Prover.ToolboxProtocol.tlapm_notif list -> Proof_step.t option -> t
 
   val empty : t
 
   val as_lsp :
-    t -> LspT.Diagnostic.t list * Tlapm_lsp_structs.TlapsProofStateMarker.t list
+    t -> LspT.Diagnostic.t list * Structs.TlapsProofStateMarker.t list
 
   (* TODO: The following should be removed when the progress reporting is reorganized. *)
   val p_ref : t -> int
@@ -86,12 +81,12 @@ val get_obligation_state :
   tk ->
   int ->
   TlapmRange.Position.t ->
-  t * Tlapm_lsp_structs.TlapsProofStepDetails.t option
+  t * Structs.TlapsProofStepDetails.t option
 (** Get the current proof state for the specific obligation. *)
 
 val get_obligation_state_latest :
   t ->
   tk ->
   TlapmRange.Position.t ->
-  t * Tlapm_lsp_structs.TlapsProofStepDetails.t option
+  t * Structs.TlapsProofStepDetails.t option
 (** Get the current proof state for the specific obligation at the latest version of the document. *)
