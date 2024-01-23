@@ -316,7 +316,7 @@ module ToolboxProtocol = struct
     | `A :: others -> (
         let re =
           Re2.create_exn
-            {|^File "(.*)", line ([0-9]+), character ([0-9]+) to line ([0-9]+), character ([0-9]+) :\n(.*)$|}
+            {|^File "(.*)", line ([0-9]+), character ([0-9]+) to line ([0-9]+), character ([0-9]+) :\n?(.*)$|}
         in
         match Re2.find_submatches re str with
         | Ok
@@ -339,7 +339,7 @@ module ToolboxProtocol = struct
         let re_opts = { Re2.Options.default with dot_nl = true } in
         let re =
           Re2.create_exn
-            {|^File "(.*)", line ([0-9]+), characters ([0-9]+)-([0-9]+)\n(.*)|}
+            {|^File "(.*)", line ([0-9]+), characters ([0-9]+)-([0-9]+)\n?(.*)|}
             ~options:re_opts
         in
         match Re2.find_submatches re str with
@@ -363,7 +363,7 @@ module ToolboxProtocol = struct
         let re_opts = { Re2.Options.default with dot_nl = true } in
         let re =
           Re2.create_exn
-            {|^File "(.*)", line ([0-9]+), character ([0-9]+)\n(.*)|}
+            {|^File "(.*)", line ([0-9]+), character ([0-9]+)\n?(.*)|}
             ~options:re_opts
         in
         match Re2.find_submatches re str with
