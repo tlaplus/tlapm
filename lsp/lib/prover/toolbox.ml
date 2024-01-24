@@ -19,7 +19,7 @@ let tlapm_obl_state_of_string s =
   | "trivial" -> Trivial
   | _ -> Unknown s
 
-(* NOTE: Strings don't have to match with the ones above. *)
+(* The strings here don't have to match with the ones above. *)
 let tlapm_obl_state_to_string (s : tlapm_obl_state) : string =
   match s with
   | ToBeProved -> "to be proved"
@@ -30,17 +30,6 @@ let tlapm_obl_state_to_string (s : tlapm_obl_state) : string =
   | Interrupted -> "interrupted"
   | Trivial -> "trivial"
   | Unknown s -> "unknown state: " ^ s
-
-let tlapm_obl_state_is_terminal (s : tlapm_obl_state) : bool =
-  match s with
-  | ToBeProved -> false
-  | BeingProved -> false
-  | Normalized -> false
-  | Proved -> true
-  | Failed -> true
-  | Interrupted -> false
-  | Trivial -> true
-  | Unknown _ -> false
 
 module Obligation = struct
   type t = {
@@ -54,6 +43,34 @@ module Obligation = struct
     already : bool option;
     obl : string option;
   }
+
+  (** Indicates if we should not expect any other obligation messages with the same id. *)
+  let is_final o =
+    match o.status with
+    | ToBeProved -> false
+    | BeingProved -> false
+    | Normalized -> false
+    | Proved -> true
+    | Failed -> ( match o.prover with Some "isabelle" -> true | _ -> false)
+    | Interrupted -> true
+    | Trivial -> true
+    | Unknown _ -> false
+
+  (** This is for testing only. *)
+  module Test = struct
+    let with_id_status id status =
+      {
+        id;
+        loc = Range.of_unknown;
+        status;
+        fp = None;
+        prover = None;
+        meth = None;
+        reason = None;
+        already = None;
+        obl = None;
+      }
+  end
 end
 
 type tlapm_notif_severity = TlapmNotifError | TlapmNotifWarning

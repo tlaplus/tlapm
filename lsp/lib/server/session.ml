@@ -50,7 +50,7 @@ let lsp_send st p =
 (* For callbacks. *)
 type t' = t
 
-module Progress = Prover.Progress.Make (struct
+module ProverProgress = Prover.Progress.Make (struct
   type t = t'
 
   let lsp_send = lsp_send
@@ -58,23 +58,11 @@ module Progress = Prover.Progress.Make (struct
   let next_req_id st =
     let next = st.last_req_id + 1 in
     (`Int next, { st with last_req_id = next })
+
+  let with_progress st f =
+    let st, progress = f st st.progress in
+    { st with progress }
 end)
-
-let progress_proof_started st p_ref =
-  let progress, st = Progress.proof_started st.progress p_ref st in
-  { st with progress }
-
-let progress_obl_num st p_ref obl_num =
-  let progress, st = Progress.obl_num st.progress p_ref obl_num st in
-  { st with progress }
-
-let progress_obl_changed st p_ref obl_done =
-  let progress, st = Progress.obl_changed st.progress p_ref obl_done st in
-  { st with progress }
-
-let progress_proof_ended st p_ref =
-  let progress, st = Progress.proof_ended st.progress p_ref st in
-  { st with progress }
 
 let send_diagnostics diagnostics st uri vsn =
   let open LspT in
@@ -108,12 +96,6 @@ let send_proof_state_markers marks st uri =
 let send_proof_info st uri vsn res =
   match res with
   | Some res ->
-      let st =
-        (* TODO: This is incorrect in general. Have to change the TLAPS toolbox protocol to count the finished steps. *)
-        progress_obl_changed st
-          (Docs.Doc_proof_res.p_ref res)
-          (Docs.Doc_proof_res.obs_done res)
-      in
       let diags, marks = Docs.Doc_proof_res.as_lsp res in
       send_diagnostics diags st uri vsn;
       send_proof_state_markers marks st uri;
@@ -182,13 +164,13 @@ module SessionHandlers = Handlers.Make (struct
     let st = { st with docs } in
     match next_p_ref_opt with
     | Some (p_ref, doc_text, p_range, proof_res) -> (
-        let st = progress_proof_started st p_ref in
+        let st = ProverProgress.proof_started ~p_ref st in
         let st = send_proof_info st uri vsn (Some proof_res) in
         let prov_events e =
           st.event_adder (TlapmEvent ((uri, vsn, p_ref), e))
         in
         match
-          Prover.start_async st.prov uri vsn doc_text p_range prov_events ()
+          Prover.start_async st.prov uri doc_text p_range prov_events ()
         with
         | Ok prov' -> { st with prov = prov' }
         | Error msg ->
@@ -199,7 +181,7 @@ module SessionHandlers = Handlers.Make (struct
         st
 
   let cancel st (progress_token : LspT.ProgressToken.t) =
-    match Progress.is_latest st.progress progress_token with
+    match ProverProgress.is_latest st.progress progress_token with
     | true ->
         let prov = Prover.cancel_all st.prov in
         { st with prov }
@@ -239,7 +221,7 @@ module SessionHandlers = Handlers.Make (struct
         event_adder = (fun _ -> ());
         output_adder = (fun _ -> ());
         last_req_id = 0;
-        progress = Prover.Progress.make ();
+        progress = ProverProgress.make ();
         docs = Docs.empty;
         prov = Prover.create sw fs proc_mgr;
         delayed = DocUriSet.empty;
@@ -280,19 +262,20 @@ let handle_toolbox_msg ((uri, vsn, p_ref) : doc_ref) msg st =
       let st = { st with docs } in
       let st = delay_proof_info st uri in
       Some st
-  | Toolbox.Msg.TlapmObligationsNumber obl_num ->
+  | Toolbox.Msg.TlapmObligationsNumber obl_count ->
       Eio.traceln "---> TlapmObligationsNumber";
-      let st = progress_obl_num st p_ref obl_num in
+      let st = ProverProgress.obl_count ~p_ref ~obl_count st in
       Some st
   | Toolbox.Msg.TlapmObligation obl ->
       Eio.traceln "---> TlapmObligation, id=%d" obl.id;
+      let st = ProverProgress.obligation ~p_ref ~obl st in
       let docs, _res = Docs.add_obl st.docs uri vsn p_ref obl in
       let st = { st with docs } in
       let st = delay_proof_info st uri in
       Some st
   | Toolbox.Msg.TlapmTerminated ->
       Eio.traceln "---> TlapmTerminated";
-      let st = progress_proof_ended st p_ref in
+      let st = ProverProgress.proof_ended ~p_ref st in
       let docs, res = Docs.terminated st.docs uri vsn p_ref in
       let st = { st with docs } in
       let st = send_proof_info st uri vsn res in
@@ -335,7 +318,7 @@ let run event_taker event_adder output_adder sw fs proc_mgr =
       event_adder;
       output_adder;
       last_req_id = 0;
-      progress = Prover.Progress.make ();
+      progress = ProverProgress.make ();
       docs = Docs.empty;
       prov = Prover.create sw fs proc_mgr;
       delayed = DocUriSet.empty;

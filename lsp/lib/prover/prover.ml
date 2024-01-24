@@ -109,8 +109,7 @@ let fork_read sw stream r w cancel =
   Eio.traceln "[TLAPM] main fiber completed"
 
 (** Start the TLAPM process and attach the reader fiber to it. *)
-let start_async_with_exec st doc_uri _doc_vsn doc_text range events_adder
-    executable =
+let start_async_with_exec st doc_uri doc_text range events_adder executable =
   let mod_path = LspT.DocumentUri.to_path doc_uri in
   let mod_dir =
     let open Eio.Path in
@@ -145,14 +144,14 @@ let start_async_with_exec st doc_uri _doc_vsn doc_text range events_adder
   { st with forked = Some forked }
 
 (* Run the tlapm prover, cancel the preceding one, if any. *)
-let start_async st doc_uri doc_vsn doc_text range events_adder
+let start_async st doc_uri doc_text range events_adder
     ?(tlapm_locator = tlapm_exe) () =
   Eio.traceln "[TLAPM][I]\n%s" doc_text;
   match tlapm_locator () with
   | Ok executable ->
       let st' = cancel_all st in
       Ok
-        (start_async_with_exec st' doc_uri doc_vsn doc_text range events_adder
+        (start_async_with_exec st' doc_uri doc_text range events_adder
            executable)
   | Error reason -> Error reason
 
@@ -164,7 +163,6 @@ let%test_module "Mocked TLAPM" =
       let fs = Eio.Stdenv.fs env in
       let mgr = Eio.Stdenv.process_mgr env in
       let du = LspT.DocumentUri.of_path doc_name in
-      let dv = 1 in
       let dt = "any\ncontent" in
       let events = Eio.Stream.create 10 in
       let events_adder = Eio.Stream.add events in
@@ -177,8 +175,8 @@ let%test_module "Mocked TLAPM" =
       let ts_start = Eio.Time.now clock in
       let pr =
         match
-          start_async pr du dv dt (Range.of_lines 3 7) events_adder
-            ~tlapm_locator ()
+          start_async pr du dt (Range.of_lines 3 7) events_adder ~tlapm_locator
+            ()
         with
         | Ok pr -> pr
         | Error e -> failwith e

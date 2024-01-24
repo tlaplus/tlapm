@@ -1,38 +1,5 @@
 module LspT := Lsp.Types
 
-type t
-
-module Progress : sig
-  type t
-
-  val make : unit -> t
-  (** Create new instance of progress tracker. *)
-
-  module type Callbacks = sig
-    type t
-
-    val next_req_id : t -> Jsonrpc.Id.t * t
-    val lsp_send : t -> Jsonrpc.Packet.t -> t
-  end
-
-  module Make (CB : Callbacks) : sig
-    val is_latest : t -> LspT.ProgressToken.t -> bool
-    (** Checks if the token is of the last progress.  *)
-
-    val proof_started : t -> int -> CB.t -> t * CB.t
-    (** Called when new TLAPM run is initiated. *)
-
-    val obl_num : t -> int -> int -> CB.t -> t * CB.t
-    (** Called when a number of obligations is received from the TLAPM. *)
-
-    val obl_changed : t -> int -> int -> CB.t -> t * CB.t
-    (** Called when some proof obligation state change is received from TLAPM. *)
-
-    val proof_ended : t -> int -> CB.t -> t * CB.t
-    (** Called when the TLAPM terminates. *)
-  end
-end
-
 (** Types representing messages from the prover. *)
 module Toolbox : sig
   type tlapm_obl_state =
@@ -46,7 +13,6 @@ module Toolbox : sig
     | Unknown of string
 
   val tlapm_obl_state_to_string : tlapm_obl_state -> string
-  val tlapm_obl_state_is_terminal : tlapm_obl_state -> bool
 
   module Obligation : sig
     type t = {
@@ -60,6 +26,8 @@ module Toolbox : sig
       already : bool option;
       obl : string option;
     }
+
+    val is_final : t -> bool
   end
 
   type tlapm_notif_severity = TlapmNotifError | TlapmNotifWarning
@@ -82,6 +50,41 @@ module Toolbox : sig
   end
 end
 
+module Progress : sig
+  type t
+
+  module type Callbacks = sig
+    type p := t
+    type t
+
+    val next_req_id : t -> Jsonrpc.Id.t * t
+    val lsp_send : t -> Jsonrpc.Packet.t -> t
+    val with_progress : t -> (t -> p -> t * p) -> t
+  end
+
+  module Make (CB : Callbacks) : sig
+    val make : unit -> t
+    (** Create new instance of progress tracker. *)
+
+    val is_latest : t -> LspT.ProgressToken.t -> bool
+    (** Checks if the token is of the last progress.  *)
+
+    val proof_started : p_ref:int -> CB.t -> CB.t
+    (** Called when new TLAPM run is initiated. *)
+
+    val obl_count : p_ref:int -> obl_count:int -> CB.t -> CB.t
+    (** Called when a number of obligations is received from the TLAPM. *)
+
+    val obligation : p_ref:int -> obl:Toolbox.Obligation.t -> CB.t -> CB.t
+    (** Called when some proof obligation state change is received from TLAPM. *)
+
+    val proof_ended : p_ref:int -> CB.t -> CB.t
+    (** Called when the TLAPM terminates. *)
+  end
+end
+
+type t
+
 val create :
   Eio.Switch.t ->
   Eio__.Fs.dir_ty Eio.Path.t ->
@@ -95,7 +98,6 @@ val cancel_all : t -> t
 val start_async :
   t ->
   LspT.DocumentUri.t ->
-  int ->
   string ->
   Range.t ->
   (Toolbox.Msg.t -> unit) ->

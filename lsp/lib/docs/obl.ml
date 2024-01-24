@@ -178,12 +178,3 @@ let as_lsp_tlaps_proof_obligation_state obl =
       (StrMap.to_list obl.by_prover)
   in
   Structs.TlapsProofObligationState.make ~range ~normalized ~results
-
-(* TODO: That's a workaround for the progress calc. Should be removed later. *)
-let is_state_terminal_in_p_ref p_ref obl =
-  let is_term = Toolbox.tlapm_obl_state_is_terminal in
-  if obl.p_ref = p_ref then
-    match obl.latest_prover with
-    | None -> false
-    | Some prover -> is_term (StrMap.find prover obl.by_prover).status
-  else false

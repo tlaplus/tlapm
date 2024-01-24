@@ -65,7 +65,7 @@ let text act = Doc_vsn.text act.doc_vsn
 
 let proof_res (act : t) : Doc_proof_res.t =
   let parsed = Lazy.force act.parsed in
-  Doc_proof_res.make act.p_ref parsed.nts parsed.ps
+  Doc_proof_res.make parsed.nts parsed.ps
 
 let prepare_proof (act : t) next_p_ref =
   (* Force it to be parsed, then prepare for the next proof session. *)

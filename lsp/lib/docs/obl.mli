@@ -28,6 +28,3 @@ val as_lsp_diagnostic : t -> LspT.Diagnostic.t option
 val as_lsp_tlaps_proof_obligation_state :
   t -> Structs.TlapsProofObligationState.t
 (** Convert to the LSP data structures. *)
-
-(* TODO: Remove afer progress reworked. *)
-val is_state_terminal_in_p_ref : int -> t -> bool

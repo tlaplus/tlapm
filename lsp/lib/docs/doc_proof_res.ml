@@ -1,14 +1,10 @@
 open Prover
 open Util
 
-type t = {
-  p_ref : int;
-  nts : Toolbox.tlapm_notif list;
-  ps : Proof_step.t option;
-}
+type t = { nts : Toolbox.tlapm_notif list; ps : Proof_step.t option }
 
-let make p_ref nts ps = { p_ref; nts; ps }
-let empty = { p_ref = 0; nts = []; ps = None }
+let make nts ps = { nts; ps }
+let empty = { nts = []; ps = None }
 
 (* Return decorator markers and diagnostics. *)
 let as_lsp pr =
@@ -41,16 +37,3 @@ let as_lsp pr =
       pr.nts
   in
   (List.concat [ diags; notif_diags ], marks)
-
-let p_ref pr = pr.p_ref
-
-let obs_done pr =
-  Proof_step.fold
-    (fun acc ps ->
-      Proof_step.fold_obs
-        (fun acc obl ->
-          match Obl.is_state_terminal_in_p_ref pr.p_ref obl with
-          | true -> acc + 1
-          | false -> acc)
-        acc ps)
-    0 pr.ps

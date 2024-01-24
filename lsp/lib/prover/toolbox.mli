@@ -12,9 +12,6 @@ type tlapm_obl_state =
 
 val tlapm_obl_state_to_string : tlapm_obl_state -> string
 
-(* TODO: This should be removed. *)
-val tlapm_obl_state_is_terminal : tlapm_obl_state -> bool
-
 module Obligation : sig
   type t = {
     id : int;
@@ -27,6 +24,13 @@ module Obligation : sig
     already : bool option;
     obl : string option;
   }
+
+  val is_final : t -> bool
+
+  (** For testing only. *)
+  module Test : sig
+    val with_id_status : int -> tlapm_obl_state -> t
+  end
 end
 
 type tlapm_notif_severity = TlapmNotifError | TlapmNotifWarning
