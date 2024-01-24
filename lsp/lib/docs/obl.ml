@@ -1,5 +1,5 @@
 open Util
-open Prover.ToolboxProtocol
+open Prover.Toolbox
 
 module Role = struct
   type t =
@@ -75,7 +75,7 @@ let latest_status_msg obl =
   match obl.latest_prover with
   | None -> Proof_status.to_message obl.status
   | Some prover ->
-      Prover.ToolboxProtocol.tlapm_obl_state_to_string
+      Prover.Toolbox.tlapm_obl_state_to_string
         (StrMap.find prover obl.by_prover).status
 
 let latest_obl_text obl =
@@ -180,7 +180,7 @@ let as_lsp_tlaps_proof_obligation_state obl =
 
 (* TODO: That's a workaround for the progress calc. Should be removed later. *)
 let is_state_terminal_in_p_ref p_ref obl =
-  let is_term = Prover.ToolboxProtocol.tlapm_obl_state_is_terminal in
+  let is_term = Prover.Toolbox.tlapm_obl_state_is_terminal in
   if obl.p_ref = p_ref then
     match obl.latest_prover with
     | None -> false

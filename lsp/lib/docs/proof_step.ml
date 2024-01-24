@@ -1,5 +1,5 @@
 open Util
-open Prover.ToolboxProtocol
+open Prover.Toolbox
 open Tlapm_lib.Backend
 
 (** We categorize the proof steps just to make the presentation in the UI clearer. *)

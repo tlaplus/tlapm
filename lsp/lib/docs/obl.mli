@@ -12,7 +12,7 @@ val of_parsed_obligation :
 val with_role : Role.t -> t -> t
 
 val with_prover_obligation :
-  int -> Prover.ToolboxProtocol.tlapm_obligation -> t option -> t
+  int -> Prover.Toolbox.tlapm_obligation -> t option -> t
 
 val with_proof_state_from : t -> (string -> t option) -> t
 val role : t -> Role.t

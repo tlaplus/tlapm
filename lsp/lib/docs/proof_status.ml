@@ -3,14 +3,14 @@ open Prover
 type t = Proved | Failed | Omitted | Missing | Pending | Progress
 
 let of_tlapm_obl_state = function
-  | ToolboxProtocol.ToBeProved -> Progress
-  | ToolboxProtocol.BeingProved -> Pending
-  | ToolboxProtocol.Normalized -> Progress
-  | ToolboxProtocol.Proved -> Proved
-  | ToolboxProtocol.Failed -> Failed
-  | ToolboxProtocol.Interrupted -> Failed
-  | ToolboxProtocol.Trivial -> Proved
-  | ToolboxProtocol.Unknown _ -> Failed
+  | Toolbox.ToBeProved -> Progress
+  | Toolbox.BeingProved -> Pending
+  | Toolbox.Normalized -> Progress
+  | Toolbox.Proved -> Proved
+  | Toolbox.Failed -> Failed
+  | Toolbox.Interrupted -> Failed
+  | Toolbox.Trivial -> Proved
+  | Toolbox.Unknown _ -> Failed
 
 let to_string = function
   | Proved -> "proved"

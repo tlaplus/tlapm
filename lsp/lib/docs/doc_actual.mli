@@ -1,7 +1,7 @@
 (** Actual state of the document. *)
 
 open Util
-open Prover.ToolboxProtocol
+open Prover.Toolbox
 
 type t
 

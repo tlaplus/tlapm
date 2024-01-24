@@ -34,7 +34,7 @@ module Progress : sig
 end
 
 (** Types representing messages from the prover. *)
-module ToolboxProtocol : sig
+module Toolbox : sig
   type tlapm_obl_state =
     | ToBeProved
     | BeingProved
@@ -94,7 +94,7 @@ val start_async :
   int ->
   string ->
   Range.t ->
-  (ToolboxProtocol.tlapm_msg -> unit) ->
+  (Toolbox.tlapm_msg -> unit) ->
   ?tlapm_locator:(unit -> (string, string) result) ->
   unit ->
   (t, string) result

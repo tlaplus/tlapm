@@ -7,7 +7,7 @@ type doc_ref = LspT.DocumentUri.t * int * int
 type events =
   | LspEOF
   | LspPacket of Jsonrpc.Packet.t
-  | TlapmEvent of doc_ref * Prover.ToolboxProtocol.tlapm_msg
+  | TlapmEvent of doc_ref * Prover.Toolbox.tlapm_msg
   | TimerTick
 
 type mode = Initializing | Ready | Shutdown
@@ -268,7 +268,7 @@ end)
 let handle_lsp_packet p st = Some (SessionHandlers.handle_jsonrpc_packet p st)
 
 let handle_tlapm_msg ((uri, vsn, p_ref) : doc_ref) msg st =
-  let open Prover.ToolboxProtocol in
+  let open Prover.Toolbox in
   let open LspT in
   Eio.traceln "handle_tlapm_msg: uri=%s, vsn=%d, p_ref=%d"
     (DocumentUri.to_string uri)

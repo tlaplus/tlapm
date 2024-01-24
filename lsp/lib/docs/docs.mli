@@ -1,6 +1,6 @@
 (** Here we maintain a list of documents and their revisions. *)
 
-open Prover.ToolboxProtocol
+open Prover.Toolbox
 module LspT := Lsp.Types
 
 module Proof_step : sig
@@ -23,9 +23,7 @@ type tk = LspT.DocumentUri.t
 module Doc_proof_res : sig
   type t
 
-  val make :
-    int -> Prover.ToolboxProtocol.tlapm_notif list -> Proof_step.t option -> t
-
+  val make : int -> Prover.Toolbox.tlapm_notif list -> Proof_step.t option -> t
   val empty : t
 
   val as_lsp :

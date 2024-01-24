@@ -3,6 +3,17 @@
     VSCode don't support the client-initiated workDoneProgress
     with LSP. *)
 
+(* TODO:
+
+   Terminal OBL states:
+       @!!status:trivial
+
+       @!!status:proved
+
+       @!!status:failed
+       @!!prover:isabelle
+*)
+
 module LspT := Lsp.Types
 
 type t

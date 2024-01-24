@@ -1,5 +1,5 @@
 open Util
-open Prover.ToolboxProtocol
+open Prover.Toolbox
 
 (* Separated form the type [t] to have the value lazily evaluated. *)
 module Parsed = struct
@@ -21,7 +21,7 @@ module Parsed = struct
         let ps = Proof_step.of_module mule ps_prev in
         { nts = []; ps }
     | Error (loc_opt, msg) ->
-        let nts = [ Prover.ToolboxProtocol.notif_of_loc_msg loc_opt msg ] in
+        let nts = [ Prover.Toolbox.notif_of_loc_msg loc_opt msg ] in
         { nts; ps = None }
 
   let ps_if_ready (p : t Lazy.t) =

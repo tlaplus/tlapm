@@ -3,7 +3,7 @@ open Util
 
 type t = {
   p_ref : int;
-  nts : ToolboxProtocol.tlapm_notif list;
+  nts : Toolbox.tlapm_notif list;
   ps : Proof_step.t option;
 }
 
@@ -29,7 +29,7 @@ let as_lsp pr =
   (* Also add the diagnostics from the notifications. *)
   let notif_diags =
     List.map
-      (fun (ntf : ToolboxProtocol.tlapm_notif) ->
+      (fun (ntf : Toolbox.tlapm_notif) ->
         let severity =
           match ntf.sev with
           | TlapmNotifError -> LspT.DiagnosticSeverity.Error

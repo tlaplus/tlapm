@@ -6,9 +6,7 @@ open Util
 
 type t
 
-val make :
-  int -> Prover.ToolboxProtocol.tlapm_notif list -> Proof_step.t option -> t
-
+val make : int -> Prover.Toolbox.tlapm_notif list -> Proof_step.t option -> t
 val empty : t
 val as_lsp : t -> LspT.Diagnostic.t list * Structs.TlapsProofStateMarker.t list
 

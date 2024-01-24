@@ -7,7 +7,7 @@ type doc_ref = LspT.DocumentUri.t * int * int
 type events =
   | LspEOF
   | LspPacket of Jsonrpc.Packet.t
-  | TlapmEvent of doc_ref * Prover.ToolboxProtocol.tlapm_msg
+  | TlapmEvent of doc_ref * Prover.Toolbox.tlapm_msg
   | TimerTick
 
 val run :
