@@ -435,9 +435,7 @@ let op_typing t_smb =
       else appb ~tys:[ t_idv ] B.Eq
     end
     [ apps i_smb
-      (List.map2 begin fun e ty0 ->
-        cast ty0 e
-      end (ixi n) t_ty0s) %% [] |>
+      (List.map2 cast t_ty0s (ixi n)) %% [] |>
       begin
         if is_pred then proj i_ty0
         else fun e -> e
