@@ -83,9 +83,9 @@ let send_proof_state_markers marks st uri =
         (`List
           [
             LspT.DocumentUri.yojson_of_t uri;
-            `List (List.map TlapsProofStateMarker.yojson_of_t marks);
+            `List (List.map TlapsProofStepMarker.yojson_of_t marks);
           ])
-      ~method_:"tlaplus/tlaps/proofStates" ()
+      ~method_:"tlaplus/tlaps/proofStepMarkers" ()
   in
   let lsp_notif = Lsp.Server_notification.UnknownNotification jsonrpc_notif in
   let lsp_packet =

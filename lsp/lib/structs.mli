@@ -33,6 +33,7 @@ module TlapsProofStepDetails : sig
 
   val make :
     kind:string ->
+    status:string ->
     location:LspT.Location.t ->
     obligations:TlapsProofObligationState.t list ->
     t
@@ -42,9 +43,9 @@ module TlapsProofStepDetails : sig
 end
 
 (** This is the structure used to create proof step decorators in the client. *)
-module TlapsProofStateMarker : sig
+module TlapsProofStepMarker : sig
   type t
 
-  val make : range:LspT.Range.t -> state:string -> hover:string -> t
+  val make : status:string -> range:LspT.Range.t -> hover:string -> t
   val yojson_of_t : t -> Yojson.Safe.t
 end

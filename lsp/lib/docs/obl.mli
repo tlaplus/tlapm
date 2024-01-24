@@ -17,6 +17,7 @@ val role : t -> Role.t
 val loc : t -> Range.t
 val fingerprint : t -> string option
 val status : t -> Proof_status.t
+val is_final : t -> bool option
 val text_plain : t -> string option
 val text_normalized : t -> string option
 val latest_status_msg : t -> string

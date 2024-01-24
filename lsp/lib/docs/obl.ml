@@ -66,6 +66,14 @@ let fingerprint obl =
   match obl.parsed with None -> None | Some obl -> obl.fingerprint
 
 let status obl = obl.status
+
+let is_final obl =
+  match obl.latest_prover with
+  | None -> None
+  | Some prover ->
+      let obl_state = StrMap.find prover obl.by_prover in
+      Some (Toolbox.Obligation.is_final obl_state)
+
 let text_plain obl = Lazy.force obl.parsed_text_plain
 let text_normalized obl = Lazy.force obl.parsed_text_normalized
 

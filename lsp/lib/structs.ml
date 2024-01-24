@@ -68,21 +68,23 @@ end
   ```
   export interface TlapsProofStepDetails {
     kind: string;
+    status: string;
     location: Location;
     obligations: TlapsProofObligationState[];
   }
   ```
   TODO: Add sub-step counts by state.
-  TODO: Add the derived state.
 *)
 module TlapsProofStepDetails = struct
   type t = {
     kind : string;
+    status : string;
     location : LspT.Location.t;
     obligations : TlapsProofObligationState.t list;
   }
 
-  let make ~kind ~location ~obligations = { kind; location; obligations }
+  let make ~kind ~status ~location ~obligations =
+    { kind; status; location; obligations }
 
   let yojson_of_t (t : t option) =
     match t with
@@ -91,6 +93,7 @@ module TlapsProofStepDetails = struct
         `Assoc
           [
             ("kind", `String t.kind);
+            ("status", `String t.status);
             ("location", LspT.Location.yojson_of_t t.location);
             ( "obligations",
               `List
@@ -111,32 +114,28 @@ end
 
 (** Corresponds to
    ```
-   interface ProofStateMarker {
+   interface ProofStepMarker {
+     status: string;
      range: vscode.Range;
-     state: string;
      hover: string;
    }
    ```
 *)
-module TlapsProofStateMarker : sig
+module TlapsProofStepMarker : sig
   type t
 
-  val make : range:LspT.Range.t -> state:string -> hover:string -> t
+  val make : status:string -> range:LspT.Range.t -> hover:string -> t
   val yojson_of_t : t -> Yojson.Safe.t
 end = struct
-  type t = {
-    range : LspT.Range.t;
-    state : string; (* TODO: Rename to status. *)
-    hover : string;
-  }
+  type t = { status : string; range : LspT.Range.t; hover : string }
 
-  let make ~range ~state ~hover = { range; state; hover }
+  let make ~status ~range ~hover = { status; range; hover }
 
   let yojson_of_t (t : t) =
     `Assoc
       [
+        ("status", `String t.status);
         ("range", LspT.Range.yojson_of_t t.range);
-        ("state", `String t.state);
         ("hover", `String t.hover);
       ]
 end

@@ -9,4 +9,4 @@ type t
 
 val make : Toolbox.tlapm_notif list -> Proof_step.t option -> t
 val empty : t
-val as_lsp : t -> LspT.Diagnostic.t list * Structs.TlapsProofStateMarker.t list
+val as_lsp : t -> LspT.Diagnostic.t list * Structs.TlapsProofStepMarker.t list

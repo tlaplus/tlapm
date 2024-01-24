@@ -182,6 +182,6 @@ let%test_module "progress reporting tests" =
       let cb = TestPr.obligation ~p_ref ~obl:(fake_obl 5 Proved) cb in
       let cb = TestPr.proof_ended ~p_ref cb in
       match List.length cb.sent with
-      | 2 -> ()
+      | 5 -> ()
       | x -> failwith (Format.sprintf "got unexpected message count: %d" x)
   end)

@@ -85,13 +85,14 @@ let make ~kind ?status_parsed ~step_loc ?head_loc ~full_loc ~sub obs_map =
   (ps, obs_map)
 
 let as_lsp_tlaps_proof_state_marker ps =
+  let status = Proof_status.to_string ps.status_derived in
   let range = Range.as_lsp_range ps.head_loc in
-  let state = Proof_status.to_string ps.status_derived in
   let hover = Proof_status.to_message ps.status_derived in
-  Structs.TlapsProofStateMarker.make ~range ~state ~hover
+  Structs.TlapsProofStepMarker.make ~status ~range ~hover
 
 let as_lsp_tlaps_proof_step_details uri ps =
   let kind = Kind.to_string ps.kind in
+  let status = Proof_status.to_string ps.status_derived in
   let location =
     LspT.Location.create ~uri ~range:(Range.as_lsp_range ps.full_loc)
   in
@@ -100,7 +101,7 @@ let as_lsp_tlaps_proof_step_details uri ps =
       (fun (_, o) -> Obl.as_lsp_tlaps_proof_obligation_state o)
       (RangeMap.to_list ps.obs)
   in
-  Structs.TlapsProofStepDetails.make ~kind ~location ~obligations
+  Structs.TlapsProofStepDetails.make ~kind ~status ~location ~obligations
 
 (* Recursively collect all the fingerprinted obligations.
    This is used to transfer proof state from the
