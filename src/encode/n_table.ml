@@ -236,7 +236,7 @@ type tla_axm =
   | ExtTrigEqCardPropagate
 
 
-let tla_smb_to_string = function
+let tla_smb_desc = function
   | Choose -> "Choose"
   | Mem -> "Mem"
   | SubsetEq -> "SubsetEq"
@@ -427,7 +427,7 @@ let axm_desc = function
   | TypeGuard ty -> "TypeGuard " ^ ty_to_string ty
   | TypeGuardIntro ty -> "TypeGuardIntro " ^ ty_to_string ty
   | TypeGuardElim ty -> "TypeGuardElim " ^ ty_to_string ty
-  | Typing tla_smb -> "Typing " ^ tla_smb_to_string tla_smb
+  | Typing tla_smb -> "Typing " ^ tla_smb_desc tla_smb
   | ExtTrigEqDef ty -> "ExtTrigEqDef " ^ ty_to_string ty
   | ExtTrigEqTrigger ty -> "ExtTrigEqTrigger " ^ ty_to_string ty
   | DisjointTrigger -> "DisjointTrigger"

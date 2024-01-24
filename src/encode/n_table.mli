@@ -256,7 +256,9 @@ type tla_axm =
   | ExtTrigEqCardPropagate
 
 
-val tla_smb_to_string : tla_smb -> string
+(** Short description for primitive symbols *)
+val tla_smb_desc : tla_smb -> string
+(** FIXME Barely used, but handy for human-readable debug messages *)
 
 (** Short description for the axiom *)
 val axm_desc : tla_axm -> string
