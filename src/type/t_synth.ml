@@ -997,7 +997,7 @@ and expr_aux scx oe =
                     else
                       None
                 | _, [] ->
-                    failwith ""
+                    assert false
               in
               match spin (ty02s, ty04s) with
               | Some ty06s -> ty05 = mk_fcn_ty ty06s ty03
