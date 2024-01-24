@@ -1,6 +1,5 @@
 open Util
-open Prover.Toolbox
-open Tlapm_lib.Backend
+open Prover
 
 (** We categorize the proof steps just to make the presentation in the UI clearer. *)
 module Kind = struct
@@ -315,7 +314,7 @@ let of_module (mule : Tlapm_lib.Module.T.mule) prev : t option =
            proof status between the modifications. *)
         let o =
           match o.fingerprint with
-          | None -> Fingerprints.write_fingerprint o
+          | None -> Tlapm_lib.Backend.Fingerprints.write_fingerprint o
           | Some _ -> o
         in
         let o = Obl.of_parsed_obligation (Some o) Proof_status.Pending in
@@ -332,8 +331,8 @@ let of_module (mule : Tlapm_lib.Module.T.mule) prev : t option =
   | Parsed -> failwith "of_module, parsed"
   | _ -> failwith "of_module, non final"
 
-let with_prover_result (ps : t option) p_ref (pr : tlapm_obligation) =
-  let rec traverse (ps : t) (pr : tlapm_obligation) =
+let with_prover_result (ps : t option) p_ref (pr : Toolbox.Obligation.t) =
+  let rec traverse (ps : t) (pr : Toolbox.Obligation.t) =
     if Range.intersect ps.full_loc pr.loc then
       let apply_to_sub acc sub_ps =
         match acc with

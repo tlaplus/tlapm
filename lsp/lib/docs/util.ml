@@ -1,7 +1,3 @@
-(* Max number of unprocessed/pending versions to keep. *)
-let keep_vsn_count = 50
-let prover_mutex = Eio.Mutex.create ()
-
 (** Obligation reference consists of the proof session reference (p_ref)
     and the obligation id (obl_id) as assigned by the TLAPS. This reference
     is unique across proof attempts.

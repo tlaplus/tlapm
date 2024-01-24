@@ -1,5 +1,8 @@
 open Util
 
+(* Max number of unprocessed/pending versions to keep. *)
+let keep_vsn_count = 50
+
 type t = {
   uri : LspT.DocumentUri.t;
   pending : Doc_vsn.t list;

@@ -42,17 +42,19 @@ let tlapm_obl_state_is_terminal (s : tlapm_obl_state) : bool =
   | Trivial -> true
   | Unknown _ -> false
 
-type tlapm_obligation = {
-  id : int;
-  loc : Range.t;
-  status : tlapm_obl_state;
-  fp : string option;
-  prover : string option;
-  meth : string option;
-  reason : string option;
-  already : bool option;
-  obl : string option;
-}
+module Obligation = struct
+  type t = {
+    id : int;
+    loc : Range.t;
+    status : tlapm_obl_state;
+    fp : string option;
+    prover : string option;
+    meth : string option;
+    reason : string option;
+    already : bool option;
+    obl : string option;
+  }
+end
 
 type tlapm_notif_severity = TlapmNotifError | TlapmNotifWarning
 
@@ -63,11 +65,13 @@ type tlapm_notif = {
   url : string option;
 }
 
-type tlapm_msg =
-  | TlapmNotif of tlapm_notif
-  | TlapmObligationsNumber of int
-  | TlapmObligation of tlapm_obligation
-  | TlapmTerminated
+module Msg = struct
+  type t =
+    | TlapmNotif of tlapm_notif
+    | TlapmObligationsNumber of int
+    | TlapmObligation of Obligation.t
+    | TlapmTerminated
+end
 
 type parser_part_msg =
   | PartWarning of { msg : string option }
@@ -213,11 +217,11 @@ let parse_line line acc stream =
   let msg_of_part = function
     | PartWarning { msg = Some msg } ->
         let loc, msg = guess_notif_loc msg in
-        Some (TlapmNotif { loc; sev = TlapmNotifWarning; msg; url = None })
+        Some (Msg.TlapmNotif { loc; sev = TlapmNotifWarning; msg; url = None })
     | PartWarning _ -> None
     | PartError { msg = Some msg; url } ->
         let loc, msg = guess_notif_loc msg in
-        Some (TlapmNotif { loc; sev = TlapmNotifError; msg; url })
+        Some (Msg.TlapmNotif { loc; sev = TlapmNotifError; msg; url })
     | PartError _ -> None
     | PartObligationsNumber (Some count) -> Some (TlapmObligationsNumber count)
     | PartObligationsNumber _ -> None

@@ -1,6 +1,6 @@
 (** Here we maintain a list of documents and their revisions. *)
 
-open Prover.Toolbox
+open Prover
 module LspT := Lsp.Types
 
 module Proof_step : sig
@@ -23,7 +23,7 @@ type tk = LspT.DocumentUri.t
 module Doc_proof_res : sig
   type t
 
-  val make : int -> Prover.Toolbox.tlapm_notif list -> Proof_step.t option -> t
+  val make : int -> Toolbox.tlapm_notif list -> Proof_step.t option -> t
   val empty : t
 
   val as_lsp :
@@ -55,11 +55,11 @@ val suggest_proof_range : t -> tk -> Range.t -> t * (int * Range.t) option
 (** Suggest proof range based on the user selection. *)
 
 val add_obl :
-  t -> tk -> int -> int -> tlapm_obligation -> t * Doc_proof_res.t option
+  t -> tk -> int -> int -> Toolbox.Obligation.t -> t * Doc_proof_res.t option
 (** Record obligation for the document, clear all the intersecting ones. *)
 
 val add_notif :
-  t -> tk -> int -> int -> tlapm_notif -> t * Doc_proof_res.t option
+  t -> tk -> int -> int -> Toolbox.tlapm_notif -> t * Doc_proof_res.t option
 (** Record obligation for the document, clear all the intersecting ones. *)
 
 val terminated : t -> tk -> int -> int -> t * Doc_proof_res.t option

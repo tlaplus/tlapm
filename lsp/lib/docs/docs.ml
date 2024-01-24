@@ -1,5 +1,5 @@
 open Util
-open Prover.Toolbox
+open Prover
 module Proof_step = Proof_step
 module Proof_status = Proof_status
 module Doc_proof_res = Doc_proof_res
@@ -62,7 +62,7 @@ let suggest_proof_range docs uri range : t * (int * Range.t) option =
       let p_range = Doc_actual.locate_proof_range act range in
       (doc, act, Some (vsn, p_range))
 
-let add_obl docs uri vsn p_ref (obl : tlapm_obligation) =
+let add_obl docs uri vsn p_ref (obl : Toolbox.Obligation.t) =
   with_doc_vsn docs uri vsn @@ fun (doc : Doc.t) (act : Doc_actual.t) ->
   match Doc_actual.add_obl act p_ref obl with
   | None -> (doc, act, None)

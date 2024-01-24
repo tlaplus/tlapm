@@ -1,7 +1,7 @@
 (** Actual state of the document. *)
 
 open Util
-open Prover.Toolbox
+open Prover
 
 type t
 
@@ -14,6 +14,6 @@ val get_obligation_state : t -> Range.Position.t -> Proof_step.t option
 
 (* TODO: Rename all the following: prover_obl ... *)
 val prepare_proof : t -> int -> t option
-val add_obl : t -> int -> tlapm_obligation -> t option
-val add_notif : t -> int -> tlapm_notif -> t option
+val add_obl : t -> int -> Toolbox.Obligation.t -> t option
+val add_notif : t -> int -> Toolbox.tlapm_notif -> t option
 val terminated : t -> int -> t option

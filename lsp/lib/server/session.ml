@@ -1,3 +1,4 @@
+open Prover
 module LspT = Lsp.Types
 module DocUriSet = Set.Make (LspT.DocumentUri)
 
@@ -7,7 +8,7 @@ type doc_ref = LspT.DocumentUri.t * int * int
 type events =
   | LspEOF
   | LspPacket of Jsonrpc.Packet.t
-  | TlapmEvent of doc_ref * Prover.Toolbox.tlapm_msg
+  | TlapmEvent of doc_ref * Toolbox.Msg.t
   | TimerTick
 
 type mode = Initializing | Ready | Shutdown
@@ -267,30 +268,29 @@ end)
 
 let handle_lsp_packet p st = Some (SessionHandlers.handle_jsonrpc_packet p st)
 
-let handle_tlapm_msg ((uri, vsn, p_ref) : doc_ref) msg st =
-  let open Prover.Toolbox in
+let handle_toolbox_msg ((uri, vsn, p_ref) : doc_ref) msg st =
   let open LspT in
-  Eio.traceln "handle_tlapm_msg: uri=%s, vsn=%d, p_ref=%d"
+  Eio.traceln "handle_Toolbox.Msg.t: uri=%s, vsn=%d, p_ref=%d"
     (DocumentUri.to_string uri)
     vsn p_ref;
   match msg with
-  | TlapmNotif notif ->
+  | Toolbox.Msg.TlapmNotif notif ->
       Eio.traceln "---> TlapmNotif: %s" notif.msg;
       let docs, _res = Docs.add_notif st.docs uri vsn p_ref notif in
       let st = { st with docs } in
       let st = delay_proof_info st uri in
       Some st
-  | TlapmObligationsNumber obl_num ->
+  | Toolbox.Msg.TlapmObligationsNumber obl_num ->
       Eio.traceln "---> TlapmObligationsNumber";
       let st = progress_obl_num st p_ref obl_num in
       Some st
-  | TlapmObligation obl ->
+  | Toolbox.Msg.TlapmObligation obl ->
       Eio.traceln "---> TlapmObligation, id=%d" obl.id;
       let docs, _res = Docs.add_obl st.docs uri vsn p_ref obl in
       let st = { st with docs } in
       let st = delay_proof_info st uri in
       Some st
-  | TlapmTerminated ->
+  | Toolbox.Msg.TlapmTerminated ->
       Eio.traceln "---> TlapmTerminated";
       let st = progress_proof_ended st p_ref in
       let docs, res = Docs.terminated st.docs uri vsn p_ref in
@@ -316,7 +316,7 @@ let handle_event e st =
   match e with
   | LspEOF -> None
   | LspPacket p -> handle_lsp_packet p st
-  | TlapmEvent (ref, msg) -> handle_tlapm_msg ref msg st
+  | TlapmEvent (ref, msg) -> handle_toolbox_msg ref msg st
   | TimerTick -> handle_timer_tick st
 
 (* The main event processing loop.

@@ -48,17 +48,19 @@ module Toolbox : sig
   val tlapm_obl_state_to_string : tlapm_obl_state -> string
   val tlapm_obl_state_is_terminal : tlapm_obl_state -> bool
 
-  type tlapm_obligation = {
-    id : int;
-    loc : Range.t;
-    status : tlapm_obl_state;
-    fp : string option;
-    prover : string option;
-    meth : string option;
-    reason : string option;
-    already : bool option;
-    obl : string option;
-  }
+  module Obligation : sig
+    type t = {
+      id : int;
+      loc : Range.t;
+      status : tlapm_obl_state;
+      fp : string option;
+      prover : string option;
+      meth : string option;
+      reason : string option;
+      already : bool option;
+      obl : string option;
+    }
+  end
 
   type tlapm_notif_severity = TlapmNotifError | TlapmNotifWarning
 
@@ -71,11 +73,13 @@ module Toolbox : sig
 
   val notif_of_loc_msg : string option -> string -> tlapm_notif
 
-  type tlapm_msg =
-    | TlapmNotif of tlapm_notif
-    | TlapmObligationsNumber of int
-    | TlapmObligation of tlapm_obligation
-    | TlapmTerminated
+  module Msg : sig
+    type t =
+      | TlapmNotif of tlapm_notif
+      | TlapmObligationsNumber of int
+      | TlapmObligation of Obligation.t
+      | TlapmTerminated
+  end
 end
 
 val create :
@@ -94,7 +98,7 @@ val start_async :
   int ->
   string ->
   Range.t ->
-  (Toolbox.tlapm_msg -> unit) ->
+  (Toolbox.Msg.t -> unit) ->
   ?tlapm_locator:(unit -> (string, string) result) ->
   unit ->
   (t, string) result

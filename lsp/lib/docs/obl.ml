@@ -1,5 +1,5 @@
 open Util
-open Prover.Toolbox
+open Prover
 
 module Role = struct
   type t =
@@ -20,7 +20,7 @@ type t = {
   (* The following collect the proof info.
      For each new p_ref we reset all the prover results. *)
   p_ref : int;
-  by_prover : tlapm_obligation StrMap.t;
+  by_prover : Toolbox.Obligation.t StrMap.t;
   latest_prover : string option;
   status : Proof_status.t;
 }
@@ -75,7 +75,7 @@ let latest_status_msg obl =
   match obl.latest_prover with
   | None -> Proof_status.to_message obl.status
   | Some prover ->
-      Prover.Toolbox.tlapm_obl_state_to_string
+      Toolbox.tlapm_obl_state_to_string
         (StrMap.find prover obl.by_prover).status
 
 let latest_obl_text obl =
@@ -110,7 +110,7 @@ let with_prover_obligation p_ref tlapm_obl (obl : t option) =
     }
   in
   let obl_add obl =
-    match tlapm_obl.prover with
+    match Toolbox.Obligation.(tlapm_obl.prover) with
     | None -> obl
     | Some prover ->
         {
@@ -162,6 +162,7 @@ let as_lsp_tlaps_proof_obligation_state obl =
   let range = Range.as_lsp_range (loc obl) in
   let normalized = text_normalized obl in
   let results =
+    let open Toolbox.Obligation in
     let some_str s = match s with None -> "?" | Some s -> s in
     List.map
       (fun (_, o) ->
@@ -180,7 +181,7 @@ let as_lsp_tlaps_proof_obligation_state obl =
 
 (* TODO: That's a workaround for the progress calc. Should be removed later. *)
 let is_state_terminal_in_p_ref p_ref obl =
-  let is_term = Prover.Toolbox.tlapm_obl_state_is_terminal in
+  let is_term = Toolbox.tlapm_obl_state_is_terminal in
   if obl.p_ref = p_ref then
     match obl.latest_prover with
     | None -> false

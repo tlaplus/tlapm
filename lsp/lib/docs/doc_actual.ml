@@ -1,10 +1,12 @@
 open Util
-open Prover.Toolbox
+open Prover
+
+let prover_mutex = Eio.Mutex.create ()
 
 (* Separated form the type [t] to have the value lazily evaluated. *)
 module Parsed = struct
   type t = {
-    nts : tlapm_notif list;
+    nts : Toolbox.tlapm_notif list;
     ps : Proof_step.t option;
         (** Parsed document structure, a tree of proof steps.
           It is obtained by parsing the document and then updated
@@ -21,7 +23,7 @@ module Parsed = struct
         let ps = Proof_step.of_module mule ps_prev in
         { nts = []; ps }
     | Error (loc_opt, msg) ->
-        let nts = [ Prover.Toolbox.notif_of_loc_msg loc_opt msg ] in
+        let nts = [ Toolbox.notif_of_loc_msg loc_opt msg ] in
         { nts; ps = None }
 
   let ps_if_ready (p : t Lazy.t) =
@@ -79,7 +81,7 @@ let get_obligation_state act range =
   let parsed = Lazy.force act.parsed in
   Proof_step.locate_proof_step parsed.ps range
 
-let add_obl (act : t) (p_ref : int) (obl : tlapm_obligation) =
+let add_obl (act : t) (p_ref : int) (obl : Toolbox.Obligation.t) =
   if act.p_ref = p_ref then
     let parsed = Lazy.force act.parsed in
     let ps = Proof_step.with_prover_result parsed.ps p_ref obl in
