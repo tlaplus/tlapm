@@ -1084,13 +1084,8 @@ and expr_aux scx oe =
         (ret, TAtm TAIdv)
 
   | Internal B.Infinity ->
-      if typelvl scx > 0 then
-        let ret = Internal B.Infinity @@ oe in
-        let ret = assign ret Props.tpars_prop [ ] in
-        (ret, TAtm TARel)
-      else
-        let ret = Internal B.Infinity @@ oe in
-        (ret, TAtm TAIdv)
+      let ret = Internal B.Infinity @@ oe in
+      (ret, TAtm TAIdv)
 
   | Apply ({ core = Internal (B.Plus | B.Minus | B.Times | B.Exp) } as op, [ e ; f ]) ->
       let e, ty01 = expr scx e in
