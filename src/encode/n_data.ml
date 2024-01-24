@@ -152,7 +152,7 @@ let untyped_data tla_smb =
                         List.init n (fun _ -> t_cst t_idv),   t_idv)
   | RecSet fs ->
       let n = List.length fs in
-      (List.fold_left (fun s1 s2 -> s1 ^ "_" ^ s2) "RecordSet" fs,
+      ("RecordSet_" ^ String.concat "_" fs,
                         List.init n (fun _ -> t_cst t_idv),   t_idv)
   (* Sequences *)
   | SeqSeq ->
