@@ -52,6 +52,12 @@ let search_type_hyp ~inferer ~pol scx oe =
         end
 
     | Apply ({ core = Internal (B.Eq | B.Neq as b) }, [ { core = Ix n } ; e ])
+      when n = ix && ((pol && b = B.Neq) || (not pol && b = B.Eq)) ->
+        begin try
+          Some (inferer scx e)
+        with _ -> None
+        end
+
     | Apply ({ core = Internal (B.Eq | B.Neq as b) }, [ e ; { core = Ix n } ])
       when n = ix && ((pol && b = B.Neq) || (not pol && b = B.Eq)) ->
         begin try
