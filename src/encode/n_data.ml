@@ -243,7 +243,7 @@ let typed_data tla_smb =
       SetEnum 0)
   | TFSSingleton s ->
       ("TFSSingleton_" ^ ty_to_string s,
-                        [ t_cst (t_fs s) ],                   t_fs s,
+                        [ t_cst s ],                          t_fs s,
       SetEnum 1)
   | TFSAdd s ->
       ("TFSAdd_" ^ ty_to_string s,
