@@ -543,8 +543,8 @@ and expr_aux scx oe =
       in
       let oty02s =
         if typelvl scx > 1 then try
-          Some (List.map (function TSet ty0 -> ty0 | _ -> failwith "") ty01s)
-        with _ -> None
+          Some (List.map (function TSet ty0 -> ty0 | _ -> raise Exit) ty01s)
+        with Exit -> None
         else None
       in
       begin match oty02s with
