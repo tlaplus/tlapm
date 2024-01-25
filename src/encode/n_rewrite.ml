@@ -11,9 +11,11 @@ open Property
 open Expr.T
 open Type.T
 
-module Subst = N_subst
+module Subst = Expr.Subst
 module Visit = Expr.Visit
 module B = Builtin
+
+let subst = N_subst.subst
 
 
 (* {3 Helpers} *)
@@ -52,7 +54,7 @@ let elim_bounds_visitor = object (self : 'self)
                 (nscx, b :: r_bs, r_hs, None, i - 1)
             | Domain d, _ ->
                 let d = self#expr scx d in
-                let d = Subst.app_expr (Subst.shift n) d in
+                let d = subst#expr (Subst.shift n) d in
                 let op =
                   Option.map (fun ty -> [ ty ]) (query d Props.mpars_prop) |>
                   maybe_assign Props.tpars_prop (Internal B.Mem %% [])
@@ -109,7 +111,7 @@ let elim_bounds_visitor = object (self : 'self)
           maybe_assign Props.tpars_prop (Internal B.Mem %% [])
         in
         let ix = copy_prop Props.icast_prop (Ix 1 %% []) v in
-        let h = Apply (op, [ ix ; Subst.app_expr (Subst.shift 1) d ]) %% [] in
+        let h = Apply (op, [ ix ; subst#expr (Subst.shift 1) d ]) %% [] in
         let e = Apply (Internal B.Conj %% [], [ h ; e ]) %% [] in
         Choose (v, None, e) @@ oe
 
@@ -124,7 +126,7 @@ let elim_bounds_visitor = object (self : 'self)
       | None -> (scx, sub, Deque.empty)
 
       | Some ({ core = Fresh (v, shp, k, Bounded (d, vis)) } as h, hs) ->
-          let d = Subst.app_expr sub d in
+          let d = subst#expr sub d in
           let d = self#expr scx d in
           let h = Fresh (v, shp, k, Unbounded) @@ h in
           let op =
@@ -132,7 +134,7 @@ let elim_bounds_visitor = object (self : 'self)
             maybe_assign Props.tpars_prop (Internal B.Mem %% [])
           in
           let ix = copy_prop Props.icast_prop (Ix 1 %% []) v in
-          let e = Apply (op, [ ix ; Subst.app_expr (Subst.shift 1) d ]) %% [] in
+          let e = Apply (op, [ ix ; subst#expr (Subst.shift 1) d ]) %% [] in
           let hh = Fact (e, vis, NotSet) %% [] in
           let scx = Visit.adj scx h in
           let sub = Subst.bump sub in
@@ -142,14 +144,13 @@ let elim_bounds_visitor = object (self : 'self)
           (scx, sub, Deque.cons h (Deque.cons hh hs))
 
       | Some (h, hs) ->
-          let h = Subst.app_hyp sub h in
+          let sub, h = subst#hyp sub h in
           let scx, h = self#hyp scx h in
-          let sub = Subst.bump sub in
           let scx, sub, hs = spin scx sub hs in
           (scx, sub, Deque.cons h hs)
     in
     let scx, sub, hs = spin scx (Subst.shift 0) sq.context in
-    let e = Subst.app_expr sub sq.active in
+    let e = subst#expr sub sq.active in
     let e = self#expr scx e in
     (scx, { context = hs ; active = e })
 end
@@ -205,14 +206,13 @@ let elim_flex_visitor = object (self : 'self)
           (scx, sub, Deque.cons h1 (Deque.cons h2 hs))
 
       | Some (h, hs) ->
-          let h = Subst.app_hyp sub h in
+          let sub, h = subst#hyp sub h in
           let scx, h = self#hyp scx h in
-          let sub = Subst.bump sub in
           let scx, sub, hs = spin scx sub hs in
           (scx, sub, Deque.cons h hs)
     in
     let scx, sub, hs = spin scx (Subst.shift 0) sq.context in
-    let e = Subst.app_expr sub sq.active in
+    let e = subst#expr sub sq.active in
     let e = self#expr scx e in
     (scx, { context = hs ; active = e })
 end
@@ -319,9 +319,9 @@ let elim_except_visitor = object (self : 'self)
         Fcn (
           [ v, Constant, Domain b ],
           If (
-            Apply (Internal B.Eq %% [], [ Ix 1 %% [] ; Subst.app_expr (Subst.shift 1) d ]) %% [],
-            Subst.app_expr (Subst.shift 1) a,
-            FcnApp (Subst.app_expr (Subst.shift 1) e, [ Ix 1 %% [] ]) %% []
+            Apply (Internal B.Eq %% [], [ Ix 1 %% [] ; subst#expr (Subst.shift 1) d ]) %% [],
+            subst#expr (Subst.shift 1) a,
+            FcnApp (subst#expr (Subst.shift 1) e, [ Ix 1 %% [] ]) %% []
           ) %% []
         ) %% []
 
@@ -432,7 +432,7 @@ let elim_tuples_visitor = object (self : 'self)
               Internal B.Mem %% [],
               [
                 FcnApp (Ix 1 %% [], [ Num (string_of_int (i + 1), "") %% [] ]) %% [] ;
-                Subst.app_expr (Subst.shift 1) e
+                subst#expr (Subst.shift 1) e
               ]
             ) %% []
           end es
@@ -459,7 +459,7 @@ let elim_tuples_visitor = object (self : 'self)
                   [ Ix 1 %% [] ; Num (string_of_int (i + 1), "") %% [] ]
                 ) %% []
               in
-              (p, Subst.app_expr (Subst.shift 1) e)
+              (p, subst#expr (Subst.shift 1) e)
             end es,
             None
           ) %% []
@@ -493,7 +493,7 @@ let elim_records_visitor = object (self : 'self)
               Apply (
                 Internal B.Mem %% [],
                 [ FcnApp (Ix 1 %% [], [ String s %% [] ]) %% []
-                ; Subst.app_expr (Subst.shift 1) e ]
+                ; subst#expr (Subst.shift 1) e ]
               ) %% []
             end fs
           ) %% []
@@ -510,7 +510,7 @@ let elim_records_visitor = object (self : 'self)
                 Internal B.Eq %% [],
                 [ Ix 1 %% [] ; String s %% [] ]) %% []
             in
-            (p, Subst.app_expr (Subst.shift 1) e)
+            (p, subst#expr (Subst.shift 1) e)
           end fs
         in
         let e = Case (ps, None) %% [] in
@@ -643,8 +643,8 @@ let apply_ext_visitor = object (self : 'self)
           q, [ v, Constant, No_domain ],
           Apply (
             Internal B.Equiv %% [],
-            [ Apply (mem_op, [ cast (Ix 1 %% []) ; Subst.app_expr (Subst.shift 1) e ]) %% []
-            ; Apply (mem_op, [ cast (Ix 1 %% []) ; Subst.app_expr (Subst.shift 1) f ]) %% []
+            [ Apply (mem_op, [ cast (Ix 1 %% []) ; subst#expr (Subst.shift 1) e ]) %% []
+            ; Apply (mem_op, [ cast (Ix 1 %% []) ; subst#expr (Subst.shift 1) f ]) %% []
             ]
           ) %% []
           |> fun e ->
@@ -677,8 +677,8 @@ let apply_ext_visitor = object (self : 'self)
           q, [ v, Constant, No_domain ],
           Apply (
             Internal B.Implies %% [],
-            [ Apply (mem_op, [ cast (Ix 1 %% []) ; Subst.app_expr (Subst.shift 1) e ]) %% []
-            ; Apply (mem_op, [ cast (Ix 1 %% []) ; Subst.app_expr (Subst.shift 1) f ]) %% []
+            [ Apply (mem_op, [ cast (Ix 1 %% []) ; subst#expr (Subst.shift 1) e ]) %% []
+            ; Apply (mem_op, [ cast (Ix 1 %% []) ; subst#expr (Subst.shift 1) f ]) %% []
             ]
           ) %% []
         ) @@ oe
@@ -735,8 +735,7 @@ let apply_ext sq =
 
 (* {3 Simplify Sets} *)
 
-(* A simple function to make one substitution. *)
-let subst a b =
+let subst_one a b =
   let lam = Lambda ([ "x" %% [], Shape_expr ], a) %% [] in
   Subst.normalize lam [b] @@ a
 
@@ -781,8 +780,8 @@ let simplify_sets_visitor = object (self : 'self)
         let e2 = self#expr scx e2 in
         let v = assign ("v" %% []) Props.ty0_prop (TAtm TAIdv) in
         let e =
-          let e1 = Subst.app_expr (Subst.shift 1) e1 in
-          let e2 = Subst.app_expr (Subst.shift 1) e2 in
+          let e1 = subst#expr (Subst.shift 1) e1 in
+          let e2 = subst#expr (Subst.shift 1) e2 in
           Apply (
             Internal B.Implies %% [],
             [ Apply (
@@ -809,8 +808,8 @@ let simplify_sets_visitor = object (self : 'self)
         let e2 = self#expr scx e2 in
         let v = assign ("v" %% []) Props.ty0_prop (TAtm TAIdv) in
         let e =
-          let e1 = Subst.app_expr (Subst.shift 1) e1 in
-          let e2 = Subst.app_expr (Subst.shift 1) e2 in
+          let e1 = subst#expr (Subst.shift 1) e1 in
+          let e2 = subst#expr (Subst.shift 1) e2 in
           Apply (
             Internal B.Conj %% [],
             [ Apply (
@@ -913,7 +912,7 @@ let simplify_sets_visitor = object (self : 'self)
             [ e1
             ; e2 ]
           ) %% []
-          ; subst e3 e1 ]
+          ; subst_one e3 e1 ]
         ) @@ oe
 
     (* x \in { F(y1, .., yn) : y1 \in a1, .., yn \in an }
@@ -946,7 +945,7 @@ let simplify_sets_visitor = object (self : 'self)
             And,
             Apply (
               eq_op,
-              [ Subst.app_expr (Subst.shift n) e1
+              [ subst#expr (Subst.shift n) e1
               ; e2
               ]
             ) %% [] ::
@@ -954,7 +953,7 @@ let simplify_sets_visitor = object (self : 'self)
               Apply (
                 Internal B.Mem %% [],
                 [ Ix (i + 1) %% []
-                ; Subst.app_expr (Subst.shift n) d
+                ; subst#expr (Subst.shift n) d
                 ]
               ) %% []
             end ds
@@ -995,15 +994,15 @@ let simplify_sets_visitor = object (self : 'self)
               [ Apply (
                 Internal B.Mem %% [],
                 [ Ix 1 %% []
-                ; Subst.app_expr (Subst.shift 1) e2
+                ; subst#expr (Subst.shift 1) e2
                 ]) %% []
               ; Apply (
                 Internal B.Mem %% [],
                 [ FcnApp (
-                  Subst.app_expr (Subst.shift 1) e1,
+                  subst#expr (Subst.shift 1) e1,
                   [ Ix 1 %% []
                   ]) %% []
-                ; Subst.app_expr (Subst.shift 1) e3
+                ; subst#expr (Subst.shift 1) e3
                 ]) %% []
               ]
             ) %% []
@@ -1221,8 +1220,8 @@ let simplify_sets_visitor = object (self : 'self)
           q, [ v, Constant, No_domain ],
           Apply (
             Internal B.Equiv %% [],
-            [ Apply (mem_op, [ cast (Ix 1 %% []) ; Subst.app_expr (Subst.shift 1) e ]) %% []
-            ; Apply (mem_op, [ cast (Ix 1 %% []) ; Subst.app_expr (Subst.shift 1) f ]) %% []
+            [ Apply (mem_op, [ cast (Ix 1 %% []) ; subst#expr (Subst.shift 1) e ]) %% []
+            ; Apply (mem_op, [ cast (Ix 1 %% []) ; subst#expr (Subst.shift 1) f ]) %% []
             ]
           ) %% []
           |> fun e ->
@@ -1255,8 +1254,8 @@ let simplify_sets_visitor = object (self : 'self)
           q, [ v, Constant, No_domain ],
           Apply (
             Internal B.Implies %% [],
-            [ Apply (mem_op, [ cast (Ix 1 %% []) ; Subst.app_expr (Subst.shift 1) e ]) %% []
-            ; Apply (mem_op, [ cast (Ix 1 %% []) ; Subst.app_expr (Subst.shift 1) f ]) %% []
+            [ Apply (mem_op, [ cast (Ix 1 %% []) ; subst#expr (Subst.shift 1) e ]) %% []
+            ; Apply (mem_op, [ cast (Ix 1 %% []) ; subst#expr (Subst.shift 1) f ]) %% []
             ]
           ) %% []
         ) @@ oe

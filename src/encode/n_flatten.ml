@@ -10,8 +10,10 @@ open Type.T
 open Property
 open Ext
 
-module Subst = N_subst
+module Subst = Expr.Subst
 module Is = Util.Coll.Is
+
+let subst = N_subst.subst
 
 (** Outline of the algorithm:
 
@@ -303,7 +305,7 @@ let find_axms bp =
     List.fold_left begin fun (es, i) h ->
       match query h N_smb.smb_prop, h.core with
       | Some smb', Fact (e, Visible, _) when N_smb.equal_smb smb smb' ->
-          (Subst.app_expr (Subst.shift i) e :: es, i + 1)
+          (subst#expr (Subst.shift i) e :: es, i + 1)
       | _, _ ->
           (es, i + 1)
     end ([], 1) gtx |> fst
@@ -372,7 +374,7 @@ let instantiate bp e =
   in
   let shift = Subst.shift (List.length lf_vars) in
   let squash = List.fold_right Subst.scons maptos shift in
-  let ho_args = List.map (Subst.app_expr squash) ho_args in
+  let ho_args = List.map (subst#expr squash) ho_args in
 
   let inst = List.fold_right Subst.scons ho_args shift in
   let e =
@@ -391,7 +393,7 @@ let instantiate bp e =
           Sequent { context = hs ; active = g } @@ e
     | _ -> error ~at:e "Expected a sequent expression"
   in
-  let e = Subst.app_expr inst e in
+  let e = subst#expr inst e in
 
   (* lf_vars set in decreasing order *)
   let bs =
@@ -554,9 +556,9 @@ let treat_expr bps gtx e =
            * partially deprecated. *)
           let n = List.length axms in
           let axms =
-            List.mapi (fun i -> Subst.app_expr (Subst.shift (i + 1))) axms
+            List.mapi (fun i -> subst#expr (Subst.shift (i + 1))) axms
           in
-          let e' = Subst.app_expr (Subst.shift (n + 1)) e' in
+          let e' = subst#expr (Subst.shift (n + 1)) e' in
 
           let axms =
             List.mapi (fun i -> rewrite_expr bp (i + 1)) axms
@@ -584,7 +586,7 @@ let main sq =
         let gtx = Deque.fold_left global_adj gtx hs' in
         let gtx = global_adj gtx h in
         let shift = Subst.shift (Deque.size hs') in
-        let hs = snd (Subst.app_hyps shift hs) in
+        let hs = snd (subst#hyps shift hs) in
         spin bps gtx hs
     | Some (h, hs) ->
         let gtx = global_adj gtx h in
