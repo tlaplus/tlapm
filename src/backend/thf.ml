@@ -453,7 +453,7 @@ let preprocess ~solver sq =
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
     |> Encode.Rewrite.simplify_sets ~rwlvl:1
     |> debug "Disambiguate and Simplify:"
-    |> Encode.Standardize.main
+    |> Encode.Standardize.main ~mark_set_equalities:false
     |> debug "Standardize:"
     |> Encode.Axiomatize.main ~solver
     |> debug "Axiomatize:"

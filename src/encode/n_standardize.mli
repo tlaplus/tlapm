@@ -38,5 +38,5 @@ open Type.T
 
 (* {3 Main} *)
 
-val main : sequent -> sequent
+val main : ?mark_set_equalities:bool -> sequent -> sequent
 

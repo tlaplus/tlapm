@@ -126,7 +126,7 @@ end
 
 module Standardize : sig
   open Expr.T
-  val main : sequent -> sequent
+  val main : ?mark_set_equalities:bool -> sequent -> sequent
 end
 
 module Axiomatize : sig

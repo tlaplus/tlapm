@@ -104,25 +104,6 @@ let visitor = object (self : 'self)
         let opq = mk_opq smb $$ op in
         Apply (opq, es) @@ oe
 
-    | Apply ({ core = Internal (B.Eq | B.Neq as b) } as op, [ e ; f ]) when not (Params.debugging "noext") ->
-        let e = self#expr scx e in
-        let f = self#expr scx f in
-        let ty0 =
-          match query op Props.tpars_prop with
-          | Some [ TAtm TAIdv ] | None when is_set e || is_set f -> TSet (TAtm TAIdv)
-          | Some [ ty0 ] -> ty0
-          | None -> TAtm TAIdv
-          | Some _ -> failwith "bad type annotation"
-        in
-        let smb = mk_smb (ExtTrigEq ty0) in
-        let opq = mk_opq smb $$ op in
-        Apply (opq, [ e ; f ]) @@ oe |> fun e ->
-          begin match b with
-          | B.Eq -> e
-          | B.Neq -> Apply (Internal B.Neg %% [], [ e ]) @@ oe
-          | _ -> failwith ""
-          end
-
     | Internal (B.TRUE | B.FALSE
                | B.Implies | B.Equiv | B.Conj | B.Disj
                | B.Neg | B.Eq | B.Neq
@@ -419,8 +400,90 @@ let visitor = object (self : 'self)
 end
 
 
-let main sq =
+(* For SMT, we also replace equalities by uninterpreted symbols to permit
+   additional trigger instantiations *)
+
+type pol =
+  | Positive
+  | Negative
+  | Neither
+
+let inv = function
+  | Positive -> Negative
+  | Negative -> Positive
+  | Neither -> Neither
+
+let set_extensionality_visitor = object (self : 'self)
+  inherit [pol] Expr.Visit.map as super
+
+  method expr (pol, hx as scx) oe =
+    match oe.core with
+    | Apply ({ core = Internal B.Eq } as op, [ e ; f ])
+      when ((pol = Positive) || (pol = Neither))
+        && (match query op Props.tpars_prop with
+            | Some [ TSet _ ] -> true
+            | _ -> is_set e || is_set f) ->
+        let e = self#expr scx e in
+        let f = self#expr scx f in
+        let ty0 =
+          match query op Props.tpars_prop with
+          | Some [ TSet ty0 ] -> TSet ty0
+          | _ -> TSet (TAtm TAIdv)
+        in
+        let smb = mk_smb (ExtTrigEq ty0) in
+        let opq = mk_opq smb $$ op in
+        Apply (opq, [ e ; f ]) @@ oe
+
+    | Apply ({ core = Internal B.Neq } as op, [ e ; f ])
+      when ((pol = Negative) || (pol = Neither))
+        && (match query op Props.tpars_prop with
+            | Some [ TSet _ ] -> true
+            | _ -> is_set e || is_set f) ->
+        let e = self#expr scx e in
+        let f = self#expr scx f in
+        let ty0 =
+          match query op Props.tpars_prop with
+          | Some [ TSet ty0 ] -> TSet ty0
+          | _ -> TSet (TAtm TAIdv)
+        in
+        let smb = mk_smb (ExtTrigEq ty0) in
+        let opq = mk_opq smb $$ op in
+        Apply (Internal B.Neg %% [],
+          [ Apply (opq, [ e ; f ]) %% [] ]) @@ oe
+
+    | Apply ({ core = Internal B.Implies } as op, [ e ; f ]) ->
+        let e = self#expr (inv pol, hx) e in
+        let f = self#expr scx f in
+        Apply (op, [ e ; f ]) @@ oe
+
+    | Apply ({ core = Internal (B.Conj | B.Disj) } as op, [ e ; f ]) ->
+        let e = self#expr (pol, hx) e in
+        let f = self#expr (pol, hx) f in
+        Apply (op, [ e ; f ]) @@ oe
+
+    | Apply ({ core = Internal B.Neg } as op, [ e ]) ->
+        let e = self#expr (inv pol, hx) e in
+        Apply (op, [ e ]) @@ oe
+
+    | Apply (op, es) ->
+        let es = List.map (self#expr (Neither, hx)) es in
+        Apply (op, es) @@ oe
+
+    | _ -> super#expr scx oe
+
+  method sequent (pol, hx) sq =
+    let (_, hx), hs = self#hyps (inv pol, hx) sq.context in
+    let e = self#expr (pol, hx) sq.active in
+    (pol, hx), { context = hs ; active = e }
+end
+
+
+let main ?(mark_set_equalities=false) sq =
   let cx = ((), Deque.empty) in
   let _, sq = visitor#sequent cx sq in
-  sq
+
+  if mark_set_equalities then
+    snd (set_extensionality_visitor#sequent (Positive, Deque.empty) sq)
+  else
+    sq
 

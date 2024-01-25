@@ -448,6 +448,8 @@ let preprocess ~solver sq =
     else 0
   in
 
+  let mark_set_equalities = not (Params.debugging "noext") in
+
   let sq = sq
     (*|> Encode.Hints.main*) (* TODO *)
     |> debug "Original Obligation:"
@@ -460,7 +462,7 @@ let preprocess ~solver sq =
     |> Encode.Rewrite.sort_recfields
     |> Encode.Rewrite.simplify_sets ~rwlvl
     |> debug "Disambiguate and Simplify:"
-    |> Encode.Standardize.main
+    |> Encode.Standardize.main ~mark_set_equalities
     |> debug "Standardize:"
     |> Encode.Axiomatize.main ~solver
     |> debug "Axiomatize:"
