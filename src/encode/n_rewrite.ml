@@ -607,6 +607,36 @@ let inv = function
   | Negative -> Positive
   | Neither -> Neither
 
+let rewrite_by_extensionality ?(b=B.Equiv) ty0 e1 e2 =
+  let ty0, cast =
+    match ty0 with
+    | TAtm TAIdv ->
+        TAtm TAIdv,
+        fun e -> e
+    | TSet ty0 ->
+        ty0,
+        fun e -> assign e Props.icast_prop ty0
+    | _ ->
+        error "internal error"
+  in
+  let v = assign ("x" %% []) Props.ty0_prop ty0 in
+
+  Quant (
+    Forall, [ v, Constant, No_domain ],
+    Apply (
+      Internal b %% [],
+      [ Apply (Internal B.Mem %% [],
+        [ cast (Ix 1 %% [])
+        ; subst#expr (Subst.shift 1) e1 ]) %% []
+      ; Apply (Internal B.Mem %% [],
+        [ cast (Ix 1 %% [])
+        ; subst#expr (Subst.shift 1) e2 ]) %% []
+      ]) %% []
+  )
+
+let rewrite_subseteq = rewrite_by_extensionality ~b:B.Implies
+
+
 let apply_ext_visitor = object (self : 'self)
   inherit [pol] Expr.Visit.map as super
 
@@ -615,45 +645,34 @@ let apply_ext_visitor = object (self : 'self)
     (* x = y
      *    -->
      * \A z : z \in x <=> z \in y *)
-    | Apply ({ core = Internal (B.Eq | B.Neq as blt) } as op, [ e ; f ])
-      when ((pol = Positive && blt = B.Eq) || (pol = Negative && blt = B.Neq))
-      && (match query op Props.tpars_prop with
-          | Some [TAtm TAIdv] -> is_set e || is_set f
-          | Some [TSet _] -> true
-          | _ -> false) ->
+    | Apply ({ core = Internal B.Eq } as op, [ e ; f ])
+      when (pol = Positive) && (match query op Props.tpars_prop with
+                                | Some [TAtm TAIdv] -> is_set e || is_set f
+                                | Some [TSet _] -> true
+                                | _ -> false) ->
         let e = self#expr scx e in
         let f = self#expr scx f in
-        let q =
-          match blt with
-          | B.Eq -> Forall
-          | B.Neq -> Exists
-          | _ -> failwith ""
-        in
-        let ty0, cast =
+        let ty0 =
           match query op Props.tpars_prop with
-          | Some [TAtm TAIdv] ->
-              TAtm TAIdv, fun e -> e
-          | Some [TSet ty0] ->
-              ty0, fun e -> assign e Props.icast_prop ty0
-          | _ -> error ~at:oe "internal error"
+          | Some [ty0] -> ty0
+          | _ -> error ~at:op "internal error"
         in
-        let v = assign ("x" %% []) Props.ty0_prop ty0 in
-        let mem_op = Internal B.Mem %% [] in
-        Quant (
-          q, [ v, Constant, No_domain ],
-          Apply (
-            Internal B.Equiv %% [],
-            [ Apply (mem_op, [ cast (Ix 1 %% []) ; subst#expr (Subst.shift 1) e ]) %% []
-            ; Apply (mem_op, [ cast (Ix 1 %% []) ; subst#expr (Subst.shift 1) f ]) %% []
-            ]
-          ) %% []
-          |> fun e ->
-              match blt with
-              | B.Eq -> e
-              | B.Neq ->
-                  Apply (Internal B.Neg %% [], [e]) %% []
-              | _ -> failwith ""
-        ) @@ oe
+        rewrite_by_extensionality ty0 e f @@ oe
+
+    | Apply ({ core = Internal B.Neq } as op, [ e ; f ])
+      when (pol = Negative) && (match query op Props.tpars_prop with
+                                | Some [TAtm TAIdv] -> is_set e || is_set f
+                                | Some [TSet _] -> true
+                                | _ -> false) ->
+        let e = self#expr scx e in
+        let f = self#expr scx f in
+        let ty0 =
+          match query op Props.tpars_prop with
+          | Some [ty0] -> ty0
+          | _ -> error ~at:op "internal error"
+        in
+        Apply (Internal B.Neg %% [],
+          [ rewrite_by_extensionality ty0 e f %% [] ]) @@ oe
 
     (* x \subseteq y
      *    -->
@@ -662,26 +681,12 @@ let apply_ext_visitor = object (self : 'self)
       when pol = Positive ->
         let e = self#expr scx e in
         let f = self#expr scx f in
-        let q = Forall in
-        let ty0, cast =
+        let ty0 =
           match query op Props.tpars_prop with
-          | None ->
-              TAtm TAIdv, fun e -> e
-          | Some [ty0] ->
-              ty0, fun e -> assign e Props.icast_prop ty0
-          | _ -> error ~at:oe "internal error"
+          | Some [ty0] -> ty0
+          | _ -> error ~at:op "internal error"
         in
-        let v = assign ("x" %% []) Props.ty0_prop ty0 in
-        let mem_op = Internal B.Mem %% [] in
-        Quant (
-          q, [ v, Constant, No_domain ],
-          Apply (
-            Internal B.Implies %% [],
-            [ Apply (mem_op, [ cast (Ix 1 %% []) ; subst#expr (Subst.shift 1) e ]) %% []
-            ; Apply (mem_op, [ cast (Ix 1 %% []) ; subst#expr (Subst.shift 1) f ]) %% []
-            ]
-          ) %% []
-        ) @@ oe
+        rewrite_subseteq ty0 e f @@ oe
 
     | Apply ({ core = Internal B.Implies } as op, [ e ; f ]) ->
         let e = self#expr (inv pol, hx) e in
@@ -1192,45 +1197,34 @@ let simplify_sets_visitor = object (self : 'self)
     (* x = y
      *    -->
      * \A z : z \in x <=> z \in y *)
-    | Apply ({ core = Internal (B.Eq | B.Neq as blt) } as op, [ e ; f ])
-      when ((pol = Positive && blt = B.Eq) || (pol = Negative && blt = B.Neq))
-      && (match query op Props.tpars_prop with
-          | Some [TAtm TAIdv] -> is_set e || is_set f
-          | Some [TSet _] -> true
-          | _ -> false) ->
+    | Apply ({ core = Internal B.Eq } as op, [ e ; f ])
+      when (pol = Positive) && (match query op Props.tpars_prop with
+                                | Some [TAtm TAIdv] -> is_set e || is_set f
+                                | Some [TSet _] -> true
+                                | _ -> false) ->
         let e = self#expr scx e in
         let f = self#expr scx f in
-        let q =
-          match blt with
-          | B.Eq -> Forall
-          | B.Neq -> Exists
-          | _ -> failwith ""
-        in
-        let ty0, cast =
+        let ty0 =
           match query op Props.tpars_prop with
-          | Some [TAtm TAIdv] ->
-              TAtm TAIdv, fun e -> e
-          | Some [TSet ty0] ->
-              ty0, fun e -> assign e Props.icast_prop ty0
+          | Some [ty0] -> ty0
           | _ -> error ~at:oe "internal error"
         in
-        let v = assign ("x" %% []) Props.ty0_prop ty0 in
-        let mem_op = Internal B.Mem %% [] in
-        Quant (
-          q, [ v, Constant, No_domain ],
-          Apply (
-            Internal B.Equiv %% [],
-            [ Apply (mem_op, [ cast (Ix 1 %% []) ; subst#expr (Subst.shift 1) e ]) %% []
-            ; Apply (mem_op, [ cast (Ix 1 %% []) ; subst#expr (Subst.shift 1) f ]) %% []
-            ]
-          ) %% []
-          |> fun e ->
-              match blt with
-              | B.Eq -> e
-              | B.Neq ->
-                  Apply (Internal B.Neg %% [], [e]) %% []
-              | _ -> failwith ""
-        ) @@ oe
+        rewrite_subseteq ty0 e f @@ oe
+
+    | Apply ({ core = Internal B.Neq } as op, [ e ; f ])
+      when (pol = Negative) && (match query op Props.tpars_prop with
+                                | Some [TAtm TAIdv] -> is_set e || is_set f
+                                | Some [TSet _] -> true
+                                | _ -> false) ->
+        let e = self#expr scx e in
+        let f = self#expr scx f in
+        let ty0 =
+          match query op Props.tpars_prop with
+          | Some [ty0] -> ty0
+          | _ -> error ~at:oe "internal error"
+        in
+        Apply (Internal B.Neg %% [],
+          [ rewrite_subseteq ty0 e f %% [] ]) @@ oe
 
     (* x \subseteq y
      *    -->
@@ -1239,26 +1233,12 @@ let simplify_sets_visitor = object (self : 'self)
       when pol = Positive ->
         let e = self#expr scx e in
         let f = self#expr scx f in
-        let q = Forall in
-        let ty0, cast =
+        let ty0 =
           match query op Props.tpars_prop with
-          | None ->
-              TAtm TAIdv, fun e -> e
-          | Some [ty0] ->
-              ty0, fun e -> assign e Props.icast_prop ty0
+          | Some [ty0] -> ty0
           | _ -> error ~at:oe "internal error"
         in
-        let v = assign ("x" %% []) Props.ty0_prop ty0 in
-        let mem_op = Internal B.Mem %% [] in
-        Quant (
-          q, [ v, Constant, No_domain ],
-          Apply (
-            Internal B.Implies %% [],
-            [ Apply (mem_op, [ cast (Ix 1 %% []) ; subst#expr (Subst.shift 1) e ]) %% []
-            ; Apply (mem_op, [ cast (Ix 1 %% []) ; subst#expr (Subst.shift 1) f ]) %% []
-            ]
-          ) %% []
-        ) @@ oe
+        rewrite_subseteq ty0 e f @@ oe
 
     | Apply ({ core = Internal B.Implies } as op, [ e ; f ]) ->
         let e = self#expr (inv pol, hx) e in
