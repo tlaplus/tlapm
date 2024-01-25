@@ -50,8 +50,6 @@ let is_set e =
 
 (* {3 Main} *)
 
-(* TODO Implement typelvl=1 *)
-
 (* NOTE This module does not perform type inference, it only works
  * from the type annotations it can find. *)
 
@@ -84,7 +82,7 @@ let visitor = object (self : 'self)
 
     begin match oe.core with
 
-    (* FIXME a bit dirty *)
+    (* FIXME Rewriting may add this special primitive in expressions *)
     | Apply ({ core = Opaque "IsAFcn" } as op, [ e ]) ->
         let e = self#expr scx e in
         let smb = mk_smb FunIsafcn in

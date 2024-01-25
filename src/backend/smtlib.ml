@@ -436,8 +436,6 @@ let preprocess ~solver sq =
          if Params.debugging "noarith"  then 0
     else if Params.debugging "t0"       then 1
     else if Params.debugging "t0+"      then 2
-    (*else if Params.debugging "t1"       then 3*)
-    (* NOTE type level 3 is but a dream *)
     else 1
   in
 
@@ -451,7 +449,6 @@ let preprocess ~solver sq =
   let mark_set_equalities = not (Params.debugging "noext") in
 
   let sq = sq
-    (*|> Encode.Hints.main*) (* TODO *)
     |> debug "Original Obligation:"
     |> Encode.Rewrite.elim_flex
     |> Type.Synthesize.main ~typelvl
