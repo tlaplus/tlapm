@@ -150,7 +150,7 @@ let visitor = object (self : 'self)
           | Uminus,     Some [ TAtm TAInt ]   -> TIntUminus
           | Minus,      Some [ TAtm TAInt ]   -> TIntMinus
           | Times,      Some [ TAtm TAInt ]   -> TIntTimes
-          | Exp,        Some [ TAtm TAInt ]   -> TIntExp
+          (*| Exp,        Some [ TAtm TAInt ]   -> TIntExp*)
           | Quotient,   Some [ ]              -> TIntQuotient
           | Remainder,  Some [ ]              -> TIntRemainder
           | Lteq,       Some [ TAtm TAInt ]   -> TIntLteq

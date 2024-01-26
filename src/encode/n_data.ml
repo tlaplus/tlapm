@@ -209,9 +209,9 @@ let typed_data tla_smb =
   | TIntRemainder ->
       ("TIntRemainder", [ t_cst t_int ; t_cst t_int ],        t_int,
       IntRemainder)
-  | TIntExp ->
+  (*| TIntExp ->
       ("TIntExp",       [ t_cst t_int ; t_cst t_int ],        t_int,
-      IntExp)
+      IntExp)*)
   | TIntLteq ->
       ("TIntLteq",      [ t_cst t_int ; t_cst t_int ],        t_bol,
       IntLteq)
@@ -315,7 +315,7 @@ let get_data tla_smb =
       ; dat_tver = None
       }
   | TIntLit _ | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient
-  | TIntRemainder | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt | TFSCard _
+  | TIntRemainder (*| TIntExp*) | TIntLteq | TIntLt | TIntGteq | TIntGt | TFSCard _
   | TFSMem _ | TFSSubseteq _ | TFSEmpty _ | TFSSingleton _ | TFSAdd _ | TFSCup _
   | TFSCap _ | TFSSetminus _ ->
       let (nm, tins, tout, tver) = typed_data tla_smb in
@@ -475,7 +475,8 @@ let untyped_deps ~solver tla_smb s =
       ([ Mem ; IntSet ; NatSet ; IntLteq ; IntLit 0 ; IntLit 1 ;
           IntRange ; IntMinus ],              [ IntRemainderTyping ])
   | IntExp when noarith ->
-      ([ Mem ; IntSet ; IntLit 0 ],           [ IntExpTyping ])
+      ([ Mem ; IntSet ; IntLteq ; IntLit 0 ; IntLit 1 ],
+                                              [ IntExpTyping ])
   | IntLteq | IntLt | IntGteq | IntGt when noarith ->
       ([ Mem ; IntSet ],                      [ LteqReflexive ; LteqTransitive ; LteqAntisym ])
   | IntPlus ->
@@ -491,7 +492,10 @@ let untyped_deps ~solver tla_smb s =
   | IntRemainder ->
       ([ Cast (TAtm TAInt) ; TIntRemainder ], [ Typing TIntRemainder ])
   | IntExp ->
-      ([ Cast (TAtm TAInt) ; TIntExp ],       [ Typing TIntExp ])
+      (* NOTE SMT has no symbol for exponentiation *)
+      (*([ Cast (TAtm TAInt) ; TIntExp ],       [ Typing TIntExp ])*)
+      ([ Mem ; IntSet ; Cast (TAtm TAInt) ; TIntLteq ; TIntLit 0 ; TIntLit 1 ],
+                                              [ IntExpTyping ])
   | IntLteq ->
       ([ Cast (TAtm TAInt) ; TIntLteq ],      [ Typing TIntLteq ])
   | IntLt ->
@@ -636,8 +640,8 @@ let typed_deps tla_smb s =
       ([ IntQuotient ],                       [])
   | TIntRemainder ->
       ([ IntRemainder ],                      [])
-  | TIntExp ->
-      ([ IntExp ],                            [])
+  (*| TIntExp ->
+      ([ IntExp ],                            [])*)
   (* NOTE Best to declare only Lteq and not the four variants *)
   | TIntLteq ->
       ([ IntLteq ],                           [ Typing TIntLteq ])
@@ -700,7 +704,7 @@ let get_deps ~solver tla_smb s =
       ; dat_axms = axms
       }
   | TIntLit _ | TIntPlus | TIntUminus | TIntMinus | TIntTimes | TIntQuotient
-  | TIntRemainder | TIntExp | TIntLteq | TIntLt | TIntGteq | TIntGt
+  | TIntRemainder (*| TIntExp*) | TIntLteq | TIntLt | TIntGteq | TIntGt
   | TFSCard _ | TFSMem _ | TFSSubseteq _ | TFSEmpty _ | TFSSingleton _
   | TFSAdd _ | TFSCup _ | TFSCap _ | TFSSetminus _ ->
 

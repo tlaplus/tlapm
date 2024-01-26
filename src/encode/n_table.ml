@@ -82,7 +82,7 @@ type tla_smb =
   | TIntTimes
   | TIntQuotient
   | TIntRemainder
-  | TIntExp
+  (*| TIntExp*)
   | TIntLteq
   | TIntLt
   | TIntGteq
@@ -296,7 +296,7 @@ let tla_smb_desc = function
   | TIntTimes -> "TIntTimes"
   | TIntQuotient -> "TIntQuotient"
   | TIntRemainder -> "TIntRemainder"
-  | TIntExp -> "TIntExp"
+  (*| TIntExp -> "TIntExp"*)
   | TIntLteq -> "TIntLteq"
   | TIntLt -> "TIntLt"
   | TIntGteq -> "TIntGteq"

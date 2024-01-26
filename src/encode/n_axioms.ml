@@ -2435,7 +2435,7 @@ let inttimes_typing () =
     ] %% []
   ) %% []
 
-let intexp_typing () =
+let intexp_typing ~noarith =
   quant Forall
   [ "x" ; "y" ] [ t_idv ; t_idv ]
   ~pats:[ [
@@ -2450,14 +2450,38 @@ let intexp_typing () =
         [ Ix 2 %% []
         ; apps T.IntSet [] %% []
         ] %% []
-      ; appb ~tys:[ t_idv ] B.Neq
-        [ Ix 2 %% []
-        ; apps (T.IntLit 0) [] %% []
-        ] %% []
       ; apps T.Mem
         [ Ix 1 %% []
         ; apps T.IntSet [] %% []
         ] %% []
+      ; begin
+        if noarith then
+          appb B.Disj
+          [ appb ~tys:[ t_idv ] B.Neq
+            [ Ix 2 %% []
+            ; apps (T.IntLit 0) [] %% []
+            ] %% []
+          ; apps T.IntLteq
+            [ apps (T.IntLit 1) [] %% []
+            ; Ix 1 %% []
+            ] %% []
+          ] %% []
+        else
+          appb B.Disj
+          [ appb ~tys:[ t_idv ] B.Neq
+            [ Ix 2 %% []
+            ; apps (T.Cast t_int)
+              [ apps (T.TIntLit 0) [] %% []
+              ] %% []
+            ] %% []
+          ; apps T.IntLteq
+            [ apps (T.Cast t_int)
+              [ apps (T.TIntLit 1) [] %% []
+              ] %% []
+            ; Ix 1 %% []
+            ] %% []
+          ] %% []
+        end
       ]) %% []
     ; apps T.Mem
       [ apps T.IntExp
@@ -4942,7 +4966,7 @@ let get_axm ~solver tla_smb =
   | T.IntTimesTyping -> inttimes_typing ()
   | T.IntQuotientTyping -> intquotient_typing ()
   | T.IntRemainderTyping -> intremainder_typing ()
-  | T.IntExpTyping -> intexp_typing ()
+  | T.IntExpTyping -> intexp_typing ~noarith
   | T.NatPlusTyping -> natplus_typing ()
   | T.NatTimesTyping -> nattimes_typing ()
   | T.IntRangeDef -> intrange_def ()

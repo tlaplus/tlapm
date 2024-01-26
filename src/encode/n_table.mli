@@ -101,7 +101,7 @@ type tla_smb =
   | TIntTimes
   | TIntQuotient
   | TIntRemainder
-  | TIntExp
+  (*| TIntExp*) (* disabled; no ^ in SMT-LIB *)
   | TIntLteq
   | TIntLt
   | TIntGteq

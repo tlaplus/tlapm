@@ -83,7 +83,7 @@ module Table : sig
     | TIntTimes
     | TIntQuotient
     | TIntRemainder
-    | TIntExp
+    (*| TIntExp*)
     | TIntLteq
     | TIntLt
     | TIntGteq

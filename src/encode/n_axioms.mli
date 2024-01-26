@@ -133,7 +133,7 @@ val intminus_typing : unit -> expr
 val inttimes_typing : unit -> expr
 val intquotient_typing : unit -> expr
 val intremainder_typing : unit -> expr
-val intexp_typing : unit -> expr
+val intexp_typing : noarith:bool -> expr
 val natplus_typing : unit -> expr
 val nattimes_typing : unit -> expr
 
