@@ -10,6 +10,7 @@ open Prover
 type t
 
 val of_module : Tlapm_lib.Module.T.mule -> t option -> t option
+val with_prover_terminated : t option -> int -> t option
 val with_prover_result : t option -> int -> Toolbox.Obligation.t -> t option
 val locate_proof_step : t option -> Range.Position.t -> t option
 val locate_proof_range : t option -> Range.t -> Range.t

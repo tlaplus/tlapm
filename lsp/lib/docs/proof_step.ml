@@ -168,9 +168,14 @@ let rec of_proof step_loc sq_range (proof : Tlapm_lib.Proof.T.proof) acc :
   let kind, sub, status_parsed, suppl_loc, acc =
     match Property.unwrap proof with
     | Proof.T.Obvious -> (Kind.Leaf, [], None, None, acc)
-    | Proof.T.Omitted _omission ->
-        (* TODO: Distinguish the implicit/explicit. *)
-        (Kind.Leaf, [], Some Proof_status.Omitted, None, acc)
+    | Proof.T.Omitted omission ->
+        let status_parsed =
+          match omission with
+          | Explicit -> Proof_status.Omitted
+          | Implicit -> Proof_status.Missing
+          | Elsewhere _loc -> Proof_status.Omitted
+        in
+        (Kind.Leaf, [], Some status_parsed, None, acc)
     | Proof.T.By (usable, _only) ->
         let wrapped_join_ranges base list =
           List.fold_left
@@ -331,6 +336,15 @@ let of_module (mule : Tlapm_lib.Module.T.mule) prev : t option =
       step_opt
   | Parsed -> failwith "of_module, parsed"
   | _ -> failwith "of_module, non final"
+
+let with_prover_terminated (ps : t option) p_ref =
+  let rec traverse ps =
+    let sub = List.map traverse ps.sub in
+    let obs = RangeMap.map (Obl.with_prover_terminated p_ref) ps.obs in
+    let status_derived = derived_status ps.status_parsed obs sub in
+    { ps with sub; obs; status_derived }
+  in
+  match ps with None -> None | Some ps -> Some (traverse ps)
 
 let with_prover_result (ps : t option) p_ref (pr : Toolbox.Obligation.t) =
   let rec traverse (ps : t) (pr : Toolbox.Obligation.t) =

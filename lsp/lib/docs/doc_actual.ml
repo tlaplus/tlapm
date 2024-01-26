@@ -99,6 +99,8 @@ let add_notif (act : t) p_ref notif =
 
 let terminated (act : t) p_ref =
   if act.p_ref = p_ref then
-    (* TODO: Mark intermediate obligation states as interrupted? *)
-    Some act
+    let parsed = Lazy.force act.parsed in
+    let ps = Proof_step.with_prover_terminated parsed.ps p_ref in
+    let parsed = Lazy.from_val { parsed with ps } in
+    Some { act with parsed }
   else None

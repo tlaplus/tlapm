@@ -20,6 +20,7 @@ type t = {
   (* The following collect the proof info.
      For each new p_ref we reset all the prover results. *)
   p_ref : int;
+  checking : bool; (* Is obligation checking currently running? *)
   by_prover : Toolbox.Obligation.t StrMap.t;
   latest_prover : string option;
   status : Proof_status.t;
@@ -44,6 +45,7 @@ let of_parsed_obligation parsed status =
     parsed_text_plain;
     parsed_text_normalized;
     p_ref = 0;
+    checking = false;
     by_prover = StrMap.empty;
     latest_prover = None;
     status;
@@ -65,7 +67,7 @@ let loc obl =
 let fingerprint obl =
   match obl.parsed with None -> None | Some obl -> obl.fingerprint
 
-let status obl = obl.status
+let status obl = if obl.checking then Proof_status.Progress else obl.status
 
 let is_final obl =
   match obl.latest_prover with
@@ -91,6 +93,9 @@ let latest_obl_text obl =
   | None -> text_normalized obl
   | Some prover -> (StrMap.find prover obl.by_prover).obl
 
+let with_prover_terminated p_ref (obl : t) =
+  if obl.p_ref <= p_ref then { obl with checking = false } else obl
+
 let with_prover_obligation p_ref tlapm_obl (obl : t option) =
   (* Create, if we had no such [Obl.t]. *)
   let obl =
@@ -102,6 +107,7 @@ let with_prover_obligation p_ref tlapm_obl (obl : t option) =
           parsed_text_plain = lazy None;
           parsed_text_normalized = lazy None;
           p_ref = 0;
+          checking = false;
           by_prover = StrMap.empty;
           latest_prover = None;
           status = Proof_status.Pending;
@@ -112,12 +118,16 @@ let with_prover_obligation p_ref tlapm_obl (obl : t option) =
     {
       obl with
       p_ref;
+      checking = false;
       by_prover = StrMap.empty;
       latest_prover = None;
       status = Proof_status.Pending;
     }
   in
   let obl_add obl =
+    let obl =
+      { obl with checking = not (Toolbox.Obligation.is_final tlapm_obl) }
+    in
     match Toolbox.Obligation.(tlapm_obl.prover) with
     | None -> obl
     | Some prover ->
@@ -145,9 +155,10 @@ let with_proof_state_from obl by_fp =
               {
                 obl with
                 p_ref = other.p_ref;
-                status = other.status;
+                checking = other.checking;
                 by_prover = other.by_prover;
                 latest_prover = other.latest_prover;
+                status = other.status;
               }))
   | Some _ -> obl
 

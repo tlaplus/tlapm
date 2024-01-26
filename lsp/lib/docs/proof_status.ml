@@ -4,7 +4,7 @@ type t = Proved | Failed | Omitted | Missing | Pending | Progress
 
 let of_tlapm_obl_state = function
   | Toolbox.ToBeProved -> Progress
-  | Toolbox.BeingProved -> Pending
+  | Toolbox.BeingProved -> Progress
   | Toolbox.Normalized -> Progress
   | Toolbox.Proved -> Proved
   | Toolbox.Failed -> Failed
