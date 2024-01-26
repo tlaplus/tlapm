@@ -36,15 +36,17 @@ val init_ecx : ecx
 (* {3 Main} *)
 
 (** Collect relevant symbols and axioms *)
-val collect : solver:string -> ecx -> sequent -> ecx
+val collect : solver:string -> disable_arithmetic:bool -> smt_set_extensionality:bool -> ecx -> sequent -> ecx
 
 (** Assemble a sequent with an extended context *)
-val assemble : solver:string -> ecx -> sequent -> sequent
+val assemble : solver:string -> disable_arithmetic:bool -> smt_set_extensionality:bool -> ecx -> sequent -> sequent
 
 (** Combine collect and assemble
     @param solver the target backend.
+    @param disable_arithmetic set to true to disregard native support for arithmetic
+    @param smt_set_extensionality set to true to use special SMT axioms for set extensionality
 *)
-val main : solver:string -> sequent -> sequent
+val main : solver:string -> disable_arithmetic:bool -> smt_set_extensionality:bool -> sequent -> sequent
 (** If a backend is given, the operators of TLA+ that correspond to builtins
     of that backend are untouched.
     Available backends:

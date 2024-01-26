@@ -451,11 +451,11 @@ let preprocess ~solver sq =
     |> Encode.Rewrite.elim_except
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
-    |> Encode.Rewrite.simplify_sets ~rwlvl:1
+    |> Encode.Rewrite.simplify_sets ~rwlvl:1 ~disable_arithmetic:true (* simplify equalities between sets by ext. *)
     |> debug "Disambiguate and Simplify:"
-    |> Encode.Standardize.main ~mark_set_equalities:false
+    |> Encode.Standardize.main ~smt_set_extensionality:false
     |> debug "Standardize:"
-    |> Encode.Axiomatize.main ~solver
+    |> Encode.Axiomatize.main ~solver ~disable_arithmetic:true ~smt_set_extensionality:false
     |> debug "Axiomatize:"
   in
   sq

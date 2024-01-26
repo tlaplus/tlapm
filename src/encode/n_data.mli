@@ -34,5 +34,5 @@ val get_data : tla_smb -> data
 type s
 val init : s
 
-val get_deps : solver:string -> tla_smb -> s -> s * dep_data
+val get_deps : solver:string -> disable_arithmetic:bool -> smt_set_extensionality:bool -> tla_smb -> s -> s * dep_data
 

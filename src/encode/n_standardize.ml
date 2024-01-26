@@ -476,11 +476,11 @@ let set_extensionality_visitor = object (self : 'self)
 end
 
 
-let main ?(mark_set_equalities=false) sq =
+let main ?(smt_set_extensionality=false) sq =
   let cx = ((), Deque.empty) in
   let _, sq = visitor#sequent cx sq in
 
-  if mark_set_equalities then
+  if smt_set_extensionality then
     snd (set_extensionality_visitor#sequent (Positive, Deque.empty) sq)
   else
     sq

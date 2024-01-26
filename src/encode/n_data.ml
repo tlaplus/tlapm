@@ -357,7 +357,7 @@ let init =
   ; recs = []
   }
 
-let untyped_deps ~solver tla_smb s =
+let untyped_deps ~solver ~disable_arithmetic ~smt_set_extensionality tla_smb s =
   let s' =
     match tla_smb with
     | StrLit str ->
@@ -376,23 +376,8 @@ let untyped_deps ~solver tla_smb s =
         { s with recs = fs :: s.recs }
     | _ -> s
   in
-  let noarith =
-    match solver with
-    | "Zipper" -> true
-    | _ -> Params.debugging "noarith"
-  in
-  let t0p =
-    match noarith with
-    | true -> false
-    | _ -> Params.debugging "t0+"
-  in
-  let ext =
-    if Params.debugging "noext" then false
-    else
-      match solver with
-      | "SMT" | "Z3" | "CVC4" | "CVC5" | "veriT" -> true
-      | _ -> false
-  in
+  let noarith = disable_arithmetic in
+  let ext = smt_set_extensionality in
   begin match tla_smb with
   (* Logic *)
   | Choose ->
@@ -540,10 +525,6 @@ let untyped_deps ~solver tla_smb s =
       ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ; Mem ; SeqSeq ; SeqLen ]
        @ List.init n (fun i -> IntLit (i+1)),
                                   [ TupIsafcn n ; TupDomDef n ; TupAppDef n ; SeqTupTyping n ; SeqTupLen n ] @ axms_except)
-  | Tuple n when n > 0 && t0p ->
-      let axms_except = if s.except then List.init n (fun i -> TupExcept (n, i+1)) else [] in
-      ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ; Cast (TAtm TAInt) ; Mem ; SeqSeq ; SeqLen ],
-                                  [ TupIsafcn n ; TupDomDef n ; TupAppDef n ; SeqTupTyping n ; SeqTupLen n ] @ axms_except)
   | Tuple n when n > 0 ->
       let axms_except = if s.except then List.init n (fun i -> TupExcept (n, i+1)) else [] in
       ([ FunIsafcn ; FunDom ; FunApp ; SetEnum n ; Cast (TAtm TAInt) ; Mem ; SeqSeq ; SeqLen ],
@@ -688,7 +669,7 @@ let special_deps tla_smb =
   end |>
   fun x -> (fun s -> (s, x))
 
-let get_deps ~solver tla_smb s =
+let get_deps ~solver ~disable_arithmetic ~smt_set_extensionality tla_smb s =
   match tla_smb with
   | Choose | Mem | SubsetEq | SetEnum _ | Add | Union | Subset | Cup | Cap
   | SetMinus | SetSt | SetOf _ | BoolSet | StrSet | StrLit _ | IntSet
@@ -698,7 +679,7 @@ let get_deps ~solver tla_smb s =
   | FunExcept | Tuple _ | Product _ | Rec _ | RecSet _ | SeqSeq | SeqLen
   | SeqBSeq | SeqCat | SeqAppend | SeqHead | SeqTail | SeqSubSeq
   | SeqSelectSeq | FSIsFiniteSet | FSCard ->
-      let s, (smbs, axms) = untyped_deps ~solver tla_smb s in
+      let s, (smbs, axms) = untyped_deps ~solver ~disable_arithmetic ~smt_set_extensionality tla_smb s in
       s,
       { dat_deps = smbs
       ; dat_axms = axms

@@ -744,7 +744,7 @@ let subst_one a b =
   let lam = Lambda ([ "x" %% [], Shape_expr ], a) %% [] in
   Subst.normalize lam [b] @@ a
 
-let simplify_sets_visitor = object (self : 'self)
+let simplify_sets_visitor ~disable_arithmetic = object (self : 'self)
   inherit [pol] Expr.Visit.map as super
 
   method expr (pol, hx as scx) oe =
@@ -779,8 +779,7 @@ let simplify_sets_visitor = object (self : 'self)
      *    -->
      * \A y : y \in x => y \in a *)
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.SUBSET } as op2, [ e2 ]) } ])
-      when ((not (Params.debugging "nonewqut")) || pol = Positive)
-      && not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
+      when not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
         let e2 = self#expr scx e2 in
         let v = assign ("v" %% []) Props.ty0_prop (TAtm TAIdv) in
@@ -807,8 +806,7 @@ let simplify_sets_visitor = object (self : 'self)
      *    -->
      * \E y : y \in a /\ x \in y *)
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Apply ({ core = Internal B.UNION } as op2, [ e2 ]) } ])
-      when ((not (Params.debugging "nonewqut")) || pol = Negative)
-      && not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
+      when not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
         let e2 = self#expr scx e2 in
         let v = assign ("v" %% []) Props.ty0_prop (TAtm TAIdv) in
@@ -924,8 +922,7 @@ let simplify_sets_visitor = object (self : 'self)
      *    -->
      * \E y1, .., yn : y1 \in a1 /\ .. /\ yn \in an /\ x = F(y1, .., yn) *)
     | Apply ({ core = Internal B.Mem } as op, [ e1 ; { core = SetOf (e2, bs) } ])
-      when ((not (Params.debugging "nonewqut")) || pol = Negative)
-      && not (has op Props.tpars_prop) ->
+      when not (has op Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
         let scx', bs = self#bounds scx bs in
         let e2 = self#expr scx' e2 in
@@ -971,8 +968,7 @@ let simplify_sets_visitor = object (self : 'self)
     (* FIXME This rule inserts an Opaque "IsAFcn" which is recognized later
      * during standardization. Careful when modifying! *)
     | Apply ({ core = Internal B.Mem } as op1, [ e1 ; { core = Arrow (e2, e3) } ])
-      when ((not (Params.debugging "nonewqut")) || pol = Positive)
-      && not (has op1 Props.tpars_prop) ->
+      when not (has op1 Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
         let e2 = self#expr scx e2 in
         let e3 = self#expr scx e3 in
@@ -1025,7 +1021,7 @@ let simplify_sets_visitor = object (self : 'self)
         let n = List.length es in
         let num i =
           Num (string_of_int i, "" ) %% [] |> fun e ->
-            if Params.debugging "noarith" then
+            if disable_arithmetic then
               e
             else
               assign (assign e Props.tpars_prop []) Props.icast_prop (TAtm TAInt)
@@ -1119,7 +1115,7 @@ let simplify_sets_visitor = object (self : 'self)
       when not (has op1 Props.tpars_prop) && not (has op2 Props.tpars_prop) ->
         let e1 = self#expr scx e1 in
         let zero_op =
-          if Params.debugging "noarith" then
+          if disable_arithmetic then
             Num ("0", "") %% []
           else
             Num ("0", "") %% [] |> fun e ->
@@ -1284,13 +1280,14 @@ let rec repeat k f x =
   if k = 0 then x
   else repeat (k - 1) f (f x)
 
-let simplify_sets ?(limit=10) ?(rwlvl=2) sq =
+let simplify_sets ?(limit=10) ?(rwlvl=2) ~disable_arithmetic sq =
   let cx = (Positive, Deque.empty) in
   if rwlvl = 0 then sq
   else if rwlvl = 1 then
     snd (apply_ext_visitor#sequent cx sq)
   else
     repeat limit begin fun sq ->
-      snd (simplify_sets_visitor#sequent cx sq)
+      let visit = simplify_sets_visitor ~disable_arithmetic in
+      snd (visit#sequent cx sq)
     end sq
 

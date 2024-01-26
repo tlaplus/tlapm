@@ -432,10 +432,15 @@ let preprocess ~solver sq =
     sq
   in
 
+  (* The "smarter_types" debug flag will activate elementary type inference to
+     translate integer expressions more efficiently for SMT. *)
+
+  let disable_arithmetic = Params.debugging "disable_arithmetic" in
+  let smarter_types = Params.debugging "smarter_types" in
+
   let typelvl =
-         if Params.debugging "noarith"  then 0
-    else if Params.debugging "t0"       then 1
-    else if Params.debugging "t0+"      then 2
+         if disable_arithmetic  then 0
+    else if smarter_types       then 2
     else 1
   in
 
@@ -446,7 +451,7 @@ let preprocess ~solver sq =
     else 0
   in
 
-  let mark_set_equalities = not (Params.debugging "noext") in
+  let smt_set_extensionality = not (Params.debugging "no_smt_set_extensionality") in
 
   let sq = sq
     |> debug "Original Obligation:"
@@ -457,11 +462,11 @@ let preprocess ~solver sq =
     |> Encode.Rewrite.elim_multiarg
     |> Encode.Rewrite.elim_bounds (* make all '\in' visible *)
     |> Encode.Rewrite.sort_recfields
-    |> Encode.Rewrite.simplify_sets ~rwlvl
+    |> Encode.Rewrite.simplify_sets ~rwlvl ~disable_arithmetic
     |> debug "Disambiguate and Simplify:"
-    |> Encode.Standardize.main ~mark_set_equalities
+    |> Encode.Standardize.main ~smt_set_extensionality
     |> debug "Standardize:"
-    |> Encode.Axiomatize.main ~solver
+    |> Encode.Axiomatize.main ~solver ~disable_arithmetic ~smt_set_extensionality
     |> debug "Axiomatize:"
     |> Encode.Flatten.main
     |> debug "Flatten:"
@@ -543,7 +548,7 @@ let pp_print_obligation ?(solver="SMT") ff ob =
 
   (* Print options *)
   let logic =
-    if Params.debugging "noarith" then "UF"
+    if Params.debugging "disable_arithmetic" then "UF"
     else if solver = "veriT" then "UFLIA"
     else !Params.smt_logic (* default: UFNIA *)
   in

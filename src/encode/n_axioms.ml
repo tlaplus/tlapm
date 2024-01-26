@@ -622,10 +622,10 @@ let choose_ext () =
 
 (* {4 Sets} *)
 
-let set_ext ~ext =
+let set_ext ~smt_set_extensionality =
   quant Forall
   [ "x" ; "y" ] [ t_idv ; t_idv ]
-  ?pats:(if ext then Some [ [
+  ?pats:(if smt_set_extensionality then Some [ [
     apps T.ExtTrig
     [ Ix 2 %% []
     ; Ix 1 %% []
@@ -2224,7 +2224,7 @@ let strlit_distinct s1 s2 =
 
 (* {4 Arithmetic} *)
 
-let natset_def ~noarith =
+let natset_def ~disable_arithmetic =
   quant Forall
   [ "x" ] [ t_idv ]
   ~pats:[ [
@@ -2245,7 +2245,7 @@ let natset_def ~noarith =
         ] %% []
       ; apps T.IntLteq
         [ begin
-          if noarith then
+          if disable_arithmetic then
             apps (T.IntLit 0) [] %% []
           else
             apps (T.Cast t_int)
@@ -2435,7 +2435,7 @@ let inttimes_typing () =
     ] %% []
   ) %% []
 
-let intexp_typing ~noarith =
+let intexp_typing ~disable_arithmetic =
   quant Forall
   [ "x" ; "y" ] [ t_idv ; t_idv ]
   ~pats:[ [
@@ -2455,7 +2455,7 @@ let intexp_typing ~noarith =
         ; apps T.IntSet [] %% []
         ] %% []
       ; begin
-        if noarith then
+        if disable_arithmetic then
           appb B.Disj
           [ appb ~tys:[ t_idv ] B.Neq
             [ Ix 2 %% []
@@ -2752,7 +2752,7 @@ let tuple_isafcn n =
       ] %% []
     ) %% []
 
-let tupdom_def ~noarith ~t0p n =
+let tupdom_def ~disable_arithmetic n =
   quant Forall
   (gen "x" n) (dupl t_idv n)
   ~pats:[ [
@@ -2766,7 +2766,7 @@ let tupdom_def ~noarith ~t0p n =
       ] %% []
     ; apps (T.SetEnum n)
       (List.init n begin fun i ->
-        if noarith then
+        if disable_arithmetic then
           apps (T.IntLit (i + 1)) [] %% []
         else
           apps (T.Cast t_int)
@@ -2776,7 +2776,7 @@ let tupdom_def ~noarith ~t0p n =
     ] %% []
   ) %% []
 
-let tupapp_def ~noarith n =
+let tupapp_def ~disable_arithmetic n =
   quant Forall
   (gen "x" n) (dupl t_idv n)
   ~pats:[ [
@@ -2791,7 +2791,7 @@ let tupapp_def ~noarith n =
           [ apps (T.Tuple n)
             (ixi n) %% []
           ; begin
-            if noarith then
+            if disable_arithmetic then
               apps (T.IntLit (i + 1)) [] %% []
             else
               apps (T.Cast t_int)
@@ -2805,7 +2805,7 @@ let tupapp_def ~noarith n =
     ) %% []
   ) %% []
 
-let tupexcept_def ~noarith n i =
+let tupexcept_def ~disable_arithmetic n i =
   quant Forall
   (gen "x" n @ [ "x" ]) (dupl t_idv (n+1))
   ~pats:[ [
@@ -2813,7 +2813,7 @@ let tupexcept_def ~noarith n i =
     [ apps (T.Tuple n)
       (ixi ~shift:1 n) %% []
     ; begin
-      if noarith then
+      if disable_arithmetic then
         apps (T.IntLit (i + 1)) [] %% []
       else
         apps (T.Cast t_int)
@@ -2828,7 +2828,7 @@ let tupexcept_def ~noarith n i =
       [ apps (T.Tuple n)
         (ixi ~shift:1 n) %% []
       ; begin
-        if noarith then
+        if disable_arithmetic then
           apps (T.IntLit (i + 1)) [] %% []
         else
           apps (T.Cast t_int)
@@ -2903,7 +2903,7 @@ let productset_intro n =
     ] %% []
   ) %% []
 
-let productset_elim ~noarith n =
+let productset_elim ~disable_arithmetic n =
   quant Forall
   (gen "s" n @ [ "t" ]) (dupl t_idv (n + 1))
   ~pats:[ [
@@ -2927,7 +2927,7 @@ let productset_elim ~noarith n =
             apps T.FunApp
             [ Ix 1 %% []
             ; begin
-              if noarith then
+              if disable_arithmetic then
                 apps (T.IntLit (i + 1)) [] %% []
               else
                 apps (T.Cast t_int)
@@ -2943,7 +2943,7 @@ let productset_elim ~noarith n =
         [ apps T.FunApp
           [ Ix 1 %% []
           ; begin
-            if noarith then
+            if disable_arithmetic then
               apps (T.IntLit (i + 1)) [] %% []
             else
               apps (T.Cast t_int)
@@ -3147,7 +3147,7 @@ let recset_elim fs =
 
 (* {4 Sequences} *)
 
-let seqset_intro ~noarith =
+let seqset_intro ~disable_arithmetic =
   quant Forall
   [ "a" ; "s" ] [ t_idv ; t_idv ]
   ~pats:[ [
@@ -3163,7 +3163,7 @@ let seqset_intro ~noarith =
       [ apps T.FunIsafcn
         [ Ix 1 %% []
         ] %% []
-      ; if noarith then
+      ; if disable_arithmetic then
         apps T.Mem
         [ apps T.SeqLen
           [ Ix 1 %% []
@@ -3193,7 +3193,7 @@ let seqset_intro ~noarith =
               [ Ix 1 %% []
               ; apps T.IntSet [] %% []
               ] %% []
-            ; if noarith then
+            ; if disable_arithmetic then
               apps T.IntLteq
               [ apps (T.IntLit 1) [] %% []
               ; Ix 1 %% []
@@ -3205,7 +3205,7 @@ let seqset_intro ~noarith =
                 [ Ix 1 %% []
                 ] %% []
               ] %% []
-            ; if noarith then
+            ; if disable_arithmetic then
               apps T.IntLteq
               [ Ix 1 %% []
               ; apps T.SeqLen
@@ -3227,10 +3227,10 @@ let seqset_intro ~noarith =
           ] %% []
         ) %% []
       ; quant Forall
-        [ "i" ] [ if noarith then t_idv else t_int ]
+        [ "i" ] [ if disable_arithmetic then t_idv else t_int ]
         ( appb B.Implies
           [ List (And,
-            begin if noarith then
+            begin if disable_arithmetic then
               [ apps T.Mem
                 [ Ix 1 %% []
                 ; apps T.IntSet [] %% []
@@ -3238,7 +3238,7 @@ let seqset_intro ~noarith =
               ]
             else []
             end @
-            [ if noarith then
+            [ if disable_arithmetic then
               apps T.IntLteq
               [ apps (T.IntLit 1) [] %% []
               ; Ix 1 %% []
@@ -3248,7 +3248,7 @@ let seqset_intro ~noarith =
               [ apps (T.TIntLit 1) [] %% []
               ; Ix 1 %% []
               ] %% []
-            ; if noarith then
+            ; if disable_arithmetic then
               apps T.IntLteq
               [ Ix 1 %% []
               ; apps T.SeqLen
@@ -3268,7 +3268,7 @@ let seqset_intro ~noarith =
           ; apps T.Mem
             [ apps T.FunApp
               [ Ix 2 %% []
-              ; if noarith then
+              ; if disable_arithmetic then
                 Ix 1 %% []
               else
                 apps (T.Cast t_int)
@@ -3289,7 +3289,7 @@ let seqset_intro ~noarith =
     ] %% []
   ) %% []
 
-let seqset_elim1 ~noarith =
+let seqset_elim1 ~disable_arithmetic =
   quant Forall
   [ "a" ; "s" ] [ t_idv ; t_idv ]
   ~pats:[ [
@@ -3322,7 +3322,7 @@ let seqset_elim1 ~noarith =
           [ Ix 1 %% []
           ] %% []
         ; apps T.IntRange
-          [ if noarith then
+          [ if disable_arithmetic then
             apps (T.IntLit 1) [] %% []
           else
             apps (T.Cast t_int)
@@ -3337,9 +3337,9 @@ let seqset_elim1 ~noarith =
     ] %% []
   ) %% []
 
-let seqset_elim2 ~noarith =
+let seqset_elim2 ~disable_arithmetic =
   quant Forall
-  [ "a" ; "s" ; "i" ] [ t_idv ; t_idv ; if noarith then t_idv else t_int ]
+  [ "a" ; "s" ; "i" ] [ t_idv ; t_idv ; if disable_arithmetic then t_idv else t_int ]
   ~pats:[ [
     apps T.Mem
     [ Ix 2 %% []
@@ -3349,7 +3349,7 @@ let seqset_elim2 ~noarith =
     ] %% []
   ; apps T.FunApp
     [ Ix 2 %% []
-    ; if noarith then
+    ; if disable_arithmetic then
       Ix 1 %% []
     else
       apps (T.Cast t_int)
@@ -3366,7 +3366,7 @@ let seqset_elim2 ~noarith =
           ] %% []
         ] %% []
       ] @
-      if noarith then
+      if disable_arithmetic then
         [ apps T.Mem
           [ Ix 1 %% []
           ; apps T.IntSet [] %% []
@@ -3399,7 +3399,7 @@ let seqset_elim2 ~noarith =
     ; apps T.Mem
       [ apps T.FunApp
         [ Ix 2 %% []
-        ; if noarith then
+        ; if disable_arithmetic then
           Ix 1 %% []
         else
           apps (T.Cast t_int)
@@ -3411,12 +3411,12 @@ let seqset_elim2 ~noarith =
     ] %% []
   ) %% []
 
-let seqlen_def ~noarith =
+let seqlen_def ~disable_arithmetic =
   quant Forall
-  [ "s" ; "z" ] [ t_idv ; if noarith then t_idv else t_int ]
+  [ "s" ; "z" ] [ t_idv ; if disable_arithmetic then t_idv else t_int ]
   ( appb B.Implies
     [ appb B.Conj
-      [ if noarith then
+      [ if disable_arithmetic then
         apps T.Mem
         [ Ix 1 %% []
         ; apps T.NatSet [] %% []
@@ -3431,13 +3431,13 @@ let seqlen_def ~noarith =
           [ Ix 2 %% []
           ] %% []
         ; apps T.IntRange
-          [ if noarith then
+          [ if disable_arithmetic then
             apps (T.IntLit 1) [] %% []
           else
             apps (T.Cast t_int)
             [ apps (T.TIntLit 1) [] %% []
             ] %% []
-          ; if noarith then
+          ; if disable_arithmetic then
             Ix 1 %% []
           else
             apps (T.Cast t_int)
@@ -3450,7 +3450,7 @@ let seqlen_def ~noarith =
       [ apps T.SeqLen
         [ Ix 2 %% []
         ] %% []
-      ; if noarith then
+      ; if disable_arithmetic then
         Ix 1 %% []
       else
         apps (T.Cast t_int)
@@ -3513,7 +3513,7 @@ let seqcat_typing () =
     ] %% []
   ) %% []
 
-let seqcatlen_def ~noarith =
+let seqcatlen_def ~disable_arithmetic =
   quant Forall
   [ "s" ; "t" ] [ t_idv ; t_idv ]
   ~pats:[ [
@@ -3544,7 +3544,7 @@ let seqcatlen_def ~noarith =
           ; Ix 1 %% []
           ] %% []
         ] %% []
-      ; if noarith then
+      ; if disable_arithmetic then
         apps T.IntPlus
         [ apps T.SeqLen
           [ Ix 2 %% []
@@ -3572,16 +3572,16 @@ let seqcatlen_def ~noarith =
     ] %% []
   ) %% []
 
-let seqcatapp1_def ~noarith =
+let seqcatapp1_def ~disable_arithmetic =
   quant Forall
-  [ "s" ; "t" ; "i" ] [ t_idv ; t_idv ; if noarith then t_idv else t_int ]
+  [ "s" ; "t" ; "i" ] [ t_idv ; t_idv ; if disable_arithmetic then t_idv else t_int ]
   ~pats:[ [
     apps T.FunApp
     [ apps T.SeqCat
       [ Ix 3 %% []
       ; Ix 2 %% []
       ] %% []
-    ; if noarith then
+    ; if disable_arithmetic then
       Ix 1 %% []
     else
       apps (T.Cast t_int)
@@ -3595,7 +3595,7 @@ let seqcatapp1_def ~noarith =
     ] %% []
   ; apps T.FunApp
     [ Ix 3 %% []
-    ; if noarith then
+    ; if disable_arithmetic then
       Ix 1 %% []
     else
       apps (T.Cast t_int)
@@ -3618,7 +3618,7 @@ let seqcatapp1_def ~noarith =
         ; apps T.NatSet [] %% []
         ] %% []
       ] @
-      if noarith then
+      if disable_arithmetic then
         [ apps T.Mem
           [ Ix 1 %% []
           ; apps T.IntSet [] %% []
@@ -3654,7 +3654,7 @@ let seqcatapp1_def ~noarith =
           [ Ix 3 %% []
           ; Ix 2 %% []
           ] %% []
-        ; if noarith then
+        ; if disable_arithmetic then
           Ix 1 %% []
         else
           apps (T.Cast t_int)
@@ -3663,7 +3663,7 @@ let seqcatapp1_def ~noarith =
         ] %% []
       ; apps T.FunApp
         [ Ix 3 %% []
-        ; if noarith then
+        ; if disable_arithmetic then
           Ix 1 %% []
         else
           apps (T.Cast t_int)
@@ -3674,16 +3674,16 @@ let seqcatapp1_def ~noarith =
     ] %% []
   ) %% []
 
-let seqcatapp2_def ~noarith =
+let seqcatapp2_def ~disable_arithmetic =
   quant Forall
-  [ "s" ; "t" ; "i" ] [ t_idv ; t_idv ; if noarith then t_idv else t_int ]
+  [ "s" ; "t" ; "i" ] [ t_idv ; t_idv ; if disable_arithmetic then t_idv else t_int ]
   ~pats:[ [
     apps T.FunApp
     [ apps T.SeqCat
       [ Ix 3 %% []
       ; Ix 2 %% []
       ] %% []
-    ; if noarith then
+    ; if disable_arithmetic then
       Ix 1 %% []
     else
       apps (T.Cast t_int)
@@ -3706,7 +3706,7 @@ let seqcatapp2_def ~noarith =
         ; apps T.NatSet [] %% []
         ] %% []
       ] @
-      if noarith then
+      if disable_arithmetic then
         [ apps T.Mem
           [ Ix 1 %% []
           ; apps T.IntSet [] %% []
@@ -3766,7 +3766,7 @@ let seqcatapp2_def ~noarith =
           [ Ix 3 %% []
           ; Ix 2 %% []
           ] %% []
-        ; if noarith then
+        ; if disable_arithmetic then
           Ix 1 %% []
         else
           apps (T.Cast t_int)
@@ -3775,7 +3775,7 @@ let seqcatapp2_def ~noarith =
         ] %% []
       ; apps T.FunApp
         [ Ix 2 %% []
-        ; if noarith then
+        ; if disable_arithmetic then
           apps T.IntMinus
           [ Ix 1 %% []
           ; apps T.SeqLen
@@ -3838,7 +3838,7 @@ let seqappend_typing () =
     ] %% []
   ) %% []
 
-let seqappendlen_def ~noarith =
+let seqappendlen_def ~disable_arithmetic =
   quant Forall
   [ "s" ; "x" ] [ t_idv ; t_idv ]
   ~pats:[ [
@@ -3861,7 +3861,7 @@ let seqappendlen_def ~noarith =
           ; Ix 1 %% []
           ] %% []
         ] %% []
-      ; if noarith then
+      ; if disable_arithmetic then
         apps T.IntPlus
         [ apps T.SeqLen
           [ Ix 2 %% []
@@ -3883,16 +3883,16 @@ let seqappendlen_def ~noarith =
     ] %% []
   ) %% []
 
-let seqappendapp1_def ~noarith =
+let seqappendapp1_def ~disable_arithmetic =
   quant Forall
-  [ "s" ; "x" ; "i" ] [ t_idv ; t_idv ; if noarith then t_idv else t_int ]
+  [ "s" ; "x" ; "i" ] [ t_idv ; t_idv ; if disable_arithmetic then t_idv else t_int ]
   ~pats:[ [
     apps T.FunApp
     [ apps T.SeqAppend
       [ Ix 3 %% []
       ; Ix 2 %% []
       ] %% []
-    ; if noarith then
+    ; if disable_arithmetic then
       Ix 1 %% []
     else
       apps (T.Cast t_int)
@@ -3906,7 +3906,7 @@ let seqappendapp1_def ~noarith =
     ] %% []
   ; apps T.FunApp
     [ Ix 3 %% []
-    ; if noarith then
+    ; if disable_arithmetic then
       Ix 1 %% []
     else
       apps (T.Cast t_int)
@@ -3923,7 +3923,7 @@ let seqappendapp1_def ~noarith =
         ; apps T.NatSet [] %% []
         ] %% []
       ] @
-      if noarith then
+      if disable_arithmetic then
         [ apps T.Mem
           [ Ix 1 %% []
           ; apps T.IntSet [] %% []
@@ -3959,7 +3959,7 @@ let seqappendapp1_def ~noarith =
           [ Ix 3 %% []
           ; Ix 2 %% []
           ] %% []
-        ; if noarith then
+        ; if disable_arithmetic then
           Ix 1 %% []
         else
           apps (T.Cast t_int)
@@ -3968,7 +3968,7 @@ let seqappendapp1_def ~noarith =
         ] %% []
       ; apps T.FunApp
         [ Ix 3 %% []
-        ; if noarith then
+        ; if disable_arithmetic then
           Ix 1 %% []
         else
           apps (T.Cast t_int)
@@ -3979,7 +3979,7 @@ let seqappendapp1_def ~noarith =
     ] %% []
   ) %% []
 
-let seqappendapp2_def ~noarith =
+let seqappendapp2_def ~disable_arithmetic =
   quant Forall
   [ "s" ; "x" ] [ t_idv ; t_idv ]
   ~pats:[ [
@@ -4001,7 +4001,7 @@ let seqappendapp2_def ~noarith =
           [ Ix 2 %% []
           ; Ix 1 %% []
           ] %% []
-        ; if noarith then
+        ; if disable_arithmetic then
           apps T.IntPlus
           [ apps T.SeqLen
             [ Ix 2 %% []
@@ -4025,7 +4025,7 @@ let seqappendapp2_def ~noarith =
     ] %% []
   ) %% []
 
-let seqhead_def ~noarith =
+let seqhead_def ~disable_arithmetic =
   quant Forall
   [ "s" ] [ t_idv ]
   ~pats:[ [
@@ -4039,7 +4039,7 @@ let seqhead_def ~noarith =
       ] %% []
     ; apps T.FunApp
       [ Ix 1 %% []
-      ; if noarith then
+      ; if disable_arithmetic then
         apps (T.IntLit 1) [] %% []
       else
         apps (T.Cast t_int)
@@ -4049,7 +4049,7 @@ let seqhead_def ~noarith =
     ] %% []
   ) %% []
 
-let seqtail_typing ~noarith =
+let seqtail_typing ~disable_arithmetic =
   quant Forall
   [ "a" ; "s" ] [ t_idv ; t_idv ]
   ~pats:[ [
@@ -4071,8 +4071,8 @@ let seqtail_typing ~noarith =
           [ Ix 2 %% []
           ] %% []
         ] %% []
-      ; appb ~tys:[ if noarith then t_idv else t_int ] B.Neq
-        [ if noarith then
+      ; appb ~tys:[ if disable_arithmetic then t_idv else t_int ] B.Neq
+        [ if disable_arithmetic then
           apps T.SeqLen
           [ Ix 1 %% []
           ] %% []
@@ -4082,7 +4082,7 @@ let seqtail_typing ~noarith =
             [ Ix 1 %% []
             ] %% []
           ] %% []
-        ; if noarith then
+        ; if disable_arithmetic then
           apps (T.IntLit 0) [] %% []
         else
           apps (T.TIntLit 0) [] %% []
@@ -4099,7 +4099,7 @@ let seqtail_typing ~noarith =
     ] %% []
   ) %% []
 
-let seqtaillen_def ~noarith =
+let seqtaillen_def ~disable_arithmetic =
   quant Forall
   [ "s" ] [ t_idv ]
   ~pats:[ [
@@ -4115,8 +4115,8 @@ let seqtaillen_def ~noarith =
           ] %% []
         ; apps T.NatSet [] %% []
         ] %% []
-      ; appb ~tys:[ if noarith then t_idv else t_int ] B.Neq
-        [ if noarith then
+      ; appb ~tys:[ if disable_arithmetic then t_idv else t_int ] B.Neq
+        [ if disable_arithmetic then
           apps T.SeqLen
           [ Ix 1 %% []
           ] %% []
@@ -4126,7 +4126,7 @@ let seqtaillen_def ~noarith =
             [ Ix 1 %% []
             ] %% []
           ] %% []
-        ; if noarith then
+        ; if disable_arithmetic then
           apps (T.IntLit 0) [] %% []
         else
           apps (T.TIntLit 0) [] %% []
@@ -4138,7 +4138,7 @@ let seqtaillen_def ~noarith =
           [ Ix 1 %% []
           ] %% []
         ] %% []
-      ; if noarith then
+      ; if disable_arithmetic then
         apps T.IntMinus
         [ apps T.SeqLen
           [ Ix 1 %% []
@@ -4160,15 +4160,15 @@ let seqtaillen_def ~noarith =
     ] %% []
   ) %% []
 
-let seqtailapp_def ~noarith =
+let seqtailapp_def ~disable_arithmetic =
   quant Forall
-  [ "s" ; "i" ] [ t_idv ; if noarith then t_idv else t_int ]
+  [ "s" ; "i" ] [ t_idv ; if disable_arithmetic then t_idv else t_int ]
   ~pats:[ [
     apps T.FunApp
     [ apps T.SeqTail
       [ Ix 2 %% []
       ] %% []
-    ; if noarith then
+    ; if disable_arithmetic then
       Ix 1 %% []
     else
       apps (T.Cast t_int)
@@ -4184,8 +4184,8 @@ let seqtailapp_def ~noarith =
           ] %% []
         ; apps T.NatSet [] %% []
         ] %% []
-      ; appb ~tys:[ if noarith then t_idv else t_int ] B.Neq
-        [ if noarith then
+      ; appb ~tys:[ if disable_arithmetic then t_idv else t_int ] B.Neq
+        [ if disable_arithmetic then
           apps T.SeqLen
           [ Ix 2 %% []
           ] %% []
@@ -4195,13 +4195,13 @@ let seqtailapp_def ~noarith =
             [ Ix 2 %% []
             ] %% []
           ] %% []
-        ; if noarith then
+        ; if disable_arithmetic then
           apps (T.IntLit 0) [] %% []
         else
           apps (T.TIntLit 0) [] %% []
         ] %% []
       ] @
-      if noarith then
+      if disable_arithmetic then
         [ apps T.Mem
           [ Ix 1 %% []
           ; apps T.IntSet [] %% []
@@ -4242,7 +4242,7 @@ let seqtailapp_def ~noarith =
         [ apps T.SeqTail
           [ Ix 2 %% []
           ] %% []
-        ; if noarith then
+        ; if disable_arithmetic then
           Ix 1 %% []
         else
           apps (T.Cast t_int)
@@ -4251,7 +4251,7 @@ let seqtailapp_def ~noarith =
         ] %% []
       ; apps T.FunApp
         [ Ix 2 %% []
-        ; if noarith then
+        ; if disable_arithmetic then
           apps T.IntPlus
           [ Ix 1 %% []
           ; apps (T.IntLit 1) [] %% []
@@ -4268,9 +4268,9 @@ let seqtailapp_def ~noarith =
     ] %% []
   ) %% []
 
-let seqsubseq_typing ~noarith =
+let seqsubseq_typing ~disable_arithmetic =
   quant Forall
-  [ "a" ; "s" ; "x" ; "y" ] [ t_idv ; t_idv ; if noarith then t_idv else t_int ; if noarith then t_idv else t_int ]
+  [ "a" ; "s" ; "x" ; "y" ] [ t_idv ; t_idv ; if disable_arithmetic then t_idv else t_int ; if disable_arithmetic then t_idv else t_int ]
   ~pats:[ [
     apps T.Mem
     [ Ix 3 %% []
@@ -4280,13 +4280,13 @@ let seqsubseq_typing ~noarith =
     ] %% []
   ; apps T.SeqSubSeq
     [ Ix 3 %% []
-    ; if noarith then
+    ; if disable_arithmetic then
       Ix 2 %% []
     else
       apps (T.Cast t_int)
       [ Ix 2 %% []
       ] %% []
-    ; if noarith then
+    ; if disable_arithmetic then
       Ix 1 %% []
     else
       apps (T.Cast t_int)
@@ -4303,7 +4303,7 @@ let seqsubseq_typing ~noarith =
           ] %% []
         ] %% []
       ] @
-      (if noarith then
+      (if disable_arithmetic then
         [ apps T.Mem
           [ Ix 2 %% []
           ; apps T.IntSet [] %% []
@@ -4314,7 +4314,7 @@ let seqsubseq_typing ~noarith =
           ] %% []
         ]
       else []) @
-      [ if noarith then
+      [ if disable_arithmetic then
         apps T.IntLteq
         [ apps (T.IntLit 1) [] %% []
         ; Ix 2 %% []
@@ -4324,7 +4324,7 @@ let seqsubseq_typing ~noarith =
         [ apps (T.TIntLit 1) [] %% []
         ; Ix 2 %% []
         ] %% []
-      ; if noarith then
+      ; if disable_arithmetic then
         apps T.IntLteq
         [ Ix 1 %% []
         ; apps T.SeqLen
@@ -4344,13 +4344,13 @@ let seqsubseq_typing ~noarith =
     ; apps T.Mem
       [ apps T.SeqSubSeq
         [ Ix 3 %% []
-        ; if noarith then
+        ; if disable_arithmetic then
           Ix 2 %% []
         else
           apps (T.Cast t_int)
           [ Ix 2 %% []
           ] %% []
-        ; if noarith then
+        ; if disable_arithmetic then
           Ix 1 %% []
         else
           apps (T.Cast t_int)
@@ -4364,19 +4364,19 @@ let seqsubseq_typing ~noarith =
     ] %% []
   ) %% []
 
-let seqsubseqlen_def ~noarith =
+let seqsubseqlen_def ~disable_arithmetic =
   quant Forall
-  [ "s" ; "x" ; "y" ] [ t_idv ; if noarith then t_idv else t_int ; if noarith then t_idv else t_int ]
+  [ "s" ; "x" ; "y" ] [ t_idv ; if disable_arithmetic then t_idv else t_int ; if disable_arithmetic then t_idv else t_int ]
   ~pats:[ [
     apps T.SeqSubSeq
     [ Ix 3 %% []
-    ; if noarith then
+    ; if disable_arithmetic then
       Ix 2 %% []
     else
       apps (T.Cast t_int)
       [ Ix 2 %% []
       ] %% []
-    ; if noarith then
+    ; if disable_arithmetic then
       Ix 1 %% []
     else
       apps (T.Cast t_int)
@@ -4384,7 +4384,7 @@ let seqsubseqlen_def ~noarith =
       ] %% []
     ] %% []
   ] ]
-  ( if noarith then
+  ( if disable_arithmetic then
     appb B.Implies
     [ appb B.Conj
       [ apps T.Mem
@@ -4506,27 +4506,27 @@ let seqsubseqlen_def ~noarith =
     ]) %% []
   ) %% []
 
-let seqsubseqapp_def ~noarith =
+let seqsubseqapp_def ~disable_arithmetic =
   quant Forall
-  [ "s" ; "x" ; "y" ; "z" ] [ t_idv ; if noarith then t_idv else t_int ; if noarith then t_idv else t_int ; if noarith then t_idv else t_int ]
+  [ "s" ; "x" ; "y" ; "z" ] [ t_idv ; if disable_arithmetic then t_idv else t_int ; if disable_arithmetic then t_idv else t_int ; if disable_arithmetic then t_idv else t_int ]
   ~pats:[ [
     apps T.FunApp
     [ apps T.SeqSubSeq
       [ Ix 4 %% []
-      ; if noarith then
+      ; if disable_arithmetic then
         Ix 3 %% []
       else
         apps (T.Cast t_int)
         [ Ix 3 %% []
         ] %% []
-      ; if noarith then
+      ; if disable_arithmetic then
         Ix 2 %% []
       else
         apps (T.Cast t_int)
         [ Ix 2 %% []
         ] %% []
       ] %% []
-    ; if noarith then
+    ; if disable_arithmetic then
       Ix 1 %% []
     else
       apps (T.Cast t_int)
@@ -4536,7 +4536,7 @@ let seqsubseqapp_def ~noarith =
   ] ]
   ( appb B.Implies
     [ List (And,
-      (if noarith then
+      (if disable_arithmetic then
         [ apps T.Mem
           [ Ix 3 %% []
           ; apps T.IntSet [] %% []
@@ -4551,7 +4551,7 @@ let seqsubseqapp_def ~noarith =
           ] %% []
         ]
       else []) @
-      [ if noarith then
+      [ if disable_arithmetic then
         apps T.IntLteq
         [ apps (T.IntLit 1) [] %% []
         ; Ix 3 %% []
@@ -4561,7 +4561,7 @@ let seqsubseqapp_def ~noarith =
         [ apps (T.TIntLit 1) [] %% []
         ; Ix 3 %% []
         ] %% []
-      ; if noarith then
+      ; if disable_arithmetic then
         apps T.IntLteq
         [ apps (T.IntLit 1) [] %% []
         ; Ix 1 %% []
@@ -4571,7 +4571,7 @@ let seqsubseqapp_def ~noarith =
         [ apps (T.TIntLit 1) [] %% []
         ; Ix 1 %% []
         ] %% []
-      ; if noarith then
+      ; if disable_arithmetic then
         apps T.IntLteq
         [ Ix 1 %% []
         ; apps T.IntMinus
@@ -4598,20 +4598,20 @@ let seqsubseqapp_def ~noarith =
       [ apps T.FunApp
         [ apps T.SeqSubSeq
           [ Ix 4 %% []
-          ; if noarith then
+          ; if disable_arithmetic then
             Ix 3 %% []
           else
             apps (T.Cast t_int)
             [ Ix 3 %% []
             ] %% []
-          ; if noarith then
+          ; if disable_arithmetic then
             Ix 2 %% []
           else
             apps (T.Cast t_int)
             [ Ix 2 %% []
             ] %% []
           ] %% []
-        ; if noarith then
+        ; if disable_arithmetic then
           Ix 1 %% []
         else
           apps (T.Cast t_int)
@@ -4620,7 +4620,7 @@ let seqsubseqapp_def ~noarith =
         ] %% []
       ; apps T.FunApp
         [ Ix 4 %% []
-        ; if noarith then
+        ; if disable_arithmetic then
           apps T.IntMinus
           [ apps T.IntPlus
             [ Ix 1 %% []
@@ -4680,7 +4680,7 @@ let seqselectseq_typing () =
     ) %% []
   ) %% []
 
-let seqselectseqlen_def ~noarith =
+let seqselectseqlen_def ~disable_arithmetic =
   seq
   [ "T" ] [ Ty1 ([ t_idv ], t_idv) ]
   ( quant Forall
@@ -4698,7 +4698,7 @@ let seqselectseqlen_def ~noarith =
           ] %% []
         ; apps T.NatSet [] %% []
         ] %% []
-      ; if noarith then
+      ; if disable_arithmetic then
         apps T.IntLteq
         [ apps T.SeqLen
           [ apps T.SeqSelectSeq
@@ -4882,7 +4882,7 @@ let seqtup_typing n =
     ] %% []
   ) %% []
 
-let seqtuplen_def ~noarith n =
+let seqtuplen_def ~disable_arithmetic n =
   quant Forall
   (gen "x" n) (dupl t_idv n)
   ~pats:[ [
@@ -4894,7 +4894,7 @@ let seqtuplen_def ~noarith n =
       [ apps (T.Tuple n)
         (ixi n) %% []
       ] %% []
-    ; if noarith then
+    ; if disable_arithmetic then
       apps (T.IntLit n) [] %% []
     else
       apps (T.Cast t_int)
@@ -4912,28 +4912,11 @@ let mark tla_smb e =
   let smb = mk_smb tla_smb in
   assign e smb_prop smb
 
-let get_axm ~solver tla_smb =
-  let noarith =
-    match solver with
-    | "Zipper" -> true
-    | _ -> Params.debugging "noarith"
-  in
-  let t0p =
-    match noarith with
-    | true -> false
-    | _ -> Params.debugging "t0+"
-  in
-  let ext =
-    if Params.debugging "noext" then false
-    else
-      match solver with
-      | "SMT" | "Z3" | "CVC4" | "CVC5" | "veriT" -> true
-      | _ -> false
-  in
+let get_axm ~solver ?(disable_arithmetic=false) ?(smt_set_extensionality=false) tla_smb =
   match tla_smb with
   | T.ChooseDef -> choose_def () |> mark T.Choose
   | T.ChooseExt -> choose_ext ()
-  | T.SetExt -> set_ext ~ext
+  | T.SetExt -> set_ext ~smt_set_extensionality
   | T.SubsetEqDef -> subseteq_def ()
   | T.SubsetEqIntro -> subseteq_intro ()
   | T.SubsetEqElim -> subseteq_elim ()
@@ -4959,14 +4942,14 @@ let get_axm ~solver tla_smb =
   | T.IntLitIsint n -> intlit_isint n
   | T.IntLitDistinct (m, n) -> intlit_distinct m n
   | T.IntLitZeroCmp n -> intlit_zerocmp n
-  | T.NatSetDef -> natset_def ~noarith
+  | T.NatSetDef -> natset_def ~disable_arithmetic
   | T.IntPlusTyping -> intplus_typing ()
   | T.IntUminusTyping -> intuminus_typing ()
   | T.IntMinusTyping -> intminus_typing ()
   | T.IntTimesTyping -> inttimes_typing ()
   | T.IntQuotientTyping -> intquotient_typing ()
   | T.IntRemainderTyping -> intremainder_typing ()
-  | T.IntExpTyping -> intexp_typing ~noarith
+  | T.IntExpTyping -> intexp_typing ~disable_arithmetic
   | T.NatPlusTyping -> natplus_typing ()
   | T.NatTimesTyping -> nattimes_typing ()
   | T.IntRangeDef -> intrange_def ()
@@ -4994,12 +4977,12 @@ let get_axm ~solver tla_smb =
   | T.FunImIntro -> fcnim_intro ()
   | T.FunImElim -> fcnim_elim ()
   | T.TupIsafcn n -> tuple_isafcn n
-  | T.TupDomDef n -> tupdom_def ~noarith ~t0p n
-  | T.TupAppDef n -> tupapp_def ~noarith n
-  | T.TupExcept (n, i) -> tupexcept_def ~noarith n i
+  | T.TupDomDef n -> tupdom_def ~disable_arithmetic n
+  | T.TupAppDef n -> tupapp_def ~disable_arithmetic n
+  | T.TupExcept (n, i) -> tupexcept_def ~disable_arithmetic n i
   | T.ProductDef n -> productset_def n
   | T.ProductIntro n -> productset_intro n
-  | T.ProductElim n -> productset_elim ~noarith n
+  | T.ProductElim n -> productset_elim ~disable_arithmetic n
   | T.RecIsafcn fs -> record_isafcn fs
   | T.RecDomDef fs -> recdom_def fs
   | T.RecAppDef fs -> recapp_def fs
@@ -5008,32 +4991,32 @@ let get_axm ~solver tla_smb =
   | T.RecSetIntro fs -> recset_intro fs
   | T.RecSetElim fs -> recset_elim fs
 
-  | T.SeqSetIntro -> seqset_intro ~noarith
-  | T.SeqSetElim1 -> seqset_elim1 ~noarith
-  | T.SeqSetElim2 -> seqset_elim2 ~noarith
-  | T.SeqLenDef -> seqlen_def ~noarith
+  | T.SeqSetIntro -> seqset_intro ~disable_arithmetic
+  | T.SeqSetElim1 -> seqset_elim1 ~disable_arithmetic
+  | T.SeqSetElim2 -> seqset_elim2 ~disable_arithmetic
+  | T.SeqLenDef -> seqlen_def ~disable_arithmetic
   | T.SeqCatTyping -> seqcat_typing ()
-  | T.SeqCatLen -> seqcatlen_def ~noarith
-  | T.SeqCatApp1 -> seqcatapp1_def ~noarith
-  | T.SeqCatApp2 -> seqcatapp2_def ~noarith
+  | T.SeqCatLen -> seqcatlen_def ~disable_arithmetic
+  | T.SeqCatApp1 -> seqcatapp1_def ~disable_arithmetic
+  | T.SeqCatApp2 -> seqcatapp2_def ~disable_arithmetic
   | T.SeqAppendTyping -> seqappend_typing ()
-  | T.SeqAppendLen -> seqappendlen_def ~noarith
-  | T.SeqAppendApp1 -> seqappendapp1_def ~noarith
-  | T.SeqAppendApp2 -> seqappendapp2_def ~noarith
-  | T.SeqHeadDef -> seqhead_def ~noarith
-  | T.SeqTailTyping -> seqtail_typing ~noarith
-  | T.SeqTailLen -> seqtaillen_def ~noarith
-  | T.SeqTailApp -> seqtailapp_def ~noarith
-  | T.SeqSubseqTyping -> seqsubseq_typing ~noarith
-  | T.SeqSubseqLen -> seqsubseqlen_def ~noarith
-  | T.SeqSubseqApp -> seqsubseqapp_def ~noarith
+  | T.SeqAppendLen -> seqappendlen_def ~disable_arithmetic
+  | T.SeqAppendApp1 -> seqappendapp1_def ~disable_arithmetic
+  | T.SeqAppendApp2 -> seqappendapp2_def ~disable_arithmetic
+  | T.SeqHeadDef -> seqhead_def ~disable_arithmetic
+  | T.SeqTailTyping -> seqtail_typing ~disable_arithmetic
+  | T.SeqTailLen -> seqtaillen_def ~disable_arithmetic
+  | T.SeqTailApp -> seqtailapp_def ~disable_arithmetic
+  | T.SeqSubseqTyping -> seqsubseq_typing ~disable_arithmetic
+  | T.SeqSubseqLen -> seqsubseqlen_def ~disable_arithmetic
+  | T.SeqSubseqApp -> seqsubseqapp_def ~disable_arithmetic
   | T.SeqSelectseqTyping -> seqselectseq_typing () |> mark T.SeqSelectSeq
-  | T.SeqSelectseqLen -> seqselectseqlen_def ~noarith |> mark T.SeqSelectSeq
+  | T.SeqSelectseqLen -> seqselectseqlen_def ~disable_arithmetic |> mark T.SeqSelectSeq
   | T.SeqSelectseqNil -> seqselectseqnil_def () |> mark T.SeqSelectSeq
   | T.SeqSelectseqApp -> seqselectseqapp_def () |> mark T.SeqSelectSeq
   | T.SeqSelectseqAppend -> seqselectseqappend_def () |> mark T.SeqSelectSeq
   | T.SeqTupTyping n -> seqtup_typing n
-  | T.SeqTupLen n -> seqtuplen_def ~noarith n
+  | T.SeqTupLen n -> seqtuplen_def ~disable_arithmetic n
 
   | T.CastInj ty0 -> cast_inj ty0
   | T.CastInjAlt ty0 -> cast_inj_alt ty0

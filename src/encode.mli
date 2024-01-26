@@ -18,7 +18,7 @@ module Rewrite : sig
   val sort_recfields : sequent -> sequent
 
   val simplify_range : sequent -> sequent
-  val simplify_sets : ?limit:int -> ?rwlvl:int -> sequent -> sequent
+  val simplify_sets : ?limit:int -> ?rwlvl:int -> disable_arithmetic:bool -> sequent -> sequent
 end
 
 module Table : sig
@@ -126,13 +126,13 @@ end
 
 module Standardize : sig
   open Expr.T
-  val main : ?mark_set_equalities:bool -> sequent -> sequent
+  val main : ?smt_set_extensionality:bool -> sequent -> sequent
 end
 
 module Axiomatize : sig
   open Property
   open Expr.T
-  val main : solver:string -> sequent -> sequent
+  val main : solver:string -> disable_arithmetic:bool -> smt_set_extensionality:bool -> sequent -> sequent
 end
 
 module Flatten : sig

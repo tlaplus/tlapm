@@ -68,7 +68,7 @@ let is_native ~solver smb =
 (* NOTE Important function
  * Add symbol to extended context, along with all depending
  * symbols and axioms *)
-let add_smb ~solver smb ecx =
+let add_smb ~solver ~disable_arithmetic ~smt_set_extensionality smb ecx =
   let rec spin (s, acc_smbs, acc_facts as ecx) work_smbs =
     try
       let smb = SmbSet.choose work_smbs in
@@ -76,7 +76,7 @@ let add_smb ~solver smb ecx =
         let work_smbs = SmbSet.remove smb work_smbs in
         spin ecx work_smbs
       else
-        let s, deps = get_deps ~solver (get_defn smb) s in
+        let s, deps = get_deps ~solver ~disable_arithmetic ~smt_set_extensionality (get_defn smb) s in
         let smb_deps = List.fold_left begin fun smbs tla_smb ->
           let smb = mk_smb tla_smb in
           smb :: smbs
@@ -92,13 +92,13 @@ let add_smb ~solver smb ecx =
   spin ecx (SmbSet.singleton smb)
 
 let collect_visitor = object (self : 'self)
-  inherit [string, ecx] Expr.Visit.fold as super
+  inherit [string * bool * bool, ecx] Expr.Visit.fold as super
 
-  method expr (solver, cx as scx) ecx oe =
+  method expr ((solver, disable_arithmetic, smt_set_extensionality), cx as scx) ecx oe =
     begin match oe.core with
     | Opaque _ when has oe smb_prop ->
         let smb = get oe smb_prop in
-        add_smb ~solver smb ecx
+        add_smb ~solver ~disable_arithmetic ~smt_set_extensionality smb ecx
 
     | _ -> super#expr scx ecx oe
 
@@ -116,8 +116,8 @@ let collect_visitor = object (self : 'self)
         super#hyp scx ecx h
 end
 
-let collect ~solver ecx sq =
-  let scx = (solver, Deque.empty) in
+let collect ~solver ~disable_arithmetic ~smt_set_extensionality ecx sq =
+  let scx = ((solver, disable_arithmetic, smt_set_extensionality), Deque.empty) in
   snd (collect_visitor#sequent scx ecx sq)
 
 
@@ -131,8 +131,8 @@ let mk_decl smb =
   let h = Fresh (v, shp, Constant, Unbounded) %% [] in
   assign h smb_prop smb
 
-let mk_fact ~solver tla_axm =
-  let e = get_axm ~solver tla_axm in
+let mk_fact ~solver ~disable_arithmetic ~smt_set_extensionality tla_axm =
+  let e = get_axm ~solver ~disable_arithmetic ~smt_set_extensionality tla_axm in
   let meta = { hkind = Axiom ; name = axm_desc tla_axm } in
   let e = assign e meta_prop meta in
   let h = Fact (e, Visible, NotSet) %% [] in
@@ -180,10 +180,10 @@ let assemble_visitor = object (self : 'self)
         super#hyp scx h
 end
 
-let assemble ~solver (_, decls, axms) sq =
+let assemble ~solver ~disable_arithmetic ~smt_set_extensionality (_, decls, axms) sq =
   let decls = SmbSet.filter (fun smb -> not (is_native ~solver smb)) decls in
   let decls = Deque.map (fun _ -> mk_decl) (SmbSet.elements decls |> Deque.of_list) in
-  let axms = TlaAxmSet.fold (fun tla_axm dq -> Deque.snoc dq (mk_fact ~solver tla_axm)) axms Deque.empty in
+  let axms = TlaAxmSet.fold (fun tla_axm dq -> Deque.snoc dq (mk_fact ~solver ~disable_arithmetic ~smt_set_extensionality tla_axm)) axms Deque.empty in
   let top_hx = Deque.append decls axms in
 
   let sq = { sq with context = Deque.append top_hx sq.context } in
@@ -194,9 +194,9 @@ let assemble ~solver (_, decls, axms) sq =
 
 (* {3 Main} *)
 
-let main ~solver sq =
+let main ~solver ~disable_arithmetic ~smt_set_extensionality sq =
   let ecx = init_ecx in
-  let ecx = collect ~solver ecx sq in
-  let sq = assemble ~solver ecx sq in
+  let ecx = collect ~solver ~disable_arithmetic ~smt_set_extensionality ecx sq in
+  let sq = assemble ~solver ~disable_arithmetic ~smt_set_extensionality ecx sq in
   sq
 

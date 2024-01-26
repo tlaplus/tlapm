@@ -51,5 +51,5 @@ val apply_ext : sequent -> sequent
                  1: only simplify set extensionality and subseteq;
                  2: simplify all set expressions;
 *)
-val simplify_sets : ?limit:int -> ?rwlvl:int -> sequent -> sequent
+val simplify_sets : ?limit:int -> ?rwlvl:int -> disable_arithmetic:bool -> sequent -> sequent
 
