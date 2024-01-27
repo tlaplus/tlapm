@@ -71,7 +71,7 @@ let locate_proof_range (act : t) range =
   let parsed = Lazy.force act.parsed in
   Proof_step.locate_proof_range parsed.ps range
 
-let get_obligation_state act range =
+let get_proof_step_details act range =
   let parsed = Lazy.force act.parsed in
   Proof_step.locate_proof_step parsed.ps range
 

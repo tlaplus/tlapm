@@ -66,7 +66,7 @@ val get_proof_res : t -> tk -> int -> t * Doc_proof_res.t option
 val get_proof_res_latest : t -> tk -> t * int option * Doc_proof_res.t option
 (** Get the latest actual proof results. Cleanup them, if needed. *)
 
-val get_obligation_state :
+val get_proof_step_details :
   t ->
   tk ->
   int ->
@@ -74,6 +74,6 @@ val get_obligation_state :
   t * Structs.TlapsProofStepDetails.t option
 (** Get the current proof state for the specific obligation. *)
 
-val get_obligation_state_latest :
+val get_proof_step_details_latest :
   t -> tk -> Range.Position.t -> t * Structs.TlapsProofStepDetails.t option
 (** Get the current proof state for the specific obligation at the latest version of the document. *)

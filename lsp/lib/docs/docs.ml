@@ -88,18 +88,18 @@ let get_proof_res_latest docs uri =
       let docs, res = get_proof_res docs uri latest_vsn in
       (docs, Some latest_vsn, res)
 
-let get_obligation_state docs uri vsn range =
+let get_proof_step_details docs uri vsn range =
   with_doc_vsn docs uri vsn @@ fun doc act ->
   let res =
-    match Doc_actual.get_obligation_state act range with
+    match Doc_actual.get_proof_step_details act range with
     | None -> None
     | Some ps -> Some (Proof_step.as_lsp_tlaps_proof_step_details uri ps)
   in
   (doc, act, res)
 
-let get_obligation_state_latest docs uri range =
+let get_proof_step_details_latest docs uri range =
   match latest_vsn docs uri with
   | None -> (docs, None)
   | Some latest_vsn ->
-      let docs, res = get_obligation_state docs uri latest_vsn range in
+      let docs, res = get_proof_step_details docs uri latest_vsn range in
       (docs, res)

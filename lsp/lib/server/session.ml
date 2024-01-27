@@ -22,10 +22,16 @@ type t = {
   progress : Prover.Progress.t;
   mode : mode;
   docs : Docs.t;
-  prov : Prover.t;  (** Prover that is currently running. *)
-  delayed : DocUriSet.t;  (** Docs which have delayed proof info updates. *)
-  current_obl : LspT.Location.t option;
-      (** The obligation that is currently selected. We will send state updates for it. *)
+  prov : Prover.t;
+      (** Prover that is currently running.
+          We are always running not more than 1 prover to
+          avoid their interference via fingerprints, etc. *)
+  delayed : DocUriSet.t;
+      (** Docs which have delayed proof info updates.
+          We use this to buffer the updates to the UI.*)
+  current_ps : LspT.Location.t option;
+      (** The proof step that is currently selected.
+          We will send state updates for it. *)
 }
 
 let with_docs' st f =
@@ -117,12 +123,12 @@ let send_obligation_proof_state st =
   let maybe_st =
     with_docs' st @@ fun (st, docs) ->
     let docs, notif_data =
-      match st.current_obl with
+      match st.current_ps with
       | None -> (docs, None)
       | Some loc ->
           let tlapm_range = Range.of_lsp_range loc.range in
           let position = Range.from tlapm_range in
-          Docs.get_obligation_state_latest docs loc.uri position
+          Docs.get_proof_step_details_latest docs loc.uri position
     in
     let notif_packet = TlapsProofStepDetails.to_jsonrpc_packet notif_data in
     st.output_adder (Some notif_packet);
@@ -199,9 +205,7 @@ module SessionHandlers = Handlers.Make (struct
     | Some (vsn, p_range) -> (st, Some (vsn, Range.as_lsp_range p_range))
 
   let track_obligation_proof_state (st : t) uri range =
-    let st =
-      { st with current_obl = Some (LspT.Location.create ~uri ~range) }
-    in
+    let st = { st with current_ps = Some (LspT.Location.create ~uri ~range) } in
     let st = send_obligation_proof_state st in
     st
 
@@ -229,7 +233,7 @@ module SessionHandlers = Handlers.Make (struct
         docs = Docs.empty;
         prov = Prover.create sw fs proc_mgr;
         delayed = DocUriSet.empty;
-        current_obl = None;
+        current_ps = None;
       }
     in
     let () =
@@ -293,9 +297,12 @@ let handle_timer_tick st =
   in
   let st = DocUriSet.fold ff st.delayed st in
   let st =
-    match DocUriSet.is_empty st.delayed with
-    | true -> st
-    | false -> send_obligation_proof_state st
+    match st.current_ps with
+    | Some current_ps -> (
+        match DocUriSet.mem current_ps.uri st.delayed with
+        | true -> st
+        | false -> send_obligation_proof_state st)
+    | None -> st
   in
   Some { st with delayed = DocUriSet.empty }
 
@@ -327,7 +334,7 @@ let run event_taker event_adder output_adder sw fs proc_mgr =
       docs = Docs.empty;
       prov = Prover.create sw fs proc_mgr;
       delayed = DocUriSet.empty;
-      current_obl = None;
+      current_ps = None;
     }
   in
   loop st
