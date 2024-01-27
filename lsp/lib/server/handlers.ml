@@ -107,7 +107,12 @@ module Make (CB : Callbacks) = struct
             ci_version
     in
     print_ci params;
-    let supported_commands = [ "tlaplus.tlaps.check-step.lsp" ] in
+    let supported_commands =
+      [
+        "tlaplus.tlaps.check-step.lsp";
+        "tlaplus.tlaps.proofStepMarkers.fetch.lsp";
+      ]
+    in
     let capabilities =
       ServerCapabilities.create
         ~textDocumentSync:(`TextDocumentSyncKind TextDocumentSyncKind.Full)
@@ -159,6 +164,19 @@ module Make (CB : Callbacks) = struct
       (LspT.FullDocumentDiagnosticReport.yojson_of_t report)
       cb_state
 
+  let handle_fetch_proof_step_markers (jsonrpc_req : Jsonrpc.Request.t)
+      (params : LspT.ExecuteCommandParams.t) cb_state =
+    match params.arguments with
+    | Some [ uri ] ->
+        let tid = LspT.TextDocumentIdentifier.t_of_yojson uri in
+        let cb_state, (_p_ref, _items) =
+          CB.latest_diagnostics cb_state tid.uri
+        in
+        reply_ok jsonrpc_req `Null cb_state
+    | _ ->
+        Eio.traceln "Unexpected parameters in handle_fetch_proof_step_markers";
+        reply_ok jsonrpc_req `Null cb_state
+
   let handle_jsonrpc_req_unknown (jsonrpc_req : Jsonrpc.Request.t) message
       cb_state =
     Eio.traceln "Received unknown JsonRPC request, method=%s, error=%s"
@@ -205,6 +223,8 @@ module Make (CB : Callbacks) = struct
     match params.command with
     | "tlaplus.tlaps.check-step.lsp" ->
         handle_check_step jsonrpc_req params cb_state
+    | "tlaplus.tlaps.proofStepMarkers.fetch.lsp" ->
+        handle_fetch_proof_step_markers jsonrpc_req params cb_state
     | unknown ->
         handle_jsonrpc_req_unknown jsonrpc_req
           (Printf.sprintf "command unknown: %s" unknown)

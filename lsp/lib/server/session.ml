@@ -100,24 +100,6 @@ let send_proof_state_markers marks st uri =
   in
   st.output_adder (Some lsp_packet)
 
-let send_proof_info st uri vsn res =
-  match res with
-  | Some res ->
-      let diags, marks = Docs.Doc_proof_res.as_lsp res in
-      send_diagnostics diags st uri vsn;
-      send_proof_state_markers marks st uri;
-      let delayed = DocUriSet.remove uri st.delayed in
-      { st with delayed }
-  | None -> st
-
-let send_latest_proof_info st uri =
-  let docs, vsn_opt, proof_res_opt = Docs.get_proof_res_latest st.docs uri in
-  let st = { st with docs } in
-  match (vsn_opt, proof_res_opt) with
-  | None, _ -> send_proof_info st uri 0 (Some Docs.Doc_proof_res.empty)
-  | Some vsn, None -> send_proof_info st uri vsn (Some Docs.Doc_proof_res.empty)
-  | Some vsn, Some p_res -> send_proof_info st uri vsn (Some p_res)
-
 let send_obligation_proof_state st =
   let open Structs in
   let maybe_st =
@@ -135,6 +117,35 @@ let send_obligation_proof_state st =
     (st, docs)
   in
   match maybe_st with Ok st -> st | Error _ -> st
+
+let send_proof_info st uri vsn res =
+  match res with
+  | Some res ->
+      (* Send the current proof step info, if it is in the [uri] file. *)
+      let st =
+        match st.current_ps with
+        | Some current_ps when current_ps.uri = uri -> (
+            match DocUriSet.mem current_ps.uri st.delayed with
+            | true -> send_obligation_proof_state st
+            | false -> st)
+        | Some _other -> st
+        | None -> st
+      in
+      (* And then the diagnostics and markers. *)
+      let diags, marks = Docs.Doc_proof_res.as_lsp res in
+      send_diagnostics diags st uri vsn;
+      send_proof_state_markers marks st uri;
+      let delayed = DocUriSet.remove uri st.delayed in
+      { st with delayed }
+  | None -> st
+
+let send_latest_proof_info st uri =
+  let docs, vsn_opt, proof_res_opt = Docs.get_proof_res_latest st.docs uri in
+  let st = { st with docs } in
+  match (vsn_opt, proof_res_opt) with
+  | None, _ -> send_proof_info st uri 0 (Some Docs.Doc_proof_res.empty)
+  | Some vsn, None -> send_proof_info st uri vsn (Some Docs.Doc_proof_res.empty)
+  | Some vsn, Some p_res -> send_proof_info st uri vsn (Some p_res)
 
 let delay_proof_info st uri =
   let delayed = DocUriSet.add uri st.delayed in
@@ -290,20 +301,12 @@ let handle_toolbox_msg ((uri, vsn, p_ref) : doc_ref) msg st =
       Some st
 
 let handle_timer_tick st =
-  let ff uri stAcc =
+  let send_for_doc uri stAcc =
     Eio.traceln "Sending delayed proof info for %s "
       (LspT.DocumentUri.to_string uri);
     send_latest_proof_info stAcc uri
   in
-  let st = DocUriSet.fold ff st.delayed st in
-  let st =
-    match st.current_ps with
-    | Some current_ps -> (
-        match DocUriSet.mem current_ps.uri st.delayed with
-        | true -> st
-        | false -> send_obligation_proof_state st)
-    | None -> st
-  in
+  let st = DocUriSet.fold send_for_doc st.delayed st in
   Some { st with delayed = DocUriSet.empty }
 
 let handle_event e st =
