@@ -111,6 +111,7 @@ module Make (CB : Callbacks) = struct
       [
         "tlaplus.tlaps.check-step.lsp";
         "tlaplus.tlaps.proofStepMarkers.fetch.lsp";
+        "tlaplus.tlaps.currentProofStep.set.lsp";
       ]
     in
     let capabilities =
@@ -166,16 +167,34 @@ module Make (CB : Callbacks) = struct
 
   let handle_fetch_proof_step_markers (jsonrpc_req : Jsonrpc.Request.t)
       (params : LspT.ExecuteCommandParams.t) cb_state =
-    match params.arguments with
-    | Some [ uri ] ->
-        let tid = LspT.TextDocumentIdentifier.t_of_yojson uri in
-        let cb_state, (_p_ref, _items) =
-          CB.latest_diagnostics cb_state tid.uri
-        in
-        reply_ok jsonrpc_req `Null cb_state
-    | _ ->
-        Eio.traceln "Unexpected parameters in handle_fetch_proof_step_markers";
-        reply_ok jsonrpc_req `Null cb_state
+    let cb_state =
+      match params.arguments with
+      | Some [ uri ] ->
+          let tid = LspT.TextDocumentIdentifier.t_of_yojson uri in
+          let cb_state, (_p_ref, _items) =
+            CB.latest_diagnostics cb_state tid.uri
+          in
+          cb_state
+      | _ ->
+          Eio.traceln "Unexpected parameters in handle_fetch_proof_step_markers";
+          cb_state
+    in
+    reply_ok jsonrpc_req `Null cb_state
+
+  let handle_cmd_current_proof_step_set (jsonrpc_req : Jsonrpc.Request.t)
+      (params : LspT.ExecuteCommandParams.t) cb_state =
+    let cb_state =
+      match params.arguments with
+      | Some [ uri; range ] ->
+          let uri = (LspT.TextDocumentIdentifier.t_of_yojson uri).uri in
+          let range = LspT.Range.t_of_yojson range in
+          CB.track_obligation_proof_state cb_state uri range
+      | _ ->
+          Eio.traceln
+            "Unexpected parameters in handle_cmd_current_proof_step_set";
+          cb_state
+    in
+    reply_ok jsonrpc_req `Null cb_state
 
   let handle_jsonrpc_req_unknown (jsonrpc_req : Jsonrpc.Request.t) message
       cb_state =
@@ -225,6 +244,8 @@ module Make (CB : Callbacks) = struct
         handle_check_step jsonrpc_req params cb_state
     | "tlaplus.tlaps.proofStepMarkers.fetch.lsp" ->
         handle_fetch_proof_step_markers jsonrpc_req params cb_state
+    | "tlaplus.tlaps.currentProofStep.set.lsp" ->
+        handle_cmd_current_proof_step_set jsonrpc_req params cb_state
     | unknown ->
         handle_jsonrpc_req_unknown jsonrpc_req
           (Printf.sprintf "command unknown: %s" unknown)
@@ -238,7 +259,6 @@ module Make (CB : Callbacks) = struct
       (params : LspT.CodeActionParams.t) cb_state =
     let user_range = params.range in
     let uri = params.textDocument.uri in
-    let cb_state = CB.track_obligation_proof_state cb_state uri user_range in
     let cb_state, res = CB.suggest_proof_range cb_state uri user_range in
     match res with
     | None ->
