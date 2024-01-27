@@ -39,20 +39,6 @@ let with_doc_vsn docs uri vsn f =
           let docs = DocMap.add uri doc docs in
           (docs, res))
 
-(* Push specific version to the actual, increase the proof_rec and clear the notifications. *)
-let prepare_proof docs uri vsn range :
-    t * (int * string * Range.t * Doc_proof_res.t) option =
-  with_doc_vsn docs uri vsn @@ fun (doc : Doc.t) (act : Doc_actual.t) ->
-  let next_doc, next_p_ref = Doc.next_p_ref doc in
-  match Doc_actual.prepare_proof act next_p_ref with
-  | None -> (doc, act, None)
-  | Some act ->
-      let p_range = Doc_actual.locate_proof_range act range in
-      let res =
-        (next_p_ref, Doc_actual.text act, p_range, Doc_actual.proof_res act)
-      in
-      (next_doc, act, Some res)
-
 (* Calculate proof range by user selection. *)
 let suggest_proof_range docs uri range : t * (int * Range.t) option =
   match latest_vsn docs uri with
@@ -62,21 +48,32 @@ let suggest_proof_range docs uri range : t * (int * Range.t) option =
       let p_range = Doc_actual.locate_proof_range act range in
       (doc, act, Some (vsn, p_range))
 
-let add_obl docs uri vsn p_ref (obl : Toolbox.Obligation.t) =
+(* Push specific version to the actual, increase the proof_rec and clear the notifications. *)
+let prover_prepare docs uri vsn range ~p_ref :
+    t * (string * Range.t * Doc_proof_res.t) option =
   with_doc_vsn docs uri vsn @@ fun (doc : Doc.t) (act : Doc_actual.t) ->
-  match Doc_actual.add_obl act p_ref obl with
+  match Doc_actual.prover_prepare act p_ref with
+  | None -> (doc, act, None)
+  | Some act ->
+      let p_range = Doc_actual.locate_proof_range act range in
+      let res = (Doc_actual.text act, p_range, Doc_actual.proof_res act) in
+      (doc, act, Some res)
+
+let prover_add_obl docs uri vsn p_ref (obl : Toolbox.Obligation.t) =
+  with_doc_vsn docs uri vsn @@ fun (doc : Doc.t) (act : Doc_actual.t) ->
+  match Doc_actual.prover_add_obl act p_ref obl with
   | None -> (doc, act, None)
   | Some act -> (doc, act, Some (Doc_actual.proof_res act))
 
-let add_notif docs uri vsn p_ref notif =
+let prover_add_notif docs uri vsn p_ref notif =
   with_doc_vsn docs uri vsn @@ fun (doc : Doc.t) (act : Doc_actual.t) ->
-  match Doc_actual.add_notif act p_ref notif with
+  match Doc_actual.prover_add_notif act p_ref notif with
   | None -> (doc, act, None)
   | Some act -> (doc, act, Some (Doc_actual.proof_res act))
 
-let terminated docs uri vsn p_ref =
+let prover_terminated docs uri vsn p_ref =
   with_doc_vsn docs uri vsn @@ fun (doc : Doc.t) (act : Doc_actual.t) ->
-  match Doc_actual.terminated act p_ref with
+  match Doc_actual.prover_terminated act p_ref with
   | None -> (doc, act, None)
   | Some act -> (doc, act, Some (Doc_actual.proof_res act))
 

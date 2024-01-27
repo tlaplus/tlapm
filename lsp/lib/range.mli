@@ -18,6 +18,8 @@ val of_string_opt : string -> t option
 val of_locus : Tlapm_lib.Loc.locus -> t option
 val of_locus_opt : Tlapm_lib.Loc.locus option -> t option
 val of_locus_must : Tlapm_lib.Loc.locus -> t
+val of_wrapped : 'a Tlapm_lib.Property.wrapped -> t option
+val of_wrapped_must : 'a Tlapm_lib.Property.wrapped -> t
 val of_points : Position.t -> Position.t -> t
 val of_ints : lf:int -> cf:int -> lt:int -> ct:int -> t
 val of_lines : int -> int -> t

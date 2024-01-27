@@ -3,6 +3,43 @@ module LspT = Lsp.Types
 let opt_str o = match o with None -> `Null | Some s -> `String s
 
 (** Corresponds to
+    ```
+    export interface CountByStepStatus {
+      proved: number;
+      failed: number;
+      omitted: number;
+      missing: number;
+      pending: number;
+      progress: number;
+    }
+    ```
+*)
+module CountByStepStatus = struct
+  type t = {
+    proved : int;
+    failed : int;
+    omitted : int;
+    missing : int;
+    pending : int;
+    progress : int;
+  }
+
+  let make ~proved ~failed ~omitted ~missing ~pending ~progress =
+    { proved; failed; omitted; missing; pending; progress }
+
+  let yojson_of_t (t : t) =
+    `Assoc
+      [
+        ("proved", `Int t.proved);
+        ("failed", `Int t.failed);
+        ("omitted", `Int t.omitted);
+        ("missing", `Int t.missing);
+        ("pending", `Int t.pending);
+        ("progress", `Int t.progress);
+      ]
+end
+
+(** Corresponds to
   ```
   export interface TlapsProofObligationResult {
     prover: string;
@@ -71,9 +108,9 @@ end
     status: string;
     location: Location;
     obligations: TlapsProofObligationState[];
+    sub_count: CountByStepStatus;
   }
   ```
-  TODO: Add sub-step counts by state.
 *)
 module TlapsProofStepDetails = struct
   type t = {
@@ -81,10 +118,11 @@ module TlapsProofStepDetails = struct
     status : string;
     location : LspT.Location.t;
     obligations : TlapsProofObligationState.t list;
+    sub_count : CountByStepStatus.t;
   }
 
-  let make ~kind ~status ~location ~obligations =
-    { kind; status; location; obligations }
+  let make ~kind ~status ~location ~obligations ~sub_count =
+    { kind; status; location; obligations; sub_count }
 
   let yojson_of_t (t : t option) =
     match t with
@@ -99,6 +137,7 @@ module TlapsProofStepDetails = struct
               `List
                 (List.map TlapsProofObligationState.yojson_of_t t.obligations)
             );
+            ("sub_count", CountByStepStatus.yojson_of_t t.sub_count);
           ]
 
   let to_jsonrpc_packet t =

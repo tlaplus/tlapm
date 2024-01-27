@@ -18,6 +18,7 @@ type t = {
   event_adder : events -> unit;
   output_adder : Jsonrpc.Packet.t option -> unit;
   last_req_id : int;
+  next_p_ref : int;
   progress : Prover.Progress.t;
   mode : mode;
   docs : Docs.t;
@@ -158,12 +159,14 @@ module SessionHandlers = Handlers.Make (struct
     Eio.traceln "PROVE_STEP: %s#%d lines %d--%d"
       (LspT.DocumentUri.to_string uri)
       vsn range.start.line range.end_.line;
-    let docs, next_p_ref_opt =
-      Docs.prepare_proof st.docs uri vsn (Range.of_lsp_range range)
+    let p_ref = st.next_p_ref in
+    let st = { st with next_p_ref = st.next_p_ref + 1 } in
+    let docs, proof_opt =
+      Docs.prover_prepare st.docs uri vsn (Range.of_lsp_range range) ~p_ref
     in
     let st = { st with docs } in
-    match next_p_ref_opt with
-    | Some (p_ref, doc_text, p_range, proof_res) -> (
+    match proof_opt with
+    | Some (doc_text, p_range, proof_res) -> (
         let st = ProverProgress.proof_started ~p_ref st in
         let st = send_proof_info st uri vsn (Some proof_res) in
         let prov_events e =
@@ -221,6 +224,7 @@ module SessionHandlers = Handlers.Make (struct
         event_adder = (fun _ -> ());
         output_adder = (fun _ -> ());
         last_req_id = 0;
+        next_p_ref = 0;
         progress = ProverProgress.make ();
         docs = Docs.empty;
         prov = Prover.create sw fs proc_mgr;
@@ -258,7 +262,7 @@ let handle_toolbox_msg ((uri, vsn, p_ref) : doc_ref) msg st =
   match msg with
   | Toolbox.Msg.TlapmNotif notif ->
       Eio.traceln "---> TlapmNotif: %s" notif.msg;
-      let docs, _res = Docs.add_notif st.docs uri vsn p_ref notif in
+      let docs, _res = Docs.prover_add_notif st.docs uri vsn p_ref notif in
       let st = { st with docs } in
       let st = delay_proof_info st uri in
       Some st
@@ -269,14 +273,14 @@ let handle_toolbox_msg ((uri, vsn, p_ref) : doc_ref) msg st =
   | Toolbox.Msg.TlapmObligation obl ->
       Eio.traceln "---> TlapmObligation, id=%d" obl.id;
       let st = ProverProgress.obligation ~p_ref ~obl st in
-      let docs, _res = Docs.add_obl st.docs uri vsn p_ref obl in
+      let docs, _res = Docs.prover_add_obl st.docs uri vsn p_ref obl in
       let st = { st with docs } in
       let st = delay_proof_info st uri in
       Some st
   | Toolbox.Msg.TlapmTerminated ->
       Eio.traceln "---> TlapmTerminated";
       let st = ProverProgress.proof_ended ~p_ref st in
-      let docs, res = Docs.terminated st.docs uri vsn p_ref in
+      let docs, res = Docs.prover_terminated st.docs uri vsn p_ref in
       let st = { st with docs } in
       let st = send_proof_info st uri vsn res in
       Some st
@@ -318,6 +322,7 @@ let run event_taker event_adder output_adder sw fs proc_mgr =
       event_adder;
       output_adder;
       last_req_id = 0;
+      next_p_ref = 0;
       progress = ProverProgress.make ();
       docs = Docs.empty;
       prov = Prover.create sw fs proc_mgr;

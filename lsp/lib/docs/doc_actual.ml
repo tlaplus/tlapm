@@ -67,12 +67,6 @@ let proof_res (act : t) : Doc_proof_res.t =
   let parsed = Lazy.force act.parsed in
   Doc_proof_res.make parsed.nts parsed.ps
 
-let prepare_proof (act : t) next_p_ref =
-  (* Force it to be parsed, then prepare for the next proof session. *)
-  match (Lazy.force act.parsed).ps with
-  | None -> None
-  | Some _ -> Some { act with p_ref = next_p_ref }
-
 let locate_proof_range (act : t) range =
   let parsed = Lazy.force act.parsed in
   Proof_step.locate_proof_range parsed.ps range
@@ -81,7 +75,13 @@ let get_obligation_state act range =
   let parsed = Lazy.force act.parsed in
   Proof_step.locate_proof_step parsed.ps range
 
-let add_obl (act : t) (p_ref : int) (obl : Toolbox.Obligation.t) =
+let prover_prepare (act : t) next_p_ref =
+  (* Force it to be parsed, then prepare for the next proof session. *)
+  match (Lazy.force act.parsed).ps with
+  | None -> None
+  | Some _ -> Some { act with p_ref = next_p_ref }
+
+let prover_add_obl (act : t) (p_ref : int) (obl : Toolbox.Obligation.t) =
   if act.p_ref = p_ref then
     let parsed = Lazy.force act.parsed in
     let ps = Proof_step.with_prover_result parsed.ps p_ref obl in
@@ -89,7 +89,7 @@ let add_obl (act : t) (p_ref : int) (obl : Toolbox.Obligation.t) =
     Some { act with parsed }
   else None
 
-let add_notif (act : t) p_ref notif =
+let prover_add_notif (act : t) p_ref notif =
   if act.p_ref = p_ref then
     let parsed = Lazy.force act.parsed in
     let nts = notif :: parsed.nts in
@@ -97,7 +97,7 @@ let add_notif (act : t) p_ref notif =
     Some { act with parsed }
   else None
 
-let terminated (act : t) p_ref =
+let prover_terminated (act : t) p_ref =
   if act.p_ref = p_ref then
     let parsed = Lazy.force act.parsed in
     let ps = Proof_step.with_prover_terminated parsed.ps p_ref in

@@ -1,7 +1,5 @@
 (* cSpell:words obligationsnumber getcwd nonblocking submatches *)
 
-(* TODO: Use `opam exec -- tlapm --noproving --printallobs --toolbox 0 0 SetSum_proofs.tla`. *)
-
 (** Max size for the read buffer, a line should fit into it.*)
 let read_buf_max_size = 1024 * 1024
 

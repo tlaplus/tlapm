@@ -101,7 +101,24 @@ let as_lsp_tlaps_proof_step_details uri ps =
       (fun (_, o) -> Obl.as_lsp_tlaps_proof_obligation_state o)
       (RangeMap.to_list ps.obs)
   in
+  let sub_count =
+    let proved, failed, omitted, missing, pending, progress =
+      List.fold_left
+        (fun (proved, failed, omitted, missing, pending, progress) sub_ps ->
+          match sub_ps.status_derived with
+          | Proved -> (proved + 1, failed, omitted, missing, pending, progress)
+          | Failed -> (proved, failed + 1, omitted, missing, pending, progress)
+          | Omitted -> (proved, failed, omitted + 1, missing, pending, progress)
+          | Missing -> (proved, failed, omitted, missing + 1, pending, progress)
+          | Pending -> (proved, failed, omitted, missing, pending + 1, progress)
+          | Progress -> (proved, failed, omitted, missing, pending, progress + 1))
+        (0, 0, 0, 0, 0, 0) ps.sub
+    in
+    Structs.CountByStepStatus.make ~proved ~failed ~omitted ~missing ~pending
+      ~progress
+  in
   Structs.TlapsProofStepDetails.make ~kind ~status ~location ~obligations
+    ~sub_count
 
 (* Recursively collect all the fingerprinted obligations.
    This is used to transfer proof state from the
@@ -138,10 +155,6 @@ let fold f acc ps =
 
 (** Iterate over obligations of a particular proof step. *)
 let fold_obs f acc ps = RangeMap.fold (fun _ obl acc -> f acc obl) ps.obs acc
-
-(* TODO: Make it more local? *)
-let opt_range prop = Range.of_locus_opt (Tlapm_lib.Util.query_locus prop)
-let get_range prop = Option.get (opt_range prop)
 
 module Acc = struct
   type t = { file : string; obs_map : Obl.t RangeMap.t }
@@ -180,7 +193,9 @@ let rec of_proof step_loc sq_range (proof : Tlapm_lib.Proof.T.proof) acc :
         let wrapped_join_ranges base list =
           List.fold_left
             (fun acc d ->
-              match opt_range d with None -> acc | Some r -> Range.join acc r)
+              match Range.of_wrapped d with
+              | None -> acc
+              | Some r -> Range.join acc r)
             base list
         in
         let suppl_range = step_loc in
@@ -235,25 +250,42 @@ and of_step (step : Tlapm_lib.Proof.T.step) acc : t option * Acc.t =
   | Proof.T.Hide _ -> (None, acc)
   | Proof.T.Define _ -> (None, acc)
   | Proof.T.Assert (sequent, proof) ->
-      Acc.some (of_proof (get_range step) (opt_range sequent.active) proof acc)
+      Acc.some
+        (of_proof
+           (Range.of_wrapped_must step)
+           (Range.of_wrapped sequent.active)
+           proof acc)
   | Proof.T.Suffices (sequent, proof) ->
-      Acc.some (of_proof (get_range step) (opt_range sequent.active) proof acc)
+      Acc.some
+        (of_proof
+           (Range.of_wrapped_must step)
+           (Range.of_wrapped sequent.active)
+           proof acc)
   | Proof.T.Pcase (expr, proof) ->
-      Acc.some (of_proof (get_range step) (opt_range expr) proof acc)
+      Acc.some
+        (of_proof
+           (Range.of_wrapped_must step)
+           (Range.of_wrapped expr) proof acc)
   | Proof.T.Pick (_bounds, expr, proof) ->
-      Acc.some (of_proof (get_range step) (opt_range expr) proof acc)
+      Acc.some
+        (of_proof
+           (Range.of_wrapped_must step)
+           (Range.of_wrapped expr) proof acc)
   | Proof.T.Use (_, _) -> (None, acc)
   | Proof.T.Have expr ->
-      let suppl_locs = List.filter_map opt_range [ expr ] in
-      Acc.some (of_implicit_proof_step (get_range step) suppl_locs acc)
+      let suppl_locs = List.filter_map Range.of_wrapped [ expr ] in
+      Acc.some
+        (of_implicit_proof_step (Range.of_wrapped_must step) suppl_locs acc)
   | Proof.T.Take bounds ->
       let suppl_locs =
-        List.filter_map (fun (hint, _, _) -> opt_range hint) bounds
+        List.filter_map (fun (hint, _, _) -> Range.of_wrapped hint) bounds
       in
-      Acc.some (of_implicit_proof_step (get_range step) suppl_locs acc)
+      Acc.some
+        (of_implicit_proof_step (Range.of_wrapped_must step) suppl_locs acc)
   | Proof.T.Witness exprs ->
-      let suppl_locs = List.filter_map opt_range exprs in
-      Acc.some (of_implicit_proof_step (get_range step) suppl_locs acc)
+      let suppl_locs = List.filter_map Range.of_wrapped exprs in
+      Acc.some
+        (of_implicit_proof_step (Range.of_wrapped_must step) suppl_locs acc)
   | Proof.T.Forget _ -> (None, acc)
 
 and of_qed_step (qed_step : Tlapm_lib.Proof.T.qed_step) acc : t * Acc.t =
@@ -262,7 +294,7 @@ and of_qed_step (qed_step : Tlapm_lib.Proof.T.qed_step) acc : t * Acc.t =
       let open Tlapm_lib in
       let qed_loc = Property.query qed_step Proof.Parser.qed_loc_prop in
       let qed_range = Range.of_locus_opt qed_loc in
-      of_proof (get_range qed_step) qed_range proof acc
+      of_proof (Range.of_wrapped_must qed_step) qed_range proof acc
 
 (* This is internal function for traversing the modules and module units recursively. *)
 let rec of_submod (mule : Tlapm_lib.Module.T.mule) (acc : Acc.t) :
@@ -295,7 +327,7 @@ and of_mod_unit (mod_unit : Tlapm_lib.Module.T.modunit) acc : t option * Acc.t =
   | Definition _ -> (None, acc)
   | Axiom _ -> (None, acc)
   | Theorem (_name, sq, _naxs, _prf, prf_orig, _sum) ->
-      Acc.some (of_proof mod_unit_loc (opt_range sq.active) prf_orig acc)
+      Acc.some (of_proof mod_unit_loc (Range.of_wrapped sq.active) prf_orig acc)
   | Submod sm -> of_submod sm acc
   | Mutate _ -> (None, acc)
   | Anoninst _ -> (None, acc)

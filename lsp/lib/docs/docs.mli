@@ -37,26 +37,27 @@ val add : t -> tk -> int -> string -> t
 val rem : t -> tk -> t
 (** Remove a document with all its revisions. *)
 
-val prepare_proof :
+val suggest_proof_range : t -> tk -> Range.t -> t * (int * Range.t) option
+(** Suggest proof range based on the user selection. *)
+
+val prover_prepare :
   t ->
   tk ->
   int ->
   Range.t ->
-  t * (int * string * Range.t * Doc_proof_res.t) option
+  p_ref:int ->
+  t * (string * Range.t * Doc_proof_res.t) option
 (** Increment the prover ref for the specified doc/vsn. *)
 
-val suggest_proof_range : t -> tk -> Range.t -> t * (int * Range.t) option
-(** Suggest proof range based on the user selection. *)
-
-val add_obl :
+val prover_add_obl :
   t -> tk -> int -> int -> Toolbox.Obligation.t -> t * Doc_proof_res.t option
 (** Record obligation for the document, clear all the intersecting ones. *)
 
-val add_notif :
+val prover_add_notif :
   t -> tk -> int -> int -> Toolbox.tlapm_notif -> t * Doc_proof_res.t option
 (** Record obligation for the document, clear all the intersecting ones. *)
 
-val terminated : t -> tk -> int -> int -> t * Doc_proof_res.t option
+val prover_terminated : t -> tk -> int -> int -> t * Doc_proof_res.t option
 (** Cleanup the incomplete proof states on termination of the prover. *)
 
 val get_proof_res : t -> tk -> int -> t * Doc_proof_res.t option

@@ -11,9 +11,7 @@ val text : t -> string
 val proof_res : t -> Doc_proof_res.t
 val locate_proof_range : t -> Range.t -> Range.t
 val get_obligation_state : t -> Range.Position.t -> Proof_step.t option
-
-(* TODO: Rename all the following: prover_obl ... *)
-val prepare_proof : t -> int -> t option
-val add_obl : t -> int -> Toolbox.Obligation.t -> t option
-val add_notif : t -> int -> Toolbox.tlapm_notif -> t option
-val terminated : t -> int -> t option
+val prover_prepare : t -> int -> t option
+val prover_add_obl : t -> int -> Toolbox.Obligation.t -> t option
+val prover_add_notif : t -> int -> Toolbox.tlapm_notif -> t option
+val prover_terminated : t -> int -> t option

@@ -85,6 +85,8 @@ let of_locus_opt (locus : Tlapm_lib.Loc.locus option) =
   match locus with None -> None | Some locus -> of_locus locus
 
 let of_locus_must (locus : Tlapm_lib.Loc.locus) = Option.get (of_locus locus)
+let of_wrapped prop = of_locus_opt (Tlapm_lib.Util.query_locus prop)
+let of_wrapped_must prop = Option.get (of_wrapped prop)
 let of_points f t = R (Position.as_pair f, Position.as_pair t)
 let of_ints ~lf ~cf ~lt ~ct = R ((lf, cf), (lt, ct))
 let of_lines fl tl = R ((fl, 1), (tl, 1))
@@ -133,7 +135,6 @@ let lines_covered a b =
   let ltb = line_till b in
   lfb <= lfa && lta <= ltb
 
-(* TODO: Is it used? *)
 let lines_covered_or_all q rs =
   match List.filter (lines_intersect q) rs with
   | [] -> of_all
@@ -145,7 +146,6 @@ let lines_covered_or_all q rs =
           of_points from till)
         q matching
 
-(* TODO: Not used anymore? *)
 let first_diff_pos a b =
   let len = min (String.length a) (String.length b) in
   let rec count i l c =

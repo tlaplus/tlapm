@@ -2,6 +2,21 @@
 
 module LspT := Lsp.Types
 
+module CountByStepStatus : sig
+  type t
+
+  val make :
+    proved:int ->
+    failed:int ->
+    omitted:int ->
+    missing:int ->
+    pending:int ->
+    progress:int ->
+    t
+
+  val yojson_of_t : t -> Yojson.Safe.t
+end
+
 module TlapsProofObligationResult : sig
   type t
 
@@ -36,6 +51,7 @@ module TlapsProofStepDetails : sig
     status:string ->
     location:LspT.Location.t ->
     obligations:TlapsProofObligationState.t list ->
+    sub_count:CountByStepStatus.t ->
     t
 
   val yojson_of_t : t option -> Yojson.Safe.t

@@ -37,7 +37,7 @@ cat << EOF
 @!!msg:this run is going to fail
 @!!END
 EOF
-exit 1 # NOTE: This.
+exit 1 # This.
 }
 
 ################################################################################

@@ -8,12 +8,9 @@ type t = {
   pending : Doc_vsn.t list;
       (** All the received but not yet processed versions. *)
   actual : Doc_actual.t;  (** Already processed version. *)
-  last_p_ref : int;
-      (** Counter for the proof runs. TODO: Move it to the session. *)
 }
 
-let make uri tv =
-  { uri; pending = []; actual = Doc_actual.make uri tv None; last_p_ref = 0 }
+let make uri tv = { uri; pending = []; actual = Doc_actual.make uri tv None }
 
 let add doc tv =
   let drop_till = Doc_vsn.version tv - keep_vsn_count in
@@ -47,7 +44,3 @@ let with_actual doc f =
   let doc, act, res = f doc doc.actual in
   let doc = { doc with actual = act } in
   (doc, res)
-
-let next_p_ref doc =
-  let next = doc.last_p_ref + 1 in
-  ({ doc with last_p_ref = next }, next)
