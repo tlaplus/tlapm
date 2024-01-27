@@ -84,16 +84,19 @@ end
   *)
 module TlapsProofObligationState = struct
   type t = {
+    role : string;
     range : LspT.Range.t;
     normalized : string option;
     results : TlapsProofObligationResult.t list;
   }
 
-  let make ~range ~normalized ~results = { range; normalized; results }
+  let make ~role ~range ~normalized ~results =
+    { role; range; normalized; results }
 
   let yojson_of_t (t : t) =
     `Assoc
       [
+        ("role", `String t.role);
         ("range", LspT.Range.yojson_of_t t.range);
         ("normalized", opt_str t.normalized);
         ( "results",

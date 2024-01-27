@@ -8,6 +8,12 @@ module Role = struct
     | Unknown  (** Initially all the obligations are of unknown role. *)
     | Unexpected
         (** Was not received from the parser, but got later from the prover. *)
+
+  let as_string = function
+    | Main -> "main"
+    | Aux -> "aux"
+    | Unknown -> "unknown"
+    | Unexpected -> "unexpected"
 end
 
 type t = {
@@ -178,6 +184,7 @@ let as_lsp_diagnostic (obl : t) =
   | false -> None
 
 let as_lsp_tlaps_proof_obligation_state obl =
+  let role = Role.as_string obl.role in
   let range = Range.as_lsp_range (loc obl) in
   let normalized = text_normalized obl in
   let results =
@@ -196,4 +203,4 @@ let as_lsp_tlaps_proof_obligation_state obl =
           ~obligation)
       (StrMap.to_list obl.by_prover)
   in
-  Structs.TlapsProofObligationState.make ~range ~normalized ~results
+  Structs.TlapsProofObligationState.make ~role ~range ~normalized ~results
