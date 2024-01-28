@@ -37,6 +37,7 @@ module TlapsProofObligationState : sig
   val make :
     role:string ->
     range:LspT.Range.t ->
+    status:string ->
     normalized:string option ->
     results:TlapsProofObligationResult.t list ->
     t

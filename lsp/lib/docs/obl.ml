@@ -186,6 +186,7 @@ let as_lsp_diagnostic (obl : t) =
 let as_lsp_tlaps_proof_obligation_state obl =
   let role = Role.as_string obl.role in
   let range = Range.as_lsp_range (loc obl) in
+  let status = Proof_status.to_string obl.status in
   let normalized = text_normalized obl in
   let results =
     let open Toolbox.Obligation in
@@ -194,7 +195,7 @@ let as_lsp_tlaps_proof_obligation_state obl =
       (fun (_, o) ->
         let prover = some_str o.prover in
         let status =
-          Proof_status.to_message (Proof_status.of_tlapm_obl_state o.status)
+          Proof_status.to_string (Proof_status.of_tlapm_obl_state o.status)
         in
         let meth = some_str o.meth in
         let reason = o.reason in
@@ -203,4 +204,5 @@ let as_lsp_tlaps_proof_obligation_state obl =
           ~obligation)
       (StrMap.to_list obl.by_prover)
   in
-  Structs.TlapsProofObligationState.make ~role ~range ~normalized ~results
+  Structs.TlapsProofObligationState.make ~role ~range ~status ~normalized
+    ~results

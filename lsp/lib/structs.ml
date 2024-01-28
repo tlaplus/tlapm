@@ -76,7 +76,9 @@ end
 (** Corresponds to
   ```
   export interface TlapsProofObligationState {
+    role: string;
     range: Range;
+    status: status;
     normalized: string;
     results: TlapsProofObligationResult[];
   }
@@ -86,18 +88,20 @@ module TlapsProofObligationState = struct
   type t = {
     role : string;
     range : LspT.Range.t;
+    status : string;
     normalized : string option;
     results : TlapsProofObligationResult.t list;
   }
 
-  let make ~role ~range ~normalized ~results =
-    { role; range; normalized; results }
+  let make ~role ~range ~status ~normalized ~results =
+    { role; range; status; normalized; results }
 
   let yojson_of_t (t : t) =
     `Assoc
       [
         ("role", `String t.role);
         ("range", LspT.Range.yojson_of_t t.range);
+        ("status", `String t.status);
         ("normalized", opt_str t.normalized);
         ( "results",
           `List (List.map TlapsProofObligationResult.yojson_of_t t.results) );
