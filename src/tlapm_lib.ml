@@ -616,12 +616,15 @@ let module_of_string (content : string) (fn : string) : (Module.T.mule, (string 
         let mcx = Sm.add mule.core.name.core mule mcx in
         let mcx = Module.Save.complete_load ~clock:Clocks.parsing mcx in
         let (mcx, mods) = Module.Dep.schedule mcx in
-        match List.filter (fun m -> m.core.name.core = mule.core.name.core) mods with
-        | [mule] ->
-            let (_mcx, mule, _summ) = Module.Elab.normalize mcx Deque.empty mule in
-            Ok mule
-        | [] -> failwith "module_of_string, found no module we tried to parse."
-        | _ -> failwith "module_of_string, found too many modules with required name."
+        let mcx, mule = List.fold_left (fun (mcx, found) m ->
+            let (mcx, m, _summ) = Module.Elab.normalize mcx Deque.empty m in
+            match m.core.name.core = mule.core.name.core with
+            | true -> (mcx, Some m)
+            | false -> (mcx, found)
+        ) (mcx, None) mods in
+        match mule with
+        | Some mule -> Ok mule
+        | None -> failwith "module_of_string, found no module we tried to parse."
     in
     match parse_it () with
     | Ok mule -> Ok mule

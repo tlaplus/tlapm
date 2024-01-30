@@ -492,3 +492,17 @@ let%test_unit "determine proof steps" =
   | pss ->
       failwith
         (Format.sprintf "unexpected, number of steps=%d" (List.length pss))
+
+let%test_unit "check if parsing works with nested local instances." =
+  let mod_file = "test_loc_ins.tla" in
+  let mod_text =
+    String.concat "\n"
+      [
+        (* Just to keep the items wrapped by line. *)
+        "---- MODULE test_loc_ins ----";
+        "LOCAL INSTANCE FiniteSets";
+        "====";
+      ]
+  in
+  let _mule = Result.get_ok (Parser.module_of_string mod_text mod_file) in
+  ()
