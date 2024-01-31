@@ -30,7 +30,7 @@ let smb_prop = make "Encode.Smb.smb_prop"
 module SmbOrd = struct
   type t = smb
   let compare smb1 smb2 =
-    Pervasives.compare smb1.smb_name smb2.smb_name
+    Stdlib.compare smb1.smb_name smb2.smb_name
 end
 
 module SmbSet = Set.Make (SmbOrd)

@@ -20,7 +20,7 @@ module Smb = Encode.Smb
 module T = Encode.Table
 module B = Builtin
 
-let (@@@) = Pervasives.(@@)
+let (@@@) = Stdlib.(@@)
 
 let error ?at mssg =
   let mssg = "Backend.Smtlib: " ^ mssg in

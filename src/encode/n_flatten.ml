@@ -239,7 +239,7 @@ let find_hoapp_visitor = object (self : 'self)
                 Is.union vs vs_e
               end Is.empty ho_args |>
               Is.elements |>
-              List.sort ~cmp:(fun i j -> Pervasives.compare j i)
+              List.sort ~cmp:(fun i j -> Stdlib.compare j i)
             in
 
             let bp =
