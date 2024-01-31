@@ -19,7 +19,7 @@ License: 2-clause BSD, portions under LGPL2.1+LE
 Installation
 ------------
 
-For installation instructions, see the file `INSTALL` in this directory.
+For installation instructions, see the file [INSTALL.md](INSTALL.md) in this directory.
 
 
 Use

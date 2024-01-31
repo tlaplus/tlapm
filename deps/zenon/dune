@@ -1,0 +1,9 @@
+; Build the zenon prover, the source is at $PROJECT_ROOT/zenon.
+(rule
+ (deps "Makefile" (source_tree "zenon-src"))
+ (targets zenon)
+ (action (run "make" "-C" "." "zenon")))
+
+(install
+ (section (site (tlapm backends)))
+ (files (zenon as bin/zenon)))

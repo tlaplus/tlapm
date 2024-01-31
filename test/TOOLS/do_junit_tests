@@ -3,7 +3,10 @@
 
 BASEDIR="`pwd`"
 TOOLDIR="$BASEDIR/TOOLS"
-export TLAPM="pkill -f cvc3 | $BASEDIR/../tlapm --stretch 10 --threads 4 -I $BASEDIR/../library"
+
+. $TOOLDIR/env_setup
+
+export TLAPM="pkill -f cvc3 | $TLAPM_BIN --stretch 10 --threads 4 -I $LIBRARY_DIR"
 
 # create output folder
 juDIR=$BASEDIR/test_reports/tmp

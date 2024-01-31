@@ -18,6 +18,11 @@ jobs:
                     '2',
                     ]
         steps:
+            - name: Install deps
+              if: matrix.operating-system == 'ubuntu-latest'
+              run: |
+                sudo apt-get update
+                sudo apt-get install --yes time
             - name: Set up Python
               uses: actions/setup-python@v2
               with:
@@ -34,41 +39,29 @@ jobs:
             - uses: ocaml/setup-ocaml@v2
               with:
                 ocaml-compiler: ${{ env.OCAML_VERSION }}
+            # - uses: actions/cache@v3
+            #   id: cache
+            #   with:
+            #     path: _build_cache
+            #     key: ${{ runner.os }}_build_cache
             - name: Build installer of TLAPS
               run: |
                 eval $(opam env)
-                ./configure
-                cd tools/installer
-                ./tlaps-release.sh
-            - name: Define TLAPS-related env vars
-              run: |
-                python .github/workflows/setup_shell_env.py \
-                    >> $GITHUB_ENV
-            - name: Run installer of TLAPS
-              run: |
-                ./tools/installer/\
-                ${{ env.INSTALLER }} -d .
-            - name: Install dependencies for testing
-              run: |
-                opam install kaputt
+                opam install ./ --deps-only --yes
+                make
+                make release
             - name: Run a subset of `tlapm` tests
               run: |
                 eval $(opam env)
-                PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make test
+                make test-inline test-fast-basic
             - name: Run all `tlapm` tests
               if: >-
                 matrix.operating-system == 'ubuntu-latest' &&
                 matrix.ocaml-compiler == '2'
               run: |
-                ls -lah
                 eval $(opam env)
-                ocaml --version
-                make
-                PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH which tlapm
-                PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH which zenon
-                PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH tlapm --version
-                PATH=$(pwd)/bin:$(pwd)/lib/tlaps/bin:$PATH make testall
+                make test
             - name: Print Test Results
               if: matrix.operating-system == 'ubuntu-latest'
               run: |
-                cat test/tests.log
+                cat _build/default/test/tests.log

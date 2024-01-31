@@ -314,3 +314,45 @@ let store_module ?clock mule =
                         mule.core.name.core fnx
             end ()
     else ()
+
+
+let%test_module _ = (module struct
+
+    let stloc =
+        { Loc.file = "<Test>" ;
+          Loc.start = Loc.dummy ;
+          Loc.stop = Loc.dummy }
+    let stm x = Util.locate x stloc
+    let create_test_case ls =
+    List.fold_left begin
+        fun acc (nm,depls,df) ->
+        let m = begin
+            stm {
+                name = noprops nm ;
+                extendees = List.map (function x -> noprops x) depls ;
+                instancees = [] ;
+                defdepth = 0 ;
+                important = true ;
+                body = [ noprops (Variables [noprops df]) ];
+                stage = Parsed ;
+            }
+        end in
+        Sm.add m.core.name.core m acc
+    end M_standard.initctx ls
+
+    let%test "t1: load external modules correctly for external modules which has the same name as a standard module - load local module" =
+        let test_case_list = [("a",["TLC"],"B")] in
+        let test_case = create_test_case  test_case_list in
+            let rfold = List.fold_left Filename.concat ".." ["test"; "resources"; "module"; "m_save"] in
+            (List.exists
+                (function
+                    | {core = Variables ls} -> List.exists (fun x -> x.core = "m_save_t1") ls
+                    | _ -> false )
+                (Sm.find "TLC" (complete_load ~root:rfold test_case)).core.body)
+
+    let%test "t2: load external modules correctly for external modules which has the same name as a standard module - load standard module" =
+        let test_case_list = [("a",["TLC"],"B")] in
+        let test_case = create_test_case  test_case_list in
+            (Sm.mem "TLC" (complete_load test_case))
+
+end)

@@ -447,7 +447,7 @@ let rec rm_lambdas l term =
   | _, _ -> assert false
 ;;
 
-let compare_hyps (name1, _) (name2, _) = Pervasives.compare name1 name2;;
+let compare_hyps (name1, _) (name2, _) = Stdlib.compare name1 name2;;
 
 let make_lemma { name = name; params = params; proof = proof } =
   let f (ty, e) =

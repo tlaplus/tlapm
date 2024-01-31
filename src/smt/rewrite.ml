@@ -729,12 +729,17 @@ class rw = object (self : 'self)
         | B.Mem, _, _ ->
           rw_mem x y
 
-        | (B.Eq | B.Equiv), _, Choose (h, None, ex) ->
+        (*| (B.Eq | B.Equiv), _, Choose (h, None, ex) ->
     (* Util.eprintf "Choo: %a : %s" (print_prop ()) (sh1 (sh1 ex)) (typ_to_str e) ; *)
             (* add_choose (fresh_name ()) cx x ;  *)            (*** FIX CHOOSE determinacy ***)
           implies (exists ~id:h ex) (ex <~ x) |> self#expr scx
         | (B.Eq | B.Equiv), Choose _, _ ->
-          Apply (o, [y ; x]) |> mk |> self#expr scx
+          Apply (o, [y ; x]) |> mk |> self#expr scx*)
+        (* NOTE Disabled by adef
+         * The rule is unsound if applied in positive contexts
+         * For ex. if can be exploited to prove any X = CHOOSE v : TRUE
+         * It's safer to disable the rule than to implement polarities
+         * in all of the SMT code... *)
 
         | B.Equiv, If (c1,t,u), If (c2,v,w) when Expr.Eq.expr c1 c2 ->
           ifte c1 (equiv t v) (equiv u w) |> self#expr scx
@@ -1028,8 +1033,13 @@ class rw = object (self : 'self)
             |> Smt.sf#simpl (snd scx)
           in
           ifte c ex (opq "tla__unspec" (f::es)) |> self#expr scx
-        | Except (f, [([Except_apply y], ex)]), [x] ->
-          let c1 = mem x (domain f)
+        | Except (ff, [([Except_apply y], ex)]), [x] ->
+          (* NOTE Fixed by adef: this rule used to specify
+           * unspec([ f EXCEPT ![y] = ex ], x) as unspec(f, x),
+           * which is incorrect and allows one to derive
+           * [ f EXCEPT ![y] = ex ][x] = f[x] when x # y
+           * without the condition x \in DOMAIN f *)
+          let c1 = mem x (domain ff)
             |> self#expr scx
             |> Smt.sf#simpl (snd scx)
           in
@@ -1040,10 +1050,10 @@ class rw = object (self : 'self)
           begin
             if is_true c1 then
               if is_true c2 then ex
-              else ifte c2 ex (fcnapp_u scx f x)
+              else ifte c2 ex (fcnapp_u scx ff x)
             else
               ifte c1
-                (ifte c2 ex (fcnapp_u scx f x))
+                (ifte c2 ex (fcnapp_u scx ff x))
                 (opq "tla__unspec" (f::es))
           end |> self#expr scx
 

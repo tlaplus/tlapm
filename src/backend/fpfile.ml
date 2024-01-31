@@ -9,6 +9,16 @@
 
 open Ext
 
+exception FpFileOlderMagicNumber
+exception FpFileCorrupted
+
+let () =
+  Printexc.register_printer
+    (function
+      | FpFileOlderMagicNumber -> Some "fingerprint file with an older magic number"
+      | FpFileCorrupted -> Some "corrupted fingerprint file"
+      | _ -> None
+    )
 
 module V13 = struct
 
@@ -536,7 +546,7 @@ let iter_file f ic =
 
 let translate v ic =
   match v with
-  | FP13 fps -> fptbl := fps; iter_file add_v13l ic;
+  | FP13 fps -> fptbl := fps; iter_file (fun x -> add_v13l x []) ic;
   | _ -> assert false
 
 
@@ -545,8 +555,8 @@ let load_fingerprints_aux file =
     let ic = open_in_bin file in
     let magic = Marshal.from_channel ic in
     if magic = old_magic_number then
-        failwith "fingerprint file with an older magic number";
-    if magic <> magic_number then failwith "corrupted fingerprint file";
+        raise(FpFileOlderMagicNumber);
+    if magic <> magic_number then raise(FpFileCorrupted);
     let v = Marshal.from_channel ic in
     if v >= FPunknown ()
       then Errors.fatal "fingerprint file is from a newer version of tlapm";
@@ -607,14 +617,14 @@ let load_fingerprints file =
   with e1 ->
     let error_str_1 = (Printexc.to_string e1) in
     let moved_filename_msg = begin match e1 with
-        | Failure "fingerprint file with an older magic number" ->
+        | FpFileOlderMagicNumber ->
             let renamed_file_name = file ^ ".old" in
             (* if renaming fails, then the exception is not caught *)
             Sys.rename file renamed_file_name;
             Printf.sprintf
                 "so moved fingerprints file by appending `.old` (%s -> %s)"
                 file renamed_file_name
-        | Failure "corrupted fingerprint file" ->
+        | FpFileCorrupted ->
             let renamed_file_name = file ^ ".corrupted" in
             (* if renaming fails, then the exception is not caught *)
             Sys.rename file renamed_file_name;
