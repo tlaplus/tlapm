@@ -171,14 +171,14 @@ module SessionHandlers = Handlers.Make (struct
 
   let lsp_send = lsp_send
   let with_docs = with_docs
+
   let use_paths st paths =
     Eio.traceln "Will use paths: %s" (String.concat ":" paths);
+    Parser.use_paths paths;
     { st with paths }
 
   let prove_step st (uri : LspT.DocumentUri.t) (vsn : int)
       (range : LspT.Range.t) =
-    (* TODO: Use the paths. *)
-    Eio.traceln "TODO: other paths: %d" (List.length st.paths);
     Eio.traceln "PROVE_STEP: %s#%d lines %d--%d"
       (LspT.DocumentUri.to_string uri)
       vsn range.start.line range.end_.line;
@@ -196,7 +196,8 @@ module SessionHandlers = Handlers.Make (struct
           st.event_adder (TlapmEvent ((uri, vsn, p_ref), e))
         in
         match
-          Prover.start_async st.prov uri doc_text p_range prov_events ()
+          Prover.start_async st.prov uri doc_text p_range st.paths prov_events
+            ()
         with
         | Ok prov' -> { st with prov = prov' }
         | Error msg ->

@@ -207,11 +207,14 @@ module Make (CB : Callbacks) = struct
     in
     reply_ok jsonrpc_req `Null cb_state
 
-  let handle_cmd_module_search_paths_updated (jsonrpc_req : Jsonrpc.Request.t) (params : LspT.ExecuteCommandParams.t) cb_state =
+  let handle_cmd_module_search_paths_updated (jsonrpc_req : Jsonrpc.Request.t)
+      (params : LspT.ExecuteCommandParams.t) cb_state =
     let cb_state =
       match params.arguments with
       | Some paths ->
-          let paths = List.filter_map (function `String p -> Some p | _ -> None) paths in
+          let paths =
+            List.filter_map (function `String p -> Some p | _ -> None) paths
+          in
           CB.use_paths cb_state paths
       | _ ->
           Eio.traceln

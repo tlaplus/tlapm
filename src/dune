@@ -21,7 +21,8 @@
   threads
   str
   dune-site
-  dune-build-info ; main deps.
+  dune-build-info
+  camlzip ; main deps.
   sexplib)
  ; for inline tests only (ppx_assert).
  (foreign_stubs

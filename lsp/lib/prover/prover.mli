@@ -100,6 +100,7 @@ val start_async :
   LspT.DocumentUri.t ->
   string ->
   Range.t ->
+  string list ->
   (Toolbox.Msg.t -> unit) ->
   ?tlapm_locator:(unit -> (string, string) result) ->
   unit ->

@@ -530,8 +530,19 @@ let map_paths_to_filenames paths =
     let basenames = List.map Filename.basename paths in
     List.map append_ext_if_not_tla basenames
 
+let setup_loader fs loader_paths =
+  let add_if_new acc f =
+    let base_dir = Filename.dirname f in
+    match List.mem base_dir acc with
+    | true -> acc
+    | false -> base_dir :: acc
+  in
+  let loader_paths = Filename.current_dir_name :: loader_paths in
+  let loader_paths = List.fold_left add_if_new loader_paths fs in
+  Loader.Global.setup loader_paths
 
 let main fs =
+  setup_loader fs !Params.rev_search_path;
   Params.input_files := map_paths_to_filenames fs;
   let () =
     List.iter begin
@@ -603,9 +614,10 @@ let init () =
        exit 3
 
 (* Access to this function has to be synchronized. *)
-let module_of_string (content : string) (fn : string) : (Module.T.mule, (string option* string)) result =
+let module_of_string (content : string) (fn : string) loader_paths : (Module.T.mule, (string option* string)) result =
     let parse_it () =
         Errors.reset ();
+        setup_loader [fn] loader_paths;
         let hint = Util.locate fn Loc.unknown in
         let hint = Property.assign hint Module.Save.module_content_prop (Module.Save.String content) in
         let mule = Module.Save.parse_file ~clock:Clocks.parsing hint in
