@@ -9,6 +9,7 @@ module type Callbacks = sig
   val with_docs : t -> (t * Docs.t -> t * Docs.t) -> t
   val prove_step : t -> LspT.DocumentUri.t -> int -> LspT.Range.t -> t
   val cancel : t -> LspT.ProgressToken.t -> t
+  val use_paths : t -> string list -> t
 
   val suggest_proof_range :
     t -> LspT.DocumentUri.t -> LspT.Range.t -> t * (int * LspT.Range.t) option
@@ -107,11 +108,17 @@ module Make (CB : Callbacks) = struct
             ci_version
     in
     print_ci params;
+    let cb_state =
+      let open Structs.InitializationOptions in
+      let init_opts = t_of_yojson params.initializationOptions in
+      CB.use_paths cb_state (module_search_paths init_opts)
+    in
     let supported_commands =
       [
         "tlaplus.tlaps.check-step.lsp";
         "tlaplus.tlaps.proofStepMarkers.fetch.lsp";
         "tlaplus.tlaps.currentProofStep.set.lsp";
+        "tlaplus.tlaps.moduleSearchPaths.updated.lsp";
       ]
     in
     let capabilities =
@@ -132,6 +139,10 @@ module Make (CB : Callbacks) = struct
                ~codeActionKinds:
                  [ CodeActionKind.Other "tlaplus.tlaps.check-step.ca" ]
                ()))
+        ~experimental:
+          Structs.ServerCapabilitiesExperimental.(
+            yojson_of_t
+              (make ~module_search_paths:Tlapm_lib.stdlib_search_paths))
         ()
     in
     let server_version =
@@ -196,6 +207,19 @@ module Make (CB : Callbacks) = struct
     in
     reply_ok jsonrpc_req `Null cb_state
 
+  let handle_cmd_module_search_paths_updated (jsonrpc_req : Jsonrpc.Request.t) (params : LspT.ExecuteCommandParams.t) cb_state =
+    let cb_state =
+      match params.arguments with
+      | Some paths ->
+          let paths = List.filter_map (function `String p -> Some p | _ -> None) paths in
+          CB.use_paths cb_state paths
+      | _ ->
+          Eio.traceln
+            "Unexpected parameters in handle_cmd_module_search_paths_updated";
+          cb_state
+    in
+    reply_ok jsonrpc_req `Null cb_state
+
   let handle_jsonrpc_req_unknown (jsonrpc_req : Jsonrpc.Request.t) message
       cb_state =
     Eio.traceln "Received unknown JsonRPC request, method=%s, error=%s"
@@ -246,6 +270,8 @@ module Make (CB : Callbacks) = struct
         handle_fetch_proof_step_markers jsonrpc_req params cb_state
     | "tlaplus.tlaps.currentProofStep.set.lsp" ->
         handle_cmd_current_proof_step_set jsonrpc_req params cb_state
+    | "tlaplus.tlaps.moduleSearchPaths.updated.lsp" ->
+        handle_cmd_module_search_paths_updated jsonrpc_req params cb_state
     | unknown ->
         handle_jsonrpc_req_unknown jsonrpc_req
           (Printf.sprintf "command unknown: %s" unknown)

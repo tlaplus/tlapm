@@ -14,5 +14,9 @@ module Backend = Backend
 val main : string list -> unit
 val init : unit -> unit
 
-val module_of_string : string -> string -> (Module.T.mule, (string option* string)) result
+val module_of_string :
+  string -> string -> (Module.T.mule, string option * string) result
 (** Parse module from a specified string, assume it is located in the specified path. *)
+
+val stdlib_search_paths : string list
+(** A list of paths to look for stdlib modules. *)

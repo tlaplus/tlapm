@@ -19,6 +19,7 @@ type t = {
   output_adder : Jsonrpc.Packet.t option -> unit;
   last_req_id : int;
   next_p_ref : int;
+  paths : string list;  (** Additional paths to look for TLA+ modules. *)
   progress : Prover.Progress.t;
   mode : mode;
   docs : Docs.t;
@@ -170,9 +171,14 @@ module SessionHandlers = Handlers.Make (struct
 
   let lsp_send = lsp_send
   let with_docs = with_docs
+  let use_paths st paths =
+    Eio.traceln "Will use paths: %s" (String.concat ":" paths);
+    { st with paths }
 
   let prove_step st (uri : LspT.DocumentUri.t) (vsn : int)
       (range : LspT.Range.t) =
+    (* TODO: Use the paths. *)
+    Eio.traceln "TODO: other paths: %d" (List.length st.paths);
     Eio.traceln "PROVE_STEP: %s#%d lines %d--%d"
       (LspT.DocumentUri.to_string uri)
       vsn range.start.line range.end_.line;
@@ -240,6 +246,7 @@ module SessionHandlers = Handlers.Make (struct
         output_adder = (fun _ -> ());
         last_req_id = 0;
         next_p_ref = 0;
+        paths = [];
         progress = ProverProgress.make ();
         docs = Docs.empty;
         prov = Prover.create sw fs proc_mgr;
@@ -333,6 +340,7 @@ let run event_taker event_adder output_adder sw fs proc_mgr =
       output_adder;
       last_req_id = 0;
       next_p_ref = 0;
+      paths = [];
       progress = ProverProgress.make ();
       docs = Docs.empty;
       prov = Prover.create sw fs proc_mgr;

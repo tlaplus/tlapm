@@ -258,8 +258,10 @@ let set_smt_logic logic = smt_logic := logic
 
 let max_threads = ref nprocs
 
+let stdlib_search_paths = Setup_paths.Sites.stdlib
+
 (* The actual list of paths at which the library TLA files are searched. *)
-let rev_search_path = ref (library_path :: Setup_paths.Sites.stdlib)
+let rev_search_path = ref (library_path :: stdlib_search_paths)
 
 (* Additional paths are added to the search list by keeping the base path as the first one. *)
 let add_search_dir dir =
@@ -273,7 +275,7 @@ let add_search_dir dir =
 
 (* Reset the search path to the specified list. *)
 let set_search_path dirs =
-  rev_search_path := library_path :: List.concat [dirs; Setup_paths.Sites.stdlib]
+  rev_search_path := library_path :: List.concat [dirs; stdlib_search_paths]
 
 let output_dir = ref "."
 

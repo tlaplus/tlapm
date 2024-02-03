@@ -66,6 +66,7 @@ val fp_deb: bool ref
 val configuration: bool -> bool -> string list
 
 (* module/save.ml *)
+val stdlib_search_paths : string list
 val rev_search_path: string list ref
 val self_sum: Digest.t
 val use_xtla: bool ref

@@ -635,3 +635,5 @@ let module_of_string (content : string) (fn : string) : (Module.T.mule, (string 
          | None, Some m -> Error (None, m)
          | Some l, None -> Error (Some l, Printexc.to_string e)
          | None, None -> Error (None, Printexc.to_string e))
+
+let stdlib_search_paths = Params.stdlib_search_paths

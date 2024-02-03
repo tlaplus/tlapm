@@ -185,3 +185,62 @@ end = struct
         ("hover", `String t.hover);
       ]
 end
+
+(** Passed by the client with the InitializeParams.
+    Corresponds to:
+    ```
+    export interface InitRequestInItializationOptions {
+      moduleSearchPaths: string[] | null | undefined
+    }
+    ```
+*)
+module InitializationOptions : sig
+  type t
+
+  val module_search_paths : t -> string list
+  val t_of_yojson : Yojson.Safe.t option -> t
+end = struct
+  type t = { module_search_paths : string list }
+
+  let module_search_paths t = t.module_search_paths
+
+  let t_of_yojson (y : Yojson.Safe.t option) : t =
+    match y with
+    | Some (`Assoc els) ->
+        let module_search_paths =
+          match List.assoc_opt "moduleSearchPaths" els with
+          | None -> []
+          | Some (`List cps) ->
+              List.filter_map
+                (fun cp -> match cp with `String cp -> Some cp | _ -> None)
+                cps
+          | Some _ -> []
+        in
+        { module_search_paths }
+    | _ -> { module_search_paths = [] }
+end
+
+(** Returned by the server in response to the Initialize request.
+    Corresponds to:
+    ```
+    export interface InitResponseCapabilitiesExperimental {
+      moduleSearchPaths: string[] | null | undefined
+    }
+    ```
+*)
+module ServerCapabilitiesExperimental : sig
+  type t
+
+  val make : module_search_paths:string list -> t
+  val yojson_of_t : t -> Yojson.Safe.t
+end = struct
+  type t = { module_search_paths : string list }
+
+  let make ~module_search_paths = { module_search_paths }
+
+  let yojson_of_t (t : t) =
+    let module_search_paths =
+      List.map (fun s -> `String s) t.module_search_paths
+    in
+    `Assoc [ ("moduleSearchPaths", `List module_search_paths) ]
+end

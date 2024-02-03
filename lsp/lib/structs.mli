@@ -67,3 +67,21 @@ module TlapsProofStepMarker : sig
   val make : status:string -> range:LspT.Range.t -> hover:string -> t
   val yojson_of_t : t -> Yojson.Safe.t
 end
+
+module InitializationOptions : sig
+  type t
+
+  val module_search_paths : t -> string list
+  (**  Additional paths to use in TLAPS. *)
+
+  val t_of_yojson : Yojson.Safe.t option -> t
+end
+
+module ServerCapabilitiesExperimental : sig
+  type t
+
+  val make : module_search_paths:string list -> t
+  (** Paths proposed by TLAPS for other tools. *)
+
+  val yojson_of_t : t -> Yojson.Safe.t
+end
