@@ -19,7 +19,7 @@ open N_table
 
 module TlaAxmSet = Set.Make (struct
   type t = tla_axm
-  let compare = Pervasives.compare
+  let compare = Stdlib.compare
 end)
 
 type ecx = s * SmbSet.t * TlaAxmSet.t

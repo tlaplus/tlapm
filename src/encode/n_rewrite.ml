@@ -539,7 +539,7 @@ let elim_records sq =
 (* {3 Sort Record Fields} *)
 
 let cmp_fs (f1, e1) (f2, e2) =
-  Pervasives.compare f1 f2
+  Stdlib.compare f1 f2
 
 let sort_recfields_visitor = object (self : 'self)
   inherit [unit] Expr.Visit.map as super
