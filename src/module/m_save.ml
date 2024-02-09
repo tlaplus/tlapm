@@ -234,7 +234,7 @@ let complete_load ?clock ?root:(r="") mcx =
                         (* if module name is also a name of
                         a standrd module, try to load it anyway
                         *)
-                        if (Sm.mem ed.core M_standard.initctx) then
+                        if ((not !Params.prefer_stdlib) && (Sm.mem ed.core M_standard.initctx)) then
                             try
                                 let emule = load_module ~root:r ed in
                                 mods := Deque.snoc !mods emule;

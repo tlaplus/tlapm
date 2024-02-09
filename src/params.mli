@@ -5,6 +5,7 @@
 (* pars/error.ml *)
 val toolbox: bool ref
 val use_stdin: bool ref
+val prefer_stdlib: bool ref
 
 (* expr/fmt.ml *)
 val debugging: string -> bool

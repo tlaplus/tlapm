@@ -15,9 +15,10 @@ val main : string list -> unit
 val init : unit -> unit
 
 val module_of_string :
-  string ->
-  string ->
-  string list ->
+  content:string ->
+  filename:string ->
+  loader_paths:string list ->
+  prefer_stdlib:bool ->
   (Module.T.mule, string option * string) result
 (** Parse module from a specified string, assume it is located in the specified path. *)
 

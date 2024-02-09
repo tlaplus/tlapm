@@ -51,6 +51,10 @@ let wait = ref 3
 let use_stdin = ref false
 (* Read the document from stdin, if only one file is provided as an input. *)
 
+let prefer_stdlib = ref false
+(* If set to true, the TLAPM will prefer the modules from the STDLIB
+   instead of modules with the same names in the search path. *)
+
 let noproving = ref false (* Don't send any obligation to the back-ends. *)
 
 let printallobs = ref false

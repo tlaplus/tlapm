@@ -126,6 +126,7 @@ let start_async_with_exec st doc_uri doc_text range paths events_adder
       string_of_int (Range.line_till range);
       (* "--verbose"; *)
       "--printallobs";
+      "--prefer-stdlib";
       "--stdin";
       mod_name;
     ]
