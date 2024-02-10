@@ -17,3 +17,8 @@ module DocMap = Map.Make (LspT.DocumentUri)
 module OblMap = Map.Make (OblRef)
 module StrMap = Map.Make (String)
 module RangeMap = Map.Make (Range)
+
+type parser_fun =
+  content:string ->
+  filename:string ->
+  (Tlapm_lib.Module.T.mule, string option * string) result

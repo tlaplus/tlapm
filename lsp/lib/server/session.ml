@@ -152,6 +152,12 @@ let delay_proof_info st uri =
   let delayed = DocUriSet.add uri st.delayed in
   { st with delayed }
 
+let parser_fun loader_paths =
+  let parser ~content ~filename =
+    Parser.module_of_string ~content ~filename ~loader_paths
+  in
+  parser
+
 module SessionHandlers = Handlers.Make (struct
   module LspT = LspT
 
@@ -174,8 +180,8 @@ module SessionHandlers = Handlers.Make (struct
 
   let use_paths st paths =
     Eio.traceln "Will use paths: %s" (String.concat ":" paths);
-    Parser.use_paths paths;
-    { st with paths }
+    let docs = Docs.with_parser st.docs (parser_fun paths) in
+    { st with paths; docs }
 
   let prove_step st (uri : LspT.DocumentUri.t) (vsn : int)
       (range : LspT.Range.t) =
@@ -249,7 +255,7 @@ module SessionHandlers = Handlers.Make (struct
         next_p_ref = 0;
         paths = [];
         progress = ProverProgress.make ();
-        docs = Docs.empty;
+        docs = Docs.empty (parser_fun []);
         prov = Prover.create sw fs proc_mgr;
         delayed = DocUriSet.empty;
         current_ps = None;
@@ -343,7 +349,7 @@ let run event_taker event_adder output_adder sw fs proc_mgr =
       next_p_ref = 0;
       paths = [];
       progress = ProverProgress.make ();
-      docs = Docs.empty;
+      docs = Docs.empty (parser_fun []);
       prov = Prover.create sw fs proc_mgr;
       delayed = DocUriSet.empty;
       current_ps = None;

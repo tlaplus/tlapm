@@ -451,7 +451,11 @@ let%test_unit "determine proof steps" =
         "====";
       ]
   in
-  let mule = Result.get_ok (Parser.module_of_string mod_text mod_file) in
+  let mule =
+    Result.get_ok
+      (Parser.module_of_string ~content:mod_text ~filename:mod_file
+         ~loader_paths:[])
+  in
   let ps = of_module mule None in
   match flatten ps with
   | [
@@ -504,5 +508,9 @@ let%test_unit "check if parsing works with nested local instances." =
         "====";
       ]
   in
-  let _mule = Result.get_ok (Parser.module_of_string mod_text mod_file) in
+  let _mule =
+    Result.get_ok
+      (Parser.module_of_string ~content:mod_text ~filename:mod_file
+         ~loader_paths:[])
+  in
   ()

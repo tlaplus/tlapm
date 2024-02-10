@@ -10,7 +10,11 @@ type t = {
   actual : Doc_actual.t;  (** Already processed version. *)
 }
 
-let make uri tv = { uri; pending = []; actual = Doc_actual.make uri tv None }
+let make uri tv parser =
+  { uri; pending = []; actual = Doc_actual.make uri tv None parser }
+
+let with_parser doc parser =
+  { doc with actual = Doc_actual.with_parser doc.actual parser }
 
 let add doc tv =
   let drop_till = Doc_vsn.version tv - keep_vsn_count in
@@ -37,7 +41,10 @@ let set_actual_vsn doc vsn =
     match selected with
     | None -> None
     | Some selected ->
-        let actual = Doc_actual.make doc.uri selected (Some doc.actual) in
+        let actual =
+          Doc_actual.make doc.uri selected (Some doc.actual)
+            (Doc_actual.parser doc.actual)
+        in
         Some { doc with actual; pending }
 
 let with_actual doc f =

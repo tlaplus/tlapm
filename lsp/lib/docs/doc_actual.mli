@@ -5,7 +5,9 @@ open Prover
 
 type t
 
-val make : LspT.DocumentUri.t -> Doc_vsn.t -> t option -> t
+val make : LspT.DocumentUri.t -> Doc_vsn.t -> t option -> Util.parser_fun -> t
+val with_parser : t -> Util.parser_fun -> t
+val parser : t -> Util.parser_fun
 val vsn : t -> int
 val text : t -> string
 val proof_res : t -> Doc_proof_res.t

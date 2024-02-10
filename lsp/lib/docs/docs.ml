@@ -4,40 +4,44 @@ module Proof_step = Proof_step
 module Proof_status = Proof_status
 module Doc_proof_res = Doc_proof_res
 
+type parser_fun = Util.parser_fun
 type tk = LspT.DocumentUri.t
-type t = Doc.t DocMap.t
+type t = { parser : Util.parser_fun; by_uri : Doc.t DocMap.t }
 
-let empty = DocMap.empty
+(* TODO: Check if we need the ProofRes on these operations. *)
+
+let empty parser = { parser; by_uri = DocMap.empty }
+let with_parser docs parser = { docs with parser }
 
 (* Just record the text. It will be processed later, when a prover
    command or diagnostics query is issued by the client. *)
 let add docs uri vsn txt =
   let tv = Doc_vsn.make txt vsn in
   let upd = function
-    | None -> Some (Doc.make uri tv)
+    | None -> Some (Doc.make uri tv docs.parser)
     | Some (doc : Doc.t) -> Some (Doc.add doc tv)
   in
-  DocMap.update uri upd docs
+  { docs with by_uri = DocMap.update uri upd docs.by_uri }
 
-let rem docs uri = DocMap.remove uri docs
+let rem docs uri = { docs with by_uri = DocMap.remove uri docs.by_uri }
 
 let latest_vsn docs uri =
-  match DocMap.find_opt uri docs with
+  match DocMap.find_opt uri docs.by_uri with
   | None -> None
   | Some doc -> Some (Doc.latest_vsn doc)
 
 (* Here we merge pending versions with the actual and then run
    the supplied function on the prepared doc info. *)
 let with_doc_vsn docs uri vsn f =
-  match DocMap.find_opt uri docs with
+  match DocMap.find_opt uri docs.by_uri with
   | None -> (docs, None)
   | Some doc -> (
       match Doc.set_actual_vsn doc vsn with
       | None -> (docs, None)
       | Some doc ->
           let doc, res = Doc.with_actual doc f in
-          let docs = DocMap.add uri doc docs in
-          (docs, res))
+          let by_uri = DocMap.add uri doc docs.by_uri in
+          ({ docs with by_uri }, res))
 
 (* Calculate proof range by user selection. *)
 let suggest_proof_range docs uri range : t * (int * Range.t) option =

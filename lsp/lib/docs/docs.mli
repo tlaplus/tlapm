@@ -16,6 +16,9 @@ end
 type t
 (** A document store type. *)
 
+type parser_fun = Util.parser_fun
+(** Parser function to use to parse modules.  *)
+
 type tk = LspT.DocumentUri.t
 (** Key type to identify documents. *)
 
@@ -28,8 +31,11 @@ module Doc_proof_res : sig
   val as_lsp : t -> LspT.Diagnostic.t list * Structs.TlapsProofStepMarker.t list
 end
 
-val empty : t
+val empty : parser_fun -> t
 (** Create new empty document store. *)
+
+val with_parser : t -> parser_fun -> t
+(** Set parser function to use. *)
 
 val add : t -> tk -> int -> string -> t
 (** Either add document or its revision. Forgets all previous unused revisions. *)

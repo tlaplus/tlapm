@@ -13,11 +13,12 @@ module Parsed = struct
           when obligation proof states are received from the prover. *)
   }
 
-  let make ~uri ~(doc_vsn : Doc_vsn.t) ~(ps_prev : Proof_step.t option) =
+  let make ~uri ~(doc_vsn : Doc_vsn.t) ~(ps_prev : Proof_step.t option) ~parser
+      =
     match
       Eio.Mutex.use_rw ~protect:true prover_mutex @@ fun () ->
-      Parser.module_of_string (Doc_vsn.text doc_vsn)
-        (LspT.DocumentUri.to_path uri)
+      parser ~content:(Doc_vsn.text doc_vsn)
+        ~filename:(LspT.DocumentUri.to_path uri)
     with
     | Ok mule ->
         let ps = Proof_step.of_module mule ps_prev in
@@ -31,10 +32,12 @@ module Parsed = struct
 end
 
 type t = {
+  uri : LspT.DocumentUri.t;
   doc_vsn : Doc_vsn.t;
   p_ref : int;
   ps_prev : Proof_step.t option;
       (** Proof steps from the previous version, if there was any.*)
+  parser : Util.parser_fun;  (** Parser to use to parse the modules. *)
   parsed : Parsed.t Lazy.t;
       (** Parsed document and information derived from it. *)
 }
@@ -42,13 +45,13 @@ type t = {
 (** Create new actual document based on the document version [doc_vsn]
     and port the current state from the previous actual document
     [prev_act], if provided. *)
-let make uri doc_vsn prev_act =
+let make uri doc_vsn prev_act parser =
   match prev_act with
   | None ->
       (* There is no previous active document, we will not try
          to move the proof state from there. *)
-      let parsed = lazy (Parsed.make ~uri ~doc_vsn ~ps_prev:None) in
-      { doc_vsn; p_ref = 0; ps_prev = None; parsed }
+      let parsed = lazy (Parsed.make ~uri ~doc_vsn ~ps_prev:None ~parser) in
+      { uri; doc_vsn; p_ref = 0; ps_prev = None; parser; parsed }
   | Some prev_act ->
       (* We have the previous actual document, thus either use its
          parsed data, or the data it got from its previous. *)
@@ -57,9 +60,11 @@ let make uri doc_vsn prev_act =
         | None -> prev_act.ps_prev
         | some -> some
       in
-      let parsed = lazy (Parsed.make ~uri ~doc_vsn ~ps_prev) in
-      { doc_vsn; p_ref = prev_act.p_ref; ps_prev; parsed }
+      let parsed = lazy (Parsed.make ~uri ~doc_vsn ~ps_prev ~parser) in
+      { uri; doc_vsn; p_ref = prev_act.p_ref; ps_prev; parser; parsed }
 
+let with_parser act parser = make act.uri act.doc_vsn (Some act) parser
+let parser act = act.parser
 let vsn act = Doc_vsn.version act.doc_vsn
 let text act = Doc_vsn.text act.doc_vsn
 
