@@ -8,10 +8,11 @@ type parser_fun = Util.parser_fun
 type tk = LspT.DocumentUri.t
 type t = { parser : Util.parser_fun; by_uri : Doc.t DocMap.t }
 
-(* TODO: Check if we need the ProofRes on these operations. *)
-
 let empty parser = { parser; by_uri = DocMap.empty }
-let with_parser docs parser = { docs with parser }
+
+let with_parser docs parser =
+  let by_uri = DocMap.map (fun d -> Doc.with_parser d parser) docs.by_uri in
+  { parser; by_uri }
 
 (* Just record the text. It will be processed later, when a prover
    command or diagnostics query is issued by the client. *)
