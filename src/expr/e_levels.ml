@@ -223,6 +223,10 @@ class virtual ['s] level_computation = object (self : 'self)
             parameters, as declared in `self#hyp` below.
             *)
             let f weights values op c =
+                if List.length weights <> List.length values then (
+                    Util.eprintf ~at:op_ "Invalid number of arguments";
+                    Errors.set op_ (Printf.sprintf "Invalid number of arguments");
+                    failwith "Expr.Levels: ARITY");
                 let pairs = List.combine weights values in
                 let w (weight, value) = if weight then value else c in
                 let values = List.map w pairs in
