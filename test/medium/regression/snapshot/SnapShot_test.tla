@@ -704,7 +704,7 @@ THEOREM Invariance == Spec => []Inv
       <4>1. ASSUME NEW q \in Proc
             PROVE  Inv1!1!(q)'
         <5>1. Inv1!1!(q)!1'
-          BY CVC4T(10) DEF Inv1, TypeOK, b, PUnion
+          BY Z3T(10) DEF Inv1, TypeOK, b, PUnion
         <5>2. Inv1!1!(q)!2'
           BY SMT DEF Inv1, TypeOK, b
         <5>3. Inv1!1!(q)!3'
