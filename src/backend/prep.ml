@@ -578,6 +578,8 @@ let get_prover_name m =
   | Method.AutoUSE -> "AutoUSE"
   | Method.Lambdify -> "Lambdify"
   | Method.ENABLEDaxioms -> "ENABLEDaxioms"
+  | Method.ENABLEDrewrites -> "ENABLEDrewrites"
+  | Method.ENABLEDrules -> "ENABLEDrules"
   | Method.LevelComparison -> "LevelComparison"
   | Method.Trivial -> "Trivial"
 
@@ -762,6 +764,12 @@ let prove_with ob org_ob meth save =  (* FIXME add success fuction *)
   | Method.ENABLEDaxioms ->
      print_string "(* ... unexpected application of `ENABLED` axioms *)\n";
      assert false
+  | Method.ENABLEDrewrites ->
+     print_string "(* ... unexpected application of `ENABLED` rewrites *)\n";
+     assert false
+  | Method.ENABLEDrules ->
+     print_string "(* ... unexpected application of `ENABLED` rules *)\n";
+     assert false
   | Method.LevelComparison ->
      print_string "(* ... unexpected level comparison *)\n";
      assert false
@@ -888,7 +896,10 @@ let expand_enabled_cdot ob
         ~(autouse: bool)
         ~(apply_lambdify: bool)
         ~(enabled_axioms: bool)
-        ~(level_comparison: bool) =
+        ~(enabled_rewrites: bool)
+        ~(enabled_rules: bool)
+        ~(level_comparison: bool)
+        ~(used_identifiers: string list) =
     (* Instantiate modules, use de Bruijn indices, expand action operators,
     automatically expand definitions necessary for soundness of expanding
     the operators `ENABLED` and `\cdot`.
@@ -906,6 +917,7 @@ let expand_enabled_cdot ob
                 ~expand_enabled:expand_enabled
                 ~expand_cdot:expand_cdot
                 ~autouse:autouse
+                ~used_identifiers:used_identifiers
         end
         else if apply_lambdify then begin
             let cx = Deque.empty in
@@ -914,6 +926,7 @@ let expand_enabled_cdot ob
                 ~lambdify_enabled:apply_lambdify
                 ~lambdify_cdot:apply_lambdify
                 ~autouse:autouse
+                ~used_identifiers:used_identifiers
         end
         else if level_comparison then begin
             let cx = Deque.empty in
@@ -921,13 +934,22 @@ let expand_enabled_cdot ob
                 cx expr
         end
         else if enabled_axioms then begin
+            let cx = Deque.empty in
+            Expr.Action.enabled_axioms cx expr
+        end
+        else if enabled_rewrites then begin
+            let cx = Deque.empty in
+            Expr.Action.enabled_rewrites cx expr
+        end
+        else if enabled_rules then begin
+            (* TODO: rename property to enabledrules *)
             if Expr.T.has_enabledaxioms expr then begin
-                print_string "expr has ENABLEDaxioms property ===\n";
+                (* print_string "expr has ENABLEDrules property ===\n"; *)
                 if not (Expr.T.get_enabledaxioms ob.obl) then
-                    failwith "ENABLEDaxioms depends on assumptions of level > 1 \n\n"
+                    failwith "ENABLEDrules depends on assumptions of level > 1 \n\n"
                 end;
             let cx = Deque.empty in
-            Expr.Action.implication_to_enabled cx expr
+            Expr.Action.enabled_rules cx expr
         end
         else
             expr
@@ -945,17 +967,25 @@ let normalize_expand ob fpout thyout record
         ~(autouse: bool)
         ~(apply_lambdify: bool)
         ~(enabled_axioms: bool)
+        ~(enabled_rewrites: bool)
+        ~(enabled_rules: bool)
         ~(level_comparison: bool) =
+    let used_identifiers =
+        let expr = expr_from_obl ob in
+        let cx = Deque.empty in
+        let identifiers = Expr.Visit.collect_identifiers cx expr in
+        (*
+        print_string "Identifiers:\n";
+        List.iter (fun v -> print_string v; print_string ", ") identifiers;
+        *)
+        identifiers in
     let ob = normalize_expr ob in
     try
         let ob = expand_enabled_cdot
-            ob
-            ~expand_enabled:expand_enabled
-            ~expand_cdot:expand_cdot
-            ~autouse:autouse
-            ~apply_lambdify:apply_lambdify
-            ~enabled_axioms:enabled_axioms
-            ~level_comparison:level_comparison in
+            ob ~expand_enabled ~expand_cdot ~autouse
+            ~apply_lambdify ~enabled_axioms ~enabled_rewrites
+            ~enabled_rules ~level_comparison
+            ~used_identifiers in
         (ob, true)
     with Failure msg ->
         (* `msg` is the message from soundness checks,
@@ -965,7 +995,8 @@ let normalize_expand ob fpout thyout record
         *)
     begin
         assert (expand_enabled || expand_cdot || apply_lambdify
-            || enabled_axioms || level_comparison);
+            || enabled_axioms || enabled_rewrites
+            || enabled_rules || level_comparison);
         (* !cleanup (); *)
         (* let warnings: string = Errors.get_warnings () in *)
         let warnings = (msg ^ "\nObligation:\n\n") in
@@ -993,6 +1024,10 @@ let normalize_expand ob fpout thyout record
                             Method.Lambdify
                         end else if enabled_axioms then begin
                             Method.ENABLEDaxioms
+                        end else if enabled_rewrites then begin
+                            Method.ENABLEDrewrites
+                        end else if enabled_rules then begin
+                            Method.ENABLEDrules
                         end else begin
                             assert level_comparison;
                             Method.LevelComparison
@@ -1183,6 +1218,10 @@ let compute_meth def args usept =
      Method.Lambdify
   | Some "enabledaxioms" ->
      Method.ENABLEDaxioms
+  | Some "enabledrewrites" ->
+     Method.ENABLEDrewrites
+  | Some "enabledrules" ->
+     Method.ENABLEDrules
   | Some "levelcomparison" ->
      Method.LevelComparison
   | Some "trivial" ->
@@ -1273,6 +1312,8 @@ let find_meth ob =
              (x <> Method.AutoUSE) &&
              (x <> Method.Lambdify) &&
              (x <> Method.ENABLEDaxioms) &&
+             (x <> Method.ENABLEDrewrites) &&
+             (x <> Method.ENABLEDrules) &&
              (x <> Method.LevelComparison)
              ))
          meths in
@@ -1325,6 +1366,14 @@ let add_constness ob =
   | _ -> assert false
 
 
+let add_expr_level ob =
+    let e = noprops (Expr.T.Sequent ob.obl.core) in
+    let cx = Deque.empty in
+    let e = Expr.Levels.compute_level cx e in
+    match e with
+    | {core=Expr.T.Sequent sq} -> {ob with obl = sq @@ ob.obl}
+    | _ -> assert false
+
 let is_success st =
   match st with
   | Triv -> true  (* FIXME assert false -- trivial results are not in FP *)
@@ -1358,6 +1407,10 @@ let ship ob fpout thyout record =
         (fun x -> (x = Method.Lambdify)) meths in
     let enabled_axioms = List.exists
         (fun x -> (x = Method.ENABLEDaxioms)) meths in
+    let enabled_rewrites = List.exists
+        (fun x -> (x = Method.ENABLEDrewrites)) meths in
+    let enabled_rules = List.exists
+        (fun x -> (x = Method.ENABLEDrules)) meths in
     let level_comparison = List.exists
         (fun x -> (x = Method.LevelComparison)) meths in
     let meths = List.filter
@@ -1367,6 +1420,8 @@ let ship ob fpout thyout record =
             (x <> Method.AutoUSE) &&
             (x <> Method.Lambdify) &&
             (x <> Method.ENABLEDaxioms) &&
+            (x <> Method.ENABLEDrewrites) &&
+            (x <> Method.ENABLEDrules) &&
             (x <> Method.LevelComparison)
             ))
         meths in
@@ -1380,18 +1435,39 @@ let ship ob fpout thyout record =
         The fingerprints include both the assertion and `BY` statement
         proof directives.
         *)
-    let const_fp_ob =
-      lazy (Fingerprints.write_fingerprint (add_constness ob))
-    in
-    let p = lazy (normalize_expand (Lazy.force const_fp_ob)
-            fpout thyout record
-            ~expand_enabled
-            ~expand_cdot
-            ~autouse
-            ~apply_lambdify
-            ~enabled_axioms
-            ~level_comparison)
-    in
+    let (const_fp_ob, p) = if autouse then begin
+            let p =
+                lazy (normalize_expand (add_expr_level ob)
+                    fpout thyout record
+                    ~expand_enabled
+                    ~expand_cdot
+                    ~autouse
+                    ~apply_lambdify
+                    ~enabled_axioms
+                    ~enabled_rewrites
+                    ~enabled_rules
+                    ~level_comparison) in
+            let (p1, expand_success) = Lazy.force p in
+            let fp_ob = Fingerprints.write_fingerprint p1 in
+            let p = lazy (fp_ob, expand_success) in
+            (lazy fp_ob, p)
+        end else begin
+            let const_fp_ob =
+              lazy (Fingerprints.write_fingerprint (add_expr_level ob))
+            in
+            let p = lazy (normalize_expand (Lazy.force const_fp_ob)
+                    fpout thyout record
+                    ~expand_enabled
+                    ~expand_cdot
+                    ~autouse
+                    ~apply_lambdify
+                    ~enabled_axioms
+                    ~enabled_rewrites
+                    ~enabled_rules
+                    ~level_comparison)
+            in
+            (const_fp_ob, p)
+        end in
     let prep_meth m =
       let ob = Lazy.force const_fp_ob in
       let m = Method.scale_time m !Params.timeout_stretch in
@@ -1400,6 +1476,7 @@ let ship ob fpout thyout record =
       assert ((List.length to_print) <= 1);
         (* some method succeeded in proving ? *)
       let has_success = List.exists is_success to_print in
+      (*
       let with_enabled_and_fp =
           if (to_do = None) && (not has_success) && expand_enabled then
             begin match List.hd to_print with
@@ -1416,6 +1493,7 @@ let ship ob fpout thyout record =
             end
           else false
         in
+      *)
       (* attempting to prove, or noting that proof obligation is trivial *)
       if has_success then begin
         List.iter (fun st -> Toolbox.print_old_res ob st false) to_print;
@@ -1450,14 +1528,15 @@ let ship ob fpout thyout record =
         | Some schedule -> schedule  (* is trivial *)
         | None -> (* nontrivial *)
       begin
-        if not with_enabled_and_fp then
-            List.iter (fun st -> Toolbox.print_old_res ob st true) to_print;
+        List.iter (fun st -> Toolbox.print_old_res ob st true) to_print;
         if to_print <> [] then record has_success ob;
         assert (to_do <> Some Method.ExpandENABLED);
         assert (to_do <> Some Method.ExpandCdot);
         assert (to_do <> Some Method.AutoUSE);
         assert (to_do <> Some Method.Lambdify);
         assert (to_do <> Some Method.ENABLEDaxioms);
+        assert (to_do <> Some Method.ENABLEDrewrites);
+        assert (to_do <> Some Method.ENABLEDrules);
         assert (to_do <> Some Method.LevelComparison);
         (* try backends only if any expansions of `ENABLED` and `\cdot` that
         have been requested have been completed successfully.

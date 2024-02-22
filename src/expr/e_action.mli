@@ -21,12 +21,15 @@ val expand_definitions:
     autouse:bool ->
         expr
 val expand_propositional_action_operators: expr -> expr
-val implication_to_enabled: ctx -> expr -> expr
+val enabled_axioms: ctx -> expr -> expr
+val enabled_rewrites: ctx -> expr -> expr
+val enabled_rules: ctx -> expr -> expr
 val lambdify:
     ctx -> expr ->
     lambdify_enabled:bool ->
     lambdify_cdot:bool ->
     autouse:bool ->
+    used_identifiers:string list ->
         expr
 val quantify:
     ctx -> expr ->
@@ -38,4 +41,5 @@ val expand_action_operators:
     expand_enabled:bool ->
     expand_cdot:bool ->
     autouse:bool ->
+    used_identifiers: string list ->
         expr

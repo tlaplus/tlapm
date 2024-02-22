@@ -48,10 +48,15 @@ jobs:
             #   with:
             #     path: _build_cache
             #     key: ${{ runner.os }}_build_cache
+            - name: Install optional dependencies
+              if: matrix.ocaml-compiler == '2'
+              run: |
+                eval $(opam env)
+                make opam-deps-opt
             - name: Build installer of TLAPS
               run: |
                 eval $(opam env)
-                opam install ./ --deps-only --yes
+                make opam-deps
                 make
                 make release
             - name: Run a subset of `tlapm` tests

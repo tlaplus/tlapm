@@ -24,7 +24,7 @@ module V13 = struct
 
   (* introduced on 2019- in revision *)
   (* Adds the cases "ExpandENABLED", "ExpandCdot", "AutoUSE", "Lambdify",
-     "ENABLEDaxioms", "LevelComparison"
+     "ENABLEDaxioms", "ENABLEDrewrites", "ENABLEDrules", "LevelComparison"
      to type meth.
    *)
 
@@ -58,6 +58,8 @@ module V13 = struct
   | ExpandCdot
   | Lambdify
   | ENABLEDaxioms
+  | ENABLEDrewrites
+  | ENABLEDrules
   | LevelComparison
   | Trivial
 
@@ -114,6 +116,8 @@ module V13 = struct
     expandcdotres : sti option;
     lambdifyres: sti option;
     enabledaxiomsres: sti option;
+    enabledrewritesres: sti option;
+    enabledrulesres: sti option;
     levelcomparisonres: sti option;
   }
 
@@ -237,6 +241,8 @@ and meth_to_Vx m =
   | M.ExpandCdot -> ExpandCdot
   | M.Lambdify -> Lambdify
   | M.ENABLEDaxioms -> ENABLEDaxioms
+  | M.ENABLEDrewrites -> ENABLEDrewrites
+  | M.ENABLEDrules -> ENABLEDrules
   | M.LevelComparison -> LevelComparison
   | M.Trivial -> Trivial
 
@@ -277,6 +283,8 @@ type prover =
   | Pexpandcdot
   | Plambdify
   | Penabledaxioms
+  | Penabledrewrites
+  | Penabledrules
   | Plevelcomparison
   | Ptrivial
 
@@ -307,6 +315,8 @@ let prover_of_method m =
   | AutoUSE -> Pautouse
   | Lambdify -> Plambdify
   | ENABLEDaxioms -> Penabledaxioms
+  | ENABLEDrewrites -> Penabledrewrites
+  | ENABLEDrules -> Penabledrules
   | LevelComparison -> Plevelcomparison
   | Trivial -> Ptrivial
 
@@ -435,6 +445,8 @@ let empty = {
   expandcdotres = None;
   lambdifyres = None;
   enabledaxiomsres = None;
+  enabledrewritesres = None;
+  enabledrulesres = None;
   levelcomparisonres = None;
 }
 
@@ -463,6 +475,8 @@ let add_to_record r st =
   | NTriv (_, ExpandCdot) -> {r with expandcdotres = Some st}
   | NTriv (_, Lambdify) -> {r with lambdifyres = Some st}
   | NTriv (_, ENABLEDaxioms) -> {r with enabledaxiomsres = Some st}
+  | NTriv (_, ENABLEDrewrites) -> {r with enabledrewritesres = Some st}
+  | NTriv (_, ENABLEDrules) -> {r with enabledrulesres = Some st}
   | NTriv (_, LevelComparison) -> {r with levelcomparisonres = Some st}
   | _ -> r
 
@@ -745,6 +759,10 @@ let print_sti_13 (st, d, pv, zv, iv) =
             printf "Lambdify definitions";
         | V13.ENABLEDaxioms ->
             printf "ENABLED axioms";
+        | V13.ENABLEDrewrites ->
+            printf "ENABLED rewrites";
+        | V13.ENABLEDrules ->
+            printf "ENABLED rules";
         | V13.LevelComparison ->
             printf "Level Comparison";
         | V13.Trivial ->
@@ -816,8 +834,10 @@ let print_fp_line_13r fp str =
   print_sti_opt "ExpandCdot" str.V13.expandcdotres;
   print_sti_opt "Lambdify" str.V13.lambdifyres;
   print_sti_opt "ENABLED axioms" str.V13.enabledaxiomsres;
-  print_sti_opt "LevelComparison" str.V13.levelcomparisonres
-
+  print_sti_opt "ENABLED rewrites" str.V13.enabledrewritesres;
+  print_sti_opt "ENABLED rules" str.V13.enabledrulesres;
+  print_sti_opt "LevelComparison" str.V13.levelcomparisonres;
+;;
 
 let print_fp_line_13l fp stil =
   printf "  %s :\n" fp;
@@ -935,6 +955,8 @@ and vx_to_meth m =
   | AutoUSE -> Some M.AutoUSE
   | Lambdify -> Some M.Lambdify
   | ENABLEDaxioms -> Some M.ENABLEDaxioms
+  | ENABLEDrewrites -> Some M.ENABLEDrewrites
+  | ENABLEDrules -> Some M.ENABLEDrules
   | LevelComparison -> Some M.LevelComparison
   | Trivial -> Some M.Trivial
 

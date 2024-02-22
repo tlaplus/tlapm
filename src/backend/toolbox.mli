@@ -40,3 +40,6 @@ val print_old_res:
 val print_ob_number: int -> unit
 val print_message_url:
     string -> string -> unit
+
+(* lsp *)
+val normalize : bool -> Proof.T.obligation -> Proof.T.obligation

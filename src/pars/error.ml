@@ -46,6 +46,10 @@ let print_error ?(verbose = false) ouch (Error (err, locus)) =
   output_string ouch ints ;
   flush ouch;
 
+  Errors.set
+    (Util.set_locus (Property.noprops err) locus)
+    (unexp ^ exps ^ msgs ^ ints);
+
   if !Params.toolbox
   then Toolbox_msg.print_warning (loc ^ unexp ^ exps ^ msgs ^ ints)
 

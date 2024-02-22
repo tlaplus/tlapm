@@ -11,6 +11,8 @@ open Expr.T
 
 open P_t
 
+let qed_loc_prop : Loc.locus pfuncs = make ~uuid:"2fb9a59e-6c30-11ee-b962-0242ac120002" "Parser.qed_loc"
+
 let enlarge_loc x y =
   Util.locate x (Loc.merge (Util.get_locus x) (Util.get_locus y))
 
@@ -59,7 +61,7 @@ and prestep =
 
 type step_or_qed =
   | STEP of step
-  | QED of proof
+  | QED of Loc.locus * proof
 
 exception Backtrack
 
@@ -140,8 +142,14 @@ and to_steps ?(first = false) currlv ps = match ps with
               let thislv = Util.locate thislv (Loc.right_of (Util.get_locus s)) in
               let (ss, qp, ps) = to_steps thislv nps in
               (s :: ss, qp, ps)
-          | (QED qp, ps) ->
-              let qp = { core = {core = Qed qp; props = [Props.step.Property.set sn]} ; props = [Props.step.Property.set sn] } in
+          | (QED (qed_loc, qp), ps) ->
+              let loc = Loc.merge qed_loc (Util.get_locus qp) in
+              let qp = Util.locate (Qed qp) loc in
+              let qp = Property.assign qp Props.step sn in
+              let qp = Property.assign qp qed_loc_prop qed_loc in
+              let qp = Util.locate qp loc in
+              let qp = Property.assign qp Props.step sn in
+              let qp = Property.assign qp qed_loc_prop qed_loc in
               ([], qp, ps)
       end
   | p :: _ ->
@@ -161,10 +169,12 @@ and to_steps ?(first = false) currlv ps = match ps with
       Errors.set currlv ("Unexpected end of (sub)proof at level "^(string_of_int currlv.core)^" before QED step\n");
       failwith "Proof.Parser"
 
-and to_step currlv st ps = match st.core with
+and to_step currlv st ps =
+  match st.core with
   | PreQed ->
+      let qed_loc = Util.get_locus st in
       let (p, ps) = to_proof (currlv + 1 @@ st) ps in
-      (QED p, ps)
+      (QED (qed_loc, p), ps)
   | PreHide us ->
       (STEP (Hide us @@ st), ps)
   | PreUse (supp, onl, us, meth) ->

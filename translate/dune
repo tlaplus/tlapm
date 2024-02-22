@@ -1,6 +1,7 @@
 (env
-  (_
-    (flags (:standard -w +a-4-7-9-21-26-27-29-30-32..42-44-45-48-50-52-60-66..70))))
+ (_
+  (flags
+   (:standard -w +a-4-7-9-21-26-27-29-30-32..42-44-45-48-50-52-60-66..70))))
 
 (executable
  (name main)
@@ -8,8 +9,12 @@
  (modules_without_implementation fotypes))
 
 (install ; It has to be installed under 2 names for some reason.
- (section (site (tlapm backends)))
- (files (main.exe as bin/ptl_to_trp)))
+ (section
+  (site
+   (tlapm backends)))
+ (files
+  (main.exe as bin/ptl_to_trp)))
 
 (ocamllex folex)
+
 (ocamlyacc foyacc)

@@ -95,3 +95,9 @@ let set st mesg =
         Some (Loc.string_of_locus ~cap:true loc)
   end;
   msg := Some (mesg^"\n\n"^(sget !msg))
+
+let reset () =
+    Buffer.clear warnbuf;
+    loc := None;
+    msg := None;
+    warning := false;

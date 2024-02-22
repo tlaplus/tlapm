@@ -59,6 +59,7 @@ let parse_args args opts mods usage_fmt =
     exit 2
 
 let show_where () =
+  (* TODO: `opam exec -- tlapm --where` produces invalid output. *)
   Printf.printf "%s\n" library_path ;
   exit 0
 
@@ -185,6 +186,12 @@ let init () =
               "<int> line to prove";
     "--wait", Arg.Set_int wait,
               "<time> wait for <time> before printing obligations in progress";
+    "--stdin", Arg.Set use_stdin, " \
+        read the tla file from stdin instead of file system. \
+        Only applies if single tla file is provided as input.";
+    "--prefer-stdlib", Arg.Set prefer_stdlib, " \
+        prefer built-in standard modules if the module search path \
+        contains files with the same names as modules in stdlib.";
     "--noproving", Arg.Set noproving,
                    " do not prove, report fingerprinted results only";
     blank;
@@ -261,5 +268,8 @@ let init () =
     Printf.printf " with command line:\n\\*";
     Array.iter (fun s -> Printf.printf " %s" (quote_if_needed s)) Sys.argv;
     Printf.printf "\n\n%!"
+  end;
+  if (List.length !mods) <> 1 then begin
+    use_stdin := false
   end;
   !mods
