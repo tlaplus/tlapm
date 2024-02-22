@@ -51,6 +51,10 @@ let wait = ref 3
 let use_stdin = ref false
 (* Read the document from stdin, if only one file is provided as an input. *)
 
+let prefer_stdlib = ref false
+(* If set to true, the TLAPM will prefer the modules from the STDLIB
+   instead of modules with the same names in the search path. *)
+
 let noproving = ref false (* Don't send any obligation to the back-ends. *)
 
 let printallobs = ref false
@@ -258,8 +262,10 @@ let set_smt_logic logic = smt_logic := logic
 
 let max_threads = ref nprocs
 
+let stdlib_search_paths = Setup_paths.Sites.stdlib
+
 (* The actual list of paths at which the library TLA files are searched. *)
-let rev_search_path = ref (library_path :: Setup_paths.Sites.stdlib)
+let rev_search_path = ref (library_path :: stdlib_search_paths)
 
 (* Additional paths are added to the search list by keeping the base path as the first one. *)
 let add_search_dir dir =
@@ -270,6 +276,10 @@ let add_search_dir dir =
   in
   if List.for_all (fun lp -> lp <> dir) !rev_search_path then
     rev_search_path := library_path :: dir :: List.tl !rev_search_path
+
+(* Reset the search path to the specified list. *)
+let set_search_path dirs =
+  rev_search_path := library_path :: List.concat [dirs; stdlib_search_paths]
 
 let output_dir = ref "."
 

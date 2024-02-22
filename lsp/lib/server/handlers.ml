@@ -1,4 +1,3 @@
-module Docs = Tlapm_lsp_docs
 module LspT = Lsp.Types
 
 module type Callbacks = sig
@@ -10,9 +9,13 @@ module type Callbacks = sig
   val with_docs : t -> (t * Docs.t -> t * Docs.t) -> t
   val prove_step : t -> LspT.DocumentUri.t -> int -> LspT.Range.t -> t
   val cancel : t -> LspT.ProgressToken.t -> t
+  val use_paths : t -> string list -> t
 
   val suggest_proof_range :
     t -> LspT.DocumentUri.t -> LspT.Range.t -> t * (int * LspT.Range.t) option
+
+  val track_obligation_proof_state :
+    t -> LspT.DocumentUri.t -> LspT.Range.t -> t
 
   val latest_diagnostics :
     t -> LspT.DocumentUri.t -> t * (int * LspT.Diagnostic.t list)
@@ -38,7 +41,7 @@ module Make (CB : Callbacks) = struct
 
   (** Dispatch notification packets. *)
   let handle_jsonrpc_notif jsonrpc_notif cb_state =
-    let open Lsp.Types in
+    let open LspT in
     match Lsp.Client_notification.of_jsonrpc jsonrpc_notif with
     | Ok Initialized ->
         Eio.traceln "CONN: Initialized";
@@ -49,7 +52,7 @@ module Make (CB : Callbacks) = struct
         let text = params.textDocument.text in
         Eio.traceln "DOCUMENT[Open]: %s => %s" (DocumentUri.to_string uri) text;
         CB.with_docs cb_state @@ fun (cb_st, docs) ->
-        let docs = Tlapm_lsp_docs.add docs uri vsn text in
+        let docs = Docs.add docs uri vsn text in
         (cb_st, docs)
     | Ok (TextDocumentDidChange params) -> (
         let uri = params.textDocument.uri in
@@ -60,12 +63,11 @@ module Make (CB : Callbacks) = struct
               (DocumentUri.to_string uri)
               text;
             CB.with_docs cb_state @@ fun (cb_st, docs) ->
-            (cb_st, Tlapm_lsp_docs.add docs uri vsn text)
+            (cb_st, Docs.add docs uri vsn text)
         | _ -> failwith "incremental changes not supported")
     | Ok (TextDocumentDidClose params) ->
         let uri = params.textDocument.uri in
-        CB.with_docs cb_state @@ fun (cb_st, docs) ->
-        (cb_st, Tlapm_lsp_docs.rem docs uri)
+        CB.with_docs cb_state @@ fun (cb_st, docs) -> (cb_st, Docs.rem docs uri)
     | Ok (DidSaveTextDocument params) ->
         let uri = params.textDocument.uri in
         Eio.traceln "DOCUMENT[Save]: %s" (DocumentUri.to_string uri);
@@ -96,7 +98,7 @@ module Make (CB : Callbacks) = struct
 
   let handle_jsonrpc_req_initialize (jsonrpc_req : Jsonrpc.Request.t) params
       cb_state =
-    let open Lsp.Types in
+    let open LspT in
     let print_ci (params : InitializeParams.t) =
       match params.clientInfo with
       | None -> ()
@@ -106,7 +108,19 @@ module Make (CB : Callbacks) = struct
             ci_version
     in
     print_ci params;
-    let supported_commands = [ "tlaplus.tlaps.check-step.lsp" ] in
+    let cb_state =
+      let open Structs.InitializationOptions in
+      let init_opts = t_of_yojson params.initializationOptions in
+      CB.use_paths cb_state (module_search_paths init_opts)
+    in
+    let supported_commands =
+      [
+        "tlaplus.tlaps.check-step.lsp";
+        "tlaplus.tlaps.proofStepMarkers.fetch.lsp";
+        "tlaplus.tlaps.currentProofStep.set.lsp";
+        "tlaplus.tlaps.moduleSearchPaths.updated.lsp";
+      ]
+    in
     let capabilities =
       ServerCapabilities.create
         ~textDocumentSync:(`TextDocumentSyncKind TextDocumentSyncKind.Full)
@@ -125,6 +139,10 @@ module Make (CB : Callbacks) = struct
                ~codeActionKinds:
                  [ CodeActionKind.Other "tlaplus.tlaps.check-step.ca" ]
                ()))
+        ~experimental:
+          Structs.ServerCapabilitiesExperimental.(
+            yojson_of_t
+              (make ~module_search_paths:Tlapm_lib.stdlib_search_paths))
         ()
     in
     let server_version =
@@ -157,6 +175,53 @@ module Make (CB : Callbacks) = struct
     reply_ok jsonrpc_req
       (LspT.FullDocumentDiagnosticReport.yojson_of_t report)
       cb_state
+
+  let handle_fetch_proof_step_markers (jsonrpc_req : Jsonrpc.Request.t)
+      (params : LspT.ExecuteCommandParams.t) cb_state =
+    let cb_state =
+      match params.arguments with
+      | Some [ uri ] ->
+          let tid = LspT.TextDocumentIdentifier.t_of_yojson uri in
+          let cb_state, (_p_ref, _items) =
+            CB.latest_diagnostics cb_state tid.uri
+          in
+          cb_state
+      | _ ->
+          Eio.traceln "Unexpected parameters in handle_fetch_proof_step_markers";
+          cb_state
+    in
+    reply_ok jsonrpc_req `Null cb_state
+
+  let handle_cmd_current_proof_step_set (jsonrpc_req : Jsonrpc.Request.t)
+      (params : LspT.ExecuteCommandParams.t) cb_state =
+    let cb_state =
+      match params.arguments with
+      | Some [ uri; range ] ->
+          let uri = (LspT.TextDocumentIdentifier.t_of_yojson uri).uri in
+          let range = LspT.Range.t_of_yojson range in
+          CB.track_obligation_proof_state cb_state uri range
+      | _ ->
+          Eio.traceln
+            "Unexpected parameters in handle_cmd_current_proof_step_set";
+          cb_state
+    in
+    reply_ok jsonrpc_req `Null cb_state
+
+  let handle_cmd_module_search_paths_updated (jsonrpc_req : Jsonrpc.Request.t)
+      (params : LspT.ExecuteCommandParams.t) cb_state =
+    let cb_state =
+      match params.arguments with
+      | Some paths ->
+          let paths =
+            List.filter_map (function `String p -> Some p | _ -> None) paths
+          in
+          CB.use_paths cb_state paths
+      | _ ->
+          Eio.traceln
+            "Unexpected parameters in handle_cmd_module_search_paths_updated";
+          cb_state
+    in
+    reply_ok jsonrpc_req `Null cb_state
 
   let handle_jsonrpc_req_unknown (jsonrpc_req : Jsonrpc.Request.t) message
       cb_state =
@@ -204,6 +269,12 @@ module Make (CB : Callbacks) = struct
     match params.command with
     | "tlaplus.tlaps.check-step.lsp" ->
         handle_check_step jsonrpc_req params cb_state
+    | "tlaplus.tlaps.proofStepMarkers.fetch.lsp" ->
+        handle_fetch_proof_step_markers jsonrpc_req params cb_state
+    | "tlaplus.tlaps.currentProofStep.set.lsp" ->
+        handle_cmd_current_proof_step_set jsonrpc_req params cb_state
+    | "tlaplus.tlaps.moduleSearchPaths.updated.lsp" ->
+        handle_cmd_module_search_paths_updated jsonrpc_req params cb_state
     | unknown ->
         handle_jsonrpc_req_unknown jsonrpc_req
           (Printf.sprintf "command unknown: %s" unknown)
@@ -253,7 +324,7 @@ module Make (CB : Callbacks) = struct
 
   (** Dispatch request packets. *)
   let handle_jsonrpc_request (jsonrpc_req : Jsonrpc.Request.t) cb_state =
-    let open Lsp.Types in
+    let open LspT in
     match Lsp.Client_request.of_jsonrpc jsonrpc_req with
     | Ok (E (Initialize (params : InitializeParams.t))) ->
         handle_jsonrpc_req_initialize jsonrpc_req params cb_state
@@ -298,7 +369,13 @@ module Make (CB : Callbacks) = struct
   let handle_jsonrpc_packet (packet : Jsonrpc.Packet.t) state =
     match packet with
     | Notification notif -> handle_jsonrpc_notif notif state
-    | Request req -> handle_jsonrpc_request req state
+    | Request req -> (
+        try handle_jsonrpc_request req state
+        with exc ->
+          let open Jsonrpc.Response.Error in
+          let exc_str = Printexc.to_string exc in
+          Eio.traceln "LSP request failed with exception %s" exc_str;
+          reply_error req Code.InternalError exc_str state)
     | Response resp -> handle_jsonrpc_response resp state
     | Batch_call sub_packets ->
         let fold_fun state_acc sub_pkg =

@@ -5,6 +5,7 @@
 (* pars/error.ml *)
 val toolbox: bool ref
 val use_stdin: bool ref
+val prefer_stdlib: bool ref
 
 (* expr/fmt.ml *)
 val debugging: string -> bool
@@ -66,6 +67,7 @@ val fp_deb: bool ref
 val configuration: bool -> bool -> string list
 
 (* module/save.ml *)
+val stdlib_search_paths : string list
 val rev_search_path: string list ref
 val self_sum: Digest.t
 val use_xtla: bool ref
@@ -87,6 +89,7 @@ val fpf_in: string option ref
 val summary: bool ref
 val stats: bool ref
 val add_search_dir: string -> unit
+val set_search_path: string list -> unit
 val keep_going: bool ref  (* FIXME check still used ? *)
 val suppress_all: bool ref
 val set_smt_logic: string -> unit

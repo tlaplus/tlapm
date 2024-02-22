@@ -209,7 +209,9 @@ class anon_sg = object (self: 'self)
                             let index = depth + 1 in
                             let op = e $$ defn in
                             anon_apply index op args
-                        | Recursive _ -> assert false
+                        | Recursive _ ->
+                            Errors.set defn "Recursive operators not supported by TLAPS";
+                            failwith "Expr.Anon: Recursive"
                         end
                     (* declared operator *)
                     | Some (depth, ({core=Fresh _} as decl)) ->

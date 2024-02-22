@@ -5,6 +5,10 @@
   (>= %{ocaml_version}, "5.0.0"))
  (libraries tlapm_lib lsp eio_main dune-build-info re2)
  (inline_tests
-  (deps "../test/tlapm_mock.sh" "../../src/tlapm.exe"))
+  (deps "../test/tlapm_mock.sh" "../../src/tlapm.exe")
+  ; (flags -only-test docs/proof_step.ml -verbose)
+  )
  (preprocess
   (pps ppx_inline_test)))
+
+(include_subdirs qualified)

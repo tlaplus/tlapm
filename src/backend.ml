@@ -9,3 +9,4 @@ module Fingerprints = Fingerprints
 module Fpfile = Fpfile
 (* module Smtlib = Smtlib *)
 module Prep = Prep
+module Interrupted = Interrupted

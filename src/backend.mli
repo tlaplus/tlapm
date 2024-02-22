@@ -67,4 +67,8 @@ module Toolbox: sig
     val print_message: string -> unit
     val print_message_url:
         string -> string -> unit
+
+    val normalize: bool -> Proof.T.obligation -> Proof.T.obligation
 end
+
+module Interrupted = Interrupted

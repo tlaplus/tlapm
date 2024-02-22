@@ -43,6 +43,10 @@ test-fast:
 test-fast-basic:
 	make -C test fast/basic
 
+fmt:
+	# Onlt the LSP part is not formatted automatically.
+	cd lsp && dune fmt
+
 install:
 	dune install --prefix=$(PREFIX)
 	make -C $(PREFIX)/lib/tlapm/ -f Makefile.post-install
