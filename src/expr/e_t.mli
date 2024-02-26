@@ -208,6 +208,33 @@ val bounds_of_parameters:
     (hint * shape) list -> bounds
 
 
+(** Name and kind of a fact *)
+type meta = {
+  hkind : hyp_kind ;
+  name : string ;
+}
+and hyp_kind = Axiom | Hypothesis | Goal
+
+(** Attached to the expression part of a fact, in a sequent *)
+val meta_prop : meta pfuncs
+
+(** SMT-LIB pattern *)
+type pat = expr list
+
+(** Attached to the body of a quantified expression *)
+val pattern_prop :
+    pat list pfuncs
+
+val add_pats :
+    expr -> pat list -> expr
+val remove_pats :
+    expr -> expr
+
+val map_pats :
+    (pat -> pat) -> expr -> expr
+val fold_pats :
+    (pat -> 'a -> 'a) -> expr -> 'a -> 'a
+
 module type Node_factory_sig =
 sig
     type t
@@ -362,6 +389,8 @@ val name_of_ix:
     int -> ctx -> hint
 
 (* fmt.ml *)
+val hyp_hint :
+    hyp_ Property.wrapped -> hint
 val hyp_name:
     hyp_ Property.wrapped -> string
 

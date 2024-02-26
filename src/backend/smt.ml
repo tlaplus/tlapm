@@ -720,14 +720,6 @@ let reset () =
     Smt.ctr := 0;
     E.ctr_types := 0;
     T.ctr_funarg := 0;
-    Smt.typesystem_mode := begin
-        if Params.debugging "notypes" then 0  (** Untyped *)
-        else if Params.debugging "types0" then 0  (** Untyped *)
-        else if Params.debugging "types1" then 1  (** Elementary type system *)
-        else if Params.debugging "types2" then 2  (** Refinement type system *)
-        else 1
-    end;
-    Smt.ifprint 1 "** Type system mode = %d" !Smt.typesystem_mode;
     Smt.verbosity := begin
         if Params.debugging "verbose0" then 0
         else if Params.debugging "verbose1" then 1
@@ -736,6 +728,14 @@ let reset () =
         else if Params.debugging "verbose4" then 4
         else 0
     end;
+    Smt.typesystem_mode := begin
+        if Params.debugging "notypes" then 0  (** Untyped *)
+        else if Params.debugging "types0" then 0  (** Untyped *)
+        else if Params.debugging "types1" then 1  (** Elementary type system *)
+        else if Params.debugging "types2" then 2  (** Refinement type system *)
+        else 1
+    end;
+    Smt.ifprint 1 "** Type system mode = %d" !Smt.typesystem_mode;
     abstract_func := begin
         if Params.debugging "abstract1" then Preprocess.abstract
         else if Params.debugging "abstract2" then Preprocess.abstract2

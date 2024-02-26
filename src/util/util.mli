@@ -26,9 +26,11 @@ type hints = hint list
 val pp_print_hint : Format.formatter -> hint -> unit
 
 module Coll : sig
+  module Im : Map.S with type key = int
   module Sm : Map.S with type key = string
   module Hm : Map.S with type key = hint
 
+  module Is : Set.S with type elt = int
   module Ss : Set.S with type elt = string
   module Hs : Set.S with type elt = hint
 

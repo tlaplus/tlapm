@@ -520,7 +520,7 @@ THEOREM Invariance == Spec => []Inv
                 BY DEF PA1
               <8>1. \A i \in Nat : wa[i] # p
                 BY NotAProcProp, SMT DEF PV
-              <8>2. \A i \in Nat : PV(wa)' = PV(wa)
+              <8>2. PV(wa)' = PV(wa)
                 BY <8>1, <5>3, SMT DEF TypeOK, PV, WriterAssignment
                 \* DEF PV added 31 May 2013
                 \** DEF WriterAssignment added 2013-06-25

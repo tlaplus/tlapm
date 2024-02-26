@@ -704,7 +704,7 @@ THEOREM Invariance == Spec => []Inv
       <4>1. ASSUME NEW q \in Proc
             PROVE  Inv1!1!(q)'
         <5>1. Inv1!1!(q)!1'
-          BY SMT DEF Inv1, TypeOK, b, PUnion
+          BY Z3T(10) DEF Inv1, TypeOK, b, PUnion
         <5>2. Inv1!1!(q)!2'
           BY SMT DEF Inv1, TypeOK, b
         <5>3. Inv1!1!(q)!3'
@@ -2057,6 +2057,7 @@ THEOREM Spec => S!BigSpec
   (*************************************************************************)OMITTED
 =============================================================================
 \* Modification History
+\* Last modified Wed Jan 18 08:51:11 CET 2023 by rosalied
 \* Last modified Tue Apr 14 16:42:06 CEST 2020 by doligez
 \* Last modified Tue Jun 25 15:13:49 CEST 2013 by hernanv
 \* Last modified Sat Jun 01 10:16:42 CEST 2013 by merz

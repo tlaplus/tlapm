@@ -277,7 +277,7 @@ let%test_module _ = (module struct
     let test_case = create_expression test_string in
     let target_case = create_expression "f'[x']" in
     (* let x = normalize Deque.empty test_case in
-       Printf.eprintf "compare: %d\n" (Pervasives.compare x target_case); *)
+       Printf.eprintf "compare: %d\n" (Stdlib.compare x target_case); *)
       [%test_eq: string] (prn_exp target_case) (prn_exp (normalize Deque.empty test_case))
   *)
 
