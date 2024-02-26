@@ -61,6 +61,33 @@ let library_path =
   let d = Filename.concat d "tlaps" in
   d
 
+(* The backends directory should be resolved via the dune sites mechanism.
+   If the sites are not available, then we assume this file layout to locate
+   the Isabelle installation.
+    - bin/tlapm
+    - lib/tlapm/backends/Isabelle
+  *)
+let isabelle_base_path =
+  let rec find paths =
+    match paths with
+    | [] ->
+      let bin_dir = Filename.dirname Sys.executable_name in
+      let prefix = Filename.dirname bin_dir in
+      List.fold_left
+        Filename.concat
+        prefix
+        ["lib"; "tlapm"; "backends"; "Isabelle"]
+    | path :: other ->
+      let isabelle_base = Filename.concat path "Isabelle" in
+      match Sys.file_exists isabelle_base with
+      | true -> isabelle_base
+      | false -> find other
+  in find Setup_paths.Sites.backends
+
+let isabelle_tla_path =
+  List.fold_left Filename.concat isabelle_base_path ["src"; "TLA+"]
+
+
 type executable =
   | Unchecked of string * string * string (* exec, command, version_command *)
   | User of string                        (* command *)
@@ -143,12 +170,13 @@ let isabelle_success_string = "((TLAPS SUCCESS))"
 
 let isabelle =
   let cmd =
-    Printf.sprintf "isabelle-process -r -q -e \"(use_thy \\\"$file\\\"; \
-                                                writeln \\\"%s\\\");\" TLA+"
+    Printf.sprintf "isabelle process -e \"(use_thy \\\"$file\\\"; \
+                        writeln \\\"%s\\\");\" -d %s -l TLA+"
                    isabelle_success_string
+                   isabelle_tla_path
   in
-  make_exec "isabelle-process" cmd "isabelle version"
-
+  make_exec "isabelle" cmd "isabelle version"
+;;
 
 let set_fast_isabelle () =
   if Sys.os_type <> "Cygwin" then

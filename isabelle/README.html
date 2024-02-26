@@ -9,9 +9,9 @@
 
 <body>
 
-<h2>TLA+: Lamport's Temporal Logic of Actions specification language</h2>
+<h2>TLA+: Lamport's specification language based on the Temporal Logic of Actions</h2>
 
-<p><a href="http://www.research.digital.com/SRC/personal/Leslie_Lamport/tla/tla.html">TLA</a>
+<p><a href="http://lamport.azurewebsites.net/tla/tla.html">TLA</a>
 is a linear-time temporal logic introduced by Leslie Lamport in
 <em>The Temporal Logic of Actions</em> (ACM TOPLAS 16(3), 1994,
 872-923). Unlike other temporal logics, both systems and properties
@@ -20,10 +20,14 @@ implication, conjunction, and existential quantification represent
 structural relations such as refinement, parallel composition, and
 hiding.</p>
 
-<p>TLA+ is a language for specifying and verifying concurrent and distributed systems. It is based on a variant of Zermelo-Fraenkel set theory for describing the data structures manipulated by the algorithms to be verified, and on TLA for describing their dynamic behavior. TLA+ has been applied to numerous case studies.
+<p>TLA+ is a language for specifying and verifying concurrent and distributed
+systems. It is based on a variant of Zermelo-Fraenkel set theory for describing
+the data structures manipulated by the algorithms to be verified, and on TLA for
+describing their dynamic behavior. TLA+ has been applied to numerous case
+studies.
 </p>
 
-<p>This directory formalizes TLA+ in Isabelle (version 2009-1), as follows:
+<p>This directory formalizes TLA+ in Isabelle (version 2021-1), as follows:
 <ul>
   <li>
   <em>PredicateLogic</em> theory
@@ -44,14 +48,14 @@ hiding.</p>
   The <em>FixedPoints</em> theory develops the
   Knaster-Tarski theorems for least and greatest fixed points in the
   subset lattice. This development is used for the construction of
-  natural numbers; it also serves as a test for the encoding of TLA+
+  integers; it also serves as a test for the encoding of TLA+
   set theory.
   </li>
 
   <li>
   <em>Functions</em> theory: functions in TLA+ are not defined
   (e.g., as sets of pairs),
-  but axiomatized, and in fact, pairs and tuples are later defined as special
+  but axiomatized, and in fact, pairs and tuples are later defined as
   functions. Incidentally, this approach helps us to identify functional
   values, and to automate the reasoning about them. This theory considers
   only unary functions; functions with multiple arguments are defined
@@ -59,18 +63,31 @@ hiding.</p>
   </li>
 
   <li>
-  <em>Peano</em> theory: Peano's axioms for natural numbers. We prove
-  the existence of a structure satisfying these axioms and derive the
-  set of natural numbers.
+  <em>Integers</em> theory: the structure of integer numbers is introduced
+  using an extended version of Peano's axioms. We prove the existence of a
+  structure satisfying these axioms and define the integers as some such
+  structure (using <em>CHOOSE</em> expressions), together with a subet of
+  natural numbers. We define the successor and predecessor functions over
+  integers and prove induction rules for natural numbers and integers.
+  We also justify the definition of functions over integers by primitive
+  recursion.
   </li>
 
   <li>
-  <em>NatOrderings</em> theory: introduces the order &lt;= over
-  natural numbers. It also defines <em>a &lt; b</em> (for arbitrary
-  values) as <em>a &lt;= b &amp; a # b</em>. Proves many lemmas over
-  these orders. Also defines intervals <em>m .. n</em> for natural
-  numbers <em>m</em> and <em>n</em>.
+  <em>IntegerArithmetic</em> theory: introduces addition (including
+  subtraction) and multiplication over integers, as well as the order
+  &lt;= over integers and <em>a &lt; b</em> (for arbitrary
+  values) as <em>a &lt;= b &amp; a # b</em>. Proves many lemmas for
+  integer arithmetic. Also defines intervals <em>m .. n</em> for
+  integers <em>m</em> and <em>n</em>.
   </li>
+
+  <li>
+  <em>IntegerDivision</em> theory: introduces integer division and
+  modulus, as well as the divisibility relation. In accordance with
+  the definition in the standard library of TLA+, <em>div</em> and
+  <em>%</em> (modulus) are defined only if the second argument is a
+  positive integer.
 
   <li>
   The <em>Tuples</em> theory defines tuples and relations in TLA+.
@@ -81,7 +98,7 @@ hiding.</p>
   <em>{x,y}</em> such that <em>f[x] \in S</em> and <em>f[y] \in T</em>.
 
   <p>
-  
+
   Finally, this theory introduces standard notions for binary
   relations, such as orderings, equivalence relations and so on.
   </li>
@@ -102,18 +119,6 @@ hiding.</p>
   :&gt; 1) @@ (''bar'' :&gt; TRUE)</em>, and sets of records can be
   written using the notation for sets of finite functions introduced
   in theory <em>Tuples</em>.
-  </li>
-
-  <li>
-  <em>NatArith</em> theory: addition, subtraction, and multiplication
-  over natural numbers. The subtraction (noted <em>--</em>) is defined
-  such that the result is cut off at 0: this is different from
-  the standard difference over integers.
-  </li>
-
-  <li>
-  <em>NatDivision</em> theory: divisibility relation, division and
-  modulus for natural numbers.
   </li>
 
 </ul>
@@ -142,7 +147,5 @@ The theories are accompanied by two examples:
 <address>
 <a href="mailto:stephan.merz@loria.fr">Stephan Merz</a>
 </address>
-<!-- hhmts start -->
-Last modified: Mon Jun  8 11:15:49 CET 2009
-<!-- hhmts end -->
+<!-- hhmts start -->Last modified: Tue Mar 15 15:05:26 CET 2022 <!-- hhmts end -->
 </body></html>
