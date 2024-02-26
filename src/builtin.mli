@@ -81,3 +81,5 @@ type builtin =
     (* special *)
   | Unprimable
   | Irregular
+
+val builtin_to_string : builtin -> string

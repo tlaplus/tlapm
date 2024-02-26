@@ -258,7 +258,7 @@ let rec unroll_seq sq =
             in
             From_hint.make_forall [bound] ex
         | Fresh _ ->
-            failwith "smt/smtcommons.ml: encountered sequent-order sequent"
+            failwith "smt/smtcommons.ml: encountered second-order sequent"
         | Flex v ->
             let v_prime = (v.core ^ "'") @@ v in
             let bounds = From_hint.make_const_decls [v; v_prime] in

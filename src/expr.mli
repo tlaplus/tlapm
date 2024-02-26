@@ -180,6 +180,27 @@ module T: sig
   val bounds_of_parameters:
       (hint * shape) list -> bounds
 
+  (** Fact name and kind *)
+  type meta = {
+    hkind : hyp_kind ;
+    name : string ;
+  }
+  and hyp_kind = Axiom | Hypothesis | Goal
+  val meta_prop : meta pfuncs
+
+  (** SMT-LIB patterns *)
+  type pat = expr list
+  val pattern_prop :
+      pat list pfuncs
+  val add_pats :
+      expr -> pat list -> expr
+  val remove_pats :
+      expr -> expr
+  val map_pats :
+      (pat -> pat) -> expr -> expr
+  val fold_pats :
+      (pat -> 'a -> 'a) -> expr -> 'a -> 'a
+
 
   module type Node_factory_sig =
   sig
@@ -332,6 +353,7 @@ module T: sig
   val get_val_from_id: 'hyp Deque.dq -> int -> 'hyp
   val name_of_ix:
       int -> ctx -> hint
+  val hyp_hint : hyp -> hint
   val hyp_name: hyp -> string
 
   val print_cx: ctx -> unit
@@ -429,6 +451,9 @@ module Subst: sig
     val scons:
         expr -> sub ->
             sub
+    val ssnoc:
+        sub -> expr ->
+            sub
     val bumpn:
         int -> sub ->
             sub
@@ -465,6 +490,9 @@ module Subst: sig
     val app_sequent:
         sub -> sequent ->
             sequent
+    val app_hyps:
+        sub -> hyp Deque.dq ->
+            sub * hyp Deque.dq
     val app_hyp:
         sub -> hyp ->
             hyp
@@ -571,15 +599,65 @@ module Visit: sig
     method hyp      : 's scx -> hyp -> 's scx
     method hyps     : 's scx -> hyp Deque.dq -> 's scx
   end
+  class virtual ['s, 'a] foldmap : object
+    method expr     : 's scx -> 'a -> expr -> 'a * expr
+    method pform    : 's scx -> 'a -> pform -> 'a * pform
+    method sel      : 's scx -> 'a -> sel -> 'a * sel
+    method sequent  : 's scx -> 'a -> sequent -> 's scx * 'a * sequent
+    method defn     : 's scx -> 'a -> defn -> 'a * defn
+    method defns    : 's scx -> 'a -> defn list -> 's scx * 'a * defn list
+    method bounds   : 's scx -> 'a -> bound list -> 's scx * 'a * bound list
+    method bound    : 's scx -> 'a -> bound -> 's scx * 'a * bound
+    method exspec   : 's scx -> 'a -> exspec -> 'a * exspec
+    method instance : 's scx -> 'a -> instance -> 'a * instance
+    method hyp      : 's scx -> 'a -> hyp -> 's scx * 'a * hyp
+    method hyps     : 's scx -> 'a -> hyp Deque.dq -> 's scx * 'a * hyp Deque.dq
+  end
+  class virtual ['s, 'a] fold : object
+    method expr     : 's scx -> 'a -> expr -> 'a
+    method pform    : 's scx -> 'a -> pform -> 'a
+    method sel      : 's scx -> 'a -> sel -> 'a
+    method sequent  : 's scx -> 'a -> sequent -> 's scx * 'a
+    method defn     : 's scx -> 'a -> defn -> 'a
+    method defns    : 's scx -> 'a -> defn list -> 's scx * 'a
+    method bounds   : 's scx -> 'a -> bound list -> 's scx * 'a
+    method bound    : 's scx -> 'a -> bound -> 's scx * 'a
+    method exspec   : 's scx -> 'a -> exspec -> 'a
+    method instance : 's scx -> 'a -> instance -> 'a
+    method hyp      : 's scx -> 'a -> hyp -> 's scx * 'a
+    method hyps     : 's scx -> 'a -> hyp Deque.dq -> 's scx * 'a
+  end
   class virtual ['s] map_visible_hyp : ['s] map
   class virtual ['s] iter_visible_hyp : ['s] iter
-
+  class virtual ['s, 'a] foldmap_visible_hyp : ['s, 'a] foldmap
+  class virtual ['s, 'a] fold_visible_hyp : ['s, 'a] fold
   class virtual ['s] map_rename : object
       inherit ['s] map
       method rename : ctx -> hyp -> Util.hint -> hyp * Util.hint
       method renames : ctx -> hyp list -> Util.hints -> hyp list * Util.hints
   end
 end
+
+
+module Collect : sig
+  open T
+  open Util.Coll
+  type ctx = hyp Deque.dq
+  type var_set = Is.t
+  val get_hints :
+      ctx -> var_set -> Hs.t
+  val get_strings :
+      ctx -> var_set -> Ss.t
+  val vs_fold :
+      ctx -> (int -> hyp -> 'a -> 'a) -> var_set -> 'a -> 'a
+  val vs_partition :
+      ctx -> (int -> hyp -> bool) -> var_set -> var_set * var_set
+  val fvs :
+      ?ctx:ctx -> expr -> var_set
+  val opaques :
+      ?ctx:ctx -> expr -> Hs.t
+end
+
 
 module Eq: sig
     open T

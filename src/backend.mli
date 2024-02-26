@@ -71,4 +71,8 @@ module Toolbox: sig
     val normalize: bool -> Proof.T.obligation -> Proof.T.obligation
 end
 
+module Smtlib: sig
+    val repls: (char * string) list
+end
+
 module Interrupted = Interrupted
