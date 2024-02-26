@@ -117,7 +117,7 @@ let run max_threads tl =
     let now = Unix.gettimeofday () in
     (* First check stdin for commands from the toolbox. *)
     (* "stop" command *)
-    if Toolbox.is_stopped () then begin
+    if Toolbox.is_stopped () || Interrupted.is_interrupted () then begin
       List.iter (fun d -> ignore (kill_process now Stopped_kill d)) running;
       raise Exit
     end;

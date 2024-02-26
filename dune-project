@@ -10,6 +10,8 @@
 
 (source (github tlaplus/tlapm))
 
+(cram enable)
+
 (package
  (name tlapm)
  (synopsis "TLA+ Proof Manager")
@@ -40,5 +42,11 @@
   dune-site
   dune-build-info
   sexplib
+  cmdliner
+  camlzip
+  re2
   ppx_inline_test
-  ppx_assert))
+  ppx_assert)
+ (depopts
+  lsp         ; https://github.com/ocaml/ocaml-lsp
+  eio_main))  ; https://github.com/ocaml-multicore/eio, only available on OCaml version >= 5.

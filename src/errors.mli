@@ -51,3 +51,5 @@ val loc: string option ref
 val msg: string option ref
 val warning: bool ref  (* FIXME remove this obsolete variable *)
 val set: 'a Property.wrapped -> string -> unit
+
+val reset : unit -> unit

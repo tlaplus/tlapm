@@ -144,6 +144,7 @@ end
 
 module Parser : sig
   type supp = Emit | Suppress
+  val qed_loc_prop : Loc.locus Property.pfuncs
   val usebody : T.usable Tla_parser.lprs
   val proof : T.proof Tla_parser.lprs
   val suppress : supp Tla_parser.lprs

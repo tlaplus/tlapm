@@ -1,0 +1,35 @@
+@startuml TLAPM-LSP
+
+component LspServer
+LspServer --> Session
+
+note as N_General
+    General layout of the tlapm_lsp_lib.
+end note
+
+component Session as Session {
+    component Handler
+}
+Session --> Prover
+Session --> Docs
+
+component Docs {
+    component Doc
+    component Version
+    component Actual
+    Doc *-- Version
+    Doc *-- Actual
+    Actual --> Parser
+}
+component Parser {
+    component TLAPM
+    component SANY
+}
+component Prover {
+    component Runner
+    component Toolbox
+    component Progress
+    Runner --> Toolbox
+    Runner --> Progress
+}
+@enduml

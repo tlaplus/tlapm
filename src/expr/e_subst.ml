@@ -100,6 +100,7 @@ and app_exprs s es =
 and normalize ?(cx = Deque.empty) op args = match op.core with
   | Lambda (vs, e) ->
       if List.length vs <> List.length args then begin
+        Errors.set op "Arity mismatch";
         Util.eprintf ~at:op
           "@[<v0>Arity mismatch:@,op =@,  %a@,args =@,  @[<v0>%a@]@]@."
           (Fmt.pp_print_expr (cx, Ctx.dot)) op
@@ -442,6 +443,7 @@ class map = object (self : 'self)
   method normalize ?(cx = Deque.empty) op args = match op.core with
     | Lambda (vs, e) ->
       if List.length vs <> List.length args then begin
+        Errors.set op "Arity mismatch";
         Util.eprintf ~at:op
           "@[<v0>Arity mismatch:@,op =@,  %a@,args =@,  @[<v0>%a@]@]@."
           (Fmt.pp_print_expr (cx, Ctx.dot)) op
