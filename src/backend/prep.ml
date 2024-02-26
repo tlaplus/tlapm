@@ -318,6 +318,58 @@ let isabelle_prove ob org_ob tmo tac res_cont =
     Schedule.Immediate (res_cont w (Method.NotTried msg) None)
 
 
+let zipper_unsat_re = Str.regexp "SZS status Theorem";;
+
+let zipper_prove ob org_ob time res_cont =
+  let cleanup = ref (fun () -> ()) in
+  try
+    let (inf, inc, outf, outc) = mk_temps cleanup ".p" in
+    let zcmd =
+      Printf.sprintf "%s >%s" (Params.solve_cmd Params.zipper inf) outf
+    in
+    let in_text =
+      ignore (Format.flush_str_formatter ());
+      Thf.pp_print_obligation Format.str_formatter ob;
+      Format.flush_str_formatter ()
+    in
+    output_string inc in_text;
+    flush inc;
+    let warnings = Errors.get_warnings () in
+    let finished time_used =
+      let zinput =
+        let header = "\n(* BEGIN ZIPPERPOSITION INPUT\n" in
+        let footer = "\nEND ZIPPERPOSITION INPUT *)\n" in
+        Printf.sprintf "%s;; %s\n%s%s" header zcmd in_text footer
+      in
+      let result = Std.input_all outc in
+      !cleanup ();
+      let success =
+        try ignore (Str.search_forward zipper_unsat_re result 0); true
+        with Not_found -> false
+      in
+      if success then
+        res_cont warnings (Method.Proved (zinput ^ result)) time_used
+      else
+        let msg = "" in
+        res_cont warnings (Method.Failed msg) time_used
+    in
+    let done_cont = mk_donec finished cleanup res_cont warnings in
+    let timo = Printf.sprintf "(%g s)" time in
+    let
+      time_cont = mk_timec ob org_ob warnings time (Some "zipper", Some timo)
+    in
+    Schedule.Todo {
+      Schedule.line = zcmd;
+      Schedule.timeout = float_of_int !Params.wait;
+      Schedule.timec = time_cont;
+      Schedule.donec = done_cont;
+    }
+  with Failure msg ->
+    !cleanup ();
+    let w = Errors.get_warnings () in
+    Schedule.Immediate (res_cont w (Method.NotTried msg) None)
+;;
+
 (****************************************************************************)
 
 let print_obligation ob =
@@ -361,13 +413,13 @@ let print_obl_and_msg
 
 
 let pp_print_ob ?comm:(c=";;") chan ob =
-  output_string chan (Printf.sprintf "%s Proof obligation:\n%s" c c);
+  output_string chan (Printf.sprintf "%s Proof obligation:\n" c);
   let ob_buf = Buffer.create 2000 in
   let fmt = Format.formatter_of_buffer ob_buf in
   Proof.Fmt.pp_print_obligation fmt ob;
   Format.pp_print_flush fmt ();
-  let replace inp out = Str.global_replace (Str.regexp_string inp) out in
-  let ob_str = replace "\n" ("\n"^c^" ") (Buffer.contents ob_buf) in
+  let pat = Str.regexp "^" in
+  let ob_str = Str.global_replace pat (c ^ "\t") (Buffer.contents ob_buf) in
   output_string chan ob_str;
   output_string chan "\n"
 
@@ -442,38 +494,48 @@ let gen_smt_solve suffix exec desc fmt_expr meth ob org_ob f res_cont comm =
     Schedule.Immediate (res_cont w (Method.NotTried msg) None)
 
 
+(* FIXME Remove all the oldsmt code *)
+let get_encode_smtlib () =
+  if Params.debugging "oldsmt" then Smt.encode_smtlib
+  else Smtlib.pp_print_obligation
+
+(* FIXME *)
+let get_encode_fof () =
+  if Params.debugging "oldsmt" then Smt.encode_fof
+  else Smtlib.pp_print_obligation ~solver:"fof"
+
 let smt_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt" Params.smt "default SMT solver" Smt.encode_smtlib
+  gen_smt_solve ".smt" Params.smt "default SMT solver" (get_encode_smtlib ())
                 (Method.Smt3 f) ob org_ob f res_cont ";;"
 
 
 let cvc3_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt" Params.cvc4 "CVC4" Smt.encode_smtlib
+  gen_smt_solve ".smt" Params.cvc4 "CVC4" (get_encode_smtlib () ~solver:"CVC4")
                 (Method.Cvc33 f) ob org_ob f res_cont ";;"
 
 
 let yices_solve ob org_ob f res_cont =
-  gen_smt_solve ".ys" Params.yices "Yices" Smt.encode_smtlib
+  gen_smt_solve ".ys" Params.yices "Yices" (get_encode_smtlib ())
                 (Method.Yices3 f) ob org_ob f res_cont ";;"
 
 
 let z3_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt2" Params.z3 "Z3" (Smt.encode_smtlib ~solver:"Z3")
+  gen_smt_solve ".smt2" Params.z3 "Z3" ((get_encode_smtlib ()) ~solver:"Z3")
                 (Method.Z33 f) ob org_ob f res_cont ";;"
 
 
 let verit_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt2" Params.verit "veriT" Smt.encode_smtlib
+  gen_smt_solve ".smt2" Params.verit "veriT" (get_encode_smtlib () ~solver:"veriT")
                 (Method.Verit f) ob org_ob f res_cont ";;"
 
 
 let spass_solve ob org_ob f res_cont =
-  gen_smt_solve ".tptp" Params.spass_tptp "Spass" Smt.encode_fof
+  gen_smt_solve ".tptp" Params.spass_tptp "Spass" (get_encode_fof ())
                 (Method.Spass f) ob org_ob f res_cont "%%"
 
 
 let tptp_solve ob org_ob f res_cont =
-  gen_smt_solve ".tptp" Params.eprover "Tptp" Smt.encode_fof
+  gen_smt_solve ".tptp" Params.eprover "Tptp" (get_encode_fof ())
                 (Method.Tptp f) ob org_ob f res_cont "% "
 
 
@@ -571,6 +633,7 @@ let get_prover_name m =
   | Method.Cvc33 _ -> "CVC33"
   | Method.Yices3 _ -> "Yices3"
   | Method.Verit _ -> "Verit"
+  | Method.Zipper _ -> "Zipperposition"
   | Method.Spass _ -> "Spass"
   | Method.Tptp _ -> "TPTP"
   | Method.ExpandENABLED -> "ExpandENABLED"
@@ -733,6 +796,9 @@ let prove_with ob org_ob meth save =  (* FIXME add success fuction *)
   | Method.Verit f ->
      vprintf "(* ... using Verit *)\n" ;
      verit_solve ob org_ob f res_cont
+  | Method.Zipper f ->
+     vprintf "(* ... using Zipperposition *)\n" ;
+     zipper_prove ob org_ob f res_cont
   | Method.Spass f ->
      vprintf "(* ... using Spass *)\n" ;
      spass_solve ob org_ob f res_cont
@@ -1167,6 +1233,9 @@ let compute_meth def args usept =
   | Some "verit" ->
      let tmo = Option.default Method.default_smt2_timeout !timeout in
      Method.Verit tmo
+  | Some "zipper" ->
+     let tmo = Option.default Method.default_zipper_timeout !timeout in
+     Method.Zipper tmo
   | Some "spass" ->
      let tmo = Option.default Method.default_spass_timeout !timeout in
      Method.Spass tmo

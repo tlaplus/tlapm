@@ -19,7 +19,7 @@
 *)
 
 (** Property identifiers. They may be safely compared using
-    [Pervasives.compare]. *)
+    [Stdlib.compare]. *)
 type pid
 
 (** The abstract type of "properties". All types can be injected and

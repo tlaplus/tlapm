@@ -1,0 +1,3 @@
+---- MODULE nothing_test ----
+
+====

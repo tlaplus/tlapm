@@ -50,6 +50,7 @@ module V13 = struct
   | Cvc33 of floatomega
   | Yices3 of floatomega
   | Verit of floatomega
+  | Zipper of floatomega
   | Spass of floatomega
   | Tptp of floatomega
   | LS4 of floatomega
@@ -126,7 +127,7 @@ module V13 = struct
      - any number of (Digest.t, sti list) pairs
   *)
 
-  let version = 13
+  let version = 14
 
 end
 
@@ -229,6 +230,7 @@ and meth_to_Vx m =
   | M.Cvc33 tmo -> Cvc33 (floatomega_to_Vx tmo)
   | M.Yices3 tmo -> Yices3 (floatomega_to_Vx tmo)
   | M.Verit tmo -> Verit (floatomega_to_Vx tmo)
+  | M.Zipper tmo -> Zipper (floatomega_to_Vx tmo)
   | M.Spass tmo -> Spass (floatomega_to_Vx tmo)
   | M.Tptp tmo -> Tptp (floatomega_to_Vx tmo)
   | M.LS4 tmo -> LS4 (floatomega_to_Vx tmo)
@@ -269,6 +271,7 @@ type prover =
   | Pcvc33
   | Pyices3
   | Pverit
+  | Pzipper
   | Pspass
   | Ptptp
   | Pls4
@@ -299,6 +302,7 @@ let prover_of_method m =
   | Cvc33 _ -> Pcvc33
   | Yices3 _ -> Pyices3
   | Verit _ -> Pverit
+  | Zipper _ -> Pzipper
   | Spass _ -> Pspass
   | Tptp _ -> Ptptp
   | LS4 _ -> Pls4
@@ -328,6 +332,7 @@ let normalize m =
   | Cvc33 (Omega) -> Cvc33 (F infinity)
   | Yices3 (Omega) -> Yices3 (F infinity)
   | Verit (Omega) -> Verit (F infinity)
+  | Zipper (Omega) -> Zipper (F infinity)
   | Spass (Omega) -> Spass (F infinity)
   | Tptp (Omega) -> Tptp (F infinity)
   | LS4 (Omega) -> LS4 (F infinity)
@@ -723,6 +728,10 @@ let print_sti_13 (st, d, pv, zv, iv) =
             printf "Verit (";
             print_floatomega tmo;
             printf ")";
+        | V13.Zipper tmo ->
+            printf "Zipper (";
+            print_floatomega tmo;
+            printf ")";
         | V13.Spass tmo ->
             printf "Spass (";
             print_floatomega tmo;
@@ -927,6 +936,7 @@ and vx_to_meth m =
   | Cvc33 tmo -> Some (M.Cvc33 (vx_to_floatomega tmo))
   | Yices3 tmo -> Some (M.Yices3 (vx_to_floatomega tmo))
   | Verit tmo -> Some (M.Verit (vx_to_floatomega tmo))
+  | Zipper tmo -> Some (M.Zipper (vx_to_floatomega tmo))
   | Spass tmo -> Some (M.Spass (vx_to_floatomega tmo))
   | Tptp tmo -> Some (M.Tptp (vx_to_floatomega tmo))
   | LS4 tmo -> Some (M.LS4 (vx_to_floatomega tmo))

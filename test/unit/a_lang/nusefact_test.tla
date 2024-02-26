@@ -1,0 +1,10 @@
+---- MODULE usedef_test ----
+
+EXTENDS TLAPS
+
+ASSUME F == FALSE
+
+THEOREM TRUE
+    OBVIOUS
+
+====

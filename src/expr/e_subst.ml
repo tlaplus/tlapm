@@ -423,8 +423,8 @@ class map = object (self : 'self)
         Fresh (nm, shp, lc, dom) @@ h
     | Flex v -> Flex v @@ h
     | Defn (df, wd, vis, ex) ->
-        let (s, df) = self#defn s df in
-        assert (s = bump s);
+        let (s', df) = self#defn s df in
+        assert (s' = bump s);
         Defn (df, wd, vis, ex) @@ h
     | Fact (e, vis, tm) ->
         Fact (self#expr s e, vis, tm) @@ h

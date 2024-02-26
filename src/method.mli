@@ -20,6 +20,7 @@ type t =
   | Cvc33 of float
   | Yices3 of float
   | Verit of float
+  | Zipper of float
   | Spass of float
   | Tptp of float
   | ExpandENABLED
@@ -51,6 +52,7 @@ val default_z3_timeout: float
 val default_cvc3_timeout: float
 val default_smt_timeout: float
 val default_smt2_timeout: float
+val default_zipper_timeout : float
 val default_spass_timeout: float
 val default_tptp_timeout: float
 

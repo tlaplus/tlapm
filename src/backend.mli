@@ -68,3 +68,8 @@ module Toolbox: sig
     val print_message_url:
         string -> string -> unit
 end
+
+
+module Smtlib: sig
+    val repls: (char * string) list
+end

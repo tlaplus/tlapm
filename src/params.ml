@@ -221,6 +221,7 @@ let cvc4 =
 
 
 let yices = make_exec "yices" "yices -tc \"$file\"" "yices --version"
+
 let z3 =
   if Sys.os_type = "Cygwin" then
     make_exec "z3"
@@ -238,6 +239,11 @@ let verit =
             "veriT --input=smtlib2 --disable-ackermann \
                    --disable-banner --disable-print-success \"$file\""
             "echo unknown"
+
+let zipper =
+  make_exec "zipperposition"
+            "zipperposition \"$file\""
+            "zipperposition --version"
 
 
 let spass_dfg =
@@ -330,6 +336,9 @@ let mk_meth name timeout =
   | "verit" ->
      let timeout = Option.default Method.default_smt2_timeout timeout in
      Method.Verit timeout
+  | "zipper" ->
+     let timeout = Option.default Method.default_zipper_timeout timeout in
+     Method.Zipper timeout
   | "spass" ->
      let timeout = Option.default Method.default_spass_timeout timeout in
      Method.Spass timeout
@@ -357,6 +366,7 @@ let parse_default_methods s =
     printf "  yices   -- Yices\n";
     printf "  verit   -- VeriT\n";
     printf "  spass   -- SPASS\n";
+    printf "  zipper  -- Zipperposition\n";
     printf "  ls4     -- LS4\n";
     printf "\n" ;
     printf "  fail    -- Dummy method that always fails\n" ;
@@ -485,6 +495,7 @@ let configuration toolbox force =
                               ("VeriT", verit);
                               ("SMT", smt);
                               ("Spass", spass_tptp);
+                              ("Zipperposition", zipper);
                               ("LS4", ls4);
                              ])
     @ [ "flatten_obligations == " ^ (if !ob_flatten then "TRUE" else "FALSE")
