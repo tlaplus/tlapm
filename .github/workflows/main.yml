@@ -1,22 +1,20 @@
 name: Build and Package TLA Proof Manager
 on:
-    push:
-    schedule:
-        - cron: '42 5 5 * *'
+  push:
+    branches:
+      - main
 jobs:
     test:
         name: Build TLAPS installer and test it
         runs-on: ${{ matrix.operating-system }}
         strategy:
-            matrix:
-                operating-system: [
-                    macos-latest,
-                    ubuntu-latest]
-                ocaml-compiler: [
-                    '0',
-                    '1',
-                    '2',
-                    ]
+          matrix:
+            operating-system:
+              - macos-latest,
+              - ubuntu-latest
+            ocaml-compiler:
+              - '0'
+              - '1'
         steps:
             - name: Install deps
               if: matrix.operating-system == 'ubuntu-latest'
@@ -24,10 +22,10 @@ jobs:
                 sudo apt-get update
                 sudo apt-get install --yes time
             - name: Set up Python
-              uses: actions/setup-python@v2
+              uses: actions/setup-python@v4
               with:
-                python-version: '3.10'
-            - uses: actions/checkout@v2
+                python-version: '3.12'
+            - uses: actions/checkout@v3
             - name: Get OCaml version
               run: |
                 INDEX=${{ matrix.ocaml-compiler }}
@@ -39,29 +37,28 @@ jobs:
             - uses: ocaml/setup-ocaml@v2
               with:
                 ocaml-compiler: ${{ env.OCAML_VERSION }}
-            # - uses: actions/cache@v3
-            #   id: cache
-            #   with:
-            #     path: _build_cache
-            #     key: ${{ runner.os }}_build_cache
-            - name: Build installer of TLAPS
+            - name: Build TLAPS installer
               run: |
                 eval $(opam env)
                 opam install ./ --deps-only --yes
                 make
                 make release
-            - name: Run a subset of `tlapm` tests
-              run: |
-                eval $(opam env)
-                make test-inline test-fast-basic
-            - name: Run all `tlapm` tests
+            - name: Run tests
               if: >-
                 matrix.operating-system == 'ubuntu-latest' &&
-                matrix.ocaml-compiler == '2'
+                matrix.ocaml-compiler == '1'
               run: |
                 eval $(opam env)
+                set +e
                 make test
-            - name: Print Test Results
-              if: matrix.operating-system == 'ubuntu-latest'
-              run: |
+                TEST_RESULT=$?
                 cat _build/default/test/tests.log
+                exit $TEST_RESULT
+            - name: Trigger run of tlaplus/examples CI
+              if: matrix.ocaml-compiler == '1'
+              uses: peter-evans/repository-dispatch@v2
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  repository: tlaplus/examples
+                  event-type: tlapm-dispatch
+

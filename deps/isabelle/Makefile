@@ -88,7 +88,7 @@ $(ISABELLE_DIR).no-links: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+
 # 		flags (or sets on all the files). Here we generate a script to restore the flags.
 Isabelle.post-install: $(ISABELLE_DIR).no-links
 	echo "FILES=$(shell find $(ISABELLE_DIR) -type f $(FIND_EXEC))" > $@
-	echo "all:\n\t chmod +x \$$(FILES)" >> $@
+	echo -e "all:\n\t chmod +x \$$(FILES)" >> $@
 
 clean:
 	rm -rf $(ISABELLE_ARCHIVE) $(ISABELLE_DIR) $(ISABELLE_DIR).no-links Isabelle.post-install
