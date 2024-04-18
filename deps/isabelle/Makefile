@@ -1,7 +1,7 @@
 OS_TYPE=$(patsubst CYGWIN%,Cygwin,$(shell uname))
 HOST_CPU=$(shell uname -m)
 
-ISABELLE_VSN=Isabelle2023
+ISABELLE_VSN=Isabelle2024-RC2
 
 ifeq ($(OS_TYPE),Linux)
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_linux.tar.gz
