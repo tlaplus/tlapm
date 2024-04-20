@@ -1791,7 +1791,7 @@ simproc_setup neq ("x = y") = \<open>fn _ =>
         eq $ lhs $ rhs =>
           (case find_first (is_neq eq lhs rhs) (Simplifier.prems_of ss) of
             SOME thm => SOME ((thm RS symEqLeft_to_symEQLeft)
-                              handle _ => thm RS neq_to_EQ_False)
+                              handle THM _ => thm RS neq_to_EQ_False)
           | NONE => NONE)
        | _ => NONE);
   in proc end
