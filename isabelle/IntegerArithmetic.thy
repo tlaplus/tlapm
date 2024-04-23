@@ -1076,7 +1076,8 @@ proof -
   next
     fix n
     assume "n \<in> Nat" "\<forall>m \<in> Nat : m \<le> n \<Rightarrow> P(m)"
-    with step show "\<forall>m \<in> Nat : m \<le> succ[n] \<Rightarrow> P(m)" by auto
+    with step show "\<forall>m \<in> Nat : m \<le> succ[n] \<Rightarrow> P(m)" 
+      by (auto simp del: nat_iff_int_geq0)
   qed
   thus ?thesis by auto
 qed
@@ -1398,7 +1399,7 @@ proof (rule int_leq_lessE[OF ij i j])
   thus ?thesis by auto
 next
   assume "i = j"
-  with i f show ?thesis by simp
+  with i f show ?thesis by auto
 qed
 
 lemma nat_less_mono_imp_leq_mono:
@@ -1412,7 +1413,7 @@ proof (rule int_leq_lessE[OF ij])
   thus ?thesis by auto
 next
   assume "i = j"
-  with i f show ?thesis by simp
+  with i f show ?thesis by (auto simp del: nat_iff_int_geq0)
 qed (auto simp: i[simplified] j[simplified])
 
 lemma int_succ_lessI:
@@ -2070,7 +2071,7 @@ next
   {
     assume eq: "i..j = k..l" and idx: "i \<noteq> k \<or> j \<noteq> l"
     from eq \<open>i \<in> i..j\<close> intvlIsEmpty[OF k l] have "\<not>(k > l)"
-      by blast
+      by auto
     with k l have "k \<in> k..l" "l \<in> k..l" by simp+
     from idx have "FALSE"
     proof
