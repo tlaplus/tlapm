@@ -19,7 +19,7 @@ proof
   thus "\<forall> x \<in> S : P(x)" ..
 next
   assume "\<forall> x \<in> S : P(x)"
-  thus "(\<And>x. (x \<in> S \<Longrightarrow> P(x)))" ..
+  thus "(\<And>x. (x \<in> S \<Longrightarrow> P(x)))" by blast
 qed
 
 lemma atomize_object_bAll [atomize]:
@@ -2108,11 +2108,15 @@ next
                    Append (zenon_seqify (es), e)[succ[Len(zenon_seqify(cs))]])
         = CaseArm (c, e)"
       using h3 zenon_seqifyIsASeq by auto
-    with h5 
+    with h5
+    have "x \\in CaseArm (Append (zenon_seqify (cs), c)[succ[Len(zenon_seqify(cs))]],
+                          Append (zenon_seqify (es), e)[succ[Len(zenon_seqify(cs))]])"
+      by simp
+    with \<open>succ[Len(zenon_seqify(cs))] \<in> DOMAIN Append (zenon_seqify (cs), c)\<close>
     have h6: "x \\in UNION {CaseArm (Append (zenon_seqify (cs), c)[i],
                                      Append (zenon_seqify (es), e)[i])
                             : i \\in DOMAIN Append (zenon_seqify (cs), c)}"
-      by blast  
+      by blast
     show "?g"
       using h4 h6 by auto
   next
@@ -2207,8 +2211,10 @@ proof (rule boolEqual, rule iffI)
       using h7 zenon_seqifyIsASeq by auto
     have h9: "zenon_seqify (cs) [i] = Append (zenon_seqify (cs), c)[i]"
       using zenon_case_append1 zenon_seqifyIsASeq h7 by auto
-    show "~ zenon_seqify(cs)[i]"
-      using h9 h8 h6 by auto
+    from h8 h6 have "~ Append(zenon_seqify(cs), c)[i]"
+      by blast
+    with h9 show "~ zenon_seqify(cs)[i]"
+      by simp
   qed
 next
   assume h6: "?f2"

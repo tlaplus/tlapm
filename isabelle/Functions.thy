@@ -196,7 +196,7 @@ proof -
   proof auto
     fix x
     assume "x \<in> S"
-    with hyp have "\<exists>y : P(x,y)" ..
+    with hyp have "\<exists>y : P(x,y)" by auto
     thus "P(x, CHOOSE y : P(x,y))" by (rule chooseI_ex)
   qed
   thus ?thesis ..

@@ -72,7 +72,13 @@ lemma isASeqE [elim]:
   assumes s: "isASeq(s)"
       and p: "\<lbrakk>isAFcn(s); DOMAIN s = 1 .. Len(s); Len(s) \<in> Nat\<rbrakk> \<Longrightarrow> P"
     shows "P"
-  using assms unfolding isASeq_def by (blast dest: LenI)
+proof -
+  from s obtain n where "isAFcn(s)" "n \<in> Nat" "DOMAIN s = 1 .. n"
+    unfolding isASeq_def by blast
+  with LenI have "isAFcn(s) \<and> DOMAIN s = 1 .. Len(s) \<and> Len(s) \<in> Nat"
+    by simp
+  thus ?thesis by (blast intro: p)
+qed
 \<comment> \<open>The corresponding lemma for @{text "Seq(S)"} will be proved later.\<close>
 
 lemma SeqIsAFcn (*[elim!]*):
@@ -156,7 +162,7 @@ lemma seqElt [elim]:
 lemma seqInSeqRange:
   assumes "isASeq(s)"
   shows "s \<in> Seq(Range(s))"
-  using assms by auto
+  using assms by force
 
 lemma isASeqInSeq: "isASeq(s) = (\<exists>S: s \<in> Seq(S))"
   by (auto elim: seqInSeqRange)
@@ -273,8 +279,12 @@ lemmas appendElt1' [simp] = SeqIsASeq[THEN appendElt1]
 lemma appendElt2 [simp]:
   assumes "isASeq(s)"
   shows "Append(s,e)[succ[Len(s)]] = e"
-  using assms unfolding Append_def by force
-
+proof -
+  from assms have "succ[Len(s)] \<in> DOMAIN Append(s,e)"
+    by (auto simp: Append_def)
+  thus ?thesis by (auto simp: Append_def)
+qed
+  
 lemmas appendElt2' [simp] = SeqIsASeq[THEN appendElt2]
 
 lemma isAppend [intro]:
@@ -309,7 +319,7 @@ proof -
     fix k
     assume k: "k \<in> 1 .. Len(t)"
     with s ls have "s[k] = ?s1[k]" by (intro sym[OF appendElt1]) auto
-    also from k elt t have "\<dots> = ?t1[k]" by auto
+    also from k elt t have "\<dots> = ?t1[k]" by force
     also from t k have "... = t[k]" by (intro appendElt1) auto
     finally show "s[k] = t[k]" .
   qed
@@ -413,10 +423,10 @@ proof -
       qed
       from sn n have 2: "so \<in> [1 .. n \<rightarrow> S]"
         unfolding so_def by force
-      with ih have 3: "P(so)" ..
+      with ih have 3: "P(so)" by blast
       from 2 n have 4: "so \<in> Seq(S)"
         unfolding Seq_def by auto
-      from sn n have "lst \<in> S" by (auto simp: lst_def)
+      from sn n have "lst \<in> S" by (force simp: lst_def)
       with 1 3 4 show "P(sn)" by (auto intro: step)
     qed
   qed
@@ -690,11 +700,26 @@ lemma inProductLen:
   using assms unfolding Product_def by auto
 
 lemma inProductE [elim!]:
-  assumes "p \<in> Product(s)" and "isASeq(s)"
-  and "\<lbrakk>isASeq(p); Len(p) = Len(s); p \<in> [1 .. Len(s) \<rightarrow> UNION Range(s)];
+  assumes p: "p \<in> Product(s)" and s: "isASeq(s)"
+  and P: "\<lbrakk>isASeq(p); Len(p) = Len(s); p \<in> [1 .. Len(s) \<rightarrow> UNION Range(s)];
         \<forall>k \<in> 1 .. Len(s) : p[k] \<in> s[k] \<rbrakk> \<Longrightarrow> P"
   shows "P"
-  using assms unfolding Product_def by auto
+proof -
+  from \<open>p \<in> Product(s)\<close> have
+    1: "p \<in> [1 .. Len(s) \<rightarrow> UNION {s[i] : i \<in> 1 .. Len(s)}]" and
+    2: "\<forall>i \<in> 1 .. Len(s) : p[i] \<in> s[i]"
+    by (auto simp: Product_def)
+  from p s have "isASeq(p)" by (rule inProductIsASeq)
+  moreover
+  from p s have "Len(p) = Len(s)" by (rule inProductLen)
+  moreover
+  from s have "Range(s) = {s[i] : i \<in> 1 .. Len(s)}"
+    by auto
+  with 1 have "p \<in> [1 .. Len(s) \<rightarrow> UNION Range(s)]"
+    by simp
+  ultimately show ?thesis
+    using 2 by (rule P)
+qed
 
 (*** examples ***
 lemma "Product(\<langle>\<rangle>) = { \<langle>\<rangle> }" by auto
@@ -1136,7 +1161,7 @@ lemma transitive_converse [simp]:
 lemma symmetric_iff_converse_eq:
   assumes r: "r \<subseteq> A \<times> B"
   shows "symmetric(r) = (r^-1 = r)"
-  using assms by (auto simp: symmetric_def)
+  using assms by (auto simp: symmetric_def dest: converseI)
 
 
 subsubsection \<open> Identity relation over a set \<close>
