@@ -1,0 +1,103 @@
+name: Build & Test
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+jobs:
+    test:
+        name: Build & Test
+        runs-on: ${{ matrix.os }}
+        strategy:
+          fail-fast: false
+          matrix:
+            os: [ubuntu-latest, macos-latest]
+            ocaml-compiler: ['0', '1']
+        env:
+          EXAMPLES_DIR: "tlaplus-examples"
+          SCRIPT_DIR: "tlaplus-examples/.github/scripts"
+          DEPS_DIR: "tlaplus-examples/deps"
+          DIST_DIR: "tlatools/org.lamport.tlatools/dist"
+        steps:
+            - name: Clone repo
+              uses: actions/checkout@v4
+            - name: Install deps
+              if: matrix.os == 'ubuntu-latest'
+              run: |
+                sudo apt-get update
+                sudo apt-get install --yes time
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.12'
+            - name: Get OCaml version
+              run: |
+                INDEX=${{ matrix.ocaml-compiler }}
+                OCAML_VERSION=\
+                `python .github/workflows/ocaml_versions.py $INDEX`
+                echo "OCAML_VERSION=$OCAML_VERSION" \
+                >> $GITHUB_ENV
+                echo "OCAML_VERSION = $OCAML_VERSION"
+            - uses: ocaml/setup-ocaml@v2
+              with:
+                ocaml-compiler: ${{ env.OCAML_VERSION }}
+            # - uses: actions/cache@v3
+            #   id: cache
+            #   with:
+            #     path: _build_cache
+            #     key: ${{ runner.os }}_build_cache
+            - name: Build TLAPM
+              run: |
+                eval $(opam env)
+                opam install ./ --deps-only --yes
+                make
+                make release
+            - name: Run tests
+              run: |
+                eval $(opam env)
+                set +e
+                make test
+                TEST_RESULT=$?
+                cat _build/default/test/tests.log
+                exit $TEST_RESULT
+            - name: Clone tlaplus/examples
+              uses: actions/checkout@v4
+              with:
+                repository: tlaplus/examples
+                path: ${{ env.EXAMPLES_DIR }}
+            - name: Check proofs in TLA+ examples
+              run: |
+                mkdir -p "$DEPS_DIR"
+                cp ./_build/tlaps*.tar.gz "$DEPS_DIR/tlaps.tar.gz"
+                tar -xzf "$DEPS_DIR/tlaps.tar.gz" -C "$DEPS_DIR"
+                rm "$DEPS_DIR/tlaps.tar.gz"
+                mv $DEPS_DIR/tlaps* "$DEPS_DIR/tlapm-install"
+                SKIP=(
+                  # Missing operator ENABLEDrules; will be fixed after
+                  # updated_enabled_cdot branch is merged.
+                  "specifications/ewd998/AsyncTerminationDetection.tla"
+                  # General proof failure
+                  "specifications/Bakery-Boulangerie/Bakery.tla"
+                  "specifications/Bakery-Boulangerie/Boulanger.tla"
+                  "specifications/bcastByz/bcastByz.tla"
+                  "specifications/byzpaxos/Consensus.tla"
+                  "specifications/byzpaxos/VoteProof.tla"
+                  "specifications/ewd998/AsyncTerminationDetection_proof.tla"
+                  "specifications/ewd998/EWD998_proof.tla"
+                  "specifications/LearnProofs/FindHighest.tla"
+                  "specifications/LoopInvariance/BinarySearch.tla"
+                  "specifications/LoopInvariance/Quicksort.tla"
+                  "specifications/LoopInvariance/SumSequence.tla"
+                  "specifications/MisraReachability/ReachabilityProofs.tla"
+                  "specifications/Paxos/Consensus.tla"
+                  "specifications/PaxosHowToWinATuringAward/Consensus.tla"
+                  "specifications/lamport_mutex/LamportMutex_proofs.tla"
+                  "specifications/TeachingConcurrency/SimpleRegular.tla"
+                  # Long-running
+                  "specifications/byzpaxos/BPConProof.tla" # Takes about 30 minutes
+                )
+                python "$SCRIPT_DIR/check_proofs.py"            \
+                  --tlapm_path "$DEPS_DIR/tlapm-install"        \
+                  --manifest_path "$EXAMPLES_DIR/manifest.json" \
+                  --skip "${SKIP[@]}"
+
