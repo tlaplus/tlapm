@@ -15,6 +15,8 @@ Copyright (C) 2008-2010  INRIA and Microsoft Corporation
 
     Typically installed using `opam` (<https://opam.ocaml.org/>).
 
+  - The Dune build system.
+
   - Zenon.
 
     Built during the TLAPM build procedure.
@@ -25,14 +27,17 @@ Copyright (C) 2008-2010  INRIA and Microsoft Corporation
 
 ## 1. Installation
 
-### 1.1. Debian / Ubuntu
+### 1.1. Linux
 
 #### 1.1.1. Setup the environment
 
-Setup required OS packages:
-
+Setup required OS packages; Debian/Ubuntu:
 ```{bash}
 sudo apt install opam zlib1g-dev gawk time
+```
+Arch Linux:
+```{bash}
+sudo pacman -S ocaml opam dune zlib time
 ```
 
 Initialize the OPAM. Add `--disable-sandboxing` option if running this on the docker or sandboxing is not supported for other reasons.
