@@ -1,7 +1,7 @@
 OS_TYPE=$(patsubst CYGWIN%,Cygwin,$(shell uname))
 HOST_CPU=$(shell uname -m)
 
-ISABELLE_VSN=Isabelle2024-RC2
+ISABELLE_VSN=Isabelle2024-RC3
 
 ifeq ($(OS_TYPE),Linux)
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_linux.tar.gz
@@ -76,7 +76,7 @@ $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 .PRECIOUS: $(ISABELLE_DIR).no-links
 $(ISABELLE_DIR).no-links: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+
 	rm -rf $@
-	cd $< && rm -rf ./contrib/e-3.0.03/src/lib/
+	cd $< && rm -rf ./contrib/e-3.0.03-1/src/lib/
 ifeq ($(OS_TYPE),Darwin)
 	cd $< && cd contrib/jdk-21.0.3/arm64-darwin/ \
 		&& (find . -type link | xargs rm) \
