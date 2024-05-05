@@ -61,7 +61,7 @@ jobs:
         strategy:
             matrix:
                 operating-system: [
-                    macos-latest,
+                    macos-13,
                     ubuntu-latest]
                 ocaml-compiler: [
                     '2',
