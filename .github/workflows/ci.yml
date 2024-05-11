@@ -73,9 +73,6 @@ jobs:
                 rm "$DEPS_DIR/tlaps.tar.gz"
                 mv $DEPS_DIR/tlaps* "$DEPS_DIR/tlapm-install"
                 SKIP=(
-                  # Missing operator ENABLEDrules; will be fixed after
-                  # updated_enabled_cdot branch is merged.
-                  "specifications/ewd998/AsyncTerminationDetection.tla"
                   # General proof failure
                   "specifications/Bakery-Boulangerie/Bakery.tla"
                   "specifications/Bakery-Boulangerie/Boulanger.tla"
@@ -88,12 +85,9 @@ jobs:
                   "specifications/LoopInvariance/BinarySearch.tla"
                   "specifications/LoopInvariance/Quicksort.tla"
                   "specifications/LoopInvariance/SumSequence.tla"
-                  "specifications/MisraReachability/ReachabilityProofs.tla"
-                  "specifications/Paxos/Consensus.tla"
-                  "specifications/PaxosHowToWinATuringAward/Consensus.tla"
                   "specifications/lamport_mutex/LamportMutex_proofs.tla"
                   "specifications/TeachingConcurrency/SimpleRegular.tla"
-                  # Long-running
+                  # Failing and long-running
                   "specifications/byzpaxos/BPConProof.tla" # Takes about 30 minutes
                 )
                 python "$SCRIPT_DIR/check_proofs.py"            \
