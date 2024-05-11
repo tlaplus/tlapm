@@ -378,6 +378,13 @@ lemma bspec:
   shows "P(x)"
 using assms unfolding bAll_def by blast
 
+text \<open>The following rule intentionally has single assumption (non-conditional),
+because otherwise it interferes with how \<open>Nat\<close> is reduced to \<open>Int\<close>.\<close>
+lemma bspec' [dest]:
+  assumes "\<forall>x\<in>A : P(x)"
+  shows "\<forall>x : (x\<in>A) \<Rightarrow> P(x)"
+  using assms unfolding bAll_def by blast
+
 setup \<open>
   map_theory_claset (fn ctxt =>
     ctxt addbefore ("bspec", fn ctxt' => dresolve_tac ctxt' @{thms bspec} THEN' assume_tac ctxt'))
