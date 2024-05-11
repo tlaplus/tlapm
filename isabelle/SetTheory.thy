@@ -385,6 +385,9 @@ lemma bspec' [dest]:
   shows "\<forall>x : (x\<in>A) \<Rightarrow> P(x)"
   using assms unfolding bAll_def by blast
 
+lemma bAll_unb [simp] : "\<And>T P. (\<forall>e : e \<in> T \<Rightarrow> P(e)) \<Longrightarrow> (\<forall>e \<in> T : P(e))"
+  using bAll_def by simp
+
 setup \<open>
   map_theory_claset (fn ctxt =>
     ctxt addbefore ("bspec", fn ctxt' => dresolve_tac ctxt' @{thms bspec} THEN' assume_tac ctxt'))
