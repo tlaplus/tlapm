@@ -34,4 +34,18 @@ lemma
   by auto
 
 
+
+text \<open>Only started to work after \<open>bAll_unb [simp]\<close> was added.\<close>
+lemma
+  assumes "RR (0)"
+  assumes "\<And> i :: c. i \<in> Nat \<Longrightarrow> RR(i) \<Longrightarrow> RR(F(i))"
+  assumes "\<And> PP :: c => c.
+              PP (0) \<Longrightarrow>
+              (\<forall>n\<in>Nat : PP(n) \<Rightarrow> PP(F(n))) \<Longrightarrow>
+              (\<forall>n\<in>Nat : PP(n))"
+  shows "\<forall> ii \<in> Nat : RR (ii)"
+  using assms
+  by auto
+
+
 end
