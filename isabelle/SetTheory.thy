@@ -48,6 +48,7 @@ text \<open>
   axioms of set theory, in order to make them more readable.
 \<close>
 
+
 text \<open> Concrete syntax: set comprehension \<close>
 
 (***
@@ -372,33 +373,25 @@ lemma bAllI [intro!]:
   shows "\<forall>x\<in>A : P(x)"
 using assms unfolding bAll_def by blast
 
-lemma bspec [dest?]:
+lemma bspec:
   assumes "\<forall>x\<in>A : P(x)" and "x \<in> A"
   shows "P(x)"
 using assms unfolding bAll_def by blast
 
-(*** currently inactive -- causes several obscure warnings about renamed
-     variables and seems to slow down large examples such as AtomicBakery ***)
-ML \<open>
-  structure Simpdata =
-  struct
+text \<open>The following rule intentionally has single assumption (non-conditional),
+because otherwise it interferes with how \<open>Nat\<close> is reduced to \<open>Int\<close>.\<close>
+lemma bspec' [dest]:
+  assumes "\<forall>x\<in>A : P(x)"
+  shows "\<forall>x : (x\<in>A) \<Rightarrow> P(x)"
+  using assms unfolding bAll_def by blast
 
-    open Simpdata;
+lemma bAll_unb [simp] : "\<And>T P. (\<forall>e : e \<in> T \<Rightarrow> P(e)) \<Longrightarrow> (\<forall>e \<in> T : P(e))"
+  using bAll_def by simp
 
-    val mksimps_pairs = [(@{const_name bAll}, (@{thms bspec}, false))] @ mksimps_pairs;
-
-  end;
-
-  open Simpdata;
+setup \<open>
+  map_theory_claset (fn ctxt =>
+    ctxt addbefore ("bspec", fn ctxt' => dresolve_tac ctxt' @{thms bspec} THEN' assume_tac ctxt'))
 \<close>
-
-declaration \<open>
-  fn _ => Simplifier.map_ss (fn ss => ss
-    |> Simplifier.set_mksimps (fn ctxt =>
-        Simpdata.mksimps Simpdata.mksimps_pairs ctxt))
-\<close>
-
-(***)
 
 lemma bAllE [elim]:
   assumes "\<forall>x\<in>A : P(x)" and "x \<notin> A \<Longrightarrow> Q" and "P(x) \<Longrightarrow> Q"
@@ -490,6 +483,28 @@ unfolding bChoose_def proof (rule choose_det)
   fix x
   from assms show "x \<in> A \<and> P(x) \<Leftrightarrow> x \<in> B \<and> Q(x)" by blast
 qed
+
+(*** currently inactive -- causes several obscure warnings about renamed
+     variables and seems to slow down large examples such as AtomicBakery ***
+ML \<open>
+  structure Simpdata =
+  struct
+
+    open Simpdata;
+
+    val mksimps_pairs = [(@{const_name bAll}, (@{thms bspec}, false))] @ mksimps_pairs;
+
+  end;
+
+  open Simpdata;
+\<close>
+
+declaration \<open>
+  fn _ => Simplifier.map_ss (fn ss => ss
+    |> Simplifier.set_mksimps (fn ctxt =>
+        Simpdata.mksimps Simpdata.mksimps_pairs ctxt))
+\<close>
+***)
 
 (***
   TYPE CHECKING CURRENTLY NOT INSTALLED
@@ -689,16 +704,36 @@ lemma setEqualD1: "A = B \<Longrightarrow> A \<subseteq> B"
 lemma setEqualD2: "A = B \<Longrightarrow> B \<subseteq> A"
   by blast
 
-text \<open>
-  We declare the elimination rule for set equations as an unsafe
-  rule to use with the classical reasoner, so it will be tried if
-  the more obvious uses of equality fail.
-\<close>
-lemma setEqualE [elim]:
+lemma setEqualE:
   assumes "A = B"
   and "\<lbrakk> c \<in> A; c \<in> B \<rbrakk> \<Longrightarrow> P" and "\<lbrakk> c \<notin> A; c \<notin> B \<rbrakk> \<Longrightarrow> P"
   shows "P"
 using assms by (blast dest: setEqualD1 setEqualD2)
+
+text \<open>
+  Again, we add instances of this theorem for obvious set constructors.
+\<close>
+lemmas
+  setEqualE [where A = "{}", elim]
+  setEqualE [where B = "{}", elim]
+  setEqualE [where A = "addElt(a,C)" for a C, elim]
+  setEqualE [where B = "addElt(a,C)" for a C, elim]
+  setEqualE [where A = "SUBSET C" for C, elim]
+  setEqualE [where B = "SUBSET C" for C, elim]
+  setEqualE [where A = "UNION C" for C, elim]
+  setEqualE [where B = "UNION C" for C, elim]
+  setEqualE [where A = "INTER C" for C, elim]
+  setEqualE [where B = "INTER C" for C, elim]
+  setEqualE [where A = "C \<union> D" for C D, elim]
+  setEqualE [where B = "C \<union> D" for C D, elim]
+  setEqualE [where A = "C \<inter> D" for C D, elim]
+  setEqualE [where B = "C \<inter> D" for C D, elim]
+  setEqualE [where A = "C \<setminus> D" for C D, elim]
+  setEqualE [where B = "C \<setminus> D" for C D, elim]
+  setEqualE [where A = "subsetOf(S,P)" for S P, elim]
+  setEqualE [where B = "subsetOf(S,P)" for S P, elim]
+  setEqualE [where A = "setOfAll(S,e)" for S e, elim]
+  setEqualE [where B = "setOfAll(S,e)" for S e, elim]
 
 lemma setEqual_iff: "(A = B) = (\<forall>x : x \<in> A \<Leftrightarrow> x \<in> B)"
 by (blast intro: setEqualI)
@@ -1102,7 +1137,8 @@ lemma inAsym:
   shows "P"
 proof (rule contradiction)
   assume "\<not>P"
-  with foundation[where A="{a,b}"] hyps show "FALSE" by blast
+  with foundation[where A="{a,b}"] hyps 
+  show "FALSE" by blast
 qed
 
 lemma inIrrefl:
@@ -1422,7 +1458,7 @@ lemma isEmptySimps [simp]:
   "({} = addElt(a,S)) = FALSE"
   "(SUBSET S = {}) = FALSE"
   "({} = SUBSET S) = FALSE"
-by (blast+)
+by blast+
 
 
 subsection \<open> Generalized union: inclusions and equalities \<close>

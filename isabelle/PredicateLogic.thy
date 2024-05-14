@@ -1428,15 +1428,18 @@ ML \<open>
 declaration \<open>
   fn _ => Induct.map_simpset (fn ss => ss
     addsimprocs
-      [Simplifier.make_simproc @{context} "swap_cases_false"
-        {lhss = [@{term "cases_false \<Longrightarrow> PROP P \<Longrightarrow> PROP Q"}],
+      [Simplifier.make_simproc @{context}
+        {name = "swap_cases_false",
+         lhss = [@{term "cases_false \<Longrightarrow> PROP P \<Longrightarrow> PROP Q"}],
          proc = fn _ => fn _ => fn ct =>
           (case Thm.term_of ct of
             _ $ (P as _ $ @{const cases_false}) $ (_ $ Q $ _) =>
               if P <> Q then SOME Drule.swap_prems_eq else NONE
-          | _ => NONE)},
-       Simplifier.make_simproc @{context} "cases_equal_conj_curry"
-        {lhss = [@{term "cases_conj(P, Q) \<Longrightarrow> PROP R"}],
+          | _ => NONE),
+         identifier = []},
+       Simplifier.make_simproc @{context}
+        {name = "cases_equal_conj_curry",
+         lhss = [@{term "cases_conj(P, Q) \<Longrightarrow> PROP R"}],
          proc = fn _ => fn _ => fn ct =>
           (case Thm.term_of ct of
             _ $ (_ $ P) $ _ =>
@@ -1448,7 +1451,8 @@ declaration \<open>
                   | is_conj @{const cases_false} = true
                   | is_conj _ = false
               in if is_conj P then SOME @{thm cases_conj_curry} else NONE end
-            | _ => NONE)}]
+            | _ => NONE),
+         identifier = []}]
     |> Simplifier.set_mksimps (fn ctxt =>
         Simpdata.mksimps Simpdata.mksimps_pairs ctxt #>
         map (rewrite_rule ctxt (map Thm.symmetric @{thms cases_rulify_fallback}))))
@@ -1787,7 +1791,7 @@ simproc_setup neq ("x = y") = \<open>fn _ =>
         eq $ lhs $ rhs =>
           (case find_first (is_neq eq lhs rhs) (Simplifier.prems_of ss) of
             SOME thm => SOME ((thm RS symEqLeft_to_symEQLeft)
-                              handle _ => thm RS neq_to_EQ_False)
+                              handle THM _ => thm RS neq_to_EQ_False)
           | NONE => NONE)
        | _ => NONE);
   in proc end

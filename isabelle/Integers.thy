@@ -118,7 +118,7 @@ proof -
       next
         fix n
         assume n: "n \<in> S"
-        with Sc have "Sc[n] \<in> S" ..
+        with Sc have "Sc[n] \<in> S" by (rule bspec)
         moreover
         from n sub have "n \<in> N" by auto
         hence "Sc[n] = ?sc(n)" by (simp add: Sc_def)
@@ -149,15 +149,14 @@ proof -
     show "FALSE"
     proof (cases "k \<in> N")
       case True
-      with e \<open>k \<noteq> Z\<close> have "e \<notin> k \<and> cp(k) = k \<union> {e}" by (simp add: cp_def)
-      with \<open>cp(k) = k\<close> show ?thesis by blast
+      with e \<open>k \<noteq> Z\<close> \<open>cp(k) = k\<close> show ?thesis 
+        by (auto simp: cp_def)
     next
       case False
       with \<open>k \<in> I\<close> obtain n where "n \<in> N" "k = cp(n)" by (auto simp: I_def)
       with \<open>k \<noteq> Z\<close> have "n \<noteq> Z" by (auto simp: cp_def)
-      with e \<open>n \<in> N\<close> \<open>k = cp(n)\<close> \<open>k \<noteq> Z\<close>
-      have "k = n \<union> {e}" "cp(k) = k \<setminus> {e}" by (auto simp: cp_def)
-      with \<open>cp(k) = k\<close> show ?thesis by auto
+      with e \<open>n \<in> N\<close> \<open>k = cp(n)\<close> \<open>k \<noteq> Z\<close> \<open>cp(k) = k\<close> show ?thesis
+        by (auto simp: cp_def)
     qed
   qed
 
@@ -178,7 +177,7 @@ proof -
       case False
       with \<open>k \<in> I\<close> obtain n where "n \<in> N" "k = cp(n)"
         by (auto simp: I_def)
-      with \<open>cp(k) = Z\<close> cpN have "n = Z" by simp
+      with \<open>cp(k) = Z\<close> cpN have "n = Z" by auto
       with \<open>k = cp(n)\<close> show ?thesis by (simp add: cp_def)
     qed
   }
@@ -210,8 +209,7 @@ proof -
         assume "l \<notin> N"
         with \<open>l \<in> I\<close> obtain n where "n \<in> N" "l = cp(n)"
           by (auto simp: I_def)
-        with cpk cpN eq have "n = k \<union> {e}" by simp
-        with \<open>n \<in> N\<close> e show "FALSE" by blast
+        with cpk eq cpN \<open>n \<in> N\<close> e show "FALSE" by force
       qed
       have "l \<noteq> Z"
       proof
@@ -219,28 +217,51 @@ proof -
         with eq cpZ dom kl cpisZ show "FALSE" by auto
       qed
       with \<open>l \<in> N\<close> e have "e \<notin> l" "cp(l) = l \<union> {e}" by (auto simp: cp_def)
-      with cpk eq have "k \<subseteq> l" "l \<subseteq> k" by auto
+      with cpk eq have "k \<subseteq> l" "l \<subseteq> k" by force+
       with kl show ?thesis by (auto dest: setEqual)
     next
       case False
       with dom obtain nk where nk: "nk \<in> N" "k = cp(nk)"
         by (auto simp: I_def)
-      with cpN eq have cpl: "cp(l) \<in> N" by simp
+      with cpN eq have cpl: "cp(l) \<in> N" by auto
       have "l \<notin> N"
       proof
         assume "l \<in> N"
-        with cpl cpNN have "l = Z" by simp
-        with eq dom cpZ cpisZ False 1 show "FALSE" by simp
+        with cpl cpNN have "l = Z" by auto
+        with eq dom cpZ cpisZ False 1 show "FALSE" by auto
       qed
       with dom obtain nl where "nl \<in> N" "l = cp(nl)"
         by (auto simp: I_def)
-      with nk eq kl cpN show ?thesis by simp
+      with nk eq have "cp(cp(nk)) = cp(cp(nl))" by simp
+      moreover
+      from \<open>nk \<in> N\<close> cpN have "cp(cp(nk)) = nk" by auto
+      moreover
+      from \<open>nl \<in> N\<close> cpN have "cp(cp(nl)) = nl" by auto
+      ultimately have "k = l"
+        using \<open>k = cp(nk)\<close> \<open>l = cp(nl)\<close> by simp
+      with kl show ?thesis ..
     qed
   }
   hence 10: "\<forall>k,l \<in> I : ?cp[k] = ?cp[l] \<Rightarrow> k = l" by auto
 
-  from cpI cpN have 11: "\<forall>k \<in> I : ?cp[?cp[k]] = k" 
-    by (auto simp: I_def)
+  have 11: "\<forall>k \<in> I : ?cp[?cp[k]] = k"
+  proof
+    fix k
+    assume "k \<in> I"
+    with cpI have "?cp[?cp[k]] = cp(cp(k))"
+      by force
+    moreover have "cp(cp(k)) = k"
+    proof (cases "k \<in> N")
+      case True
+      with cpN show ?thesis by auto
+    next
+      case False
+      with \<open>k \<in> I\<close> obtain nk where "nk \<in> N" "k = cp(nk)"
+        by (auto simp: I_def)
+      with cpN show ?thesis by auto
+    qed
+    ultimately show "?cp[?cp[k]] = k" by simp
+  qed
 
   from 1 2 3 4 5 6 7 8 9 10 11 have "ExtendedPeano(I,N,Z,Sc,?cp)"
     unfolding ExtendedPeano_def by blast
@@ -261,10 +282,10 @@ definition Nat :: "c"   where
   "Nat \<equiv> DOMAIN Succ"
 
 definition zero :: "c" ("0")  where
-  "0 \<equiv> CHOOSE Z : \<exists>cp,I : ExtendedPeano(I,Nat,Z,Succ,cp)"
+  "zero \<equiv> CHOOSE Z : \<exists>cp,I : ExtendedPeano(I,Nat,Z,Succ,cp)"
 
 definition intCplt :: "c" where
-  "intCplt \<equiv> CHOOSE cp : \<exists>I : ExtendedPeano(I,Nat,0,Succ,cp)"
+  "intCplt \<equiv> CHOOSE cp : \<exists>I : ExtendedPeano(I,Nat,zero,Succ,cp)"
 
 definition Int :: "c"   where
   "Int \<equiv> DOMAIN intCplt"
@@ -277,6 +298,10 @@ lemmas
   setEqualI [where B = "Nat", intro!]
   setEqualI [where A = "Int", intro!]
   setEqualI [where B = "Int", intro!]
+  setEqualE [where A = "Nat", elim]
+  setEqualE [where B = "Nat", elim]
+  setEqualE [where A = "Int", elim]
+  setEqualE [where B = "Int", elim]
 
 lemma intExtendedPeano: "ExtendedPeano(Int,Nat,0,Succ,intCplt)"
 proof -
@@ -369,8 +394,11 @@ proof -
   from z have "0 \<in> ?P" by simp
   moreover
   from sc have "\<forall>n \<in> ?P : Succ[n] \<in> ?P" by simp
-  ultimately have "Nat \<subseteq> ?P"
+  moreover
+  have "\<forall>S \<in> SUBSET Nat : 0 \<in> S \<and> (\<forall>n \<in> S : Succ[n] \<in> S) \<Rightarrow> Nat \<subseteq> S"
     using intExtendedPeano by (simp add: ExtendedPeano_def)
+  ultimately have "Nat \<subseteq> ?P"
+    by blast
   thus ?thesis by auto
 qed
 
@@ -411,8 +439,14 @@ lemma uminusInjIff [simp]:
   by auto
 
 lemma uminusUminus [simp]:
-  "a \<in> Int \<Longrightarrow> --a = a"
-  using intExtendedPeano by (simp add: ExtendedPeano_def uminus_def)
+  assumes "a \<in> Int"
+  shows "--a = a"
+proof -
+  from intExtendedPeano have "\<forall>k \<in> Int : intCplt[intCplt[k]] = k"
+    by (simp add: ExtendedPeano_def)
+  with assms show ?thesis
+    by (auto simp add: uminus_def)
+qed
 
 lemma uminusSwap:
   assumes "a \<in> Int" and "b \<in> Int"
@@ -727,7 +761,7 @@ next
   fix n
   assume n: "n \<in> Nat" "a = -Succ[n]"
   hence "a = succ[-succ[Succ[n]]]" by simp
-  with n show ?thesis by blast
+  with n show ?thesis by auto
 qed
 
 definition pred where
@@ -856,7 +890,7 @@ next
     fix n
     assume "n \<in> Nat" thus "P(succ[m],n)"
     proof (cases)
-      case 0 with b1 m show ?thesis by auto
+      case 0 with b1 m show ?thesis by force
     next
       case succ with step ih m show ?thesis by auto
     qed
@@ -975,6 +1009,8 @@ where "upto(n) \<equiv> lfp(Nat, \<lambda>S. {n} \<union> { k \<in> Nat : succ[k
 lemmas
   setEqualI [where A = "upto(n)" for n, intro!]
   setEqualI [where B = "upto(n)" for n, intro!]
+  setEqualE [where A = "upto(n)" for n, elim]
+  setEqualE [where B = "upto(n)" for n, elim]
 
 lemma uptoNat: "upto(n) \<subseteq> Nat"
   unfolding upto_def by (rule lfpSubsetDomain)
@@ -1082,7 +1118,7 @@ lemma uptoLimit:
 proof -
   from m uptoNat have mNat: "m \<in> Nat" by blast
   from n have "\<forall>m\<in>Nat: m \<in> upto(n) \<and> succ[m] \<notin> upto(n) \<Rightarrow> m=n" (is "?P(n)")
-    by (induct, auto simp: uptoZero uptoSucc)
+    by (induct, (force simp add: uptoZero uptoSucc)+)
   with mNat m suc show ?thesis by blast
 qed
 
@@ -1188,12 +1224,12 @@ proof -
     assume kNat: "k \<in> Nat" and ih: "k \<in> upto(m) \<Rightarrow> f[k] = g[k]"
        and sk: "succ[k] \<in> upto(m)"
     from sk kNat g have "g[succ[k]] = step(k, g[k])"
-      unfolding primrec_nat_upto_def by simp
+      unfolding primrec_nat_upto_def by auto
     moreover
     from sk m n have "succ[k] \<in> upto(n)"
       by (rule uptoTrans)
     with kNat f have "f[succ[k]] = step(k, f[k])"
-      unfolding primrec_nat_upto_def by simp
+      unfolding primrec_nat_upto_def by auto
     moreover
     from sk kNat mNat have "k \<in> upto(m)" 
       by (rule uptoPred)
@@ -1256,7 +1292,7 @@ proof -
     unfolding g_def by (simp+)
   moreover
   from F have "g[0] = base" 
-    by (simp add: primrec_nat_upto_def g_def)
+    by (auto simp: primrec_nat_upto_def g_def)
   moreover
   have "\<forall>n \<in> Nat : g[succ[n]] = step(n, g[n])"
   proof
@@ -1363,14 +1399,14 @@ proof -
     from sk kNat g 
     have "g[succ[k]] = pstep(k, g[k], g[-k])
         \<and> g[-succ[k]] = nstep(k, g[k], g[-k])"
-      unfolding primrec_int_upto_def by simp
+      unfolding primrec_int_upto_def by auto
     moreover
     from sk m n have "succ[k] \<in> upto(n)"
       by (rule uptoTrans)
     with kNat f
     have "f[succ[k]] = pstep(k, f[k], f[-k])
         \<and> f[-succ[k]] = nstep(k, f[k], f[-k])"
-      unfolding primrec_int_upto_def by simp
+      unfolding primrec_int_upto_def by auto
     moreover
     from sk kNat mNat have "k \<in> upto(m)" 
       by (rule uptoPred)
@@ -1448,7 +1484,7 @@ proof -
     unfolding g_def by (simp+)
   moreover
   from F have "g[0] = base" 
-    by (simp add: primrec_int_upto_def g_def)
+    by (auto simp: primrec_int_upto_def g_def)
   moreover
   have "\<forall>n \<in> Nat : g[succ[n]] = pstep(n, g[n], g[-n])
                  \<and> g[-succ[n]] = nstep(n, g[n], g[-n])"
@@ -1490,7 +1526,7 @@ proof -
     and 5: "\<forall>n\<in>Nat : f[-succ[n]] = nstep(n, f[n], f[-n])"
     by blast
   from 3 4 5 base pstep nstep have "\<forall>n\<in>Int : f[n] \<in> S"
-    by (intro intInduct) auto
+    by (intro intInduct) force+
   with 1 2 3 4 5 show ?thesis
     by blast
 qed
