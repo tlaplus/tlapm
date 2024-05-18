@@ -7,7 +7,21 @@ session "TLA+" = "Pure" +
     Constant (global)
     Zenon (global)
 (*    NewSMT (global)  *)
-    Tests (* Test cases only. *)
+
+  document_files
+    "root.tex"
+
+session "TLA+Tests" in tests = "TLA+" +
+  options [document=false]
+  theories
+    Tests
+
+session "TLA+Examples" in examples = "TLA+" +
+  options [document=pdf, document_output = "output", document_variants="document:outline=/proof"]
+
+  theories
+    Allocator
+    AtomicBakeryG
 
   document_files
     "root.tex"
