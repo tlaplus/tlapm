@@ -1,7 +1,7 @@
 OS_TYPE=$(patsubst CYGWIN%,Cygwin,$(shell uname))
 HOST_CPU=$(shell uname -m)
 
-ISABELLE_VSN=Isabelle2024-RC3
+ISABELLE_VSN=Isabelle2024
 
 ifeq ($(OS_TYPE),Linux)
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_linux.tar.gz
@@ -55,7 +55,8 @@ endif
 .PRECIOUS: $(ISABELLE_DIR)/src/TLA+
 $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 	cd $(ISABELLE_DIR) \
-		&& rm -rf contrib/ProofGeneral* doc heaps/*/HOL
+		&& rm -rf contrib/ProofGeneral* doc heaps/*/HOL contrib/vscodium* contrib/vscode* \
+		&& sed -i -e 's@^\(contrib/vscode_extension\|contrib/vscodium\|src/Tools/Demo\)@#rm at TLA# \1@' etc/components
 	cd $(ISABELLE_DIR) \
 		&& HEAPS_PATH=$(shell pwd)/$(ISABELLE_DIR)/heaps \
 		&& if [ "$(HOST_CPU)" = "x86_64" ] ; then sed -i -e 's/^ML_PLATFORM=.*$$/ML_PLATFORM="$${ISABELLE_PLATFORM64:-$$ISABELLE_PLATFORM}"/' etc/settings ; fi \
@@ -84,7 +85,6 @@ ifeq ($(OS_TYPE),Darwin)
 	cd $< && cd contrib/jdk-21.0.3/x86_64-darwin/ \
 		&& (find . -type link | xargs rm) \
 		&& mv zulu-21.jdk/Contents/Home/* ./
-	cd $< && rm -rf contrib/vscodium-1.70.1
 endif
 	touch $@
 
