@@ -44,7 +44,7 @@ test-fast-basic:
 	make -C test fast/basic
 
 fmt:
-	# Onlt the LSP part is not formatted automatically.
+	# Only the LSP part is not formatted automatically.
 	cd lsp && dune fmt
 
 install:
