@@ -1,5 +1,5 @@
 type t = {
-  text : string; (* Contents if the file at the specific version. *)
+  text : string; (* Contents of the file at the specific version. *)
   version : int;
 }
 
