@@ -48,4 +48,24 @@ lemma
   by auto
 
 
+section \<open>Nat vs Functions\<close>
+
+lemma \<comment> \<open>Works with abstract types, by auto.\<close>
+  fixes p :: "c" and f and i
+  assumes "f \<in> [p \<rightarrow> a]" and "i \<in> p"
+  shows "f[i] \<in> a"
+  using assms by auto
+
+text \<open>
+The following only started to work after changing the \<open>Nat\<close> to \<open>Int\<close>
+rewrite from \<open>n \<in> Nat = (n \<in> Int \<and> 0 \<le> n)\<close> to \<open>Nat = {x \<in> Int : 0 \<le> x}\<close>
+see \<open>nat_iff_int_geq0\<close>.
+\<close>
+lemma
+  fixes p :: "c" and f and i
+  assumes "f \<in> [p \<rightarrow> Nat]" and "i \<in> p"
+  shows "f[i] \<in> Nat"
+  using assms by auto
+
+
 end

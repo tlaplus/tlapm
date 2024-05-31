@@ -434,7 +434,7 @@ proof auto
                pc[k] = ''p3'' \<and> num[i] \<le> max[k] \<or>
                (pc[k] = ''p4'' \<or> pc[k] = ''p5'' \<or> pc[k] = ''p6'') \<and>
                GG(i, k, num) \<and> (pc[k] = ''p5'' \<or> pc[k] = ''p6'' \<Rightarrow> i \<in> unread[k])"
-    from iinv i have iinvi: "IInv(i, unread, max, flag, pc, num, nxt)" ..
+    from iinv i have iinvi: "IInv(i, unread, max, flag, pc, num, nxt)" by auto
 
     \<comment> \<open> iinv3 and iinv5: particular parts of the invariant, 
          taken to the meta-level for then being instantiated with the proper variables, 
@@ -447,7 +447,7 @@ proof auto
       fix i j
       assume pci: "pc[i] \<in> {''p5'', ''p6''}" 
         and i: "i \<in> ProcSet" and j:"j \<in> ProcSet \<setminus> unread[i] \<setminus> {i}"
-      from iinv i have iinvi: "IInv(i, unread, max, flag, pc, num, nxt)" ..
+      from iinv i have iinvi: "IInv(i, unread, max, flag, pc, num, nxt)" by auto
       hence "pc[i] \<in> {''p5'', ''p6''} \<Rightarrow>
         (\<forall>j \<in> ProcSet \<setminus> unread[i] \<setminus> {i} :
         After(j, i, unread, max, flag, pc, num, nxt))"
@@ -465,7 +465,7 @@ proof auto
       fix i j
       assume pci: "pc[i] \<in> {''p7'', ''p8''}" 
         and i: "i \<in> ProcSet" and j:"j \<in> ProcSet \\ {i}"
-      from iinv i have iinvi: "IInv(i, unread, max, flag, pc, num, nxt)" ..
+      from iinv i have iinvi: "IInv(i, unread, max, flag, pc, num, nxt)" by auto
       hence "pc[i] \<in> {''p7'', ''p8''} \<Rightarrow>
         (\<forall>j \<in> ProcSet \<setminus> {i} :
         After(j, i, unread, max, flag, pc, num, nxt))"
@@ -568,7 +568,7 @@ proof auto
             fix j
             assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \<setminus> unread'[i]) \<setminus> {i}"
             from unch pc' i j iinvi have after: "After(j,i,unread,max,flag,pc,num,nxt)"
-              unfolding IInv_def by auto
+              unfolding IInv_def using After_def by auto
             show "After(j,i,unread',max',flag',pc',num',nxt')"
             proof (cases "self = j")
               case True
@@ -602,7 +602,7 @@ proof auto
             fix j
             assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \<setminus> {i}"
             from unch pc' i j iinvi have after: "After(j,i,unread,max,flag,pc,num,nxt)"
-              unfolding IInv_def by auto
+              unfolding IInv_def using After_def by auto
             show "After(j,i,unread',max',flag',pc',num',nxt')"
             proof (cases "self = j")
               case True
