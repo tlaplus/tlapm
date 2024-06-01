@@ -67,7 +67,7 @@ val prover_terminated : t -> tk -> int -> int -> t * Doc_proof_res.t option
 (** Cleanup the incomplete proof states on termination of the prover. *)
 
 val get_proof_res : t -> tk -> int -> t * Doc_proof_res.t option
-(** Get the latest actual proof results. Cleanup them, if needed. *)
+(** Get the actual proof results for the specific version. Cleanup them, if needed. *)
 
 val get_proof_res_latest : t -> tk -> t * int option * Doc_proof_res.t option
 (** Get the latest actual proof results. Cleanup them, if needed. *)
