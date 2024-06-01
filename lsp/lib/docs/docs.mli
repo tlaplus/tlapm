@@ -61,7 +61,7 @@ val prover_add_obl :
 
 val prover_add_notif :
   t -> tk -> int -> int -> Toolbox.tlapm_notif -> t * Doc_proof_res.t option
-(** Record obligation for the document, clear all the intersecting ones. *)
+(** Record notification for the document, clear all the intersecting ones. *)
 
 val prover_terminated : t -> tk -> int -> int -> t * Doc_proof_res.t option
 (** Cleanup the incomplete proof states on termination of the prover. *)
