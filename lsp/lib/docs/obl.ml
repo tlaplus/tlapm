@@ -65,7 +65,8 @@ let loc obl =
   match obl.parsed with
   | None ->
       (match obl.latest_prover with
-      | None -> failwith "there should be either parsed info or prover result"
+      | None ->
+          assert false (* there should be either parsed info or prover result *)
       | Some prover -> StrMap.find prover obl.by_prover)
         .loc
   | Some parsed -> Range.of_locus_must (Tlapm_lib.Util.get_locus parsed.obl)
