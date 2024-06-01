@@ -6,7 +6,7 @@
 type t
 
 val make : string list -> t
-(** Initialize the loaded with a set of paths.
+(** Initialize the loader with a set of paths.
     The paths can be of two kinds:
       - Paths to directories/folders. A regular path is assumed:
 
