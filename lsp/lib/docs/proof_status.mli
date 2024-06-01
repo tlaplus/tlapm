@@ -12,4 +12,4 @@ val min : t -> t -> t
 val yojson_of_t : t -> Yojson.Safe.t
 
 val is_diagnostic : t -> bool
-(** Reurns true, if this state should be shown as a diagnostic. *)
+(** Returns true, if this state should be shown as a diagnostic. *)
