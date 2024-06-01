@@ -9,8 +9,6 @@
 
 open Property
 
-module Deque = Deque
-
 (** {3 Locations} *)
 
 val locate      : 'a -> Loc.locus -> 'a wrapped

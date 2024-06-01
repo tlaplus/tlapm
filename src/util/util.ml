@@ -9,8 +9,6 @@ open Ext
 open Property
 open Loc
 
-module Deque = Deque
-
 type hint = string wrapped
 type hints = hint list
 
