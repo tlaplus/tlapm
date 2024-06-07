@@ -28,7 +28,7 @@ Next ==
     A \/ B
 
 System ==
-    Init /\ [][Next]_vars /\ WF_vars(Next)
+    Init /\ [][Next]_vars /\ WF_vars(A)
 
 Prop ==
     <>(x = TRUE)
