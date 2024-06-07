@@ -42,17 +42,11 @@ LEMMA TypeCorrect == System => []TypeOK
 
 -------------------------------------------------------------------------------
 
-\* The PM needs this hint for the liveness proof to be accepted.
-LEMMA Equiv == ~(x = TRUE) <=> (x = FALSE) OBVIOUS
-USE Equiv
-
--------------------------------------------------------------------------------
-
 (* Proof of liveness property. *)
 THEOREM System => Prop
-<1>1. SUFFICES (System /\ [](x = FALSE)) => FALSE 
+<1>1. SUFFICES (System /\ []~(x = TRUE)) => FALSE 
     BY <1>1, PTL DEF Prop
-<1>3. ASSUME TypeOK /\ (x = FALSE)
+<1>3. ASSUME TypeOK /\ ~(x = TRUE)
       PROVE ENABLED <<A>>_vars
     BY <1>3, ExpandENABLED DEF Next, vars, A, B
 <1>4. ASSUME <<A>>_vars
