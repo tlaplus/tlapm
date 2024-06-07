@@ -21,158 +21,33 @@
   <h2>Generic Instructions</h2>
 
   <p>These instructions apply to any UNIX-like system, including
-    GNU/Linux, most BSD variants, Solaris, Cygwin on Windows,
+    GNU/Linux, most BSD variants, Solaris, WSL on Windows,
     MacOSX, etc.</p>
-  <p>Notes for Windows users:</p>
-  <ul>
-    <li>TLAPS requires Cygwin 3.0.7 or later. At this time it works only
-      with the 32-bit version of cygwin.</li>
-    <li>The following Cygwin packages are required for the
-      instructions below: <code>gcc4</code>, <code>make</code>,
-      <code>wget</code>, <code>perl</code>. Install them using
-      Cygwin's <code>setup.exe</code>.</li>
-  </ul>
+  <p>Notes for Windows users: TLAPS requires WSL (Windows Subsystem for Linux).</p>
 
-  <p> TLAPS tarball:
-    <a href="https://github.com/tlaplus/tlapm/archive/v1.4.5.tar.gz">tlaps-1.4.5.tar.gz</a></p>
-
-
-  <h3>1. Unpack TLAPS tarball</h3>
+  <h3>1. Obtain source code</h3>
   <div class="hr"></div>
+  <p>TLAPS source code can be obtained as a release tarball or cloned from the <code>git</code> repository.
+    <ol type="A">
+      <li>
+        <p>Download the tarball: <a href="https://github.com/tlaplus/tlapm/archive/refs/tags/202210041448.tar.gz">202210041448.tar.gz</a></p>
+        <p>You can unpack TLAPS by running the following command:</p>
+        <div class="terminal">$ tar -xzf 202210041448.tar.gz</div>
+      </li>
+      <li>
+        <p>Clone the repository</p>
+        <div class="terminal">$ git clone https://github.com/tlaplus/tlapm/</div>
+      </li>
+    </ol>
+  </p>
 
-  <p>You can unpack TLAPS by running the following command:</p>
-
-  <div class="terminal">$ tar -xzf tlaps-1.4.5.tar.gz</div>
-
-  <p>This creates a directory named <code>tlaps-1.4.5</code> that
-  contains four subdirectories: <code>tlapm</code>, <code>zenon</code>,
-  <code>isabelle</code> and <code>emacs</code>.</p>
-
-  <h3>2. Install OCaml</h3>
-  <div class="hr"></div>
-
-  <p>TLAPS is implemented in OCaml and requires version 4.04.2 or
-  higher.  You can follow any of the suggestions
-  on <a href="https://ocaml.org/docs/install.html">the offical
-  OCaml release page</a> to install OCaml. On Windows/Cygwin, OCaml
-  can be installed directly from Cygwin's <code>setup.exe</code>.
-  On most modern
-  GNU/Linux distributions, OCaml is already packaged.  Here are the
-  commands for the common Linux distributions:</p>
-
-  <table style="margin-left: 2em;">
-    <tbody>
-      <tr>
-        <td style="padding-right: 3em;">Debian, Ubuntu, etc.</td>
-        <td><code>apt-get install ocaml</code></td>
-      </tr>
-      <tr>
-        <td valign="top">Redhat, Fedora, SuSe,<br /> Mandriva, CentOS, etc.</td>
-        <td valign="top"><code>yum install ocaml</code></td>
-      </tr>
-      <tr>
-        <td valign="top">Gentoo</td>
-        <td valign="top"><code>emerge ocaml</code></td>
-      </tr>
-      <tr>
-        <td valign="top">Arch Linux</td>
-        <td valign="top"><code>pacman install ocaml</code></td>
-      </tr>
-    </tbody>
-  </table>
-
-  <p> On MacOSX, you can use the package
-    managers <a href="http://brew.sh/">Homebrew</a>
-    (<code>brew install objective-caml</code>)
-    or <a href="http://www.macports.org">MacPorts</a>
-    (<code>port install ocaml</code>).</p>
-
-  <p>If you want to install OCaml from source, consider
-  using <a href="http://opam.ocaml.org">OPAM</a>.</p>
-
-  <h3>3. Compile and Install Zenon</h3>
-  <div class="hr"></div>
-
-  <p>Run the following commands.</p>
-
-  <div class="terminal">$ pushd tlaps-1.4.5/zenon<br/>
-$ ./configure &amp;&amp; make &amp;&amp; make install<br/>
-$ popd</div>
-
-  <p>By default, the above will try to install
-  in <code>/usr/local</code>. If you don't have write access to that
-  directory, or would rather install Zenon elsewhere, such as
-  in <code>$HOME/bin</code>, run the following:</p>
-
-  <div class="terminal">$ pushd tlaps-1.4.5/zenon<br/>
-$ ./configure --prefix $HOME &amp;&amp; make &amp;&amp; make install<br/>
-$ popd</div>
-
-  <h3>4. Install Isabelle2011-1</h3>
-  <div class="hr"></div>
-
-  <p>Follow the
-    <a href="http://isabelle.in.tum.de/website-Isabelle2011-1/download.html">instructions</a>
-    on the Isabelle Web site. TLAPS actually does not need the full
-    Isabelle2011-1 distribution.  If you want only the necessary
-    components, run the following commands:</p>
-
-  <div class="terminal" style="width:95%">$ wget http://isabelle.in.tum.de/website-Isabelle2011-1/dist/Isabelle2011-1.tar.gz<br/>
-$ wget http://isabelle.in.tum.de/website-Isabelle2011-1/dist/polyml-5.4.0.tar.gz<br/>
-$ tar -xzf -C /usr/local Isabelle2011-1.tar.gz<br/>
-$ tar -xzf -C /usr/local polyml-5.4.0.tar.gz</div>
-
-  <p style="position:relative; top:10px">You may
-  replace <code>/usr/local</code> above by any other directory. For
-  example, to install Isabelle2011-1 in your <code>$HOME</code>,
-  use <code> -C $HOME </code> instead of <code> -C /usr/local </code>.</p>
-
-  <p>Note that the <code>isabelle</code>
-  and <code>isabelle-process</code> executables (found
-  in <code>/usr/local/Isabelle/bin</code>
-  or <code>$HOME/Isabelle/bin</code>), or symbolic links to them, must
-  be in your <code>$PATH</code> for TLAPS to work.</p>
-
-  <p>You may delete the <code>Isabelle2011-1.tar.gz</code> and
-  <code>polyml-5.4.0.tar.gz</code> files after the above steps.</p>
-
-  <h3>5. Compile Isabelle/TLA+</h3>
-  <div class="hr"></div>
-
-  <p>Run the following commands.</p>
-
-  <div class="terminal">$ pushd /usr/local/Isabelle/src/Pure<br/>
-$ isabelle make<br/>
-$ popd<br/>
-$ pushd tlaps-1.4.5/isabelle<br/>
-$ make<br/>
-$ popd</div>
-
-  <p>(Replace <code>/usr/local</code> above with wherever you
-  installed Isabelle in the previous step.)</p>
-
-  <h3>6. Compile the <strong>TLA</strong><sup>+</sup>
+  <h3>2. Compile the <strong>TLA</strong><sup>+</sup>
       <strong>P</strong>roof <strong>M</strong>anager (TLAPM)</h3>
   <div class="hr"></div>
 
-  <p>Run the following commands.</p>
+  <p>See instructions at <a href="https://github.com/tlaplus/tlapm/blob/main/INSTALL.md">INSTALL.md</a>.</p>
 
-  <div class="terminal">$ pushd tlaps-1.4.5/tlapm<br/>
-$ ./configure &amp;&amp; make all<br/>
-$ sudo make install<br/>
-$ popd</div>
-
-  <p>By default, the above will try to install TLAPM
-  in <code>/usr/local</code>. If you don't have write access to that
-  directory, or would rather install the <code>TLAPM</code> elsewhere,
-  such as in <code>$HOME/bin</code>, run the following:</p>
-
-  <div class="terminal">$ pushd tlaps-1.4.5/tlapm<br/>
-$ ./configure --prefix $HOME &amp;&amp; make all<br/>
-$ make install<br/>
-$ popd</div>
-
-  <h3>7. Verify the installation</h3>
+  <h3>3. Verify the installation</h3>
   <div class="hr"></div>
 
   <p>Run the following command:</p>
@@ -183,7 +58,7 @@ $ popd</div>
   and <code>isabelle</code> you installed in earlier steps.</p>
 
   <p>You can also test the <code>TLAPS</code> on any of the examples
-  in the <code>/usr/local/lib/tlaps/examples</code> directory (which
+  in the <code>examples</code> directory (which
   you can easily refer to using the option <code>-I +examples</code>
   to <code>tlapm</code>). For instance:</p>
 
