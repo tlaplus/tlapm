@@ -20,7 +20,7 @@ A ==
     /\ UNCHANGED y
 
 B ==
-    /\ y = FALSE
+\*    /\ y = FALSE \* WF_vars(Next) suffices hinges on the fact that a B step disables B (s.t. it leaves the vars unchanged). 
     /\ y' = TRUE
     /\ UNCHANGED x
 
