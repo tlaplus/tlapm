@@ -252,7 +252,7 @@ module Make (CB : Callbacks) = struct
         reply_ok jsonrpc_req `Null cb_state
     | Some _ ->
         reply_error jsonrpc_req Jsonrpc.Response.Error.Code.InvalidParams
-          "single argument object expected" cb_state
+          "two arguments expected" cb_state
     | None ->
         reply_error jsonrpc_req Jsonrpc.Response.Error.Code.InvalidParams
           "arguments missing" cb_state
