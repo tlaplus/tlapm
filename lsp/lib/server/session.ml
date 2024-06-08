@@ -149,11 +149,7 @@ let delay_proof_info st uri =
   let delayed = DocUriSet.add uri st.delayed in
   { st with delayed }
 
-let parser_fun loader_paths =
-  let parser ~content ~filename =
-    Parser.module_of_string ~content ~filename ~loader_paths
-  in
-  parser
+let parser_fun loader_paths = Parser.module_of_string ~loader_paths
 
 module SessionHandlers = Handlers.Make (struct
   module LspT = LspT
