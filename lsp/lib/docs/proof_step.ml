@@ -22,7 +22,7 @@ type t = {
       (** Derived status.
           Here we sum-up the states from all the related obligations and sub-steps. *)
   step_loc : Range.t;
-      (** Location if the entire step.
+      (** Location of the entire step.
           This doesn't include the BY statement, but includes
           the sub-steps and the BY proof excluding the used facts. *)
   head_loc : Range.t;
@@ -50,7 +50,7 @@ let derived_status parsed obs sub =
   List.fold_left (fun acc sub -> ps_min acc sub.status_derived) acc sub
 
 (* Takes step parameters and a set of remaining unassigned obligations,
-   constructs the proof step and returns obligations that left unassigned. *)
+   constructs the proof step and returns obligations that are left unassigned. *)
 let make ~kind ?status_parsed ~step_loc ?head_loc ~full_loc ~sub obs_map =
   let intersects_with_full_loc obl_loc _ = Range.intersect obl_loc full_loc in
   let intersects_with_step_loc obl_loc = Range.intersect obl_loc step_loc in

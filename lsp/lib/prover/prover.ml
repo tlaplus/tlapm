@@ -10,7 +10,7 @@ module Toolbox = Toolbox
 (* ***** Prover process management ****************************************** *)
 
 (**
-  Returns tha tlapm executable path or error, if there is no such in known places.
+  Returns the tlapm executable path or error, if there is no such in known places.
   If installed, both files are in the same dir:
     - .../bin/tlapm
     - .../bin/tlapm_lsp

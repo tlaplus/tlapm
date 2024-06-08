@@ -114,7 +114,7 @@ let before p r = Position.less (till r) p
 let intersect a b =
   Position.leq (from a) (till b) && Position.leq (from b) (till a)
 
-(** [lines_intersect a b] is true is line ranges for [a] and [b] intersect. *)
+(** [lines_intersect a b] is true if line ranges for [a] and [b] intersect. *)
 let lines_intersect a b =
   let lfa = line_from a in
   let lta = line_till a in

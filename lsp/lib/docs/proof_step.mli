@@ -1,5 +1,5 @@
 (** Proof step, as it is displayed in the editor.
-    The proof steps are obtained by parsing the the TLAPS source file.
+    The proof steps are obtained by parsing the TLAPS source file.
     Later the proof obligation info is added to the tree as they are
     obtained from the prover.
     *)

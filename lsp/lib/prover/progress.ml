@@ -7,7 +7,7 @@ type t = {
   started : bool;
   ended : bool;
   obl_count : int option; (* Total number of proof obligations. *)
-  obl_done : OblIdSet.t; (* Number of obligations already checked. *)
+  obl_done : OblIdSet.t; (* Obligations already checked. *)
 }
 
 let title = "Checking TLA+ proofs"
