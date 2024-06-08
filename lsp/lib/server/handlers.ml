@@ -36,7 +36,7 @@ module Make (CB : Callbacks) = struct
     let open Jsonrpc in
     let error = Response.Error.make ~code ~message () in
     let response = Response.error jsonrpc_req.id error in
-    let packet = Jsonrpc.Packet.Response response in
+    let packet = Packet.Response response in
     CB.lsp_send cb_state packet
 
   (** Dispatch notification packets. *)
