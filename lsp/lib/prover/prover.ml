@@ -43,7 +43,7 @@ let tlapm_exe () =
   | Some path -> Ok path
   | None ->
       Error
-        ("tlapm not found, expected it among as: "
+        ("tlapm not found, expected it among these: "
         ^ String.concat ", " paths_to_check)
 
 (* Currently forked tlapm process. *)
