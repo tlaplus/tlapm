@@ -296,12 +296,10 @@ module Make (CB : Callbacks) = struct
         let l_from = p_range.start.line + 1 in
         let l_till = p_range.end_.line + 1 in
         let title =
-          match l_from = l_till with
-          | true -> (
-              match l_from with
-              | 0 -> "Check all document proofs"
-              | _ -> Format.sprintf "Check proof on line %d" l_from)
-          | false -> Format.sprintf "Check proofs on lines %d-%d" l_from l_till
+          if l_from = 0 && l_till = 0 then "Check all document proofs"
+          else if l_from = l_till then
+            Format.sprintf "Check proof on line %d" l_from
+          else Format.sprintf "Check proofs on lines %d-%d" l_from l_till
         in
         let uri_vsn =
           LspT.VersionedTextDocumentIdentifier.create ~uri ~version
