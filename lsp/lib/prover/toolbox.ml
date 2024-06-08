@@ -120,7 +120,7 @@ let match_line line =
   let re = Re2.create_exn {|^@!!([a-z]*):(.*)$|} in
   match Re2.find_submatches re line with
   | Ok [| _all_match; Some k; Some v |] -> Some (k, v)
-  | Ok _ -> failwith "impossible"
+  | Ok _ -> assert false
   | Error _ -> None
 
 let rec guess_notif_loc' str = function
@@ -145,7 +145,7 @@ let rec guess_notif_loc' str = function
               ~cf:(int_of_string char_from) ~lt:(int_of_string line_till)
               ~ct:(int_of_string char_till),
             String.trim rest_msg )
-      | Ok _ -> failwith "impossible"
+      | Ok _ -> assert false
       | Error _ -> guess_notif_loc' str others)
   | `B :: others -> (
       let re_opts = { Re2.Options.default with dot_nl = true } in
@@ -183,7 +183,7 @@ let rec guess_notif_loc' str = function
               ~lt:(int_of_string line)
               ~ct:(int_of_string char + 4),
             String.trim rest_msg )
-      | Ok _ -> failwith "impossible"
+      | Ok _ -> assert false
       | Error _ -> guess_notif_loc' str others)
 
 let guess_notif_loc str = guess_notif_loc' str [ `A; `B; `C ]
