@@ -23,8 +23,9 @@ type t = {
           Here we sum-up the states from all the related obligations and sub-steps. *)
   step_loc : Range.t;
       (** Location of the entire step.
-          This doesn't include the BY statement, but includes
-          the sub-steps and the BY proof excluding the used facts. *)
+          It starts with a statement/sequent and ends with the BY statement (inclusive),
+          not including the listed facts and definitions. In the case of a structured
+          proof, this ends with the BY statement of the corresponding QED step. *)
   head_loc : Range.t;
       (** The location of the proof sequent.
           It is always contained within the [step_loc].
