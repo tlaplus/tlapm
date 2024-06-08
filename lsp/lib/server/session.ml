@@ -55,11 +55,8 @@ let lsp_send st p =
   st.output_adder (Some p);
   st
 
-(* For callbacks. *)
-type t' = t
-
 module ProverProgress = Prover.Progress.Make (struct
-  type t = t'
+  type nonrec t = t
 
   let lsp_send = lsp_send
 
@@ -161,7 +158,7 @@ let parser_fun loader_paths =
 module SessionHandlers = Handlers.Make (struct
   module LspT = LspT
 
-  type t = t'
+  type nonrec t = t
 
   let ready st =
     match st.mode with
