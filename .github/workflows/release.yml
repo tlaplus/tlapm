@@ -61,10 +61,10 @@ jobs:
         strategy:
             matrix:
                 operating-system: [
-                    macos-latest,
+                    macos-13,
                     ubuntu-latest]
                 ocaml-compiler: [
-                    '2',
+                    '4.13.1',
                     ]
         steps:
             - name: Install deps
@@ -72,10 +72,6 @@ jobs:
               run: |
                 sudo apt-get update
                 sudo apt-get install --yes time
-            - name: Set up Python
-              uses: actions/setup-python@v2
-              with:
-                python-version: '3.10'
             # Read "Output Release URL and
             # ID File" of `release` job above.
             - name: Load Release URL File from release job
@@ -94,24 +90,16 @@ jobs:
                 TAG_REF_NAME: ${{ github.ref }}
                 REPOSITORY_NAME: ${{ github.repository }}
             - uses: actions/checkout@v2
-            - name: Get OCaml version
-              run: |
-                INDEX=${{ matrix.ocaml-compiler }}
-                OCAML_VERSION=\
-                `python .github/workflows/ocaml_versions.py $INDEX`
-                echo "OCAML_VERSION=$OCAML_VERSION" \
-                >> $GITHUB_ENV
-                echo "OCAML_VERSION = $OCAML_VERSION"
             - uses: ocaml/setup-ocaml@v2
               with:
-                ocaml-compiler: ${{ env.OCAML_VERSION }}
+                ocaml-compiler: ${{ matrix.ocaml-compiler }}
             # - uses: actions/cache@v3
             #   id: cache
             #   with:
             #     path: _build_cache
             #     key: ${{ runner.os }}_build_cache
             - name: Install optional dependencies
-              if: matrix.ocaml-compiler == '2'
+              if: startsWith(matrix.ocaml-compiler, '5.')
               run: |
                 eval $(opam env)
                 make opam-deps-opt
@@ -127,7 +115,6 @@ jobs:
                 eval $(opam env)
                 make test-inline test-fast-basic
             - name: Upload Release Asset
-              if: matrix.ocaml-compiler == '2'
               id: upload-release-asset
               uses: actions/upload-release-asset@v1.0.1
               env:
