@@ -1,8 +1,8 @@
 (*  Title:      TLA+/Tuples.thy
     Author:     Stephan Merz, Inria Nancy
-    Copyright (C) 2008-2022 Inria and Microsoft Corporation
+    Copyright (C) 2008-2024 Inria and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2021-1
+    Version:    Isabelle2024
 *)
 
 section \<open> Tuples and Relations in \tlaplus{} \<close>

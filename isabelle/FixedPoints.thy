@@ -1,8 +1,8 @@
 (*  Title:      TLA+/FixedPoints.thy
-    Author:     Stephan Merz, LORIA
-    Copyright (C) 2008-2021  INRIA and Microsoft Corporation
+    Author:     Stephan Merz, Inria Nancy
+    Copyright (C) 2008-2024  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2020
+    Version:    Isabelle2024
 *)
 
 section \<open>Fixed points for set-theoretical constructions\<close>

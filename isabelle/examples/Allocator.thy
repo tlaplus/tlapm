@@ -2,13 +2,13 @@
     Author:     Stephan Merz, Inria Nancy
     Copyright (C) 2009-2022  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2021-1
+    Version:    Isabelle2024
 *)
 
 section \<open>A Simple Resource Allocator\<close>
 
 theory Allocator
-imports Constant
+imports "../Constant"
 begin
 
 text \<open>

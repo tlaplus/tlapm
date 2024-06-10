@@ -2,13 +2,13 @@
     Author:     Hernan Vanzetto, LORIA
     Copyright (C) 2009-2022  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2021-1
+    Version:    Isabelle2024
 *)
 
 section \<open>Safety Proof of the Atomic Version of the Bakery Algorithm\<close>
 
 theory AtomicBakeryG
-imports Constant
+imports "../Constant"
 begin
 
 text \<open>
@@ -294,8 +294,7 @@ next
   next
     case False
     from type have "isAFcn(pc)"
-      (* FIXME: needed for proving that pc'=pc, but why doesn't "simp ..." suffice *)
-      by (force simp add: TypeOK_def)
+      by (auto simp: TypeOK_def)
     with False p2 obtain i where
       i: "pc[self] = ''p2''" "i \<in> unread[self]"
          "unread' = [unread EXCEPT ![self] = unread[self] \\ {i}]"
@@ -409,9 +408,6 @@ proof (auto simp: MutualExclusion_def)
 qed
 
 
-lemma leq_neq_trans' (*[dest!]*): "a \<le> b \<Longrightarrow> b \<noteq> a \<Longrightarrow> a < b"
-  by (simp add: less_def)
-
 theorem InvInvariant:
   assumes inv: "Inv(unread,max,flag,pc,num,nxt)"
       and nxt: "Next(unread,max,flag,pc,num,nxt,unread',max',flag',pc',num',nxt')"
@@ -504,10 +500,15 @@ proof auto
           show "After(j,i,unread',max',flag',pc',num',nxt')"
           proof (cases "self = j")
             case True with selfi p1 type iinvi self i pc' show ?thesis
-              by (clarsimp simp: TypeOK_def IInv_def After_def p1_def) auto
+              by (clarsimp simp: TypeOK_def IInv_def After_def p1_def)
+                 (force elim: int_leq_lessE)
           next
-            case False with selfi p1 type iinvi self i pc' j show ?thesis
-              by (clarsimp simp: TypeOK_def IInv_def After_def p1_def) auto
+            case False 
+            from i type have "num[i] \<in> Nat"
+              by (auto simp: TypeOK_def)
+            with False selfi p1 type iinvi self i pc' j show ?thesis
+              by (clarsimp simp: TypeOK_def IInv_def After_def p1_def int_leq_less)
+                 (force elim!: bspec)
           qed
         qed
         have 4: "pc'[i] = ''p6''
@@ -534,8 +535,10 @@ proof auto
             case True with selfi p1 type iinvi self i pc' show ?thesis
               by (clarsimp simp: TypeOK_def IInv_def After_def p1_def) auto
           next
-            case False with selfi p1 type iinvi self i pc' j show ?thesis
-              by (clarsimp simp: TypeOK_def IInv_def After_def p1_def) auto
+            case False 
+            with pc' self selfi p1 type iinvi i j show ?thesis
+              by (clarsimp simp: p1_def TypeOK_def IInv_def After_def)
+                 (force elim!: bspec)
           qed
         qed
         from 1 2 3 4 5 show ?thesis
@@ -642,7 +645,7 @@ proof auto
             fix j
             assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \<setminus> unread'[i]) \<setminus> {i}"
             from pc' i k 1 type have numi: "0 < num'[i]"
-              by (auto simp: TypeOK_def)
+              by (force simp: TypeOK_def)
             from j type have mx: "pc[j] = ''p2'' \<Rightarrow> max[j] \<in> Nat"
               by (auto simp: TypeOK_def)
             show "After(j,i,unread',max',flag',pc',num',nxt')"
@@ -672,7 +675,7 @@ proof auto
                                GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j])"
                     hence ii2: "num[i] \<le> max[j]"
                       by auto
-                    assume "max[j] < num[k]" "num \<in> [ProcSet \<rightarrow> Nat]" 
+                    assume "max[j] < num[k]" "num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]"
                     with ii2 kproc mx i \<open>pc[j] = ''p2''\<close>
                     show "num[i] \<le> num[k]"
                       by (auto elim!: int_leq_trans)
@@ -683,8 +686,11 @@ proof auto
                 show ?thesis
                 proof (cases "i=k")
                   case True
-                  with k selfi selfj nless type iinvi self i pc' j mx show ?thesis
-                    by (auto simp: TypeOK_def IInv_def After_def)
+                  from i type have "num[i] \<in> Int \<and> 0 \<le> num[i]"
+                    by (auto simp: TypeOK_def)
+                  with True k selfi selfj nless type iinvi self i pc' j mx 
+                  show ?thesis
+                    by (auto simp: TypeOK_def IInv_def After_def elim: int_leq_lessE)
                 next
                   case False
                   with k selfi selfj nless type iinvi self i pc' j mx numi show ?thesis
@@ -730,7 +736,7 @@ proof auto
               case True
               with k selfi type iinvi self i nxt mx show ?thesis
               proof (clarsimp simp: TypeOK_def IInv_def, cases "i \<in> unread[nxt[i]]", simp)
-                assume "i \<notin> unread[nxt[i]]" "num \<in> [ProcSet \<rightarrow> Nat]" 
+                assume "i \<notin> unread[nxt[i]]" "num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]" 
                        "i \<in> unread[nxt[i]] = FALSE \<Rightarrow> num[i] \<le> max[nxt[i]]" 
                        "max[nxt[i]] < num[k]"
                 with mx nxt kproc i show "num[i] \<le> num[k]"
@@ -775,7 +781,7 @@ proof auto
             fix j
             assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \<setminus> {i}"
             from pc' i k 1 type have numi: "0 < num'[i]"
-              by (auto simp: TypeOK_def)
+              by (force simp: TypeOK_def)
             from j type have mx: "pc[j] = ''p2'' \<Rightarrow> max[j] \<in> Nat"
               by (auto simp: TypeOK_def)
             show "After(j,i,unread',max',flag',pc',num',nxt')"
@@ -805,7 +811,7 @@ proof auto
                                GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j])"
                     hence ii2: "num[i] \<le> max[j]"
                       by auto
-                    assume "max[j] < num[k]" "num \<in> [ProcSet \<rightarrow> Nat]" 
+                    assume "max[j] < num[k]" "num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]" 
                     with ii2 kproc mx i \<open>pc[j] = ''p2''\<close>
                     show "num[i] \<le> num[k]"
                       by (auto elim!: int_leq_trans)
@@ -816,8 +822,11 @@ proof auto
                 show ?thesis
                 proof (cases "i=k")
                   case True
-                  with k selfi selfj nless type iinvi self i pc' j mx show ?thesis
-                    by (auto simp: TypeOK_def IInv_def After_def)
+                  from type i have "num[i] \<in> Int \<and> 0 \<le> num[i]"
+                    by (auto simp: TypeOK_def)
+                  with True k selfi selfj nless type iinvi self i pc' j mx
+                  show ?thesis
+                    by (auto simp: TypeOK_def IInv_def After_def elim: int_leq_lessE)
                 next
                   case False
                   with k selfi selfj nless type iinvi self i pc' j mx numi show ?thesis
@@ -860,7 +869,7 @@ proof auto
       proof (cases "self = i")
         case True
         with p3 type iinvi i show ?thesis
-          by (clarsimp simp: TypeOK_def IInv_def p3_def)
+          by (clarsimp simp: TypeOK_def IInv_def p3_def) auto
       next
         assume selfi: "self \<noteq> i"
         from selfi p3 type iinvi self i
@@ -1066,7 +1075,8 @@ proof auto
             by(auto simp: p5_def)
           with type self have kproc: "k \<in> ProcSet"
             by (auto simp: TypeOK_def)
-          with iinv have iinvk: "IInv(k, unread, max, flag, pc, num, nxt)" ..
+          with iinv have iinvk: "IInv(k, unread, max, flag, pc, num, nxt)" 
+            by (rule bspec)
           show ?thesis
           proof (cases "self = i")
             case True
@@ -1118,7 +1128,9 @@ proof auto
         show "After(j, i, unread', max', flag', pc', num', nxt')"
         proof (cases "self = i")
           assume selfi: "self = i"
-          with iinvi p6 type i have numi: "0 < num[i]" "nxt[i] \<in> ProcSet" "nxt[i] \<noteq> i"
+          with iinvi p6 type i have numi: "0 < num[i]"
+            by (force simp: IInv_def TypeOK_def p6_def)
+          from selfi p6 type i have nxtip: "nxt[i] \<in> ProcSet \<setminus> {i}"
             by (auto simp: IInv_def TypeOK_def p6_def)
           show ?thesis
           proof (cases "j \<in> unread[self]")
@@ -1126,9 +1138,12 @@ proof auto
             show ?thesis
             proof(cases "num[j] = 0")
               case True
-              with j selfi i pc' p6 type self iinvi junread iinvj
+              from i type have "num[i] \<in> Nat"
+                by (auto simp: TypeOK_def)
+              with j selfi i pc' p6 type self iinvi junread iinvj True
               show ?thesis
-                by (clarsimp simp: p6_def TypeOK_def IInv_def After_def) auto
+                by (clarsimp simp: p6_def TypeOK_def IInv_def After_def int_leq_less)
+                   (force elim!: bspec)
             next
               assume numj: "num[j] \<noteq> 0"
               show ?thesis
@@ -1146,13 +1161,13 @@ proof auto
                   proof (cases "j < i")
                     case True
                     with j selfi i pc' p6 type self iinvi junread numj numi pcj 
-                         iinv3[of j i] nxti notunread (*procInNat*)
+                         iinv3[of j i] nxti notunread
                     show ?thesis
                     proof (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def)
                       assume "nxt[i] < i" "j = nxt[i]"
                       with i j have nxti: "nxt[i] \<in> ProcSet" "\<not>(i < nxt[i])"
                         by (auto dest: procInNat elim!: int_less_asym)
-                      assume "num \<in> [ProcSet \<rightarrow> Nat]"
+                      assume "num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]"
                              "pc[nxt[i]] = ''p5'' \<or> pc[nxt[i]] = ''p6'' 
                               \<Longrightarrow> 0 < num[nxt[i]]
                                 \<and> (IF i < nxt[i] THEN num[nxt[i]] < num[i]
@@ -1161,7 +1176,7 @@ proof auto
                       with i nxti
                       show "(pc[nxt[i]] = ''p5'') = FALSE
                           \<and> (pc[nxt[i]] = ''p6'') = FALSE"
-                        by (auto simp: int_leq_not_less)
+                        by (auto dest!: int_leq_not_less) auto
                     qed
                   next
                     case False
@@ -1169,18 +1184,18 @@ proof auto
                     show ?thesis
                     proof (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def)
                       assume "(nxt[i] < i) = FALSE"
-                      with i numi int_less_linear[of "i" "nxt[i]"] have "i < nxt[i]"
-                        by (auto dest: procInNat)
+                      with i numi nxtip int_less_linear[of "i" "nxt[i]"] have "i < nxt[i]"
+                        by (auto dest!: procInNat) 
                       assume
                         "pc[nxt[i]] = ''p5'' \<or> pc[nxt[i]] = ''p6'' 
                          \<Longrightarrow>  0 < num[nxt[i]]
                               \<and> (IF i < nxt[i] THEN num[nxt[i]] < num[i]
                                  ELSE boolify(num[nxt[i]] \<le> num[i]))"
                         "num[i] \<le> num[nxt[i]]"
-                        "num \<in> [ProcSet \<rightarrow> Nat]"
-                      with i numi \<open>i < nxt[i]\<close>
+                        "num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]"
+                      with i numi nxtip \<open>i < nxt[i]\<close>
                       show "(pc[nxt[i]] = ''p5'') = FALSE \<and> (pc[nxt[i]] = ''p6'') = FALSE"
-                        by (auto dest: procInNat simp: int_leq_not_less)
+                        by (auto dest!: int_leq_not_less)
                     qed
                   qed
                 qed
@@ -1198,19 +1213,18 @@ proof auto
                       assume nxti: "nxt[i] < i"
                       hence "i \<noteq> nxt[i]" by (auto simp: less_def)
                       assume
-                        "i = nxt[i] = FALSE
-                         \<Longrightarrow> 0 < num[nxt[i]] 
-                           \<and> (IF i < nxt[i]
-                              THEN num[nxt[i]] < num[i]
-                              ELSE boolify(num[nxt[i]] \<le> num[i]))"
-                        "num \<in> [ProcSet \<rightarrow> Nat]"
+                        "0 < num[nxt[i]]" 
+                        "IF i < nxt[i]
+                         THEN num[nxt[i]] < num[i]
+                         ELSE boolify(num[nxt[i]] \<le> num[i])"
+                        "num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]"
                       with \<open>i \<noteq> nxt[i]\<close> have "num[nxt[i]] \<le> num[i]"
                         by (auto dest: procInNat elim!: int_less_asym[OF nxti])
                       assume "num[i] < num[nxt[i]]"
-                      with i numi \<open>num \<in> [ProcSet \<rightarrow> Nat]\<close> \<open>num[nxt[i]] \<le> num[i]\<close>
+                      with i numi nxtip \<open>num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]\<close> \<open>num[nxt[i]] \<le> num[i]\<close>
                       show "(pc[nxt[i]] = ''p4'' \<or> pc[nxt[i]] = ''p5'' \<or> pc[nxt[i]] = ''p6'') 
                           \<and> (pc[nxt[i]] = ''p5'' \<or> pc[nxt[i]] = ''p6'' \<Rightarrow> i \<in> unread[nxt[i]])"
-                        by (auto simp: int_less_not_leq)
+                        by (auto dest!: int_less_not_leq)
                     qed
                   next
                     case False
@@ -1219,16 +1233,16 @@ proof auto
                     show ?thesis
                     proof (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def)
                       assume "(nxt[i] < i) = FALSE"
-                      with i numi int_less_linear[of "nxt[i]" "i"] have "i < nxt[i]"
+                      with i numi nxtip int_less_linear[of "nxt[i]" "i"] have "i < nxt[i]"
                         by (auto dest: procInNat)
                       assume "num[i] \<le> num[nxt[i]]"
                         "IF i < nxt[i] THEN num[nxt[i]] < num[i]
                          ELSE boolify(num[nxt[i]] \<le> num[i])"
-                        "num \<in> [ProcSet \<rightarrow> Nat]"
-                      with i numi \<open>i < nxt[i]\<close>
+                        "num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]"
+                      with i numi nxtip \<open>i < nxt[i]\<close>
                       show "(pc[nxt[i]] = ''p4'' \<or> pc[nxt[i]] = ''p5'' \<or> pc[nxt[i]] = ''p6'') 
                           \<and> (pc[nxt[i]] = ''p5'' \<or> pc[nxt[i]] = ''p6'' \<Rightarrow> i \<in> unread[nxt[i]])"
-                        by (auto simp: int_less_not_leq)
+                        by (auto dest!: int_less_not_leq)
                     qed
                   qed
                 next
@@ -1258,8 +1272,7 @@ proof auto
               with j pc' selfi selfj i p6 type self iinv3[of i j] nxtj
               show ?thesis
                 by (clarsimp simp: p6_def TypeOK_def After_def GG_def)
-                   (auto simp: int_less_not_leq[of "num[nxt[j]]" "num[j]"] 
-                         elim!: int_less_asym[of "num[j]" "num[nxt[j]]"])
+                   (auto dest!: int_leq_not_less int_less_asym[of "num[j]" "num[nxt[j]]"]) 
             next
               case False
               with j pc' selfi selfj i p6 type self iinv3[of i j] 
@@ -1276,10 +1289,9 @@ proof auto
                    \<or> (IF nxt[j] < j THEN num[j] < num[nxt[j]] ELSE num[j] \<le> num[nxt[j]])"
                   "0 < num[i]"
                   "IF j < i THEN num[i] < num[j] ELSE num[i] \<le> num[j]"
-                  "num \<in> [ProcSet \<rightarrow> Nat]"
+                  "num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]"
                 with i j \<open>nxt[j] < j\<close> show "(i = nxt[j]) = FALSE"
-                  by (auto simp: int_less_not_leq[of "num[j]" "num[nxt[j]]"]
-                              elim!: int_less_asym[of "num[nxt[j]]" "num[j]"])
+                  by (auto dest!: int_leq_not_less int_less_asym[of "num[nxt[j]]" "num[j]"])
               qed
             qed
           next
@@ -1318,8 +1330,7 @@ proof auto
             with type p6 i pc' j self selfj iinv5[of i j] 
             show ?thesis
               by (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def)
-                 (auto simp: int_less_not_leq[of "num[nxt[j]]" "num[j]"] 
-                       elim!: int_less_asym[of "num[j]" "num[nxt[j]]"])
+                 (auto dest!: int_leq_not_less int_less_asym[of "num[j]" "num[nxt[j]]"])
           next
             case False
             from i j type have num: "num[i] \<in> Nat" "num[j] \<in> Nat"
@@ -1328,7 +1339,7 @@ proof auto
             show ?thesis
               using int_less_linear[of i j] procInNat
               by (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def)
-                 (auto dest!: int_leq_less_trans)
+                 (auto dest!: int_leq_not_less)
           qed
         next
           case False
@@ -1338,7 +1349,7 @@ proof auto
         qed
       qed
       from 1 2 3 4 5 show ?thesis
-        unfolding IInv_def by blast
+        unfolding IInv_def by simp
     next
       assume p7: "p7(self, unread, max, flag, pc, num, nxt, unread', max', flag', pc', num', nxt')"
 

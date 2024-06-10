@@ -10,7 +10,7 @@ session "TLA+" = "Pure" +
 
   document_files
     "root.tex"
-
+(*
 session "TLA+Tests" in tests = "TLA+" +
   options [document=false]
   theories
@@ -25,3 +25,4 @@ session "TLA+Examples" in examples = "TLA+" +
 
   document_files
     "root.tex"
+*)

@@ -1,8 +1,8 @@
 (*  Title:      TLA+/IntegerDivision.thy
     Author:     Stephan Merz, Inria Nancy
-    Copyright (C) 2009-2022  INRIA and Microsoft Corporation
+    Copyright (C) 2009-2024  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2021-1
+    Version:    Isabelle2024
 *)
 
 section \<open> The division operators div and mod on the integers \<close>

@@ -1,8 +1,8 @@
 (*  Title:      TLA+/Integers.thy
-    Author:     Stephan Merz, LORIA
-    Copyright (C) 2008-2021  INRIA and Microsoft Corporation
+    Author:     Stephan Merz, Inria Nancy
+    Copyright (C) 2008-2024  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2021-1
+    Version:    Isabelle2024
 *)
 
 section \<open> The set of integer numbers \<close>
