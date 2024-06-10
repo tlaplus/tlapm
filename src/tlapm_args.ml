@@ -269,7 +269,10 @@ let init () =
     Array.iter (fun s -> Printf.printf " %s" (quote_if_needed s)) Sys.argv;
     Printf.printf "\n\n%!"
   end;
-  if (List.length !mods) <> 1 then begin
-    use_stdin := false
+  if !use_stdin && (List.length !mods) <> 1 then begin
+    Arg.usage opts
+      "Exactly 1 module has to be specified if TLAPM is invoked with\
+       the --stdin option." ;
+    exit 2
   end;
   !mods
