@@ -1,7 +1,7 @@
 OS_TYPE=$(patsubst CYGWIN%,Cygwin,$(shell uname))
 HOST_CPU=$(shell uname -m)
 
-ISABELLE_VSN=Isabelle2024-RC3
+ISABELLE_VSN=Isabelle2024
 
 ifeq ($(OS_TYPE),Linux)
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_linux.tar.gz
@@ -27,7 +27,7 @@ ISABELLE_URL=https://isabelle.in.tum.de/website-$(ISABELLE_VSN)/dist/$(ISABELLE_
 ISABELLE_DIR=Isabelle
 
 # Some defaults, for the case if makefile is called not by the dune build system.
-PROJECT_ROOT=../..
+PROJECT_ROOT=$(if $(DUNE_SOURCEROOT),$(DUNE_SOURCEROOT),../..)
 CACHE_DIR=$(PROJECT_ROOT)/_build_cache
 
 
@@ -55,18 +55,20 @@ endif
 .PRECIOUS: $(ISABELLE_DIR)/src/TLA+
 $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 	cd $(ISABELLE_DIR) \
-		&& rm -rf contrib/ProofGeneral* doc heaps/*/HOL
+		&& rm -rf contrib/ProofGeneral* doc heaps/*/HOL contrib/vscodium* contrib/vscode* \
+		&& sed -i -e 's@^\(contrib/vscode_extension\|contrib/vscodium\|src/Tools/Demo\)@#rm at TLA# \1@' etc/components
 	cd $(ISABELLE_DIR) \
 		&& HEAPS_PATH=$(shell pwd)/$(ISABELLE_DIR)/heaps \
 		&& if [ "$(HOST_CPU)" = "x86_64" ] ; then sed -i -e 's/^ML_PLATFORM=.*$$/ML_PLATFORM="$${ISABELLE_PLATFORM64:-$$ISABELLE_PLATFORM}"/' etc/settings ; fi \
 		&& cp etc/settings etc/settings.target \
 		&& echo "ISABELLE_OUTPUT=$$HEAPS_PATH" >> etc/settings
 	mkdir -p $(ISABELLE_DIR)/src/TLA+ \
-		&& cp -a theories/TLA+/* $(ISABELLE_DIR)/src/TLA+/ \
+		&& cp -a ../../isabelle/* $(ISABELLE_DIR)/src/TLA+/ \
 		&& chmod -R u+w $(ISABELLE_DIR)/src/TLA+/
 	cd $(ISABELLE_DIR)/ \
 		&& ./bin/isabelle build -o system_heaps -o document=false -b -v -d src/Pure Pure \
-		&& ./bin/isabelle build -o system_heaps -o document=false -b -c -v -d src/TLA+ TLA+
+		&& ./bin/isabelle build -o system_heaps -o document=false -b -c -v -d src/TLA+ TLA+ \
+		&& rm -rf ./heaps/polyml-*/log/*
 	cd $(ISABELLE_DIR) \
 		&& rm etc/settings \
 		&& mv etc/settings.target etc/settings
@@ -84,7 +86,6 @@ ifeq ($(OS_TYPE),Darwin)
 	cd $< && cd contrib/jdk-21.0.3/x86_64-darwin/ \
 		&& (find . -type link | xargs rm) \
 		&& mv zulu-21.jdk/Contents/Home/* ./
-	cd $< && rm -rf contrib/vscodium-1.70.1
 endif
 	touch $@
 
