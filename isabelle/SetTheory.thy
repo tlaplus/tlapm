@@ -1,8 +1,8 @@
 (*  Title:      TLA+/SetTheory.thy
-    Author:     Stephan Merz, LORIA
-    Copyright (C) 2008-2021  INRIA and Microsoft Corporation
+    Author:     Stephan Merz, Inria Nancy
+    Copyright (C) 2008-2024  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2020
+    Version:    Isabelle2024
 *)
 
 section \<open>\tlaplus{} Set Theory\<close>
@@ -378,20 +378,22 @@ lemma bspec:
   shows "P(x)"
 using assms unfolding bAll_def by blast
 
+setup \<open>
+  map_theory_claset (fn ctxt =>
+    ctxt addbefore ("bspec", fn ctxt' => dresolve_tac ctxt' @{thms bspec} THEN' assume_tac ctxt'))
+\<close>
+
+(**
 text \<open>The following rule intentionally has single assumption (non-conditional),
 because otherwise it interferes with how \<open>Nat\<close> is reduced to \<open>Int\<close>.\<close>
 lemma bspec' [dest]:
   assumes "\<forall>x\<in>A : P(x)"
   shows "\<forall>x : (x\<in>A) \<Rightarrow> P(x)"
   using assms unfolding bAll_def by blast
+**)
 
 lemma bAll_unb [simp] : "\<And>T P. (\<forall>e : e \<in> T \<Rightarrow> P(e)) \<Longrightarrow> (\<forall>e \<in> T : P(e))"
   using bAll_def by simp
-
-setup \<open>
-  map_theory_claset (fn ctxt =>
-    ctxt addbefore ("bspec", fn ctxt' => dresolve_tac ctxt' @{thms bspec} THEN' assume_tac ctxt'))
-\<close>
 
 lemma bAllE [elim]:
   assumes "\<forall>x\<in>A : P(x)" and "x \<notin> A \<Longrightarrow> Q" and "P(x) \<Longrightarrow> Q"
