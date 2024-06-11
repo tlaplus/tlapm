@@ -1,0 +1,13 @@
+(* build the session using "isabelle build -b -D ." *)
+chapter "TLA+"
+session "TLA+" = "Pure" +
+  options [document_output = "output", document_variants="document:outline=/proof"]
+
+  theories
+    Constant (global)
+    Zenon (global)
+(*    NewSMT (global)  *)
+    Tests (* Test cases only. *)
+
+  document_files
+    "root.tex"
