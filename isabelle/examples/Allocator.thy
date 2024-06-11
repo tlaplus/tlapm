@@ -8,7 +8,7 @@
 section \<open>A Simple Resource Allocator\<close>
 
 theory Allocator
-imports "../Constant"
+imports Constant
 begin
 
 text \<open>

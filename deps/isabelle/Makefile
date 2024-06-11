@@ -64,7 +64,8 @@ $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 		&& echo "ISABELLE_OUTPUT=$$HEAPS_PATH" >> etc/settings
 	mkdir -p $(ISABELLE_DIR)/src/TLA+ \
 		&& cp -a ../../isabelle/* $(ISABELLE_DIR)/src/TLA+/ \
-		&& chmod -R u+w $(ISABELLE_DIR)/src/TLA+/
+		&& chmod -R u+w $(ISABELLE_DIR)/src/TLA+/ \
+		&& make -C $(ISABELLE_DIR)/src/TLA+/ clean
 	cd $(ISABELLE_DIR)/ \
 		&& ./bin/isabelle build -o system_heaps -o document=false -b -v -d src/Pure Pure \
 		&& ./bin/isabelle build -o system_heaps -o document=false -b -c -v -d src/TLA+ TLA+ \

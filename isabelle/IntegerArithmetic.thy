@@ -833,7 +833,7 @@ lemma nat_iff_int_geq0' (*[simp]*) : "n \<in> Nat = (n \<in> Int \<and> 0 \<le> 
   by (auto simp: int_leq_def)
 
 text \<open>
-We will use \<open>nat_iff_int_geq0\<close> for simplification instead
+We will use \<open>nat_is_int_geq0\<close> for simplification instead
 of \<open>nat_iff_int_geq0'\<close> for rewriting \<open>Nat\<close> to \<open>Int\<close> to
 handle also the cases where no \<open>Nat\<close> is used without
 the \<open>\<in>\<close> operator, e.g. in function sets.

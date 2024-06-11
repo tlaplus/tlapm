@@ -18,7 +18,7 @@ heap-only:
 # This is invoked from the dune file to run the tests.
 # The tex files might be readonly in the sandbox and Isabelle copies
 # them several times, and thus fails by overwriting a readonly file.
-dune-runtest:
+dune-runtest: clean
 	chmod 644 examples/document/root.tex document/root.tex
 	$(SRC_ROOT)/deps/isabelle/Isabelle/bin/isabelle build -o document=false -o browser_info=false -c -v -D .
 

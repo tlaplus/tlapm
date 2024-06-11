@@ -59,7 +59,7 @@ lemma \<comment> \<open>Works with abstract types, by auto.\<close>
 text \<open>
 The following only started to work after changing the \<open>Nat\<close> to \<open>Int\<close>
 rewrite from \<open>n \<in> Nat = (n \<in> Int \<and> 0 \<le> n)\<close> to \<open>Nat = {x \<in> Int : 0 \<le> x}\<close>
-see \<open>nat_iff_int_geq0\<close>.
+see \<open>nat_is_int_geq0\<close>.
 \<close>
 lemma
   fixes p :: "c" and f and i

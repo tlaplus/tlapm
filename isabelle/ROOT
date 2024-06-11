@@ -10,7 +10,7 @@ session "TLA+" = "Pure" +
 
   document_files
     "root.tex"
-(*
+
 session "TLA+Tests" in tests = "TLA+" +
   options [document=false]
   theories
@@ -21,8 +21,7 @@ session "TLA+Examples" in examples = "TLA+" +
 
   theories
     Allocator
-    (* AtomicBakeryG  TODO: Restore it here, when examples are fixed. *)
+    AtomicBakeryG
 
   document_files
     "root.tex"
-*)

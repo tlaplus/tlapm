@@ -8,7 +8,7 @@
 section \<open>Safety Proof of the Atomic Version of the Bakery Algorithm\<close>
 
 theory AtomicBakeryG
-imports "../Constant"
+imports Constant
 begin
 
 text \<open>
