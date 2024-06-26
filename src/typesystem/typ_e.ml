@@ -32,6 +32,8 @@ let hyp_optype h =
         optype nm
     | Fact (_, _, _) ->
         None
+    | FreshTuply _ ->
+        assert false  (* unexpected case *)
 
 
 (* Equivalence classes of type variables *)
@@ -783,6 +785,12 @@ let rec fmt_expr (cx: Expr.Fmt.ctx) ew = match ew.core with
       fmt_expr cx (Parens (e, Nlabel (l, xs) @@ e) @@ e)
   | Parens (e, {core=Syntax}) ->
       fmt_expr cx e
+  | QuantTuply _
+  | ChooseTuply _
+  | SetStTuply _
+  | SetOfTuply _
+  | FcnTuply _ ->
+      assert false
 
 and pp_print_bang ff () =
   if Params.debugging "garish" then
@@ -1083,6 +1091,8 @@ and pp_print_sequent cx ff sq = match Deque.null sq.context with
                   fst (Expr.Fmt.adj cx nm)
               | Fact (_, _, _) ->
                   Expr.Fmt.bump cx
+              | FreshTuply _ ->
+                  assert false  (* not implemented *)
             in (cx, ch :: chs)
         end (cx, []) sq.context in
       let chs = List.filter
@@ -1121,6 +1131,7 @@ and pp_print_hyp cx ff h =
               fprintf ff
               " \\in %a" (pp_print_expr cx) b);
         ncx
+    | FreshTuply _ -> assert false  (* not implemented *)
     | Flex nm ->
         let t = optype nm in
         let (ncx, nm) = Expr.Fmt.adj cx nm in

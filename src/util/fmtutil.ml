@@ -7,6 +7,29 @@
 
 open Format
 
+let join
+        (separator: string)
+        (items: string list):
+            string =
+    (* Concatenate `items`.
+
+    Return the concatenation of `items`,
+    with `separator` inserted in-between.
+    Example:
+
+    ```ocaml
+    let items = ["a"; "b"] in
+    let separator = "," in
+    let s = join separator items in
+    assert s = "a, b"
+    ```
+    *)
+    let step accum item =
+        accum ^ separator ^ item in
+    let accum = "" in
+    List.fold_left step accum items
+let comma items = join "," items
+
 let pp_print_commasp ff () =
   pp_print_string ff "," ;
   pp_print_space ff ()

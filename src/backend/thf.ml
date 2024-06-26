@@ -564,6 +564,8 @@ let pp_print_obligation ?(solver="Zipper") ff ob =
         pp_print_thf cx ff ("defn_" ^ nm) Type (Opr v);
         pp_print_newline ff ();
         spin ncx hs
+    | Some ({core=FreshTuply (_, _); _ }, _) ->
+        failwith "unexpected case"
   in
 
   let cx =
@@ -580,4 +582,3 @@ let pp_print_obligation ?(solver="Zipper") ff ob =
   fprintf ff "%%---- Goal@.";
   pp_print_thf cx ff "goal" Conjecture (Form sq.active);
   pp_print_newline ff ();
-

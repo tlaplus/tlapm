@@ -6,6 +6,17 @@ open Tla_parser
 open E_t
 
 
+type boundeds
+val has_tuply_bounded:
+    boundeds -> bool
+val tuply_bounds_of_boundeds:
+    boundeds -> tuply_bounds
+val bounds_of_boundeds:
+    boundeds -> bounds
+val quantifier_boundeds:
+    bool -> (pcx, boundeds) P.prs
+val colon_expr:
+    bool -> (pcx, expr) P.prs
 val expr : bool -> expr lprs
 val bounds : bool -> bound list lprs
 val defn : bool -> defn lprs

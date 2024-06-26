@@ -482,6 +482,7 @@ let read_new_modules mcx fs =
         Module.Save.parse_file ~clock:Clocks.parsing
                                (Util.locate fn Loc.unknown)
       in
+      let mule = Intermediate.expand mule in
       (* set a flag for each module of the new modules that it is important *)
       mule.core.important <- true ;
       let mcx = Sm.add mule.core.name.core mule mcx in
@@ -582,4 +583,3 @@ let init () =
           Backend.Toolbox.print_message_url msg url;
        end;
        exit 3
-

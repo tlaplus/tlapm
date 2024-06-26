@@ -171,8 +171,9 @@ let rename_with_loc cx e =
                 *)
                 let h = Defn (df, wd, vis, ex) @@ hyp in
                 (h, name)
+            | FreshTuply _
             | Fact _ ->
-                assert false
+                assert false  (* unexpected cases *)
     end in
     visitor#expr ((), cx) e
 
@@ -364,7 +365,9 @@ let coalesce_modal_visitor = object (self)
                     let op_ = (Operator (coalesced_op, expr)) @@ index in
                     coalesce_operator cx op_ args
                 end
-            | Fact _ -> (* unexpected `Fact` *)  assert false
+            | FreshTuply _
+            | Fact _ ->
+                assert false  (* unexpected cases *)
             | Defn ({core=Recursive _}, _, _, _) ->
                 (* not implemented case *)  assert false
             | Defn ({core=Instance _}, _, _, _) ->
