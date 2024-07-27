@@ -1,0 +1,15 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "TLAPM Debug",
+            "type": "ocaml.earlybird",
+            "request": "launch",
+            "program": "${workspaceFolder}/src/tlapm.bc",
+            "stopOnEntry": true,
+            "env": {
+                "CAML_LD_LIBRARY_PATH": "${workspaceFolder}/_build/default/src:${env:CAML_LD_LIBRARY_PATH}"
+            }
+        }
+    ]
+}
