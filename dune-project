@@ -10,6 +10,8 @@
 
 (source (github tlaplus/tlapm))
 
+(license BSD-2-Clause)
+
 (package
  (name tlapm)
  (synopsis "TLA+ Proof Manager")
