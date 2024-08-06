@@ -4,6 +4,7 @@
 
 (executable
   (name tlapm)
+  (modes byte exe)
   (public_name tlapm)
   (modules tlapm)
   (libraries tlapm_lib)
@@ -26,4 +27,3 @@
  (sites tlapm))
 
 (include_subdirs unqualified)
-
