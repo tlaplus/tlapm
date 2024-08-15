@@ -583,3 +583,7 @@ let init () =
        end;
        exit 3
 
+let parse_module_from_string module_str =
+    let hparse = Tla_parser.P.use M_parser.parse in
+    let (flex, _) = Alexer.lex_string module_str in
+    Tla_parser.P.run hparse ~init:Tla_parser.init ~source:flex

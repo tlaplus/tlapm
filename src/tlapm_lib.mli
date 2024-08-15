@@ -3,3 +3,4 @@
  *)
  val main: string list -> unit
  val init: unit -> unit
+ val parse_module_from_string: string -> M_t.mule option
