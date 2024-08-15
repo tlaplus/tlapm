@@ -615,7 +615,7 @@ let init () =
        exit 3
 
 (* Access to this function has to be synchronized. *)
-let module_of_string ~(content : string) ~(filename : string) ~loader_paths ~prefer_stdlib : (Module.T.mule, (string option* string)) result =
+let transitive_parse_module_of_string ~(content : string) ~(filename : string) ~loader_paths ~prefer_stdlib : (Module.T.mule, (string option* string)) result =
     let parse_it () =
         Errors.reset ();
         Params.prefer_stdlib := prefer_stdlib;
@@ -651,3 +651,8 @@ let module_of_string ~(content : string) ~(filename : string) ~loader_paths ~pre
          | None, None -> Error (None, Printexc.to_string e))
 
 let stdlib_search_paths = Params.stdlib_search_paths
+
+let parse_module_of_string module_str =
+    let hparse = Tla_parser.P.use M_parser.parse in
+    let (flex, _) = Alexer.lex_string module_str in
+    Tla_parser.P.run hparse ~init:Tla_parser.init ~source:flex
