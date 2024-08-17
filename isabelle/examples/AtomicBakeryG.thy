@@ -1140,10 +1140,59 @@ proof auto
               case True
               from i type have "num[i] \<in> Nat"
                 by (auto simp: TypeOK_def)
+              (* Here \<open>show ?thesis\<close> works, as shown here, but takes long time.
+                 Thus tried to decompose the step.
+
               with j selfi i pc' p6 type self iinvi junread iinvj True
               show ?thesis
                 by (clarsimp simp: p6_def TypeOK_def IInv_def After_def int_leq_less)
                    (force elim!: bspec)
+              *)
+              show ?thesis
+              proof -
+                have asd: "0 < num'[i]"
+                proof -
+                  have "TypeOK (unread', max', flag', pc', num', nxt')"
+                    using type self p TypeOKInvariant by auto
+                  hence "num'[i] \<in> Nat"
+                    using i TypeOK_def by auto
+                  moreover have "num'[i] \<noteq> 0"
+                    using selfi p6 iinvi by (simp add: p6_def IInv_def)
+                  ultimately show ?thesis
+                    by simp
+                qed
+                moreover have "
+                  (pc'[j] = ''p1'') \<or>
+                  (pc'[j] = ''p2'' \<and> (i \<in> unread'[j] \<or> num'[i] \<le> max'[j])) \<or>
+                  (pc'[j] = ''p3'' \<and> num'[i] \<le> max'[j]) \<or>
+                  (pc'[j] \<in> {''p4'', ''p5'', ''p6''} \<and> GG(i, j, num') \<and> (pc'[j] \<in> {''p5'', ''p6''} \<Rightarrow> i \<in> unread'[j]))"
+                proof (rule,rule,rule)
+                  assume aa1: "\<not>(pc'[j] = ''p1'')"
+                    and aa2: "\<not>(pc'[j] = ''p2'' \<and> (i \<in> unread'[j] \<or> num'[i] \<le> max'[j]))"
+                    and aa3: "\<not>(pc'[j] = ''p3'' \<and> num'[i] \<le> max'[j])"
+                  show "(pc'[j] \<in> {''p4'', ''p5'', ''p6''} \<and> GG(i, j, num') \<and> (pc'[j] \<in> {''p5'', ''p6''} \<Rightarrow> i \<in> unread'[j]))"
+                  proof -
+                    have "pc'[j] \<in> {''p4'', ''p5'', ''p6''}" (* 35s *)
+                      using aa1 aa2 aa3
+                      using j selfi i pc' p6 type iinvi junread iinvj True
+                      by (clarsimp simp: p6_def TypeOK_def IInv_def)
+                         (force elim!: bspec)
+                    moreover have "GG(i, j, num')" (* 30s *)
+                      using aa1 aa2 aa3
+                      using j selfi i pc' p6 type iinvi junread iinvj True
+                      by (clarsimp simp: p6_def TypeOK_def IInv_def)
+                         (force elim!: bspec)
+                    moreover have "(pc'[j] \<in> {''p5'', ''p6''} \<Rightarrow> i \<in> unread'[j])" (* 4s *)
+                      using j selfi i pc' p6 type iinvi junread iinvj True
+                      by (clarsimp simp: p6_def TypeOK_def IInv_def)
+                         (force elim!: bspec)
+                    ultimately show ?thesis by
+                      auto
+                  qed
+                qed
+                ultimately show ?thesis
+                  unfolding After_def by simp
+              qed
             next
               assume numj: "num[j] \<noteq> 0"
               show ?thesis
