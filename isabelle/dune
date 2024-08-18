@@ -5,9 +5,9 @@
 (rule
  (alias runtest)
  (deps
-  ; (alias_rec ../deps/isabelle/default) -- We don't use it here, because otherwise the isabelle is always rebuilt.
-  (source_tree "."))
+  (source_tree ".")
+  (sandbox none))
  (action
-  (run make dune-runtest)))
+  (run make -f dune.mk runtest)))
 
 (data_only_dirs document examples tests)

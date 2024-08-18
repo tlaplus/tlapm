@@ -1,8 +1,8 @@
 (*  Title:      TLA+/IntegerArithmetic.thy
     Author:     Stephan Merz, Inria Nancy
-    Copyright (C) 2009-2022  INRIA and Microsoft Corporation
+    Copyright (C) 2009-2024  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2021-1
+    Version:    Isabelle2024
 *)
 
 section \<open> Arithmetic (except division) for the integers \<close>
@@ -719,18 +719,31 @@ by simp
 lemma less_not_refl: "a < b \<Longrightarrow> a \<noteq> b"
 by auto
 
-lemma neq_leq_trans [trans]: "a \<noteq> b \<Longrightarrow> a \<le> b \<Longrightarrow> a < b"
+lemma neq_leq_trans [trans,intro]: "a \<noteq> b \<Longrightarrow> a \<le> b \<Longrightarrow> a < b"
 by (simp add: less_def)
 
-declare neq_leq_trans[simplified,trans]
+declare neq_leq_trans[simplified,trans,intro]
+
+lemma neq_leq_trans_sym [trans,intro]: "b \<noteq> a \<Longrightarrow> a \<le> b \<Longrightarrow> a < b"
+by (simp add: less_def)
+
+declare neq_leq_trans_sym[simplified,trans,intro]
 
 lemma leq_neq_trans [trans,elim!]: "a \<le> b \<Longrightarrow> a \<noteq> b \<Longrightarrow> a < b"
 by (simp add: less_def)
 
-declare leq_neq_trans[simplified,trans]
+declare leq_neq_trans[simplified,trans,elim!]
+
+lemma leq_neq_trans_sym [trans,elim!]: "a \<le> b \<Longrightarrow> b \<noteq> a \<Longrightarrow> a < b"
+by (simp add: less_def)
+
+declare leq_neq_trans_sym[simplified,trans,elim!]
 
 (* Don't add to [simp]: will be tried on all disequalities! *)
 lemma leq_neq_iff_less: "a \<le> b \<Longrightarrow> (a \<noteq> b) = (a < b)"
+by auto
+
+lemma leq_neq_iff_less_sym: "a \<le> b \<Longrightarrow> (b \<noteq> a) = (a < b)"
 by auto
 
 subsection \<open> Facts about @{text "\<le>"} over @{text Int} \<close>
@@ -816,8 +829,24 @@ text \<open>
   From now on, we reduce the set @{text "Nat"} to the set of
   non-negative integers.
 \<close>
-lemma nat_iff_int_geq0 [simp]: "n \<in> Nat = (n \<in> Int \<and> 0 \<le> n)"
+lemma nat_iff_int_geq0' (*[simp]*) : "n \<in> Nat = (n \<in> Int \<and> 0 \<le> n)"
   by (auto simp: int_leq_def)
+
+text \<open>
+We will use \<open>nat_is_int_geq0\<close> for simplification instead
+of \<open>nat_iff_int_geq0'\<close> for rewriting \<open>Nat\<close> to \<open>Int\<close> to
+handle also the cases where no \<open>Nat\<close> is used without
+the \<open>\<in>\<close> operator, e.g. in function sets.
+\<close>
+lemma nat_is_int_geq0 [simp] : "Nat = {x \<in> Int : 0 \<le> x}"
+proof
+  show "\<And>x. x \<in> Nat \<Longrightarrow> x \<in> {x \<in> Int : 0 \<le> x}"
+    using nat_iff_int_geq0' by auto
+next
+  show "\<And>x. x \<in> {x \<in> Int : 0 \<le> x} \<Longrightarrow> x \<in> Nat"
+    using nat_iff_int_geq0' by auto
+qed
+
 
 declare natIsInt [simp del]
 declare succInNat [simp del]
@@ -1071,14 +1100,7 @@ lemma nat_leq_induct:  \<comment> \<open>sometimes called ``complete induction''
   shows "\<forall>n\<in>Nat : P(n)"
 proof -
   have "\<forall>n\<in>Nat : \<forall>m\<in>Nat : m \<le> n \<Rightarrow> P(m)"
-  proof (rule natInduct)
-    from base show "\<forall>m \<in> Nat : m \<le> 0 \<Rightarrow> P(m)" by auto
-  next
-    fix n
-    assume "n \<in> Nat" "\<forall>m \<in> Nat : m \<le> n \<Rightarrow> P(m)"
-    with step show "\<forall>m \<in> Nat : m \<le> succ[n] \<Rightarrow> P(m)" 
-      by (auto simp del: nat_iff_int_geq0)
-  qed
+    using assms by (intro natInduct) auto
   thus ?thesis by auto
 qed
 
@@ -1163,12 +1185,12 @@ lemma int_lessE:
   by (simp add: int_less_iff_zero_less_diff[of "a" "b"])
 
 lemma int_leq_not_less:
-  assumes "a \<in> Int" and "b \<in> Int" and "a \<le> b"
+  assumes "a \<le> b" and "a \<in> Int" and "b \<in> Int"
   shows "(b < a) = FALSE"
   using assms by (auto simp: less_def dest: int_leq_antisym)
 
 lemma int_less_not_leq:
-  assumes "a \<in> Int" and "b \<in> Int" and "a < b"
+  assumes "a < b" and "a \<in> Int" and "b \<in> Int"
   shows "(b \<le> a) = FALSE"
   using assms by (auto simp: less_def dest: int_leq_antisym)
 
@@ -1413,7 +1435,7 @@ proof (rule int_leq_lessE[OF ij])
   thus ?thesis by auto
 next
   assume "i = j"
-  with i f show ?thesis by (auto simp del: nat_iff_int_geq0)
+  with i f show ?thesis by auto
 qed (auto simp: i[simplified] j[simplified])
 
 lemma int_succ_lessI:
@@ -1613,12 +1635,12 @@ lemma leq_add_nat2 [iff]:
   shows "b \<le> a + b"
   using assms add_leq_right_mono [of 0 a b] by simp
 
-lemma trans_leq_add_nat1 [simp] (* was [elim]*):
+lemma trans_leq_add_nat1 [simp,intro]:
   assumes "a \<le> b" and "a \<in> Int" and "b \<in> Int" and "m \<in> Int" and "0 \<le> m"
   shows "a \<le> b+m"
   using assms by (simp add: int_leq_trans[of "a" "b" "b+m"])
 
-lemma trans_leq_add_nat2 [simp] (* was [elim] *):
+lemma trans_leq_add_nat2 [simp,intro]:
   assumes "a \<le> b" and "a \<in> Int" and "b \<in> Int" and "m \<in> Int" and "0 \<le> m"
   shows "a \<le> m+b"
   using assms by (simp add: int_leq_trans[of "a" "b" "m+b"])
@@ -1696,12 +1718,12 @@ lemma trans_leq_diff_nat2 [simp]:
 lemma int_leq_iff_add:
   assumes "i \<in> Int" and "j \<in> Int"
   shows "(i \<le> j) = (\<exists>k \<in> Nat: j = i + k)" (is "?lhs = ?rhs")
-  using assms by (auto intro: int_leq_imp_add)
+  using assms by (auto intro: int_leq_imp_add simp del: nat_is_int_geq0 simp add: nat_iff_int_geq0')
 
 lemma int_less_iff_succ_add:
   assumes "i \<in> Int" and "j \<in> Int"
   shows "(i < j) = (\<exists>k \<in> Nat: j = succ[i + k])" (is "?lhs = ?rhs")
-  using assms by (auto intro: int_less_imp_succ_add)
+  using assms by (auto intro: int_less_imp_succ_add simp del: nat_is_int_geq0 simp add: nat_iff_int_geq0')
 
 lemma leq_add_self1 [simp]:
   assumes "i \<in> Int" and "j \<in> Int"
@@ -1718,15 +1740,25 @@ lemma leq_add_self2 [simp]:
   shows "(j + i \<le> i) = (j \<le> 0)"
   using assms by (simp add: add_commute)
 
-lemma trans_less_add_nat1 [simp]:
+lemma trans_less_add_nat1 [simp,intro]:
   assumes "i < j" and "i \<in> Int" and "j \<in> Int" and "m \<in> Int" and "0 \<le> m"
   shows "i < j + m"
   using assms by (simp add: int_less_leq_trans[of "i" "j" "j+m"])
 
-lemma trans_less_add_nat2 [simp]:
+lemma trans_less_add_nat2 [simp,intro]:
   assumes "i < j" and "i \<in> Int" and "j \<in> Int" and "m \<in> Int" and "0 \<le> m"
   shows "i < m + j"
   using assms by (simp add: int_less_leq_trans[of "i" "j" "m+j"])
+
+lemma trans_leq_less_add_nat1 [simp,intro]:
+  assumes "i \<le> j" and "i \<in> Int" and "j \<in> Int" and "m \<in> Int" and "0 < m"
+  shows "i < j + m"
+  using assms add_leq_less_mono[of "i" "j" "0" "m"] by simp
+
+lemma trans_leq_less_add_nat2 [simp,intro]:
+  assumes "i \<le> j" and "i \<in> Int" and "j \<in> Int" and "m \<in> Int" and "0 < m"
+  shows "i < m + j"
+  using assms add_leq_less_mono[of "i" "j" "0" "m"] by (simp add: add_commute)
 
 lemma trans_less_diff_nat1:
   assumes "i < j" and "i \<in> Int" and "j \<in> Int" and "m \<in> Int" and "0 \<le> m"

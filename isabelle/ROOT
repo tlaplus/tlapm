@@ -21,7 +21,7 @@ session "TLA+Examples" in examples = "TLA+" +
 
   theories
     Allocator
-    (* AtomicBakeryG  TODO: Restore it here, when examples are fixed. *)
+    AtomicBakeryG
 
   document_files
     "root.tex"

@@ -1,5 +1,4 @@
 ISABELLE=isabelle
-SRC_ROOT=$(if $(DUNE_SOURCEROOT),$(DUNE_SOURCEROOT),..)
 
 .PHONY: rebuild heap-only dune-runtest clean
 
@@ -15,12 +14,9 @@ rebuild:
 heap-only:
 	$(ISABELLE) build -o document=false -o browser_info=false -b -c -v -D .
 
-# This is invoked from the dune file to run the tests.
-# The tex files might be readonly in the sandbox and Isabelle copies
-# them several times, and thus fails by overwriting a readonly file.
-dune-runtest:
-	chmod 644 examples/document/root.tex document/root.tex
-	$(SRC_ROOT)/deps/isabelle/Isabelle/bin/isabelle build -o document=false -o browser_info=false -c -v -D .
+# Launch Isabelle / Jedit to edit the theory, examples, tests.
+jedit:
+	$(ISABELLE) jedit -d . Constant.thy
 
 clean:
 	rm -rf output/ examples/output/

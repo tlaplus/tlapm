@@ -25,7 +25,7 @@ authors: [
 homepage: "https://github.com/tlaplus/tlapm"
 bug-reports: "https://github.com/tlaplus/tlapm/issues"
 depends: [
-  "dune" {>= "3.12"}
+  "dune" {>= "3.15"}
   "ocaml"
   "dune-site"
   "dune-build-info"
