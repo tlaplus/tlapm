@@ -25,7 +25,7 @@ jobs:
               if: matrix.os == 'ubuntu-latest'
               run: |
                 sudo apt-get update
-                sudo apt-get install --yes time texlive-latex-base
+                sudo apt-get install --yes time texlive-latex-base texlive-plain-generic
             - uses: ocaml/setup-ocaml@v2
               with:
                 ocaml-compiler: ${{ matrix.ocaml-compiler }}

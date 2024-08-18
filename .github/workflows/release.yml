@@ -71,7 +71,7 @@ jobs:
               if: matrix.operating-system == 'ubuntu-latest'
               run: |
                 sudo apt-get update
-                sudo apt-get install --yes time texlive-latex-base
+                sudo apt-get install --yes time texlive-latex-base texlive-plain-generic
             # Read "Output Release URL and
             # ID File" of `release` job above.
             - name: Load Release URL File from release job
