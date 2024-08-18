@@ -21,11 +21,15 @@ jobs:
         steps:
             - name: Clone repo
               uses: actions/checkout@v4
-            - name: Install deps
+            - name: Install deps (ubuntu)
               if: matrix.os == 'ubuntu-latest'
               run: |
                 sudo apt-get update
                 sudo apt-get install --yes time texlive texlive-latex-extra texlive-fonts-extra texlive-luatex
+            - name: Install deps (macos)
+              if: startsWith(matrix.os, 'macos')
+              run: |
+                brew install texlive texlive-latex-extra texlive-fonts-extra texlive-luatex
             - uses: ocaml/setup-ocaml@v2
               with:
                 ocaml-compiler: ${{ matrix.ocaml-compiler }}

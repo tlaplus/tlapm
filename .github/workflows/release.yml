@@ -67,11 +67,15 @@ jobs:
                     '4.13.1',
                     ]
         steps:
-            - name: Install deps
+            - name: Install deps (ubuntu)
               if: matrix.operating-system == 'ubuntu-latest'
               run: |
                 sudo apt-get update
                 sudo apt-get install --yes time texlive texlive-latex-extra texlive-fonts-extra texlive-luatex
+            - name: Install deps (macos)
+              if: startsWith(matrix.operating-system, 'macos')
+              run: |
+                brew install texlive texlive-latex-extra texlive-fonts-extra texlive-luatex
             # Read "Output Release URL and
             # ID File" of `release` job above.
             - name: Load Release URL File from release job
