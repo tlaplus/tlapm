@@ -25,13 +25,14 @@ endif
 
 ISABELLE_URL=https://isabelle.in.tum.de/website-$(ISABELLE_VSN)/dist/$(ISABELLE_ARCHIVE)
 ISABELLE_DIR=Isabelle
+ISABELLE_TEST=Isabelle-test
 
 # Some defaults, for the case if makefile is called not by the dune build system.
 PROJECT_ROOT=$(if $(DUNE_SOURCEROOT),$(DUNE_SOURCEROOT),../..)
 CACHE_DIR=$(PROJECT_ROOT)/_build_cache
 
 
-all: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+ $(ISABELLE_DIR).no-links Isabelle.exec-files
+all: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+ $(ISABELLE_TEST) Isabelle.exec-files
 
 # Download the isabelle archive to the cache.
 $(CACHE_DIR)/$(ISABELLE_ARCHIVE):
@@ -43,16 +44,25 @@ $(ISABELLE_ARCHIVE): $(CACHE_DIR)/$(ISABELLE_ARCHIVE)
 	rm -f $@
 	ln -s $< $@
 
-# Extract the isabelle archive.
-# $(ISABELLE_DIR) is for the release and
-# $(ISABELLE_DIR)-test is for running the isabelle TLA+ tests.
-$(ISABELLE_DIR): $(ISABELLE_ARCHIVE)
-	rm -rf $(ISABELLE_DIR) $(ISABELLE_DIR)-test
+# Extract the isabelle archive and remove the symlinks.
+# TODO: This is is a workaround to eliminate symlinks to directories
+# 		until https://github.com/ocaml/dune/issues/7831 is resolved.
+$(ISABELLE_DIR) $(ISABELLE_TEST): $(ISABELLE_ARCHIVE)
+	rm -rf $(ISABELLE_DIR)
 ifeq ($(ISABELLE_ARCHIVE_TYPE),tgz)
 	tar -xzf $<
 	mv $(ISABELLE_ARCHIVE_DIR) $(ISABELLE_DIR)
 endif
-	cp -r $(ISABELLE_DIR) $(ISABELLE_DIR)-test
+	cd $(ISABELLE_DIR) && rm -rf ./contrib/e-3.0.03-1/src/lib/
+ifeq ($(OS_TYPE),Darwin)
+	cd $(ISABELLE_DIR) && cd contrib/jdk-21.0.3/arm64-darwin/ \
+		&& (find . -type link | xargs rm) \
+		&& mv zulu-21.jdk/Contents/Home/* ./
+	cd $(ISABELLE_DIR) && cd contrib/jdk-21.0.3/x86_64-darwin/ \
+		&& (find . -type link | xargs rm) \
+		&& mv zulu-21.jdk/Contents/Home/* ./
+endif
+	cp -r $(ISABELLE_DIR) $(ISABELLE_TEST)
 
 # Build the TLA+ theory.
 .PRECIOUS: $(ISABELLE_DIR)/src/TLA+
@@ -78,28 +88,12 @@ $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 		&& rm etc/settings \
 		&& mv etc/settings.target etc/settings
 
-# TODO: This is is a workaround to eliminate symlinks to directories
-# 		until https://github.com/ocaml/dune/issues/7831 is resolved.
-.PRECIOUS: $(ISABELLE_DIR).no-links
-$(ISABELLE_DIR).no-links: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+
-	rm -rf $@
-	cd $< && rm -rf ./contrib/e-3.0.03-1/src/lib/
-ifeq ($(OS_TYPE),Darwin)
-	cd $< && cd contrib/jdk-21.0.3/arm64-darwin/ \
-		&& (find . -type link | xargs rm) \
-		&& mv zulu-21.jdk/Contents/Home/* ./
-	cd $< && cd contrib/jdk-21.0.3/x86_64-darwin/ \
-		&& (find . -type link | xargs rm) \
-		&& mv zulu-21.jdk/Contents/Home/* ./
-endif
-	touch $@
-
 # TODO: This is a workaround, because the dune install removes all the executable
 # 		flags (or sets on all the files). Here we generate a script to restore the flags.
-Isabelle.exec-files: $(ISABELLE_DIR).no-links
+Isabelle.exec-files: $(ISABELLE_DIR)
 	echo "$(shell find $(ISABELLE_DIR) -type f $(FIND_EXEC))" > $@
 
 clean:
-	rm -rf $(ISABELLE_ARCHIVE) $(ISABELLE_DIR) $(ISABELLE_DIR).no-links Isabelle.exec-files
+	rm -rf $(ISABELLE_ARCHIVE) $(ISABELLE_DIR) $(ISABELLE_TEST) Isabelle.exec-files
 
 .PHONY: all clean
