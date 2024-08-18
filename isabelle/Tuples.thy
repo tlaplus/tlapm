@@ -1,8 +1,8 @@
 (*  Title:      TLA+/Tuples.thy
     Author:     Stephan Merz, Inria Nancy
-    Copyright (C) 2008-2022 Inria and Microsoft Corporation
+    Copyright (C) 2008-2024 Inria and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2021-1
+    Version:    Isabelle2024
 *)
 
 section \<open> Tuples and Relations in \tlaplus{} \<close>
@@ -129,7 +129,7 @@ lemma SeqI [intro]:
   shows "s \<in> Seq(S)"
 proof -
   from assms have "s \<in> [1 .. Len(s) \<rightarrow> S]" by auto
-  with s show ?thesis unfolding Seq_def by auto
+  with s show ?thesis unfolding Seq_def by (auto simp del: nat_is_int_geq0)
 qed
 
 lemma SeqI':  \<comment> \<open> closer to the definition but probably less useful \<close>
