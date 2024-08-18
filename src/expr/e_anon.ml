@@ -297,11 +297,9 @@ class anon_sg = object (self: 'self)
 end
 
 
-class anon = object
-    inherit anon_sg as super
-
-    method expr scx e =
-        Elab.desugar (super#expr scx e)
+class anon = object (self : 'self)
+  inherit anon_sg as super
+  method expr scx e = Elab.desugar self#expr super#expr scx e
 end
 
 
