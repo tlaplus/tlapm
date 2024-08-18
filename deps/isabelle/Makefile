@@ -44,19 +44,23 @@ $(ISABELLE_ARCHIVE): $(CACHE_DIR)/$(ISABELLE_ARCHIVE)
 	ln -s $< $@
 
 # Extract the isabelle archive.
+# $(ISABELLE_DIR) is for the release and
+# $(ISABELLE_DIR)-test is for running the isabelle TLA+ tests.
 $(ISABELLE_DIR): $(ISABELLE_ARCHIVE)
+	rm -rf $(ISABELLE_DIR) $(ISABELLE_DIR)-test
 ifeq ($(ISABELLE_ARCHIVE_TYPE),tgz)
-	rm -rf $(ISABELLE_DIR)
 	tar -xzf $<
 	mv $(ISABELLE_ARCHIVE_DIR) $(ISABELLE_DIR)
 endif
+	cp -r $(ISABELLE_DIR) $(ISABELLE_DIR)-test
 
 # Build the TLA+ theory.
 .PRECIOUS: $(ISABELLE_DIR)/src/TLA+
 $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 	cd $(ISABELLE_DIR) \
 		&& rm -rf contrib/ProofGeneral* doc heaps/*/HOL contrib/vscodium* contrib/vscode* \
-		&& sed -i -e 's@^\(contrib/vscode_extension\|contrib/vscodium\|src/Tools/Demo\)@#rm at TLA# \1@' etc/components
+		&& sed -i -e 's@^\(contrib/vscode_extension\|contrib/vscodium\|src/Tools/Demo\)@#rm at TLA# \1@' etc/components \
+		&& echo 'src/TLA+' >> etc/components
 	cd $(ISABELLE_DIR) \
 		&& HEAPS_PATH=$(shell pwd)/$(ISABELLE_DIR)/heaps \
 		&& if [ "$(HOST_CPU)" = "x86_64" ] ; then sed -i -e 's/^ML_PLATFORM=.*$$/ML_PLATFORM="$${ISABELLE_PLATFORM64:-$$ISABELLE_PLATFORM}"/' etc/settings ; fi \
