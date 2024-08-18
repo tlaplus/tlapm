@@ -75,7 +75,7 @@ jobs:
             - name: Install deps (macos)
               if: startsWith(matrix.operating-system, 'macos')
               run: |
-                brew install texlive texlive-latex-extra texlive-fonts-extra texlive-luatex
+                brew install texlive
             # Read "Output Release URL and
             # ID File" of `release` job above.
             - name: Load Release URL File from release job
