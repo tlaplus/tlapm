@@ -33,11 +33,12 @@ Copyright (C) 2008-2010  INRIA and Microsoft Corporation
 
 Setup required OS packages; Debian/Ubuntu:
 ```{bash}
-sudo apt install opam zlib1g-dev gawk time
+sudo apt install opam zlib1g-dev gawk time texlive texlive-latex-extra texlive-fonts-extra texlive-luatex
 ```
 Arch Linux:
 ```{bash}
-sudo pacman -S ocaml opam dune zlib time
+sudo pacman -Sy git make gcc patch diffutils ocaml opam dune zlib wget fontconfig gnu-free-fonts  # ocaml and tlapm build
+sudo pacman -Sy time texlive texlive-latexextra texlive-fontsextra texlive-luatex                 # for tlapm tests
 ```
 
 Initialize the OPAM. Add `--disable-sandboxing` option if running this on the docker or sandboxing is not supported for other reasons.
@@ -105,7 +106,7 @@ Then view/edit the code e.g. using VSCode with the `OCaml Platform` extension in
 
 #### 1.1.5. Testing the build/install procedures
 
-The above instructions were tested with
+The above instructions were tested for Debian as follows:
 
 ```{bash}
 docker run -it --rm debian bash
