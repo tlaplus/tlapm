@@ -37,7 +37,7 @@ all: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+ $(ISABELLE_TEST) Isabelle.exec-fil
 # Download the isabelle archive to the cache.
 $(CACHE_DIR)/$(ISABELLE_ARCHIVE):
 	mkdir -p $(CACHE_DIR)
-	cd $(CACHE_DIR) && wget -nv $(ISABELLE_URL)
+	cd $(CACHE_DIR) && wget --progress=dot:giga $(ISABELLE_URL)
 
 # Take the Isabelle archive from the cache.
 $(ISABELLE_ARCHIVE): $(CACHE_DIR)/$(ISABELLE_ARCHIVE)

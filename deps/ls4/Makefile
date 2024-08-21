@@ -17,7 +17,7 @@ endif
 all: ls4
 
 v$(LS4_VERS).zip:
-	wget -nv $(LS4_URL_PREFIX)/$@
+	wget --progress=dot:giga $(LS4_URL_PREFIX)/$@
 
 $(LS4_BASE_NAME): v$(LS4_VERS).zip
 	rm -rf $@
