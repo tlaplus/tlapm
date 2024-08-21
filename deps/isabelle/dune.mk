@@ -43,10 +43,10 @@ all: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+ $(ISABELLE_TEST) Isabelle.exec-fil
 # Download the isabelle archive to the cache.
 $(CACHE_DIR)/$(ISABELLE_ARCHIVE):
 	mkdir -p $(CACHE_DIR)
-	(echo "$(ISABELLE_SHA256) $@" | sha256sum -c -) || ( \
+	(echo "$(ISABELLE_SHA256) *$@" | shasum -a 256 -c -) || ( \
 		(rm -f $@) && \
 		(wget --progress=dot:giga --directory-prefix=$(CACHE_DIR) $(ISABELLE_URL)) && \
-		(echo "$(ISABELLE_SHA256) $@" | sha256sum -c -) \
+		(echo "$(ISABELLE_SHA256) *$@" | shasum -a 256 -c -) \
 	)
 .PHONY: $(CACHE_DIR)/$(ISABELLE_ARCHIVE) # Have to double-check the checksum.
 
