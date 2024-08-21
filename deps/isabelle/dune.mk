@@ -1,15 +1,20 @@
+#
+# See https://isabelle.in.tum.de/dist/ for download files and their SHA256 sums.
+#
 OS_TYPE=$(patsubst CYGWIN%,Cygwin,$(shell uname))
 HOST_CPU=$(shell uname -m)
 
 ISABELLE_VSN=Isabelle2024
 
 ifeq ($(OS_TYPE),Linux)
+	ISABELLE_SHA256=603aaaf8abea36597af3b0651d2c162a86c0a0dd4420766f47e5724039639267
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_linux.tar.gz
 	ISABELLE_ARCHIVE_TYPE=tgz
 	ISABELLE_ARCHIVE_DIR=$(ISABELLE_VSN)
 	FIND_EXEC=-executable
 endif
 ifeq ($(OS_TYPE),Darwin)
+	ISABELLE_SHA256=22035f996f71ea1f03063f6f144195eb6a04974d4d916ed0772cd79569a28bc7
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_macos.tar.gz
 	ISABELLE_ARCHIVE_TYPE=tgz
 	ISABELLE_ARCHIVE_DIR=$(ISABELLE_VSN).app
@@ -17,6 +22,7 @@ ifeq ($(OS_TYPE),Darwin)
 endif
 ifeq ($(OS_TYPE),Cygwin)
 	# TODO: Fix this.
+	ISABELLE_SHA256=ab449a85c0f7c483027c2000889ec93b3f7df565d9d0c6902af2d666b3b58220
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_bundle_x86-cygwin.tar.gz
 	ISABELLE_ARCHIVE_TYPE=tgz
 	ISABELLE_ARCHIVE_DIR=$(ISABELLE_VSN)
@@ -37,7 +43,12 @@ all: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+ $(ISABELLE_TEST) Isabelle.exec-fil
 # Download the isabelle archive to the cache.
 $(CACHE_DIR)/$(ISABELLE_ARCHIVE):
 	mkdir -p $(CACHE_DIR)
-	cd $(CACHE_DIR) && wget --progress=dot:giga $(ISABELLE_URL)
+	(echo "$(ISABELLE_SHA256) $@" | sha256sum -c -) || ( \
+		(rm -f $@) && \
+		(wget --progress=dot:giga --directory-prefix=$(CACHE_DIR) $(ISABELLE_URL)) && \
+		(echo "$(ISABELLE_SHA256) $@" | sha256sum -c -) \
+	)
+.PHONY: $(CACHE_DIR)/$(ISABELLE_ARCHIVE) # Have to double-check the checksum.
 
 # Take the Isabelle archive from the cache.
 $(ISABELLE_ARCHIVE): $(CACHE_DIR)/$(ISABELLE_ARCHIVE)

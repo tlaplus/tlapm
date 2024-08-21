@@ -34,11 +34,11 @@ jobs:
             - uses: ocaml/setup-ocaml@v2
               with:
                 ocaml-compiler: ${{ matrix.ocaml-compiler }}
-            # - uses: actions/cache@v3
-            #   id: cache
-            #   with:
-            #     path: _build_cache
-            #     key: ${{ runner.os }}_build_cache
+            - uses: actions/cache@v4
+              id: cache
+              with:
+                path: _build_cache
+                key: ${{ runner.os }}_build_cache
             - name: Build TLAPM
               run: |
                 eval $(opam env)
