@@ -39,7 +39,7 @@ sudo pacman -Sy git make gcc patch diffutils ocaml opam dune zlib wget fontconfi
 sudo pacman -Sy time texlive texlive-latexextra texlive-fontsextra texlive-luatex                 # for tlapm tests
 ```
 
-maxOS:
+macOS:
 ```{bash}
 brew install texlive
 ```
