@@ -19,7 +19,7 @@ endif
 all: z3
 
 $(Z3_BASE_NAME).zip:
-	wget -q $(Z3_URL_PREFIX)/$@
+	wget -nv $(Z3_URL_PREFIX)/$@
 
 $(Z3_BASE_NAME): $(Z3_BASE_NAME).zip
 	rm -rf $@

@@ -68,6 +68,7 @@ cd tlapm
 Install the dependencies via OPAM. A helper `make` target is present for that:
 
 ```{bash}
+make opam-update
 make opam-deps
 ```
 

@@ -17,6 +17,9 @@ PREFIX=$(OPAM_SWITCH_PREFIX)
 
 all: build
 
+opam-update: # Update the package lists.
+	opam update
+
 opam-deps:
 	opam install ./ --deps-only --yes --working-dir
 
