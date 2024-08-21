@@ -31,17 +31,16 @@ Copyright (C) 2008-2010  INRIA and Microsoft Corporation
 
 Setup required OS packages; Debian/Ubuntu:
 ```{bash}
-sudo apt install opam zlib1g-dev gawk time texlive texlive-latex-extra texlive-fonts-extra texlive-luatex
+sudo apt install opam zlib1g-dev gawk time
 ```
 Arch Linux:
 ```{bash}
-sudo pacman -Sy git make gcc patch diffutils ocaml opam dune zlib wget fontconfig gnu-free-fonts  # ocaml and tlapm build
-sudo pacman -Sy time texlive texlive-latexextra texlive-fontsextra texlive-luatex                 # for tlapm tests
+sudo pacman -Sy time git make gcc patch diffutils ocaml opam dune zlib wget fontconfig gnu-free-fonts
 ```
 
 macOS:
 ```{bash}
-brew install texlive
+# No additional packages needed.
 ```
 
 Initialize the OPAM. Add `--disable-sandboxing` option if running this on the docker or sandboxing is not supported for other reasons.

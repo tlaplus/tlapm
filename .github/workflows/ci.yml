@@ -30,11 +30,7 @@ jobs:
               if: matrix.os == 'ubuntu-latest'
               run: |
                 sudo apt-get update
-                sudo apt-get install --yes time texlive texlive-latex-extra texlive-fonts-extra texlive-luatex
-            - name: Install deps (macos)
-              if: startsWith(matrix.os, 'macos')
-              run: |
-                brew install texlive
+                sudo apt-get install --yes time
             - uses: ocaml/setup-ocaml@v2
               with:
                 ocaml-compiler: ${{ matrix.ocaml-compiler }}
