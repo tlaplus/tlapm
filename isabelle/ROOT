@@ -1,4 +1,4 @@
-(* build the session using "isabelle build -b -D ." *)
+(* See also Makefile. *)
 chapter "TLA+"
 session "TLA+" = "Pure" +
   options [document_output = "output", document_variants="document:outline=/proof"]
@@ -17,7 +17,7 @@ session "TLA+Tests" in tests = "TLA+" +
     Tests
 
 session "TLA+Examples" in examples = "TLA+" +
-  options [document=pdf, document_output = "output", document_variants="document:outline=/proof"]
+  options [document_output = "output", document_variants="document:outline=/proof"]
 
   theories
     Allocator
