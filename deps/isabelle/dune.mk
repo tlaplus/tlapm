@@ -80,11 +80,10 @@ endif
 $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 	cd $(ISABELLE_DIR) \
 		&& rm -rf contrib/ProofGeneral* doc heaps/*/HOL contrib/vscodium* contrib/vscode* \
-		&& sed -i -e 's@^\(contrib/vscode_extension\|contrib/vscodium\|src/Tools/Demo\)@#rm at TLA# \1@' etc/components \
-		&& echo 'src/TLA+' >> etc/components
+		&& awk '/^((contrib\/(vscode_extension|vscodium))|(src\/Tools\/Demo))/{ print "#rm at TLA# " $$0; next } END { print "src/TLA+" } { print }' etc/components > etc/components.tmp \
+		&& rm etc/components && mv etc/components.tmp etc/components
 	cd $(ISABELLE_DIR) \
 		&& HEAPS_PATH=$(shell pwd)/$(ISABELLE_DIR)/heaps \
-		&& if [ "$(HOST_CPU)" = "x86_64" ] ; then sed -i -e 's/^ML_PLATFORM=.*$$/ML_PLATFORM="$${ISABELLE_PLATFORM64:-$$ISABELLE_PLATFORM}"/' etc/settings ; fi \
 		&& cp etc/settings etc/settings.target \
 		&& echo "ISABELLE_OUTPUT=$$HEAPS_PATH" >> etc/settings
 	mkdir -p $(ISABELLE_DIR)/src/TLA+ \
