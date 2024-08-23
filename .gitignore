@@ -1,7 +1,3 @@
-*.o
-*.cmi
-*.cmx
-*.annot
 *.exe
 *.err
 *.out

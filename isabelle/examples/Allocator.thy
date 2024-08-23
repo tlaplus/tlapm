@@ -1,18 +1,29 @@
-(*  Title:      TLA+/AtomicBakery.thy
-    Author:     Stephan Merz, LORIA
-    Copyright (C) 2009-2011  INRIA and Microsoft Corporation
+(*  Title:      TLA+/Allocator.thy
+    Author:     Stephan Merz, Inria Nancy
+    Copyright (C) 2009-2022  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2011-1
-    Time-stamp: <2011-10-11 17:38:22 merz>
+    Version:    Isabelle2024
 *)
+
+section \<open>A Simple Resource Allocator\<close>
 
 theory Allocator
 imports Constant
 begin
 
+text \<open>
+  We define and prove the safety of a simple-minded resource allocator
+  where clients can request and return resources. The allocator can
+  hand out resources that are available. Since the allocator does
+  not keep track of the fact if clients will be able to satisfy all 
+  their requests, it may get into a situation where clients hold
+  part of their requested resources but will wait forever for the
+  outstanding resources, held by other clients.
+\<close>
+
 declare funcSetValue [dest]
 
-consts   -- {* constant parameters of TLA+ SimpleAllocator module *}
+consts   \<comment> \<open> constant parameters of TLA+ SimpleAllocator module \<close>
   Client :: c
   Resource :: c
 
@@ -28,14 +39,14 @@ lemma InitTypeInvariant:
   "Init(unsat,alloc) \<Rightarrow> TypeInvariant(unsat,alloc)"
 by (auto simp: Init_def TypeInvariant_def)
 
--- {* Alternative formulation as proof rule (meta-level implication) *}
+\<comment> \<open> Alternative formulation as proof rule (meta-level implication) \<close>
 lemma InitTypeInvariant':
   assumes "Init(unsat,alloc)"
   shows "TypeInvariant(unsat,alloc)"
 using assms by (auto simp: Init_def TypeInvariant_def)
 
 definition available where
-  "available(alloc) \<equiv> Resource \\ (UNION {alloc[c] : c \<in> Client})"
+  "available(alloc) \<equiv> Resource \<setminus> (UNION {alloc[c] : c \<in> Client})"
 
 definition Request where
   "Request(c,S,unsat,alloc,unsat',alloc') \<equiv>
@@ -49,7 +60,7 @@ lemma RequestTypeInvariant:
    \<Rightarrow> TypeInvariant(unsat',alloc')"
 unfolding TypeInvariant_def Request_def by auto
 
--- {* Alternative formulation *}
+\<comment> \<open> Alternative formulation \<close>
 lemma RequestTypeInvariant':
   assumes "TypeInvariant(unsat,alloc)" and "c \<in> Client" and "S \<in> SUBSET Resource"
     and "Request(c,S,unsat,alloc,unsat',alloc')"
@@ -60,7 +71,7 @@ definition Allocate where
   "Allocate(c,S,unsat,alloc,unsat',alloc') \<equiv>
       S \<noteq> {} \<and> S \<subseteq> available(alloc) \<inter> unsat[c]
    \<and> alloc' = [alloc EXCEPT ![c] = alloc[c] \<union> S]
-   \<and> unsat' = [unsat EXCEPT ![c] = alloc[c] \\ S]"
+   \<and> unsat' = [unsat EXCEPT ![c] = alloc[c] \<setminus> S]"
 
 lemma AllocateTypeInvariant:
   "TypeInvariant(unsat,alloc) 
@@ -68,7 +79,7 @@ lemma AllocateTypeInvariant:
    \<Rightarrow> TypeInvariant(unsat',alloc')"
 unfolding TypeInvariant_def Allocate_def by auto
 
--- {* Alternative formulation *}
+\<comment> \<open> Alternative formulation \<close>
 lemma AllocateTypeInvariant':
   assumes "TypeInvariant(unsat,alloc)" and "c \<in> Client" and "S \<in> SUBSET Resource"
     and "Allocate(c,S,unsat,alloc,unsat',alloc')"
@@ -78,7 +89,7 @@ using assms unfolding TypeInvariant_def Allocate_def by auto
 definition Return where
   "Return(c,S,unsat,alloc,unsat',alloc') \<equiv>
       S \<noteq> {} \<and> S \<subseteq> alloc[c]
-   \<and> alloc' = [alloc EXCEPT ![c] = alloc[c] \\ S]
+   \<and> alloc' = [alloc EXCEPT ![c] = alloc[c] \<setminus> S]
    \<and> unsat' = unsat"
 
 lemma ReturnTypeInvariant:
@@ -87,7 +98,7 @@ lemma ReturnTypeInvariant:
    \<Rightarrow> TypeInvariant(unsat',alloc')"
 unfolding TypeInvariant_def Return_def by auto
 
--- {* Alternative formulation *}
+\<comment> \<open> Alternative formulation \<close>
 lemma ReturnTypeInvariant':
   assumes "TypeInvariant(unsat,alloc)" and "c \<in> Client" and "S \<in> SUBSET Resource"
      and "Return(c,S,unsat,alloc,unsat',alloc')"
@@ -109,14 +120,14 @@ by (blast intro: RequestTypeInvariant [rule_format]
                  AllocateTypeInvariant [rule_format]
                  ReturnTypeInvariant [rule_format])
 
--- {* Alternative formulation, using the rule formats of the individual lemmas *}
+\<comment> \<open> Alternative formulation, using the rule formats of the individual lemmas \<close>
 lemma NextTypeInvariant':
   assumes "TypeInvariant(unsat,alloc)" and "Next(unsat,alloc,unsat',alloc')"
   shows "TypeInvariant(unsat',alloc')"
 using assms unfolding Next_def
 by (blast intro: RequestTypeInvariant' AllocateTypeInvariant' ReturnTypeInvariant')
 
--- {* Direct proof, without use of lemmas for subactions *}
+\<comment> \<open> Direct proof, without use of lemmas for subactions \<close>
 lemma NextTypeInvariant'':
   "TypeInvariant(unsat,alloc) \<and> Next(unsat,alloc,unsat',alloc')
    \<Rightarrow> TypeInvariant(unsat',alloc')"
@@ -124,7 +135,7 @@ unfolding TypeInvariant_def Next_def Request_def Allocate_def Return_def
 by auto
 
 
-text {* Proof of mutual exclusion: no two processes ever hold a common resource *}
+text \<open> Proof of mutual exclusion: no two processes ever hold a common resource \<close>
 
 definition Mutex where
   "Mutex(alloc) \<equiv>
@@ -133,10 +144,10 @@ definition Mutex where
 lemma InitMutex: "Init(unsat,alloc) \<Rightarrow> Mutex(alloc)"
 unfolding Init_def Mutex_def by auto
 
-text {* 
+text \<open> 
   The @{text Request} action trivially preserves mutual exclusion because 
   it leaves the value of @{text alloc} unchanged.
-*}
+\<close>
 
 lemma RequestMutex:
   "Mutex(alloc)
@@ -144,10 +155,10 @@ lemma RequestMutex:
    \<Rightarrow> Mutex(alloc')"
 unfolding Request_def by auto
 
-text {*
+text \<open>
   The @{text Return} action decreases the set of allocated resources,
   so preservation of mutual exclusion follows easily. Note the use of the type invariant.
-*}
+\<close>
 
 lemma ReturnMutex:
   "Mutex(alloc) \<and> TypeInvariant(unsat,alloc)
@@ -174,10 +185,10 @@ proof (clarify)
   qed
 qed
 
-text {*
+text \<open>
   In fact, the proof is easy for Isabelle's automatic proof methods.
   Note the use of @{text clarsimp} to simplify the goal before the heavy lifting.
-*}
+\<close>
 
 lemma
   "Mutex(alloc) \<and> TypeInvariant(unsat,alloc)
@@ -185,10 +196,10 @@ lemma
    \<Rightarrow> Mutex(alloc')"
 by (clarsimp simp: Mutex_def TypeInvariant_def Return_def) auto
 
-text {*
+text \<open>
   The proof for the @{text Allocate} action requires some case analysis.
   Unfortunately, we need to prove two symmetric assertions.
-*}
+\<close>
 
 lemma AllocateMutex:
   "Mutex(alloc) \<and> TypeInvariant(unsat,alloc)
@@ -206,13 +217,13 @@ proof (clarify)
        and rc: "r \<in> alloc'[c]" and rc': "r \<in> alloc'[c']"
     show "c' = c"
     proof (cases "c=clt \<or> c'=clt")
-      case False -- {* the simple case first *}
+      case False \<comment> \<open> the simple case first \<close>
       with all c c' tpg have "alloc'[c] = alloc[c] \<and> alloc'[c'] = alloc[c']"
 	by (auto simp: Allocate_def TypeInvariant_def)
       with mux rc rc' c c' r show "c' = c"
 	by (auto simp: Mutex_def)
     next
-      case True -- {* one of @{term c} or @{term c'} is @{term clt} *}
+      case True \<comment> \<open> one of @{term c} or @{term c'} is @{term clt} \<close>
       thus "c' = c"
       proof
 	assume c1: "c = clt"
@@ -233,7 +244,7 @@ proof (clarify)
 	    using all c1 c tpg by (auto simp: Allocate_def TypeInvariant_def)
 	  with rc show "FALSE" by auto
 	qed
-      next   -- {* symmetric argument *}
+      next   \<comment> \<open> symmetric argument \<close>
 	assume c1: "c' = clt"
 	show "c' = c"
 	proof (rule contradiction)
@@ -258,10 +269,10 @@ proof (clarify)
 qed
 
 
-text {*
+text \<open>
   Using the above lemmas, it is straightforward to derive that the
   next-state action preserves mutual exclusion.
-*}
+\<close>
 
 lemma NextMutex:
   "Mutex(alloc) \<and> TypeInvariant(unsat,alloc) \<and> Next(unsat,alloc,unsat',alloc')

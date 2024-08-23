@@ -1,28 +1,43 @@
 (*  Title:      TLA+/Strings.thy
-    Author:     Stephan Merz, LORIA
-    Copyright (C) 2009-2011  INRIA and Microsoft Corporation
+    Author:     Stephan Merz, Inria Nancy
+    Copyright (C) 2009-2024  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2011-1
-    Time-stamp: <2011-10-11 17:40:15 merz>
+    Version:    Isabelle2024
 *)
 
-header {* Characters and strings *}
+section \<open> Characters and strings \<close>
 
 theory Strings
 imports Tuples
 begin
 
-subsection {* Characters *}
+subsection \<open> Characters \<close>
 
-text {*
+text \<open>
   Characters are represented as pairs of hexadecimal digits (also called
   \emph{nibbles}).
-*}
+\<close>
 
 definition Nibble
-where "Nibble \<equiv> {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}"
+(*  where "Nibble \<equiv> {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}" *)
+  where "Nibble \<equiv> {0, 
+                    1, 
+                    succ[1], 
+                    succ[succ[1]], 
+                    succ[succ[succ[1]]],
+                    succ[succ[succ[succ[1]]]],
+                    succ[succ[succ[succ[succ[1]]]]],
+                    succ[succ[succ[succ[succ[succ[1]]]]]],
+                    succ[succ[succ[succ[succ[succ[succ[1]]]]]]],
+                    succ[succ[succ[succ[succ[succ[succ[succ[1]]]]]]]],
+                    succ[succ[succ[succ[succ[succ[succ[succ[succ[1]]]]]]]]],
+                    succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[1]]]]]]]]]],
+                    succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[1]]]]]]]]]]],
+                    succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[1]]]]]]]]]]]],
+                    succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[1]]]]]]]]]]]]],
+                    succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[succ[1]]]]]]]]]]]]]]}"
 
-definition char   -- {* @{text char} is intended to be applied to nibbles *}
+definition char   (* -- @{text char} is intended to be applied to nibbles *)
 where "char(a,b) \<equiv> \<langle>a,b\<rangle>"
 
 lemma charInj [simp]: "(char(a,b) = char(c,d)) = (a=c \<and> b=d)"
@@ -30,7 +45,8 @@ by (simp add: char_def)
 
 (*** example **
 lemma "char(3,13) \<noteq> char(14,2)"
-by simp
+  by (simp add: two_def three_def four_def five_def six_def seven_def eight_def
+                nine_def ten_def eleven_def twelve_def thirteen_def fourteen_def)
 ***)
 
 definition Char
@@ -40,39 +56,43 @@ lemma isChar [simp]: "(c \<in> Char) = (\<exists>a,b \<in> Nibble : c = char(a,b
 unfolding Char_def by auto
 
 
-subsection {* Strings *}
+subsection \<open> Strings \<close>
 
 definition String
 where "String \<equiv> Seq(Char)"
 
 syntax
-  "_Char"   :: "xstr \<Rightarrow> c"    ("CHAR _")
-  "_String" :: "xstr \<Rightarrow> c"    ("_")
+  "_Char"   :: "str_token \<Rightarrow> c"    ("CHAR _")
+  "_String" :: "str_token \<Rightarrow> c"    ("_")
 
-text {*
+text \<open>
   The following parse and print translations convert between the internal
-  and external representations of strings. Strings are written using 
+  and external representations of strings. Strings are written using
   two single quotes in Isabelle, such as \verb|''abc''|. Note that the
   empty string is just the empty sequence in \tlaplus{}, so \verb|''''| gets
   printed as @{term "\<langle>\<rangle>"}. Single characters are printed in the form
   \verb|CHAR ''a''|: Isabelle doesn't provide single characters in its
   lexicon.
-*}
+\<close>
 
-parse_ast_translation {*
+parse_ast_translation \<open>
   let
     (* convert an ML integer to a nibble *)
     fun mkNibble n =
       if n = 0
-      then Ast.Constant "Peano.zero"
-      else Ast.Appl [Ast.Constant "Functions.fapply", Ast.Constant "Peano.Succ", mkNibble (n-1)];
+      then Ast.Constant "Integers.zero"
+      else Ast.Appl [Ast.Constant "Functions.fapply", Ast.Constant "Integers.succ", mkNibble (n-1)];
 
     (* convert an ML character to a TLA+ Char *)
     fun mkChar c =
       if Symbol.is_ascii c
-      then Ast.Appl [Ast.Constant "Strings.char", 
+      then Ast.Appl [Ast.Constant "Strings.char",
                         mkNibble (ord c div 16), mkNibble (ord c mod 16)]
       else error ("Non-ASCII symbol: " ^ quote c);
+
+    (* remove two leading quotes from a list of characters *)
+    fun trim_quotes ("'" :: ( "'" :: cs)) = cs
+      | trim_quotes cs = cs
 
     (* convert a list of ML characters into a TLA+ string, in reverse order *)
     fun list2TupleReverse [] = Ast.Constant "Tuples.emptySeq"
@@ -80,38 +100,54 @@ parse_ast_translation {*
           Ast.Appl [Ast.Constant "Tuples.Append", list2TupleReverse cs, mkChar c];
 
     (* parse AST translation for characters *)
-    fun char_ast_tr [Ast.Variable xstr] =
-          (case Lexicon.explode_xstr xstr of
+    fun char_ast_tr [Ast.Variable str] =
+      let val trimmed_str = (trim_quotes (rev (trim_quotes (Symbol.explode str))))
+      in  (case trimmed_str of
             [c] => mkChar c
-          | _ => error ("Expected single character, not " ^ xstr))
-      | char_ast_tr asts = raise Ast.AST ("char_ast_tr", asts);
+            | _ => error ("Expected single character, not " ^ str))
+      end
+    | char_ast_tr asts = raise Ast.AST ("char_ast_tr", asts);
 
     (* parse AST translation for strings *)
-    fun string_ast_tr [Ast.Variable xstr] = 
-          list2TupleReverse (rev (Lexicon.explode_xstr xstr))
+    fun string_ast_tr [Ast.Variable str] =
+          list2TupleReverse (trim_quotes (rev ((trim_quotes (Symbol.explode str)))))
       | string_ast_tr asts = raise Ast.AST ("string_ast_tr", asts);
   in
-    [("_Char", char_ast_tr), ("_String", string_ast_tr)]
+    [("_Char", K char_ast_tr), ("_String", K string_ast_tr)]
   end
-*}
+\<close>
 
 
-(** debug **)
-(*ML {* set Syntax.trace_ast; *}*)
+(** debug **
+(*declare [[syntax_ast_trace = true]]*)
 
 lemma "''a''"
+oops
+
+lemma "''''"
+oops
+
+lemma "''abc''"
 oops
 
 lemma "CHAR ''a''"
 oops
 
-(*ML {* reset Syntax.trace_ast; *}*)
-(**)
+(* declare [[syntax_ast_trace = false]] *)
+**)
 
-print_ast_translation {*
+print_ast_translation \<open>
   let
-    (* convert a nibble to an ML integer -- because translation macros have 
-       already been applied, we see constants "0" through "15", not Succ[...] terms! *)
+    (* convert a nibble to an ML integer *)
+    (* version to be used if 2 .. 15 are definitions, not abbreviations *)
+    fun destNibble (Ast.Constant @{const_syntax "zero"}) = 0
+      | destNibble (Ast.Constant @{const_syntax "one"}) = 1
+      | destNibble (Ast.Appl [Ast.Constant @{const_syntax "Functions.fapply"}, 
+                              Ast.Constant @{const_syntax "Integers.succ"}, nb])
+           = (destNibble nb) + 1
+      | destNibble _ = raise Match
+    (* version to be used when 2 .. 15 are abbreviations, not definitions *)
+(*
     fun destNibble (Ast.Constant @{const_syntax "zero"}) = 0
       | destNibble (Ast.Constant @{const_syntax "one"}) = 1
       | destNibble (Ast.Constant @{const_syntax "two"}) = 2
@@ -129,12 +165,12 @@ print_ast_translation {*
       | destNibble (Ast.Constant @{const_syntax "fourteen"}) = 14
       | destNibble (Ast.Constant @{const_syntax "fifteen"}) = 15
       | destNibble _ = raise Match;
-
+*)
     (* convert a pair of nibbles to an ML character *)
     fun destNbls nb1 nb2 =
         let val specials = raw_explode "\"\\`'"
             val c = chr (destNibble nb1 * 16 + destNibble nb2)
-        in  if not (member (op =) specials c) andalso Symbol.is_ascii c 
+        in  if not (member (op =) specials c) andalso Symbol.is_ascii c
                andalso Symbol.is_printable c
             then c else raise Match
         end;
@@ -151,13 +187,12 @@ print_ast_translation {*
     (* convert a list of TLA+ characters to the output representation of a TLA+ string *)
     fun list2String cs =
           Ast.Appl [Ast.Constant "_inner_string",
-                       Ast.Variable (Lexicon.implode_xstr cs)];
+                       Ast.Variable (Lexicon.implode_str cs)];
 
     (* print AST translation for single characters that do not occur in a string *)
     fun char_ast_tr' [nb1, nb2] =
-          Ast.Appl [Ast.Constant @{syntax_const "_Char"}, 
-                       list2String [destNbls nb1 nb2]]
-      | char_ast_tr' _ = raise Match;
+        Ast.Appl [Ast.Constant @{syntax_const "_Char"}, list2String [destNbls nb1 nb2]]
+      | char_ast_tr' _ = raise Match
 
     (* print AST translation for non-empty literal strings,
        fails (by raising exception Match)
@@ -165,13 +200,12 @@ print_ast_translation {*
     fun string_ast_tr' [args] = list2String (map destChar (tuple2List args))
       | string_ast_tr' _ = raise Match;
   in
-    [(@{const_syntax "char"}, char_ast_tr'), ("@tuple", string_ast_tr')]
+    [(@{const_syntax "char"}, K char_ast_tr'), ("@tuple", K string_ast_tr')]
   end
-*}
+\<close>
 
 (*** examples **
-(* not sure if the following is the way to set tracing? *)
-(* ML {* val _ = Config.put Ast.trace true @{context} *} *)
+(*declare [[syntax_ast_trace = true]]*)
 
 lemma "CHAR ''a'' \<noteq> CHAR ''b''"
 by simp
@@ -189,15 +223,16 @@ lemma "''ab''[1] = CHAR ''a''"
 by simp
 
 lemma "''abc''[2] \<noteq> CHAR ''a''"
-by simp
+by (simp add: two_def)
 
-(* ML {* val _ = Config.put Ast.trace false @{context} *} *)
+(* declare [[syntax_ast_trace = false]] *)
+
 **)
 
 
-subsection {* Records and sets of records *}
+subsection \<open> Records and sets of records \<close>
 
-text {*
+text \<open>
   Records are simply represented as enumerated functions with string arguments,
   such as @{text "(''foo'' :> 1) @ (''bar'' :> TRUE)"}. Similarly, there is no
   specific @{text "EXCEPT"} construct for records; use the standard one for
@@ -207,16 +242,16 @@ text {*
   record syntax in Isabelle seems difficult, because the Isabelle lexer
   distinguishes between identifiers and strings: the latter must be surrounded
   by two single quotes.
-*}
+\<close>
 
 (** Examples **
 
 lemma "(''foo'' :> 1 @@ ''bar'' :> TRUE) \<in> [''bar'' : BOOLEAN, ''foo'' : Nat]"
-by auto
+by auto   (* slow *)
 
 lemma "r \<in> [''bar'' : BOOLEAN, ''foo'' : Nat]
        \<Longrightarrow> [r EXCEPT ![''foo''] = 3] \<in> [''bar'' : BOOLEAN, ''foo'' : Nat]"
-by force    (* "by auto" also works, but is slow *)
+by (force simp: two_def three_def)   (* even slower, "auto" also works *)
 
 lemma "(''a'' :> 1) \<noteq> (''b'' :> 1)"
 by simp
@@ -225,25 +260,25 @@ lemma "(''a'' :> 1 @@ ''b'' :> 2) \<noteq> (''a'' :> 1)"
 by simp
 
 lemma "(''a'' :> 1 @@ ''b'' :> 2) \<noteq> (''a'' :> 1 @@ ''b'' :> 3)"
-by simp
+by (simp add: two_def three_def)
 
 lemma "(''a'' :> 1 @@ ''b'' :> 2) = (''b'' :> 2 @@ ''a'' :> 1)"
 by simp
 
 lemma "''ab'' = [i \<in> {1,2} \<mapsto> ''ab''[i]]"
-by auto
+by (auto simp: two_def)
 
 lemma "''ab'' = (1 :> CHAR ''a'') @@ (2 :> CHAR ''b'')"
-by auto
+by (auto simp: two_def)
 
 lemma "Len(''ab'') = 2"
-by simp
+by (simp add: two_def)
 
 **)
 
 end
 
-(* NB: Make sure that the following are proved automatically:
+(* NB: Make sure that the following is proved automatically once concatenation is defined:
 
 THEOREM Thm1 == "ab" = "a" \o "b"
 OBVIOUS
