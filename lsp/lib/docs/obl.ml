@@ -178,6 +178,7 @@ let as_lsp_diagnostic (obl : t) =
         | None -> message
         | Some obl_text -> message ^ "\n" ^ obl_text
       in
+      let message = `String message in
       let severity = LspT.DiagnosticSeverity.Error in
       let range = Range.as_lsp_range (loc obl) in
       let source = Const.diagnostic_source in

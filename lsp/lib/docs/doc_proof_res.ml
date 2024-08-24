@@ -31,7 +31,7 @@ let as_lsp pr =
           | TlapmNotifError -> LspT.DiagnosticSeverity.Error
           | TlapmNotifWarning -> LspT.DiagnosticSeverity.Warning
         in
-        LspT.Diagnostic.create ~message:ntf.msg
+        LspT.Diagnostic.create ~message:(`String ntf.msg)
           ~range:(Range.as_lsp_range ntf.loc)
           ~severity ~source:Const.diagnostic_source ())
       pr.nts
