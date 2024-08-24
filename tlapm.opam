@@ -22,10 +22,11 @@ authors: [
   "Jean-Baptiste Tristan"
   "Hernan Vanzetto"
 ]
+license: "BSD-2-Clause"
 homepage: "https://github.com/tlaplus/tlapm"
 bug-reports: "https://github.com/tlaplus/tlapm/issues"
 depends: [
-  "dune" {>= "3.8"}
+  "dune" {>= "3.15"}
   "ocaml"
   "dune-site"
   "dune-build-info"

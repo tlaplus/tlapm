@@ -1,8 +1,7 @@
 (* Zenon.thy --- Support lemmas for Zenon proofs
  * Author: Damien Doligez <damien.doligez@inria.fr>
- * Copyright (C) 2008-2011  INRIA and Microsoft Corporation
- * Version:    Isabelle2011-1
- * Time-stamp: <2011-10-11 17:41:20 merz>
+ * Copyright (C) 2008-2024  INRIA and Microsoft Corporation
+ * Version:    Isabelle2024
  *)
 
 (* isabelle usedir -b Pure TLA+ *)
@@ -11,7 +10,7 @@ theory Zenon
 imports Constant
 begin
 
-text {* The following lemmas make a cleaner meta-object reification *}
+text \<open> The following lemmas make a cleaner meta-object reification \<close>
 lemma atomize_meta_bAll [atomize]:
   "(\<And>x. (x \<in> S \<Longrightarrow> P(x)))
               \<equiv> Trueprop (\<forall> x \<in> S : P(x))"
@@ -20,7 +19,7 @@ proof
   thus "\<forall> x \<in> S : P(x)" ..
 next
   assume "\<forall> x \<in> S : P(x)"
-  thus "(\<And>x. (x \<in> S \<Longrightarrow> P(x)))" ..
+  thus "(\<And>x. (x \<in> S \<Longrightarrow> P(x)))" by blast
 qed
 
 lemma atomize_object_bAll [atomize]:
@@ -336,6 +335,14 @@ by blast
 
 (* INTER -- needed ? *)
 
+abbreviation
+    cup :: "[c, c] \<Rightarrow> c" (infixl "\\cup" 65)
+    where "a \\cup b \<equiv> a \<union> b"
+
+abbreviation
+    cap :: "[c, c] \<Rightarrow> c" (infixl "\\cap" 70)
+    where "a \\cap b \<equiv> a \<inter> b"
+
 lemma zenon_in_cup :
   "x \\in A \\cup B ==> (x \\in A ==> FALSE) ==> (x \\in B ==> FALSE) ==> FALSE"
 by blast
@@ -347,7 +354,7 @@ by blast
 lemma zenon_notin_cup_0 :
   "x \\notin A \\cup B ==> x \\notin A"
 by blast
-  
+
 lemma zenon_notin_cup_1 :
   "x \\notin A \\cup B ==> x \\notin B"
 by blast
@@ -542,7 +549,7 @@ proof -
       have h10: "x = v | x ~= v" by (rule excluded_middle)
       show "except (f, v, e)[x] \\in B"
       using h4 h9 h5 except_def by auto
-    qed  
+    qed
     show "except (f, v, e) \\in FuncSet (A, B)"
     using h6 h7 h8 FuncSet by blast
   qed
@@ -936,7 +943,8 @@ proof -
   assume h2: "~c ==> P(b) ==> FALSE"
   have h2x: "~c ==> ~P(b)" using h2 by auto
   have h3: "~P (IF c THEN a ELSE b)"
-  by (rule condI [of c "\<lambda> x . ~P (x)", OF h1x h2x])
+  using atomize_not condI[of c "\<lambda> x . ~P (x)", OF h1x h2x]
+    by (auto)
   show FALSE
   by (rule notE [OF h3 main])
 qed
@@ -1038,7 +1046,7 @@ proof (rule inProductE [OF a b])
   assume h1: "isASeq(p)"
   assume h2: "Len(p) = Len(s)"
   assume h3: "p \\in [1 .. Len (s) -> UNION Range (s)]"
-  assume h4: "ALL k in 1 .. Len (s) : p[k] \\in s[k]"
+  assume h4: "\\A k \\in 1 .. Len (s) : p[k] \\in s[k]"
   show "p[i] \\in s[i]" (is "?c")
   proof (rule bAllE [where x = i, OF h4])
     assume h5: "i \\notin 1 .. Len(s)"
@@ -1081,7 +1089,7 @@ using zenon_sa_seq by (auto simp add: zenon_sa_def)
 
 lemma zenon_sa_diff_0a :
   "zenon_sa (zenon_sa (s1, e1), e2) ~= zenon_sa (<<>>, f2)"
-using zenon_sa_def zenon_sa_seq by auto
+using zenon_sa_seq by (auto simp: zenon_sa_def)
 
 lemma zenon_sa_diff_0b :
   "zenon_sa (<<>>, f2) ~= zenon_sa (zenon_sa (s1, e1), e2)"
@@ -1108,10 +1116,10 @@ lemma zenon_in_nat_0 : "~(0 \\in Nat) ==> FALSE"
 by blast
 
 lemma zenon_in_nat_1 : "~(1 \\in Nat) ==> FALSE"
-by blast
+by simp
 
 lemma zenon_in_nat_2 : "~(2 \\in Nat) ==> FALSE"
-by blast
+by (simp add: two_def)
 
 lemma zenon_in_nat_succ :
   "~(Succ[x] \\in Nat) ==> (~(x \\in Nat) ==> FALSE) ==> FALSE"
@@ -1128,7 +1136,7 @@ lemma zenon_in_recordset_field :
   shows "r[doms[i]] \\in rngs[i]"
 proof (rule EnumFuncSetE [OF a])
   assume h1: "r \\in [Range(doms) -> UNION Range(rngs)]"
-  assume h2: "ALL i in DOMAIN doms : r[doms[i]] \\in rngs[i]"
+  assume h2: "\\A i \\in DOMAIN doms : r[doms[i]] \\in rngs[i]"
   show "r[doms[i]] \\in rngs[i]" (is "?c")
   proof (rule bAllE [where x = i, OF h2])
     assume h3: "i \\notin DOMAIN doms"
@@ -1166,7 +1174,10 @@ lemma zenon_range_1 : "isASeq (<<>>) & {} = Range (<<>>)" by auto
 lemma zenon_range_2 :
   assumes h: "(isASeq (s) & a = Range (s))"
   shows "(isASeq (Append (s, x)) & addElt (x, a) = Range (Append (s, x)))"
-using h by auto
+proof -
+  from assms have "succ[Len(s)] \<in> DOMAIN Append(s,x)" by auto
+  with assms show ?thesis by auto
+qed
 
 lemma zenon_set_rev_1 : "a = {} \\cup c ==> c = a" by auto
 
@@ -1189,49 +1200,70 @@ lemma zenon_tuple_dom_3 :
   "isASeq (s) & isASeq (t) & DOMAIN s = DOMAIN t ==> DOMAIN s = DOMAIN t"
 by auto
 
-lemma zenon_all_rec_1 : "ALL i in {} : r[doms[i]] \\in rngs[i]" by auto
+lemma zenon_all_rec_1 : "\\A i \\in {} : r[doms[i]] \\in rngs[i]" by auto
 
 lemma zenon_all_rec_2 :
-  "ALL i in s : r[doms[i]] \\in rngs[i] ==>
+  "\\A i \\in s : r[doms[i]] \\in rngs[i] ==>
    r[doms[j]] \\in rngs[j] ==>
-   ALL i in addElt (j, s) : r[doms[i]] \\in rngs[i]"
+   \\A i \\in addElt (j, s) : r[doms[i]] \\in rngs[i]"
 by auto
 
 lemma zenon_tuple_acc_1 :
-  "isASeq (r) ==> Len (r) = n ==> x = Append (r, x) [Succ[n]]" by auto
+  "isASeq (r) ==> Len (r) = n ==> x = Append (r, x) [succ[n]]" 
+  by auto
 
 lemma zenon_tuple_acc_2 :
   "isASeq (r) ==> k \\in Nat ==> 0 < k ==> k \<le> Len (r) ==>
    x = r[k] ==> x = Append (r, e) [k]"
-by auto
+using appendElt1 by auto
 
 definition zenon_ss :: "c \<Rightarrow> c"
-where "zenon_ss (n) \<equiv> IF n \\in Nat THEN Succ[n] ELSE 1"
+where "zenon_ss (n) \<equiv> IF n \\in Nat THEN succ[n] ELSE 1"
 
-lemma zenon_ss_nat : "zenon_ss(x) \\in Nat" by (auto simp add: zenon_ss_def)
+lemma zenon_ss_nat : "zenon_ss(x) \\in Nat"
+unfolding zenon_ss_def proof (rule condI)
+  assume "x \<in> Nat" thus "succ[x] \<in> Nat" by simp
+next
+  show "1 \<in> Nat" by simp
+qed
 
-lemma zenon_ss_1 : "Succ[0] = zenon_ss(0)" by (auto simp add: zenon_ss_def)
+lemma zenon_ss_1 : "succ[0] = zenon_ss(0)" by (simp add: zenon_ss_def)
 
-lemma zenon_ss_2 : "Succ[zenon_ss(x)] = zenon_ss(zenon_ss(x))" by (auto simp add: zenon_ss_def)
+lemma zenon_ss_2 : "succ[zenon_ss(x)] = zenon_ss(zenon_ss(x))"
+proof (cases "x \<in> Nat")
+  case True
+  then show ?thesis by (simp add: zenon_ss_def)
+next
+  case False
+  hence "zenon_ss(x) = 1" by (auto simp: zenon_ss_def)
+  thus ?thesis by (simp add: zenon_ss_def)
+qed
 
 lemma zenon_zero_lt : "0 < zenon_ss(x)"
-  by (simp add: zenon_ss_def, rule disjE [of "x \\in Nat" "x \\notin Nat"], rule excluded_middle, simp+)
+proof (cases "x \<in> Nat")
+  case True
+  then show ?thesis by (simp add: zenon_ss_def)
+next
+  case False
+  hence "zenon_ss(x) = 1" by (auto simp: zenon_ss_def)
+  then show ?thesis by simp
+qed
 
 lemma zenon_ss_le_sa_1 : "zenon_ss(0) <= Len (zenon_sa (s, x))"
-  by (auto simp add: zenon_ss_def zenon_sa_def, rule disjE [of "isASeq (s)" "~isASeq (s)"], rule excluded_middle, simp+)
+  by (cases "isASeq(s)") (auto simp: zenon_ss_def zenon_sa_def)
 
 lemma zenon_ss_le_sa_2 :
   fixes x y z
   assumes h0: "zenon_ss (x) <= Len (zenon_sa (s, y))"
   shows "zenon_ss (zenon_ss (x)) <= Len (zenon_sa (zenon_sa (s, y), z))"
 proof -
-  have h1: "Succ [Len (zenon_sa (s, y))] = Len (zenon_sa (zenon_sa (s, y), z))"
+  have h1: "succ [Len (zenon_sa (s, y))] = Len (zenon_sa (zenon_sa (s, y), z))"
   using zenon_sa_seq by (auto simp add: zenon_sa_def)
 
   have h2: "Len (zenon_sa (s, y)) \\in Nat"
-  using zenon_sa_seq by (rule LenInNat)
-  have h3: "Succ [zenon_ss (x)] \<le> Succ [Len (zenon_sa (s, y))]"
-  using zenon_ss_nat h2 h0 by (simp only: nat_Succ_leq_Succ)
+  using zenon_sa_seq by simp
+  have h3: "succ [zenon_ss (x)] \<le> succ [Len (zenon_sa (s, y))]"
+    using zenon_ss_nat h2 h0 by (intro int_succ_leq_succI) simp+
   show ?thesis
   using h3 by (auto simp add: zenon_ss_2 h1)
 qed
@@ -1241,8 +1273,8 @@ by auto
 
 lemma zenon_dom_app_2 :
   assumes h: "isASeq (s) & n = Len (s) & x = 1 .. Len (s)"
-  shows "isASeq (Append (s, y)) & Succ[n] = Len (Append (s, y))
-         & addElt (Succ[n], x) = 1 .. Len (Append (s, y))" (is "?a & ?b & ?c")
+  shows "isASeq (Append (s, y)) & succ[n] = Len (Append (s, y))
+         & addElt (succ[n], x) = 1 .. Len (Append (s, y))"
 using h by auto
 
 (* generic proof rules instantiated for small n *)
@@ -1254,14 +1286,16 @@ lemma zenon_inrecordsetI1 :
   assumes hfcn: "isAFcn (r)"
   assumes hdom: "DOMAIN r = {l1x}"
   assumes h1: "r[l1x] \\in s1x"
-  shows "r \\in [l1x : s1x]"
+  (* TODO
+  shows "r \\in [l1x : s1x]" *)
+  shows "r \\in EnumFuncSet(<<l1x>>, <<s1x>>)"
 proof -
   let ?doms = "<<l1x>>"
   let ?domset = "{l1x}"
   let ?domsetrev = "{l1x}"
   let ?rngs = "<<s1x>>"
   let ?n0n = "0"
-  let ?n1n = "Succ[?n0n]"
+  let ?n1n = "succ[?n0n]"
   let ?indices = "{?n1n}"
   have hdomx : "?domsetrev = DOMAIN r"
   by (rule zenon_set_rev_1, (rule zenon_set_rev_2)+, rule zenon_set_rev_3,
@@ -1285,7 +1319,7 @@ proof -
     by (simp only: DomainSeqLen [OF hdomseq], (rule zenon_dom_app_2)+,
         rule zenon_dom_app_1)
     have hind: "?indices = DOMAIN ?doms" by (rule conjE [OF hindx], elim conjE)
-    show "ALL i in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
+    show "\\A i \\in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
@@ -1315,15 +1349,17 @@ lemma zenon_inrecordsetI2 :
   assumes hdom: "DOMAIN r = {l1x, l2x}"
   assumes h1: "r[l1x] \\in s1x"
   assumes h2: "r[l2x] \\in s2x"
-  shows "r \\in [l1x : s1x, l2x : s2x]"
+  (* TODO
+  shows "r \\in [l1x : s1x, l2x : s2x]" *)
+  shows "r \\in EnumFuncSet(<<l1x, l2x>>, <<s1x, s2x>>)"
 proof -
   let ?doms = "<<l1x, l2x>>"
   let ?domset = "{l1x, l2x}"
   let ?domsetrev = "{l2x, l1x}"
   let ?rngs = "<<s1x, s2x>>"
   let ?n0n = "0"
-  let ?n1n = "Succ[?n0n]"
-  let ?n2n = "Succ[?n1n]"
+  let ?n1n = "succ[?n0n]"
+  let ?n2n = "succ[?n1n]"
   let ?indices = "{?n2n, ?n1n}"
   have hdomx : "?domsetrev = DOMAIN r"
   by (rule zenon_set_rev_1, (rule zenon_set_rev_2)+, rule zenon_set_rev_3,
@@ -1347,43 +1383,22 @@ proof -
     by (simp only: DomainSeqLen [OF hdomseq], (rule zenon_dom_app_2)+,
         rule zenon_dom_app_1)
     have hind: "?indices = DOMAIN ?doms" by (rule conjE [OF hindx], elim conjE)
-    show "ALL i in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
+    show "\\A i \\in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s1x = ?rngs[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n1n]] \\in ?rngs[?n1n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h1)
     next
       have hn: "l2x = ?doms[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s2x = ?rngs[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n2n]] \\in ?rngs[?n2n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h2)
-
     qed
   qed
 qed
@@ -1395,16 +1410,18 @@ lemma zenon_inrecordsetI3 :
   assumes h1: "r[l1x] \\in s1x"
   assumes h2: "r[l2x] \\in s2x"
   assumes h3: "r[l3x] \\in s3x"
-  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x]"
+  (* TODO
+  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x]" *)
+  shows "r \\in EnumFuncSet(<<l1x, l2x, l3x>>, <<s1x, s2x, s3x>>)"
 proof -
   let ?doms = "<<l1x, l2x, l3x>>"
   let ?domset = "{l1x, l2x, l3x}"
   let ?domsetrev = "{l3x, l2x, l1x}"
   let ?rngs = "<<s1x, s2x, s3x>>"
   let ?n0n = "0"
-  let ?n1n = "Succ[?n0n]"
-  let ?n2n = "Succ[?n1n]"
-  let ?n3n = "Succ[?n2n]"
+  let ?n1n = "succ[?n0n]"
+  let ?n2n = "succ[?n1n]"
+  let ?n3n = "succ[?n2n]"
   let ?indices = "{?n3n, ?n2n, ?n1n}"
   have hdomx : "?domsetrev = DOMAIN r"
   by (rule zenon_set_rev_1, (rule zenon_set_rev_2)+, rule zenon_set_rev_3,
@@ -1428,57 +1445,27 @@ proof -
     by (simp only: DomainSeqLen [OF hdomseq], (rule zenon_dom_app_2)+,
         rule zenon_dom_app_1)
     have hind: "?indices = DOMAIN ?doms" by (rule conjE [OF hindx], elim conjE)
-    show "ALL i in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
+    show "\\A i \\in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s1x = ?rngs[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n1n]] \\in ?rngs[?n1n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h1)
     next
       have hn: "l2x = ?doms[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s2x = ?rngs[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n2n]] \\in ?rngs[?n2n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h2)
     next
       have hn: "l3x = ?doms[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s3x = ?rngs[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n3n]] \\in ?rngs[?n3n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h3)
 
@@ -1494,17 +1481,21 @@ lemma zenon_inrecordsetI4 :
   assumes h2: "r[l2x] \\in s2x"
   assumes h3: "r[l3x] \\in s3x"
   assumes h4: "r[l4x] \\in s4x"
-  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x, l4x : s4x]"
+  (* TODO
+  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x, l4x : s4x]" *)
+  shows "r \\in EnumFuncSet(
+        <<l1x, l2x, l3x, l4x>>,
+        <<s1x, s2x, s3x, s4x>>)"
 proof -
   let ?doms = "<<l1x, l2x, l3x, l4x>>"
   let ?domset = "{l1x, l2x, l3x, l4x}"
   let ?domsetrev = "{l4x, l3x, l2x, l1x}"
   let ?rngs = "<<s1x, s2x, s3x, s4x>>"
   let ?n0n = "0"
-  let ?n1n = "Succ[?n0n]"
-  let ?n2n = "Succ[?n1n]"
-  let ?n3n = "Succ[?n2n]"
-  let ?n4n = "Succ[?n3n]"
+  let ?n1n = "succ[?n0n]"
+  let ?n2n = "succ[?n1n]"
+  let ?n3n = "succ[?n2n]"
+  let ?n4n = "succ[?n3n]"
   let ?indices = "{?n4n, ?n3n, ?n2n, ?n1n}"
   have hdomx : "?domsetrev = DOMAIN r"
   by (rule zenon_set_rev_1, (rule zenon_set_rev_2)+, rule zenon_set_rev_3,
@@ -1528,74 +1519,34 @@ proof -
     by (simp only: DomainSeqLen [OF hdomseq], (rule zenon_dom_app_2)+,
         rule zenon_dom_app_1)
     have hind: "?indices = DOMAIN ?doms" by (rule conjE [OF hindx], elim conjE)
-    show "ALL i in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
+    show "\\A i \\in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s1x = ?rngs[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n1n]] \\in ?rngs[?n1n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h1)
     next
       have hn: "l2x = ?doms[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s2x = ?rngs[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n2n]] \\in ?rngs[?n2n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h2)
     next
       have hn: "l3x = ?doms[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s3x = ?rngs[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n3n]] \\in ?rngs[?n3n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h3)
     next
       have hn: "l4x = ?doms[?n4n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s4x = ?rngs[?n4n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n4n]] \\in ?rngs[?n4n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h4)
 
@@ -1612,18 +1563,22 @@ lemma zenon_inrecordsetI5 :
   assumes h3: "r[l3x] \\in s3x"
   assumes h4: "r[l4x] \\in s4x"
   assumes h5: "r[l5x] \\in s5x"
-  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x, l4x : s4x, l5x : s5x]"
+  (* TODO
+  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x, l4x : s4x, l5x : s5x]" *)
+  shows "r \\in EnumFuncSet(
+        <<l1x, l2x, l3x, l4x, l5x>>,
+        <<s1x, s2x, s3x, s4x, s5x>>)"
 proof -
   let ?doms = "<<l1x, l2x, l3x, l4x, l5x>>"
   let ?domset = "{l1x, l2x, l3x, l4x, l5x}"
   let ?domsetrev = "{l5x, l4x, l3x, l2x, l1x}"
   let ?rngs = "<<s1x, s2x, s3x, s4x, s5x>>"
   let ?n0n = "0"
-  let ?n1n = "Succ[?n0n]"
-  let ?n2n = "Succ[?n1n]"
-  let ?n3n = "Succ[?n2n]"
-  let ?n4n = "Succ[?n3n]"
-  let ?n5n = "Succ[?n4n]"
+  let ?n1n = "succ[?n0n]"
+  let ?n2n = "succ[?n1n]"
+  let ?n3n = "succ[?n2n]"
+  let ?n4n = "succ[?n3n]"
+  let ?n5n = "succ[?n4n]"
   let ?indices = "{?n5n, ?n4n, ?n3n, ?n2n, ?n1n}"
   have hdomx : "?domsetrev = DOMAIN r"
   by (rule zenon_set_rev_1, (rule zenon_set_rev_2)+, rule zenon_set_rev_3,
@@ -1647,91 +1602,41 @@ proof -
     by (simp only: DomainSeqLen [OF hdomseq], (rule zenon_dom_app_2)+,
         rule zenon_dom_app_1)
     have hind: "?indices = DOMAIN ?doms" by (rule conjE [OF hindx], elim conjE)
-    show "ALL i in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
+    show "\\A i \\in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s1x = ?rngs[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n1n]] \\in ?rngs[?n1n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h1)
     next
       have hn: "l2x = ?doms[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s2x = ?rngs[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n2n]] \\in ?rngs[?n2n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h2)
     next
       have hn: "l3x = ?doms[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s3x = ?rngs[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n3n]] \\in ?rngs[?n3n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h3)
     next
       have hn: "l4x = ?doms[?n4n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s4x = ?rngs[?n4n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n4n]] \\in ?rngs[?n4n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h4)
     next
       have hn: "l5x = ?doms[?n5n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s5x = ?rngs[?n5n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n5n]] \\in ?rngs[?n5n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h5)
 
@@ -1749,19 +1654,23 @@ lemma zenon_inrecordsetI6 :
   assumes h4: "r[l4x] \\in s4x"
   assumes h5: "r[l5x] \\in s5x"
   assumes h6: "r[l6x] \\in s6x"
-  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x, l4x : s4x, l5x : s5x, l6x : s6x]"
+  (* TODO
+  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x, l4x : s4x, l5x : s5x, l6x : s6x]" *)
+  shows "r \\in EnumFuncSet(
+        <<l1x, l2x, l3x, l4x, l5x, l6x>>,
+        <<s1x, s2x, s3x, s4x, s5x, s6x>>)"
 proof -
   let ?doms = "<<l1x, l2x, l3x, l4x, l5x, l6x>>"
   let ?domset = "{l1x, l2x, l3x, l4x, l5x, l6x}"
   let ?domsetrev = "{l6x, l5x, l4x, l3x, l2x, l1x}"
   let ?rngs = "<<s1x, s2x, s3x, s4x, s5x, s6x>>"
   let ?n0n = "0"
-  let ?n1n = "Succ[?n0n]"
-  let ?n2n = "Succ[?n1n]"
-  let ?n3n = "Succ[?n2n]"
-  let ?n4n = "Succ[?n3n]"
-  let ?n5n = "Succ[?n4n]"
-  let ?n6n = "Succ[?n5n]"
+  let ?n1n = "succ[?n0n]"
+  let ?n2n = "succ[?n1n]"
+  let ?n3n = "succ[?n2n]"
+  let ?n4n = "succ[?n3n]"
+  let ?n5n = "succ[?n4n]"
+  let ?n6n = "succ[?n5n]"
   let ?indices = "{?n6n, ?n5n, ?n4n, ?n3n, ?n2n, ?n1n}"
   have hdomx : "?domsetrev = DOMAIN r"
   by (rule zenon_set_rev_1, (rule zenon_set_rev_2)+, rule zenon_set_rev_3,
@@ -1785,108 +1694,48 @@ proof -
     by (simp only: DomainSeqLen [OF hdomseq], (rule zenon_dom_app_2)+,
         rule zenon_dom_app_1)
     have hind: "?indices = DOMAIN ?doms" by (rule conjE [OF hindx], elim conjE)
-    show "ALL i in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
+    show "\\A i \\in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s1x = ?rngs[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n1n]] \\in ?rngs[?n1n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h1)
     next
       have hn: "l2x = ?doms[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s2x = ?rngs[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n2n]] \\in ?rngs[?n2n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h2)
     next
       have hn: "l3x = ?doms[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s3x = ?rngs[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n3n]] \\in ?rngs[?n3n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h3)
     next
       have hn: "l4x = ?doms[?n4n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s4x = ?rngs[?n4n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n4n]] \\in ?rngs[?n4n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h4)
     next
       have hn: "l5x = ?doms[?n5n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s5x = ?rngs[?n5n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n5n]] \\in ?rngs[?n5n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h5)
     next
       have hn: "l6x = ?doms[?n6n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s6x = ?rngs[?n6n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n6n]] \\in ?rngs[?n6n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h6)
 
@@ -1905,20 +1754,24 @@ lemma zenon_inrecordsetI7 :
   assumes h5: "r[l5x] \\in s5x"
   assumes h6: "r[l6x] \\in s6x"
   assumes h7: "r[l7x] \\in s7x"
-  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x, l4x : s4x, l5x : s5x, l6x : s6x, l7x : s7x]"
+  (* TODO
+  shows "r \\in [l1x : s1x, l2x : s2x, l3x : s3x, l4x : s4x, l5x : s5x, l6x : s6x, l7x : s7x]" *)
+  shows "r \\in EnumFuncSet(
+        <<l1x, l2x, l3x, l4x, l5x, l6x, l7x>>,
+        <<s1x, s2x, s3x, s4x, s5x, s6x, s7x>>)"
 proof -
   let ?doms = "<<l1x, l2x, l3x, l4x, l5x, l6x, l7x>>"
   let ?domset = "{l1x, l2x, l3x, l4x, l5x, l6x, l7x}"
   let ?domsetrev = "{l7x, l6x, l5x, l4x, l3x, l2x, l1x}"
   let ?rngs = "<<s1x, s2x, s3x, s4x, s5x, s6x, s7x>>"
   let ?n0n = "0"
-  let ?n1n = "Succ[?n0n]"
-  let ?n2n = "Succ[?n1n]"
-  let ?n3n = "Succ[?n2n]"
-  let ?n4n = "Succ[?n3n]"
-  let ?n5n = "Succ[?n4n]"
-  let ?n6n = "Succ[?n5n]"
-  let ?n7n = "Succ[?n6n]"
+  let ?n1n = "succ[?n0n]"
+  let ?n2n = "succ[?n1n]"
+  let ?n3n = "succ[?n2n]"
+  let ?n4n = "succ[?n3n]"
+  let ?n5n = "succ[?n4n]"
+  let ?n6n = "succ[?n5n]"
+  let ?n7n = "succ[?n6n]"
   let ?indices = "{?n7n, ?n6n, ?n5n, ?n4n, ?n3n, ?n2n, ?n1n}"
   have hdomx : "?domsetrev = DOMAIN r"
   by (rule zenon_set_rev_1, (rule zenon_set_rev_2)+, rule zenon_set_rev_3,
@@ -1942,125 +1795,55 @@ proof -
     by (simp only: DomainSeqLen [OF hdomseq], (rule zenon_dom_app_2)+,
         rule zenon_dom_app_1)
     have hind: "?indices = DOMAIN ?doms" by (rule conjE [OF hindx], elim conjE)
-    show "ALL i in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
+    show "\\A i \\in DOMAIN ?doms : r[?doms[i]] \\in ?rngs[i]"
     proof (rule subst [OF hind], (rule zenon_all_rec_2)+, rule zenon_all_rec_1)
 
       have hn: "l1x = ?doms[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s1x = ?rngs[?n1n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n1n]] \\in ?rngs[?n1n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h1)
     next
       have hn: "l2x = ?doms[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s2x = ?rngs[?n2n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n2n]] \\in ?rngs[?n2n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h2)
     next
       have hn: "l3x = ?doms[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s3x = ?rngs[?n3n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n3n]] \\in ?rngs[?n3n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h3)
     next
       have hn: "l4x = ?doms[?n4n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s4x = ?rngs[?n4n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n4n]] \\in ?rngs[?n4n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h4)
     next
       have hn: "l5x = ?doms[?n5n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s5x = ?rngs[?n5n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n5n]] \\in ?rngs[?n5n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h5)
     next
       have hn: "l6x = ?doms[?n6n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s6x = ?rngs[?n6n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n6n]] \\in ?rngs[?n6n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h6)
     next
       have hn: "l7x = ?doms[?n7n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       have hs: "s7x = ?rngs[?n7n]"
-      by (((rule zenon_tuple_acc_2, safe, simp only: zenon_ss_1 zenon_ss_2,
-            rule zenon_zero_lt,
-            simp only: zenon_ss_1 zenon_ss_2 zenon_sa_1 zenon_sa_2,
-            ((rule zenon_ss_le_sa_2)+)?, rule zenon_ss_le_sa_1
-           )+)?,
-          rule zenon_tuple_acc_1, auto)
+        by simp
       show "r[?doms[?n7n]] \\in ?rngs[?n7n]"
       by (rule subst[OF hs], rule subst[OF hn], rule h7)
 
@@ -2077,7 +1860,7 @@ lemma zenon_caseother0 :
 proof -
   fix P e0
   assume h: "P (CASE OTHER -> e0)"
-  def cas == "CASE OTHER -> e0"
+  define cas where "cas \<equiv> CASE OTHER -> e0"
   have hh: "P (cas)" using h by (fold cas_def)
   assume hoth: "P (e0) ==> FALSE"
   have hb: "(\<forall> i \<in> DOMAIN <<>> : ~<<>>[i]) = TRUE" by auto
@@ -2137,7 +1920,7 @@ proof (rule boolEqual, simp only: zenon_seqify_appseq, rule iffI)
     assume h4: "~ c"
     with h1 h6 obtain i
       where i: "i \<in> DOMAIN zenon_seqify(cs)" "Append(zenon_seqify(cs), c)[i]"
-      by auto
+      by force
     with h6 have "zenon_seqify(cs)[i]" by (auto simp: leq_neq_iff_less[simplified])
     with i show "\<exists> i \<in> DOMAIN zenon_seqify (cs) : zenon_seqify (cs)[i]" by blast
   qed
@@ -2146,11 +1929,13 @@ next
   assume h1: "c | (\<exists> i \<in> DOMAIN zenon_seqify (cs)
                    : zenon_seqify (cs)[i])"
   show "\<exists> i \<in> DOMAIN Append (zenon_seqify (cs), c)
-        : Append (zenon_seqify (cs), c)[i]" (is "?g")
+        : Append (zenon_seqify (cs), c)[i]" 
+    (is "?g" is "\<exists>i \<in> DOMAIN ?app : Append(?seq,c)[i]")
   proof (rule disjE [OF h1])
     assume h2: c
-    show "?g"
-    using h2 h0 by auto
+    with h0 have "succ[Len(?seq)] \<in> DOMAIN ?app" "?app[succ[Len(?seq)]]"
+      by auto
+    thus "?g" by blast
   next
     assume h2: "\<exists> i \<in> DOMAIN zenon_seqify (cs)
                 : zenon_seqify (cs)[i]"
@@ -2161,15 +1946,15 @@ next
       have h4: "i \\in DOMAIN Append (zenon_seqify (cs), c)"
         using h0 h3 by auto
       assume h5: "zenon_seqify (cs)[i]"
-      have h6: "i ~= Succ[Len (zenon_seqify (cs))]"
+      have h6: "i ~= succ[Len (zenon_seqify (cs))]"
         using h0 h3 by auto
       have h7: "Append (zenon_seqify (cs), c)[i]"
         using h6 h5 h3 h0 by force
       show "?g"
-        using h4 h7 by auto
+        using h4 h7 by blast
     qed
   qed
-qed (simp_all)
+qed (simp+)
 
 lemma zenon_case_seq_empty :
   assumes h0: "\<exists> i \<in> DOMAIN zenon_seqify (<<>>)
@@ -2226,14 +2011,14 @@ proof
   proof (rule bExE [OF h5])
     fix i
     assume h6: "i \\in DOMAIN Append (zenon_seqify(cs), c)"
-    have h7: "i = Succ [Len (zenon_seqify (cs))]
+    have h7: "i = succ [Len (zenon_seqify (cs))]
               | i \\in DOMAIN (zenon_seqify (cs))"
       using h3c h6 by auto
     assume h8: "x \\in CaseArm (Append (zenon_seqify (cs), c)[i],
                                 Append (zenon_seqify (es), e)[i])"
     have h9: "i \\in DOMAIN (zenon_seqify (cs))" (is "?g")
     proof (rule disjE [OF h7])
-      assume h10: "i = Succ [Len (zenon_seqify (cs))]"
+      assume h10: "i = succ [Len (zenon_seqify (cs))]"
       have h11: FALSE using h8 h10 h4 h3c h3e h2 by auto
       show "?g" using h11 by auto
     next
@@ -2318,10 +2103,20 @@ next
       using h4 zenon_seqifyIsASeq by auto
     have h5: "x \\in CaseArm (c, e)"
       using h2 by blast
+    have "succ[Len(zenon_seqify(cs))] \\in DOMAIN Append (zenon_seqify (cs), c)"
+         "CaseArm (Append (zenon_seqify (cs), c)[succ[Len(zenon_seqify(cs))]],
+                   Append (zenon_seqify (es), e)[succ[Len(zenon_seqify(cs))]])
+        = CaseArm (c, e)"
+      using h3 zenon_seqifyIsASeq by auto
+    with h5
+    have "x \\in CaseArm (Append (zenon_seqify (cs), c)[succ[Len(zenon_seqify(cs))]],
+                          Append (zenon_seqify (es), e)[succ[Len(zenon_seqify(cs))]])"
+      by simp
+    with \<open>succ[Len(zenon_seqify(cs))] \<in> DOMAIN Append (zenon_seqify (cs), c)\<close>
     have h6: "x \\in UNION {CaseArm (Append (zenon_seqify (cs), c)[i],
                                      Append (zenon_seqify (es), e)[i])
                             : i \\in DOMAIN Append (zenon_seqify (cs), c)}"
-      using h5 zenon_seqifyIsASeq appendElt2 h3 by auto
+      by blast
     show "?g"
       using h4 h6 by auto
   next
@@ -2368,12 +2163,12 @@ next
               \\in {CaseArm (Append (zenon_seqify (cs), c)[i],
                              Append (zenon_seqify (es), e)[i])
                     : i \\in DOMAIN Append (zenon_seqify (cs), c)}"
-          using h10 by auto
+          using h10 by blast
       qed
     qed
     show "?g" using h4 h7 by blast
   qed
-qed (simp_all)
+qed (simp+)
 
 lemma zenon_case_len_simpl :
   fixes cs c es e
@@ -2390,7 +2185,7 @@ next
   show "Len (Append (zenon_seqify (cs), c))
         = Len (Append (zenon_seqify (es), e))"
     using h1 zenon_seqifyIsASeq by auto
-qed (simp_all)
+qed (simp+)
 
 lemma zenon_case_empty_union :
   fixes x
@@ -2416,8 +2211,10 @@ proof (rule boolEqual, rule iffI)
       using h7 zenon_seqifyIsASeq by auto
     have h9: "zenon_seqify (cs) [i] = Append (zenon_seqify (cs), c)[i]"
       using zenon_case_append1 zenon_seqifyIsASeq h7 by auto
-    show "~ zenon_seqify(cs)[i]"
-      using h9 h8 h6 by auto
+    from h8 h6 have "~ Append(zenon_seqify(cs), c)[i]"
+      by blast
+    with h9 show "~ zenon_seqify(cs)[i]"
+      by simp
   qed
 next
   assume h6: "?f2"
@@ -2426,9 +2223,17 @@ next
     fix i
     assume h7: "i \\in DOMAIN Append (zenon_seqify (cs), c)"
     show "~Append (zenon_seqify (cs), c)[i]"
-      using g0 h7 h6 zenon_seqifyIsASeq by (unfold Append_def, auto)
+    proof (cases "i \\in DOMAIN zenon_seqify(cs)")
+      case True
+      with h6 zenon_seqifyIsASeq show ?thesis by force
+    next
+      case False
+      with h7 zenon_seqifyIsASeq[of cs]
+      have "i = succ[Len(zenon_seqify(cs))]" by (auto simp: int_less_not_leq)
+      with g0 zenon_seqifyIsASeq show ?thesis by auto
+    qed
   qed
-qed (simp_all)
+qed (simp+)
 
 lemma zenon_case_oth_simpl_l2 :
   fixes cs c es e
@@ -2461,9 +2266,9 @@ proof
       assume h9: "i \\in DOMAIN Append (zenon_seqify (cs), c)"
       assume h10: "CaseArm (Append (zenon_seqify (cs), c)[i],
                             Append (zenon_seqify (es), e)[i]) = B"
-      have h11: "i = Succ[Len (zenon_seqify (cs))] ==> FALSE"
+      have h11: "i = succ[Len (zenon_seqify (cs))] ==> FALSE"
       proof -
-        assume h12: "i = Succ[Len (zenon_seqify (cs))]"
+        assume h12: "i = succ[Len (zenon_seqify (cs))]"
         have h13: "B = CaseArm (c, e)"
           using h10 h12 g0 appendElt2 zenon_seqifyIsASeq by auto
         show FALSE
@@ -2635,13 +2440,14 @@ lemma zenon_case1 :
   assumes hoth: "~c1x & TRUE ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x>>" (is "?cs")
-  def es == "<<e1x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
-              (is "?arms")
-  def cas == "?cas"
+  define cs where "cs \<equiv> <<c1x>>" (is "_ \<equiv> ?cs")
+  define es where "es \<equiv> <<e1x>>" (is "_ \<equiv> ?es")
+  define arms where "arms \<equiv>
+    UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+              (is "_ \<equiv> ?arms")
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c1x" (is "?dcs")
+  define dcs where "dcs \<equiv> c1x" (is "_ \<equiv> ?dcs")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
     assume ha: "~(?dcs)"
@@ -2651,12 +2457,12 @@ proof -
       using hoth hh1 by blast
   next
     assume ha: "?dcs"
-    def scs == "zenon_seqify (zenon_appseq (
+    define scs where "scs \<equiv> zenon_seqify (zenon_appseq (
                                <<>>, c1x))"
-               (is "?scs")
-    def ses == "zenon_seqify (zenon_appseq (
+               (is "_ \<equiv> ?scs")
+    define ses where "ses \<equiv> zenon_seqify (zenon_appseq (
                                <<>>, e1x))"
-               (is "?ses")
+               (is "_ \<equiv> ?ses")
     have ha1: "\<exists> i \<in> DOMAIN ?scs : ?scs[i]"
       using ha zenon_case_seq_empty
       by (simp only: zenon_case_seq_simpl zenon_seqify_empty, blast)
@@ -2689,7 +2495,7 @@ proof -
       using h0 h1 by auto
 
     from hf
-    have hh0: "?gxx" 
+    have hh0: "?gxx"
       by (rule zenon_disjE1 [OF _ hg1x])
     have hi: "cas \\in UNION {CaseArm (<<>>[i], <<>>[i])
                                  : i \\in DOMAIN <<>>}"
@@ -2709,27 +2515,29 @@ lemma zenon_caseother1 :
   assumes hoth: "~c1x & TRUE ==> P (oth) ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x>>" (is "?cs")
-  def es == "<<e1x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
-              (is "?arms")
-  def cas == "?cas"
+  define cs where "cs \<equiv> <<c1x>>" (is "_ \<equiv> ?cs")
+  define es where "es \<equiv> <<e1x>>" (is "_ \<equiv> ?es")
+  define arms where "arms \<equiv>
+    UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+              (is "_ \<equiv> ?arms")
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c1x | FALSE" (is "?dcs")
-  def scs == "zenon_seqify (zenon_appseq (
+  define dcs where "dcs \<equiv> c1x | FALSE" (is "_ \<equiv> ?dcs")
+  define scs where "scs \<equiv> zenon_seqify (zenon_appseq (
                              <<>>, c1x))"
-             (is "?scs")
+             (is "_ \<equiv> ?scs")
   have hscs : "?cs = ?scs"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
-  def ses == "zenon_seqify (zenon_appseq (
+  define ses where "ses \<equiv> zenon_seqify (zenon_appseq (
                              <<>>, e1x))"
-             (is "?ses")
+             (is "_ \<equiv> ?ses")
   have hses : "?es = ?ses"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
   have hlen: "Len (?scs) = Len (?ses)" (is "?hlen")
     by (simp only: zenon_case_len_simpl)
-  def armoth == "CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
-                (is "?armoth")
+  define armoth where "armoth \<equiv>
+        CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
+                (is "_ \<equiv> ?armoth")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
     assume ha: "~(?dcs)"
@@ -2795,7 +2603,7 @@ proof -
       using h0 h1 by auto
 
     from hf
-    have hh0: "?gxx" 
+    have hh0: "?gxx"
       by (rule zenon_disjE1 [OF _ hg1x])
     have hi: "cas \\in UNION {CaseArm (<<>>[i], <<>>[i])
                                  : i \\in DOMAIN <<>>}"
@@ -2814,13 +2622,14 @@ lemma zenon_case2 :
   assumes hoth: "~c2x & ~c1x & TRUE ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x, c2x>>" (is "?cs")
-  def es == "<<e1x, e2x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
-              (is "?arms")
-  def cas == "?cas"
+  define cs where "cs \<equiv> <<c1x, c2x>>" (is "_ \<equiv> ?cs")
+  define es where "es \<equiv> <<e1x, e2x>>" (is "_ \<equiv> ?es")
+  define arms where "arms \<equiv>
+    UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+              (is "_ \<equiv> ?arms")
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c2x | c1x" (is "?dcs")
+  define dcs where "dcs \<equiv> c2x | c1x" (is "_ \<equiv> ?dcs")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
     assume ha: "~(?dcs)"
@@ -2830,12 +2639,12 @@ proof -
       using hoth hh1 hh2 by blast
   next
     assume ha: "?dcs"
-    def scs == "zenon_seqify (zenon_appseq (zenon_appseq (
+    define scs where "scs \<equiv> zenon_seqify (zenon_appseq (zenon_appseq (
                                <<>>, c1x), c2x))"
-               (is "?scs")
-    def ses == "zenon_seqify (zenon_appseq (zenon_appseq (
+               (is "_ \<equiv> ?scs")
+    define ses where "ses \<equiv> zenon_seqify (zenon_appseq (zenon_appseq (
                                <<>>, e1x), e2x))"
-               (is "?ses")
+               (is "_ \<equiv> ?ses")
     have ha1: "\<exists> i \<in> DOMAIN ?scs : ?scs[i]"
       using ha zenon_case_seq_empty
       by (simp only: zenon_case_seq_simpl zenon_seqify_empty, blast)
@@ -2892,27 +2701,29 @@ lemma zenon_caseother2 :
   assumes hoth: "~c2x & ~c1x & TRUE ==> P (oth) ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x, c2x>>" (is "?cs")
-  def es == "<<e1x, e2x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
-              (is "?arms")
-  def cas == "?cas"
+  define cs where "cs \<equiv> <<c1x, c2x>>" (is "_ \<equiv> ?cs")
+  define es where "es \<equiv> <<e1x, e2x>>" (is "_ \<equiv> ?es")
+  define arms where "arms \<equiv>
+    UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+              (is "_ \<equiv> ?arms")
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c2x | c1x | FALSE" (is "?dcs")
-  def scs == "zenon_seqify (zenon_appseq (zenon_appseq (
+  define dcs where "dcs \<equiv> c2x | c1x | FALSE" (is "_ \<equiv> ?dcs")
+  define scs where "scs \<equiv> zenon_seqify (zenon_appseq (zenon_appseq (
                              <<>>, c1x), c2x))"
-             (is "?scs")
+             (is "_ \<equiv> ?scs")
   have hscs : "?cs = ?scs"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
-  def ses == "zenon_seqify (zenon_appseq (zenon_appseq (
+  define ses where "ses \<equiv> zenon_seqify (zenon_appseq (zenon_appseq (
                              <<>>, e1x), e2x))"
-             (is "?ses")
+             (is "_ \<equiv> ?ses")
   have hses : "?es = ?ses"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
   have hlen: "Len (?scs) = Len (?ses)" (is "?hlen")
     by (simp only: zenon_case_len_simpl)
-  def armoth == "CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
-                (is "?armoth")
+  define armoth where "armoth \<equiv>
+            CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
+                (is "_ \<equiv> ?armoth")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
     assume ha: "~(?dcs)"
@@ -3002,13 +2813,14 @@ lemma zenon_case3 :
   assumes hoth: "~c3x & ~c2x & ~c1x & TRUE ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x, c2x, c3x>>" (is "?cs")
-  def es == "<<e1x, e2x, e3x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
-              (is "?arms")
-  def cas == "?cas"
+  define cs where "cs \<equiv> <<c1x, c2x, c3x>>" (is "_ \<equiv> ?cs")
+  define es where "es \<equiv> <<e1x, e2x, e3x>>" (is "_ \<equiv> ?es")
+  define arms where "arms \<equiv>
+        UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+              (is "_ \<equiv> ?arms")
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c3x | c2x | c1x" (is "?dcs")
+  define dcs where "dcs \<equiv> c3x | c2x | c1x" (is "_ \<equiv> ?dcs")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
     assume ha: "~(?dcs)"
@@ -3019,12 +2831,14 @@ proof -
       using hoth hh1 hh2 hh3 by blast
   next
     assume ha: "?dcs"
-    def scs == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (
+    define scs where "scs \<equiv>
+        zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (
                                <<>>, c1x), c2x), c3x))"
-               (is "?scs")
-    def ses == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (
+               (is "_ \<equiv> ?scs")
+    define ses where "ses \<equiv>
+        zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (
                                <<>>, e1x), e2x), e3x))"
-               (is "?ses")
+               (is "_ \<equiv> ?ses")
     have ha1: "\<exists> i \<in> DOMAIN ?scs : ?scs[i]"
       using ha zenon_case_seq_empty
       by (simp only: zenon_case_seq_simpl zenon_seqify_empty, blast)
@@ -3087,27 +2901,30 @@ lemma zenon_caseother3 :
   assumes hoth: "~c3x & ~c2x & ~c1x & TRUE ==> P (oth) ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x, c2x, c3x>>" (is "?cs")
-  def es == "<<e1x, e2x, e3x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
-              (is "?arms")
-  def cas == "?cas"
+  define cs where "cs \<equiv> <<c1x, c2x, c3x>>" (is "_ \<equiv> ?cs")
+  define es where "es \<equiv> <<e1x, e2x, e3x>>" (is "_ \<equiv> ?es")
+  define arms where "arms \<equiv>
+    UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+              (is "_ \<equiv> ?arms")
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c3x | c2x | c1x | FALSE" (is "?dcs")
-  def scs == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (
+  define dcs where "dcs \<equiv> c3x | c2x | c1x | FALSE" (is "_ \<equiv> ?dcs")
+  define scs where "scs \<equiv> zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (
                              <<>>, c1x), c2x), c3x))"
-             (is "?scs")
+             (is "_ \<equiv> ?scs")
   have hscs : "?cs = ?scs"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
-  def ses == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (
+  define ses where "ses \<equiv>
+            zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (
                              <<>>, e1x), e2x), e3x))"
-             (is "?ses")
+             (is "_ \<equiv> ?ses")
   have hses : "?es = ?ses"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
   have hlen: "Len (?scs) = Len (?ses)" (is "?hlen")
     by (simp only: zenon_case_len_simpl)
-  def armoth == "CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
-                (is "?armoth")
+  define armoth where "armoth \<equiv>
+            CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
+                (is "_ \<equiv> ?armoth")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
     assume ha: "~(?dcs)"
@@ -3204,13 +3021,14 @@ lemma zenon_case4 :
   assumes hoth: "~c4x & ~c3x & ~c2x & ~c1x & TRUE ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x, c2x, c3x, c4x>>" (is "?cs")
-  def es == "<<e1x, e2x, e3x, e4x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
-              (is "?arms")
-  def cas == "?cas"
+  define cs where "cs \<equiv> <<c1x, c2x, c3x, c4x>>" (is "_ \<equiv> ?cs")
+  define es where "es \<equiv> <<e1x, e2x, e3x, e4x>>" (is "_ \<equiv> ?es")
+  define arms where "arms \<equiv>
+            UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+              (is "_ \<equiv> ?arms")
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c4x | c3x | c2x | c1x" (is "?dcs")
+  define dcs where "dcs \<equiv> c4x | c3x | c2x | c1x" (is "_ \<equiv> ?dcs")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
     assume ha: "~(?dcs)"
@@ -3222,12 +3040,14 @@ proof -
       using hoth hh1 hh2 hh3 hh4 by blast
   next
     assume ha: "?dcs"
-    def scs == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
+    define scs where "scs \<equiv>
+        zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
                                <<>>, c1x), c2x), c3x), c4x))"
-               (is "?scs")
-    def ses == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
+               (is "_ \<equiv> ?scs")
+    define ses where "ses \<equiv>
+        zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
                                <<>>, e1x), e2x), e3x), e4x))"
-               (is "?ses")
+               (is "_ \<equiv> ?ses")
     have ha1: "\<exists> i \<in> DOMAIN ?scs : ?scs[i]"
       using ha zenon_case_seq_empty
       by (simp only: zenon_case_seq_simpl zenon_seqify_empty, blast)
@@ -3296,27 +3116,31 @@ lemma zenon_caseother4 :
   assumes hoth: "~c4x & ~c3x & ~c2x & ~c1x & TRUE ==> P (oth) ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x, c2x, c3x, c4x>>" (is "?cs")
-  def es == "<<e1x, e2x, e3x, e4x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
-              (is "?arms")
-  def cas == "?cas"
+  define cs where "cs \<equiv> <<c1x, c2x, c3x, c4x>>" (is "_ \<equiv> ?cs")
+  define es where "es \<equiv> <<e1x, e2x, e3x, e4x>>" (is "_ \<equiv> ?es")
+  define arms where "arms \<equiv>
+    UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+              (is "_ \<equiv> ?arms")
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c4x | c3x | c2x | c1x | FALSE" (is "?dcs")
-  def scs == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
+  define dcs where "dcs \<equiv> c4x | c3x | c2x | c1x | FALSE" (is "_ \<equiv> ?dcs")
+  define scs where "scs \<equiv>
+    zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
                              <<>>, c1x), c2x), c3x), c4x))"
-             (is "?scs")
+             (is "_ \<equiv> ?scs")
   have hscs : "?cs = ?scs"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
-  def ses == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
+  define ses where "ses \<equiv>
+    zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
                              <<>>, e1x), e2x), e3x), e4x))"
-             (is "?ses")
+             (is "_ \<equiv> ?ses")
   have hses : "?es = ?ses"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
   have hlen: "Len (?scs) = Len (?ses)" (is "?hlen")
     by (simp only: zenon_case_len_simpl)
-  def armoth == "CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
-                (is "?armoth")
+  define armoth where "armoth \<equiv>
+        CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
+                (is "_ \<equiv> ?armoth")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
     assume ha: "~(?dcs)"
@@ -3420,13 +3244,14 @@ lemma zenon_case5 :
   assumes hoth: "~c5x & ~c4x & ~c3x & ~c2x & ~c1x & TRUE ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x, c2x, c3x, c4x, c5x>>" (is "?cs")
-  def es == "<<e1x, e2x, e3x, e4x, e5x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
-              (is "?arms")
-  def cas == "?cas"
+  define cs where "cs \<equiv> <<c1x, c2x, c3x, c4x, c5x>>" (is "_ \<equiv> ?cs")
+  define es where "es \<equiv> <<e1x, e2x, e3x, e4x, e5x>>" (is "_ \<equiv> ?es")
+  define arms where "arms \<equiv>
+        UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+              (is "_ \<equiv> ?arms")
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c5x | c4x | c3x | c2x | c1x" (is "?dcs")
+  define dcs where "dcs \<equiv> c5x | c4x | c3x | c2x | c1x" (is "_ \<equiv> ?dcs")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
     assume ha: "~(?dcs)"
@@ -3439,12 +3264,14 @@ proof -
       using hoth hh1 hh2 hh3 hh4 hh5 by blast
   next
     assume ha: "?dcs"
-    def scs == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
+    define scs where "scs \<equiv>
+        zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
                                <<>>, c1x), c2x), c3x), c4x), c5x))"
-               (is "?scs")
-    def ses == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
+               (is "_ \<equiv> ?scs")
+    define ses where "ses \<equiv>
+        zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
                                <<>>, e1x), e2x), e3x), e4x), e5x))"
-               (is "?ses")
+               (is "_ \<equiv> ?ses")
     have ha1: "\<exists> i \<in> DOMAIN ?scs : ?scs[i]"
       using ha zenon_case_seq_empty
       by (simp only: zenon_case_seq_simpl zenon_seqify_empty, blast)
@@ -3519,27 +3346,32 @@ lemma zenon_caseother5 :
   assumes hoth: "~c5x & ~c4x & ~c3x & ~c2x & ~c1x & TRUE ==> P (oth) ==> FALSE"
   shows FALSE
 proof -
-  def cs == "<<c1x, c2x, c3x, c4x, c5x>>" (is "?cs")
-  def es == "<<e1x, e2x, e3x, e4x, e5x>>" (is "?es")
-  def arms == "UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
-              (is "?arms")
-  def cas == "?cas"
+  define cs where "cs \<equiv> <<c1x, c2x, c3x, c4x, c5x>>" (is "_ \<equiv> ?cs")
+  define es where "es \<equiv> <<e1x, e2x, e3x, e4x, e5x>>" (is "_ \<equiv> ?es")
+  define arms where "arms \<equiv>
+        UNION {CaseArm (?cs[i], ?es[i]) : i \\in DOMAIN ?cs}"
+              (is "_ \<equiv> ?arms")
+  define cas where "cas \<equiv> ?cas"
   have h0: "P (cas)" using h by (fold cas_def)
-  def dcs == "c5x | c4x | c3x | c2x | c1x | FALSE" (is "?dcs")
-  def scs == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
+  define dcs where "dcs \<equiv>
+        c5x | c4x | c3x | c2x | c1x | FALSE" (is "_ \<equiv> ?dcs")
+  define scs where "scs \<equiv>
+    zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
                              <<>>, c1x), c2x), c3x), c4x), c5x))"
-             (is "?scs")
+             (is "_ \<equiv> ?scs")
   have hscs : "?cs = ?scs"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
-  def ses == "zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
+  define ses where "ses \<equiv>
+    zenon_seqify (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (zenon_appseq (
                              <<>>, e1x), e2x), e3x), e4x), e5x))"
-             (is "?ses")
+             (is "_ \<equiv> ?ses")
   have hses : "?es = ?ses"
     by (simp only: zenon_seqify_appseq zenon_seqify_empty)
   have hlen: "Len (?scs) = Len (?ses)" (is "?hlen")
     by (simp only: zenon_case_len_simpl)
-  def armoth == "CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
-                (is "?armoth")
+  define armoth where "armoth \<equiv>
+    CaseArm (\<forall> i \<in> DOMAIN ?cs : ~?cs[i], oth)"
+                (is "_ \<equiv> ?armoth")
   show FALSE
   proof (rule zenon_em [of "?dcs"])
     assume ha: "~(?dcs)"

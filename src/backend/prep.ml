@@ -1193,7 +1193,7 @@ let compute_meth def args usept =
      Method.Zenon tmo
   | Some "isabelle" ->
      let tmo = Option.default Method.default_isabelle_timeout !timeout in
-     let tac = Option.default "auto" !tactic in
+     let tac = Option.default Method.default_isabelle_tactic !tactic in
      Method.Isabelle (tmo, tac)
   | Some "yices" ->
      let tmo = Option.default Method.default_yices_timeout !timeout in

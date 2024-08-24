@@ -11,8 +11,13 @@ jobs:
         strategy:
           fail-fast: false
           matrix:
-            os: [ubuntu-latest, macos-13]
-            ocaml-compiler: ['4.14.1', '5.1.0']
+            os:
+              - ubuntu-latest
+              - macos-13
+              - macos-14
+            ocaml-compiler:
+              - '4.14.1'
+              - '5.1.0'
         env:
           EXAMPLES_DIR: "tlaplus-examples"
           SCRIPT_DIR: "tlaplus-examples/.github/scripts"
@@ -21,7 +26,7 @@ jobs:
         steps:
             - name: Clone repo
               uses: actions/checkout@v4
-            - name: Install deps
+            - name: Install deps (ubuntu)
               if: matrix.os == 'ubuntu-latest'
               run: |
                 sudo apt-get update
@@ -29,11 +34,11 @@ jobs:
             - uses: ocaml/setup-ocaml@v2
               with:
                 ocaml-compiler: ${{ matrix.ocaml-compiler }}
-            # - uses: actions/cache@v3
-            #   id: cache
-            #   with:
-            #     path: _build_cache
-            #     key: ${{ runner.os }}_build_cache
+            - uses: actions/cache@v4
+              id: cache
+              with:
+                path: _build_cache
+                key: ${{ runner.os }}_build_cache
             - name: Install optional dependencies
               if: startsWith(matrix.ocaml-compiler, '5.')
               run: |
@@ -70,9 +75,6 @@ jobs:
                 rm "$DEPS_DIR/tlaps.tar.gz"
                 mv $DEPS_DIR/tlaps* "$DEPS_DIR/tlapm-install"
                 SKIP=(
-                  # Missing operator ENABLEDrules; will be fixed after
-                  # updated_enabled_cdot branch is merged.
-                  "specifications/ewd998/AsyncTerminationDetection.tla"
                   # General proof failure
                   "specifications/Bakery-Boulangerie/Bakery.tla"
                   "specifications/Bakery-Boulangerie/Boulanger.tla"
@@ -85,12 +87,9 @@ jobs:
                   "specifications/LoopInvariance/BinarySearch.tla"
                   "specifications/LoopInvariance/Quicksort.tla"
                   "specifications/LoopInvariance/SumSequence.tla"
-                  "specifications/MisraReachability/ReachabilityProofs.tla"
-                  "specifications/Paxos/Consensus.tla"
-                  "specifications/PaxosHowToWinATuringAward/Consensus.tla"
                   "specifications/lamport_mutex/LamportMutex_proofs.tla"
                   "specifications/TeachingConcurrency/SimpleRegular.tla"
-                  # Long-running
+                  # Failing and long-running
                   "specifications/byzpaxos/BPConProof.tla" # Takes about 30 minutes
                 )
                 python "$SCRIPT_DIR/check_proofs.py"            \

@@ -4,7 +4,7 @@ theory SMT
 imports NatDivision CaseExpressions Strings Integers
 begin
 
-text {* We can declare the rewriting rules used for normalization 
+text {* We can declare the rewriting rules used for normalization
    with the attribute "norm". *}
 
 ML {*
@@ -43,15 +43,15 @@ theorem [norm]: "{} \\ S = {}" by simp
 theorem [norm]: "{a1,a2} \<union> {b1,b2} = {a1,a2,b1,b2}" by simp
 theorem [norm]: "{a,b} \<subseteq> S \<equiv> a \<in> S \<and> b \<in> S" by simp
 
-theorem [norm]: "(\<And>x. isBool(P(x))) \<Longrightarrow> (\<forall>x \<in> {a,b} : P(x)) \<equiv> P(a) \<and> P(b)" 
+theorem [norm]: "(\<And>x. isBool(P(x))) \<Longrightarrow> (\<forall>x \<in> {a,b} : P(x)) \<equiv> P(a) \<and> P(b)"
   by (simp add:isBool_def)
-theorem [norm]: "(\<And>x. isBool(P(x))) \<Longrightarrow> (\<exists>x \<in> {a,b} : P(x)) \<equiv> P(a) \<or> P(b)" 
+theorem [norm]: "(\<And>x. isBool(P(x))) \<Longrightarrow> (\<exists>x \<in> {a,b} : P(x)) \<equiv> P(a) \<or> P(b)"
   by (simp add:isBool_def)
 
 theorem [norm]: "\<lbrakk>\<And>x. isBool(P(x)) ; \<forall>x \<in> S \\ T : P(x)\<rbrakk> \<Longrightarrow> \<forall>x \<in> S : x \<notin> T \<Rightarrow> P(x)"
-  by (simp add: bAll_def) 
+  by (simp add: bAll_def)
 theorem [norm]: "(\<And>x. isBool(P(x))) \<Longrightarrow> (\<forall>x \<in> {a,b} \\ S : P(x)) \<Longrightarrow> \<forall>x \<in> {a,b} : x \<notin> S \<Rightarrow> P(x)"
-  by (auto simp only: bAll_def) 
+  by (auto simp only: bAll_def)
 
 text {* Sets *}
 
@@ -72,7 +72,7 @@ theorem [norm]: "x \<in> {y \<in> S : P(y)} \<equiv> x \<in> S \<and> P(x)" by s
 theorem [norm]: "S \<subseteq> T \<Longrightarrow> \<forall> x \<in> S : x \<in> T" by auto
 theorem [norm]: "S = {} = (\<forall>x \<in> S : FALSE)" by auto
 
-text {* Of the following two rules, the first is applied when S \<noteq> {} 
+text {* Of the following two rules, the first is applied when S \<noteq> {}
   is a hypothesis ; the second, when it is a conclusion. *}
 theorem [norm]: "S \<noteq> {} \<equiv> (\<exists> x \<in> S : TRUE)" by simp
 theorem [norm]: "S \<noteq> {} \<equiv> (S = {} \<Rightarrow> FALSE)" by simp
@@ -81,7 +81,7 @@ text {* For the moment, the interval of numbers ".." is defined only for natural
 theorem [norm]: "x \<in> a..b \<equiv> x \<in> Nat \<and> a \<le> x \<and> x \<le> b" by (simp add: natInterval_def)
 
 text {* \<lbrakk>b \<in> Nat; a \<in> Nat; c \<in> Nat\<rbrakk> \<Longrightarrow> a .. b = a .. c = (b < a \<and> c < a \<or> b = c) *}
-theorems 
+theorems
   natIntervalEqual_iff [of a b a c, simplified, standard, norm]
   natIntervalEqual_iff [of a b c b, simplified, standard, norm]
 
@@ -93,26 +93,26 @@ theorem [norm]: "isAFcn([f EXCEPT ![a] = b])" by simp
 theorem [norm]: "f = [x \<in> S \<mapsto> e(x)] \<Leftrightarrow> isAFcn(f) \<and> DOMAIN f = S \<and> (\<forall> x \<in> S : f[x] = e(x))" by auto
 theorem [norm]: "f \<in> [S \<rightarrow> T] \<Leftrightarrow> isAFcn(f) \<and> DOMAIN f = S \<and> (\<forall> x \<in> S : f[x] \<in> T)" by auto
 theorem [norm]: "a \<in> S \<Longrightarrow> [x \<in> S \<mapsto> e(x)][a] = e(a)" by simp
-theorem [norm]: 
+theorem [norm]:
   assumes "a \<in> DOMAIN f"
-      and "g = [f EXCEPT ![a] = b]" 
-  shows "isAFcn(g)" 
-    and "DOMAIN g = DOMAIN f" 
-    and "g[a] = b \<and> (\<forall> x \<in> DOMAIN f \\ {a} : g[x] = f[x])" 
+      and "g = [f EXCEPT ![a] = b]"
+  shows "isAFcn(g)"
+    and "DOMAIN g = DOMAIN f"
+    and "g[a] = b \<and> (\<forall> x \<in> DOMAIN f \\ {a} : g[x] = f[x])"
   using assms by auto
 
-theorem [norm]: 
-  "a \<in> DOMAIN f \<Longrightarrow> [f EXCEPT ![x] = y][a] = (IF x = a THEN y ELSE f[a])" 
+theorem [norm]:
+  "a \<in> DOMAIN f \<Longrightarrow> [f EXCEPT ![x] = y][a] = (IF x = a THEN y ELSE f[a])"
   by (auto simp: except_def)
-theorem [norm]: 
+theorem [norm]:
   "DOMAIN [x \<in> S \<mapsto> e(x)] = S" by simp
-theorem [norm]: 
+theorem [norm]:
   "DOMAIN [f EXCEPT ![a] = b] = DOMAIN f" by simp
-theorem [norm]: 
-  assumes "a \<in> DOMAIN f" 
-      and "b \<in> T" 
-      and "[f EXCEPT ![a] = b] \<in> [S \<rightarrow> T]" 
-  shows "DOMAIN f = S" and "a \<in> S" and "b \<in> T" 
+theorem [norm]:
+  assumes "a \<in> DOMAIN f"
+      and "b \<in> T"
+      and "[f EXCEPT ![a] = b] \<in> [S \<rightarrow> T]"
+  shows "DOMAIN f = S" and "a \<in> S" and "b \<in> T"
     and "\<forall> x \<in> S \\ {a} : f[x] \<in> T"
   using assms by (simp_all only:FuncSet except_def, auto)
 
@@ -122,64 +122,64 @@ theorem [norm]:
 
 theorem [norm]:
   "[f EXCEPT ![a] = b] = [g EXCEPT ![c] = d] =
-  (DOMAIN f = DOMAIN g \<and> 
+  (DOMAIN f = DOMAIN g \<and>
   (\<forall>x \<in> DOMAIN g : (IF x = a THEN b ELSE f[x]) = (IF x = c THEN d ELSE g[x])))"
   by (force simp add: fcnEqualIff)
 
 text {* IFs *}
 
-theorem [norm]: 
+theorem [norm]:
   "isBool(P) \<Longrightarrow> Q(IF P THEN t ELSE e) \<Longrightarrow> IF P THEN Q(t) ELSE Q(e)"
   by (auto simp add:isBool_def)
-theorem [norm]: 
+theorem [norm]:
   "isBool(P) \<Longrightarrow> Q(x, IF P THEN t ELSE e) \<Longrightarrow> IF P THEN Q(x,t) ELSE Q(x,e)"
   "isBool(P) \<Longrightarrow> Q(IF P THEN t ELSE e, x) \<Longrightarrow> IF P THEN Q(t,x) ELSE Q(e,x)"
   by (auto simp add:isBool_def)
 (* SM: should the above rather be the following? *)
-theorem [norm]: 
+theorem [norm]:
   "isBool(P) \<Longrightarrow> Q(x, IF P THEN t ELSE e) = (IF P THEN Q(x,t) ELSE Q(x,e))"
   "isBool(P) \<Longrightarrow> Q(IF P THEN t ELSE e, x) = (IF P THEN Q(t,x) ELSE Q(e,x))"
   by (auto simp add:isBool_def)
 
-theorem [norm]: 
+theorem [norm]:
   "isBool(P) \<Longrightarrow> (IF P THEN t ELSE e)[x] = (IF P THEN t[x] ELSE e[x])"
   by (auto simp add:isBool_def)
-theorem [norm]: 
-  "isBool(P) \<Longrightarrow> [(IF P THEN t ELSE e) EXCEPT ![x] = y] = 
+theorem [norm]:
+  "isBool(P) \<Longrightarrow> [(IF P THEN t ELSE e) EXCEPT ![x] = y] =
     (IF P THEN [t EXCEPT ![x] = y] ELSE [e EXCEPT ![x] = y])"
   by (auto simp add:isBool_def)
-theorem [norm]: 
+theorem [norm]:
   "x = (IF P THEN t ELSE e) \<Longrightarrow> IF P THEN x = t ELSE x = e"
   "(IF P THEN t ELSE e) = x \<Longrightarrow> IF P THEN t = x ELSE e = x"
   by auto
 (* SM: should the above rather be the following? *)
-theorem [norm]: 
+theorem [norm]:
   "(x = (IF P THEN t ELSE e)) = (IF P THEN x = t ELSE x = e)"
   "((IF P THEN t ELSE e) = x) = (IF P THEN t = x ELSE e = x)"
   by auto
-theorem [norm]: 
+theorem [norm]:
   "x \<in> (IF P THEN t ELSE e) \<Longrightarrow> IF P THEN x \<in> t ELSE x \<in> e"
   "(IF P THEN t ELSE e) \<in> S \<Longrightarrow> IF P THEN t \<in> S ELSE e \<in> S"
   by auto
 (* SM: similar *)
-theorem [norm]: 
+theorem [norm]:
   "x \<in> (IF P THEN t ELSE e) = (IF P THEN x \<in> t ELSE x \<in> e)"
   "(IF P THEN t ELSE e) \<in> S = (IF P THEN t \<in> S ELSE e \<in> S)"
   by auto
-theorem [norm]: 
+theorem [norm]:
   "isBool(P) \<Longrightarrow> x \<le> (IF P THEN t ELSE e) \<Longrightarrow> IF P THEN x \<le> t ELSE x \<le> e"
   "isBool(P) \<Longrightarrow> (IF P THEN t ELSE e) \<le> x \<Longrightarrow> IF P THEN t \<le> x ELSE e \<le> x"
   by (auto simp add:isBool_def)
 (* SM: similar *)
-theorem [norm]: 
+theorem [norm]:
   "isBool(P) \<Longrightarrow> x \<le> (IF P THEN t ELSE e) = (IF P THEN x \<le> t ELSE x \<le> e)"
   "isBool(P) \<Longrightarrow> (IF P THEN t ELSE e) \<le> x = (IF P THEN t \<le> x ELSE e \<le> x)"
   by (auto simp add:isBool_def)
-theorem [norm]: 
+theorem [norm]:
   "\<lbrakk>isBool(P); P = Q\<rbrakk> \<Longrightarrow> (IF P THEN t ELSE e) \<le> (IF Q THEN u ELSE v) \<Longrightarrow> IF P THEN t \<le> u ELSE e \<le> v"
   by (auto simp add:isBool_def)
 (* SM: similar *)
-theorem [norm]: 
+theorem [norm]:
   "\<lbrakk>isBool(P); P = Q\<rbrakk> \<Longrightarrow> (IF P THEN t ELSE e) \<le> (IF Q THEN u ELSE v) = (IF P THEN t \<le> u ELSE e \<le> v)"
   by (auto simp add:isBool_def)
 
@@ -202,13 +202,13 @@ theorem [norm]: "DOMAIN <<>> = {}" by simp
 
 theorem [norm]: "<<e1,e2>>[1] = e1" by simp
 theorem [norm]: "<<e1,e2>>[2] = e2" by simp
-theorem [norm]: "t = <<e1,e2>> \<Leftrightarrow> isASeq(t) \<and> DOMAIN t = 1..2 \<and> t[1] = e1 \<and> t[2] = e2" 
+theorem [norm]: "t = <<e1,e2>> \<Leftrightarrow> isASeq(t) \<and> DOMAIN t = 1..2 \<and> t[1] = e1 \<and> t[2] = e2"
   by (intro iffI, simp, rule seqEqualI, simp_all, intro LenI, simp_all)
 theorem [norm]: "t \<in> S \<times> T \<Leftrightarrow> isASeq(t) \<and> DOMAIN t = 1..2 \<and> t[1] \<in> S \<and> t[2] \<in> T"
   by (intro iffI, force, auto simp: prod_def Product_def)
 
 theorem [norm]: "<<a1,a2>> = <<b1,b2>> \<Longrightarrow> a1 = b1 \<and> a2 = b2" by simp
-theorem [norm]: 
+theorem [norm]:
   assumes "[i \<in> 1..2 \<mapsto> e(i)] = <<e1,e2>>"
   shows "\<forall>i \<in> 1..2 : e(i) = <<e1,e2>>[i]"
 proof -
@@ -225,9 +225,9 @@ text {* Records *}
 
 theorem [norm]: "r = (''h1'' :> e1 @@ ''h2'' :> e2) \<Longrightarrow> r[''h1''] = e1 \<and> r[''h2''] = e2" by simp
 theorem [norm]: "r \<in> [''h1'' : e1, ''h2'' : e2] \<Longrightarrow> r[''h1''] \<in> e1 \<and> r[''h2''] \<in> e2" by auto
-theorem [norm]: 
+theorem [norm]:
   assumes "h \<in> DOMAIN r" and "s = [r EXCEPT ![h] = e]"
-  shows "\<forall>f \<in> DOMAIN r : IF f = h THEN s[f] = e ELSE s[f] = r[f]" 
+  shows "\<forall>f \<in> DOMAIN r : IF f = h THEN s[f] = e ELSE s[f] = r[f]"
   using assms by auto
 
 text {* Arithmetic *}
@@ -251,7 +251,7 @@ theorem "\<lbrakk>x \<in> Int; y \<in> Int; z \<in> Int\<rbrakk> \<Longrightarro
 theorem "\<lbrakk>x \<in> Int; y \<in> Int; z \<in> Int\<rbrakk> \<Longrightarrow> (y + x \<le> z + x) = (y \<le> z)" sorry
 
 theorem "\<lbrakk>x \<in> Int; y \<in> Int; z \<in> Int\<rbrakk> \<Longrightarrow> (x \<le> y - z) = (x + z \<le> y)"
-  apply (rule intCases3[of x y z],simp+) 
+  apply (rule intCases3[of x y z],simp+)
   apply (simp add: int_diff_def)
   thm nat_add_right_cancel_leq
   thm leq_adiff_right_add_left
@@ -287,7 +287,7 @@ lemma (*[simp]:*) "n \<in> Nat \<and> 1..n = {} \<Longrightarrow> n = 0" sorry
 lemma (*[simp]:*) "n \<in> Nat \<and> {} = 1..n \<Longrightarrow> n = 0" sorry
 lemma OneToNegative (*[simp]*): "n \<in> Int \<and> n \<le> 0 \<Longrightarrow> 1..n = 1..0" sorry
 (*
-theorem range_empty [simp]: "b < a \<Longrightarrow> a..b = {}" 
+theorem range_empty [simp]: "b < a \<Longrightarrow> a..b = {}"
   sorry
 SM: shouldn't this rather be the following
 *)
@@ -298,9 +298,9 @@ lemma (*[simp]:*) "\<lbrakk>n \<in> Int; {1} = 1..n\<rbrakk> \<Longrightarrow> n
 lemma (*[simp]:*) "\<lbrakk>n \<in> Int; {1,2} = 1..n\<rbrakk> \<Longrightarrow> n = 2" sorry
 lemma (*[simp]:*) "\<lbrakk>n \<in> Int; {1,2,3} = 1..n\<rbrakk> \<Longrightarrow> n = 3" sorry
 
-(* Seq(S) is defined over intervals of naturals but it should work 
+(* Seq(S) is defined over intervals of naturals but it should work
     as well for intervals of integers. *)
-lemma SeqInt: "UNION {[1 .. n \<rightarrow> S] : n \<in> Int} = Seq(S)" 
+lemma SeqInt: "UNION {[1 .. n \<rightarrow> S] : n \<in> Int} = Seq(S)"
 proof -
   have "(UNION {[1 .. n \<rightarrow> S] : n \<in> Int}) = (UNION {[1 .. n \<rightarrow> S] : n \<in> Nat})"
     (is "?uint = ?unat")
@@ -326,7 +326,7 @@ text {* Sequences *}
 
 (* NB: "\\circ" is already -- mistakenly -- used for relation composition in Tuples.thy !!*)
 definition "Concat" :: "[c, c] \<Rightarrow> c" (infixl "\\o" 50)
-  where "Concat(s,t) \<equiv> [i \<in> 1 .. (Len(s) + Len(t)) \<mapsto> 
+  where "Concat(s,t) \<equiv> [i \<in> 1 .. (Len(s) + Len(t)) \<mapsto>
            IF i \<le> Len(s) THEN s[i] ELSE t[i - Len(s)]]"
 
 (* SM: changed definition of Tail to use "--" instead of "-", which shouldn't change the semantics *)
@@ -363,7 +363,7 @@ theorem [norm,simp]: "isASeq(s) \<Longrightarrow> s \\o \<langle>\<rangle> = s" 
 theorem [norm]: "Append(\<langle>\<rangle>,e) = \<langle>e\<rangle>" ..
 theorem [norm]: "Len(\<langle>\<rangle>) = 0" by simp
 theorem [norm,simp]: "Tail(\<langle>\<rangle>) = \<langle>\<rangle>" by (auto simp: Tail_def OneToNegative)
-theorem [norm]: "SubSeq(s,m,n) = \<langle>\<rangle> \<Longrightarrow> s = \<langle>\<rangle> \<or> 1..(1 + n - m) = {}" 
+theorem [norm]: "SubSeq(s,m,n) = \<langle>\<rangle> \<Longrightarrow> s = \<langle>\<rangle> \<or> 1..(1 + n - m) = {}"
   by (simp add: SubSeq_def)
 
 (* Rules about Len *)
@@ -372,7 +372,7 @@ theorem [norm]: "Len(\<langle>e1,e2\<rangle>) = 2" by simp
 
 theorem SeqLenGeqZero [norm]: "isASeq(s) \<Longrightarrow> 0 \<le> Len(s)" by simp
 
-theorem [simp]: 
+theorem [simp]:
   assumes 1: "isASeq(s)" and 2: "s \<noteq> \<langle>\<rangle>"
   shows "0 < Len(s)"
 proof -
@@ -387,21 +387,21 @@ theorem LenNonEmptySeq (*[simp]*):
   shows "Len(s) - 1 \<in> Nat"
 sorry
 
-theorem [norm,simp]: "n \<in> Nat \<Longrightarrow> Len([x \<in> 1..n \<mapsto> e]) = n" 
+theorem [norm,simp]: "n \<in> Nat \<Longrightarrow> Len([x \<in> 1..n \<mapsto> e]) = n"
   by (intro LenI, auto)
-theorem [norm,simp]: "n \<in> Int \<and> n \<le> 0 \<Longrightarrow> Len([x \<in> 1..n \<mapsto> e]) = 0" 
+theorem [norm,simp]: "n \<in> Int \<and> n \<le> 0 \<Longrightarrow> Len([x \<in> 1..n \<mapsto> e]) = 0"
   by (intro LenI, simp_all add: OneToNegative)
 
 theorem [norm]: "\<lbrakk>isASeq(s); s \<noteq> \<langle>\<rangle>\<rbrakk> \<Longrightarrow> Len(Tail(s)) = Len(s) - 1"
   by (force simp: Tail_def LenNonEmptySeq)
-theorem [norm]: "\<lbrakk>isASeq(s); isASeq(t)\<rbrakk> \<Longrightarrow> Len(s \\o t) = Len(s) + Len(t)" 
+theorem [norm]: "\<lbrakk>isASeq(s); isASeq(t)\<rbrakk> \<Longrightarrow> Len(s \\o t) = Len(s) + Len(t)"
   by (force simp: Concat_def)
 theorem [norm]: "isASeq(s) \<Longrightarrow> Len(Append(s,e)) = Len(s) + 1"
   by (force simp: Append_def)
 theorem [norm]: "isASeq(s) \<Longrightarrow> Len([s EXCEPT ![x] = y]) = Len(s)"
   by force
 
-theorem [simp]: 
+theorem [simp]:
   assumes 1: "isASeq(s)" and 2: "isASeq(t)" and 3: "s \\o t = \<langle>\<rangle>"
   shows "s = \<langle>\<rangle> \<and> t = \<langle>\<rangle>"
 proof -
@@ -430,7 +430,7 @@ next
   thus ?thesis by (auto simp: Tail_def)
 qed
 
-theorem SubSeqIsASeq [norm]: 
+theorem SubSeqIsASeq [norm]:
   assumes s: "isASeq(s)" and m: "m \<in> Int" and n: "n \<in> Int"
   shows "isASeq(SubSeq(s,m,n))"
 proof -
@@ -447,12 +447,12 @@ qed
 theorem [norm]: "\<lbrakk>isASeq(s)\<rbrakk> \<Longrightarrow> isASeq([s EXCEPT ![a] = b])" by (simp add: except_def)
 
 (* Rules of the form seq[i] *)
-theorem [norm]: "\<lbrakk>isASeq(s); i \<in> 1..Len(s)\<rbrakk> \<Longrightarrow> Append(s,e)[i] = s[i]" 
+theorem [norm]: "\<lbrakk>isASeq(s); i \<in> 1..Len(s)\<rbrakk> \<Longrightarrow> Append(s,e)[i] = s[i]"
   by (auto simp: inNatInterval_iff)
 theorem [norm]: "isASeq(s) \<Longrightarrow> Append(s,e)[Len(s) + 1] = e" by auto
 theorem TailElt [norm]: "\<lbrakk>isASeq(s); i \<in> 1..(Len(s) - 1)\<rbrakk> \<Longrightarrow> Tail(s)[i] = s[i + 1]" by (simp add: Tail_def)
 theorem [norm]: "i \<in> 1..(1 + n - m) \<Longrightarrow> SubSeq(s,m,n)[i] = s[i + m - 1]" by (simp add: SubSeq_def)
-theorem ConcatEltFirst [norm]: 
+theorem ConcatEltFirst [norm]:
   assumes s: "isASeq(s)" and t: "isASeq(t)" and i: "i \<in> 1..Len(s)"
   shows "(s \\o t)[i] = s[i]"
 proof -
@@ -462,7 +462,7 @@ proof -
   ultimately show ?thesis by (simp add: Concat_def)
 qed
 
-theorem ConcatEltSecond [norm]: 
+theorem ConcatEltSecond [norm]:
   assumes s: "isASeq(s)" and t: "isASeq(t)" and i: "i \<in> (Len(s)+1) .. (Len(s)+Len(t))"
   shows "(s \\o t)[i] = t[i - Len(s)]"
 proof -
@@ -488,12 +488,12 @@ theorem [norm]: "e1 \<in> S \<and> e2 \<in> S \<Longrightarrow> \<langle>e1,e2\<
 theorem [norm]: "\<langle>e1,e2\<rangle> \<in> Seq(S) \<Longrightarrow> e1 \<in> S \<and> e2 \<in> S" by force
 theorem [norm]: "n \<in> Nat \<Longrightarrow> [i \<in> 1 .. n \<mapsto> e(i)] \<in> Seq(S) = (\<forall>i \<in> 1..n : e(i) \<in> S)"
   by (simp add:Seq_def FuncSet)
-theorem [norm]: 
+theorem [norm]:
   assumes n: "n \<in> Int" shows "[i \<in> 1 .. n \<mapsto> e(i)] \<in> Seq(S) = (\<forall>i \<in> 1..n : e(i) \<in> S)"
   apply (simp add: Seq_def FuncSet)
-  using n apply (rule intCases, simp_all) 
+  using n apply (rule intCases, simp_all)
   by force
-theorem AppendInSeq [norm]: 
+theorem AppendInSeq [norm]:
   assumes s: "isASeq(s)"
   shows "(Append(s,e) \<in> Seq(S)) \<Leftrightarrow> (e \<in> S \<and> s \<in> Seq(S))"
 proof
@@ -519,7 +519,7 @@ qed
 
 theorem [norm]: "\<lbrakk>e \<in> S; s \<in> Seq(S)\<rbrakk> \<Longrightarrow> Append(s,e) \<in> Seq(S)" by auto
 
-theorem [norm]: 
+theorem [norm]:
   assumes s: "s \<in> Seq(S)"
   shows "Tail(s) \<in> Seq(S)"
 proof (cases "s = \<langle>\<rangle>")
@@ -546,7 +546,7 @@ next
   qed
 qed
 
-theorem [norm]: 
+theorem [norm]:
   assumes s: "s \<in> Seq(S)" and t: "t \<in> Seq(S)"
   shows "s \\o t \<in> Seq(S)"
 proof
@@ -566,7 +566,7 @@ next
   qed
 qed
 
-theorem [norm]: 
+theorem [norm]:
   assumes s: "s \<in> Seq(S)" and m: "m \<in> Int" and n: "n \<in> Int"
      and mn: "(n < m) \<or> (m \<in> 1 .. Len(s) \<and> n \<in> m .. Len(s))"
   shows "SubSeq(s,m,n) \<in> Seq(S)"
@@ -592,7 +592,7 @@ qed
 
 (* Rules of the form x = seq *)
 
-theorem [norm]: 
+theorem [norm]:
   assumes m: "m \<in> Int" and n: "n \<in> Int" and t: "t = SubSeq(s,m,n)" and i: "i \<in> m .. n"
   shows "t[1 + i - m] = s[i]"
 proof -
@@ -601,7 +601,7 @@ proof -
   with t show ?thesis by (simp add: SubSeq_def)
 qed
 
-theorem [norm]: 
+theorem [norm]:
   assumes n: "n \<in> 1..Len(s)"
   shows "SubSeq(s,n,n) = \<langle>s[n]\<rangle>"
 proof -
@@ -612,32 +612,32 @@ qed
 
 theorem [norm]: "x = Len(s) \<Longrightarrow> isASeq(s) \<Rightarrow> x \<in> Nat \<and> DOMAIN s = 1..x" by simp
 
-theorem [norm]: 
+theorem [norm]:
   assumes "isASeq(s)"
       and "x = Append(s,e)"
   shows "isASeq(x)"
     and "DOMAIN x = 1 .. (Len(s) + 1)"
-    and "\<forall>i \<in> 1 .. Len(s): x[i] = s[i]" 
+    and "\<forall>i \<in> 1 .. Len(s): x[i] = s[i]"
     and "x[Len(s) + 1] = e"
   using assms by (simp_all, auto simp: Append_def)
-  
-theorem [norm]: 
-  assumes "isASeq(s)" 
+
+theorem [norm]:
+  assumes "isASeq(s)"
       and "isASeq(t)"
       and "x = (s \\o t)"
   shows "isASeq(x)"
     and "DOMAIN x = 1 .. (Len(s) + Len(t))"
-    and "\<forall>i \<in> 1 .. Len(s): x[i] = s[i]" 
+    and "\<forall>i \<in> 1 .. Len(s): x[i] = s[i]"
     and "\<forall>i \<in> (Len(s) + 1) .. (Len(s) + Len(t)): x[i] = t[i - Len(s)]"
 using assms by (auto simp: ConcatEltFirst ConcatEltSecond)
 
-theorem [norm]: 
+theorem [norm]:
   assumes "isASeq(s)"
       and "s \<noteq> \<langle>\<rangle>"
       and "x = Tail(s)"
   shows "isASeq(x)"
     and "DOMAIN x = 1 .. (Len(s) - 1)"
-    and "\<forall>i \<in> 1 .. (Len(s) - 1): x[i] = s[i + 1]" 
+    and "\<forall>i \<in> 1 .. (Len(s) - 1): x[i] = s[i + 1]"
 using assms by (simp_all add: TailIsASeq TailElt)
 
 text {* Setting up the smt tactic. *}
@@ -645,7 +645,7 @@ text {* Setting up the smt tactic. *}
 thm norm
 
 ML {*
-fun smt_tac ctxt = 
+fun smt_tac ctxt =
 (*  let
     val my_ctxt =
       ctxt |> Simplifier.map_simpset

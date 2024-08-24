@@ -1,14 +1,22 @@
 (*  Title:      TLA+/AtomicBakery.thy
     Author:     Hernan Vanzetto, LORIA
-    Copyright (C) 2009-2011  INRIA and Microsoft Corporation
+    Copyright (C) 2009-2022  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2011-1
-    Time-stamp: <2011-10-11 17:37:50 merz>
+    Version:    Isabelle2024
 *)
+
+section \<open>Safety Proof of the Atomic Version of the Bakery Algorithm\<close>
 
 theory AtomicBakeryG
 imports Constant
 begin
+
+text \<open>
+  This is the version of the atomic Bakery algorithm used for
+  presenting TLAPS, verified using only Isabelle/TLA+. The
+  proof is quite tedious, compared to the proof that makes use
+  of the different back-end provers available in TLAPS.
+\<close>
 
 (**************************************************
 
@@ -80,7 +88,7 @@ definition Init where
 definition p1 where
  "p1(self,unread,max,flag,pc,num,nxt,unread',max',flag',pc',num',nxt') \<equiv>
                pc[self] = ''p1''
-             \<and> unread' = [unread EXCEPT ![self] = P \\ {self}]
+             \<and> unread' = [unread EXCEPT ![self] = P \<setminus> {self}]
              \<and> max' = [max EXCEPT ![self] = 0]
              \<and> flag' = [flag EXCEPT ![self] = TRUE]
              \<and> pc' = [pc EXCEPT ![self] = ''p2'']
@@ -91,7 +99,7 @@ definition p2 where
                 pc[self] = ''p2'' 
               \<and> (IF unread[self] \<noteq> {}
                   THEN \<exists>i \<in> unread[self] : 
-                       (  unread' = [unread EXCEPT ![self] = unread[self] \\ {i}]
+                       (  unread' = [unread EXCEPT ![self] = unread[self] \<setminus> {i}]
                         \<and> (IF num[i] > max[self] 
                              THEN max' = [max EXCEPT ![self] = num[i]] 
                              ELSE (max' = max)))
@@ -111,7 +119,7 @@ definition p4 where
   "p4(self,unread,max,flag,pc,num,nxt,unread',max',flag',pc',num',nxt') \<equiv>
                 pc[self] = ''p4'' 
               \<and> flag' = [flag EXCEPT ![self] = FALSE] 
-              \<and> unread' = [unread EXCEPT ![self] = P \\ {self}] 
+              \<and> unread' = [unread EXCEPT ![self] = P \<setminus> {self}] 
               \<and> pc' = [pc EXCEPT ![self] = ''p5''] 
               \<and> num' = num \<and> max' = max \<and> nxt' = nxt"
 
@@ -133,11 +141,11 @@ definition p6 where
                 \<or> (IF self > nxt[self] 
                      THEN num[nxt[self]] > num[self]
                      ELSE num[nxt[self]] \<ge> num[self]))
-              \<and> unread' = [unread EXCEPT ![self] = unread[self] \\ {nxt[self]}] 
+              \<and> unread' = [unread EXCEPT ![self] = unread[self] \<setminus> {nxt[self]}] 
               \<and> pc' = [pc EXCEPT ![self] = ''p5''] 
               \<and> num' = num \<and> flag' = flag \<and> max' = max \<and> nxt' = nxt"
 
-definition p7 where  -- {* Critical section *}
+definition p7 where  \<comment> \<open> Critical section \<close>
   "p7(self,unread,max,flag,pc,num,nxt,unread',max',flag',pc',num',nxt') \<equiv>
                 pc[self] = ''p7'' 
               \<and> TRUE 
@@ -193,12 +201,12 @@ definition TypeOK where
             \<and> max \<in> [P \<rightarrow> Nat \<union> {defaultInitValue}] 
             \<and> (\<forall>j \<in> P : (pc[j] \<in> {''p2'', ''p3''}) \<Rightarrow> max[j] \<in> Nat)
             \<and> nxt \<in> [P \<rightarrow> P \<union> {defaultInitValue}] 
-            \<and> (\<forall>i \<in> P : (pc[i] = ''p6'') \<Rightarrow> nxt[i] \<in> P \\ {i})
+            \<and> (\<forall>i \<in> P : (pc[i] = ''p6'') \<Rightarrow> nxt[i] \<in> P \<setminus> {i})
             \<and> pc \<in> [P \<rightarrow> {''p1'',''p2'',''p3'',''p4'',''p5'',''p6'',''p7'',''p8''}]"
---{* The type invariant in p6 should be
-            @{text "\<and> (\<forall>i \<in> P : (pc[i] = ''p6'') \<Rightarrow> nxt[i] \<in> unread[i] \\ {i})"}
+\<comment> \<open> The type invariant in p6 should be
+            @{text "\<and> (\<forall>i \<in> P : (pc[i] = ''p6'') \<Rightarrow> nxt[i] \<in> unread[i] \<setminus> {i})"}
   but it works anyway as it is.
-*}
+\<close>
 
 (**
 definition TypeOK where (** version for the alternative initial condition **)
@@ -212,10 +220,10 @@ definition TypeOK where (** version for the alternative initial condition **)
             \<and> nxt \<in> [P \<rightarrow> P]
             \<and> (\<forall>i \<in> P : (pc[i] = ''p6'') \<Rightarrow> nxt[i] \<noteq> i)
             \<and> pc \<in> [P \<rightarrow> {''p1'',''p2'',''p3'',''p4'',''p5'',''p6'',''p7'',''p8''}]"
---{* The type invariant in p6 should be
-            @{text "\<and> (\<forall>i \<in> P : (pc[i] = ''p6'') \<Rightarrow> nxt[i] \<in> unread[i] \\ {i})"}
+\<comment> \<open> The type invariant in p6 should be
+            @{text "\<and> (\<forall>i \<in> P : (pc[i] = ''p6'') \<Rightarrow> nxt[i] \<in> unread[i] \<setminus> {i})"}
   but it works anyway as it is.
-*}
+\<close>
 **)
 
 definition GG where
@@ -239,12 +247,12 @@ definition IInv where
                ((num[i] = 0) = (pc[i] \<in> {''p1'', ''p2'', ''p3''}))
              \<and> (flag[i] = (pc[i] \<in> {''p2'', ''p3'', ''p4''}))
              \<and> (pc[i] \<in> {''p5'', ''p6''} \<Rightarrow> 
-                 (\<forall>j \<in> (P \\ unread[i]) \\ {i} : After(j,i,unread,max,flag,pc,num,nxt)))
+                 (\<forall>j \<in> (P \<setminus> unread[i]) \<setminus> {i} : After(j,i,unread,max,flag,pc,num,nxt)))
              \<and> ( pc[i] = ''p6''
                \<and> ( (pc[nxt[i]] = ''p2'') \<and> i \<notin> unread[nxt[i]]
                  \<or> (pc[nxt[i]] = ''p3''))
                \<Rightarrow> max[nxt[i]] \<ge> num[i])
-             \<and> ((pc[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \\ {i} : After(j,i,unread,max,flag,pc,num,nxt)))"
+             \<and> ((pc[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \<setminus> {i} : After(j,i,unread,max,flag,pc,num,nxt)))"
 
 definition Inv where
   "Inv(unread,max,flag,pc,num,nxt) \<equiv> 
@@ -261,8 +269,8 @@ theorem GGIrreflexive:
   assumes i: "i \<in> P" and j: "j \<in> P" 
     and 1: "i \<noteq> j" and 2: "num[i] \<in> Nat \\ {0}" and 3: "num[j] \<in> Nat \\ {0}"
   shows "\<not>(GG(i,j,num) \<and> GG(j,i,num))"
-unfolding GG_def using assms nat_less_linear[of i j]
-by (auto dest: procInNat nat_less_not_sym nat_less_leq_trans)
+unfolding GG_def using assms int_less_linear[of i j]
+by (auto dest: procInNat int_less_not_sym int_less_leq_trans)
 
 theorem InitImpliesTypeOK:
   "Init(unread,max,flag,pc,num,nxt) \<Longrightarrow> TypeOK(unread,max,flag,pc,num,nxt)"
@@ -286,8 +294,7 @@ next
   next
     case False
     from type have "isAFcn(pc)"
-      (* FIXME: needed for proving that pc'=pc, but why doesn't "simp ..." suffice *)
-      by (force simp add: TypeOK_def)
+      by (auto simp: TypeOK_def)
     with False p2 obtain i where
       i: "pc[self] = ''p2''" "i \<in> unread[self]"
          "unread' = [unread EXCEPT ![self] = unread[self] \\ {i}]"
@@ -313,15 +320,27 @@ next
       with i j pc type show "unread'[j] \<subseteq> P \<and> j \<notin> unread'[j]"
         by (auto simp: TypeOK_def)
     qed
-    from u type i have n: "num[i] \<in> Nat"
-      by (auto simp: TypeOK_def)
+    from u \<open>i \<in> unread[self]\<close> have "i \<in> ProcSet" by blast
+    with type have n: "num[i] \<in> Nat" by (auto simp: TypeOK_def)
     with i type have m': "max' \<in> [P \<rightarrow> Nat \<union> {defaultInitValue}]"
       by (auto simp: TypeOK_def)
-    from n i type have m'': "\<forall>j \<in> P : pc'[j] \<in> {''p2'',''p3''} \<Rightarrow> max'[j] \<in> Nat"
-      (* FIXME: 
-         - why doesn't Isabelle do the case distinction by itself?
-         - why do we need condElse? *)
-      by (cases "max[self] < num[i]", auto simp: TypeOK_def (*condThen*) condElse)
+    have m'': "\<forall>j \<in> P : pc'[j] \<in> {''p2'',''p3''} \<Rightarrow> max'[j] \<in> Nat"
+    proof (clarify)
+      fix j
+      assume "j \<in> ProcSet" "pc'[j] \<in> {''p2'', ''p3''}"
+      with type i have mj: "max[j] \<in> Nat"
+        unfolding TypeOK_def by auto
+      show "max'[j] \<in> Nat"
+      proof (cases "j = self")
+        case True
+        with i mj type \<open>j \<in> ProcSet\<close> n show ?thesis
+          by (cases "max[self] < num[i]") (auto simp: TypeOK_def)
+      next
+        case False
+        with i mj type \<open>j \<in> ProcSet\<close> show ?thesis 
+          by (auto simp: TypeOK_def)
+      qed
+    qed
     from triv u' u'' m' m'' show ?thesis
       by (auto simp add: TypeOK_def)
   qed
@@ -389,9 +408,6 @@ proof (auto simp: MutualExclusion_def)
 qed
 
 
-lemma leq_neq_trans' (*[dest!]*): "a \<le> b \<Longrightarrow> b \<noteq> a \<Longrightarrow> a < b"
-  by (drule not_sym) (rule leq_neq_trans)
-
 theorem InvInvariant:
   assumes inv: "Inv(unread,max,flag,pc,num,nxt)"
       and nxt: "Next(unread,max,flag,pc,num,nxt,unread',max',flag',pc',num',nxt')"
@@ -407,26 +423,29 @@ proof auto
     assume type: "TypeOK(unread, max, flag, pc, num, nxt)"
        and iinv: "\<forall>j \<in> ProcSet: IInv(j, unread, max, flag, pc, num, nxt)"
        and i: "i \<in> ProcSet"
-    -- {* auxiliary definition that is used in several places of the proof below *}
-    def after \<equiv> "\<lambda>k. pc[k] = ''p1'' \<or>
+    \<comment> \<open> auxiliary definition that is used in several places of the proof below \<close>
+    define after where
+      "after \<equiv> \<lambda>k. pc[k] = ''p1'' \<or>
                pc[k] = ''p2'' \<and> (i \<in> unread[k] \<or> num[i] \<le> max[k]) \<or>
                pc[k] = ''p3'' \<and> num[i] \<le> max[k] \<or>
                (pc[k] = ''p4'' \<or> pc[k] = ''p5'' \<or> pc[k] = ''p6'') \<and>
                GG(i, k, num) \<and> (pc[k] = ''p5'' \<or> pc[k] = ''p6'' \<Rightarrow> i \<in> unread[k])"
-    from iinv i have iinvi: "IInv(i, unread, max, flag, pc, num, nxt)" ..
+    from iinv i have iinvi: "IInv(i, unread, max, flag, pc, num, nxt)" by auto
 
-    -- {* iinv3 and iinv5: particular parts of the invariant, taken to the meta-level for then being instantiated with the proper variables, to ease the work of the classical reasoner. *}
+    \<comment> \<open> iinv3 and iinv5: particular parts of the invariant, 
+         taken to the meta-level for then being instantiated with the proper variables, 
+         to ease the work of the classical reasoner. \<close>
     from iinv
     have iinv3: "\<And>i j. 
-      \<lbrakk>pc[i] \<in> {''p5'', ''p6''}; i \<in> ProcSet; j \<in> ProcSet \\ unread[i] \\ {i}\<rbrakk> 
+      \<lbrakk>pc[i] \<in> {''p5'', ''p6''}; i \<in> ProcSet; j \<in> ProcSet \<setminus> unread[i] \<setminus> {i}\<rbrakk> 
       \<Longrightarrow> After(j, i, unread, max, flag, pc, num, nxt)"
     proof -
       fix i j
       assume pci: "pc[i] \<in> {''p5'', ''p6''}" 
-        and i: "i \<in> ProcSet" and j:"j \<in> ProcSet \\ unread[i] \\ {i}"
-      from iinv i have iinvi: "IInv(i, unread, max, flag, pc, num, nxt)" ..
+        and i: "i \<in> ProcSet" and j:"j \<in> ProcSet \<setminus> unread[i] \<setminus> {i}"
+      from iinv i have iinvi: "IInv(i, unread, max, flag, pc, num, nxt)" by auto
       hence "pc[i] \<in> {''p5'', ''p6''} \<Rightarrow>
-        (\<forall>j \<in> ProcSet \\ unread[i] \\ {i} :
+        (\<forall>j \<in> ProcSet \<setminus> unread[i] \<setminus> {i} :
         After(j, i, unread, max, flag, pc, num, nxt))"
         unfolding IInv_def by auto
       with pci i j
@@ -436,15 +455,15 @@ proof auto
 
     from iinv
     have iinv5: "\<And>i j. 
-      \<lbrakk>pc[i] \<in> {''p7'', ''p8''}; i \<in> ProcSet; j \<in> ProcSet \\ {i}\<rbrakk> 
+      \<lbrakk>pc[i] \<in> {''p7'', ''p8''}; i \<in> ProcSet; j \<in> ProcSet \<setminus> {i}\<rbrakk> 
       \<Longrightarrow> After(j, i, unread, max, flag, pc, num, nxt)"
     proof -
       fix i j
       assume pci: "pc[i] \<in> {''p7'', ''p8''}" 
         and i: "i \<in> ProcSet" and j:"j \<in> ProcSet \\ {i}"
-      from iinv i have iinvi: "IInv(i, unread, max, flag, pc, num, nxt)" ..
+      from iinv i have iinvi: "IInv(i, unread, max, flag, pc, num, nxt)" by auto
       hence "pc[i] \<in> {''p7'', ''p8''} \<Rightarrow>
-        (\<forall>j \<in> ProcSet \\ {i} :
+        (\<forall>j \<in> ProcSet \<setminus> {i} :
         After(j, i, unread, max, flag, pc, num, nxt))"
         unfolding IInv_def by auto
       with pci i j
@@ -452,7 +471,7 @@ proof auto
         by auto
     qed
 
-    -- {* This also is an instantiation of a type invariant, since auto can't resolve it in a reasonable time. *}
+    \<comment> \<open> This also is an instantiation of a type invariant, since auto can't resolve it in a reasonable time. \<close>
     from type i
     have nxti: "pc[i] = ''p6'' \<Rightarrow> nxt[i] \<in> ProcSet \<and> nxt[i] \<noteq> i"
       by (auto simp: TypeOK_def)
@@ -474,210 +493,96 @@ proof auto
         have 2: "flag'[i] = (pc'[i] \<in> {''p2'', ''p3'', ''p4''})"
           by (clarsimp simp: TypeOK_def IInv_def p1_def)
         have 3: "pc'[i] \<in> {''p5'', ''p6''} \<Rightarrow> 
-                 (\<forall>j \<in> (P \\ unread'[i]) \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+                 (\<forall>j \<in> (P \<setminus> unread'[i]) \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
         proof (rule+)
           fix j
-          assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \\ unread'[i]) \\ {i}"
+          assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \<setminus> unread'[i]) \<setminus> {i}"
           show "After(j,i,unread',max',flag',pc',num',nxt')"
           proof (cases "self = j")
             case True with selfi p1 type iinvi self i pc' show ?thesis
-              proof (clarsimp simp: TypeOK_def IInv_def After_def p1_def nat_gt0_not0)
-              (** FIXME: "proof(..., auto)" doesn't finish in reasonable time **)
-              assume "pc[i] = ''p5'' \<or> pc[i] = ''p6''"
-              thus "(pc[i] = ''p1'') = FALSE \<and> (pc[i] = ''p2'') = FALSE \<and> (pc[i] = ''p3'') = FALSE"
-              by auto
-          qed
-        next
-          case False with selfi p1 type iinvi self i pc' j show ?thesis
-          proof (clarsimp simp: TypeOK_def IInv_def After_def p1_def nat_gt0_not0)
-            (** FIXME: "proof(..., auto/force) doesn't finish in reasonable time 
-                and auto / force / blast cannot handle the following in one fell swoop
-                so we have to resort to very low-level reasoning. **)
-            assume "pc[i] = ''p5'' \<or> pc[i] = ''p6''"
-            hence ii1: "pc[i] \<noteq> ''p1'' \<and> pc[i] \<noteq> ''p2'' \<and> pc[i] \<noteq> ''p3''" by auto
-            assume "\<forall>k \<in> ProcSet \\ unread[i] \\ {i}:
-                       pc[k] = ''p1'' \<or>
-                       pc[k] = ''p2'' \<and> (i \<in> unread[k] \<or> num[i] \<le> max[k]) \<or>
-                       pc[k] = ''p3'' \<and> num[i] \<le> max[k] \<or>
-                       (pc[k] = ''p4'' \<or> pc[k] = ''p5'' \<or> pc[k] = ''p6'') \<and>
-                       GG(i, k, num) \<and> (pc[k] = ''p5'' \<or> pc[k] = ''p6'' \<Rightarrow> i \<in> unread[k])"
-            hence aft: "\<forall>k \<in> ProcSet \\ unread[i] \\ {i}: after(k)" unfolding after_def .
-            assume "j \<in> ProcSet" "(j \<in> unread[i]) = FALSE" "(j = i) = FALSE"
-            with aft have "after(j)" by auto
-            hence "pc[j] = ''p1'' \<or>
-                   pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                   pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                   (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                   GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j])"
-              unfolding after_def .
-            with ii1
-            show "(pc[i] = ''p1'') = FALSE 
-                  \<and> (pc[i] = ''p2'') = FALSE
-                  \<and> (pc[i] = ''p3'') = FALSE
-                  \<and> (pc[j] = ''p1'' \<or>
-                     pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                     pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                     (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                     GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j]))"
-              by simp
+              by (clarsimp simp: TypeOK_def IInv_def After_def p1_def)
+                 (force elim: int_leq_lessE)
+          next
+            case False 
+            from i type have "num[i] \<in> Nat"
+              by (auto simp: TypeOK_def)
+            with False selfi p1 type iinvi self i pc' j show ?thesis
+              by (clarsimp simp: TypeOK_def IInv_def After_def p1_def int_leq_less)
+                 (force elim!: bspec)
           qed
         qed
-      qed
-      have 4: "pc'[i] = ''p6''
-               \<and> (  (pc'[nxt'[i]] = ''p2'') \<and> i \<notin> unread'[nxt'[i]]
-                  \<or> (pc'[nxt'[i]] = ''p3''))
-               \<Rightarrow> max'[nxt'[i]] \<ge> num'[i]"
-      proof (cases "self = nxt[i]")
-        case True
-        with selfi p1 type iinvi self i show ?thesis
-          by (clarsimp simp: TypeOK_def IInv_def p1_def)
-      next
-        case False
-        with type self i have "pc[i] = ''p6'' \<Rightarrow> nxt[i] \<in> ProcSet"
-          by (auto simp: TypeOK_def)
-        with False selfi p1 type iinvi self i show ?thesis
-          by (clarsimp simp: TypeOK_def IInv_def p1_def)
-      qed
-      have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
-      proof (rule+)
-        fix j
-        assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \\ {i}"
-        show "After(j,i,unread',max',flag',pc',num',nxt')"
-        proof (cases "self = j")
-          case True with selfi p1 type iinvi self i pc' show ?thesis
-          proof (clarsimp simp: TypeOK_def IInv_def After_def p1_def nat_gt0_not0)
-            (** FIXME: same problems as in 3 above **)
-            assume "(j = i) = FALSE" "pc[i] = ''p7'' \<or> pc[i] = ''p8''"
-            thus "(pc[i] = ''p1'') = FALSE \<and> (pc[i] = ''p2'') = FALSE \<and> (pc[i] = ''p3'') = FALSE"
-              by auto
-          qed
+        have 4: "pc'[i] = ''p6''
+                 \<and> (  (pc'[nxt'[i]] = ''p2'') \<and> i \<notin> unread'[nxt'[i]]
+                    \<or> (pc'[nxt'[i]] = ''p3''))
+                 \<Rightarrow> max'[nxt'[i]] \<ge> num'[i]"
+        proof (cases "self = nxt[i]")
+          case True
+          with selfi p1 type iinvi self i show ?thesis
+            by (clarsimp simp: TypeOK_def IInv_def p1_def)
         next
-          case False with selfi p1 type iinvi self i pc' j show ?thesis
-          proof (clarsimp simp: TypeOK_def IInv_def After_def p1_def nat_gt0_not0)
-            (** FIXME: again, similar problems **)
-            assume "pc[i] = ''p7'' \<or> pc[i] = ''p8''"
-            hence ii1: "pc[i] \<noteq> ''p1'' \<and> pc[i] \<noteq> ''p2'' \<and> pc[i] \<noteq> ''p3''" by auto
-            assume "\<forall>k \<in> ProcSet \\ {i} :
-                       pc[k] = ''p1'' \<or>
-                       pc[k] = ''p2'' \<and> (i \<in> unread[k] \<or> num[i] \<le> max[k]) \<or>
-                       pc[k] = ''p3'' \<and> num[i] \<le> max[k] \<or>
-                       (pc[k] = ''p4'' \<or> pc[k] = ''p5'' \<or> pc[k] = ''p6'') \<and>
-                       GG(i, k, num) \<and> (pc[k] = ''p5'' \<or> pc[k] = ''p6'' \<Rightarrow> i \<in> unread[k])"
-            hence aft: "\<forall>k \<in> ProcSet \\ {i} : after(k)" unfolding after_def .
-            with j have "after(j)" by blast
-            hence "pc[j] = ''p1'' \<or>
-                   pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                   pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                   (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                   GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j])"
-              unfolding after_def .
-            with ii1
-            show "(pc[i] = ''p1'') = FALSE 
-                  \<and> (pc[i] = ''p2'') = FALSE
-                  \<and> (pc[i] = ''p3'') = FALSE
-                  \<and> (pc[j] = ''p1'' \<or>
-                     pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                     pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                     (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                     GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j]))"
-              by simp
+          case False
+          with type self i have "pc[i] = ''p6'' \<Rightarrow> nxt[i] \<in> ProcSet"
+            by (auto simp: TypeOK_def)
+          with False selfi p1 type iinvi self i show ?thesis
+            by (clarsimp simp: TypeOK_def IInv_def p1_def)
+        qed
+        have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+        proof (rule+)
+          fix j
+          assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \<setminus> {i}"
+          show "After(j,i,unread',max',flag',pc',num',nxt')"
+          proof (cases "self = j")
+            case True with selfi p1 type iinvi self i pc' show ?thesis
+              by (clarsimp simp: TypeOK_def IInv_def After_def p1_def) auto
+          next
+            case False 
+            with pc' self selfi p1 type iinvi i j show ?thesis
+              by (clarsimp simp: p1_def TypeOK_def IInv_def After_def)
+                 (force elim!: bspec)
           qed
         qed
+        from 1 2 3 4 5 show ?thesis
+          unfolding IInv_def by blast
       qed
-      from 1 2 3 4 5 show ?thesis
-        unfolding IInv_def by blast
-    qed
-  next
+    next
       assume p2: "p2(self, unread, max, flag, pc, num, nxt, unread', max', flag', pc', num', nxt')"
       show ?thesis
       proof (cases "self = i")
         assume selfi: "self = i"
-        show ?thesis
-        proof (cases "unread[self] = {}")
-          case True
-          with selfi p2 type iinvi i show ?thesis
-            by (clarsimp simp: TypeOK_def IInv_def p2_def)
-        next
-          case False
-          from type have "isAFcn(pc)"
-            (* FIXME: needed for proving that pc'=pc, but why doesn't "simp ..." suffice *)
-            by (force simp add: TypeOK_def)
-          with False p2 obtain k where
-            k: "pc[self] = ''p2''" "k \<in> unread[self]"
-               "unread' = [unread EXCEPT ![self] = unread[self] \\ {k}]"
-               "max' = (IF num[k] > max[self] THEN [max EXCEPT ![self] = num[k]] ELSE max)"
-               "pc' = pc" "num' = num" "flag' = flag" "nxt' = nxt"
-            by (auto simp: p2_def)
-          with selfi type iinvi i show ?thesis
-            by (clarsimp simp: TypeOK_def IInv_def)
-        qed
+        with selfi p2 type iinvi i show ?thesis
+          by (auto simp: p2_def TypeOK_def IInv_def)
       next
         assume selfi: "self \<noteq> i"
         show ?thesis
         proof (cases "unread[self] = {}")
           assume empty: "unread[self] = {}"
-          with selfi p2 type iinvi self i
+          from i selfi self p2 type empty 
+          have unch: "pc'[i] = pc[i]" "unread' = unread" "max' = max" "num' = num" "flag' = flag"
+            by (auto simp: TypeOK_def p2_def)
+          from empty selfi p2 type iinvi self i
           have 1: "(num'[i] = 0) = (pc'[i] \<in> {''p1'', ''p2'', ''p3''})"
             by (clarsimp simp: TypeOK_def IInv_def p2_def)
           from empty selfi p2 type iinvi self i
           have 2: "flag'[i] = (pc'[i] \<in> {''p2'', ''p3'', ''p4''})"
             by (clarsimp simp: TypeOK_def IInv_def p2_def)
           have 3: "pc'[i] \<in> {''p5'', ''p6''} \<Rightarrow> 
-                   (\<forall>j \<in> (P \\ unread'[i]) \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+                   (\<forall>j \<in> (P \<setminus> unread'[i]) \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
           proof (rule+)
             fix j
-            assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \\ unread'[i]) \\ {i}"
-            from j type have mx: "pc[j] = ''p2'' \<Rightarrow> max[j] \<in> Nat"
-              by (auto simp: TypeOK_def)
+            assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \<setminus> unread'[i]) \<setminus> {i}"
+            from unch pc' i j iinvi have after: "After(j,i,unread,max,flag,pc,num,nxt)"
+              unfolding IInv_def using After_def by auto
             show "After(j,i,unread',max',flag',pc',num',nxt')"
             proof (cases "self = j")
-              case True with empty selfi p2 type iinvi self i pc' j mx show ?thesis
-              proof (clarsimp simp: TypeOK_def IInv_def After_def p2_def nat_gt0_not0)
-                (** FIXME: again, some manual help necessary **)
-                assume "pc[i] = ''p5'' \<or> pc[i] = ''p6''"
-                hence ii1: "pc[i] \<noteq> ''p1'' \<and> pc[i] \<noteq> ''p2'' \<and> pc[i] \<noteq> ''p3''"
-                  by auto
-                assume "j \<in> ProcSet" "(j = i) = FALSE" 
-                       "(j \<in> unread[i]) = FALSE" "pc[j] = ''p2''"
-                       "unread[j] = {}"
-                       "\<forall>j \<in> ProcSet \\ unread[i] \\ {i}: 
-                           pc[j] = ''p1'' \<or>
-                           pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                           pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                           (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                           GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j])"
-                hence "num[i] \<le> max[j]" by auto
-                with ii1 show "(pc[i] = ''p1'') = FALSE \<and> (pc[i] = ''p2'') = FALSE \<and> (pc[i] = ''p3'') = FALSE \<and> num[i] \<le> max[j]"
-                  by simp
-              qed
+              case True
+              with empty unch after p2 type j show ?thesis
+                by (auto simp: p2_def TypeOK_def After_def)
             next
-              case False with empty selfi p2 type iinvi self i pc' j show ?thesis
-              proof (clarsimp simp: TypeOK_def IInv_def After_def p2_def nat_gt0_not0)
-                (** FIXME: similar problems **)
-                assume "pc[i] = ''p5'' \<or> pc[i] = ''p6''"
-                hence ii1: "pc[i] \<noteq> ''p1'' \<and> pc[i] \<noteq> ''p2'' \<and> pc[i] \<noteq> ''p3''"
-                  by auto
-                assume "\<forall>j \<in> ProcSet \\ unread[i] \\ {i}: 
-                           pc[j] = ''p1'' \<or>
-                           pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                           pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                           (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                           GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j])"
-                hence aft: "\<forall>j \<in> ProcSet \\ unread[i] \\ {i}: after(j)"
-                  unfolding after_def .
-                assume "j \<in> ProcSet" "(j = i) = FALSE" "(j \<in> unread[i]) = FALSE"
-                with aft have "after(j)" by auto
-                with ii1 
-                show "(pc[i] = ''p1'') = FALSE 
-                      \<and> (pc[i] = ''p2'') = FALSE
-                      \<and> (pc[i] = ''p3'') = FALSE
-                      \<and> (pc[j] = ''p1'' \<or>
-                         pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                         pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                         (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                         GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j]))"
-                  by (simp add: after_def)
-              qed
+              case False
+              with self j p2 type have "pc'[j] = pc[j]"
+                by (auto simp: TypeOK_def p2_def)
+              with after unch show ?thesis
+                by (auto simp: After_def GG_def)
             qed
           qed
           have 4: "pc'[i] = ''p6''
@@ -695,78 +600,38 @@ proof auto
             with False empty selfi p2 type iinvi self i show ?thesis
               by (clarsimp simp: TypeOK_def IInv_def p2_def)
           qed
-          have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+          have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
           proof (rule+)
             fix j
-            assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \\ {i}"
-            from j type have mx: "pc[j] = ''p2'' \<Rightarrow> max[j] \<in> Nat"
-              by (auto simp: TypeOK_def)
+            assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \<setminus> {i}"
+            from unch pc' i j iinvi have after: "After(j,i,unread,max,flag,pc,num,nxt)"
+              unfolding IInv_def using After_def by auto
             show "After(j,i,unread',max',flag',pc',num',nxt')"
             proof (cases "self = j")
               case True
-              with empty selfi p2 type iinvi i pc' j mx show ?thesis
-              proof (clarsimp simp: TypeOK_def IInv_def After_def p2_def nat_gt0_not0)
-                (** FIXME: similar problems **)
-                assume "pc[i] = ''p7'' \<or> pc[i] = ''p8''"
-                hence ii1: "pc[i] \<noteq> ''p1'' \<and> pc[i] \<noteq> ''p2'' \<and> pc[i] \<noteq> ''p3''"
-                  by auto
-                assume "j \<in> ProcSet" "(j = i) = FALSE" "pc[j] = ''p2''"
-                       "unread[j] = {}"
-                       "\<forall>j \<in> ProcSet \\ {i}: 
-                           pc[j] = ''p1'' \<or>
-                           pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                           pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                           (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                           GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j])"
-                hence "num[i] \<le> max[j]" by auto
-                with ii1 show "(pc[i] = ''p1'') = FALSE \<and> (pc[i] = ''p2'') = FALSE \<and> (pc[i] = ''p3'') = FALSE \<and> num[i] \<le> max[j]"
-                  by simp
-              qed
+              with empty unch after p2 type j show ?thesis
+                by (auto simp: p2_def TypeOK_def After_def)
             next
               case False
-              with empty selfi p2 type iinvi i pc' j show ?thesis
-              proof (clarsimp simp: TypeOK_def IInv_def After_def p2_def nat_gt0_not0)
-                (** FIXME: similar problems **)
-                assume "pc[i] = ''p7'' \<or> pc[i] = ''p8''"
-                hence ii1: "pc[i] \<noteq> ''p1'' \<and> pc[i] \<noteq> ''p2'' \<and> pc[i] \<noteq> ''p3''"
-                  by auto
-                assume "\<forall>j \<in> ProcSet \\ {i}: 
-                           pc[j] = ''p1'' \<or>
-                           pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                           pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                           (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                           GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j])"
-                hence aft: "\<forall>j \<in> ProcSet \\ {i}: after(j)"
-                  unfolding after_def .
-                assume "j \<in> ProcSet" "(j = i) = FALSE"
-                with aft have "after(j)" by auto
-                with ii1 
-                show "(pc[i] = ''p1'') = FALSE \<and>
-                      (pc[i] = ''p2'') = FALSE \<and>
-                      (pc[i] = ''p3'') = FALSE \<and>
-                      (pc[j] = ''p1'' \<or>
-                       pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                       pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                       (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                       GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j]))"
-                  by (simp add: after_def)
-              qed
+              with self j p2 type have "pc'[j] = pc[j]"
+                by (auto simp: TypeOK_def p2_def)
+              with after unch show ?thesis
+                by (auto simp: After_def GG_def)
             qed
           qed
           from 1 2 3 4 5 show ?thesis
             unfolding IInv_def by blast
         next
           assume nempty: "unread[self] \<noteq> {}"
-          from type have "isAFcn(pc)"
-            (* FIXME: needed for proving that pc'=pc, but why doesn't "simp ..." suffice *)
-            by (force simp: TypeOK_def)
-          with nempty p2 obtain k where
+          with p2 type obtain k where
             k: "pc[self] = ''p2''" "k \<in> unread[self]"
-               "unread' = [unread EXCEPT ![self] = unread[self] \\ {k}]"
+               "unread' = [unread EXCEPT ![self] = unread[self] \<setminus> {k}]"
                "max' = (IF num[k] > max[self] THEN [max EXCEPT ![self] = num[k]] ELSE max)"
                "pc' = pc" "num' = num" "flag' = flag" "nxt' = nxt"
-            by (auto simp: p2_def)
+            by (auto simp: p2_def TypeOK_def)
           with type self have kproc: "k \<in> ProcSet"
+            by (auto simp: TypeOK_def)
+          with type have numk: "num[k] \<in> Nat"
             by (auto simp: TypeOK_def)
           from k selfi type iinvi self i
           have 1: "(num'[i] = 0) = (pc'[i] \<in> {''p1'', ''p2'', ''p3''})"
@@ -775,10 +640,12 @@ proof auto
           have 2: "flag'[i] = (pc'[i] \<in> {''p2'', ''p3'', ''p4''})"
             by (clarsimp simp: TypeOK_def IInv_def)
           have 3: "pc'[i] \<in> {''p5'', ''p6''} \<Rightarrow> 
-                   (\<forall>j \<in> (P \\ unread'[i]) \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+                   (\<forall>j \<in> (P \<setminus> unread'[i]) \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
           proof (rule+)
             fix j
-            assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \\ unread'[i]) \\ {i}"
+            assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \<setminus> unread'[i]) \<setminus> {i}"
+            from pc' i k 1 type have numi: "0 < num'[i]"
+              by (force simp: TypeOK_def)
             from j type have mx: "pc[j] = ''p2'' \<Rightarrow> max[j] \<in> Nat"
               by (auto simp: TypeOK_def)
             show "After(j,i,unread',max',flag',pc',num',nxt')"
@@ -790,38 +657,28 @@ proof auto
                 show ?thesis
                 proof (cases "i=k")
                   case True
-                  with k selfi selfj less type iinvi self i pc' j mx show ?thesis
-                  proof (clarsimp simp: TypeOK_def IInv_def After_def nat_gt0_not0)
-                    assume "pc[k] = ''p5'' \<or> pc[k] = ''p6''"
-                    thus "(pc[k] = ''p1'') = FALSE \<and> (pc[k] = ''p2'') = FALSE \<and> (pc[k] = ''p3'') = FALSE"
-                      by auto
-                  qed
+                  with k selfi selfj less type iinvi self i pc' j mx numi numk show ?thesis
+                    by (clarsimp simp: TypeOK_def IInv_def After_def)
                 next
                   case False
-                  with k selfi selfj less type iinvi self i pc' j mx show ?thesis
-                  proof (clarsimp simp: TypeOK_def IInv_def After_def nat_gt0_not0)
+                  with k selfi selfj less type iinvi self i pc' j mx numi show ?thesis
+                  proof (clarsimp simp: TypeOK_def IInv_def After_def)
                     assume "pc[i] = ''p5'' \<or> pc[i] = ''p6''"
-                    hence ii1: "pc[i] \<noteq> ''p1'' \<and> pc[i] \<noteq> ''p2'' \<and> pc[i] \<noteq> ''p3''"
-                      by auto
-                    assume "pc[j] = ''p2''" "j \<in> ProcSet" 
+                           "pc[j] = ''p2''" "j \<in> ProcSet" 
                            "(j \<in> unread[i]) = FALSE" "(j = i) = FALSE"
+                           "(i \<in> unread[j]) = FALSE"
                            "\<forall>j \<in> ProcSet \\ unread[i] \\ {i} :
                                pc[j] = ''p1'' \<or>
                                pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
                                pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
                                (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
                                GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j])"
-                    hence ii2: "i \<in> unread[j] \<or> num[i] \<le> max[j]"
+                    hence ii2: "num[i] \<le> max[j]"
                       by auto
-                    assume "max[j] < num[k]" "num \<in> [ProcSet \<rightarrow> Nat]" "i \<in> ProcSet" 
-                           "max[j] \<in> Nat"
-                    with ii2 kproc have "i \<in> unread[j] \<or> num[i] \<le> num[k]"
-                      by (auto dest: nat_leq_less_trans)
-                    with ii1
-                    show "(pc[i] = ''p1'') = FALSE \<and> (pc[i] = ''p2'') = FALSE
-                          \<and> (pc[i] = ''p3'') = FALSE
-                          \<and> (i \<in> unread[j] \<or> num[i] \<le> num[k])"
-                      by simp
+                    assume "max[j] < num[k]" "num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]"
+                    with ii2 kproc mx i \<open>pc[j] = ''p2''\<close>
+                    show "num[i] \<le> num[k]"
+                      by (auto elim!: int_leq_trans)
                   qed
                 qed
               next
@@ -829,95 +686,41 @@ proof auto
                 show ?thesis
                 proof (cases "i=k")
                   case True
-                  with k selfi selfj nless type iinvi self i pc' j mx show ?thesis
-                  proof (clarsimp simp: TypeOK_def IInv_def After_def nat_gt0_not0 condElse nat_not_less[simplified])
-                    assume "pc[k] = ''p5'' \<or> pc[k] = ''p6''"
-                    thus "(pc[k] = ''p1'') = FALSE \<and> (pc[k] = ''p2'') = FALSE \<and> (pc[k] = ''p3'') = FALSE"
-                      by auto
-                  qed
+                  from i type have "num[i] \<in> Int \<and> 0 \<le> num[i]"
+                    by (auto simp: TypeOK_def)
+                  with True k selfi selfj nless type iinvi self i pc' j mx 
+                  show ?thesis
+                    by (auto simp: TypeOK_def IInv_def After_def elim: int_leq_lessE)
                 next
                   case False
-                  with k selfi selfj nless type iinvi self i pc' j mx show ?thesis
-                  proof (clarsimp simp: TypeOK_def IInv_def After_def nat_gt0_not0 condElse)
+                  with k selfi selfj nless type iinvi self i pc' j mx numi show ?thesis
+                  proof (clarsimp simp: TypeOK_def IInv_def After_def)
                     assume "pc[i] = ''p5'' \<or> pc[i] = ''p6''"
-                    hence ii1: "pc[i] \<noteq> ''p1'' \<and> pc[i] \<noteq> ''p2'' \<and> pc[i] \<noteq> ''p3''"
-                      by auto
-                    assume "j \<in> ProcSet" "(j \<in> unread[i]) = FALSE" 
+                           "j \<in> ProcSet" "(j \<in> unread[i]) = FALSE" 
+                           "(i \<in> unread[j]) = FALSE"
                            "(j = i) = FALSE" "pc[j] = ''p2''"
-                           "\<forall>j \<in> ProcSet \\ unread[i] \\ {i} :
+                           "\<forall>j \<in> ProcSet \<setminus> unread[i] \<setminus> {i} :
                                pc[j] = ''p1'' \<or>
                                pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
                                pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
                                (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
                                GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j])"
-                    hence "i \<in> unread[j] \<or> num[i] \<le> max[j]"
+                    thus "num[i] \<le> max[j]"
                       by auto
-                    with ii1 show "(pc[i] = ''p1'') = FALSE
-                                   \<and> (pc[i] = ''p2'') = FALSE
-                                   \<and> (pc[i] = ''p3'') = FALSE
-                                   \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j])"
-                      by simp
                   qed
                 qed
               qed
             next
               assume selfj: "self \<noteq> j"
-              show ?thesis
-              proof (cases "max[self] < num[k]")
-                case True
-                with k selfi selfj type iinvi self i pc' j show ?thesis
-                proof (clarsimp simp: TypeOK_def IInv_def After_def nat_gt0_not0)
-                  assume "pc[i] = ''p5'' \<or> pc[i] = ''p6''"
-                  hence ii1: "pc[i] \<noteq> ''p1'' \<and> pc[i] \<noteq> ''p2'' \<and> pc[i] \<noteq> ''p3''"
-                    by auto
-                  assume "\<forall>j \<in> ProcSet \\ unread[i] \\ {i} :
-                             pc[j] = ''p1'' \<or>
-                             pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                             pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                             (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                             GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j])"
-                  hence aft: "\<forall>j \<in> ProcSet \\ unread[i] \\ {i} : after(j)"
-                    unfolding after_def .
-                  assume "j \<in> ProcSet" "(j \<in> unread[i]) = FALSE" "(j = i) = FALSE"
-                  with aft have "after(j)" by auto
-                  with ii1 show
-                    "(pc[i] = ''p1'') = FALSE \<and>
-                     (pc[i] = ''p2'') = FALSE \<and>
-                     (pc[i] = ''p3'') = FALSE \<and>
-                     (pc[j] = ''p1'' \<or>
-                      pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                      pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                      (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                      GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j]))"
-                    by (simp add: after_def)
-                qed
-              next
-                case False
-                with k selfi selfj type iinvi self i pc' j show ?thesis
-                proof (clarsimp simp: TypeOK_def IInv_def After_def nat_gt0_not0 condElse)
-                  assume "pc[i] = ''p5'' \<or> pc[i] = ''p6''"
-                  hence ii1: "pc[i] \<noteq> ''p1'' \<and> pc[i] \<noteq> ''p2'' \<and> pc[i] \<noteq> ''p3''"
-                    by auto
-                  assume "\<forall>j \<in> ProcSet \\ unread[i] \\ {i} :
-                             pc[j] = ''p1'' \<or>
-                             pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                             pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                             (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                             GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j])"
-                  hence aft: "\<forall>j \<in> ProcSet \\ unread[i] \\ {i} : after(j)"
-                    unfolding after_def .
-                  assume "j \<in> ProcSet" "(j \<in> unread[i]) = FALSE" "(j = i) = FALSE"
-                  with aft have "after(j)" by auto
-                  with ii1 show
-                    "(pc[i] = ''p1'') = FALSE \<and> (pc[i] = ''p2'') = FALSE \<and> (pc[i] = ''p3'') = FALSE \<and>
-                     (pc[j] = ''p1'' \<or>
-                      pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                      pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                      (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                      GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j]))"
-                    by (simp add: after_def)
-                qed
-              qed
+              with selfi i j self type k
+              have unr: "unread'[i] = unread[i]" "unread'[j] = unread[j]"
+                        "max'[j] = max[j]"
+                by (auto simp: TypeOK_def)
+              with iinvi \<open>pc' = pc\<close> pc' j
+              have "After(j,i,unread,max,flag,pc,num,nxt)"
+                by (auto simp: IInv_def)
+              with unr \<open>num' = num\<close> \<open>pc' = pc\<close> show ?thesis
+                by (auto simp: After_def GG_def)
             qed
           qed
           have 4: "pc'[i] = ''p6''
@@ -926,21 +729,37 @@ proof auto
                    \<Rightarrow> max'[nxt'[i]] \<ge> num'[i]"
           proof (cases "self = nxt[i]")
             assume nxt: "self = nxt[i]"
-            from type k self have mx: "max[self] \<in> Nat"
+            from type k kproc self have mx: "max[self] \<in> Nat" "num[k] \<in> Nat"
               by (auto simp: TypeOK_def)
             show ?thesis
             proof (cases "max[self] < num[k]")
               case True
               with k selfi type iinvi self i nxt mx show ?thesis
-              proof (clarsimp simp: TypeOK_def IInv_def, cases "i=k", simp, simp)
-                assume "num \<in> [ProcSet \<rightarrow> Nat]" "num[i] \<le> max[nxt[i]]" "max[nxt[i]] < num[k]"
-                with mx kproc i nxt show "num[i] \<le> num[k]"
-                  by (auto dest: nat_leq_less_trans)
+              proof (clarsimp simp: TypeOK_def IInv_def, cases "i \<in> unread[nxt[i]]", simp)
+                assume "i \<notin> unread[nxt[i]]" "num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]" 
+                       "i \<in> unread[nxt[i]] = FALSE \<Rightarrow> num[i] \<le> max[nxt[i]]" 
+                       "max[nxt[i]] < num[k]"
+                with mx nxt kproc i show "num[i] \<le> num[k]"
+                  by (auto elim!: int_leq_trans)
               qed
             next
               case False
               with k selfi type iinvi self i nxt mx show ?thesis
-                by (clarsimp simp: TypeOK_def IInv_def nat_not_less[simplified])
+              proof (clarsimp simp: TypeOK_def IInv_def)
+                from False mx nxt type
+                have mxexc: "(IF max[nxt[i]] < num[k]
+                             THEN [max EXCEPT ![nxt[i]] = num[k]]
+                             ELSE max) = max"
+                  by (auto simp: TypeOK_def)
+                assume "i \<in> unread[nxt[i]] = FALSE \<Rightarrow> num[i] \<le> max[nxt[i]]"
+                       "i \<in> unread[nxt[i]] = FALSE \<or> i = k"
+                       "k \<in> unread[nxt[i]]"
+                with mxexc mx False nxt
+                show "num[i] \<le> (IF max[nxt[i]] < num[k]
+                                THEN [max EXCEPT ![nxt[i]] = num[k]]
+                                ELSE max)[nxt[i]]"
+                  by auto
+              qed
             qed
           next
             assume nxt: "self \<noteq> nxt[i]"
@@ -957,10 +776,12 @@ proof auto
                 by (clarsimp simp: TypeOK_def IInv_def condElse)
             qed
           qed
-          have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+          have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
           proof (rule+)
             fix j
-            assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \\ {i}"
+            assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \<setminus> {i}"
+            from pc' i k 1 type have numi: "0 < num'[i]"
+              by (force simp: TypeOK_def)
             from j type have mx: "pc[j] = ''p2'' \<Rightarrow> max[j] \<in> Nat"
               by (auto simp: TypeOK_def)
             show "After(j,i,unread',max',flag',pc',num',nxt')"
@@ -972,38 +793,28 @@ proof auto
                 show ?thesis
                 proof (cases "i=k")
                   case True
-                  with k selfi selfj less type iinvi i pc' j mx show ?thesis
-                  proof (clarsimp simp: TypeOK_def IInv_def After_def nat_gt0_not0)
-                    assume "pc[k] = ''p7'' \<or> pc[k] = ''p8''"
-                    thus "(pc[k] = ''p1'') = FALSE
-                          \<and> (pc[k] = ''p2'') = FALSE
-                          \<and> (pc[k] = ''p3'') = FALSE"
-                      by auto
-                  qed
+                  with k selfi selfj less type iinvi self i pc' j mx numi numk show ?thesis
+                    by (clarsimp simp: TypeOK_def IInv_def After_def)
                 next
                   case False
-                  with k selfi selfj less type iinvi i pc' j mx show ?thesis
-                  proof (clarsimp simp: TypeOK_def IInv_def After_def nat_gt0_not0)
+                  with k selfi selfj less type iinvi self i pc' j mx numi show ?thesis
+                  proof (clarsimp simp: TypeOK_def IInv_def After_def)
                     assume "pc[i] = ''p7'' \<or> pc[i] = ''p8''"
-                    hence ii1: "pc[i] \<noteq> ''p1'' \<and> pc[i] \<noteq> ''p2'' \<and> pc[i] \<noteq> ''p3''"
+                           "pc[j] = ''p2''" "j \<in> ProcSet" 
+                           "(j = i) = FALSE"
+                           "(i \<in> unread[j]) = FALSE"
+                           "\<forall>j \<in> ProcSet \<setminus> {i} :
+                               pc[j] = ''p1'' \<or>
+                               pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
+                               pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
+                               (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
+                               GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j])"
+                    hence ii2: "num[i] \<le> max[j]"
                       by auto
-                    assume "j \<in> ProcSet" "(j = i) = FALSE" "pc[j] = ''p2''" 
-                           "\<forall>j \<in> ProcSet \\ {i} :
-                              pc[j] = ''p1'' \<or>
-                              pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                              pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                              (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                              GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j])"
-                    hence ii2: "i \<in> unread[j] \<or> num[i] \<le> max[j]"
-                      by auto
-                    assume "max[j] < num[k]" "num \<in> [ProcSet \<rightarrow> Nat]" "max[j] \<in> Nat"
-                    with i kproc ii2 have "i \<in> unread[j] \<or> num[i] \<le> num[k]"
-                      by (auto dest: nat_leq_less_trans)
-                    with ii1 show "(pc[i] = ''p1'') = FALSE
-                                   \<and> (pc[i] = ''p2'') = FALSE
-                                   \<and> (pc[i] = ''p3'') = FALSE
-                                   \<and> (i \<in> unread[j] \<or> num[i] \<le> num[k])"
-                      by simp
+                    assume "max[j] < num[k]" "num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]" 
+                    with ii2 kproc mx i \<open>pc[j] = ''p2''\<close>
+                    show "num[i] \<le> num[k]"
+                      by (auto elim!: int_leq_trans)
                   qed
                 qed
               next
@@ -1011,92 +822,41 @@ proof auto
                 show ?thesis
                 proof (cases "i=k")
                   case True
-                  with k selfi selfj nless type iinvi i pc' j mx show ?thesis
-                  proof (clarsimp simp: TypeOK_def IInv_def After_def nat_gt0_not0 nat_not_less[simplified])
-                    assume "pc[k] = ''p7'' \<or> pc[k] = ''p8''"
-                    thus "(pc[k] = ''p1'') = FALSE \<and> (pc[k] = ''p2'') = FALSE \<and> (pc[k] = ''p3'') = FALSE"
-                      by auto
-                  qed
+                  from type i have "num[i] \<in> Int \<and> 0 \<le> num[i]"
+                    by (auto simp: TypeOK_def)
+                  with True k selfi selfj nless type iinvi self i pc' j mx
+                  show ?thesis
+                    by (auto simp: TypeOK_def IInv_def After_def elim: int_leq_lessE)
                 next
                   case False
-                  with k selfi selfj nless type iinvi i pc' j mx show ?thesis
-                  proof (clarsimp simp: TypeOK_def IInv_def After_def nat_gt0_not0)
+                  with k selfi selfj nless type iinvi self i pc' j mx numi show ?thesis
+                  proof (clarsimp simp: TypeOK_def IInv_def After_def)
                     assume "pc[i] = ''p7'' \<or> pc[i] = ''p8''"
-                    hence ii1: "pc[i] \<noteq> ''p1'' \<and> pc[i] \<noteq> ''p2'' \<and> pc[i] \<noteq> ''p3''"
-                      by auto
-                    assume "j \<in> ProcSet" "(j = i) = FALSE" "pc[j] = ''p2''"
-                           "\<forall>j \<in> ProcSet \\ {i} :
+                           "j \<in> ProcSet" 
+                           "(i \<in> unread[j]) = FALSE"
+                           "(j = i) = FALSE" "pc[j] = ''p2''"
+                           "\<forall>j \<in> ProcSet \<setminus> {i} :
                                pc[j] = ''p1'' \<or>
                                pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
                                pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
                                (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
                                GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j])"
-                    hence "i \<in> unread[j] \<or> num[i] \<le> max[j]"
+                    thus "num[i] \<le> max[j]"
                       by auto
-                    with ii1 show "(pc[i] = ''p1'') = FALSE
-                                   \<and> (pc[i] = ''p2'') = FALSE
-                                   \<and> (pc[i] = ''p3'') = FALSE
-                                   \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j])"
-                      by simp
                   qed
                 qed
               qed
             next
               assume selfj: "self \<noteq> j"
-              show ?thesis
-              proof (cases "max[self] < num[k]")
-                case True
-                with k selfi selfj type iinvi self i pc' j show ?thesis
-                proof (clarsimp simp: TypeOK_def IInv_def After_def nat_gt0_not0)
-                  assume "pc[i] = ''p7'' \<or> pc[i] = ''p8''"
-                  hence ii1: "pc[i] \<noteq> ''p1'' \<and> pc[i] \<noteq> ''p2'' \<and> pc[i] \<noteq> ''p3''"
-                    by auto
-                  assume "\<forall>j \<in> ProcSet \\ {i} :
-                             pc[j] = ''p1'' \<or>
-                             pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                             pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                             (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                             GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j])"
-                  hence aft: "\<forall>j \<in> ProcSet \\ {i} : after(j)"
-                    unfolding after_def .
-                  assume "j \<in> ProcSet" "(j = i) = FALSE"
-                  with aft have "after(j)" by auto
-                  with ii1 show
-                    "(pc[i] = ''p1'') = FALSE \<and> (pc[i] = ''p2'') = FALSE \<and> (pc[i] = ''p3'') = FALSE \<and>
-                     (pc[j] = ''p1'' \<or>
-                      pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                      pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                      (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                      GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j]))"
-                    by (simp add: after_def)
-                qed
-              next
-                case False
-                with k selfi selfj type iinvi self i pc' j show ?thesis
-                proof (clarsimp simp: TypeOK_def IInv_def After_def nat_gt0_not0)
-                  assume "pc[i] = ''p7'' \<or> pc[i] = ''p8''"
-                  hence ii1: "pc[i] \<noteq> ''p1'' \<and> pc[i] \<noteq> ''p2'' \<and> pc[i] \<noteq> ''p3''"
-                    by auto
-                  assume "\<forall>j \<in> ProcSet \\ {i} :
-                             pc[j] = ''p1'' \<or>
-                             pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                             pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                             (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                             GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j])"
-                  hence aft: "\<forall>j \<in> ProcSet \\ {i} : after(j)"
-                    unfolding after_def .
-                  assume "j \<in> ProcSet" "(j = i) = FALSE"
-                  with aft have "after(j)" by auto
-                  with ii1 show
-                    "(pc[i] = ''p1'') = FALSE \<and> (pc[i] = ''p2'') = FALSE \<and> (pc[i] = ''p3'') = FALSE \<and>
-                     (pc[j] = ''p1'' \<or>
-                      pc[j] = ''p2'' \<and> (i \<in> unread[j] \<or> num[i] \<le> max[j]) \<or>
-                      pc[j] = ''p3'' \<and> num[i] \<le> max[j] \<or>
-                      (pc[j] = ''p4'' \<or> pc[j] = ''p5'' \<or> pc[j] = ''p6'') \<and>
-                      GG(i, j, num) \<and> (pc[j] = ''p5'' \<or> pc[j] = ''p6'' \<Rightarrow> i \<in> unread[j]))"
-                    by (simp add: after_def)
-                qed
-              qed
+              with selfi i j self type k
+              have unr: "unread'[i] = unread[i]" "unread'[j] = unread[j]"
+                        "max'[j] = max[j]"
+                by (auto simp: TypeOK_def)
+              with iinvi \<open>pc' = pc\<close> pc' j
+              have "After(j,i,unread,max,flag,pc,num,nxt)"
+                by (auto simp: IInv_def)
+              with unr \<open>num' = num\<close> \<open>pc' = pc\<close> show ?thesis
+                by (auto simp: After_def GG_def)
             qed
           qed
           from 1 2 3 4 5 show ?thesis
@@ -1117,7 +877,7 @@ proof auto
           and 2: "flag'[i] = (pc'[i] \<in> {''p2'', ''p3'', ''p4''})"
           by (clarsimp simp: TypeOK_def IInv_def p3_def)+
         have 3: "pc'[i] \<in> {''p5'', ''p6''} \<Rightarrow> 
-          (\<forall>j \<in> (P \\ unread'[i]) \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+          (\<forall>j \<in> (P \<setminus> unread'[i]) \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
         proof (rule+)
           fix j
           assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \\ unread'[i]) \\ {i}"
@@ -1125,7 +885,6 @@ proof auto
           proof (cases "self = j")
             case True with selfi type p3 self i j iinv3[of i j] pc' show ?thesis
               by (clarsimp simp: TypeOK_def p3_def After_def GG_def) auto
-                (** a bit slow, but it's not necessary to do case analysis on IF **)
           next
             case False with selfi p3 type self i j iinv3[of i j] pc'
             show ?thesis
@@ -1177,10 +936,10 @@ proof auto
           and 2: "flag'[i] = (pc'[i] \<in> {''p2'', ''p3'', ''p4''})"
           by (clarsimp simp: TypeOK_def IInv_def p4_def)+
         have 3: "pc'[i] \<in> {''p5'', ''p6''} \<Rightarrow> 
-                 (\<forall>j \<in> (P \\ unread'[i]) \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+                 (\<forall>j \<in> (P \<setminus> unread'[i]) \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
         proof (rule+)
           fix j
-          assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \\ unread'[i]) \\ {i}"
+          assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \<setminus> unread'[i]) \<setminus> {i}"
           with selfi type p4 self i iinv3[of i j]
           show "After(j,i,unread',max',flag',pc',num',nxt')"
             unfolding TypeOK_def p4_def After_def GG_def
@@ -1199,10 +958,10 @@ proof auto
           with selfi p4 type iinvi self i nxti show ?thesis
             by (clarsimp simp: TypeOK_def IInv_def p4_def)
         qed
-        have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+        have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
         proof (rule+)
           fix j
-          assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \\ {i}"
+          assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \<setminus> {i}"
           with selfi type p4 self i j pc' iinv5[of i j] 
           show "After(j,i,unread',max',flag',pc',num',nxt')"
             by (cases "self = j") (clarsimp simp: TypeOK_def p4_def After_def)+
@@ -1224,10 +983,10 @@ proof auto
           unfolding TypeOK_def IInv_def p5_def
           by(cases "self = i", clarsimp+)
         have 3: "pc'[i] \<in> {''p5'', ''p6''} \<Rightarrow> 
-          (\<forall>j \<in> (P \\ unread'[i]) \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+          (\<forall>j \<in> (P \<setminus> unread'[i]) \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
         proof (rule+)
           fix j
-          assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \\ unread'[i]) \\ {i}"
+          assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \<setminus> unread'[i]) \<setminus> {i}"
           with empty type p5 self i j iinv3[of i j]
           show "After(j,i,unread',max',flag',pc',num',nxt')"
             unfolding TypeOK_def After_def GG_def p5_def
@@ -1245,19 +1004,16 @@ proof auto
             by (cases "self = nxt[i]", (clarsimp simp: nxti)+)
         qed
 
-        have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+        have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
         proof (rule+)
           fix j
-          assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \\ {i}"
+          assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \<setminus> {i}"
           show "After(j,i,unread',max',flag',pc',num',nxt')"
           proof (cases "self = i")
             case True
             with empty type p5 self i j iinv3[of i j] (** IInv part 3 is used, not part 5! **)
             show ?thesis
-              apply (clarsimp simp: IInv_def TypeOK_def p5_def After_def)
-              apply (cases "pc[j] = ''p2''", clarsimp)
-              apply (cases "pc[j] = ''p3''", clarsimp+)
-              done
+              by (clarsimp simp: IInv_def TypeOK_def p5_def After_def) auto
           next
             from empty
             have unreadj: "j \<notin> unread[self]" by auto
@@ -1282,18 +1038,28 @@ proof auto
           unfolding TypeOK_def IInv_def p5_def
           by(cases "self = i") clarsimp+
         have 3: "pc'[i] \<in> {''p5'', ''p6''} \<Rightarrow> 
-          (\<forall>j \<in> (P \\ unread'[i]) \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+          (\<forall>j \<in> (P \<setminus> unread'[i]) \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
         proof (rule+)
           fix j
           assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \\ unread'[i]) \\ {i}"
-          with empty type p5 self i j iinv3[of i j]
           show "After(j,i,unread',max',flag',pc',num',nxt')"
-            unfolding TypeOK_def After_def GG_def p5_def
-            apply(cases "self = j", clarsimp)
-            apply (cases "self = i", clarsimp)
-              apply (cases "pc[j] = ''p2''", clarsimp)
-              apply (cases "pc[j] = ''p3''", clarsimp+)
-              done
+          proof (cases "self=j")
+            case True
+            with empty type p5 self i j pc' iinv3[of i j] show ?thesis
+              by (clarsimp simp: TypeOK_def After_def GG_def p5_def) auto
+          next
+            case False
+            show ?thesis
+            proof (cases "self = i")
+              case True
+              with empty type p5 self i j pc' iinv3[of i j] show ?thesis
+                by (clarsimp simp: TypeOK_def After_def GG_def p5_def) auto
+            next
+              case False
+              with empty type p5 self i j pc' \<open>self \<noteq> j\<close> iinv3[of i j] show ?thesis
+                by (clarsimp simp: TypeOK_def After_def GG_def p5_def)
+            qed
+          qed
         qed
         have 4: "pc'[i] = ''p6''
           \<and> (  (pc'[nxt'[i]] = ''p2'') \<and> i \<notin> unread'[nxt'[i]]
@@ -1309,7 +1075,8 @@ proof auto
             by(auto simp: p5_def)
           with type self have kproc: "k \<in> ProcSet"
             by (auto simp: TypeOK_def)
-          with iinv have iinvk: "IInv(k, unread, max, flag, pc, num, nxt)" ..
+          with iinv have iinvk: "IInv(k, unread, max, flag, pc, num, nxt)" 
+            by (rule bspec)
           show ?thesis
           proof (cases "self = i")
             case True
@@ -1326,10 +1093,10 @@ proof auto
               by (cases "self = nxt[i]") clarsimp+
           qed
         qed
-        have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+        have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
         proof (rule+)
           fix j
-          assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \\ {i}"
+          assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \<setminus> {i}"
           from j type have mx: "pc[j] = ''p2'' \<Rightarrow> max[j] \<in> Nat"
             by (auto simp: TypeOK_def)
           from j iinv have iinvj: "IInv(j, unread, max, flag, pc, num, nxt)" by auto
@@ -1349,10 +1116,10 @@ proof auto
         unfolding TypeOK_def IInv_def p6_def
         by (cases "self = i", clarsimp, clarsimp)+
       have 3: "pc'[i] \<in> {''p5'', ''p6''} \<Rightarrow> 
-        (\<forall>j \<in> (P \\ unread'[i]) \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+        (\<forall>j \<in> (P \<setminus> unread'[i]) \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
       proof(rule+)
         fix j
-        assume pc': "pc'[i] \<in> {''p5'', ''p6''}" and j: "j \<in> ProcSet \\ unread'[i] \\ {i}"
+        assume pc': "pc'[i] \<in> {''p5'', ''p6''}" and j: "j \<in> ProcSet \<setminus> unread'[i] \<setminus> {i}"
         from iinv j 
         have iinvj: "IInv(j, unread, max, flag, pc, num, nxt)" by auto
         from type j
@@ -1361,16 +1128,71 @@ proof auto
         show "After(j, i, unread', max', flag', pc', num', nxt')"
         proof (cases "self = i")
           assume selfi: "self = i"
+          with iinvi p6 type i have numi: "0 < num[i]"
+            by (force simp: IInv_def TypeOK_def p6_def)
+          from selfi p6 type i have nxtip: "nxt[i] \<in> ProcSet \<setminus> {i}"
+            by (auto simp: IInv_def TypeOK_def p6_def)
           show ?thesis
           proof (cases "j \<in> unread[self]")
             assume junread: "j \<in> unread[self]"
             show ?thesis
             proof(cases "num[j] = 0")
               case True
-              with j selfi i pc' p6 type self iinvi junread iinvj (* FIXME: iinvj *)
+              from i type have "num[i] \<in> Nat"
+                by (auto simp: TypeOK_def)
+              (* Here \<open>show ?thesis\<close> works, as shown here, but takes long time.
+                 Thus tried to decompose the step.
+
+              with j selfi i pc' p6 type self iinvi junread iinvj True
               show ?thesis
-                apply (clarsimp simp: p6_def TypeOK_def IInv_def After_def nat_gt0_not0)
-                by (cases "pc[nxt[i]] = ''p2''", clarsimp+)
+                by (clarsimp simp: p6_def TypeOK_def IInv_def After_def int_leq_less)
+                   (force elim!: bspec)
+              *)
+              show ?thesis
+              proof -
+                have asd: "0 < num'[i]"
+                proof -
+                  have "TypeOK (unread', max', flag', pc', num', nxt')"
+                    using type self p TypeOKInvariant by auto
+                  hence "num'[i] \<in> Nat"
+                    using i TypeOK_def by auto
+                  moreover have "num'[i] \<noteq> 0"
+                    using selfi p6 iinvi by (simp add: p6_def IInv_def)
+                  ultimately show ?thesis
+                    by simp
+                qed
+                moreover have "
+                  (pc'[j] = ''p1'') \<or>
+                  (pc'[j] = ''p2'' \<and> (i \<in> unread'[j] \<or> num'[i] \<le> max'[j])) \<or>
+                  (pc'[j] = ''p3'' \<and> num'[i] \<le> max'[j]) \<or>
+                  (pc'[j] \<in> {''p4'', ''p5'', ''p6''} \<and> GG(i, j, num') \<and> (pc'[j] \<in> {''p5'', ''p6''} \<Rightarrow> i \<in> unread'[j]))"
+                proof (rule,rule,rule)
+                  assume aa1: "\<not>(pc'[j] = ''p1'')"
+                    and aa2: "\<not>(pc'[j] = ''p2'' \<and> (i \<in> unread'[j] \<or> num'[i] \<le> max'[j]))"
+                    and aa3: "\<not>(pc'[j] = ''p3'' \<and> num'[i] \<le> max'[j])"
+                  show "(pc'[j] \<in> {''p4'', ''p5'', ''p6''} \<and> GG(i, j, num') \<and> (pc'[j] \<in> {''p5'', ''p6''} \<Rightarrow> i \<in> unread'[j]))"
+                  proof -
+                    have "pc'[j] \<in> {''p4'', ''p5'', ''p6''}" (* 35s *)
+                      using aa1 aa2 aa3
+                      using j selfi i pc' p6 type iinvi junread iinvj True
+                      by (clarsimp simp: p6_def TypeOK_def IInv_def)
+                         (force elim!: bspec)
+                    moreover have "GG(i, j, num')" (* 30s *)
+                      using aa1 aa2 aa3
+                      using j selfi i pc' p6 type iinvi junread iinvj True
+                      by (clarsimp simp: p6_def TypeOK_def IInv_def)
+                         (force elim!: bspec)
+                    moreover have "(pc'[j] \<in> {''p5'', ''p6''} \<Rightarrow> i \<in> unread'[j])" (* 4s *)
+                      using j selfi i pc' p6 type iinvi junread iinvj True
+                      by (clarsimp simp: p6_def TypeOK_def IInv_def)
+                         (force elim!: bspec)
+                    ultimately show ?thesis by
+                      auto
+                  qed
+                qed
+                ultimately show ?thesis
+                  unfolding After_def by simp
+              qed
             next
               assume numj: "num[j] \<noteq> 0"
               show ?thesis
@@ -1381,30 +1203,49 @@ proof auto
                   case True
                   with j selfi i pc' p6 type self iinvi junread numj pcj
                   show ?thesis
-                    by (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def nat_gt0_not0)
+                    by (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def) auto
                 next
                   assume notunread: "i \<notin> unread[j]"
                   show ?thesis
                   proof (cases "j < i")
                     case True
-                    from True j selfi i pc' p6 type self iinvi junread numj pcj iinv3[of j i] nxti notunread
+                    with j selfi i pc' p6 type self iinvi junread numj numi pcj 
+                         iinv3[of j i] nxti notunread
                     show ?thesis
-                      using procInNat nat_less_antisym_false[of j i]
-                      by (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def nat_gt0_not0) (force simp: nat_less_antisym_leq_false)
+                    proof (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def)
+                      assume "nxt[i] < i" "j = nxt[i]"
+                      with i j have nxti: "nxt[i] \<in> ProcSet" "\<not>(i < nxt[i])"
+                        by (auto dest: procInNat elim!: int_less_asym)
+                      assume "num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]"
+                             "pc[nxt[i]] = ''p5'' \<or> pc[nxt[i]] = ''p6'' 
+                              \<Longrightarrow> 0 < num[nxt[i]]
+                                \<and> (IF i < nxt[i] THEN num[nxt[i]] < num[i]
+                                   ELSE boolify(num[nxt[i]] \<le> num[i]))"
+                             "num[i] < num[nxt[i]]"
+                      with i nxti
+                      show "(pc[nxt[i]] = ''p5'') = FALSE
+                          \<and> (pc[nxt[i]] = ''p6'') = FALSE"
+                        by (auto dest!: int_leq_not_less) auto
+                    qed
                   next
                     case False
-                    with j selfi i pc' p6 type self iinvi junread numj pcj iinv3[of j i] nxti notunread
+                    with j selfi i pc' p6 type self iinvi junread numi numj pcj iinv3[of j i] nxti notunread
                     show ?thesis
-                      unfolding p6_def TypeOK_def IInv_def After_def GG_def
-                      proof (clarsimp simp: nat_gt0_not0 nat_not_less[simplified] nat_less_not_sym procInNat
-                                      dest!: leq_neq_trans'[of "i" "nxt[i]", simplified])
-                        assume
-                          "pc[nxt[i]] = ''p5'' \<or> pc[nxt[i]] = ''p6'' \<Longrightarrow> num[nxt[i]] < num[i]"
-                          "num[i] \<le> num[nxt[i]]" "nxt[i] \<in> ProcSet" "i \<in> ProcSet"
-                          "num \<in> [ProcSet \<rightarrow> Nat]"
-                        thus "(pc[nxt[i]] = ''p5'') = FALSE \<and> (pc[nxt[i]] = ''p6'') = FALSE"
-                          by (auto simp: nat_less_antisym_leq_false)
-                      qed
+                    proof (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def)
+                      assume "(nxt[i] < i) = FALSE"
+                      with i numi nxtip int_less_linear[of "i" "nxt[i]"] have "i < nxt[i]"
+                        by (auto dest!: procInNat) 
+                      assume
+                        "pc[nxt[i]] = ''p5'' \<or> pc[nxt[i]] = ''p6'' 
+                         \<Longrightarrow>  0 < num[nxt[i]]
+                              \<and> (IF i < nxt[i] THEN num[nxt[i]] < num[i]
+                                 ELSE boolify(num[nxt[i]] \<le> num[i]))"
+                        "num[i] \<le> num[nxt[i]]"
+                        "num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]"
+                      with i numi nxtip \<open>i < nxt[i]\<close>
+                      show "(pc[nxt[i]] = ''p5'') = FALSE \<and> (pc[nxt[i]] = ''p6'') = FALSE"
+                        by (auto dest!: int_leq_not_less)
+                    qed
                   qed
                 qed
               next
@@ -1415,25 +1256,49 @@ proof auto
                   show ?thesis
                   proof (cases "j < i")
                     case True
-                    with j selfi i pc' p6 type self iinvi junread numj pcj iinvj nxti iinv5[of "nxt[i]" i] 
+                    with j selfi i pc' p6 type self iinvi junread numi numj pcj iinvj nxti iinv5[of "nxt[i]" i] 
                     show ?thesis
-                      unfolding p6_def TypeOK_def IInv_def After_def GG_def
-                      using nat_less_antisym_false[of j i]
-                      apply (clarsimp simp: nat_gt0_not0 procInNat)
-                      by (clarsimp simp: nat_less_antisym_leq_false)
+                    proof (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def)
+                      assume nxti: "nxt[i] < i"
+                      hence "i \<noteq> nxt[i]" by (auto simp: less_def)
+                      assume
+                        "0 < num[nxt[i]]" 
+                        "IF i < nxt[i]
+                         THEN num[nxt[i]] < num[i]
+                         ELSE boolify(num[nxt[i]] \<le> num[i])"
+                        "num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]"
+                      with \<open>i \<noteq> nxt[i]\<close> have "num[nxt[i]] \<le> num[i]"
+                        by (auto dest: procInNat elim!: int_less_asym[OF nxti])
+                      assume "num[i] < num[nxt[i]]"
+                      with i numi nxtip \<open>num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]\<close> \<open>num[nxt[i]] \<le> num[i]\<close>
+                      show "(pc[nxt[i]] = ''p4'' \<or> pc[nxt[i]] = ''p5'' \<or> pc[nxt[i]] = ''p6'') 
+                          \<and> (pc[nxt[i]] = ''p5'' \<or> pc[nxt[i]] = ''p6'' \<Rightarrow> i \<in> unread[nxt[i]])"
+                        by (auto dest!: int_less_not_leq)
+                    qed
                   next
                     case False
-                    with j selfi i pc' p6 type self iinvi junread numj pcj iinv5[of j i] nxti
+                    with j selfi i pc' p6 type self iinvi junread numi numj pcj iinv5[of j i] nxti
+                         int_less_linear[of "nxt[i]" "i"]
                     show ?thesis
-                      unfolding p6_def TypeOK_def IInv_def After_def GG_def 
-                      by (clarsimp simp: nat_gt0_not0 nat_not_less[simplified] procInNat)
-                         (clarsimp dest!: leq_neq_trans'[simplified] simp: nat_less_antisym_leq_false nat_less_not_sym)
+                    proof (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def)
+                      assume "(nxt[i] < i) = FALSE"
+                      with i numi nxtip int_less_linear[of "nxt[i]" "i"] have "i < nxt[i]"
+                        by (auto dest: procInNat)
+                      assume "num[i] \<le> num[nxt[i]]"
+                        "IF i < nxt[i] THEN num[nxt[i]] < num[i]
+                         ELSE boolify(num[nxt[i]] \<le> num[i])"
+                        "num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]"
+                      with i numi nxtip \<open>i < nxt[i]\<close>
+                      show "(pc[nxt[i]] = ''p4'' \<or> pc[nxt[i]] = ''p5'' \<or> pc[nxt[i]] = ''p6'') 
+                          \<and> (pc[nxt[i]] = ''p5'' \<or> pc[nxt[i]] = ''p6'' \<Rightarrow> i \<in> unread[nxt[i]])"
+                        by (auto dest!: int_less_not_leq)
+                    qed
                   qed
                 next
                   assume pcj2: "pc[j] \<notin> {''p7'', ''p8''}"
                   with j selfi i pc' p6 type self iinvi junread numj pcj iinvj nxti
                   show ?thesis
-                    apply (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def nat_gt0_not0)
+                    apply (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def)
                     by (erule funcSetE[where f="pc" and x="nxt[i]"], simp+)
                 qed
               qed
@@ -1453,18 +1318,30 @@ proof auto
             show ?thesis
             proof (cases "j < nxt[j]")
               case True
-              with j pc' selfi selfj i p6 type self iinv3[of i j]
+              with j pc' selfi selfj i p6 type self iinv3[of i j] nxtj
               show ?thesis
-                apply (clarsimp simp: p6_def TypeOK_def After_def GG_def nat_gt0_not0)
-                by (auto dest: nat_less_trans nat_less_leq_trans)
-              (** slow **)
+                by (clarsimp simp: p6_def TypeOK_def After_def GG_def)
+                   (auto dest!: int_leq_not_less int_less_asym[of "num[j]" "num[nxt[j]]"]) 
             next
               case False
               with j pc' selfi selfj i p6 type self iinv3[of i j] 
               show ?thesis
-                using nxtj nat_not_less procInNat
-                by (clarsimp simp: p6_def TypeOK_def After_def GG_def nat_gt0_not0 leq_neq_iff_less[simplified])
-                   (auto simp: nat_less_antisym_leq_false)
+              proof (clarsimp simp: p6_def TypeOK_def After_def GG_def)
+                assume
+                  "pc[j] = ''p6''"
+                  "(j < nxt[j]) = FALSE"
+                with i j nxtj int_less_linear[of "j" "nxt[j]"] have "nxt[j] < j"
+                  by (force dest: procInNat)
+
+                assume
+                  "num[nxt[j]] = 0
+                   \<or> (IF nxt[j] < j THEN num[j] < num[nxt[j]] ELSE num[j] \<le> num[nxt[j]])"
+                  "0 < num[i]"
+                  "IF j < i THEN num[i] < num[j] ELSE num[i] \<le> num[j]"
+                  "num \<in> [ProcSet \<rightarrow> {x \<in> Int : 0 \<le> x}]"
+                with i j \<open>nxt[j] < j\<close> show "(i = nxt[j]) = FALSE"
+                  by (auto dest!: int_leq_not_less int_less_asym[of "num[nxt[j]]" "num[j]"])
+              qed
             qed
           next
             case False
@@ -1488,10 +1365,10 @@ proof auto
           apply (clarsimp simp: TypeOK_def IInv_def p6_def)
           by (cases "self = i", simp+)
       qed
-      have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+      have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
       proof (rule+)
         fix j
-        assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \\ {i}"
+        assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \<setminus> {i}"
         show "After(j,i,unread',max',flag',pc',num',nxt')"
         proof (cases "self = j")
           case True
@@ -1501,28 +1378,27 @@ proof auto
             case True
             with type p6 i pc' j self selfj iinv5[of i j] 
             show ?thesis
-              using nat_less_antisym_false[of j i] procInNat
-              apply (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def nat_gt0_not0)
-              by (cases "i = nxt[j]") (auto simp: nat_less_antisym_leq_false)
+              by (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def)
+                 (auto dest!: int_leq_not_less int_less_asym[of "num[j]" "num[nxt[j]]"])
           next
             case False
             from i j type have num: "num[i] \<in> Nat" "num[j] \<in> Nat"
               by (auto simp: TypeOK_def)
             from False type p6 i pc' j self selfj iinv5[of i j]
             show ?thesis
-              using nat_less_linear[of i j] procInNat
-              by (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def nat_gt0_not0)
-                 (auto dest!: nat_leq_less_trans)
+              using int_less_linear[of i j] procInNat
+              by (clarsimp simp: p6_def TypeOK_def IInv_def After_def GG_def)
+                 (auto dest!: int_leq_not_less)
           qed
         next
           case False
           with type iinv5[of i j] p6 i pc' j show ?thesis
             apply (clarsimp simp: TypeOK_def IInv_def After_def p6_def)
-            by (cases "self = i", simp, simp)
+            by (cases "self = i", simp+)
         qed
       qed
       from 1 2 3 4 5 show ?thesis
-        unfolding IInv_def by blast
+        unfolding IInv_def by simp
     next
       assume p7: "p7(self, unread, max, flag, pc, num, nxt, unread', max', flag', pc', num', nxt')"
 
@@ -1532,10 +1408,10 @@ proof auto
         unfolding TypeOK_def IInv_def p7_def
         by (cases "self = i", clarsimp, clarsimp)+
       have 3: "pc'[i] \<in> {''p5'', ''p6''} \<Rightarrow> 
-        (\<forall>j \<in> (P \\ unread'[i]) \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+        (\<forall>j \<in> (P \\ unread'[i]) \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
       proof (rule+)
         fix j
-        assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \\ unread'[i]) \\ {i}"
+        assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \<setminus> unread'[i]) \<setminus> {i}"
         show "After(j,i,unread',max',flag',pc',num',nxt')"
         proof (cases "self = i")
           case True
@@ -1564,10 +1440,10 @@ proof auto
           unfolding TypeOK_def IInv_def p7_def
           by (cases "self = nxt[i]") clarsimp+
       qed
-      have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+      have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
       proof (rule+)
         fix j
-        assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \\ {i}"
+        assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \<setminus> {i}"
         show "After(j, i, unread', max', flag', pc', num', nxt')"
         proof (cases "self = j")
           case True
@@ -1590,10 +1466,10 @@ proof auto
         unfolding p8_def TypeOK_def IInv_def
         by (cases "self = i", clarsimp, clarsimp)+
       have 3: "pc'[i] \<in> {''p5'', ''p6''} \<Rightarrow> 
-     (\<forall>j \<in> (P \\ unread'[i]) \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+     (\<forall>j \<in> (P \<setminus> unread'[i]) \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
       proof (rule+)
         fix j
-        assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \\ unread'[i]) \\ {i}"
+        assume pc': "pc'[i] \<in> {''p5'',''p6''}" and j: "j \<in> (ProcSet \<setminus> unread'[i]) \<setminus> {i}"
         show "After(j,i,unread',max',flag',pc',num',nxt')"
         proof (cases "self = i")
           case True
@@ -1622,10 +1498,10 @@ proof auto
           unfolding p8_def TypeOK_def IInv_def
           by (cases "self = nxt[i]") clarsimp+
       qed
-      have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \\ {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
+      have 5: "(pc'[i] \<in> {''p7'', ''p8''}) \<Rightarrow> (\<forall>j \<in> P \<setminus> {i} : After(j,i,unread',max',flag',pc',num',nxt'))"
       proof (rule+)
         fix j
-        assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \\ {i}"
+        assume pc': "pc'[i] \<in> {''p7'',''p8''}" and j: "j \<in> ProcSet \<setminus> {i}"
         show "After(j, i, unread', max', flag', pc', num', nxt')"
         proof (cases "self = i")
           case True

@@ -5,12 +5,11 @@
 
 (executable
  (name tlapm)
+ (modes byte exe)
  (public_name tlapm)
  (modules tlapm)
  (libraries tlapm_lib)
- (promote (until-clean)))
-
-; Required to get `tlapm --version` during a release.
+ (promote (until-clean))) ; Required to get `tlapm --version` during a release.
 
 (library
  (name tlapm_lib)

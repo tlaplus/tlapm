@@ -1,0 +1,13 @@
+; We use the promoted version of the Isabelle here to have proper file permissions.
+; The promoted version is in the source tree, which is located based on ${DUNE_SOURCEROOT} environment variable.
+; We assume the project will be built before running the tests, otherwise the Isabelle is always rebuilt.
+
+(rule
+ (alias runtest)
+ (deps
+  (source_tree ".")
+  (sandbox none))
+ (action
+  (run make -f dune.mk runtest)))
+
+(data_only_dirs document examples tests)
