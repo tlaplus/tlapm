@@ -79,14 +79,18 @@ let rec load_from_zips t mod_name =
   List.find_map check t.zips
 
 let load_from_dirs t mod_name =
+  let try_read_file path =
+    try
+      let ic = open_in path in
+      let content = In_channel.input_all ic in
+      let () = close_in ic in
+      Some content
+    with Sys_error _ -> None
+  in
   let check dir =
     let path = Filename.concat dir mod_name in
     match Sys.file_exists path with
-    | true ->
-        let ic = open_in path in
-        let content = In_channel.input_all ic in
-        let () = close_in ic in
-        Some content
+    | true -> try_read_file path
     | false -> None
   in
   match List.find_map check t.dirs with
