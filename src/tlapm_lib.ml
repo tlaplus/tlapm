@@ -490,10 +490,11 @@ let read_new_modules mcx fs =
   List.fold_left begin
     fun (mcx, mods) fn ->
       let hint = Util.locate fn Loc.unknown in
-      (* Params.use_stdin is only set, if a single file is passed to the tlapm.
-         Bellow we set the use_stdin_prop property for the single input file only.
-         This way the file passed explicitly will be read from stdin and all the files
-         referenced from it will be searched in a file system, as usual. *)
+      (* The flag `Params.use_stdin` can only be set to true if only a single
+         file is passed to the `tlapm`. Therefore, the following assignment of
+         the `use_stdin_prop` property will only be applied to a single file.
+         This way, the file passed explicitly will be read from `stdin`, and all
+         the files referenced from it will be searched in a file system, as usual. *)
       let hint = match !Params.use_stdin with
       | true -> Property.assign hint Module.Save.module_content_prop (Module.Save.Channel Stdlib.stdin)
       | false -> hint
