@@ -84,7 +84,7 @@ val tb_sl: int ref
 val tb_el: int ref
 val input_files: string list ref
 val set_default_method: string -> unit
-val library_path: string
+val stdlib_path: string option
 val cleanfp: bool ref
 val fpf_in: string option ref
 val summary: bool ref

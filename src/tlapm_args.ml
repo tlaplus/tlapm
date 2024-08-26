@@ -59,9 +59,13 @@ let parse_args args opts mods usage_fmt =
     exit 2
 
 let show_where () =
-  (* TODO: `opam exec -- tlapm --where` produces invalid output. *)
-  Printf.printf "%s\n" library_path ;
-  exit 0
+  match stdlib_path with
+  | Some path  ->
+    Printf.printf "%s\n" path;
+    exit 0
+  | None ->
+    Printf.printf "N/A\n";
+    exit 1
 
 let set_nofp_start s =
   nofp_sl := s

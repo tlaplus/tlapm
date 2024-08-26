@@ -32,6 +32,7 @@ module List : sig
   val find : ('a -> bool) -> 'a list -> 'a
   val filter : ('a -> bool) -> 'a list -> 'a list
   val find_all : ('a -> bool) -> 'a list -> 'a list
+  val find_opt : ('a -> bool) -> 'a list -> 'a option
   val partition : ('a -> bool) -> 'a list -> 'a list * 'a list
   val assoc : 'a -> ('a * 'b) list -> 'b
   val assq : 'a -> ('a * 'b) list -> 'b

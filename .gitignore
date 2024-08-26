@@ -11,6 +11,7 @@
 /_build_cache/
 /.vscode/settings.json
 /tlaps-*.tar.gz
+/src/tlapm.bc
 
 __pycache__/
 *.pyc
