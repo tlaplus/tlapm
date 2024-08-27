@@ -37,6 +37,7 @@ val print_old_res:
     bool -> unit
 
 (* tlapm.ml *)
+val print_ob_provers: Proof.T.obligation -> unit
 val print_ob_number: int -> unit
 val print_message_url:
     string -> string -> unit

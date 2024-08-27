@@ -144,6 +144,13 @@ let print_message_url msg url =
   if !Params.toolbox then Toolbox_msg.print_error msg url
 
 
+let print_ob_provers ob =
+  if !Params.toolbox then
+    let provers = Property.get ob.obl Proof.T.Props.meth in
+    let provers = List.filter_map Method.prover_name_of_tac provers in
+    let provers = List.unique provers in
+    Toolbox_msg.print_obligationprovers (Option.get ob.id) provers
+
 let print_ob_number n =
   if !Params.toolbox then Toolbox_msg.print_obligationsnumber n
 

@@ -55,8 +55,12 @@ val prover_prepare :
   t * (string * Range.t * Doc_proof_res.t) option
 (** Increment the prover ref for the specified doc/vsn. *)
 
+val prover_add_obl_provers :
+  t -> tk -> int -> int -> int -> string list -> t * bool option
+(** Record the provers for an obligation. *)
+
 val prover_add_obl :
-  t -> tk -> int -> int -> Toolbox.Obligation.t -> t * Doc_proof_res.t option
+  t -> tk -> int -> int -> Toolbox.Obligation.t -> t * bool option
 (** Record obligation for the document, clear all the intersecting ones. *)
 
 val prover_add_notif :

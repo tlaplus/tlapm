@@ -331,30 +331,9 @@ module Make (CB : Callbacks) = struct
     | Ok (E (CodeAction params)) ->
         handle_jsonrpc_req_code_action jsonrpc_req params cb_state
     | Ok (E Shutdown) -> handle_jsonrpc_req_shutdown jsonrpc_req cb_state
-    | Ok (E (UnknownRequest unknown)) -> (
-        match unknown.meth with
-        | "textDocument/diagnostic" -> (
-            match unknown.params with
-            | Some params -> (
-                match params with
-                | `Assoc xs ->
-                    let text_doc_js = List.assoc "textDocument" xs in
-                    let text_doc_id =
-                      LspT.TextDocumentIdentifier.t_of_yojson text_doc_js
-                    in
-                    handle_jsonrpc_req_diagnostics jsonrpc_req text_doc_id.uri
-                      cb_state
-                | `List _xs ->
-                    reply_error jsonrpc_req
-                      Jsonrpc.Response.Error.Code.InvalidParams "params missing"
-                      cb_state)
-            | None ->
-                reply_error jsonrpc_req
-                  Jsonrpc.Response.Error.Code.InvalidParams "params missing"
-                  cb_state)
-        | _ ->
-            handle_jsonrpc_req_unknown jsonrpc_req
-              "unknown method not supported" cb_state)
+    | Ok (E (TextDocumentDiagnostic params)) ->
+        handle_jsonrpc_req_diagnostics jsonrpc_req params.textDocument.uri
+          cb_state
     | Ok (E _unsupported) ->
         handle_jsonrpc_req_unknown jsonrpc_req "method not supported" cb_state
     | Error reason ->

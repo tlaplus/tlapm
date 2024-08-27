@@ -86,6 +86,15 @@ let prover_prepare (act : t) next_p_ref =
   | None -> None
   | Some _ -> Some { act with p_ref = next_p_ref }
 
+let prover_add_obl_provers (act : t) (p_ref : int) (obl_id : int)
+    (provers : string list) =
+  if act.p_ref = p_ref then
+    let parsed = Lazy.force act.parsed in
+    let ps = Proof_step.with_provers parsed.ps p_ref obl_id provers in
+    let parsed = Lazy.from_val { parsed with ps } in
+    Some { act with parsed }
+  else None
+
 let prover_add_obl (act : t) (p_ref : int) (obl : Toolbox.Obligation.t) =
   if act.p_ref = p_ref then
     let parsed = Lazy.force act.parsed in
@@ -108,4 +117,10 @@ let prover_terminated (act : t) p_ref =
     let ps = Proof_step.with_prover_terminated parsed.ps p_ref in
     let parsed = Lazy.from_val { parsed with ps } in
     Some { act with parsed }
+  else None
+
+let is_obl_final (act : t) p_ref obl_id =
+  if act.p_ref = p_ref then
+    let parsed = Lazy.force act.parsed in
+    Proof_step.is_obl_final parsed.ps obl_id
   else None

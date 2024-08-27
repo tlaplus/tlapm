@@ -29,7 +29,7 @@ module Make (CB : Callbacks) : sig
   val obl_count : p_ref:int -> obl_count:int -> CB.t -> CB.t
   (** Called when a number of obligations is received from the TLAPM. *)
 
-  val obligation : p_ref:int -> obl:Toolbox.Obligation.t -> CB.t -> CB.t
+  val obligation_done : p_ref:int -> obl_id:int -> CB.t -> CB.t
   (** Called when some proof obligation state change is received from TLAPM. *)
 
   val proof_ended : p_ref:int -> CB.t -> CB.t

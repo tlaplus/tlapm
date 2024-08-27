@@ -127,14 +127,13 @@ module Make (CB : Callbacks) = struct
       (cb_state, pr)
     else (cb_state, pr)
 
-  let obligation ~p_ref ~(obl : Toolbox.Obligation.t) cb_state =
+  let obligation_done ~p_ref ~(obl_id : int) cb_state =
     CB.with_progress cb_state @@ fun cb_state pr ->
     if
       p_ref = pr.p_ref && pr.started && (not pr.ended)
-      && (not (OblIdSet.mem obl.id pr.obl_done))
-      && Toolbox.Obligation.is_final obl
+      && not (OblIdSet.mem obl_id pr.obl_done)
     then
-      let pr = { pr with obl_done = OblIdSet.add obl.id pr.obl_done } in
+      let pr = { pr with obl_done = OblIdSet.add obl_id pr.obl_done } in
       let cb_state = send_notif cb_state (make_lsp_notif_report pr) in
       (cb_state, pr)
     else (cb_state, pr)
@@ -171,15 +170,12 @@ let%test_module "progress reporting tests" =
     let fresh = { req_id = 0; sent = []; progress = TestPr.make () }
 
     let%test_unit "basic" =
-      let open Toolbox in
-      let fake_obl = Obligation.Test.with_id_status in
       let cb = fresh in
       let p_ref = 1 in
       let cb = TestPr.proof_started ~p_ref cb in
       let cb = TestPr.obl_count ~p_ref ~obl_count:10 cb in
-      let cb = TestPr.obligation ~p_ref ~obl:(fake_obl 2 Proved) cb in
-      let cb = TestPr.obligation ~p_ref ~obl:(fake_obl 3 ToBeProved) cb in
-      let cb = TestPr.obligation ~p_ref ~obl:(fake_obl 5 Proved) cb in
+      let cb = TestPr.obligation_done ~p_ref ~obl_id:2 cb in
+      let cb = TestPr.obligation_done ~p_ref ~obl_id:5 cb in
       let cb = TestPr.proof_ended ~p_ref cb in
       match List.length cb.sent with
       | 5 -> ()

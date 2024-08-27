@@ -31,6 +31,7 @@ let tb_el = ref max_int (* toolbox end line *)
 let input_files = ref []  (* List of input file names *)
 
 let toolbox = ref false     (* Run in toolbox mode. *)
+let toolbox_vsn = ref 1     (* Toolbox protocol version. *)
 
 let no_fp = ref false
 (* Don't use the fingerprints but still save them with the old ones. *)

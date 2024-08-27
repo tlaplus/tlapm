@@ -33,6 +33,10 @@ let set_target_start s =
 let set_target_end e =
   tb_el := if e = 0 then max_int else e
 
+let set_toolbox_vsn vsn =
+  toolbox := true;
+  toolbox_vsn := vsn
+
 let set_target_line s =
     toolbox := true;
     if s = 0 then begin
@@ -186,6 +190,8 @@ let init () =
     blank;
     "--toolbox", (Arg.Tuple [Arg.Int set_target_start;Arg.Int set_target_end]),
                  "<int><int> toolbox mode";
+    "--toolbox-vsn", (Arg.Int set_toolbox_vsn),
+                     "<int> Toolbox protocol version, 1|2, 1 by default.";
     "--line", Arg.Int set_target_line,
               "<int> line to prove";
     "--wait", Arg.Set_int wait,

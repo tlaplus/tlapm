@@ -356,7 +356,7 @@ let of_module (mule : Tlapm_lib.Module.T.mule) prev : t option =
           | None -> Tlapm_lib.Backend.Fingerprints.write_fingerprint o
           | Some _ -> o
         in
-        let o = Obl.of_parsed_obligation (Some o) Proof_status.Pending in
+        let o = Obl.of_parsed_obligation o Proof_status.Pending in
         let o = Obl.with_proof_state_from o (Hashtbl.find_opt prev_obs) in
         Some (o_range, o)
       in
@@ -378,6 +378,33 @@ let with_prover_terminated (ps : t option) p_ref =
     { ps with sub; obs; status_derived }
   in
   match ps with None -> None | Some ps -> Some (traverse ps)
+
+let with_provers (ps : t option) p_ref obl_id prover_names =
+  let rec traverse ps =
+    let found = ref false in
+    let try_obl obl =
+      if (not !found) && Obl.is_for_obl_id obl obl_id then (
+        found := true;
+        Obl.with_prover_names p_ref prover_names obl)
+      else obl
+    in
+    let try_sub ps =
+      if not !found then (
+        let ps, sub_found = traverse ps in
+        if sub_found then found := true;
+        ps)
+      else ps
+    in
+    let obs = RangeMap.map try_obl ps.obs in
+    let sub = List.map try_sub ps.sub in
+    let ps = { ps with obs; sub } in
+    (ps, !found)
+  in
+  match ps with
+  | None -> None
+  | Some ps ->
+      let ps, _ = traverse ps in
+      Some ps
 
 let with_prover_result (ps : t option) p_ref (pr : Toolbox.Obligation.t) =
   let rec traverse (ps : t) (pr : Toolbox.Obligation.t) =
@@ -428,6 +455,15 @@ let locate_proof_range (ps : t option) (range : Range.t) : Range.t =
   | Some ps_from, None -> ps_from.full_loc
   | None, Some ps_till -> ps_till.full_loc
   | Some ps_from, Some ps_till -> Range.join ps_from.full_loc ps_till.full_loc
+
+let is_obl_final (ps : t option) obl_id =
+  let rec traverse ps =
+    let with_obl_id r = Obl.is_for_obl_id (RangeMap.find r ps.obs) obl_id in
+    match RangeMap.find_first_opt with_obl_id ps.obs with
+    | None -> List.find_map traverse ps.sub
+    | Some (_, o) -> Some (Obl.is_final o)
+  in
+  match ps with None -> None | Some ps -> traverse ps
 
 let%test_unit "determine proof steps" =
   let mod_file = "test_obl_expand.tla" in

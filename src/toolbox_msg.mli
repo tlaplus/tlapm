@@ -13,6 +13,17 @@ val print_error: string -> string -> unit
    Displays the message in a dialog box along with the (clickable) URL.
 *)
 
+val print_obligationprovers: int -> string list -> unit
+(** [print_obligationprovers id provers]
+    Send a list of pending provers to the toolbox.
+    The client has to wait until it receives any success message
+    or failure messages from all of the provers listed here.
+    Note that the client might get success from prover=tlapm,
+    despite it is not listed here.
+
+    This message is only sent if toolbox-vsn >= 2.
+*)
+
 val print_obligationsnumber: int -> unit
 (* Send a "type:obligationsnumber" message to the toolbox. *)
 

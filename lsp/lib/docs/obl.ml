@@ -17,6 +17,7 @@ module Role = struct
 end
 
 type t = {
+  id : int option;
   role : Role.t;
   (* The obligation as received from the parser. *)
   parsed : Tlapm_lib.Proof.T.obligation option;
@@ -28,6 +29,7 @@ type t = {
   p_ref : int;
   checking : bool; (* Is obligation checking currently running? *)
   by_prover : Toolbox.Obligation.t StrMap.t;
+  prover_names : string list option;
   latest_prover : string option;
   status : Proof_status.t;
 }
@@ -42,19 +44,31 @@ let obl_to_str obl =
 let obl_to_normalized_str obl =
   obl_to_str (Tlapm_lib.Backend.Toolbox.normalize true obl)
 
-let of_parsed_obligation parsed status =
-  let parsed_text_plain = lazy (Option.map obl_to_str parsed) in
-  let parsed_text_normalized = lazy (Option.map obl_to_normalized_str parsed) in
+let of_parsed_obligation (parsed : Tlapm_lib.Proof.T.obligation) status =
+  let parsed_text_plain = lazy (Some (obl_to_str parsed)) in
+  let parsed_text_normalized = lazy (Some (obl_to_normalized_str parsed)) in
   {
+    id = parsed.id;
     role = Role.Unknown;
-    parsed;
+    parsed = Some parsed;
     parsed_text_plain;
     parsed_text_normalized;
     p_ref = 0;
     checking = false;
     by_prover = StrMap.empty;
+    prover_names = None;
     latest_prover = None;
     status;
+  }
+
+let reset obl p_ref =
+  {
+    obl with
+    p_ref;
+    checking = false;
+    by_prover = StrMap.empty;
+    latest_prover = None;
+    status = Proof_status.Pending;
   }
 
 let with_role role obl = { obl with role }
@@ -76,12 +90,22 @@ let fingerprint obl =
 
 let status obl = if obl.checking then Proof_status.Progress else obl.status
 
+(** Check if this obligation has the specified id. *)
+let is_for_obl_id obl obl_id =
+  match obl.id with None -> false | Some id -> id = obl_id
+
+(** Either there exist a success result (the latest one),
+    or we have outputs from all the provers. *)
 let is_final obl =
-  match obl.latest_prover with
-  | None -> None
-  | Some prover ->
-      let obl_state = StrMap.find prover obl.by_prover in
-      Some (Toolbox.Obligation.is_final obl_state)
+  match obl.status with
+  | Pending | Progress -> false
+  | Proved | Omitted | Missing -> true
+  | Failed -> (
+      match obl.prover_names with
+      | None -> false
+      | Some prover_names ->
+          let have_prover_result pn = StrMap.mem pn obl.by_prover in
+          List.for_all have_prover_result prover_names)
 
 let text_plain obl = Lazy.force obl.parsed_text_plain
 let text_normalized obl = Lazy.force obl.parsed_text_normalized
@@ -103,12 +127,14 @@ let latest_obl_text obl =
 let with_prover_terminated p_ref (obl : t) =
   if obl.p_ref <= p_ref then { obl with checking = false } else obl
 
-let with_prover_obligation p_ref tlapm_obl (obl : t option) =
+let with_prover_obligation p_ref (tlapm_obl : Toolbox.Obligation.t)
+    (obl : t option) =
   (* Create, if we had no such [Obl.t]. *)
   let obl =
     match obl with
     | None ->
         {
+          id = Some tlapm_obl.id;
           role = Role.Unexpected;
           parsed = None;
           parsed_text_plain = lazy None;
@@ -116,37 +142,28 @@ let with_prover_obligation p_ref tlapm_obl (obl : t option) =
           p_ref = 0;
           checking = false;
           by_prover = StrMap.empty;
+          prover_names = None;
           latest_prover = None;
           status = Proof_status.Pending;
         }
-    | Some obl -> obl
-  in
-  let obl_reset obl =
-    {
-      obl with
-      p_ref;
-      checking = false;
-      by_prover = StrMap.empty;
-      latest_prover = None;
-      status = Proof_status.Pending;
-    }
+    | Some obl -> { obl with id = Some tlapm_obl.id }
   in
   let obl_add obl =
     let obl =
-      { obl with checking = not (Toolbox.Obligation.is_final tlapm_obl) }
+      match Toolbox.Obligation.(tlapm_obl.prover) with
+      | None -> obl
+      | Some prover ->
+          {
+            obl with
+            by_prover = StrMap.add prover tlapm_obl obl.by_prover;
+            latest_prover = Some prover;
+            status = Proof_status.of_tlapm_obl_state tlapm_obl.status;
+          }
     in
-    match Toolbox.Obligation.(tlapm_obl.prover) with
-    | None -> obl
-    | Some prover ->
-        {
-          obl with
-          by_prover = StrMap.add prover tlapm_obl obl.by_prover;
-          latest_prover = Some prover;
-          status = Proof_status.of_tlapm_obl_state tlapm_obl.status;
-        }
+    { obl with checking = not (is_final obl) }
   in
   (* Reset / update / ignore the prover info. *)
-  if obl.p_ref < p_ref then obl_add (obl_reset obl)
+  if obl.p_ref < p_ref then obl_add (reset obl p_ref)
   else if obl.p_ref = p_ref then obl_add obl
   else obl
 
@@ -168,6 +185,13 @@ let with_proof_state_from obl by_fp =
                 status = other.status;
               }))
   | Some _ -> obl
+
+let with_prover_names p_ref prover_names obl =
+  let update obl = { obl with prover_names = Some prover_names } in
+  (* Reset / update / ignore the prover info. *)
+  if obl.p_ref < p_ref then update (reset obl p_ref)
+  else if obl.p_ref = p_ref then update obl
+  else obl
 
 let as_lsp_diagnostic (obl : t) =
   match Proof_status.is_diagnostic obl.status with
@@ -193,18 +217,41 @@ let as_lsp_tlaps_proof_obligation_state obl =
   let results =
     let open Toolbox.Obligation in
     let some_str s = match s with None -> "?" | Some s -> s in
-    List.map
-      (fun (_, o) ->
-        let prover = some_str o.prover in
-        let status =
-          Proof_status.to_string (Proof_status.of_tlapm_obl_state o.status)
+    let make_result o =
+      let prover = some_str o.prover in
+      let status =
+        Proof_status.to_string (Proof_status.of_tlapm_obl_state o.status)
+      in
+      let meth = some_str o.meth in
+      let reason = o.reason in
+      let obligation = o.obl in
+      Structs.TlapsProofObligationResult.make ~prover ~meth ~status ~reason
+        ~obligation
+    in
+    let make_pending prover =
+      Structs.TlapsProofObligationResult.make ~prover ~meth:(some_str None)
+        ~status:(Proof_status.to_string Pending)
+        ~reason:None ~obligation:None
+    in
+    (* Next, try to retain the order of the provers as it was reported
+       by the tlaps. Only output pending/planned provers if the
+       obligation state is not final yet. *)
+    let final = is_final obl in
+    match obl.prover_names with
+    | None ->
+        List.map (fun (_pn, o) -> make_result o) (StrMap.to_list obl.by_prover)
+    | Some prover_names ->
+        let planned pn =
+          match StrMap.find_opt pn obl.by_prover with
+          | None -> if final then None else Some (make_pending pn)
+          | Some o -> Some (make_result o)
         in
-        let meth = some_str o.meth in
-        let reason = o.reason in
-        let obligation = o.obl in
-        Structs.TlapsProofObligationResult.make ~prover ~meth ~status ~reason
-          ~obligation)
-      (StrMap.to_list obl.by_prover)
+        let unplanned (pn, o) =
+          if List.mem pn prover_names then None else Some (make_result o)
+        in
+        List.append
+          (List.filter_map planned prover_names)
+          (List.filter_map unplanned (StrMap.to_list obl.by_prover))
   in
   Structs.TlapsProofObligationState.make ~role ~range ~status ~normalized
     ~results

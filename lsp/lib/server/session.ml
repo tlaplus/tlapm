@@ -245,7 +245,7 @@ module SessionHandlers = Handlers.Make (struct
         event_adder = (fun _ -> ());
         output_adder = (fun _ -> ());
         last_req_id = 0;
-        next_p_ref = 0;
+        next_p_ref = 1;
         paths = [];
         progress = ProverProgress.make ();
         docs = Docs.empty (parser_fun []);
@@ -292,12 +292,31 @@ let handle_toolbox_msg ((uri, vsn, p_ref) : doc_ref) msg st =
       Eio.traceln "---> TlapmObligationsNumber";
       let st = ProverProgress.obl_count ~p_ref ~obl_count st in
       Some st
-  | Toolbox.Msg.TlapmObligation obl ->
-      Eio.traceln "---> TlapmObligation, id=%d" obl.id;
-      let st = ProverProgress.obligation ~p_ref ~obl st in
-      let docs, _res = Docs.prover_add_obl st.docs uri vsn p_ref obl in
+  | Toolbox.Msg.TlapmObligationProvers { id; provers } ->
+      Eio.traceln "---> TlapmObligationProvers, id=%d" id;
+      let docs, obl_is_final =
+        Docs.prover_add_obl_provers st.docs uri vsn p_ref id provers
+      in
       let st = { st with docs } in
       let st = delay_proof_info st uri in
+      let st =
+        match obl_is_final with
+        | None -> st
+        | Some false -> st
+        | Some true -> ProverProgress.obligation_done ~p_ref ~obl_id:id st
+      in
+      Some st
+  | Toolbox.Msg.TlapmObligation obl ->
+      Eio.traceln "---> TlapmObligation, id=%d" obl.id;
+      let docs, obl_is_final = Docs.prover_add_obl st.docs uri vsn p_ref obl in
+      let st = { st with docs } in
+      let st = delay_proof_info st uri in
+      let st =
+        match obl_is_final with
+        | None -> st
+        | Some false -> st
+        | Some true -> ProverProgress.obligation_done ~p_ref ~obl_id:obl.id st
+      in
       Some st
   | Toolbox.Msg.TlapmTerminated ->
       Eio.traceln "---> TlapmTerminated";
@@ -339,7 +358,7 @@ let run event_taker event_adder output_adder sw fs proc_mgr =
       event_adder;
       output_adder;
       last_req_id = 0;
-      next_p_ref = 0;
+      next_p_ref = 1;
       paths = [];
       progress = ProverProgress.make ();
       docs = Docs.empty (parser_fun []);

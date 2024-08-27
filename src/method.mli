@@ -37,6 +37,7 @@ val pp_print_method: Format.formatter -> t -> unit
 
 (* backend/isabelle.ml *)
 val prover_meth_of_tac: t -> string option * string option
+val prover_name_of_tac: t -> string option
 
 (* backend/prep.ml *)
 val timeout: t -> float

@@ -124,6 +124,8 @@ let start_async_with_exec st doc_uri doc_text range paths events_adder
       "--toolbox";
       string_of_int (Range.line_from range);
       string_of_int (Range.line_till range);
+      "--toolbox-vsn";
+      "2";
       (* "--verbose"; *)
       "--printallobs";
       "--prefer-stdlib";

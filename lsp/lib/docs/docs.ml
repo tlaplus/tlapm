@@ -64,11 +64,17 @@ let prover_prepare docs uri vsn range ~p_ref :
       let res = (Doc_actual.text act, p_range, Doc_actual.proof_res act) in
       (doc, act, Some res)
 
+let prover_add_obl_provers docs uri vsn p_ref obl_id provers =
+  with_doc_vsn docs uri vsn @@ fun (doc : Doc.t) (act : Doc_actual.t) ->
+  match Doc_actual.prover_add_obl_provers act p_ref obl_id provers with
+  | None -> (doc, act, None)
+  | Some act -> (doc, act, Doc_actual.is_obl_final act p_ref obl_id)
+
 let prover_add_obl docs uri vsn p_ref (obl : Toolbox.Obligation.t) =
   with_doc_vsn docs uri vsn @@ fun (doc : Doc.t) (act : Doc_actual.t) ->
   match Doc_actual.prover_add_obl act p_ref obl with
   | None -> (doc, act, None)
-  | Some act -> (doc, act, Some (Doc_actual.proof_res act))
+  | Some act -> (doc, act, Doc_actual.is_obl_final act p_ref obl.id)
 
 let prover_add_notif docs uri vsn p_ref notif =
   with_doc_vsn docs uri vsn @@ fun (doc : Doc.t) (act : Doc_actual.t) ->

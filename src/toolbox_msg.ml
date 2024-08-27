@@ -41,6 +41,13 @@ let print_obligationsnumber n =
     print_int "count" n;
     print_end ()
 
+let print_obligationprovers id provers =
+    if !Params.toolbox_vsn >= 2 then (
+        print_begin "obligationprovers";
+        print_int "id" id;
+        print_string "provers" (String.concat "," provers);
+        print_end ())
+    else ()
 
 let line loc = Loc.line loc
 let col loc = Loc.column loc

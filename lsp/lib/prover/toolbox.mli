@@ -25,8 +25,6 @@ module Obligation : sig
     obl : string option;
   }
 
-  val is_final : t -> bool
-
   (** For testing only. *)
   module Test : sig
     val with_id_status : int -> tlapm_obl_state -> t
@@ -48,6 +46,7 @@ module Msg : sig
   type t =
     | TlapmNotif of tlapm_notif
     | TlapmObligationsNumber of int
+    | TlapmObligationProvers of { id : int; provers : string list }
     | TlapmObligation of Obligation.t
     | TlapmTerminated
 end

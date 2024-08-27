@@ -44,18 +44,6 @@ module Obligation = struct
     obl : string option;
   }
 
-  (** Indicates if we should not expect any other obligation messages with the same id. *)
-  let is_final o =
-    match o.status with
-    | ToBeProved -> false
-    | BeingProved -> false
-    | Normalized -> false
-    | Proved -> true
-    | Failed -> ( match o.prover with Some "isabelle" -> true | _ -> false)
-    | Interrupted -> true
-    | Trivial -> true
-    | Unknown _ -> false
-
   (** This is for testing only. *)
   module Test = struct
     let with_id_status id status =
@@ -86,6 +74,7 @@ module Msg = struct
   type t =
     | TlapmNotif of tlapm_notif
     | TlapmObligationsNumber of int
+    | TlapmObligationProvers of { id : int; provers : string list }
     | TlapmObligation of Obligation.t
     | TlapmTerminated
 end
@@ -94,6 +83,7 @@ type parser_part_msg =
   | PartWarning of { msg : string option }
   | PartError of { url : string option; msg : string option }
   | PartObligationsNumber of int option
+  | PartObligationProvers of { id : int option; provers : string list option }
   | PartObligation of {
       id : int option;
       loc : Range.t option;
@@ -215,6 +205,13 @@ let parse_line line acc stream =
         match n with
         | "count" -> PartObligationsNumber (int_of_string_opt v)
         | _ -> PartObligationsNumber e)
+    | PartObligationProvers o -> (
+        match n with
+        | "id" -> PartObligationProvers { o with id = int_of_string_opt v }
+        | "provers" ->
+            PartObligationProvers
+              { o with provers = Some (String.split_on_char ',' v) }
+        | _ -> PartObligationProvers o)
     | PartObligation o -> (
         match n with
         | "id" -> PartObligation { o with id = int_of_string_opt v }
@@ -242,6 +239,9 @@ let parse_line line acc stream =
     | PartError _ -> None
     | PartObligationsNumber (Some count) -> Some (TlapmObligationsNumber count)
     | PartObligationsNumber _ -> None
+    | PartObligationProvers { id = Some id; provers = Some provers } ->
+        Some (TlapmObligationProvers { id; provers })
+    | PartObligationProvers _ -> None
     | PartObligation
         {
           id = Some id;
@@ -266,6 +266,8 @@ let parse_line line acc stream =
   | Begin, "@!!type:warning" -> new_msg (PartWarning { msg = None })
   | Begin, "@!!type:error" -> new_msg (PartError { msg = None; url = None })
   | Begin, "@!!type:obligationsnumber" -> new_msg (PartObligationsNumber None)
+  | Begin, "@!!type:obligationprovers" ->
+      new_msg (PartObligationProvers { id = None; provers = None })
   | Begin, "@!!type:obligation" ->
       new_msg
         (PartObligation
