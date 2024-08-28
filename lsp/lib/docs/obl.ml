@@ -17,17 +17,16 @@ module Role = struct
 end
 
 type t = {
-  id : int option;
   role : Role.t;
-  (* The obligation as received from the parser. *)
   parsed : Tlapm_lib.Proof.T.obligation option;
-  (* The following work as a cache. *)
-  parsed_text_plain : string option Lazy.t;
-  parsed_text_normalized : string option Lazy.t;
-  (* The following collect the proof info.
-     For each new p_ref we reset all the prover results. *)
+      (** The obligation as received from the parser. *)
+  parsed_text_plain : string option Lazy.t;  (** Works as a cache. *)
+  parsed_text_normalized : string option Lazy.t;  (** Works as a cache. *)
   p_ref : int;
-  checking : bool; (* Is obligation checking currently running? *)
+      (** We collect proof info in a scope of p_ref only.
+          For each new p_ref we reset all the prover results. *)
+  p_obl_id : int option;  (** Obligation ID, as assigned by the prover. *)
+  checking : bool;  (** Is obligation checking currently running? *)
   by_prover : Toolbox.Obligation.t StrMap.t;
   prover_names : string list option;
   latest_prover : string option;
@@ -48,12 +47,12 @@ let of_parsed_obligation (parsed : Tlapm_lib.Proof.T.obligation) status =
   let parsed_text_plain = lazy (Some (obl_to_str parsed)) in
   let parsed_text_normalized = lazy (Some (obl_to_normalized_str parsed)) in
   {
-    id = parsed.id;
     role = Role.Unknown;
     parsed = Some parsed;
     parsed_text_plain;
     parsed_text_normalized;
     p_ref = 0;
+    p_obl_id = None;
     checking = false;
     by_prover = StrMap.empty;
     prover_names = None;
@@ -65,8 +64,10 @@ let reset obl p_ref =
   {
     obl with
     p_ref;
+    p_obl_id = None;
     checking = false;
     by_prover = StrMap.empty;
+    prover_names = None;
     latest_prover = None;
     status = Proof_status.Pending;
   }
@@ -88,11 +89,11 @@ let loc obl =
 let fingerprint obl =
   match obl.parsed with None -> None | Some obl -> obl.fingerprint
 
-let status obl = if obl.checking then Proof_status.Progress else obl.status
-
 (** Check if this obligation has the specified id. *)
-let is_for_obl_id obl obl_id =
-  match obl.id with None -> false | Some id -> id = obl_id
+let is_for_obl_id obl p_ref obl_id =
+  if p_ref = obl.p_ref then
+    match obl.p_obl_id with None -> false | Some id -> id = obl_id
+  else false
 
 (** Either there exist a success result (the latest one),
     or we have outputs from all the provers. *)
@@ -107,6 +108,7 @@ let is_final obl =
           let have_prover_result pn = StrMap.mem pn obl.by_prover in
           List.for_all have_prover_result prover_names)
 
+let status obl = if obl.checking then Proof_status.Progress else obl.status
 let text_plain obl = Lazy.force obl.parsed_text_plain
 let text_normalized obl = Lazy.force obl.parsed_text_normalized
 
@@ -134,19 +136,20 @@ let with_prover_obligation p_ref (tlapm_obl : Toolbox.Obligation.t)
     match obl with
     | None ->
         {
-          id = Some tlapm_obl.id;
           role = Role.Unexpected;
           parsed = None;
           parsed_text_plain = lazy None;
           parsed_text_normalized = lazy None;
           p_ref = 0;
+          (* To have it reset bellow. *)
+          p_obl_id = None;
           checking = false;
           by_prover = StrMap.empty;
           prover_names = None;
           latest_prover = None;
           status = Proof_status.Pending;
         }
-    | Some obl -> { obl with id = Some tlapm_obl.id }
+    | Some obl -> obl
   in
   let obl_add obl =
     let obl =
@@ -160,7 +163,7 @@ let with_prover_obligation p_ref (tlapm_obl : Toolbox.Obligation.t)
             status = Proof_status.of_tlapm_obl_state tlapm_obl.status;
           }
     in
-    { obl with checking = not (is_final obl) }
+    { obl with p_obl_id = Some tlapm_obl.id; checking = not (is_final obl) }
   in
   (* Reset / update / ignore the prover info. *)
   if obl.p_ref < p_ref then obl_add (reset obl p_ref)
@@ -179,15 +182,19 @@ let with_proof_state_from obl by_fp =
               {
                 obl with
                 p_ref = other.p_ref;
+                p_obl_id = other.p_obl_id;
                 checking = other.checking;
                 by_prover = other.by_prover;
+                prover_names = other.prover_names;
                 latest_prover = other.latest_prover;
                 status = other.status;
               }))
   | Some _ -> obl
 
-let with_prover_names p_ref prover_names obl =
-  let update obl = { obl with prover_names = Some prover_names } in
+let with_prover_names p_ref obl_id prover_names obl =
+  let update obl =
+    { obl with p_obl_id = Some obl_id; prover_names = Some prover_names }
+  in
   (* Reset / update / ignore the prover info. *)
   if obl.p_ref < p_ref then update (reset obl p_ref)
   else if obl.p_ref = p_ref then update obl

@@ -122,5 +122,5 @@ let prover_terminated (act : t) p_ref =
 let is_obl_final (act : t) p_ref obl_id =
   if act.p_ref = p_ref then
     let parsed = Lazy.force act.parsed in
-    Proof_step.is_obl_final parsed.ps obl_id
+    Proof_step.is_obl_final parsed.ps p_ref obl_id
   else None

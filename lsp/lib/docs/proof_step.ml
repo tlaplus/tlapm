@@ -383,9 +383,9 @@ let with_provers (ps : t option) p_ref obl_id prover_names =
   let rec traverse ps =
     let found = ref false in
     let try_obl obl =
-      if (not !found) && Obl.is_for_obl_id obl obl_id then (
+      if (not !found) && Obl.is_for_obl_id obl p_ref obl_id then (
         found := true;
-        Obl.with_prover_names p_ref prover_names obl)
+        Obl.with_prover_names p_ref obl_id prover_names obl)
       else obl
     in
     let try_sub ps =
@@ -456,9 +456,11 @@ let locate_proof_range (ps : t option) (range : Range.t) : Range.t =
   | None, Some ps_till -> ps_till.full_loc
   | Some ps_from, Some ps_till -> Range.join ps_from.full_loc ps_till.full_loc
 
-let is_obl_final (ps : t option) obl_id =
+let is_obl_final (ps : t option) p_ref obl_id =
   let rec traverse ps =
-    let with_obl_id r = Obl.is_for_obl_id (RangeMap.find r ps.obs) obl_id in
+    let with_obl_id r =
+      Obl.is_for_obl_id (RangeMap.find r ps.obs) p_ref obl_id
+    in
     match RangeMap.find_first_opt with_obl_id ps.obs with
     | None -> List.find_map traverse ps.sub
     | Some (_, o) -> Some (Obl.is_final o)
