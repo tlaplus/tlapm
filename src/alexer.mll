@@ -296,9 +296,9 @@ and comment depth = parse
     in
     lex_channel fn ich
 
-  let lex_string s =
+  let lex_string ?(fn = "") s =
     let lb = Lexing.from_string s in
-    lb.lex_curr_p <- {pos_fname = ""; pos_cnum = 0; pos_lnum = 1; pos_bol = 0};
+    lb.lex_curr_p <- {pos_fname = fn; pos_cnum = 0; pos_lnum = 1; pos_bol = 0};
     let buffer = ref [] in
     let next () =
       try

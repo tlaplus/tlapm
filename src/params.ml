@@ -31,6 +31,7 @@ let tb_el = ref max_int (* toolbox end line *)
 let input_files = ref []  (* List of input file names *)
 
 let toolbox = ref false     (* Run in toolbox mode. *)
+let toolbox_vsn = ref 1     (* Toolbox protocol version. *)
 
 let no_fp = ref false
 (* Don't use the fingerprints but still save them with the old ones. *)
@@ -48,18 +49,18 @@ let safefp = ref false
 let wait = ref 3
 (* Wait time before sending a "being proved" message to the toolbox. *)
 
+let use_stdin = ref false
+(* Read the document from stdin, if only one file is provided as an input. *)
+
+let prefer_stdlib = ref false
+(* If set to true, the TLAPM will prefer the modules from the STDLIB
+   instead of modules with the same names in the search path. *)
+
 let noproving = ref false (* Don't send any obligation to the back-ends. *)
 
 let printallobs = ref false
 (* print unnormalized and normalized versions of obligations in toolbox mode *)
 
-(* The default library path. The relative paths (-I +some) are based on this. *)
-let library_path =
-  let d = Sys.executable_name in
-  let d = Filename.dirname (Filename.dirname d) in
-  let d = Filename.concat d "lib" in
-  let d = Filename.concat d "tlaps" in
-  d
 
 (* The backends directory should be resolved via the dune sites mechanism.
    If the sites are not available, then we assume this file layout to locate
@@ -97,26 +98,9 @@ type executable =
 
 type exec = executable ref
 
-(* If the backends site is not available ([]), then look for executables in the PATH,
-   otherwise we are in the dune-based build and should look for the backends in the
-   specified site locations. *)
-let path =
-  match Setup_paths.Sites.backends with
-  | [] ->
-    let mydir = Filename.dirname Sys.executable_name in
-    let auxdir = Filename.concat library_path "bin" in
-    let extrapath = sprintf ":%s:%s" mydir auxdir in
-    let path = Sys.getenv "PATH" in
-      sprintf "%s%s" path extrapath
-  | backends_site ->
-    let site_bin bs = Filename.concat bs "bin" in
-    let site_isa bs = Filename.concat (Filename.concat bs "Isabelle") "bin" in
-    let site_paths bs = [site_bin bs; site_isa bs] in
-    let path_elems = List.concat (List.map site_paths backends_site) in
-      sprintf "%s:%s" (String.concat ":" path_elems) (Sys.getenv "PATH")
 
 let path_prefix =
-  sprintf "PATH='%s';" path
+  sprintf "PATH='%s';" Paths.backend_path_string
 
 let get_exec e =
   match !e with
@@ -143,7 +127,7 @@ let get_exec e =
         let msg1 = sprintf "Executable %S not found" exec in
         let msg2 =
           if Filename.is_relative exec
-          then sprintf " in this PATH:\n%s\n" path
+          then sprintf " in this PATH:\n%s\n" Paths.backend_path_string
           else "."
         in
         let msg = msg1 ^ msg2 in
@@ -289,18 +273,38 @@ let set_smt_logic logic = smt_logic := logic
 
 let max_threads = ref nprocs
 
-(* The actual list of paths at which the library TLA files are searched. *)
-let rev_search_path = ref (library_path :: Setup_paths.Sites.stdlib)
+let stdlib_search_paths = Paths.stdlib_paths
+
+(** Finds the actual path containing the STDLIB modules.
+    The relative paths (-I +some) are based on this. *)
+let stdlib_path : string option =
+  Paths.find_path_containing Paths.stdlib_paths "TLAPS.tla"
+
+(** The actual list of paths at which the library TLA files are searched. *)
+let rev_search_path = ref (match stdlib_path with None -> [] | Some p -> [p])
 
 (* Additional paths are added to the search list by keeping the base path as the first one. *)
 let add_search_dir dir =
-  let dir =
-    if dir.[0] = '+'
-    then Filename.concat library_path (String.sub dir 1 (String.length dir - 1))
-    else dir
+  let add dir =
+    let rsp = !rev_search_path in
+    let hd, tl = match stdlib_path with None -> ([], rsp) | Some p -> ([p], List.tl rsp) in
+    if List.for_all (fun lp -> lp <> dir) rsp then
+      rev_search_path :=  List.concat([hd; [dir]; tl])
   in
-  if List.for_all (fun lp -> lp <> dir) !rev_search_path then
-    rev_search_path := library_path :: dir :: List.tl !rev_search_path
+  let dir =
+    if dir.[0] = '+' then
+    match stdlib_path with
+    | None -> failwith "base stdlib path unknown";
+    | Some p -> Filename.concat p (String.sub dir 1 (String.length dir - 1))
+    else dir
+  in add dir
+
+(* Reset the search path to the specified list. *)
+let set_search_path dirs =
+  let p = match stdlib_path with
+  | None -> dirs
+  | Some p -> p :: dirs
+  in rev_search_path := p
 
 let output_dir = ref "."
 
@@ -467,12 +471,16 @@ let external_tool_config force (name, tool) =
 
 
 let configuration toolbox force =
+  let library_path = (match stdlib_path with
+  | Some path -> "\"" ^ (String.escaped path) ^ "\"";
+  | None -> "N/A")
+  in
   let lines =
     [ "version == \"" ^ rawversion () ^ "\""
     ; "built_with == \"OCaml " ^ Sys.ocaml_version ^ "\""
     ; "tlapm_executable == \"" ^ Sys.executable_name ^ "\""
     ; "max_threads == " ^ string_of_int !max_threads
-    ; "library_path == \"" ^ String.escaped library_path ^ "\"" ]
+    ; "library_path == " ^  library_path ]
     @ begin match !rev_search_path with
       | [] -> ["search_path == << >>"]
       | [p] -> ["search_path == << \"" ^ p ^ "\" >>"]

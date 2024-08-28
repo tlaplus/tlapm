@@ -31,10 +31,14 @@ depends: [
   "dune-site"
   "dune-build-info"
   "sexplib"
+  "cmdliner"
+  "camlzip"
+  "re2"
   "ppx_inline_test"
   "ppx_assert"
   "odoc" {with-doc}
 ]
+depopts: ["lsp" "eio_main"]
 dev-repo: "git+https://github.com/tlaplus/tlapm.git"
 build: [ # This is to override the build step, add the invocation of `Makefile.post-install`.
   ["dune" "subst"] {dev}

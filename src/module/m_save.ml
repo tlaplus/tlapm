@@ -28,7 +28,12 @@ let clocking cl fn x =
         fn x
 
 
-let file_search fh =
+
+type module_content = Channel of in_channel | String of string | Filesystem
+
+let module_content_prop = Property.make "module_content"
+
+let file_search' fh =
     if Filename.is_implicit fh.core then
         let rec scan = function
             | [] -> None
@@ -43,6 +48,23 @@ let file_search fh =
             Some fh
         else None
 
+let file_search'' fh =
+    match file_search' fh with
+    | None -> (
+        match Loader.Global.load fh.core with
+        | Some content ->
+            let fh = Property.assign fh module_content_prop (String content) in
+            Some fh
+        | None -> None)
+    | Some fh -> Some fh
+
+let file_search fh =
+    match Property.query fh module_content_prop with
+    | Some (Channel _)
+    | Some (String _) -> Some fh
+    | Some Filesystem
+    | None -> file_search'' fh
+
 
 let really_parse_file fn =
     match file_search fn with
@@ -52,7 +74,12 @@ let really_parse_file fn =
             fn.core;
         failwith "Module.Parser.parse_file"
     | Some fn ->
-        let (flex, _) = Alexer.lex fn.core in
+        let (flex, _) = match Property.query fn module_content_prop with
+            | Some (Channel ch) -> Alexer.lex_channel fn.core ch
+            | Some (String str) -> Alexer.lex_string ~fn:fn.core str
+            | Some Filesystem
+            | None -> Alexer.lex fn.core
+        in
         let hparse = use parse in
         match P.run hparse ~init:Tla_parser.init ~source:flex with
         | None ->
@@ -207,7 +234,7 @@ let complete_load ?clock ?root:(r="") mcx =
                         (* if module name is also a name of
                         a standrd module, try to load it anyway
                         *)
-                        if (Sm.mem ed.core M_standard.initctx) then
+                        if ((not !Params.prefer_stdlib) && (Sm.mem ed.core M_standard.initctx)) then
                             try
                                 let emule = load_module ~root:r ed in
                                 mods := Deque.snoc !mods emule;
@@ -341,6 +368,7 @@ let%test_module _ = (module struct
     end M_standard.initctx ls
 
     let%test "t1: load external modules correctly for external modules which has the same name as a standard module - load local module" =
+        Loader.Global.setup [];
         let test_case_list = [("a",["TLC"],"B")] in
         let test_case = create_test_case  test_case_list in
             let rfold = List.fold_left Filename.concat ".." ["test"; "resources"; "module"; "m_save"] in
@@ -351,6 +379,7 @@ let%test_module _ = (module struct
                 (Sm.find "TLC" (complete_load ~root:rfold test_case)).core.body)
 
     let%test "t2: load external modules correctly for external modules which has the same name as a standard module - load standard module" =
+        Loader.Global.setup [];
         let test_case_list = [("a",["TLC"],"B")] in
         let test_case = create_test_case  test_case_list in
             (Sm.mem "TLC" (complete_load test_case))

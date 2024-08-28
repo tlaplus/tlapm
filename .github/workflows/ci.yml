@@ -16,7 +16,7 @@ jobs:
               - macos-13
               - macos-14
             ocaml-compiler:
-              - '4.13.1'
+              - '4.14.1'
               - '5.1.0'
         env:
           EXAMPLES_DIR: "tlaplus-examples"
@@ -39,10 +39,15 @@ jobs:
               with:
                 path: _build_cache
                 key: ${{ runner.os }}_build_cache
+            - name: Install optional dependencies
+              if: startsWith(matrix.ocaml-compiler, '5.')
+              run: |
+                eval $(opam env)
+                make opam-deps-opt
             - name: Build TLAPM
               run: |
                 eval $(opam env)
-                opam install ./ --deps-only --yes
+                make opam-deps
                 make
                 make release
             - name: Run tests

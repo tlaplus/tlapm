@@ -9,8 +9,9 @@
 
 /_build/
 /_build_cache/
-/.vscode/
+/.vscode/settings.json
 /tlaps-*.tar.gz
+/src/tlapm.bc
 
 __pycache__/
 *.pyc
