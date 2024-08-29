@@ -1,3 +1,7 @@
 let module_of_string ~content ~filename ~loader_paths =
-  Tlapm_lib.module_of_string ~content ~filename ~loader_paths
-    ~prefer_stdlib:true
+  match
+    Tlapm_lib.modctx_of_string ~content ~filename ~loader_paths
+      ~prefer_stdlib:true
+  with
+  | Ok (_mcx, mule) -> Ok mule
+  | Error err -> Error err
