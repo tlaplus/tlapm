@@ -33,6 +33,10 @@ let set_target_start s =
 let set_target_end e =
   tb_el := if e = 0 then max_int else e
 
+let set_toolbox_vsn vsn =
+  toolbox := true;
+  toolbox_vsn := vsn
+
 let set_target_line s =
     toolbox := true;
     if s = 0 then begin
@@ -59,8 +63,13 @@ let parse_args args opts mods usage_fmt =
     exit 2
 
 let show_where () =
-  Printf.printf "%s\n" library_path ;
-  exit 0
+  match stdlib_path with
+  | Some path  ->
+    Printf.printf "%s\n" path;
+    exit 0
+  | None ->
+    Printf.printf "N/A\n";
+    exit 1
 
 let set_nofp_start s =
   nofp_sl := s
@@ -181,10 +190,18 @@ let init () =
     blank;
     "--toolbox", (Arg.Tuple [Arg.Int set_target_start;Arg.Int set_target_end]),
                  "<int><int> toolbox mode";
+    "--toolbox-vsn", (Arg.Int set_toolbox_vsn),
+                     "<int> Toolbox protocol version, 1|2, 1 by default.";
     "--line", Arg.Int set_target_line,
               "<int> line to prove";
     "--wait", Arg.Set_int wait,
               "<time> wait for <time> before printing obligations in progress";
+    "--stdin", Arg.Set use_stdin, " \
+        read the tla file from stdin instead of file system. \
+        Only applies if single tla file is provided as input.";
+    "--prefer-stdlib", Arg.Set prefer_stdlib, " \
+        prefer built-in standard modules if the module search path \
+        contains files with the same names as modules in stdlib.";
     "--noproving", Arg.Set noproving,
                    " do not prove, report fingerprinted results only";
     blank;
@@ -261,5 +278,11 @@ let init () =
     Printf.printf " with command line:\n\\*";
     Array.iter (fun s -> Printf.printf " %s" (quote_if_needed s)) Sys.argv;
     Printf.printf "\n\n%!"
+  end;
+  if !use_stdin && (List.length !mods) <> 1 then begin
+    Arg.usage opts
+      "Exactly 1 module has to be specified if TLAPM is invoked with\
+       the --stdin option." ;
+    exit 2
   end;
   !mods

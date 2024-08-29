@@ -4,8 +4,13 @@
   (alias_rec ../deps/all)
   (alias_rec ../src/all)
   (glob_files_rec "*.tla")
-  (source_tree "TOOLS"))
+  (source_tree "TOOLS")
+  (sandbox none))
  (action
-  (setenv USE_TLAPM %{exe:../src/tlapm.exe}
-  (setenv USE_LIB ../library
-   (run "./TOOLS/do_tests" %{env:TEST_CASE=.})))))
+  (setenv
+   USE_TLAPM
+   %{exe:../src/tlapm.exe}
+   (setenv
+    USE_LIB
+    ../library
+    (run "./TOOLS/do_tests" %{env:TEST_CASE=.})))))

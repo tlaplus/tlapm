@@ -109,6 +109,8 @@ end
 
 module Save : sig
   open T
+  type module_content = Channel of in_channel | String of string | Filesystem
+  val module_content_prop: module_content Property.pfuncs
   val parse_file    : ?clock:Timing.clock -> Util.hint -> mule
   val store_module  : ?clock:Timing.clock -> mule -> unit
   val complete_load : ?clock:Timing.clock -> ?root:string -> modctx -> modctx
@@ -144,9 +146,9 @@ module Visit : sig
     open T
 
     class map : object
-        method module_units: Expr.T.ctx -> M_t.modunit list ->
-            ctx * M_t.modunit list
-        method module_unit: ctx -> M_t.modunit ->
+        method module_units: Expr.T.ctx -> modunit list ->
+            ctx * modunit list
+        method module_unit: ctx -> modunit ->
             ctx * modunit
         method constants: ctx -> (hint * shape) list ->
             ctx * modunit_

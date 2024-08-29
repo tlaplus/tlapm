@@ -1,4 +1,4 @@
-(lang dune 3.8)
+(lang dune 3.15)
 
 (using dune_site 0.1)
 
@@ -9,6 +9,10 @@
 (generate_opam_files true)
 
 (source (github tlaplus/tlapm))
+
+(license BSD-2-Clause)
+
+(cram enable)
 
 (package
  (name tlapm)
@@ -40,5 +44,11 @@
   dune-site
   dune-build-info
   sexplib
+  cmdliner
+  camlzip
+  re2
   ppx_inline_test
-  ppx_assert))
+  ppx_assert)
+ (depopts
+  lsp         ; https://github.com/ocaml/ocaml-lsp
+  eio_main))  ; https://github.com/ocaml-multicore/eio, only available on OCaml version >= 5.

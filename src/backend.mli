@@ -67,9 +67,12 @@ module Toolbox: sig
     val print_message: string -> unit
     val print_message_url:
         string -> string -> unit
-end
 
+    val normalize: bool -> Proof.T.obligation -> Proof.T.obligation
+end
 
 module Smtlib: sig
     val repls: (char * string) list
 end
+
+module Interrupted = Interrupted

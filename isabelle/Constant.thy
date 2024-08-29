@@ -1,20 +1,19 @@
 (*  Title:      TLA+/Constant.thy
     Author:     Stephan Merz, LORIA
-    Copyright (C) 2008-2011  INRIA and Microsoft Corporation
+    Copyright (C) 2008-2024  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2011-1
-    Time-stamp: <2011-10-11 17:40:28 merz>
+    Version:    Isabelle2024
 *)
 
-header {* Main theory for constant-level Isabelle/\tlaplus{} *}
+section \<open> Main theory for constant-level Isabelle/\tlaplus{} \<close>
 
 theory Constant
-imports NatDivision CaseExpressions Strings Integers
+imports IntegerDivision CaseExpressions Strings
 begin
 
-text {*
+text \<open>
   This is just an umbrella for the component theories.
-*}
+\<close>
 
 
 end

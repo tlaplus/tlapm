@@ -1193,7 +1193,7 @@ let compute_meth def args usept =
      Method.Zenon tmo
   | Some "isabelle" ->
      let tmo = Option.default Method.default_isabelle_timeout !timeout in
-     let tac = Option.default "auto" !tactic in
+     let tac = Option.default Method.default_isabelle_tactic !tactic in
      Method.Isabelle (tmo, tac)
   | Some "yices" ->
      let tmo = Option.default Method.default_yices_timeout !timeout in
@@ -1416,6 +1416,7 @@ let ship ob fpout thyout record =
     print_obl_and_msg ob "Proof obligation before `find_meth`:\n";
     let ob = find_meth ob in
     print_obl_and_msg ob "Proof obligation after `find_meth`:\n";
+    Toolbox.print_ob_provers ob;
     let meths = get ob.obl Proof.T.Props.meth in
     let expand_enabled = List.exists
         (fun x -> (x = Method.ExpandENABLED)) meths in

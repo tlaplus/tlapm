@@ -174,6 +174,10 @@ let prover_meth_of_tac tac =
     | LevelComparison -> (Some "levelcomparison", None)
     | Trivial -> (Some "trivial", None)
 
+let prover_name_of_tac tac =
+  let prover, _meth = prover_meth_of_tac tac in
+  prover
+
 type result =
   | Proved of string
   | Failed of string

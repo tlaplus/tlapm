@@ -22,18 +22,23 @@ authors: [
   "Jean-Baptiste Tristan"
   "Hernan Vanzetto"
 ]
+license: "BSD-2-Clause"
 homepage: "https://github.com/tlaplus/tlapm"
 bug-reports: "https://github.com/tlaplus/tlapm/issues"
 depends: [
-  "dune" {>= "3.8"}
+  "dune" {>= "3.15"}
   "ocaml"
   "dune-site"
   "dune-build-info"
   "sexplib"
+  "cmdliner"
+  "camlzip"
+  "re2"
   "ppx_inline_test"
   "ppx_assert"
   "odoc" {with-doc}
 ]
+depopts: ["lsp" "eio_main"]
 dev-repo: "git+https://github.com/tlaplus/tlapm.git"
 build: [ # This is to override the build step, add the invocation of `Makefile.post-install`.
   ["dune" "subst"] {dev}
