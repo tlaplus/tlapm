@@ -14,13 +14,19 @@ module Backend = Backend
 val main : string list -> unit
 val init : unit -> unit
 
-val transitive_parse_module_of_string :
+val modctx_of_string :
   content:string ->
   filename:string ->
   loader_paths:string list ->
   prefer_stdlib:bool ->
-  (Module.T.mule, string option * string) result
-(** Parse module from a specified string, assume it is located in the specified path. *)
+  (Module.T.modctx * Module.T.mule, string option * string) result
+(** Parse and elaborate the specified module and its context
+    from a specified string, assume it is located in the
+    specified path. *)
+
+val module_of_string : string -> M_t.mule option
+(** Parse the specified string as a module. No dependencies
+    are considered, nor proof obligations are elaborated. *)
 
 val parse_module_of_string: string -> M_t.mule option
 (** Parse module from given string without pulling in dependencies. *)
