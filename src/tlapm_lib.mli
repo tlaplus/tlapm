@@ -28,5 +28,8 @@ val module_of_string : string -> M_t.mule option
 (** Parse the specified string as a module. No dependencies
     are considered, nor proof obligations are elaborated. *)
 
+val parse_module_of_string: string -> M_t.mule option
+(** Parse module from given string without pulling in dependencies. *)
+
 val stdlib_search_paths : string list
 (** A list of paths to look for stdlib modules. *)

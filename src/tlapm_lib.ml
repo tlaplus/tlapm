@@ -656,3 +656,8 @@ let module_of_string module_str =
     Tla_parser.P.run hparse ~init:Tla_parser.init ~source:flex
 
 let stdlib_search_paths = Params.stdlib_search_paths
+
+let parse_module_of_string module_str =
+    let hparse = Tla_parser.P.use M_parser.parse in
+    let (flex, _) = Alexer.lex_string module_str in
+    Tla_parser.P.run hparse ~init:Tla_parser.init ~source:flex
