@@ -1,11 +1,9 @@
-(*
- * smt/rewrite.ml --- Rewriting rules.
- *
- * Author: Hern\'an Vanzetto <hernan.vanzetto@inria.fr>
- *
- * Copyright (C) 2011-2012  INRIA and Microsoft Corporation
- *)
+(* Rewriting rules.
 
+Author: Hern\'an Vanzetto <hernan.vanzetto@inria.fr>
+
+Copyright (C) 2011-2012  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 
@@ -195,7 +193,7 @@ class rw = object (self : 'self)
               let es = map (self#expr scx) es in
               lAnd (map (fun e -> mem e ex) es) |> self#expr scx
 
-            (** [h \in 1..n |- ex1] \in Seq(ex) --> \A h \in 1..n : ex1 \in ex *)
+            (** [h \in 1..n |- ex1] \in Seq(ex) --> \A h \in 1..n:  ex1 \in ex *)
             | _ when is_function_with_explicit_domain x ->
               let h,n,dom,ex1 = Option.get (extract_domain_from_function x) in
               let ex1 = self#expr scx ex1 in
@@ -221,12 +219,19 @@ class rw = object (self : 'self)
             | Apply ({core = Internal B.Cat}, [r ; t]) ->
               lAnd [mem r y ; mem t y] |> self#expr scx
 
-            (** SubSeq(s,m,n) \in Seq(ex) --> s \in Seq(ex) /\ m \in Int /\ n \in Int
+            (** SubSeq(s,m,n) \in Seq(ex) -->
+                /\ s \in Seq(ex)
+                /\ m \in Int
+                /\ n \in Int
             | Apply ({core = Internal B.SubSeq}, [s ; m ; n]) ->
                 lAnd [mem s y ; mem m ints ; mem n ints] |> self#expr scx
             *)
 
-            (** SubSeq(s,m,n) \in Seq(ex)  -->  m \in Int /\ n \in Int /\ \A i \in m .. n : s[m] \in ex *)
+            (** SubSeq(s,m,n) \in Seq(ex)  -->
+                /\ m \in Int
+                /\ n \in Int
+                /\ \A i \in m .. n:  s[m] \in ex
+            *)
             | Apply ({core = Internal B.SubSeq}, [s ; m ; n]) ->
               lAnd [
                 mem m ints ; mem n ints ;
@@ -234,7 +239,11 @@ class rw = object (self : 'self)
                   (mem (fcnapp (sh1 s) ix1) (sh1 ex))
               ] |> self#expr scx
 
-            (** [s EXCEPT ![a] = b] \in Seq(ex)  -->  s \in Seq(ex) /\ a \in 1..Len(s) /\ b \in ex *)
+            (** [s EXCEPT ![a] = b] \in Seq(ex)  -->
+                /\ s \in Seq(ex)
+                /\ a \in 1..Len(s)
+                /\ b \in ex
+            *)
             | Except (s, [([Except_apply a], b)]) ->
               lAnd [mem s y ; mem a (range one (len s)) ; mem b ex] |> self#expr scx
 
@@ -401,12 +410,16 @@ class rw = object (self : 'self)
           eq t empty_set
         ] |> self#expr scx
 (*
-      (** (a..b) = {} --> a \in Int /\ b \in Int /\ b < a *)
+      (** (a..b) = {} -->
+          /\ a \in Int
+          /\ b \in Int
+          /\ b < a
+      *)
       | SetEnum [], Apply ({core = Internal B.Range}, [a;b])
       | Apply ({core = Internal B.Range}, [a;b]), SetEnum [] ->
         lAnd [mem a ints ; mem b ints ; lt b a] |> self#expr scx
 *)
-      (** x = {} --> \A z : ~ (z \in x) *)
+      (** x = {} --> \A z:  ~ (z \in x) *)
       | _, SetEnum [] ->
         forall ~typ:(get_tybase scx x) (neg (mem ix1 (sh1 x)))                  (*** Unbounded quantifier! *)
         |> self#expr scx
@@ -439,19 +452,26 @@ class rw = object (self : 'self)
       | Fcn ([_,_,Domain s], _), Tuple [] ->
         eq s empty_set |> self#expr scx
 
-      (** Cat(s,t) = <<>> --> s = <<>> /\ t = <<>> *)
+      (** Cat(s, t) = <<>> -->
+          /\ s = <<>>
+          /\ t = <<>>
+      *)
       | Apply ({core = Internal B.Cat}, [s ; t]), Tuple [] ->
         lAnd [eq s y ; eq t y] |> self#expr scx
 
-      (** SubSeq(s,m,n) = <<>> --> s = <<>> \/ 1..1+n-m = {} *)
+      (** SubSeq(s,m,n) = <<>> -->
+          \/ s = <<>>
+          \/ 1 .. 1 + n - m = {}
+      *)
       | Apply ({core = Internal B.SubSeq}, [s ; m ; n]), Tuple [] ->
         lOr [ eq s empty_tuple ;
               eq (range one (minus (plus one n) m)) empty_set ]
           |> self#expr scx
 
       (** [h \in dom |-> ex] = <<e1, ..., en>> -->
-            /\ dom = 1 .. n
-            /\ \A h \in dom : ex = <<e1, ..., en>>[h] *)
+          /\ dom = 1 .. n
+          /\ \A h \in dom:  ex = <<e1, ..., en>>[h]
+      *)
       | _, Tuple es when is_function_with_explicit_domain x ->
         let scx' = adj scx dummy in
         let h,_,dom,ex = Option.get (extract_domain_from_function x) in
@@ -582,11 +602,12 @@ class rw = object (self : 'self)
           (* self#expr scx (implies (exists ~dom:nats (eq (domain (sh1 s)) (range one ix1)))
                           (lAnd [mem x nats ; eq (domain s) (range one x)])) *)
 
-      (** x = Append(s,ex) -->
-            /\ isAFcn x
-            /\ DOMAIN x = 1 .. Len(s) + 1
-            /\ \A z \in 1 .. Len(s) : x[z] = s[z]
-            /\ x[Len(s) + 1] = ex *)
+      (** x = Append(s, ex) -->
+            /\ isAFcn(x)
+            /\ (DOMAIN x) = 1 .. Len(s) + 1
+            /\ \A z \in 1 .. Len(s):  x[z] = s[z]
+            /\ x[Len(s) + 1] = ex
+      *)
       | _, Apply ({core = Internal B.Append}, [s ; ex]) ->
           let dom1 = range one (len s) in
           lAnd [
@@ -599,9 +620,11 @@ class rw = object (self : 'self)
 
       (** x = Tail(s) -->
             s # <<>> =>
-                /\ isAFcn x
-                /\ DOMAIN x = 1 .. Len(s) - 1
-                /\ \A z \in 1 .. Len(s) - 1 : x[z] = s[z + 1] *)
+                /\ isAFcn(x)
+                /\ (DOMAIN x) = 1 .. Len(s) - 1
+                /\ \A z \in 1 .. Len(s) - 1:
+                    x[z] = s[z + 1]
+      *)
       | _, Apply ({core = Internal B.Tail}, [s]) ->
           let dom = range one (minus (len s) one) in
           implies
@@ -614,12 +637,14 @@ class rw = object (self : 'self)
               ])
             |> self#expr scx
 
-      (** x = Cat(s,t) -->
-            /\ isAFcn x
-            /\ DOMAIN x = 1 .. Len(s) + Len(t)
-            /\ \A z \in 1 .. Len(s) : x[z] = s[z]
-            /\ \A z \in 1 .. Len(t) : x[Len(s) + z] = t[z]
-            /\ \A z \in Len(s) + 1 .. Len(s) + Len(t) : x[z] = t[z - Len(s)]
+      (** x = Cat(s, t) -->
+            /\ isAFcn(x)
+            /\ (DOMAIN x) = 1 .. Len(s) + Len(t)
+            /\ \A z \in 1 .. Len(s):  x[z] = s[z]
+            /\ \A z \in 1 .. Len(t):  x[Len(s) + z] = t[z]
+            /\ \A z \in Len(s) + 1 .. Len(s) + Len(t):
+                x[z] = t[z - Len(s)]
+
           NB: The last two conjuncts are redundant but including both makes
           more proofs succeed. *)
       | _, Apply ({core = Internal B.Cat}, [s ; t]) ->
@@ -638,10 +663,11 @@ class rw = object (self : 'self)
                     (fcnapp (sh1 t) (minus ix1 (len (sh1 s)))))
           ] |> self#expr scx
 
-      (** x = SubSeq(s,m,n) -->
-            /\ isAFcn x
-            /\ DOMAIN x = 1 .. 1 + n - m
-            /\ \A z \in m .. n : x[1 + z - m] = s[z] *)
+      (** x = SubSeq(s, m, n) -->
+            /\ isAFcn(x)
+            /\ (DOMAIN x) = 1 .. 1 + n - m
+            /\ \A z \in m .. n:  x[1 + z - m] = s[z]
+      *)
       | _, Apply ({core = Internal B.SubSeq}, [s ; m ; n]) ->
           let dom = range one (minus (plus one n) m) in
           lAnd [
@@ -703,12 +729,17 @@ class rw = object (self : 'self)
         | B.Mem, _, _ ->
           rw_mem x y
 
-        | (B.Eq | B.Equiv), _, Choose (h, None, ex) ->
+        (*| (B.Eq | B.Equiv), _, Choose (h, None, ex) ->
     (* Util.eprintf "Choo: %a : %s" (print_prop ()) (sh1 (sh1 ex)) (typ_to_str e) ; *)
             (* add_choose (fresh_name ()) cx x ;  *)            (*** FIX CHOOSE determinacy ***)
           implies (exists ~id:h ex) (ex <~ x) |> self#expr scx
         | (B.Eq | B.Equiv), Choose _, _ ->
-          Apply (o, [y ; x]) |> mk |> self#expr scx
+          Apply (o, [y ; x]) |> mk |> self#expr scx*)
+        (* NOTE Disabled by adef
+         * The rule is unsound if applied in positive contexts
+         * For ex. if can be exploited to prove any X = CHOOSE v : TRUE
+         * It's safer to disable the rule than to implement polarities
+         * in all of the SMT code... *)
 
         | B.Equiv, If (c1,t,u), If (c2,v,w) when Expr.Eq.expr c1 c2 ->
           ifte c1 (equiv t v) (equiv u w) |> self#expr scx
@@ -810,14 +841,7 @@ class rw = object (self : 'self)
           self#expr scx (ifte c (apply1 op t) (apply1 op f))
         | B.Neg, _ -> neg ex
         | B.DOMAIN, Fcn (bs,_) ->
-            let rec unditto = function
-              | (_, _, Domain d) as b1 :: (h,k,Ditto) :: bs ->
-                b1 :: unditto ((h,k,Domain d) :: bs)
-              | b :: bs ->
-                b :: unditto bs
-              | [] -> []
-            in
-            let bs = unditto bs in
+            let bs = Expr.T.unditto bs in
             let rec doms = function
               | (_,_,Domain d) :: bs -> d :: doms bs
               | [] -> []
@@ -1009,8 +1033,13 @@ class rw = object (self : 'self)
             |> Smt.sf#simpl (snd scx)
           in
           ifte c ex (opq "tla__unspec" (f::es)) |> self#expr scx
-        | Except (f, [([Except_apply y], ex)]), [x] ->
-          let c1 = mem x (domain f)
+        | Except (ff, [([Except_apply y], ex)]), [x] ->
+          (* NOTE Fixed by adef: this rule used to specify
+           * unspec([ f EXCEPT ![y] = ex ], x) as unspec(f, x),
+           * which is incorrect and allows one to derive
+           * [ f EXCEPT ![y] = ex ][x] = f[x] when x # y
+           * without the condition x \in DOMAIN f *)
+          let c1 = mem x (domain ff)
             |> self#expr scx
             |> Smt.sf#simpl (snd scx)
           in
@@ -1021,10 +1050,10 @@ class rw = object (self : 'self)
           begin
             if is_true c1 then
               if is_true c2 then ex
-              else ifte c2 ex (fcnapp_u scx f x)
+              else ifte c2 ex (fcnapp_u scx ff x)
             else
               ifte c1
-                (ifte c2 ex (fcnapp_u scx f x))
+                (ifte c2 ex (fcnapp_u scx ff x))
                 (opq "tla__unspec" (f::es))
           end |> self#expr scx
 
@@ -1040,9 +1069,13 @@ class rw = object (self : 'self)
           (try List.nth ts ((int_of_string i) - 1) with e -> raise e)
           |> self#expr scx
 
-        (** Append(s,ex)[i] -->
-              IF i \in 1..Len(s) THEN s[i] ELSE
-                (IF i = Len(s)+1 THEN ex ELSE unspec(Append(s,ex),i)) *)
+        (** Append(s, ex)[i] -->
+            IF i \in 1..Len(s)
+                THEN s[i]
+                ELSE (IF i = Len(s) + 1
+                    THEN ex
+                    ELSE unspec(Append(s, ex), i))
+        *)
         | Apply ({core = Internal B.Append}, [s ; ex]), [i] ->
           ifte (mem i (range one (len s)))
                           (fcnapp s i)
@@ -1050,8 +1083,10 @@ class rw = object (self : 'self)
                       |> self#expr scx
 
         (** Tail(s)[i] -->
-              IF i \in 1 .. Len(s) - 1 THEN s[i+1]
-              ELSE unspec(Tail(s),i)*)
+            IF i \in 1 .. Len(s) - 1
+                THEN s[i + 1]
+                ELSE unspec(Tail(s), i)
+        *)
         | Apply ({core = Internal B.Tail}, [s]), [i] ->
           ifte (mem i (range one (minus (len s) one)))
                           (fcnapp s (plus i one))
@@ -1059,7 +1094,10 @@ class rw = object (self : 'self)
                       |> self#expr scx
 
         (** SubSeq(s,m,n)[i] -->
-              IF i \in 1..1+n-m THEN s[i+m-1] ELSE unspec(SubSeq(s,m,n),i) *)
+            IF i \in 1 .. 1 + n - m
+                THEN s[i + m - 1]
+                ELSE unspec(SubSeq(s, m, n), i)
+        *)
         | Apply ({core = Internal B.SubSeq}, [s ; m ; n]), [i] ->
           ifte (mem i (range one (minus (plus one n) m)))
                           (fcnapp s (minus (plus i m) one))
@@ -1073,7 +1111,10 @@ class rw = object (self : 'self)
               (unspec scx e))
                       |> self#expr scx
               (** f[x] -->
-                          IF x \in DOMAIN f THEN tla__fcnapp(f,x) ELSE tla__unspec(f,x) *)
+                    IF x \in DOMAIN f
+                        THEN tla__fcnapp(f, x)
+                        ELSE tla__unspec(f, x)
+              *)
               | _, [x] ->
           ifte (mem x (domain f))
             (fcnapp_u scx f x)
@@ -1131,7 +1172,7 @@ class rw = object (self : 'self)
       in
       ex |> self#expr scx'
 
-    (** [Quant] assumption: already [Smt.unditto] *)
+    (** [Quant] assumption: already [Expr.T.unditto] *)
     (* | Quant (q, b :: bs, ex) -> *)
     | Quant (q, ((v,_,_) as b) :: bs, ex) ->
 (* Util.eprintf "{rw} %a" (Expr.Fmt.pp_print_expr (snd scx, Ctx.dot)) e ; *)
@@ -1155,7 +1196,8 @@ class rw = object (self : 'self)
 
       (** Pass domains from bounds [bs] to body [ex].
           The resulting [bs] has [No_domain]s.
-          [\A x \in S : ex] --> [\A x : x \in S => ex ] *)
+          `[\A x \in S:  ex] --> [\A x:  x \in S => ex]`
+      *)
       (* let unbound q bs ex =
         let bs,ds = Smt.unb bs in
         let conn q = match q with Forall -> implies | Exists -> conj in
@@ -1340,15 +1382,20 @@ class rw = object (self : 'self)
     | Choose (v, None, ex) ->
       let scx' = adj scx (Fresh (v, Shape_expr, Constant, Unbounded) @@ v) in
       let ex = self#expr scx' ex in
-      Choose (v, None, ex) |> mk
+      let choose = From_hint.make_choose v ex in
+      choose.core |> mk
 
     | Choose (v, Some dom, ex) ->
       (** Note: Don't attach types to h or ix1. They will be later substituted
            by other expressions with (maybe) other types.  *)
-      Choose (v, None, conj (mem ix1 (sh1 dom)) ex) |> mk
+      let ex = conj (mem ix1 (sh1 dom)) ex in
+      let choose = From_hint.make_choose v ex in
+      choose.core
+      |> mk
       |> self#expr scx
 
     (* | Internal B.BOOLEAN -> SetEnum [tla_true ; tla_false] |> mk *)
+
     | _ ->
       super#expr scx e
   end

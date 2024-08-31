@@ -361,11 +361,14 @@ THEOREM Inv /\ Next => Inv'
 (*|*)   BY <3>1, <3>2
     <2>3. CorrectTermination'
       <3>1. Cardinality (S) = 1 => S = {CHOOSE t \in S : TRUE}
-        BY CardThm DEF Inv, TypeOK
+        <4> Cardinality (S) = 1 => \E x \in S : S = {x}
+          BY CardThm DEF Inv, TypeOK
+        <4> QED
+          BY Zenon
       <3>2. Cardinality (S) = 1 => GCD (S) = CHOOSE t \in S : TRUE
         BY <3>1, GCD2 DEF Inv, TypeOK
-      <3> QED 
-        BY <1>1, <3>2, InputAssump, GCD1, GCD2, GCD3, CardThm, FiniteSetThm, Z3   
+      <3> QED
+        BY <1>1, <3>2, InputAssump, GCD1, GCD2, GCD3, CardThm, FiniteSetThm, Z3
         DEF Inv, TypeOK, CorrectTermination, lbl
     <2>4. QED
       BY <2>1, <2>2, <2>3 DEF Inv

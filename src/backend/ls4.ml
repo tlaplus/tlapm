@@ -30,7 +30,7 @@ let is_only_whitespace s =
   in
   try String.iter check s; true
   with Exit -> false
-;;
+
 
 (*
 let rec pp_apply sd cx ff op args = match op.core with
@@ -556,7 +556,7 @@ let visitor = object (self : 'self)
         | And | Refs -> " & "
         | Or -> " | "
         in
-	self#write_list scxp rep es
+        self#write_list scxp rep es
     | Apply (op, _) ->
             let s = Coalesce.coalesce scx e in
             self#expr scxp s
@@ -580,4 +580,3 @@ let pp_print_obligation ff ob =
   (* we negate the query as we try to refute it *)
   fprintf ff "not (%a)"
   (visitor#print Deque.empty)  (noprops (Sequent ob.obl.core))
-;;

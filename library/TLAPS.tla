@@ -73,6 +73,16 @@ veriT == TRUE (*{ by (prover: "verit") }*)
 veriTT(X) == TRUE (*{ by (prover:"verit"; timeout:@) }*)
 
 (**************************************************************************)
+(* Backend pragma: Zipperposition solver                                  *)
+(*                                                                        *)
+(* This method translates the proof obligation to TPTP and                *)
+(* calls Zipperposition.                                                  *)
+(**************************************************************************)
+
+Zipper == TRUE (*{ by (prover: "zipper") }*)
+ZipperT(X) == TRUE (*{ by (prover:"zipper"; timeout:@) }*)
+
+(**************************************************************************)
 (* Backend pragma: Z3 SMT solver                                          *)
 (*                                                                        *)
 (* This method translates the proof obligation to SMTLIB2 and calls Z3.   *)

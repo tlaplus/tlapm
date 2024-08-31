@@ -35,7 +35,7 @@ let rec except e =
   ;;
 
 (* exclude a list from a list *)
-let rec exceptL exceptionList aList = 
+let rec exceptL exceptionList aList =
   match exceptionList with
   [] -> aList
   | e'::l -> except e' (exceptL l aList)
@@ -45,7 +45,7 @@ let rec exceptL exceptionList aList =
 let rec union l1 l2 =
   match l1 with
   | [] -> l2
-  | head::tail -> 
+  | head::tail ->
      if List.mem head l2
      then union tail l2
      else head::(union tail l2)
@@ -71,9 +71,9 @@ let string_of_arg = function
     | Variable(head) -> head
     | Constant(head) -> head
     | Skolem(head,vlist) -> let args = if List.length vlist = 0
-                                then "" 
-				else "(" ^ string_of_v_list vlist ^ ")" 
-                            in head ^ args 
+                                then ""
+				else "(" ^ string_of_v_list vlist ^ ")"
+                            in head ^ args
 
 (* Make a string out of a list of strings *)
 let rec string_of_a_list = function
@@ -86,21 +86,21 @@ let rec string_of_a_list = function
 let rec string_of_formula = function
   | True -> (*debug("sof 1");*) "True"
   | False -> (*debug("sof 2");*) "False"
-  | Literal(Atom(a,v)) -> (*debug("sof 3 " ^ a);*) 
-     if List.length v = 0 
+  | Literal(Atom(a,v)) -> (*debug("sof 3 " ^ a);*)
+     if List.length v = 0
      then a
      else (a ^ "("^ string_of_a_list v ^")")
   | Literal(NotAtom(a,v)) -> (*debug("sof 4");*)
-     if List.length v = 0 
+     if List.length v = 0
      then "not "^a
      else ("not " ^ a ^ "("^ string_of_a_list v ^")")
-  | And(f,g) ->(*debug("sof 5");*) 
+  | And(f,g) ->(*debug("sof 5");*)
      "("^string_of_formula f ^ " & " ^ string_of_formula g^")"
   | Or(f,g) -> (*debug("sof 6");*)
      "("^string_of_formula f ^ " | " ^ string_of_formula g^")"
   | Implies(f,g) -> (*debug("sof 7");*)
     "("^string_of_formula f ^ " => " ^ string_of_formula g^")"
-  | Not(f) -> (*debug("sof 8");*) 
+  | Not(f) -> (*debug("sof 8");*)
     "not (" ^ string_of_formula f^")"
   | Forall(v,f) ->(*debug("sof 9");*)
     "![" ^ string_of_v_list v ^"](" ^ string_of_formula f^")"
@@ -140,7 +140,7 @@ let rec string_of_formulas = function
 let rec string_of_i_clausesAux = function
     | [] -> ""
     | head::[]  -> "or([" ^ string_of_clause head ^ "])"
-    | head::tail  -> "or([" ^ string_of_clause head ^ "]), \n" ^ 
+    | head::tail  -> "or([" ^ string_of_clause head ^ "]), \n" ^
                                    string_of_i_clausesAux tail
     ;;
 let string_of_i_clauses clauses =  string_of_i_clausesAux clauses;;
@@ -149,7 +149,7 @@ let string_of_i_clauses clauses =  string_of_i_clausesAux clauses;;
 let rec string_of_u_clausesAux = function
     | [] -> ""
     | head::[]  -> "always(or([" ^ string_of_clause head ^ "]))"
-    | head::tail  -> "always(or([" ^ string_of_clause head ^ "])), \n" ^ 
+    | head::tail  -> "always(or([" ^ string_of_clause head ^ "])), \n" ^
                                    string_of_u_clausesAux tail
     ;;
 let string_of_u_clauses clauses =  string_of_u_clausesAux clauses;;
@@ -158,7 +158,7 @@ let string_of_u_clauses clauses =  string_of_u_clausesAux clauses;;
 let rec string_of_s_clausesAux = function
     | [] -> ""
     | head::[]  -> "always(or([" ^ string_of_clause head ^ "]))"
-    | head::tail  -> "always(or([" ^ string_of_clause head ^ "])), \n" ^ 
+    | head::tail  -> "always(or([" ^ string_of_clause head ^ "])), \n" ^
                                    string_of_s_clausesAux tail
     ;;
 let string_of_s_clauses clauses =  string_of_s_clausesAux clauses;;
@@ -166,7 +166,7 @@ let string_of_s_clauses clauses =  string_of_s_clausesAux clauses;;
 let rec string_of_e_clausesAux = function
     | [] -> ""
     | head::[]  -> "always(or([" ^ string_of_clause head ^ "]))"
-    | head::tail  -> "always(or([" ^ string_of_clause head ^ "])), \n" ^ 
+    | head::tail  -> "always(or([" ^ string_of_clause head ^ "])), \n" ^
                                    string_of_e_clausesAux tail
     ;;
 let string_of_e_clauses clauses =  string_of_e_clausesAux clauses;;
@@ -193,9 +193,9 @@ let isTemporalLiteral literal = match literal with
    | Next(Literal(_)) -> true
    | _ -> false
    ;;
-  
+
 (* Returns true if a formula is a truth constant, literal, or a disjunction of literals  *)
-let rec isDisjunctive form = 
+let rec isDisjunctive form =
    if (isLiteral form ) then true
    else match form with
    | True -> true
@@ -221,7 +221,7 @@ let isTemporal formula = match formula with
    ;;
 
 (* True, if the formula does not contain temporal operators *)
-let rec isTemporalFree formula = 
+let rec isTemporalFree formula =
   (*debug ("isTemporalFree " ^ (string_of_formula formula));*)
   if isTemporal formula
   then ( (*(debug "isTempralFree: returning False1");*) false)
@@ -237,7 +237,7 @@ let rec isTemporalFree formula =
 
 (* Ordering on formulas (used in simplifications) *)
 let myLess (f:formula) (g:formula) =  match (f,g) with
-    | (Literal(Atom(a1, vlist1)),Literal(Atom(a2, vlist2))) -> 
+    | (Literal(Atom(a1, vlist1)),Literal(Atom(a2, vlist2))) ->
          Atom(a1, vlist1) < Atom(a2, vlist2)
     | (Literal(Atom(a1, vlist1)),Literal(NotAtom(a2, vlist2))) ->
          Atom(a1, vlist1) < Atom(a2, vlist2)
@@ -267,7 +267,7 @@ let rec getConsts = function
   ;;
 
 (* free variables of a formula *)
-let rec process formula fn  = 
+let rec process formula fn  =
   match formula with
   | (True | False) -> []
   | Literal(Atom(_,v)) -> (fn v)
@@ -300,7 +300,7 @@ let rec  varl2argl = function
    ;;
 
 (* Returns the list of all atoms occuring in the formula *)
-let rec getAtoms formula  = 
+let rec getAtoms formula  =
   match formula with
   | (True | False) -> []
   | Literal(Atom(a,v)) -> [Literal(Atom(a,v))]
@@ -347,11 +347,11 @@ and
   | True -> False
   | False -> True
   | Literal(l) ->
-     begin 
+     begin
       match l with
       | Atom(a,v) -> Literal(NotAtom(a,v))
       | NotAtom(a,v) -> Literal(Atom(a,v))
-     end 
+     end
   | And(f,g) -> Or (negate f, negate g)
   | Or(f,g) -> And(negate f,negate g)
   | Implies(f,g) -> And(nnf f, negate g)
@@ -373,26 +373,26 @@ and
 (******************************************************************)
 
 (* Apply one simplification step *)
-let rec elementarySimplify form = debug ("elementarySimplify called with " ^(string_of_formula form)); 
+let rec elementarySimplify form = debug ("elementarySimplify called with " ^(string_of_formula form));
 match form with
     (* Jenssen simplifications *)
-    | Not(False) -> debug "1 "; 
+    | Not(False) -> debug "1 ";
    	    True
-    | Not(True)   -> debug "2 "; 
+    | Not(True)   -> debug "2 ";
  	    False
-    | Next(False) -> debug "3 "; 
+    | Next(False) -> debug "3 ";
  	    False
-    | Next(True)  -> debug "4 "; 
+    | Next(True)  -> debug "4 ";
  	    True
-    | Sometime(False) -> debug "5 "; 
+    | Sometime(False) -> debug "5 ";
  	    False
-    | Sometime(True) -> debug "6 "; 
+    | Sometime(True) -> debug "6 ";
  	    True
-    | Always(False) -> debug "7 "; 
+    | Always(False) -> debug "7 ";
  	    False
-    | Always(True) -> debug "8 "; 
+    | Always(True) -> debug "8 ";
  	    True
-    | Forall(_, True) -> debug "75"; 
+    | Forall(_, True) -> debug "75";
         True
     | Forall(_, False) -> debug "76";
         False
@@ -400,164 +400,164 @@ match form with
         True
     | Exists(_, False) -> debug "78";
         False
-    (*| Sometime(Next(f)) -> debug " "; 
+    (*| Sometime(Next(f)) -> debug " ";
  Next(Sometime(f)) -- same number of clauses*)
-    | Sometime(Sometime(f)) -> debug "9 "; 
+    | Sometime(Sometime(f)) -> debug "9 ";
  	    Sometime(elementarySimplify f)
-    | Sometime(Always(Sometime(f))) -> debug "10 "; 
+    | Sometime(Always(Sometime(f))) -> debug "10 ";
  	    Always(Sometime(elementarySimplify f))
-    | Sometime(Until(f,g)) -> debug "11 "; 
+    | Sometime(Until(f,g)) -> debug "11 ";
  	    Sometime(elementarySimplify g)
-    (*| Always(Next(f)) -> debug " "; 
+    (*| Always(Next(f)) -> debug " ";
  Next(Always(f)) -- same number of clauses *)
-    | Always(Always(f)) -> debug "12 "; 
+    | Always(Always(f)) -> debug "12 ";
  	    Always(elementarySimplify f)
-    | Always(Sometime(Always(f))) -> debug "13 "; 
+    | Always(Sometime(Always(f))) -> debug "13 ";
  	    Sometime(Always(elementarySimplify f))
      (*changed from Until to Unless!!!*)
-    | Always(Unless(f,g)) -> debug "14 "; 
+    | Always(Unless(f,g)) -> debug "14 ";
  	    Always(Or((elementarySimplify f), (elementarySimplify g)))
     (* *)
-    | Until(False, f) -> debug "15 "; 
+    | Until(False, f) -> debug "15 ";
  	    elementarySimplify f
-    | Until(f, False) -> debug "16 "; 
+    | Until(f, False) -> debug "16 ";
  	    False
-    | Until(True, f) -> debug "17 "; 
+    | Until(True, f) -> debug "17 ";
  	    Sometime(elementarySimplify f)
-    | Until(f, True) -> debug "18 "; 
+    | Until(f, True) -> debug "18 ";
  	    True
-    | Until(Next(f), Next(g)) -> debug ("19: "); debug((string_of_formula f) ^ " : " ^ (string_of_formula g)); 
+    | Until(Next(f), Next(g)) -> debug ("19: "); debug((string_of_formula f) ^ " : " ^ (string_of_formula g));
  	    Next(Until((elementarySimplify f), (elementarySimplify g))) (* one clause gained *)
-    | Until(f, Sometime(g)) -> debug "20 "; 
+    | Until(f, Sometime(g)) -> debug "20 ";
  	    Sometime(elementarySimplify g)
-    | Until(p, q) when debug("c1"); ((isTemporalLiteral p )&& (isTemporalLiteral q) && (p=(negate q))) -> debug ("21 : p = "); debug((string_of_formula p) ^ " : q = " ^ (string_of_formula q)); 
+    | Until(p, q) when debug("c1"); ((isTemporalLiteral p )&& (isTemporalLiteral q) && (p=(negate q))) -> debug ("21 : p = "); debug((string_of_formula p) ^ " : q = " ^ (string_of_formula q));
 	    Sometime(elementarySimplify q)
 (*
-    | Until(p, q) when q=(negate p) -> debug "22 "; 
+    | Until(p, q) when q=(negate p) -> debug "22 ";
  	    Sometime(p)
 *)
-    | Until(f,g) when f=g -> debug "23 "; 
+    | Until(f,g) when f=g -> debug "23 ";
  	    elementarySimplify f
-    | Unless(False, f) -> debug "24 "; 
+    | Unless(False, f) -> debug "24 ";
  	    elementarySimplify f
-    | Unless(f, False) -> debug "25 "; 
+    | Unless(f, False) -> debug "25 ";
  	    Always(elementarySimplify f)
-    | Unless(True, f) -> debug "26 "; 
+    | Unless(True, f) -> debug "26 ";
  	    True
-    | Unless(f, True) -> debug "27 "; 
+    | Unless(f, True) -> debug "27 ";
  	    True
-    | Unless(Next(f), Next(g)) -> debug "28 "; 
+    | Unless(Next(f), Next(g)) -> debug "28 ";
  	    Next(Unless((elementarySimplify f), (elementarySimplify g))) (* one clause gained *)
-    | Unless(Always(f), g) -> debug "29 "; 
+    | Unless(Always(f), g) -> debug "29 ";
  	    Or((Always(elementarySimplify f)), ((elementarySimplify g)))
-    | Unless(p, q) when ((isTemporalLiteral p )&& (isTemporalLiteral q) && p=(negate q)) -> debug "30 "; 
+    | Unless(p, q) when ((isTemporalLiteral p )&& (isTemporalLiteral q) && p=(negate q)) -> debug "30 ";
  	    True
 (*
-    | Unless(p, q) when q=(negate p) -> debug "31 "; 
+    | Unless(p, q) when q=(negate p) -> debug "31 ";
  	True
 *)
-    | Unless(f,g) when f=g -> debug "32 "; 
+    | Unless(f,g) when f=g -> debug "32 ";
  	    elementarySimplify f
     (* *)
-    | And(False, f) -> debug "33 "; 
+    | And(False, f) -> debug "33 ";
  	    False
-    | And(True, f) -> debug "34 "; 
+    | And(True, f) -> debug "34 ";
  	    elementarySimplify f
-    | And(f, False) -> debug "35 "; 
+    | And(f, False) -> debug "35 ";
  	    False
-    | And(f, True) -> debug "36 "; 
+    | And(f, True) -> debug "36 ";
   	    elementarySimplify f
-    | And(Next(f), Next(g)) -> debug "37 "; 
+    | And(Next(f), Next(g)) -> debug "37 ";
  	    Next(And((elementarySimplify f), (elementarySimplify g))) (* 2 clauses gained *)
-    | And(Always(f), Always(g)) -> debug "38 "; 
+    | And(Always(f), Always(g)) -> debug "38 ";
  	    Always(And((elementarySimplify f), (elementarySimplify g))) (* 2 clauses gained *)
-    | And(p, q) when p=q -> debug "39 "; 
-  	    elementarySimplify p 
-    | And(p, q) when p=(negate q) -> debug "40 "; 
+    | And(p, q) when p=q -> debug "39 ";
+  	    elementarySimplify p
+    | And(p, q) when p=(negate q) -> debug "40 ";
   	    False
-    | And(p, q) when q=(negate p) -> debug "41 "; 
+    | And(p, q) when q=(negate p) -> debug "41 ";
   	    False
-    | Or(False, f) -> debug "42 "; 
+    | Or(False, f) -> debug "42 ";
  	    elementarySimplify f
-    | Or(True, f) -> debug "43 "; 
+    | Or(True, f) -> debug "43 ";
  	    True
-    | Or(f, False) -> debug "44 "; 
+    | Or(f, False) -> debug "44 ";
  	    elementarySimplify f
-    | Or(f, True) -> debug "45 "; 
+    | Or(f, True) -> debug "45 ";
  	    True
-    | Or(Next(f), Next(g)) -> debug "46 "; 
+    | Or(Next(f), Next(g)) -> debug "46 ";
  	    Next(Or((elementarySimplify f),(elementarySimplify g))) (* 2 clauses gained *)
-    | Or(Sometime(f), Sometime(g)) -> debug "47 "; 
+    | Or(Sometime(f), Sometime(g)) -> debug "47 ";
  	    Sometime(Or((elementarySimplify f), (elementarySimplify g))) (* 2 clauses gained*)
-    | Or(p, q) when p=q -> debug "48 "; 
+    | Or(p, q) when p=q -> debug "48 ";
  	    elementarySimplify p
-    | Or(p, q) when p=(negate q) -> debug "49 "; 
+    | Or(p, q) when p=(negate q) -> debug "49 ";
  	    True
-    | Or(p, q) when q=(negate p) -> debug "50 "; 
+    | Or(p, q) when q=(negate p) -> debug "50 ";
  	    True
     (* Trying to "normalise" subformulae *)
-    | And(f,g) when 
+    | And(f,g) when
         ((match g with And(_,_) -> false | _ -> true )&&
-	 (myLess g f)) 
-	-> debug ("51 : AND : "); debug ((string_of_formula f ) ^ " : " ^ (string_of_formula g)); 
+	 (myLess g f))
+	-> debug ("51 : AND : "); debug ((string_of_formula f ) ^ " : " ^ (string_of_formula g));
   	    And(elementarySimplify g, elementarySimplify f)
-    | Or(f,g) when 
+    | Or(f,g) when
         ((match g with Or(_,_) -> false | _ -> true )&&
-	 (myLess g f)) 
-	-> debug "52 "; 
+	 (myLess g f))
+	-> debug "52 ";
   	    Or(elementarySimplify g, elementarySimplify f)
-    | And(And(f,g), h) -> debug "53 "; 
+    | And(And(f,g), h) -> debug "53 ";
  	    And(elementarySimplify f, And(elementarySimplify g, elementarySimplify h))
-    | Or(Or(f,g), h) -> debug "54 "; 
+    | Or(Or(f,g), h) -> debug "54 ";
  	    Or(elementarySimplify f, Or(elementarySimplify g,elementarySimplify h))
-    | And(f, And(g,h)) when (myLess g f) -> debug "55 "; 
+    | And(f, And(g,h)) when (myLess g f) -> debug "55 ";
  	    And(elementarySimplify g, And(elementarySimplify f,elementarySimplify h))
-    | Or(f, Or(g,h)) when (myLess g f) -> debug "56 "; 
+    | Or(f, Or(g,h)) when (myLess g f) -> debug "56 ";
  	    Or(elementarySimplify g, Or(elementarySimplify f, elementarySimplify h))
     (* *)
-    | And(p, And(q,r)) when p=q -> debug "57 "; 
+    | And(p, And(q,r)) when p=q -> debug "57 ";
   	    And(elementarySimplify p,elementarySimplify r)
-    | And(p, And(q,r)) when p=(negate q) -> debug "58 "; 
+    | And(p, And(q,r)) when p=(negate q) -> debug "58 ";
   	    False
-    | And(p, And(q,r)) when q=(negate p) -> debug "59 "; 
+    | And(p, And(q,r)) when q=(negate p) -> debug "59 ";
   	    False
-    | Or(p, Or(q,r)) when p=q -> debug "60 "; 
+    | Or(p, Or(q,r)) when p=q -> debug "60 ";
   	    Or(elementarySimplify p,elementarySimplify r)
-    | Or(p, Or(q,r)) when p=(negate q) -> debug "61 "; 
+    | Or(p, Or(q,r)) when p=(negate q) -> debug "61 ";
   	    True
-    | Or(p, Or(q,r)) when q=(negate p) -> debug "62 "; 
+    | Or(p, Or(q,r)) when q=(negate p) -> debug "62 ";
   	    True
     (* none of the above worked *)
     (* go  inside *)
-    | And(f,g) -> debug "63 "; 
+    | And(f,g) -> debug "63 ";
  	    And(elementarySimplify f, elementarySimplify g)
-    | Or(f,g) -> debug "64 "; 
+    | Or(f,g) -> debug "64 ";
  	    Or(elementarySimplify f, elementarySimplify g)
-    | Implies(f,g) -> debug "65 "; 
+    | Implies(f,g) -> debug "65 ";
  	    Implies(elementarySimplify f, elementarySimplify g)
-    | Not(f) -> debug "66 "; 
+    | Not(f) -> debug "66 ";
  	    Not(elementarySimplify f)
-    | Forall(v, f) -> debug "67 "; 
+    | Forall(v, f) -> debug "67 ";
  	    Forall(v, elementarySimplify f)
-    | Exists(v, f) -> debug "68 "; 
+    | Exists(v, f) -> debug "68 ";
  	    Exists(v, elementarySimplify f)
-    | Always(f) -> debug "69 "; 
+    | Always(f) -> debug "69 ";
  	    Always(elementarySimplify f)
-    | Sometime(f) -> debug "70 "; 
+    | Sometime(f) -> debug "70 ";
  	    Sometime(elementarySimplify f)
-    | Next(f) -> debug ("71 : "); debug((string_of_formula f)); 
+    | Next(f) -> debug ("71 : "); debug((string_of_formula f));
  	    Next(elementarySimplify f)
-    | Until(f,g) -> debug ("72 : UNTIL : "); debug((string_of_formula f) ^ " : " ^ (string_of_formula g)); 
+    | Until(f,g) -> debug ("72 : UNTIL : "); debug((string_of_formula f) ^ " : " ^ (string_of_formula g));
  	    Until(elementarySimplify f, elementarySimplify g)
-    | Unless(f,g) -> debug ("73 : "); debug((string_of_formula f) ^ " : " ^  (string_of_formula g)); 
+    | Unless(f,g) -> debug ("73 : "); debug((string_of_formula f) ^ " : " ^  (string_of_formula g));
  	    Unless(elementarySimplify f,elementarySimplify g)
     (* constants True/False*)
-    | x -> debug ("74 : "); debug((string_of_formula x)); 
+    | x -> debug ("74 : "); debug((string_of_formula x));
  	    x
     ;;
 
 (* Apply simplification steps while possible *)
-let simplify (form:formula) (channel:out_channel) (isVerbose:bool) = 
+let simplify (form:formula) (channel:out_channel) (isVerbose:bool) =
    debug("simplify " ^ (string_of_formula form));
    let tmpform = ref form
    and tmpsimp = ref (elementarySimplify form)
@@ -581,9 +581,9 @@ let resetVar = count :=0;;
 
 let newSkolem () = newVar "skolem";;
 
-let newLiteral varlist = 
+let newLiteral varlist =
     let tmpLit = Literal(Atom(newVar "NVV", (varl2argl varlist)))
-  in (*newNamesList:=tmpLit::(!newNamesList);*) tmpLit 
+  in (*newNamesList:=tmpLit::(!newNamesList);*) tmpLit
   ;;
 
 (******************************************************************)
@@ -618,7 +618,7 @@ let rename proposition formula =
 (*              DSNF TRANSFORMATIONS                              *)
 (******************************************************************)
 
-(* this reference controls how fo formulas are processed: if false, 
+(* this reference controls how fo formulas are processed: if false,
 then by de Morgan laws, by renaming else*)
 let useFOrenaming = ref false;;
 
@@ -635,7 +635,7 @@ let rec foToCNFbyRenaming form =
     (form,[],[],[])
   else
   match form with
-    | And(f, g) -> 
+    | And(f, g) ->
       let (iP1, uP1, sP1, eP1) = foToCNFbyRenaming f
       and (iP2, uP2, sP2, eP2) = foToCNFbyRenaming g
       in
@@ -651,23 +651,23 @@ let rec foToCNFbyRenaming form =
        in setSeen iP1 newP ;
        let (iP2, uP2, sP2, eP2) = foToCNFbyRenaming g
        in
-       (Or(newP, iP2), 
+       (Or(newP, iP2),
          (rename newP iP1)::(union uP1 uP2),
 	 [], [])
     | Forall(v,y) ->
-        let (iP,uP,sP,eP) = foToCNFbyRenaming y 
+        let (iP,uP,sP,eP) = foToCNFbyRenaming y
         in (Forall(v, iP), uP,sP,eP)
-    | Exists(v,y) -> 
-        let (iP,uP,sP,eP) = foToCNFbyRenaming y 
+    | Exists(v,y) ->
+        let (iP,uP,sP,eP) = foToCNFbyRenaming y
         in (Exists(v, iP), uP,sP,eP)
     | _ -> raise Illegal6
     ;;
 
 (* Choose how to proceed a fo-formula *)
-let fodsnfselect form = 
-  if not !useFOrenaming 
+let fodsnfselect form =
+  if not !useFOrenaming
   then (form,[],[],[]) (* will be transformed to CNF by de Morgan rules *)
-  else 
+  else
     foToCNFbyRenaming form (* do transformation by renaming*)
   ;;*)
 
@@ -675,23 +675,23 @@ let fodsnfselect form =
 (*                                iP       uP      sP     eP   *)
 (*                                                             *)
 (* ASSUME that formula is in NNF                               *)
-let rec dsnfWrap form = 
+let rec dsnfWrap form =
     debug ("dsnfWrap input: " ^ (string_of_formula form));
     match form with
      | f when (isTemporalFree f) -> (f, [], [], [])
-     | And(x,y) -> 
-         let (iP1, uP1,sP1,eP1) = dsnfWrap x 
-         and (iP2, uP2,sP2,eP2) = dsnfWrap y 
+     | And(x,y) ->
+         let (iP1, uP1,sP1,eP1) = dsnfWrap x
+         and (iP2, uP2,sP2,eP2) = dsnfWrap y
          in (And(iP1, iP2), union uP1 uP2, union sP1 sP2, union eP1 eP2)
-     | Always (f) when (isTemporalFree f) -> 
+     | Always (f) when (isTemporalFree f) ->
         (True, [f], [], [])
 
 (* a special treatment for step clauses in the input *)
-     | Always(Or(lhs,rhs)) when 
-          ((isTemporalLiteral lhs) && (isTemporalLiteral rhs)) -> 
+     | Always(Or(lhs,rhs)) when
+          ((isTemporalLiteral lhs) && (isTemporalLiteral rhs)) ->
                  (True, [], [Always(Or(lhs,rhs))], [])
-     | Always(Forall(_, (Or(lhs,rhs)))) when 
-          ((isTemporalLiteral lhs) && (isTemporalLiteral rhs)) -> 
+     | Always(Forall(_, (Or(lhs,rhs)))) when
+          ((isTemporalLiteral lhs) && (isTemporalLiteral rhs)) ->
                  (True, [], [Always(Or(lhs,rhs))], [])
 
 (* else use the standard transformations *)
@@ -711,16 +711,16 @@ and dsnf form =
     else
     match form with
      (* booleans go first *)
-     | Not x  -> 
-         let (iP,uP,sP,eP) = dsnf x 
+     | Not x  ->
+         let (iP,uP,sP,eP) = dsnf x
          in (Not(iP), uP,sP,eP)
-     | And(x,y) -> 
-         let (iP1, uP1,sP1,eP1) = dsnf x 
-         and (iP2, uP2,sP2,eP2) = dsnf y 
+     | And(x,y) ->
+         let (iP1, uP1,sP1,eP1) = dsnf x
+         and (iP2, uP2,sP2,eP2) = dsnf y
          in (And(iP1, iP2), union uP1 uP2, union sP1 sP2, union eP1 eP2)
-  (*   | Or(x,y) -> 
-         let (iP1, uP1,sP1,eP1) = dsnf x 
-         and (iP2, uP2,sP2,eP2) = dsnf y 
+  (*   | Or(x,y) ->
+         let (iP1, uP1,sP1,eP1) = dsnf x
+         and (iP2, uP2,sP2,eP2) = dsnf y
          in (Or(iP1, iP2), union uP1 uP2, union sP1 sP2, union eP1 eP2)*)
       | Or(f, g) when ((not !useFOrenaming) || (isLiteral f) || (isLiteral g)) ->
         let (iP1, uP1, sP1, eP1) = dsnf f
@@ -733,40 +733,40 @@ and dsnf form =
          in setSeen iP1 newP ;
          let (iP2, uP2, sP2, eP2) = dsnf g
          in
-         (Or(newP, iP2), 
+         (Or(newP, iP2),
            (rename newP iP1)::(union uP1 uP2), (union sP1 sP2), (union eP1 eP2))
-     | Implies(x,y) -> 
+     | Implies(x,y) ->
          raise Illegal7
-         (*let (iP1, uP1,sP1,eP1) = dsnf x 
-         and (iP2, uP2,sP2,eP2) = dsnf y 
+         (*let (iP1, uP1,sP1,eP1) = dsnf x
+         and (iP2, uP2,sP2,eP2) = dsnf y
          in (Implies(iP1, iP2), union uP1 uP2, union sP1 sP2, union eP1 eP2)*)
      (* Quantifiers *)
      | Forall(v,y) ->
-         let (iP,uP,sP,eP) = dsnf y 
+         let (iP,uP,sP,eP) = dsnf y
          in (Forall(v, iP), uP,sP,eP)
-     | Exists(v,y) -> 
-         let (iP,uP,sP,eP) = dsnf y 
+     | Exists(v,y) ->
+         let (iP,uP,sP,eP) = dsnf y
          in (Exists(v, iP), uP,sP,eP)
      (* Temporal operators *)
-     | Always(f) -> 
+     | Always(f) ->
          let newP = newLiteral (freeVars f)
-          and (iP,uP,sP,eP) = dsnf f  
-         in setSeen (Always(f)) newP ; 
-         (newP, 
+          and (iP,uP,sP,eP) = dsnf f
+         in setSeen (Always(f)) newP ;
+         (newP,
            (rename newP iP)::uP,
   	 (rename newP (Next(newP)))::sP,
   	 eP
          )
-     | Next(f) -> 
+     | Next(f) ->
          let newP = newLiteral (freeVars f)
-         and newQ = 
-           ( 
+         and newQ =
+           (
              if (isLiteral f) then f
               else (newLiteral (freeVars f))
            )
-          and (iP,uP,sP,eP) = dsnf f  
+          and (iP,uP,sP,eP) = dsnf f
          in setSeen (Next (f)) newP ;
-         (newP, 
+         (newP,
            (if (isLiteral f) then uP else
             (rename newQ iP)::uP),
   	  (rename newP (Next(newQ)))::sP,
@@ -775,20 +775,20 @@ and dsnf form =
      | Sometime(f) ->
          let newP = newLiteral (freeVars f)
          and newQ = newLiteral (freeVars f)
-          and (iP,uP,sP,eP) = dsnf f  
+          and (iP,uP,sP,eP) = dsnf f
          in setSeen (Sometime(f)) newP ;
-         (newP, 
+         (newP,
             (rename newQ iP)::uP,
             sP,
   	  (rename newP (Sometime(newQ)))::eP
          )
-     | Until(f,g) -> 
+     | Until(f,g) ->
          if not (isLiteral f)
-         then 
+         then
            let newP = newLiteral (freeVars (Until(f,g)))
   	 in let (iP,uP,sP,eP) = dsnf (Until(newP, g))
   	    and (iP2,uP2,sP2,eP2) = dsnf (f)
-  	 in (iP, 
+  	 in (iP,
   	 (rename newP iP2)::(uP@uP2),
   	 sP@sP2, eP@eP2)
          else if not (isLiteral g)
@@ -796,16 +796,16 @@ and dsnf form =
            let newQ = newLiteral (freeVars (Until(f,g)))
   	 in let (iP,uP,sP,eP) = dsnf (Until(f, newQ))
   	    and (iP2,uP2,sP2,eP2) = dsnf (g)
-  	 in (iP, 
+  	 in (iP,
   	 (rename newQ iP2)::(uP@uP2),
   	 sP@sP2, eP@eP2)
          else (* Both f and g are atoms *)
            let newP = newLiteral (freeVars (Until(f,g)))
            and newQ = newLiteral (freeVars (Until(f,g)))
-           and (iP1,uP1,sP1,eP1) = dsnf f  
-           and (iP2,uP2,sP2,eP2) = dsnf g  
+           and (iP1,uP1,sP1,eP1) = dsnf f
+           and (iP2,uP2,sP2,eP2) = dsnf g
            in setSeen (Until(f,g)) newP ;
-  	 (newP, 
+  	 (newP,
   	   (
   	     (rename newP (Or(f,g)))::
   	     (rename newP (Or(g,newQ)))::[]
@@ -818,11 +818,11 @@ and dsnf form =
   	 )
      | Unless(f,g) ->  (* same as until but without the eventuality. cut-n-paste *)
          if not (isLiteral f)
-         then 
+         then
            let newP = newLiteral (freeVars (Unless(f,g)))
   	 in let (iP,uP,sP,eP) = dsnf (Unless(newP, g))
   	    and (iP2,uP2,sP2,eP2) = dsnf (f)
-  	 in (iP, 
+  	 in (iP,
   	 (rename newP iP2)::(uP@uP2),
   	 sP@sP2,eP@eP2)
          else if not (isLiteral g)
@@ -830,16 +830,16 @@ and dsnf form =
            let newQ = newLiteral (freeVars (Unless(f,g)))
   	 in let (iP,uP,sP,eP) = dsnf (Unless(f, newQ))
   	    and (iP2,uP2,sP2,eP2) = dsnf (g)
-  	 in (iP, 
+  	 in (iP,
   	 (rename newQ iP2)::(uP@uP2),
   	 sP@sP2,eP@eP2)
          else (* Both f and g are atoms *)
            let newP = newLiteral (freeVars (Unless(f,g)))
            and newQ = newLiteral (freeVars (Unless(f,g)))
-           and (iP1,uP1,sP1,eP1) = dsnf f  
-           and (iP2,uP2,sP2,eP2) = dsnf g  
+           and (iP1,uP1,sP1,eP1) = dsnf f
+           and (iP2,uP2,sP2,eP2) = dsnf g
            in setSeen (Unless(f,g)) newP ;
-  	 (newP, 
+  	 (newP,
   	   (
   	     (rename newP (Or(f,g)))::
   	     (rename newP (Or(g,newQ)))::[]
@@ -888,9 +888,9 @@ let rec subst f var sk = match f with
     | Literal(NotAtom(a, vlist)) -> Literal(NotAtom(a, substL vlist var sk))
     ;;
 
-let rec introduceSkolem existentialVars form freevars = 
+let rec introduceSkolem existentialVars form freevars =
  match existentialVars with
-    | v::tail -> let ns = Skolem(newSkolem(), freevars) 
+    | v::tail -> let ns = Skolem(newSkolem(), freevars)
                  in subst (introduceSkolem tail form freevars) (var2arg v) ns
     | [] -> form
     ;;
@@ -986,12 +986,12 @@ let const var = Skolem("constant", [var]) ;;
 (* Given a step clause of the form P(x) => \next Q(x) returns a list of *)
 (* two clauses                                                          *)
 (* P(x) => \next Q(hidden(x)) and P(const(x)) => \next Q(const(x)       *)
-let foStepClause clause = 
+let foStepClause clause =
  debug ("foStepClause clause = " ^ (string_of_formula clause));
  match clause with
   | Always(Or(lhs,rhs)) ->
    let varlist = freeVars clause
-   in 
+   in
    (* monodicity check *)
    if List.length varlist > 1 then raise NonMonodic
    else begin
@@ -1011,20 +1011,20 @@ let rec foStepClauses = function
   | head::tail -> (foStepClause head)@(foStepClauses tail)
   ;;
 
-let processFOconstant form constantName = 
-let cnew = const constantName 
+let processFOconstant form constantName =
+let cnew = const constantName
 and cold = Constant(constantName)
-in 
+in
 subst form cold cnew ;;
 
-let rec processFOconstantsAux form constantList = 
+let rec processFOconstantsAux form constantList =
 match constantList with
-    | head::tail ->let newf = (processFOconstant form head) in 
+    | head::tail ->let newf = (processFOconstant form head) in
         processFOconstantsAux newf tail
     | [] -> form
     ;;
 
-let processFOconstants form = 
+let processFOconstants form =
   let clist = constsOf form in
   let newf = processFOconstantsAux form clist
   in newf
@@ -1038,11 +1038,11 @@ let rec processFOconstantsl = function
 let rec flood formList constList = match formList with
     | head::tail -> [head]@(floodAux head constList)@(flood tail constList)
     | [] -> []
-and 
+and
     floodAux form constList = match constList with
     | head::tail -> (floodAux2 form head)@(floodAux form tail)
     | [] -> []
-and 
+and
     floodAux2 form const = match form with
     | Always(Or(_,_)) ->  []
     | Always(Forall(v, f)) ->  assert (List.length v = 1); [Always(subst f ( var2arg (List.hd v) ) (Constant(const)))]

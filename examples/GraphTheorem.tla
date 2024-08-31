@@ -17,7 +17,7 @@ LEMMA EdgesAxiom == \A Nodes :
 BY IsaM("force") DEF Edges
 
 -------------------------------------------------------
-LEMMA EdgesFinite == 
+LEMMA EdgesFinite ==
   ASSUME NEW Nodes, IsFiniteSet(Nodes)
   PROVE  IsFiniteSet(Edges(Nodes))
 <1>1. IsFiniteSet(Nodes \X Nodes)
@@ -30,7 +30,7 @@ NonLoopEdges(Nodes) == {e \in Edges(Nodes) : Cardinality(e) = 2}
 SimpleGraphs(Nodes) == SUBSET NonLoopEdges(Nodes)
 Degree(n, G) == Cardinality ({e \in G : n \in e})
 
-LEMMA NLEdgeElements == 
+LEMMA NLEdgeElements ==
   ASSUME NEW Nodes, IsFiniteSet(Nodes),
          NEW e \in NonLoopEdges(Nodes)
   PROVE  \E m,n \in Nodes : m # n /\ e = {m,n}

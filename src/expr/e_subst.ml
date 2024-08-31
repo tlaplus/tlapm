@@ -1,16 +1,14 @@
-(*
- * expr/subst.ml --- expressions (substitution)
- *
- *
- * Copyright (C) 2008-2019  INRIA and Microsoft Corporation
- *)
+(* Substitution within expressions.
 
+Copyright (C) 2008-2019  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 open E_t
 
 module Dq = Deque
-module Fmt = E_fmt;;
+module Fmt = E_fmt
+
 
 type sub =
   | Shift of int
@@ -102,6 +100,7 @@ and app_exprs s es =
 and normalize ?(cx = Deque.empty) op args = match op.core with
   | Lambda (vs, e) ->
       if List.length vs <> List.length args then begin
+        Errors.set op "Arity mismatch";
         Util.eprintf ~at:op
           "@[<v0>Arity mismatch:@,op =@,  %a@,args =@,  @[<v0>%a@]@]@."
           (Fmt.pp_print_expr (cx, Ctx.dot)) op
@@ -425,8 +424,8 @@ class map = object (self : 'self)
         Fresh (nm, shp, lc, dom) @@ h
     | Flex v -> Flex v @@ h
     | Defn (df, wd, vis, ex) ->
-        let (s, df) = self#defn s df in
-        assert (s = bump s);
+        let (s', df) = self#defn s df in
+        assert (s' = bump s);
         Defn (df, wd, vis, ex) @@ h
     | Fact (e, vis, tm) ->
         Fact (self#expr s e, vis, tm) @@ h
@@ -444,6 +443,7 @@ class map = object (self : 'self)
   method normalize ?(cx = Deque.empty) op args = match op.core with
     | Lambda (vs, e) ->
       if List.length vs <> List.length args then begin
+        Errors.set op "Arity mismatch";
         Util.eprintf ~at:op
           "@[<v0>Arity mismatch:@,op =@,  %a@,args =@,  @[<v0>%a@]@]@."
           (Fmt.pp_print_expr (cx, Ctx.dot)) op

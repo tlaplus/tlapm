@@ -20,7 +20,7 @@ NUnion(A) == UNION {A[i] : i \in Nat}
 (******
 --algorithm GFX{
    variables A1 = [i \in Nat |-> {}], result = [i \in Proc |-> {}];
-   process (Pr \in Proc) 
+   process (Pr \in Proc)
      variables known = {self}, notKnown = {} ;
      { a: known := known \cup NUnion(A1) ;
           notKnown := {i \in 0..(Cardinality(known)) : known # A1[i]} ;
@@ -114,14 +114,14 @@ NotAProc == CHOOSE n : n \notin Proc
   (*************************************************************************)
   (* An arbitrary value that is not a process.                             *)
   (*************************************************************************)
-  
-ReadyToWrite(i, p) == /\ pc[p] = "b" 
+
+ReadyToWrite(i, p) == /\ pc[p] = "b"
                       /\ i \in notKnown[p]
   (*************************************************************************)
   (* True iff process p could write known[p] to A1[i] in its next step.    *)
   (*************************************************************************)
 WriterAssignment == {f \in [Nat -> Proc \cup {NotAProc}] :
-                        \A i \in Nat : 
+                        \A i \in Nat :
                           (f[i] \in Proc) => /\ ReadyToWrite(i, f[i])
                                              /\ \A j \in Nat \ {i} :
                                                     f[j] # f[i] }
@@ -130,7 +130,7 @@ WriterAssignment == {f \in [Nat -> Proc \cup {NotAProc}] :
   (* process that is ready to write i, or NotAProc.                        *)
   (*************************************************************************)
 
-PV(wa) == [i \in Nat |-> IF wa[i] = NotAProc THEN A1[i]  
+PV(wa) == [i \in Nat |-> IF wa[i] = NotAProc THEN A1[i]
                                              ELSE known[wa[i]] ]
 
 PA1 == {PV(wa) : wa \in WriterAssignment}
@@ -144,18 +144,18 @@ PA1 == {PV(wa) : wa \in WriterAssignment}
 InvB == /\ \A i \in Nat : (A1[i] # {}) => (Cardinality(A1[i]) >= i)
         /\ \A p \in Proc :
              /\ (pc[p] = "b") => \A i \in notKnown[p] : i =< Cardinality(known[p])
-             /\ p \in known[p] 
+             /\ p \in known[p]
              /\ (result[p] # {}) <=> (pc[p] = "Done")
-             /\ (result[p] # {}) => (result[p] = known[p])  
+             /\ (result[p] # {}) => (result[p] = known[p])
 
 (***************************************************************************)
 (* InvC is the interesting part of the inductive invariant that captures   *)
 (* the essence of the algorithm.                                           *)
 (***************************************************************************)
-InvC == \A p \in Proc : 
+InvC == \A p \in Proc :
            LET S == result[p]
-               k == Cardinality(S) 
-           IN  k > 0 => \A P \in PA1 : 
+               k == Cardinality(S)
+           IN  k > 0 => \A P \in PA1 :
                            \/ Cardinality(UNION {P[i] : i \in Nat}) > k
                            \/ S \subseteq  UNION {P[i] : i \in Nat}
 
@@ -183,27 +183,27 @@ THEOREM PositiveCardinalityImpliesNonEmpty ==
 <1> QED
   BY EmptySetCardinality
 
-THEOREM NonEmptySetCardinality == 
+THEOREM NonEmptySetCardinality ==
            \A S : IsFiniteSet(S) /\ S # {} => (Cardinality(S) > 0)
 PROOF OMITTED
 
 THEOREM SingletonCardinalty == \A x : Cardinality({x}) = 1
 PROOF OMITTED
 
-THEOREM SubsetFinite == 
+THEOREM SubsetFinite ==
             \A S : IsFiniteSet(S) => \A T \in SUBSET S : IsFiniteSet(T)
 PROOF OMITTED
-                                                                       
+
 THEOREM CardType == \A S : IsFiniteSet(S) => Cardinality(S) \in Nat
 PROOF OMITTED
 
-THEOREM SubsetCardinality == 
+THEOREM SubsetCardinality ==
            \A T : IsFiniteSet(T) => \A S \in SUBSET T :
                                        (S # T) => (Cardinality(S) < Cardinality(T))
 PROOF OMITTED
 
-THEOREM SubsetCardinality2 == 
-           \A T : IsFiniteSet(T) => 
+THEOREM SubsetCardinality2 ==
+           \A T : IsFiniteSet(T) =>
                     \A S \in SUBSET T :(Cardinality(S) =< Cardinality(T))
 PROOF OMITTED
 
@@ -216,9 +216,9 @@ THEOREM IntervalCardinality ==
 
 THEOREM PigeonHolePrinciple ==
          \A S, T :
-             /\ IsFiniteSet(S) /\ IsFiniteSet(T) 
+             /\ IsFiniteSet(S) /\ IsFiniteSet(T)
              /\ Cardinality(T) < Cardinality(S)
-             => \A f \in [S -> T] : 
+             => \A f \in [S -> T] :
                    \E x, y \in S : (x # y) /\ (f[x] = f[y])
 PROOF OMITTED
 
@@ -232,16 +232,16 @@ COROLLARY InjectionCardinality ==
                /\ \A x, y \in S : x # y => f[x] # f[y]
                => Cardinality(S) =< Cardinality(T)
 BY PigeonHolePrinciple, CardType, SMT
-                  
+
 (***************************************************************************)
 (* The theorems above were checked for silly mistakes by having TLC check  *)
 (* that with this definition, Test equals <<TRUE, ...  , TRUE>>.           *)
 (***************************************************************************)
 Test ==
-<< 
-   EmptySetCardinality, 
+<<
+   EmptySetCardinality,
    \A S \in SUBSET (0..3) : NonEmptySetCardinality!(S),
-   SingletonCardinalty!("abc"), 
+   SingletonCardinalty!("abc"),
    \A S \in SUBSET (0..3) : SubsetFinite!(S),
    \A S \in SUBSET (0..3) : CardType!(S),
    \A T \in SUBSET (0..3) : SubsetCardinality!(T),
@@ -266,25 +266,25 @@ THEOREM Invariance == Spec => []Inv
   <2>1. Init => TypeOK
     BY SMT
   <2>2. Init => InvB
-    <3>1. ASSUME Init 
+    <3>1. ASSUME Init
           PROVE  InvB!1
       BY <3>1,  EmptySetCardinality, (* SingletonCardinalty,*) SMT DEF InvB
-    <3>2. ASSUME Init 
+    <3>2. ASSUME Init
           PROVE InvB!2
       <4>1. \A p \in Proc : Cardinality(known[p]) = 1
         BY <3>2, SingletonCardinalty  \* SMT fails on this
       <4>2. QED
         BY <3>2, <4>1, SMT DEF InvB
     <3>3. QED
-      BY <3>1, <3>2 DEF InvB    
+      BY <3>1, <3>2 DEF InvB
   <2>3. Init => InvC
     <3> SUFFICES ASSUME Init, NEW p \in Proc
                  PROVE  ~(Cardinality(result[p]) > 0)
       BY DEF InvC
     <3> QED
-      BY EmptySetCardinality, SMT 
+      BY EmptySetCardinality, SMT
   <2>4. Init => GFXCorrect
-    BY SMT DEF GFXCorrect 
+    BY SMT DEF GFXCorrect
   <2>5. QED
     BY <2>1, <2>2, <2>3, <2>4
 
@@ -294,7 +294,7 @@ THEOREM Invariance == Spec => []Inv
                  PROVE  Inv'
       OBVIOUS
     <3>1. TypeOK'
-      BY SMT DEF Inv, TypeOK, ProcSet, ReadyToWrite, 
+      BY SMT DEF Inv, TypeOK, ProcSet, ReadyToWrite,
                WriterAssignment, PA1, PV, vars
     <3>2. InvB'
       BY SMT DEF Inv, TypeOK, InvB, PA1, PV, vars
@@ -312,7 +312,7 @@ THEOREM Invariance == Spec => []Inv
                  PROVE  Inv'
       OBVIOUS
     <3>1. IsFiniteSet(snapshot) /\ (snapshot \subseteq Proc)
-      BY ONLY TypeOK, ProcFinite, SubsetFinite, SMT DEF Inv, TypeOK, snapshot 
+      BY ONLY TypeOK, ProcFinite, SubsetFinite, SMT DEF Inv, TypeOK, snapshot
     <3>2. \A p \in Proc : Cardinality(known[p]) \in Nat
       BY ProcFinite, SubsetFinite, CardType, SMT DEF Inv, TypeOK
     <3>3. TypeOK'
@@ -364,17 +364,17 @@ THEOREM Invariance == Spec => []Inv
                                         /\ result'[qq] = result[qq],
                  pc'[p] # "b",
                  NEW P \in PA1
-          PROVE  InvCI(q, P)' 
+          PROVE  InvCI(q, P)'
       <4> DEFINE S == result[q]
-                 k == Cardinality(result[q]) 
+                 k == Cardinality(result[q])
       <4>1. /\  IsFiniteSet(S')
             /\  k' \in Nat
-        BY <3>3, ProcFinite, SubsetFinite, CardType, SMT DEF TypeOK               
-      <4>2. S = S' /\ k = k' 
+        BY <3>3, ProcFinite, SubsetFinite, CardType, SMT DEF TypeOK
+      <4>2. S = S' /\ k = k'
         BY <3>6, SMT DEF TypeOK
       <4>3. \A i \in Nat : ~ReadyToWrite(i, p)'
         BY <3>6 DEF ReadyToWrite
-      <4>4. \A i \in Nat : {r \in Proc : ReadyToWrite(i, r)'} \subseteq 
+      <4>4. \A i \in Nat : {r \in Proc : ReadyToWrite(i, r)'} \subseteq
                              {r \in Proc : ReadyToWrite(i, r)}
         BY <3>6, <4>3, SMT DEF ReadyToWrite, TypeOK
       <4>5. result[q] = result'[q]
@@ -441,7 +441,7 @@ THEOREM Invariance == Spec => []Inv
                                 \/ Cardinality( UNION {Q[i] : i \in Nat} ) > Cardinality(S)
         <5>1. /\  IsFiniteSet(S')
               /\  k' \in Nat
-          BY <3>3(*TypeOK'*), ProcFinite, SubsetFinite, CardType, SMT DEF TypeOK   
+          BY <3>3(*TypeOK'*), ProcFinite, SubsetFinite, CardType, SMT DEF TypeOK
         <5>2. \A r \in Proc :
                 /\ IsFiniteSet(result[r])
                 /\ IsFiniteSet(result'[r])
@@ -451,12 +451,12 @@ THEOREM Invariance == Spec => []Inv
                 /\ Cardinality(result'[r]) \in Nat
                 /\ Cardinality(known[r]) \in Nat
                 /\ Cardinality(known'[r]) \in Nat
-          BY  <3>3(*TypeOK'*), ProcFinite, SubsetFinite, CardType, SMT DEF TypeOK     
-        <5>3. CASE /\ known' = [known EXCEPT ![p] 
+          BY  <3>3(*TypeOK'*), ProcFinite, SubsetFinite, CardType, SMT DEF TypeOK
+        <5>3. CASE /\ known' = [known EXCEPT ![p]
                                  = known[p] \cup UNION {A1[i] : i \in Nat}]
-                   /\ notKnown' = 
-                        [notKnown EXCEPT ![p] = 
-                            {i \in 0..(Cardinality(known'[p])) : 
+                   /\ notKnown' =
+                        [notKnown EXCEPT ![p] =
+                            {i \in 0..(Cardinality(known'[p])) :
                                     known'[p] # A1[i]}]
                    /\ notKnown'[p] # {}
                    /\ pc' = [pc EXCEPT ![p] = "b"]
@@ -471,11 +471,11 @@ THEOREM Invariance == Spec => []Inv
             <7>2. \A i \in Nat : PV(wa)[i] \in SUBSET Proc
               BY <7>1, <3>3(*TypeOK'*), SMT DEF PV, TypeOK
             <7>3. UNION {Q[j] : j \in Nat} \subseteq Proc
-              BY <7>2, SMT 
+              BY <7>2, SMT
             <7>4. IsFiniteSet(UNION {Q[j] : j \in Nat})
               BY <7>3, ProcFinite, SubsetFinite  \* SMT failed on this.
             <7>5. QED
-              BY <7>4, CardType(*, SMT*)  \** sm: SMT fails here 
+              BY <7>4, CardType(*, SMT*)  \** sm: SMT fails here
           <6>2. A1 \in PA1
             <7> DEFINE wa == [i \in Nat |-> NotAProc]
             <7>1. wa \in WriterAssignment
@@ -491,7 +491,7 @@ THEOREM Invariance == Spec => []Inv
             <7>2. result'[p] = {}
               BY  <5>3, (* <8>1,*) <4>1(*InvB'*), SMT DEF TypeOK, InvB  \* sm: triviality check doesn't get InvB'
             <7>3. QED
-              BY <7>1, <7>2, <5>3, SMT DEF TypeOK             
+              BY <7>1, <7>2, <5>3, SMT DEF TypeOK
           <6>4. /\ IsFiniteSet(UNION {P[i] : i \in Nat})
                 /\ Cardinality(UNION {P[i] : i \in Nat}) \in Nat
             <7> PICK wa \in WriterAssignment' : P = PV(wa)'
@@ -501,7 +501,7 @@ THEOREM Invariance == Spec => []Inv
             <7>2. \A i \in Nat : PV(wa)'[i] \in SUBSET Proc
               BY <7>1, <3>3(*TypeOK'*), SMT DEF PV, TypeOK
             <7>3. UNION {P[j] : j \in Nat} \subseteq Proc
-              BY <7>2, SMT 
+              BY <7>2, SMT
             <7>4. IsFiniteSet(UNION {P[j] : j \in Nat})
               BY <7>3, ProcFinite, SubsetFinite  \* SMT failed on this.
             <7>5. QED
@@ -520,12 +520,12 @@ THEOREM Invariance == Spec => []Inv
                 BY DEF PA1
               <8>1. \A i \in Nat : wa[i] # p
                 BY NotAProcProp, SMT DEF PV
-              <8>2. \A i \in Nat : PV(wa)' = PV(wa)
-                BY <8>1, <5>3, SMT DEF TypeOK, PV, WriterAssignment  
+              <8>2. PV(wa)' = PV(wa)
+                BY <8>1, <5>3, SMT DEF TypeOK, PV, WriterAssignment
                 \* DEF PV added 31 May 2013
                 \** DEF WriterAssignment added 2013-06-25
               <8>3. wa \in WriterAssignment
-                <9>1. ASSUME NEW i \in Nat, wa[i] \in Proc 
+                <9>1. ASSUME NEW i \in Nat, wa[i] \in Proc
                       PROVE  ReadyToWrite(i, wa[i])
                   <10>1. ReadyToWrite(i, wa[i])' => ReadyToWrite(i, wa[i])
                     BY <8>1, <5>3, wa[i] \in Proc, Z3 DEF TypeOK, ReadyToWrite
@@ -555,12 +555,12 @@ THEOREM Invariance == Spec => []Inv
                 <9> k \in Nat
                   BY <6>3, <5>1
                 <9>3. QED
-                BY <5>2, <7>1, <9>2, <8>1, SMT 
+                BY <5>2, <7>1, <9>2, <8>1, SMT
               <8>2. CASE S \subseteq Snapshot(A1)
-                BY <8>2, <6>1, <6>2, <7>1, <7>2, <7>3, CardType, 
+                BY <8>2, <6>1, <6>2, <7>1, <7>2, <7>3, CardType,
                  ProcFinite, SubsetFinite, SubsetCardinality2, SMT DEF TypeOK
               <8>3. QED
-                 BY <8>1, <8>2, <7>3              
+                 BY <8>1, <8>2, <7>3
             <7>5. P[j] \subseteq Snapshot(P)
               BY <5>1, <6>3 DEF TypeOK
             <7>6. QED
@@ -579,14 +579,14 @@ THEOREM Invariance == Spec => []Inv
               <8>2. CASE S \subseteq P[j]
                 BY <8>2, <7>5, <5>3, SMT DEF TypeOK
               <8>3. QED
-                BY <8>1, <8>2, <7>4 
+                BY <8>1, <8>2, <7>4
           <6>7. QED
             BY <6>5, <6>6
-        <5>4. CASE /\ known' = [known EXCEPT ![p] 
+        <5>4. CASE /\ known' = [known EXCEPT ![p]
                                  = known[p] \cup UNION {A1[i] : i \in Nat}]
-                   /\ notKnown' = 
-                        [notKnown EXCEPT ![p] = 
-                            {i \in 0..(Cardinality(known'[p])) : 
+                   /\ notKnown' =
+                        [notKnown EXCEPT ![p] =
+                            {i \in 0..(Cardinality(known'[p])) :
                                  known'[p] # A1[i]}]
                    /\ notKnown'[p] = {}
                    /\ result' = [result EXCEPT ![p] = known'[p]]
@@ -606,7 +606,7 @@ THEOREM Invariance == Spec => []Inv
               <8>2. wa[i] # p
                 BY <5>4, <8>1, SMT DEF ReadyToWrite
               <8>3. wa[i] \in Proc
-                BY SMT DEF WriterAssignment 
+                BY SMT DEF WriterAssignment
               <8>4. QED
                 BY <8>2, <8>3, <5>4, SMT DEF TypeOK
             <7>4. A1' = A1
@@ -642,19 +642,19 @@ THEOREM Invariance == Spec => []Inv
             <7> InvCI(q, P)
               BY <6>2, SMT DEF InvC
             <7> QED
-              BY <6>2, SMT 
+              BY <6>2, SMT
           <6>4. /\ \A i \in 0..Cardinality(known'[p]) : known'[p] = A1[i]
                 /\ known'[p] = NUnion(A1)
                 /\ Cardinality(known'[p]) >= 0
             <7>1. \A i \in 0..Cardinality(known'[p]) : known'[p] = A1[i]
-               <8> /\ notKnown'[p] = {i \in 0..Cardinality(known'[p]) : 
+               <8> /\ notKnown'[p] = {i \in 0..Cardinality(known'[p]) :
                                           known'[p] # A1[i]}
                    /\ notKnown'[p] = {}
                  BY <5>4, SMT DEF TypeOK
                <8> QED
                  OBVIOUS
             <7>2. Cardinality(known'[p]) >= 0
-              BY <5>2, <4>1(*InvB'*), NonEmptySetCardinality, SMT DEF InvB   \** sm: triviality check 
+              BY <5>2, <4>1(*InvB'*), NonEmptySetCardinality, SMT DEF InvB   \** sm: triviality check
             <7>3. known'[p] = A1[0]
               BY <5>2, <7>1, <7>2, SMT DEF TypeOK
             <7>4. NUnion(A1) \subseteq known'[p]
@@ -682,7 +682,7 @@ THEOREM Invariance == Spec => []Inv
               BY <6>6, SMT DEF PV
             <7>2. \A i \in 0..Cardinality(known'[p]) : /\ wa[i] \in Proc
                                                        /\ ReadyToWrite(i, wa[i])
-              BY <7>1, NotAProcProp, SMT DEF WriterAssignment           
+              BY <7>1, NotAProcProp, SMT DEF WriterAssignment
             <7>3. \A i, j \in 0..Cardinality(known'[p]) : i # j => wa[i] # wa[j]
               BY <5>2, <7>2, SMT DEF WriterAssignment
             <7>4. \A i \in 0..Cardinality(known'[p]) : wa[i] \in P[i]
@@ -716,7 +716,7 @@ THEOREM Invariance == Spec => []Inv
                     /\ SS \subseteq Nat
                     /\ IsFiniteSet(SS)
                     /\ Cardinality(SS) = C+1
-                BY <5>2, IntervalCardinality, IntervalFinite, SMT   
+                BY <5>2, IntervalCardinality, IntervalFinite, SMT
               <8>2. /\ TT \subseteq  UU
                     /\ IsFiniteSet(UU)
                     /\ IsFiniteSet(TT)
@@ -738,7 +738,7 @@ THEOREM Invariance == Spec => []Inv
               <8> result'[p] = known'[p]
                 BY <5>4, SMT DEF TypeOK
               <8> QED
-                BY <5>2, <6>3, <7>5, <7>6, SMT 
+                BY <5>2, <6>3, <7>5, <7>6, SMT
           <6>7. QED
             BY <6>5, <6>6
         <5>5. QED
@@ -749,11 +749,11 @@ THEOREM Invariance == Spec => []Inv
              (* This handles the IF/THEN case.                             *)
              (**************************************************************)
           BY <5>1, SMT DEF TypeOK, GFXCorrect, Done
-        <5>2. CASE /\ known' = [known EXCEPT ![p] 
+        <5>2. CASE /\ known' = [known EXCEPT ![p]
                                  = known[p] \cup UNION {A1[i] : i \in Nat}]
-                   /\ notKnown' = 
-                        [notKnown EXCEPT ![p] = 
-                            {i \in 0..(Cardinality(known'[p])) : 
+                   /\ notKnown' =
+                        [notKnown EXCEPT ![p] =
+                            {i \in 0..(Cardinality(known'[p])) :
                                  known'[p] # A1[i]}]
                    /\ notKnown'[p] = {}
                    /\ result' = [result EXCEPT ![p] = known'[p]]
@@ -768,7 +768,7 @@ THEOREM Invariance == Spec => []Inv
                               Cardinality(result'[q]) = Cardinality(result'[r])
                        PROVE  result'[q] = result'[r]
             BY DEF GFXCorrect
-          <6>1. CASE p \notin {q, r} 
+          <6>1. CASE p \notin {q, r}
             <7>1. /\ result'[q] = result[q]
                   /\ result'[r] = result[r]
                   /\ Done(q)' = Done(q)
@@ -790,13 +790,13 @@ THEOREM Invariance == Spec => []Inv
                   BY <8>2
                <8>3. QED
                  BY <8>1, <8>2, <6>2
-                  
+
             <7>1. /\ result'[s] = result[s]
                   /\ Done(s)
               BY <5>2 DEF TypeOK, Done
             <7> DEFINE S == result[s]
                        k == Cardinality(result[s])
-            <7>2. /\ k \in Nat 
+            <7>2. /\ k \in Nat
                   /\ k > 0
               BY <7>1, ProcFinite, SubsetFinite, CardType, NonEmptySetCardinality, SMT DEF TypeOK, Done
             <7>3. \/ S \subseteq Snapshot(A1)
@@ -827,7 +827,7 @@ THEOREM Invariance == Spec => []Inv
             <7>5. result'[p] = UNION {A1[i] : i \in Nat}
               <8>1. UNION {A1[i] : i \in Nat} \subseteq result'[p]
                 BY <5>2, <7>2 , SMT DEF TypeOK
-              <8>2. result'[p] \subseteq UNION {A1[i] : i \in Nat} 
+              <8>2. result'[p] \subseteq UNION {A1[i] : i \in Nat}
                 BY <7>2, <7>4, SMT
               <8>3. QED
                 BY <8>1, <8>2
@@ -836,7 +836,7 @@ THEOREM Invariance == Spec => []Inv
             <7>7. S \subseteq result'[p]
               BY <7>2, <7>3, <7>5, <7>6, SMT
             <7>8. IsFiniteSet(result'[p])
-              BY <3>3(*TypeOK'*), ProcFinite, SubsetFinite, SMT DEF TypeOK 
+              BY <3>3(*TypeOK'*), ProcFinite, SubsetFinite, SMT DEF TypeOK
             <7>9. S = result'[p]
               <8> (Cardinality(S) = k) /\ (Cardinality(result'[p]) = k)
                 BY  <7>5, <7>6  \* SMT fails here
@@ -845,7 +845,7 @@ THEOREM Invariance == Spec => []Inv
               <8> QED
                 BY  <7>2, <7>5, <7>6, <7>7, <7>8, SubsetCardinality, SMT
             <7>10. QED
-              BY <7>1, <7>9               
+              BY <7>1, <7>9
           <6>3. QED
             BY <6>1, <6>2
        <5>3. QED
@@ -897,13 +897,13 @@ THEOREM Invariance == Spec => []Inv
           <6>3. PICK j \in notKnown[p] : A1' = [A1 EXCEPT ![j] = known[p]]
             BY DEF b
           <6> j \in Nat
-            BY DEF TypeOK 
+            BY DEF TypeOK
           <6>4. CASE wa[j] # NotAProc
             <7>1. PV(wa)' = PV(wa)
               <8>1. SUFFICES ASSUME NEW i \in Nat
                              PROVE  PV(wa)'[i] = PV(wa)[i]
                 BY DEF PV
-              <8>2. CASE wa[i] # NotAProc 
+              <8>2. CASE wa[i] # NotAProc
                 <9> known'[wa[i]] = known[wa[i]]
                   BY DEF b
                 <9> QED
@@ -929,7 +929,7 @@ THEOREM Invariance == Spec => []Inv
                   BY SMT DEF WriterAssignment
               <8>2. ReadyToWrite(j, p)
                 BY DEF b, ReadyToWrite
-              <8>3. ASSUME NEW i \in Nat, NEW  k \in Nat \ {i}, wa[i] \in Proc 
+              <8>3. ASSUME NEW i \in Nat, NEW  k \in Nat \ {i}, wa[i] \in Proc
                     PROVE  za[i] # za[k]
                 <9> wa \in [Nat -> Proc \union {NotAProc}]
                   BY DEF WriterAssignment
@@ -939,7 +939,7 @@ THEOREM Invariance == Spec => []Inv
                   <10> za[i] = wa[i] /\ za[k] = wa[k]
                     OBVIOUS
                   <10> QED
-                    BY <8>1, SMT 
+                    BY <8>1, SMT
                 <9> CASE j \in {i, k}
                   BY <8>1, SMT
                 <9> QED
@@ -952,7 +952,7 @@ THEOREM Invariance == Spec => []Inv
               <8>2. SUFFICES ASSUME NEW i \in Nat
                              PROVE  PV(wa)'[i] = PV(za)[i]
                 BY DEF PV
-              <8>3. CASE wa[i] # NotAProc 
+              <8>3. CASE wa[i] # NotAProc
                 <9>1. i # j
                   BY <6>5, <8>3
                 <9>2. known'[wa[i]] = known[wa[i]]
@@ -962,7 +962,7 @@ THEOREM Invariance == Spec => []Inv
                 <9>4. za[i] = wa[i]
                    BY <8>1, <9>1
                 <9>5. PV(za)[i] = known[wa[i]]
-                  BY <9>4, <8>3 DEF PV  
+                  BY <9>4, <8>3 DEF PV
                 <9>6. QED
                   BY <9>2, <9>3, <9>5
               <8>4. CASE wa[i] = NotAProc
@@ -970,7 +970,7 @@ THEOREM Invariance == Spec => []Inv
                   <10> A1'[i] = A1[i]
                     BY <9>1, <6>3, SMT DEF TypeOK
                   <10> wa[i] = za[i]
-                    BY <8>1, <9>1 
+                    BY <8>1, <9>1
                   <10> QED
                     BY <8>4, <9>1, <6>1, SMT DEF PV, WriterAssignment
                     \** 2013-06-25 DEF WriterAssignment missing
@@ -1002,7 +1002,7 @@ THEOREM Invariance == Spec => []Inv
           BY <3>8, SMT DEF b, TypeOK
         <5>3. pc'[p] = "a"
           BY <3>8, SMT DEF TypeOK, b
-        <5>4. q # p 
+        <5>4. q # p
           <6>1. Cardinality(result'[q]) \in Nat
             BY <3>3(*TypeOK'*), ProcFinite, SubsetFinite, CardType, SMT DEF TypeOK  \* sm: failure of triviality check
           <6>2. result'[q] # {}
@@ -1013,7 +1013,7 @@ THEOREM Invariance == Spec => []Inv
             BY <6>3, <5>3
         <5> HIDE DEF PA1, InvCI
         <5>5. InvCI(q, P)'
-          BY <5>1, <5>2, <5>3, <5>4, <3>6, SMT DEF TypeOK 
+          BY <5>1, <5>2, <5>3, <5>4, <3>6, SMT DEF TypeOK
         <5>6. QED
           BY <5>5 DEF InvCI
       <4>3. GFXCorrect'
@@ -1026,7 +1026,7 @@ THEOREM Invariance == Spec => []Inv
   <2>3. QED
     BY <2>1, <2>2
 
-<1>3. QED                              
+<1>3. QED
   (*************************************************************************)PROOF
   (* This follows from a <1>1, <1>2, and a simple TLA proof rule.          *)
   (*************************************************************************)OMITTED
@@ -1076,16 +1076,16 @@ LEMMA StepSimulation ==  Inv /\ Inv' /\ [Next]_vars => [PS!Next]_PS!vars
 <1> SUFFICES ASSUME Inv, Inv', [Next]_vars
              PROVE  [PS!Next]_PS!vars
   OBVIOUS
-<1>1. CASE UNCHANGED vars 
+<1>1. CASE UNCHANGED vars
   BY <1>1, SMT DEF vars, PS!vars, pcBar
 <1>2. ASSUME NEW p \in Proc, a(p)
       PROVE  [PS!Next]_PS!vars
   <2> pc[p] = "a"
-    BY <1>2 DEF a  
-  <2>1. CASE /\ known' = [known EXCEPT ![p] 
+    BY <1>2 DEF a
+  <2>1. CASE /\ known' = [known EXCEPT ![p]
                            = known[p] \cup UNION {A1[i] : i \in Nat}]
-             /\ notKnown' = 
-                  [notKnown EXCEPT ![p] = 
+             /\ notKnown' =
+                  [notKnown EXCEPT ![p] =
                       {i \in 0..(Cardinality(known'[p])) : known'[p] # A1[i]}]
              /\ notKnown'[p] # {}
              /\ pc' = [pc EXCEPT ![p] = "b"]
@@ -1100,14 +1100,14 @@ LEMMA StepSimulation ==  Inv /\ Inv' /\ [Next]_vars => [PS!Next]_PS!vars
         /\ pcBar' \in [Proc -> {"A", "Done"}]
       BY DEF pcBar
     <3> SUFFICES ASSUME NEW q \in Proc
-                 PROVE  pcBar[q]' = pcBar[q] 
+                 PROVE  pcBar[q]' = pcBar[q]
       BY DEF PS!vars
     <3> QED
       BY DEF PS!vars, pcBar  \* SMT used to prove this but doesn't now
-  <2>2. CASE /\ known' = [known EXCEPT ![p] 
+  <2>2. CASE /\ known' = [known EXCEPT ![p]
                            = known[p] \cup UNION {A1[i] : i \in Nat}]
-             /\ notKnown' = 
-                  [notKnown EXCEPT ![p] = 
+             /\ notKnown' =
+                  [notKnown EXCEPT ![p] =
                       {i \in 0..(Cardinality(known'[p])) : known'[p] # A1[i]}]
              /\ notKnown'[p] = {}
              /\ result' = [result EXCEPT ![p] = known'[p]]
@@ -1142,7 +1142,7 @@ LEMMA StepSimulation ==  Inv /\ Inv' /\ [Next]_vars => [PS!Next]_PS!vars
               /\ Cardinality(result[q]) \in Nat
               /\ IsFiniteSet(P)
               /\ IsFiniteSet(result[q])
-          BY ProcFinite, SubsetFinite, CardType, SMT DEF Inv, TypeOK 
+          BY ProcFinite, SubsetFinite, CardType, SMT DEF Inv, TypeOK
         <5>2. /\ Cardinality(P) # 0
               /\ P # {}
           BY <4>2, <5>1, NonEmptySetCardinality, SMT DEF Done
@@ -1151,7 +1151,7 @@ LEMMA StepSimulation ==  Inv /\ Inv' /\ [Next]_vars => [PS!Next]_PS!vars
         <5>4. CASE result[q] # {}
           <6>1. /\ result'[q] = result[q]
                 /\ result'[p] = known'[p]
-             BY <2>2, SMT DEF Inv, TypeOK   
+             BY <2>2, SMT DEF Inv, TypeOK
           <6>2. QED
             BY <6>1, <5>2, <5>4, SMT DEF Inv, GFXCorrect, Done
         <5>5. QED
@@ -1164,14 +1164,14 @@ LEMMA StepSimulation ==  Inv /\ Inv' /\ [Next]_vars => [PS!Next]_PS!vars
         BY DEF pcBar
       <4> SUFFICES ASSUME NEW q \in Proc
                    PROVE  pcBar[q]' = IF q = p THEN "Done"
-                                               ELSE pcBar[q] 
+                                               ELSE pcBar[q]
         OBVIOUS
       <4> /\ pc' = [pc EXCEPT ![p] = "Done"]
           /\ pc \in [Proc -> {"a", "b", "Done"}]
         BY <2>2 DEF Inv, TypeOK
       <4> QED
         BY SMT DEF pcBar
-    <3>5. QED 
+    <3>5. QED
       BY  <3>1, <3>2, <3>3, <3>4 DEF PS!A, PS!Next, PS!Pr
   <2>4. QED
     BY <2>1, <2>2, <1>2 DEF a
@@ -1179,13 +1179,13 @@ LEMMA StepSimulation ==  Inv /\ Inv' /\ [Next]_vars => [PS!Next]_PS!vars
 <1>3. ASSUME NEW p \in Proc, b(p)
       PROVE UNCHANGED PS!vars
   <2> SUFFICES ASSUME NEW q \in Proc
-               PROVE  pcBar[q]' = pcBar[q] 
+               PROVE  pcBar[q]' = pcBar[q]
     <3> result' = result
       BY <1>3 DEF b
-    <3> pcBar' = pcBar 
-      BY DEF pcBar 
+    <3> pcBar' = pcBar
+      BY DEF pcBar
     <3> QED
-     BY DEF PS!vars 
+     BY DEF PS!vars
   <2>1. CASE q = p
     BY <1>3, SMT DEF PS!vars, pcBar, b, Inv, TypeOK
   <2>2. CASE q # p

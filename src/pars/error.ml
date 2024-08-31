@@ -1,10 +1,7 @@
-(*
- * error.ml --- errors
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Parsing errors.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 
 type error_ =
@@ -49,9 +46,13 @@ let print_error ?(verbose = false) ouch (Error (err, locus)) =
   output_string ouch ints ;
   flush ouch;
 
+  Errors.set
+    (Util.set_locus (Property.noprops err) locus)
+    (unexp ^ exps ^ msgs ^ ints);
+
   if !Params.toolbox
-  then Toolbox_msg.print_warning (loc ^ unexp ^ exps ^ msgs ^ ints);
-;;
+  then Toolbox_msg.print_warning (loc ^ unexp ^ exps ^ msgs ^ ints)
+
 
 let error locus =
   Error ({ err_unex = None ;

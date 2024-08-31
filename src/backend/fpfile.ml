@@ -7,8 +7,18 @@
    module for each new format.
 *)
 
-open Ext;;
+open Ext
 
+exception FpFileOlderMagicNumber
+exception FpFileCorrupted
+
+let () =
+  Printexc.register_printer
+    (function
+      | FpFileOlderMagicNumber -> Some "fingerprint file with an older magic number"
+      | FpFileCorrupted -> Some "corrupted fingerprint file"
+      | _ -> None
+    )
 
 module V13 = struct
 
@@ -18,7 +28,7 @@ module V13 = struct
      to type meth.
    *)
 
-  type floatomega = F of float | Omega;;
+  type floatomega = F of float | Omega
 
   type meth =
   | Isabelle of isabelle
@@ -40,6 +50,7 @@ module V13 = struct
   | Cvc33 of floatomega
   | Yices3 of floatomega
   | Verit of floatomega
+  | Zipper of floatomega
   | Spass of floatomega
   | Tptp of floatomega
   | LS4 of floatomega
@@ -62,29 +73,25 @@ module V13 = struct
     isabelle_timeout : floatomega;
     isabelle_tactic : string;
   }
-  ;;
 
   type reason =
   | False
   | Timeout
   | Cantwork of string
-  ;;
 
   type status_type_aux =
   | RSucc
   | RFail of reason option
   | RInt
-  ;;
 
   type status_type =
   | Triv
   | NTriv of status_type_aux * meth
-  ;;
 
-  type date = int * int * int * int * int * int;;
+  type date = int * int * int * int * int * int
   (* year, month-1, day, hour, minute, second *)
 
-  type sti = status_type * date * string * string * string;;
+  type sti = status_type * date * string * string * string
              (* status, date, pm version, zenon version, isabelle version *)
 
   type str = {
@@ -113,9 +120,9 @@ module V13 = struct
     enabledrewritesres: sti option;
     enabledrulesres: sti option;
     levelcomparisonres: sti option;
-  };;
+  }
 
-  type tbl = (string, str) Hashtbl.t;;
+  type tbl = (string, str) Hashtbl.t
   (* The key is the MD5 converted to hex. *)
 
   (* File format:
@@ -124,14 +131,13 @@ module V13 = struct
      - any number of (Digest.t, sti list) pairs
   *)
 
-  let version = 13;;
+  let version = 14
 
-end;;
+end
 
 type fp =
   | FP13 of V13.tbl
   | FPunknown of unit
-;;
 
 
 (* Note: the above modules and types are strictly private to this
@@ -141,30 +147,28 @@ type fp =
 
 (* ===================================================================== *)
 
-let myrevision = "$Rev$";;
 
-open Printf;;
-open V13;;
+open Printf
+open V13
 
-let fptbl = ref (Hashtbl.create 500 : V13.tbl);;
+let fptbl = ref (Hashtbl.create 500 : V13.tbl)
 
-let old_magic_number = 20101013;;
-let magic_number = 20210223;;
+let old_magic_number = 20101013
+let magic_number = 20210223
 
 let write_fp_table oc =
   output_value oc magic_number;
-  output_value oc (FP13 !fptbl);
-;;
+  output_value oc (FP13 !fptbl)
+
 
 let get_date month_offset =
   let tm = Unix.localtime (Unix.gettimeofday ()) in
   (1900 + tm.Unix.tm_year, 1 + tm.Unix.tm_mon + month_offset, tm.Unix.tm_mday,
    tm.Unix.tm_hour, tm.Unix.tm_min, tm.Unix.tm_sec)
-;;
 
-let hist_dir_name = ref "";;
+let hist_dir_name = ref ""
 
-module FN = Filename;;
+module FN = Filename
 
 let fp_init fp_file sources =
   let histdir = fp_file ^ ".history" in
@@ -188,10 +192,9 @@ let fp_init fp_file sources =
   let oc = open_out_bin fp_file in
   write_fp_table oc;
   oc
-;;
 
-module T = Types;;
-module M = Method;;
+module T = Types
+module M = Method
 
 (* Vx means the latest version, currently V13 *)
 
@@ -231,6 +234,7 @@ and meth_to_Vx m =
   | M.Cvc33 tmo -> Cvc33 (floatomega_to_Vx tmo)
   | M.Yices3 tmo -> Yices3 (floatomega_to_Vx tmo)
   | M.Verit tmo -> Verit (floatomega_to_Vx tmo)
+  | M.Zipper tmo -> Zipper (floatomega_to_Vx tmo)
   | M.Spass tmo -> Spass (floatomega_to_Vx tmo)
   | M.Tptp tmo -> Tptp (floatomega_to_Vx tmo)
   | M.LS4 tmo -> LS4 (floatomega_to_Vx tmo)
@@ -244,15 +248,15 @@ and meth_to_Vx m =
   | M.LevelComparison -> LevelComparison
   | M.Trivial -> Trivial
 
-and floatomega_to_Vx f = F f;;
+and floatomega_to_Vx f = F f
 
-let fp_to_Vx fp = fp;;
+let fp_to_Vx fp = fp
 (* V13 fingerprints are hex-encoded digests, as are external fingerprints.
    Future versions will use raw digests, hence the need for this translation
    function.
 *)
 
-let date_to_Vx d = d;;
+let date_to_Vx d = d
 (* V13 dates use month-1, as do external dates.  Future versions will use
    month, hence the need for this translation function. *)
 
@@ -273,6 +277,7 @@ type prover =
   | Pcvc33
   | Pyices3
   | Pverit
+  | Pzipper
   | Pspass
   | Ptptp
   | Pls4
@@ -285,7 +290,7 @@ type prover =
   | Penabledrules
   | Plevelcomparison
   | Ptrivial
-;;
+
 
 let prover_of_method m =
   match m with
@@ -305,6 +310,7 @@ let prover_of_method m =
   | Cvc33 _ -> Pcvc33
   | Yices3 _ -> Pyices3
   | Verit _ -> Pverit
+  | Zipper _ -> Pzipper
   | Spass _ -> Pspass
   | Tptp _ -> Ptptp
   | LS4 _ -> Pls4
@@ -317,7 +323,7 @@ let prover_of_method m =
   | ENABLEDrules -> Penabledrules
   | LevelComparison -> Plevelcomparison
   | Trivial -> Ptrivial
-;;
+
 
 let normalize m =
   match m with
@@ -336,11 +342,12 @@ let normalize m =
   | Cvc33 (Omega) -> Cvc33 (F infinity)
   | Yices3 (Omega) -> Yices3 (F infinity)
   | Verit (Omega) -> Verit (F infinity)
+  | Zipper (Omega) -> Zipper (F infinity)
   | Spass (Omega) -> Spass (F infinity)
   | Tptp (Omega) -> Tptp (F infinity)
   | LS4 (Omega) -> LS4 (F infinity)
   | _ -> m
-;;
+
 
 let get_timeout m =
   match m with
@@ -362,7 +369,7 @@ let get_timeout m =
   | LS4 (F t)
   -> t
   | _ -> infinity
-;;
+
 
 (* Arbitrary order on the methods, and inside each method the best result
    is greater. *)
@@ -389,13 +396,13 @@ let order st1 st2 =
      | RFail _, RFail _ -> compare (get_timeout m1) (get_timeout m2)
      end
   | NTriv (_, m1), NTriv (_, m2) -> compare (normalize m1) (normalize m2)
-;;
+
 
 let opt_to_list o =
   match o with
   | None -> []
   | Some x -> [x]
-;;
+
 
 let record_to_list r =
   List.flatten [
@@ -418,7 +425,7 @@ let record_to_list r =
     opt_to_list r.tptpres;
     opt_to_list r.ls4res;
   ]
-;;
+
 
 let empty = {
   tres = None;
@@ -446,7 +453,7 @@ let empty = {
   enabledrewritesres = None;
   enabledrulesres = None;
   levelcomparisonres = None;
-};;
+}
 
 let add_to_record r st =
   let (x, _, _, _, _) = st in
@@ -477,16 +484,15 @@ let add_to_record r st =
   | NTriv (_, ENABLEDrules) -> {r with enabledrulesres = Some st}
   | NTriv (_, LevelComparison) -> {r with levelcomparisonres = Some st}
   | _ -> r
-;;
 
-let list_to_record l = List.fold_left add_to_record empty l;;
+let list_to_record l = List.fold_left add_to_record empty l
 
 let add_to_table fp l1 =
   let r = try Hashtbl.find !fptbl fp with Not_found -> empty in
   let l2 = record_to_list r in
   let l = List.sort ~cmp:order (l1 @ l2) in
   Hashtbl.replace !fptbl fp (list_to_record l)
-;;
+
 
 let fp_writes
         (oc: out_channel)
@@ -518,10 +524,9 @@ let fp_writes
   let l = List.filter filt l in
   Marshal.to_channel oc (fp, l) [];
   flush oc;
-  add_to_table fp l;
-;;
+  add_to_table fp l
 
-let num_fingerprints_loaded = ref 0;;
+let num_fingerprints_loaded = ref 0
 
 let fp_close_and_consolidate file oc =
   close_out oc;
@@ -534,16 +539,15 @@ let fp_close_and_consolidate file oc =
   if Hashtbl.length !fptbl < !num_fingerprints_loaded then begin
     Errors.err "The fingerprints file %s has fewer entries than its \
                 previous version (stored in %s)." file !hist_dir_name;
-  end;
-;;
+  end
 
-let add_v13l fp stl = add_to_table fp stl;;
+let add_v13l fp stl = add_to_table fp stl
 
 let iter_tbl vnum f fps =
   Errors.err "Translating fingerprints from version %d to version %d"
              vnum version;
-  Hashtbl.iter f fps;
-;;
+  Hashtbl.iter f fps
+
 
 let iter_file f ic =
   try while true do
@@ -552,21 +556,21 @@ let iter_file f ic =
   done with
   | End_of_file -> ()
   | Failure _ -> ()  (* truncated object *)
-;;
+
 
 let translate v ic =
   match v with
-  | FP13 fps -> fptbl := fps; iter_file add_v13l ic;
+  | FP13 fps -> fptbl := fps; iter_file (fun x -> add_v13l x []) ic;
   | _ -> assert false
-;;
+
 
 let load_fingerprints_aux file =
   if Sys.file_exists file then begin
     let ic = open_in_bin file in
     let magic = Marshal.from_channel ic in
     if magic = old_magic_number then
-        failwith "fingerprint file with an older magic number";
-    if magic <> magic_number then failwith "corrupted fingerprint file";
+        raise(FpFileOlderMagicNumber);
+    if magic <> magic_number then raise(FpFileCorrupted);
     let v = Marshal.from_channel ic in
     if v >= FPunknown ()
       then Errors.fatal "fingerprint file is from a newer version of tlapm";
@@ -590,8 +594,8 @@ let load_fingerprints_aux file =
       in
       Hashtbl.iter process oldtbl;
     end;
-  end;
-;;
+  end
+
 
 let previous_fp_file file =
   let histdir = file ^ ".history" in
@@ -619,7 +623,7 @@ let previous_fp_file file =
       looking for older fingerprints file")
   end;
   prev
-;;
+
 
 let load_fingerprints file =
   try
@@ -627,14 +631,14 @@ let load_fingerprints file =
   with e1 ->
     let error_str_1 = (Printexc.to_string e1) in
     let moved_filename_msg = begin match e1 with
-        | Failure "fingerprint file with an older magic number" ->
+        | FpFileOlderMagicNumber ->
             let renamed_file_name = file ^ ".old" in
             (* if renaming fails, then the exception is not caught *)
             Sys.rename file renamed_file_name;
             Printf.sprintf
                 "so moved fingerprints file by appending `.old` (%s -> %s)"
                 file renamed_file_name
-        | Failure "corrupted fingerprint file" ->
+        | FpFileCorrupted ->
             let renamed_file_name = file ^ ".corrupted" in
             (* if renaming fails, then the exception is not caught *)
             Sys.rename file renamed_file_name;
@@ -665,8 +669,8 @@ let load_fingerprints file =
                 Cannot load older fingerprints file: %s\n"
             error_str_1
             moved_filename_msg
-            (Printexc.to_string e2);
-;;
+            (Printexc.to_string e2)
+
 
 let print_sti_13 (st, d, pv, zv, iv) =
     let print_floatomega x =
@@ -738,6 +742,10 @@ let print_sti_13 (st, d, pv, zv, iv) =
             printf "Verit (";
             print_floatomega tmo;
             printf ")";
+        | V13.Zipper tmo ->
+            printf "Zipper (";
+            print_floatomega tmo;
+            printf ")";
         | V13.Spass tmo ->
             printf "Spass (";
             print_floatomega tmo;
@@ -801,8 +809,8 @@ let print_sti_13 (st, d, pv, zv, iv) =
     printf "    date = "; print_date d; printf "\n";
     printf "    tlapm version = %S\n" pv;
     printf "    zenon version = %S\n" zv;
-    printf "    isabelle version = %S\n" iv;
-;;
+    printf "    isabelle version = %S\n" iv
+
 
 let print_fp_line_13r fp str =
   let print_sti_opt lbl o =
@@ -837,20 +845,19 @@ let print_fp_line_13r fp str =
   print_sti_opt "ENABLED axioms" str.V13.enabledaxiomsres;
   print_sti_opt "ENABLED rewrites" str.V13.enabledrewritesres;
   print_sti_opt "ENABLED rules" str.V13.enabledrulesres;
-  print_sti_opt "LevelComparison" str.V13.levelcomparisonres;
-;;
+  print_sti_opt "LevelComparison" str.V13.levelcomparisonres
 
 let print_fp_line_13l fp stil =
   printf "  %s :\n" fp;
-  List.iter print_sti_13 stil;
-;;
+  List.iter print_sti_13 stil
+
 
 let iter_file f ic =
   try while true do
     let (fp, stil) = Marshal.from_channel ic in
     f fp stil;
   done with End_of_file -> ()
-;;
+
 
 let print file =
   try
@@ -881,13 +888,13 @@ let print file =
     end;
     stop ();
   with Exit -> ()
-;;
+
 
 let same_prover p sti =
   match sti with
   | (NTriv (_, m), _, _, _, _) when prover_of_method m = p -> true
   | _ -> false
-;;
+
 
 let erase_results file meth =
   if not (Sys.file_exists file) then Errors.fatal "%s: file not found" file;
@@ -902,10 +909,10 @@ let erase_results file meth =
   in
   Hashtbl.iter process oldtbl;
   let oc = fp_init file [] in
-  fp_close_and_consolidate file oc;
-;;
+  fp_close_and_consolidate file oc
 
-let remove fp = Hashtbl.remove !fptbl (fp_to_Vx fp);;
+
+let remove fp = Hashtbl.remove !fptbl (fp_to_Vx fp)
 
 let rec vx_to_st6 st =
   match st with
@@ -948,6 +955,7 @@ and vx_to_meth m =
   | Cvc33 tmo -> Some (M.Cvc33 (vx_to_floatomega tmo))
   | Yices3 tmo -> Some (M.Yices3 (vx_to_floatomega tmo))
   | Verit tmo -> Some (M.Verit (vx_to_floatomega tmo))
+  | Zipper tmo -> Some (M.Zipper (vx_to_floatomega tmo))
   | Spass tmo -> Some (M.Spass (vx_to_floatomega tmo))
   | Tptp tmo -> Some (M.Tptp (vx_to_floatomega tmo))
   | LS4 tmo -> Some (M.LS4 (vx_to_floatomega tmo))
@@ -965,7 +973,7 @@ and vx_to_floatomega f =
   match f with
   | Omega -> infinity
   | F x -> x
-;;
+
 
 (* FIXME don't use prover_of_method, but another function that doesn't
    erase the tactic field in the Isabelle case *)
@@ -993,6 +1001,5 @@ let query fp meth =
     | x :: _ -> (vx_to_st6 x, List.filter_map vx_to_st6 others)
   with
   | Not_found -> (None, [])
-;;
 
-let get_length () = Hashtbl.length !fptbl;;
+let get_length () = Hashtbl.length !fptbl

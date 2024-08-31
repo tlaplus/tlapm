@@ -1,11 +1,9 @@
-(*
- * smt/rewrite_arith.ml --- Rewrite arithmetic expressions.
- *
- * Author: Hern\'an Vanzetto <hernan.vanzetto@inria.fr>
- *
- * Copyright (C) 2011-2020  INRIA and Microsoft Corporation
- *)
+(* Rewrite arithmetic expressions.
 
+Author: Hern\'an Vanzetto <hernan.vanzetto@inria.fr>
+
+Copyright (C) 2011-2020  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 

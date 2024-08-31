@@ -1,9 +1,10 @@
-(*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
- *)
+(* Flatten modules (i.e., remove `EXTENDS` statements).
 
-open M_t;;
+Copyright (C) 2011  INRIA and Microsoft Corporation
+*)
+open M_t
 
-val flatten :
-  modctx -> mule -> Util.Coll.Ss.t -> (mule_ Property.wrapped * Util.Coll.Ss.t)
-;;
+
+val flatten:
+  modctx -> mule -> Util.Coll.Ss.t ->
+    (mule_ Property.wrapped * Util.Coll.Ss.t)

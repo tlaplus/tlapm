@@ -23,9 +23,9 @@ let args_spec = ("-v", Arg.Set verbose, "Be verbose (print intermediate transfor
 		("-r", Arg.Set useFOrenaming, "Transform to CNF by renaming")::
                 (*("-fo", Arg.Set fo, "Perform transformation for FO (expanding domains).")::*)
                 ("-al", Arg.Set atoms, "Include the 'order' statement with the list of all atoms in the input formula (experimental feature).")::
-                ("-i", Arg.String setInFilename, 
+                ("-i", Arg.String setInFilename,
 		  "Specify the input file. If not given, stdin is used.")::
-                ("-o", Arg.String setOutFilename, 
+                ("-o", Arg.String setOutFilename,
 		  "Specify the output file. If not given, stdout is used.")::
 		[];;
 
@@ -44,7 +44,7 @@ let _ =
         let constList = constsOf result in
 	if !atoms=true then begin
 	  let atomList = getAtoms result in
-	    output_string !outx ("order(" ^ (string_of_clause atomList) ^ ").\n"); 
+	    output_string !outx ("order(" ^ (string_of_clause atomList) ^ ").\n");
 	end;
         if !verbose=true then begin
 	   output_string !outx ("Input: " ^ string_of_formula result^"\n");
@@ -53,20 +53,20 @@ let _ =
         let inNNF = nnf result in
         if !verbose then begin
 	  output_string !outx "In NNF: ";
-          output_string !outx (string_of_formula inNNF^"\n"); 
+          output_string !outx (string_of_formula inNNF^"\n");
           debug("DONE");
 	  flush !outx;
           debug("DONE");
 	end;
     debug("done ");
-	let simplified = 
+	let simplified =
 	if !useSimplification then
 	  simplify inNNF !outx !verbose
 	else inNNF
         in
         if !verbose then begin
 	  output_string !outx "After all simplifications:\n";
-          output_string !outx (string_of_formula simplified^"\n"); 
+          output_string !outx (string_of_formula simplified^"\n");
 	  flush !outx
 	end;
 	let (iP,uP,sP,eP) = dsnfWrap simplified in
@@ -83,7 +83,7 @@ let _ =
 	flush !outx
 	end;
 	(* Skolemization *)
-	let skolemisedIP = eliminateQ iP 
+	let skolemisedIP = eliminateQ iP
 	and skolemisedUP = eliminateQl uP
 	and skolemisedSP = eliminateQl sP
 	and skolemisedEP = if !fo then (eliminateQl (flood eP constList)) else (eliminateQl eP)
@@ -97,25 +97,25 @@ let _ =
 	(**)
 	let cnfedIP = cnf processedIP
 	and cnfedUP = cnfl processedUP
-	in 
-	let clausesIP = clausify cnfedIP 
-	and clausesUP = clausifyl cnfedUP 
+	in
+	let clausesIP = clausify cnfedIP
+	and clausesUP = clausifyl cnfedUP
 	and clausesSP = clausifyl processedSP
 	and clausesEP = clausifyl processedEP in
 	(* prepare to print *)
-	let preamble = "and([\n" 
+	let preamble = "and([\n"
 	and ending = "]).\n" in
 	let printed = ref true in
 	(* translate into strings *)
-	let icstringAux = string_of_i_clauses clausesIP 
-	and ucstringAux = string_of_u_clauses clausesUP 
-	and scstringAux = string_of_s_clauses clausesSP 
+	let icstringAux = string_of_i_clauses clausesIP
+	and ucstringAux = string_of_u_clauses clausesUP
+	and scstringAux = string_of_s_clauses clausesSP
 	and ecstringAux = string_of_e_clauses clausesEP in
 	(* Add commas depending on whether the next string is empty *)
 	let icstring = if ((String.length ucstringAux = 0) ||
                    (String.length icstringAux = 0)) then icstringAux
 	                                                else icstringAux ^",\n"
-	and ucstring = if ((String.length scstringAux = 0) || 
+	and ucstring = if ((String.length scstringAux = 0) ||
              (((String.length ucstringAux)+(String.length icstringAux)) = 0 ))
                                                     then ucstringAux
 	                                                else ucstringAux ^",\n"
@@ -127,7 +127,7 @@ let _ =
 	let resultStr = preamble^icstring^ucstring^scstring^ecstring^ending^"\n" in
 	(*print_string (string_of_clause (!newNamesList));*)
 	output_string !outx (resultStr); if !outx != stdout then close_out !outx
-  with Parsing.Parse_error -> print_endline ("Parse error line " ^ 
+  with Parsing.Parse_error -> print_endline ("Parse error line " ^
      string_of_int (!Folex.currentLine) ^ " characters " ^
      string_of_int (!Folex.posmin) ^ "-" ^ string_of_int (!Folex.posmax))
      | Sys_error astring ->  print_endline (astring);;

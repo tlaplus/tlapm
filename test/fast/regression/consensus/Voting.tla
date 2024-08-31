@@ -113,7 +113,7 @@ THEOREM VotesSafeImpliesConsistency ==
     BY <1>7, <2>1, QuorumAssumption, Z3
     DEF CannotVoteAt, DidNotVoteAt, OneVote, ChosenAt, NoneOtherChoosableAt, Ballot, SafeAt
 <1>10. QED
-  BY QuorumAssumption, <1>2, <1>3, <1>7, Z3 
+  BY QuorumAssumption, <1>2, <1>3, <1>7, Z3
   DEF Ballot, ChosenAt, OneVote, chosen
 
 THEOREM ShowsSafety ==
@@ -121,7 +121,7 @@ THEOREM ShowsSafety ==
              \A Q \in Quorum, b \in Ballot, v \in Value :
                ShowsSafeAt(Q, b, v) => SafeAt(b, v)
   BY QuorumAssumption, Z3
-  DEFS Ballot, TypeOK, VotesSafe, OneValuePerBallot, SafeAt, 
+  DEFS Ballot, TypeOK, VotesSafe, OneValuePerBallot, SafeAt,
     ShowsSafeAt, CannotVoteAt, NoneOtherChoosableAt, DidNotVoteAt
 
 -----------------------------------------------------------------------------
@@ -133,14 +133,14 @@ THEOREM Invariance == Spec => []Inv
       PROVE Inv'
   <2> USE DEF Inv, Ballot, VotedFor, VoteFor
   <2>1. CASE UNCHANGED <<votes, maxBal>>
-    BY <1>2, <2>1, IsaM("auto") 
+    BY <1>2, <2>1, IsaM("auto")
     DEFS IncreaseMaxBal, ShowsSafeAt,
          DidNotVoteAt, TypeOK, VotesSafe, OneValuePerBallot,
          SafeAt, NoneOtherChoosableAt, CannotVoteAt
   <2>2. CASE Next
     <3>1. ASSUME NEW a \in Acceptor, NEW b \in Ballot, IncreaseMaxBal(a, b)
           PROVE  Inv'
-      BY  <1>2, <2>2, <3>1, QuorumAssumption, SMT 
+      BY  <1>2, <2>2, <3>1, QuorumAssumption, SMT
       DEFS TypeOK, CannotVoteAt, DidNotVoteAt, VotesSafe,
            OneValuePerBallot, SafeAt, NoneOtherChoosableAt, IncreaseMaxBal
     <3>2. ASSUME NEW a \in Acceptor, NEW b \in Ballot, NEW v \in Value,
@@ -195,7 +195,7 @@ THEOREM Invariance == Spec => []Inv
         <5> QED
           BY <5>2, <5>3, <5>4, <5>5, <5>6
       <4>4. QED
-        BY <1>2, <2>2, <3>2, <4>3, TypeOK, ShowsSafety, VotesSafe, QuorumAssumption, Z3 
+        BY <1>2, <2>2, <3>2, <4>3, TypeOK, ShowsSafety, VotesSafe, QuorumAssumption, Z3
         DEFS TypeOK, VotesSafe, DidNotVoteAt, CannotVoteAt, NoneOtherChoosableAt, SafeAt
     <3>3. QED
       BY <3>1, <3>2, <2>2, SMT DEF Next
@@ -213,7 +213,7 @@ THEOREM Spec /\ Inv => C!Spec
   BY QuorumAssumption, SetExtensionality, IsaM("force")
   DEF Init, C!Init, chosen, ChosenAt, VotedFor
 <1>2. Next /\ Inv => C!Next \/ UNCHANGED chosen
-  <2>1 SUFFICES ASSUME Next, Inv PROVE C!Next \/ UNCHANGED chosen 
+  <2>1 SUFFICES ASSUME Next, Inv PROVE C!Next \/ UNCHANGED chosen
     BY <2>1
   <2>2. chosen \subseteq chosen'
     BY <2>1, QuorumAssumption, Z3   \* SMTT(10) fails
@@ -227,12 +227,12 @@ THEOREM Spec /\ Inv => C!Spec
 \*      BY <2>1, <3>2, QuorumAssumption, OneVoteThm, Z3
 \*      DEF Inv, TypeOK, IncreaseMaxBal,
 \*        chosen, ChosenAt, Ballot, VotedFor, VoteFor
-\*\*        VotesSafe, OneValuePerBallot, ShowsSafeAt, DidNotVoteAt, 
+\*\*        VotesSafe, OneValuePerBallot, ShowsSafeAt, DidNotVoteAt,
 \*\*        SafeAt, NoneOtherChoosableAt, CannotVoteAt
     <3>3. CASE \E v \in Value : VoteFor(a, b, v)
 \*      BY <2>1, <3>3, QuorumAssumption,  VotesSafeImpliesConsistency, Z3T(30)
 \*      DEF Inv, TypeOK, chosen, ChosenAt, VotedFor, Ballot, VoteFor,
-\*        VotesSafe, OneValuePerBallot, ShowsSafeAt, DidNotVoteAt, SafeAt, 
+\*        VotesSafe, OneValuePerBallot, ShowsSafeAt, DidNotVoteAt, SafeAt,
 \*        NoneOtherChoosableAt, CannotVoteAt
     <3>q. QED
       BY <3>1, <3>2, <3>3, SMT

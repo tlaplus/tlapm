@@ -93,7 +93,6 @@ module  Minimal (Prec : Pars.Intf.Prec) = struct
   let name_of = function
     | Op (n, _, _, _) -> n
     | _ -> ""
-  ;;
 
   let is_prefix = function
     | Op (_, _, _, Prefix _) -> true
@@ -107,13 +106,11 @@ module  Minimal (Prec : Pars.Intf.Prec) = struct
     match a with
     | Left -> true
     | Non | Right -> false
-  ;;
 
   let is_right a =
     match a with
     | Right -> true
     | Non | Left -> false
-  ;;
 
   let rec pp_print_minimal ff : exp -> unit =
     let go = function

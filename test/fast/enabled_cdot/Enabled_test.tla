@@ -225,7 +225,7 @@ D == ENABLED C  (* A state predicate that describes the states from where x
 
 
 (* The operator D is expanded by listing D in the BY DEF statement, because the
-definition of D contains an occurence of ENABLED. The expansion of D makes the
+definition of D contains an occurrence of ENABLED. The expansion of D makes the
 ENABLED visible to the proof directive AutoUSE, which expands the operator C,
 because C is an action that occurs in the scope of ENABLED within the
 definition of operator D. After these expansions take place, the proof
@@ -241,7 +241,7 @@ PROOF
 --------------------------------------------------------------------------------
 
 (* The first ENABLED expression is parsed as (ENABLED y) /\ x', which is
-equivalent to y /\ x', which implies ENABLED (y /\ x'), becuase the latter is
+equivalent to y /\ x', which implies ENABLED (y /\ x'), because the latter is
 equivalent to \E u:  y /\ u .
 *)
 THEOREM

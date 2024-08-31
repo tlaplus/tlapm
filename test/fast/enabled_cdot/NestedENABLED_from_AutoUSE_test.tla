@@ -27,7 +27,7 @@ level expression (ENABLED has this expression level) that occurs primed in
 the scope of ENABLED, so it could (and does) contain variables in the scope of
 a prime within the scope of ENABLED.
 
-After AutoUSE and ExpandENABLED are applied the resulting expression is
+After AutoUSE and ExpandENABLED are applied, the resulting expression is
 
 \E r_0 :
     \E r_0_1 :

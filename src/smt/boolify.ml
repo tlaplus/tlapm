@@ -1,13 +1,9 @@
-(************************************************************************
-*
-*  boolify.ml
-*
-*
-*  Created by Hernán Vanzetto on 23 Oct 2013.
-*  Copyright (C) 2013-2014  INRIA and Microsoft Corporation
-*
-************************************************************************)
+(* Boolification of expressions.
 
+Created by Hernán Vanzetto on 23 Oct 2013.
+
+Copyright (C) 2013-2014  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 
@@ -44,9 +40,9 @@ let rec eboo e =
   | Apply ({core = Opaque "tla__isAFcn"} as o, [ex]) ->
       Apply (o, [nboo ex]) @@ e
   | Ix n ->
-	  e |> mk_bool
+      e |> mk_bool
   | Opaque s ->
-	  e |> mk_bool
+      e |> mk_bool
   | Apply ({core = Ix _ | Opaque _} as f, es) ->
       Apply (nboo f, map nboo es) |> mk |> mk_bool
   | FcnApp (f,es) ->
@@ -151,7 +147,7 @@ and nboobs bs =
     | (v, k, Domain d) -> (v, k, Domain (nboo d))
     | b -> b
     end
-  (Smt.unditto bs)
+  (Expr.T.unditto bs)
 
 let boolify sq =
   let visitor = object (self : 'self)
@@ -168,14 +164,8 @@ let boolify sq =
   method expr scx e =
     eboo e
   method bounds scx bs =
-    let bs = List.map begin
-      fun (v, k, dom) -> match dom with
-        | Domain d -> (v, k, Domain (nboo d))
-        | _ -> (v, k, dom)
-    end bs in
-    let hs = List.map begin
-      fun (v, k, _) -> Fresh (v, Shape_expr, k, Unbounded) @@ v
-    end bs in
+    let bs = Expr.Visit.map_bound_domains nboo bs in
+    let hs = Expr.Visit.hyps_of_bounds bs in
     let scx = adjs scx hs in
     (scx, bs)
   method exspec scx (trail, res) =

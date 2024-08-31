@@ -14,9 +14,9 @@ EXTENDS FiniteSets
 CONSTANT Proc
 -----------------------------------------------------------------------------
 (***************************************************************************
---algorithm GFXSpec 
+--algorithm GFXSpec
 { variable result = [p \in Proc |-> {}]
-  process (Pr \in Proc) 
+  process (Pr \in Proc)
     { A: with ( P \in { Q \in SUBSET Proc :
                            /\ self \in Q
                            /\ \A p \in Proc\{self}:
@@ -24,7 +24,7 @@ CONSTANT Proc
                                 \/ Q = result[p]
                         } )
              { result[self] := P }
-    } 
+    }
 }
  ***************************************************************************)
 (***************************************************************************)

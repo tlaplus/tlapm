@@ -1,17 +1,16 @@
-(*
- * tlapm_args.ml --- arguments for tlapm
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Command-line arguments to `tlapm`.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Params
+
 
 let show_config = ref false
 let show_version () =
   print_endline (rawversion ()) ;
   exit 0
+
 
 let set_debug_flags flgs =
   let flgs = Ext.split flgs ',' in
@@ -21,7 +20,7 @@ let set_debug_flags flgs =
     | _ -> add_debug_flag flg
   in
   List.iter f flgs
-;;
+
 
 let set_max_threads n =
   if n < 0 then raise (Arg.Bad "--threads requires a positive argument") ;
@@ -33,6 +32,10 @@ let set_target_start s =
 
 let set_target_end e =
   tb_el := if e = 0 then max_int else e
+
+let set_toolbox_vsn vsn =
+  toolbox := true;
+  toolbox_vsn := vsn
 
 let set_target_line s =
     toolbox := true;
@@ -47,7 +50,7 @@ let set_target_line s =
 let set_default_method meth =
   try set_default_method meth
   with Failure msg -> raise (Arg.Bad ("--method: " ^ msg))
-;;
+
 
 (* FIXME use Arg.parse instead *)
 let parse_args args opts mods usage_fmt =
@@ -60,8 +63,13 @@ let parse_args args opts mods usage_fmt =
     exit 2
 
 let show_where () =
-  Printf.printf "%s\n" library_path ;
-  exit 0
+  match stdlib_path with
+  | Some path  ->
+    Printf.printf "%s\n" path;
+    exit 0
+  | None ->
+    Printf.printf "N/A\n";
+    exit 1
 
 let set_nofp_start s =
   nofp_sl := s
@@ -72,8 +80,8 @@ let set_nofp_end e =
 
 let print_fp fic =
   Backend.Fpfile.print fic;
-  exit 0;
-;;
+  exit 0
+
 
 let use_fp fic =
   fpf_in := Some fic
@@ -100,8 +108,8 @@ let erase_fp backend =
      let msg = "Valid arguments for --erasefp are {zenon,isabelle,cooper}" in
      raise (Arg.Bad msg);
   end;
-  exit 0;
-;;
+  exit 0
+
 
 let deprecated flag nargs =
   let f _ = Printf.eprintf "Warning: %s is deprecated (ignored)\n%!" flag in
@@ -111,7 +119,7 @@ let deprecated flag nargs =
   | _ ->
      let args = Array.to_list (Array.make nargs (Arg.String f)) in
      flag, Arg.Tuple args, ""
-;;
+
 
 let quote_if_needed s =
   let check c =
@@ -124,7 +132,7 @@ let quote_if_needed s =
     try String.iter check s; s
     with Exit -> Filename.quote s
   end
-;;
+
 
 let init () =
   let mods = ref [] in
@@ -182,10 +190,18 @@ let init () =
     blank;
     "--toolbox", (Arg.Tuple [Arg.Int set_target_start;Arg.Int set_target_end]),
                  "<int><int> toolbox mode";
+    "--toolbox-vsn", (Arg.Int set_toolbox_vsn),
+                     "<int> Toolbox protocol version, 1|2, 1 by default.";
     "--line", Arg.Int set_target_line,
               "<int> line to prove";
     "--wait", Arg.Set_int wait,
               "<time> wait for <time> before printing obligations in progress";
+    "--stdin", Arg.Set use_stdin, " \
+        read the tla file from stdin instead of file system. \
+        Only applies if single tla file is provided as input.";
+    "--prefer-stdlib", Arg.Set prefer_stdlib, " \
+        prefer built-in standard modules if the module search path \
+        contains files with the same names as modules in stdlib.";
     "--noproving", Arg.Set noproving,
                    " do not prove, report fingerprinted results only";
     blank;
@@ -195,7 +211,10 @@ let init () =
     deprecated "--fpdir" 1;
     "--safefp", Arg.Set Params.safefp,
                 " check tlapm, zenon, Isabelle versions for fingerprints";
-    "--nofp", Arg.Set Params.no_fp, " disable fingerprint use";
+    "--nofp", Arg.Set Params.no_fp, " do not use existing fingerprints, \
+        but overwrite any preexisting fingerprints associated \
+        with the current proof obligations, \
+        using the newly computed fingerprints and results";
     "--nofpl", (Arg.Tuple [Arg.Int set_nofp_start;Arg.Int set_nofp_end]),
                "<int><int> disable fingerprint use between given lines";
     "--cleanfp", Arg.Set Params.cleanfp,
@@ -209,6 +228,16 @@ let init () =
                "<f> load fingerprints from file <f> (save as usual)";
     "--fpp", Arg.Set fp_deb,
              " print the fingerprints of obligations in toolbox messages";
+    "--cache-dir", Arg.String set_tlapm_cache_dir,
+            "<directory> save auxiliary and \
+             temporary files under <directory>. \
+             Alternatively, this directory \
+             can be defined via the variable \
+             `TLAPM_CACHE_DIR` of the runtime \
+             environment. The command-line \
+             parameter takes precedence over \
+             the environment variable. If neither \
+             is specified, the default value is \".tlacache\".";
   ]
   in
   let opts = Arg.align opts in
@@ -240,8 +269,8 @@ let init () =
   end ;
   check_zenon_ver () ;
   if !Params.toolbox then begin
-    Printf.printf "\n\\* TLAPM version %d.%d.%d\n"
-                  Version.major Version.minor Version.micro;
+    Printf.printf "\n\\* TLAPM version %s\n"
+                  (Params.rawversion ());
     let tm = Unix.localtime (Unix.gettimeofday ()) in
     Printf.printf "\\* launched at %04d-%02d-%02d %02d:%02d:%02d"
                   (tm.Unix.tm_year + 1900) (tm.Unix.tm_mon + 1) tm.Unix.tm_mday
@@ -249,5 +278,11 @@ let init () =
     Printf.printf " with command line:\n\\*";
     Array.iter (fun s -> Printf.printf " %s" (quote_if_needed s)) Sys.argv;
     Printf.printf "\n\n%!"
+  end;
+  if !use_stdin && (List.length !mods) <> 1 then begin
+    Arg.usage opts
+      "Exactly 1 module has to be specified if TLAPM is invoked with\
+       the --stdin option." ;
+    exit 2
   end;
   !mods

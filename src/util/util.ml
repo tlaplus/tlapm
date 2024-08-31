@@ -10,6 +10,7 @@ open Property
 open Loc
 
 type hint = string wrapped
+type hints = hint list
 
 let pp_print_hint ff h = Format.pp_print_string ff h.core
 
@@ -18,7 +19,14 @@ module HC = struct
   let compare x y = Stdlib.compare x.core y.core
 end
 
+module IC = struct
+  type t = int
+  let compare x y = Stdlib.compare x y
+end
+
 module Coll = struct
+  module Im = Map.Make (IC)
+  module Is = Set.Make (IC)
   module Sm = Map.Make (String)
   module Ss = Set.Make (String)
   module Sh = Weak.Make (struct
@@ -72,17 +80,17 @@ let kfprintf ?debug ?at ?prefix ?nonl cont ff fmt =
        | _ -> fmt
      in
      Format.kfprintf cont ff fmt
-;;
+
 
 let sprintf ?debug ?at ?prefix ?nonl fmt =
   ignore (Format.flush_str_formatter ());
   kfprintf ?debug ?at ?prefix ?nonl
-           (fun _ -> Format.flush_str_formatter ()) Format.str_formatter fmt;
-;;
+    (fun _ -> Format.flush_str_formatter ()) Format.str_formatter fmt
+
 
 let fprintf ?debug ?at ?prefix ?nonl ff fmt =
   kfprintf ?debug ?at ?prefix ?nonl (fun _ -> ()) ff fmt
-;;
+
 
 let eprintf ?debug ?at ?prefix ?nonl fmt =
   fprintf ?debug ?at ?prefix ?nonl Format.err_formatter fmt
@@ -166,14 +174,14 @@ let heap_stats () =
 
 let add_hook h f x =
   let old = !h in
-  h := (fun () -> f x; old ());
-;;
+  h := (fun () -> f x; old ())
+
 
 let rm_temp_file fname =
   if not (Params.debugging "tempfiles") then begin
     try Sys.remove fname with _ -> ()
-  end;
-;;
+  end
+
 
 let temp_file (clean_hook : (unit -> unit) ref) suffix =
   let (fname, chan) =
@@ -186,13 +194,13 @@ let temp_file (clean_hook : (unit -> unit) ref) suffix =
   in
   add_hook clean_hook f ();
   (fname, chan)
-;;
+
 
 (*****************************************)
 
-exception Internal_timeout;;
+exception Internal_timeout
 
-let handler _ = raise Internal_timeout;;
+let handler _ = raise Internal_timeout
 
 (* Note: we are using SIGALRM and the real-time alarm system because
    SIGVTALRM and the virtual-time alarm system are not available on Cygwin *)
@@ -200,14 +208,14 @@ let handler _ = raise Internal_timeout;;
 let set_timer t =
   Sys.set_signal Sys.sigalrm (Sys.Signal_handle handler);
   ignore (Unix.setitimer Unix.ITIMER_REAL
-                         {Unix.it_interval = 0.02; Unix.it_value = t});
-;;
+    {Unix.it_interval = 0.02; Unix.it_value = t})
+
 
 let clear_timer () =
   Sys.set_signal Sys.sigalrm Sys.Signal_ignore;
   ignore (Unix.setitimer Unix.ITIMER_REAL
-                         {Unix.it_interval = 0.; Unix.it_value = 0.});
-;;
+    {Unix.it_interval = 0.; Unix.it_value = 0.})
+
 
 let run_with_timeout tmo f x =
   try
@@ -216,4 +224,3 @@ let run_with_timeout tmo f x =
     clear_timer ();
     Some result
   with Internal_timeout -> clear_timer (); None
-;;

@@ -1,11 +1,9 @@
-(*
- * abstractor.ml --- make an abstract version of an expression
- *
- * Copyright (C) 2010  INRIA and Microsoft Corporation
- *)
+(* Make an abstract version of an expression.
 
-open Property;;
-open Expr.T;;
+Copyright (C) 2010  INRIA and Microsoft Corporation
+*)
+open Property
+open Expr.T
 
 (* TLAPM expressions and DeBruijn indices
 
@@ -29,12 +27,11 @@ Fcn -- (l, body) : binds (List.length l) variables in body (not in l)
 
 let list f l env =
   List.fold_left (fun lv x -> min lv (f x env)) max_int l
-;;
+
 
 (* [get_level e 0] returns the minimum index of all free
    variables in [e], or [max_int] if [e] is closed.
 *)
-
 let rec get_level e env =
   match e.core with
   | Ix i -> if i > env then i - env else max_int
@@ -115,12 +112,11 @@ and get_level_def x env =
   | Instance _ -> assert false
 
 and get_level_case (e1, e2) env = min (get_level e1 env) (get_level e2 env)
-;;
 
 
 let shift d env i =
   if i > env then (assert (i - d > env); i - d) else i
-;;
+
 
 (* [equal d1 d2 0 e1 e2] returns [true] iff [e1] shifted by [d1]
    and [e2] shifted by [d2] are equal modulo alpha-conversion
@@ -133,14 +129,14 @@ let rec equal_list f l1 l2 =
   | [], [] -> true
   | (h1 :: t1), (h2 :: t2) -> equal_list f t1 t2 && f h1 h2
   | _, _ -> false
-;;
+
 
 let equal_option f o1 o2 =
   match o1, o2 with
   | None, None -> true
   | Some x1, Some x2 -> f x1 x2
   | _, _ -> false
-;;
+
 
 let rec equal d1 d2 env e1 e2 =
   let c1 = e1.core in
@@ -189,9 +185,11 @@ let rec equal d1 d2 env e1 e2 =
   | Arrow (a1, b1), Arrow (a2, b2) ->
      equal d1 d2 env a1 a2 && equal d1 d2 env b1 b2
   | Rect (l1), Rect (l2) ->
-     equal_list (fun (s1, e1) (s2, e2) -> s1 = s2 && equal d1 d2 env e1 e2) l1 l2
+     equal_list
+        (fun (s1, e1) (s2, e2) -> s1 = s2 && equal d1 d2 env e1 e2) l1 l2
   | Record (l1), Record (l2) ->
-     equal_list (fun (s1, e1) (s2, e2) -> s1 = s2 && equal d1 d2 env e1 e2) l1 l2
+     equal_list
+        (fun (s1, e1) (s2, e2) -> s1 = s2 && equal d1 d2 env e1 e2) l1 l2
   | Except (e1, l1), Except (e2, l2) ->
      equal d1 d2 env e1 e2 && equal_list (equal_exspec d1 d2 env) l1 l2
   | Dot (e1, s1), Dot (e2, s2) -> equal d1 d2 env e1 e2 && s1 = s2
@@ -271,21 +269,21 @@ and equal_expoint d1 d2 env p1 p2 =
   | Except_dot (s1), Except_dot (s2) -> s1 = s2
   | Except_apply (e1), Except_apply (e2) -> equal d1 d2 env e1 e2
   | _, _ -> false
-;;
+
 
 let option_map f o =
   match o with
   | Some x -> Some (f x)
   | None -> None
-;;
 
-module BI = Builtin;;
+module BI = Builtin
 
-let cur = ref 0;;
-let gensym () = incr cur; !cur;;
+let cur = ref 0
+let gensym () = incr cur; !cur
 
 (* spine = still in the spine ?
-   env = local environment (i.e. number of binders between the spine and here)
+   env = local environment
+         (i.e. number of binders between the spine and here)
    stk = stack of references to (expr * hint) list for the spine
 
 TO DO: generaliser la spine aux \E sous negations / a gauche des =>
@@ -295,8 +293,8 @@ false if it must be abstracted away
 
 *)
 
-let push (len, bot, list) = (len + 1, bot, ref [] :: list);;
-let length (len, _, _) = len;;
+let push (len, bot, list) = (len + 1, bot, ref [] :: list)
+let length (len, _, _) = len
 let get (_, bot, list) n =
   let rec spin list n =
     match list with
@@ -305,7 +303,7 @@ let get (_, bot, list) n =
     | _ :: t -> spin t (n-1)
   in
   spin list n
-;;
+
 
 let rec abst f spine stk env e =
   if f e then begin
@@ -441,7 +439,7 @@ and abst_defn f stk env d =
     | Bpragma (h, e1, l) -> Bpragma (h, abst f false stk env e1, l)
     | Instance (h, i) -> assert false
   in d1 @@ d
-;;
+
 
 let abstract f e =
   cur := 0;
@@ -460,4 +458,3 @@ let abstract f e =
     end
   in
   spin e1 !cur
-;;

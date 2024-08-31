@@ -32,6 +32,7 @@ module List : sig
   val find : ('a -> bool) -> 'a list -> 'a
   val filter : ('a -> bool) -> 'a list -> 'a list
   val find_all : ('a -> bool) -> 'a list -> 'a list
+  val find_opt : ('a -> bool) -> 'a list -> 'a option
   val partition : ('a -> bool) -> 'a list -> 'a list * 'a list
   val assoc : 'a -> ('a * 'b) list -> 'b
   val assq : 'a -> ('a * 'b) list -> 'b
@@ -54,16 +55,17 @@ module List : sig
   val sort : ?cmp:('a -> 'a -> int) -> 'a list -> 'a list
   val iteri : (int -> 'a -> unit) -> 'a list -> unit
   val split_nth : int -> 'a list -> 'a list * 'a list
-end;;
+end
 
 module Option : sig
   val get : 'a option -> 'a
+  val fold : ('b -> 'a -> 'b) -> 'b -> 'a option -> 'b
   val map : ('a -> 'b) -> 'a option -> 'b option
   val iter : ('a -> unit) -> 'a option -> unit
   val default : 'a -> 'a option -> 'a
   val is_some : 'a option -> bool
   val is_none : 'a option -> bool
-end;;
+end
 
 module Std : sig
   val unique : unit -> int
@@ -72,7 +74,7 @@ module Std : sig
   val input_all : ?bsize:int -> in_channel -> string
   val identity : 'a -> 'a
   val finally : (unit -> unit) -> ('a -> 'b) -> 'a -> 'b
-end;;
+end
 
 val string_contains : string -> string -> bool
 val is_prefix : string -> string -> bool

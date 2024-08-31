@@ -17,7 +17,6 @@ type ident =
   | Identvar of string
   | Identhyp of string * string
   | IdentBPragma of string
-;;
 
 (************************)
 (***** Stack module ******)
@@ -180,38 +179,38 @@ let builtin_to_int bi =
   | Builtin.ToString -> 67
   | Builtin.Unprimable -> 68
   | Builtin.Irregular -> 69
-;;
+
 
 let bullet_to_int b =
   match b with
   | And -> 0
   | Or -> 1
   | Refs -> 2
-;;
+
 
 let quantifier_to_int q =
   match q with
   | Forall -> 0
   | Exists -> 1
-;;
+
 
 let modal_op_to_int m =
   match m with
   | Box -> 0
   | Dia -> 1
-;;
+
 
 let fairness_op_to_int f =
   match f with
   | Weak -> 0
   | Strong -> 1
-;;
+
 
 let rec time_to_string = function
   | Now -> "now"
   | Always -> "always"
   | NotSet -> assert false
-;;
+
 
 let to_string fp = Digest.to_hex (Digest.string (Buffer.contents fp))
 (* FIXME: remove conversion to hex, watch out for FP files. *)
@@ -229,8 +228,8 @@ let rec list ?(sep=fun buf -> bprintf buf ",") pr buf = function
 let fp_bin buf = function
   | Builtin.Box false -> Buffer.add_string buf "$FakeBox"
   | Builtin.Box true  -> Buffer.add_string buf "$Box"
-  | bin -> Printf.bprintf buf "$%d" (builtin_to_int bin);
-;;
+  | bin -> Printf.bprintf buf "$%d" (builtin_to_int bin)
+
 
 let rec fp_expr counthyp countvar stack buf e =
   let fps = fp_expr counthyp countvar stack in
@@ -291,7 +290,7 @@ let rec fp_expr counthyp countvar stack buf e =
         fp_let counthyp countvar stack buf ds e
     | Quant (q, bs, e) ->
         let n = List.length bs in
-        let l = List.map (fun (a,_,_) -> a.core) bs in
+        let l = strings_of_bounds bs in
         (*let bounds = (fp_bounds count stack) bs in*)
          let bu = Buffer.create 17 in
            pushlvars stack l;
@@ -345,7 +344,7 @@ let rec fp_expr counthyp countvar stack buf e =
            (Buffer.contents bu)
     | SetOf (e, bs) ->
         let n = List.length bs in
-        let l = List.map (fun (a,_,_) -> a.core) bs in
+        let l = strings_of_bounds bs in
         (*let vars = String.concat "." l in*)
          let bu = Buffer.create 17 in
            pushlvars stack l;
@@ -361,7 +360,7 @@ let rec fp_expr counthyp countvar stack buf e =
         bprintf buf "$Prod(%a)" (list fps) es
     | Fcn (bs, e) ->
         let n = List.length bs in
-        let l = List.map (fun (a,_,_) -> a.core) bs in
+        let l = strings_of_bounds bs in
          let bu = Buffer.create 17 in
            pushlvars stack l;
            bprintf bu "%a" (fp_expr counthyp countvar stack) e;
@@ -502,7 +501,7 @@ and fp_sequent stack buf sq =
                 "%s@\n  @[<b0>%t@]@." msg pr_obl;
               *)
               bprintf buf "$Fact(%a,%s)" (fp_expr counthyp countvar stack) e
-                      (time_to_string tm);
+                      (time_to_string tm)
   in
   spin stack sq.context
 

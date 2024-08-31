@@ -44,7 +44,7 @@ Message == {AckMessage, RelMessage} \union {ReqMessage(c) : c \in Clock}
 
 (***************************************************************************)
 (* The type correctness predicate.                                         *)
-(***************************************************************************)  
+(***************************************************************************)
 TypeOK ==
      (* clock[p] is the local clock of process p *)
   /\ clock \in [Proc -> Clock]
@@ -60,8 +60,8 @@ TypeOK ==
 
 (***************************************************************************)
 (* The initial state predicate.                                            *)
-(***************************************************************************) 
-   
+(***************************************************************************)
+
 Init ==
   /\ clock = [p \in Proc |-> 1]
   /\ req = [p \in Proc |-> [q \in Proc |-> 0]]
@@ -69,7 +69,7 @@ Init ==
   /\ network = [p \in Proc |-> [q \in Proc |-> <<>> ]]
   /\ crit = {}
 
-  
+
 (***************************************************************************)
 (* beats(p,q) is true if process p believes that its request has higher    *)
 (* priority than q's request. This is true if either p has not received a  *)
@@ -80,7 +80,7 @@ beats(p,q) ==
   \/ req[p][q] = 0
   \/ req[p][p] < req[p][q]
   \/ req[p][p] = req[p][q] /\ p < q
-  
+
 (***************************************************************************)
 (* Broadcast a message: send it to all processes except the sender.        *)
 (***************************************************************************)
@@ -119,7 +119,7 @@ ReceiveRequest(p,q) ==
 
 (***************************************************************************)
 (* Process p receives an acknowledgement from q.                           *)
-(***************************************************************************)      
+(***************************************************************************)
 ReceiveAck(p,q) ==
   /\ network[q][p] # << >>
   /\ LET m == Head(network[q][p])
@@ -131,12 +131,12 @@ ReceiveAck(p,q) ==
 (**************************************************************************)
 (* Process p enters the critical section.                                 *)
 (**************************************************************************)
-Enter(p) == 
+Enter(p) ==
   /\ ack[p] = Proc
   /\ \A q \in Proc \ {p} : beats(p,q)
   /\ crit' = crit \union {p}
   /\ UNCHANGED <<clock, req, ack, network>>
-  
+
 (***************************************************************************)
 (* Process p exits the critical section and notifies other processes.      *)
 (***************************************************************************)
@@ -147,7 +147,7 @@ Exit(p) ==
   /\ req' = [req EXCEPT ![p][p] = 0]
   /\ ack' = [ack EXCEPT ![p] = {}]
   /\ UNCHANGED clock
- 
+
 (***************************************************************************)
 (* Process p receives a release notification from q.                       *)
 (***************************************************************************)
@@ -165,7 +165,7 @@ ReceiveRelease(p,q) ==
 
 Next ==
   \/ \E p \in Proc : Request(p) \/ Enter(p) \/ Exit(p)
-  \/ \E p \in Proc : \E q \in Proc \ {p} : 
+  \/ \E p \in Proc : \E q \in Proc \ {p} :
         ReceiveRequest(p,q) \/ ReceiveAck(p,q) \/ ReceiveRelease(p,q)
 
 vars == <<req, network, clock, ack, crit>>
@@ -327,7 +327,7 @@ LEMMA NotContainsSend ==
 BY DEF Contains, AtMostOne
 
 LEMMA AtMostOneSend ==
-  ASSUME NEW s \in Seq(Message), NEW mtype, AtMostOne(s, mtype), 
+  ASSUME NEW s \in Seq(Message), NEW mtype, AtMostOne(s, mtype),
          NEW m \in Message, m.type # mtype
   PROVE  AtMostOne(Append(s,m), mtype)
 BY DEF AtMostOne
@@ -385,7 +385,7 @@ CommInv(p) ==
                \/ /\ q \notin ack[p] /\ Contains(pq,"req")
                   /\ ~ Contains(qp,"ack") /\ Precedes(pq,"rel","req")
 
-BasicInv == 
+BasicInv ==
   /\ \A p,q \in Proc : NetworkInv(p,q)
   /\ \A p \in Proc : CommInv(p)
 
@@ -668,7 +668,7 @@ ClockInvInner(p,q) ==
   LET pq == network[p][q]
       qp == network[q][p]
   IN  /\ \A i \in 1 .. Len(pq) : pq[i].type = "req" => pq[i].clock = req[p][p]
-      /\ Contains(qp, "ack") \/ q \in ack[p] => 
+      /\ Contains(qp, "ack") \/ q \in ack[p] =>
              /\ req[q][p] = req[p][p]
              /\ clock[q] > req[p][p]
              /\ Precedes(qp, "ack", "req") =>
@@ -728,7 +728,7 @@ THEOREM ClockInvariant == Spec => []ClockInv
         <5>. QED  BY <5>1, <5>2, <5>3 DEF ClockInvInner, beats
       <4>3. CASE n \notin {p,q}  \* all relevant variables unchanged
         <5>1. /\ ClockInvInner(p,q)
-              /\ UNCHANGED <<network[p][q], network[q][p], req[p][p], req[p][q], req[q][p], 
+              /\ UNCHANGED <<network[p][q], network[q][p], req[p][p], req[p][q], req[q][p],
                              ack[p], clock, crit>>
           BY <3>1, <4>3 DEF ClockInv
         <5>. QED  BY ONLY <5>1 DEF ClockInvInner, beats
@@ -774,7 +774,7 @@ THEOREM ClockInvariant == Spec => []ClockInv
     <3>1. /\ network[k][n] # << >>
           /\ m.type = "req"
           /\ req' = [req EXCEPT ![n][k] = m.clock]
-          /\ clock' = [clock EXCEPT ![n] = IF m.clock > clock[n] THEN m.clock + 1 
+          /\ clock' = [clock EXCEPT ![n] = IF m.clock > clock[n] THEN m.clock + 1
                                                                  ELSE clock[n]+1]
           /\ network' = [a \in Proc |-> [b \in Proc |->
                            IF a=k /\ b=n THEN Tail(network[k][n])
@@ -810,7 +810,7 @@ THEOREM ClockInvariant == Spec => []ClockInv
               /\ q \notin ack'[p]
               /\ p \notin crit'
           BY <3>1, <3>2, <4>1
-        <5>5. ASSUME Precedes(qp', "ack", "req"), 
+        <5>5. ASSUME Precedes(qp', "ack", "req"),
                      NEW i \in 1 .. Len(qp'), qp'[i].type = "req"
               PROVE  FALSE
           BY <3>1, <4>1, <5>5, CVC4 DEF Precedes

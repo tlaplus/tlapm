@@ -1,12 +1,12 @@
 (* This code derives from a GPL'ed code and so is GPL'ed *)
 type variable = string
-type constant = string 
-type skolem   = string 
+type constant = string
+type skolem   = string
 
 type varlist = variable list
 
-type arg = Variable of variable 
-         | Constant of constant 
+type arg = Variable of variable
+         | Constant of constant
 	 | Skolem of skolem * varlist
 
 type arglist = arg list
@@ -21,7 +21,7 @@ type formula =  True                                 (* constants *)
 	      | And of formula * formula             (* Booleans *)
 	      | Or  of formula * formula
 	      | Implies  of formula * formula
-	      | Not  of formula 
+	      | Not  of formula
 	      | Forall of varlist * formula              (* Quantification*)
 	      | Exists of varlist * formula
 	      | Always of formula                    (* Temporal operators*)
@@ -37,11 +37,11 @@ type disjunct = True
 	      | Or of literal list
 
 type cnf = True
-         | False 
+         | False
 	 | And of disjunct list
 
 type formulaList = True
-		 | False 
+		 | False
 		 | Literal of literal
 		 | And of formulaList list
 		 | Or of formulaList list

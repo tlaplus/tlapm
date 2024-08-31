@@ -5,12 +5,13 @@
 let default_zenon_timeout = 10.
 let default_ls4_timeout = 10.
 let default_isabelle_timeout = 30.
-let default_isabelle_tactic = "auto";;
+let default_isabelle_tactic = "auto"
 let default_yices_timeout = 30.
 let default_z3_timeout = 5.
 let default_cvc3_timeout = 5.
 let default_smt_timeout = 5.
 let default_smt2_timeout = 5.
+let default_zipper_timeout = 30.
 let default_spass_timeout = 5.
 let default_tptp_timeout = 5.
 
@@ -31,6 +32,7 @@ type t =
   | Cvc33 of float
   | Yices3 of float
   | Verit of float
+  | Zipper of float
   | Spass of float
   | Tptp of float
   | ExpandENABLED
@@ -42,7 +44,7 @@ type t =
   | ENABLEDrules
   | LevelComparison
   | Trivial
-;;
+
 
 let timeout m =
   match m with
@@ -61,6 +63,7 @@ let timeout m =
   | Cvc33 f -> f
   | Yices3 f -> f
   | Verit f -> f
+  | Zipper f -> f
   | Spass f -> f
   | Tptp f -> f
   | ExpandENABLED -> infinity
@@ -96,6 +99,7 @@ let scale_time m s =
   | Cvc33 f -> Cvc33 (f *. s)
   | Yices3 f -> Yices3 (f *. s)
   | Verit f -> Verit (f *. s)
+  | Zipper f -> Zipper (f *. s)
   | Spass f -> Spass (f *. s)
   | Tptp f -> Tptp (f *. s)
   | ExpandENABLED -> ExpandENABLED
@@ -107,7 +111,7 @@ let scale_time m s =
   | ENABLEDrules -> ENABLEDrules
   | LevelComparison -> LevelComparison
   | Trivial -> Trivial
-;;
+
 
 open Format
 
@@ -129,6 +133,7 @@ let pp_print_tactic ff m =
   | Cvc33 f -> fprintf ff "(cvc4 %g s)" f
   | Yices3 f -> fprintf ff "(yices %g s)" f
   | Verit f -> fprintf ff "(verit %g s)" f
+  | Zipper f -> fprintf ff "(zipper %g s)" f
   | Spass f -> fprintf ff "(spass %g s)" f
   | Tptp f -> fprintf ff "(tptp %g s)" f
   | Cooper -> fprintf ff "(cooper)"
@@ -142,11 +147,11 @@ let pp_print_tactic ff m =
   | ENABLEDrules -> fprintf ff "(enabledrules)"
   | LevelComparison -> fprintf ff "(levelcomparison)"
   | Trivial -> fprintf ff "(trivial)"
-;;
+
 
 let pp_print_method ff meth =
   fprintf ff "@[<h>(*{ by %a }*)@]" pp_print_tactic meth
-;;
+
 
 let prover_meth_of_tac tac =
   match tac with
@@ -164,6 +169,7 @@ let prover_meth_of_tac tac =
     | Cvc33 f -> (Some "cvc4", None)
     | Yices3 f -> (Some "yices", None)
     | Verit f -> (Some "verit", None)
+    | Zipper f -> (Some "zipper", None)
     | Spass f -> (Some "spass", None)
     | Tptp f -> (Some "tptp", None)
     | Cooper -> (Some "cooper", None)
@@ -178,10 +184,13 @@ let prover_meth_of_tac tac =
     | LevelComparison -> (Some "levelcomparison", None)
     | Trivial -> (Some "trivial", None)
 
+let prover_name_of_tac tac =
+  let prover, _meth = prover_meth_of_tac tac in
+  prover
+
 type result =
   | Proved of string
   | Failed of string
   | Timedout
   | Interrupted
   | NotTried of string
-;;

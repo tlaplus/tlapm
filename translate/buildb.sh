@@ -9,6 +9,6 @@ ocamlopt -c folex.ml
 ocamlopt -c foyacc.ml
 ocamlopt -c main.ml
 
-ocamlopt -o translate.bin fofunctions.cmx folex.cmx foyacc.cmx main.cmx 
+ocamlopt -o translate.bin fofunctions.cmx folex.cmx foyacc.cmx main.cmx
 strip translate.bin
 cp translate.bin fotranslate.bin

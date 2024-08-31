@@ -1,0 +1,22 @@
+; Download the Isabelle and build the TLA+ theory with it.
+; The source code for the TLA+ theory is in the $PROJECT_ROOT/isabelle directory.
+; The generated heaps (Pure and TLA+) are in Isabelle/heaps/polyml-*/.
+(rule
+ (alias default)
+ (deps
+  "dune.mk"
+  (source_tree ../../isabelle)
+  (sandbox none))
+ (targets
+  (dir "Isabelle")
+  (dir "Isabelle-test")
+  "Isabelle.exec-files")
+ (action (run "make" "-f" "dune.mk")))
+
+(install
+ (section (site (tlapm backends)))
+ (dirs Isabelle))
+
+(install
+ (section (site (tlapm backends)))
+ (files ("Isabelle.exec-files" as "Isabelle.exec-files")))

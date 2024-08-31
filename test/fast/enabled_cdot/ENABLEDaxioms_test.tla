@@ -3,7 +3,7 @@
 EXTENDS TLAPS
 
 
-(* This statement declares two variables. *)
+(* This statement declares three variables. *)
 VARIABLE x, y
 
 

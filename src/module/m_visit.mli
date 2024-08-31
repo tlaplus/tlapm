@@ -5,14 +5,14 @@ open Util
 open M_t
 
 
-class map : object
+class map: object
     method module_units: Expr.T.ctx -> M_t.modunit list ->
         ctx * M_t.modunit list
     method module_unit: ctx -> M_t.modunit ->
         ctx * modunit
     method constants: ctx -> (hint * shape) list ->
         ctx * modunit_
-    method variables: ctx -> hint list ->
+    method variables: ctx -> hints ->
         ctx * modunit_
     method recursives: ctx -> (hint * shape) list ->
         ctx * modunit_

@@ -1,21 +1,14 @@
-(*
- * proof/visit.ml --- default visitor for proofs
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Visitor for proofs.
 
-(** default visitors for proofs *)
-
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
-
 open Property
-
 module Dq = Deque
-
 open Expr.T
 
 open P_t
+
 
 let dummy = At false @@ nowhere
 let dummy_fact = Fact (dummy, Visible, Always) @@ nowhere
@@ -159,9 +152,7 @@ class virtual ['hyp] map = object (self : 'self)
           let scx = bump scx 1 in
           (* there is a SUFFICES here *)
           (*    ... so add assumptions for the new identifiers *)
-          let hyps = List.map begin
-            fun (v, k, _) -> Fresh (v, Shape_expr, k, Unbounded) @@ v
-          end bs in
+          let hyps = Expr.Visit.hyps_of_bounds bs in
           let scx = Expr.Visit.adjs scx hyps in
           (*    ... then add assumption about the body of the PICK *)
           (*    ... then add the negation of the old goal *)
@@ -174,14 +165,7 @@ class virtual ['hyp] map = object (self : 'self)
   method usable scx us =
     let usdef dw =
       match dw.core with
-      | Dvar v ->
-         begin match self#expr scx { dw with core = Opaque v } with
-         | { core = Ix n } -> [{dw with core = Dx n}]
-         | _ ->
-            Errors.warn ~at:dw "Ignored unexpandable identifier %S in BY DEF."
-                        v;
-            []
-         end
+      | Dvar v -> [Dvar v @@ dw]
       | Dx n -> [{dw with core = Dx n}]
     in
     { facts = List.map (self#expr scx) us.facts ;
@@ -279,10 +263,8 @@ class virtual ['hyp] iter = object (self : 'self)
             self#expr scx e in
           let scx = adj_step scx in
           let scx = bump scx 1 in
-          let scx = List.fold_left begin
-            fun scx (v, k, _) ->
-              Expr.Visit.adj scx (Fresh (v, Shape_expr, k, Unbounded) @@ v)
-          end scx bs in
+          let scx =
+            Expr.Visit.adj_unboundeds_unchecked scx bs in
           bump scx 4
 
   method usable scx us  =

@@ -1,6 +1,4 @@
-(*
- * Copyright (C) 2011-2012  INRIA and Microsoft Corporation
- *)
+(* Copyright (C) 2011-2012  INRIA and Microsoft Corporation *)
 open Expr.T
 
 module SSet : Set.S with type elt = string
@@ -85,14 +83,13 @@ val boundvar : unit Property.pfuncs
 val has_boundvar : expr -> bool
 (* val quant_id : string -> string *)
 
-val unditto : bound list -> bound list
 val add_bs_ctx : bound list -> hyp list -> hyp list
 
 val n_to_list : int -> int list
 (* val concat0 : string -> 'a list -> string *)
 (* val concat1 : ('a -> string, unit, string) format -> 'a list -> string *)
 (* val concat2 : ('a -> string, unit, string) format -> 'a list -> string *)
-val remove_repeated : 'a list -> 'a list 
+val remove_repeated : 'a list -> 'a list
 val remove_repeated_ex : expr list -> expr list
 
 val ctr : int ref
@@ -109,11 +106,11 @@ val mk_string : string -> string
 val split_domain :
   quantifier ->
   expr ->
-  (Util.hint * kind * bound_domain) list ->
   bound list ->
-  (Util.hint * kind * bound_domain) list * expr
+  bound list ->
+  bound list * expr
 
-val deconj : expr -> expr list;;
+val deconj : expr -> expr list
 val deimpl : expr -> expr list * expr
 val unroll_seq : sequent -> expr
 val to_list : sequent -> ((unit * hyp Deque.dq) * expr list * expr)
@@ -194,10 +191,10 @@ val flatten_conj : expr -> expr
 val flatten_disj : expr -> expr
 
 val fix : ?feq:(expr -> expr -> bool) -> int -> (expr list -> expr list) -> expr list -> expr list
-val fix3 : int -> 
-	(((unit * hyp Deque.dq) * hyp Deque.dq * expr) -> ((unit * hyp Deque.dq) * hyp Deque.dq * expr)) -> 
-	((unit * hyp Deque.dq) * hyp Deque.dq * expr) -> 
-	((unit * hyp Deque.dq) * hyp Deque.dq * expr)
+val fix3 : int ->
+    (((unit * hyp Deque.dq) * hyp Deque.dq * expr) -> ((unit * hyp Deque.dq) * hyp Deque.dq * expr)) ->
+    ((unit * hyp Deque.dq) * hyp Deque.dq * expr) ->
+    ((unit * hyp Deque.dq) * hyp Deque.dq * expr)
 val fix_sq : int -> (sequent -> sequent) -> sequent -> sequent
 val fix_sqs : int -> (sequent list -> sequent list) -> sequent list -> sequent list
 

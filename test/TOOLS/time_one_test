@@ -3,6 +3,18 @@
 FILE="$1"
 TOOLDIR="$2"
 
-exec "$TOOLDIR"/do_one_test "$FILE" "$TOOLDIR/separator" \
+"$TOOLDIR"/do_one_test "$FILE" "$TOOLDIR/separator" \
                             "$FILE.out" "$FILE.err" \
                             >"$FILE.out" 2>"$FILE.err"
+retcode=$?
+case $retcode in
+    0) ;;
+    *)
+        printf "failed with return code %d\n" $retcode
+        printf "#### stdout:\n"
+        cat "$FILE.out"
+        printf "#### stderr:\n"
+        cat "$FILE.err"
+        exit $retcode
+        ;;
+esac

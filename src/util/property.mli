@@ -19,7 +19,7 @@
 *)
 
 (** Property identifiers. They may be safely compared using
-    [Pervasives.compare]. *)
+    [Stdlib.compare]. *)
 type pid
 
 (** The abstract type of "properties". All types can be injected and
@@ -83,13 +83,18 @@ val assign : 'a wrapped -> 'b pfuncs -> 'b -> 'a wrapped
     [w]. *)
 val remove : 'a wrapped -> 'b pfuncs -> 'a wrapped
 
+(* `unwrap x` returns `x.core`.
+Useful for use with `List.map`.
+*)
+val unwrap: 'a wrapped -> 'a
+
 (** [noprops x] wraps [x] with no properties. *)
 val noprops : 'a -> 'a wrapped
 
 (** [nowhere] is a wrapped value with no properties. *)
 val nowhere : unit wrapped
 
-(** [aw $ bw] returns aw with all new properties in bw *)
+(** [aw $$ bw] returns aw with all new properties in bw *)
 val ( $$ ) : 'a wrapped -> 'b wrapped -> 'a wrapped
 
 (** [x @@ w] wraps [x] with the properties of [w] *)

@@ -1,7 +1,7 @@
-(*
- * Copyright (C) 2013  INRIA and Microsoft Corporation
- *)
+(* Normalization of expressions.
 
+Copyright (C) 2013  INRIA and Microsoft Corporation
+*)
 open Ext
 open Format
 open Tla_parser
@@ -128,3 +128,40 @@ let expand_action =
         | _ -> super#expr scx e
   end in
   fun scx e -> visitor#expr scx e
+
+
+let%test_module _ = (module struct
+  let sexp_of_string = Sexplib.Std.sexp_of_string
+  let compare_string = Base.compare_string
+
+  let parse_expr = Tla_parser.P.use (E_parser.expr true);;
+  let nullctx = (Deque.empty, Ctx.dot);;
+
+  let create_expression str =
+    let (flex, _) = Alexer.lex_string str in
+    match Tla_parser.P.run parse_expr ~init:Tla_parser.init ~source:flex with
+      | Some e -> e
+      | None -> failwith "cannot parse test string"
+
+  let prn_exp exp =
+        Tla_parser.Fu.pp_print_minimal
+        Format.str_formatter (E_fmt.fmt_expr nullctx exp);
+        Format.flush_str_formatter ()
+
+  let prn_str str = str
+
+  let%test_unit "t1" =
+    let test_string = "WF_f(A)" in
+    let test_case = create_expression test_string in
+    let target_string = "<>[]ENABLED<<A>>_f => []<><<A>>_f" in
+    let target_case = create_expression target_string in
+      [%test_eq: string] (prn_exp target_case) (prn_exp (expand_fairness ((),Deque.empty) test_case))
+
+  let%test_unit "t2" =
+    let test_string = "SF_f(A)" in
+    let test_case = create_expression test_string in
+    let target_string = "[]<>ENABLED<<A>>_f => []<><<A>>_f" in
+    let target_case = create_expression target_string in
+      [%test_eq: string] (prn_exp target_case) (prn_exp (expand_fairness ((),Deque.empty) test_case))
+
+end)

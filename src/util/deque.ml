@@ -95,6 +95,20 @@ let prepend_list l q =
       flen = q.flen + n }
 
 let rec nth ?(backwards=false) q n =
+  (* Return item `n` from `q`.
+
+  Define `m == (size q) - 1`.
+
+  Indexing starts from 0, thus `q` contains
+  elements indexed with:
+
+    0, 1, ..., m
+
+  If `backwards=true`, then count from the end,
+  so the indexing becomes:
+
+    m, m - 1, ..., 0
+  *)
   if backwards then nth (rev q) n
   else if n >= size q then None
   else

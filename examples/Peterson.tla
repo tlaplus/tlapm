@@ -124,7 +124,7 @@ THEOREM Spec => []MutualExclusion
 <1>1. Init => Inv
   BY DEF Init, Inv, TypeOK, I
 <1>2. Inv /\ [Next]_vars => Inv'
-\*  BY DEFS Inv, TypeOK, I, Next, proc, a0, a1, a2, a3a, a3b, cs, a4, Not, vars 
+\*  BY DEFS Inv, TypeOK, I, Next, proc, a0, a1, a2, a3a, a3b, cs, a4, Not, vars
   <2> SUFFICES ASSUME Inv,
                       [Next]_vars
                PROVE  Inv'

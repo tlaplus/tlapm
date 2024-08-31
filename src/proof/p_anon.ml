@@ -52,7 +52,7 @@ let citable st = match st.core with
   | _ -> true
 
 
-let push_name sn (stack, cx) = ((string_of_stepno sn) :: stack, cx);;
+let push_name sn (stack, cx) = ((string_of_stepno sn) :: stack, cx)
 
 class anon = object (self : 'self)
   inherit [string list] P_visit.map as super
@@ -199,9 +199,7 @@ class anon = object (self : 'self)
           let scx = bump scx 2 in
           (* there is a SUFFICES here *)
           (*    ... so add assumptions for the new identifiers *)
-          let hyps = List.map begin
-            fun (v, k, _) -> Fresh (v, Shape_expr, k, Unbounded) @@ v
-          end bs in
+          let hyps = Expr.Visit.hyps_of_bounds bs in
           let scx = Expr.Visit.adjs scx hyps in
           (*    ... then add assumption about the body of the PICK *)
           (*    ... then add the negation of the old goal *)
@@ -215,6 +213,29 @@ class anon = object (self : 'self)
           (scx, st)
       | _ ->
           super#step scx st
+
+    method usable scx usables =
+        let usdef dw = match dw.core with
+            | Dvar v ->
+                begin
+                let opaque = Opaque v @@ dw in
+                let opaque = self#expr scx opaque in
+                match opaque.core with
+                | Ix n -> [Dx n @@ dw]
+                | _ ->
+                    Errors.warn ~at:dw
+                        "Ignored unexpandable \
+                        identifier %S in BY DEF."
+                        v;
+                    []
+                end
+            | Dx n ->
+                [{dw with core = Dx n}] in
+        let facts = List.map
+            (self#expr scx) usables.facts in
+        let defs = List.flatten (
+            List.map usdef usables.defs) in
+        {facts=facts; defs=defs}
 end
 
 let anon = new anon

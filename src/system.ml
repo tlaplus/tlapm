@@ -10,23 +10,26 @@
    groups because they don't seem to be available on Cygwin.
 *)
 
-module Intmap = Map.Make (struct type t = int let compare = compare end);;
+module Intmap = Map.Make (struct type t = int let compare = compare end)
 
 let win_kill pid =
   ignore (Sys.command (Printf.sprintf "taskkill /PID %d /F" pid))
-;;
+
 
 let unix_kill pid =
   try Unix.kill pid 1 with _ -> ()
-;;
+
 
 let ps_list = [
-  "cygwin", "ps -l", format_of_string " PID PPID PGID WINPID",
+  "cygwin", "LINES=200 COLUMNS=200 ps -l",
+    format_of_string " PID PPID PGID WINPID",
     format_of_string "%_c %d %d %_d %d", win_kill;
 
-  "unix", "ps x -o pid,ppid,pid", format_of_string " PID PPID PID",
+  "unix", "LINES=200 COLUMNS=200 ps x -o pid,ppid,pid",
+    format_of_string " PID PPID PID",
     format_of_string" %d %d %d", unix_kill;
-];;
+]
+
 
 let (_, ps_cmd, _, ps_format, kill_fn) =
   let test (_, cmd, hd, _, _) =
@@ -40,7 +43,7 @@ let (_, ps_cmd, _, ps_format, kill_fn) =
     result
   in
   List.find test ps_list
-;;
+
 
 let kill_tree pid =
   try
@@ -67,7 +70,7 @@ let kill_tree pid =
     in
     kill pid;
   with _ -> ()
-;;
+
 
 (* Use the wait system call to harvest the dead children processes. *)
 let harvest_zombies () =
@@ -76,7 +79,7 @@ let harvest_zombies () =
     if pid <> 0 then spin ();
   in
   try spin () with Unix.Unix_error _ -> ()
-;;
+
 
 let launch_process cmd =
   let (out_read, out_write) = Unix.pipe () in
@@ -88,23 +91,23 @@ let launch_process cmd =
   Unix.close in_read;
   Unix.close in_write;
   (pid, out_read)
-;;
+
 
 (*****************************************)
 
 type line =
   | Line of string
   | Leof
-;;
+
 
 type line_buffer = {
   desc : Unix.file_descr;
   buf : Buffer.t;
-};;
+}
 
-let make_line_buffer fd = {desc = fd; buf = Buffer.create 100};;
+let make_line_buffer fd = {desc = fd; buf = Buffer.create 100}
 
-let rawbuf = Bytes.create 1000;;
+let rawbuf = Bytes.create 1000
 
 let read_lines buf =
   let n = Unix.read buf.desc rawbuf 0 (Bytes.length rawbuf) in
@@ -123,13 +126,13 @@ let read_lines buf =
        Buffer.add_string buf.buf last;
        List.map (fun x -> Line (x ^ "\n")) (List.rev rest)
   end
-;;
+
 
 type toolbox_command =
   | Kill of int
   | Killall
   | Eof
-;;
+
 
 let parse_command l =
   match l with
@@ -141,8 +144,7 @@ let parse_command l =
      else
        []  (* ignore unknown input *)
   | Leof -> [Eof]
-;;
+
 
 let read_toolbox_commands buf =
   List.flatten (List.map parse_command (read_lines buf))
-;;

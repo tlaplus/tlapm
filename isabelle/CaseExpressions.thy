@@ -1,18 +1,17 @@
 (*  Title:      TLA+/CaseExpressions.thy
-    Author:     Stephan Merz, LORIA
-    Copyright (C) 2009-2011  INRIA and Microsoft Corporation
+    Author:     Stephan Merz, Inria Nancy
+    Copyright (C) 2009-2024  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2011-1
-    Time-stamp: <2011-10-11 17:40:22 merz>
+    Version:    Isabelle2024
 *)
 
-header {* Case expressions *}
+section \<open> Case expressions \<close>
 
 theory CaseExpressions
 imports Tuples
 begin
 
-text {*
+text \<open>
   A \textsc{case} expression in \tlaplus{} has the form
   \[
     \textsc{case } p_1 \rightarrow e_1
@@ -32,16 +31,16 @@ text {*
   guard of the \textsc{other}-branch, when present, is the conjunction
   of the negated guards of all other branches, so every guard appears
   twice (and will be simplified twice) in a @{text CaseOther} expression.
-*}
+\<close>
 
-definition CaseArm  -- {* preliminary construct to convert case arm into set *}
+definition CaseArm  \<comment> \<open> preliminary construct to convert case arm into set \<close>
 where "CaseArm(p,e) \<equiv> IF p THEN {e} ELSE {}"
 
 definition Case where
   "Case(ps, es) \<equiv> CHOOSE x : x \<in> (UNION { CaseArm(ps[i], es[i]) : i \<in> DOMAIN ps })"
 
 definition CaseOther where
-  "CaseOther(ps, es, oth) \<equiv> 
+  "CaseOther(ps, es, oth) \<equiv>
    CHOOSE x : x \<in> (UNION { CaseArm(ps[i], es[i]) : i \<in> DOMAIN ps })
                   \<union> CaseArm((\<forall>i \<in> DOMAIN ps : \<not>ps[i]), oth)"
 
@@ -49,22 +48,17 @@ nonterminal case_arm and case_arms
 
 syntax
   "_case_syntax":: "case_arms \<Rightarrow> c"               ("(CASE _ )" 10)
-  "_case1"      :: "[c, c] \<Rightarrow> case_arm"           ("(2_ ->/ _)" 10)
+  "_case1"      :: "[c, c] \<Rightarrow> case_arm"           ("(2_ \<rightarrow>/ _)" 10)
   ""            :: "case_arm \<Rightarrow> case_arms"        ("_")
+  "_other"      :: "c \<Rightarrow> case_arms"               ("OTHER \<rightarrow> _")
+  "_case2"      :: "[case_arm, case_arms] \<Rightarrow> case_arms"  ("_/ \<box> _")
+
+syntax (ASCII)
+  "_case1"      :: "[c, c] \<Rightarrow> case_arm"           ("(2_ ->/ _)" 10)
   "_other"      :: "c \<Rightarrow> case_arms"               ("OTHER -> _")
   "_case2"      :: "[case_arm, case_arms] \<Rightarrow> case_arms"  ("_/ [] _")
 
-syntax (xsymbols)
-  "_case1"      :: "[c, c] \<Rightarrow> case_arm"           ("(2_ \<rightarrow>/ _)" 10)
-  "_other"      :: "c \<Rightarrow> case_arms"               ("OTHER \<rightarrow> _")
-  "_case2"      :: "[case_arm, case_arms] \<Rightarrow> case_arms"  ("_/ \<box> _")
-
-syntax (HTML output)
-  "_case1"      :: "[c, c] \<Rightarrow> case_arm"           ("(2_ \<rightarrow>/ _)" 10)
-  "_other"      :: "c \<Rightarrow> case_arms"               ("OTHER \<rightarrow> _")
-  "_case2"      :: "[case_arm, case_arms] \<Rightarrow> case_arms"  ("_/ \<box> _")
-
-parse_ast_translation {*
+parse_ast_translation \<open>
   let
     (* make_tuple converts a list of ASTs to a tuple formed from these ASTs.
        The order of elements is reversed. *)
@@ -73,14 +67,14 @@ parse_ast_translation {*
     (* get_case_constituents extracts the lists of predicates, terms, and
        default value from the arms of a case expression.
        The order of the ASTs is reversed. *)
-    fun get_case_constituents (Ast.Appl[Ast.Constant "_other", t]) = 
+    fun get_case_constituents (Ast.Appl[Ast.Constant "_other", t]) =
             (* 1st case: single "OTHER" arm *)
             ([], [], SOME t)
-      | get_case_constituents (Ast.Appl[Ast.Constant "_case1", p, t]) = 
+      | get_case_constituents (Ast.Appl[Ast.Constant "_case1", p, t]) =
             (* 2nd case: a single arm, no "OTHER" branch *)
             ([p], [t], NONE)
-      | get_case_constituents (Ast.Appl[Ast.Constant "_case2", 
-                                    Ast.Appl[Ast.Constant "_case1", p, t], 
+      | get_case_constituents (Ast.Appl[Ast.Constant "_case2",
+                                    Ast.Appl[Ast.Constant "_case1", p, t],
                                     arms]) =
             (* 3rd case: one arm, followed by remaining arms *)
             let val (ps, ts, oth) = get_case_constituents arms
@@ -97,14 +91,15 @@ parse_ast_translation {*
         end
       | case_syntax_tr _ = raise Match;
   in
-    [("_case_syntax", case_syntax_tr)]
+    [("_case_syntax", K case_syntax_tr)]
   end
-*}
+\<close>
+
 
 (** debugging **
-(*ML {* set Syntax.trace_ast; *}*)
+(*ML \<open> set Syntax.trace_ast; \<close>*)
 
-lemma "CASE a \<rightarrow> b [] c \<rightarrow> d [] e \<rightarrow> f [] OTHER \<rightarrow> g"
+lemma "CASE a \<rightarrow> b \<box> c \<rightarrow> d \<box> e \<rightarrow> f \<box> OTHER \<rightarrow> g"
 oops
 
 lemma "CASE a \<rightarrow> b"
@@ -113,10 +108,10 @@ oops
 lemma "CASE OTHER \<rightarrow> g"  (* degenerated case *)
 oops
 
-(*ML {* reset Syntax.trace_ast; *}*)
+(*ML \<open> reset Syntax.trace_ast; \<close>*)
 **)
 
-print_ast_translation {*
+print_ast_translation \<open>
   let
     fun list_from_tuple (Ast.Constant @{const_syntax "emptySeq"}) = []
       | list_from_tuple (Ast.Appl[Ast.Constant "@tuple", tp]) =
@@ -125,8 +120,8 @@ print_ast_translation {*
               | list_from_tp t = [t]
         in  list_from_tp tp
         end
-    (* make_case_arms constructs an AST representing the arms of the 
-       CASE expression. The result is an AST of "type" case_arms. 
+    (* make_case_arms constructs an AST representing the arms of the
+       CASE expression. The result is an AST of "type" case_arms.
        The lists of predicates and terms are of equal length,
        oth is optional. The lists can be empty only if "oth" is present,
        corresponding to a degenerated expression "CASE OTHER -> e". *)
@@ -138,7 +133,7 @@ print_ast_translation {*
             in  (* last arm: check if OTHER defaults *)
                 if oth = NONE
                 then arm
-                else Ast.Appl[Ast.Constant @{syntax_const "_case2"}, arm, 
+                else Ast.Appl[Ast.Constant @{syntax_const "_case2"}, arm,
                        Ast.Appl[Ast.Constant @{syntax_const "_other"}, the oth]]
             end
       | make_case_arms (p::ps) (t::ts) oth =
@@ -164,21 +159,21 @@ print_ast_translation {*
             val trms = list_from_tuple tTuple
         in  (* make sure that tuples are of equal length, otherwise give up *)
             if length prds = length trms
-            then Ast.Appl[Ast.Constant @{syntax_const "_case_syntax"}, 
+            then Ast.Appl[Ast.Constant @{syntax_const "_case_syntax"},
                              make_case_arms prds trms (SOME oth)]
             else Ast.Appl[Ast.Constant "CaseOther", pTuple, tTuple, oth]
         end
       | caseother_tr' _ = raise Match
   in
-    [(@{const_syntax "Case"}, case_syntax_tr'), 
-     (@{const_syntax "CaseOther"}, caseother_tr')]
+    [(@{const_syntax "Case"}, K case_syntax_tr'),
+     (@{const_syntax "CaseOther"}, K caseother_tr')]
   end
-*}
+\<close>
 
 (** debugging **
-(*ML {* set Syntax.trace_ast; *}*)
+(*ML \<open> set Syntax.trace_ast; \<close>*)
 
-lemma "CASE a \<rightarrow> b [] c \<rightarrow> d [] e \<rightarrow> f [] OTHER \<rightarrow> g"
+lemma "CASE a \<rightarrow> b \<box> c \<rightarrow> d \<box> e \<rightarrow> f \<box> OTHER \<rightarrow> g"
 oops
 
 lemma "CASE a \<rightarrow> b"
@@ -187,7 +182,7 @@ oops
 lemma "CASE OTHER \<rightarrow> g"  (* degenerated case *)
 oops
 
-(*ML {* reset Syntax.trace_ast; *}*)
+(*ML \<open> reset Syntax.trace_ast; \<close>*)
 **)
 
 lemmas Case_simps [simp] = CaseArm_def Case_def CaseOther_def
@@ -195,16 +190,16 @@ lemmas Case_simps [simp] = CaseArm_def Case_def CaseOther_def
 (** test cases **
 
 lemma
-  "i=1 \<Longrightarrow> (CASE i=0 \<rightarrow> 2 [] i=1 \<rightarrow> 0 [] i=2 \<rightarrow> 1) = 0"
-by simp
+  "i=1 \<Longrightarrow> (CASE i=0 \<rightarrow> 2 \<box> i=1 \<rightarrow> 0 \<box> i=2 \<rightarrow> 1) = 0"
+  by simp
 
 lemma
- "i \<notin> {0,1,2} \<Rightarrow>  (CASE i=0 \<rightarrow> 2 [] i=1 \<rightarrow> 0 [] i=2 \<rightarrow> 1) = default"
-by auto
+  "i \<notin> {0,1,2} \<Rightarrow>  (CASE i=0 \<rightarrow> 2 \<box> i=1 \<rightarrow> 0 \<box> i=2 \<rightarrow> 1) = default"
+  by auto
 
 lemma
- "i \<notin> {0,1,2} \<Rightarrow>  (CASE i=0 \<rightarrow> 2 [] i=1 \<rightarrow> 0 [] i=2 \<rightarrow> 1 [] OTHER \<rightarrow> a) = a"
-by auto
+  "i \<notin> {0,1,2} \<Rightarrow>  (CASE i=0 \<rightarrow> 2 \<box> i=1 \<rightarrow> 0 \<box> i=2 \<rightarrow> 1 \<box> OTHER \<rightarrow> a) = a"
+  by auto
 
 **)
 

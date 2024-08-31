@@ -1,0 +1,99 @@
+name: Build & Test
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+jobs:
+    test:
+        name: Build & Test
+        runs-on: ${{ matrix.os }}
+        strategy:
+          fail-fast: false
+          matrix:
+            os:
+              - ubuntu-latest
+              - macos-13
+              - macos-14
+            ocaml-compiler:
+              - '4.14.1'
+              - '5.1.0'
+        env:
+          EXAMPLES_DIR: "tlaplus-examples"
+          SCRIPT_DIR: "tlaplus-examples/.github/scripts"
+          DEPS_DIR: "tlaplus-examples/deps"
+          DIST_DIR: "tlatools/org.lamport.tlatools/dist"
+        steps:
+            - name: Clone repo
+              uses: actions/checkout@v4
+            - name: Install deps (ubuntu)
+              if: matrix.os == 'ubuntu-latest'
+              run: |
+                sudo apt-get update
+                sudo apt-get install --yes time
+            - uses: ocaml/setup-ocaml@v2
+              with:
+                ocaml-compiler: ${{ matrix.ocaml-compiler }}
+            - uses: actions/cache@v4
+              id: cache
+              with:
+                path: _build_cache
+                key: ${{ runner.os }}_build_cache
+            - name: Install optional dependencies
+              if: startsWith(matrix.ocaml-compiler, '5.')
+              run: |
+                eval $(opam env)
+                make opam-deps-opt
+            - name: Build TLAPM
+              run: |
+                eval $(opam env)
+                make opam-deps
+                make
+                make release
+            - name: Run tests
+              run: |
+                eval $(opam env)
+                set +e
+                make test
+                TEST_RESULT=$?
+                cat _build/default/test/tests.log
+                exit $TEST_RESULT
+            - name: Clone tlaplus/examples
+              uses: actions/checkout@v4
+              with:
+                repository: tlaplus/examples
+                path: ${{ env.EXAMPLES_DIR }}
+            - name: Set up Python
+              uses: actions/setup-python@v5
+              with:
+                python-version: '3.12'
+            - name: Check proofs in TLA+ examples
+              run: |
+                mkdir -p "$DEPS_DIR"
+                cp ./_build/tlaps*.tar.gz "$DEPS_DIR/tlaps.tar.gz"
+                tar -xzf "$DEPS_DIR/tlaps.tar.gz" -C "$DEPS_DIR"
+                rm "$DEPS_DIR/tlaps.tar.gz"
+                mv $DEPS_DIR/tlaps* "$DEPS_DIR/tlapm-install"
+                SKIP=(
+                  # General proof failure
+                  "specifications/Bakery-Boulangerie/Bakery.tla"
+                  "specifications/Bakery-Boulangerie/Boulanger.tla"
+                  "specifications/bcastByz/bcastByz.tla"
+                  "specifications/byzpaxos/Consensus.tla"
+                  "specifications/byzpaxos/VoteProof.tla"
+                  "specifications/ewd998/AsyncTerminationDetection_proof.tla"
+                  "specifications/ewd998/EWD998_proof.tla"
+                  "specifications/LearnProofs/FindHighest.tla"
+                  "specifications/LoopInvariance/BinarySearch.tla"
+                  "specifications/LoopInvariance/Quicksort.tla"
+                  "specifications/LoopInvariance/SumSequence.tla"
+                  "specifications/lamport_mutex/LamportMutex_proofs.tla"
+                  "specifications/TeachingConcurrency/SimpleRegular.tla"
+                  # Failing and long-running
+                  "specifications/byzpaxos/BPConProof.tla" # Takes about 30 minutes
+                )
+                python "$SCRIPT_DIR/check_proofs.py"            \
+                  --tlapm_path "$DEPS_DIR/tlapm-install"        \
+                  --manifest_path "$EXAMPLES_DIR/manifest.json" \
+                  --skip "${SKIP[@]}"
+

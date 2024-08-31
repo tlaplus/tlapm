@@ -1,10 +1,7 @@
-(*
- * expr/parser.ml --- expressions (parsing)
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Parser of expressions.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 open E_t
@@ -16,6 +13,10 @@ module Prop = Property
 
 module Op = Optable
 module B = Builtin
+
+
+let tuple_of_names = angle names
+
 
 (*let b = ref false*)
 
@@ -98,7 +99,6 @@ let distinct =
   in
     fun vs -> check S.empty vs
 
-let hint = locate anyident
 
 let rec expr b = lazy begin
   resolve (expr_or_op b);
@@ -150,7 +150,7 @@ and expr_or_op b is_start =
         | ops ->
             let non_test = function
               | Opr (_, Infix (_, ix)) ->
-                  attempt (punct "(" >>> (use (expr b) <*> (punct "," >>> use (expr b))) <<< punct ")")
+                  attempt (punct "(" >>> (use (expr b) <*> (comma_symbol >>> use (expr b))) <<< punct ")")
                   (* <<! [Printf.sprintf "args of nonfix_%s" p] *)
                   <$> (fun (e, f) -> [P.Atm (ix pts e f)])
               | Opr (_, Postfix ix) ->
@@ -183,7 +183,7 @@ and expr_or_op b is_start =
 
     if not is_start then
       attempt begin
-        locate (punct "[" >>> sep1 (punct ",") (use (expr b)) <<< punct "]")
+        locate (punct "[" >>> comma1 (use (expr b)) <<< punct "]")
       end
       <$> begin
         fun esw ->
@@ -228,7 +228,7 @@ and expr_or_op b is_start =
 and label = lazy begin
   locate begin
     anyident <*> choice [
-      punct "(" >>> sep1 (punct ",") (locate anyident) <<< punct ")" ;
+      punct "(" >>> names <<< punct ")" ;
       succeed [] ;
     ] <<< punct "::"
     <$> (fun (l, ns) -> Nlabel (l, ns))
@@ -237,7 +237,7 @@ end
 
 and opargs b = lazy begin
   optional begin
-    punct "(" >*> sep1 (punct ",") (use (oparg b)) <<< punct ")"
+    punct "(" >*> comma1 (use (oparg b)) <<< punct ")"
   end <$> Option.default []
 end
 
@@ -247,12 +247,13 @@ end
 
 and sel b = lazy begin
   choice [
-    choice [ anyident ; anyop ] <**> optional (punct "(" >>> sep1 (punct ",") (use (oparg b)) <<< punct ")")
+    choice [ anyident ; anyop ] <**> optional (punct "("
+        >>> comma1 (use (oparg b)) <<< punct ")")
     <$> (fun (l, args) -> match args with
            | None -> Sel_lab (l, [])
            | Some args -> Sel_lab (l, args)) ;
 
-    punct "(" >*> sep1 (punct ",") (use (oparg b)) <<< punct ")"
+    punct "(" >*> comma1 (use (oparg b)) <<< punct ")"
     <$> (fun args -> Sel_inst args) ;
 
     nat <$> (fun n -> Sel_num n) ;
@@ -294,12 +295,16 @@ and complex_expr b = lazy begin
 
     (* quantifiers *)
 
+    (* constant quantification
+    for example:
+        \E x, y, z:  x = y
+    *)
     locate begin
       choice [ punct "\\A" <!> Forall ;
                punct "\\E" <!> Exists ;
              ]
       <**> use (bounds b)
-      <**> (punct ":" >>> use (expr b))
+      <**> (colon_expr b)
     end <$> begin
       fun ({core = ((q, bs), e)} as quant) ->
         { quant with core = Quant (q, bs, e) }
@@ -308,13 +313,19 @@ and complex_expr b = lazy begin
     locate begin
       choice [ punct "\\AA" <!> Forall ;
                punct "\\EE" <!> Exists ]
-      <**> (sep1 (punct ",") hint <?> distinct)
-      <**> (punct ":" >>> use (expr b))
+      <**> (names <?> distinct)
+      <**> (colon_expr b)
     end <$> begin
       fun ({core = ((q, vs), e)} as tquant) ->
         { tquant with core = Tquant (q, vs, e) }
     end ;
 
+    (* CHOOSE expressions
+
+    examples:
+        CHOOSE x:  TRUE
+        CHOOSE x \in S:  TRUE
+    *)
     locate begin
       kwd "CHOOSE" >*> hint
       <*> optional (infix "\\in" >*> use (expr b))
@@ -322,7 +333,7 @@ and complex_expr b = lazy begin
     end <$> begin
       fun ({core = ((v, ran), e)} as choose) ->
         { choose with core = Choose (v, ran, e) }
-    end ;
+    end;
 
     locate begin
       kwd "CASE"
@@ -337,18 +348,40 @@ and complex_expr b = lazy begin
   ]
 end
 
+
 and atomic_expr b = lazy begin
   choice [
     locate begin
+      (* set constructor *)
       punct "{" >>>
         choice [
+          (* axiom scheme of separation
+          for example:
+              {x \in S:  x + 1}
+
+          Section 16.1.6 on pages 299--301 of the book "Specifying Systems",
+          specifically page 301
+          *)
           attempt (hint <*> (infix "\\in" >*> use (expr b))) <*> (punct ":" >*> use (expr b))
           <$> (fun ((v, ran), e) -> SetSt (v, ran, e)) ;
 
-          attempt (use (expr b)<<< punct ":") <*> use (boundeds b)
+          (* axiom scheme of replacement
+          for example:  {x + 1:  x \in S}
+
+          Section 16.1.6 on pages 299--301 of the book "Specifying Systems",
+          specifically page 301
+          *)
+          attempt (use (expr b) <<< colon)
+            <*> use (boundeds b)
           <$> (fun (e, bs) -> SetOf (e, bs)) ;
 
-          sep (punct ",") (use (expr b))
+          (* set enumeration
+          for example:  {1, 2, 3}
+
+          Section 16.1.6 on pages 299--301 of the book "Specifying Systems",
+          specifically page 300
+          *)
+          comma_exprs b
           <$> (fun es -> SetEnum es)
         ]
       <<< punct "}"
@@ -357,42 +390,121 @@ and atomic_expr b = lazy begin
     locate begin
       punct "[" >>>
         choice [
-          enabled (anyname <<< punct "|->") >*>
-            sep1 (punct ",") (anyname <<< punct "|->" <**> use (expr b))
+          (* Record constructor:  [name1 |-> e1, ...] *)
+          enabled (anyname <<< mapsto) >*>
+            (comma1 (anyname <<< mapsto <**> use (expr b)))
           <<< punct "]"
           <$> (fun fs -> Record fs) ;
 
-          enabled (anyname <<< punct ":") >*>
-            sep1 (punct ",") (anyname <<< punct ":" <*> use (expr b))
+          (* Set of records:  [name1: Values1, ...] *)
+          enabled (anyname <<< colon) >*>
+            (comma1 (anyname <<< colon <*> use (expr b)))
           <<< punct "]"
           <$> (fun fs -> Rect fs) ;
 
+          (* EXCEPT expression, examples:
+
+          [f EXCEPT ![1] = 2]
+          [f EXCEPT ![1] = 3, ![2] = 4]
+          [f EXCEPT ![1, 2] = 3]
+          [f EXCEPT !["a"] = 3, !["b"] = 4]
+          [f EXCEPT !.a = 3, !.b = 4]
+          [f EXCEPT !.a = 3, !["b"] = 4]
+          *)
           begin
             let rec exspec b = lazy begin
-              punct "!" >>> use (trail b) <<< infix "=" <*> (use (expr true)) (* choice [ attempt (punct "@" <!> At true);  use expr ] *)
+              (* except equality, examples:
+
+              ![1] = 2
+              !["a"] = 2
+              !.a = 2
+              ![1, 2] = 3
+              *)
+              punct "!" >>> use (trail b) <<< infix "=" <*> (use (expr true))
+              (* choice [ attempt (punct "@" <!> At true);  use expr ] *)
             end
             and trail b = lazy begin
               star1 begin
                 choice [
+                  (* field reference:  .name *)
                   punct "." >>> anyname <$> (fun x -> Except_dot x) ;
-                  punct "[" >>> use (expr b) <<< punct "]" <$> (fun e -> Except_apply e) ;
+                  (* application, examples:
+
+                  [arg]
+                  [arg1, arg2]
+                  *)
+                  punct "[" >>> alt [
+                        (* single expression within square brackets:  [arg] *)
+                        (use (expr b)) <<< punct "]";
+                        (* comma-separated list of expressions,
+                        within square brackets:  [arg1, ..., argN] *)
+                        (comma1_exprs b)
+                            <$> (fun es -> noprops (Tuple es))
+                            <<< punct "]"
+                    ]
+                    <$> (fun e -> Except_apply e) ;
                 ]
               end
             end in
               attempt (use (expr b) <<< kwd "EXCEPT")
-              <**> sep1 (punct ",") (use (exspec b)) <<< punct "]"
+              <**> comma1 (use (exspec b)) <<< punct "]"
               <$> (fun (e, xs) -> Except (e, xs))
           end ;
 
-          attempt (use (boundeds b) <<< punct "|->") <**> use (expr b)
-          <<< punct "]"
-          <$> (fun (bs, e) -> Fcn (bs, e)) ;
+          (* Function constructor, examples:
+
+          [x \in S |-> e]
+          [<<x, y>> \in S \X R |-> e]
+          [<<x, y>> \in S \X R, z \in Q |-> e]
+          *)
+          attempt (use (func_boundeds b) <<< mapsto)
+              <**> use (expr b)
+              <<< punct "]"
+          <$> begin
+            fun ((bs, letin), e) ->
+                (* decide whether to insert a `LET...IN`
+                for representing bound identifiers described by bounded
+                tuples in the source
+                *)
+                if ((List.length letin) = 0) then
+                    (* no `LET...IN` needed, because no tuple declarations
+                    appear in the function constructor, for example:
+
+                    [x \in S |-> x + 1]
+
+                    is represented with `bs` containing the declaration
+                    `x \in S`, and `e` the expression `x + 1`.
+                    *)
+                    Fcn (bs, e)
+                else begin
+                    (* insert a `LET...IN`, needed to represent tuple
+                    declarations, for example:
+
+                    [<<x, y>> \in S,  r, w \in Q |-> x + y - r - w]
+
+                    is represented with `bs` containing the declarations
+                    `fcnbnd#x \in S`, `r \in Q`, `w \in Ditto`, and
+                    `e` the expression
+
+                        LET
+                            x == fcnbnd#x[1]
+                            y == fcnbnd#x[2]
+                        IN
+                            x + y - r - w
+                    *)
+                    let e_ = Let (letin, e) in
+                    let e = noprops e_ in
+                    Fcn (bs, e)
+                end
+          end ;
 
           use (expr b) >>= begin fun e ->
             choice [
+              (* Set of functions:  [Domain -> Range] *)
               punct "->" >*> use (expr b) <<< punct "]"
               <$> (fun f -> Arrow (e, f)) ;
 
+              (* Box action operator:  [A]_e *)
               punct "]_" >>> use (sub_expr b)
               <$> (fun v -> Sub (Box, e, v)) ;
             ]
@@ -402,7 +514,7 @@ and atomic_expr b = lazy begin
 
     locate begin
       punct "<<" >>>
-        sep (punct ",") (use (expr b)) >>= begin
+        comma_exprs b >>= begin
           function
             | [e] ->
                 choice [
@@ -545,8 +657,8 @@ end
 and operator b = lazy begin
   choice [
     locate begin
-      kwd "LAMBDA" >*> sep1 (punct ",") hint
-      <**> (punct ":" >>> use (expr b))
+      kwd "LAMBDA" >*> names
+      <**> (colon_expr b)
       <$> (fun (vs, e) -> Lambda (List.map (fun v -> (v, Shape_expr)) vs, e))
     end ;
 
@@ -566,7 +678,7 @@ and operator b = lazy begin
 end
 
 and bounds b = lazy begin
-  sep1 (punct ",") (sep1 (punct ",") hint <*> optional (infix "\\in" >*> use (expr b)))
+  comma1 (names <*> optional (in_expr b))
   <$> begin
     fun bss ->
       let vss = List.map begin
@@ -581,8 +693,10 @@ and bounds b = lazy begin
   end
 end
 
+
 and boundeds b = lazy begin
-  sep1 (punct ",") (sep1 (punct ",") hint <*> (infix "\\in" >*> use (expr b)))
+  (* The function `boundeds` parses a list of only bounded declarations. *)
+  comma1 (names <*> (in_expr b))
   <$> begin
     fun bss ->
       let vss = List.map begin
@@ -593,6 +707,211 @@ and boundeds b = lazy begin
       List.concat vss
   end
 end
+
+
+and func_boundeds b = lazy begin
+    (* Parse comma-separated bounded declarations.
+
+    The declarations are separated by commas.
+
+    Each declaration is either:
+    - a comma-separated list of identifiers,
+      followed by the lexeme `\in`,
+      and an expression, or
+    - a collection of identifiers described
+      using TLA+ tuple syntax,
+      followed by the lexeme `\in`,
+      and an expression.
+
+    Examples of such declarations:
+    m \in S
+    a, b \in R
+    <<x, y, z>> \in S
+    m \in S,  a, b \in R
+    m \in S,  a, b \in R,  <<x, y>> \in A \X B
+
+    Note that each declaration has a bound.
+    Declarations of (lists of) identifiers
+    and tuply declarations can appear in any
+    order within the list of declarations.
+    *)
+    comma1 (choice [
+        (* bounded constants, examples:
+
+        m \in S
+        a, b \in R
+        *)
+        (names <*> (in_expr b))
+            <$> begin
+                fun (vs, dom) ->
+                    let bounds =
+                        let name = List.hd vs in
+                        let hd = (name, Constant, Domain dom) in
+                        let tl = List.map
+                            (fun v -> (v, Constant, Ditto))
+                            (List.tl vs) in
+                        hd :: tl in
+                    let letin = [] in
+                    (bounds, letin)
+            end;
+        (* bounded tuples of constants, examples:
+
+        <<x, y>> \in S
+        <<a, b, c>> \in A \X B \X C
+
+        A function constructor is represented with `Fcn`,
+        which takes `bounds` as first argument.
+        `bounds` represents a list of bound identifiers (constants here).
+
+        So the tuples need to be converted to individual identifier bounds.
+        This is done by introducing intermediate definitions in a `LET...IN`.
+        Each bounded tuple (like `<<x, y>>` above) is replaced by a fresh
+        identifier of the form:
+
+            fcnbnd#first_name
+
+        where "first_name" results from using the first identifier
+        that occurs within the tuple. For example, `<<x, y>>` is replaced by
+
+            fcnbnd#x
+
+        The fresh identifier is used inside the `LET...IN` for defining each
+        of the identifiers that occurred within the tuple. For example,
+        `[<<x, y>> \in S |-> ...]` becomes:
+
+            [fcnbnd#x \in S:
+                LET
+                    x == fcnbnd#x[1]
+                    y == fcnbnd#x[2]
+                IN
+                    ...]
+
+        The hashmark is used within the identifier fcnbnd#... to ensure that
+        the fresh identifier is different from all other identifiers in the
+        current context, without the need to inspect the context (which is
+        not available while parsing). The syntax of TLA+ ensures this,
+        because no identifier in TLA+ source can contain a hashmark.
+
+        In each function constructor, the first identifier from the tuple
+        (like "x" above) is unique, because the TLA+ syntax ensures that
+        each identifier is unique within its context. Therefore, each bounded
+        tuple within a function constructor will be replaced by a unique
+        fresh identifier (unique within that context and that context's
+        extensions).
+        *)
+        (tuple_of_names <*> (in_expr b))
+            <$> begin
+                fun (vs, dom) ->
+                    (* bounds *)
+                    (* name of first identifier that appears within the tuple,
+                    for example "x" from the tuple `<x, y>`.
+                    This name is to be used as suffix of the fresh identifier
+                    that will represent the tuple.
+                    *)
+                    let name = (List.hd vs).core in
+                    (* fresh identifier that will represent the tuple,
+                    for example "fcnbnd#x" from the tuple `<x, y>`
+                    *)
+                    let v = noprops ("fcnbnd#" ^ name) in
+                    (* bounded constant declaration for the fresh identifier,
+                    for example `fcnbnd#x \in S` from `<x, y> \in S`
+                    *)
+                    let hd = (v, Constant, Domain dom) in
+                    (* a list with a single element, in preparation for
+                    later concatenation
+                    *)
+                    let bounds = [hd] in
+                    (* `LET...IN` definitions
+
+                    We now create the definitions of the identifiers that
+                    appeared inside the tuple declaration, using in the
+                    definiens the fresh identifier `v` that has just been
+                    introduced.
+
+                    For example, the tuple declaration `<<x, y>> \in S`
+                    would here result in the creation of two definitions:
+
+                        x == fcnbnd#x[1]
+                        y == fcnbnd#x[2]
+                    *)
+                    let letin =
+                        (* create one definition for each identifier that
+                        appears inside the tuple declaration
+                        *)
+                        List.mapi begin
+                        fun i op ->  (* arguments:
+                            - `i` is the 0-based index of the tuple element
+                            - `op` is the tuple element (an identifier)
+                            *)
+                            let e =
+                                (* tuple identifier, for example "fcnbnd#x" *)
+                                let f = noprops (Opaque v.core) in
+                                (* 1-based index numeral *)
+                                let idx =
+                                    let i_str = string_of_int (i + 1) in
+                                    let num = Num (i_str, "") in
+                                    noprops num in
+                                (* function application on the index,
+                                for example:  fcnbnd#x[1]
+                                *)
+                                let e_ = FcnApp (f, [idx]) in
+                                noprops e_ in
+                            (* definition for `op`, for example:
+
+                            x == fcnbnd#x[1]
+
+                            The result is of type `defn`.
+                            *)
+                            let defn_ = Operator (op, e) in
+                            noprops defn_
+                        end vs in
+                    (* Bundle the constant declarations of fresh
+                    identifiers (in `bounds`) and the definitions (in terms of
+                    these fresh identifiers) of the identifiers that appeared
+                    in the tuple declaration (these definitions are in `letin`).
+
+                    These definitions are used at the call site to construct
+                    a new `LET...IN` expression that wraps the function's
+                    value expression (the `e` in `[... |-> e]`).
+
+                    The declarations are used, together with this `LET...IN`
+                    expression, to populate a function constructor `Fcn`.
+                    *)
+                    (bounds, letin)
+            end
+        ])
+    <$> begin
+      fun bss ->
+        (* Unzip the two lists.
+        `bss` is a list of pairs of lists, so `bounds` is a list of lists
+        and so is `letin`.
+        *)
+        let (bounds, letin) = List.split bss in
+        (* Flatten each list of lists into a list.
+        At this point we return a list of bounds that will be used in a `Fcn`,
+        and a (possibly empty) list of operator definitions that
+        will be used (if nonempty) to form a `Let` that will wrap the
+        expression that defines the value of the function in `Fcn`.
+        *)
+        (List.concat bounds, List.concat letin)
+    end
+end
+
+
+and colon_expr b =
+    colon >>> use (expr b)
+
+
+and in_expr b =
+    (infix "\\in") >*> use (expr b)
+
+
+and comma_exprs b =
+    comma (use (expr b))
+
+
+and comma1_exprs b =
+    comma1 (use (expr b))
 
 
 (* pragmas *)
@@ -644,8 +963,6 @@ and string_or_float_of_expr = lazy begin
 end
 
 
-
-
 (* definitions *)
 
 and defn b = lazy begin
@@ -681,7 +998,8 @@ and defn b = lazy begin
                                                 (Util.locate (Lambda (args, e)) loc),
                                                 l)
                             end
-                        | `Fun (h, args) ->  assert false (*** FIXME add error message ***)
+                        | `Fun (h, boundeds) ->
+                            assert false  (* FIXME add error message *)
                     end
                 | None ->
                     begin
@@ -692,8 +1010,12 @@ and defn b = lazy begin
                                 | [] -> Operator (h, e)
                                 | _ -> Operator (h, Util.locate (Lambda (args, e)) loc)
                             end
-                        | `Fun (h, args) ->
-                            Operator (h, Util.locate (Fcn (args, e)) loc)
+                        | `Fun (name, boundeds) ->
+                            begin
+                            let fcn_ = Fcn (boundeds, e) in
+                            let fcn = Util.locate fcn_ loc in
+                            Operator (name, fcn)
+                            end
                     end
             in Util.locate op loc
           end;
@@ -716,23 +1038,44 @@ and defn b = lazy begin
 end
 
 and ophead b = lazy begin
+  let make_param name = (name, Shape_expr) in
   choice [
-    locate anyprefix <*> hint <$> (fun (h, u) -> `Op (h, [u, Shape_expr])) ;
-    hint >>= fun u ->
+    (* prefix operator definition *)
+    locate anyprefix
+        <*> hint
+        <$> (fun (op_name, param) ->
+            let params = [make_param param] in
+            `Op (op_name, params));
+    hint >>= fun name_1 ->
       choice [
-        locate anypostfix <$> (fun h -> `Op (h, [u, Shape_expr])) ;
+        (* postfix operator definition *)
+        locate anypostfix
+            <$> (fun op_name ->
+                let params = [make_param name_1] in
+                `Op (op_name, params));
 
-        locate anyinfix <*> hint <$> (fun (h, v) -> `Op (h, [u, Shape_expr ; v, Shape_expr])) ;
+        (* infix operator definition *)
+        locate anyinfix
+            <*> hint
+            <$> (fun (op_name, name_2) ->
+                let params = List.map
+                    make_param [name_1; name_2] in
+                `Op (op_name, params));
 
+        (* function definition
+        *)
         punct "[" >>> use (bounds b) <<< punct "]"
-        <$> (fun args -> `Fun (u, args)) ;
+        <$> (fun args -> `Fun (name_1, args));
 
-        optional (punct "(" >>> sep1 (punct ",") ((use opdecl)) <<< punct ")")
+        (* first-order-operator definition *)
+        optional (
+            punct "("
+            >>> comma1 (use opdecl)
+            <<< punct ")")
         <$> (function
-               | None -> `Op (u, [])
-               | Some args -> `Op (u, args)) ;
-
-      ] ;
+               | None -> `Op (name_1, [])
+               | Some args -> `Op (name_1, args))
+      ]
   ]
 end
 
@@ -750,7 +1093,7 @@ and opdecl = lazy begin
         <$> (fun h -> (h, Shape_op 2))
       ] ;
 
-    hint <*> optional (punct "(" >>> sep1 (punct ",") (punct "_") <<< punct ")")
+    hint <*> optional (punct "(" >>> comma1 (punct "_") <<< punct ")")
     <$> begin
       fun (h, args) -> match args with
         | None -> (h, Shape_expr)
@@ -786,7 +1129,7 @@ end
 
 and subst b = lazy begin
   let exprify op = return (Opaque op) in
-  sep1 (punct ",")
+  comma1
     (choice [ hint ; locate anyop ]
      <**> (punct "<-" >>> choice [ use (expr b) ; locate (anyop >>+ exprify) ]))
 end
@@ -821,7 +1164,7 @@ and hyp b = lazy begin locate begin
 end end
 
 and sequent b = lazy begin
-  kwd "ASSUME" >*> sep1 (punct ",") (use (hyp b))
+  kwd "ASSUME" >*> comma1 (use (hyp b))
   <**> (kwd "PROVE" >>> use (expr b))
   <$> (fun (hs, e) -> { context = Deque.of_list hs ; active = e }) ;
 end

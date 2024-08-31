@@ -39,6 +39,7 @@ and isa_method = lazy begin
              isa_cvc33;
              isa_yices3;
              isa_verit;
+             isa_zipper;
              isa_spass;
              isa_tptp;
              isa_ls4;
@@ -109,6 +110,8 @@ and isa_cvc33 = ident "cvc33" <!> Cvc33 default_smt2_timeout
 and isa_yices3 = ident "yices3" <!> Yices3 default_smt2_timeout
 
 and isa_verit = ident "verit" <!> Verit default_smt2_timeout
+
+and isa_zipper = ident "zipper" <!> Zipper default_zipper_timeout
 
 and isa_spass = ident "spass" <!> Spass default_spass_timeout
 

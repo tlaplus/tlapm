@@ -105,6 +105,6 @@ let () =
   let ret = Sys.command ("autoconf -I tools -o configure " ^ acf) in
   if ret <> 0 then failwith "calling autoconf" ;
   if !loud then printf "Created configure\n%!" ;
-  flush Pervasives.stdout ;
+  flush Stdlib.stdout ;
   if !loud then printf "Now run ./configure to rebuild the Makefile\n%!"
 ;;

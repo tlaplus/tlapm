@@ -231,12 +231,29 @@ and get_steps_step stp =
 let rec generate (sq : sequent) prf time_flag =
   let prf = assign prf Props.goal sq in
   let loc = Util.get_locus prf in
-  if not (List.mem (Filename.basename loc.Loc.file) !Params.input_files)
+  let file_basename = Filename.basename loc.Loc.file in
+  if !Params.verbose then
+    Util.printf "Deciding whether to generate \
+        proof obligations for a proof in \
+        a file with basename `%s` \
+        (inside `Proof.Gen`)\n"
+        file_basename;
+  if not (List.mem file_basename !Params.input_files)
      || Loc.line loc.Loc.stop < !Params.tb_sl
      || Loc.line loc.Loc.start > !Params.tb_el
-  then
+  then begin
+    if !Params.verbose then
+    Util.printf "Skipping generation of \
+        proof obligations for this particular proof, \
+        because no path from those given to `tlapm` \
+        has basename `%s`\n"
+        file_basename;
     prf
-  else begin
+  end else begin
+    if !Params.verbose then
+    Util.printf "Will generate proof obligations for \
+        a proof in a file with basename `%s`\n"
+        file_basename;
     match prf.core with
       | Obvious ->
           let ob = obligate (sq @@ prf) Ob_main in
@@ -368,7 +385,7 @@ let rec mutate cx uh us time_flag =
       time_flag in
       (cx2, obs1 @ obs2)
   | {defs = []; facts = []} -> (cx, [])
-;;
+
 
 let collect prf =
   let coll = ref [] in

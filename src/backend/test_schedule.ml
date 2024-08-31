@@ -1,31 +1,32 @@
-(*
- * Copyright (C) 2012  Inria and Microsoft Corporation
- *)
+(* Test harness for `schedule.ml`.
 
-(* Test harness for schedule.ml *)
+```shell
+ocamlc -g unix.cma schedule.mli schedule.ml test_schedule.ml
+```
 
-(* ocamlc -g unix.cma schedule.mli schedule.ml test_schedule.ml *)
+Copyright (C) 2012  Inria and Microsoft Corporation
+*)
+open Printf
 
-open Printf;;
+open Schedule
 
-open Schedule;;
 
 let timeout_cont name () =
   printf ">>> %s: timeout\n%!" name;
   Timeout
-;;
+
 
 let show_cont name () =
   printf ">>> %s: running\n%!" name;
   Continue (timeout_cont name, 60.0)
-;;
+
 
 let string_of_result r =
   match r with
   | Finished -> "Finished"
   | Stopped_kill -> "Stopped_kill"
   | Stopped_timeout -> "Stopped_timeout"
-;;
+
 
 let done_cont name success res time =
   printf ">>> %s: done (%s)\n%!" name (string_of_result res);
@@ -33,7 +34,7 @@ let done_cont name success res time =
     success
   else
     false
-;;
+
 
 let compute name delay result =
   function () ->
@@ -49,7 +50,7 @@ let compute name delay result =
         donec = done_cont name result;
       }
     end
-;;
+
 
 let tasks = [
   1, [compute "1-zenon" 4 true;
@@ -73,6 +74,6 @@ let tasks = [
       compute "5-smt" 80 true;
       compute "5-smt2" 30 true;
      ];
-];;
+]
 
 Schedule.run (int_of_string Sys.argv.(1)) (Some Unix.stdin) tasks;;

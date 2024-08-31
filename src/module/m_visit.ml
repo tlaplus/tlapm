@@ -21,10 +21,11 @@ let update_cx (cx: ctx) mu =
 
 
 class map =
-    object (self : 'self)
+    object (self: 'self)
 
     method module_units cx tla_module =
-        (* The context `cx` would be relevant for modules that extend modules
+        (* The context `cx` would be relevant for
+        modules that extend modules
         or for submodules.
         *)
         let new_module = [] in
@@ -73,23 +74,27 @@ class map =
         (cx, mu)
 
     method definition cx df wd vsbl local =
-        (* TODO: assumes that `INSTANCE` statements have been expanded *)
+        (* TODO: assumes that `INSTANCE` statements
+        have been expanded *)
         let mu = Definition (df, wd, vsbl, local) in
         let cx = update_cx cx mu in
         (cx, mu)
 
     method axiom cx name expr =
         let mu = Axiom (name, expr) in
-        (* add a fact for the axiom, and, if named, then also a definition,
+        (* add a fact for the axiom, and,
+        if named, then also a definition,
         to the context `cx`
         *)
         let cx = update_cx cx mu in
         (cx, mu)
 
     method theorem cx name sq naxs pf orig_pf summ =
-        (* add the hypotheses of the theorem to the context `cx` *)
+        (* add the hypotheses of the
+        theorem to the context `cx` *)
         let mu = Theorem (name, sq, naxs, pf, orig_pf, summ) in
-        (* add a fact for the theorem, and, if named, then also a definition,
+        (* add a fact for the theorem, and,
+        if named, then also a definition,
         to the context `cx`
         *)
         let cx = update_cx cx mu in
@@ -97,7 +102,8 @@ class map =
 
     method mutate cx change usable =
         let mu = Mutate (change, usable) in
-        (* TODO: change the visibility of facts in `cx` based on the
+        (* TODO: change the visibility of
+        facts in `cx` based on the
         `Mutate` statement.
         *)
         (cx, mu)

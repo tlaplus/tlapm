@@ -1,9 +1,7 @@
-(*
- * pars/pco.ml --- parsers (based on lazy lists)
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Parser combinators (based on lazy lists).
+
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 
 (** Parsers implementation *)
 
@@ -457,10 +455,9 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
     (pst.source, pst.lastpos, pst.ustate)
 
   let restore (s, l, u) pst =
-    pst.source <- s ;
-    pst.lastpos <- l ;
-    pst.ustate <- u ;
-  ;;
+    pst.source <- s;
+    pst.lastpos <- l;
+    pst.ustate <- u
 
   let lookahead ap = Prs begin
     fun pst ->
@@ -650,6 +647,7 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
     | Infix of assoc * (Loc.locus -> 'a -> 'a -> 'a)
 
   let resolve (item_prs : bool -> ('s, 'a item list) prs) : ('s, 'a) prs =
+    let exception Reduce_one_exn in
     let rec next stack startp =
       attempt (item_prs startp >>+ decide_fork stack) <|> use (lazy (finish stack))
 
@@ -724,7 +722,7 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
           (Atm (px oloc a), fuse oloc aloc)
           :: stack
       | _ ->
-          failwith "reduce_one"
+          raise Reduce_one_exn
 
     and finish stack = match stack with
         | [(Atm a, loc)] -> return a loc
@@ -733,7 +731,7 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
               fail ("required expressions(s) missing before '" ^ Tok.rep t ^ "'")
         | _ -> begin
             try finish (reduce_one stack) with
-              | Failure "reduce_one" -> fail "incomplete expression"
+              | Reduce_one_exn -> fail "incomplete expression"
           end
 
     in next [] true

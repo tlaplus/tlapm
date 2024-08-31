@@ -1,16 +1,14 @@
-(*
- * expr/constness.ml --- detect constant operators
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Detect constant operators.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 
 open E_t
 
-module Visit = E_visit;;
+module Visit = E_visit
+
 
 let isconst : bool pfuncs =
   Property.make ~uuid:"595aaaad-07ca-498b-8ebc-a473db6b0b27" "Expr.Constness.isconst"

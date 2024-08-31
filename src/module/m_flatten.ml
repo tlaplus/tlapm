@@ -1,19 +1,19 @@
-(*
- * module/flatten.ml --- flatten modules (getting rid of EXTENDS)
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Flatten modules (i.e., remove `EXTENDS` statements).
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 open Util.Coll
 
 open Expr.T
 open Proof.T
+
 open M_t
 
-(*let debug = Printf.eprintf;;*)
+
+(* let debug = Printf.eprintf *)
+
 
 let rec exports m =
   let rec spin body = function
@@ -89,4 +89,3 @@ and flatten_body mcx m =
   in
   spin mcx m.core.body ;
   {m.core with body = Deque.to_list !prefix; stage = Flat} @@ m
-;;

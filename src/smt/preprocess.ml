@@ -1,11 +1,9 @@
-(*
- * backend/smt/preprocess.ml --- Skolemize, simplify equalities and abstract.
- *
- * Author: Hernán Vanzetto <hernan.vanzetto@inria.fr>
- *
- * Copyright (C) 2011-2012  INRIA and Microsoft Corporation
- *)
+(* Skolemize, simplify equalities and abstract.
 
+Author: Hernán Vanzetto <hernan.vanzetto@inria.fr>
+
+Copyright (C) 2011-2012  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 
@@ -34,9 +32,11 @@ let ( ||> ) = Smt.( ||> )
 
 let ( $! ) = E.( $! )
 
+
 (****************************************************************************)
-(* Preprocessing functions																								  *)
+(* Preprocessing functions *)
 (****************************************************************************)
+
 
 (** Compute list of primed variables occuring in the sequent [sq] *)
 let primed_vars sq =
@@ -66,7 +66,7 @@ let operator_symbols sq =
       | Ix n ->
           begin match Dq.nth ~backwards:true (snd scx) (n - 1) with
           | Some ({core = Defn ({core = Operator (h,_)},_,_,_)}) ->
-							vars := h.core :: !vars
+            vars := h.core :: !vars
           | _ -> ()
           end
       | _ -> super#expr scx e
@@ -97,20 +97,23 @@ let opaques sq =
 (* Util.eprintf "opaques = %s" (String.concat "," (Smt.remove_repeated !vars)) ; *)
   Smt.remove_repeated !vars
 
+
 (** Change the operator identifiers in the list [ids] from hidden
-		definitions to new CONSTANTs in the context of sequent [sq] *)
+definitions to new CONSTANTs in the context of sequent [sq]
+*)
 let make_operators_visible ids sq =
   let visitor = object (self : 'self)
     inherit [unit] Expr.Visit.map as super
     method hyp scx h =
-			let nm = Expr.T.hyp_name h in
-			match h.core with
-			| Defn (defn, wd, Hidden, ex) when List.mem nm ids ->
-					let h = Fresh (nm %% [], Shape_expr, Constant, Unbounded) @@ h in
-					super#hyp scx h
-      | _ -> super#hyp scx h
+        let nm = Expr.T.hyp_name h in
+        match h.core with
+        | Defn (defn, wd, Hidden, ex) when List.mem nm ids ->
+            let h = Fresh (nm %% [], Shape_expr, Constant, Unbounded) @@ h in
+            super#hyp scx h
+        | _ -> super#hyp scx h
   end in
-	snd (visitor#sequent ((),sq.context) sq)
+  snd (visitor#sequent ((),sq.context) sq)
+
 
 (** Inserts the list [vars] of identifiers as new CONSTANTs in the context of
     sequent [sq] *)
@@ -121,30 +124,37 @@ let insert_vars vars sq =
 (* Util.eprintf "inserted_vars : %s" (String.concat "," vars) ; *)
   { context = cx ; active = sq.active }
 
+
 (** The type [Ctx.ident] contains a field [salt] that counts the number
-		of occurrences of an identifier symbol. [Ctx.string_of_ident] is the
-		string that will be actually printed, i.e. [i_1].  *)
+of occurrences of an identifier symbol. [Ctx.string_of_ident] is the
+string that will be actually printed, i.e. [i_1].
+*)
 let make_salt_explicit sq =
-  let visitor = object (self : 'self)
+    let visitor = object (self : 'self)
     inherit [unit] Expr.Visit.map as super
-	  method bounds scx bs =
-		  let _,cx = Ectx.from_hyps Ectx.dot (snd scx) in
-	    let bs = List.map begin
-	      fun (v, k, dom) ->
-					(* let _,nm = Isabelle.adj cx v in *)
-				  let cx = Ctx.push cx v.core in
-			  	let nm = Ctx.string_of_ident (Ctx.front cx) in
-					(nm @@ v, k, dom)
-	    end bs in
-			super#bounds scx bs
-    method hyp scx h =
-      match h.core with
-      | Defn (_, _, Hidden, _)    																						(** ignore these cases *)
-      | Fact (_, Hidden, _) ->
-          (Expr.Visit.adj scx h, h)
-      | _ -> super#hyp scx h
-  end in
-	snd (visitor#sequent ((),sq.context) sq)
+
+        method bounds scx bs =
+            let _, cx = Ectx.from_hyps Ectx.dot (snd scx) in
+            let bs = List.map begin
+                fun bound ->
+                    let v = Expr.T.name_of_bound bound in
+                    let cx = Ctx.push cx v.core in
+                    let nm = Ctx.string_of_ident (Ctx.front cx) in
+                    let h = nm @@ v in
+                    Expr.Visit.rename_bound bound h
+                end bs in
+                super#bounds scx bs
+
+        method hyp scx h =
+            match h.core with
+            | Defn (_, _, Hidden, _)  (** ignore these cases *)
+            | Fact (_, Hidden, _) ->
+                (Expr.Visit.adj scx h, h)
+            | _ ->
+                super#hyp scx h
+        end in
+    snd (visitor#sequent ((), sq.context) sq)
+
 
 (****************************************************************************)
 
@@ -152,13 +162,17 @@ let make_salt_explicit sq =
     - Register record signatures in [Smt.record_signatures] and add (instances of) record extensionality axioms
     - [TODO] Register tuple signatures
     - Unroll sequents
-    - Rewrite [<<a_1,...,a_n>> = <<b_1,...,b_n>>]  -->  [a_1 = b_1 /\ ... /\ a_n = b_n]
-    - Rewrite [x = TRUE|FALSE]  -->  [x <=> TRUE|FALSE]
-    - Rewrite [x # {}]  -->  [(\A y : ~ y \in x) => FALSE]  in conclusions
+    - Rewrite
+      ```
+      [<<a_1, ..., a_n>> = <<b_1, ..., b_n>>]  -->
+      [a_1 = b_1 /\ ... /\ a_n = b_n]
+      ```
+    - Rewrite `[x = TRUE]  -->  [x <=> TRUE]`
+    - Rewrite `[x # {}]  -->  [(\A y :  ~ y \in x) => FALSE]`  in conclusions
     - Insert operator symbols and primed variable symbols in the context
     - Remove [B.Unprimable] from expressions
-    - Sort string elements in sets {s1,...,sn} alphabetically
-	  - make_salt_explicit
+    - Sort string elements in sets `{s1, ..., sn}` alphabetically
+    - make_salt_explicit
     *)
 let prepreproc sq =
   let app op es = Apply (Internal op %% [], es) %% [] in
@@ -178,21 +192,25 @@ let prepreproc sq =
           begin try
             lAnd (List.map (fun (x,y) -> app B.Eq [x ; y]) (List.combine es1 es2))
           with _ ->
-						Internal B.FALSE @@ e
-					end
+            Internal B.FALSE @@ e
+          end
       | Record res ->
           let res = Smt.rec_sort res in
           let hs,_ = List.split res in
           Smt.record_signatures := hs :: !Smt.record_signatures;
           Record (List.map (fun (s, e) -> (s, self#expr scx e)) res) @@ e
-      | Apply ({core = Internal B.Eq}, [x ; {core = Internal (B.TRUE | B.FALSE)} as y])
-      | Apply ({core = Internal B.Eq}, [{core = Internal (B.TRUE | B.FALSE)} as y ; x]) ->
+      | Apply ({core = Internal B.Eq}, [x ; {core = Internal B.TRUE} as y])
+      | Apply ({core = Internal B.Eq}, [{core = Internal B.TRUE} as y ; x]) ->
           let x = super#expr scx x in
           app B.Equiv [x ; y]
+          (* NOTE Removed the case for y = FALSE, which is unsound:
+           * If ( x <=> FALSE ) => ( x = FALSE ), then using the law
+           * \A x : x <=> TRUE \/ x <=> FALSE, one can prove
+           * \A x : x = TRUE \/ x = FALSE *)
       | SetEnum es when List.for_all is_string es ->
           SetEnum (List.sort ~cmp:sort_string_exp es) @@ e
       | Sequent sq ->
-					Smt.unroll_seq sq
+          Smt.unroll_seq sq
       | Apply ({core = Internal B.Unprimable}, [ex]) ->
           ex
       | Apply ({core = Internal (B.Leadsto | B.ENABLED | B.Cdot | B.Actplus |
@@ -203,23 +221,31 @@ let prepreproc sq =
           super#expr scx e
     method hyp scx h =
       match h.core with
-      | Defn (_, _, Hidden, _)    																						(** ignore these cases *)
+      | Defn (_, _, Hidden, _)  (** ignore these cases *)
       | Fact (_, Hidden, _) ->
           (Expr.Visit.adj scx h, h)
       | _ -> super#hyp scx h
   end in
   let sq = snd (visitor#sequent ((),sq.context) sq) in
 
-  (** Transform conclusion(s)  [x # {}]  -->  [(\A y : ~ y \in x) => FALSE]
-		  (TODO: also transform all positive formulas) *)
+  (** Transform conclusion(s)  `[x # {}]  -->  [(\A y:  ~ y \in x) => FALSE]`
+  (TODO: also transform all positive formulas) *)
   let c =
     match sq.active.core with
     | Apply ({core = Internal B.Neq}, ([x ; {core = SetEnum []}]
                                      | [{core = SetEnum []} ; x])) ->
         (* app B.Implies [app B.Eq [x ; SetEnum [] %% []] ; Internal B.FALSE %% []] *)
-        app B.Implies [
-					Quant (Forall, [ ("y"^fresh_id ()) %% [], Constant, No_domain ], app B.Neg [app B.Mem [Ix 1 %% [] ; app_expr (shift 1) x]]) %% [];
-					Internal B.FALSE %% []]
+        let name = ("y" ^ fresh_id ()) in
+        let bounds = [From_string.make_const_decl name] in
+        let expr = app B.Neg [
+            app B.Mem [
+                Ix 1 %% [];
+                app_expr (shift 1) x]
+            ] in
+        let forall = From_hint.make_forall
+            bounds expr in
+        app B.Implies [forall;
+            Internal B.FALSE %% []]
     | _ -> sq.active
   in
 
@@ -231,8 +257,7 @@ let prepreproc sq =
         let x = Ix 2 %% [] in
         let y = Ix 1 %% [] in
         let fcnapp f x = Apply (Opaque Smt.fcnapp %% [], [f ; x]) %% [] in
-        let bs = [ "r1" %% [], Constant, No_domain
-                 ; "r2" %% [], Constant, No_domain ] in
+        let bs = From_string.make_const_decls ["r1"; "r2"] in
         let hs = List.sort ~cmp:String.compare hs in
         let hs = List.map (fun h -> String h %% []) hs in
         let ex = app B.Implies [
@@ -243,7 +268,7 @@ let prepreproc sq =
                 (map (fun h -> app B.Eq [ fcnapp x h ; fcnapp y h ]) hs)
                );
           app B.Eq [x ; y]
-        	] in
+        ] in
         Quant (Forall, bs, ex) %% []
       end
   in
@@ -253,9 +278,14 @@ let prepreproc sq =
 (* Util.eprintf "//operator_symbols = %s" (String.concat "," (operator_symbols sq)); *)
 (* Util.eprintf "//primed_vars = %s" (String.concat "," (primed_vars sq)); *)
   sq
-	|> make_operators_visible (operator_symbols sq)															(** Operator identifiers need to appear explicitly in the sequent in order to be declared *)
-	|> insert_vars (primed_vars sq)																							(** ... the same for identifiers of primed variables *)
-	|> insert_vars (opaques sq)					    																		(** ... the same for other opaque expressions *)
+  |> make_operators_visible (operator_symbols sq)
+      (** Operator identifiers need to appear explicitly
+      in the sequent in order to be declared
+      *)
+  |> insert_vars (primed_vars sq)
+      (** ... the same for identifiers of primed variables *)
+  |> insert_vars (opaques sq)
+      (** ... the same for other opaque expressions *)
   |> make_salt_explicit
 
 (****************************************************************************)
@@ -278,7 +308,7 @@ let rec uncurry sq n =
 (* Util.eprintf "Skolem Fact: %a" (Typ_e.pp_print_expr (sq.context, Ctx.dot)) sq.active; *)
       (* let ecx = Ectx.from_hyps Ectx.dot sq.context in                        (** creates [ecx] from [sq.context] *)
       let (scx,_),_,hs = Ectx.adj_bs ecx bs in *)
-      let hs = Ectx.to_fresh bs in
+      let hs = Expr.Visit.hyps_of_bounds_unditto bs in
       let cx = snd (Expr.Visit.adjs ((),sq.context) hs) in
 (* Util.eprintf "       Fact: %a" (Typ_e.pp_print_expr (scx, Ctx.dot)) c; *)
       let sq = { context = cx ; active = c } in
@@ -288,22 +318,23 @@ let rec uncurry sq n =
 
 (****************************************************************************)
 (* Skolemize and deconj hypotheses + [uncurry]                              *)
-(*   FIX: Suppose two hypotheses [\E i: P(i)] and [\E i: Q(i)]. The first   *)
+(*   FIX: Suppose two hypotheses `[\E i:  P(i)]` and `[\E i:  Q(i)]`.
+The first *)
 (*   one is skolemized as [NEW i; P(i)] while the second as [NEW i; Q(i_1)].*)
 (****************************************************************************)
 let rec skolemize_once sq =
   let rec skol (cx:unit Expr.Visit.scx) h hs =
-	  (** Returns [(cx, ks, hs)] where:
-	      [cx] = new context including the new hypotheses [ks]
-	      [ks] = list of new hypotheses replacing [h]
-	      [hs] = rest of hypotheses, shifted
-	      *)
+    (** Returns [(cx, ks, hs)] where:
+      [cx] = new context including the new hypotheses [ks]
+      [ks] = list of new hypotheses replacing [h]
+      [hs] = rest of hypotheses, shifted
+    *)
     match h.core with
     | Fact ({core = Quant (Exists, bs, ex)}, Visible, tm) ->
 (* Util.eprintf "       Fact: %a" (Expr.Fmt.pp_print_expr (snd cx, Ctx.dot)) (Quant (Exists, bs, ex) @@ h); *)
-        let bs = Smt.unditto bs in
+        let bs = Expr.T.unditto bs in
         let h = Fact (ex, Visible, tm) @@ h in
-        let ks = Ectx.to_fresh bs @ [h] in                                    (** [ks] = new hypotheses *)
+        let ks = Expr.Visit.hyps_of_bounds_unditto bs @ [h] in                                    (** [ks] = new hypotheses *)
         let cx = Expr.Visit.adjs ((),sq.context) ks in
         let n = List.length ks - 1 in                                         (** [n] = number of new hypotheses; the 1 corresponds to [h] *)
         let hs = Dq.map (fun i -> app_hyp (bumpn i (shift n))) hs in          (** apply [shift n] only to the ids that are higher than [i] *)
@@ -311,7 +342,7 @@ let rec skolemize_once sq =
 
     (* | Fact ({core = Quant (Exists, bs, ex)}, Visible, tm) ->
 Util.eprintf "       Fact: %a" (Typ_e.pp_print_expr (snd cx, Ctx.dot)) (Quant (Exists, bs, ex) @@ h);
-        let bs = Smt.unditto bs in
+        let bs = Expr.T.unditto bs in
         let h = Fact (ex, Visible, tm) @@ h in
 
         let ecx = Ectx.from_hyps Ectx.dot (snd cx) in                         (** creates [ecx] from [cx] *)
@@ -320,17 +351,17 @@ Util.eprintf "       Fact: %a" (Typ_e.pp_print_expr (snd cx, Ctx.dot)) (Quant (E
 
 let ex' = app_expr (bumpn (Dq.size hs) (shift (List.length bs))) ex in
 let vs = map fst vss in
-Util.eprintf "Skolem \\E %s : %a" (String.concat "," vs) (Typ_e.pp_print_expr ecx) ex';
-Util.eprintf "Skolem \\E %s : %a" (String.concat "," vs) (Typ_e.pp_print_expr (fst ecx, Ctx.dot)) ex';
+Util.eprintf "Skolem \\E %s:  %a" (String.concat "," vs) (Typ_e.pp_print_expr ecx) ex';
+Util.eprintf "Skolem \\E %s:  %a" (String.concat "," vs) (Typ_e.pp_print_expr (fst ecx, Ctx.dot)) ex';
 let cx' = Expr.Visit.adjs cx js in
-Util.eprintf "Skolem \\E %s : %a" (String.concat "," vs) (Typ_e.pp_print_expr (snd cx', Ctx.dot)) ex';
+Util.eprintf "Skolem \\E %s:  %a" (String.concat "," vs) (Typ_e.pp_print_expr (snd cx', Ctx.dot)) ex';
 
 
         (* let cx = Expr.Visit.adjs cx ks in *)
         let ecx,(_,h) = Ectx.adj ecx h in
         let ks = js @ [h] in
 
-(* let ks = Ectx.to_fresh bs @ [h] in *)
+(* let ks = Expr.Visit.hyps_of_bounds_unditto bs @ [h] in *)
 let cx' = Expr.Visit.adjs cx' [h] in
 
         let n = List.length ks - 1 in                                         (** [n] = number of new hypotheses; the 1 corresponds to [h] *)
@@ -343,7 +374,7 @@ let cx' = Expr.Visit.adjs cx' [h] in
     | Fact ({core = Apply ({core = Internal B.Conj}, es)}, Visible, tm)
     | Fact ({core = List (And, es)}, Visible, tm) ->
 (* Util.eprintf "Conj Fact: %a" (Expr.Fmt.pp_print_expr (snd cx, Ctx.dot)) (List (And, es) @@ h); *)
-  			let es = List.flatten (map Smt.deconj es) in
+        let es = List.flatten (map Smt.deconj es) in
         let ks = mapi (fun i e -> Fact (app_expr (shift i) e, Visible, tm) @@ h) es in
         let cx = Expr.Visit.adjs cx ks in
         let n = List.length ks - 1 in                                         (** [n] = number of new hypotheses; the 1 corresponds to [h] *)
@@ -439,11 +470,11 @@ let rec is_subexpr x y =
 (* Simplify top-level equalities                                            *)
 (****************************************************************************)
 let simpl_eq scx (hs,c) =
-	(** Returns, if possible, a rewriting equality from expression [e] *)
+  (** Returns, if possible, a rewriting equality from expression [e] *)
   let rw_pair e =
     match e.core with
     | Apply ({core = Internal B.Eq}, [x ; y])
-				when is_rw_term x && not (is_subexpr x y) ->
+        when is_rw_term x && not (is_subexpr x y) ->
 (* Util.eprintf "simpl: %a --> %a" (Typ_e.pp_print_expr (snd scx, Ctx.dot)) x (Typ_e.pp_print_expr (snd scx, Ctx.dot)) y; *)
         Some (x,y)
     | Apply ({core = Opaque "boolify"}, [ex]) ->
@@ -455,7 +486,7 @@ let simpl_eq scx (hs,c) =
       match rw_pair e with Some (x,y) -> (x,y) :: r | None -> r
     end [] hs
   in
-	(** Apply rewriting rule [x --> y] in expression [e] *)
+  (** Apply rewriting rule [x --> y] in expression [e] *)
   let rw scx (x,y) e =
     let visitor = object (self : 'self)
       inherit [unit] Expr.Visit.map as super
@@ -489,12 +520,16 @@ let simpl_eq scx (hs,c) =
   in
   let rwr = (* rev *) (eqs hs) in
 (* (iter (fun (x,y) -> Util.eprintf "rwr: %a --> %a" (Typ_e.pp_print_expr (snd scx, Ctx.dot)) x (Typ_e.pp_print_expr (snd scx, Ctx.dot)) y) rwr); *)
-  let rwr = fold_left begin fun rs (x,y) -> 																	(** Apply substitutions [rwr] to itself *)
+  let rwr = fold_left begin fun rs (x,y) ->
+      (** Apply substitutions [rwr] to itself *)
       (x,y) :: (map (fun (a,b) -> rw scx (x,y) a, rw scx (x,y) b) rs)
     end [] rwr
   in
 (* (iter (fun (x,y) -> Util.eprintf "simpl: %a --> %a" (Typ_e.pp_print_expr (snd scx, Ctx.dot)) x (Expr.Fmt.pp_print_expr (snd scx, Ctx.dot)) y) rwr); *)
-  fold_left ff (hs,c) rwr																											(** Apply substitutions [rwr] to the proof obligation [hs,c] *)
+  fold_left ff (hs,c) rwr
+      (** Apply substitutions [rwr] to
+      the proof obligation [hs,c] *)
+
 
 (****************************************************************************)
 (* From Batteries List                                                      *)
@@ -667,22 +702,39 @@ let add_hyps hs ex =
   | [h] -> imp h ex
   | hs -> imp (List (And, hs) |> noprops) ex
 
-let add_eqs ss scx ex =
-  (* let ss = filter (fun (_,(_,_,b)) -> not b) ss in *)
-  if ss = [] then ex else
-  let bs' = List.map (fun (id,(_,e,_)) -> ((* Smt.turn_first_char true *) id) @@ e, Unknown, No_domain) ss in
-  let ex = add_hyps (mk_defs2 scx ss) ex
-    |> app_expr (shift (length bs'))
-  in
-  Quant (Forall, bs', ex) @@ ex
+
+let add_eqs id_bounds scx ex =
+    (* let id_bounds =
+        filter (fun (_,(_,_,b)) -> not b) id_bounds in
+    *)
+    match id_bounds with
+    | [] -> ex
+    | _ ->
+        (* (* Smt.turn_first_char true *) id
+        (earlier comment)
+        *)
+        let bs = List.map
+            (fun (id, (_, e, _)) ->
+                let h = id @@ e in
+                From_hint.make_param_decl h)
+            id_bounds in
+        let ex =
+            add_hyps
+                (mk_defs2 scx id_bounds) ex
+            |> app_expr (shift (List.length bs)) in
+        From_hint.make_forall bs ex $$ ex
+
 
 (** TODO: abstract (and normalize) just one non-basic expression at a time (with all its occurences, of course)
     See, for instance, the translation of, with two non-basic expressions:
+
+```
 LEMMA
   ASSUME NEW h(_)
   PROVE  [a |-> h(1), b |-> h(2)]  =
-         [x \in {"a","b"} |-> IF x = "a" THEN h(1) ELSE h(2)]
+         [x \in {"a", "b"} |-> IF x = "a" THEN h(1) ELSE h(2)]
   BY TPTP   \** function extensionality missing
+```
 *)
 let abstract scx (hs,c) =
   let offset1 = Dq.size (snd scx) in
@@ -769,8 +821,9 @@ let abstract scx (hs,c) =
 (****************************************************************************)
 (* Kinds of non-basic expressions E:
    - P(E)              non-shifted, no free variables
-   - \A x : P(E,x)     shifted, e.g. by quantified variables, no free variables
-   - \A x : P(E(x),x)  shifted, with free variables [x] bound by \A x       *)
+   - `\A x:  P(E, x)` shifted, e.g., by quantified variables, no free variables
+   - `\A x:  P(E(x), x)` shifted, with free variables `[x]` bound by `\A x`
+*)
 (****************************************************************************)
 
 let abstract2 scx (hs,c) =
@@ -812,8 +865,9 @@ let abstract2 scx (hs,c) =
 (* Util.eprintf "^^ canonical (%d-%d) of %a" offset offset0 (Typ_e.pp_print_expr (snd scx, Ctx.dot)) e ; *)
     let fvs = fvis offset e in
 (* - P(E)               canonical E = E
-   - \A x : P(E,x)      canonical E = shift -length(x) E
-   - \A x : P(E(x),x)   canonical E(x) = old_canonical(E(x))      // E will be always bound, so no need to shift
+   - `\A x:  P(E, x)`      canonical E = shift - length(x) E
+   - `\A x:  P(E(x), x)`   canonical E(x) = old_canonical(E(x))
+     // E will be always bound, so no need to shift
    *)
     if fvs = [] then app_expr (shift (-offset)) e else begin
 (* Smt.ifprint 2 "   fvs [%s]" (String.concat "," (map string_of_int fvs)) ; *)
@@ -899,7 +953,8 @@ let abstract2 scx (hs,c) =
       let fvs = fvis off e in
 (* Util.eprintf "  mk_def  %s : %a  [%s]" k (Typ_e.pp_print_expr (Dq.empty, Ctx.dot)) e  (String.concat "," (map string_of_int fvs)) ; *)
       let bs = map begin fun v ->
-          ("x"^(string_of_int v)) %% [], Constant, No_domain
+            let name = "x" ^ (string_of_int v) in
+            From_string.make_const_decl name
         end fvs
       in
       (* let e = canonical off e in *)

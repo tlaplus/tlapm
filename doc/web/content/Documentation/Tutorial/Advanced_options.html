@@ -146,6 +146,80 @@
   --stretch <n>
 -->
 
+  <p>The internal processing that the program <code>tlapm</code> performs
+  is shown in the following diagram. <code>tlapm</code> reads a TLA+ file
+  (or TLA+ files), parses it, applies a number of transformations, and
+  at some point converts to formats that can be used to communicate with
+  external solvers (these are other programs). These solvers include:
+  <ul>
+  <li>an SMT solver (
+  <a href="https://en.wikipedia.org/wiki/Z3_Theorem_Prover"><code>z3</code></a>,
+  <a href="https://cvc4.github.io"><code>cvc4</code></a>,
+  <a href="http://www.verit-solver.org"><code>veriT</code></a>,
+  or other),
+  </li>
+  <li>the automated theorem prover
+  <a href="http://zenon-prover.org"><code>zenon</code></a>,
+  </li>
+  <li>the proof assistant Isabelle with the
+  <a href="https://members.loria.fr/SMerz/projects/tlaps/index.html">formalization of TLA+</a>
+  (<a href="https://github.com/tlaplus/tlapm/tree/master/isabelle">Isabelle files</a>),
+  </li>
+  <li>and the propositional temporal logic prover
+  <a href="https://github.com/quickbeam123/ls4"><code>ls4</code></a>
+  via the interface program
+  <a href="https://cgi.csc.liv.ac.uk/~konev/software/trp++/translator/"><code>ptl_to_trp</code></a>.
+  </li>
+  </ul>
+  </p>
+
+  <p>Depending on what these external solvers return to <code>tlapm</code>,
+  <code>tlapm</code> outputs to the
+  <a href="https://lamport.azurewebsites.net/tla/toolbox.html">TLA+ Toolbox
+  </a>, and to
+  <a href="https://en.wikipedia.org/wiki/Standard_streams#Standard_output_(stdout)">stdout</a>
+  and
+  <a href="https://en.wikipedia.org/wiki/Standard_streams#Standard_error_(stderr)">stderr</a>,
+  which parts of the proof <code>tlapm</code> could successfully prove,
+  and which parts not. This output indicates which parts of the proof need
+  further changes, e.g., by adding more details to the proof, or by changing
+  what we are attempting to prove.</p>
+
+  <p>The internal transformations within <code>tlapm</code> include:
+  <ul>
+  <li>the generation of proof obligations,
+  which can be thought of as individual "theorems" that <code>tlapm</code>
+  needs to prove in order to prove the entire module
+  (not to be confused with <code>THEOREM</code> statements in the TLA+ source
+  file),
+  </li>
+  <li>the normalization of expressions and expansion of defined operators by
+  their <a href="https://en.wiktionary.org/wiki/definiens">definiens</a>,
+  </li>
+  <li>the interpretation of the operators <code>ENABLED</code> and
+  <code>\cdot</code>,
+  </li>
+  <li>the computation (and later saving) of fingerprints of proof obligations
+  (to remember proof results and skip reproving them in later invocations
+  of <code>tlapm</code>), and
+  </li>
+  <li><a href="https://arxiv.org/abs/1409.3819">coalescing</a>.
+  </li>
+  </ul>
+  </p>
+
+  <p>For each proof step, more than one proof obligation may be generated.
+  Among the proof obligations that are generated from a proof step,
+  there is one proof obligation that has as consequent the same consequent
+  as that proof step in the TLA+ source. The other proof obligations that are
+  generated from that same proof step have as consequents the facts that are
+  listed in the <code>BY</code> statement of that proof step (i.e., the
+  identifiers and expressions listed within the <code>BY</code> statement
+  <i>before</i> the keyword <code>DEF</i>).
+  </p>
+
+  <img alt="TLAPS architecture" src="../img/tlaps_arch.svg" />
+
 </div> <!-- section -->
 
 <!-- DO NOT EDIT BELOW THIS LINE, DO NOT REMOVE THIS LINE -->

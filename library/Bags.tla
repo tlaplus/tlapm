@@ -11,10 +11,10 @@
 EXTENDS TLC, TLAPS,
         FiniteSetTheorems,
         SequenceTheorems
-        
+
 LOCAL INSTANCE Naturals
- 
-IsABag(B) == 
+
+IsABag(B) ==
   (************************************************************************)
   (* True iff B is a bag.                                                 *)
   (************************************************************************)
@@ -25,11 +25,11 @@ BagToSet(B) == DOMAIN B
   (* The set of elements at least one copy of which is in B.              *)
   (************************************************************************)
 
-SetToBag(S) == [e \in S |-> 1]  
+SetToBag(S) == [e \in S |-> 1]
   (************************************************************************)
   (* The bag that contains one copy of every element of the set S.        *)
   (************************************************************************)
-    
+
 BagIn(e,B) == e \in BagToSet(B)
   (************************************************************************)
   (* The \in operator for bags.                                           *)
@@ -42,10 +42,10 @@ B1 (+) B2  ==
   (* The union of bags B1 and B2.                                         *)
   (************************************************************************)
   [e \in (DOMAIN B1) \cup (DOMAIN B2) |->
-      (IF e \in DOMAIN B1 THEN B1[e] ELSE 0) 
+      (IF e \in DOMAIN B1 THEN B1[e] ELSE 0)
     + (IF e \in DOMAIN B2 THEN B2[e] ELSE 0) ]
-  
-B1 (-) B2  == 
+
+B1 (-) B2  ==
   (************************************************************************)
   (* The bag B1 with the elements of B2 removed--that is, with one copy   *)
   (* of an element removed from B1 for each copy of the same element in   *)
@@ -92,8 +92,8 @@ SubBag(B) ==
   (************************************************************************)
 
   LET RemoveFromDom(x, f) == [y \in (DOMAIN f) \ {x} |-> f[y]]
-      Combine(x, BagSet) == 
-         BagSet \cup 
+      Combine(x, BagSet) ==
+         BagSet \cup
           {[y \in (DOMAIN f) \cup {x} |-> IF y = x THEN i ELSE f[y]] :
                 f \in BagSet, i \in 1..B[x]}
       Biggest == LET Range1 == {B[x] : x \in DOMAIN B}
@@ -107,12 +107,12 @@ SubBag(B) ==
   IN RSB[B]
 
   (*******************  Here is the definition from the TLA+ book. ********
-  LET AllBagsOfSubset == 
+  LET AllBagsOfSubset ==
         (******************************************************************)
         (* The set of all bags SB such that BagToSet(SB) \subseteq        *)
         (* BagToSet(B).                                                   *)
         (******************************************************************)
-        UNION {[SB -> {n \in Nat : n > 0}] : SB \in SUBSET BagToSet(B)}  
+        UNION {[SB -> {n \in Nat : n > 0}] : SB \in SUBSET BagToSet(B)}
   IN  {SB \in AllBagsOfSubset : \A e \in DOMAIN SB : SB[e] \leq B[e]}
   ***************************************************************************)
 
@@ -123,7 +123,7 @@ BagOfAll(F(_), B) ==
   (* copy of e in B. This defines a bag iff, for any value v, the set of  *)
   (* e in B such that F(e) = v is finite.                                 *)
   (************************************************************************)
-  [e \in {F(d) : d \in BagToSet(B)} |-> 
+  [e \in {F(d) : d \in BagToSet(B)} |->
      Sum( [d \in BagToSet(B) |-> IF F(d) = e THEN B[d] ELSE 0] ) ]
 
 BagCardinality(B) ==

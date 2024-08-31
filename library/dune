@@ -1,0 +1,6 @@
+(install
+ (section
+  (site
+   (tlapm stdlib)))
+ (files
+  (glob_files "*.tla")))

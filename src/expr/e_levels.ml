@@ -1,22 +1,20 @@
-(*
- * expr/e_levels.ml --- compute expression levels
- *)
-
-
-(*
+(* Compute expression levels.
 
 
 References
 ==========
 
 [1] Leslie Lamport, Specifying Systems, Addison-Wesley, 2002
+    https://lamport.azurewebsites.net/tla/book.html
 
 [2] Leslie Lamport, TLA+ Version 2: A Preliminary Guide, 2018
+    https://lamport.azurewebsites.net/tla/tla2-guide.pdf
 
 [3] Leslie Lamport, LevelSpec specification, from the repository `tlaplus` at:
-    htpps://github.com/tlaplus/tlatools/src/tla2sany/semantic/LevelNode.java
+    https://github.com/tlaplus/tlatools/src/tla2sany/semantic/LevelNode.java
 
 [4] Leslie Lamport, Proving safety properties, 2019
+    https://lamport.azurewebsites.net/tla/proving-safety.pdf
 
 *)
 
@@ -225,6 +223,10 @@ class virtual ['s] level_computation = object (self : 'self)
             parameters, as declared in `self#hyp` below.
             *)
             let f weights values op c =
+                if List.length weights <> List.length values then (
+                    Util.eprintf ~at:op_ "Invalid number of arguments";
+                    Errors.set op_ (Printf.sprintf "Invalid number of arguments");
+                    failwith "Expr.Levels: ARITY");
                 let pairs = List.combine weights values in
                 let w (weight, value) = if weight then value else c in
                 let values = List.map w pairs in
@@ -682,8 +684,9 @@ class virtual ['s] level_computation = object (self : 'self)
             let level_args = StringSet.union
                 dom_level_args e_level_args in
             let level_info = LevelInfo (level, [], level_args) in
-            let new_setst = SetSt (v, dom_, e_) in
-            let new_e = new_setst @@ e in
+            let new_setst = E_t.From_hint.make_setst
+                v dom_ e_ in
+            let new_e = new_setst.core @@ e in
             assign new_e exprlevel level_info
         | SetOf (e, bs) ->  (* {f(x):  x \in S} *)
                 (* There is one bound constant in the expression

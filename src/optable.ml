@@ -23,7 +23,7 @@ and dom =
 
 type prec = int * int
 
-let withdef (name, prec, fix, als, defn) = (name, prec, fix, als, Some defn);;
+let withdef (name, prec, fix, als, defn) = (name, prec, fix, als, Some defn)
 
 let tlaops = [
   Logic,
@@ -263,4 +263,3 @@ let standard_form b =
 
   | Unprimable    -> nonfix "Unprimable" None
   | Irregular     -> nonfix "Irregular" None
-;;

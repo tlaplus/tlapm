@@ -1,0 +1,3 @@
+all:
+	chmod +x backends/bin/*
+	cd backends && cat Isabelle.exec-files | xargs chmod +x

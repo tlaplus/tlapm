@@ -25,7 +25,7 @@ Spec == Init /\ [][SubX \/ SubY]_<<x,y>>
 Correctness == x=y => x = GCD(M,N)
 Termination == <>(x = y)
 
-InductiveInvariant == 
+InductiveInvariant ==
   /\ x \in PosInteger /\ y \in PosInteger
   /\ GCD(x,y) = GCD(M,N)
 

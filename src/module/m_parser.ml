@@ -1,10 +1,7 @@
-(*
- * module/parser.ml --- modules (parsing)
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Parsing of modules.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Ext
 open Property
 
@@ -15,6 +12,7 @@ open Expr.T
 open Expr.Parser
 
 open M_t
+
 
 let with_meth e meth = match meth with
   | Some meth -> { e with core = With (e, meth) }
@@ -69,7 +67,7 @@ let rec modunit = lazy begin
            [ Theorem (nm, { bod with active = with_meth bod.active meth }, 0, prf, prf, empty_summary) ]) ;
 
     enabled (punct "----" <*> kwd "MODULE")
-      >*> use parse <$> (fun m -> [ Submod m ]) ;
+      >*> use parse <$> (fun m -> m.core.important <- true; [ Submod m ]) ;
 
     punct "----" <!> [] ;
   ]
@@ -101,7 +99,7 @@ and parse_ = lazy begin
     ; extendees = extends
     ; instancees = []
     ; defdepth = 0
-    ; important = (* false *) true  (* to simplify proofs of submodules *)
+    ; important = false
     ; body = List.concat mus
     ; stage = Parsed }
   end

@@ -58,8 +58,8 @@ BY ExpandCdot, Zenon DEF A, B, R, C, D
 
 (* This theorem differs from the previous one in the presence of the proof
 directive AutoUSE. The definitions of the operators A, B, and R are expanded
-automatically by AutoUSE, because they contain primed and unrpimed variables in
-the first and second arguments of the operator \cdot, respectively. These
+automatically by AutoUSE, because they contain primed and unprimed variables
+in the first and second arguments of the operator \cdot, respectively. These
 expansions ensure sound reasoning about the operator \cdot.
 *)
 THEOREM C <=> D

@@ -34,11 +34,11 @@ IsSorted(A) == IsSortedTo(A, N)
 (* Perms to be the set of permutations of (sequences of length N           *)
 (* containing all of) the numbers from 1 through N.                        *)
 (***************************************************************************)
-Perms == { f \in [1..N -> 1..N] : 
+Perms == { f \in [1..N -> 1..N] :
                      \A i \in 1..N : \E j \in 1..N : f[i] = f[j] }
 
 f ** g == [i \in 1..N |-> f[g[i]]]
-   
+
 IsPermOf(A, B) == \E f \in Perms : A = (B ** f)
 
 (***************************************************************************)
@@ -46,7 +46,7 @@ IsPermOf(A, B) == \E f \in Perms : A = (B ** f)
 (* the permutation of 1..N that just exchanges two numbers.  (If the       *)
 (* numbers are the same, it's the identity permutation.)                   *)
 (***************************************************************************)
-Id == [i \in 1..N |-> i] 
+Id == [i \in 1..N |-> i]
 
 Exchange(i, j) == [Id EXCEPT ![i] = j, ![j] = i]
 
@@ -66,20 +66,20 @@ BY IdAPerm, IdIdentity DEF IsPermOf, Id
 THEOREM ExchangeAPerm == \A i, j \in 1..N : Exchange(i, j) \in Perms
 BY Zenon DEF Perms, Exchange, Id
 
-THEOREM IsPermOfExchange == 
+THEOREM IsPermOfExchange ==
            \A A \in [1..N -> Int],  i, j \in 1..N :
              /\ [A EXCEPT ![i] = A[j], ![j] = A[i]] \in [1..N -> Int]
              /\ IsPermOf([A EXCEPT ![i] = A[j], ![j] = A[i]], A)
 <1> DEFINE AA(A, i, j) == [A EXCEPT ![i] = A[j], ![j] = A[i]]
-<1> SUFFICES ASSUME NEW A \in [1..N -> Int],  NEW i \in 1..N , NEW j \in 1..N 
+<1> SUFFICES ASSUME NEW A \in [1..N -> Int],  NEW i \in 1..N , NEW j \in 1..N
              PROVE  AA(A, i, j) \in [1..N -> Int]  /\ IsPermOf(AA(A, i, j), A)
   BY Zenon
 <1>1. AA(A,i,j) = A ** Exchange(i, j)
-  BY Zenon DEF **, Exchange, Id  
+  BY Zenon DEF **, Exchange, Id
 <1>2. QED
   BY <1>1, ExchangeAPerm, Zenon DEF IsPermOf
 
-THEOREM CompositionAssociative == 
+THEOREM CompositionAssociative ==
            \A A \in [1..N -> Int], f, g \in [1..N -> 1..N] :
                 (A ** f) ** g  =  A ** (f ** g)
 BY DEF **
@@ -87,8 +87,8 @@ BY DEF **
 THEOREM CompositionOfPerms == \A f, g \in Perms : f ** g \in Perms
 BY Zenon DEF **, Perms
 
-THEOREM IsPermOfTransitive == 
-          \A A, B, C \in [1..N -> Int] : 
+THEOREM IsPermOfTransitive ==
+          \A A, B, C \in [1..N -> Int] :
              IsPermOf(A, B) /\ IsPermOf(B, C) => IsPermOf(A, C)
 <1> SUFFICES ASSUME NEW A \in [1..N -> Int], NEW B \in [1..N -> Int],
                     NEW C \in [1..N -> Int], IsPermOf(A, B), IsPermOf(B, C)
@@ -114,16 +114,16 @@ THEOREM IsPermOfTransitive ==
     { while (i < N)
        { \* assert IsSortedTo(A, i) /\ IsPermOf(A, A0);
          j := i+1 ;
-         while (j > 1  /\  A[j-1] > A[j]) 
+         while (j > 1  /\  A[j-1] > A[j])
            { \* assert IsSortedTo(A, j-1) /\ IsSortedFromTo(A, j, i+1) /\ IsPermOf(A, A0) ;
              A[j-1] := A[j] || A[j] := A[j-1] ;
-             j := j-1 ;        
+             j := j-1 ;
            } ;
          i := i+1 ;
        } ;
       \* assert IsSorted(A) /\ IsPermOf(A, A0)
-    } 
-} 
+    }
+}
 *)
 \* BEGIN TRANSLATION
 VARIABLES A, A0, i, j, pc
@@ -178,7 +178,7 @@ TypeOK == /\ i \in 1..N
           /\ A \in [1..N -> Int]
           /\ A0 \in [1..N -> Int]
           /\ pc \in {"Lbl_1", "Lbl_2", "Done"}
-          
+
 RealInv ==
   /\ pc = "Lbl_1" => /\ IsSortedTo(A, i)
                      /\ IsPermOf(A, A0)
@@ -188,9 +188,9 @@ RealInv ==
                      /\ IsSortedFromTo(A, j, i+1)
                      /\ \A p \in 1..(j-1), q \in (j+1)..(i+1) : A[p] =< A[q]
                      /\ IsPermOf(A, A0)
-                     
+
   /\ pc = "Done" => IsSorted(A) /\ IsPermOf(A, A0)
-  
+
 Inv == TypeOK /\ RealInv
 -----------------------------------------------------------------------------
 (***************************************************************************)
@@ -201,21 +201,21 @@ THEOREM Spec => [](pc = "Done" => IsSorted(A) /\ IsPermOf(A, A0))
 <1> USE NAssumption DEF Inv
 <1>1 Init => Inv
   BY IsPermOfReflexive DEF Init, TypeOK, RealInv, IsSortedTo
-<1>2. Inv /\ [Next]_vars => Inv'  
+<1>2. Inv /\ [Next]_vars => Inv'
   <2> SUFFICES ASSUME Inv, Lbl_1 \/ Lbl_2 \* Next
                PROVE  Inv'
     <3>1. Inv /\ UNCHANGED vars => Inv'
-      BY DEF vars, TypeOK, RealInv, IsSorted, IsSortedTo, 
+      BY DEF vars, TypeOK, RealInv, IsSorted, IsSortedTo,
                 IsSortedFromTo, IsPermOf, Perms, **
     <3>2. QED
-      BY <3>1 DEF Next 
+      BY <3>1 DEF Next
   <2>1. TypeOK'
-    BY DEF TypeOK, RealInv, Lbl_1, Lbl_2 
+    BY DEF TypeOK, RealInv, Lbl_1, Lbl_2
   <2>2. RealInv'
     \* This part of the proof is left as a (difficult!) exercise
     \* for the reader.
   <2>3. QED
-    BY <2>1, <2>2 
+    BY <2>1, <2>2
 <1>3. Inv => (pc = "Done" => IsSorted(A) /\ IsPermOf(A, A0))
   BY DEF Inv, RealInv
 <1>4. QED

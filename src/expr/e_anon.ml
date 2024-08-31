@@ -1,93 +1,149 @@
-(*
- * expr/anon.ml --- expressions (anonymization)
- *
- *
- * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
- *)
+(* Conversion of identifiers to De Bruijn indices.
 
+Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+*)
 open Property
 open E_t
 open E_subst
 
-module Elab = E_elab;;
-module Visit = E_visit;;
-module Deref = E_deref;;
-module Eq = E_eq;;
+module Elab = E_elab
+module Visit = E_visit
+module Deref = E_deref
+module Eq = E_eq
+
 
 let ( |> ) x f = f x
 
+
 (* see also `Expr.T.hyp_name` *)
 let hyp_is_named what h = match h.core with
-  | Fresh (nm, _, _, _)
-  | Flex nm
-  | Defn ({core = Operator (nm, _) | Instance (nm, _)
-                  | Bpragma(nm,_,_) | Recursive (nm, _)},
-          _, _, _)
-  -> nm.core = what
-  | Fact (_, _, _) ->
-      what = "_"
-
-let standard_form ~cx ~dep ~wd op args = match wd with
-  | Builtin ->
-      if args = [] then
-        (app_expr (shift dep) op).core @@ op
-      else
-        normalize ~cx:cx (app_expr (shift dep) op) args @@ op
-  | _ ->
-      if args = [] then
-        Ix dep @@ op
-      else
-        Apply (Ix dep @@ op, args) @@ op
+    | Fresh (nm, _, _, _)
+    | Flex nm
+    | Defn ({core =
+              Operator (nm, _)
+            | Instance (nm, _)
+            | Bpragma(nm,_,_)
+            | Recursive (nm, _)},
+            _, _, _) ->
+        nm.core = what
+    | Fact (_, _, _) -> false
 
 
-class anon_sg = object (self : 'self)
-  inherit [string list] Visit.map as super
+let anon_apply index op args =
+    let ix = Ix index @@ op in
+    match args with
+    | [] -> ix
+    | _ -> Apply (ix, args) @@ op
+
+
+let standard_form
+        ~cx ~index ~wd op args =
+    match wd with
+    | Builtin -> begin
+        let ix = app_expr
+            (shift index) op in
+        match args with
+        | [] -> ix.core @@ op
+        | _ ->
+            let e = normalize
+                ~cx:cx ix args in
+            e @@ op
+        end
+    | _ ->
+        anon_apply index op args
+
+
+class anon_sg = object (self: 'self)
+  inherit [string list] Visit.map
+        as super
 
   method expr scx e =
     match e.core with
-    | Bang ({core = Apply ({core = Opaque op}, args)}, sels) -> begin
-        let sels = List.map (self#sel scx) sels in
-        let args = List.map (self#expr scx) args in
+    | Bang (
+            {core=Apply (
+                {core = Opaque op},
+                args)},
+            sels) -> begin
+        let sels = List.map
+            (self#sel scx) sels in
+        let args = List.map
+            (self#expr scx) args in
         let scx = ([], snd scx) in
-        (* check the operator without the "use <1>1 in proof of <1>1" warning *)
-        let rec check (pfx, pargs) sels is_inst = begin
-          match Deque.find ~backwards:true (snd scx) (hyp_is_named pfx) with
-            | None -> begin match sels with
+        (* check the operator without the
+        "use <1>1 in proof of <1>1" warning *)
+        let rec check
+                (pfx, pargs)
+                sels
+                is_inst =
+            begin
+            let hyp = Deque.find
+                ~backwards:true
+                (snd scx)
+                (hyp_is_named pfx) in
+            match hyp with
+            | None -> begin
+                match sels with
                 | Sel_lab (sfx, sargs) :: sels ->
-                    let sargs = List.map (self#expr scx) sargs in
-                    check (pfx ^ "!" ^ sfx, pargs @ sargs) sels true
-(* a enlever *) | (Sel_num n)::sels ->  Util.eprintf ~at:e
-                      "Operator \"%s\" not found" pfx ;
-                    Errors.set e (Printf.sprintf "Operator \"%s\" not found" pfx);
+                    let sargs = List.map
+                        (self#expr scx) sargs in
+                    check
+                        (pfx ^ "!" ^ sfx,
+                         pargs @ sargs)
+                        sels true
+                (* a enlever *)
+                | (Sel_num n) :: sels ->
+                    Util.eprintf ~at:e
+                        "Operator \"%s\" not found" pfx;
+                    Errors.set
+                        e (Printf.sprintf
+                            "Operator \"%s\" not found" pfx);
                     failwith "Expr.Anon: 1NUM"
-                | (Sel_down)::sels ->  Util.eprintf ~at:e
-                      "Operator \"%s\" not found" pfx ;
-                    Errors.set e (Printf.sprintf "Operator \"%s\" not found" pfx);
+                | (Sel_down) :: sels ->
+                    Util.eprintf ~at:e
+                        "Operator \"%s\" not found" pfx;
+                    Errors.set
+                        e (Printf.sprintf
+                            "Operator \"%s\" not found" pfx);
                     failwith "Expr.Anon: 1DOWN"
-                | (Sel_at)::sels ->  Util.eprintf ~at:e
-                      "Operator \"%s\" not found" pfx ;
-                    Errors.set e (Printf.sprintf "Operator \"%s\" not found" pfx);
+                | (Sel_at) :: sels ->
+                    Util.eprintf ~at:e
+                        "Operator \"%s\" not found" pfx;
+                    Errors.set
+                        e (Printf.sprintf
+                            "Operator \"%s\" not found" pfx);
                     failwith "Expr.Anon: 1AT"
-                | (Sel_inst _)::sels ->  Util.eprintf ~at:e
-                      "Operator \"%s\" not found" pfx ;
-                    Errors.set e (Printf.sprintf "Operator \"%s\" not found" pfx);
+                | (Sel_inst _) :: sels ->
+                    Util.eprintf ~at:e
+                        "Operator \"%s\" not found" pfx;
+                    Errors.set
+                        e (Printf.sprintf
+                            "Operator \"%s\" not found" pfx);
                     failwith "Expr.Anon: 1INST"
-                | [] -> Errors.set e (Printf.sprintf "Operator \"%s\" not found" pfx);
+                | [] ->
+                    Errors.set
+                        e (Printf.sprintf
+                            "Operator \"%s\" not found" pfx);
                     failwith "Expr.Anon: 1EMPTY"
                 | _ ->
                     Util.eprintf ~at:e
-                      "Operator \"%s\" not found" pfx ;
-                    Errors.set e (Printf.sprintf "Operator \"%s\" not found" pfx);
+                        "Operator \"%s\" not found" pfx;
+                    Errors.set
+                        e (Printf.sprintf
+                            "Operator \"%s\" not found" pfx);
                     failwith "Expr.Anon: 1"
               end
-            | Some (dep, {core = Defn ({core = Operator (_, op)}, wd, _, _)}) ->
+            | Some (dep,
+                    {core=Defn ({core=(
+                        Operator (_, op)
+                        | Bpragma (_, op, _)
+                    )}, wd, _, _)}) ->
                 begin match sels with
                   | [] when is_inst -> begin
                       let ix = Ix (dep + 1) @@ e in
                       match pargs with
                         | [] -> ix
                         | pargs ->
-                            standard_form ~cx:(snd scx) ~dep:(dep + 1) ~wd:wd
+                            standard_form ~cx:(snd scx) ~index:(dep + 1) ~wd:wd
                               (op.core @@ e) pargs
                     end
                   | _ -> begin
@@ -103,7 +159,10 @@ class anon_sg = object (self : 'self)
                     end
                 end
             | Some _ ->
-                Util.eprintf ~at:e "invalid subexpression reference" ;
+                let cx = snd scx in
+                let expr_str = E_fmt.string_of_expr cx e in
+                Util.eprintf ~at:e "%s"
+                    ("invalid subexpression reference in:  " ^ expr_str) ;
                  Errors.set e (Printf.sprintf "invalid subexpression reference");
                  failwith "Expr.Anon: 3"
         end in
@@ -131,22 +190,41 @@ class anon_sg = object (self : 'self)
                     Defined operators are not expanded. *)
 
                     (* defined or builtin operator *)
-                    | Some (dep, {
-                        core = Defn (
-                            {core = Operator (_, op)} as opc,
-                            wd, _, _)
-                        }) ->
+                    | Some (depth, {core=Defn (defn, wd, _, _)}) ->
+                        begin
+                        match defn.core with
+                        | Operator (_, op) ->
+                            let cx = snd scx in
+                            (* An increment by 1 is needed
+                            to convert the 0-based depth to
+                            a 1-based De Bruijn index.
+                            *)
+                            let index = depth + 1 in
+                            let op = op.core @@ e $$ defn in
                             (* does not expand defined operators *)
-                            standard_form ~cx:(snd scx) ~dep:(dep + 1) ~wd:wd
-                            (op.core @@ e $$ opc) args
+                            standard_form
+                                ~cx:cx ~index:index ~wd:wd op args
+                        | Instance _
+                        | Bpragma _ ->
+                            let index = depth + 1 in
+                            let op = e $$ defn in
+                            anon_apply index op args
+                        | Recursive _ ->
+                            Errors.set defn "Recursive operators not supported by TLAPS";
+                            failwith "Expr.Anon: Recursive"
+                        end
                     (* declared operator *)
-                    | Some (dep, opc) ->
-                        (* nullary *)
-                        if args = [] then
-                          Ix (dep + 1) @@ e $$ opc
-                        (* with arguments *)
-                        else
-                          Apply (Ix (dep + 1) @@ e, args) @@ e $$ opc
+                    | Some (depth, ({core=Fresh _} as decl)) ->
+                        let index = depth + 1 in
+                        let op = e $$ decl in
+                        anon_apply index op args
+                    | Some (depth, ({core=Flex _} as decl)) ->
+                        assert ((List.length args) = 0);
+                        let index = depth + 1 in
+                        let op = e $$ decl in
+                        Ix index @@ op
+                    (* fact: unexpected *)
+                    | Some (_, {core=Fact _}) -> assert false
                     | None ->
                          (* TODO? allow builtin operators here ?
                          possibly passing a context with builtin operators
@@ -201,12 +279,14 @@ class anon_sg = object (self : 'self)
                 let op' = (app_expr (scons (Opaque "%%%" |> mk) (shift 1)) op) in
                 not (Eq.expr op' op)
               in
-                if occurs op then
-                  Choose (nm, None,
-                          Apply (Internal Builtin.Eq |> mk, [
-                                   Ix 1 |> mk ;
-                                   op
-                                 ]) |> mk) |> mk
+                if occurs op then begin
+                    let e = Apply (Internal Builtin.Eq |> mk, [
+                             Ix 1 |> mk ;
+                             op
+                           ]) |> mk in
+                    let choose = E_t.From_hint.make_choose nm e in
+                    choose.core |> mk
+                    end
                 else
                   app_expr (shift (-1)) op
 
@@ -216,16 +296,13 @@ class anon_sg = object (self : 'self)
         Operator (nm, op) @@ df
     | _ ->
         super#defn scx df
-
 end
 
-class anon = object
+
+class anon = object (self : 'self)
   inherit anon_sg as super
-
-  method expr scx e =
-    Elab.desugar (super#expr scx e)
+  method expr scx e = Elab.desugar self#expr super#expr scx e
 end
+
 
 let anon = new anon
-
-let _ = ()

@@ -13,9 +13,9 @@ EXTENDS Integers, TLAPS, TLC
 
 CONSTANTS Acceptors, Values, Quorums
 
-ASSUME QuorumAssumption == 
+ASSUME QuorumAssumption ==
           /\ Quorums \subseteq SUBSET Acceptors
-          /\ \A Q1, Q2 \in Quorums : Q1 \cap Q2 # {}                 
+          /\ \A Q1, Q2 \in Quorums : Q1 \cap Q2 # {}
 
 (***************************************************************************)
 (* The following lemma is an immediate consequence of the assumption.      *)
@@ -54,7 +54,7 @@ Init == /\ msgs = {}
 Phase1a(b) == /\ ~ \E m \in msgs : (m.type = "1a") /\ (m.bal = b)
               /\ Send([type |-> "1a", bal |-> b])
               /\ UNCHANGED <<maxVBal, maxBal, maxVal>>
-              
+
 (***************************************************************************)
 (* Phase 1b: If an acceptor receives a 1a message with ballot b greater    *)
 (* than that of any 1a message to which it has already responded, then it  *)
@@ -63,15 +63,15 @@ Phase1a(b) == /\ ~ \E m \in msgs : (m.type = "1a") /\ (m.bal = b)
 (* (if any) for which it has voted for a value and the value it voted for  *)
 (* in that ballot.  That promise is made in a 1b message.                  *)
 (***************************************************************************)
-Phase1b(a) == 
-  \E m \in msgs : 
+Phase1b(a) ==
+  \E m \in msgs :
      /\ m.type = "1a"
      /\ m.bal > maxBal[a]
-     /\ Send([type |-> "1b", bal |-> m.bal, maxVBal |-> maxVBal[a], 
+     /\ Send([type |-> "1b", bal |-> m.bal, maxVBal |-> maxVBal[a],
                maxVal |-> maxVal[a], acc |-> a])
      /\ maxBal' = [maxBal EXCEPT ![a] = m.bal]
      /\ UNCHANGED <<maxVBal, maxVal>>
-        
+
 (***************************************************************************)
 (* Phase 2a: If the leader receives a response to its 1b message (for      *)
 (* ballot b) from a quorum of acceptors, then it sends a 2a message to all *)
@@ -81,13 +81,13 @@ Phase1b(a) ==
 (* one 2a message for any ballot.                                          *)
 (***************************************************************************)
 Phase2a(b) ==
-  /\ ~ \E m \in msgs : (m.type = "2a") /\ (m.bal = b) 
+  /\ ~ \E m \in msgs : (m.type = "2a") /\ (m.bal = b)
   /\ \E v \in Values :
        /\ \E Q \in Quorums :
             \E S \in SUBSET {m \in msgs : (m.type = "1b") /\ (m.bal = b)} :
                /\ \A a \in Q : \E m \in S : m.acc = a
                /\ \/ \A m \in S : m.maxVBal = -1
-                  \/ \E c \in 0..(b-1) : 
+                  \/ \E c \in 0..(b-1) :
                         /\ \A m \in S : m.maxVBal =< c
                         /\ \E m \in S : /\ m.maxVBal = c
                                         /\ m.maxVal = v
@@ -100,9 +100,9 @@ Phase2a(b) ==
 (* responded to a 1a request for a ballot number greater than or equal to  *)
 (* b.                                                                      *)
 (***************************************************************************)
-Phase2b(a) == 
+Phase2b(a) ==
   \E m \in msgs :
-    /\ m.type = "2a" 
+    /\ m.type = "2a"
     /\ m.bal >= maxBal[a]
     /\ Send([type |-> "2b", bal |-> m.bal, val |-> m.val, acc |-> a])
     /\ maxVBal' = [maxVBal EXCEPT ![a] = m.bal]
@@ -110,9 +110,9 @@ Phase2b(a) ==
     /\ maxVal' = [maxVal EXCEPT ![a] = m.val]
 
 Next == \/ \E b \in Ballots : Phase1a(b) \/ Phase2a(b)
-        \/ \E a \in Acceptors : Phase1b(a) \/ Phase2b(a) 
+        \/ \E a \in Acceptors : Phase1b(a) \/ Phase2b(a)
 
-Spec == Init /\ [][Next]_vars       
+Spec == Init /\ [][Next]_vars
 -----------------------------------------------------------------------------
 (***************************************************************************)
 (* How a value is chosen:                                                  *)
@@ -147,7 +147,7 @@ Messages ==      [type : {"1a"}, bal : Ballots]
                     maxVal : Values \cup {None}, acc : Acceptors]
             \cup [type : {"2a"}, bal : Ballots, val : Values]
             \cup [type : {"2b"}, bal : Ballots, val : Values, acc : Acceptors]
-        
+
 
 TypeOK == /\ msgs \in SUBSET Messages
           /\ maxVBal \in [Acceptors -> Ballots \cup {-1}]
@@ -158,21 +158,21 @@ TypeOK == /\ msgs \in SUBSET Messages
 (***************************************************************************)
 (* WontVoteIn(a, b) is a predicate that implies that a has not voted and   *)
 (* never will vote in ballot b.                                            *)
-(***************************************************************************)                                       
+(***************************************************************************)
 WontVoteIn(a, b) == /\ \A v \in Values : ~ VotedForIn(a, v, b)
                     /\ maxBal[a] > b
 
 (***************************************************************************)
 (* The predicate SafeAt(v, b) implies that no value other than perhaps v   *)
 (* has been or ever will be chosen in any ballot numbered less than b.     *)
-(***************************************************************************)                   
-SafeAt(v, b) == 
+(***************************************************************************)
+SafeAt(v, b) ==
   \A c \in 0..(b-1) :
-    \E Q \in Quorums : 
+    \E Q \in Quorums :
       \A a \in Q : VotedForIn(a, v, c) \/ WontVoteIn(a, c)
 
 MsgInv ==
-  \A m \in msgs : 
+  \A m \in msgs :
     /\ (m.type = "1b") => /\ m.bal =< maxBal[m.acc]
                           /\ \/ /\ m.maxVal \in Values
                                 /\ m.maxVBal \in Ballots
@@ -182,13 +182,13 @@ MsgInv ==
                              \/ /\ m.maxVal = None
                                 /\ m.maxVBal = -1
                           \** conjunct added 2014/03/29 sm
-                          /\ \A c \in (m.maxVBal+1) .. (m.bal-1) : 
+                          /\ \A c \in (m.maxVBal+1) .. (m.bal-1) :
                                 ~ \E v \in Values : VotedForIn(m.acc, v, c)
-    /\ (m.type = "2a") => 
+    /\ (m.type = "2a") =>
          /\ SafeAt(m.val, m.bal)
          /\ \A ma \in msgs : (ma.type = "2a") /\ (ma.bal = m.bal)
                                 => (ma = m)
-    /\ (m.type = "2b") => 
+    /\ (m.type = "2b") =>
          /\ \E ma \in msgs : /\ ma.type = "2a"
                              /\ ma.bal  = m.bal
                              /\ ma.val  = m.val
@@ -197,13 +197,13 @@ MsgInv ==
 (***************************************************************************)
 (* The following two lemmas are simple consequences of the definitions.    *)
 (***************************************************************************)
-LEMMA VotedInv == 
-        MsgInv /\ TypeOK => 
+LEMMA VotedInv ==
+        MsgInv /\ TypeOK =>
             \A a \in Acceptors, v \in Values, b \in Ballots :
                 VotedForIn(a, v, b) => SafeAt(v, b) /\ b =< maxVBal[a]
 BY DEF VotedForIn, MsgInv, Messages, TypeOK
 
-LEMMA VotedOnce == 
+LEMMA VotedOnce ==
         MsgInv =>  \A a1, a2 \in Acceptors, b \in Ballots, v1, v2 \in Values :
                        VotedForIn(a1, v1, b) /\ VotedForIn(a2, v2, b) => (v1 = v2)
 BY DEF MsgInv, VotedForIn
@@ -216,7 +216,7 @@ AccInv ==
     /\ (maxVBal[a] >= 0) => VotedForIn(a, maxVal[a], maxVBal[a])  \* SafeAt(maxVal[a], maxVBal[a])
     \* conjunct added corresponding to MsgInv 2014/03/29 sm
     /\ \A c \in Ballots : c > maxVBal[a] => ~ \E v \in Values : VotedForIn(a, v, c)
-                                       
+
 (***************************************************************************)
 (* Inv is the complete inductive invariant.                                *)
 (***************************************************************************)
@@ -227,7 +227,7 @@ Inv == TypeOK /\ MsgInv /\ AccInv
 (* predicate SafeAt(v, b) is stable, meaning that once it becomes true, it *)
 (* remains true throughout the rest of the excecution.                     *)
 (***************************************************************************)
-LEMMA SafeAtStable == Inv /\ Next /\ TypeOK' => 
+LEMMA SafeAtStable == Inv /\ Next /\ TypeOK' =>
                           \A v \in Values, b \in Ballots:
                                   SafeAt(v, b) => SafeAt(v, b)'
 <1> SUFFICES ASSUME Inv, Next, TypeOK',
@@ -271,19 +271,19 @@ LEMMA SafeAtStable == Inv /\ Next /\ TypeOK' =>
     <3>3. aa = a /\ m.bal = bb
       BY <2>1, <3>1, <3>2 DEF TypeOK
     <3>. QED
-      BY <2>1, <2>4, <3>3 DEF Phase2b, WontVoteIn, TypeOK 
+      BY <2>1, <2>4, <3>3 DEF Phase2b, WontVoteIn, TypeOK
   <2>5 \A aa \in Acceptors, bb \in Ballots : WontVoteIn(aa, bb) => WontVoteIn(aa, bb)'
     BY <2>3, <2>4 DEF WontVoteIn
   <2> QED
     BY <2>2, <2>5, QuorumAssumption DEF SafeAt
-                         
+
 <1>. QED  BY <1>1, <1>2, <1>3, <1>4 DEF Next
 
 THEOREM Invariant == Spec => []Inv
 <1> USE DEF Ballots
 <1>1. Init => Inv
   BY Isa DEF Init, Inv, TypeOK, AccInv, MsgInv, VotedForIn
-  
+
 <1>2. Inv /\ [Next]_vars => Inv'
   <2> SUFFICES ASSUME Inv, Next
                PROVE  Inv'
@@ -318,7 +318,7 @@ THEOREM Invariant == Spec => []Inv
     <3>4. ASSUME NEW a \in Acceptors, Phase2b(a) PROVE AccInv'
       <4>1. PICK m \in msgs : Phase2b(a)!(m)
         BY <3>4, Zenon DEF Phase2b
-      <4>2. \A acc \in Acceptors : 
+      <4>2. \A acc \in Acceptors :
                /\ maxVal'[acc] = None <=> maxVBal'[acc] = -1
                /\ maxVBal'[acc] =< maxBal'[acc]
         BY <2>1, <4>1, NoneNotAValue DEF AccInv, TypeOK, Messages
@@ -347,7 +347,7 @@ THEOREM Invariant == Spec => []Inv
         BY <3>2, Zenon DEF Phase1b
       <4>1. \A aa,vv,bb : VotedForIn(aa,vv,bb)' <=> VotedForIn(aa,vv,bb)
         BY DEF Send, VotedForIn
-      <4>. DEFINE mm == [type |-> "1b", bal |-> m.bal, maxVBal |-> maxVBal[a], 
+      <4>. DEFINE mm == [type |-> "1b", bal |-> m.bal, maxVBal |-> maxVBal[a],
                          maxVal |-> maxVal[a], acc |-> a]
       <4>2. mm.bal =< maxBal'[mm.acc]
         BY DEF TypeOK, Messages
@@ -369,11 +369,11 @@ THEOREM Invariant == Spec => []Inv
       <4>1a. UNCHANGED <<maxBal, maxVBal, maxVal>>
         BY <3>3 DEF Phase2a
       <4>2. PICK v \in Values :
-               /\ \E Q \in Quorums : 
+               /\ \E Q \in Quorums :
                      \E S \in SUBSET {m \in msgs : (m.type = "1b") /\ (m.bal = b)} :
                         /\ \A a \in Q : \E m \in S : m.acc = a
                         /\ \/ \A m \in S : m.maxVBal = -1
-                           \/ \E c \in 0..(b-1) : 
+                           \/ \E c \in 0..(b-1) :
                                  /\ \A m \in S : m.maxVBal =< c
                                  /\ \E m \in S : /\ m.maxVBal = c
                                                  /\ m.maxVal = v
@@ -388,11 +388,11 @@ THEOREM Invariant == Spec => []Inv
                                 => ma = m
         BY <4>1, <4>3, Isa DEF MsgInv
       <4>10. SafeAt(v,b)
-        <5>0. PICK Q \in Quorums, 
+        <5>0. PICK Q \in Quorums,
                    S \in SUBSET {m \in msgs : (m.type = "1b") /\ (m.bal = b)} :
                      /\ \A a \in Q : \E m \in S : m.acc = a
                      /\ \/ \A m \in S : m.maxVBal = -1
-                        \/ \E c \in 0..(b-1) : 
+                        \/ \E c \in 0..(b-1) :
                               /\ \A m \in S : m.maxVBal =< c
                               /\ \E m \in S : /\ m.maxVBal = c
                                               /\ m.maxVal = v
@@ -406,12 +406,12 @@ THEOREM Invariant == Spec => []Inv
                      NEW ma \in S, ma.maxVBal = c, ma.maxVal = v
               PROVE  SafeAt(v,b)
           <6>. SUFFICES ASSUME NEW d \in 0 .. (b-1)
-                        PROVE  \E QQ \in Quorums : \A q \in QQ : 
+                        PROVE  \E QQ \in Quorums : \A q \in QQ :
                                   VotedForIn(q,v,d) \/ WontVoteIn(q,d)
             BY Zenon DEF SafeAt
           <6>1. CASE d \in 0 .. (c-1)
             \* The "1b" message for v with maxVBal value c must have been safe
-            \* according to MsgInv for "1b" messages and lemma VotedInv, 
+            \* according to MsgInv for "1b" messages and lemma VotedInv,
             \* and that proves the assertion
             BY <5>2, <6>1, VotedInv DEF SafeAt, MsgInv, TypeOK, Messages
           <6>2. CASE d = c
@@ -451,13 +451,13 @@ THEOREM Invariant == Spec => []Inv
 
 <1>. QED  BY <1>1, <1>2, PTL DEF Spec
 
-    
+
 THEOREM Consistent == Spec => []Consistency
 <1> USE DEF Ballots
-  
+
 <1>1. Inv => Consistency
-  <2> SUFFICES ASSUME Inv,  
-                      NEW v1 \in Values,  NEW v2 \in Values, 
+  <2> SUFFICES ASSUME Inv,
+                      NEW v1 \in Values,  NEW v2 \in Values,
                       NEW b1 \in Ballots, NEW b2 \in Ballots,
                       ChosenIn(v1, b1), ChosenIn(v2, b2),
                       b1 =< b2
@@ -476,7 +476,7 @@ THEOREM Consistent == Spec => []Consistency
   <2>2. CASE b1 < b2
     <3>1. SafeAt(v2, b2)
       BY VotedInv, QuorumNonEmpty, QuorumAssumption DEF ChosenIn, Inv
-    <3>2. PICK Q2 \in Quorums : 
+    <3>2. PICK Q2 \in Quorums :
                   \A a \in Q2 : VotedForIn(a, v2, b1) \/ WontVoteIn(a, b1)
       BY <3>1, <2>2 DEF SafeAt
     <3>3. PICK Q1 \in Quorums : \A a \in Q1 : VotedForIn(a, v1, b1)

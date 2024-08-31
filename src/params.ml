@@ -3,17 +3,19 @@
  *
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
  *)
-
 open Ext
-open Printf;;
+open Printf
+
 
 let self_sum = Digest.file Sys.executable_name
 
 (* must be a function because it must not be computed before all the
    modules are loaded. *)
 let rawversion () =
-  sprintf "%d.%d.%d" Version.major Version.minor Version.micro
-;;
+  match Build_info.V1.version () with
+   | None -> "development"
+   | Some v -> Build_info.V1.Version.to_string v
+
 
 let debug_flags : (string, unit) Hashtbl.t = Hashtbl.create 3
 let add_debug_flag flg = Hashtbl.add debug_flags flg ()
@@ -22,13 +24,14 @@ let debugging flg = Hashtbl.mem debug_flags flg
 
 let nprocs = Sysconf.nprocs ()
 
-let timeout_stretch = ref 1.0;;
+let timeout_stretch = ref 1.0
 
 let tb_sl = ref 0 (* toolbox start line *)
 let tb_el = ref max_int (* toolbox end line *)
-let input_files = ref [];;  (* List of input file names *)
+let input_files = ref []  (* List of input file names *)
 
 let toolbox = ref false     (* Run in toolbox mode. *)
+let toolbox_vsn = ref 1     (* Toolbox protocol version. *)
 
 let no_fp = ref false
 (* Don't use the fingerprints but still save them with the old ones. *)
@@ -46,34 +49,58 @@ let safefp = ref false
 let wait = ref 3
 (* Wait time before sending a "being proved" message to the toolbox. *)
 
+let use_stdin = ref false
+(* Read the document from stdin, if only one file is provided as an input. *)
+
+let prefer_stdlib = ref false
+(* If set to true, the TLAPM will prefer the modules from the STDLIB
+   instead of modules with the same names in the search path. *)
+
 let noproving = ref false (* Don't send any obligation to the back-ends. *)
 
 let printallobs = ref false
 (* print unnormalized and normalized versions of obligations in toolbox mode *)
 
 
-let library_path =
-  let d = Sys.executable_name in
-  let d = Filename.dirname (Filename.dirname d) in
-  let d = Filename.concat d "lib" in
-  let d = Filename.concat d "tlaps" in
-  d
+(* The backends directory should be resolved via the dune sites mechanism.
+   If the sites are not available, then we assume this file layout to locate
+   the Isabelle installation.
+    - bin/tlapm
+    - lib/tlapm/backends/Isabelle
+  *)
+let isabelle_base_path =
+  let rec find paths =
+    match paths with
+    | [] ->
+      let bin_dir = Filename.dirname Sys.executable_name in
+      let prefix = Filename.dirname bin_dir in
+      List.fold_left
+        Filename.concat
+        prefix
+        ["lib"; "tlapm"; "backends"; "Isabelle"]
+    | path :: other ->
+      let isabelle_base = Filename.concat path "Isabelle" in
+      match Sys.file_exists isabelle_base with
+      | true -> isabelle_base
+      | false -> find other
+  in find Setup_paths.Sites.backends
+
+let isabelle_tla_path =
+  List.fold_left Filename.concat isabelle_base_path ["src"; "TLA+"]
+
 
 type executable =
   | Unchecked of string * string * string (* exec, command, version_command *)
   | User of string                        (* command *)
   | Checked of string * string list       (* command, version *)
   | NotFound of string
-;;
 
-type exec = executable ref;;
 
-let mydir = Filename.dirname Sys.executable_name;;
-let auxdir = Filename.concat library_path "bin";;
-let extrapath = sprintf ":%s:%s" mydir auxdir;;
+type exec = executable ref
+
+
 let path_prefix =
-  let path = Sys.getenv "PATH" in
-  sprintf "PATH='%s%s';" path extrapath;;
+  sprintf "PATH='%s';" Paths.backend_path_string
 
 let get_exec e =
   match !e with
@@ -100,7 +127,7 @@ let get_exec e =
         let msg1 = sprintf "Executable %S not found" exec in
         let msg2 =
           if Filename.is_relative exec
-          then sprintf " in this PATH:\n%s%s\n" (Sys.getenv "PATH") extrapath
+          then sprintf " in this PATH:\n%s\n" Paths.backend_path_string
           else "."
         in
         let msg = msg1 ^ msg2 in
@@ -112,26 +139,27 @@ let get_exec e =
      e := Checked (cmd, []);
      cmd
   | Checked (cmd, vers) -> cmd
-  | NotFound msg -> failwith msg;
-;;
+  | NotFound msg -> failwith msg
+
 
 let get_version e =
   match !e with
   | Checked (cmd, vers) -> vers
   | _ -> []
-;;
 
-let make_exec cmd args version = ref (Unchecked (cmd, args, version));;
+
+let make_exec cmd args version = ref (Unchecked (cmd, args, version))
 
 let isabelle_success_string = "((TLAPS SUCCESS))"
 
 let isabelle =
   let cmd =
-    Printf.sprintf "isabelle-process -r -q -e \"(use_thy \\\"$file\\\"; \
-                                                writeln \\\"%s\\\");\" TLA+"
+    Printf.sprintf "isabelle process -e \"(use_thy \\\"$file\\\"; \
+                        writeln \\\"%s\\\");\" -d %s -l TLA+"
                    isabelle_success_string
+                   isabelle_tla_path
   in
-  make_exec "isabelle-process" cmd "isabelle version"
+  make_exec "isabelle" cmd "isabelle version"
 ;;
 
 let set_fast_isabelle () =
@@ -163,20 +191,21 @@ let set_fast_isabelle () =
     isabelle := Unchecked (poly, cmd, "isabelle version");
   with _ -> eprintf "Warning: error trying to set up fast-isabelle\n%!";
   end
-;;
+
 
 let zenon =
   make_exec "zenon" "zenon -p0 -x tla -oisar -max-time 1d \"$file\"" "zenon -v"
-;;
+
 
 let cvc4 =
   if Sys.os_type = "Cygwin" then
     make_exec "cvc4" "cvc4 --lang=smt2 \"$winfile\"" "cvc4 --version"
   else
     make_exec "cvc4" "cvc4 --lang=smt2 \"$file\"" "cvc4 --version"
-;;
 
-let yices = make_exec "yices" "yices -tc \"$file\"" "yices --version";;
+
+let yices = make_exec "yices" "yices -tc \"$file\"" "yices --version"
+
 let z3 =
   if Sys.os_type = "Cygwin" then
     make_exec "z3"
@@ -188,18 +217,40 @@ let z3 =
               (* "z3 -smt2 -v:0 AUTO_CONFIG=false PULL_NESTED_QUANTIFIERS=true MBQI=true CNF_MODE=1 \"$file\"" *)
               "z3 -smt2 -v:0 AUTO_CONFIG=false smt.MBQI=true \"$file\""
               "z3 -version"
-;;
+
 let verit =
   make_exec "veriT"
             "veriT --input=smtlib2 --disable-ackermann \
                    --disable-banner --disable-print-success \"$file\""
             "echo unknown"
-;;
-let spass_dfg = make_exec "SPASS" "SPASS -Auto -PGiven=0 -PProblem=0 -PStatistic=0 \"$file\"" "echo unknown";;
-let spass_tptp = make_exec "SPASS" "SPASS -Auto -TPTP -PGiven=0 -PProblem=0 -PStatistic=0 \"$file\"" "echo unknown";;
-let eprover = make_exec "eprover" "eprover --auto --tstp-format --silent \"$file\"" "eprover --version";;
 
-let ls4 = make_exec "ls4" "ptl_to_trp -i $file | ls4" "echo unknown";;
+let zipper =
+  make_exec "zipperposition"
+            "zipperposition \"$file\""
+            "zipperposition --version"
+
+
+let spass_dfg =
+  make_exec "SPASS"
+            "SPASS -Auto -PGiven=0 -PProblem=0 -PStatistic=0 \"$file\""
+            "echo unknown"
+let spass_tptp =
+  make_exec "SPASS"
+            "SPASS -Auto -TPTP -PGiven=0 -PProblem=0 -PStatistic=0 \"$file\""
+            "echo unknown"
+
+
+let eprover =
+  make_exec "eprover"
+            "eprover --auto --tstp-format --silent \"$file\""
+            "eprover --version"
+
+
+let ls4 =
+  make_exec "ls4"
+            "ptl_to_trp -i $file | ls4"
+            "echo unknown"
+
 
 let smt_logic = ref "UFNIA"
 
@@ -211,27 +262,49 @@ let smt_logic = ref "UFNIA"
 let smt =
   try ref (User (Sys.getenv "TLAPM_SMT_SOLVER"))
   with Not_found -> ref !z3
-;;
     (* "verit --input=smtlib2 --disable-ackermann --disable-banner $file" *)
     (* "z3 /smt2 MODEL=true PULL_NESTED_QUANTIFIERS=true $file" *)
     (* Yices does not handle SMTLIB version 2 yet *)
 
-let set_smt_solver slv = smt := User slv;;
+let set_smt_solver slv = smt := User slv
 
 let set_smt_logic logic = smt_logic := logic
 
 
 let max_threads = ref nprocs
 
-let rev_search_path = ref [library_path]
+let stdlib_search_paths = Paths.stdlib_paths
+
+(** Finds the actual path containing the STDLIB modules.
+    The relative paths (-I +some) are based on this. *)
+let stdlib_path : string option =
+  Paths.find_path_containing Paths.stdlib_paths "TLAPS.tla"
+
+(** The actual list of paths at which the library TLA files are searched. *)
+let rev_search_path = ref (match stdlib_path with None -> [] | Some p -> [p])
+
+(* Additional paths are added to the search list by keeping the base path as the first one. *)
 let add_search_dir dir =
-  let dir =
-    if dir.[0] = '+'
-    then Filename.concat library_path (String.sub dir 1 (String.length dir - 1))
-    else dir
+  let add dir =
+    let rsp = !rev_search_path in
+    let hd, tl = match stdlib_path with None -> ([], rsp) | Some p -> ([p], List.tl rsp) in
+    if List.for_all (fun lp -> lp <> dir) rsp then
+      rev_search_path :=  List.concat([hd; [dir]; tl])
   in
-  if List.for_all (fun lp -> lp <> dir) !rev_search_path then
-    rev_search_path := library_path :: dir :: List.tl !rev_search_path
+  let dir =
+    if dir.[0] = '+' then
+    match stdlib_path with
+    | None -> failwith "base stdlib path unknown";
+    | Some p -> Filename.concat p (String.sub dir 1 (String.length dir - 1))
+    else dir
+  in add dir
+
+(* Reset the search path to the specified list. *)
+let set_search_path dirs =
+  let p = match stdlib_path with
+  | None -> dirs
+  | Some p -> p :: dirs
+  in rev_search_path := p
 
 let output_dir = ref "."
 
@@ -242,7 +315,7 @@ let default_method =
     Method.Isabelle (Method.default_isabelle_timeout,
                      Method.default_isabelle_tactic);
   ]
-;;
+
 
 let mk_meth name timeout =
   match name with
@@ -267,6 +340,9 @@ let mk_meth name timeout =
   | "verit" ->
      let timeout = Option.default Method.default_smt2_timeout timeout in
      Method.Verit timeout
+  | "zipper" ->
+     let timeout = Option.default Method.default_zipper_timeout timeout in
+     Method.Zipper timeout
   | "spass" ->
      let timeout = Option.default Method.default_spass_timeout timeout in
      Method.Spass timeout
@@ -278,7 +354,7 @@ let mk_meth name timeout =
      Method.LS4 timeout
   | "fail" -> Method.Fail
   | _ -> failwith (sprintf "unknown method %S" name)
-;;
+
 
 (** Raise Failure in case of syntax error or unknown method. *)
 let parse_default_methods s =
@@ -294,6 +370,7 @@ let parse_default_methods s =
     printf "  yices   -- Yices\n";
     printf "  verit   -- VeriT\n";
     printf "  spass   -- SPASS\n";
+    printf "  zipper  -- Zipperposition\n";
     printf "  ls4     -- LS4\n";
     printf "\n" ;
     printf "  fail    -- Dummy method that always fails\n" ;
@@ -310,11 +387,11 @@ let parse_default_methods s =
     in
     List.map f (Ext.split s ',')
   end
-;;
+
 
 let set_default_method meths =
   default_method := parse_default_methods meths
-;;
+
 
 let verbose = ref false
 
@@ -348,6 +425,23 @@ let () =
         use_xtla := false
   with Not_found -> ()
 
+(* The `cachedir` is where `tlapm`
+stores fingerprint and auxiliary
+files. This directory can be defined:
+- via the environment variable
+  that is read below, or
+- via the command-line option
+  `--cache-dir`
+*)
+let cachedir = ref ""
+let () =
+    try
+        cachedir := Sys.getenv "TLAPM_CACHE_DIR";
+    with Not_found ->
+        cachedir := ".tlacache"
+let set_tlapm_cache_dir dir = cachedir := dir
+
+
 let keep_going   = ref false
 let suppress_all = ref false
 let check        = ref false
@@ -359,7 +453,6 @@ let solve_cmd cmd file =
     sprintf "file=%s; winfile=\"`cygpath -a -w \"%s\"`\"; %s" file file (get_exec cmd)
   else
     sprintf "file=%s; %s" file (get_exec cmd)
-;;
 
 
 let external_tool_config force (name, tool) =
@@ -375,15 +468,19 @@ let external_tool_config force (name, tool) =
   | NotFound msg ->
       [msg]
   | _ -> []
-;;
+
 
 let configuration toolbox force =
+  let library_path = (match stdlib_path with
+  | Some path -> "\"" ^ (String.escaped path) ^ "\"";
+  | None -> "N/A")
+  in
   let lines =
     [ "version == \"" ^ rawversion () ^ "\""
-    ; "built_with == \"OCaml " ^ Config.ocaml_version ^ "\""
+    ; "built_with == \"OCaml " ^ Sys.ocaml_version ^ "\""
     ; "tlapm_executable == \"" ^ Sys.executable_name ^ "\""
     ; "max_threads == " ^ string_of_int !max_threads
-    ; "library_path == \"" ^ String.escaped library_path ^ "\"" ]
+    ; "library_path == " ^  library_path ]
     @ begin match !rev_search_path with
       | [] -> ["search_path == << >>"]
       | [p] -> ["search_path == << \"" ^ p ^ "\" >>"]
@@ -406,6 +503,7 @@ let configuration toolbox force =
                               ("VeriT", verit);
                               ("SMT", smt);
                               ("Spass", spass_tptp);
+                              ("Zipperposition", zipper);
                               ("LS4", ls4);
                              ])
     @ [ "flatten_obligations == " ^ (if !ob_flatten then "TRUE" else "FALSE")
@@ -417,7 +515,7 @@ let configuration toolbox force =
       ([h], [String.make (String.length h) '='])
   in
   header @ lines @ footer
-;;
+
 
 let printconfig force =
   String.concat "\n" (configuration false force)
@@ -437,7 +535,7 @@ let check_zenon_ver () =
        "zenon version %d.%d.%d [%c%d] %4d-%02d-%02d"
        (fun _ _ _ _ znum year month date ->
           zenon_version := Some (zen, znum, year * 10000 + month * 100 + date))
-;;
+
 
 let get_zenon_verfp () = if !zenon_version = None then check_zenon_ver ();
   "Zenon version ["^(string_of_int (let _,znum,_ = Option.get !zenon_version in znum))^"]"
@@ -456,7 +554,7 @@ let get_isabelle_version () =
   match !isabelle_version with
   | None -> "(unknown)"
   | Some s -> s
-;;
+
 
 let fpf_out: string option ref = ref None
 
@@ -470,7 +568,7 @@ let fp_hist_dir = ref ""
 
 let fp_deb = ref false
 
-let backend_timeout = ref 5.;;
+let backend_timeout = ref 5.
 (** How much time a back-end is allowed to spend processing the obligation
    before sending it to its external prover. This gets multiplied by
    timeout_stretch before use.

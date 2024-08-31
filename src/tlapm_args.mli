@@ -1,5 +1,5 @@
-(*
- * Copyright (C) 2011  INRIA and Microsoft Corporation
- *)
+(* Command-line arguments to `tlapm`.
 
-val init : unit -> string list;;
+Copyright (C) 2011  INRIA and Microsoft Corporation
+*)
+val init: unit -> string list

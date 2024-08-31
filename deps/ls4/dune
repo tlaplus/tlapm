@@ -1,0 +1,9 @@
+; Download and build the LS4 prover.
+(rule
+ (deps "Makefile" "ls4.patch")
+ (targets ls4)
+ (action (run "make" "-C" "." "ls4")))
+
+(install
+ (section (site (tlapm backends)))
+ (files (ls4 as bin/ls4)))
