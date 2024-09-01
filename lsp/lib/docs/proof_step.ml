@@ -353,9 +353,7 @@ let of_module (mule : Tlapm_lib.Module.T.mule) prev : t option =
            proof status between the modifications. *)
         let o =
           match o.fingerprint with
-          | None ->
-              let o = Tlapm_lib.Backend.Prep.add_expr_level o in  (* TODO: Fix this properly. More conditions have to be satisfied. *)
-              Tlapm_lib.Backend.Fingerprints.write_fingerprint o
+          | None -> Tlapm_lib.Backend.Prep.prepare_obligation o
           | Some _ -> o
         in
         let o = Obl.of_parsed_obligation o Proof_status.Pending in

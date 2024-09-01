@@ -29,4 +29,4 @@ val normalize:
         obligation
 *)
 
-val add_expr_level: obligation -> obligation
+val prepare_obligation: obligation -> obligation

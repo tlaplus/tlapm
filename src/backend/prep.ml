@@ -1453,6 +1453,97 @@ let is_trivial x =
   try ignore (Lazy.force x); true with Nontrivial -> false
 
 
+let prepare_obligation_with_effects ob fpout thyout record print =
+  if print then begin
+    print_obl_and_msg ob "Proof obligation before `find_meth`:\n"
+  end;
+  let ob = find_meth ob in
+  if print then begin
+    print_obl_and_msg ob "Proof obligation after `find_meth`:\n";
+    Toolbox.print_ob_provers ob
+  end;
+  let meths = get ob.obl Proof.T.Props.meth in
+  let expand_enabled = List.exists
+      (fun x -> (x = Method.ExpandENABLED)) meths in
+  let expand_cdot = List.exists
+      (fun x -> (x = Method.ExpandCdot)) meths in
+  let autouse = List.exists
+      (fun x -> (x = Method.AutoUSE)) meths in
+  let apply_lambdify = List.exists
+      (fun x -> (x = Method.Lambdify)) meths in
+  let enabled_axioms = List.exists
+      (fun x -> (x = Method.ENABLEDaxioms)) meths in
+  let enabled_rewrites = List.exists
+      (fun x -> (x = Method.ENABLEDrewrites)) meths in
+  let enabled_rules = List.exists
+      (fun x -> (x = Method.ENABLEDrules)) meths in
+  let level_comparison = List.exists
+      (fun x -> (x = Method.LevelComparison)) meths in
+  let meths = List.filter
+      (fun x -> (
+          (x <> Method.ExpandENABLED) &&
+          (x <> Method.ExpandCdot) &&
+          (x <> Method.AutoUSE) &&
+          (x <> Method.Lambdify) &&
+          (x <> Method.ENABLEDaxioms) &&
+          (x <> Method.ENABLEDrewrites) &&
+          (x <> Method.ENABLEDrules) &&
+          (x <> Method.LevelComparison)
+          ))
+      meths in
+  assert ((List.length meths) > 0);
+  (* compute fingerprint:
+      The fingerprint is computed before:
+          - expanding definitions listed in `BY DEF`
+          - normalizing expressions
+          - auto-expanding definitions for sound `ENABLED`, `\cdot` expansion
+          - replacing `ENABLED` and `\cdot` with rigid quantification
+      The fingerprints include both the assertion and `BY` statement
+      proof directives.
+      *)
+  if autouse then begin
+    let p =
+        lazy (normalize_expand (add_expr_level ob)
+            fpout thyout record
+            ~expand_enabled
+            ~expand_cdot
+            ~autouse
+            ~apply_lambdify
+            ~enabled_axioms
+            ~enabled_rewrites
+            ~enabled_rules
+            ~level_comparison) in
+    let (p1, expand_success) = Lazy.force p in
+    let fp_ob = Fingerprints.write_fingerprint p1 in
+    let p = lazy (fp_ob, expand_success) in
+    (lazy fp_ob, p, meths)
+  end else begin
+    let const_fp_ob =
+      lazy (Fingerprints.write_fingerprint (add_expr_level ob))
+    in
+    let p = lazy (normalize_expand (Lazy.force const_fp_ob)
+            fpout thyout record
+            ~expand_enabled
+            ~expand_cdot
+            ~autouse
+            ~apply_lambdify
+            ~enabled_axioms
+            ~enabled_rewrites
+            ~enabled_rules
+            ~level_comparison)
+    in
+    (const_fp_ob, p, meths)
+  end
+
+(* This function is used also in the LSP server to get the fingerprint for
+   an obligation with the ENABLED and Cdot expanded properly.
+*)
+let prepare_obligation ob =
+  Out_channel.with_open_bin "/dev/null" (fun discard_out ->
+  let discard_rec _ _ = () in
+  let fp_ob, p, meths = prepare_obligation_with_effects ob discard_out discard_out discard_rec false in
+  Lazy.force fp_ob)
+
 (* This function is called on every obligation in the range selected by the
    user. It produces a [Schedule.t] that represents the job of proving this
    obligation.
@@ -1461,82 +1552,7 @@ let ship ob fpout thyout record =
   vprintf "(* trying obligation %d generated from %s *)\n" (Option.get ob.id)
           (Util.location ~cap:false ob.obl);
   begin try
-    print_obl_and_msg ob "Proof obligation before `find_meth`:\n";
-    let ob = find_meth ob in
-    print_obl_and_msg ob "Proof obligation after `find_meth`:\n";
-    Toolbox.print_ob_provers ob;
-    let meths = get ob.obl Proof.T.Props.meth in
-    let expand_enabled = List.exists
-        (fun x -> (x = Method.ExpandENABLED)) meths in
-    let expand_cdot = List.exists
-        (fun x -> (x = Method.ExpandCdot)) meths in
-    let autouse = List.exists
-        (fun x -> (x = Method.AutoUSE)) meths in
-    let apply_lambdify = List.exists
-        (fun x -> (x = Method.Lambdify)) meths in
-    let enabled_axioms = List.exists
-        (fun x -> (x = Method.ENABLEDaxioms)) meths in
-    let enabled_rewrites = List.exists
-        (fun x -> (x = Method.ENABLEDrewrites)) meths in
-    let enabled_rules = List.exists
-        (fun x -> (x = Method.ENABLEDrules)) meths in
-    let level_comparison = List.exists
-        (fun x -> (x = Method.LevelComparison)) meths in
-    let meths = List.filter
-        (fun x -> (
-            (x <> Method.ExpandENABLED) &&
-            (x <> Method.ExpandCdot) &&
-            (x <> Method.AutoUSE) &&
-            (x <> Method.Lambdify) &&
-            (x <> Method.ENABLEDaxioms) &&
-            (x <> Method.ENABLEDrewrites) &&
-            (x <> Method.ENABLEDrules) &&
-            (x <> Method.LevelComparison)
-            ))
-        meths in
-    assert ((List.length meths) > 0);
-    (* compute fingerprint:
-        The fingerprint is computed before:
-            - expanding definitions listed in `BY DEF`
-            - normalizing expressions
-            - auto-expanding definitions for sound `ENABLED`, `\cdot` expansion
-            - replacing `ENABLED` and `\cdot` with rigid quantification
-        The fingerprints include both the assertion and `BY` statement
-        proof directives.
-        *)
-    let (const_fp_ob, p) = if autouse then begin
-            let p =
-                lazy (normalize_expand (add_expr_level ob)
-                    fpout thyout record
-                    ~expand_enabled
-                    ~expand_cdot
-                    ~autouse
-                    ~apply_lambdify
-                    ~enabled_axioms
-                    ~enabled_rewrites
-                    ~enabled_rules
-                    ~level_comparison) in
-            let (p1, expand_success) = Lazy.force p in
-            let fp_ob = Fingerprints.write_fingerprint p1 in
-            let p = lazy (fp_ob, expand_success) in
-            (lazy fp_ob, p)
-        end else begin
-            let const_fp_ob =
-              lazy (Fingerprints.write_fingerprint (add_expr_level ob))
-            in
-            let p = lazy (normalize_expand (Lazy.force const_fp_ob)
-                    fpout thyout record
-                    ~expand_enabled
-                    ~expand_cdot
-                    ~autouse
-                    ~apply_lambdify
-                    ~enabled_axioms
-                    ~enabled_rewrites
-                    ~enabled_rules
-                    ~level_comparison)
-            in
-            (const_fp_ob, p)
-        end in
+    let const_fp_ob, p, meths = prepare_obligation_with_effects ob fpout thyout record true in
     let prep_meth m =
       let ob = Lazy.force const_fp_ob in
       let m = Method.scale_time m !Params.timeout_stretch in
