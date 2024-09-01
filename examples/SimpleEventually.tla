@@ -26,7 +26,7 @@ THEOREM System => <>(x = TRUE)
         BY <2>1, <2>2, PTL
 <1>3. ASSUME TypeOK /\ ~(x = TRUE)
       PROVE ENABLED <<Next>>_x
-    BY <1>3, ExpandENABLED DEF Next
+    BY <1>3, ExpandENABLED DEF Next, TypeOK
 <1>4. ASSUME <<Next>>_x
       PROVE (x = TRUE)'
     BY <1>4 DEF Next
