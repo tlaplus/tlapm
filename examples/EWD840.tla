@@ -173,7 +173,7 @@ LEMMA TypeCorrect == Spec => []TypeOK
 THEOREM Spec => []TerminationDetection
 (* Dijkstra's invariant implies correctness *)
 <1>1 Inv => TerminationDetection
-  BY  DEF Inv, TerminationDetection, terminationDetected, Nodes
+  BY  DEF Inv, TerminationDetection, terminationDetected, Nodes, allInactive
 (* Dijkstra's invariant is (trivially) established by the initial condition *)
 <1>2 Init => Inv
   BY DEF Init, Inv
@@ -213,7 +213,7 @@ LEMMA Inv_implies_Termination == Inv => TerminationDetection
     <2>. QED  BY <2>4, <2>5 DEF Nodes
 
 <1>. QED
-  BY <1>1 DEF TerminationDetection, terminationDetected
+  BY <1>1 DEF TerminationDetection, terminationDetected, allInactive
 
 -----------------------------------------------------------------------------
 (***************************************************************************)
@@ -256,7 +256,7 @@ LEMMA EnabledControlled ==
                 PROVE  PassToken(i) => <<PassToken(i)>>_vars
     OBVIOUS
   <2>. QED
-    BY DEF PassToken, vars, TypeOK
+    BY DEF PassToken, vars, TypeOK, Nodes
 <1>3. Controlled <=> <<Controlled>>_vars
   BY <1>1, <1>2 DEF Controlled
 <1>4. (ENABLED Controlled) <=> ENABLED <<Controlled>>_vars
@@ -312,7 +312,7 @@ LEMMA TerminationRound1 ==
       BY <3>1, <3>2, <3>3, PTL DEF BSpec
     <3>. QED  BY <3>4 DEF Pn1
   <2>. HIDE DEF R
-  <2>. QED  \* BY <2>1, <2>2, NatInduction
+  <2>. QED BY <2>1, <2>2, NatInduction
 <1>2. BSpec => []((\E n \in Nat : P(n)) => <>Q)
   <2>. HIDE DEF P, Q
   <2>1. BSpec => [](\A n \in Nat : P(n) => <>Q)
@@ -371,7 +371,7 @@ LEMMA TerminationRound2 ==
       BY <3>1, <3>2, <3>3, PTL DEF BSpec
     <3>. QED  BY <3>4 DEF Pn1
   <2>. HIDE DEF R
-  <2>. QED  \* BY <2>1, <2>2, NatInduction
+  <2>. QED BY <2>1, <2>2, NatInduction
 <1>3. BSpec => []((\E n \in Nat : P(n)) => <>Q)
   <2>. HIDE DEF P, Q
   <2>1. BSpec => [](\A n \in Nat : P(n) => <>Q)
@@ -426,7 +426,7 @@ LEMMA TerminationRound3 ==
       BY <3>1, <3>2, <3>3, PTL DEF BSpec
     <3>. QED  BY <3>4 DEF Pn1
   <2>. HIDE DEF R
-  <2>. QED  \* BY <2>1, <2>2, NatInduction
+  <2>. QED BY <2>1, <2>2, NatInduction
 <1>3. BSpec => []((\E n \in Nat : P(n)) => <>Q)
   <2>. HIDE DEF P, Q
   <2>1. BSpec => [](\A n \in Nat : P(n) => <>Q)
