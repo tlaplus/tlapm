@@ -615,7 +615,7 @@ let init () =
        exit 3
 
 (* Access to this function has to be synchronized. *)
-let module_of_string ~(content : string) ~(filename : string) ~loader_paths ~prefer_stdlib : (Module.T.mule, (string option* string)) result =
+let modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~prefer_stdlib : (modctx * Module.T.mule, string option * string) result =
     let parse_it () =
         Errors.reset ();
         Params.prefer_stdlib := prefer_stdlib;
@@ -637,11 +637,11 @@ let module_of_string ~(content : string) ~(filename : string) ~loader_paths ~pre
             | false -> (mcx, found)
         ) (mcx, None) mods in
         match mule with
-        | Some mule -> Ok mule
-        | None -> failwith "module_of_string, found no module we tried to parse."
+        | Some mule -> Ok (mcx, mule)
+        | None -> failwith "modctx_of_string, found no module we tried to parse."
     in
     match parse_it () with
-    | Ok mule -> Ok mule
+    | Ok (mcx, mule) -> Ok (mcx, mule)
     | Error e -> Error e
     | exception e ->
         (match !Errors.loc, !Errors.msg with
@@ -649,5 +649,10 @@ let module_of_string ~(content : string) ~(filename : string) ~loader_paths ~pre
          | None, Some m -> Error (None, m)
          | Some l, None -> Error (Some l, Printexc.to_string e)
          | None, None -> Error (None, Printexc.to_string e))
+
+let module_of_string module_str =
+    let hparse = Tla_parser.P.use M_parser.parse in
+    let (flex, _) = Alexer.lex_string module_str in
+    Tla_parser.P.run hparse ~init:Tla_parser.init ~source:flex
 
 let stdlib_search_paths = Params.stdlib_search_paths
