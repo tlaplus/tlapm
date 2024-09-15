@@ -13,6 +13,7 @@ module Property = Property
 module Proof = Proof
 module Expr = Expr
 module Util = Util
+module Deque = Deque
 module Loc = Loc
 module Ctx = Ctx
 module Backend = Backend
@@ -650,8 +651,8 @@ let modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~pre
          | Some l, None -> Error (Some l, Printexc.to_string e)
          | None, None -> Error (None, Printexc.to_string e))
 
-let module_of_string module_str =
-    let hparse = Tla_parser.P.use M_parser.parse in
+let module_of_string (module_str : string) : Module.T.mule option =
+    let hparse = Tla_parser.P.use Module.Parser.parse in
     let (flex, _) = Alexer.lex_string module_str in
     Tla_parser.P.run hparse ~init:Tla_parser.init ~source:flex
 

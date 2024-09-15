@@ -7,6 +7,7 @@ module Property = Property
 module Proof = Proof
 module Expr = Expr
 module Util = Util
+module Deque = Deque
 module Loc = Loc
 module Ctx = Ctx
 module Backend = Backend
@@ -24,7 +25,7 @@ val modctx_of_string :
     from a specified string, assume it is located in the
     specified path. *)
 
-val module_of_string : string -> M_t.mule option
+val module_of_string : string -> Module.T.mule option
 (** Parse the specified string as a module. No dependencies
     are considered, nor proof obligations are elaborated. *)
 
