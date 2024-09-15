@@ -1,5 +1,9 @@
 (*
  * Copyright (C) 2008-2010  INRIA and Microsoft Corporation
+ *
+ * WARNING: While this library is exposed for other projects, its interface
+ * is considered experimentai and not stable. It can change in uncompatible
+ * ways in the future.
  *)
 
 module Module = Module

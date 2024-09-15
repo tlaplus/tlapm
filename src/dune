@@ -13,6 +13,7 @@
 
 (library
  (name tlapm_lib)
+ (public_name tlapm)
  (modules
   (:standard \ tlapm test_schedule why3_interface abstractor))
  (libraries
