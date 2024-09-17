@@ -12,6 +12,7 @@ let inx = ref stdin;;
 let outx = ref stdout;;
 let fo = ref false;;
 let atoms = ref false;;
+let useFOrenaming = ref false;;
 
 (*let resetVerbose = verbose := false;;*)
 
@@ -69,7 +70,8 @@ let _ =
           output_string !outx (string_of_formula simplified^"\n");
 	  flush !outx
 	end;
-	let (iP,uP,sP,eP) = dsnfWrap simplified in
+        let useFOrenaming = !useFOrenaming in
+	let (iP,uP,sP,eP) = dsnfWrap ~useFOrenaming simplified in
         if !verbose then begin
 	output_string !outx "After transformations, the DSNF is\n";
 	output_string !outx "iP = {\n";
