@@ -10,7 +10,6 @@ let useSimplification = ref false;;
 let filename = ref "";;
 let inx = ref stdin;;
 let outx = ref stdout;;
-let fo = ref false;;
 let atoms = ref false;;
 let useFOrenaming = ref false;;
 
@@ -38,7 +37,7 @@ let anonfun astring = Arg.usage args_spec usage_spec; exit 0;;
 let _ =
   try
     (*print_string ( Filename.basename Sys.argv.(0) );*)
-    if ( (String.sub ( Filename.basename Sys.argv.(0)) 0 2  ) = "fo") then fo:=true;
+    let fo = String.starts_with ~prefix:"fo" (Filename.basename Sys.argv.(0)) in
     Arg.parse args_spec anonfun usage_spec ;
     let lexbuf = Lexing.from_channel !inx in
       let result = Foyacc.start Folex.lexer lexbuf in
@@ -88,13 +87,13 @@ let _ =
 	let skolemisedIP = eliminateQ iP
 	and skolemisedUP = eliminateQl uP
 	and skolemisedSP = eliminateQl sP
-	and skolemisedEP = if !fo then (eliminateQl (flood eP constList)) else (eliminateQl eP)
+	and skolemisedEP = if fo then (eliminateQl (flood eP constList)) else (eliminateQl eP)
 	in
 	(* FO transformations *)
-	let processedIP = if !fo then (processFOconstants skolemisedIP) else skolemisedIP
-	and processedUP = if !fo then (processFOconstantsl skolemisedUP) else skolemisedUP
-	and processedSP = if !fo then (foStepClauses skolemisedSP) else skolemisedSP
-	and processedEP = if !fo then (processFOconstantsl skolemisedEP) else skolemisedEP
+	let processedIP = if fo then (processFOconstants skolemisedIP) else skolemisedIP
+	and processedUP = if fo then (processFOconstantsl skolemisedUP) else skolemisedUP
+	and processedSP = if fo then (foStepClauses skolemisedSP) else skolemisedSP
+	and processedEP = if fo then (processFOconstantsl skolemisedEP) else skolemisedEP
 	in
 	(**)
 	let cnfedIP = cnf processedIP
