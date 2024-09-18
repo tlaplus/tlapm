@@ -618,9 +618,8 @@ let rename proposition formula =
 (*              DSNF TRANSFORMATIONS                              *)
 (******************************************************************)
 
-(* this reference controls how fo formulas are processed: if false,
-then by de Morgan laws, by renaming else*)
-let useFOrenaming = ref false;;
+(* the useFOrenaming argument controls how fo formulas are processed:
+if false, then by de Morgan laws, by renaming else*)
 
 (*
 (* Transformation to CNF by renaming *)
@@ -675,13 +674,13 @@ let fodsnfselect form =
 (*                                iP       uP      sP     eP   *)
 (*                                                             *)
 (* ASSUME that formula is in NNF                               *)
-let rec dsnfWrap form =
+let rec dsnfWrap ~useFOrenaming form =
     debug ("dsnfWrap input: " ^ (string_of_formula form));
     match form with
      | f when (isTemporalFree f) -> (f, [], [], [])
      | And(x,y) ->
-         let (iP1, uP1,sP1,eP1) = dsnfWrap x
-         and (iP2, uP2,sP2,eP2) = dsnfWrap y
+         let (iP1, uP1,sP1,eP1) = dsnfWrap ~useFOrenaming x
+         and (iP2, uP2,sP2,eP2) = dsnfWrap ~useFOrenaming y
          in (And(iP1, iP2), union uP1 uP2, union sP1 sP2, union eP1 eP2)
      | Always (f) when (isTemporalFree f) ->
         (True, [f], [], [])
@@ -695,9 +694,9 @@ let rec dsnfWrap form =
                  (True, [], [Always(Or(lhs,rhs))], [])
 
 (* else use the standard transformations *)
-     | _ -> dsnf form
+     | _ -> dsnf ~useFOrenaming form
 
-and dsnf form =
+and dsnf ~useFOrenaming form =
     debug ("dsnf input: " ^ (string_of_formula form));
   (*  if isTemporalFree form *)
   (*  then fodsnfselect form *)
@@ -712,26 +711,26 @@ and dsnf form =
     match form with
      (* booleans go first *)
      | Not x  ->
-         let (iP,uP,sP,eP) = dsnf x
+         let (iP,uP,sP,eP) = dsnf ~useFOrenaming x
          in (Not(iP), uP,sP,eP)
      | And(x,y) ->
-         let (iP1, uP1,sP1,eP1) = dsnf x
-         and (iP2, uP2,sP2,eP2) = dsnf y
+         let (iP1, uP1,sP1,eP1) = dsnf ~useFOrenaming x
+         and (iP2, uP2,sP2,eP2) = dsnf ~useFOrenaming y
          in (And(iP1, iP2), union uP1 uP2, union sP1 sP2, union eP1 eP2)
   (*   | Or(x,y) ->
-         let (iP1, uP1,sP1,eP1) = dsnf x
-         and (iP2, uP2,sP2,eP2) = dsnf y
+         let (iP1, uP1,sP1,eP1) = dsnf ~useFOrenaming x
+         and (iP2, uP2,sP2,eP2) = dsnf ~useFOrenaming y
          in (Or(iP1, iP2), union uP1 uP2, union sP1 sP2, union eP1 eP2)*)
-      | Or(f, g) when ((not !useFOrenaming) || (isLiteral f) || (isLiteral g)) ->
-        let (iP1, uP1, sP1, eP1) = dsnf f
-        and (iP2, uP2, sP2, eP2) = dsnf g
+      | Or(f, g) when ((not useFOrenaming) || (isLiteral f) || (isLiteral g)) ->
+        let (iP1, uP1, sP1, eP1) = dsnf ~useFOrenaming f
+        and (iP2, uP2, sP2, eP2) = dsnf ~useFOrenaming g
         in
          (Or(iP1, iP2), (union uP1 uP2), (union sP1 sP2), (union eP1 eP2))
-      | Or(f, g) when (!useFOrenaming) (* both are non-litarls & useFOrenaming *) ->
+      | Or(f, g) when (useFOrenaming) (* both are non-litarls & useFOrenaming *) ->
          let newP = newLiteral (freeVars f)
-         and (iP1, uP1, sP1, eP1) = dsnf f
+         and (iP1, uP1, sP1, eP1) = dsnf ~useFOrenaming f
          in setSeen iP1 newP ;
-         let (iP2, uP2, sP2, eP2) = dsnf g
+         let (iP2, uP2, sP2, eP2) = dsnf ~useFOrenaming g
          in
          (Or(newP, iP2),
            (rename newP iP1)::(union uP1 uP2), (union sP1 sP2), (union eP1 eP2))
@@ -742,15 +741,15 @@ and dsnf form =
          in (Implies(iP1, iP2), union uP1 uP2, union sP1 sP2, union eP1 eP2)*)
      (* Quantifiers *)
      | Forall(v,y) ->
-         let (iP,uP,sP,eP) = dsnf y
+         let (iP,uP,sP,eP) = dsnf ~useFOrenaming y
          in (Forall(v, iP), uP,sP,eP)
      | Exists(v,y) ->
-         let (iP,uP,sP,eP) = dsnf y
+         let (iP,uP,sP,eP) = dsnf ~useFOrenaming y
          in (Exists(v, iP), uP,sP,eP)
      (* Temporal operators *)
      | Always(f) ->
          let newP = newLiteral (freeVars f)
-          and (iP,uP,sP,eP) = dsnf f
+          and (iP,uP,sP,eP) = dsnf ~useFOrenaming f
          in setSeen (Always(f)) newP ;
          (newP,
            (rename newP iP)::uP,
@@ -764,7 +763,7 @@ and dsnf form =
              if (isLiteral f) then f
               else (newLiteral (freeVars f))
            )
-          and (iP,uP,sP,eP) = dsnf f
+          and (iP,uP,sP,eP) = dsnf ~useFOrenaming f
          in setSeen (Next (f)) newP ;
          (newP,
            (if (isLiteral f) then uP else
@@ -775,7 +774,7 @@ and dsnf form =
      | Sometime(f) ->
          let newP = newLiteral (freeVars f)
          and newQ = newLiteral (freeVars f)
-          and (iP,uP,sP,eP) = dsnf f
+          and (iP,uP,sP,eP) = dsnf ~useFOrenaming f
          in setSeen (Sometime(f)) newP ;
          (newP,
             (rename newQ iP)::uP,
@@ -786,24 +785,24 @@ and dsnf form =
          if not (isLiteral f)
          then
            let newP = newLiteral (freeVars (Until(f,g)))
-  	 in let (iP,uP,sP,eP) = dsnf (Until(newP, g))
-  	    and (iP2,uP2,sP2,eP2) = dsnf (f)
+  	 in let (iP,uP,sP,eP) = dsnf ~useFOrenaming (Until(newP, g))
+  	    and (iP2,uP2,sP2,eP2) = dsnf ~useFOrenaming (f)
   	 in (iP,
   	 (rename newP iP2)::(uP@uP2),
   	 sP@sP2, eP@eP2)
          else if not (isLiteral g)
          then
            let newQ = newLiteral (freeVars (Until(f,g)))
-  	 in let (iP,uP,sP,eP) = dsnf (Until(f, newQ))
-  	    and (iP2,uP2,sP2,eP2) = dsnf (g)
+  	 in let (iP,uP,sP,eP) = dsnf ~useFOrenaming (Until(f, newQ))
+  	    and (iP2,uP2,sP2,eP2) = dsnf ~useFOrenaming (g)
   	 in (iP,
   	 (rename newQ iP2)::(uP@uP2),
   	 sP@sP2, eP@eP2)
          else (* Both f and g are atoms *)
            let newP = newLiteral (freeVars (Until(f,g)))
            and newQ = newLiteral (freeVars (Until(f,g)))
-           and (iP1,uP1,sP1,eP1) = dsnf f
-           and (iP2,uP2,sP2,eP2) = dsnf g
+           and (iP1,uP1,sP1,eP1) = dsnf ~useFOrenaming f
+           and (iP2,uP2,sP2,eP2) = dsnf ~useFOrenaming g
            in setSeen (Until(f,g)) newP ;
   	 (newP,
   	   (
@@ -820,24 +819,24 @@ and dsnf form =
          if not (isLiteral f)
          then
            let newP = newLiteral (freeVars (Unless(f,g)))
-  	 in let (iP,uP,sP,eP) = dsnf (Unless(newP, g))
-  	    and (iP2,uP2,sP2,eP2) = dsnf (f)
+  	 in let (iP,uP,sP,eP) = dsnf ~useFOrenaming (Unless(newP, g))
+  	    and (iP2,uP2,sP2,eP2) = dsnf ~useFOrenaming (f)
   	 in (iP,
   	 (rename newP iP2)::(uP@uP2),
   	 sP@sP2,eP@eP2)
          else if not (isLiteral g)
          then
            let newQ = newLiteral (freeVars (Unless(f,g)))
-  	 in let (iP,uP,sP,eP) = dsnf (Unless(f, newQ))
-  	    and (iP2,uP2,sP2,eP2) = dsnf (g)
+  	 in let (iP,uP,sP,eP) = dsnf ~useFOrenaming (Unless(f, newQ))
+  	    and (iP2,uP2,sP2,eP2) = dsnf ~useFOrenaming (g)
   	 in (iP,
   	 (rename newQ iP2)::(uP@uP2),
   	 sP@sP2,eP@eP2)
          else (* Both f and g are atoms *)
            let newP = newLiteral (freeVars (Unless(f,g)))
            and newQ = newLiteral (freeVars (Unless(f,g)))
-           and (iP1,uP1,sP1,eP1) = dsnf f
-           and (iP2,uP2,sP2,eP2) = dsnf g
+           and (iP1,uP1,sP1,eP1) = dsnf ~useFOrenaming f
+           and (iP2,uP2,sP2,eP2) = dsnf ~useFOrenaming g
            in setSeen (Unless(f,g)) newP ;
   	 (newP,
   	   (

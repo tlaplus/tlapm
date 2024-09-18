@@ -5,94 +5,75 @@ open Fotypes;;
 open Fofunctions;;
 
 
-let verbose = ref false;;
-let useSimplification = ref false;;
-let filename = ref "";;
-let inx = ref stdin;;
-let outx = ref stdout;;
-let fo = ref false;;
-let atoms = ref false;;
-
-(*let resetVerbose = verbose := false;;*)
-
-let setInFilename name = inx := open_in name;;
-let setOutFilename name = outx := open_out name;;
-
-let args_spec = ("-v", Arg.Set verbose, "Be verbose (print intermediate transformations).")::
-                ("-s", Arg.Set useSimplification, "Use simplifications.")::
-		("-r", Arg.Set useFOrenaming, "Transform to CNF by renaming")::
-                (*("-fo", Arg.Set fo, "Perform transformation for FO (expanding domains).")::*)
-                ("-al", Arg.Set atoms, "Include the 'order' statement with the list of all atoms in the input formula (experimental feature).")::
-                ("-i", Arg.String setInFilename,
-		  "Specify the input file. If not given, stdin is used.")::
-                ("-o", Arg.String setOutFilename,
-		  "Specify the output file. If not given, stdout is used.")::
-		[];;
-
-let usage_spec = "Usage: translate [-v] [-s] [-i infile] [-o outfile]";;
-
-let anonfun astring = Arg.usage args_spec usage_spec; exit 0;;
-
 (* main function *)
-let _ =
+let main verbose useSimplification useFOrenaming atoms inFilename outFilename =
   try
     (*print_string ( Filename.basename Sys.argv.(0) );*)
-    if ( (String.sub ( Filename.basename Sys.argv.(0)) 0 2  ) = "fo") then fo:=true;
-    Arg.parse args_spec anonfun usage_spec ;
-    let lexbuf = Lexing.from_channel !inx in
+    let fo = String.starts_with ~prefix:"fo" (Filename.basename Sys.argv.(0)) in
+    let inx =
+      match inFilename with
+      | None -> stdin
+      | Some name -> open_in name
+    in
+    let outx =
+      match outFilename with
+      | None -> stdout
+      | Some name -> open_out name
+    in
+    let lexbuf = Lexing.from_channel inx in
       let result = Foyacc.start Folex.lexer lexbuf in
         let constList = constsOf result in
-	if !atoms=true then begin
+	if atoms then begin
 	  let atomList = getAtoms result in
-	    output_string !outx ("order(" ^ (string_of_clause atomList) ^ ").\n");
+	    output_string outx ("order(" ^ (string_of_clause atomList) ^ ").\n");
 	end;
-        if !verbose=true then begin
-	   output_string !outx ("Input: " ^ string_of_formula result^"\n");
-	   flush !outx
+        if verbose then begin
+	   output_string outx ("Input: " ^ string_of_formula result^"\n");
+	   flush outx
 	   end;
         let inNNF = nnf result in
-        if !verbose then begin
-	  output_string !outx "In NNF: ";
-          output_string !outx (string_of_formula inNNF^"\n");
+        if verbose then begin
+	  output_string outx "In NNF: ";
+          output_string outx (string_of_formula inNNF^"\n");
           debug("DONE");
-	  flush !outx;
+	  flush outx;
           debug("DONE");
 	end;
     debug("done ");
 	let simplified =
-	if !useSimplification then
-	  simplify inNNF !outx !verbose
+	if useSimplification then
+	  simplify inNNF outx verbose
 	else inNNF
         in
-        if !verbose then begin
-	  output_string !outx "After all simplifications:\n";
-          output_string !outx (string_of_formula simplified^"\n");
-	  flush !outx
+        if verbose then begin
+	  output_string outx "After all simplifications:\n";
+          output_string outx (string_of_formula simplified^"\n");
+	  flush outx
 	end;
-	let (iP,uP,sP,eP) = dsnfWrap simplified in
-        if !verbose then begin
-	output_string !outx "After transformations, the DSNF is\n";
-	output_string !outx "iP = {\n";
-        output_string !outx ((string_of_formula iP)^"\n}\n");
-	output_string !outx "uP = {\n";
-        output_string !outx ((string_of_formulas uP)^"\n}\n");
-	output_string !outx "sP = {\n";
-        output_string !outx ((string_of_formulas sP)^"\n}\n");
-	output_string !outx "eP = {\n";
-        output_string !outx ((string_of_formulas eP)^"\n}\n");
-	flush !outx
+	let (iP,uP,sP,eP) = dsnfWrap ~useFOrenaming simplified in
+        if verbose then begin
+	output_string outx "After transformations, the DSNF is\n";
+	output_string outx "iP = {\n";
+        output_string outx ((string_of_formula iP)^"\n}\n");
+	output_string outx "uP = {\n";
+        output_string outx ((string_of_formulas uP)^"\n}\n");
+	output_string outx "sP = {\n";
+        output_string outx ((string_of_formulas sP)^"\n}\n");
+	output_string outx "eP = {\n";
+        output_string outx ((string_of_formulas eP)^"\n}\n");
+	flush outx
 	end;
 	(* Skolemization *)
 	let skolemisedIP = eliminateQ iP
 	and skolemisedUP = eliminateQl uP
 	and skolemisedSP = eliminateQl sP
-	and skolemisedEP = if !fo then (eliminateQl (flood eP constList)) else (eliminateQl eP)
+	and skolemisedEP = if fo then (eliminateQl (flood eP constList)) else (eliminateQl eP)
 	in
 	(* FO transformations *)
-	let processedIP = if !fo then (processFOconstants skolemisedIP) else skolemisedIP
-	and processedUP = if !fo then (processFOconstantsl skolemisedUP) else skolemisedUP
-	and processedSP = if !fo then (foStepClauses skolemisedSP) else skolemisedSP
-	and processedEP = if !fo then (processFOconstantsl skolemisedEP) else skolemisedEP
+	let processedIP = if fo then (processFOconstants skolemisedIP) else skolemisedIP
+	and processedUP = if fo then (processFOconstantsl skolemisedUP) else skolemisedUP
+	and processedSP = if fo then (foStepClauses skolemisedSP) else skolemisedSP
+	and processedEP = if fo then (processFOconstantsl skolemisedEP) else skolemisedEP
 	in
 	(**)
 	let cnfedIP = cnf processedIP
@@ -126,8 +107,42 @@ let _ =
 	(* Collect strings *)
 	let resultStr = preamble^icstring^ucstring^scstring^ecstring^ending^"\n" in
 	(*print_string (string_of_clause (!newNamesList));*)
-	output_string !outx (resultStr); if !outx != stdout then close_out !outx
+	output_string outx (resultStr); if outx != stdout then close_out outx
   with Parsing.Parse_error -> print_endline ("Parse error line " ^
      string_of_int (!Folex.currentLine) ^ " characters " ^
      string_of_int (!Folex.posmin) ^ "-" ^ string_of_int (!Folex.posmax))
      | Sys_error astring ->  print_endline (astring);;
+
+open Cmdliner
+
+let verbose =
+  let doc = "Be verbose (print intermediate transformations)." in
+  Arg.(value & flag & info ["v"] ~doc)
+
+let useSimplification =
+  let doc = "Use simplifications." in
+  Arg.(value & flag & info ["s"] ~doc)
+
+let useFOrenaming =
+  let doc = "Transform to CNF by renaming." in
+  Arg.(value & flag & info ["r"] ~doc)
+
+let atoms =
+  let doc = "Include the 'order' statement with the list of all atoms in the input formula (experimental feature)." in
+  Arg.(value & flag & info ["al"] ~doc)
+
+let inFilename =
+  let doc = "Specify the input file. If not given, stdin is used." in
+  Arg.(value & opt (some file) None & info ["i"] ~doc)
+
+let outFilename =
+  let doc = "Specify the output file. If not given, stdout is used." in
+  Arg.(value & opt (some string) None & info ["o"] ~doc)
+
+let main_t = Term.(const main $ verbose $ useSimplification $ useFOrenaming $ atoms $ inFilename $ outFilename)
+
+let cmd =
+  let info = Cmd.info "translate" in
+  Cmd.v info main_t
+
+let () = exit (Cmd.eval cmd)
