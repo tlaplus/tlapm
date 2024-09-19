@@ -636,6 +636,8 @@ module Visit: sig
       method rename : ctx -> hyp -> Util.hint -> hyp * Util.hint
       method renames : ctx -> hyp list -> Util.hints -> hyp list * Util.hints
   end
+
+  val collect_identifiers: ctx -> expr -> string list
 end
 
 
@@ -796,17 +798,18 @@ end
 
 module Action: sig
     open T
-    val invert_renaming:
-        ctx -> expr ->
-            expr
-    val implication_to_enabled:
-        ctx -> expr ->
-            expr
+
+    val invert_renaming: ctx -> expr -> expr
+    val enabled_axioms: ctx -> expr -> expr
+    val enabled_rewrites: ctx -> expr -> expr
+    val enabled_rules: ctx -> expr -> expr
+    val implication_to_enabled: ctx -> expr -> expr
     val lambdify:
         ctx -> expr ->
         lambdify_enabled:bool ->
         lambdify_cdot:bool ->
         autouse:bool ->
+        used_identifiers: string list ->
             expr
     val quantify:
         ctx -> expr ->
@@ -818,6 +821,7 @@ module Action: sig
         expand_enabled:bool ->
         expand_cdot:bool ->
         autouse:bool ->
+        used_identifiers: string list ->
             expr
 end
 
@@ -847,7 +851,7 @@ module LevelComparison: sig
     open T
     class level_comparison : object
         method compare:
-            ctx -> ctx ->
+            ctx -> ctx -> ctx ->
             expr -> expr ->
                 bool
         method expr:
