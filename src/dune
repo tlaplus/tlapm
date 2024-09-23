@@ -19,6 +19,7 @@
   unix
   threads
   str
+  cmdliner
   dune-site
   dune-build-info
   camlzip ; main deps.
