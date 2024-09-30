@@ -17,6 +17,7 @@ module Deque = Deque
 module Loc = Loc
 module Ctx = Ctx
 module Backend = Backend
+module Builtin = Builtin
 
 open Proof.T
 
