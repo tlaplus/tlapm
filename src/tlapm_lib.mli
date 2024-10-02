@@ -20,6 +20,14 @@ module Builtin = Builtin
 val main : string list -> unit
 val init : unit -> unit
 
+val modctx_of_mule :
+  mule:Module.T.mule ->
+  filename:string ->
+  loader_paths:string list ->
+  prefer_stdlib:bool ->
+  (Module.T.modctx * Module.T.mule, string option * string) result
+(** Elaborate a module and its context from a module AST. *)
+
 val modctx_of_string :
   content:string ->
   filename:string ->
