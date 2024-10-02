@@ -125,7 +125,7 @@ let rec pp_print_proof cx ff prf =
                    cx)
                 cx ff inits
             in
-            fprintf ff "@[<hv2>%s%s QED%a@]"
+            fprintf ff "@[<hv2>%s%s QED %a@]"
               (step_name prf) (step_dot prf)
               (pp_print_qed_step(*proof_nl*) cx) qed
         | Error msg ->
