@@ -45,7 +45,7 @@ function Empty() {
 cat << EOF
 \* TLAPM version 1.5.0
 \* launched at 2023-09-30 23:39:35 with command line:
-\* tlapm --toolbox 0 0 Empty.tla
+\* tlapm --toolbox 0,0 Empty.tla
 
 @!!BEGIN
 @!!type:obligationsnumber
@@ -64,7 +64,7 @@ function Some() {
 cat << EOF
 \* TLAPM version 1.5.0
 \* launched at 2023-09-30 23:43:15 with command line:
-\* tlapm --toolbox 0 0 Some.tla
+\* tlapm --toolbox 0,0 Some.tla
 
 (* loading fingerprints in ".tlacache/Some.tlaps/fingerprints" *)
 @!!BEGIN

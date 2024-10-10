@@ -122,8 +122,9 @@ let start_async_with_exec st doc_uri doc_text range paths events_adder
       (* First arg s ignored, if executable is specified. *)
       executable;
       "--toolbox";
-      string_of_int (Range.line_from range);
-      string_of_int (Range.line_till range);
+      Printf.sprintf "%d,%d"
+        (Range.line_from range)
+        (Range.line_till range);
       "--toolbox-vsn";
       "2";
       (* "--verbose"; *)

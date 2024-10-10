@@ -19,7 +19,7 @@ THEOREM \E y:  y # y
 OBVIOUS
 
 ====================================
-command: ${TLAPM} --toolbox 0 0 ${FILE}
+command: ${TLAPM} --toolbox 0,0 ${FILE}
 stderr: 1/2 obligations failed
-command: ${TLAPM} --toolbox 0 0 ${FILE}
+command: ${TLAPM} --toolbox 0,0 ${FILE}
 stderr: 1/2 obligations failed

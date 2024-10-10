@@ -25,5 +25,5 @@ OBVIOUS
 
 
 ============================================================
-command: ${TLAPM} --toolbox 0 0 ${FILE}
+command: ${TLAPM} --toolbox 0,0 ${FILE}
 nostderr: Assertion failed

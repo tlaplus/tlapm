@@ -1,5 +1,5 @@
 Test the --stdin option
-  $ cat <<EOF | (tlapm --toolbox 0 0 --stdin A.tla 2>&1 | grep -e '^@!!' | grep -v 'time-used')
+  $ cat <<EOF | (tlapm --toolbox 0,0 --stdin A.tla 2>&1 | grep -e '^@!!' | grep -v 'time-used')
   > ---- MODULE A ----
   > THEOREM
   >   ASSUME

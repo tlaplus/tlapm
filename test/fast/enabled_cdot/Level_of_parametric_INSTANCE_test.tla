@@ -27,5 +27,5 @@ THEOREM TRUE
 <1> QED
 
 ==================================================
-command: ${TLAPM} --nofp --toolbox 0 0 ${FILE}
+command: ${TLAPM} --nofp --toolbox 0,0 ${FILE}
 nostderr: ending abnormally

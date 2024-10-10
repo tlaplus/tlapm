@@ -12,6 +12,6 @@ to the filename (filepath).
 THEOREM FALSE
 OBVIOUS
 =================================
-command: ${TLAPM} --toolbox 0 0 nonexistent_test
+command: ${TLAPM} --toolbox 0,0 nonexistent_test
 stderr: obligation failed.
 

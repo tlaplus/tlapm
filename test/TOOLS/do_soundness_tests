@@ -38,7 +38,7 @@ outf=/var/tmp/ju$$.txt
     FILE="`basename $f`"
     DIR="`dirname $f`"
 
-    cmd="cd $DIR; ${TLAPM} --toolbox 0 0 --nofp $FILE"
+    cmd="cd $DIR; ${TLAPM} --toolbox 0,0 --nofp $FILE"
     echo ""                         | tee -a $outf
     echo "+++ Running case: $FILE " | tee -a $outf
     echo "+++ working dir: "`pwd`           | tee -a $outf

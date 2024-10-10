@@ -11,5 +11,5 @@ OBVIOUS
 THEOREM S # {} OBVIOUS
 
 ====
-command: ${TLAPM} --toolbox 0 0 --threads 1 --cleanfp ${FILE}
+command: ${TLAPM} --toolbox 0,0 --threads 1 --cleanfp ${FILE}
 stderr: status:failed
