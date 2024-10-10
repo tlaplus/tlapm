@@ -27,7 +27,7 @@ THEOREM cantor ==
 ===============================================
 command: rm -rf load_v9_test.tlaps
 command: cp -r load_v9_test.tlaps.testbase load_v9_test.tlaps
-command: ${TLAPM} --toolbox 0 0 --isaprove ${FILE}
+command: ${TLAPM} --toolbox 0 0 ${FILE}
 stdout: fingerprints written
 stderr: Translating fingerprints from version 9
 stderr: already:true
