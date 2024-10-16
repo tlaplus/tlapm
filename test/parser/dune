@@ -2,4 +2,5 @@
  (name test_parser)
  (modes exe)
  (libraries tlapm_lib)
+ (deps (glob_files_rec syntax_corpus/*))
 )
