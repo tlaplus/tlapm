@@ -37,27 +37,31 @@ let str_to_test_attribute (attr : string) : test_attribute =
 type syntax_test_info = {
   file    : string;
   name    : string;
-  skip    : bool;
 } [@@deriving show]
 
 (** A syntax test expected to produce an error. *)
 type error_syntax_test = {
-  info  : syntax_test_info;
   input : string;
 } [@@deriving show]
 
 (** A syntax test expected to produce a specific parse tree. *)
 type expected_syntax_test = {
-  info    : syntax_test_info;
   input   : string;
   expect  : Sexp.t;
 } [@@deriving show]
 
-(** All information necessary to run a single syntax test. *)
-type syntax_test =
+(** Enumeration of syntax test variants. *)
+type syntax_test_variant =
   | Expected_test of expected_syntax_test
   | Error_test of error_syntax_test
 [@@deriving show]
+
+(** All information necessary to run a single syntax test. *)
+type syntax_test = {
+  info  : syntax_test_info;
+  skip  : bool;
+  test  : syntax_test_variant;
+} [@@deriving show]
 
 (** Given a test header as a list of lines, decompose & parse it into the
     test name and a list of test attributes.
@@ -97,19 +101,20 @@ let rec parse_split_test_file (path : string) (input : string list) : syntax_tes
   | test_header :: test_body :: ls ->
     let (test_name, test_attrs) = test_header |> trim |> split_on_char '\n' |> parse_test_header in
     let (test_input, test_output) = parse_test_body path test_name test_body in
-    let test_info = { file = path; name = test_name; skip = List.mem Skip test_attrs; } in
-    let test =
+    let test_variant =
       if List.mem Error test_attrs
       then Error_test {
-        info = test_info;
         input = test_input;
       }
       else Expected_test {
-        info = test_info;
         input = test_input;
         expect = Sexp.of_string test_output
       }
-    in test :: (parse_split_test_file path ls)
+    in {
+      info = { file = path; name = test_name; };
+      skip = List.mem Skip test_attrs; 
+      test = test_variant;
+    } :: (parse_split_test_file path ls)
   | _ -> Invalid_argument (Printf.sprintf "Test file %s contains extra header separators" path) |> raise
 
 (** Given a path to a syntax test corpus file, parse all tests in that file.

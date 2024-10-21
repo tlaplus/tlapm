@@ -8,6 +8,16 @@ let () =
 let () =
   "syntax_corpus"
   |> get_all_tests_under
-  |> List.map show_syntax_test
-  |> List.iter print_endline;
-  flush stdout;
+  |> List.iter (
+    fun test ->
+      if test.skip then print_endline (show_syntax_test_info test.info) else
+      match test.test with
+      | Error_test test -> (
+        match Tlapm_lib.module_of_string test.input with
+        | None -> print_endline "Successful failure"
+        | Some _ -> print_endline "Failing success")
+      | Expected_test test -> (
+        match Tlapm_lib.module_of_string test.input with
+        | None -> print_endline "Successful success"
+        | Some _ -> print_endline "Failing failure")
+  )
