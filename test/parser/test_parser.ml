@@ -17,7 +17,7 @@ type syntax_test = {
   name    : string;
   input   : string;
   output  : string;
-}
+} [@@deriving show]
 
 let parse_test_file path =
   let test_file = open_in path in
@@ -58,5 +58,6 @@ let () =
   let test_corpus = List.map parse_test_file corpus_files in
   test_corpus
   |> List.flatten
-  |> List.iter (fun r -> Printf.printf "%s\n%s\n%s\n%s\n" r.file r.name r.input r.output);
+  |> List.map show_syntax_test
+  |> List.iter print_endline;
   flush stdout;

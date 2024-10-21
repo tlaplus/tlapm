@@ -3,4 +3,5 @@
  (modes exe)
  (libraries tlapm_lib)
  (deps (glob_files_rec syntax_corpus/*))
+ (preprocess (pps ppx_deriving.show))
 )

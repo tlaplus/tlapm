@@ -28,7 +28,7 @@ opam-deps-opt:
 	opam install --yes eio_main lsp
 
 opam-deps-dev:
-	opam install --yes ocamlformat ocaml-lsp-server earlybird
+	opam install --yes ocamlformat ocaml-lsp-server earlybird ppx_deriving
 
 build:
 	dune build
