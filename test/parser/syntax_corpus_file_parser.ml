@@ -8,6 +8,7 @@ open In_channel;;
 open List;;
 open Str;;
 open String;;
+open Sexplib;;
 
 (** A regex for finding test header delimiters. *)
 let header_regex = regexp {|^===+||||}
@@ -32,14 +33,31 @@ let str_to_test_attribute (attr : string) : test_attribute =
   | ":error" -> Error
   | _ -> Invalid_argument (Printf.sprintf "Invalid attribute %s" attr) |> raise
 
-(** All information necessary to run a single syntax test. *)
-type syntax_test = {
+(** Metadata about a syntax test. *)
+type syntax_test_info = {
   file    : string;
   name    : string;
-  attrs   : test_attribute list;
-  input   : string;
-  expect  : string;
+  skip    : bool;
 } [@@deriving show]
+
+(** A syntax test expected to produce an error. *)
+type error_syntax_test = {
+  info  : syntax_test_info;
+  input : string;
+} [@@deriving show]
+
+(** A syntax test expected to produce a specific parse tree. *)
+type expected_syntax_test = {
+  info    : syntax_test_info;
+  input   : string;
+  expect  : Sexp.t;
+} [@@deriving show]
+
+(** All information necessary to run a single syntax test. *)
+type syntax_test =
+  | Expected_test of expected_syntax_test
+  | Error_test of error_syntax_test
+[@@deriving show]
 
 (** Given a test header as a list of lines, decompose & parse it into the
     test name and a list of test attributes.
@@ -78,13 +96,20 @@ let rec parse_split_test_file (path : string) (input : string list) : syntax_tes
   | [] -> []
   | test_header :: test_body :: ls ->
     let (test_name, test_attrs) = test_header |> trim |> split_on_char '\n' |> parse_test_header in
-    let (test_input, test_output) = parse_test_body path test_name test_body in {
-      file = path;
-      name = test_name;
-      attrs = test_attrs;
-      input = test_input;
-      expect = test_output;
-    } :: (parse_split_test_file path ls)
+    let (test_input, test_output) = parse_test_body path test_name test_body in
+    let test_info = { file = path; name = test_name; skip = List.mem Skip test_attrs; } in
+    let test =
+      if List.mem Error test_attrs
+      then Error_test {
+        info = test_info;
+        input = test_input;
+      }
+      else Expected_test {
+        info = test_info;
+        input = test_input;
+        expect = Sexp.of_string test_output
+      }
+    in test :: (parse_split_test_file path ls)
   | _ -> Invalid_argument (Printf.sprintf "Test file %s contains extra header separators" path) |> raise
 
 (** Given a path to a syntax test corpus file, parse all tests in that file.
