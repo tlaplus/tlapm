@@ -6,6 +6,7 @@
 
 open In_channel;;
 open List;;
+open Printf;;
 open Str;;
 open String;;
 open Sexplib;;
@@ -31,7 +32,7 @@ let str_to_test_attribute (attr : string) : test_attribute =
   match attr with
   | ":skip" -> Skip
   | ":error" -> Error
-  | _ -> Invalid_argument (Printf.sprintf "Invalid attribute %s" attr) |> raise
+  | _ -> Invalid_argument (sprintf "Invalid attribute %s" attr) |> raise
 
 (** Metadata about a syntax test. *)
 type syntax_test_info = {
@@ -85,7 +86,7 @@ let parse_test_header (header : string list) : string * (test_attribute list) =
 let parse_test_body (path : string) (test_name : string) (input : string) : string * string =
   match split separator_regex input with
   | input :: output :: [] -> (trim input, trim output)
-  | _ -> Invalid_argument (Printf.sprintf "Test body for %s in file %s lacks separator" test_name path) |> raise
+  | _ -> Invalid_argument (sprintf "Test body for %s in file %s lacks separator" test_name path) |> raise
 
 (** Given a test file which has been split using the {!val:header_regex},
     parse the various sections to construct a list of information about the
@@ -115,7 +116,7 @@ let rec parse_split_test_file (path : string) (input : string list) : syntax_tes
       skip = List.mem Skip test_attrs; 
       test = test_variant;
     } :: (parse_split_test_file path ls)
-  | _ -> Invalid_argument (Printf.sprintf "Test file %s contains extra header separators" path) |> raise
+  | _ -> Invalid_argument (sprintf "Test file %s contains extra header separators" path) |> raise
 
 (** Given a path to a syntax test corpus file, parse all tests in that file.
     @param path The path to the syntax test corpus file.
