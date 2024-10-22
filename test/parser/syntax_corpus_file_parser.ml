@@ -36,25 +36,14 @@ let str_to_test_attribute (attr : string) : test_attribute =
 
 (** Metadata about a syntax test. *)
 type syntax_test_info = {
-  file    : string;
+  path    : string;
   name    : string;
-} [@@deriving show]
-
-(** A syntax test expected to produce an error. *)
-type error_syntax_test = {
-  input : string;
-} [@@deriving show]
-
-(** A syntax test expected to produce a specific parse tree. *)
-type expected_syntax_test = {
-  input   : string;
-  expect  : Sexp.t;
 } [@@deriving show]
 
 (** Enumeration of syntax test variants. *)
 type syntax_test_variant =
-  | Expected_test of expected_syntax_test
-  | Error_test of error_syntax_test
+  | Error_test of string
+  | Expected_test of (string * Sexp.t)
 [@@deriving show]
 
 (** All information necessary to run a single syntax test. *)
@@ -100,21 +89,16 @@ let rec parse_split_test_file (path : string) (input : string list) : syntax_tes
   match input with
   | [] -> []
   | test_header :: test_body :: ls ->
-    let (test_name, test_attrs) = test_header |> trim |> split_on_char '\n' |> parse_test_header in
-    let (test_input, test_output) = parse_test_body path test_name test_body in
-    let test_variant =
+    let (name, test_attrs) = test_header |> trim |> split_on_char '\n' |> parse_test_header in
+    let (test_input, test_output) = parse_test_body path name test_body in
+    let test =
       if List.mem Error test_attrs
-      then Error_test {
-        input = test_input;
-      }
-      else Expected_test {
-        input = test_input;
-        expect = Sexp.of_string test_output
-      }
+      then Error_test test_input
+      else Expected_test (test_input, Sexp.of_string test_output)
     in {
-      info = { file = path; name = test_name; };
+      info = { path; name; };
       skip = List.mem Skip test_attrs; 
-      test = test_variant;
+      test;
     } :: (parse_split_test_file path ls)
   | _ -> Invalid_argument (sprintf "Test file %s contains extra header separators" path) |> raise
 
