@@ -98,13 +98,10 @@ Proof by Multiple Definitions
 LEMMA TRUE
 PROOF BY ONLY
   P,
-  MODULE Naturals,
-  Q,
-  MODULE Integers
+  Q
   DEFS
     >,
     R,
-    MODULE Reals,
     =
 ====
 
@@ -115,15 +112,43 @@ PROOF BY ONLY
     (terminal_proof (use_body
       (use_body_expr
         (identifier_ref)
-        (module_ref (identifier_ref))
         (identifier_ref)
-        (module_ref (identifier_ref))
       )
       (use_body_def
         (infix_op_symbol (gt))
         (identifier_ref)
-        (module_ref (identifier_ref))
         (infix_op_symbol (eq))
+      )
+    ))
+  )
+(double_line)))
+
+===============================|||
+Proof by Module References
+===============================|||
+
+---- MODULE Test ----
+LEMMA TRUE
+PROOF BY ONLY
+  MODULE Naturals,
+  MODULE Integers
+  DEFS
+    MODULE Reals,
+    MODULE Sequences
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) (identifier) (header_line)
+  (theorem (boolean)
+    (terminal_proof (use_body
+      (use_body_expr
+        (module_ref (identifier_ref))
+        (module_ref (identifier_ref))
+      )
+      (use_body_def
+        (module_ref (identifier_ref))
+        (module_ref (identifier_ref))
       )
     ))
   )
@@ -135,7 +160,31 @@ Proof by QED
 
 ---- MODULE Test ----
 COROLLARY TRUE
-PROOF <1>a QED BY <1>a, <*>a
+PROOF <1>a QED BY <1>a, <1>b
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) (identifier) (header_line)
+  (theorem (boolean)
+    (non_terminal_proof
+      (qed_step (proof_step_id (level) (name))
+        (terminal_proof (use_body (use_body_expr
+          (proof_step_ref (level) (name))
+          (proof_step_ref (level) (name))
+        )))
+      )
+    )
+  )
+(double_line)))
+
+===============================|||
+Proof by QED with implicit step level
+===============================|||
+
+---- MODULE Test ----
+COROLLARY TRUE
+PROOF <1>a QED BY <1>a, <*>b
 ====
 
 -------------------------------|||
@@ -186,7 +235,6 @@ THEOREM TRUE
 <1>i..... PICK a, b, c : 7
 <1>j..... HIDE 8
 <1>k..... USE 9
-<1>l..... INSTANCE M
 <1>m..... QED
 ====
 
@@ -206,6 +254,26 @@ THEOREM TRUE
       (proof_step (proof_step_id (level) (name)) (pick_proof_step (identifier) (identifier) (identifier) (nat_number)))
       (proof_step (proof_step_id (level) (name)) (use_or_hide (use_body (use_body_expr (nat_number)))))
       (proof_step (proof_step_id (level) (name)) (use_or_hide (use_body (use_body_expr (nat_number)))))
+      (qed_step (proof_step_id (level) (name)))
+    )
+  )
+(double_line)))
+
+===============================|||
+Proof with INSTANCE step type
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1>a..... INSTANCE M
+<1>b..... QED
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) (identifier) (header_line)
+  (theorem (boolean)
+    (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (instance (identifier_ref)))
       (qed_step (proof_step_id (level) (name)))
     )

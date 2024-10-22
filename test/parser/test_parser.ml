@@ -64,10 +64,16 @@ let run_test (test : syntax_test) : test_run_summary =
     | None -> test_summary_failed test.info
     | Some _ -> test_summary_succeeded)
 
-let () =
-  "syntax_corpus"
+let run_test_corpus (path : string) (pred : syntax_test -> bool) : test_run_summary =
+  path
   |> get_all_tests_under
+  |> List.filter pred
   |> List.map run_test
   |> List.fold_left acc_test_summary test_summary_init
+
+let () =
+  (*fun test -> String.equal test.info.name "Proof Containing Jlist"*)
+  (fun _ -> true)
+  |> run_test_corpus "syntax_corpus" 
   |> show_test_run_summary
   |> print_endline
