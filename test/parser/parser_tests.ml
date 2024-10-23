@@ -37,7 +37,7 @@ let test_summary_init = {
 
 (** Runs a given syntax test by determining its type then sending the input
     into the TLAPM parser. 
-    @param should_fail Whether this test should fail due to a TLAPM bug.
+    @param expect_failure Whether this test should fail due to a TLAPM bug.
     @param test Information about the test itself.
     @return Whether the test succeeded.
 *)
@@ -49,19 +49,19 @@ let run_test (test : syntax_test) : bool =
 (** Controls run of a given syntax test. Checks whether test should be
     skipped and whether it is expected to fail, then runs test and returns
     summary.
-    @param should_fail Whether this test should fail due to a TLAPM bug.
+    @param expect_failure Whether this test should fail due to a TLAPM bug.
     @param acc Accumulation variable for test summarization.
     @param test Information about the test itself.
     @return Test run summary.
 *)
 let control_test_run
-  (should_fail : syntax_test -> bool)
+  (expect_failure : syntax_test -> bool)
   (acc : test_run_summary)
   (test : syntax_test)
     : test_run_summary =
   let acc = {acc with total = acc.total + 1} in
   if test.skip then {acc with skipped = acc.skipped + 1} else
-  if run_test test = should_fail test
+  if run_test test = expect_failure test
   then {acc with failed = acc.failed + 1; failures = test.info :: acc.failures}
   else {acc with succeeded = acc.succeeded + 1}
 
@@ -69,54 +69,68 @@ let control_test_run
     the tests encoded in those files, filter them as appropriate, then run
     them all and collect the results.
     @param path Path to the directory containing the corpus of syntax tests.
-    @param should_fail Whether a test should fail due to a TLAPM bug.
+    @param expect_failure Whether a test should fail due to a TLAPM bug.
     @param filter_predicate Whether to actually execute a test.
     @return Accumulated summary of all test executions.
 *)
 let run_test_corpus
   (path : string)
-  (should_fail : syntax_test -> bool)
+  (expect_failure : syntax_test -> bool)
   (filter_pred : syntax_test -> bool)
     : test_run_summary =
   path
   |> get_all_tests_under
   |> List.filter filter_pred
-  |> List.fold_left (control_test_run should_fail) test_summary_init
+  |> List.fold_left (control_test_run expect_failure) test_summary_init
 
-(** Names of tests that are known to fail due to TLAPM parser bugs. *)
-let failing_test_names = [
-  "Invalid parentheses use in jlist";
-  "Bounded Quantification With Tuples";
-  "Mixed Bounded Quantification With Tuples";
-  "Bounded CHOOSE With Tuple";
-  "Unbounded CHOOSE With Tuple";
-  "Cartesian Product Infix Op Definition";
-  "Cartesian Product Declaration as Parameter";
-  "Infix Minus as Parameter";
-  "RECURSIVE inside LET/IN";
-  "Conjlist with RECURSIVE in LET/IN";
-  "Disjlist with RECURSIVE in LET/IN";
-  "Use & Hide Declarations";
-  "Label interfering with precedence";
-  "Bitfield Number Formats";
-  "Proof by Module References";
-  "Proof by QED with implicit step level";
-  "Proof with INSTANCE step type";
-  "Proof Containing Jlist";
-  "Prefix Operator References";
-  "Mistaken Set Filter Test";
-  "Set Filter with Tuple";
-  "Proof Step ID Subexpression Tree Navigation";
-]
+(** Names of tests that are known to fail due to TLAPM parser bugs.
+    @param test Information about the test.
+    @return Whether the test is expected to fail.
+*)
+let expect_failure (test : syntax_test) : bool =
+  List.mem test.info.name [
+    "Invalid parentheses use in jlist";
+    "Bounded Quantification With Tuples";
+    "Mixed Bounded Quantification With Tuples";
+    "Bounded CHOOSE With Tuple";
+    "Unbounded CHOOSE With Tuple";
+    "Cartesian Product Infix Op Definition";
+    "Cartesian Product Declaration as Parameter";
+    "Infix Minus as Parameter";
+    "RECURSIVE inside LET/IN";
+    "Conjlist with RECURSIVE in LET/IN";
+    "Disjlist with RECURSIVE in LET/IN";
+    "Use & Hide Declarations";
+    "Label interfering with precedence";
+    "Bitfield Number Formats";
+    "Proof by Module References";
+    "Proof by QED with implicit step level";
+    "Proof with INSTANCE step type";
+    "Proof Containing Jlist";
+    "Prefix Operator References";
+    "Mistaken Set Filter Test";
+    "Set Filter with Tuple";
+    "Proof Step ID Subexpression Tree Navigation";
+  ]
+
+(** Filter predicate to control which tests to run.
+    @param name Optional; a test name to filter on.
+    @return Predicate matching all tests or tests with given name.
+*)
+let should_run ?name test =
+  match name with
+  | Some name -> String.equal test.info.name name
+  | None -> true
 
 (** The top-level test; runs all syntax tests, prints summary, then fails
     with an assertion if any tests failed.
 *)
 let () =
-  (* Keeping this around because it's useful when wanting to run a single test. *)
-  (*let filter_pred = fun test -> String.equal test.info.name "Proof Containing Jlist" in*)
-  let filter_pred = fun _ -> true in
-  let should_fail = fun (test : syntax_test) -> List.mem test.info.name failing_test_names in
-  let test_results = run_test_corpus "syntax_corpus" should_fail filter_pred in
+  let test_results =
+    run_test_corpus
+      "syntax_corpus"
+      expect_failure
+      (should_run (*~name:"Set Filter with Tuple"*))
+  in
   print_endline (show_test_run_summary test_results);
   assert_equal 0 test_results.failed;
