@@ -1,7 +1,7 @@
 (test
  (name test_parser)
  (modes exe)
- (libraries tlapm_lib sexplib)
+ (libraries tlapm_lib ounit2 sexplib)
  (deps (glob_files_rec syntax_corpus/*))
  (preprocess (pps ppx_deriving.show))
 )

@@ -6,6 +6,7 @@
 *)
 
 open Syntax_corpus_file_parser;;
+open OUnit2;;
 
 (** Calls TLAPM's parser with the given input. Catches all exceptions and
     treats them as parse failures.
@@ -34,37 +35,6 @@ let test_summary_init = {
   failures  = [];
 }
 
-(** Summary for a successful test. *)
-let test_summary_succeeded = {
-  test_summary_init with
-  total = 1;
-  succeeded = 1;
-}
-
-(** Summary for a failed test. *)
-let test_summary_failed info = {
-  test_summary_init with
-  total     = 1;
-  failed    = 1;
-  failures  = [info];
-}
-
-(** Summary for a skipped test. *)
-let test_summary_skipped = {
-  test_summary_init with
-  total     = 1;
-  skipped   = 1;
-}
-
-(** Merge and accumulate two test summaries into one. *)
-let acc_test_summary acc e = {
-  total     = acc.total     + e.total;
-  succeeded = acc.succeeded + e.succeeded;
-  failed    = acc.failed    + e.failed;
-  skipped   = acc.skipped   + e.skipped;
-  failures  = List.append acc.failures e.failures;
-}
-
 (** Runs a given syntax test by determining its type then sending the input
     into the TLAPM parser. 
     @param should_fail Whether this test should fail due to a TLAPM bug.
@@ -73,27 +43,27 @@ let acc_test_summary acc e = {
 *)
 let run_test (test : syntax_test) : bool =
   match test.test with
-  | Error_test input -> (
-    match parse input with
-    | None -> true
-    | Some _ -> false)
-  | Expected_test (input, _) -> (
-    match parse input with
-    | None -> false
-    | Some _ -> true)
+  | Error_test input -> parse input |> Option.is_none
+  | Expected_test (input, _) -> parse input |> Option.is_some
 
 (** Controls run of a given syntax test. Checks whether test should be
     skipped and whether it is expected to fail, then runs test and returns
     summary.
     @param should_fail Whether this test should fail due to a TLAPM bug.
+    @param acc Accumulation variable for test summarization.
     @param test Information about the test itself.
     @return Test run summary.
 *)
-let control_test_run (should_fail : syntax_test -> bool) (test : syntax_test) : test_run_summary =
-  if test.skip then test_summary_skipped else
+let control_test_run
+  (should_fail : syntax_test -> bool)
+  (acc : test_run_summary)
+  (test : syntax_test)
+    : test_run_summary =
+  let acc = {acc with total = acc.total + 1} in
+  if test.skip then {acc with skipped = acc.skipped + 1} else
   if run_test test = should_fail test
-  then test_summary_failed test.info
-  else test_summary_succeeded
+  then {acc with failed = acc.failed + 1; failures = test.info :: acc.failures}
+  else {acc with succeeded = acc.succeeded + 1}
 
 (** Given a path to a directory containing a corpus of syntax tests, get all
     the tests encoded in those files, filter them as appropriate, then run
@@ -103,12 +73,15 @@ let control_test_run (should_fail : syntax_test -> bool) (test : syntax_test) : 
     @param filter_predicate Whether to actually execute a test.
     @return Accumulated summary of all test executions.
 *)
-let run_test_corpus (path : string) (should_fail : syntax_test -> bool) (filter_pred : syntax_test -> bool)  : test_run_summary =
+let run_test_corpus
+  (path : string)
+  (should_fail : syntax_test -> bool)
+  (filter_pred : syntax_test -> bool)
+    : test_run_summary =
   path
   |> get_all_tests_under
   |> List.filter filter_pred
-  |> List.map (control_test_run should_fail)
-  |> List.fold_left acc_test_summary test_summary_init
+  |> List.fold_left (control_test_run should_fail) test_summary_init
 
 (** Names of tests that are known to fail due to TLAPM parser bugs. *)
 let failing_test_names = [
@@ -146,4 +119,4 @@ let () =
   let should_fail = fun (test : syntax_test) -> List.mem test.info.name failing_test_names in
   let test_results = run_test_corpus "syntax_corpus" should_fail filter_pred in
   print_endline (show_test_run_summary test_results);
-  ignore (assert (0 == test_results.failed));
+  assert_equal 0 test_results.failed;
