@@ -1,5 +1,5 @@
 (test
- (name test_parser)
+ (name parser_tests)
  (modes exe)
  (libraries tlapm_lib ounit2 sexplib)
  (deps (glob_files_rec syntax_corpus/*))
