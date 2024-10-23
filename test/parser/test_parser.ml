@@ -65,25 +65,35 @@ let acc_test_summary acc e = {
   failures  = List.append acc.failures e.failures;
 }
 
-(** Runs a given syntax test. Checks whether test should be skipped, what
-    kind of test it is, and whether the test is expected to fail due to a
-    known bug in the TLAPM parser; then sends the test's TLA+ fragment into
-    the parser to see what happens.
+(** Runs a given syntax test by determining its type then sending the input
+    into the TLAPM parser. 
     @param should_fail Whether this test should fail due to a TLAPM bug.
     @param test Information about the test itself.
-    @return A summary of the test's execution.
+    @return Whether the test succeeded.
 *)
-let run_test (should_fail : syntax_test -> bool) (test : syntax_test) : test_run_summary =
-  if test.skip then test_summary_skipped else
+let run_test (test : syntax_test) : bool =
   match test.test with
   | Error_test input -> (
     match parse input with
-    | None -> if should_fail test then test_summary_failed test.info else test_summary_succeeded
-    | Some _ -> if should_fail test then test_summary_succeeded else test_summary_failed test.info)
+    | None -> true
+    | Some _ -> false)
   | Expected_test (input, _) -> (
     match parse input with
-    | None -> if should_fail test then test_summary_succeeded else test_summary_failed test.info
-    | Some _ -> if should_fail test then test_summary_failed test.info else test_summary_succeeded)
+    | None -> false
+    | Some _ -> true)
+
+(** Controls run of a given syntax test. Checks whether test should be
+    skipped and whether it is expected to fail, then runs test and returns
+    summary.
+    @param should_fail Whether this test should fail due to a TLAPM bug.
+    @param test Information about the test itself.
+    @return Test run summary.
+*)
+let control_test_run (should_fail : syntax_test -> bool) (test : syntax_test) : test_run_summary =
+  if test.skip then test_summary_skipped else
+  if run_test test = should_fail test
+  then test_summary_failed test.info
+  else test_summary_succeeded
 
 (** Given a path to a directory containing a corpus of syntax tests, get all
     the tests encoded in those files, filter them as appropriate, then run
@@ -97,7 +107,7 @@ let run_test_corpus (path : string) (should_fail : syntax_test -> bool) (filter_
   path
   |> get_all_tests_under
   |> List.filter filter_pred
-  |> List.map (run_test should_fail)
+  |> List.map (control_test_run should_fail)
   |> List.fold_left acc_test_summary test_summary_init
 
 (** Names of tests that are known to fail due to TLAPM parser bugs. *)
