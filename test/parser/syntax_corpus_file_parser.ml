@@ -59,10 +59,9 @@ type syntax_test = {
     @return A tuple of (test_name, test_attributes).
 *)
 let parse_test_header (header : string list) : string * (test_attribute list) =
-  let is_attr (line : string) : bool = length line > 0 && ':' == get line 0 in
-  let test_name = List.find (fun line -> line |> is_attr |> not) header in
-  let test_attrs = header |> List.filter is_attr |> List.map str_to_test_attribute in
-  (test_name, test_attrs)
+  let is_attr = String.starts_with ~prefix: ":" in
+  let (test_attrs, test_name) = List.partition is_attr header in
+  (hd test_name, test_attrs |> List.map str_to_test_attribute)
 
 (** Given the body of a test as a string, split it into input and expected
     output; raise an error if this is not possible.
