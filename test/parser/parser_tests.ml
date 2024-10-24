@@ -89,28 +89,48 @@ let run_test_corpus
 *)
 let expect_failure (test : syntax_test) : bool =
   List.mem test.info.name [
-    "Verbose Bounded Quantification";
-    "Invalid parentheses use in jlist";
+    (* https://github.com/tlaplus/tlapm/issues/11 *)
     "Bounded Quantification With Tuples";
     "Mixed Bounded Quantification With Tuples";
     "Bounded CHOOSE With Tuple";
     "Unbounded CHOOSE With Tuple";
-    "Cartesian Product Infix Op Definition";
-    "Cartesian Product Declaration as Parameter";
-    "Infix Minus as Parameter";
+    "Set Filter with Tuple";
+
+    (* https://github.com/tlaplus/tlapm/issues/54#issuecomment-2435515180 *)
     "RECURSIVE inside LET/IN";
     "Conjlist with RECURSIVE in LET/IN";
     "Disjlist with RECURSIVE in LET/IN";
-    "Use & Hide Declarations";
-    "Label interfering with precedence";
-    "Bitfield Number Formats";
-    "Proof by Module References";
-    "Proof by QED with implicit step level";
-    "Proof with INSTANCE step type";
-    "Proof Containing Jlist";
+    
+    (* https://github.com/tlaplus/tlapm/issues/160 *)
+    "Verbose Bounded Quantification";
+
+    (* https://github.com/tlaplus/tlapm/issues/161 *)
+    "Infix Minus as Parameter";
     "Prefix Operator References";
+
+    (* https://github.com/tlaplus/tlapm/issues/162 *)
+    "Cartesian Product Infix Op Definition";
+    "Cartesian Product Declaration as Parameter";
+
+    (* https://github.com/tlaplus/tlapm/issues/163 *)
+    "Bitfield Number Formats";
+
+    (* https://github.com/tlaplus/tlapm/issues/164 *)
     "Mistaken Set Filter Test";
-    "Set Filter with Tuple";
+
+    (* https://github.com/tlaplus/tlapm/issues/165 *)
+    "Proof by QED with implicit step level";
+
+    (* https://github.com/tlaplus/tlapm/issues/166 *)
+    "Use & Hide Modules";
+    "Proof by Module References";
+
+    (* https://github.com/tlaplus/tlapm/issues/167 *)
+    "Proof with INSTANCE step type";
+
+    "Invalid parentheses use in jlist";
+    "Label interfering with precedence";
+    "Proof Containing Jlist";
     "Proof Step ID Subexpression Tree Navigation";
   ]
 

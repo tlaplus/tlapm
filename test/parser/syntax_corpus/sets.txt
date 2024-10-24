@@ -163,6 +163,17 @@ op == {x \in Nat : P(x)}
 (double_line)))
 
 ======================|||
+Set Filter With Too Many Quantifiers
+:error
+======================|||
+
+---- MODULE Test ----
+op == {x \in Nat, y \in Int : P(x, y)}
+====
+
+----------------------|||
+
+======================|||
 Set Filter with Tuple
 ======================|||
 
