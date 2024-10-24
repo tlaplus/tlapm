@@ -137,7 +137,9 @@ let expect_failure (test : syntax_test) : bool =
     (* https://github.com/tlaplus/tlapm/issues/156 *)
     "Step Expression With Parameterized Subscript";
 
-    "Proof Containing Jlist";
+    (* https://github.com/tlaplus/tlapm/issues/170 *)
+    "Implicit Proof Steps With Names";
+    "Plus Proof Step With Name";
   ]
 
 (** Filter predicate to control which tests to run.
@@ -157,7 +159,7 @@ let () =
     run_test_corpus
       "syntax_corpus"
       expect_failure
-      (should_run (*~name:"Set Filter with Tuple"*))
+      (should_run (*~name:"Proof Containing Jlist"*))
   in
   print_endline (show_test_run_summary test_results);
   assert_equal 0 test_results.failed;
