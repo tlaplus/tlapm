@@ -55,6 +55,62 @@ op == \E x, y \in Nat, a, b \in Int : TRUE
 (double_line)))
 
 ==============================|||
+Verbose Bounded Quantification
+==============================|||
+
+---- MODULE Test ----
+op == \forall x, y \in Nat, z \in Int, a, b, c \in Real : FALSE
+op == \exists x, y \in Nat, a, b \in Int : TRUE
+====
+
+------------------------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq)
+    definition: (bounded_quantification
+      quantifier: (forall)
+      bound: (quantifier_bound
+        intro: (identifier)
+        intro: (identifier)
+        (set_in)
+        set: (nat_number_set)
+      )
+      bound: (quantifier_bound
+        intro: (identifier)
+        (set_in)
+        set: (int_number_set)
+      )
+      bound: (quantifier_bound
+        intro: (identifier)
+        intro: (identifier)
+        intro: (identifier)
+        (set_in)
+        set: (real_number_set)
+      )
+      expression: (boolean)
+    )
+  )
+  (operator_definition name: (identifier) (def_eq)
+    definition: (bounded_quantification
+      quantifier: (exists)
+      bound: (quantifier_bound
+        intro: (identifier)
+        intro: (identifier)
+        (set_in)
+        set: (nat_number_set)
+      )
+      bound: (quantifier_bound
+        intro: (identifier)
+        intro: (identifier)
+        (set_in)
+        set: (int_number_set)
+      )
+      expression: (boolean)
+    )
+  )
+(double_line)))
+
+==============================|||
 Bounded Quantification With Tuples
 ==============================|||
 

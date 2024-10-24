@@ -89,6 +89,7 @@ let run_test_corpus
 *)
 let expect_failure (test : syntax_test) : bool =
   List.mem test.info.name [
+    "Verbose Bounded Quantification";
     "Invalid parentheses use in jlist";
     "Bounded Quantification With Tuples";
     "Mixed Bounded Quantification With Tuples";
