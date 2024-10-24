@@ -128,10 +128,16 @@ let expect_failure (test : syntax_test) : bool =
     (* https://github.com/tlaplus/tlapm/issues/167 *)
     "Proof with INSTANCE step type";
 
+    (* https://github.com/tlaplus/tlapm/issues/168 *)
     "Invalid parentheses use in jlist";
+
+    (* https://github.com/tlaplus/tlapm/issues/169 *)
     "Label interfering with precedence";
+    
+    (* https://github.com/tlaplus/tlapm/issues/156 *)
+    "Step Expression With Parameterized Subscript";
+
     "Proof Containing Jlist";
-    "Proof Step ID Subexpression Tree Navigation";
   ]
 
 (** Filter predicate to control which tests to run.
