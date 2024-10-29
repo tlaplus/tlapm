@@ -68,3 +68,15 @@ op == a * lab :: b + c
 ====
 
 -------------|||
+
+=============|||
+Label with Subexpression Prefix (GH tlaplus/tlaplus #885)
+:error
+=============|||
+
+---- MODULE Test ----
+op == \A x \in {} : A!B!lbl(x) :: x
+====
+
+-------------|||
+

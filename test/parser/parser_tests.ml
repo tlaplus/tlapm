@@ -140,6 +140,18 @@ let expect_failure (test : syntax_test) : bool =
     (* https://github.com/tlaplus/tlapm/issues/170 *)
     "Implicit Proof Steps With Names";
     "Plus Proof Step With Name";
+
+    (* https://github.com/tlaplus/tlapm/issues/172 *)
+    "Invalid LOCAL Declaration of THEOREM";
+    "Invalid LOCAL Declaration of ASSUME";
+    "Invalid LOCAL Declaration of USE";
+    
+    (* https://github.com/tlaplus/tlapm/issues/173 *)
+    "Decimal No Leading Zero (GH tlaplus/tlaplus #596)";
+
+    (* https://github.com/tlaplus/tlapm/issues/173 *)
+    "Nonfix Submodule Excl (GH tlaplus/tlaplus #GH884)";
+    "Nonfix Double Exclamation Operator (GH TSTLA #GH97, GH tlaplus/tlaplus #884)";
   ]
 
 (** Filter predicate to control which tests to run.
