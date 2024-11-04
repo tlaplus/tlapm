@@ -36,6 +36,8 @@ depends: [
   "re2"
   "ppx_inline_test"
   "ppx_assert"
+  "ppx_deriving"
+  "ounit2"
   "odoc" {with-doc}
 ]
 depopts: ["lsp" "eio_main"]
