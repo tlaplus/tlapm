@@ -502,6 +502,7 @@ let read_new_modules mcx fs =
       let mule =
         Module.Save.parse_file ~clock:Clocks.parsing hint
       in
+      let mule = Intermediate.expand mule in
       (* set a flag for each module of the new modules that it is important *)
       mule.core.important <- true ;
       let mcx = Sm.add mule.core.name.core mule mcx in

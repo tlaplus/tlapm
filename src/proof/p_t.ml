@@ -49,9 +49,11 @@ and step_ =
     | Suffices of sequent * proof
     | Pcase of expr * proof
     | Pick of bound list * expr * proof
+    | PickTuply of tuply_bounds * expr * proof
     | Use of usable * bool
     | Have of expr
     | Take of bound list
+    | TakeTuply of tuply_bounds
     | Witness of expr list
     | Forget of int
 (** Terminal proof-step **)

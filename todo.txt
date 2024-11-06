@@ -81,7 +81,7 @@ Misc
   It will be handled by the USE/BY MODULE Foo construct, which
   will use the unnamed as well as the named theoresm of Foo.
 
-- PM/Zenon/Isabelle does not yet handle expressions
+- PM backends/Zenon/Isabelle do not yet handle expressions
       {e : x_1 \in S_1, ... , x_n \in S_n}
   for n > 1.
 
@@ -135,7 +135,7 @@ OBVIOUS
 SETS
 - expressions of the form {e : x_1 \in S_1, ...  , x_n \in S_n}
   for n > 1
-PM: waiting for backend support
+PM: parses them, awaiting for backend support
 Zenon: 1 week after Isabelle encodes it
 Isabelle: to be done
 
@@ -153,7 +153,7 @@ Zenon:
 Isabelle:
 
 -Functions of multiple arguments.
-PM: waiting for backend support
+PM: parses them as tuples
 Zenon: waiting for Isabelle, not sure how much work there will be
 Isabelle: to be done
 

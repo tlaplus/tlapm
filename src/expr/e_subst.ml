@@ -93,6 +93,11 @@ let rec app_expr s oe = match oe.core with
       Case (List.map (fun (e, f) -> (app_expr s e, app_expr s f)) arms,
             Option.map (app_expr s) oth) @@ oe
   | Parens (e, rig) -> Parens (app_expr s e, rig) @@ oe
+  | QuantTuply _
+  | ChooseTuply _
+  | SetStTuply _
+  | SetOfTuply _
+  | FcnTuply _ -> assert false
 
 and app_exprs s es =
   List.map (fun e -> app_expr s e) es
@@ -197,6 +202,7 @@ and app_hyps s cs = match Deque.front cs with
 
 and app_hyp s h = match h.core with
   | Fresh (x, shp, lv, b) -> Fresh (x, shp, lv, app_dom s b) @@ h
+  | FreshTuply _ -> assert false  (* not implemented *)
   | Flex v -> Flex v @@ h
   | Defn (d, wd, us, ex) -> Defn (app_defn s d, wd, us, ex) @@ h
   | Fact (e, us,tm) -> Fact (app_expr s e, us,tm) @@ h
@@ -347,6 +353,11 @@ class map = object (self : 'self)
         At b @@ oe
     | Parens (e, pf) ->
         Parens (self#expr s e, self#pform s pf) @@ oe
+    | QuantTuply _
+    | ChooseTuply _
+    | SetStTuply _
+    | SetOfTuply _
+    | FcnTuply _ -> assert false  (* not implemented *)
 
   method exprs s es = List.map (self#expr s) es
 
@@ -422,6 +433,7 @@ class map = object (self : 'self)
           | Bounded (r, rvis) -> Bounded (self#expr s r, rvis)
         in
         Fresh (nm, shp, lc, dom) @@ h
+    | FreshTuply _ -> assert false  (* not implemented *)
     | Flex v -> Flex v @@ h
     | Defn (df, wd, vis, ex) ->
         let (s', df) = self#defn s df in
@@ -474,6 +486,7 @@ class map_visible_hyp = object (self: 'self)
     method hyp s h =
       begin match h.core with
       | Fresh _ | Flex _ -> super#hyp s h
+      | FreshTuply _ -> assert false  (* not implemented *)
       | Defn (_, _, Hidden, _)
       | Fact (_, Hidden, _) -> (bump s, h)
       | Defn _ | Fact _ -> super#hyp s h

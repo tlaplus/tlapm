@@ -272,6 +272,11 @@ and of_step (step : Tlapm_lib.Proof.T.step) acc : t option * Acc.t =
         (of_proof
            (Range.of_wrapped_must step)
            (Range.of_wrapped expr) proof acc)
+  | Proof.T.PickTuply (_, expr, proof) ->
+      Acc.some
+        (of_proof
+           (Range.of_wrapped_must step)
+           (Range.of_wrapped expr) proof acc)
   | Proof.T.Use (_, _) -> (None, acc)
   | Proof.T.Have expr ->
       let suppl_locs = List.filter_map Range.of_wrapped [ expr ] in
@@ -280,6 +285,18 @@ and of_step (step : Tlapm_lib.Proof.T.step) acc : t option * Acc.t =
   | Proof.T.Take bounds ->
       let suppl_locs =
         List.filter_map (fun (hint, _, _) -> Range.of_wrapped hint) bounds
+      in
+      Acc.some
+        (of_implicit_proof_step (Range.of_wrapped_must step) suppl_locs acc)
+  | Proof.T.TakeTuply tuply_bounds ->
+      let suppl_locs =
+        List.concat (List.map (fun (tuply_name, _) ->
+          begin match tuply_name with
+          | Expr.T.Bound_name hint ->
+            List.filter_map Range.of_wrapped [ hint ]
+          | Expr.T.Bound_names hints ->
+            List.filter_map Range.of_wrapped hints
+          end) tuply_bounds)
       in
       Acc.some
         (of_implicit_proof_step (Range.of_wrapped_must step) suppl_locs acc)

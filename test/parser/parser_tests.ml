@@ -89,18 +89,12 @@ let run_test_corpus
 *)
 let expect_failure (test : syntax_test) : bool =
   List.mem test.info.name [
-    (* https://github.com/tlaplus/tlapm/issues/11 *)
-    "Bounded Quantification With Tuples";
-    "Mixed Bounded Quantification With Tuples";
-    "Bounded CHOOSE With Tuple";
-    "Unbounded CHOOSE With Tuple";
-    "Set Filter with Tuple";
 
     (* https://github.com/tlaplus/tlapm/issues/54#issuecomment-2435515180 *)
     "RECURSIVE inside LET/IN";
     "Conjlist with RECURSIVE in LET/IN";
     "Disjlist with RECURSIVE in LET/IN";
-    
+
     (* https://github.com/tlaplus/tlapm/issues/160 *)
     "Verbose Bounded Quantification";
 
@@ -114,9 +108,6 @@ let expect_failure (test : syntax_test) : bool =
 
     (* https://github.com/tlaplus/tlapm/issues/163 *)
     "Bitfield Number Formats";
-
-    (* https://github.com/tlaplus/tlapm/issues/164 *)
-    "Mistaken Set Filter Test";
 
     (* https://github.com/tlaplus/tlapm/issues/165 *)
     "Proof by QED with implicit step level";
