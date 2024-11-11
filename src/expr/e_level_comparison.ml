@@ -31,21 +31,24 @@ ASSUME
 PROVE
     goal
 
-the algorithm checks that goal results from expr1 or expr2 by a renaming of
+the algorithm checks that `goal` results from `expr2` by a renaming of
 identifiers that does not increase the levels of the identifiers.
 
-If an identifier is renamed, then it is assumed that the identifier before
-renaming is declared in declarations2. This ensures correct instantiation
-of universal quantifiers, outside of the quantifier scope.
+If an identifier is renamed, then it is asserted that the identifier before
+renaming is declared in `declarations2`. This ensures correct instantiation
+of universal (metatheoretic) quantifiers, outside of the quantifier scope.
 
-If an identifier is not renamed, then the original identifier can occur in
-either declarations1 or declarations2. If the identifier occurs in declarations1
-then the identifier is the same declaration in both expr1 and goal or
-expr2 and goal. There is no substitution for that identifier in this case.
+If an identifier is not renamed, then there are two cases:
 
-If the original identifier occurs in declarations2, then the identical
-identifier in goal is from declarations3, and the substitution is sound.
+- the identifier is declared in `declarations1`, so it is the same
+  operator in both `expr2` and `goal`. (`declarations1` includes
+  module-scope declarations, because the above sequent shows
+  a proof obligation within `tlapm`).
 
+- the identifier is declared in both `declarations2` and `declarations3`,
+  so the operator in `expr2` that is declared in `declarations2` is
+  substituted by an operator of the same name that is declared in
+  `declarations3`. This substitution is sound.
 *)
 class level_comparison = object (self : 'self)
 
@@ -53,13 +56,29 @@ class level_comparison = object (self : 'self)
     val mutable ctx2: ctx = Deque.empty
     val mutable op_mapping: string StringMap.t = StringMap.empty
 
-    method compare ctx1_ ctx2_ expr1 expr2 =
+    method compare inner_hyps ctx1_ ctx2_ expr1 expr2 =
         ctx1 <- ctx1_;
         ctx2 <- ctx2_;
         op_mapping <- StringMap.empty;
         let res = self#expr ctx1_ ctx2_ expr1 expr2 in
+        (* ensure that all renamed identifiers are declared
+        within the assumptions of the sequent that appears
+        as assumption. This ensures that the renaming happens
+        outside the scope of those declarations.
+
+        All declarations in the nested sequent must be
+        instantiated. This is required syntactically,
+        because the consequent cannot itself be a sequent.
+        Thus, there are no declarations before any renamed ones
+        that would remain. So the renaming can be justified
+        by instantiation of declarations in the order that
+        they appear.
+        *)
         let all = ref true in
         let check (key: string) (value: string) =
+            (* key: source identifier
+            value: target identifier
+            *)
             if not (key = value) then begin
                 let found = ref false in
                 Deque.iter begin
@@ -72,7 +91,7 @@ class level_comparison = object (self : 'self)
                         | Fact _ -> ()
                         | _ -> assert false
                             (* Defn ( Recursive | Instance | Bpragrama ) *)
-                end ctx1;
+                end inner_hyps;
                 all := !all && !found
             end in
         StringMap.iter check op_mapping;
@@ -743,15 +762,16 @@ let check_level_change cx expr =
                     | Fact (expr, Visible, _) ->
                         begin match expr.core with
                         | Sequent sq ->
-                            let hyps = sq.context in
+                            let inner_hyps = sq.context in
                             let active = sq.active in
                             let visitor = object (self: 'self)
                                 inherit [unit] E_visit.iter_visible_hyp
                             end in
-                            let (_, cx_goal) = visitor#hyps ((), cx2) hyps in
-                            found := !found || (checker cx_goal active)
-                        | _ ->
-                            found := !found || (checker cx2 expr)
+                            let (_, cx_goal) = visitor#hyps
+                                ((), cx2) inner_hyps in
+                            found := !found || (
+                                checker inner_hyps cx_goal active)
+                        | _ -> ()
                         end
                     | _ -> ()
                 end;
@@ -773,7 +793,14 @@ let check_level_change cx expr =
         end in
         let (_, cx_goal) = visitor#hyps ((), cx) hyps in
         let visitor = new level_comparison in
-        let f cx_hyps hyp = visitor#compare cx_hyps cx_goal hyp active in
+        (* cx_hyps: context of source sequent
+        hyp: goal of source sequent
+
+        cx_goal: context of target sequent
+        active: goal of target sequent
+        *)
+        let f inner_hyps cx_hyps hyp = visitor#compare
+            inner_hyps cx_hyps cx_goal hyp active in
         check_context f hyps;
         let proved = !found in
         begin if proved then begin
