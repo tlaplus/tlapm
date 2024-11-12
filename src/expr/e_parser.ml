@@ -61,15 +61,11 @@ let make_dittos
                 bound_domain ->
                     'a):
             'a list =
-    let name = List.hd names in
-    let head = make_bound
-        name (Domain dom) in
-    let make_ditto name = make_bound
-        name Ditto in
-    let rest = List.tl names in
-    let tail = List.map
-        make_ditto rest in
-    head :: tail
+    match names with
+    | name :: rest ->
+        make_bound name (Domain dom) ::
+            List.map (fun name -> make_bound name Ditto) rest
+    | [] -> assert false
 
 
 let make_unboundeds

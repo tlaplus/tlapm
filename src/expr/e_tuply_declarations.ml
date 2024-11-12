@@ -636,7 +636,7 @@ let make_choose_from_tuply
         /\ fresh_name = <<... names ...>>
         /\ predicate
     or
-    CHOOSE fresh_name:
+    CHOOSE fresh_name \in dom1 \X dom2:
         LET
             name1 == fresh_name[1]
             name2 == fresh_name[2]
@@ -661,7 +661,7 @@ let make_setst_from_tuply
                 /\ fresh_name = <<... names ...>>
                 /\ predicate}
     or
-        {fresh_name \in dom:
+        {fresh_name \in dom1 \X dom2:
             LET
                 name1 == fresh_name[1]
                 name2 == fresh_name[2]

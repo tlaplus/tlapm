@@ -30,12 +30,7 @@ let mint_by_coordinate
     (* A similar idea was implemented inside
     the function `Coalesce.rename_with_loc`.
     *)
-    let line = string_of_int line in
-    let column = string_of_int column in
-    (basename ^
-     (* "_filename_" ^ filename ^ *)
-     "_line_" ^ line ^
-     "_column_" ^ column)
+    Printf.sprintf "%s_line_%d_column_%d" basename line column
 
 
 let mint_from_hint
@@ -82,8 +77,7 @@ let mint_by_min_free
     `E_action.normalize_lambda_signature`.
     *)
     let mk_id name i =
-        let numeral = string_of_int i in
-        name ^ "_" ^ numeral in
+        Printf.sprintf "%s_%d" name i in
     let f i = List.mem
         (mk_id basename i) used_identifiers in
     let i = ref start in
@@ -91,22 +85,3 @@ let mint_by_min_free
         i := !i + 1
     done;
     mk_id basename !i
-
-
-(* Scheme 3: Globally incremental
-
-This is the simplest scheme.
-`count + 1` is appended to `basename` to
-form an identifier.
-
-The new count and identifier are
-the result.
-*)
-let mint_by_count
-        (basename: string)
-        (count: int):
-            int * string =
-    let new_count = count + 1 in
-    let k = string_of_int new_count in
-    let name = basename ^ k in
-    (new_count, name)

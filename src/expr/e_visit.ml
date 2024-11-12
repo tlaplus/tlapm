@@ -977,7 +977,7 @@ class virtual ['s, 'a] foldmap = object (self : 'self)
     | ChooseTuply (_, _, _)
     | SetStTuply (_, _, _)
     | SetOfTuply (_, _)
-    | FcnTuply (_, _) -> failwith "unexpected case"
+    | FcnTuply (_, _) -> assert false
 
   method pform scx a pf = a, pf
 
@@ -1225,7 +1225,7 @@ class virtual ['s, 'a] fold = object (self : 'self)
     | ChooseTuply (_, _, _)
     | SetStTuply (_, _, _)
     | SetOfTuply (_, _)
-    | FcnTuply (_, _) -> failwith "unexpected case"
+    | FcnTuply (_, _) -> assert false
 
   method pform scx a pf = a
 
@@ -1356,7 +1356,7 @@ class virtual ['s] map_visible_hyp = object (self : 'self)
           (adj scx h, h)
       | FreshTuply _ ->
           failwith "use instead the class \
-              `E_visit.iter_concrete`"
+              `E_visit.map_concrete`"
 end
 
 class virtual ['s] iter_visible_hyp = object (self : 'self)
@@ -1609,7 +1609,7 @@ class virtual ['s] map_rename = object (self : 'self)
     | SetStTuply _
     | SetOfTuply _
     | FcnTuply _ ->
-        failwith "unused pattern-case, so not implemented"
+        assert false
     | _ -> super#expr scx oe
 
   method defn scx df =
@@ -1675,7 +1675,7 @@ class virtual ['s] map_rename = object (self : 'self)
         let (h, _) = self#rename cx h nm in
         (self#adj scx h, h)
     | FreshTuply _ ->
-        failwith "unused pattern-case, so not implemented"
+        assert false
     | Flex s ->
         let h = Flex s @@ h in
         let (h, _) = self#rename cx h s in

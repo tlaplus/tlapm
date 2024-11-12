@@ -12,7 +12,7 @@ module Tuply = Expr.Tuply_declarations
 type mule = Module.T.mule
 
 
-let expand_tuplys_and_tuplify
+let expand_tuplys
         (tla_module: mule):
             mule =
     let visitor =
@@ -45,4 +45,4 @@ let expand
     (* Expand tuplys. *)
     module_tree
     (* |> Refs.expand *)
-    |> expand_tuplys_and_tuplify
+    |> expand_tuplys
