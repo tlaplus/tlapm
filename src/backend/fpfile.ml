@@ -153,8 +153,8 @@ open V13
 
 let fptbl = ref (Hashtbl.create 500 : V13.tbl)
 
-let old_magic_number = 20101013
-let magic_number = 20210223
+let old_magic_numbers = [20101013; 20210223]
+let magic_number = 20241112
 
 let write_fp_table oc =
   output_value oc magic_number;
@@ -568,7 +568,7 @@ let load_fingerprints_aux file =
   if Sys.file_exists file then begin
     let ic = open_in_bin file in
     let magic = Marshal.from_channel ic in
-    if magic = old_magic_number then
+    if List.mem magic old_magic_numbers then
         raise(FpFileOlderMagicNumber);
     if magic <> magic_number then raise(FpFileCorrupted);
     let v = Marshal.from_channel ic in
