@@ -21,15 +21,6 @@ let update_cx (cx: ctx) mu =
     Dq.append_list cx hyps
 
 
-(* TODO: make this method deep,
-for uniformity of the API with
-`Expr.Visit.map`,
-and create a class
-`Module.Visit.shallow_map`,
-and call that one from where
-currently the class `map` is
-being used.
-*)
 class map =
     (* Shallow mapping of modules.
 
@@ -174,10 +165,6 @@ class map =
     method mutate cx change usable =
         let mu = Mutate (
             change, usable) in
-        (* TODO: change the visibility of
-        facts in `cx` based on the
-        `Mutate` statement.
-        *)
         (cx, mu)
 
     method submod cx tla_module =
@@ -185,19 +172,12 @@ class map =
         (cx, mu)
 
     method anoninst cx inst local =
-        (* TODO: expand statements
-        from `INSTANCE` *)
         let mu = Anoninst (inst, local) in
         (cx, mu)
 
 end
 
 
-(* TODO: handle `INSTANCE`
-statements when expanding
-tuply declarations, or
-expand them beforehand.
-*)
 class deep_map =
     (* Deep mapping of modules.
 
@@ -243,14 +223,24 @@ class deep_map =
         let cx = update_cx cx mu in
         (cx, mu)
 
-    (* TODO: expression references and instantiation
     method mutate cx change usable =
-        failwith "not implemented"
+        let scx = ((), cx) in
+        let usable = self#usable scx usable in
+        let mu = Mutate (change, usable) in
+        let cx = update_cx cx mu in
+        (cx, mu)
 
     method submod cx tla_module =
-        failwith "not implemented"
+        let cx, tla_module = self#tla_module
+            cx tla_module in
+        let mu = Submod tla_module in
+        (cx, mu)
 
     method anoninst cx inst local =
-        failwith "not implemented"
-    *)
+        let scx = ((), cx) in
+        let inst = self#instance scx inst in
+        let mu = Anoninst (inst, local) in
+        (* NOTE: `inst_sub` expressions mapped,
+        not full instantiation, so `cx` unchanged. *)
+        (cx, mu)
 end
