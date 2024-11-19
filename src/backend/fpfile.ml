@@ -126,7 +126,7 @@ module V13 = struct
   (* The key is the MD5 converted to hex. *)
 
   (* File format:
-     - magic number as a marshalled integer = 20101013
+     - magic number as a marshalled integer = 20241112
      - Fpver13 of tbl
      - any number of (Digest.t, sti list) pairs
   *)
