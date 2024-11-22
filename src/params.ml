@@ -477,6 +477,7 @@ let configuration toolbox force =
   in
   let lines =
     [ "version == \"" ^ rawversion () ^ "\""
+    ; "cmdline_api_version == 2"
     ; "built_with == \"OCaml " ^ Sys.ocaml_version ^ "\""
     ; "tlapm_executable == \"" ^ Sys.executable_name ^ "\""
     ; "max_threads == " ^ string_of_int !max_threads
