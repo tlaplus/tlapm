@@ -16,8 +16,7 @@ jobs:
           matrix:
             os:
               - ubuntu-latest
-              - macos-13
-              - macos-14
+              - macos-latest
             ocaml-compiler:
               - '4.14.1'
               - '5.1.0'
