@@ -51,8 +51,17 @@ jobs:
               run: |
                 eval $(opam env)
                 make opam-deps
-                make
-                make release
+                # Workaround for https://github.com/tlaplus/tlapm/issues/88
+                set +e
+                for ((attempt = 1; attempt <= 5; attempt++)); do
+                  rm -rf _build
+                  make
+                  if [ $? -eq 0 ]; then
+                    make release
+                    exit $?
+                  fi
+                done
+                exit 1
             - name: Run tests
               run: |
                 eval $(opam env)
