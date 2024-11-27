@@ -424,18 +424,6 @@ module T: sig
 end
 
 
-module Namespaces: sig
-    open Util
-
-
-    val mint_from_hint:
-        hint -> hint
-    val mint_by_min_free:
-        string -> int -> string list ->
-            string
-end
-
-
 module Fmt: sig
     open T
     open Ctx

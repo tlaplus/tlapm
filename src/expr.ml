@@ -3,7 +3,6 @@
 Copyright (C) 2011-2019  INRIA and Microsoft Corporation
 *)
 module T = E_t
-module Namespaces = E_namespaces
 module Fmt = E_fmt
 module Subst = E_subst
 module Visit = E_visit
