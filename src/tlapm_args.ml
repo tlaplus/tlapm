@@ -386,7 +386,31 @@ let cmd =
   let info = Cmd.info "tlapm" in
   Cmd.v info term
 
+
+let join_double_args a =
+  let no_comma s =
+    let rec loop i = i >= String.length s || s.[i] <> ',' && loop (i+1) in
+    loop 0
+  in
+  let rec loop a i =
+    let l = Array.length a in
+    if i + 2 >= l then
+      a
+    else if (a.(i) = "--toolbox" || a.(i) = "--nofpl" || a.(i) = "--erasefp")
+       && no_comma a.(i+1)
+    then begin
+      let aa = Array.make (l - 1) "" in
+      Array.blit a 0 aa 0 (i+1);
+      aa.(i+1) <- a.(i+1) ^ "," ^ a.(i+2);
+      Array.blit a (i+3) aa (i+2) (l - i - 3);
+      loop aa (i+2)
+    end else
+      loop a (i+1)
+  in
+  loop a 1
+
 let init () =
-  match Cmd.eval_value' cmd with
+  let argv = join_double_args Sys.argv in
+  match Cmd.eval_value' ~argv cmd with
   | `Ok x -> x
   | `Exit r -> exit r
