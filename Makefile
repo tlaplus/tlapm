@@ -10,10 +10,10 @@ ifeq ($(OS_TYPE),Cygwin)
 	HOST_OS=cygwin
 endif
 HOST_CPU=$(shell uname -m)
-RELEASE_NAME=tlaps-$$RELEASE_VERSION-$(HOST_CPU)-$(HOST_OS)
-RELEASE_FILE=$(RELEASE_NAME).tar.gz
 
 PREFIX=$(OPAM_SWITCH_PREFIX)
+
+DUNE_BUILD_DIR=_build
 
 all: build
 
@@ -55,29 +55,43 @@ install:
 	dune install --prefix=$(PREFIX)
 	make -C $(PREFIX)/lib/tlapm/ -f Makefile.post-install
 
-release:
-	rm -rf _build/tlaps-release-dir _build/tlaps-release-version
-	dune install --relocatable --prefix _build/tlaps-release-dir
-	make -C _build/tlaps-release-dir/lib/tlapm -f Makefile.post-install
+TLAPM_RELEASE_DIR_NAME=tlapm
+TLAPM_RELEASE_DIR=$(DUNE_BUILD_DIR)/$(TLAPM_RELEASE_DIR_NAME)
+$(TLAPM_RELEASE_DIR): build
+#	rm -rf $(TLAPM_RELEASE_DIR)
+	dune install --relocatable --prefix $(TLAPM_RELEASE_DIR)
+	make -C $(TLAPM_RELEASE_DIR)/lib/tlapm -f Makefile.post-install
 	cd test && env \
-		USE_TLAPM=../_build/tlaps-release-dir/bin/tlapm \
-		USE_LIB=../_build/tlaps-release-dir/lib/tlapm/stdlib \
+		USE_TLAPM=../$(TLAPM_RELEASE_DIR)/bin/tlapm \
+		USE_LIB=../$(TLAPM_RELEASE_DIR)/lib/tlapm/stdlib \
 		./TOOLS/do_tests fast/basic
-	RELEASE_VERSION="$$(_build/tlaps-release-dir/bin/tlapm --version)" \
-		&& rm -rf _build/$(RELEASE_FILE) \
-		&& mv _build/tlaps-release-dir _build/$(RELEASE_NAME) \
-		&& (cd _build/ && tar -czf $(RELEASE_FILE) $(RELEASE_NAME)) \
-		&& rm -rf _build/$(RELEASE_NAME) \
-		&& echo $$RELEASE_VERSION > _build/tlaps-release-version
 
-release-print-version:
-	@cat _build/tlaps-release-version
+$(TLAPM_RELEASE_DIR).tar.gz: $(TLAPM_RELEASE_DIR)
+	cd $(DUNE_BUILD_DIR) && tar -czf $(TLAPM_RELEASE_DIR_NAME).tar.gz $(TLAPM_RELEASE_DIR_NAME)
 
-release-print-file:
-	@RELEASE_VERSION="$$(cat _build/tlaps-release-version)" && echo $(RELEASE_FILE)
+# Use RELEASE_VERSION from Make CLI args; if not present, use TLAPM build version
+# Override variable like "make release RELEASE_VERSION=1.6.0"
+TLAPM_VERSION_FILE = $(DUNE_BUILD_DIR)/tlapm-release-version
+$(TLAPM_VERSION_FILE): $(TLAPM_RELEASE_DIR)
+	if [ -z "$(RELEASE_VERSION)" ]; then \
+		RELEASE_VERSION=$$($(TLAPM_RELEASE_DIR)/bin/tlapm --version); \
+	fi; \
+	echo $${RELEASE_VERSION} > $(TLAPM_VERSION_FILE)
+
+release: $(TLAPM_RELEASE_DIR).tar.gz $(TLAPM_VERSION_FILE)
+	TLAPM_RELEASE_VERSION="$$(cat $(TLAPM_VERSION_FILE))"; \
+	TLAPM_RELEASE_NAME=tlapm-$${TLAPM_RELEASE_VERSION}-$(HOST_CPU)-$(HOST_OS); \
+	mv $(TLAPM_RELEASE_DIR).tar.gz $(DUNE_BUILD_DIR)/$${TLAPM_RELEASE_NAME}.tar.gz;
+
+release-print-version: $(TLAPM_VERSION_FILE)
+	RELEASE_VERSION="$$(cat $(TLAPM_VERSION_FILE))"; \
+	echo $${RELEASE_VERSION}
+
+release-print-file: $(TLAPM_VERSION_FILE)
+	cat $(TLAPM_VERSION_FILE)
 
 clean:
 	dune clean
 
-.PHONY: all build check test test-inline test-fast test-fast-basic install release release-print-version release-print-file clean
+.PHONY: all build check test test-inline test-fast test-fast-basic install $(TLAPM_VERSION_FILE) release release-print-version release-print-file clean
 

@@ -10,8 +10,8 @@ For information on TLA⁺ generally, see http://tlapl.us.
 
 Installation & Use
 ------------------
-Versioned releases can be downloaded from the [GitHub Releases page](https://github.com/tlaplus/tlapm/releases).
-If you instead prefer to use the latest development version, follow the instructions in [`DEVELOPING.md`](DEVELOPING.md) to build & install TLAPM.
+Past versioned releases can be downloaded from the [GitHub Releases page](https://github.com/tlaplus/tlapm/releases).
+For the latest development version, download the builds attached to the [1.6.0 rolling pre-release](https://github.com/tlapm/tlapm/releases/tag/1.6.0-pre) or follow the instructions in [`DEVELOPING.md`](DEVELOPING.md) to build TLAPM from source.
 
 Once TLAPM is installed, run `tlapm --help` to see documentation of the various command-line parameters.
 Check the proofs in a simple example spec in this repo by running:
