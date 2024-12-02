@@ -7,6 +7,9 @@
 
 open Format
 
+
+let comma items = String.concat "," items
+
 let pp_print_commasp ff () =
   pp_print_string ff "," ;
   pp_print_space ff ()

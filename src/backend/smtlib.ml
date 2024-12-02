@@ -650,6 +650,8 @@ let pp_print_obligation ?(solver="SMT") ff ob =
           fprintf ff "; omitted declaration of '%s' (missing type)@." nm.core;
           pp_print_newline ff ();
           spin ncx hs
+    | Some ({core=FreshTuply (_, _); _ }, _) ->
+        failwith "unexpected case"
   in
 
   pp_print_newline ff ();
@@ -670,4 +672,3 @@ let pp_print_obligation ?(solver="SMT") ff ob =
 
   fprintf ff "(check-sat)@.";
   fprintf ff "(exit)@."
-

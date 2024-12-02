@@ -484,6 +484,13 @@ class level_comparison = object (self : 'self)
             && j = l
         | At b,
           At c -> b = c
+        | (QuantTuply _ | ChooseTuply _ |
+           SetStTuply _ | SetOfTuply _ |
+           FcnTuply _), _
+        | _, (QuantTuply _ | ChooseTuply _ |
+              SetStTuply _ | SetOfTuply _ |
+              FcnTuply _) ->
+            assert false
         | _, _ -> false
 
     method exprs cx1 cx2 es fs = match es, fs with

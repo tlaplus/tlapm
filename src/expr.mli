@@ -48,14 +48,22 @@ module T: sig
     | List of bullet * expr list
     | Let of defn list * expr
     | Quant of quantifier * bounds * expr
+    | QuantTuply of
+          quantifier * tuply_bounds * expr
     | Tquant of quantifier * hints * expr
     | Choose of hint * expr option * expr
+    | ChooseTuply of
+          hints * expr option * expr
     | SetSt of hint * expr * expr
+    | SetStTuply of
+          hints * expr * expr
     | SetOf of expr * bounds
+    | SetOfTuply of expr * tuply_bounds
     | SetEnum of expr list
     | Product of expr list
     | Tuple of expr list
     | Fcn of bounds * expr
+    | FcnTuply of tuply_bounds * expr
     | FcnApp of expr * expr list
     | Arrow of expr * expr
     | Rect of (string * expr) list
@@ -100,6 +108,13 @@ module T: sig
   and bounds = bound list
   and bound =
       hint * kind * bound_domain
+  (* tuply bounds *)
+  and tuply_bounds = tuply_bound list
+  and tuply_bound =
+      tuply_name * bound_domain
+  and tuply_name =
+    | Bound_name of hint
+    | Bound_names of hints
   and bound_domain =
     | No_domain
     | Domain of expr
@@ -154,6 +169,7 @@ module T: sig
   and hyp = hyp_ wrapped
   and hyp_ =
     | Fresh of hint * shape * kind * hdom
+    | FreshTuply of hints * hdom
     | Flex of hint
     | Defn of defn * wheredef * visibility * export
     | Fact of expr * visibility * time
@@ -169,7 +185,9 @@ module T: sig
   and time = Now | Always | NotSet
 
   val unditto: bounds -> bounds
+  val unditto_tuply: tuply_bounds -> tuply_bounds
 
+  val name_of_tuply: tuply_name -> hint
   val name_of_bound: bound -> hint
   val names_of_bounds: bounds -> hints
   val string_of_bound: bound -> string
@@ -254,6 +272,12 @@ module T: sig
           bounds -> expr -> expr
       val make_forall:
           bounds -> expr -> expr
+      val make_tuply_exists:
+          tuply_bounds -> expr ->
+          expr
+      val make_tuply_forall:
+          tuply_bounds -> expr ->
+          expr
       val make_temporal_exists:
           t list -> expr -> expr
       val make_temporal_forall:
@@ -262,10 +286,21 @@ module T: sig
           t -> expr -> expr
       val make_bounded_choose:
           t -> expr -> expr -> expr
+      val make_tuply_choose:
+          t list -> expr -> expr
+      val make_bounded_tuply_choose:
+          t list -> expr ->
+          expr -> expr
       val make_setst:
           t -> expr -> expr -> expr
+      val make_tuply_setst:
+          t list -> expr ->
+          expr -> expr
       val make_setof:
           expr -> bounds -> expr
+      val make_tuply_setof:
+          expr -> tuply_bounds ->
+          expr
       val make_setenum:
           expr list -> expr
       val make_product:
@@ -274,6 +309,9 @@ module T: sig
           expr list -> expr
       val make_fcn:
           bounds -> expr -> expr
+      val make_tuply_fcn:
+          tuply_bounds -> expr ->
+          expr
       val make_fcn_domain:
           expr -> expr
       val make_fcn_app:
@@ -331,12 +369,25 @@ module T: sig
       val make_bounded:
           t -> kind ->
           expr -> bound
+      val make_unbounded_name_decl:
+          t -> tuply_bound
+      val make_bounded_name_decl:
+          t -> expr -> tuply_bound
+      val make_tuply_decl:
+          t list -> tuply_bound
+      val make_bounded_tuply_decl:
+          t list -> expr ->
+          tuply_bound
       val make_fresh:
           t -> kind -> hyp
       val make_bounded_fresh:
           t -> expr -> hyp
       val make_fresh_with_arity:
           t -> kind -> int -> hyp
+      val make_tuply_fresh:
+          t list -> hyp
+      val make_bounded_tuply_fresh:
+          t list -> expr -> hyp
   end
 
 
@@ -599,6 +650,21 @@ module Visit: sig
     method hyp      : 's scx -> hyp -> 's scx
     method hyps     : 's scx -> hyp Deque.dq -> 's scx
   end
+  class virtual ['s] map_concrete: object
+      inherit ['s] map
+      method tuply_bounds:
+          's scx -> tuply_bounds ->
+          's scx * tuply_bounds
+      method tuply_bound:
+          's scx -> tuply_bound -> tuply_bound
+  end
+  class virtual ['s] iter_concrete: object
+      inherit ['s] iter
+      method tuply_bounds:
+          's scx -> tuply_bounds -> 's scx
+      method tuply_bound:
+          's scx -> tuply_bound -> unit
+  end
   class virtual ['s, 'a] foldmap : object
     method expr     : 's scx -> 'a -> expr -> 'a * expr
     method pform    : 's scx -> 'a -> pform -> 'a * pform
@@ -636,6 +702,8 @@ module Visit: sig
       method rename : ctx -> hyp -> Util.hint -> hyp * Util.hint
       method renames : ctx -> hyp list -> Util.hints -> hyp list * Util.hints
   end
+
+  val name_operators: ctx -> expr -> expr
 end
 
 
@@ -659,6 +727,15 @@ module Collect : sig
 end
 
 
+module Tuply_declarations: sig
+    open T
+    val expand_tuply_declarations:
+        expr -> expr
+    val tuplify_functions:
+        expr -> expr
+end
+
+
 module Eq: sig
     open T
     val expr:
@@ -671,7 +748,12 @@ end
 
 
 module Deref: sig
-    val badexp: T.expr
+    open T
+    val resolve_bang:
+        hyp Deque.dq -> expr ->
+        expr list -> sel list -> expr
+    val badexp: expr
+    val is_badexp: expr -> bool
 end
 
 
@@ -743,6 +825,17 @@ end
 module Parser: sig
     open Tla_parser
     open T
+    type boundeds
+    val has_tuply_bounded:
+        boundeds -> bool
+    val tuply_bounds_of_boundeds:
+        boundeds -> tuply_bounds
+    val bounds_of_boundeds:
+        boundeds -> bounds
+    val quantifier_boundeds:
+        bool -> (pcx, boundeds) P.prs
+    val colon_expr:
+        bool -> (pcx, expr) P.prs
     val expr: bool -> T.expr lprs
     val bounds: bool -> T.bound list lprs
     val defn: bool -> T.defn lprs

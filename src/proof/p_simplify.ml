@@ -273,6 +273,9 @@ and simplify_step cx goal st time_flag =
                         (Quant (Forall, gbs, ge) @@ goal, shf + 1)
                   in
                   strip shf aux goal bs
+              | {core=QuantTuply (Forall, _, _)} ->
+                  assert false  (* tuple declarations
+                      have been translated earlier *)
               | _ ->
                   let msg =
                     Util.sprintf "@.@[<v2>@[<b0>%s@ %s@]@,%a@]@."
@@ -355,6 +358,9 @@ and simplify_step cx goal st time_flag =
                   let e = Apply (Internal Builtin.Unprimable @@ e, [e]) @@ e in
                   let goal = app_expr (scons e (shift 0)) goal in
                   instantiate aux err goal es
+              | {core = QuantTuply (Exists, _, _)} ->
+                  assert false  (* tuple declarations
+                      have been translated earlier *)
               | goal ->
                   let msg =
                     Util.sprintf "@.@[<v2>@[<b0>%s@ %s@]@,%a@]@."
@@ -447,6 +453,9 @@ and simplify_step cx goal st time_flag =
           | _ -> Errors.bug ~at:st "Proof.Simplify.simplify_step/PICK"
         in
         (cx, goal, nsts, time_flag)
+    | TakeTuply _
+    | PickTuply _ ->
+        assert false
   in
   Util.eprintf ~debug:"simpl" ~at:st
     "simplify_step (result)@\n@[<hv2>%t@ --> %t@]@.@."
