@@ -33,7 +33,7 @@ jobs:
               run: |
                 sudo apt-get update
                 sudo apt-get install --yes time
-            - uses: ocaml/setup-ocaml@v2
+            - uses: ocaml/setup-ocaml@v3
               with:
                 ocaml-compiler: ${{ matrix.ocaml-compiler }}
             - uses: actions/cache@v4
@@ -53,7 +53,7 @@ jobs:
                 # Workaround for https://github.com/tlaplus/tlapm/issues/88
                 set +e
                 for ((attempt = 1; attempt <= 5; attempt++)); do
-                  rm -rf _build
+                  make clean
                   make
                   if [ $? -eq 0 ]; then
                     make release
@@ -81,10 +81,10 @@ jobs:
             - name: Check proofs in TLA+ examples
               run: |
                 mkdir -p "$DEPS_DIR"
-                cp ./_build/tlaps*.tar.gz "$DEPS_DIR/tlaps.tar.gz"
-                tar -xzf "$DEPS_DIR/tlaps.tar.gz" -C "$DEPS_DIR"
-                rm "$DEPS_DIR/tlaps.tar.gz"
-                mv $DEPS_DIR/tlaps* "$DEPS_DIR/tlapm-install"
+                cp ./_build/tlapm*.tar.gz "$DEPS_DIR/tlapm.tar.gz"
+                tar -xzf "$DEPS_DIR/tlapm.tar.gz" -C "$DEPS_DIR"
+                rm "$DEPS_DIR/tlapm.tar.gz"
+                mv $DEPS_DIR/tlapm* "$DEPS_DIR/tlapm-install"
                 SKIP=(
                   # General proof failure
                   "specifications/Bakery-Boulangerie/Bakery.tla"
