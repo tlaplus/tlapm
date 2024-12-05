@@ -69,6 +69,13 @@ jobs:
                 TEST_RESULT=$?
                 cat _build/default/test/tests.log
                 exit $TEST_RESULT
+            - name: show logs for each test file
+              if: failure()
+              run: |
+                find test -type f \
+                    -name '*.err' -o \
+                    -name '*.out' \
+                    -exec cat '{}' \;
             - name: Clone tlaplus/examples
               uses: actions/checkout@v4
               with:
