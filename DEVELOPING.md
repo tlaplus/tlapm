@@ -8,7 +8,7 @@ It uses the [Dune](https://dune.build/) build system for OCaml, with [Make](http
 Release Channels
 ----------------
 Past versioned releases can be downloaded from the [GitHub Releases page](https://github.com/tlaplus/tlapm/releases).
-For the latest development version, download the builds attached to the [1.6.0 rolling pre-release](https://github.com/tlapm/tlapm/releases/tag/1.6.0-pre) or follow the instructions below to build TLAPM from source.
+For the latest development version, download the builds attached to the [1.6.0 rolling pre-release](https://github.com/tlaplus/tlapm/releases/tag/1.6.0-pre) or follow the instructions below to build TLAPM from source.
 
 Dependencies
 ------------
