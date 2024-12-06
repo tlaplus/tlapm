@@ -27,7 +27,7 @@ jobs:
         git tag -f "${{ vars.ROLLING_PRERELEASE_VERSION }}"
         git remote
         echo "Updating remote tag..."
-        git push -f "${{ vars.ROLLING_PRERELEASE_VERSION }}"
+        git push -f origin "${{ vars.ROLLING_PRERELEASE_VERSION }}"
     - name: Install deps on Ubuntu
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get install --yes time
