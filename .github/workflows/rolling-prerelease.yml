@@ -68,7 +68,7 @@ jobs:
         ## Delete old assets and upload replacement assets (if delete fails we still try to upload the new asset)
         RELEASE_ASSETS_URL="https://api.github.com/repos/${{ github.repository }}/releases/$DRAFT_RELEASE/assets"
         echo "Crawling assets in release from '$RELEASE_ASSETS_URL'..."
-        ID=$(curl -sS -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "RELEASE_ASSETS_URL" --header "Content-Type: application/json"  | jq '.[]| select(.name == "$TLAPM_ZIP") | .id')
+        ID=$(curl -sS -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$RELEASE_ASSETS_URL" --header "Content-Type: application/json"  | jq '.[]| select(.name == "$TLAPM_ZIP") | .id')
         echo "Found asset ID: '$ID'"
         ASSET_ID_URL="https://api.github.com/repos/${{ github.repository }}/releases/assets/$ID"
         echo "Deleting old release from '$ASSET_ID_URL'..."
