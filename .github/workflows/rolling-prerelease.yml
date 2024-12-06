@@ -23,17 +23,11 @@ jobs:
     - name: "Update release tag"
       if: matrix.os == 'ubuntu-latest'
       run: |
-        git tag
-        echo "Deleting local tag..."
-        git tag -d "${{ vars.ROLLING_PRERELEASE_VERSION }}"
-        git remote
-        echo "Deleting remote tag..."
-        git push --delete "${{ vars.ROLLING_PRERELEASE_VERSION }}"
         echo "Creating local tag..."
-        git tag "${{ vars.ROLLING_PRERELEASE_VERSION }}"
-        git tag
-        echo "Creating remote tag..."
-        git push --tags
+        git tag -f "${{ vars.ROLLING_PRERELEASE_VERSION }}"
+        git remote
+        echo "Updating remote tag..."
+        git push -f "${{ vars.ROLLING_PRERELEASE_VERSION }}"
     - name: Install deps on Ubuntu
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get install --yes time
