@@ -8,6 +8,8 @@ concurrency:
 env:
   DUNE_BUILD_DIR: "_build"
   OCAML_VERSION: "5.1.0"
+permissions:
+  contents: write
 jobs:
   publish:
     environment: release
@@ -18,6 +20,20 @@ jobs:
     steps:
     - name: Clone repo
       uses: actions/checkout@v4
+    - name: "Update release tag"
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        git tag
+        echo "Deleting local tag..."
+        git tag -d "${{ vars.ROLLING_PRERELEASE_VERSION }}"
+        git remote
+        echo "Deleting remote tag..."
+        git push --delete "${{ vars.ROLLING_PRERELEASE_VERSION }}"
+        echo "Creating local tag..."
+        git tag "${{ vars.ROLLING_PRERELEASE_VERSION }}"
+        git tag
+        echo "Creating remote tag..."
+        git push --tags
     - name: Install deps on Ubuntu
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get install --yes time
@@ -45,7 +61,7 @@ jobs:
           fi
         done
         exit 1
-    - name: "Upload release"
+    - name: "Upload artifacts"
       run: |
         kernel=$(uname -s)
         if [ "$kernel" == "Linux" ]; then
