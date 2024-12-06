@@ -57,19 +57,21 @@ jobs:
           exit 1
         fi
         HOST_CPU=$(uname -m)
-        TLAPM_ZIP=tlapm-${{ vars.ROLLING_PRERELEASE_VERSION }}-$HOST_CPU-$OS_TYPE.tar.gz
-        echo $TLAPM_ZIP
+        TLAPM_ZIP="tlapm-${{ vars.ROLLING_PRERELEASE_VERSION }}-$HOST_CPU-$OS_TYPE.tar.gz"
+        echo "Asset name: $TLAPM_ZIP"
         ls -lh ${{ env.DUNE_BUILD_DIR }}
-        cat ${{ env.DUNE_BUILD_DIR }}/tlapm-release-version
+        echo "Release version: $(cat "${{ env.DUNE_BUILD_DIR }}/tlapm-release-version")"
         ## Adapted from https://github.com/tlaplus/tlaplus repository
         echo "Crawling rolling pre-release ID..."
         DRAFT_RELEASE=$(curl -sS -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/releases" --header "Content-Type: application/json" | jq '.[]| select(.name=="${{ vars.ROLLING_PRERELEASE_GITHUB_NAME }}") | .id')
-        echo "Release ID: $DRAFT_RELEASE"
+        echo "Found release ID: $DRAFT_RELEASE"
         ## Delete old assets and upload replacement assets (if delete fails we still try to upload the new asset)
-        ID=$(curl -sS -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/releases/$DRAFT_RELEASE/assets" --header "Content-Type: application/json"  | jq '.[]| select(.name == "$TLAPM_ZIP") | .id')
-        echo "Asset ID: $ID"
+        RELEASE_ASSETS_URL="https://api.github.com/repos/${{ github.repository }}/releases/$DRAFT_RELEASE/assets"
+        echo "Crawling assets in release from '$RELEASE_ASSETS_URL'..."
+        ID=$(curl -sS -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "RELEASE_ASSETS_URL" --header "Content-Type: application/json"  | jq '.[]| select(.name == "$TLAPM_ZIP") | .id')
+        echo "Found asset ID: '$ID'"
         ASSET_ID_URL="https://api.github.com/repos/${{ github.repository }}/releases/assets/$ID"
-        echo "Deleting old release from $ASSET_ID_URL..."
+        echo "Deleting old release from '$ASSET_ID_URL'..."
         curl -sS -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$ASSET_ID_URL"
         echo "Uploading new release..."
         curl -s -X POST -H "Content-Type: application/zip" -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" "https://uploads.github.com/repos/${{ github.repository }}/releases/$DRAFT_RELEASE/assets?name=$TLAPM_ZIP" --upload-file "${{ env.DUNE_BUILD_DIR }}/$TLAPM_ZIP"
