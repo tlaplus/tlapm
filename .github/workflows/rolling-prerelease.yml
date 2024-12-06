@@ -20,14 +20,6 @@ jobs:
     steps:
     - name: Clone repo
       uses: actions/checkout@v4
-    - name: "Update release tag"
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        echo "Creating local tag..."
-        git tag -f "${{ vars.ROLLING_PRERELEASE_VERSION }}"
-        git remote
-        echo "Updating remote tag..."
-        git push -f origin "${{ vars.ROLLING_PRERELEASE_VERSION }}"
     - name: Install deps on Ubuntu
       if: matrix.os == 'ubuntu-latest'
       run: sudo apt-get install --yes time
@@ -85,3 +77,11 @@ jobs:
         curl -sS -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$ASSET_ID_URL"
         echo "Uploading new release..."
         curl -s -X POST -H "Content-Type: application/zip" -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" "https://uploads.github.com/repos/${{ github.repository }}/releases/$DRAFT_RELEASE/assets?name=$TLAPM_ZIP" --upload-file "${{ env.DUNE_BUILD_DIR }}/$TLAPM_ZIP"
+    - name: "Update release tag"
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        echo "Creating local tag..."
+        git tag -f "${{ vars.ROLLING_PRERELEASE_VERSION }}"
+        git remote
+        echo "Updating remote tag..."
+        git push -f origin "${{ vars.ROLLING_PRERELEASE_VERSION }}"
