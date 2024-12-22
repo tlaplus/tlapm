@@ -54,8 +54,10 @@ and prestep =
   | PreSuffices of sequent
   | PreCase     of expr
   | PrePick     of bound list * expr
+  | PrePickTuply of tuply_bounds * expr
   | PreHave     of supp * expr * Method.t option
   | PreTake     of supp * bound list * Method.t option
+  | PreTakeTuply of supp * tuply_bounds * Method.t option
   | PreWitness  of supp * expr list * Method.t option
   | PreQed
 
@@ -188,6 +190,9 @@ and to_step currlv st ps =
   | PreTake (supp, bs, meth) ->
       let t = Take bs @@ st in
       (STEP (annotate supp meth t), ps)
+  | PreTakeTuply (supp, bs, meth) ->
+      let t = TakeTuply bs @@ st in
+      (STEP (annotate supp meth t), ps)
   | PreWitness (supp, es, meth) ->
       let w = Witness es @@ st in
       (STEP (annotate supp meth w), ps)
@@ -207,6 +212,10 @@ and to_step currlv st ps =
       let (p, ps) = to_proof (currlv + 1 @@ st) ps in
       let st = enlarge_loc st p in
       (STEP (Pick (bs, e, p) @@ st), ps)
+  | PrePickTuply (bs, e) ->
+      let (p, ps) = to_proof (currlv + 1 @@ st) ps in
+      let st = enlarge_loc st p in
+      (STEP (PickTuply (bs, e, p) @@ st), ps)
 
 let toplevel ps =
   let ps = match ps with
@@ -224,6 +233,38 @@ let toplevel ps =
         Errors.set p "extra step(s) after finished proof" ;
         Util.eprintf ~at:p "extra step(s) after finished proof" ;
         failwith "Proof.Parser.toplevel"
+
+
+let make_pick_from_boundeds
+        (boundeds: Expr.Parser.boundeds)
+        (predicate: expr):
+            prestep =
+    if Expr.Parser.has_tuply_bounded boundeds
+    then
+        let bs = Expr.Parser.tuply_bounds_of_boundeds
+            boundeds in
+        PrePickTuply (bs, predicate)
+    else
+        let bs = Expr.Parser.bounds_of_boundeds
+            boundeds in
+        PrePick (bs, predicate)
+
+
+let make_take_from_boundeds
+        (boundeds: Expr.Parser.boundeds)
+        supp
+        meth:
+            prestep =
+    if Expr.Parser.has_tuply_bounded boundeds
+    then
+        let bs = Expr.Parser.tuply_bounds_of_boundeds
+            boundeds in
+        PreTakeTuply (supp, bs, meth)
+    else
+        let bs = Expr.Parser.bounds_of_boundeds
+            boundeds in
+        PreTake (supp, bs, meth)
+
 
 module Parser = struct
   open Expr.Parser
@@ -301,8 +342,12 @@ module Parser = struct
 
       kwd "CASE" >*> use (expr false) <$> (fun e -> PreCase e) ;
 
-      kwd "PICK" >*> use (bounds false) <**> (punct ":" >>> use (expr false))
-      <$> (fun (bs, e) -> PrePick (bs, e)) ;
+      kwd "PICK" >*>
+      (quantifier_boundeds false) <**>
+      (colon_expr false)
+      <$> (fun (boundeds, predicate) ->
+          make_pick_from_boundeds
+              boundeds predicate);
 
       use suppress >>= begin fun supp ->
         choice [
@@ -312,8 +357,12 @@ module Parser = struct
           kwd "HAVE" >*> use (expr false) <*> read_method
           <$> (fun (e, meth) -> PreHave (supp, e, meth)) ;
 
-          kwd "TAKE" >*> use (bounds false) <*> read_method
-          <$> (fun (bs, meth) -> PreTake (supp, bs, meth)) ;
+          kwd "TAKE" >*>
+              (quantifier_boundeds false) <*>
+              read_method
+              <$> (fun (boundeds, meth) ->
+                  make_take_from_boundeds
+                      boundeds supp meth);
 
           kwd "WITNESS" >*> sep1 (punct ",") (use (expr false)) <*> read_method
           <$> (fun (es, meth) -> PreWitness (supp, es, meth)) ;

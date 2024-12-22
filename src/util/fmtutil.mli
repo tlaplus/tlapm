@@ -9,6 +9,8 @@
 
 open Format
 
+val comma: string list -> string
+
 (** [pp_print_commasp ff ()] is equivalent to [pp_print_string ff "," ; pp_print_space ff ()]  *)
 val pp_print_commasp : formatter -> unit -> unit
 

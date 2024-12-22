@@ -1,0 +1,87 @@
+name: Rolling Pre-release
+on:
+  push:
+    branches: [main]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  DUNE_BUILD_DIR: "_build"
+  OCAML_VERSION: "5.1.0"
+permissions:
+  contents: write
+jobs:
+  publish:
+    environment: release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+    - name: Clone repo
+      uses: actions/checkout@v4
+    - name: Install deps on Ubuntu
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt-get install --yes time
+    - uses: ocaml/setup-ocaml@v3
+      with:
+        ocaml-compiler: ${{ env.OCAML_VERSION }}
+    - uses: actions/cache@v4
+      id: cache
+      with:
+        path: _build_cache
+        key: ${{ runner.os }}_build_cache
+    - name: Build TLAPM
+      run: |
+        eval $(opam env)
+        make opam-deps
+        make opam-deps-opt
+        # Workaround for https://github.com/tlaplus/tlapm/issues/88
+        set +e
+        for ((attempt = 1; attempt <= 5; attempt++)); do
+          make clean
+          make
+          if [ $? -eq 0 ]; then
+            make release RELEASE_VERSION=${{ vars.ROLLING_PRERELEASE_VERSION }}
+            exit $?
+          fi
+        done
+        exit 1
+    - name: "Upload artifacts"
+      run: |
+        kernel=$(uname -s)
+        if [ "$kernel" == "Linux" ]; then
+          OS_TYPE=linux-gnu
+        elif [ "$kernel" == "Darwin" ]; then
+          OS_TYPE=darwin
+        else
+          echo "Unknown OS: $kernel"
+          exit 1
+        fi
+        HOST_CPU=$(uname -m)
+        TLAPM_ZIP="tlapm-${{ vars.ROLLING_PRERELEASE_VERSION }}-$HOST_CPU-$OS_TYPE.tar.gz"
+        echo "Asset name: $TLAPM_ZIP"
+        ls -lh ${{ env.DUNE_BUILD_DIR }}
+        echo "Release version: $(cat "${{ env.DUNE_BUILD_DIR }}/tlapm-release-version")"
+        ## Adapted from https://github.com/tlaplus/tlaplus repository
+        echo "Crawling rolling pre-release ID..."
+        DRAFT_RELEASE=$(curl -sS -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "https://api.github.com/repos/${{ github.repository }}/releases" --header "Content-Type: application/json" | jq '.[]| select(.name=="${{ vars.ROLLING_PRERELEASE_GITHUB_NAME }}") | .id')
+        echo "Found release ID: $DRAFT_RELEASE"
+        ## Delete old assets and upload replacement assets (if delete fails we still try to upload the new asset)
+        RELEASE_ASSETS_URL="https://api.github.com/repos/${{ github.repository }}/releases/$DRAFT_RELEASE/assets"
+        echo "Crawling assets in release from '$RELEASE_ASSETS_URL'..."
+        ID=$(curl -sS -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$RELEASE_ASSETS_URL" --header "Content-Type: application/json"  | jq ".[]| select(.name == \"$TLAPM_ZIP\") | .id")
+        echo "Found asset ID: '$ID'"
+        ASSET_ID_URL="https://api.github.com/repos/${{ github.repository }}/releases/assets/$ID"
+        echo "Deleting old release from '$ASSET_ID_URL'..."
+        curl -sS -X DELETE -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" "$ASSET_ID_URL"
+        echo "Uploading new release..."
+        curl -s -X POST -H "Content-Type: application/zip" -H "Authorization: token ${{secrets.GITHUB_TOKEN}}" "https://uploads.github.com/repos/${{ github.repository }}/releases/$DRAFT_RELEASE/assets?name=$TLAPM_ZIP" --upload-file "${{ env.DUNE_BUILD_DIR }}/$TLAPM_ZIP"
+    - name: "Update release tag"
+      if: matrix.os == 'ubuntu-latest'
+      run: |
+        echo "Creating local tag..."
+        git tag -f "${{ vars.ROLLING_PRERELEASE_VERSION }}"
+        git remote
+        echo "Updating remote tag..."
+        git push -f origin "${{ vars.ROLLING_PRERELEASE_VERSION }}"

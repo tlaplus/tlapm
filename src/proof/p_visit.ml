@@ -161,6 +161,10 @@ class virtual ['hyp] map = object (self : 'self)
           let scx = bump scx 4 in
           (* finally, we are in the next step *)
           (scx, st)
+      | TakeTuply _
+      | PickTuply _ ->
+          failwith "use instead the class \
+              `P_visit.map_concrete`"
 
   method usable scx us =
     let usdef dw =
@@ -266,6 +270,10 @@ class virtual ['hyp] iter = object (self : 'self)
           let scx =
             Expr.Visit.adj_unboundeds_unchecked scx bs in
           bump scx 4
+      | TakeTuply _
+      | PickTuply _ ->
+          failwith "use instead the class \
+              `P_visit.iter_concrete`"
 
   method usable scx us  =
     let usdef dw = match dw.core with
@@ -278,3 +286,89 @@ class virtual ['hyp] iter = object (self : 'self)
     List.iter usdef us.defs
 
 end
+
+
+class virtual ['s] map_concrete =
+    object (self: 'self)
+    inherit ['s] map as super
+    inherit ['s] Expr.Visit.map_concrete
+
+    method step scx st =
+        let stepnm = string_of_stepno
+            (Property.get st Props.step) in
+        let adj_step scx =
+            Expr.Visit.adj
+                scx
+                (Defn (
+                    Operator (
+                        stepnm @@ st,
+                        dummy) @@ st,
+                    Proof Always,
+                    Visible,
+                    Local) @@ st) in
+        match st.core with
+        | TakeTuply bs ->
+            let (scx, bs) = self#tuply_bounds
+                scx bs in
+            let st = TakeTuply bs @@ st in
+            let scx = bump scx 1 in
+            let scx = adj_step scx in
+            let scx = bump scx 1 in
+            (scx, st)
+        | PickTuply (bs, e, prf) ->
+            let prf = self#proof
+                (bump scx 3) prf in
+            let (bs, e) =
+                let (scx, bs) = self#tuply_bounds
+                    scx bs in
+                let e = self#expr scx e in
+                (bs, e) in
+            let st = PickTuply (bs, e, prf) @@ st in
+            let scx = adj_step scx in
+            let scx = bump scx 1 in
+            let scx, _ = self#tuply_bounds scx bs in
+            let scx = bump scx 4 in
+            (scx, st)
+        | _ ->
+            super#step scx st
+    end
+
+
+class virtual ['s] iter_concrete =
+    object (self: 'self)
+    inherit ['s] iter as super
+    inherit ['s] Expr.Visit.iter_concrete
+
+    method step scx st =
+        let stepnm = string_of_stepno
+            (Property.get st Props.step) in
+        let adj_step scx =
+            Expr.Visit.adj
+                scx
+                (Defn (
+                    Operator (
+                        stepnm @@ st,
+                        dummy) @@ st,
+                    Proof Always,
+                    Visible,
+                    Local) @@ st) in
+        match st.core with
+        | TakeTuply bs ->
+            let scx = self#tuply_bounds
+                scx bs in
+            let scx = bump scx 1 in
+            let scx = adj_step scx in
+            bump scx 1
+        | PickTuply (bs, e, prf) ->
+            self#proof scx prf ;
+            let () =
+                let scx = self#tuply_bounds
+                    scx bs in
+                self#expr scx e in
+            let scx = adj_step scx in
+            let scx = bump scx 1 in
+            let scx = self#tuply_bounds
+                scx bs in
+            bump scx 4
+        | _ -> super#step scx st
+    end

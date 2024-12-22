@@ -490,6 +490,8 @@ let visitor = object (self : 'self)
             fprintf ff  "%s" (if (not is_first) then " & " else "");
             self#expr scxp e;
             true
+        | FreshTuply _ ->
+            assert false  (* unexpected case *)
       in
       (ret, Expr.Visit.adj scxp h)
   method myhyps ((ff,scx) as scxp) hs had_first = match Deque.front hs with
@@ -519,6 +521,7 @@ let visitor = object (self : 'self)
               self#expr scxp { e with core = Opaque name.core }
           | Some({core=Defn ({core=Operator (name, _)}, _, _, _)}) ->
                 self#expr scxp (Opaque name.core @@ name)
+          | Some {core=FreshTuply _}
           | Some({core=Fact _}) -> assert false
                 (* super#expr *)
           | Some({core=Defn _}) -> assert false

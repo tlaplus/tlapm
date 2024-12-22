@@ -1,32 +1,50 @@
-The TLA+ Proof Manager (`tlapm`)
+The TLA⁺ Proof Manager (`tlapm`)
 ================================
+[![Build & Test](https://github.com/tlaplus/tlapm/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tlaplus/tlapm/actions/workflows/ci.yml)
 
-Copyright (C) 2008-2013  INRIA and Microsoft Corporation
+This repository hosts the TLA⁺ Proof Manager TLAPM, formerly known as TLAPS.
+TLAPM translates TLA⁺ proof constructs into forms understood by an array of backend solvers & theorem provers, enabling machine-checked proofs of correctness for TLA⁺ specifications.
+TLAPM's development is managed by the [TLA⁺ Foundation](https://foundation.tlapl.us/).
+For documentation, see http://proofs.tlapl.us.
+For information on TLA⁺ generally, see http://tlapl.us.
 
-Authors:  \
-    Kaustuv Chaudhuri  \
-    Denis Cousineau  \
-    Damien Doligez  \
-    Leslie Lamport  \
-    Tomer Libal  \
-    Stephan Merz  \
-    Jean-Baptiste Tristan  \
-    Hernan Vanzetto
+Installation & Use
+------------------
+Past versioned releases can be downloaded from the [GitHub Releases page](https://github.com/tlaplus/tlapm/releases).
+For the latest development version, download the builds attached to the [1.6.0 rolling pre-release](https://github.com/tlaplus/tlapm/releases/tag/1.6.0-pre) or follow the instructions in [`DEVELOPING.md`](DEVELOPING.md) to build TLAPM from source.
 
-License: 2-clause BSD, portions under LGPL2.1+LE
-         (see file `LICENSE` for details)
+Once TLAPM is installed, run `tlapm --help` to see documentation of the various command-line parameters.
+Check the proofs in a simple example spec in this repo by running:
+```sh
+tlapm examples/Euclid.tla
+```
+Documentation is hosted at http://proofs.tlapl.us, or can be viewed locally from this repository starting at [`doc/web/index.html`](doc/web/index.html).
 
-Installation
-------------
+Developing & Contributing
+-------------------------
+For instructions on building & testing TLAPM as well as setting up a development environment, see [DEVELOPING.md](DEVELOPING.md).
 
-For installation instructions, see the file [INSTALL.md](INSTALL.md) in this directory.
+We welcome your contributions to this open source project!
+TLAPM is used in safety-critical systems, so we have a contribution process in place to ensure quality is maintained; read [CONTRIBUTING.md](CONTRIBUTING.md) before beginning work.
 
+Authors
+-------
+The following people were instrumental in creating TLAPM:
+- [Kaustuv Chaudhuri](https://chaudhuri.info/) (@[chaudhuri](https://github.com/chaudhuri))
+- Denis Cousineau
+- [Damien Doligez](http://cambium.inria.fr/~doligez/) (@[damiendoligez](https://github.com/damiendoligez))
+- [Leslie Lamport](https://lamport.azurewebsites.net/) (@[xxyzzn](https://github.com/xxyzzn))
+- [Tomer Libal](https://tomer.libal.info/) (@[shaolintl](https://github.com/shaolintl))
+- [Stephan Merz](https://members.loria.fr/Stephan.Merz/) (@[muenchnerkindl](https://github.com/muenchnerkindl))
+- [Jean-Baptiste Tristan](https://jtristan.github.io/) (@[jtristan](https://github.com/jtristan))
+- [Hernán Vanzetto](https://www.cs.yale.edu/homes/vanzetto/) (@[hvanz](https://github.com/hvanz))
 
-Use
----
+License & Copyright
+-------------------
+Copyright © 2008 INRIA & Microsoft Corporation  
+Copyright © 2023 Linux Foundation
 
-Some user documentation is in the form of HTML files in the directory
-`doc/web`. Start with `doc/web/index.html`.
+Licenses:
+- Main codebase licensed under [2-Clause BSD](LICENSE)
+- Contents of [`translate`](translate) directory licensed under LGPL2.1+LE
 
-Tags of the form `vI.J.K` in the `git` repository are releases.
-Other tags may be ephemeral.

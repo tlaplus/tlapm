@@ -291,6 +291,9 @@ and pp_print_step cx ff stp =
         let cx = bump cx in
         (* conjunction of nondom facts in the SUFFICES *)
         bump cx
+    | TakeTuply _
+    | PickTuply _ ->
+        assert false
   in cx
 
 and pp_print_qed_step cx ff q =

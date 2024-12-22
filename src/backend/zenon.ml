@@ -437,6 +437,11 @@ and fmt_expr sd cx e =
         Errors.bug ~at:e "Backend.Zenon.fmt_exp: encountered @"
     | Parens (e, _) ->
         fmt_expr sd cx e
+    | QuantTuply _
+    | ChooseTuply _
+    | SetStTuply _
+    | SetOfTuply _
+    | FcnTuply _ -> assert false
 
 and pp_print_boundvar cx ff (v, _, _) = pp_print_string ff v
 
@@ -488,6 +493,9 @@ and pp_print_sequent cx ff sq =
   | Some ({core = Fact (_, Hidden, _)}, hs) ->
      let ncx = bump cx in
      pp_print_sequent ncx ff {sq with context = hs}
+  | Some ({core=FreshTuply _}, _) ->
+      assert false  (* unexpected case *)
+
 
 let pp_print_obligation ff ob =
   fprintf ff ";; obligation #%d@\n" (Option.get ob.id);

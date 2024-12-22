@@ -6,6 +6,7 @@
 (executable
  (name main)
  (public_name translate)
+ (libraries cmdliner)
  (modules_without_implementation fotypes))
 
 (install ; It has to be installed under 2 names for some reason.

@@ -7,6 +7,7 @@ module Fmt = E_fmt
 module Subst = E_subst
 module Visit = E_visit
 module Collect = E_collect
+module Tuply_declarations = E_tuply_declarations
 module Eq = E_eq
 module Deref = E_deref
 module Leibniz = E_leibniz

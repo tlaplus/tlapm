@@ -372,6 +372,7 @@ class auto_expansion_of_defs =
                     begin
                     assert (e_level <= 2);
                     match hyp.core with
+                        | FreshTuply _
                         | Fact _ -> assert false
                         | Flex _  -> assert (e.core = Ix n); e
                         | Fresh (op_name, shape, kind, _) ->

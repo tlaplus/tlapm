@@ -349,6 +349,11 @@ let rec fmt_expr ?(temp=false) cx ew = match ew.core with
       fmt_expr ~temp:temp cx (Parens (e, Nlabel (l, xs) @@ e) @@ e)
   | Parens (e, {core = Syntax}) ->
       fmt_expr ~temp:temp cx e
+  | QuantTuply _
+  | ChooseTuply _
+  | SetStTuply _
+  | SetOfTuply _
+  | FcnTuply _ -> assert false
 
 and pp_print_bang ff () =
   if Params.debugging "garish" then
@@ -642,6 +647,8 @@ and pp_print_sequent  ?(temp=false) cx ff sq = match Deque.null sq.context with
                   fst (adj cx nm)
               | Fact (_, _,_) ->
                   bump cx
+              | FreshTuply _ ->
+                  assert false  (* not implemented *)
             in (cx, ch :: chs)
         end (cx, []) sq.context in
       let chs = List.filter (fun (cx, h) -> not (elide h)) (List.rev chs) in
@@ -679,6 +686,7 @@ and pp_print_hyp ?(temp=false) cx ff h =
            | Bounded (_, Hidden) -> ()
            | Bounded (b, _) -> fprintf ff " \\in %a" (pp_print_expr ~temp:temp cx) b) ;
         ncx
+    | FreshTuply _ -> assert false  (* not implemented *)
     | Flex nm ->
         let (ncx, nm) = adj cx nm in
         fprintf ff "NEW VARIABLE %s" nm ;

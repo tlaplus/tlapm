@@ -4,6 +4,9 @@ on:
     branches: [main]
   push:
     branches: [main]
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
     test:
         name: Build & Test
@@ -13,8 +16,7 @@ jobs:
           matrix:
             os:
               - ubuntu-latest
-              - macos-13
-              - macos-14
+              - macos-latest
             ocaml-compiler:
               - '4.14.1'
               - '5.1.0'
@@ -31,7 +33,7 @@ jobs:
               run: |
                 sudo apt-get update
                 sudo apt-get install --yes time
-            - uses: ocaml/setup-ocaml@v2
+            - uses: ocaml/setup-ocaml@v3
               with:
                 ocaml-compiler: ${{ matrix.ocaml-compiler }}
             - uses: actions/cache@v4
@@ -48,8 +50,17 @@ jobs:
               run: |
                 eval $(opam env)
                 make opam-deps
-                make
-                make release
+                # Workaround for https://github.com/tlaplus/tlapm/issues/88
+                set +e
+                for ((attempt = 1; attempt <= 5; attempt++)); do
+                  make clean
+                  make
+                  if [ $? -eq 0 ]; then
+                    make release
+                    exit $?
+                  fi
+                done
+                exit 1
             - name: Run tests
               run: |
                 eval $(opam env)
@@ -58,6 +69,13 @@ jobs:
                 TEST_RESULT=$?
                 cat _build/default/test/tests.log
                 exit $TEST_RESULT
+            - name: show logs for each test file
+              if: failure()
+              run: |
+                find test -type f \
+                    -name '*.err' -o \
+                    -name '*.out' \
+                    -exec cat '{}' \;
             - name: Clone tlaplus/examples
               uses: actions/checkout@v4
               with:
@@ -70,10 +88,10 @@ jobs:
             - name: Check proofs in TLA+ examples
               run: |
                 mkdir -p "$DEPS_DIR"
-                cp ./_build/tlaps*.tar.gz "$DEPS_DIR/tlaps.tar.gz"
-                tar -xzf "$DEPS_DIR/tlaps.tar.gz" -C "$DEPS_DIR"
-                rm "$DEPS_DIR/tlaps.tar.gz"
-                mv $DEPS_DIR/tlaps* "$DEPS_DIR/tlapm-install"
+                cp ./_build/tlapm*.tar.gz "$DEPS_DIR/tlapm.tar.gz"
+                tar -xzf "$DEPS_DIR/tlapm.tar.gz" -C "$DEPS_DIR"
+                rm "$DEPS_DIR/tlapm.tar.gz"
+                mv $DEPS_DIR/tlapm* "$DEPS_DIR/tlapm-install"
                 SKIP=(
                   # General proof failure
                   "specifications/Bakery-Boulangerie/Bakery.tla"

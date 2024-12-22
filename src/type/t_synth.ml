@@ -1249,6 +1249,13 @@ and expr_aux scx oe =
   | Internal _ ->
       error ~at:oe "Unexpected builtin"
 
+  | QuantTuply _
+  | ChooseTuply _
+  | SetStTuply _
+  | SetOfTuply _
+  | FcnTuply _ ->
+    failwith "unexpected tuple declaration"
+
 and earg scx oa =
   match oa.core with
   | Ix n ->
@@ -1522,6 +1529,8 @@ and sequent scx sq =
         let h = Fact (e, Hidden, tm) @@ h in
         let scx, hs = hyps scx hs in
         (scx, Deque.cons h hs)
+    | Some ({core=FreshTuply (_, _); _ }, _) ->
+        failwith "unexpected case"
   in
 
   let scx, hs = hyps scx sq.context in
