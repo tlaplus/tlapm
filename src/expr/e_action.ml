@@ -130,7 +130,7 @@ let expand_definition hyp expr
         (Util.eprintf ~at:expr "%s" msg);
         failwith msg  (* SoundnessCheck *)
         end;
-    Util.printf ~at:expr ~prefix:"[INFO]: "
+    Util.eprintf ~at:expr ~prefix:"[INFO]: "
         "Auto-expanding the definition of operator:  %s\n" name;
     match expr.core with
         | Apply ({core=Ix n}, args) ->
