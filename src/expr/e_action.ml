@@ -1449,8 +1449,7 @@ let collect_vars cx e primed =
                         match a with
                         | None -> ()
                         | Some primed_vars ->
-                            if (not (Hashtbl.mem primed_vars var_name)) then
-                                Hashtbl.add primed_vars var_name ()
+                            Hashtbl.replace primed_vars var_name ()
                         end
                     | Fresh (_, _, kind, _) ->
                         begin

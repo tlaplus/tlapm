@@ -132,7 +132,7 @@ Inv ==
 
 USE NAssumption
 
-(* TypeOK is an inductive invariant *)
+(* TypeCorrect is an inductive invariant *)
 LEMMA TypeCorrect == Spec => []TypeOK
 <1>. USE DEF TypeOK, Nodes, Color
 <1>1. Init => TypeOK

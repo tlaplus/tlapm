@@ -579,7 +579,8 @@ let fingerprint ob =
             "Level<=1"
         else
             "Level>1"
-        end else "" in
+        end
+    else "" in
     let buf = fp_sequent ob.Proof.T.obl.core in
     bprintf buf "%s" enabledrules;
     (* Buffer.output_buffer stdout buf; *)
