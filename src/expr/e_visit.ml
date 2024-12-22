@@ -1514,6 +1514,7 @@ let collect_identifiers cx e =
         method hyp scx h =
             begin match h.core with
             | Fresh (nm, _, _, _) -> add_id nm
+            | FreshTuply (hints, _) -> List.iter add_id hints
             | Flex nm -> add_id nm
             | Defn _ -> ()  (* handled in the method `self#defn` *)
             | Fact _ -> () end;

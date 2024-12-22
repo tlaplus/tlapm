@@ -988,8 +988,10 @@ let check_enabled_axioms_map = object (self: 'self)
         | Pcase _
         | Have _
         | Take _
+        | TakeTuply _
         | Witness _
-        | Pick _ ->
+        | Pick _
+        | PickTuply _ ->
             assert false  (* after `Proof.Simplify.simplify` *)
         | Define dfs ->
             let (scx, dfs) = self#defns scx dfs in
@@ -1057,7 +1059,7 @@ let check_enabled_axioms_map = object (self: 'self)
                     ()  (* Hidden facts are not usable in
                         the proof, so they do not contribute to
                         the proof level. *)
-                | Fresh _ | Flex _ ->
+                | Fresh _ | FreshTuply _ | Flex _ ->
                     ()  (* Declarations of operators do not have
                         a notion of being usable in the proof,
                         so they do not contribute to the
