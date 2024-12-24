@@ -446,9 +446,14 @@ and fp_sequent stack buf sq =
              spin stack cx;
              let v,r = Stack.pop stack in
              if !r then
+               (* Here `Expr.Levels.get_level e` was used instead of
+                  `if Expr.Constness.is_const e then 0 else 3`,
+                  but that introduces a dependency on having the levels
+                  assigned before calculating fingerprints. The former is
+                  slow and thus is problematic to use in LSP. *)
                bprintf buf "$Def(%d,%d)"
                        (match v with Identhypi i -> i | _ -> assert false)
-                       (Expr.Levels.get_level e)
+                       (if Expr.Constness.is_const e then 0 else 3)
           | Defn ({core = Bpragma (nm, _, _)}, _, Hidden, _) ->
              Stack.push stack (IdentBPragma nm.core, ref false);
              spin stack cx;
