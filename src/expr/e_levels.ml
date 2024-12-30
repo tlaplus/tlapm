@@ -196,7 +196,8 @@ class virtual ['s] level_computation = object (self : 'self)
                         (v, k, No_domain)
                     end
                 in
-                (List.map f bs, !bs_levels, !level_args_sets) in
+                let fbs = List.map f bs in (* has to be executed before reading refs. *)
+                (fbs, !bs_levels, !level_args_sets) in
             let doms_level = List.fold_left max 0 bs_levels in
             let level_args = List.fold_left
                 StringSet.union StringSet.empty level_args_sets in
