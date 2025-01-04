@@ -165,6 +165,7 @@ class map =
     method mutate cx change usable =
         let mu = Mutate (
             change, usable) in
+        let cx = update_cx cx mu in
         (cx, mu)
 
     method submod cx tla_module =
