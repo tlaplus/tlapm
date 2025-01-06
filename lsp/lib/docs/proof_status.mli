@@ -9,6 +9,7 @@ val to_order : t -> int
 val of_order : int -> t
 val top : t
 val min : t -> t -> t
+val max : t -> t -> t
 val yojson_of_t : t -> Yojson.Safe.t
 
 val is_diagnostic : t -> bool
