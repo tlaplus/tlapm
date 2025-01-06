@@ -122,7 +122,8 @@ let lines_intersect a b =
   let ltb = line_till b in
   lfa <= ltb && lfb <= lta
 
-(** [line_covered r p] is true, if the line of position [p] intersects with the range [r] lines. *)
+(** [line_covered r p] is true, if the line of position [p] intersects with the
+    range [r] lines. *)
 let line_covered r p =
   let l = Position.line p in
   line_from r <= l && l <= line_till r
