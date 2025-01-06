@@ -8,9 +8,9 @@ module Parsed = struct
   type t = {
     nts : Toolbox.tlapm_notif list;
     ps : Proof_step.t option;
-        (** Parsed document structure, a tree of proof steps.
-          It is obtained by parsing the document and then updated
-          when obligation proof states are received from the prover. *)
+        (** Parsed document structure, a tree of proof steps. It is obtained by
+            parsing the document and then updated when obligation proof states
+            are received from the prover. *)
   }
 
   let make ~uri ~(doc_vsn : Doc_vsn.t) ~(ps_prev : Proof_step.t option) ~parser
@@ -42,9 +42,9 @@ type t = {
       (** Parsed document and information derived from it. *)
 }
 
-(** Create new actual document based on the document version [doc_vsn]
-    and port the current state from the previous actual document
-    [prev_act], if provided. *)
+(** Create new actual document based on the document version [doc_vsn] and port
+    the current state from the previous actual document [prev_act], if provided.
+*)
 let make uri doc_vsn prev_act parser =
   match prev_act with
   | None ->

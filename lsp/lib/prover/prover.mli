@@ -66,7 +66,7 @@ module Progress : sig
     (** Create new instance of progress tracker. *)
 
     val is_latest : t -> LspT.ProgressToken.t -> bool
-    (** Checks if the token is of the last progress.  *)
+    (** Checks if the token is of the last progress. *)
 
     val proof_started : p_ref:int -> CB.t -> CB.t
     (** Called when new TLAPM run is initiated. *)
@@ -75,7 +75,8 @@ module Progress : sig
     (** Called when a number of obligations is received from the TLAPM. *)
 
     val obligation_done : p_ref:int -> obl_id:int -> CB.t -> CB.t
-    (** Called when some proof obligation state change is received from TLAPM. *)
+    (** Called when some proof obligation state change is received from TLAPM.
+    *)
 
     val proof_ended : p_ref:int -> CB.t -> CB.t
     (** Called when the TLAPM terminates. *)

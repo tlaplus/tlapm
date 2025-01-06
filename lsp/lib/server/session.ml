@@ -24,15 +24,14 @@ type t = {
   mode : mode;
   docs : Docs.t;
   prov : Prover.t;
-      (** Prover that is currently running.
-          We are always running not more than 1 prover to
-          avoid their interference via fingerprints, etc. *)
+      (** Prover that is currently running. We are always running not more than
+          1 prover to avoid their interference via fingerprints, etc. *)
   delayed : DocUriSet.t;
-      (** Docs which have delayed proof info updates.
-          We use this to buffer the updates to the UI.*)
+      (** Docs which have delayed proof info updates. We use this to buffer the
+          updates to the UI.*)
   current_ps : LspT.Location.t option;
-      (** The proof step that is currently selected.
-          We will send state updates for it. *)
+      (** The proof step that is currently selected. We will send state updates
+          for it. *)
 }
 
 let with_docs' st f =
@@ -86,10 +85,10 @@ let send_proof_state_markers marks st uri =
     Jsonrpc.Notification.create
       ~params:
         (`List
-          [
-            LspT.DocumentUri.yojson_of_t uri;
-            `List (List.map TlapsProofStepMarker.yojson_of_t marks);
-          ])
+           [
+             LspT.DocumentUri.yojson_of_t uri;
+             `List (List.map TlapsProofStepMarker.yojson_of_t marks);
+           ])
       ~method_:"tlaplus/tlaps/proofStepMarkers" ()
   in
   let lsp_notif = Lsp.Server_notification.UnknownNotification jsonrpc_notif in

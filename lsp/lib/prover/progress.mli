@@ -1,7 +1,6 @@
-(** Maintains the proof progress in the client app. Here we use the
-    server initiated progress and cancellation support, because the
-    VSCode don't support the client-initiated workDoneProgress
-    with LSP. *)
+(** Maintains the proof progress in the client app. Here we use the server
+    initiated progress and cancellation support, because the VSCode don't
+    support the client-initiated workDoneProgress with LSP. *)
 
 module LspT := Lsp.Types
 
@@ -21,7 +20,7 @@ module Make (CB : Callbacks) : sig
   (** Create new instance of progress tracker. *)
 
   val is_latest : t -> LspT.ProgressToken.t -> bool
-  (** Checks if the token is of the last progress.  *)
+  (** Checks if the token is of the last progress. *)
 
   val proof_started : p_ref:int -> CB.t -> CB.t
   (** Called when new TLAPM run is initiated. *)

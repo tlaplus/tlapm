@@ -1,7 +1,8 @@
 open Util
 open Prover
 
-(** We categorize the proof steps just to make the presentation in the UI clearer. *)
+(** We categorize the proof steps just to make the presentation in the UI
+    clearer. *)
 module Kind = struct
   type t = Module | Struct | Leaf
 
@@ -13,31 +14,30 @@ end
 
 type t = {
   kind : Kind.t;
-      (** Kind/Type of this proof step.
-          We want to show the proof steps differently based in its type. *)
+      (** Kind/Type of this proof step. We want to show the proof steps
+          differently based in its type. *)
   status_parsed : Proof_status.t option;
-      (** Status derived at the parse time, if any.
-          This is for the omitted or error cases. *)
+      (** Status derived at the parse time, if any. This is for the omitted or
+          error cases. *)
   status_derived : Proof_status.t;
-      (** Derived status.
-          Here we sum-up the states from all the related obligations and sub-steps. *)
+      (** Derived status. Here we sum-up the states from all the related
+          obligations and sub-steps. *)
   step_loc : Range.t;
-      (** Location of the entire step.
-          It starts with a statement/sequent and ends with the BY keyword (inclusive),
-          not including the listed facts and definitions. In the case of a structured
-          proof, this ends with the BY keyword of the corresponding QED step. *)
+      (** Location of the entire step. It starts with a statement/sequent and
+          ends with the BY keyword (inclusive), not including the listed facts
+          and definitions. In the case of a structured proof, this ends with the
+          BY keyword of the corresponding QED step. *)
   head_loc : Range.t;
-      (** The location of the proof sequent.
-          It is always contained within the [step_loc].
-          This is shown as a step in the UI. *)
+      (** The location of the proof sequent. It is always contained within the
+          [step_loc]. This is shown as a step in the UI. *)
   full_loc : Range.t;
-      (** [step_loc] plus all the BY facts included.
-          If an obligation is in [full_loc] but not in the [step_loc],
-          we consider it supplementary (will be shown a bit more hidden). *)
+      (** [step_loc] plus all the BY facts included. If an obligation is in
+          [full_loc] but not in the [step_loc], we consider it supplementary
+          (will be shown a bit more hidden). *)
   obs : Obl.t RangeMap.t;
-      (** Obligations associated with this step.
-          Here we include all the obligations fitting into [full_loc],
-          but not covered by any of the [sub] steps. *)
+      (** Obligations associated with this step. Here we include all the
+          obligations fitting into [full_loc], but not covered by any of the
+          [sub] steps. *)
   sub : t list; (* Sub-steps, if any. *)
 }
 
@@ -290,13 +290,15 @@ and of_step (step : Tlapm_lib.Proof.T.step) acc : t option * Acc.t =
         (of_implicit_proof_step (Range.of_wrapped_must step) suppl_locs acc)
   | Proof.T.TakeTuply tuply_bounds ->
       let suppl_locs =
-        List.concat (List.map (fun (tuply_name, _) ->
-          begin match tuply_name with
-          | Expr.T.Bound_name hint ->
-            List.filter_map Range.of_wrapped [ hint ]
-          | Expr.T.Bound_names hints ->
-            List.filter_map Range.of_wrapped hints
-          end) tuply_bounds)
+        List.concat
+          (List.map
+             (fun (tuply_name, _) ->
+               match tuply_name with
+               | Expr.T.Bound_name hint ->
+                   List.filter_map Range.of_wrapped [ hint ]
+               | Expr.T.Bound_names hints ->
+                   List.filter_map Range.of_wrapped hints)
+             tuply_bounds)
       in
       Acc.some
         (of_implicit_proof_step (Range.of_wrapped_must step) suppl_locs acc)

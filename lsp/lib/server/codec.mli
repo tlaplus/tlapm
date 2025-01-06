@@ -1,7 +1,6 @@
-(**
-Here we construct a decoder/encoder for the LSP protocol on top of Eio flows.
-We use the lsp module from the ocaml-lsp server and configure it to run over Eio.
-*)
+(** Here we construct a decoder/encoder for the LSP protocol on top of Eio
+    flows. We use the lsp module from the ocaml-lsp server and configure it to
+    run over Eio. *)
 
 type trace_fun = string -> unit
 type input_chan = Eio.Buf_read.t * trace_fun

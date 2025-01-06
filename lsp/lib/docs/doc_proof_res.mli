@@ -1,6 +1,5 @@
-(** Proof results of a document. Includes the errors returned from the prover
-    as well as all the proof steps with their current state.
-    *)
+(** Proof results of a document. Includes the errors returned from the prover as
+    well as all the proof steps with their current state. *)
 
 open Util
 open Prover
