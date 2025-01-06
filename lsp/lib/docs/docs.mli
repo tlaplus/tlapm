@@ -17,7 +17,7 @@ type t
 (** A document store type. *)
 
 type parser_fun = Util.parser_fun
-(** Parser function to use to parse modules.  *)
+(** Parser function to use to parse modules. *)
 
 type tk = LspT.DocumentUri.t
 (** Key type to identify documents. *)
@@ -38,7 +38,8 @@ val with_parser : t -> parser_fun -> t
 (** Set parser function to use. *)
 
 val add : t -> tk -> int -> string -> t
-(** Either add document or its revision. Forgets all previous unused revisions. *)
+(** Either add document or its revision. Forgets all previous unused revisions.
+*)
 
 val rem : t -> tk -> t
 (** Remove a document with all its revisions. *)
@@ -71,7 +72,8 @@ val prover_terminated : t -> tk -> int -> int -> t * Doc_proof_res.t option
 (** Cleanup the incomplete proof states on termination of the prover. *)
 
 val get_proof_res : t -> tk -> int -> t * Doc_proof_res.t option
-(** Get the actual proof results for the specific version. Cleanup them, if needed. *)
+(** Get the actual proof results for the specific version. Cleanup them, if
+    needed. *)
 
 val get_proof_res_latest : t -> tk -> t * int option * Doc_proof_res.t option
 (** Get the latest actual proof results. Cleanup them, if needed. *)
@@ -86,4 +88,5 @@ val get_proof_step_details :
 
 val get_proof_step_details_latest :
   t -> tk -> Range.Position.t -> t * Structs.TlapsProofStepDetails.t option
-(** Get the current proof state for the specific obligation at the latest version of the document. *)
+(** Get the current proof state for the specific obligation at the latest
+    version of the document. *)

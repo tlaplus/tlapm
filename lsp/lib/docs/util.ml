@@ -1,7 +1,6 @@
-(** Obligation reference consists of the proof session reference (p_ref)
-    and the obligation id (obl_id) as assigned by the TLAPS. This reference
-    is unique across proof attempts.
-    *)
+(** Obligation reference consists of the proof session reference (p_ref) and the
+    obligation id (obl_id) as assigned by the TLAPS. This reference is unique
+    across proof attempts. *)
 module OblRef = struct
   type t = { p_ref : int; obl_id : int }
 

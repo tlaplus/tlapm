@@ -72,7 +72,7 @@ module InitializationOptions : sig
   type t
 
   val module_search_paths : t -> string list
-  (**  Additional paths to use in TLAPS. *)
+  (** Additional paths to use in TLAPS. *)
 
   val t_of_yojson : Yojson.Safe.t option -> t
 end

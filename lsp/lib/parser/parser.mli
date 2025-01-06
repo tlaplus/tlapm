@@ -1,6 +1,6 @@
 (** Responsible for parsing the TLA+ documents.
-    TODO: SANY integration should be added here as well.
-    *)
+
+    TODO: SANY integration should be added here as well. *)
 
 val module_of_string :
   content:string ->

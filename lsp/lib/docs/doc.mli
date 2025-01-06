@@ -1,4 +1,5 @@
-(** Represents a document identified by its uri. It can contain multiple versions and all the related info. *)
+(** Represents a document identified by its uri. It can contain multiple
+    versions and all the related info. *)
 
 open Util
 

@@ -18,8 +18,8 @@ module type Callbacks = sig
 
   val track_obligation_proof_state :
     t -> LspT.DocumentUri.t -> LspT.Range.t -> t
-  (** User selected a position in a document, we have to provide the
-      obligation info for it. The information has to be re-sent on update. *)
+  (** User selected a position in a document, we have to provide the obligation
+      info for it. The information has to be re-sent on update. *)
 
   val latest_diagnostics :
     t -> LspT.DocumentUri.t -> t * (int * LspT.Diagnostic.t list)
