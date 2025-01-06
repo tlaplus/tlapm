@@ -32,18 +32,18 @@ let to_message = function
     provers for each obligation and the minimum across the obligations. *)
 let to_order = function
   | Pending -> 0
-  | Progress -> 1
-  | Failed -> 2
-  | Missing -> 3
-  | Omitted -> 4
+  | Failed -> 1
+  | Missing -> 2
+  | Omitted -> 3
+  | Progress -> 4
   | Proved -> 5
 
 let of_order = function
   | 0 -> Pending
-  | 1 -> Progress
-  | 2 -> Failed
-  | 3 -> Missing
-  | 4 -> Omitted
+  | 1 -> Failed
+  | 2 -> Missing
+  | 3 -> Omitted
+  | 4 -> Progress
   | 5 -> Proved
   | _ -> failwith "Impossible order"
 
