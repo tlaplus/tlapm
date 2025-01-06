@@ -1,6 +1,5 @@
-(** Here we serve the LSP RPC over TCP.
-    This module contains only the generic server-related functions.
-    *)
+(** Here we serve the LSP RPC over TCP. This module contains only the generic
+    server-related functions. *)
 
 type transport = Stdio | Socket of int
 

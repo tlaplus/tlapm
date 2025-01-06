@@ -9,18 +9,19 @@ module Toolbox = Toolbox
 
 (* ***** Prover process management ****************************************** *)
 
-(**
-  Returns the tlapm executable path or error, if there is no such in known places.
-  If installed, both files are in the same dir:
+(** Returns the tlapm executable path or error, if there is no such in known
+    places. If installed, both files are in the same dir:
     - .../bin/tlapm
     - .../bin/tlapm_lsp
-  Otherwise, if that's development environment, the files are:
+
+    Otherwise, if that's development environment, the files are:
     - .../src/tlapm.exe
     - .../lsp/bin/tlapm_lsp.exe
-  And during the inline tests:
+
+    And during the inline tests:
     - .../src/tlapm.exe
     - .../lsp/lib/.tlapm_lsp_lib.inline-tests/inline_test_runner_tlapm_lsp_lib.exe
-  *)
+*)
 let tlapm_exe () =
   let open Filename in
   let this_exe = Sys.executable_name in

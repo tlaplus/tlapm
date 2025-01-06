@@ -23,8 +23,8 @@ type t = {
   parsed_text_plain : string option Lazy.t;  (** Works as a cache. *)
   parsed_text_normalized : string option Lazy.t;  (** Works as a cache. *)
   p_ref : int;
-      (** We collect proof info in a scope of p_ref only.
-          For each new p_ref we reset all the prover results. *)
+      (** We collect proof info in a scope of p_ref only. For each new p_ref we
+          reset all the prover results. *)
   p_obl_id : int option;  (** Obligation ID, as assigned by the prover. *)
   checking : bool;  (** Is obligation checking currently running? *)
   by_prover : Toolbox.Obligation.t StrMap.t;
@@ -95,8 +95,8 @@ let is_for_obl_id obl p_ref obl_id =
     match obl.p_obl_id with None -> false | Some id -> id = obl_id
   else false
 
-(** Either there exist a success result (the latest one),
-    or we have outputs from all the provers. *)
+(** Either there exist a success result (the latest one), or we have outputs
+    from all the provers. *)
 let is_final obl =
   match obl.status with
   | Pending | Progress -> false
@@ -112,8 +112,8 @@ let status obl = if obl.checking then Proof_status.Progress else obl.status
 let text_plain obl = Lazy.force obl.parsed_text_plain
 let text_normalized obl = Lazy.force obl.parsed_text_normalized
 
-(** Try to get most detailed status message.
-    Take it from the prover result, if exist. *)
+(** Try to get most detailed status message. Take it from the prover result, if
+    exist. *)
 let latest_status_msg obl =
   match obl.latest_prover with
   | None -> Proof_status.to_message obl.status

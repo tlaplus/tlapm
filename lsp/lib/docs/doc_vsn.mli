@@ -1,7 +1,6 @@
-(** Versions that are collected after the last prover launch or client
-    asks for diagnostics. We store some limited number of versions here,
-    just to cope with async events from the client.
-    *)
+(** Versions that are collected after the last prover launch or client asks for
+    diagnostics. We store some limited number of versions here, just to cope
+    with async events from the client. *)
 
 type t
 
