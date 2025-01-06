@@ -245,6 +245,25 @@ and of_implicit_proof_step step_loc suppl_locs (acc : Acc.t) : t * Acc.t =
   in
   (st, { acc with obs_map })
 
+(** USE generates aux proof obligations for the facts mentioned, so we create a
+    step for presenting their state. *)
+and of_usable (usable : Tlapm_lib.Proof.T.usable) step_loc (acc : Acc.t) :
+    t option * Acc.t =
+  match usable.facts with
+  | [] -> (None, acc)
+  | first_fact :: _ ->
+      let facts_loc =
+        List.fold_left Range.join
+          (Range.of_wrapped_must first_fact)
+          (List.map Range.of_wrapped_must usable.facts)
+      in
+      let full_loc = Range.join step_loc facts_loc in
+      let st, obs_map =
+        make ~kind:Kind.Leaf ~step_loc ~head_loc:step_loc ~full_loc ~sub:[]
+          acc.obs_map
+      in
+      Acc.some (st, { acc with obs_map })
+
 and of_step (step : Tlapm_lib.Proof.T.step) acc : t option * Acc.t =
   let open Tlapm_lib in
   match Property.unwrap step with
@@ -277,7 +296,7 @@ and of_step (step : Tlapm_lib.Proof.T.step) acc : t option * Acc.t =
         (of_proof
            (Range.of_wrapped_must step)
            (Range.of_wrapped expr) proof acc)
-  | Proof.T.Use (_, _) -> (None, acc)
+  | Proof.T.Use (usable, _) -> of_usable usable (Range.of_wrapped_must step) acc
   | Proof.T.Have expr ->
       let suppl_locs = List.filter_map Range.of_wrapped [ expr ] in
       Acc.some
@@ -349,7 +368,8 @@ and of_mod_unit (mod_unit : Tlapm_lib.Module.T.modunit) acc : t option * Acc.t =
   | Theorem (_name, sq, _naxs, _prf, prf_orig, _sum) ->
       Acc.some (of_proof mod_unit_loc (Range.of_wrapped sq.active) prf_orig acc)
   | Submod sm -> of_submod sm acc
-  | Mutate _ -> (None, acc)
+  | Mutate (`Hide, _) -> (None, acc)
+  | Mutate (`Use _, usable) -> of_usable usable mod_unit_loc acc
   | Anoninst _ -> (None, acc)
 
 (* This is the entry point for creating proof steps from a module.
@@ -551,6 +571,56 @@ let%test_unit "determine proof steps" =
       | Some "ASSUME TRUE \nPROVE  FALSE" -> ()
       | Some s -> failwith (Format.sprintf "Unexpected %s" s)
       | None -> failwith "Unexpected none")
+  | pss ->
+      failwith
+        (Format.sprintf "unexpected, number of steps=%d" (List.length pss))
+
+let%test_unit "determine proof steps for USE statements" =
+  let mod_file = "test_use.tla" in
+  let mod_text =
+    String.concat "\n"
+      [
+        "---- MODULE test_use ----";
+        "op == TRUE";
+        "USE DEF op";
+        "USE TRUE";
+        "USE FALSE";
+        "HIDE TRUE";
+        "THEOREM TRUE";
+        "    <1> USE TRUE";
+        "    <1> USE FALSE";
+        "    <1> HIDE TRUE";
+        "    <1> QED";
+        "====";
+      ]
+  in
+  let mule =
+    Result.get_ok
+      (Parser.module_of_string ~content:mod_text ~filename:mod_file
+         ~loader_paths:[])
+  in
+  let ps = of_module mule None in
+  match flatten ps with
+  | [
+      _m_test_use;
+      _use_true;
+      _use_false;
+      _th;
+      _th_use_true;
+      _th_use_false;
+      _th_qed;
+    ] as all ->
+      List.iteri
+        (fun i ps ->
+          Format.printf
+            "Step[%d]: |obs|=%d, full_loc=%s, step_loc=%s head_loc=%s\n" i
+            (RangeMap.cardinal ps.obs)
+            (Range.string_of_range ps.full_loc)
+            (Range.string_of_range ps.step_loc)
+            (Range.string_of_range ps.head_loc))
+        all;
+      assert (RangeMap.cardinal _use_true.obs = 1);
+      assert (RangeMap.cardinal _use_false.obs = 1)
   | pss ->
       failwith
         (Format.sprintf "unexpected, number of steps=%d" (List.length pss))
