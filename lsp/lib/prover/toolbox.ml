@@ -7,6 +7,7 @@ type tlapm_obl_state =
   | Interrupted
   | Trivial
   | Unknown of string
+[@@deriving show]
 
 let tlapm_obl_state_of_string s =
   match s with
@@ -42,7 +43,9 @@ module Obligation = struct
     reason : string option;
     already : bool option;
     obl : string option;
+        [@printer fun _ fmt -> Printf.ifprintf fmt "...skipped..."]
   }
+  [@@deriving show]
 
   (** This is for testing only. *)
   module Test = struct

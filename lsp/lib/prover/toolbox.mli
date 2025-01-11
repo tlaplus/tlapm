@@ -9,6 +9,7 @@ type tlapm_obl_state =
   | Interrupted
   | Trivial
   | Unknown of string
+[@@deriving show]
 
 val tlapm_obl_state_to_string : tlapm_obl_state -> string
 
@@ -24,6 +25,7 @@ module Obligation : sig
     already : bool option;
     obl : string option;
   }
+  [@@deriving show]
 
   (** For testing only. *)
   module Test : sig
