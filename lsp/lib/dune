@@ -9,6 +9,6 @@
   ; (flags -only-test docs/proof_step.ml -verbose)
   )
  (preprocess
-  (pps ppx_inline_test)))
+  (pps ppx_inline_test ppx_deriving.show)))
 
 (include_subdirs qualified)

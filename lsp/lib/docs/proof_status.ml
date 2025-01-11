@@ -1,6 +1,7 @@
 open Prover
 
 type t = Proved | Failed | Omitted | Missing | Pending | Progress
+[@@deriving show]
 
 let of_tlapm_obl_state = function
   | Toolbox.ToBeProved -> Progress
@@ -47,6 +48,7 @@ let of_order = function
   | 5 -> Proved
   | _ -> failwith "Impossible order"
 
+let bot = Pending
 let top = Proved
 let min a b = of_order (min (to_order a) (to_order b))
 let max a b = of_order (max (to_order a) (to_order b))

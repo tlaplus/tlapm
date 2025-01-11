@@ -1,12 +1,12 @@
 module LspT := Lsp.Types
 
 module Position : sig
-  type t
+  type t [@@deriving show]
 
   val compare : t -> t -> int
 end
 
-type t
+type t [@@deriving show]
 
 val from : t -> Position.t
 val till : t -> Position.t
