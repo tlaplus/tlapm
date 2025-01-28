@@ -1,6 +1,7 @@
 open Prover
 
 type t = Proved | Failed | Omitted | Missing | Pending | Progress
+[@@deriving show]
 
 let of_tlapm_obl_state = function
   | Toolbox.ToBeProved -> Progress
@@ -28,25 +29,29 @@ let to_message = function
   | Pending -> "Proof pending."
   | Proved -> "Proof checked successfully."
 
+(** For a proof step, we will take the maximum of statuses returned by different
+    provers for each obligation and the minimum across the obligations. *)
 let to_order = function
-  | Failed -> 0
-  | Missing -> 1
-  | Omitted -> 2
-  | Progress -> 3
-  | Pending -> 4
+  | Pending -> 0
+  | Failed -> 1
+  | Missing -> 2
+  | Omitted -> 3
+  | Progress -> 4
   | Proved -> 5
 
 let of_order = function
-  | 0 -> Failed
-  | 1 -> Missing
-  | 2 -> Omitted
-  | 3 -> Progress
-  | 4 -> Pending
+  | 0 -> Pending
+  | 1 -> Failed
+  | 2 -> Missing
+  | 3 -> Omitted
+  | 4 -> Progress
   | 5 -> Proved
   | _ -> failwith "Impossible order"
 
+let bot = Pending
 let top = Proved
 let min a b = of_order (min (to_order a) (to_order b))
+let max a b = of_order (max (to_order a) (to_order b))
 let yojson_of_t t = `String (to_string t)
 
 let is_diagnostic = function

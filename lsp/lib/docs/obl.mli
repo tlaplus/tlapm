@@ -7,7 +7,7 @@ end
 
 type t
 
-val of_parsed_obligation : Tlapm_lib.Proof.T.obligation -> Proof_status.t -> t
+val of_parsed_obligation : Tlapm_lib.Proof.T.obligation -> t
 val with_role : Role.t -> t -> t
 val with_prover_terminated : int -> t -> t
 val with_prover_obligation : int -> Toolbox.Obligation.t -> t option -> t
