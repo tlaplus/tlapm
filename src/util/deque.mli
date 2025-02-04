@@ -33,3 +33,5 @@ val prepend_list : 'a list -> 'a dq -> 'a dq
 
 val of_list : 'a list -> 'a dq
 val to_list : 'a dq -> 'a list
+
+val equal : ('a -> 'a -> bool) -> 'a dq -> 'a dq -> bool
