@@ -173,7 +173,7 @@ let hyps_of_modunit
         end us.facts
     | Submod _
     | Mutate _
-    | Anoninst _ -> []
+    | Anoninst _ (* TODO: No recursion? *) -> []
 
 
 let hyp_size

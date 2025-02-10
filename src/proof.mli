@@ -48,6 +48,7 @@ module T : sig
   type stepno =
     | Named   of int * string * bool
     | Unnamed of int * int
+    [@@deriving show]
   module Props : sig
     val step : stepno Property.pfuncs
     val goal : sequent pfuncs

@@ -30,7 +30,7 @@ let rec exports m =
             let mu = Definition (df, wd, vis, ex) @@ mu in
             spin (mu :: body) mus
         | Mutate _ ->
-            spin body mus
+            spin body mus (* TODO: Just dropped? *)
         | Theorem (nm, sq, naxs, _, prf_orig, summ) ->
             let prf = Omitted (Elsewhere (Util.get_locus mu)) @@ mu in
             let mu = Theorem (nm, sq, naxs, prf, prf_orig, summ) @@ mu in

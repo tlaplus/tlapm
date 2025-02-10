@@ -77,7 +77,7 @@ type obligation = {
 type stepno =
     | Named of int * string * bool
     | Unnamed of int * int
-
+    [@@deriving show]
 
 module Props: sig
     val step: stepno pfuncs
