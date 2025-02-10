@@ -22,8 +22,9 @@ val assert_has_correct_level: expr -> unit
 val kind_to_level: kind -> int
 
 
-class virtual ['s] level_computation : ['s] E_visit.map
 class virtual ['s] _rm_expr_level : ['s] E_visit.map_visible_hyp
 
 val compute_level: ctx -> expr -> expr
 val rm_expr_level: ctx -> expr -> expr
+
+val newcache: expr -> expr

@@ -57,6 +57,12 @@ type level_info =  (* Stores information for computing the
 
 let exprlevel : level_info pfuncs =
     Property.make "Expr.Levels.exprlevel"
+type elcache =
+  | ELCache_full of hyp Deque.dq * expr_ * level_info
+  | ELCache_empty
+let exprlevel_cache : elcache ref pfuncs =
+    Property.make "Expr.Levels.exprlevel_cache"
+
 let assert_is_level (level: int) =
     assert ((level >= 0) && (level <= 3))
     (* The value 4 signifies that the notion of level is undefined for
@@ -124,6 +130,23 @@ let kind_to_level (kind: kind): int =
     | Temporal -> 3
     | Unknown -> assert false
 
+let has_cached_level cx e =
+  match Property.get e exprlevel_cache with
+  | exception Not_found -> false
+  | {contents = ELCache_full (cx2, ecore, l)}
+    when ecore == e.core && Deque.equal (==) cx2 cx -> true
+  | _ -> false
+
+let get_cached_level e =
+  match Property.get e exprlevel_cache with
+  | {contents = ELCache_full (_, _, l)} -> l
+  | _ -> assert false
+  | exception Not_found -> assert false
+
+let set_cached_level e cx l =
+  match Property.get e exprlevel_cache with
+  | r -> r := ELCache_full (cx, e.core, l)
+  | exception Not_found -> ()
 
 (*
 The level property is stored in the syntax tree nodes.
@@ -142,8 +165,15 @@ class virtual ['s] level_computation = object (self : 'self)
     method expr ((_, cx) as scx) e =
         if (has_level e) then
             e
+        else if has_cached_level cx e then
+            assign e exprlevel (get_cached_level e)
         else
         begin
+        let assign e tag l =
+          assert (tag == exprlevel);
+          set_cached_level e cx l;
+          assign e tag l
+        in
         let max_args_level scx args = (
             let es_ = List.map (self#expr scx) args in
             let es_levels = List.map get_level es_ in
@@ -402,7 +432,7 @@ class virtual ['s] level_computation = object (self : 'self)
             assign e exprlevel level_info
         | Bang (e, sels) -> assert false  (* subexpression references are
                 expanded before expanding `ENABLED` and `\cdot`. *)
-        | Lambda (vs, e) ->
+        | Lambda (vs, e2) ->
             (* Note: 2nd-order operators (signified via `shp` below) are
             handled by the declarations in `e_scx` below and the call to
             the method `self#hyp` in the pattern case `Apply (op, es)` below.
@@ -415,7 +445,7 @@ class virtual ['s] level_computation = object (self : 'self)
                         @@ v)
                     vs) in
             (* expression `e` *)
-            let e_ = self#expr e_scx e in
+            let e_ = self#expr e_scx e2 in
             let e_level = get_level e_ in
             (*
             if e_level > 2 then
@@ -962,7 +992,7 @@ class virtual ['s] level_computation = object (self : 'self)
             *)
 
     method hyp scx h =
-        let level_info = begin match h.core with
+        let level_info h = begin match h.core with
             (* declared variable *)
             | Flex _ -> make_level_info 1
             (* declared operator of any arity *)
@@ -1003,18 +1033,14 @@ class virtual ['s] level_computation = object (self : 'self)
                 assert false  (* not implemented *)
             (* defined operator of any arity *)
             | Defn (df, _, _, _) ->
-                let df_ = self#defn scx df in
-                get_level_info df_
+                get_level_info df
             | Fact (e, _, _) ->
-                let e_ = self#expr scx e in
-                begin
-                if (has_level e_) then
-                    get_level_info e_
+                if (has_level e) then
+                    get_level_info e
                 else
                     (* For example, the notion of expression level is
                     undefined for theorems. *)
                     make_undefined_level_info
-                end
             end in
         (* Hidden definitions need to be visited to
         have level information available for computing the
@@ -1041,11 +1067,12 @@ class virtual ['s] level_computation = object (self : 'self)
                 let h = Fact (self#expr scx e, vis, tm) @@ h in
                 (adj scx h, h)
             in
-        let e_ = assign e_ exprlevel level_info in
+        let e_ = assign e_ exprlevel (level_info e_) in
         (scx_, e_)
 
 end
 
+let newcache e = Property.assign e exprlevel_cache (ref ELCache_empty)
 
 let compute_level cx expr =
     let visitor = object

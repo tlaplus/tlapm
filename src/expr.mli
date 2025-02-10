@@ -876,8 +876,6 @@ module Levels: sig
     val kind_to_level:
         kind -> int
 
-    class virtual ['s] level_computation:
-        ['s] Visit.map
     class virtual ['s] _rm_expr_level:
         ['s] Visit.map
 
@@ -885,6 +883,9 @@ module Levels: sig
         ctx -> expr -> expr
     val rm_expr_level:
         ctx -> expr -> expr
+
+    val newcache:
+        expr -> expr
 end
 
 
