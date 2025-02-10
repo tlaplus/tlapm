@@ -3,7 +3,7 @@
 module LspT = Lsp.Types
 
 module Position : sig
-  type t
+  type t [@@deriving show]
 
   val make : int -> int -> t
   val of_pair : int * int -> t
@@ -16,7 +16,7 @@ module Position : sig
   val max : t -> t -> t
   val line : t -> int
 end = struct
-  type t = P of int * int
+  type t = P of int * int [@@deriving show]
 
   let make l c = P (l, c)
   let of_pair (l, c) = P (l, c)
@@ -43,7 +43,7 @@ end = struct
   let line (P (l, _)) = l
 end
 
-type t = R of (int * int) * (int * int)
+type t = R of (int * int) * (int * int) [@@deriving show]
 
 let line_from (R ((fl, _), _)) = fl
 let line_till (R (_, (tl, _))) = tl
@@ -122,7 +122,8 @@ let lines_intersect a b =
   let ltb = line_till b in
   lfa <= ltb && lfb <= lta
 
-(** [line_covered r p] is true, if the line of position [p] intersects with the range [r] lines. *)
+(** [line_covered r p] is true, if the line of position [p] intersects with the
+    range [r] lines. *)
 let line_covered r p =
   let l = Position.line p in
   line_from r <= l && l <= line_till r

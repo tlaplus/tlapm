@@ -129,16 +129,16 @@ module Make (CB : Callbacks) = struct
              ~workDoneProgress:true ())
         ~diagnosticProvider:
           (`DiagnosticOptions
-            (DiagnosticOptions.create ~identifier:CB.diagnostic_source
-               ~interFileDependencies:false ~workspaceDiagnostics:false
-               ~workDoneProgress:false ()))
+             (DiagnosticOptions.create ~identifier:CB.diagnostic_source
+                ~interFileDependencies:false ~workspaceDiagnostics:false
+                ~workDoneProgress:false ()))
         ~codeActionProvider:
           (`CodeActionOptions
-            (CodeActionOptions.create ~resolveProvider:false
-               ~workDoneProgress:false
-               ~codeActionKinds:
-                 [ CodeActionKind.Other "tlaplus.tlaps.check-step.ca" ]
-               ()))
+             (CodeActionOptions.create ~resolveProvider:false
+                ~workDoneProgress:false
+                ~codeActionKinds:
+                  [ CodeActionKind.Other "tlaplus.tlaps.check-step.ca" ]
+                ()))
         ~experimental:
           Structs.ServerCapabilitiesExperimental.(
             yojson_of_t
@@ -280,10 +280,8 @@ module Make (CB : Callbacks) = struct
           (Printf.sprintf "command unknown: %s" unknown)
           cb_state
 
-  (**
-    Provide code actions for a document.
-    - Code actions can be used for proof decomposition, probably.
-  *)
+  (** Provide code actions for a document.
+      - Code actions can be used for proof decomposition, probably. *)
   let handle_jsonrpc_req_code_action (jsonrpc_req : Jsonrpc.Request.t)
       (params : LspT.CodeActionParams.t) cb_state =
     let user_range = params.range in

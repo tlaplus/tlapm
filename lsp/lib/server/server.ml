@@ -5,7 +5,8 @@ module Structs = Structs
 (** 50 MB should be enough. *)
 let max_size = 50 * 1024 * 1024
 
-(** The proof info updates are aggregated for 0.5s before sending them to IDE. *)
+(** The proof info updates are aggregated for 0.5s before sending them to IDE.
+*)
 let timer_tick_period = 0.5
 
 type transport = Stdio | Socket of int
