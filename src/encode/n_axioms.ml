@@ -2814,10 +2814,10 @@ let tupexcept_def ~disable_arithmetic n i =
       (ixi ~shift:1 n) %% []
     ; begin
       if disable_arithmetic then
-        apps (T.IntLit (i + 1)) [] %% []
+        apps (T.IntLit i) [] %% []
       else
         apps (T.Cast t_int)
-        [ apps (T.TIntLit (i + 1)) [] %% []
+        [ apps (T.TIntLit i) [] %% []
         ] %% []
       end
     ; Ix 1 %% []
@@ -2829,10 +2829,10 @@ let tupexcept_def ~disable_arithmetic n i =
         (ixi ~shift:1 n) %% []
       ; begin
         if disable_arithmetic then
-          apps (T.IntLit (i + 1)) [] %% []
+          apps (T.IntLit i) [] %% []
         else
           apps (T.Cast t_int)
-          [ apps (T.TIntLit (i + 1)) [] %% []
+          [ apps (T.TIntLit i) [] %% []
           ] %% []
         end
       ; Ix 1 %% []
