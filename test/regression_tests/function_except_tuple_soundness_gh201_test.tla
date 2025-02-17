@@ -1,4 +1,4 @@
----- MODULE function_except_tuple_soundness_gh201 ----
+---- MODULE function_except_tuple_soundness_gh201_test ----
 EXTENDS TLAPS, Naturals
 
 THEOREM SoundnessError == FALSE

@@ -1,4 +1,4 @@
----- MODULE nat_comparison_soundness_gh200 ----
+---- MODULE nat_comparison_soundness_gh200_test ----
 EXTENDS TLAPS, Naturals
 
 THEOREM SoundnessError == FALSE
