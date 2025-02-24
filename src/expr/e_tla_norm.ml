@@ -10,6 +10,8 @@ open Property
 open E_t
 module B = Builtin
 
+let ( @@ ) core e = E_levels.newcache (core @@ e)
+
 let rec tuple_flatten e = match e.core with
   | Tuple es ->
       List.concat (List.map tuple_flatten es)
