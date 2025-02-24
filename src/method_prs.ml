@@ -48,6 +48,8 @@ and isa_method = lazy begin
              isa_autouse;
              isa_lambdify;
              isa_enabledaxioms;
+             isa_enabledrewrites;
+             isa_enabledrules;
              isa_levelcomparison;
              isa_trivial;
            ]
@@ -124,6 +126,10 @@ and isa_autouse = ident "autouse" <!> AutoUSE
 and isa_lambdify = ident "lambdify" <!> Lambdify
 
 and isa_enabledaxioms = ident "enabledaxioms" <!> ENABLEDaxioms
+
+and isa_enabledrewrites = ident "enabledrewrites" <!> ENABLEDrewrites
+
+and isa_enabledrules = ident "enabledrules" <!> ENABLEDrules
 
 and isa_levelcomparison = ident "levelcomparison" <!> LevelComparison
 
