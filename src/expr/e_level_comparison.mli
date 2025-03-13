@@ -4,7 +4,7 @@ open E_t
 
 
 class level_comparison : object
-    method compare : ctx -> ctx -> expr -> expr -> bool
+    method compare : ctx -> ctx -> ctx -> expr -> expr -> bool
 
     method expr : ctx -> ctx -> expr -> expr -> bool
     method exprs : ctx -> ctx -> expr list -> expr list -> bool
