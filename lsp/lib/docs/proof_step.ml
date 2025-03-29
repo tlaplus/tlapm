@@ -396,7 +396,7 @@ let of_module (mule : Tlapm_lib.Module.T.mule) prev : t option =
           | None -> Tlapm_lib.Backend.Fingerprints.write_fingerprint o
           | Some _ -> o
         in
-        let o = Obl.of_parsed_obligation o Proof_status.Pending in
+        let o = Obl.of_parsed_obligation o in
         let o = Obl.with_proof_state_from o (Hashtbl.find_opt prev_obs) in
         Some (o_range, o)
       in

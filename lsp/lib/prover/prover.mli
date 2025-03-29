@@ -26,6 +26,7 @@ module Toolbox : sig
       already : bool option;
       obl : string option;
     }
+    [@@deriving show]
   end
 
   type tlapm_notif_severity = TlapmNotifError | TlapmNotifWarning

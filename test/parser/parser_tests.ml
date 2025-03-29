@@ -2,7 +2,7 @@
     parser. In the future it will check the actual parse tree emitted by
     TLAPM, but for now it just checks whether TLAPM parses without error all
     the syntax it is expected to parse. Tests sourced from:
-    https://github.com/tlaplus/tlaplus-standard/tree/main/tests/tlaplus_syntax
+    https://github.com/tlaplus/rfcs/tree/2a772d9dd11acec5d7dedf30abfab91a49de48b8/language_standard/tests/tlaplus_syntax
 *)
 
 open Syntax_corpus_file_parser;;
