@@ -54,15 +54,8 @@ class step_rename_visitor (at_loc : Range.t) =
     (* Look for step references in all the expressions. *)
     method! expr ctx expr =
       (match expr.core with
-      | Expr.T.Opaque str -> (
-          match StepMap.find_opt str step_map with
-          | None -> ()
-          | Some (label_offset, ranges) ->
-              let new_info =
-                ( label_offset,
-                  Range.of_locus_must (Util.get_locus expr) :: ranges )
-              in
-              step_map <- StepMap.add str new_info step_map)
+      | Expr.T.Opaque step_name ->
+          self#add_step_range_opt step_name (Util.get_locus expr)
       | _ -> ());
       p_super#expr ctx expr
 
@@ -78,6 +71,14 @@ class step_rename_visitor (at_loc : Range.t) =
           step_map <- StepMap.add step_str step_info step_map
       | Proof.T.Named (_level, _suffix, true) -> ()
       | Proof.T.Unnamed (_, _) -> ()
+
+    (* Private helper. *)
+    method add_step_range_opt (step_name : string) (locus : Loc.locus) =
+      match StepMap.find_opt step_name step_map with
+      | None -> ()
+      | Some (label_offset, ranges) ->
+          let new_info = (label_offset, Range.of_locus_must locus :: ranges) in
+          step_map <- StepMap.add step_name new_info step_map
   end
 
 let find_ranges (at_loc : Range.t) (mule : Module.T.mule) :
@@ -153,4 +154,4 @@ let step_label step_name label_offset =
   String.sub step_name label_offset (String.length step_name - label_offset)
 
 let step_label_range range label_offset =
-  Range.crop_line_prefix range label_offset 
+  Range.crop_line_prefix range label_offset

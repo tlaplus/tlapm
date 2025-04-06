@@ -94,7 +94,7 @@ let of_wrapped_must prop = Option.get (of_wrapped prop)
 let of_points f t = R (Position.as_pair f, Position.as_pair t)
 let of_ints ~lf ~cf ~lt ~ct = R ((lf, cf), (lt, ct))
 let of_lines fl tl = R ((fl, 1), (tl, 1))
-let of_len (R ((fl, fc), _)) len = R ((fl, fc), (fl, fc + len))
+let of_len (R ((fl, fc), _)) len = R ((fl, fc), (fl, fc + len - 1))
 
 let join (R (af, at)) (R (bf, bt)) =
   let f = Position.min (Position.of_pair af) (Position.of_pair bf) in
