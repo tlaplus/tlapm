@@ -332,7 +332,6 @@ and of_qed_step (qed_step : Tlapm_lib.Proof.T.qed_step) acc : t * Acc.t =
   | Tlapm_lib.Proof.T.Qed proof ->
       let open Tlapm_lib in
       let qed_loc = Property.query qed_step Proof.Parser.qed_loc_prop in
-      (Option.iter (fun _l -> Eio.traceln "XXXYYYZZZ, have loc") qed_loc);
       let qed_range = Range.of_locus_opt qed_loc in
       of_proof (Range.of_wrapped_must qed_step) qed_range proof acc
 
