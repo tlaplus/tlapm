@@ -91,3 +91,60 @@ let pp_expr (fmt : Format.formatter) (expr : Tlapm_lib.Expr.T.expr) : unit =
   | Num (_, _) -> Format.fprintf fmt "Num"
   | At _ -> Format.fprintf fmt "At"
   | Parens (_, _) -> Format.fprintf fmt "Parens"
+
+let%test_unit "example use of visitor_pp" =
+  let filename = "test_obl_expand.tla" in
+  let content =
+    String.concat "\n"
+      [
+        "---- MODULE test_obl_expand ----";
+        "THEOREM TestA == FALSE";
+        "    <1>1. TRUE OBVIOUS";
+        "    <1>2. TRUE";
+        "    <1>q. QED BY <1>1, <1>1, <1>2";
+        "====";
+      ]
+  in
+  let mule =
+    Result.get_ok (Parser.module_of_string ~content ~filename ~loader_paths:[])
+  in
+  let vpp = new visitor_pp in
+  let visitor =
+    object (self : 'self)
+      inherit Tlapm_lib.Module.Visit.map as m_super
+      inherit [unit] Tlapm_lib.Proof.Visit.iter as p_super
+
+      method! theorem cx name sq naxs pf orig_pf summ =
+        vpp#scope
+          (Format.dprintf "Theorem %a {@[<v>%t@]}"
+             (Format.pp_print_option Tlapm_lib.Util.pp_print_hint)
+             name)
+        @@ fun () ->
+        self#proof (Tlapm_lib.Expr.Visit.empty ()) pf;
+        m_super#theorem cx name sq naxs pf orig_pf summ
+
+      method! proof ctx pf : unit =
+        vpp#scope (Format.dprintf "Proof{@[<v>%t@]}") @@ fun () ->
+        p_super#proof ctx pf
+
+      method! steps ctx sts =
+        List.fold_left (fun ctx st -> self#step ctx st) ctx sts
+
+      method! step ctx (st : Tlapm_lib.Proof.T.step) =
+        vpp#scope (Format.dprintf "Step{@[<v>%t@]}") @@ fun () ->
+        let open Tlapm_lib in
+        vpp#add
+          (Format.dprintf "[step=%a, %a]"
+             (Format.pp_print_option Proof.T.pp_stepno)
+             (Property.query st Proof.T.Props.step)
+             Loc.pp_locus_compact_opt (Util.query_locus st));
+        p_super#step ctx st
+
+      method! expr ctx expr =
+        vpp#scope (Format.dprintf "Expr{@[<hv>%a|%t@]}" pp_expr expr)
+        @@ fun () -> p_super#expr ctx expr
+    end
+  in
+  let _ = visitor#tla_module_root mule in
+  (* Here we print all the collected output. *)
+  Format.printf "Output {@[<v>%t@]}" vpp#as_fmt
