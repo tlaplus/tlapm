@@ -145,7 +145,6 @@ and to_steps ?(first = false) currlv ps = match ps with
               let (ss, qp, ps) = to_steps thislv nps in
               (s :: ss, qp, ps)
           | (QED (qed_loc, qp), ps) ->
-              Printf.eprintf "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY QED\n"; (* TODO: ... *)
               let loc = Loc.merge qed_loc (Util.get_locus qp) in
               let qp = Util.locate (Qed qp) loc in
               let qp = Property.assign qp Props.step sn in

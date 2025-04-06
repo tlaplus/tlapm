@@ -34,13 +34,29 @@ type t = {
           for it. *)
 }
 
-let with_docs' st f =
+let with_docs_res' st f =
   match st.mode with
   | Initializing -> Error "initializing"
   | Ready ->
-      let st', docs' = f (st, st.docs) in
-      Ok { st' with docs = docs' }
+      let st', docs', res = f st st.docs in
+      Ok ({ st' with docs = docs' }, res)
   | Shutdown -> Error "going to shutdown"
+
+let with_docs_res st f =
+  match with_docs_res' st f with
+  | Ok (st', res) -> (st', res)
+  | Error err ->
+      Eio.traceln "Ignoring request: %s" err;
+      (st, None)
+
+let with_docs' st f =
+  match
+    with_docs_res' st (fun st docs ->
+        let st, docs = f st docs in
+        (st, docs, ()))
+  with
+  | Ok (st, ()) -> Ok st
+  | Error err -> Error err
 
 let with_docs st f =
   match with_docs' st f with
@@ -100,7 +116,7 @@ let send_proof_state_markers marks st uri =
 let send_obligation_proof_state st =
   let open Structs in
   let maybe_st =
-    with_docs' st @@ fun (st, docs) ->
+    with_docs' st @@ fun st docs ->
     let docs, notif_data =
       match st.current_ps with
       | None -> (docs, None)
@@ -169,6 +185,7 @@ module SessionHandlers = Handlers.Make (struct
 
   let lsp_send = lsp_send
   let with_docs = with_docs
+  let with_docs_res = with_docs_res
 
   let use_paths st paths =
     Eio.traceln "Will use paths: %s" (String.concat ":" paths);
@@ -254,19 +271,19 @@ module SessionHandlers = Handlers.Make (struct
       }
     in
     let () =
-      match with_docs' st (fun docs -> docs) with
+      match with_docs' st (fun st docs -> (st, docs)) with
       | Ok _ -> failwith "should fail"
       | Error _ -> ()
     in
     let st = ready st in
     let st =
-      match with_docs' st (fun docs -> docs) with
+      match with_docs' st (fun st docs -> (st, docs)) with
       | Ok st -> st
       | Error e -> failwith e
     in
     let st = shutdown st in
     let () =
-      match with_docs' st (fun docs -> docs) with
+      match with_docs' st (fun st docs -> (st, docs)) with
       | Ok _ -> failwith "should fail"
       | Error _ -> ()
     in

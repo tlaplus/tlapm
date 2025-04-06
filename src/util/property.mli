@@ -28,6 +28,10 @@ type prop
 
 type props = prop list
 
+val pp_prop_name : Format.formatter -> prop -> unit
+val pp_prop_names : Format.formatter -> props -> unit
+
+
 (** [pid p] returns the pid of property [p]. All properties of the
     same pid store values of the same type (and this is statically
     enforced by the compiler). *)

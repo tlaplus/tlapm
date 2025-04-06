@@ -6,7 +6,11 @@ module type Callbacks = sig
   val ready : t -> t
   val shutdown : t -> t
   val lsp_send : t -> Jsonrpc.Packet.t -> t
-  val with_docs : t -> (t * Docs.t -> t * Docs.t) -> t
+  val with_docs : t -> (t -> Docs.t -> t * Docs.t) -> t
+
+  val with_docs_res :
+    t -> (t -> Docs.t -> t * Docs.t * 'a option) -> t * 'a option
+
   val prove_step : t -> LspT.DocumentUri.t -> int -> LspT.Range.t -> t
   val cancel : t -> LspT.ProgressToken.t -> t
   val use_paths : t -> string list -> t
@@ -51,7 +55,7 @@ module Make (CB : Callbacks) = struct
         let vsn = params.textDocument.version in
         let text = params.textDocument.text in
         Eio.traceln "DOCUMENT[Open]: %s => %s" (DocumentUri.to_string uri) text;
-        CB.with_docs cb_state @@ fun (cb_st, docs) ->
+        CB.with_docs cb_state @@ fun cb_st docs ->
         let docs = Docs.add docs uri vsn text in
         (cb_st, docs)
     | Ok (TextDocumentDidChange params) -> (
@@ -62,12 +66,12 @@ module Make (CB : Callbacks) = struct
             Eio.traceln "DOCUMENT[Change]: %s => %s"
               (DocumentUri.to_string uri)
               text;
-            CB.with_docs cb_state @@ fun (cb_st, docs) ->
+            CB.with_docs cb_state @@ fun cb_st docs ->
             (cb_st, Docs.add docs uri vsn text)
         | _ -> failwith "incremental changes not supported")
     | Ok (TextDocumentDidClose params) ->
         let uri = params.textDocument.uri in
-        CB.with_docs cb_state @@ fun (cb_st, docs) -> (cb_st, Docs.rem docs uri)
+        CB.with_docs cb_state @@ fun cb_st docs -> (cb_st, Docs.rem docs uri)
     | Ok (DidSaveTextDocument params) ->
         let uri = params.textDocument.uri in
         Eio.traceln "DOCUMENT[Save]: %s" (DocumentUri.to_string uri);
@@ -138,6 +142,10 @@ module Make (CB : Callbacks) = struct
                 ~workDoneProgress:false
                 ~codeActionKinds:
                   [ CodeActionKind.Other "tlaplus.tlaps.check-step.ca" ]
+                ()))
+        ~renameProvider:
+          (`RenameOptions
+             (RenameOptions.create ~prepareProvider:true ~workDoneProgress:false
                 ()))
         ~experimental:
           Structs.ServerCapabilitiesExperimental.(
@@ -222,6 +230,72 @@ module Make (CB : Callbacks) = struct
           cb_state
     in
     reply_ok jsonrpc_req `Null cb_state
+
+  let handle_jsonrpc_req_rename_prepare (jsonrpc_req : Jsonrpc.Request.t)
+      (params : LspT.PrepareRenameParams.t) cb_state =
+    let uri = params.textDocument.uri in
+    let pos = Range.of_lsp_position params.position in
+    CB.with_docs cb_state @@ fun cb_st docs ->
+    let f mule = Analysis.Step_rename.find_ranges pos mule in
+    let docs, res = Docs.on_parsed_mule_latest docs uri f in
+    let cb_st =
+      match res with
+      | None -> reply_ok jsonrpc_req `Null cb_st
+      | Some (step_name, label_offset, step_ranges) -> (
+          match List.find_opt (Range.intersect pos) step_ranges with
+          | None -> reply_ok jsonrpc_req `Null cb_st
+          | Some step_range ->
+              reply_ok jsonrpc_req
+                (`Assoc
+                   [
+                     ( "range",
+                       LspT.Range.yojson_of_t
+                         (Range.as_lsp_range
+                            (Analysis.Step_rename.step_label_range step_range
+                               label_offset)) );
+                     ( "placeholder",
+                       `String
+                         (Analysis.Step_rename.step_label step_name label_offset)
+                     );
+                   ])
+                cb_st)
+    in
+    (cb_st, docs)
+
+  let handle_jsonrpc_req_rename (jsonrpc_req : Jsonrpc.Request.t)
+      (params : LspT.RenameParams.t) cb_state =
+    let uri = params.textDocument.uri in
+    let pos = Range.of_lsp_position params.position in
+    let new_text = params.newName in
+    CB.with_docs cb_state @@ fun cb_st docs ->
+    let f mule = Analysis.Step_rename.find_ranges pos mule in
+    let docs, res = Docs.on_parsed_mule_latest docs uri f in
+    let cb_st =
+      match res with
+      | None -> reply_ok jsonrpc_req `Null cb_st
+      | Some (_step_name, label_offset, step_ranges) -> (
+          match List.find_opt (Range.intersect pos) step_ranges with
+          | None -> reply_ok jsonrpc_req `Null cb_st
+          | Some _step_range ->
+              let edits =
+                List.map
+                  (fun step_range ->
+                    let range =
+                      Range.as_lsp_range
+                        (Analysis.Step_rename.step_label_range step_range
+                           label_offset)
+                    in
+                    LspT.TextEdit.create ~newText:new_text ~range)
+                  step_ranges
+              in
+              let workspace_edit =
+                LspT.WorkspaceEdit.create ~changes:[ (uri, edits) ] ()
+              in
+              reply_ok jsonrpc_req
+                (LspT.WorkspaceEdit.yojson_of_t workspace_edit)
+                cb_st)
+    in
+    (cb_st, docs)
 
   let handle_jsonrpc_req_unknown (jsonrpc_req : Jsonrpc.Request.t) message
       cb_state =
@@ -332,6 +406,10 @@ module Make (CB : Callbacks) = struct
     | Ok (E (TextDocumentDiagnostic params)) ->
         handle_jsonrpc_req_diagnostics jsonrpc_req params.textDocument.uri
           cb_state
+    | Ok (E (TextDocumentPrepareRename params)) ->
+        handle_jsonrpc_req_rename_prepare jsonrpc_req params cb_state
+    | Ok (E (TextDocumentRename params)) ->
+        handle_jsonrpc_req_rename jsonrpc_req params cb_state
     | Ok (E _unsupported) ->
         handle_jsonrpc_req_unknown jsonrpc_req "method not supported" cb_state
     | Error reason ->

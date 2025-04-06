@@ -114,3 +114,13 @@ let get_proof_step_details_latest docs uri range =
   | Some latest_vsn ->
       let docs, res = get_proof_step_details docs uri latest_vsn range in
       (docs, res)
+
+let on_parsed_mule docs uri vsn f =
+  with_doc_vsn docs uri vsn @@ fun doc act ->
+  let res = Doc_actual.on_parsed_mule act f in
+  (doc, act, res)
+
+let on_parsed_mule_latest docs uri f =
+  match latest_vsn docs uri with
+  | None -> (docs, None)
+  | Some latest_vsn -> on_parsed_mule docs uri latest_vsn f

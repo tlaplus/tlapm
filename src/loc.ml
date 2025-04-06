@@ -103,6 +103,28 @@ let string_of_locus_nofile r =
 let string_of_pt ?(file="<nofile>") l =
   string_of_locus { start = l ; stop = l ; file = file }
 
+let pp_locus_compact (fmt : Format.formatter) (loc : locus) : unit =
+  let open Format in
+  match loc.start, loc.stop with
+    | Actual start, Actual stop ->
+        if start.line = stop.line && start.col >= stop.col - 1 then
+          fprintf fmt "%d:%d"
+            start.line start.col
+        else
+          if start.line = stop.line then
+            fprintf fmt "%d:%d-%d"
+              start.line start.col (stop.col - 1)
+          else
+            fprintf fmt "%d:%d-%d:%d"
+              start.line start.col
+              stop.line (stop.col - 1)
+    | _ -> fprintf fmt "loc-undef"
+
+let pp_locus_compact_opt (fmt : Format.formatter) (loc : locus option) : unit =
+  Format.fprintf fmt "%a"
+    (Format.pp_print_option ~none:(fun fmt () -> Format.fprintf fmt "no-loc") pp_locus_compact)
+    loc
+
 let compare r s =
   match Stdlib.compare (line r.start) (line s.start) with
     | 0 ->

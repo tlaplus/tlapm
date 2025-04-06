@@ -6,6 +6,7 @@ let prover_mutex = Eio.Mutex.create ()
 (* Separated form the type [t] to have the value lazily evaluated. *)
 module Parsed = struct
   type t = {
+    mule : (Tlapm_lib.Module.T.mule, string) result;
     nts : Toolbox.tlapm_notif list;
     ps : Proof_step.t option;
         (** Parsed document structure, a tree of proof steps. It is obtained by
@@ -22,10 +23,10 @@ module Parsed = struct
     with
     | Ok mule ->
         let ps = Proof_step.of_module mule ps_prev in
-        { nts = []; ps }
+        { mule = Ok mule; nts = []; ps }
     | Error (loc_opt, msg) ->
         let nts = [ Toolbox.notif_of_loc_msg loc_opt msg ] in
-        { nts; ps = None }
+        { mule = Error msg; nts; ps = None }
 
   let ps_if_ready (p : t Lazy.t) =
     match Lazy.is_val p with false -> None | true -> (Lazy.force p).ps
@@ -124,3 +125,8 @@ let is_obl_final (act : t) p_ref obl_id =
     let parsed = Lazy.force act.parsed in
     Proof_step.is_obl_final parsed.ps p_ref obl_id
   else None
+
+let on_parsed_mule (act : t) f =
+  match (Lazy.force act.parsed).mule with
+  | Ok mule -> ( match f mule with None -> None | Some res -> Some res)
+  | Error _ -> None

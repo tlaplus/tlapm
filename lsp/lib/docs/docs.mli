@@ -90,3 +90,11 @@ val get_proof_step_details_latest :
   t -> tk -> Range.Position.t -> t * Structs.TlapsProofStepDetails.t option
 (** Get the current proof state for the specific obligation at the latest
     version of the document. *)
+
+val on_parsed_mule :
+  t -> tk -> int -> (Tlapm_lib.Module.T.mule -> 'a option) -> t * 'a option
+(** Apply [f] on a parsed module, if any. *)
+
+val on_parsed_mule_latest :
+  t -> tk -> (Tlapm_lib.Module.T.mule -> 'a option) -> t * 'a option
+(** Apply [f] on a parsed module of the latest version, if any. *)
