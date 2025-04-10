@@ -75,7 +75,7 @@ class virtual const_visitor = object (self : 'self)
                         false
                   end
                 | _ ->
-                    Util.printf ~at:e "\n%s\n" (E_fmt.string_of_expr cx e);
+                    Util.eprintf ~at:e "\n%s\n" (E_fmt.string_of_expr cx e);
                     Errors.bug ~at:e "Expr.Constness.propagate#expr: Ix"
             end
           |  Opaque _ ->
