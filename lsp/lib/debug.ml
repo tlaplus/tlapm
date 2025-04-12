@@ -45,10 +45,10 @@ class visitor_pp =
         res
 
     method scope_str : 'a. string -> (unit -> 'a) -> 'a =
-      fun name f -> self#scope (Format.dprintf "%s{%t}" name) f
+      fun name f -> self#scope (Format.dprintf "%s{@[<hov>%t@]}" name) f
   end
 
-let pp_expr (fmt : Format.formatter) (expr : Tlapm_lib.Expr.T.expr) : unit =
+let rec pp_expr (fmt : Format.formatter) (expr : Tlapm_lib.Expr.T.expr) : unit =
   let open Tlapm_lib.Expr.T in
   match expr.core with
   | Ix i -> Format.fprintf fmt "Ix %d" i
@@ -58,7 +58,12 @@ let pp_expr (fmt : Format.formatter) (expr : Tlapm_lib.Expr.T.expr) : unit =
   | Lambda (_, _) -> Format.fprintf fmt "Lambda"
   | Sequent _ -> Format.fprintf fmt "Sequent"
   | Bang (_, _) -> Format.fprintf fmt "Bang"
-  | Apply (_, _) -> Format.fprintf fmt "Apply"
+  | Apply (expr, args) ->
+      Format.fprintf fmt "Apply{@[%a to %a@]}" pp_expr expr
+        (Format.pp_print_list
+           ~pp_sep:(fun f _ -> Format.fprintf f ",@,")
+           pp_expr)
+        args
   | With (_, _) -> Format.fprintf fmt "With"
   | If (_, _, _) -> Format.fprintf fmt "If"
   | List (_, _) -> Format.fprintf fmt "List"
@@ -91,6 +96,24 @@ let pp_expr (fmt : Format.formatter) (expr : Tlapm_lib.Expr.T.expr) : unit =
   | Num (_, _) -> Format.fprintf fmt "Num"
   | At _ -> Format.fprintf fmt "At"
   | Parens (_, _) -> Format.fprintf fmt "Parens"
+
+let pp_defn (fmt : Format.formatter) (defn : Tlapm_lib.Expr.T.defn) : unit =
+  let open Tlapm_lib.Expr.T in
+  match defn.core with
+  | Recursive (_, _) -> Format.fprintf fmt "Recursive"
+  | Operator (hint, expr) ->
+      Format.fprintf fmt "Operator{hint=%s,expr=%a}" hint.core pp_expr expr
+  | Instance (_, _) -> Format.fprintf fmt "Instance"
+  | Bpragma (_, _, _) -> Format.fprintf fmt "Bpragma"
+
+let pp_hyp (fmt : Format.formatter) (hyp : Tlapm_lib.Expr.T.hyp) : unit =
+  let open Tlapm_lib.Expr.T in
+  match hyp.core with
+  | Fresh (_, _, _, _) -> Format.fprintf fmt "Fresh"
+  | FreshTuply (_, _) -> Format.fprintf fmt "FreshTuply"
+  | Flex _ -> Format.fprintf fmt "Flex"
+  | Defn (defn, _, _, _) -> Format.fprintf fmt "Defn{%a}" pp_defn defn
+  | Fact (expr, _, _) -> Format.fprintf fmt "Fact{expr=%a}" pp_expr expr
 
 let%test_unit "example use of visitor_pp" =
   let filename = "test_obl_expand.tla" in

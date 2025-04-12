@@ -15,6 +15,7 @@ module Expr = Expr
 module Util = Util
 module Loc = Loc
 module Ctx = Ctx
+module Deque = Deque
 module Backend = Backend
 module Builtin = Builtin
 

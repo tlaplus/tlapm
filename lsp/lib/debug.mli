@@ -25,3 +25,5 @@ class visitor_pp : object
 end
 
 val pp_expr : Format.formatter -> Tlapm_lib.Expr.T.expr -> unit
+val pp_defn : Format.formatter -> Tlapm_lib.Expr.T.defn -> unit
+val pp_hyp : Format.formatter -> Tlapm_lib.Expr.T.hyp -> unit
