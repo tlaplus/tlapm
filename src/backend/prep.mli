@@ -28,3 +28,6 @@ val normalize:
     auto_expand_defs: bool ->
         obligation
 *)
+
+(** Check if an expression if a fact within a context. *)
+val have_fact : Expr.T.hyp Deque.dq -> Expr.T.expr -> bool

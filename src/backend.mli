@@ -76,3 +76,7 @@ module Smtlib: sig
 end
 
 module Interrupted = Interrupted
+
+module Prep : sig
+    val have_fact : Expr.T.hyp Deque.dq -> Expr.T.expr -> bool
+end

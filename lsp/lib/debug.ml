@@ -1,3 +1,5 @@
+open Tlapm_lib
+
 class visitor_pp =
   object (self)
     val mutable acc : (Format.formatter -> unit) list = []
@@ -48,13 +50,12 @@ class visitor_pp =
       fun name f -> self#scope (Format.dprintf "%s{@[<hov>%t@]}" name) f
   end
 
-let rec pp_expr (fmt : Format.formatter) (expr : Tlapm_lib.Expr.T.expr) : unit =
-  let open Tlapm_lib.Expr.T in
+let rec pp_expr (fmt : Format.formatter) (expr : Expr.T.expr) : unit =
+  let open Expr.T in
   match expr.core with
   | Ix i -> Format.fprintf fmt "Ix %d" i
   | Opaque n -> Format.fprintf fmt "Opaque %s" n
-  | Internal b ->
-      Format.fprintf fmt "Internal/%s" (Tlapm_lib.Builtin.builtin_to_string b)
+  | Internal b -> Format.fprintf fmt "Internal/%s" (Builtin.builtin_to_string b)
   | Lambda (_, _) -> Format.fprintf fmt "Lambda"
   | Sequent _ -> Format.fprintf fmt "Sequent"
   | Bang (_, _) -> Format.fprintf fmt "Bang"
@@ -97,8 +98,8 @@ let rec pp_expr (fmt : Format.formatter) (expr : Tlapm_lib.Expr.T.expr) : unit =
   | At _ -> Format.fprintf fmt "At"
   | Parens (_, _) -> Format.fprintf fmt "Parens"
 
-let pp_defn (fmt : Format.formatter) (defn : Tlapm_lib.Expr.T.defn) : unit =
-  let open Tlapm_lib.Expr.T in
+let pp_defn (fmt : Format.formatter) (defn : Expr.T.defn) : unit =
+  let open Expr.T in
   match defn.core with
   | Recursive (_, _) -> Format.fprintf fmt "Recursive"
   | Operator (hint, expr) ->
@@ -106,13 +107,41 @@ let pp_defn (fmt : Format.formatter) (defn : Tlapm_lib.Expr.T.defn) : unit =
   | Instance (_, _) -> Format.fprintf fmt "Instance"
   | Bpragma (_, _, _) -> Format.fprintf fmt "Bpragma"
 
-let pp_hyp (fmt : Format.formatter) (hyp : Tlapm_lib.Expr.T.hyp) : unit =
-  let open Tlapm_lib.Expr.T in
+let pp_visibility (fmt : Format.formatter) (v : Expr.T.visibility) =
+  let open Expr.T in
+  match v with
+  | Visible -> Format.fprintf fmt "Visible"
+  | Hidden -> Format.fprintf fmt "Hidden"
+
+let pp_export (fmt : Format.formatter) (v : Expr.T.export) =
+  let open Expr.T in
+  match v with
+  | Local -> Format.fprintf fmt "Local"
+  | Export -> Format.fprintf fmt "Export"
+
+let pp_time (fmt : Format.formatter) (v : Expr.T.time) =
+  let open Expr.T in
+  match v with
+  | Now -> Format.fprintf fmt "Now"
+  | Always -> Format.fprintf fmt "Always"
+  | NotSet -> Format.fprintf fmt "NotSet"
+
+let pp_wheredef (fmt : Format.formatter) (v : Expr.T.wheredef) =
+  let open Expr.T in
+  match v with
+  | Builtin -> Format.fprintf fmt "Builtin"
+  | Proof time -> Format.fprintf fmt "Proof-%a" pp_time time
+  | User -> Format.fprintf fmt "User"
+
+let pp_hyp (fmt : Format.formatter) (hyp : Expr.T.hyp) : unit =
+  let open Expr.T in
   match hyp.core with
-  | Fresh (_, _, _, _) -> Format.fprintf fmt "Fresh"
+  | Fresh (hint, _, _, _) -> Format.fprintf fmt "Fresh:%s" hint.core
   | FreshTuply (_, _) -> Format.fprintf fmt "FreshTuply"
   | Flex _ -> Format.fprintf fmt "Flex"
-  | Defn (defn, _, _, _) -> Format.fprintf fmt "Defn{%a}" pp_defn defn
+  | Defn (defn, wheredef, visibility, export) ->
+      Format.fprintf fmt "Defn[%a:%a:%a]{%a}" pp_wheredef wheredef pp_visibility
+        visibility pp_export export pp_defn defn
   | Fact (expr, _, _) -> Format.fprintf fmt "Fact{expr=%a}" pp_expr expr
 
 let%test_unit "example use of visitor_pp" =

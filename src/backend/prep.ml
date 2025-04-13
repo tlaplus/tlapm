@@ -570,6 +570,13 @@ let rec find_fact cx e rest =
   | None ->
       raise Nontrivial
 
+let have_fact (cx : hyp Deque.dq) (e : expr) : bool =
+  try
+    ignore (find_fact cx e []);
+    true
+  with Nontrivial ->
+    false
+
 let trying_to_prove_true = function
   | Internal Builtin.TRUE -> true
   | _ -> false
