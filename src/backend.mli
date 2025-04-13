@@ -78,5 +78,12 @@ end
 module Interrupted = Interrupted
 
 module Prep : sig
-    val have_fact : Expr.T.hyp Deque.dq -> Expr.T.expr -> bool
+    val expand_defs:
+        ?what:(Expr.T.wheredef -> bool) ->
+        Proof.T.obligation ->
+        Proof.T.obligation
+    val have_fact :
+        Expr.T.hyp Deque.dq ->
+        Expr.T.expr ->
+        bool
 end

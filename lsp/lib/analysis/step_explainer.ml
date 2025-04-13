@@ -1,6 +1,10 @@
 open Tlapm_lib
 
-(* TODO: Expand expandable definitions, when looking for facts. *)
+(* TODO: Expand expandable definitions, when looking for facts.
+  - prep.ml: let expand_defs
+  - e_action.ml: let expand_definition hyp expr
+
+*)
 
 let%test_module "poc: explain direct" =
   (module struct
@@ -28,6 +32,7 @@ let%test_module "poc: explain direct" =
           | Module.T.Final { final_obs; _ } ->
               Array.iter
                 (fun obl ->
+                  let obl = Backend.Prep.expand_defs obl in
                   vpp#scope
                     (Format.dprintf "Obl[%a %a]{@[<hov>%t@]}"
                        Loc.pp_locus_compact_opt (Util.query_locus obl.obl)
@@ -44,6 +49,13 @@ let%test_module "poc: explain direct" =
                   vpp#scope (Format.dprintf "context{@[<v>%t@]}") @@ fun () ->
                   Deque.iter
                     (fun hyp_i (hyp : Expr.T.hyp) ->
+                      vpp#scope (Format.dprintf "Hyp-%d{@[%t@]}" hyp_i)
+                      @@ fun () ->
+                      vpp#add
+                        (Format.dprintf "[loc=%a]" Loc.pp_locus_compact_opt
+                           (Util.query_locus hyp));
+                      vpp#add (Format.dprintf "[val=%a]" Debug.pp_hyp hyp);
+
                       let open Expr.T in
                       (* TODO: ix_hyp is incorrect, because we have to increse ix'es when pushing an expression upwards. *)
                       let ix_hyp =
@@ -58,11 +70,18 @@ let%test_module "poc: explain direct" =
                             | Ix ix -> Deque.nth context (hyp_i - ix)
                             | _ -> None)
                       in
-                      vpp#add (fun fmt ->
-                          Format.fprintf fmt "[%a,%a,%a]" Debug.pp_hyp hyp
-                            Loc.pp_locus_compact_opt (Util.query_locus hyp)
-                            (Format.pp_print_option Debug.pp_hyp)
-                            ix_hyp))
+                      let hyp_at_active =
+                        Expr.Subst.app_hyp
+                          (Expr.Subst.shift (Deque.size context - hyp_i))
+                          hyp
+                      in
+                      vpp#add
+                        (Format.dprintf "[at_active=%a]" Debug.pp_hyp
+                           hyp_at_active);
+                      vpp#add
+                        (Format.dprintf "[lookup_by_ix=%a]"
+                           (Format.pp_print_option Debug.pp_hyp)
+                           ix_hyp))
                     context)
                 final_obs;
               ());
