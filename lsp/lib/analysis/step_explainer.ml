@@ -15,7 +15,20 @@ let explain_obl_conj_intro (active : Expr.T.expr)
           let all_found =
             List.for_all (fun arg -> Backend.Prep.have_fact context arg) args
           in
-          match all_found with true -> [ "/\-intro" ] | false -> [])
+          match all_found with true -> [ "/\\-intro" ] | false -> [])
+      | _ -> [])
+  | _ -> []
+
+let explain_obl_disj_intro (active : Expr.T.expr)
+    (context : Expr.T.hyp Deque.dq) : string list =
+  match active.core with
+  | Expr.T.Apply (op, args) -> (
+      match op.core with
+      | Expr.T.Internal Builtin.Disj -> (
+          let any_found =
+            List.exists (fun arg -> Backend.Prep.have_fact context arg) args
+          in
+          match any_found with true -> [ "\\/-intro" ] | false -> [])
       | _ -> [])
   | _ -> []
 
@@ -26,9 +39,80 @@ let explain_obl (obl : Proof.T.obligation) : string list =
   List.flatten
     (List.map
        (fun f -> f active context)
-       [ explain_obl_direct; explain_obl_conj_intro ])
+       [ explain_obl_direct; explain_obl_conj_intro; explain_obl_disj_intro ])
 
-let%test_module "poc: explain direct" =
+let test_util_get_expl (theorem : string list) : string list =
+  let filename = "test_step_explainer.tla" in
+  let content =
+    "---- MODULE test_step_explainer ----\n" ^ String.concat "\n" theorem
+    ^ "===="
+  in
+  let mule =
+    Result.get_ok (Parser.module_of_string ~content ~filename ~loader_paths:[])
+  in
+  match mule.core.stage with
+  | Module.T.Special | Module.T.Parsed | Module.T.Flat -> []
+  | Module.T.Final { final_obs; _ } -> explain_obl final_obs.(0)
+
+let%test_unit "explain conj direct intro" =
+  let theorem =
+    [
+      "THEOREM TestA == ASSUME NEW a, NEW b, a, b PROVE a /\\ b";
+      "    <1>1. a /\\ b OBVIOUS";
+      "    <1>q. QED BY <1>1";
+    ]
+  in
+  match test_util_get_expl theorem with
+  | list ->
+      assert (String.concat ";" list = "Direct proof from assumptions;/\\-intro")
+
+let%test_unit "explain conj intro" =
+  let theorem =
+    [
+      "THEOREM TestA == ASSUME NEW a, NEW b, a, b PROVE a /\\ b";
+      "    <1>1. a OBVIOUS";
+      "    <1>2. b OBVIOUS";
+      "    <1>q. QED BY <1>1, <1>2";
+    ]
+  in
+  match test_util_get_expl theorem with
+  | list -> assert (String.concat ";" list = "/\\-intro")
+
+let%test_unit "explain disj direct intro" =
+  let theorem =
+    [
+      "THEOREM TestA == ASSUME NEW a, NEW b, a, b PROVE a \\/ b";
+      "    <1>1. a \\/ b OBVIOUS";
+      "    <1>q. QED BY <1>1";
+    ]
+  in
+  match test_util_get_expl theorem with
+  | list ->
+      assert (String.concat ";" list = "Direct proof from assumptions;\\/-intro")
+
+let%test_unit "explain disj intro left" =
+  let theorem =
+    [
+      "THEOREM TestA == ASSUME NEW a, NEW b, a PROVE a \\/ b";
+      "    <1>1. a OBVIOUS";
+      "    <1>q. QED BY <1>1";
+    ]
+  in
+  match test_util_get_expl theorem with
+  | list -> assert (String.concat ";" list = "\\/-intro")
+
+let%test_unit "explain disj intro right" =
+  let theorem =
+    [
+      "THEOREM TestA == ASSUME NEW a, NEW b, b PROVE a \\/ b";
+      "    <1>1. b OBVIOUS";
+      "    <1>q. QED BY <1>1";
+    ]
+  in
+  match test_util_get_expl theorem with
+  | list -> assert (String.concat ";" list = "\\/-intro")
+
+(* let%test_module "poc: explain direct" =
   (module struct
     let mule =
       let filename = "test_rename_step.tla" in
@@ -108,4 +192,4 @@ let%test_module "poc: explain direct" =
                 final_obs;
               ());
       Format.printf "@.%t@." vpp#as_fmt
-  end)
+  end) *)
