@@ -1,10 +1,32 @@
 open Tlapm_lib
 
-(* TODO: Expand expandable definitions, when looking for facts.
-  - prep.ml: let expand_defs
-  - e_action.ml: let expand_definition hyp expr
+let explain_obl_direct (active : Expr.T.expr) (context : Expr.T.hyp Deque.dq) :
+    string list =
+  match Backend.Prep.have_fact context active with
+  | true -> [ "Direct proof from assumptions" ]
+  | false -> []
 
-*)
+let explain_obl_conj_intro (active : Expr.T.expr)
+    (context : Expr.T.hyp Deque.dq) : string list =
+  match active.core with
+  | Expr.T.Apply (op, args) -> (
+      match op.core with
+      | Expr.T.Internal Builtin.Conj -> (
+          let all_found =
+            List.for_all (fun arg -> Backend.Prep.have_fact context arg) args
+          in
+          match all_found with true -> [ "/\-intro" ] | false -> [])
+      | _ -> [])
+  | _ -> []
+
+let explain_obl (obl : Proof.T.obligation) : string list =
+  let obl = Backend.Prep.expand_defs obl in
+  let active = obl.obl.core.active in
+  let context = obl.obl.core.context in
+  List.flatten
+    (List.map
+       (fun f -> f active context)
+       [ explain_obl_direct; explain_obl_conj_intro ])
 
 let%test_module "poc: explain direct" =
   (module struct
