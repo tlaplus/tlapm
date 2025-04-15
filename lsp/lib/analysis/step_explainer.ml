@@ -19,6 +19,34 @@ let explain_obl_conj_intro (active : Expr.T.expr)
       | _ -> [])
   | _ -> []
 
+let explain_obl_conj_elim (active : Expr.T.expr) (context : Expr.T.hyp Deque.dq)
+    : string list =
+  let process_hyp ((expls, index) : string list * int) (hyp : Expr.T.hyp) :
+      string list * int =
+    let hyp_at_active =
+      Expr.Subst.app_hyp (Expr.Subst.shift (Deque.size context - index)) hyp
+    in
+    let new_expls =
+      match hyp_at_active.core with
+      | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _) ->
+          expls
+      | Fact (hyp_expr, _, _) -> (
+          match hyp_expr.core with
+          | Apply (op, args) -> (
+              match op.core with
+              | Expr.T.Internal Builtin.Conj ->
+                  List.fold_left
+                    (fun acc arg ->
+                      if Expr.Eq.expr arg active then "/\\-elim" :: acc else acc)
+                    expls args
+              | _ -> expls)
+          | _ -> expls)
+    in
+    (new_expls, index + 1)
+  in
+  let explanations, _ = Deque.fold_left process_hyp ([], 0) context in
+  explanations
+
 let explain_obl_disj_intro (active : Expr.T.expr)
     (context : Expr.T.hyp Deque.dq) : string list =
   match active.core with
@@ -39,7 +67,12 @@ let explain_obl (obl : Proof.T.obligation) : string list =
   List.flatten
     (List.map
        (fun f -> f active context)
-       [ explain_obl_direct; explain_obl_conj_intro; explain_obl_disj_intro ])
+       [
+         explain_obl_direct;
+         explain_obl_conj_intro;
+         explain_obl_conj_elim;
+         explain_obl_disj_intro;
+       ])
 
 let test_util_get_expl (theorem : string list) : string list =
   let filename = "test_step_explainer.tla" in
@@ -78,6 +111,29 @@ let%test_unit "explain conj intro" =
   match test_util_get_expl theorem with
   | list -> assert (String.concat ";" list = "/\\-intro")
 
+let%test_unit "explain conj elim Ix match" =
+  let theorem =
+    [
+      "THEOREM TestA == ASSUME NEW a, NEW b, a /\\ b PROVE a";
+      "    <1>1. a PROOF OBVIOUS";
+      "    <1>q. QED BY <1>1";
+    ]
+  in
+  match test_util_get_expl theorem with
+  | list ->
+      assert (String.concat ";" list = "Direct proof from assumptions;/\\-elim")
+
+let%test_unit "explain conj elim Ix not match" =
+  let theorem =
+    [
+      "THEOREM TestA == ASSUME NEW a, NEW b, NEW c, NEW d, c /\\ d PROVE a";
+      "    <1>1. a PROOF OBVIOUS";
+      "    <1>q. QED BY <1>1";
+    ]
+  in
+  match test_util_get_expl theorem with
+  | list -> assert (String.concat ";" list = "Direct proof from assumptions")
+
 let%test_unit "explain disj direct intro" =
   let theorem =
     [
@@ -115,13 +171,13 @@ let%test_unit "explain disj intro right" =
 (* let%test_module "poc: explain direct" =
   (module struct
     let mule =
-      let filename = "test_rename_step.tla" in
+      let filename = "test_step_explainer.tla" in
       let content =
         String.concat "\n"
           [
-            "---- MODULE test_rename_step ----";
-            "THEOREM TestA == ASSUME NEW a, NEW b, a, b PROVE a /\\ b";
-            "    <1>1. a /\\ b OBVIOUS";
+            "---- MODULE test_step_explainer ----";
+            "THEOREM TestA == ASSUME NEW a, NEW b, NEW c, NEW d, a /\\ b, c /\\ d PROVE a";
+            "    <1>1. a PROOF OBVIOUS";
             "    <1>q. QED BY <1>1";
             "====";
           ]
@@ -192,4 +248,4 @@ let%test_unit "explain disj intro right" =
                 final_obs;
               ());
       Format.printf "@.%t@." vpp#as_fmt
-  end) *)
+  end)  *)
