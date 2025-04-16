@@ -60,6 +60,64 @@ let explain_obl_disj_intro (active : Expr.T.expr)
       | _ -> [])
   | _ -> []
 
+let explain_obl_disj_elim (active : Expr.T.expr) (context : Expr.T.hyp Deque.dq)
+    : string list =
+  let process_expr ((bools, index, exp) : bool list * int * Expr.T.expr)
+      (hyp : Expr.T.hyp) : bool list * int * Expr.T.expr =
+    let hyp_at_active =
+      Expr.Subst.app_hyp (Expr.Subst.shift (Deque.size context - index)) hyp
+    in
+    let new_bools =
+      match hyp_at_active.core with
+      | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _) ->
+          bools
+      | Fact (hyp_expr, _, _) -> (
+          match hyp_expr.core with
+          | Apply (op, args) -> (
+              match op.core with
+              | Expr.T.Internal Builtin.Implies ->
+                  if
+                    Expr.Eq.expr (List.nth args 0) exp
+                    && Expr.Eq.expr (List.nth args 1) active
+                  then true :: bools
+                  else bools
+              | _ -> bools)
+          | _ -> bools)
+    in
+    (new_bools, index + 1, exp)
+  in
+  let find_arg_impl_goal arg =
+    let bools, _, _ =
+      Deque.fold_left process_expr ([], 0, arg) context
+    in
+    match bools with [] -> false | _ -> true
+  in
+  let process_hyp ((expls, index) : string list * int) (hyp : Expr.T.hyp) :
+      string list * int =
+    let hyp_at_active =
+      Expr.Subst.app_hyp (Expr.Subst.shift (Deque.size context - index)) hyp
+    in
+    let new_expls =
+      match hyp_at_active.core with
+      | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _) ->
+          expls
+      | Fact (hyp_expr, _, _) -> (
+          match hyp_expr.core with
+          | Apply (op, args) -> (
+              match op.core with
+              | Expr.T.Internal Builtin.Disj -> (
+                  let all_found =
+                    List.for_all (fun arg -> find_arg_impl_goal arg) args
+                  in
+                  match all_found with true -> [ "\\/-elim" ] | false -> [])
+              | _ -> expls)
+          | _ -> expls)
+    in
+    (new_expls, index + 1)
+  in
+  let explanations, _ = Deque.fold_left process_hyp ([], 0) context in
+  explanations
+
 let explain_obl (obl : Proof.T.obligation) : string list =
   let obl = Backend.Prep.expand_defs obl in
   let active = obl.obl.core.active in
@@ -72,6 +130,7 @@ let explain_obl (obl : Proof.T.obligation) : string list =
          explain_obl_conj_intro;
          explain_obl_conj_elim;
          explain_obl_disj_intro;
+         explain_obl_disj_elim;
        ])
 
 let test_util_get_expl (theorem : string list) : string list =
@@ -168,6 +227,31 @@ let%test_unit "explain disj intro right" =
   match test_util_get_expl theorem with
   | list -> assert (String.concat ";" list = "\\/-intro")
 
+let%test_unit "explain disj elim" =
+  let theorem =
+    [
+      "THEOREM TestA == ASSUME NEW a, NEW b, NEW c, NEW d, a => c, b => c, a \
+       \\/ b PROVE c";
+      "    <1>1. c PROOF OBVIOUS";
+      "    <1>q. QED BY <1>1";
+    ]
+  in
+  match test_util_get_expl theorem with
+  | list ->
+      assert (String.concat ";" list = "Direct proof from assumptions;\\/-elim")
+
+let%test_unit "explain disj elim not full" =
+  let theorem =
+    [
+      "THEOREM TestA == ASSUME NEW a, NEW b, NEW c, NEW d, a => c, b => d, a \
+       \\/ b PROVE c";
+      "    <1>1. c PROOF OBVIOUS";
+      "    <1>q. QED BY <1>1";
+    ]
+  in
+  match test_util_get_expl theorem with
+  | list -> assert (String.concat ";" list = "Direct proof from assumptions")
+
 (* let%test_module "poc: explain direct" =
   (module struct
     let mule =
@@ -176,7 +260,7 @@ let%test_unit "explain disj intro right" =
         String.concat "\n"
           [
             "---- MODULE test_step_explainer ----";
-            "THEOREM TestA == ASSUME NEW a, NEW b, NEW c, NEW d, a /\\ b, c /\\ d PROVE a";
+            "THEOREM TestA == ASSUME NEW a, NEW b, NEW c, NEW d, a => c, b => c, d => c, a \\/ b \\/ d PROVE a";
             "    <1>1. a PROOF OBVIOUS";
             "    <1>q. QED BY <1>1";
             "====";
