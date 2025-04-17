@@ -180,6 +180,35 @@ let explain_obl_disjunctive_syllogism (active : Expr.T.expr)
   let explanations, _ = Deque.fold_left process_hyp ([], 0) context in
   explanations
 
+let explain_obl_elim_modus_ponens (active : Expr.T.expr)
+    (context : Expr.T.hyp Deque.dq) : string list =
+  let process_hyp ((expls, index) : string list * int) (hyp : Expr.T.hyp) :
+      string list * int =
+    let hyp_at_active =
+      Expr.Subst.app_hyp (Expr.Subst.shift (Deque.size context - index)) hyp
+    in
+    let new_expls =
+      match hyp_at_active.core with
+      | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _) ->
+          expls
+      | Fact (hyp_expr, _, _) -> (
+          match hyp_expr.core with
+          | Apply (op, args) -> (
+              match op.core with
+              | Expr.T.Internal Builtin.Implies ->
+                  if
+                    Expr.Eq.expr (List.nth args 1) active
+                    && Backend.Prep.have_fact context (List.nth args 0)
+                  then [ "elim (modus ponens)" ]
+                  else []
+              | _ -> expls)
+          | _ -> expls)
+    in
+    (new_expls, index + 1)
+  in
+  let explanations, _ = Deque.fold_left process_hyp ([], 0) context in
+  explanations
+
 let explain_obl (obl : Proof.T.obligation) : string list =
   let obl = Backend.Prep.expand_defs obl in
   let active = obl.obl.core.active in
@@ -194,6 +223,7 @@ let explain_obl (obl : Proof.T.obligation) : string list =
          explain_obl_disj_intro;
          explain_obl_disj_elim;
          explain_obl_disjunctive_syllogism;
+         explain_obl_elim_modus_ponens;
        ])
 
 let test_util_get_expl (theorem : string list) : string list =
@@ -328,6 +358,20 @@ let%test_unit "explain disjunctive syllogism" =
       assert (
         String.concat ";" list
         = "Direct proof from assumptions;Disjunctive syllogism")
+
+let%test_unit "explain elim (modus ponens)" =
+  let theorem =
+    [
+      "THEOREM TestA == ASSUME NEW a, NEW b, a => b, a PROVE b";
+      "    <1>1. b PROOF OBVIOUS";
+      "    <1>q. QED BY <1>1";
+    ]
+  in
+  match test_util_get_expl theorem with
+  | list ->
+      assert (
+        String.concat ";" list
+        = "Direct proof from assumptions;elim (modus ponens)")
 
 (* let%test_module "poc: explain direct" =
   (module struct
