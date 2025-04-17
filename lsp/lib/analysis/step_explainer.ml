@@ -1,5 +1,61 @@
 open Tlapm_lib
 
+type pred_expr_fun =
+  Expr.T.expr -> Expr.T.hyp Deque.dq -> Expr.T.expr list -> Expr.T.expr -> bool
+
+type pred_hyp_fun =
+  Expr.T.expr -> Expr.T.hyp Deque.dq -> Expr.T.expr list -> string list
+
+let find_in_ctx (active : Expr.T.expr) (context : Expr.T.hyp Deque.dq)
+    (pred_expr' : pred_expr_fun) (match_op : Expr.T.expr) (arg : Expr.T.expr) :
+    bool =
+  let pred_expr ((bools, index, exp) : bool list * int * Expr.T.expr)
+      (hyp : Expr.T.hyp) : bool list * int * Expr.T.expr =
+    let hyp_at_active =
+      Expr.Subst.app_hyp (Expr.Subst.shift (Deque.size context - index)) hyp
+    in
+    let new_bools =
+      match hyp_at_active.core with
+      | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _) ->
+          bools
+      | Fact (hyp_expr, _, _) -> (
+          match hyp_expr.core with
+          | Apply (op, args) ->
+              if op.core = match_op.core then
+                if pred_expr' active context args arg then true :: bools
+                else bools
+              else bools
+          | _ -> bools)
+    in
+    (new_bools, index + 1, exp)
+  in
+  let bools, _, _ = Deque.fold_left pred_expr ([], 0, arg) context in
+  match bools with [] -> false | _ -> true
+
+let iter_ctx (active : Expr.T.expr) (context : Expr.T.hyp Deque.dq)
+    (pred_hyp' : pred_hyp_fun) (match_op : Expr.T.expr) : string list =
+  let pred_hyp ((expls, index) : string list * int) (hyp : Expr.T.hyp) :
+      string list * int =
+    let hyp_at_active =
+      Expr.Subst.app_hyp (Expr.Subst.shift (Deque.size context - index)) hyp
+    in
+    let new_expls =
+      match hyp_at_active.core with
+      | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _) ->
+          expls
+      | Fact (hyp_expr, _, _) -> (
+          match hyp_expr.core with
+          | Apply (op, args) ->
+              if op.core = match_op.core then
+                pred_hyp' active context args @ expls
+              else expls
+          | _ -> expls)
+    in
+    (new_expls, index + 1)
+  in
+  let explanations, _ = Deque.fold_left pred_hyp ([], 0) context in
+  explanations
+
 let explain_obl_direct (active : Expr.T.expr) (context : Expr.T.hyp Deque.dq) :
     string list =
   match Backend.Prep.have_fact context active with
@@ -21,31 +77,15 @@ let explain_obl_conj_intro (active : Expr.T.expr)
 
 let explain_obl_conj_elim (active : Expr.T.expr) (context : Expr.T.hyp Deque.dq)
     : string list =
-  let process_hyp ((expls, index) : string list * int) (hyp : Expr.T.hyp) :
-      string list * int =
-    let hyp_at_active =
-      Expr.Subst.app_hyp (Expr.Subst.shift (Deque.size context - index)) hyp
-    in
-    let new_expls =
-      match hyp_at_active.core with
-      | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _) ->
-          expls
-      | Fact (hyp_expr, _, _) -> (
-          match hyp_expr.core with
-          | Apply (op, args) -> (
-              match op.core with
-              | Expr.T.Internal Builtin.Conj ->
-                  List.fold_left
-                    (fun acc arg ->
-                      if Expr.Eq.expr arg active then "/\\-elim" :: acc else acc)
-                    expls args
-              | _ -> expls)
-          | _ -> expls)
-    in
-    (new_expls, index + 1)
+  let pred_hyp_fun : pred_hyp_fun =
+   fun active _context args ->
+    List.fold_left
+      (fun acc arg ->
+        if Expr.Eq.expr arg active then "/\\-elim" :: acc else acc)
+      [] args
   in
-  let explanations, _ = Deque.fold_left process_hyp ([], 0) context in
-  explanations
+  iter_ctx active context pred_hyp_fun
+    (Property.noprops (Expr.T.Internal Builtin.Conj))
 
 let explain_obl_disj_intro (active : Expr.T.expr)
     (context : Expr.T.hyp Deque.dq) : string list =
@@ -62,152 +102,66 @@ let explain_obl_disj_intro (active : Expr.T.expr)
 
 let explain_obl_disj_elim (active : Expr.T.expr) (context : Expr.T.hyp Deque.dq)
     : string list =
-  let process_expr ((bools, index, exp) : bool list * int * Expr.T.expr)
-      (hyp : Expr.T.hyp) : bool list * int * Expr.T.expr =
-    let hyp_at_active =
-      Expr.Subst.app_hyp (Expr.Subst.shift (Deque.size context - index)) hyp
-    in
-    let new_bools =
-      match hyp_at_active.core with
-      | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _) ->
-          bools
-      | Fact (hyp_expr, _, _) -> (
-          match hyp_expr.core with
-          | Apply (op, args) -> (
-              match op.core with
-              | Expr.T.Internal Builtin.Implies ->
-                  if
-                    Expr.Eq.expr (List.nth args 0) exp
-                    && Expr.Eq.expr (List.nth args 1) active
-                  then true :: bools
-                  else bools
-              | _ -> bools)
-          | _ -> bools)
-    in
-    (new_bools, index + 1, exp)
+  let pred_expr_fun : pred_expr_fun =
+   fun _active _context args arg ->
+    Expr.Eq.expr (List.nth args 0) arg && Expr.Eq.expr (List.nth args 1) active
   in
-  let find_arg_impl_goal arg =
-    let bools, _, _ = Deque.fold_left process_expr ([], 0, arg) context in
-    match bools with [] -> false | _ -> true
-  in
-  let process_hyp ((expls, index) : string list * int) (hyp : Expr.T.hyp) :
-      string list * int =
-    let hyp_at_active =
-      Expr.Subst.app_hyp (Expr.Subst.shift (Deque.size context - index)) hyp
+  let pred_hyp_fun : pred_hyp_fun =
+   fun _active _context args ->
+    let all_found =
+      List.for_all
+        (fun arg ->
+          find_in_ctx active context pred_expr_fun
+            (Property.noprops (Expr.T.Internal Builtin.Implies))
+            arg)
+        args
     in
-    let new_expls =
-      match hyp_at_active.core with
-      | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _) ->
-          expls
-      | Fact (hyp_expr, _, _) -> (
-          match hyp_expr.core with
-          | Apply (op, args) -> (
-              match op.core with
-              | Expr.T.Internal Builtin.Disj -> (
-                  let all_found =
-                    List.for_all (fun arg -> find_arg_impl_goal arg) args
-                  in
-                  match all_found with true -> [ "\\/-elim" ] | false -> [])
-              | _ -> expls)
-          | _ -> expls)
-    in
-    (new_expls, index + 1)
+    match all_found with true -> [ "\\/-elim" ] | false -> []
   in
-  let explanations, _ = Deque.fold_left process_hyp ([], 0) context in
-  explanations
+  iter_ctx active context pred_hyp_fun
+    (Property.noprops (Expr.T.Internal Builtin.Disj))
 
 let explain_obl_disjunctive_syllogism (active : Expr.T.expr)
     (context : Expr.T.hyp Deque.dq) : string list =
-  let process_expr ((bools, index, exp) : bool list * int * Expr.T.expr)
-      (hyp : Expr.T.hyp) : bool list * int * Expr.T.expr =
-    let hyp_at_active =
-      Expr.Subst.app_hyp (Expr.Subst.shift (Deque.size context - index)) hyp
-    in
-    let new_bools =
-      match hyp_at_active.core with
-      | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _) ->
-          bools
-      | Fact (hyp_expr, _, _) -> (
-          match hyp_expr.core with
-          | Apply (op, args) -> (
-              match op.core with
-              | Expr.T.Internal Builtin.Neg ->
-                  if Expr.Eq.expr (List.nth args 0) exp then true :: bools
-                  else bools
-              | _ -> bools)
-          | _ -> bools)
-    in
-    (new_bools, index + 1, exp)
+  let pred_expr_fun : pred_expr_fun =
+   fun _active _context args arg -> Expr.Eq.expr (List.nth args 0) arg
   in
-  let find_neg_in_ctx arg =
-    let bools, _, _ = Deque.fold_left process_expr ([], 0, arg) context in
-    match bools with [] -> false | _ -> true
-  in
-  let process_hyp ((expls, index) : string list * int) (hyp : Expr.T.hyp) :
-      string list * int =
-    let hyp_at_active =
-      Expr.Subst.app_hyp (Expr.Subst.shift (Deque.size context - index)) hyp
+  let pred_hyp_fun : pred_hyp_fun =
+   fun active _context args ->
+    let args_wo_goal =
+      List.filter (fun arg -> not (Expr.Eq.expr arg active)) args
     in
-    let new_expls =
-      match hyp_at_active.core with
-      | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _) ->
-          expls
-      | Fact (hyp_expr, _, _) -> (
-          match hyp_expr.core with
-          | Apply (op, args) -> (
-              match op.core with
-              | Expr.T.Internal Builtin.Disj -> (
-                  let args_wo_goal =
-                    List.filter (fun arg -> not (Expr.Eq.expr arg active)) args
-                  in
-                  let exists = List.length args != List.length args_wo_goal in
-                  match exists with
-                  | true -> (
-                      let all_neg_found =
-                        List.for_all
-                          (fun arg -> find_neg_in_ctx arg)
-                          args_wo_goal
-                      in
-                      match all_neg_found with
-                      | true -> [ "Disjunctive syllogism" ]
-                      | false -> [])
-                  | false -> [])
-              | _ -> expls)
-          | _ -> expls)
-    in
-    (new_expls, index + 1)
+    let exists = List.length args != List.length args_wo_goal in
+    match exists with
+    | true -> (
+        let all_neg_found =
+          List.for_all
+            (fun arg ->
+              find_in_ctx active context pred_expr_fun
+                (Property.noprops (Expr.T.Internal Builtin.Neg))
+                arg)
+            args_wo_goal
+        in
+        match all_neg_found with
+        | true -> [ "Disjunctive syllogism" ]
+        | false -> [])
+    | false -> []
   in
-  let explanations, _ = Deque.fold_left process_hyp ([], 0) context in
-  explanations
+  iter_ctx active context pred_hyp_fun
+    (Property.noprops (Expr.T.Internal Builtin.Disj))
 
 let explain_obl_elim_modus_ponens (active : Expr.T.expr)
     (context : Expr.T.hyp Deque.dq) : string list =
-  let process_hyp ((expls, index) : string list * int) (hyp : Expr.T.hyp) :
-      string list * int =
-    let hyp_at_active =
-      Expr.Subst.app_hyp (Expr.Subst.shift (Deque.size context - index)) hyp
-    in
-    let new_expls =
-      match hyp_at_active.core with
-      | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _) ->
-          expls
-      | Fact (hyp_expr, _, _) -> (
-          match hyp_expr.core with
-          | Apply (op, args) -> (
-              match op.core with
-              | Expr.T.Internal Builtin.Implies ->
-                  if
-                    Expr.Eq.expr (List.nth args 1) active
-                    && Backend.Prep.have_fact context (List.nth args 0)
-                  then [ "elim (modus ponens)" ]
-                  else []
-              | _ -> expls)
-          | _ -> expls)
-    in
-    (new_expls, index + 1)
+  let pred_hyp_fun : pred_hyp_fun =
+   fun active context args ->
+    if
+      Expr.Eq.expr (List.nth args 1) active
+      && Backend.Prep.have_fact context (List.nth args 0)
+    then [ "elim (modus ponens)" ]
+    else []
   in
-  let explanations, _ = Deque.fold_left process_hyp ([], 0) context in
-  explanations
+  iter_ctx active context pred_hyp_fun
+    (Property.noprops (Expr.T.Internal Builtin.Implies))
 
 let explain_obl (obl : Proof.T.obligation) : string list =
   let obl = Backend.Prep.expand_defs obl in
