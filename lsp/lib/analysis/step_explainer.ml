@@ -87,9 +87,7 @@ let explain_obl_disj_elim (active : Expr.T.expr) (context : Expr.T.hyp Deque.dq)
     (new_bools, index + 1, exp)
   in
   let find_arg_impl_goal arg =
-    let bools, _, _ =
-      Deque.fold_left process_expr ([], 0, arg) context
-    in
+    let bools, _, _ = Deque.fold_left process_expr ([], 0, arg) context in
     match bools with [] -> false | _ -> true
   in
   let process_hyp ((expls, index) : string list * int) (hyp : Expr.T.hyp) :
@@ -118,6 +116,70 @@ let explain_obl_disj_elim (active : Expr.T.expr) (context : Expr.T.hyp Deque.dq)
   let explanations, _ = Deque.fold_left process_hyp ([], 0) context in
   explanations
 
+let explain_obl_disjunctive_syllogism (active : Expr.T.expr)
+    (context : Expr.T.hyp Deque.dq) : string list =
+  let process_expr ((bools, index, exp) : bool list * int * Expr.T.expr)
+      (hyp : Expr.T.hyp) : bool list * int * Expr.T.expr =
+    let hyp_at_active =
+      Expr.Subst.app_hyp (Expr.Subst.shift (Deque.size context - index)) hyp
+    in
+    let new_bools =
+      match hyp_at_active.core with
+      | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _) ->
+          bools
+      | Fact (hyp_expr, _, _) -> (
+          match hyp_expr.core with
+          | Apply (op, args) -> (
+              match op.core with
+              | Expr.T.Internal Builtin.Neg ->
+                  if Expr.Eq.expr (List.nth args 0) exp then true :: bools
+                  else bools
+              | _ -> bools)
+          | _ -> bools)
+    in
+    (new_bools, index + 1, exp)
+  in
+  let find_neg_in_ctx arg =
+    let bools, _, _ = Deque.fold_left process_expr ([], 0, arg) context in
+    match bools with [] -> false | _ -> true
+  in
+  let process_hyp ((expls, index) : string list * int) (hyp : Expr.T.hyp) :
+      string list * int =
+    let hyp_at_active =
+      Expr.Subst.app_hyp (Expr.Subst.shift (Deque.size context - index)) hyp
+    in
+    let new_expls =
+      match hyp_at_active.core with
+      | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _) ->
+          expls
+      | Fact (hyp_expr, _, _) -> (
+          match hyp_expr.core with
+          | Apply (op, args) -> (
+              match op.core with
+              | Expr.T.Internal Builtin.Disj -> (
+                  let args_wo_goal =
+                    List.filter (fun arg -> not (Expr.Eq.expr arg active)) args
+                  in
+                  let exists = List.length args != List.length args_wo_goal in
+                  match exists with
+                  | true -> (
+                      let all_neg_found =
+                        List.for_all
+                          (fun arg -> find_neg_in_ctx arg)
+                          args_wo_goal
+                      in
+                      match all_neg_found with
+                      | true -> [ "Disjunctive syllogism" ]
+                      | false -> [])
+                  | false -> [])
+              | _ -> expls)
+          | _ -> expls)
+    in
+    (new_expls, index + 1)
+  in
+  let explanations, _ = Deque.fold_left process_hyp ([], 0) context in
+  explanations
+
 let explain_obl (obl : Proof.T.obligation) : string list =
   let obl = Backend.Prep.expand_defs obl in
   let active = obl.obl.core.active in
@@ -131,6 +193,7 @@ let explain_obl (obl : Proof.T.obligation) : string list =
          explain_obl_conj_elim;
          explain_obl_disj_intro;
          explain_obl_disj_elim;
+         explain_obl_disjunctive_syllogism;
        ])
 
 let test_util_get_expl (theorem : string list) : string list =
@@ -251,6 +314,20 @@ let%test_unit "explain disj elim not full" =
   in
   match test_util_get_expl theorem with
   | list -> assert (String.concat ";" list = "Direct proof from assumptions")
+
+let%test_unit "explain disjunctive syllogism" =
+  let theorem =
+    [
+      "THEOREM TestA == ASSUME NEW a, NEW b, a \\/ b, ~a PROVE b";
+      "    <1>1. b PROOF OBVIOUS";
+      "    <1>q. QED BY <1>1";
+    ]
+  in
+  match test_util_get_expl theorem with
+  | list ->
+      assert (
+        String.concat ";" list
+        = "Direct proof from assumptions;Disjunctive syllogism")
 
 (* let%test_module "poc: explain direct" =
   (module struct
