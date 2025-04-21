@@ -233,7 +233,7 @@ let rec generate (sq : sequent) prf time_flag =
   let loc = Util.get_locus prf in
   let file_basename = Filename.basename loc.Loc.file in
   if !Params.verbose then
-    Util.eprintf "Deciding whether to generate \
+    Util.printf "Deciding whether to generate \
         proof obligations for a proof in \
         a file with basename `%s` \
         (inside `Proof.Gen`)\n"
@@ -243,7 +243,7 @@ let rec generate (sq : sequent) prf time_flag =
      || Loc.line loc.Loc.start > !Params.tb_el
   then begin
     if !Params.verbose then
-    Util.eprintf "Skipping generation of \
+    Util.printf "Skipping generation of \
         proof obligations for this particular proof, \
         because no path from those given to `tlapm` \
         has basename `%s`\n"
@@ -251,7 +251,7 @@ let rec generate (sq : sequent) prf time_flag =
     prf
   end else begin
     if !Params.verbose then
-    Util.eprintf "Will generate proof obligations for \
+    Util.printf "Will generate proof obligations for \
         a proof in a file with basename `%s`\n"
         file_basename;
     match prf.core with

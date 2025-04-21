@@ -521,7 +521,7 @@ let fp_close_and_consolidate file oc =
   write_fp_table noc;
   close_out noc;
   Sys.rename tmpfile file;
-  Util.eprintf "(* fingerprints written in %S *)" file;
+  Util.printf "(* fingerprints written in %S *)" file;
   if Hashtbl.length !fptbl < !num_fingerprints_loaded then begin
     Errors.err "The fingerprints file %s has fewer entries than its \
                 previous version (stored in %s)." file !hist_dir_name;

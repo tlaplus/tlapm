@@ -1925,7 +1925,7 @@ let sequent_stats (sq: sequent) =
              nums.hidden_definition_names) ^
         "\nVisible fact names:\n")
         in
-    Util.eprintf ~prefix:"[INFO]: " "%s" msg;
+    Util.printf ~prefix:"[INFO]: " "%s" msg;
     (*
     let print_fact e =
         let print = Expr.Fmt.pp_print_expr in

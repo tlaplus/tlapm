@@ -379,7 +379,7 @@ let print_obligation ob =
         let cx = (Deque.empty, Ctx.dot) in
         let fmt = Format.std_formatter in
         print cx fmt ob.obl.core) in
-    Util.eprintf
+    Util.printf
         ~at:ob.obl
         ~prefix:"[INFO]: "
         "%s@\n  @[<b0>%t@]@." msg pr_obl
@@ -390,7 +390,7 @@ let print_obligation ob =
 let log_info (msg: string) =
     let at = noprops "" in
     (* to print `prefix`, set `at <> None` *)
-    Util.eprintf
+    Util.printf
         ~at:at
         ~prefix:"[INFO]: " "%s" msg
 

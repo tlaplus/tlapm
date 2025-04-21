@@ -288,7 +288,7 @@ let lambdify_enabled_cdot cx mus =
                             "named: " ^ s.core ^ ", "
                         | None -> ""
                         ) ^ "at: " ^ (Expr.T.format_locus sq.active)) in
-                    Util.eprintf ~at:sq.active ~prefix:"[ERROR]" "%s" msg;
+                    Util.printf ~at:sq.active ~prefix:"[ERROR]" "%s" msg;
                     Backend.Toolbox.print_message msg;
                     {context=Deque.empty; active=(Internal TRUE) @@ sq.active}
                 end in

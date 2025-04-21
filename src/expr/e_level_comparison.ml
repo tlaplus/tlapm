@@ -785,7 +785,7 @@ let check_level_change cx expr =
         let proved = !found in
         begin if proved then begin
             if !Params.verbose then
-            Util.eprintf ~at:expr ~prefix:"[INFO]" "%s"
+            Util.printf ~at:expr ~prefix:"[INFO]" "%s"
                 ("Proved level comparison\n")
             end
         else
