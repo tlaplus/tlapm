@@ -48,6 +48,13 @@ let location ?(cap=true) lw = match query_locus lw with
   | None -> "<unknown location>"
   | Some loc -> string_of_locus ~cap:cap loc
 
+
+let err_formatter = ref Format.err_formatter
+let std_formatter = ref Format.std_formatter
+let redirect_stderr fmt = err_formatter := fmt
+let redirect_stdout fmt = std_formatter := fmt
+
+
 (* FIXME get rid of nonl *)
 let kfprintf ?debug ?at ?prefix ?nonl cont ff fmt =
   (* Print `prefix` only if `at` is not `None`. *)
@@ -91,12 +98,11 @@ let sprintf ?debug ?at ?prefix ?nonl fmt =
 let fprintf ?debug ?at ?prefix ?nonl ff fmt =
   kfprintf ?debug ?at ?prefix ?nonl (fun _ -> ()) ff fmt
 
-
 let eprintf ?debug ?at ?prefix ?nonl fmt =
-  fprintf ?debug ?at ?prefix ?nonl Format.err_formatter fmt
+  fprintf ?debug ?at ?prefix ?nonl !err_formatter fmt
 
 let printf ?debug ?at ?prefix ?nonl fmt =
-  fprintf ?debug ?at ?prefix ?nonl Format.std_formatter fmt
+  fprintf ?debug ?at ?prefix ?nonl !std_formatter fmt
 
 
 (* FIXME remove, replace with assert false *)
