@@ -8,7 +8,11 @@ module type Callbacks = sig
   val ready : t -> t
   val shutdown : t -> t
   val lsp_send : t -> Jsonrpc.Packet.t -> t
-  val with_docs : t -> (t * Docs.t -> t * Docs.t) -> t
+  val with_docs : t -> (t -> Docs.t -> t * Docs.t) -> t
+
+  val with_docs_res :
+    t -> (t -> Docs.t -> t * Docs.t * 'a option) -> t * 'a option
+
   val prove_step : t -> LspT.DocumentUri.t -> int -> LspT.Range.t -> t
   val cancel : t -> LspT.ProgressToken.t -> t
   val use_paths : t -> string list -> t

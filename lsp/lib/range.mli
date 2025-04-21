@@ -14,6 +14,7 @@ val line_from : t -> int
 val line_till : t -> int
 val as_lsp_range : t -> LspT.Range.t
 val of_lsp_range : LspT.Range.t -> t
+val of_lsp_position : LspT.Position.t -> t
 val of_string_opt : string -> t option
 val of_locus : Tlapm_lib.Loc.locus -> t option
 val of_locus_opt : Tlapm_lib.Loc.locus option -> t option
@@ -23,9 +24,11 @@ val of_wrapped_must : 'a Tlapm_lib.Property.wrapped -> t
 val of_points : Position.t -> Position.t -> t
 val of_ints : lf:int -> cf:int -> lt:int -> ct:int -> t
 val of_lines : int -> int -> t
+val of_len : t -> int -> t
 val of_unknown : t
 val of_all : t
 val join : t -> t -> t
+val crop_line_prefix : t -> int -> t
 val string_of_range : t -> string
 val string_of_pos : Position.t -> string
 val compare : t -> t -> int

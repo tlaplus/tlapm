@@ -67,6 +67,10 @@ let of_lsp_range (range : LspT.Range.t) =
   let t = (range.end_.line + 1, range.end_.character) in
   R (f, t)
 
+let of_lsp_position (pos : LspT.Position.t) =
+  let p = (pos.line + 1, pos.character + 1) in
+  R (p, p)
+
 let of_string_opt s =
   match String.split_on_char ':' s with
   | [ fl; fc; tl; tc ] ->
@@ -90,11 +94,14 @@ let of_wrapped_must prop = Option.get (of_wrapped prop)
 let of_points f t = R (Position.as_pair f, Position.as_pair t)
 let of_ints ~lf ~cf ~lt ~ct = R ((lf, cf), (lt, ct))
 let of_lines fl tl = R ((fl, 1), (tl, 1))
+let of_len (R ((fl, fc), _)) len = R ((fl, fc), (fl, fc + len - 1))
 
 let join (R (af, at)) (R (bf, bt)) =
   let f = Position.min (Position.of_pair af) (Position.of_pair bf) in
   let t = Position.max (Position.of_pair at) (Position.of_pair bt) in
   of_points f t
+
+let crop_line_prefix (R ((lf, cf), t)) offset = R ((lf, cf + offset), t)
 
 let string_of_range (R ((fl, fc), (tl, tc))) : string =
   Format.sprintf "%d:%d:%d:%d" fl fc tl tc

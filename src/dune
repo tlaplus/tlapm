@@ -30,7 +30,7 @@
  (inline_tests
   (deps "../test/resources/module/m_save/TLC.tla"))
  (preprocess
-  (pps ppx_inline_test ppx_assert)))
+  (pps ppx_inline_test ppx_assert ppx_deriving.show)))
 
 (ocamllex alexer)
 

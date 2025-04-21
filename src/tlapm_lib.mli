@@ -10,6 +10,7 @@ module Util = Util
 module Loc = Loc
 module Ctx = Ctx
 module Backend = Backend
+module Builtin = Builtin
 
 val main : string list -> unit
 val init : unit -> unit
