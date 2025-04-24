@@ -246,7 +246,20 @@ let as_lsp_tlaps_proof_obligation_state obl =
   let role = Role.as_string obl.role in
   let range = Range.as_lsp_range (loc obl) in
   let status = Proof_status.to_string obl.status in
-  let normalized = text_normalized obl in
+  let explanation obl =
+    match obl.parsed with
+    | Some o ->
+        let explanations = Analysis.Step_explainer.explain_obl o in
+        if explanations != [] then
+          "(* " ^ String.concat "\n" explanations ^ " *)\n"
+        else "(* Explanation missing *)\n"
+    | None -> "(* Explanation missing *)\n"
+  in
+  let normalized =
+    match text_normalized obl with
+    | Some str -> Some (explanation obl ^ str)
+    | None -> None
+  in
   let results =
     let open Toolbox.Obligation in
     let some_str s = match s with None -> "?" | Some s -> s in
