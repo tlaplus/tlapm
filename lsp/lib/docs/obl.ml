@@ -251,7 +251,7 @@ let as_lsp_tlaps_proof_obligation_state obl =
     | Some o ->
         let explanations = Analysis.Step_explainer.explain_obl o in
         if explanations != [] then
-          "(* " ^ String.concat "\n" explanations ^ " *)\n"
+          "(* " ^ String.concat "\n   " explanations ^ " *)\n"
         else "(* Explanation missing *)\n"
     | None -> "(* Explanation missing *)\n"
   in
