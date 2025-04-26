@@ -123,4 +123,4 @@ let on_parsed_mule docs uri vsn f =
 let on_parsed_mule_latest docs uri f =
   match latest_vsn docs uri with
   | None -> (docs, None)
-  | Some latest_vsn -> on_parsed_mule docs uri latest_vsn f
+  | Some latest_vsn -> on_parsed_mule docs uri latest_vsn (f latest_vsn)

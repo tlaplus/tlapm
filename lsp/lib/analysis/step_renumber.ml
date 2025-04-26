@@ -11,19 +11,21 @@ module StepInfo = struct
 
   let make_opt stepno_opt (step_loc : Loc.locus) pos : t option =
     match stepno_opt with
-    | Proof.T.Named (level, suffix, false) ->
+    | Proof.T.Named (level, suffix, false) -> (
         let prefix_str = Printf.sprintf "<%d>" level in
         let target_str = Printf.sprintf "<%d>%d" level pos in
         let step_str = Printf.sprintf "<%d>%s" level suffix in
-        let range = Range.of_locus_must step_loc in
-        let range = Range.of_len range (String.length step_str) in
-        Some
-          {
-            name = step_str;
-            target_name = target_str;
-            prefix_len = String.length prefix_str;
-            ranges = [ range ];
-          }
+        match Range.of_locus step_loc with
+        | None -> None
+        | Some range ->
+            let range = Range.of_len range (String.length step_str) in
+            Some
+              {
+                name = step_str;
+                target_name = target_str;
+                prefix_len = String.length prefix_str;
+                ranges = [ range ];
+              })
     | Proof.T.Named (_level, _suffix, true) -> None
     | Proof.T.Unnamed (_, _) -> None
 
@@ -31,8 +33,9 @@ module StepInfo = struct
     List.map
       (fun si ->
         if si.name = step_name then
-          let si_range = Range.of_locus_must locus in
-          { si with ranges = si_range :: si.ranges }
+          match Range.of_locus locus with
+          | None -> si
+          | Some si_range -> { si with ranges = si_range :: si.ranges }
         else si)
       sis
 end
@@ -53,11 +56,13 @@ class step_renumber_visitor (at_loc : Range.t) =
 
     (* We don't have the range at the theorem, so we try to track it by inspecting module units. *)
     method! module_unit cx mu =
-      let mu_range = Range.of_wrapped_must mu in
-      steps_range <-
-        (match Range.lines_intersect mu_range at_loc with
-        | true -> Some mu_range
-        | false -> None);
+      (match Range.of_wrapped mu with
+      | None -> ()
+      | Some mu_range ->
+          steps_range <-
+            (match Range.lines_intersect mu_range at_loc with
+            | true -> Some mu_range
+            | false -> None));
       m_super#module_unit cx mu
 
     (* Leaf at the `Module.Visit.map as m_super`.
@@ -76,41 +81,48 @@ class step_renumber_visitor (at_loc : Range.t) =
        But keep the collected ranges for already known steps. *)
     method! proof ctx pf : unit =
       match pf.core with
-      | Steps (sts, qed) ->
-          let pf_range = Range.of_wrapped_must pf in
-          let pf_at_loc = Range.lines_intersect pf_range at_loc in
-          if
-            List.is_empty step_list && Option.is_some steps_range
-            && not pf_at_loc
-          then (
-            let sts_info =
-              List.mapi
-                (fun pos st ->
-                  let st_stepno = Property.get st Proof.T.Props.step in
-                  let st_locus = Util.get_locus st in
-                  StepInfo.make_opt st_stepno st_locus (pos + 1))
-                sts
-            in
-            let qed_info =
-              let qed_stepno = Property.get qed Proof.T.Props.step in
-              let qed_locus = Util.get_locus qed in
-              StepInfo.make_opt qed_stepno qed_locus (List.length sts_info + 1)
-            in
-            step_list <-
-              List.filter_map (fun x -> x) (List.append sts_info [ qed_info ]);
-            p_super#proof ctx pf;
-            raise (Found_it step_list))
-          else p_super#proof ctx pf
+      | Steps (sts, qed) -> (
+          match Range.of_wrapped pf with
+          | None -> p_super#proof ctx pf
+          | Some pf_range ->
+              let pf_at_loc = Range.lines_intersect pf_range at_loc in
+              if
+                List.is_empty step_list && Option.is_some steps_range
+                && not pf_at_loc
+              then (
+                let sts_info =
+                  List.mapi
+                    (fun pos st ->
+                      let st_stepno = Property.get st Proof.T.Props.step in
+                      let st_locus = Util.get_locus st in
+                      StepInfo.make_opt st_stepno st_locus (pos + 1))
+                    sts
+                in
+                let qed_info =
+                  let qed_stepno = Property.get qed Proof.T.Props.step in
+                  let qed_locus = Util.get_locus qed in
+                  StepInfo.make_opt qed_stepno qed_locus
+                    (List.length sts_info + 1)
+                in
+                step_list <-
+                  List.filter_map
+                    (fun x -> x)
+                    (List.append sts_info [ qed_info ]);
+                p_super#proof ctx pf;
+                raise (Found_it step_list))
+              else p_super#proof ctx pf)
       | _ -> p_super#proof ctx pf
 
     (* For a step, we put its name to range mapping to the context. *)
     method! step ctx (st : Proof.T.step) =
       if List.is_empty step_list then
         (* Still looking for the steps to re-number. *)
-        let st_range = Range.of_wrapped_must st in
-        if Range.lines_intersect st_range at_loc then
-          steps_range <- Some st_range
-        else steps_range <- None
+        match Range.of_wrapped st with
+        | None -> steps_range <- None
+        | Some st_range ->
+            if Range.lines_intersect st_range at_loc then
+              steps_range <- Some st_range
+            else steps_range <- None
       else
         (* Just looking for references to the steps. *)
         ();
