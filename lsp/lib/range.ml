@@ -68,8 +68,7 @@ let of_lsp_range (range : LspT.Range.t) =
   R (f, t)
 
 let of_lsp_position (pos : LspT.Position.t) =
-  let p = (pos.line + 1, pos.character + 1) in
-  R (p, p)
+  R ((pos.line + 1, pos.character + 1), (pos.line + 1, pos.character))
 
 let of_string_opt s =
   match String.split_on_char ':' s with
@@ -116,6 +115,12 @@ let of_all = R ((0, 0), (0, 0))
 
 (** [before p r] means range [r] is before point [p]. *)
 let before p r = Position.less (till r) p
+
+(** [touches a b] is true, if ranges [a] and [b] touches with their endpoints.
+    Consider here that the ranges here are with the end character inclusive.
+    I.e. "..-x:10" touches with "x:11-.." *)
+let touches (R ((alf, acf), (alt, act))) (R ((blf, bcf), (blt, bct))) =
+  (alt = blf && act + 1 = bcf) || (blt = alf && bct + 1 = acf)
 
 (** [intersect a b] is true, if ranges [a] and [b] overlaps. *)
 let intersect a b =
