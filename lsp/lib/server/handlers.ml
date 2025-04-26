@@ -237,13 +237,14 @@ module Make (CB : Callbacks) = struct
     let uri = params.textDocument.uri in
     let pos = Range.of_lsp_position params.position in
     CB.with_docs cb_state @@ fun cb_st docs ->
-    let f _vsn mule = Analysis.Step_rename.find_ranges pos mule in
+    let open Analysis.Step_rename in
+    let f _vsn mule = find_ranges pos mule in
     let docs, res = Docs.on_parsed_mule_latest docs uri f in
     let cb_st =
       match res with
       | None -> reply_ok jsonrpc_req `Null cb_st
-      | Some (step_name, label_offset, step_ranges) -> (
-          match List.find_opt (Range.intersect pos) step_ranges with
+      | Some si -> (
+          match StepInfo.matching_range si pos with
           | None -> reply_ok jsonrpc_req `Null cb_st
           | Some step_range ->
               reply_ok jsonrpc_req
@@ -252,12 +253,8 @@ module Make (CB : Callbacks) = struct
                      ( "range",
                        LspT.Range.yojson_of_t
                          (Range.as_lsp_range
-                            (Analysis.Step_rename.step_label_range step_range
-                               label_offset)) );
-                     ( "placeholder",
-                       `String
-                         (Analysis.Step_rename.step_label step_name label_offset)
-                     );
+                            (StepInfo.step_label_range si step_range)) );
+                     ("placeholder", `String (StepInfo.step_label si));
                    ])
                 cb_st)
     in
@@ -267,15 +264,16 @@ module Make (CB : Callbacks) = struct
       (params : LspT.RenameParams.t) cb_state =
     let uri = params.textDocument.uri in
     let pos = Range.of_lsp_position params.position in
-    let new_text = params.newName in
+    let newText = params.newName in
     CB.with_docs cb_state @@ fun cb_st docs ->
-    let f _vsn mule = Analysis.Step_rename.find_ranges pos mule in
+    let open Analysis.Step_rename in
+    let f _vsn mule = find_ranges pos mule in
     let docs, res = Docs.on_parsed_mule_latest docs uri f in
     let cb_st =
       match res with
       | None -> reply_ok jsonrpc_req `Null cb_st
-      | Some (_step_name, label_offset, step_ranges) -> (
-          match List.find_opt (Range.intersect pos) step_ranges with
+      | Some si -> (
+          match StepInfo.matching_range si pos with
           | None -> reply_ok jsonrpc_req `Null cb_st
           | Some _step_range ->
               let edits =
@@ -283,11 +281,10 @@ module Make (CB : Callbacks) = struct
                   (fun step_range ->
                     let range =
                       Range.as_lsp_range
-                        (Analysis.Step_rename.step_label_range step_range
-                           label_offset)
+                        (StepInfo.step_label_range si step_range)
                     in
-                    LspT.TextEdit.create ~newText:new_text ~range)
-                  step_ranges
+                    LspT.TextEdit.create ~newText ~range)
+                  si.step_ranges
               in
               let workspace_edit =
                 LspT.WorkspaceEdit.create ~changes:[ (uri, edits) ] ()

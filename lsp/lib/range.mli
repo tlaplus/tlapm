@@ -33,6 +33,7 @@ val string_of_range : t -> string
 val string_of_pos : Position.t -> string
 val compare : t -> t -> int
 val before : Position.t -> t -> bool
+val touches : t -> t -> bool
 val intersect : t -> t -> bool
 val lines_intersect : t -> t -> bool
 val line_covered : t -> Position.t -> bool
