@@ -4,6 +4,7 @@ module StepInfo : sig
   type t = {
     name : string;
     target_name : string;
+    level : int;
     prefix_len : int;
     ranges : Range.t list;
   }

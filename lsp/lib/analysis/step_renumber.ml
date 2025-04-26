@@ -4,16 +4,16 @@ module StepInfo = struct
   type t = {
     name : string;
     target_name : string;
+    level : int;
     prefix_len : int;
     ranges : Range.t list;
   }
   [@@deriving show]
 
-  let make_opt stepno_opt (step_loc : Loc.locus) pos : t option =
+  let make_opt stepno_opt (step_loc : Loc.locus) : t option =
     match stepno_opt with
     | Proof.T.Named (level, suffix, false) -> (
         let prefix_str = Printf.sprintf "<%d>" level in
-        let target_str = Printf.sprintf "<%d>%d" level pos in
         let step_str = Printf.sprintf "<%d>%s" level suffix in
         match Range.of_locus step_loc with
         | None -> None
@@ -22,12 +22,17 @@ module StepInfo = struct
             Some
               {
                 name = step_str;
-                target_name = target_str;
+                target_name = step_str;
+                level;
                 prefix_len = String.length prefix_str;
                 ranges = [ range ];
               })
     | Proof.T.Named (_level, _suffix, true) -> None
     | Proof.T.Unnamed (_, _) -> None
+
+  let with_target_name si pos =
+    let target_name = Printf.sprintf "<%d>%d" si.level pos in
+    { si with target_name }
 
   let add_range_opt (sis : t list) (step_name : string) (locus : Loc.locus) =
     List.map
@@ -91,23 +96,24 @@ class step_renumber_visitor (at_loc : Range.t) =
                 && not pf_at_loc
               then (
                 let sts_info =
-                  List.mapi
-                    (fun pos st ->
+                  List.map
+                    (fun st ->
                       let st_stepno = Property.get st Proof.T.Props.step in
                       let st_locus = Util.get_locus st in
-                      StepInfo.make_opt st_stepno st_locus (pos + 1))
+                      StepInfo.make_opt st_stepno st_locus)
                     sts
                 in
                 let qed_info =
                   let qed_stepno = Property.get qed Proof.T.Props.step in
                   let qed_locus = Util.get_locus qed in
                   StepInfo.make_opt qed_stepno qed_locus
-                    (List.length sts_info + 1)
                 in
                 step_list <-
-                  List.filter_map
-                    (fun x -> x)
-                    (List.append sts_info [ qed_info ]);
+                  List.mapi
+                    (fun pos st -> StepInfo.with_target_name st (pos + 1))
+                    (List.filter_map
+                       (fun x -> x)
+                       (List.append sts_info [ qed_info ]));
                 p_super#proof ctx pf;
                 raise (Found_it step_list))
               else p_super#proof ctx pf)
