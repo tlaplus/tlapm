@@ -151,11 +151,6 @@ let find_ranges (at_loc : Range.t) (mule : Module.T.mule) : StepInfo.t list =
     []
   with Found_it step_info_list -> step_info_list
 
-(* let make_renames (sts : StepInfo.t list) =
-  let open StepInfo in
-  let sts = List.filter (fun st -> st.name != st.target_name) sts in
-  List.map (fun st -> ()) sts *)
-
 let%test_module "renumber step tests" =
   (module struct
     let mule =
