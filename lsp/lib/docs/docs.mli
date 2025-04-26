@@ -96,5 +96,5 @@ val on_parsed_mule :
 (** Apply [f] on a parsed module, if any. *)
 
 val on_parsed_mule_latest :
-  t -> tk -> (Tlapm_lib.Module.T.mule -> 'a option) -> t * 'a option
+  t -> tk -> (int -> Tlapm_lib.Module.T.mule -> 'a option) -> t * 'a option
 (** Apply [f] on a parsed module of the latest version, if any. *)

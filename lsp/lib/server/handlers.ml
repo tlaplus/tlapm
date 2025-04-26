@@ -1,3 +1,4 @@
+(* cspell:words failwith yojson *)
 module LspT = Lsp.Types
 
 module type Callbacks = sig
@@ -236,7 +237,7 @@ module Make (CB : Callbacks) = struct
     let uri = params.textDocument.uri in
     let pos = Range.of_lsp_position params.position in
     CB.with_docs cb_state @@ fun cb_st docs ->
-    let f mule = Analysis.Step_rename.find_ranges pos mule in
+    let f _vsn mule = Analysis.Step_rename.find_ranges pos mule in
     let docs, res = Docs.on_parsed_mule_latest docs uri f in
     let cb_st =
       match res with
@@ -268,7 +269,7 @@ module Make (CB : Callbacks) = struct
     let pos = Range.of_lsp_position params.position in
     let new_text = params.newName in
     CB.with_docs cb_state @@ fun cb_st docs ->
-    let f mule = Analysis.Step_rename.find_ranges pos mule in
+    let f _vsn mule = Analysis.Step_rename.find_ranges pos mule in
     let docs, res = Docs.on_parsed_mule_latest docs uri f in
     let cb_st =
       match res with
@@ -360,36 +361,88 @@ module Make (CB : Callbacks) = struct
       (params : LspT.CodeActionParams.t) cb_state =
     let user_range = params.range in
     let uri = params.textDocument.uri in
-    let cb_state, res = CB.suggest_proof_range cb_state uri user_range in
-    match res with
-    | None ->
+
+    (* Suggest step renumber command. *)
+    let cb_state, step_renumber_cas =
+      CB.with_docs_res cb_state @@ fun cb_st docs ->
+      let open Analysis.Step_renumber.StepInfo in
+      let f _vsn mule =
+        let ranges =
+          Analysis.Step_renumber.find_ranges
+            (Range.of_lsp_range user_range)
+            mule
+        in
+        let ranges = List.filter (fun st -> st.name != st.target_name) ranges in
+        if ranges = [] then None else Some ranges
+      in
+      let docs, ranges_opt = Docs.on_parsed_mule_latest docs uri f in
+      let actions =
+        match ranges_opt with
+        | None -> []
+        | Some sts ->
+            let title = "Renumber proof steps" in
+            let edits =
+              List.map
+                (fun si ->
+                  let newText = si.target_name in
+                  List.map
+                    (fun range ->
+                      let range = Range.as_lsp_range range in
+                      LspT.TextEdit.create ~newText ~range)
+                    si.ranges)
+                sts
+            in
+            let edits = List.flatten edits in
+            let edit = LspT.WorkspaceEdit.create ~changes:[ (uri, edits) ] () in
+            let action = LspT.CodeAction.create ~title ~edit () in
+            [ action ]
+      in
+      (cb_st, docs, Some actions)
+    in
+
+    (* Suggest "check proof step" action. *)
+    let cb_state, check_step_cas =
+      let cb_state, res = CB.suggest_proof_range cb_state uri user_range in
+      match res with
+      | None -> (cb_state, [])
+      | Some (version, p_range) ->
+          let l_from = p_range.start.line + 1 in
+          let l_till = p_range.end_.line + 1 in
+          let title =
+            if l_from = 0 && l_till = 0 then "Check all document proofs"
+            else if l_from = l_till then
+              Format.sprintf "Check proof on line %d" l_from
+            else Format.sprintf "Check proofs on lines %d-%d" l_from l_till
+          in
+          let uri_vsn =
+            LspT.VersionedTextDocumentIdentifier.create ~uri ~version
+          in
+          let check_step_ca =
+            LspT.CodeAction.create ~title
+              ~command:
+                (LspT.Command.create ~command:"tlaplus.tlaps.check-step.lsp"
+                   ~title
+                   ~arguments:
+                     [
+                       LspT.VersionedTextDocumentIdentifier.yojson_of_t uri_vsn;
+                       LspT.Range.yojson_of_t p_range;
+                     ]
+                   ())
+              ()
+          in
+          (cb_state, [ check_step_ca ])
+    in
+
+    (* Return the actions. *)
+    let acts =
+      List.append check_step_cas
+        (List.flatten (Option.to_list step_renumber_cas))
+    in
+    match acts with
+    | [] ->
         reply_ok jsonrpc_req (LspT.CodeActionResult.yojson_of_t None) cb_state
-    | Some (version, p_range) ->
-        let l_from = p_range.start.line + 1 in
-        let l_till = p_range.end_.line + 1 in
-        let title =
-          if l_from = 0 && l_till = 0 then "Check all document proofs"
-          else if l_from = l_till then
-            Format.sprintf "Check proof on line %d" l_from
-          else Format.sprintf "Check proofs on lines %d-%d" l_from l_till
-        in
-        let uri_vsn =
-          LspT.VersionedTextDocumentIdentifier.create ~uri ~version
-        in
-        let check_step_ca =
-          LspT.CodeAction.create ~title
-            ~command:
-              (LspT.Command.create ~command:"tlaplus.tlaps.check-step.lsp"
-                 ~title
-                 ~arguments:
-                   [
-                     LspT.VersionedTextDocumentIdentifier.yojson_of_t uri_vsn;
-                     LspT.Range.yojson_of_t p_range;
-                   ]
-                 ())
-            ()
-        in
-        let acts = Some [ `CodeAction check_step_ca ] in
+    | _ :: _ ->
+        let acts = Some (List.map (fun a -> `CodeAction a) acts) in
         reply_ok jsonrpc_req (LspT.CodeActionResult.yojson_of_t acts) cb_state
 
   (** Dispatch request packets. *)
