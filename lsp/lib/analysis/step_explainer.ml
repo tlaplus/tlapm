@@ -163,6 +163,219 @@ let explain_obl_elim_modus_ponens (active : Expr.T.expr)
   iter_ctx active context pred_hyp_fun
     (Property.noprops (Expr.T.Internal Builtin.Implies))
 
+  let rec _t_usable_fact (fact : Tlapm_lib__.Expr.T.expr) =
+    let open Tlapm_lib in
+    let nm =
+      match fact.core with
+      | Expr.T.Ix n -> "Ix" ^ string_of_int n
+      | Expr.T.Opaque s -> "Opaque-" ^ s
+      | Expr.T.Internal i -> (
+          match i with
+          | TRUE -> "TRUE"
+          | FALSE -> "FALSE"
+          | Implies -> "Implies"
+          | Equiv -> "Equiv"
+          | Conj -> "Conj"
+          | Disj -> "Disj"
+          | Neg -> "Neg"
+          | Eq -> "Eq"
+          | Neq -> "Neq"
+          | STRING -> "STRING"
+          | BOOLEAN -> "BOOLEAN"
+          | SUBSET -> "SUBSET"
+          | UNION -> "UNION"
+          | DOMAIN -> "DOMAIN"
+          | Subseteq -> "Subseteq"
+          | Mem -> "Mem"
+          | Notmem -> "Notmem"
+          | Setminus -> "Setminus"
+          | Cap -> "Cap"
+          | Cup -> "Cup"
+          | Prime -> "Prime"
+          | StrongPrime -> "StrongPrime"
+          | Leadsto -> "Leadsto"
+          | ENABLED -> "ENABLED"
+          | UNCHANGED -> "UNCHANGED"
+          | Cdot -> "Cdot"
+          | Actplus -> "Actplus"
+          | Box true -> "Box(true)"
+          | Box false -> "Box(false)"
+          | Diamond -> "Diamond"
+          | Nat -> "Nat"
+          | Int -> "Int"
+          | Real -> "Real"
+          | Plus -> "Plus"
+          | Minus -> "Minus"
+          | Uminus -> "Uminus"
+          | Times -> "Times"
+          | Ratio -> "Ratio"
+          | Quotient -> "Quotient"
+          | Remainder -> "Remainder"
+          | Exp -> "Exp"
+          | Infinity -> "Infinity"
+          | Lteq -> "Lteq"
+          | Lt -> "Lt"
+          | Gteq -> "Gteq"
+          | Gt -> "Gt"
+          | Divides -> "Divides"
+          | Range -> "Range"
+          | Seq -> "Seq"
+          | Len -> "Len"
+          | BSeq -> "BSeq"
+          | Cat -> "Cat"
+          | Append -> "Append"
+          | Head -> "Head"
+          | Tail -> "Tail"
+          | SubSeq -> "SubSeq"
+          | SelectSeq -> "SelectSeq"
+          | OneArg -> "OneArg"
+          | Extend -> "Extend"
+          | Print -> "Print"
+          | PrintT -> "PrintT"
+          | Assert -> "Assert"
+          | JavaTime -> "JaveTime"
+          | TLCGet -> "TLCGet"
+          | TLCSet -> "TLCSet"
+          | Permutations -> "Permutations"
+          | SortSeq -> "SortSeq"
+          | RandomElement -> "RandomElement"
+          | Any -> "Any"
+          | ToString -> "ToString"
+          | Unprimable -> "Unprimable"
+          | Irregular -> "Irregular")
+      | Expr.T.Lambda (_, _) -> "Lambda"
+      | Expr.T.Sequent _ ->
+          "Sequent"
+      | Expr.T.Bang (_, _) -> "Bang"
+      | Expr.T.Apply (e, e_l) ->
+          _t_usable_fact e;
+          List.iter (_t_usable_fact) e_l;
+          "Apply"
+      | Expr.T.With (_, _) -> "With"
+      | Expr.T.If (_, _, _) -> "If"
+      | Expr.T.List (_, _) -> "List"
+      | Expr.T.Let (_, _) -> "Let"
+      | Expr.T.Quant (_, _, _) -> "Quant"
+      | Expr.T.QuantTuply (_, _, _) -> "QuantTuply"
+      | Expr.T.Tquant (_, _, _) -> "Tquant"
+      | Expr.T.Choose (_, _, _) -> "Choose"
+      | Expr.T.ChooseTuply (_, _, _) -> "ChooseTuply"
+      | Expr.T.SetSt (_, _, _) -> "SetSt"
+      | Expr.T.SetStTuply (_, _, _) -> "SetStTuply"
+      | Expr.T.SetOf (_, _) -> "SetOf"
+      | Expr.T.SetOfTuply (_, _) -> "SetOfTuply"
+      | Expr.T.SetEnum _ -> "SetEnum"
+      | Expr.T.Product _ -> "Product"
+      | Expr.T.Tuple _ -> "Tuple"
+      | Expr.T.Fcn (_, _) -> "Fcn"
+      | Expr.T.FcnTuply (_, _) -> "FcnTuply"
+      | Expr.T.FcnApp (_, _) -> "FcnApp"
+      | Expr.T.Arrow (_, _) -> "Arrow"
+      | Expr.T.Rect _ -> "Rect"
+      | Expr.T.Record _ -> "Record"
+      | Expr.T.Except (_, _) -> "Except"
+      | Expr.T.Dot (_, _) -> "Dot"
+      | Expr.T.Sub (_, _, _) -> "Sub"
+      | Expr.T.Tsub (_, _, _) -> "Tsub"
+      | Expr.T.Fair (_, _, _) -> "Fair"
+      | Expr.T.Case (_, _) -> "Case"
+      | Expr.T.String _ -> "String"
+      | Expr.T.Num (_, _) -> "Num"
+      | Expr.T.At _ -> "At"
+      | Expr.T.Parens (_, _) -> "Parens"
+    in
+    match Property.query fact Proof.T.Props.use_location with
+    | None ->
+      Eio.traceln " Fact %s" nm
+    | Some loc -> Eio.traceln "Loc %s" (Loc.string_of_locus loc)
+and _t_hyp (_: int) (hy : Tlapm_lib.Expr.T.hyp) = (
+  match hy.core with
+  | Fresh (hint, _, _, hdom) -> (
+    Eio.traceln "Fresh %s" hint.core;
+    match hdom with
+    | Unbounded -> Eio.traceln "Unbounded"
+    | Bounded (expr, _) -> (
+      Eio.traceln "Bounded";
+      _t_usable_fact expr;
+    )
+  )
+  | FreshTuply (_, _) -> Eio.traceln "FreshTuply"
+  | Flex (_) -> Eio.traceln "Flex"
+  | Defn (defn, _, _, _) -> (
+    match defn.core with
+    | Recursive (hint, _) -> (
+      (* hint * shape *)
+      Eio.traceln "Defn Recursive %s" hint.core
+    )
+    | Operator (hint, expr)  -> (
+      (* hint * expr *)
+      Eio.traceln "Defn Operator %s" hint.core;
+      _t_usable_fact expr;
+    )
+    | Instance (hint, _)  -> (
+      (* hint * instance *)
+      Eio.traceln "Defn Instance %s" hint.core
+    )
+    | Bpragma (hint, _, _) -> (
+      Eio.traceln "Defn Bpragma %s" hint.core
+    )
+  )
+  | Fact (fact, _, _) -> (
+    (* Eio.traceln "Fact"; *)
+    _t_usable_fact fact;
+  )
+)
+let _t_deq (context : Expr.T.hyp Deque.dq) =
+  Deque.iter _t_hyp context
+
+let find_in_seq (_active : Expr.T.expr) (context : Expr.T.hyp Deque.dq)
+(pred_expr' : pred_expr_fun) (assums : Expr.T.expr list) (goal : Expr.T.expr) :
+bool =
+let pred_expr ((bools, index, exp) : bool list * int * Expr.T.expr)
+  (hyp : Expr.T.hyp) : bool list * int * Expr.T.expr =
+let hyp_at_active =
+  Expr.Subst.app_hyp (Expr.Subst.shift (Deque.size context - index)) hyp
+in
+let new_bools =
+  match hyp_at_active.core with
+  | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _) ->
+      bools
+  | Fact (hyp_expr, _, _) -> (
+      match hyp_expr.core with
+      | Sequent seq ->
+          if pred_expr' seq.active seq.context assums goal then true :: bools
+          else bools
+      | _ -> bools)
+in
+(new_bools, index + 1, exp)
+in
+let bools, _, _ = Deque.fold_left pred_expr ([], 0, goal) context in
+match bools with [] -> false | _ -> true
+
+let explain_obl_impl_intro (active : Expr.T.expr) (context : Expr.T.hyp Deque.dq)
+    : string list =
+  let pred_expr_fun : pred_expr_fun =
+    fun active context args arg -> (
+      if Expr.Eq.expr arg active then Eio.traceln "Yes" else Eio.traceln "No";
+      Eio.traceln "Orig goal:";
+      _t_usable_fact arg;
+      Eio.traceln "Seq goal:";
+      _t_usable_fact active;
+      Eio.traceln "Seq ctx:";
+      _t_deq context;
+      Backend.Prep.have_fact context (List.nth args 0) && Expr.Eq.expr arg active
+    )
+  in
+  match active.core with
+  | Expr.T.Apply (op, args) -> (
+      match op.core with
+      | Expr.T.Internal Builtin.Implies -> (
+          let all_found = find_in_seq active context pred_expr_fun [List.nth args 0] (List.nth args 1)
+          in
+          match all_found with true -> [ "=>-intro" ] | false -> [])
+      | _ -> [])
+  | _ -> []
+
 let explain_obl (obl : Proof.T.obligation) : string list =
   let obl = Backend.Prep.expand_defs obl in
   let active = obl.obl.core.active in
@@ -178,6 +391,7 @@ let explain_obl (obl : Proof.T.obligation) : string list =
          explain_obl_disj_elim;
          explain_obl_disjunctive_syllogism;
          explain_obl_elim_modus_ponens;
+         explain_obl_impl_intro;
        ])
 
 let test_util_get_expl (theorem : string list) : string list =
@@ -327,7 +541,22 @@ let%test_unit "explain elim (modus ponens)" =
         String.concat ";" list
         = "Direct proof from assumptions;elim (modus ponens)")
 
-(* let%test_module "poc: explain direct" =
+let%test_unit "explain impl intro" =
+  let theorem =
+    [
+      "THEOREM TestA == ASSUME NEW a, NEW b PROVE a => b";
+      "    <1>1. ASSUME a PROVE b PROOF OMITTED";
+      "    <1>q. QED BY <1>1";
+    ]
+  in
+  match test_util_get_expl theorem with
+  | list ->
+    Eio.traceln "Res:%s" (String.concat ";" list);
+      assert (
+        String.concat ";" list
+        = "Direct proof from assumptions;=>-intro")
+
+let%test_module "poc: explain direct" =
   (module struct
     let mule =
       let filename = "test_step_explainer.tla" in
@@ -335,8 +564,68 @@ let%test_unit "explain elim (modus ponens)" =
         String.concat "\n"
           [
             "---- MODULE test_step_explainer ----";
-            "THEOREM TestA == ASSUME NEW a, NEW b, NEW c, NEW d, a => c, b => c, d => c, a \\/ b \\/ d PROVE a";
-            "    <1>1. a PROOF OBVIOUS";
+            (* "THEOREM ASSUME NEW P(_) PROVE \\A x: P(x)";
+            "PROOF";
+            "    <1> TAKE x";
+            "    <1>1. P(x) PROOF OMITTED";
+            "    <1>q. QED BY <1>1"; *)
+            (* "THEOREM ProveImplicationDirect ==";
+            "  ASSUME NEW A, NEW B PROVE A => B";
+            "PROOF";
+            "  <1> SUFFICES ASSUME A PROVE B OBVIOUS";
+            "  <1>1. B PROOF OMITTED";
+            "  <1>q. QED BY <1>1"; *)
+            (* "THEOREM ASSUME NEW A, NEW B PROVE A => B";
+            "  <1> HAVE A";
+            "  <1>1. B PROOF OMITTED";
+            "  <1>q. QED BY <1>1"; *)
+            (* "THEOREM ProveDisjunctionByCases ==";
+            "  ASSUME NEW A, NEW B PROVE A \\/ B";
+            "PROOF";
+            "  <1> SUFFICES ASSUME NEW C, NEW D, C \\/ D PROVE A \\/ B OBVIOUS";
+            "  <1>a. ASSUME C PROVE A PROOF OMITTED";
+            "  <1>b. ASSUME D PROVE B PROOF OMITTED";
+            "  <1>q. QED BY <1>a, <1>b"; *)
+            (* "THEOREM ProveForallSuffices ==";
+            "  ASSUME NEW P(_) PROVE \\A x: P(x)";
+            "PROOF";
+            "  <1> SUFFICES ASSUME NEW a PROVE P(a) OBVIOUS";
+            "  <1>1. P(a) PROOF OMITTED";
+            "  <1>q. QED BY <1>1"; *)
+            (* "THEOREM ProveForallTake ==";
+            "  ASSUME NEW P(_) PROVE \\A x: P(x)";
+            "PROOF";
+            "  <1> TAKE x";
+            "  <1>1. P(x) PROOF OMITTED";
+            "  <1>q. QED BY <1>1"; *)
+            (* "THEOREM ProveExistsAssume ==";
+            "    ASSUME NEW P(_) PROVE \\E x: P(x)";
+            "PROOF";
+            "    <1>p. ASSUME NEW x, x = 123";
+            "    PROVE P(x) PROOF OMITTED";
+            "    <1>q. QED BY <1>p"; *)
+            (* "THEOREM UseNegationReexpress ==";
+            "    ASSUME NEW A, NEW B, NEW C, NEW P, ~P, P = (A \\/ B) PROVE C";
+            "PROOF";
+            "    <1>x. ~A /\\ ~B PROOF OBVIOUS";
+            "    <1>q. QED OMITTED"; *)
+            (* "THEOREM UseDisjunctionCases ==";
+            "    ASSUME NEW A, NEW B, NEW C, A \\/ B PROVE C";
+            "PROOF";
+            "    <1>a. CASE A PROOF OMITTED";
+            "    <1>b. CASE B PROOF OMITTED";
+            "    <1>q. QED BY <1>a, <1>b"; *)
+            (* "THEOREM UseForallSuffices ==";
+            "    ASSUME NEW S, NEW P(_), NEW G,";
+            "    \\A x \\in S : P(x),";
+            "    S # {}";
+            "    PROVE G";
+            "PROOF";
+            "    <1> SUFFICES ASSUME NEW a \\in S PROVE G OBVIOUS";
+            "    <1>p. P(a) PROOF OBVIOUS";
+            "    <1>q. QED PROOF OMITTED"; *)
+            "THEOREM TestA == ASSUME NEW a, NEW b PROVE a => b";
+            "    <1>1. ASSUME a PROVE b PROOF OMITTED";
             "    <1>q. QED BY <1>1";
             "====";
           ]
@@ -407,4 +696,4 @@ let%test_unit "explain elim (modus ponens)" =
                 final_obs;
               ());
       Format.printf "@.%t@." vpp#as_fmt
-  end)  *)
+  end)
