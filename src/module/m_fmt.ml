@@ -104,13 +104,14 @@ let rec pp_print_modunit ?(force=false) cx ff mu = match mu.core with
 and pp_print_module ?(force=false) cx ff m =
   fprintf ff "@[<v0>---- MODULE %s ----@," m.core.name.core ;
   begin match m.core.stage with
+    | Final _
     | Parsed when m.core.extendees <> [] ->
         fprintf ff "EXTENDS @[<b0>%a@]@,"
           (pp_print_delimited Util.pp_print_hint) m.core.extendees
-    | Flat -> fprintf ff "@[Flat@]@,"
-    | Special -> fprintf ff "@[Special@]@,"
-    | Parsed -> fprintf ff "@[Parsed with no extendees@]@,"
-    | _ -> ()
+    | Flat -> fprintf ff "@[\\* EXTENDS: Flat@]@,"
+    | Special -> fprintf ff "@[\\* EXTENDS: Special@]@,"
+    | Parsed -> fprintf ff "@[\\* EXTENDS: Parsed with no extendees@]@,"
+    | Final _ -> ()
   end ;
   ignore begin
     List.fold_left begin
