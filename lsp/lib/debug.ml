@@ -50,6 +50,172 @@ class visitor_pp =
       fun name f -> self#scope (Format.dprintf "%s{@[<hov>%t@]}" name) f
   end
 
+  let rec _t_usable_fact (fmt : Format.formatter) (fact : Tlapm_lib__.Expr.T.expr) =
+    let open Tlapm_lib in
+    let nm =
+      match fact.core with
+      | Expr.T.Ix n -> "Ix" ^ string_of_int n
+      | Expr.T.Opaque s -> "Opaque-" ^ s
+      | Expr.T.Internal i -> (
+          match i with
+          | TRUE -> "TRUE"
+          | FALSE -> "FALSE"
+          | Implies -> "Implies"
+          | Equiv -> "Equiv"
+          | Conj -> "Conj"
+          | Disj -> "Disj"
+          | Neg -> "Neg"
+          | Eq -> "Eq"
+          | Neq -> "Neq"
+          | STRING -> "STRING"
+          | BOOLEAN -> "BOOLEAN"
+          | SUBSET -> "SUBSET"
+          | UNION -> "UNION"
+          | DOMAIN -> "DOMAIN"
+          | Subseteq -> "Subseteq"
+          | Mem -> "Mem"
+          | Notmem -> "Notmem"
+          | Setminus -> "Setminus"
+          | Cap -> "Cap"
+          | Cup -> "Cup"
+          | Prime -> "Prime"
+          | StrongPrime -> "StrongPrime"
+          | Leadsto -> "Leadsto"
+          | ENABLED -> "ENABLED"
+          | UNCHANGED -> "UNCHANGED"
+          | Cdot -> "Cdot"
+          | Actplus -> "Actplus"
+          | Box true -> "Box(true)"
+          | Box false -> "Box(false)"
+          | Diamond -> "Diamond"
+          | Nat -> "Nat"
+          | Int -> "Int"
+          | Real -> "Real"
+          | Plus -> "Plus"
+          | Minus -> "Minus"
+          | Uminus -> "Uminus"
+          | Times -> "Times"
+          | Ratio -> "Ratio"
+          | Quotient -> "Quotient"
+          | Remainder -> "Remainder"
+          | Exp -> "Exp"
+          | Infinity -> "Infinity"
+          | Lteq -> "Lteq"
+          | Lt -> "Lt"
+          | Gteq -> "Gteq"
+          | Gt -> "Gt"
+          | Divides -> "Divides"
+          | Range -> "Range"
+          | Seq -> "Seq"
+          | Len -> "Len"
+          | BSeq -> "BSeq"
+          | Cat -> "Cat"
+          | Append -> "Append"
+          | Head -> "Head"
+          | Tail -> "Tail"
+          | SubSeq -> "SubSeq"
+          | SelectSeq -> "SelectSeq"
+          | OneArg -> "OneArg"
+          | Extend -> "Extend"
+          | Print -> "Print"
+          | PrintT -> "PrintT"
+          | Assert -> "Assert"
+          | JavaTime -> "JaveTime"
+          | TLCGet -> "TLCGet"
+          | TLCSet -> "TLCSet"
+          | Permutations -> "Permutations"
+          | SortSeq -> "SortSeq"
+          | RandomElement -> "RandomElement"
+          | Any -> "Any"
+          | ToString -> "ToString"
+          | Unprimable -> "Unprimable"
+          | Irregular -> "Irregular")
+      | Expr.T.Lambda (_, _) -> "Lambda"
+      | Expr.T.Sequent sq ->
+          _t_sq fmt sq;
+          "Sequent"
+      | Expr.T.Bang (_, _) -> "Bang"
+      | Expr.T.Apply (e, e_l) ->
+          _t_usable_fact fmt e;
+          List.iter (_t_usable_fact fmt) e_l;
+          "Apply"
+      | Expr.T.With (_, _) -> "With"
+      | Expr.T.If (_, _, _) -> "If"
+      | Expr.T.List (_, _) -> "List"
+      | Expr.T.Let (_, _) -> "Let"
+      | Expr.T.Quant (_, _, _) -> "Quant"
+      | Expr.T.QuantTuply (_, _, _) -> "QuantTuply"
+      | Expr.T.Tquant (_, _, _) -> "Tquant"
+      | Expr.T.Choose (_, _, _) -> "Choose"
+      | Expr.T.ChooseTuply (_, _, _) -> "ChooseTuply"
+      | Expr.T.SetSt (_, _, _) -> "SetSt"
+      | Expr.T.SetStTuply (_, _, _) -> "SetStTuply"
+      | Expr.T.SetOf (_, _) -> "SetOf"
+      | Expr.T.SetOfTuply (_, _) -> "SetOfTuply"
+      | Expr.T.SetEnum _ -> "SetEnum"
+      | Expr.T.Product _ -> "Product"
+      | Expr.T.Tuple _ -> "Tuple"
+      | Expr.T.Fcn (_, _) -> "Fcn"
+      | Expr.T.FcnTuply (_, _) -> "FcnTuply"
+      | Expr.T.FcnApp (_, _) -> "FcnApp"
+      | Expr.T.Arrow (_, _) -> "Arrow"
+      | Expr.T.Rect _ -> "Rect"
+      | Expr.T.Record _ -> "Record"
+      | Expr.T.Except (_, _) -> "Except"
+      | Expr.T.Dot (_, _) -> "Dot"
+      | Expr.T.Sub (_, _, _) -> "Sub"
+      | Expr.T.Tsub (_, _, _) -> "Tsub"
+      | Expr.T.Fair (_, _, _) -> "Fair"
+      | Expr.T.Case (_, _) -> "Case"
+      | Expr.T.String _ -> "String"
+      | Expr.T.Num (_, _) -> "Num"
+      | Expr.T.At _ -> "At"
+      | Expr.T.Parens (_, _) -> "Parens"
+    in
+    match Property.query fact Proof.T.Props.use_location with
+    | None ->
+      Format.fprintf fmt " Fact %s" nm
+    | Some loc -> Format.fprintf fmt "Loc %s" (Loc.string_of_locus loc)
+  
+  and _t_sq (fmt : Format.formatter) (sq : Tlapm_lib.Expr.T.sequent) =  (
+    Format.fprintf fmt "=Ctx:";
+    List.iter (t_hyp fmt) (Deque.to_list sq.context);
+    Format.fprintf fmt "; Goal:";
+  _t_usable_fact fmt sq.active;
+  )
+  and t_hyp (fmt : Format.formatter) (hy : Tlapm_lib.Expr.T.hyp) = (
+    match hy.core with
+    | Fresh (hint, _, _, hdom) -> (
+      Eio.traceln "Fresh %s" hint.core;
+      match hdom with
+      | Unbounded -> Eio.traceln "Unbounded"
+      | Bounded (expr, _) -> (
+        Eio.traceln "Bounded";
+        _t_usable_fact fmt expr;
+      )
+    )
+    | FreshTuply (_, _) -> Eio.traceln "FreshTuply"
+    | Flex (_) -> Eio.traceln "Flex"
+    | Defn (defn, _, _, _) -> (
+      match defn.core with
+      | Recursive (hint, _) -> (
+        Eio.traceln "Defn Recursive %s" hint.core
+      )
+      | Operator (hint, expr)  -> (
+        Eio.traceln "Defn Operator %s" hint.core;
+        _t_usable_fact fmt expr;
+      )
+      | Instance (hint, _)  -> (
+        Eio.traceln "Defn Instance %s" hint.core
+      )
+      | Bpragma (hint, _, _) -> (
+        Eio.traceln "Defn Bpragma %s" hint.core
+      )
+    )
+    | Fact (fact, _, _) -> (
+      _t_usable_fact fmt fact;
+    )
+  )
 let rec pp_expr (fmt : Format.formatter) (expr : Expr.T.expr) : unit =
   let open Expr.T in
   match expr.core with
@@ -57,7 +223,10 @@ let rec pp_expr (fmt : Format.formatter) (expr : Expr.T.expr) : unit =
   | Opaque n -> Format.fprintf fmt "Opaque %s" n
   | Internal b -> Format.fprintf fmt "Internal/%s" (Builtin.builtin_to_string b)
   | Lambda (_, _) -> Format.fprintf fmt "Lambda"
-  | Sequent _ -> Format.fprintf fmt "Sequent"
+  | Sequent seq -> (
+    Format.fprintf fmt "Sequent";
+    _t_sq fmt seq;
+    )
   | Bang (_, _) -> Format.fprintf fmt "Bang"
   | Apply (expr, args) ->
       Format.fprintf fmt "Apply{@[%a to %a@]}" pp_expr expr
@@ -67,9 +236,16 @@ let rec pp_expr (fmt : Format.formatter) (expr : Expr.T.expr) : unit =
         args
   | With (_, _) -> Format.fprintf fmt "With"
   | If (_, _, _) -> Format.fprintf fmt "If"
-  | List (_, _) -> Format.fprintf fmt "List"
+  | List (_, exprr) -> (
+    Format.fprintf fmt "List";
+    Format.fprintf fmt "vals:%d" (List.length exprr);
+    List.iter (fun expp -> (pp_expr fmt expp)) exprr
+    )
   | Let (_, _) -> Format.fprintf fmt "Let"
-  | Quant (_, _, _) -> Format.fprintf fmt "Quant"
+  | Quant (_, _, exprr) -> (
+    Format.fprintf fmt "Quant";
+    pp_expr fmt exprr;
+    )
   | QuantTuply (_, _, _) -> Format.fprintf fmt "QuantTuply"
   | Tquant (_, _, _) -> Format.fprintf fmt "Tquant"
   | Choose (_, _, _) -> Format.fprintf fmt "Choose"
