@@ -243,13 +243,6 @@ let as_lsp_diagnostic (obl : t) =
   | false -> None
 
 let as_lsp_tlaps_proof_obligation_notes obl =
-  let expls_missing =
-    [
-      Structs.TlapsProofObligationNote.make
-        ~level:Structs.TlapsProofObligationNoteLevel.WARNING
-        ~text:"Explanation missing";
-    ]
-  in
   match obl.parsed with
   | Some o ->
       let explanations = Analysis.Step_explainer.explain_obl o in
@@ -259,8 +252,8 @@ let as_lsp_tlaps_proof_obligation_notes obl =
             Structs.TlapsProofObligationNote.make
               ~level:Structs.TlapsProofObligationNoteLevel.INFO ~text:expl)
           explanations
-      else expls_missing
-  | None -> expls_missing
+      else []
+  | None -> []
 
 let as_lsp_tlaps_proof_obligation_state obl =
   let role = Role.as_string obl.role in
