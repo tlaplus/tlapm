@@ -242,24 +242,32 @@ let as_lsp_diagnostic (obl : t) =
       Some (LspT.Diagnostic.create ~message ~range ~severity ~source ())
   | false -> None
 
+let as_lsp_tlaps_proof_obligation_notes obl =
+  let expls_missing =
+    [
+      Structs.TlapsProofObligationNote.make
+        ~level:Structs.TlapsProofObligationNoteLevel.WARNING
+        ~text:"Explanation missing";
+    ]
+  in
+  match obl.parsed with
+  | Some o ->
+      let explanations = Analysis.Step_explainer.explain_obl o in
+      if explanations != [] then
+        List.map
+          (fun expl ->
+            Structs.TlapsProofObligationNote.make
+              ~level:Structs.TlapsProofObligationNoteLevel.INFO ~text:expl)
+          explanations
+      else expls_missing
+  | None -> expls_missing
+
 let as_lsp_tlaps_proof_obligation_state obl =
   let role = Role.as_string obl.role in
   let range = Range.as_lsp_range (loc obl) in
   let status = Proof_status.to_string obl.status in
-  let explanation obl =
-    match obl.parsed with
-    | Some o ->
-        let explanations = Analysis.Step_explainer.explain_obl o in
-        if explanations != [] then
-          "(* " ^ String.concat "\n   " explanations ^ " *)\n"
-        else "(* Explanation missing *)\n"
-    | None -> "(* Explanation missing *)\n"
-  in
-  let normalized =
-    match text_normalized obl with
-    | Some str -> Some (explanation obl ^ str)
-    | None -> None
-  in
+  let notes = as_lsp_tlaps_proof_obligation_notes obl in
+  let normalized = text_normalized obl in
   let results =
     let open Toolbox.Obligation in
     let some_str s = match s with None -> "?" | Some s -> s in
@@ -302,7 +310,7 @@ let as_lsp_tlaps_proof_obligation_state obl =
           (List.filter_map unplanned
              (ObligationByProverMap.to_list obl.by_prover))
   in
-  Structs.TlapsProofObligationState.make ~role ~range ~status ~normalized
+  Structs.TlapsProofObligationState.make ~role ~range ~status ~normalized ~notes
     ~results
 
 let%test_unit "Check Role.pp" =

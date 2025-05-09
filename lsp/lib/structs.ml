@@ -39,6 +39,37 @@ module CountByStepStatus = struct
       ]
 end
 
+module TlapsProofObligationNoteLevel = struct
+  type t = INFO | WARNING | ERROR
+
+  let level_to_string = function
+    | INFO -> "info"
+    | WARNING -> "warning"
+    | ERROR -> "error"
+end
+
+(** Corresponds to
+  ```
+  export interface TlapsProofObligationNote {
+    level: 'info' | 'warning' | 'error';
+    text: string;
+  }
+  ```
+*)
+module TlapsProofObligationNote = struct
+  type t = { level : TlapsProofObligationNoteLevel.t; text : string }
+
+  let make ~level ~text = { level; text }
+
+  let yojson_of_t (t : t) =
+    `Assoc
+      [
+        ( "level",
+          `String (TlapsProofObligationNoteLevel.level_to_string t.level) );
+        ("text", `String t.text);
+      ]
+end
+
 (** Corresponds to
   ```
   export interface TlapsProofObligationResult {
@@ -80,6 +111,7 @@ end
     range: Range;
     status: status;
     normalized: string;
+    notes?: TlapsProofObligationNote[];
     results: TlapsProofObligationResult[];
   }
   ```
@@ -90,11 +122,12 @@ module TlapsProofObligationState = struct
     range : LspT.Range.t;
     status : string;
     normalized : string option;
+    notes : TlapsProofObligationNote.t list;
     results : TlapsProofObligationResult.t list;
   }
 
-  let make ~role ~range ~status ~normalized ~results =
-    { role; range; status; normalized; results }
+  let make ~role ~range ~status ~normalized ~notes ~results =
+    { role; range; status; normalized; notes; results }
 
   let yojson_of_t (t : t) =
     `Assoc
@@ -103,6 +136,7 @@ module TlapsProofObligationState = struct
         ("range", LspT.Range.yojson_of_t t.range);
         ("status", `String t.status);
         ("normalized", opt_str t.normalized);
+        ("notes", `List (List.map TlapsProofObligationNote.yojson_of_t t.notes));
         ( "results",
           `List (List.map TlapsProofObligationResult.yojson_of_t t.results) );
       ]

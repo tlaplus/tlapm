@@ -17,6 +17,19 @@ module CountByStepStatus : sig
   val yojson_of_t : t -> Yojson.Safe.t
 end
 
+module TlapsProofObligationNoteLevel : sig
+  type t = INFO | WARNING | ERROR
+
+  val level_to_string : t -> string
+end
+
+module TlapsProofObligationNote : sig
+  type t = { level : TlapsProofObligationNoteLevel.t; text : string }
+
+  val make : level:TlapsProofObligationNoteLevel.t -> text:string -> t
+  val yojson_of_t : t -> Yojson.Safe.t
+end
+
 module TlapsProofObligationResult : sig
   type t
 
@@ -39,6 +52,7 @@ module TlapsProofObligationState : sig
     range:LspT.Range.t ->
     status:string ->
     normalized:string option ->
+    notes:TlapsProofObligationNote.t list ->
     results:TlapsProofObligationResult.t list ->
     t
 
