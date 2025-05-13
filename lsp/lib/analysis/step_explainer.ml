@@ -56,6 +56,41 @@ let iter_ctx (active : Expr.T.expr) (context : Expr.T.hyp Deque.dq)
   let explanations, _ = Deque.fold_left pred_hyp ([], 0) context in
   explanations
 
+let find_in_seq (_active : Expr.T.expr) (context : Expr.T.hyp Deque.dq)
+    (pred_expr' : pred_expr_fun) (assums : Expr.T.expr list)
+    (goal : Expr.T.expr) : bool =
+  let pred_expr ((bools, index, exp) : bool list * int * Expr.T.expr)
+      (hyp : Expr.T.hyp) : bool list * int * Expr.T.expr =
+    let new_bools =
+      match hyp.core with
+      | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _) ->
+          bools
+      | Fact (hyp_expr, _, _) -> (
+          match hyp_expr.core with
+          | Sequent seq ->
+              let n_ctx =
+                Deque.map
+                  (fun i hyp ->
+                    let shift_by = Deque.size context - index - i in
+                    (* Eio.traceln "Shift:%d" shift_by; *)
+                    Expr.Subst.app_hyp (Expr.Subst.shift shift_by) hyp)
+                  seq.context
+              in
+              let n_active =
+                Expr.Subst.app_expr
+                  (Expr.Subst.shift
+                     (Deque.size context - index - Deque.size seq.context))
+                  seq.active
+              in
+              if pred_expr' n_active n_ctx assums goal then true :: bools
+              else bools
+          | _ -> bools)
+    in
+    (new_bools, index + 1, exp)
+  in
+  let bools, _, _ = Deque.fold_left pred_expr ([], 0, goal) context in
+  match bools with [] -> false | _ -> true
+
 let explain_obl_direct (active : Expr.T.expr) (context : Expr.T.hyp Deque.dq) :
     string list =
   match Backend.Prep.have_fact context active with
@@ -149,6 +184,52 @@ let explain_obl_disjunctive_syllogism (active : Expr.T.expr)
   in
   iter_ctx active context pred_hyp_fun
     (Property.noprops (Expr.T.Internal Builtin.Disj))
+
+let explain_obl_disjunctive_syllogism_seq (active : Expr.T.expr)
+    (context : Expr.T.hyp Deque.dq) : string list =
+  let pred_expr_fun : pred_expr_fun =
+   fun active context args arg ->
+    let res =
+      match
+        Deque.find context (fun hyp ->
+            match hyp.core with
+            | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _)
+              ->
+                false
+            | Fact (hyp_expr, _, _) -> (
+                match hyp_expr.core with
+                | Apply (op, args') ->
+                    if
+                      op.core
+                      = (Property.noprops (Expr.T.Internal Builtin.Neg)).core
+                    then
+                      Expr.Eq.expr (List.nth args 0) (List.nth args' 0)
+                      && Expr.Eq.expr active arg
+                    else false
+                | _ -> false))
+      with
+      | Some (_, _) -> true
+      | None -> false
+    in
+    res
+  in
+  match active.core with
+  | Expr.T.Apply (op, args) -> (
+      match op.core with
+      | Expr.T.Internal Builtin.Disj -> (
+          let all_found =
+            find_in_seq active context pred_expr_fun
+              [ List.nth args 0 ]
+              (List.nth args 1)
+            || find_in_seq active context pred_expr_fun
+                 [ List.nth args 1 ]
+                 (List.nth args 0)
+          in
+          match all_found with
+          | true -> [ "Disjunctive syllogism" ]
+          | false -> [])
+      | _ -> [])
+  | _ -> []
 
 let explain_obl_elim_modus_ponens (active : Expr.T.expr)
     (context : Expr.T.hyp Deque.dq) : string list =
@@ -317,41 +398,6 @@ and _t_hyp (_ : int) (hy : Tlapm_lib.Expr.T.hyp) =
 
 let _t_deq (context : Expr.T.hyp Deque.dq) = Deque.iter _t_hyp context
 
-let find_in_seq (_active : Expr.T.expr) (context : Expr.T.hyp Deque.dq)
-    (pred_expr' : pred_expr_fun) (assums : Expr.T.expr list)
-    (goal : Expr.T.expr) : bool =
-  let pred_expr ((bools, index, exp) : bool list * int * Expr.T.expr)
-      (hyp : Expr.T.hyp) : bool list * int * Expr.T.expr =
-    let new_bools =
-      match hyp.core with
-      | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _) ->
-          bools
-      | Fact (hyp_expr, _, _) -> (
-          match hyp_expr.core with
-          | Sequent seq ->
-              let n_ctx =
-                Deque.map
-                  (fun i hyp ->
-                    let shift_by = Deque.size context - index - i in
-                    (* Eio.traceln "Shift:%d" shift_by; *)
-                    Expr.Subst.app_hyp (Expr.Subst.shift shift_by) hyp)
-                  seq.context
-              in
-              let n_active =
-                Expr.Subst.app_expr
-                  (Expr.Subst.shift
-                     (Deque.size context - index - Deque.size seq.context))
-                  seq.active
-              in
-              if pred_expr' n_active n_ctx assums goal then true :: bools
-              else bools
-          | _ -> bools)
-    in
-    (new_bools, index + 1, exp)
-  in
-  let bools, _, _ = Deque.fold_left pred_expr ([], 0, goal) context in
-  match bools with [] -> false | _ -> true
-
 let explain_obl_impl_intro (active : Expr.T.expr)
     (context : Expr.T.hyp Deque.dq) : string list =
   let pred_expr_fun : pred_expr_fun =
@@ -406,6 +452,7 @@ let explain_obl (obl : Proof.T.obligation) : string list =
          explain_obl_disj_intro;
          explain_obl_disj_elim;
          explain_obl_disjunctive_syllogism;
+         explain_obl_disjunctive_syllogism_seq;
          explain_obl_elim_modus_ponens;
          explain_obl_impl_intro;
        ])
@@ -542,6 +589,28 @@ let%test_unit "explain disjunctive syllogism" =
       assert (
         String.concat ";" list
         = "Direct proof from assumptions;Disjunctive syllogism")
+
+let%test_unit "explain disjunctive syllogism seq" =
+  let theorem =
+    [
+      "THEOREM TestA == ASSUME NEW a, NEW b PROVE a \\/ b";
+      "    <1>1. ASSUME ~a PROVE b PROOF OMITTED";
+      "    <1>q. QED BY <1>1";
+    ]
+  in
+  match test_util_get_expl theorem with
+  | list -> assert (String.concat ";" list = "Disjunctive syllogism")
+
+let%test_unit "explain disjunctive syllogism seq switched" =
+  let theorem =
+    [
+      "THEOREM TestA == ASSUME NEW a, NEW b PROVE a \\/ b";
+      "    <1>1. ASSUME ~b PROVE a PROOF OMITTED";
+      "    <1>q. QED BY <1>1";
+    ]
+  in
+  match test_util_get_expl theorem with
+  | list -> assert (String.concat ";" list = "Disjunctive syllogism")
 
 let%test_unit "explain elim (modus ponens)" =
   let theorem =
