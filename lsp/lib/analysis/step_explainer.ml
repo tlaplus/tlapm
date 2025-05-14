@@ -135,6 +135,35 @@ let explain_obl_disj_intro (active : Expr.T.expr)
       | _ -> [])
   | _ -> []
 
+let explain_obl_disj_use_by_cases (active : Expr.T.expr)
+    (context : Expr.T.hyp Deque.dq) : string list =
+  let pred_expr_fun : pred_expr_fun =
+   fun active context args arg ->
+    let res =
+      match
+        Deque.find context (fun hyp ->
+            match hyp.core with
+            | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ | Defn (_, _, _, _)
+              ->
+                false
+            | Fact (hyp_expr, _, _) -> Expr.Eq.expr hyp_expr (List.nth args 0))
+      with
+      | Some (_, _) -> true
+      | None -> false
+    in
+    res && Expr.Eq.expr arg active
+  in
+  let pred_hyp_fun : pred_hyp_fun =
+   fun active _context args ->
+    let all_found =
+      find_in_seq active context pred_expr_fun [ List.nth args 0 ] active
+      || find_in_seq active context pred_expr_fun [ List.nth args 1 ] active
+    in
+    match all_found with true -> [ "\\/-use by cases" ] | false -> []
+  in
+  iter_ctx active context pred_hyp_fun
+    (Property.noprops (Expr.T.Internal Builtin.Disj))
+
 let explain_obl_disj_elim (active : Expr.T.expr) (context : Expr.T.hyp Deque.dq)
     : string list =
   let pred_expr_fun : pred_expr_fun =
@@ -450,6 +479,7 @@ let explain_obl (obl : Proof.T.obligation) : string list =
          explain_obl_conj_intro;
          explain_obl_conj_elim;
          explain_obl_disj_intro;
+         explain_obl_disj_use_by_cases;
          explain_obl_disj_elim;
          explain_obl_disjunctive_syllogism;
          explain_obl_disjunctive_syllogism_seq;
@@ -551,6 +581,19 @@ let%test_unit "explain disj intro right" =
   match test_util_get_expl theorem with
   | list -> assert (String.concat ";" list = "\\/-intro")
 
+let%test_unit "explain disj use by cases" =
+  let theorem =
+    [
+      "THEOREM TestA == ASSUME NEW a, NEW b, NEW c, a \\/ b PROVE c";
+      "    <1>a. CASE a PROOF OMITTED";
+      "    <1>b. CASE b PROOF OMITTED";
+      "    <1>q. QED BY <1>a, <1>b";
+    ]
+  in
+  match test_util_get_expl theorem with
+  | list ->
+      assert (String.concat ";" list = "\\/-use by cases")
+
 let%test_unit "explain disj elim" =
   let theorem =
     [
@@ -647,6 +690,7 @@ let%test_module "poc: explain direct" =
         String.concat "\n"
           [
             "---- MODULE test_step_explainer ----";
+            (* "EXTENDS Integers, TLAPS"; *)
             (* "THEOREM ASSUME NEW P(_) PROVE \\A x: P(x)";
             "PROOF";
             "    <1> TAKE x";
@@ -707,9 +751,15 @@ let%test_module "poc: explain direct" =
             "    <1> SUFFICES ASSUME NEW a \\in S PROVE G OBVIOUS";
             "    <1>p. P(a) PROOF OBVIOUS";
             "    <1>q. QED PROOF OMITTED"; *)
-            "THEOREM TestA == ASSUME NEW a, NEW b, NEW c, NEW d PROVE a => b";
-            "    <1>1. ASSUME c, d, a PROVE b PROOF OMITTED";
-            "    <1>q. QED BY <1>1";
+            (* "THEOREM TestA == ASSUME NEW x, NEW y, NEW a, NEW b PROVE a => b";
+            "    <1>1. (x < y) \\/ (y < x) PROOF OMITTED";
+            "    <1>q. QED BY <1>1"; *)
+            "THEOREM UseDisjunctionCases ==";
+            "    ASSUME NEW A, NEW B, NEW C, A \\/ B PROVE C";
+            "PROOF";
+            "    <1>a. CASE A PROOF OMITTED";
+            "    <1>b. CASE B PROOF OMITTED";
+            "    <1>q. QED BY <1>a, <1>b";
             (* "THEOREM ProveExistsWitness ==";
             "    ASSUME NEW P(_) PROVE \\E x: P(x)";
             "PROOF";
