@@ -38,6 +38,16 @@ SeqToBag(seq) == [ x \in Range(seq) |-> Cardinality({i \in DOMAIN seq: seq[i]=x}
 
 
 (***************************************************************************)
+(* Equality of bags via DOMAIN and CopiesIn.                               *)
+(***************************************************************************)
+THEOREM BagEquality ==
+  ASSUME NEW B1, NEW B2, IsABag(B1), IsABag(B2),
+         DOMAIN B1 = DOMAIN B2,
+         \A e : CopiesIn(e, B1) = CopiesIn(e, B2)
+  PROVE  B1 = B2
+BY DEF IsABag, CopiesIn, BagIn, BagToSet
+ 
+(***************************************************************************)
 (* \sqsubseteq is a PARTIAL ORDER relattion                                *)
 (***************************************************************************)
 
@@ -96,7 +106,9 @@ THEOREM Bags_Scaling ==
   BY DEF Scaling, IsABag
 <1>5. Scaling(n*m, B) = Scaling(n, Scaling(m, B))
   <2>1. CASE m>0 /\ n>0
-    BY <2>1, n*m > 0 DEF Scaling, IsABag
+    <3>. \A i \in DOMAIN B : n * m * B[i] = n * (m * B[i])
+      BY DEF IsABag
+    <3>. QED  BY <2>1 DEF Scaling
   <2>2. CASE m=0
     BY <2>2, <1>2, <1>3 DEF Scaling
   <2>3. CASE n=0
@@ -152,7 +164,24 @@ THEOREM Bags_Difference ==
          /\ \A e : CopiesIn(e, B1 (-) B2) =
                    IF BagIn(e, B1(-)B2) THEN CopiesIn(e,B1) - CopiesIn(e,B2)
                    ELSE 0
-BY DEF IsABag, (-), CopiesIn, BagIn, BagToSet
+<1>. DEFINE B == [e \in DOMAIN B1 |-> IF e \in DOMAIN B2 THEN B1[e] - B2[e]
+                                                         ELSE B1[e]]
+            D == {e \in DOMAIN B1 : B[e] > 0}
+            R == [e \in D |-> B[e]]
+<1>1. R = B1 (-) B2
+  BY Zenon DEF (-)
+<1>2. \A e \in DOMAIN R : R[e] \in Nat /\ R[e] > 0
+  BY DEF IsABag
+<1>3. DOMAIN R = {e \in DOMAIN B1 : e \notin DOMAIN B2 \/ B1[e] > B2[e]}
+  BY DEF IsABag
+<1>4. \A e : CopiesIn(e, R) =
+                   IF BagIn(e, R) THEN CopiesIn(e,B1) - CopiesIn(e,B2)
+                   ELSE 0
+  BY DEF IsABag, BagIn, BagToSet, CopiesIn
+<1>. HIDE DEF D
+<1>5. IsABag(R)
+  BY <1>2 DEF IsABag
+<1>. QED  BY <1>1, <1>2, <1>3, <1>4, <1>5
 
 (***************************************************************************)
 (* Union is commutative.                                                   *)
@@ -161,7 +190,16 @@ BY DEF IsABag, (-), CopiesIn, BagIn, BagToSet
 THEOREM Bags_UnionCommutative ==
   ASSUME NEW B1, NEW B2, IsABag(B1), IsABag(B2)
   PROVE  B1(+)B2 = B2(+)B1
-BY DEF IsABag, (+)
+<1>. DEFINE D1 == DOMAIN B1   D2 == DOMAIN B2
+            C1(e) == IF e \in D1 THEN B1[e] ELSE 0
+            C2(e) == IF e \in D2 THEN B2[e] ELSE 0
+<1>1. \A e : C1(e) \in Nat /\ C2(e) \in Nat
+  BY DEF IsABag
+<1>2. /\ B1 (+) B2 = [e \in D1 \union D2 |-> C1(e) + C2(e)]
+      /\ B2 (+) B1 = [e \in D2 \union D1 |-> C2(e) + C1(e)]
+  BY DEF (+)
+<1>. HIDE DEF D1, D2, C1, C2
+<1>. QED  BY <1>1, <1>2
 
 (***************************************************************************)
 (* Unon is associative.                                                    *)
@@ -170,7 +208,22 @@ BY DEF IsABag, (+)
 THEOREM Bags_UnionAssociative ==
   ASSUME NEW B1, NEW B2, NEW B3, IsABag(B1), IsABag(B2), IsABag(B3)
   PROVE  (B1(+)B2) (+) B3 = B1 (+) (B2(+)B3)
-BY DEF IsABag, (+)
+<1>. DEFINE D1 == DOMAIN B1   D2 == DOMAIN B2   D3 == DOMAIN B3
+            C1(e) == IF e \in D1 THEN B1[e] ELSE 0
+            C2(e) == IF e \in D2 THEN B2[e] ELSE 0
+            C3(e) == IF e \in D3 THEN B3[e] ELSE 0
+<1>1. \A e : C1(e) \in Nat /\ C2(e) \in Nat /\ C3(e) \in Nat
+  BY DEF IsABag
+<1>2. /\ (B1 (+) B2) (+) B3 = 
+         [e \in (D1 \union D2) \union D3 |-> (C1(e) + C2(e)) + C3(e)]
+      /\ B1 (+) (B2 (+) B3) = 
+         [e \in D1 \union (D2 \union D3) |-> C1(e) + (C2(e) + C3(e))]
+  BY DEF (+)
+<1>. HIDE DEF D1, D2, D3, C1, C2, C3
+<1>3. \A e : (C1(e) + C2(e)) + C3(e) = C1(e) + (C2(e) + C3(e))
+  BY <1>1
+<1>. QED  BY <1>2, <1>3, Zenon
+
 
 (***************************************************************************)
 (* Given Bags B1, B2 then B1 \sqsubseteq B1(+)B2                           *)
@@ -188,7 +241,7 @@ BY DEF IsABag, (+), \sqsubseteq
 THEOREM Bags_ScalingMonotonic ==
   ASSUME NEW B, IsABag(B), NEW n \in Nat, NEW m \in Nat, m <= n
   PROVE  Scaling(m, B) \sqsubseteq Scaling(n, B)
-BY CVC4 DEF IsABag, Scaling, EmptyBag, SetToBag, \sqsubseteq
+BY DEF IsABag, Scaling, EmptyBag, SetToBag, \sqsubseteq
 
 (***************************************************************************)
 (* Given Bags A and B, A(-)B \sqsubseteq A                                 *)
@@ -207,7 +260,19 @@ THEOREM Bags_EmptyBagOperations ==
   ASSUME NEW B, IsABag(B)
   PROVE  /\ B (+) EmptyBag = B
          /\ B (-) EmptyBag = B
-BY DEF IsABag, (+), (-), EmptyBag, SetToBag
+<1>. DEFINE D == DOMAIN B  C(e) == IF e \in D THEN B[e] ELSE 0
+<1>1. /\ \A e \in D : C(e) \in Nat /\ C(e) > 0
+      /\ \A e : e \notin D => C(e) = 0
+  BY DEF IsABag
+<1>2. /\ B = [e \in D |-> C(e)]
+      /\ EmptyBag = [e \in {} |-> 0]
+  BY DEF IsABag, EmptyBag, SetToBag
+<1>. HIDE DEF D, C
+<1>3. B (+) EmptyBag = B
+  BY <1>1, <1>2 DEF (+)
+<1>4. B (-) EmptyBag = B
+  BY <1>1, <1>2 DEF (-)
+<1>. QED  BY <1>3, <1>4
 
 (***************************************************************************)
 (* SetToBag of a set is a bag.                                             *)
@@ -256,10 +321,11 @@ THEOREM Bags_IsABagSeqToBag ==
 <1>. DEFINE occs(x) == { i \in DOMAIN seq : seq[i] = x }
 <1>1. ASSUME NEW x \in Range(seq)
       PROVE  Cardinality(occs(x)) \in Nat \ {0}
-  <2>1. /\ IsFiniteSet(occs(x))
-        /\ occs(x) # {}
-    BY SeqDef, FS_Interval, FS_Subset DEF Range
-  <2>. QED  BY <2>1, FS_CardinalityType, FS_EmptySet, Zenon
+  <2>1. occs(x) # {}
+    BY DEF Range
+  <2>2. IsFiniteSet(occs(x))
+    BY FS_Interval, FS_Subset
+  <2>. QED  BY <2>1, <2>2, FS_CardinalityType, FS_EmptySet, Zenon
 <1>. QED  BY <1>1 DEF IsABag, SeqToBag
 
 =============================================================================

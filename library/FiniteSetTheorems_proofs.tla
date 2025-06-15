@@ -18,7 +18,8 @@ EXTENDS
 (***************************************************************************)
 LEMMA TwoExpLemma ==
   ASSUME NEW n \in Nat
-  PROVE  2^(n+1) = 2^n + 2^n
+  PROVE  /\ 2^0 = 1
+         /\ 2^(n+1) = 2^n + 2^n
 PROOF OMITTED
 
 
@@ -44,7 +45,9 @@ LEMMA FS_NatSurjection ==
   <2> QED BY <2>2 DEF ExistsSurjection
 
 <1>2. ASSUME NEW n \in Nat, ExistsSurjection(1..n,S)  PROVE  IsFiniteSet(S)
-  BY <1>2, Z3 DEF IsFiniteSet, ExistsSurjection, Surjection
+  <2>1. PICK M \in [1..n -> S] : \A t \in S : \E s \in 1..n : M[s] = t
+    BY <1>2 DEF ExistsSurjection, Surjection
+  <2>. QED  BY <2>1 DEF IsFiniteSet
 
 <1> QED BY <1>1, <1>2
 
@@ -121,7 +124,7 @@ PROOF
               OBVIOUS
         <4>2. Size(T) = 0  BY <4>1, Fun_NatBijSame
         <4>3. T = {}  BY <4>1, Fun_NatBijEmpty
-        <4>4. SZ[T] = 0  BY <4>2  DEF SZ
+        <4>4. SZ[T] = 0  BY <4>2, Zenon  DEF SZ
         <4>5. fn(SZ,T) = 0  BY <4>3  DEF fn
         <4> QED BY <4>4, <4>5
 
@@ -142,7 +145,7 @@ PROOF
         <4>7. SZ[U] = i  BY <4>5, Fun_NatBijSame DEF SZ
         <4>8. fn(SZ,T) = 1 + SZ[U]  BY <4>2, <4>4 DEF fn
         <4>9. fn(SZ,T) = i+1  BY <4>7, <4>8
-        <4>10. SZ[T] = i+1  BY <4>3  DEF SZ
+        <4>10. SZ[T] = i+1  BY <4>3, Zenon  DEF SZ
         <4>. QED  BY <4>9, <4>10
       <3> HIDE DEF Prop
       <3> QED BY Isa, <3>1, <3>2, NatInduction
@@ -192,8 +195,8 @@ PROOF
         <4>. DEFINE U == T \ {t}
         <4>9. ExistsBijection(1..i,U)  BY Fun_NatBijSubElem, Z3
         <4>10. CS1[U] = CS2[U]  BY <4>9, <3>2
-        <4>11. CS1[T] = 1 + CS1[U]  BY <4>6, <4>7, <1>2  DEF fn
-        <4>12. CS2[T] = 1 + CS2[U]  BY <4>6, <4>7, <1>2  DEF fn
+        <4>11. CS1[T] = 1 + CS1[U]  BY <4>6, <4>7, <1>2, Zenon  DEF fn
+        <4>12. CS2[T] = 1 + CS2[U]  BY <4>6, <4>7, <1>2, Zenon  DEF fn
         <4> QED BY <4>10, <4>11, <4>12
 
       <3> HIDE DEF Prop
@@ -212,8 +215,8 @@ PROOF
   <1>4. CS = SZ  BY <1>1, <1>2, <1>3, Zenon
 
 
-  <1>5. Cardinality(S) = CS[S]  BY DEF Cardinality, CS, fn
-  <1>7. SZ[S] = Size(S)  BY DEF SZ
+  <1>5. Cardinality(S) = CS[S]  BY Zenon DEF Cardinality, CS, fn
+  <1>7. SZ[S] = Size(S)  BY Zenon DEF SZ
   <1>8. Size(S) = n  BY Fun_NatBijSame
   <1> QED BY <1>4, <1>5, <1>7, <1>8
 
@@ -279,7 +282,7 @@ THEOREM FS_SurjSameCardinalityImpliesInj ==
   PROVE  f \in Injection(S,T)
 <1>1. SUFFICES ASSUME NEW a \in S, NEW b \in S, a # b, f[a] = f[b]
       PROVE FALSE
-  BY DEF Injection, Surjection
+  BY DEF Injection, Surjection, IsInjective
 <1>. DEFINE n == Cardinality(S)
 <1>. n \in Nat  BY FS_CardinalityType
 <1>. PICK g \in Bijection(1..n, S) : TRUE
@@ -300,7 +303,21 @@ THEOREM FS_SurjSameCardinalityImpliesInj ==
   <2>2. ASSUME NEW t \in T  PROVE \E k \in 1..n-1 : h[k] = t
     <3>1. PICK s \in S : f[s] = t  BY DEF Surjection
     <3>2. PICK l \in 1..n : g[l] = s  BY DEF Bijection, Surjection
-    <3>. QED  BY <1>1, <1>2, <3>1, <3>2
+    <3>. HIDE DEF n
+    <3>3. CASE l = j
+      <4>. /\ i \in 1 .. n-1
+           /\ i # j
+           /\ h[i] = t
+        BY <1>1, <1>2, <3>1, <3>2, <3>3
+      <4>. QED  OBVIOUS
+    <3>4. CASE l # j /\ l = n
+      <4>. /\ j \in 1 .. n-1
+           /\ h[j] = t
+        BY <3>1, <3>2, <3>4
+      <4>. QED  OBVIOUS
+    <3>5. CASE l # j /\ l # n
+      BY <3>1, <3>2, <3>5
+    <3>. QED  BY <3>3, <3>4, <3>5
   <2>. QED  BY <2>1, <2>2 DEF Surjection
 <1>4. Cardinality(T) <= n-1  BY <1>3, FS_SurjCardinalityBound DEF ExistsSurjection
 <1>. QED  BY <1>4
@@ -370,7 +387,7 @@ THEOREM FS_Singleton ==
   <2>1. /\ IsFiniteSet({} \cup {x})
         /\ Cardinality({} \cup {x}) = 0 + 1
     BY FS_EmptySet, FS_AddElement, Zenon
-  <2>. QED  BY <2>1
+  <2>. QED  BY <2>1, Isa
 <1>2. ASSUME NEW S, IsFiniteSet(S), Cardinality(S) = 1
       PROVE  \E x : S = {x}
   BY <1>2, FS_CardinalityType, Fun_NatBijSingleton, Zenon
@@ -507,7 +524,7 @@ THEOREM FS_PigeonHole ==
   PROVE  \E x,y \in S : x # y /\ f[x] = f[y]
 <1>. SUFFICES ASSUME f \in Injection(S,T)
               PROVE  FALSE
-  BY DEF Injection
+  BY DEF Injection, IsInjective
 <1>. QED  BY FS_Injection, FS_CardinalityType
 
 
@@ -535,8 +552,7 @@ THEOREM FS_BoundedSetOfNaturals ==
   PROVE  /\ IsFiniteSet(S)
          /\ Cardinality(S) \leq n+1
 <1>1. S \subseteq 0 .. n
-  \* FIXME: auxiliary assertion required due to current encoding for SMT backend
-  BY \A x : x \in S => x \in Nat, Z3
+  OBVIOUS
 <1>2. IsFiniteSet(0..n) /\ Cardinality(0..n) = n+1  BY FS_Interval
 <1>. QED  BY <1>1, <1>2, FS_Subset, Zenon
 
@@ -605,7 +621,7 @@ THEOREM FS_StrictSubsetOrderingWellFounded ==
   BY FS_CardinalityType, FS_Subset DEF FiniteSubsetsOf
 <1>2. IsWellFoundedOn(PreImage(Cardinality, FiniteSubsetsOf(S), OpToRel(<,Nat)),
                        FiniteSubsetsOf(S))
-  BY <1>1, PreImageWellFounded, NatLessThanWellFounded, Isa
+  BY <1>1, PreImageWellFounded, NatLessThanWellFounded, IsaM("blast")
 <1>3. StrictSubsetOrdering(S) \cap (FiniteSubsetsOf(S) \X FiniteSubsetsOf(S))
        \subseteq PreImage(Cardinality, FiniteSubsetsOf(S), OpToRel(<, Nat))
   BY FS_Subset, <1>1
@@ -825,7 +841,8 @@ THEOREM FS_Product ==
     BY <1>2, Isa
   <2>3. ExistsBijection(S, SX)
     <3>. DEFINE f  == [s \in S |-> <<s,x>>]
-    <3>. f \in Bijection(S, SX)  BY Zenon DEF Bijection, Injection, Surjection
+    <3>. f \in Bijection(S, SX)
+      BY Zenon DEF Bijection, Injection, IsInjective, Surjection
     <3>. QED  BY DEF ExistsBijection
   <2>4. /\ IsFiniteSet(SX)
         /\ Cardinality(SX) = Cardinality(S)
@@ -859,11 +876,10 @@ THEOREM FS_SUBSET ==
 <1>. DEFINE P(A) == /\ IsFiniteSet(SUBSET A)
                     /\ Cardinality(SUBSET A) = 2^Cardinality(A)
 <1>1. P({})
-  <2>1. /\ IsFiniteSet({{}})
-        /\ Cardinality({{}}) = 1
+  <2>. /\ IsFiniteSet({{}})
+       /\ Cardinality({{}}) = 1
     BY FS_Singleton, Zenon
-  <2>2. 1 = 2^0  OBVIOUS
-  <2>. QED  BY <2>1, <2>2, FS_EmptySet, Zenon
+  <2>. QED  BY FS_EmptySet, TwoExpLemma, Zenon
 <1>2. ASSUME NEW A, NEW x, IsFiniteSet(A), x \notin A, P(A)
       PROVE  P(A \cup {x})
   <2>. DEFINE Ax == {B \cup {x} : B \in SUBSET A}
@@ -901,7 +917,7 @@ THEOREM FS_SUBSET ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Jan 08 17:42:32 CET 2020 by merz
+\* Last modified Fri Jun 13 19:01:57 CEST 2025 by merz
 \* Last modified Thu Jul 04 15:15:07 CEST 2013 by bhargav
 \* Last modified Tue Jun 04 11:44:51 CEST 2013 by bhargav
 \* Last modified Fri May 03 12:02:51 PDT 2013 by tomr
