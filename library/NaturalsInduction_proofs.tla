@@ -40,7 +40,7 @@ THEOREM DownwardNatInduction ==
 <1>1. Q(0)  OBVIOUS
 <1>2. ASSUME NEW n \in Nat, Q(n)
       PROVE  Q(n+1)
-  BY <1>2
+  BY <1>2, n+1 <= m => m-n \in 1 .. m
 <1>3. \A n \in Nat : Q(n)  BY <1>1, <1>2, NatInduction, Isa
 <1>. QED  BY <1>3, Isa
 
@@ -125,7 +125,7 @@ THEOREM RecursiveFcnOfNat ==
     <3>. SUFFICES \A k \in Nat : Q(k)  BY Zenon
     <3>1. Q(0)
       <4>. DEFINE g0 == [n \in {0} |-> [i \in {} |-> {}]]
-      <4>1. P(g0, 0)  OBVIOUS
+      <4>1. P(g0, 0)  BY Isa
       <4>. QED  BY <4>1, Zenon
     <3>2. ASSUME NEW k \in Nat, Q(k)
           PROVE  Q(k+1)
@@ -159,7 +159,7 @@ THEOREM RecursiveFcnOfNat ==
     <3>1. ASSUME NEW k \in Nat, Q(k)
           PROVE  Q(k+1)
       <4>. HIDE DEF P
-      <4>. SUFFICES ASSUME NEW l \in 0 .. k+1, NEW i \in 0 .. l-1, NEW g, NEW h,
+      <4>. SUFFICES ASSUME NEW l \in 1 .. k+1, NEW i \in 0 .. l-1, NEW g, NEW h,
                            P(g,k+1), P(h,l)
                     PROVE  g[l][i] = h[l][i]
         OBVIOUS
@@ -186,9 +186,10 @@ THEOREM RecursiveFcnOfNat ==
             BY nn-1 \in 0 .. l-1, nn-1 \in 0 .. l, Zenon DEF P
           <6>. QED  BY <6>1, <6>2
         <5>. QED  BY <5>1, Zenon DEF P
-      <4>4. \A m \in 0 .. i-1 : gg[l-1][m] = hh[l-1][m]
+      <4>4. ASSUME NEW m \in 0 .. i-1
+            PROVE  gg[l-1][m] = hh[l-1][m]
         <5>. HIDE DEF gg, hh
-        <5>. QED  BY <3>1, <4>2, <4>3
+        <5>. QED  BY <3>1, <4>2, <4>3, l-1 \in 0 .. k, m \in 0 .. l-2
       <4>5. \A m \in 0 .. i-1 : g[l-1][m] = gg[l-1][m]   BY <2>0
       <4>6. \A m \in 0 .. i-1 : h[l-1][m] = hh[l-1][m]   BY <2>0
       <4>7. \A m \in 0 .. i-1 : g[l-1][m] = h[l-1][m]    BY <4>4, <4>5, <4>6, Zenon
@@ -202,9 +203,9 @@ THEOREM RecursiveFcnOfNat ==
                   PROVE  FF[k][i] = Def(FF[k-1], i)
       BY Zenon
     <3>1. FF[k][i] = G(k)[k][i]  OBVIOUS
-    <3>2. G(k)[k][i] = Def(G(k)[k-1], i)  BY <2>2, CVC4
+    <3>2. G(k)[k][i] = Def(G(k)[k-1], i)  BY <2>2
     <3>. HIDE DEF P
-    <3>3. \A j \in 0 .. i-1 : G(k)[k-1][j] = FF[k-1][j]  BY <2>2, <2>3, CVC4
+    <3>3. \A j \in 0 .. i-1 : G(k)[k-1][j] = FF[k-1][j]  BY <2>2, <2>3 DEF G
     <3>. HIDE DEF FF
     <3>4. Def(G(k)[k-1], i) = Def(FF[k-1], i)  BY <3>3
     <3>. QED  BY <3>1, <3>2, <3>4
@@ -283,7 +284,7 @@ THEOREM NatInductiveDef ==
 <1>. HIDE DEF PRDef
 <1>2. ff = [n \in Nat |-> PRDef(ff,n)]  BY <1>1, RecursiveFcnOfNat, Isa
 <1>. USE DEF PRDef
-<1>3. ff = f  BY DEF NatInductiveDefHypothesis
+<1>3. ff = f  BY DEF NatInductiveDefHypothesis, Zenon
 <1>. HIDE DEF ff
 <1>. QED  BY <1>2, <1>3 DEF NatInductiveDefConclusion
 
@@ -433,9 +434,9 @@ factorial[n \in Nat] == IF n = 0 THEN 1 ELSE n * factorial[n-1]
 
 THEOREM FactorialDefConclusion == NatInductiveDefConclusion(factorial, 1, LAMBDA v,n : n*v)
 <1>1. NatInductiveDefHypothesis(factorial, 1, LAMBDA v,n : n*v)
-  BY DEF NatInductiveDefHypothesis, factorial
+  BY Zenon DEF NatInductiveDefHypothesis, factorial
 <1>2. QED
-  BY <1>1, NatInductiveDef
+  BY <1>1, NatInductiveDef, Zenon
 
 THEOREM FactorialDef == \A n \in Nat : factorial[n] = IF n = 0 THEN 1 ELSE n * factorial[n-1]
 BY FactorialDefConclusion DEF NatInductiveDefConclusion
@@ -447,7 +448,7 @@ THEOREM FactorialType == factorial \in [Nat -> Nat]
   BY <1>1, NatInductiveDefType, FactorialDefConclusion, Isa
 
 \* Modification History
-\* Last modified Tue Jan 21 11:44:24 CET 2020 by merz
+\* Last modified Fri Jun 13 13:59:36 CEST 2025 by merz
 \* Last modified Tue Oct 15 12:06:48 CEST 2013 by shaolin
 \* Last modified Sat Nov 26 08:49:59 CET 2011 by merz
 \* Last modified Mon Nov 07 08:58:05 PST 2011 by lamport
