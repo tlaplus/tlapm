@@ -38,14 +38,17 @@ SeqToBag(seq) == [ x \in Range(seq) |-> Cardinality({i \in DOMAIN seq: seq[i]=x}
 
 
 (***************************************************************************)
-(* Equality of bags via DOMAIN and CopiesIn.                               *)
+(* Two bags are equal if they agree on all numbers of copies.              *)
 (***************************************************************************)
 THEOREM BagEquality ==
   ASSUME NEW B1, NEW B2, IsABag(B1), IsABag(B2),
-         DOMAIN B1 = DOMAIN B2,
          \A e : CopiesIn(e, B1) = CopiesIn(e, B2)
   PROVE  B1 = B2
-BY DEF IsABag, CopiesIn, BagIn, BagToSet
+<1>1. \A e : e \in DOMAIN B1 <=> e \in DOMAIN B2
+  BY DEF IsABag, CopiesIn, BagIn, BagToSet
+<1>2. DOMAIN B1 = DOMAIN B2
+  BY <1>1
+<1>. QED  BY <1>2 DEF IsABag, CopiesIn, BagIn, BagToSet
  
 (***************************************************************************)
 (* \sqsubseteq is a PARTIAL ORDER relattion                                *)
