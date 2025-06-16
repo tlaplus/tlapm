@@ -128,7 +128,7 @@ THEOREM ConcatSimplifications ==
 
 THEOREM SubSeqProperties ==
   ASSUME NEW S, NEW s \in Seq(S), NEW m \in Int, NEW n \in Int,
-         1 <= m, m <= n, n <= Len(s),
+         m > n \/ (1 <= m /\ n <= Len(s)),
          \A i \in m .. n : s[i] \in S
    PROVE /\ SubSeq(s,m,n) \in Seq(S)
          /\ Len(SubSeq(s,m,n)) = IF m<=n THEN n-m+1 ELSE 0
@@ -136,7 +136,7 @@ THEOREM SubSeqProperties ==
 OBVIOUS
 
 THEOREM SubSeqEmpty ==
-  ASSUME NEW s, NEW m \in Int, NEW n \in Int, n < m
+  ASSUME NEW S, NEW s \in Seq(S), NEW m \in Int, NEW n \in Int, n < m
   PROVE  SubSeq(s,m,n) = << >>
 OBVIOUS
 
@@ -240,7 +240,7 @@ THEOREM HeadTailAppend ==
   ASSUME NEW S, NEW seq \in Seq(S), NEW elt
   PROVE  /\ Head(Append(seq, elt)) = IF seq = <<>> THEN elt ELSE Head(seq)
          /\ Tail(Append(seq, elt)) = IF seq = <<>> THEN <<>> ELSE Append(Tail(seq), elt)
-OBVIOUS
+BY seq \in Seq(S \union {elt})
 
 THEOREM AppendInjective ==
   ASSUME NEW S, NEW e \in S, NEW s \in Seq(S), NEW f \in S, NEW t \in Seq(S)
@@ -252,11 +252,18 @@ THEOREM SequenceEmptyOrAppend ==
   PROVE \E s \in Seq(S), elt \in S : seq = Append(s, elt)
 <1>. DEFINE front == [i \in 1 .. Len(seq)-1 |-> seq[i]]
             last == seq[Len(seq)]
-<1>. /\ front \in Seq(S)
-     /\ last \in S
-     /\ seq = Append(front, last)
+<1>1. /\ front \in Seq(S)
+      /\ Len(front) = Len(seq)-1
+      /\ last \in S
   OBVIOUS
-<1>. QED  BY Zenon
+<1>2. Len(seq) = Len(Append(front, last))
+  OBVIOUS
+<1>3. ASSUME NEW i \in 1 .. Len(seq) 
+      PROVE  seq[i] = Append(front, last)[i]
+  OBVIOUS
+<1>4. seq = Append(front, last)
+  BY <1>2, <1>3
+<1>. QED  BY <1>1, <1>4
 
 (***************************************************************************)
 (* Inductive reasoning for sequences                                       *)
