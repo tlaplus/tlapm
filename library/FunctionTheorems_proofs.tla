@@ -926,7 +926,9 @@ THEOREM Fun_NatBijAddElem ==
 <1>20. ASSUME NEW t \in S \cup {x}  PROVE \E i \in 1..m+1 : G[i] = t
 \*  BY <1>3  \* fails on some installations
   <2>1. CASE t \in S
-    BY <1>3
+    <3>1. PICK i \in 1 .. m : F[i] = t
+      BY <1>3, <2>1
+    <3>. QED  BY <3>1
   <2>2. CASE t = x
     BY <2>2, m+1 \in 1 .. m+1
   <2>. QED  BY <2>1, <2>2
@@ -963,7 +965,7 @@ THEOREM Fun_NatBijSubElem ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Jun 18 16:03:39 CEST 2025 by merz
+\* Last modified Wed Jun 18 16:34:46 CEST 2025 by merz
 \* Last modified Tue Jun 11 12:30:05 CEST 2013 by bhargav
 \* Last modified Fri May 31 15:27:41 CEST 2013 by bhargav
 \* Last modified Fri May 03 12:55:32 PDT 2013 by tomr
