@@ -922,9 +922,14 @@ THEOREM Fun_NatBijAddElem ==
 <1>4. \A i,j \in 1..m : F[i] = F[j] => i = j  BY <1>1 DEF Bijection, Injection, IsInjective
 
 <1>. DEFINE G == [i \in 1..m+1 |-> IF i <= m THEN F[i] ELSE x]
-<1>10. G \in [1..m+1 -> S \cup {x}]  BY SMT, <1>2
+<1>10. G \in [1..m+1 -> S \cup {x}]  BY <1>2
 <1>20. ASSUME NEW t \in S \cup {x}  PROVE \E i \in 1..m+1 : G[i] = t
-  BY <1>3, Z3
+\*  BY <1>3  \* fails on some installations
+  <2>1. CASE t \in S
+    BY <1>3
+  <2>2. CASE t = x
+    BY <2>2, m+1 \in 1 .. m+1
+  <2>. QED  BY <2>1, <2>2
 <1>30. ASSUME NEW i \in 1..m+1, NEW j \in 1..m+1, G[i] = G[j]  PROVE i = j
   BY <1>2, <1>4, <1>30
 <1>40. G \in Bijection(1..m+1, S \cup {x})
@@ -958,7 +963,7 @@ THEOREM Fun_NatBijSubElem ==
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Jun 13 14:51:49 CEST 2025 by merz
+\* Last modified Wed Jun 18 16:03:39 CEST 2025 by merz
 \* Last modified Tue Jun 11 12:30:05 CEST 2013 by bhargav
 \* Last modified Fri May 31 15:27:41 CEST 2013 by bhargav
 \* Last modified Fri May 03 12:55:32 PDT 2013 by tomr
