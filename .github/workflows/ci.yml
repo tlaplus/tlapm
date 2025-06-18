@@ -67,7 +67,6 @@ jobs:
                   \(                                                    \
                          -not -name "BagsTheorems_proofs.tla"           \
                     -and -not -name "FiniteSetTheorems_proofs.tla"      \
-#                    -and -not -name "FunctionTheorems_proofs.tla"       \
                     -and -not -name "NaturalsInduction_proofs.tla"      \
                     -and -not -name "SequenceTheorems_proofs.tla"       \
                     -and -not -name "SequencesExtTheorems_proofs.tla"   \
