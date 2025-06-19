@@ -549,6 +549,8 @@ and complex_expr b = lazy begin
     locate begin
       choice [ punct "\\A" <!> Forall ;
                punct "\\E" <!> Exists ;
+               punct "\\forall" <!> Forall ;
+               punct "\\exists" <!> Exists ;
              ]
       <**> (quantifier_boundeds b)
       <**> (colon_expr b)
