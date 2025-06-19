@@ -95,9 +95,6 @@ let expect_failure (test : syntax_test) : bool =
     "Conjlist with RECURSIVE in LET/IN";
     "Disjlist with RECURSIVE in LET/IN";
 
-    (* https://github.com/tlaplus/tlapm/issues/160 *)
-    "Verbose Bounded Quantification";
-
     (* https://github.com/tlaplus/tlapm/issues/161 *)
     "Infix Minus as Parameter";
     "Prefix Operator References";
