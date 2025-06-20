@@ -189,7 +189,7 @@ THEOREM RecursiveFcnOfNat ==
       <4>4. ASSUME NEW m \in 0 .. i-1
             PROVE  gg[l-1][m] = hh[l-1][m]
         <5>. HIDE DEF gg, hh
-        <5>. QED  BY <3>1, <4>2, <4>3, l-1 \in 0 .. k, m \in 0 .. l-2
+        <5>. QED  BY <3>1, <4>2, <4>3, l-1 \in 0 .. k, m \in 0 .. (l-1)-1
       <4>5. \A m \in 0 .. i-1 : g[l-1][m] = gg[l-1][m]   BY <2>0
       <4>6. \A m \in 0 .. i-1 : h[l-1][m] = hh[l-1][m]   BY <2>0
       <4>7. \A m \in 0 .. i-1 : g[l-1][m] = h[l-1][m]    BY <4>4, <4>5, <4>6, Zenon
