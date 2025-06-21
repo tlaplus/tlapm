@@ -299,8 +299,11 @@ THEOREM IsPrefixProperties ==
   PROVE  /\ IsPrefix(s,t) <=> \E u \in Seq(S) : t = s \o u
          /\ IsPrefix(s,t) <=> Len(s) <= Len(t) /\ s = SubSeq(t, 1, Len(s))
          /\ IsPrefix(s,t) <=> Len(s) <= Len(t) /\ s = Restrict(t, DOMAIN s)
-<1>1. IsPrefix(s,t) <=> Len(s) <= Len(t) /\ s = SubSeq(t, 1, Len(s))
-  BY DEF IsPrefix
+<1>1. IsPrefix(s,t) <=> (Len(s) <= Len(t) /\ s = SubSeq(t, 1, Len(s)))
+  <2>1. IsPrefix(s,t) => Len(s) =< Len(t) BY DEF IsPrefix
+  <2>2. IsPrefix(s,t) => s = SubSeq(t, 1, Len(s)) BY <2>1 DEF IsPrefix
+  <2>3. (Len(s) <= Len(t) /\ s = SubSeq(t, 1, Len(s))) => IsPrefix(s, t) BY DEF IsPrefix
+  <2>q. QED BY <2>1, <2>2, <2>3
 <1>2. IsPrefix(s,t) <=> \E u \in Seq(S) : t = s \o u
   <2>1. ASSUME IsPrefix(s,t)  PROVE  \E u \in Seq(S) : t = s \o u
     <3>1. Len(s) <= Len(t) /\ s = SubSeq(t, 1, Len(s))
@@ -323,7 +326,7 @@ THEOREM IsStrictPrefixProperties ==
          /\ IsStrictPrefix(s,t) <=> Len(s) < Len(t) /\ s = Restrict(t, DOMAIN s)
          /\ IsStrictPrefix(s,t) <=> IsPrefix(s,t) /\ Len(s) < Len(t)
 <1>1. IsStrictPrefix(s,t) => Len(s) < Len(t)
-  BY DEF IsStrictPrefix, IsPrefix
+  BY IsPrefixProperties DEF IsStrictPrefix
 <1>2. IsStrictPrefix(s,t) <=> \E u \in Seq(S) : u # << >> /\ t = s \o u
   <2>1. ASSUME IsStrictPrefix(s,t)
         PROVE  \E u \in Seq(S) : u # << >> /\ t = s \o u
