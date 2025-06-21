@@ -1,8 +1,8 @@
 (*  Title:      TLA+/Allocator.thy
     Author:     Stephan Merz, Inria Nancy
-    Copyright (C) 2009-2022  INRIA and Microsoft Corporation
+    Copyright (C) 2009-2025  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2024
+    Version:    Isabelle2025
 *)
 
 section \<open>A Simple Resource Allocator\<close>

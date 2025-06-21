@@ -1,8 +1,8 @@
 (*  Title:      TLA+/SetTheory.thy
     Author:     Stephan Merz, Inria Nancy
-    Copyright (C) 2008-2024  INRIA and Microsoft Corporation
+    Copyright (C) 2008-2025  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2024
+    Version:    Isabelle2025
 *)
 
 section \<open>\tlaplus{} Set Theory\<close>
@@ -168,38 +168,38 @@ translations
 
 print_translation \<open>
   let
-      fun bEx_tr' [S, Abs(x, T, P as (Const (@{const_syntax "bEx"},_) $ S' $ Q))] =
+      fun bEx_tr' ctxt [S, Abs(x, T, P as (Const (@{const_syntax "bEx"},_) $ S' $ Q))] =
           (* bEx(S, bEx(S', Q)) => \\E x,y \\in S : Q if S = S' *)
-          let val (y,Q') = Syntax_Trans.atomic_abs_tr' (x,T,Q)
-              val (_ $ xs $ set $ Q'') = bEx_tr' [S', Q']
+          let val (y,Q') = Syntax_Trans.atomic_abs_tr' ctxt (x,T,Q)
+              val (_ $ xs $ set $ Q'') = bEx_tr' ctxt [S', Q']
 	  in  if S = S'
 	      then Syntax.const "@bEx" $ (Syntax.const "@cidts" $ y $ xs)
 				       $ set $ Q''
 	      else Syntax.const "@bEx" $ y $ S $
 		       (Syntax.const "@bEx" $ xs $ set $ Q'')
 	  end
-	| bEx_tr' [S, Abs(x, T, P)] =
-	    let val (x',P') = Syntax_Trans.atomic_abs_tr' (x,T,P)
+	| bEx_tr' ctxt [S, Abs(x, T, P)] =
+	    let val (x',P') = Syntax_Trans.atomic_abs_tr' ctxt (x,T,P)
 	    in  (Syntax.const "@bEx") $ x' $ S $ P'
 	    end
-	| bEx_tr' _ = raise Match;
-      fun bAll_tr' [S, Abs(x, T, P as (Const (@{const_syntax "bAll"},_) $ S' $ Q))] =
+	| bEx_tr' _ _ = raise Match;
+      fun bAll_tr' ctxt [S, Abs(x, T, P as (Const (@{const_syntax "bAll"},_) $ S' $ Q))] =
           (* bAll(S, bAll(S', Q)) => \\A x,y \\in S : Q if S = S' *)
-          let val (y,Q') = Syntax_Trans.atomic_abs_tr' (x,T,Q)
-              val (_ $ xs $ set $ Q'') = bAll_tr' [S', Q']
+          let val (y,Q') = Syntax_Trans.atomic_abs_tr' ctxt (x,T,Q)
+              val (_ $ xs $ set $ Q'') = bAll_tr' ctxt [S', Q']
 	  in  if S = S'
 	      then Syntax.const "@bAll" $ (Syntax.const "@cidts" $ y $ xs)
 				        $ set $ Q''
 	      else Syntax.const "@bAll" $ y $ S $
 		       (Syntax.const "@bAll" $ xs $ set $ Q'')
 	  end
-	| bAll_tr' [S, Abs(x, T, P)] =
-	    let val (x',P') = Syntax_Trans.atomic_abs_tr' (x,T,P)
+	| bAll_tr' ctxt [S, Abs(x, T, P)] =
+	    let val (x',P') = Syntax_Trans.atomic_abs_tr' ctxt (x,T,P)
 	    in  (Syntax.const "@bAll") $ x' $ S $ P'
 	    end
-	| bAll_tr' _ = raise Match;
-  in  [(@{const_syntax "bEx"}, (fn _ => bEx_tr')),
-       (@{const_syntax "bAll"}, (fn _ => bAll_tr'))]
+	| bAll_tr' _ _ = raise Match;
+  in  [(@{const_syntax "bEx"}, bEx_tr'),
+       (@{const_syntax "bAll"}, bAll_tr')]
   end
 \<close>
 

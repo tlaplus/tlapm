@@ -1,8 +1,8 @@
 (*  Title:      TLA+/PredicateLogic.thy
     Author:     Stephan Merz, Inria Nancy
-    Copyright (C) 2008-2024  INRIA and Microsoft Corporation
+    Copyright (C) 2008-2025  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2024
+    Version:    Isabelle2025
 *)
 
 section \<open>First-Order Logic for TLA+\<close>
@@ -1355,8 +1355,6 @@ text \<open>
   development of FOL, we introduce a set of ``shadow connectives''
   that will only be used for this purpose.
 \<close>
-
-(* lemmas cases = case_split [case_names True False] *)
 context
 begin
 
@@ -1425,37 +1423,33 @@ ML \<open>
   )
 \<close>
 
+simproc_setup passive swap_cases_false ("cases_false \<Longrightarrow> PROP P \<Longrightarrow> PROP Q") =
+  \<open>fn _ => fn _ => fn ct =>
+    (case Thm.term_of ct of
+      _ $ (P as _ $ \<^Const_>\<open>cases_false\<close>) $ (_ $ Q $ _) =>
+        if P <> Q then SOME Drule.swap_prems_eq else NONE
+    | _ => NONE)\<close>
+
+simproc_setup passive cases_equal_conj_curry ("cases_conj(P, Q) \<Longrightarrow> PROP R") =
+  \<open>fn _ => fn _ => fn ct =>
+    (case Thm.term_of ct of
+      _ $ (_ $ P) $ _ =>
+        let
+          fun is_conj \<^Const_>\<open>cases_conj for P Q\<close> = is_conj P andalso is_conj Q
+            | is_conj \<^Const_>\<open>cases_equal\<close> = true
+            | is_conj \<^Const_>\<open>cases_true\<close> = true
+            | is_conj \<^Const_>\<open>cases_false\<close> = true
+            | is_conj _ = false
+        in if is_conj P then SOME @{thm cases_conj_curry} else NONE end
+      | _ => NONE)\<close>
+
 declaration \<open>
-  fn _ => Induct.map_simpset (fn ss => ss
-    addsimprocs
-      [Simplifier.make_simproc @{context}
-        {name = "swap_cases_false",
-         lhss = [@{term "cases_false \<Longrightarrow> PROP P \<Longrightarrow> PROP Q"}],
-         proc = fn _ => fn _ => fn ct =>
-          (case Thm.term_of ct of
-            _ $ (P as _ $ @{const cases_false}) $ (_ $ Q $ _) =>
-              if P <> Q then SOME Drule.swap_prems_eq else NONE
-          | _ => NONE),
-         identifier = []},
-       Simplifier.make_simproc @{context}
-        {name = "cases_equal_conj_curry",
-         lhss = [@{term "cases_conj(P, Q) \<Longrightarrow> PROP R"}],
-         proc = fn _ => fn _ => fn ct =>
-          (case Thm.term_of ct of
-            _ $ (_ $ P) $ _ =>
-              let
-                fun is_conj (@{const cases_conj} $ P $ Q) =
-                      is_conj P andalso is_conj Q
-                  | is_conj (Const (@{const_name cases_equal}, _) $ _ $ _) = true
-                  | is_conj @{const cases_true} = true
-                  | is_conj @{const cases_false} = true
-                  | is_conj _ = false
-              in if is_conj P then SOME @{thm cases_conj_curry} else NONE end
-            | _ => NONE),
-         identifier = []}]
-    |> Simplifier.set_mksimps (fn ctxt =>
+  K (Induct.map_simpset
+     (Simplifier.add_proc \<^simproc>\<open>swap_cases_false\<close> #>
+      Simplifier.add_proc \<^simproc>\<open>cases_equal_conj_curry\<close> #>
+      Simplifier.set_mksimps (fn ctxt =>
         Simpdata.mksimps Simpdata.mksimps_pairs ctxt #>
-        map (rewrite_rule ctxt (map Thm.symmetric @{thms cases_rulify_fallback}))))
+        map (rewrite_rule ctxt (map Thm.symmetric @{thms cases_rulify_fallback})))))
 \<close>
 
 text \<open> Pre-simplification of induction and cases rules \<close>
@@ -1523,7 +1517,8 @@ subsection \<open> Propositional simplification \<close>
 subsubsection \<open> Conversion to Boolean values \<close>
 
 text \<open>
-  Because \tlaplus{} is untyped, equivalence is different from equality,
+  Because \tlaplus{} does not distinguish between terms and formulas, 
+  equivalence is different from equality,
   and one has to be careful about stating the laws of propositional
   logic. For example, although the equivalence @{text "(TRUE \<and> A) \<Leftrightarrow> A"}
   is valid, we cannot state the law @{text "(TRUE \<and> A) = A"}
@@ -1945,7 +1940,6 @@ struct
   (
     type T = ((term -> bool) * stamp) list;
     val empty = [];
-    val extend = I;
     fun merge data : T = Library.merge (eq_snd (op =)) data;
   );
   fun add m = Data.map (cons (m, stamp ()));

@@ -4,17 +4,17 @@
 OS_TYPE=$(patsubst CYGWIN%,Cygwin,$(shell uname))
 HOST_CPU=$(shell uname -m)
 
-ISABELLE_VSN=Isabelle2024
+ISABELLE_VSN=Isabelle2025
 
 ifeq ($(OS_TYPE),Linux)
-	ISABELLE_SHA256=603aaaf8abea36597af3b0651d2c162a86c0a0dd4420766f47e5724039639267
+	ISABELLE_SHA256=3d1d66de371823fe31aa8ae66638f73575bac244f00b31aee1dcb62f38147c56
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_linux.tar.gz
 	ISABELLE_ARCHIVE_TYPE=tgz
 	ISABELLE_ARCHIVE_DIR=$(ISABELLE_VSN)
 	FIND_EXEC=-executable
 endif
 ifeq ($(OS_TYPE),Darwin)
-	ISABELLE_SHA256=22035f996f71ea1f03063f6f144195eb6a04974d4d916ed0772cd79569a28bc7
+	ISABELLE_SHA256=ea5754c228857f5d9d3ae254ec9814797f2453ea290df20b2f6dcb2ef0e2e7f8
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_macos.tar.gz
 	ISABELLE_ARCHIVE_TYPE=tgz
 	ISABELLE_ARCHIVE_DIR=$(ISABELLE_VSN).app
@@ -64,12 +64,12 @@ ifeq ($(ISABELLE_ARCHIVE_TYPE),tgz)
 	tar -xzf $<
 	mv $(ISABELLE_ARCHIVE_DIR) $(ISABELLE_DIR)
 endif
-	cd $(ISABELLE_DIR) && rm -rf ./contrib/e-3.0.03-1/src/lib/
+	cd $(ISABELLE_DIR) && rm -rf ./contrib/e-3.1-1/src/lib/
 ifeq ($(OS_TYPE),Darwin)
-	cd $(ISABELLE_DIR) && cd contrib/jdk-21.0.3/arm64-darwin/ \
+	cd $(ISABELLE_DIR) && cd contrib/jdk-21.0.6/arm64-darwin/ \
 		&& (find . -type link | xargs rm) \
 		&& mv zulu-21.jdk/Contents/Home/* ./
-	cd $(ISABELLE_DIR) && cd contrib/jdk-21.0.3/x86_64-darwin/ \
+	cd $(ISABELLE_DIR) && cd contrib/jdk-21.0.6/x86_64-darwin/ \
 		&& (find . -type link | xargs rm) \
 		&& mv zulu-21.jdk/Contents/Home/* ./
 endif

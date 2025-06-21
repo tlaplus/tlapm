@@ -180,7 +180,7 @@ let rec pp_apply sd cx ff op args = match op.core with
         | B.Lt, [e ; f] -> nonfix "less" [e ; f]
         | B.Gteq, [e ; f] -> nonfix "geq" [e ; f]
         | B.Gt, [e ; f] -> nonfix "greater" [e ; f]
-        | B.Range, [e ; f] -> nonfix (cook "..") [e ; f]
+        | B.Range, [e ; f] -> nonfix "intvl" [e ; f]   (* nonfix (cook "..") [e ; f] *)
         (* Sequence operators *)
         | B.Seq, [e] -> nonfix "Seq" [e]
         | B.Len, [e] -> nonfix "Len" [e]
@@ -451,7 +451,7 @@ and fmt_expr sd cx e = match e.core with
   | Num (m, "") ->
       let rec uloop = function
         | 0 -> "0"
-        | n -> "Succ[" ^ uloop (n - 1) ^ "]"
+        | n -> "succ[" ^ uloop (n - 1) ^ "]"
       in
       Fu.Atm (fun ff -> fprintf ff "(%s)" (uloop (int_of_string m)))
   | Num (m, n) -> raise (Unsupported "real constants")
@@ -593,7 +593,7 @@ let thy_header ?(verbose=true) modname oc =
   Printf.fprintf oc "theory %s imports Constant Zenon begin\n" modname;
   if verbose then
     Printf.fprintf oc
-                   "ML_command {* writeln (\"*** TLAPS PARSED\\n\"); *}\n";
+                   "ML_command \\<open> writeln (\"*** TLAPS PARSED\\n\"); \\<close>\n";
   let tdoms_table = [
     cook "Real"     , 0, None;
     cook "/"        , 2, None;
@@ -648,12 +648,12 @@ let thy_write thyout ob proof =
     Printf.fprintf thyout "%s" statement;
     Printf.fprintf thyout "(is \"PROP ?ob'%d\")\n" obid;
     Printf.fprintf thyout "proof -\n";
-    Printf.fprintf thyout "ML_command {* writeln \"*** TLAPS ENTER %d\"; *}\n"
+    Printf.fprintf thyout "ML_command \\<open> writeln \"*** TLAPS ENTER %d\"; \\<close>\n"
                    obid;
     Printf.fprintf thyout "show \"PROP ?ob'%d\"\n" obid;
     Printf.fprintf thyout "%s" proof;
     Printf.fprintf thyout
-                   "ML_command {* writeln \"*** TLAPS EXIT %d\"; *} qed\n"
+                   "ML_command \\<open> writeln \"*** TLAPS EXIT %d\"; \\<close> qed\n"
                    obid;
   with Failure msg ->
     Errors.warn "Proof of obligation %d cannot be checked:\n%s\n" obid msg
