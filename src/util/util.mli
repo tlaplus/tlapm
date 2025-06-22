@@ -39,6 +39,9 @@ end
 
 (** {3 Printing with locations} *)
 
+val redirect_stderr : Format.formatter -> unit
+val redirect_stdout : Format.formatter -> unit
+
 val sprintf :
   ?debug:string -> ?at:('a wrapped) -> ?prefix:string -> ?nonl:unit ->
   ('r, Format.formatter, unit, string) Stdlib.format4 -> 'r

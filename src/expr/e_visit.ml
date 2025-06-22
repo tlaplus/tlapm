@@ -245,6 +245,8 @@ let rename_bounds
 
 type 's scx = 's * hyp Deque.dq
 
+let empty s = (s, Dq.empty)
+
 let adj (s, cx) h =
   (s, Dq.snoc cx h)
 

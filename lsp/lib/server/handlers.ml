@@ -1,3 +1,4 @@
+(* cspell:words failwith yojson *)
 module LspT = Lsp.Types
 
 module type Callbacks = sig
@@ -6,7 +7,11 @@ module type Callbacks = sig
   val ready : t -> t
   val shutdown : t -> t
   val lsp_send : t -> Jsonrpc.Packet.t -> t
-  val with_docs : t -> (t * Docs.t -> t * Docs.t) -> t
+  val with_docs : t -> (t -> Docs.t -> t * Docs.t) -> t
+
+  val with_docs_res :
+    t -> (t -> Docs.t -> t * Docs.t * 'a option) -> t * 'a option
+
   val prove_step : t -> LspT.DocumentUri.t -> int -> LspT.Range.t -> t
   val cancel : t -> LspT.ProgressToken.t -> t
   val use_paths : t -> string list -> t
@@ -51,7 +56,7 @@ module Make (CB : Callbacks) = struct
         let vsn = params.textDocument.version in
         let text = params.textDocument.text in
         Eio.traceln "DOCUMENT[Open]: %s => %s" (DocumentUri.to_string uri) text;
-        CB.with_docs cb_state @@ fun (cb_st, docs) ->
+        CB.with_docs cb_state @@ fun cb_st docs ->
         let docs = Docs.add docs uri vsn text in
         (cb_st, docs)
     | Ok (TextDocumentDidChange params) -> (
@@ -62,12 +67,12 @@ module Make (CB : Callbacks) = struct
             Eio.traceln "DOCUMENT[Change]: %s => %s"
               (DocumentUri.to_string uri)
               text;
-            CB.with_docs cb_state @@ fun (cb_st, docs) ->
+            CB.with_docs cb_state @@ fun cb_st docs ->
             (cb_st, Docs.add docs uri vsn text)
         | _ -> failwith "incremental changes not supported")
     | Ok (TextDocumentDidClose params) ->
         let uri = params.textDocument.uri in
-        CB.with_docs cb_state @@ fun (cb_st, docs) -> (cb_st, Docs.rem docs uri)
+        CB.with_docs cb_state @@ fun cb_st docs -> (cb_st, Docs.rem docs uri)
     | Ok (DidSaveTextDocument params) ->
         let uri = params.textDocument.uri in
         Eio.traceln "DOCUMENT[Save]: %s" (DocumentUri.to_string uri);
@@ -138,6 +143,10 @@ module Make (CB : Callbacks) = struct
                 ~workDoneProgress:false
                 ~codeActionKinds:
                   [ CodeActionKind.Other "tlaplus.tlaps.check-step.ca" ]
+                ()))
+        ~renameProvider:
+          (`RenameOptions
+             (RenameOptions.create ~prepareProvider:true ~workDoneProgress:false
                 ()))
         ~experimental:
           Structs.ServerCapabilitiesExperimental.(
@@ -223,6 +232,69 @@ module Make (CB : Callbacks) = struct
     in
     reply_ok jsonrpc_req `Null cb_state
 
+  let handle_jsonrpc_req_rename_prepare (jsonrpc_req : Jsonrpc.Request.t)
+      (params : LspT.PrepareRenameParams.t) cb_state =
+    let uri = params.textDocument.uri in
+    let pos = Range.of_lsp_position params.position in
+    CB.with_docs cb_state @@ fun cb_st docs ->
+    let open Analysis.Step_rename in
+    let f _vsn mule = find_ranges pos mule in
+    let docs, res = Docs.on_parsed_mule_latest docs uri f in
+    let cb_st =
+      match res with
+      | None -> reply_ok jsonrpc_req `Null cb_st
+      | Some si -> (
+          match StepInfo.matching_range si pos with
+          | None -> reply_ok jsonrpc_req `Null cb_st
+          | Some step_range ->
+              reply_ok jsonrpc_req
+                (`Assoc
+                   [
+                     ( "range",
+                       LspT.Range.yojson_of_t
+                         (Range.as_lsp_range
+                            (StepInfo.step_label_range si step_range)) );
+                     ("placeholder", `String (StepInfo.step_label si));
+                   ])
+                cb_st)
+    in
+    (cb_st, docs)
+
+  let handle_jsonrpc_req_rename (jsonrpc_req : Jsonrpc.Request.t)
+      (params : LspT.RenameParams.t) cb_state =
+    let uri = params.textDocument.uri in
+    let pos = Range.of_lsp_position params.position in
+    let newText = params.newName in
+    CB.with_docs cb_state @@ fun cb_st docs ->
+    let open Analysis.Step_rename in
+    let f _vsn mule = find_ranges pos mule in
+    let docs, res = Docs.on_parsed_mule_latest docs uri f in
+    let cb_st =
+      match res with
+      | None -> reply_ok jsonrpc_req `Null cb_st
+      | Some si -> (
+          match StepInfo.matching_range si pos with
+          | None -> reply_ok jsonrpc_req `Null cb_st
+          | Some _step_range ->
+              let edits =
+                List.map
+                  (fun step_range ->
+                    let range =
+                      Range.as_lsp_range
+                        (StepInfo.step_label_range si step_range)
+                    in
+                    LspT.TextEdit.create ~newText ~range)
+                  si.step_ranges
+              in
+              let workspace_edit =
+                LspT.WorkspaceEdit.create ~changes:[ (uri, edits) ] ()
+              in
+              reply_ok jsonrpc_req
+                (LspT.WorkspaceEdit.yojson_of_t workspace_edit)
+                cb_st)
+    in
+    (cb_st, docs)
+
   let handle_jsonrpc_req_unknown (jsonrpc_req : Jsonrpc.Request.t) message
       cb_state =
     Eio.traceln "Received unknown JsonRPC request, method=%s, error=%s"
@@ -286,36 +358,88 @@ module Make (CB : Callbacks) = struct
       (params : LspT.CodeActionParams.t) cb_state =
     let user_range = params.range in
     let uri = params.textDocument.uri in
-    let cb_state, res = CB.suggest_proof_range cb_state uri user_range in
-    match res with
-    | None ->
+
+    (* Suggest step renumber command. *)
+    let cb_state, step_renumber_cas =
+      CB.with_docs_res cb_state @@ fun cb_st docs ->
+      let open Analysis.Step_renumber.StepInfo in
+      let f _vsn mule =
+        let ranges =
+          Analysis.Step_renumber.find_ranges
+            (Range.of_lsp_range user_range)
+            mule
+        in
+        let ranges = List.filter (fun st -> st.name != st.target_name) ranges in
+        if ranges = [] then None else Some ranges
+      in
+      let docs, ranges_opt = Docs.on_parsed_mule_latest docs uri f in
+      let actions =
+        match ranges_opt with
+        | None -> []
+        | Some sts ->
+            let title = "Renumber proof steps" in
+            let edits =
+              List.map
+                (fun si ->
+                  let newText = si.target_name in
+                  List.map
+                    (fun range ->
+                      let range = Range.as_lsp_range range in
+                      LspT.TextEdit.create ~newText ~range)
+                    si.ranges)
+                sts
+            in
+            let edits = List.flatten edits in
+            let edit = LspT.WorkspaceEdit.create ~changes:[ (uri, edits) ] () in
+            let action = LspT.CodeAction.create ~title ~edit () in
+            [ action ]
+      in
+      (cb_st, docs, Some actions)
+    in
+
+    (* Suggest "check proof step" action. *)
+    let cb_state, check_step_cas =
+      let cb_state, res = CB.suggest_proof_range cb_state uri user_range in
+      match res with
+      | None -> (cb_state, [])
+      | Some (version, p_range) ->
+          let l_from = p_range.start.line + 1 in
+          let l_till = p_range.end_.line + 1 in
+          let title =
+            if l_from = 0 && l_till = 0 then "Check all document proofs"
+            else if l_from = l_till then
+              Format.sprintf "Check proof on line %d" l_from
+            else Format.sprintf "Check proofs on lines %d-%d" l_from l_till
+          in
+          let uri_vsn =
+            LspT.VersionedTextDocumentIdentifier.create ~uri ~version
+          in
+          let check_step_ca =
+            LspT.CodeAction.create ~title
+              ~command:
+                (LspT.Command.create ~command:"tlaplus.tlaps.check-step.lsp"
+                   ~title
+                   ~arguments:
+                     [
+                       LspT.VersionedTextDocumentIdentifier.yojson_of_t uri_vsn;
+                       LspT.Range.yojson_of_t p_range;
+                     ]
+                   ())
+              ()
+          in
+          (cb_state, [ check_step_ca ])
+    in
+
+    (* Return the actions. *)
+    let acts =
+      List.append check_step_cas
+        (List.flatten (Option.to_list step_renumber_cas))
+    in
+    match acts with
+    | [] ->
         reply_ok jsonrpc_req (LspT.CodeActionResult.yojson_of_t None) cb_state
-    | Some (version, p_range) ->
-        let l_from = p_range.start.line + 1 in
-        let l_till = p_range.end_.line + 1 in
-        let title =
-          if l_from = 0 && l_till = 0 then "Check all document proofs"
-          else if l_from = l_till then
-            Format.sprintf "Check proof on line %d" l_from
-          else Format.sprintf "Check proofs on lines %d-%d" l_from l_till
-        in
-        let uri_vsn =
-          LspT.VersionedTextDocumentIdentifier.create ~uri ~version
-        in
-        let check_step_ca =
-          LspT.CodeAction.create ~title
-            ~command:
-              (LspT.Command.create ~command:"tlaplus.tlaps.check-step.lsp"
-                 ~title
-                 ~arguments:
-                   [
-                     LspT.VersionedTextDocumentIdentifier.yojson_of_t uri_vsn;
-                     LspT.Range.yojson_of_t p_range;
-                   ]
-                 ())
-            ()
-        in
-        let acts = Some [ `CodeAction check_step_ca ] in
+    | _ :: _ ->
+        let acts = Some (List.map (fun a -> `CodeAction a) acts) in
         reply_ok jsonrpc_req (LspT.CodeActionResult.yojson_of_t acts) cb_state
 
   (** Dispatch request packets. *)
@@ -332,6 +456,10 @@ module Make (CB : Callbacks) = struct
     | Ok (E (TextDocumentDiagnostic params)) ->
         handle_jsonrpc_req_diagnostics jsonrpc_req params.textDocument.uri
           cb_state
+    | Ok (E (TextDocumentPrepareRename params)) ->
+        handle_jsonrpc_req_rename_prepare jsonrpc_req params cb_state
+    | Ok (E (TextDocumentRename params)) ->
+        handle_jsonrpc_req_rename jsonrpc_req params cb_state
     | Ok (E _unsupported) ->
         handle_jsonrpc_req_unknown jsonrpc_req "method not supported" cb_state
     | Error reason ->

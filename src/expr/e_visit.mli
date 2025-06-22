@@ -20,6 +20,7 @@ val rename_bounds: bounds -> Util.hints -> bounds
 
 type 's scx = 's * hyp Deque.dq
 
+val empty : 's ->  's scx
 val adj  : 's scx -> hyp -> 's scx
 val adjs : 's scx -> hyp list -> 's scx
 val adj_unboundeds_unchecked: 's scx -> bounds -> 's scx

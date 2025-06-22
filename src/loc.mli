@@ -66,5 +66,9 @@ val string_of_locus : ?cap:bool -> locus -> string
 (** String representation of a locus without filename. *)
 val string_of_locus_nofile : locus -> string
 
+(** Compact representation of a locus without a file. *)
+val pp_locus_compact : Format.formatter -> locus -> unit
+val pp_locus_compact_opt : Format.formatter -> locus option -> unit
+
 (** Comparing loci *)
 val compare : locus -> locus -> int

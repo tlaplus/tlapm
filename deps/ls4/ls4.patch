@@ -18,3 +18,24 @@
  inline  Lit  operator ~(Lit p)              { Lit q; q.x = p.x ^ 1; return q; }
  inline  Lit  operator ^(Lit p, bool b)      { Lit q; q.x = p.x ^ (unsigned int)b; return q; }
  inline  bool sign      (Lit p)              { return p.x & 1; }
+--- ls4-1.0.orig/utils/Options.h	2025-05-07 11:05:16
++++ ls4-1.0/utils/Options.h	2025-05-07 11:06:59
+@@ -282,15 +282,15 @@
+         if (range.begin == INT64_MIN)
+             fprintf(stderr, "imin");
+         else
+-            fprintf(stderr, "%4"PRIi64, range.begin);
++            fprintf(stderr, "%4" PRIi64, range.begin);
+ 
+         fprintf(stderr, " .. ");
+         if (range.end == INT64_MAX)
+             fprintf(stderr, "imax");
+         else
+-            fprintf(stderr, "%4"PRIi64, range.end);
++            fprintf(stderr, "%4" PRIi64, range.end);
+ 
+-        fprintf(stderr, "] (default: %"PRIi64")\n", value);
++        fprintf(stderr, "] (default: %" PRIi64 ")\n", value);
+         if (verbose){
+             fprintf(stderr, "\n        %s\n", description);
+             fprintf(stderr, "\n");

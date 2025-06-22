@@ -10,6 +10,7 @@
 open Ext
 
 type uuid = Int64.t * Int64.t
+[@@deriving show]
 
 let uuid_of_string s : uuid =
   assert (String.length s = 36) ;
@@ -27,11 +28,19 @@ let uuid_of_string s : uuid =
 type pid =
   | Pid of int
   | Puuid of uuid
+[@@deriving show]
 
 type prop = pid * Obj.t
 
+let pp_prop_name (fmt : Format.formatter) (p : prop) : unit =
+  let (pid, _obj) = p in
+  Format.fprintf fmt "prop[pid=%a]" pp_pid pid
+
 (* [(Pid(7), Obj.t); ...]  *)
 type props = prop list
+
+let pp_prop_names (fmt : Format.formatter) (ps : props) : unit =
+  Format.fprintf fmt "[%a]" (Format.pp_print_list pp_prop_name) ps
 
 type 'a pfuncs = {
   get : prop -> 'a ;

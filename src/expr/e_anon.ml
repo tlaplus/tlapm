@@ -304,7 +304,8 @@ end
 
 class anon = object (self : 'self)
   inherit anon_sg as super
-  method expr scx e = Elab.desugar self#expr super#expr scx e
+  method expr scx e =
+    E_levels.newcache (Elab.desugar self#expr super#expr scx e)
 end
 
 

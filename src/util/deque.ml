@@ -206,3 +206,20 @@ let alter ?(backwards=false) q n alt_fn =
         end
   in
   spin 0 q
+
+(* Compare deques `q1` and `q2`, using `cmp` to compare their elements. *)
+let equal cmp q1 q2 =
+  let rec diff l1 l2 =
+    match l1, l2 with
+    | x1 :: ll1, x2 :: ll2 when cmp x1 x2 -> diff ll1 ll2
+    | [], _ -> Some l2
+    | _, [] -> Some l1
+    | _ -> None
+  in
+  q1.flen + q1.rlen = q2.flen + q2.rlen && begin
+    let f = diff q1.front q2.front in
+    let r = diff q1.rear q2.rear in
+    match f, r with
+    | Some lf, Some lr -> List.for_all2 cmp lf (List.rev lr)
+    | _, _ -> false
+  end

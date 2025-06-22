@@ -9,6 +9,7 @@ open Expr.T
 type stepno =
     | Named of int * string * bool
     | Unnamed of int * int
+    [@@deriving show]
 
 
 let step_number = function

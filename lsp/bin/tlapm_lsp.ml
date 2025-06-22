@@ -14,6 +14,7 @@ let transport_of_args tr_stdio tr_socket =
 let run transport log_to log_io =
   Printexc.record_backtrace true;
   let main_fun (env : Eio_unix.Stdenv.base) =
+    Tlapm_lib.Util.redirect_stdout Format.err_formatter;
     let main_switch _sw =
       let stop_promise, stop_resolver = Eio.Std.Promise.create () in
       let handle_signal (_signum : int) =

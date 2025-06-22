@@ -2,7 +2,7 @@
     parser. In the future it will check the actual parse tree emitted by
     TLAPM, but for now it just checks whether TLAPM parses without error all
     the syntax it is expected to parse. Tests sourced from:
-    https://github.com/tlaplus/tlaplus-standard/tree/main/tests/tlaplus_syntax
+    https://github.com/tlaplus/rfcs/tree/2a772d9dd11acec5d7dedf30abfab91a49de48b8/language_standard/tests/tlaplus_syntax
 *)
 
 open Syntax_corpus_file_parser;;
@@ -94,9 +94,6 @@ let expect_failure (test : syntax_test) : bool =
     "RECURSIVE inside LET/IN";
     "Conjlist with RECURSIVE in LET/IN";
     "Disjlist with RECURSIVE in LET/IN";
-
-    (* https://github.com/tlaplus/tlapm/issues/160 *)
-    "Verbose Bounded Quantification";
 
     (* https://github.com/tlaplus/tlapm/issues/161 *)
     "Infix Minus as Parameter";
