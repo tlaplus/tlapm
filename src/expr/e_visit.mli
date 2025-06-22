@@ -116,6 +116,6 @@ class virtual ['s] map_rename : object
 end
 
 val set_to_list: ('a, 'b) Hashtbl.t -> 'a list
-val collect_unprimed_vars: ctx -> expr -> string list
+val collect_identifiers: ctx -> expr -> string list
 val collect_primed_vars: ctx -> expr -> string list
 val name_operators: ctx -> expr -> expr
