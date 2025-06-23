@@ -468,21 +468,18 @@ THEOREM Fun_CantorBernsteinSchroeder_Lemma ==
       f0       == Y
       Def(v,i) == {F[s] : s \in v}
       f        == CHOOSE f : f = [i \in Nat |-> IF i = 0 THEN f0 ELSE Def(f[i-1],i)]
-  <2> SUFFICES \A i \in Nat : f[i] = IF i = 0 THEN f0 ELSE Def(f[i-1],i)  BY DEF Ci
+  <2> SUFFICES \A i \in Nat : f[i] = IF i = 0 THEN f0 ELSE Def(f[i-1],i)  BY Zenon DEF Ci
   <2> HIDE DEF f0, Def, f
   <2> SUFFICES NatInductiveDefConclusion(f,f0,Def)  BY DEF NatInductiveDefConclusion
-  <2> SUFFICES NatInductiveDefHypothesis(f,f0,Def)  BY NatInductiveDef
-  <2> QED BY DEF NatInductiveDefHypothesis, f
+  <2> SUFFICES NatInductiveDefHypothesis(f,f0,Def)  BY NatInductiveDef, Zenon
+  <2> QED BY Zenon DEF NatInductiveDefHypothesis, f
 
 (*************************************************************************)
 (* Applying F to an element of Ci[i] produces an element of Ci[i+1].     *)
 (*************************************************************************)
 <1>4. ASSUME NEW i \in Nat, NEW s \in Ci[i]
       PROVE F[s] \in Ci[i+1]
-   (* old proof fails:
-      BY <1>3, SMT
-   *)
-   BY <1>3, i+1 \in Nat \ {0}, (i+1)-1 = i, Zenon
+   BY <1>3
 
 (*************************************************************************)
 (* Each element of Ci[i+1] is the application of F to some element in    *)
@@ -490,9 +487,6 @@ THEOREM Fun_CantorBernsteinSchroeder_Lemma ==
 (*************************************************************************)
 <1>5. ASSUME NEW i \in Nat, NEW t \in Ci[i+1]
       PROVE \E s \in Ci[i] : F[s] = t
-   (* old proof fails:
-      BY <1>3, SMT
-   *)
    <2>1. Ci[i+1] = {F[s] : s \in Ci[i]}
      BY <1>3, i+1 \in Nat \ {0}, (i+1)-1 = i, Zenon
    <2>. QED  BY <2>1
@@ -532,11 +526,8 @@ THEOREM Fun_CantorBernsteinSchroeder_Lemma ==
     <3>1. PICK i \in Nat : c \in Ci[i]  BY <1>7
     <3>2. CASE i = 0  BY <3>1, <3>2, <1>3, Zenon
     <3>3. CASE i # 0
-      (* old proof fails:
-      <4>1. PICK s \in Ci[i-1] : F[s] = c  BY <3>1, <3>3, <1>5, SMT
-      *)
       <4>0. PICK j \in Nat : i = j+1
-        BY <3>3
+        BY <3>3, Isa
       <4>1. PICK s \in Ci[j] : F[s] = c
         BY <4>0, <3>1, <1>5, Zenon
       <4>2. s \in C  BY <3>3, <1>7
@@ -710,15 +701,12 @@ THEOREM Fun_ExistsBijInterval ==
 <1>. DEFINE f == [i \in 1 .. b-a+1 |-> i+a-1]
 <1>1. f \in [1 .. b-a+1 -> a .. b]  BY SMT
 <1>2. f \in Injection(1 .. b-a+1, a .. b) BY DEF Injection, IsInjective
-(** old proof fails:
-<1>3. f \in Surjection(1 .. b-a+1, a .. b) BY Z3 DEF Surjection
-**)
 <1>3. \A t \in a..b :
          /\ t-a+1 \in 1 .. (b-a+1)
          /\ f[t-a+1] = t
   OBVIOUS
 <1>4. f \in Surjection(1 .. b-a+1, a .. b)
-  BY <1>3, <1>1, Zenon DEF Surjection
+  BY <1>1, <1>3 DEF Surjection
 <1>. QED  BY <1>1, <1>2, <1>4 DEF ExistsBijection, Bijection
 
 
@@ -812,7 +800,13 @@ THEOREM Fun_NatSurjImpliesNatBij ==
     <3>1. g \in [1..m-1 -> S]  BY <2>1
     <3>2. ASSUME NEW s \in S  PROVE \E k \in 1..m-1 : g[k] = s
       <4>. PICK l \in 1..m : f[l] = s  BY <1>3 DEF Surjection
-      <4>. QED  BY <2>2
+      <4>1. CASE l = j
+        BY <2>2, <4>1, i \in 1 .. m-1
+      <4>2. CASE l # j /\ l = m
+        BY <4>2, j \in 1 .. m-1
+      <4>3. CASE l # j /\ l # m
+        BY <4>3
+      <4>. QED  BY <4>1, <4>2, <4>3
     <3>. QED  BY <3>1, <3>2, Zenon DEF Surjection
   <2>. QED  BY SMT, <2>3, <2>4, <1>1 DEF ExistsSurjection
 
@@ -862,7 +856,7 @@ THEOREM Fun_NatBijEmpty ==
   <2>. ExistsInjection(S, 1..0)  BY <1>1, Fun_ExistsBijEquiv
   <2>. QED  BY <1>1 DEF ExistsInjection, Injection
 <1>2. ASSUME S = {}  PROVE ExistsBijection(1..0, S)
-  BY <1>2, Fun_ExistsBijReflexive
+  BY <1>2, Fun_ExistsBijReflexive, Isa
 <1>3. QED  BY <1>1, <1>2
 
 
@@ -877,7 +871,7 @@ THEOREM Fun_NatBijSingleton ==
   ASSUME NEW S
   PROVE  ExistsBijection(1..1,S) <=> \E s : S = {s}
 <1>1. ASSUME NEW f \in Bijection(1..1, S)  PROVE \E s : S = {s}
-  BY DEF Bijection, Injection, Surjection
+  BY 1..1 = {1}, SMTT(10) DEF Bijection, Injection, Surjection
 <1>2. ASSUME NEW s, S = {s}  PROVE [i \in 1..1 |-> s] \in Bijection(1..1, S)
   BY <1>2 DEF Bijection, Injection, IsInjective, Surjection
 <1>. QED  BY <1>1, <1>2 DEF ExistsBijection
@@ -928,9 +922,16 @@ THEOREM Fun_NatBijAddElem ==
 <1>4. \A i,j \in 1..m : F[i] = F[j] => i = j  BY <1>1 DEF Bijection, Injection, IsInjective
 
 <1>. DEFINE G == [i \in 1..m+1 |-> IF i <= m THEN F[i] ELSE x]
-<1>10. G \in [1..m+1 -> S \cup {x}]  BY SMT, <1>2
+<1>10. G \in [1..m+1 -> S \cup {x}]  BY <1>2
 <1>20. ASSUME NEW t \in S \cup {x}  PROVE \E i \in 1..m+1 : G[i] = t
-  BY <1>3, Z3
+\*  BY <1>3  \* fails on some installations
+  <2>1. CASE t \in S
+    <3>1. PICK i \in 1 .. m : F[i] = t
+      BY <1>3, <2>1
+    <3>. QED  BY <3>1
+  <2>2. CASE t = x
+    BY <2>2, m+1 \in 1 .. m+1
+  <2>. QED  BY <2>1, <2>2
 <1>30. ASSUME NEW i \in 1..m+1, NEW j \in 1..m+1, G[i] = G[j]  PROVE i = j
   BY <1>2, <1>4, <1>30
 <1>40. G \in Bijection(1..m+1, S \cup {x})
@@ -964,7 +965,7 @@ THEOREM Fun_NatBijSubElem ==
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Dec 30 08:28:26 CET 2020 by merz
+\* Last modified Wed Jun 18 16:34:46 CEST 2025 by merz
 \* Last modified Tue Jun 11 12:30:05 CEST 2013 by bhargav
 \* Last modified Fri May 31 15:27:41 CEST 2013 by bhargav
 \* Last modified Fri May 03 12:55:32 PDT 2013 by tomr

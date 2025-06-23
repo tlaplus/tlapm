@@ -51,7 +51,7 @@ LEMMA IsWellFoundedOnSubset ==
         ASSUME NEW R, NEW S, NEW T \in SUBSET S,
                IsWellFoundedOn(R,S)
         PROVE  IsWellFoundedOn(R,T)
-BY DEF IsWellFoundedOn
+BY Zenon DEF IsWellFoundedOn
 
 
 LEMMA IsWellFoundedOnSubrelation ==
@@ -90,9 +90,9 @@ THEOREM WFMin ==
            f[n \in Nat] == IF n = 0 THEN f0 ELSE Def(f[n-1], n)
 <1>1. NatInductiveDefConclusion(f, f0, Def)
   <2>1. NatInductiveDefHypothesis(f, f0, Def)
-    BY DEF NatInductiveDefHypothesis
+    BY Zenon DEF NatInductiveDefHypothesis
   <2>. QED
-    BY <2>1, NatInductiveDef
+    BY <2>1, NatInductiveDef, Zenon
 <1>2. f \in [Nat -> T]
   <2>1. f0 \in T
     OBVIOUS
@@ -102,15 +102,7 @@ THEOREM WFMin ==
     BY <1>1, <2>1, <2>2, NatInductiveDefType, Isa
 <1>3. ASSUME NEW n \in Nat
       PROVE  <<f[n+1], f[n]>> \in R
-  (* FIXME: SMT backend raises exception "Index past end of list"
-  BY <1>1, <1>2 DEF NatInductiveDefConclusion
-  *)
-  <2>. /\ n+1 \in Nat
-       /\ n+1 # 0
-       /\ (n+1)-1 = n
-    OBVIOUS
-  <2>. QED
-    BY <1>1, <1>2, Zenon DEF NatInductiveDefConclusion
+  BY <1>1, <1>2, n+1 \in Nat \ {0}, (n+1)-1 = n, Zenon DEF NatInductiveDefConclusion
 <1>. QED
   BY <1>2, <1>3, Zenon DEF IsWellFoundedOn
 
@@ -250,7 +242,6 @@ LEMMA WFInductiveDefLemma ==
              /\ \A y \in LT(x) : SetLessThan(y, R, S) \subseteq LT(x)
              /\ \A y \in LT(x) : LT(y) \subseteq LT(x)
              /\ LT(x) \subseteq S
-  \* FIXME: SMT backend fails with exception
   BY Isa DEF SetLessThan, IsTransitivelyClosedOn
 <1> HIDE DEF LT  \** from now on, (mostly) use properties in step <1>1 rather than the definition
 
@@ -271,9 +262,9 @@ LEMMA WFInductiveDefLemma ==
     <3>3. \A z \in LT(x) : SetLessThan(z, R, LT(x)) = SetLessThan(z, R, S)
       BY DEF LT, SetLessThan, IsTransitivelyClosedOn
     <3>4. WFDefOn(R, LT(x), Def)
-      BY <3>1, <3>3, IsaM("blast") DEF WFDefOn
+      BY <3>1, <3>3 DEF WFDefOn
     <3>. QED
-      BY <3>2, <3>4, WFDefOnUnique
+      BY <3>2, <3>4, WFDefOnUnique, Zenon
   <2> DEFINE g == [y \in LT(x) |-> Def(ff, y)]
   <2>3. Def(ff,x) = Def(g,x)
     BY <1>1 (* x \in LT(x) *), <2>1, Zenon DEF WFDefOn
@@ -350,13 +341,13 @@ LEMMA TCRTC ==
        ASSUME NEW R, NEW S, NEW i \in S, NEW j \in S, NEW k \in S,
               <<i,j>> \in TransitiveClosureOn(R,S), <<j,k>> \in R
        PROVE  <<i,k>> \in TransitiveClosureOn(R,S)
-BY TransitiveClosureThm, TCTCTC
+BY TransitiveClosureThm, TCTCTC, Zenon
 
 LEMMA RTCTC ==
        ASSUME NEW R, NEW S, NEW i \in S, NEW j \in S, NEW k \in S,
               <<i,j>> \in R, <<j,k>> \in TransitiveClosureOn(R,S)
        PROVE  <<i,k>> \in TransitiveClosureOn(R,S)
-BY TransitiveClosureThm, TCTCTC
+BY TransitiveClosureThm, TCTCTC, Zenon
 
 LEMMA TransitiveClosureChopLast ==
         ASSUME NEW R, NEW S, NEW i \in S, NEW k \in S, <<i,k>> \in TransitiveClosureOn(R,S)
@@ -392,7 +383,7 @@ LEMMA TransitiveClosureChopLast ==
     BY <2>3, <2>4
 <1>4. QED
   <2>1. TransitiveClosureOn(R,S) \subseteq U
-    BY <1>1, <1>3, TransitiveClosureMinimal
+    BY <1>1, <1>3, TransitiveClosureMinimal, Zenon
   <2>2. QED
     BY <2>1, Zenon
 
@@ -542,17 +533,12 @@ THEOREM NatLessThanWellFounded == IsWellFoundedOn(OpToRel(<,Nat), Nat)
     OBVIOUS
   <2> DEFINE g[i \in Nat] == f[i+1]
   <2>1. g \in [Nat -> Nat]
-    BY ONLY f \in [Nat -> Nat], Isa
+    OBVIOUS
   <2>2. \A i \in Nat : <<g[i+1], g[i]>> \in R
     BY Isa
   <2>3. g[0] \in 0..(n-1)
-    <3>1. f[1] < f[0]  BY Isa DEF OpToRel
-    <3>2. /\ f[1] \in Nat
-          /\ f[1] < n
-      BY <3>1
-    <3>3. f[1] \in 0 .. (n-1)
-      BY ONLY <3>2
-    <3>. QED  BY <3>3, Isa
+    <3>. f[1] < f[0]  BY Isa DEF OpToRel
+    <3>. QED  BY Isa
   <2>4 QED
     BY <2>1, <2>2, <2>3, <1>3
 <1>4. ~ P(ff[0])
@@ -690,7 +676,7 @@ THEOREM WFLexProductOrdering ==
         <5>2. CASE j = m+1
           <6>1. /\ g(x)[1] = g(y)[1]
                 /\ << g(x)[2], g(y)[2] >> \in R
-            BY <3>0, <5>2, IsaM("force")
+            BY <3>0, <5>2
           <6>2. QED
             BY <6>1 DEF LexPairOrdering
         <5>3. QED
@@ -737,6 +723,6 @@ THEOREM WFLexProductOrdering ==
 
 =============================================================================
 \* Modification History
-\* Last modified Sat Jan 04 12:13:45 CET 2020 by merz
+\* Last modified Fri Jun 13 15:08:07 CEST 2025 by merz
 \* Last modified Sun Jan 01 18:39:23 CET 2012 by merz
 \* Last modified Wed Nov 23 10:13:18 PST 2011 by lamport

@@ -64,15 +64,6 @@ jobs:
             - name: Check library proofs
               run: |
                 find ./library -type f -iname "*_proofs.tla"            \
-                  \(                                                    \
-                         -not -name "BagsTheorems_proofs.tla"           \
-                    -and -not -name "FiniteSetTheorems_proofs.tla"      \
-                    -and -not -name "FunctionTheorems_proofs.tla"       \
-                    -and -not -name "NaturalsInduction_proofs.tla"      \
-                    -and -not -name "SequenceTheorems_proofs.tla"       \
-                    -and -not -name "SequencesExtTheorems_proofs.tla"   \
-                    -and -not -name "WellFoundedInduction_proofs.tla"   \
-                  \)                                                    \
                   -print0 | xargs --null --max-args=1 --no-run-if-empty \
                     ./_build/tlapm/bin/tlapm --cleanfp
             - name: Run tests
