@@ -17,8 +17,7 @@ jobs:
             os:
               - ubuntu-latest
               - macos-latest
-            ocaml-compiler:
-              - '4.14.1'
+            ocaml-version:
               - '5.1.0'
         env:
           EXAMPLES_DIR: "tlaplus-examples"
@@ -35,14 +34,13 @@ jobs:
                 sudo apt-get install --yes time
             - uses: ocaml/setup-ocaml@v3
               with:
-                ocaml-compiler: ${{ matrix.ocaml-compiler }}
+                ocaml-compiler: ${{ matrix.ocaml-version }}
             - uses: actions/cache@v4
               id: cache
               with:
                 path: _build_cache
                 key: ${{ runner.os }}_build_cache
             - name: Install optional dependencies
-              if: startsWith(matrix.ocaml-compiler, '5.')
               run: |
                 eval $(opam env)
                 make opam-deps-opt
