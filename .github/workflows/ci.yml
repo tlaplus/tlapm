@@ -61,11 +61,6 @@ jobs:
                   fi
                 done
                 exit 1
-            - name: Check library proofs
-              run: |
-                find ./library -type f -iname "*_proofs.tla"            \
-                  -print0 | xargs --null --max-args=1 --no-run-if-empty \
-                    ./_build/tlapm/bin/tlapm --cleanfp
             - name: Run tests
               run: |
                 eval $(opam env)
@@ -81,6 +76,10 @@ jobs:
                     -name '*.err' -o \
                     -name '*.out' \
                     -exec cat '{}' \;
+            - name: Check library proofs
+              run: |
+                find ./library -type f -iname "*_proofs.tla" -print0 |
+                xargs --null --max-args=1 ./_build/tlapm/bin/tlapm --cleanfp
             - name: Clone tlaplus/examples
               uses: actions/checkout@v4
               with:
