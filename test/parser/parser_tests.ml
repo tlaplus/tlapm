@@ -163,3 +163,16 @@ let () =
   in
   print_endline (show_test_run_summary test_results);
   assert_equal 0 test_results.failed;
+
+open Translate_syntax_tree;;
+open Sexplib;;
+
+let () =
+  "---- MODULE Test ----\nEXTENDS Naturals, FiniteSets\n===="
+  |> Tlapm_lib.module_of_string
+  |> Option.get
+  |> translate_module
+  |> ts_node_to_sexpr
+  |> Sexp.to_string_hum
+  |> print_endline
+
