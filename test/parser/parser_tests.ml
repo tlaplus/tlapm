@@ -5,7 +5,12 @@
     https://github.com/tlaplus/rfcs/tree/2a772d9dd11acec5d7dedf30abfab91a49de48b8/language_standard/tests/tlaplus_syntax
 *)
 
+open Tlapm_lib;;
+
 open Syntax_corpus_file_parser;;
+open Translate_syntax_tree;;
+
+open Sexplib;;
 open OUnit2;;
 
 (** Calls TLAPM's parser with the given input. Catches all exceptions and
@@ -13,27 +18,15 @@ open OUnit2;;
     @param input The TLA+ fragment to parse.
     @return None if parse failure, syntax tree root if successful.
 *)
-let parse (input : string) : Tlapm_lib__M_t.mule option =
-  try Tlapm_lib.module_of_string input
+let parse (input : string) : Module.T.mule option =
+  try module_of_string input
   with _ -> None
 
-(** Datatype summarizing a run of all the syntax tests. *)
-type test_run_summary = {
-  total     : int;
-  succeeded : int;
-  failed    : int;
-  skipped   : int;
-  failures  : syntax_test_info list;
-} [@@deriving show]
-
-(** A blank test summary. *)
-let test_summary_init = {
-  total     = 0;
-  succeeded = 0;
-  failed    = 0;
-  skipped   = 0;
-  failures  = [];
-}
+type test_result =
+  | Success
+  | ShouldHaveFailed of Module.T.mule
+  | ParseFailure
+  | ParseTreeComparisonFailure of Sexp.t * Sexp.t
 
 (** Runs a given syntax test by determining its type then sending the input
     into the TLAPM parser. 
@@ -41,47 +34,21 @@ let test_summary_init = {
     @param test Information about the test itself.
     @return Whether the test succeeded.
 *)
-let run_test (test : syntax_test) : bool =
+let run_test (test : syntax_test) : test_result =
   match test.test with
-  | Error_test input -> parse input |> Option.is_none
-  | Expected_test (input, _) -> parse input |> Option.is_some
-
-(** Controls run of a given syntax test. Checks whether test should be
-    skipped and whether it is expected to fail, then runs test and returns
-    summary.
-    @param expect_failure Whether this test should fail due to a TLAPM bug.
-    @param acc Accumulation variable for test summarization.
-    @param test Information about the test itself.
-    @return Test run summary.
-*)
-let control_test_run
-  (expect_failure : syntax_test -> bool)
-  (acc : test_run_summary)
-  (test : syntax_test)
-    : test_run_summary =
-  let acc = {acc with total = acc.total + 1} in
-  if test.skip then {acc with skipped = acc.skipped + 1} else
-  if run_test test = expect_failure test
-  then {acc with failed = acc.failed + 1; failures = test.info :: acc.failures}
-  else {acc with succeeded = acc.succeeded + 1}
-
-(** Given a path to a directory containing a corpus of syntax tests, get all
-    the tests encoded in those files, filter them as appropriate, then run
-    them all and collect the results.
-    @param path Path to the directory containing the corpus of syntax tests.
-    @param expect_failure Whether a test should fail due to a TLAPM bug.
-    @param filter_predicate Whether to actually execute a test.
-    @return Accumulated summary of all test executions.
-*)
-let run_test_corpus
-  (path : string)
-  (expect_failure : syntax_test -> bool)
-  (filter_pred : syntax_test -> bool)
-    : test_run_summary =
-  path
-  |> get_all_tests_under
-  |> List.filter filter_pred
-  |> List.fold_left (control_test_run expect_failure) test_summary_init
+  | Error_test input -> (
+    match parse input with
+    | None -> Success
+    | Some tlapm_output -> ShouldHaveFailed tlapm_output
+  )
+  | Expected_test (input, expected) -> (
+      match parse input with
+      | None -> ParseFailure
+      | Some tlapm_output ->
+        let actual = tlapm_output |> translate_module |> ts_node_to_sexpr in
+        if Sexp.equal expected actual
+        then Success else ParseTreeComparisonFailure (expected, actual)
+  )
 
 (** Names of tests that are known to fail due to TLAPM parser bugs.
     @param test Information about the test.
@@ -142,34 +109,28 @@ let expect_failure (test : syntax_test) : bool =
     "Nonfix Double Exclamation Operator (GH TSTLA #GH97, GH tlaplus/tlaplus #884)";
   ]
 
-(** Filter predicate to control which tests to run.
-    @param name Optional; a test name to filter on.
-    @return Predicate matching all tests or tests with given name.
-*)
-let should_run ?name test =
-  match name with
-  | Some name -> String.equal test.info.name name
-  | None -> true
+let _tests = "Standardized syntax test corpus" >::: (
+  get_all_tests_under "syntax_corpus"
+  |> List.map (fun test -> test.info.name >::
+    (fun _ ->
+      skip_if test.skip "Test has skip attribute";
+      match run_test test with
+      | Success -> ()
+      | ShouldHaveFailed _ -> assert_bool "Expected parse failure" (expect_failure test)
+      | ParseFailure -> assert_bool "Expected parse success" (expect_failure test)
+      | ParseTreeComparisonFailure (_, _) -> assert_failure "Parse tree mismatch"
+    )
+  )
+)
 
-(** The top-level test; runs all syntax tests, prints summary, then fails
-    with an assertion if any tests failed.
-*)
-let () =
-  let test_results =
-    run_test_corpus
-      "syntax_corpus"
-      expect_failure
-      (should_run (*~name:"Proof Containing Jlist"*))
-  in
-  print_endline (show_test_run_summary test_results);
-  assert_equal 0 test_results.failed;
+(**let _ = run_test_tt_main _tests*)
 
-open Translate_syntax_tree;;
-open Sexplib;;
-
-let () =
-  "---- MODULE Test ----\nEXTENDS Naturals, FiniteSets\n===="
-  |> Tlapm_lib.module_of_string
+let () = " \
+  --------- MODULE Test --------\n \
+  EXTENDS Naturals, FiniteSets\n \
+  CONSTANTS a, _+_, _', SUBSET _, f(_, _, _)\n \
+  ====================="
+  |> module_of_string
   |> Option.get
   |> translate_module
   |> ts_node_to_sexpr
