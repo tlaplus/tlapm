@@ -49,9 +49,11 @@ let as_operator (op_str : string) (arity : int) : operator =
   | ("DOMAIN", 1) -> Prefix "domain"
   | ("SUBSET", 1) -> Prefix "powerset"
   | ("-", 1) -> Prefix "negative"
+  | ("-.", 1) -> Prefix "negative"
   | ("-", 2) -> Infix "minus"
   | ("+", 2) -> Infix "plus"
   | ("'", 1) -> Postfix "prime"
+  | ("^+", 1) -> Postfix "sup_plus"
   | _ -> Named
 
 let translate_operator_declaration (name : string) (arity : int) : field_or_node list =
@@ -88,16 +90,61 @@ let translate_constant_decl ((name, shape) : (Util.hint * Expr.T.shape)) : field
   }
 
 (** TODO *)
-let translate_variable_decl (_decl : Util.hint) : field_or_node =
-  leaf "ph"
+let translate_variable_decl (_ : Util.hint) : field_or_node =
+  leaf "identifier"
 
 (** TODO *)
 let translate_recursive_decl ((_hint, _shape) : (Util.hint * Expr.T.shape)) : field_or_node =
   leaf "ph"
+  
+let translate_operator_parameter ((_hint, shape) : Util.hint * Expr.T.shape) : field_or_node =
+  match shape with
+  | Shape_expr -> field_leaf "parameter" "identifier"
+  | Shape_op _arity -> leaf "ph"
 
-(** TODO *)
-let translate_operator_definition (_defn : Expr.T.defn) (_wheredef : Expr.T.wheredef) (_visibility : Expr.T.visibility) (_export : Expr.T.export) : field_or_node list =
-  [leaf "ph"]
+let translate_operator_argument (expr : Expr.T.expr) : field_or_node =
+  match expr.core with
+  | Num (_, _) -> field_leaf "parameter" "nat_number"
+  | _ -> field_leaf "parameter" "arg_ph"
+
+let translate_expr (expr : Expr.T.expr) : ts_node =
+  match expr.core with
+  | Apply (_callee, args) -> {
+    name = "bound_op";
+    children = List.flatten [
+      [field_leaf "name" "identifier_ref"];
+      List.map translate_operator_argument args
+    ]
+  }
+  | _ -> {name = "expr_ph"; children = []}
+
+let translate_operator_definition (defn : Expr.T.defn) : ts_node =
+  match defn.core with
+  | Recursive (_hint, _shape) -> {name = "recursive_ph"; children = []}
+  | Operator (_hint, expr) -> (
+    match expr.core with
+    (* Operators with parameters are represented by a LAMBDA expression. *)
+    | Lambda (params, expr) -> {
+      name = "operator_definition";
+      children = List.flatten [
+        [field_leaf "name" "identifier"];
+        List.map translate_operator_parameter params;
+        [leaf "def_eq"];
+        [Field ("definition", (translate_expr expr))]
+      ]
+    }
+    (* Operators without parameters are represented by a non-LAMBDA expression. *)
+    | _ -> {
+      name = "operator_definition";
+      children = [
+        field_leaf "name" "identifier";
+        leaf "def_eq";
+        Field ("definition", translate_expr expr)
+      ]
+    }
+  )
+  | Instance (_hint, _instance) -> {name = "ph"; children = []}
+  | Bpragma _ -> assert false
 
 (** TODO *)
 let translate_assumption (_hint : Util.hint option) (_expr : Expr.T.expr) : field_or_node list =
@@ -139,10 +186,14 @@ and translate_unit (unit : Module.T.modunit) : field_or_node =
     name = "recursive_declaration";
     children = List.map translate_recursive_decl ls
   }
-  | Definition (defn, wheredef, visibility, export) -> Node {
-    name = "operator_definition";
-    children = translate_operator_definition defn wheredef visibility export
-  }
+  | Definition (defn, _visibility, _wheredef, export) -> (
+    match export with
+    | Local -> Node {
+      name = "local_definition";
+      children = [Node (translate_operator_definition defn)]
+    }
+    | Export -> Node (translate_operator_definition defn)
+  )
   | Axiom (hint, expr) -> Node {
     name = "assumption";
     children = translate_assumption hint expr
