@@ -43,35 +43,51 @@ type operator =
   | Postfix of string
   | Named
 
-let as_operator (op_str : string) (arity : int) : operator =
-  match op_str, arity with
-  | ("ENABLED", 1) -> Prefix "enabled"
-  | ("DOMAIN", 1) -> Prefix "domain"
-  | ("SUBSET", 1) -> Prefix "powerset"
-  | ("-", 1) -> Prefix "negative"
-  | ("-.", 1) -> Prefix "negative"
-  | ("-", 2) -> Infix "minus"
-  | ("+", 2) -> Infix "plus"
-  | ("'", 1) -> Postfix "prime"
-  | ("^+", 1) -> Postfix "sup_plus"
+type decl_or_ref =
+  | Declaration
+  | Reference
+
+let op_to_node (if_id : decl_or_ref) (op : operator) : ts_node =
+  match op with
+  | Prefix symbol -> {name = "prefix_op_symbol"; children = [leaf symbol]}
+  | Infix symbol -> {name = "infix_op_symbol"; children = [leaf symbol]}
+  | Postfix symbol -> {name = "postfix_op_symbol"; children = [leaf symbol]}
+  | Named -> {
+    name = (match if_id with | Declaration -> "identifier" | Reference -> "identifier_ref");
+    children = []
+  }
+
+let as_operator (op_str : string) : operator =
+  match op_str with
+  | "ENABLED" -> Prefix "enabled"
+  | "DOMAIN" -> Prefix "domain"
+  | "SUBSET" -> Prefix "powerset"
+  | "-." -> Prefix "negative"
+  | "-" -> Infix "minus"
+  | "+" -> Infix "plus"
+  | "*" -> Infix "mul"
+  | "'" -> Postfix "prime"
+  | "^+" -> Postfix "sup_plus"
   | _ -> Named
 
 let translate_operator_declaration (name : string) (arity : int) : field_or_node list =
-  match as_operator name arity with
-  | Prefix symbol -> [
-    Field ("name", {name = "prefix_op_symbol"; children = [leaf symbol]});
+  let op = as_operator name in
+  let symbol = op_to_node Declaration op in
+  match op with
+  | Prefix _ -> [
+    Field ("name", symbol);
     leaf "placeholder"
   ]
-  | Infix symbol -> [
+  | Infix _ -> [
     leaf "placeholder";
-    Field ("name", {name = "infix_op_symbol"; children = [leaf symbol]});
+    Field ("name", symbol);
     leaf "placeholder"
   ]
-  | Postfix symbol -> [
+  | Postfix _ -> [
     leaf "placeholder";
-    Field ("name", {name = "postfix_op_symbol"; children = [leaf symbol]});
+    Field ("name", symbol);
   ]
-  | Named -> (field_leaf "name" "identifier") :: (repeat arity (field_leaf "parameter" "placeholder"))
+  | Named -> (Field ("name", symbol)) :: (repeat arity (field_leaf "parameter" "placeholder"))
   
 let translate_extends (tree : Util.hints) : field_or_node list =
   match tree with
@@ -102,16 +118,18 @@ let translate_operator_parameter ((_hint, shape) : Util.hint * Expr.T.shape) : f
   | Shape_expr -> field_leaf "parameter" "identifier"
   | Shape_op _arity -> leaf "higher_order_param_ph"
 
-let rec translate_substitution ((_hint, expr) : (Util.hint * Expr.T.expr)) : field_or_node =
+(** Translates the substitution component of INSTANCE statements like s <- expr *)
+let rec translate_substitution ((hint, expr) : (Util.hint * Expr.T.expr)) : field_or_node =
   Node {
     name = "substitution";
     children = [
-      leaf "identifier_ref";
+      Node (hint.core |> as_operator |> op_to_node Reference);
       leaf "gets";
       Node (translate_expr expr)
     ]
   }
 
+(** Translates statements like INSTANCE M WITH s1 <- e1, s2 <- e2 *)
 and translate_instance (instance : Expr.T.instance) : ts_node = {
   name = "instance";
   children = List.flatten [
@@ -120,6 +138,11 @@ and translate_instance (instance : Expr.T.instance) : ts_node = {
   ]
 }
 
+(** Translate conjunction & disjunction lists like
+  /\ e1
+  /\ e2
+  /\ e3
+*)
 and translate_jlist (bullet : Expr.T.bullet) (juncts : Expr.T.expr list) : ts_node =
   let jtype = match bullet with | And -> "conj" | Or -> "disj" | _ -> failwith "jlist"
   in {
@@ -130,10 +153,12 @@ and translate_jlist (bullet : Expr.T.bullet) (juncts : Expr.T.expr list) : ts_no
     }) juncts
   }
 
+(** Top-level translation method for all expression types. *)
 and translate_expr (expr : Expr.T.expr) : ts_node =
   match expr.core with
   | Num (_, _) -> {name = "nat_number"; children = []}
   | List (bullet, juncts) -> translate_jlist bullet juncts
+  | Opaque _ -> {name = "identifier_ref"; children = []}
   | Apply (_callee, args) -> {
     name = "bound_op";
     children = List.flatten [

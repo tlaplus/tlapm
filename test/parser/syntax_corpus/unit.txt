@@ -102,7 +102,7 @@ INSTANCE M WITH
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
+(source_file (module (header_line) name: (identifier) (header_line)
   (instance (identifier_ref)
     (substitution (identifier_ref) (gets) (identifier_ref))
     (substitution (prefix_op_symbol (powerset)) (gets) (identifier_ref))
