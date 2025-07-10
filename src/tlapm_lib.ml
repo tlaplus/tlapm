@@ -652,9 +652,9 @@ let modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~pre
          | Some l, None -> Error (Some l, Printexc.to_string e)
          | None, None -> Error (None, Printexc.to_string e))
 
-let module_of_string module_str =
+let module_of_string ?(send_output = output_string) module_str =
     let hparse = Tla_parser.P.use Module.Parser.parse in
     let (flex, _) = Alexer.lex_string module_str in
-    Tla_parser.P.run hparse ~init:Tla_parser.init ~source:flex
+    Tla_parser.P.run hparse ~send_output ~init:Tla_parser.init ~source:flex
 
 let stdlib_search_paths = Params.stdlib_search_paths

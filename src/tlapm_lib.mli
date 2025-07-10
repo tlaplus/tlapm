@@ -25,7 +25,7 @@ val modctx_of_string :
     from a specified string, assume it is located in the
     specified path. *)
 
-val module_of_string : string -> Module.T.mule option
+val module_of_string : ?send_output:(out_channel -> string -> unit) -> string -> Module.T.mule option
 (** Parse the specified string as a module. No dependencies
     are considered, nor proof obligations are elaborated. *)
 

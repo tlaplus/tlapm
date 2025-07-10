@@ -19,36 +19,9 @@ open OUnit2;;
     @return None if parse failure, syntax tree root if successful.
 *)
 let parse (input : string) : Module.T.mule option =
-  try module_of_string input
+  let send_output (_ : out_channel) (_ : string) : unit = () in
+  try module_of_string ~send_output input
   with _ -> None
-
-type test_result =
-  | Success
-  | ShouldHaveFailed of Module.T.mule
-  | ParseFailure
-  | ParseTreeComparisonFailure of Sexp.t * Sexp.t
-
-(** Runs a given syntax test by determining its type then sending the input
-    into the TLAPM parser. 
-    @param expect_failure Whether this test should fail due to a TLAPM bug.
-    @param test Information about the test itself.
-    @return Whether the test succeeded.
-*)
-let run_test (test : syntax_test) : test_result =
-  match test.test with
-  | Error_test input -> (
-    match parse input with
-    | None -> Success
-    | Some tlapm_output -> ShouldHaveFailed tlapm_output
-  )
-  | Expected_test (input, expected) -> (
-      match parse input with
-      | None -> ParseFailure
-      | Some tlapm_output ->
-        let actual = tlapm_output |> translate_module |> ts_node_to_sexpr in
-        if Sexp.equal expected actual
-        then Success else ParseTreeComparisonFailure (expected, actual)
-  )
 
 (** Names of tests that are known to fail due to TLAPM parser bugs.
     @param test Information about the test.
@@ -114,16 +87,32 @@ let _tests = "Standardized syntax test corpus" >::: (
   |> List.map (fun test -> test.info.name >::
     (fun _ ->
       skip_if test.skip "Test has skip attribute";
-      match run_test test with
-      | Success -> ()
-      | ShouldHaveFailed _ -> assert_bool "Expected parse failure" (expect_failure test)
-      | ParseFailure -> assert_bool "Expected parse success" (expect_failure test)
-      | ParseTreeComparisonFailure (_, _) -> assert_failure "Parse tree mismatch"
+      match test.test with
+      | Error_test input -> (
+        match parse input with
+        | None -> assert_bool "Expected error test to fail" (not (expect_failure test))
+        | Some _ -> assert_bool "Expected parse failure" (expect_failure test)
+      )
+      | Expected_test (input, expected) -> (
+          match parse input with
+          | None -> assert_bool "Expected parse success" (expect_failure test)
+          | Some tlapm_output ->
+            let actual = tlapm_output |> translate_module |> ts_node_to_sexpr in
+            if Sexp.equal expected actual
+            then assert_bool "Expected test to fail" (not (expect_failure test))
+            else
+              let display_options =
+                Sexp_diff.Display.Display_options.create
+                  Sexp_diff.Display.Display_options.Layout.Single_column
+              in Sexp_diff.Algo.diff ~original:expected ~updated:actual ()
+              |> Sexp_diff.Display.display_as_plain_string display_options
+              |> assert_failure
+      )
     )
   )
 )
 
-(**let _ = run_test_tt_main _tests*)
+let _ = run_test_tt_main _tests
 
 let () = " \
   --------- MODULE Test --------\n \
