@@ -30,7 +30,6 @@ let parse (input : string) : Module.T.mule option =
 let expect_failure (test : syntax_test) : bool =
   List.mem test.info.path [
     "syntax_corpus/assume-prove.txt";
-    "syntax_corpus/assume.txt";
     "syntax_corpus/case.txt";
     "syntax_corpus/conjlist.txt";
     "syntax_corpus/disjlist.txt";

@@ -70,6 +70,17 @@ let as_operator (op_str : string) : operator =
   | "^+" -> Postfix "sup_plus"
   | _ -> Named
 
+let as_specific_name (id : string) : ts_node =
+  match id with
+  | "Nat" -> {name = "nat_number_set"; children = []}
+  | _ -> {name = "identifier_ref"; children = []}
+
+let builtin_to_node (builtin : Builtin.builtin) : ts_node =
+  match builtin with
+  | TRUE -> {name = "boolean"; children = []}
+  | FALSE -> {name = "boolean"; children = []}
+  | _ -> {name = "builtin_ph"; children = []}
+
 let translate_operator_declaration (name : string) (arity : int) : field_or_node list =
   let op = as_operator name in
   let symbol = op_to_node Declaration op in
@@ -152,13 +163,25 @@ and translate_jlist (bullet : Expr.T.bullet) (juncts : Expr.T.expr list) : ts_no
       children = [leaf ("bullet_" ^ jtype); Node (translate_expr expr)]
     }) juncts
   }
+and translate_quantifier_bound ((_hint, _, bound_domain) : Expr.T.bound) : field_or_node =
+  match bound_domain with
+  | Domain expr -> Node {
+    name = "quantifier_bound";
+    children = [
+      field_leaf "intro" "identifier";
+      leaf "set_in";
+      Field ("set", translate_expr expr)
+    ]
+  }
+  | _ -> failwith "Invalid function domain"
 
 (** Top-level translation method for all expression types. *)
 and translate_expr (expr : Expr.T.expr) : ts_node =
   match expr.core with
   | Num (_, _) -> {name = "nat_number"; children = []}
+  | Opaque id -> as_specific_name id
+  | Internal internal -> builtin_to_node internal
   | List (bullet, juncts) -> translate_jlist bullet juncts
-  | Opaque _ -> {name = "identifier_ref"; children = []}
   | Apply (_callee, args) -> {
     name = "bound_op";
     children = List.flatten [
@@ -183,6 +206,15 @@ let translate_operator_definition (defn : Expr.T.defn) : ts_node =
         [Field ("definition", (translate_expr expr))]
       ]
     }
+    | Fcn (bounds, expr) -> {
+      name = "function_definition";
+      children = List.flatten [
+        [field_leaf "name" "identifier"];
+        List.map translate_quantifier_bound bounds;
+        [leaf "def_eq"];
+        [Field ("definition", translate_expr expr)]
+      ]
+    }
     (* Operators without parameters are represented by a non-LAMBDA expression. *)
     | _ -> {
       name = "operator_definition";
@@ -196,17 +228,19 @@ let translate_operator_definition (defn : Expr.T.defn) : ts_node =
   | Instance (_hint, instance) -> {
     name = "module_definition";
     children = List.flatten [
-      [field_leaf "name" "identifier_ref"];
+      [field_leaf "name" "identifier"];
       [leaf "def_eq"];
-      [leaf "identifier_ref"];
-      [Node (translate_instance instance)];
+      [Field ("definition", (translate_instance instance))];
     ]
   }
   | Bpragma _ -> assert false
 
 (** TODO *)
-let translate_assumption (_hint : Util.hint option) (_expr : Expr.T.expr) : field_or_node list =
-  [leaf "assume_ph"]
+let translate_assumption (hint : Util.hint option) (expr : Expr.T.expr) : field_or_node list =
+  List.flatten [
+    if Option.is_some hint then [field_leaf "name" "identifier"; leaf "def_eq"] else [];
+    [Node (translate_expr expr)]
+  ]
 
 (** TODO *)
 let translate_theorem (_hint : Util.hint option) (_sequent : Expr.T.sequent) (_level : int) (_proof1 : Proof.T.proof) (_proof2 : Proof.T.proof) (_summary : Module.T.summary) : field_or_node list =
