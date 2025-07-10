@@ -95,25 +95,50 @@ let translate_variable_decl (_ : Util.hint) : field_or_node =
 
 (** TODO *)
 let translate_recursive_decl ((_hint, _shape) : (Util.hint * Expr.T.shape)) : field_or_node =
-  leaf "ph"
+  leaf "recursive_ph"
   
 let translate_operator_parameter ((_hint, shape) : Util.hint * Expr.T.shape) : field_or_node =
   match shape with
   | Shape_expr -> field_leaf "parameter" "identifier"
-  | Shape_op _arity -> leaf "ph"
+  | Shape_op _arity -> leaf "higher_order_param_ph"
 
-let translate_operator_argument (expr : Expr.T.expr) : field_or_node =
-  match expr.core with
-  | Num (_, _) -> field_leaf "parameter" "nat_number"
-  | _ -> field_leaf "parameter" "arg_ph"
+let rec translate_substitution ((_hint, expr) : (Util.hint * Expr.T.expr)) : field_or_node =
+  Node {
+    name = "substitution";
+    children = [
+      leaf "identifier_ref";
+      leaf "gets";
+      Node (translate_expr expr)
+    ]
+  }
 
-let translate_expr (expr : Expr.T.expr) : ts_node =
+and translate_instance (instance : Expr.T.instance) : ts_node = {
+  name = "instance";
+  children = List.flatten [
+    [leaf "identifier_ref"];
+    List.map translate_substitution instance.inst_sub
+  ]
+}
+
+and translate_jlist (bullet : Expr.T.bullet) (juncts : Expr.T.expr list) : ts_node =
+  let jtype = match bullet with | And -> "conj" | Or -> "disj" | _ -> failwith "jlist"
+  in {
+    name = jtype ^ "_list";
+    children = List.map (fun expr -> Node {
+      name = jtype ^ "_item";
+      children = [leaf ("bullet_" ^ jtype); Node (translate_expr expr)]
+    }) juncts
+  }
+
+and translate_expr (expr : Expr.T.expr) : ts_node =
   match expr.core with
+  | Num (_, _) -> {name = "nat_number"; children = []}
+  | List (bullet, juncts) -> translate_jlist bullet juncts
   | Apply (_callee, args) -> {
     name = "bound_op";
     children = List.flatten [
       [field_leaf "name" "identifier_ref"];
-      List.map translate_operator_argument args
+      List.map (fun arg -> Field ("parameter", (translate_expr arg))) args
     ]
   }
   | _ -> {name = "expr_ph"; children = []}
@@ -143,16 +168,24 @@ let translate_operator_definition (defn : Expr.T.defn) : ts_node =
       ]
     }
   )
-  | Instance (_hint, _instance) -> {name = "ph"; children = []}
+  | Instance (_hint, instance) -> {
+    name = "module_definition";
+    children = List.flatten [
+      [field_leaf "name" "identifier_ref"];
+      [leaf "def_eq"];
+      [leaf "identifier_ref"];
+      [Node (translate_instance instance)];
+    ]
+  }
   | Bpragma _ -> assert false
 
 (** TODO *)
 let translate_assumption (_hint : Util.hint option) (_expr : Expr.T.expr) : field_or_node list =
-  [leaf "ph"]
+  [leaf "assume_ph"]
 
 (** TODO *)
 let translate_theorem (_hint : Util.hint option) (_sequent : Expr.T.sequent) (_level : int) (_proof1 : Proof.T.proof) (_proof2 : Proof.T.proof) (_summary : Module.T.summary) : field_or_node list =
-  [leaf "ph"]
+  [leaf "theorem_ph"]
 
 let rec translate_module (tree : Module.T.mule) : ts_node =
   {
@@ -203,5 +236,9 @@ and translate_unit (unit : Module.T.modunit) : field_or_node =
     children = translate_theorem hint sequent level proof1 proof2 summary
   }
   | Submod mule -> Node (translate_module mule)
-  | Mutate _ -> leaf "ph"
-  | Anoninst _ -> leaf "ph"
+  | Mutate _ -> leaf "mutate_ph"
+  | Anoninst (instance, Local) -> Node {
+      name = "local_definition";
+      children = [Node (translate_instance instance)]
+    }
+  | Anoninst (instance, Export) -> Node (translate_instance instance)
