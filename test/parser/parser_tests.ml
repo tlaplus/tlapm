@@ -28,7 +28,37 @@ let parse (input : string) : Module.T.mule option =
     @return Whether the test is expected to fail.
 *)
 let expect_failure (test : syntax_test) : bool =
-  List.mem test.info.name [
+  List.mem test.info.path [
+    "syntax_corpus/assume-prove.txt";
+    "syntax_corpus/assume.txt";
+    "syntax_corpus/case.txt";
+    "syntax_corpus/conjlist.txt";
+    "syntax_corpus/disjlist.txt";
+    "syntax_corpus/except.txt";
+    "syntax_corpus/expressions.txt";
+    "syntax_corpus/fairness.txt";
+    "syntax_corpus/functions.txt";
+    "syntax_corpus/if_then_else.txt";
+    "syntax_corpus/infix_op.txt";
+    "syntax_corpus/jlist.txt";
+    "syntax_corpus/labels.txt";
+    "syntax_corpus/let_in.txt";
+    "syntax_corpus/modules.txt";
+    "syntax_corpus/number.txt";
+    "syntax_corpus/operators.txt";
+    "syntax_corpus/postfix_op.txt";
+    "syntax_corpus/prefix_op.txt";
+    "syntax_corpus/proofs.txt";
+    "syntax_corpus/quantification.txt";
+    "syntax_corpus/records.txt";
+    "syntax_corpus/recursive.txt";
+    "syntax_corpus/sets.txt";
+    "syntax_corpus/step_expressions.txt";
+    "syntax_corpus/string.txt";
+    "syntax_corpus/subexpressions.txt";
+    "syntax_corpus/tuples.txt";
+    "syntax_corpus/use_or_hide.txt";
+  ] || List.mem test.info.name [
 
     (* https://github.com/tlaplus/tlapm/issues/54#issuecomment-2435515180 *)
     "RECURSIVE inside LET/IN";
@@ -82,9 +112,10 @@ let expect_failure (test : syntax_test) : bool =
     "Nonfix Double Exclamation Operator (GH TSTLA #GH97, GH tlaplus/tlaplus #884)";
   ]
 
-let _tests = "Standardized syntax test corpus" >::: (
+let tests = "Standardized syntax test corpus" >::: (
   get_all_tests_under "syntax_corpus"
-  |> List.map (fun test -> test.info.name >::
+  |> List.map (fun test ->
+    Format.sprintf "[%s] %s" test.info.path test.info.name >::
     (fun _ ->
       skip_if test.skip "Test has skip attribute";
       match test.test with
@@ -99,30 +130,16 @@ let _tests = "Standardized syntax test corpus" >::: (
           | Some tlapm_output ->
             let actual = tlapm_output |> translate_module |> ts_node_to_sexpr in
             if Sexp.equal expected actual
-            then assert_bool "Expected test to fail" (not (expect_failure test))
+            then assert_bool "Expected parse test to fail" (not (expect_failure test))
             else
-              let display_options =
-                Sexp_diff.Display.Display_options.create
-                  Sexp_diff.Display.Display_options.Layout.Single_column
-              in Sexp_diff.Algo.diff ~original:expected ~updated:actual ()
-              |> Sexp_diff.Display.display_as_plain_string display_options
-              |> assert_failure
+              let open Sexp_diff in
+              let diff = Algo.diff ~original:expected ~updated:actual () in
+              let options = Display.Display_options.(create Layout.Single_column) in
+              let text = Display.display_with_ansi_colors options diff in
+              assert_bool text (expect_failure test)
       )
     )
   )
 )
 
-let _ = run_test_tt_main _tests
-
-let () = " \
-  --------- MODULE Test --------\n \
-  EXTENDS Naturals, FiniteSets\n \
-  CONSTANTS a, _+_, _', SUBSET _, f(_, _, _)\n \
-  ====================="
-  |> module_of_string
-  |> Option.get
-  |> translate_module
-  |> ts_node_to_sexpr
-  |> Sexp.to_string_hum
-  |> print_endline
-
+let _ = run_test_tt_main tests
