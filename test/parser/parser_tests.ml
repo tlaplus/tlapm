@@ -85,7 +85,6 @@ let should_skip (test : syntax_test) : bool =
   List.mem test.info.path [
     "syntax_corpus/assume-prove.txt";
     "syntax_corpus/case.txt";
-    "syntax_corpus/disjlist.txt";
     "syntax_corpus/except.txt";
     "syntax_corpus/expressions.txt";
     "syntax_corpus/fairness.txt";
@@ -113,6 +112,7 @@ let should_skip (test : syntax_test) : bool =
   ] || List.mem test.info.name [
     (* Jlist terminated by single line comment omitted in TLAPM AST *)
     "Keyword-Unit-Terminated Conjlist";
+    "Keyword-Unit-Terminated Disjlist";
   ]
 
 let tests = "Standardized syntax test corpus" >::: (
