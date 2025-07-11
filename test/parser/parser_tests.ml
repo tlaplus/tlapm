@@ -107,7 +107,6 @@ let should_skip (test : syntax_test) : bool =
     "syntax_corpus/step_expressions.txt";
     "syntax_corpus/string.txt";
     "syntax_corpus/subexpressions.txt";
-    "syntax_corpus/tuples.txt";
     "syntax_corpus/use_or_hide.txt";
   ] || List.mem test.info.name [
     (* Jlist terminated by single line comment omitted in TLAPM AST *)
