@@ -89,7 +89,6 @@ let should_skip (test : syntax_test) : bool =
     "syntax_corpus/expressions.txt";
     "syntax_corpus/fairness.txt";
     "syntax_corpus/functions.txt";
-    "syntax_corpus/if_then_else.txt";
     "syntax_corpus/infix_op.txt";
     "syntax_corpus/jlist.txt";
     "syntax_corpus/labels.txt";

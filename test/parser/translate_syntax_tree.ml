@@ -228,6 +228,7 @@ and translate_bound_op (callee : Expr.T.expr) (args : Expr.T.expr list) : ts_nod
 and translate_expr (expr : Expr.T.expr) : ts_node =
   match expr.core with
   | Num (_, _) -> {name = "nat_number"; children = []}
+  | String _ -> {name = "string"; children = []}
   | Opaque id -> as_specific_name Reference id
   | Internal internal -> internal |> builtin_to_op |> op_to_node Reference
   | List (bullet, juncts) -> translate_jlist bullet juncts
@@ -237,6 +238,14 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
   | Tuple expr_ls -> {
     name = "tuple_literal";
     children = [leaf "langle_bracket"] @ (node_list_map translate_expr expr_ls) @ [leaf "rangle_bracket"]
+  }
+  | If (i, t, e) -> {
+    name = "if_then_else";
+    children = [
+      Field ("if", translate_expr i);
+      Field ("then", translate_expr t);
+      Field ("else", translate_expr e);
+    ]
   }
   | _ -> {name = "expr_ph"; children = []}
 
