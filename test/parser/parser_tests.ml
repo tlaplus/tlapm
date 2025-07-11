@@ -81,7 +81,7 @@ let expect_failure (test : syntax_test) : bool =
     "Nonfix Submodule Excl (GH tlaplus/tlaplus #GH884)";
     "Nonfix Double Exclamation Operator (GH TSTLA #GH97, GH tlaplus/tlaplus #884)";
   ]
-let should_skip (test : syntax_test) : bool =
+let should_skip_tree_comparison (test : syntax_test) : bool =
   List.mem test.info.path [
     "syntax_corpus/assume-prove.txt";
     "syntax_corpus/case.txt";
@@ -104,7 +104,6 @@ let should_skip (test : syntax_test) : bool =
     "syntax_corpus/recursive.txt";
     "syntax_corpus/sets.txt";
     "syntax_corpus/step_expressions.txt";
-    "syntax_corpus/string.txt";
     "syntax_corpus/subexpressions.txt";
     "syntax_corpus/use_or_hide.txt";
   ] || List.mem test.info.name [
@@ -119,7 +118,6 @@ let tests = "Standardized syntax test corpus" >::: (
     Format.sprintf "[%s] %s" test.info.path test.info.name >::
     (fun _ ->
       skip_if test.skip "Test has skip attribute";
-      skip_if (should_skip test) "Skip file";
       match test.test with
       | Error_test input -> (
         match parse input with
@@ -130,6 +128,7 @@ let tests = "Standardized syntax test corpus" >::: (
           match parse input with
           | None -> assert_bool "Expected parse success" (expect_failure test)
           | Some tlapm_output ->
+            skip_if (should_skip_tree_comparison test) "Skipping parse tree comparison";
             let actual = tlapm_output |> translate_module |> ts_node_to_sexpr in
             if Sexp.equal expected actual
             then assert_bool "Expected parse test to fail" (not (expect_failure test))
