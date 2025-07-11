@@ -18,6 +18,9 @@ let leaf (name : string) : field_or_node = Node {name; children = []}
   
 let field_leaf (field_name : string) (name : string) : field_or_node =
   Field (field_name, {name; children = []})
+  
+let node_list_map (f : 'a -> ts_node) (ls : 'a list) : field_or_node list =
+  List.map (fun e -> Node e) (List.map f ls)
 
 let rec ts_node_to_sexpr (node : ts_node) : Sexp.t =
   let flatten_child (child : field_or_node) : Sexp.t list =
@@ -41,23 +44,30 @@ type operator =
   | Prefix of string
   | Infix of string
   | Postfix of string
-  | Named
+  | Named of string
 
 type decl_or_ref =
   | Declaration
   | Reference
+
+let as_specific_name (if_id : decl_or_ref) (id : string) : ts_node =
+  match id with
+  | "Nat" -> {name = "nat_number_set"; children = []}
+  | "FALSE" -> {name = "boolean"; children = []}
+  | "TRUE" -> {name = "boolean"; children = []}
+  | _ -> {
+    name = (match if_id with | Declaration -> "identifier" | Reference -> "identifier_ref");
+    children = []
+  }
 
 let op_to_node (if_id : decl_or_ref) (op : operator) : ts_node =
   match op with
   | Prefix symbol -> {name = "prefix_op_symbol"; children = [leaf symbol]}
   | Infix symbol -> {name = "infix_op_symbol"; children = [leaf symbol]}
   | Postfix symbol -> {name = "postfix_op_symbol"; children = [leaf symbol]}
-  | Named -> {
-    name = (match if_id with | Declaration -> "identifier" | Reference -> "identifier_ref");
-    children = []
-  }
+  | Named name -> as_specific_name if_id name
 
-let as_operator (op_str : string) : operator =
+let str_to_op (op_str : string) : operator =
   match op_str with
   | "ENABLED" -> Prefix "enabled"
   | "DOMAIN" -> Prefix "domain"
@@ -66,23 +76,27 @@ let as_operator (op_str : string) : operator =
   | "-" -> Infix "minus"
   | "+" -> Infix "plus"
   | "*" -> Infix "mul"
+  | "/" -> Infix "slash"
   | "'" -> Postfix "prime"
   | "^+" -> Postfix "sup_plus"
-  | _ -> Named
+  | _ -> Named op_str
 
-let as_specific_name (id : string) : ts_node =
-  match id with
-  | "Nat" -> {name = "nat_number_set"; children = []}
-  | _ -> {name = "identifier_ref"; children = []}
+let as_bound_op (op : Expr.T.expr) : operator =
+  match op.core with
+  | Opaque name -> Named name
+  | _ -> Named "expr_as_bound_op_ph"
 
-let builtin_to_node (builtin : Builtin.builtin) : ts_node =
+let builtin_to_op (builtin : Builtin.builtin) : operator =
   match builtin with
-  | TRUE -> {name = "boolean"; children = []}
-  | FALSE -> {name = "boolean"; children = []}
-  | _ -> {name = "builtin_ph"; children = []}
+  | TRUE -> Named "TRUE"
+  | FALSE -> Named "FALSE"
+  | Plus -> Infix "plus"
+  | Conj -> Infix "land"
+  | Disj -> Infix "lor"
+  | _ -> Named "builtin_as_op_ph"
 
 let translate_operator_declaration (name : string) (arity : int) : field_or_node list =
-  let op = as_operator name in
+  let op = str_to_op name in
   let symbol = op_to_node Declaration op in
   match op with
   | Prefix _ -> [
@@ -98,7 +112,7 @@ let translate_operator_declaration (name : string) (arity : int) : field_or_node
     leaf "placeholder";
     Field ("name", symbol);
   ]
-  | Named -> (Field ("name", symbol)) :: (repeat arity (field_leaf "parameter" "placeholder"))
+  | Named _ -> (Field ("name", symbol)) :: (repeat arity (field_leaf "parameter" "placeholder"))
   
 let translate_extends (tree : Util.hints) : field_or_node list =
   match tree with
@@ -116,11 +130,9 @@ let translate_constant_decl ((name, shape) : (Util.hint * Expr.T.shape)) : field
     children = translate_operator_declaration name.core arity;
   }
 
-(** TODO *)
 let translate_variable_decl (_ : Util.hint) : field_or_node =
   leaf "identifier"
 
-(** TODO *)
 let translate_recursive_decl ((_hint, _shape) : (Util.hint * Expr.T.shape)) : field_or_node =
   leaf "recursive_ph"
   
@@ -134,7 +146,7 @@ let rec translate_substitution ((hint, expr) : (Util.hint * Expr.T.expr)) : fiel
   Node {
     name = "substitution";
     children = [
-      Node (hint.core |> as_operator |> op_to_node Reference);
+      Node (hint.core |> str_to_op |> op_to_node Reference);
       leaf "gets";
       Node (translate_expr expr)
     ]
@@ -175,19 +187,56 @@ and translate_quantifier_bound ((_hint, _, bound_domain) : Expr.T.bound) : field
   }
   | _ -> failwith "Invalid function domain"
 
-(** Top-level translation method for all expression types. *)
-and translate_expr (expr : Expr.T.expr) : ts_node =
-  match expr.core with
-  | Num (_, _) -> {name = "nat_number"; children = []}
-  | Opaque id -> as_specific_name id
-  | Internal internal -> builtin_to_node internal
-  | List (bullet, juncts) -> translate_jlist bullet juncts
-  | Apply (_callee, args) -> {
+and translate_bound_op (callee : Expr.T.expr) (args : Expr.T.expr list) : ts_node =
+  let op : operator =
+    match callee.core with
+    | Opaque op -> str_to_op op
+    | Internal builtin -> builtin_to_op builtin
+    | _ -> failwith "bound_op callee"
+  in match op with
+  | Prefix op -> {
+    name = "bound_prefix_op";
+    children = [
+      field_leaf "symbol" op;
+      Field ("rhs", translate_expr (List.hd args))
+    ]
+  }
+  | Infix op -> {
+    name = "bound_infix_op";
+    children = [
+      Field ("lhs", translate_expr (List.nth args 0));
+      field_leaf "symbol" op;
+      Field ("rhs", translate_expr (List.nth args 1));
+    ]
+  }
+  | Postfix op -> {
+    name = "bound_postfix_op";
+    children = [
+      Field ("lhs", translate_expr (List.hd args));
+      field_leaf "symbol" op;
+    ]
+  }
+  | Named _ -> {
     name = "bound_op";
     children = List.flatten [
       [field_leaf "name" "identifier_ref"];
       List.map (fun arg -> Field ("parameter", (translate_expr arg))) args
     ]
+  }
+
+(** Top-level translation method for all expression types. *)
+and translate_expr (expr : Expr.T.expr) : ts_node =
+  match expr.core with
+  | Num (_, _) -> {name = "nat_number"; children = []}
+  | Opaque id -> as_specific_name Reference id
+  | Internal internal -> internal |> builtin_to_op |> op_to_node Reference
+  | List (bullet, juncts) -> translate_jlist bullet juncts
+  | Apply (callee, args) -> translate_bound_op callee args
+  | Parens (expr, _) -> {name = "parentheses"; children = [Node (translate_expr expr)]}
+  | SetEnum expr_ls -> {name = "finite_set_literal"; children = node_list_map translate_expr expr_ls }
+  | Tuple expr_ls -> {
+    name = "tuple_literal";
+    children = [leaf "langle_bracket"] @ (node_list_map translate_expr expr_ls) @ [leaf "rangle_bracket"]
   }
   | _ -> {name = "expr_ph"; children = []}
 
@@ -235,14 +284,12 @@ let translate_operator_definition (defn : Expr.T.defn) : ts_node =
   }
   | Bpragma _ -> assert false
 
-(** TODO *)
 let translate_assumption (hint : Util.hint option) (expr : Expr.T.expr) : field_or_node list =
   List.flatten [
     if Option.is_some hint then [field_leaf "name" "identifier"; leaf "def_eq"] else [];
     [Node (translate_expr expr)]
   ]
 
-(** TODO *)
 let translate_theorem (_hint : Util.hint option) (_sequent : Expr.T.sequent) (_level : int) (_proof1 : Proof.T.proof) (_proof2 : Proof.T.proof) (_summary : Module.T.summary) : field_or_node list =
   [leaf "theorem_ph"]
 

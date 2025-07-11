@@ -28,36 +28,7 @@ let parse (input : string) : Module.T.mule option =
     @return Whether the test is expected to fail.
 *)
 let expect_failure (test : syntax_test) : bool =
-  List.mem test.info.path [
-    "syntax_corpus/assume-prove.txt";
-    "syntax_corpus/case.txt";
-    "syntax_corpus/conjlist.txt";
-    "syntax_corpus/disjlist.txt";
-    "syntax_corpus/except.txt";
-    "syntax_corpus/expressions.txt";
-    "syntax_corpus/fairness.txt";
-    "syntax_corpus/functions.txt";
-    "syntax_corpus/if_then_else.txt";
-    "syntax_corpus/infix_op.txt";
-    "syntax_corpus/jlist.txt";
-    "syntax_corpus/labels.txt";
-    "syntax_corpus/let_in.txt";
-    "syntax_corpus/modules.txt";
-    "syntax_corpus/number.txt";
-    "syntax_corpus/operators.txt";
-    "syntax_corpus/postfix_op.txt";
-    "syntax_corpus/prefix_op.txt";
-    "syntax_corpus/proofs.txt";
-    "syntax_corpus/quantification.txt";
-    "syntax_corpus/records.txt";
-    "syntax_corpus/recursive.txt";
-    "syntax_corpus/sets.txt";
-    "syntax_corpus/step_expressions.txt";
-    "syntax_corpus/string.txt";
-    "syntax_corpus/subexpressions.txt";
-    "syntax_corpus/tuples.txt";
-    "syntax_corpus/use_or_hide.txt";
-  ] || List.mem test.info.name [
+  List.mem test.info.name [
 
     (* https://github.com/tlaplus/tlapm/issues/54#issuecomment-2435515180 *)
     "RECURSIVE inside LET/IN";
@@ -110,6 +81,39 @@ let expect_failure (test : syntax_test) : bool =
     "Nonfix Submodule Excl (GH tlaplus/tlaplus #GH884)";
     "Nonfix Double Exclamation Operator (GH TSTLA #GH97, GH tlaplus/tlaplus #884)";
   ]
+let should_skip (test : syntax_test) : bool =
+  List.mem test.info.path [
+    "syntax_corpus/assume-prove.txt";
+    "syntax_corpus/case.txt";
+    "syntax_corpus/disjlist.txt";
+    "syntax_corpus/except.txt";
+    "syntax_corpus/expressions.txt";
+    "syntax_corpus/fairness.txt";
+    "syntax_corpus/functions.txt";
+    "syntax_corpus/if_then_else.txt";
+    "syntax_corpus/infix_op.txt";
+    "syntax_corpus/jlist.txt";
+    "syntax_corpus/labels.txt";
+    "syntax_corpus/let_in.txt";
+    "syntax_corpus/modules.txt";
+    "syntax_corpus/number.txt";
+    "syntax_corpus/operators.txt";
+    "syntax_corpus/postfix_op.txt";
+    "syntax_corpus/prefix_op.txt";
+    "syntax_corpus/proofs.txt";
+    "syntax_corpus/quantification.txt";
+    "syntax_corpus/records.txt";
+    "syntax_corpus/recursive.txt";
+    "syntax_corpus/sets.txt";
+    "syntax_corpus/step_expressions.txt";
+    "syntax_corpus/string.txt";
+    "syntax_corpus/subexpressions.txt";
+    "syntax_corpus/tuples.txt";
+    "syntax_corpus/use_or_hide.txt";
+  ] || List.mem test.info.name [
+    (* Jlist terminated by single line comment omitted in TLAPM AST *)
+    "Keyword-Unit-Terminated Conjlist";
+  ]
 
 let tests = "Standardized syntax test corpus" >::: (
   get_all_tests_under "syntax_corpus"
@@ -117,6 +121,7 @@ let tests = "Standardized syntax test corpus" >::: (
     Format.sprintf "[%s] %s" test.info.path test.info.name >::
     (fun _ ->
       skip_if test.skip "Test has skip attribute";
+      skip_if (should_skip test) "Skip file";
       match test.test with
       | Error_test input -> (
         match parse input with
