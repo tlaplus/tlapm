@@ -213,6 +213,40 @@ and translate_quantifier_bound ((_hint, _, bound_domain) : Expr.T.bound) : field
   }
   | _ -> failwith "Invalid function domain"
 
+and translate_case_arm (index : int) ((pred, expr) : Expr.T.expr * Expr.T.expr) : field_or_node list =
+  let case = Node {
+    name = "case_arm";
+    children = [
+      Node (translate_expr pred);
+      leaf "case_arrow";
+      Node (translate_expr expr);
+    ]
+  } in match index with
+  | 0 -> [case]
+  | _ -> [leaf "case_box"; case]
+
+and translate_default_arm (default : Expr.T.expr option) : field_or_node list =
+  match default with
+  | None -> []
+  | Some expr -> [
+    leaf "case_box";
+    Node {
+      name = "other_arm";
+      children = [
+        leaf "case_arrow";
+        Node (translate_expr expr)
+      ]
+    }
+  ]
+  
+and translate_case (cases : (Expr.T.expr * Expr.T.expr) list) (default : Expr.T.expr option) : ts_node = {
+  name = "case";
+  children = List.flatten [
+    List.mapi translate_case_arm cases |> List.flatten;
+    translate_default_arm default
+  ]
+}
+
 and translate_bound_op (callee : Expr.T.expr) (args : Expr.T.expr list) : ts_node =
   let op : operator =
     match callee.core with
@@ -273,6 +307,7 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
       Field ("else", translate_expr e);
     ]
   }
+  | Case (cases, other) -> translate_case cases other
   | _ -> {name = "expr_ph"; children = []}
 
 let translate_operator_definition (defn : Expr.T.defn) : ts_node =
