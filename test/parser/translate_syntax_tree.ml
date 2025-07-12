@@ -104,8 +104,12 @@ let str_to_op (op_str : string) : operator =
   | "+" -> Infix "plus"
   | "*" -> Infix "mul"
   | "/" -> Infix "slash"
+  | ":>" -> Infix "map_to"
+  | "&" -> Infix "amp"
   | ":=" -> Infix "assign"
   | "::=" -> Infix "bnf_rule"
+  | "\\o" -> Infix "circ"
+  | "->" -> Infix "map_to"
   | "'" -> Postfix "prime"
   | "^+" -> Postfix "sup_plus"
   | _ -> Named op_str
@@ -119,11 +123,24 @@ let builtin_to_op (builtin : Builtin.builtin) : operator =
   match builtin with
   | TRUE -> Named "TRUE"
   | FALSE -> Named "FALSE"
+  | BOOLEAN -> Named "BOOLEAN"
   | STRING -> Named "STRING"
+  | SUBSET -> Prefix "powerset"
+  | UNION -> Prefix "union"
+  | DOMAIN -> Prefix "domain"
+  | Neg -> Prefix "lnot"
   | Plus -> Infix "plus"
+  | Implies -> Infix "implies"
+  | Equiv -> Infix "equiv"
   | Conj -> Infix "land"
   | Disj -> Infix "lor"
-  | _ -> failwith "builtin"
+  | Eq -> Infix "eq"
+  | Neq -> Infix "neq"
+  | Setminus -> Infix "setminus"
+  | Cap -> Infix "cap"
+  | Cup -> Infix "cup"
+  | Prime -> Postfix "prime"
+  | _ -> failwith "unknown built-in"
 
 let translate_operator_declaration (name : string) (arity : int) : field_or_node list =
   let op = str_to_op name in
@@ -166,10 +183,13 @@ let translate_variable_decl (_ : Util.hint) : field_or_node =
 let translate_recursive_decl ((_hint, _shape) : (Util.hint * Expr.T.shape)) : field_or_node =
   leaf "recursive_ph"
   
-let translate_operator_parameter ((_hint, shape) : Util.hint * Expr.T.shape) : field_or_node =
+let translate_operator_parameter ((name, shape) : Util.hint * Expr.T.shape) : field_or_node =
   match shape with
   | Shape_expr -> field_leaf "parameter" "identifier"
-  | Shape_op _arity -> leaf "higher_order_param_ph"
+  | Shape_op arity -> Field ("parameter", {
+    name = "operator_declaration";
+    children = translate_operator_declaration name.core arity;
+  })
 
 let translate_number (_number : string) (decimal : string) : ts_node =
   if String.empty = decimal
@@ -324,6 +344,14 @@ and translate_bound_op (callee : Expr.T.expr) (args : Expr.T.expr list) : ts_nod
     ]
   }
 
+and translate_lambda (params : (Util.hint * Expr.T.shape) list) (expr : Expr.T.expr) : ts_node = {
+  name = "lambda";
+  children = List.flatten [
+    List.map (fun _ -> leaf "identifier") params;
+    [Node (translate_expr expr)]
+  ]
+}
+
 and translate_parentheses (expr : Expr.T.expr) (pform : Expr.T.pform) : ts_node =
   match pform.core with
   | Syntax -> {
@@ -351,6 +379,7 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
   | List (bullet, juncts) -> translate_jlist bullet juncts
   | Apply (callee, args) -> translate_bound_op callee args
   | Parens (expr, pform) -> translate_parentheses expr pform
+  | Lambda (params, expr) -> translate_lambda params expr
   | SetEnum expr_ls -> {name = "finite_set_literal"; children = node_list_map translate_expr expr_ls }
   | Tuple expr_ls -> {
     name = "tuple_literal";

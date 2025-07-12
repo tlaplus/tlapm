@@ -88,7 +88,6 @@ let should_skip_tree_comparison (test : syntax_test) : bool =
     "syntax_corpus/infix_op.txt";
     "syntax_corpus/labels.txt";
     "syntax_corpus/let_in.txt";
-    "syntax_corpus/operators.txt";
     "syntax_corpus/postfix_op.txt";
     "syntax_corpus/prefix_op.txt";
     "syntax_corpus/proofs.txt";
@@ -106,6 +105,11 @@ let should_skip_tree_comparison (test : syntax_test) : bool =
     
     (* Unnecessary parentheses omitted in TLAPM AST *)
     "Nested Parentheses";
+    
+    (* TLAPM AST does not distinguish between nonfix and infix ops *)
+    "Lexically-Conflicting Nonfix Operators";
+    "Minus and Negative";
+    "Nonfix Minus (GH tlaplus/tlaplus #GH884)";
   ]
 
 let tests = "Standardized syntax test corpus" >::: (
