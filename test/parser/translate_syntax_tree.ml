@@ -53,6 +53,8 @@ type decl_or_ref =
 let as_specific_name (if_id : decl_or_ref) (id : string) : ts_node =
   match id with
   | "Nat" -> {name = "nat_number_set"; children = []}
+  | "Int" -> {name = "int_number_set"; children = []}
+  | "Real" -> {name = "real_number_set"; children = []}
   | "FALSE" -> {name = "boolean"; children = []}
   | "TRUE" -> {name = "boolean"; children = []}
   | "STRING" -> {name = "string_set"; children = []}
@@ -169,6 +171,11 @@ let translate_operator_parameter ((_hint, shape) : Util.hint * Expr.T.shape) : f
   | Shape_expr -> field_leaf "parameter" "identifier"
   | Shape_op _arity -> leaf "higher_order_param_ph"
 
+let translate_number (_number : string) (decimal : string) : ts_node =
+  if String.empty = decimal
+  then {name = "nat_number"; children = []}
+  else {name = "real_number"; children = []}
+
 (** Translates the substitution component of INSTANCE statements like s <- expr *)
 let rec translate_substitution ((hint, expr) : (Util.hint * Expr.T.expr)) : field_or_node =
   Node {
@@ -188,6 +195,37 @@ and translate_instance (instance : Expr.T.instance) : ts_node = {
     List.map translate_substitution instance.inst_sub
   ]
 }
+
+and translate_subexpression (expr : Expr.T.expr) (selectors : Expr.T.sel list) : ts_node =
+  (*let _ =match expr.core with
+  | Opaque s -> failwith s;
+  | _ -> failwith "Something else"
+in*)
+  let translate_final_selector (selector : Expr.T.sel) : ts_node =
+    match selector with
+    | Sel_lab (name, args) ->
+      if List.is_empty args then as_specific_name Reference name else {
+        name = "bound_op";
+        children = List.flatten [
+          [field_leaf "name" "identifier_ref"];
+          List.map (fun arg -> Field ("parameter", (translate_expr arg))) args
+        ]
+      }
+    | _ -> failwith "final_selector"
+  in {
+    name = "prefixed_op";
+    children = [
+      Field ("prefix", {
+        name = "subexpr_prefix";
+        children = [Node {
+          name = "subexpr_component";
+          children = [Node (translate_expr expr)]
+        }]
+      });
+      let last (ls : 'a list) : 'a = List.nth ls ((List.length ls) - 1) in
+      Field ("op", translate_final_selector (last selectors));
+    ]
+  }
 
 (** Translate conjunction & disjunction lists like
   /\ e1
@@ -306,7 +344,7 @@ and translate_parentheses (expr : Expr.T.expr) (pform : Expr.T.pform) : ts_node 
 (** Top-level translation method for all expression types. *)
 and translate_expr (expr : Expr.T.expr) : ts_node =
   match expr.core with
-  | Num (_, _) -> {name = "nat_number"; children = []}
+  | Num (number, decimal) -> translate_number number decimal
   | String str -> translate_string str
   | Opaque id -> as_specific_name Reference id
   | Internal internal -> internal |> builtin_to_op |> op_to_node Reference
@@ -327,12 +365,13 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
     ]
   }
   | Case (cases, other) -> translate_case cases other
+  | Bang (expr, selectors) -> translate_subexpression expr selectors
   | _ -> {name = "expr_ph"; children = []}
 
 let translate_operator_definition (defn : Expr.T.defn) : ts_node =
   match defn.core with
-  | Recursive (_hint, _shape) -> {name = "recursive_ph"; children = []}
-  | Operator (_hint, expr) -> (
+  | Recursive (_name, _shape) -> {name = "recursive_ph"; children = []}
+  | Operator (name, expr) -> (
     match expr.core with
     (* Operators with parameters are represented by a LAMBDA expression. *)
     | Lambda (params, expr) -> {
@@ -357,7 +396,7 @@ let translate_operator_definition (defn : Expr.T.defn) : ts_node =
     | _ -> {
       name = "operator_definition";
       children = [
-        field_leaf "name" "identifier";
+        Field ("name", (as_specific_name Declaration name.core));
         leaf "def_eq";
         Field ("definition", translate_expr expr)
       ]
