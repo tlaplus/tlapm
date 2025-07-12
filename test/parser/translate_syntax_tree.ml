@@ -373,32 +373,29 @@ let translate_operator_definition (defn : Expr.T.defn) : ts_node =
   }
   | Bpragma _ -> assert false
 
-let translate_assumption (hint : Util.hint option) (expr : Expr.T.expr) : field_or_node list =
+let translate_assumption (name : Util.hint option) (expr : Expr.T.expr) : field_or_node list =
   List.flatten [
-    if Option.is_some hint then [field_leaf "name" "identifier"; leaf "def_eq"] else [];
+    if Option.is_some name then [field_leaf "name" "identifier"; leaf "def_eq"] else [];
     [Node (translate_expr expr)]
   ]
 
-let translate_theorem (_hint : Util.hint option) (_sequent : Expr.T.sequent) (_level : int) (_proof1 : Proof.T.proof) (_proof2 : Proof.T.proof) (_summary : Module.T.summary) : field_or_node list =
-  [leaf "theorem_ph"]
+let translate_theorem (name : Util.hint option) (sequent : Expr.T.sequent) (_level : int) (_proof1 : Proof.T.proof) (_proof2 : Proof.T.proof) (_summary : Module.T.summary) : field_or_node list =
+  List.flatten [
+    if Option.is_some name then [field_leaf "name" "identifier"; leaf "def_eq"] else [];
+    [Field ("statement", translate_expr sequent.active)]
+  ]
 
-let rec translate_module (tree : Module.T.mule) : ts_node =
-  {
-    name = "source_file";
-    children = [
-      Node {
-        name = "module";
-        children = List.flatten [
-          [leaf "header_line"];
-          [field_leaf "name" "identifier"];
-          [leaf "header_line"];
-          translate_extends tree.core.extendees;
-          List.map translate_unit tree.core.body;
-          [leaf "double_line"];
-        ]
-      }
-    ]
-  }
+let rec translate_module (tree : Module.T.mule) : ts_node = {
+  name = "module";
+  children = List.flatten [
+    [leaf "header_line"];
+    [field_leaf "name" "identifier"];
+    [leaf "header_line"];
+    translate_extends tree.core.extendees;
+    List.map translate_unit tree.core.body;
+    [leaf "double_line"];
+  ]
+}
 
 and translate_unit (unit : Module.T.modunit) : field_or_node =
   match unit.core with
@@ -437,3 +434,8 @@ and translate_unit (unit : Module.T.modunit) : field_or_node =
       children = [Node (translate_instance instance)]
     }
   | Anoninst (instance, Export) -> Node (translate_instance instance)
+
+let translate_tla_source_file (tree : Module.T.mule) : ts_node = {
+    name = "source_file";
+    children = [Node (translate_module tree)]
+  }

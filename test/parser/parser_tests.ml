@@ -8,9 +8,7 @@
 open Tlapm_lib;;
 
 open Syntax_corpus_file_parser;;
-open Translate_syntax_tree;;
 
-open Sexplib;;
 open OUnit2;;
 
 (** Calls TLAPM's parser with the given input. Catches all exceptions and
@@ -91,7 +89,6 @@ let should_skip_tree_comparison (test : syntax_test) : bool =
     "syntax_corpus/infix_op.txt";
     "syntax_corpus/labels.txt";
     "syntax_corpus/let_in.txt";
-    "syntax_corpus/modules.txt";
     "syntax_corpus/number.txt";
     "syntax_corpus/operators.txt";
     "syntax_corpus/postfix_op.txt";
@@ -127,7 +124,9 @@ let tests = "Standardized syntax test corpus" >::: (
           | None -> assert_bool "Expected parse success" (expect_failure test)
           | Some tlapm_output ->
             skip_if (should_skip_tree_comparison test) "Skipping parse tree comparison";
-            let actual = tlapm_output |> translate_module |> ts_node_to_sexpr in
+            let open Translate_syntax_tree in
+            let open Sexplib in
+            let actual = tlapm_output |> translate_tla_source_file |> ts_node_to_sexpr in
             if Sexp.equal expected actual
             then assert_bool "Expected parse test to fail" (not (expect_failure test))
             else
