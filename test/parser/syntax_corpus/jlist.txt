@@ -11,15 +11,15 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (bound_infix_op
-      (conj_list
+      lhs: (conj_list
         (conj_item (bullet_conj) (nat_number))
         (conj_item (bullet_conj) (nat_number))
       )
-      (lor)
-      (nat_number)
+      symbol: (lor)
+      rhs: (nat_number)
     )
   )
 (double_line)))
@@ -37,15 +37,15 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (bound_infix_op
-      (disj_list
+      lhs: (disj_list
         (disj_item (bullet_disj) (nat_number))
         (disj_item (bullet_disj) (nat_number))
       )
-      (land)
-      (nat_number)
+      symbol: (land)
+      rhs: (nat_number)
     )
   )
 (double_line)))
@@ -68,25 +68,25 @@ opB ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (bound_infix_op
-      (conj_list
+      lhs: (conj_list
         (conj_item (bullet_conj) (nat_number))
         (conj_item (bullet_conj) (nat_number))
       )
-      (lor)
-      (nat_number)
+      symbol: (lor)
+      rhs: (nat_number)
     )
   )
-  (operator_definition (identifier) (def_eq)
+  (operator_definition name: (identifier) (def_eq) definition:
     (bound_infix_op
-      (disj_list
+      lhs: (disj_list
         (disj_item (bullet_disj) (nat_number))
         (disj_item (bullet_disj) (nat_number))
       )
-      (land)
-      (nat_number)
+      symbol: (land)
+      rhs: (nat_number)
     )
   )
 (double_line)))
@@ -107,8 +107,8 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item
         (bullet_conj)
@@ -153,19 +153,31 @@ disj ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
-      (conj_item (bullet_conj) (label (identifier) (label_as) (identifier_ref)))
-      (conj_item (bullet_conj) (bound_infix_op (identifier_ref) (assign) (identifier_ref)))
-      (conj_item (bullet_conj) (bound_infix_op (identifier_ref) (bnf_rule) (identifier_ref)))
+      (conj_item (bullet_conj) (label name: (identifier) (label_as) expression: (identifier_ref)))
+      (conj_item (bullet_conj) (bound_infix_op
+        lhs: (identifier_ref)
+        symbol: (assign)
+        rhs: (identifier_ref)))
+      (conj_item (bullet_conj) (bound_infix_op
+        lhs: (identifier_ref)
+        symbol: (bnf_rule)
+        rhs: (identifier_ref)))
     )
   )
-  (operator_definition (identifier) (def_eq)
+  (operator_definition name: (identifier) (def_eq) definition:
     (disj_list
-      (disj_item (bullet_disj) (label (identifier) (label_as) (identifier_ref)))
-      (disj_item (bullet_disj) (bound_infix_op (identifier_ref) (assign) (identifier_ref)))
-      (disj_item (bullet_disj) (bound_infix_op (identifier_ref) (bnf_rule) (identifier_ref)))
+      (disj_item (bullet_disj) (label name: (identifier) (label_as) expression: (identifier_ref)))
+      (disj_item (bullet_disj) (bound_infix_op
+        lhs: (identifier_ref)
+        symbol: (assign)
+        rhs: (identifier_ref)))
+      (disj_item (bullet_disj) (bound_infix_op
+        lhs: (identifier_ref)
+        symbol: (bnf_rule)
+        rhs: (identifier_ref)))
     )
   )
 (double_line)))

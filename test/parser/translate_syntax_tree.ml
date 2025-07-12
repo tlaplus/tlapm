@@ -102,6 +102,8 @@ let str_to_op (op_str : string) : operator =
   | "+" -> Infix "plus"
   | "*" -> Infix "mul"
   | "/" -> Infix "slash"
+  | ":=" -> Infix "assign"
+  | "::=" -> Infix "bnf_rule"
   | "'" -> Postfix "prime"
   | "^+" -> Postfix "sup_plus"
   | _ -> Named op_str
@@ -284,6 +286,23 @@ and translate_bound_op (callee : Expr.T.expr) (args : Expr.T.expr list) : ts_nod
     ]
   }
 
+and translate_parentheses (expr : Expr.T.expr) (pform : Expr.T.pform) : ts_node =
+  match pform.core with
+  | Syntax -> {
+    name = "parentheses";
+    children = [Node (translate_expr expr)]
+  }
+  | Nlabel (_, params) -> {
+    name = "label";
+    children = List.flatten [
+      [field_leaf "name" "identifier"];
+      List.map (fun _ -> field_leaf "parameter" "identifier_ref") params;
+      [leaf "label_as"];
+      [Field ("expression", translate_expr expr)]
+    ]
+  }
+  | Xlabel _ -> failwith "parens_xlabel"
+
 (** Top-level translation method for all expression types. *)
 and translate_expr (expr : Expr.T.expr) : ts_node =
   match expr.core with
@@ -293,7 +312,7 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
   | Internal internal -> internal |> builtin_to_op |> op_to_node Reference
   | List (bullet, juncts) -> translate_jlist bullet juncts
   | Apply (callee, args) -> translate_bound_op callee args
-  | Parens (expr, _) -> {name = "parentheses"; children = [Node (translate_expr expr)]}
+  | Parens (expr, pform) -> translate_parentheses expr pform
   | SetEnum expr_ls -> {name = "finite_set_literal"; children = node_list_map translate_expr expr_ls }
   | Tuple expr_ls -> {
     name = "tuple_literal";
