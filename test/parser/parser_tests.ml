@@ -25,7 +25,7 @@ let parse (input : string) : Module.T.mule option =
     @param test Information about the test.
     @return Whether the test is expected to fail.
 *)
-let expect_failure (test : syntax_test) : bool =
+let expect_parse_failure (test : syntax_test) : bool =
   List.mem test.info.name [
 
     (* https://github.com/tlaplus/tlapm/issues/54#issuecomment-2435515180 *)
@@ -79,6 +79,14 @@ let expect_failure (test : syntax_test) : bool =
     "Nonfix Submodule Excl (GH tlaplus/tlaplus #GH884)";
     "Nonfix Double Exclamation Operator (GH TSTLA #GH97, GH tlaplus/tlaplus #884)";
   ]
+
+let expect_tree_comparison_failure (test : syntax_test) : bool =
+  List.mem test.info.name [
+    (* TLAPM appears to simply return an empty set here? *)
+    "Mistaken Set Filter Test";
+    "Mistaken Set Filter Tuples Test";
+  ]
+
 let should_skip_tree_comparison (test : syntax_test) : bool =
   List.mem test.info.path [
     "syntax_corpus/assume-prove.txt";
@@ -94,7 +102,6 @@ let should_skip_tree_comparison (test : syntax_test) : bool =
     "syntax_corpus/quantification.txt";
     "syntax_corpus/records.txt";
     "syntax_corpus/recursive.txt";
-    "syntax_corpus/sets.txt";
     "syntax_corpus/step_expressions.txt";
     "syntax_corpus/subexpressions.txt";
     "syntax_corpus/use_or_hide.txt";
@@ -121,25 +128,25 @@ let tests = "Standardized syntax test corpus" >::: (
       match test.test with
       | Error_test input -> (
         match parse input with
-        | None -> assert_bool "Expected error test to fail" (not (expect_failure test))
-        | Some _ -> assert_bool "Expected parse failure" (expect_failure test)
+        | None -> assert_bool "Expected error test to fail" (not (expect_parse_failure test))
+        | Some _ -> assert_bool "Expected parse failure" (expect_parse_failure test)
       )
       | Expected_test (input, expected) -> (
           match parse input with
-          | None -> assert_bool "Expected parse success" (expect_failure test)
+          | None -> assert_bool "Expected parse success" (expect_parse_failure test)
           | Some tlapm_output ->
             skip_if (should_skip_tree_comparison test) "Skipping parse tree comparison";
             let open Translate_syntax_tree in
             let open Sexplib in
             let actual = tlapm_output |> translate_tla_source_file |> ts_node_to_sexpr in
             if Sexp.equal expected actual
-            then assert_bool "Expected parse test to fail" (not (expect_failure test))
+            then assert_bool "Expected parse test to fail" (not (expect_tree_comparison_failure test))
             else
               let open Sexp_diff in
               let diff = Algo.diff ~original:expected ~updated:actual () in
               let options = Display.Display_options.(create Layout.Single_column) in
               let text = Display.display_with_ansi_colors options diff in
-              assert_bool text (expect_failure test)
+              assert_bool text (expect_tree_comparison_failure test)
       )
     )
   )

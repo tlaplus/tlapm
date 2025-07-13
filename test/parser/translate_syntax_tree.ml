@@ -22,6 +22,9 @@ let field_leaf (field_name : string) (name : string) : field_or_node =
 let node_list_map (f : 'a -> ts_node) (ls : 'a list) : field_or_node list =
   List.map (fun e -> Node e) (List.map f ls)
 
+let field_list_map (field : string) (f : 'a -> ts_node) (ls : 'a list) : field_or_node list =
+  List.map (fun e -> Field (field, e)) (List.map f ls)
+
 let rec ts_node_to_sexpr (node : ts_node) : Sexp.t =
   let flatten_child (child : field_or_node) : Sexp.t list =
     match child with
@@ -130,6 +133,8 @@ let builtin_to_op (builtin : Builtin.builtin) : operator =
   | DOMAIN -> Prefix "domain"
   | Neg -> Prefix "lnot"
   | Plus -> Infix "plus"
+  | Mem -> Infix "in"
+  | Notmem -> Infix "notin"
   | Implies -> Infix "implies"
   | Equiv -> Infix "equiv"
   | Conj -> Infix "land"
@@ -216,6 +221,19 @@ and translate_instance (instance : Expr.T.instance) : ts_node = {
   ]
 }
 
+and translate_cross_product (exprs : Expr.T.expr list) : ts_node =
+  match exprs with
+  | [] -> failwith "Empty cross product"
+  | hd :: tl -> List.fold_left (
+    fun lhs rhs -> {
+      name = "bound_infix_op";
+      children = [
+        Field ("lhs", lhs);
+        field_leaf "symbol" "times";
+        Field ("rhs", translate_expr rhs);
+      ]
+    }) (translate_expr hd) tl
+
 and translate_subexpression (expr : Expr.T.expr) (selectors : Expr.T.sel list) : ts_node =
   (*let _ =match expr.core with
   | Opaque s -> failwith s;
@@ -261,9 +279,9 @@ and translate_jlist (bullet : Expr.T.bullet) (juncts : Expr.T.expr list) : ts_no
       children = [leaf ("bullet_" ^ jtype); Node (translate_expr expr)]
     }) juncts
   }
-and translate_quantifier_bound ((_hint, _, bound_domain) : Expr.T.bound) : field_or_node =
+and translate_quantifier_bound ((_hint, _, bound_domain) : Expr.T.bound) : ts_node =
   match bound_domain with
-  | Domain expr -> Node {
+  | Domain expr -> {
     name = "quantifier_bound";
     children = [
       field_leaf "intro" "identifier";
@@ -271,7 +289,28 @@ and translate_quantifier_bound ((_hint, _, bound_domain) : Expr.T.bound) : field
       Field ("set", translate_expr expr)
     ]
   }
-  | _ -> failwith "Invalid function domain"
+  | Ditto -> failwith "ditto quantifier"
+  | _ -> failwith "unknown quantifier bound type"
+
+and translate_tuple_quantifier_bound ((names, bound_domain) : Expr.T.tuply_name * Expr.T.bound_domain) : ts_node =
+  match names, bound_domain with
+  | (Bound_names names, Domain set) -> {
+    name = "quantifier_bound";
+    children = [
+      Field ("intro", {
+        name = "tuple_of_identifiers";
+        children = List.flatten [
+          [leaf "langle_bracket"];
+          List.map (fun _ -> leaf "identifier") names;
+          [leaf "rangle_bracket"];
+        ]
+      });
+      leaf "set_in";
+      Field ("set", translate_expr set);
+    ]
+  }
+  | (Bound_names _, Ditto) -> failwith "tuple quantifier ditto"
+  | _ -> failwith "unknown tuple quantifier bound type"
 
 and translate_case_arm (index : int) ((pred, expr) : Expr.T.expr * Expr.T.expr) : field_or_node list =
   let case = Node {
@@ -369,6 +408,71 @@ and translate_parentheses (expr : Expr.T.expr) (pform : Expr.T.pform) : ts_node 
   }
   | Xlabel _ -> failwith "parens_xlabel"
 
+and translate_set_filter (_name : Util.hint) (set : Expr.T.expr) (filter : Expr.T.expr) : ts_node = {
+  name = "set_filter";
+  children = [
+    Field ("generator", {
+      name = "quantifier_bound";
+      children = [
+        field_leaf "intro" "identifier";
+        leaf "set_in";
+        Field ("set", translate_expr set);
+      ]
+    });
+    Field ("filter", translate_expr filter)
+  ]
+}
+
+and translate_tuple_set_filter (names : Util.hint list) (set : Expr.T.expr) (filter : Expr.T.expr) : ts_node = {
+  name = "set_filter";
+  children = [
+    Field ("generator", {
+      name = "quantifier_bound";
+      children = [
+        Field ("intro", {
+          name = "tuple_of_identifiers";
+          children = List.flatten [
+            [leaf "langle_bracket"];
+            List.map (fun _ -> leaf "identifier") names;
+            [leaf "rangle_bracket"];
+          ]
+        });
+        leaf "set_in";
+        Field ("set", translate_expr set)
+      ]
+    });
+    Field ("filter", translate_expr filter);
+  ]
+}
+
+and translate_set_map (map : Expr.T.expr) (bounds : Expr.T.bound list) : ts_node =
+  let bounds = Expr.T.unditto bounds in {
+  name = "set_map";
+  children = List.flatten [
+    [Field ("map", translate_expr map)];
+    field_list_map "generator" translate_quantifier_bound bounds;
+  ]
+}
+
+and translate_tuple_set_map (map : Expr.T.expr) (bounds : Expr.T.tuply_bound list) : ts_node =
+  let bounds = Expr.T.unditto_tuply bounds in {
+  name = "set_map";
+  children = List.flatten [
+    [Field ("map", translate_expr map)];
+    field_list_map "generator" translate_tuple_quantifier_bound bounds;
+  ]
+}
+
+and translate_bounded_quantification (quantifier : Expr.T.quantifier) (bounds : Expr.T.bound list) (expr : Expr.T.expr) : ts_node =
+  let bounds = Expr.T.unditto bounds in {
+  name = "bounded_quantification";
+  children = List.flatten [
+    [field_leaf "quantifier" (match quantifier with | Forall -> "forall" | Exists -> "exists")];
+    node_list_map translate_quantifier_bound bounds;
+    [Field ("expression", translate_expr expr)];
+  ]
+}
+
 (** Top-level translation method for all expression types. *)
 and translate_expr (expr : Expr.T.expr) : ts_node =
   match expr.core with
@@ -377,10 +481,16 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
   | Opaque id -> as_specific_name Reference id
   | Internal internal -> internal |> builtin_to_op |> op_to_node Reference
   | List (bullet, juncts) -> translate_jlist bullet juncts
+  | Product exprs -> translate_cross_product exprs
   | Apply (callee, args) -> translate_bound_op callee args
   | Parens (expr, pform) -> translate_parentheses expr pform
   | Lambda (params, expr) -> translate_lambda params expr
-  | SetEnum expr_ls -> {name = "finite_set_literal"; children = node_list_map translate_expr expr_ls }
+  | SetEnum exprs -> {name = "finite_set_literal"; children = node_list_map translate_expr exprs }
+  | SetSt (name, set, filter) -> translate_set_filter name set filter
+  | SetStTuply (names, set, filter) -> translate_tuple_set_filter names set filter
+  | SetOf (map, bounds) -> translate_set_map map bounds
+  | SetOfTuply (map, bounds) -> translate_tuple_set_map map bounds
+  | Quant (quantifier, bounds, expr) -> translate_bounded_quantification quantifier bounds expr
   | Tuple expr_ls -> {
     name = "tuple_literal";
     children = [leaf "langle_bracket"] @ (node_list_map translate_expr expr_ls) @ [leaf "rangle_bracket"]
@@ -416,7 +526,7 @@ let translate_operator_definition (defn : Expr.T.defn) : ts_node =
       name = "function_definition";
       children = List.flatten [
         [field_leaf "name" "identifier"];
-        List.map translate_quantifier_bound bounds;
+        node_list_map translate_quantifier_bound bounds;
         [leaf "def_eq"];
         [Field ("definition", translate_expr expr)]
       ]
