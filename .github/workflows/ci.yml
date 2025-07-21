@@ -79,7 +79,7 @@ jobs:
             - name: Check library proofs
               run: |
                 find ./library -type f -iname "*_proofs.tla" -print0 |
-                xargs --null --max-args=1 ./_build/tlapm/bin/tlapm --cleanfp
+                xargs --null --max-args=1 ./_build/tlapm/bin/tlapm --cleanfp --stretch 5
             - name: Clone tlaplus/examples
               uses: actions/checkout@v4
               with:
@@ -97,22 +97,22 @@ jobs:
                 rm "$DEPS_DIR/tlapm.tar.gz"
                 mv $DEPS_DIR/tlapm* "$DEPS_DIR/tlapm-install"
                 SKIP=(
-                  # General proof failure
-                  "specifications/Bakery-Boulangerie/Bakery.tla"
-                  "specifications/Bakery-Boulangerie/Boulanger.tla"
-                  "specifications/bcastByz/bcastByz.tla"
-                  "specifications/byzpaxos/Consensus.tla"
-                  "specifications/byzpaxos/VoteProof.tla"
-                  "specifications/ewd998/AsyncTerminationDetection_proof.tla"
-                  "specifications/ewd998/EWD998_proof.tla"
-                  "specifications/LearnProofs/FindHighest.tla"
-                  "specifications/LoopInvariance/BinarySearch.tla"
-                  "specifications/LoopInvariance/Quicksort.tla"
-                  "specifications/LoopInvariance/SumSequence.tla"
-                  "specifications/lamport_mutex/LamportMutex_proofs.tla"
-                  "specifications/TeachingConcurrency/SimpleRegular.tla"
-                  # Failing and long-running
-                  "specifications/byzpaxos/BPConProof.tla" # Takes about 30 minutes
+                  ## ATD/EWD require TLAPS' update_enabled_cdot branch
+                  specifications/ewd998/AsyncTerminationDetection_proof.tla
+                  specifications/ewd998/EWD998_proof.tla
+                  # Failing; see https://github.com/tlaplus/Examples/issues/67
+                  specifications/Bakery-Boulangerie/Bakery.tla
+                  specifications/Bakery-Boulangerie/Boulanger.tla
+                  specifications/Paxos/Consensus.tla
+                  specifications/PaxosHowToWinATuringAward/Consensus.tla
+                  specifications/lamport_mutex/LamportMutex_proofs.tla
+                  specifications/byzpaxos/VoteProof.tla
+                  # Long-running
+                  specifications/LoopInvariance/Quicksort.tla
+                  specifications/LoopInvariance/SumSequence.tla
+                  specifications/bcastByz/bcastByz.tla
+                  specifications/MisraReachability/ReachabilityProofs.tla
+                  specifications/byzpaxos/BPConProof.tla # Takes about 30 minutes
                 )
                 python "$SCRIPT_DIR/check_proofs.py"            \
                   --tlapm_path "$DEPS_DIR/tlapm-install"        \
