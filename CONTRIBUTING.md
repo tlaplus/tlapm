@@ -1,11 +1,11 @@
-Contributing to TLAPM
+Contributing to TLAPS
 ---------------------
 
 TL;DR: engage maintainers early & often, be surgical in your changes, and write lots of tests.
 
 We welcome contributions to this open source project!
 Before beginning work, please take some time to familiarize yourself with our development processes and expectations.
-TLAPM is used to validate safety-critical systems, so maintaining quality is paramount.
+TLAPS is used to validate safety-critical systems, so maintaining quality is paramount.
 The existing code can also be quite complicated to modify and it is difficult to review changes effectively.
 So, there are several practices that are necessary for having a good contribution experience.
 The last thing anybody wants is for you to feel as though you have wasted your time!
@@ -53,7 +53,7 @@ Contribution Possibilities
 These tools have a large number existing issues to fix, which you can see on the repo's [issues tab](https://github.com/tlaplus/tlapm/issues).
 
 Non-code contributions are particularly desired!
-TLAPM documentation needs a lot of work.
+TLAPS documentation needs a lot of work.
 The docs are hosted at https://proofs.tlapl.us and live in this repo in the [doc/web](doc/web) directory.
 
 For new features, there are a number of [substantial improvements we'd like to see implemented](todo.txt).
