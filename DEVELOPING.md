@@ -8,16 +8,16 @@ It uses the [Dune](https://dune.build/) build system for OCaml, with [Make](http
 Release Channels
 ----------------
 Past versioned releases can be downloaded from the [GitHub Releases page](https://github.com/tlaplus/tlapm/releases).
-For the latest development version, download the builds attached to the [1.6.0 rolling pre-release](https://github.com/tlaplus/tlapm/releases/tag/1.6.0-pre) or follow the instructions below to build TLAPM from source.
+For the latest development version, download the builds attached to the [1.6.0 rolling pre-release](https://github.com/tlaplus/tlapm/releases/tag/1.6.0-pre) or follow the instructions below to build TLAPS from source.
 
 Dependencies
 ------------
-TLAPM development & use is only supported on Unix-like systems, such as:
+TLAPS development & use is only supported on Unix-like systems, such as:
 * Any modern Linux
 * macOS
 * Windows Subsystem for Linux
 
-For building TLAPM, some Linux distros require additional packages beyond the base install; on Debian/Ubuntu:
+For building TLAPS, some Linux distros require additional packages beyond the base install; on Debian/Ubuntu:
 ```sh
 apt install zlib1g-dev gawk time
 ```
@@ -38,7 +38,7 @@ eval $(opam env --switch=5.1.0)
 ```
 You can put the `eval` statement in your shell init file (`~/.bashrc` or similar) to ensure your shell always has an active OCaml environment.
 
-Build & Install TLAPM
+Build & Install TLAPS
 ---------------------
 Clone this repo & open a shell in its root.
 Install OCaml package dependencies with:
@@ -49,11 +49,11 @@ make opam-deps-opt
 ```
 Package dependencies are unfortunately not yet declarative, but [will be in the future](https://github.com/tlaplus/tlapm/issues/158#issuecomment-2455455589).
 
-Compile the embedded dependencies and TLAPM with:
+Compile the embedded dependencies and TLAPS with:
 ```sh
 make
 ```
-Install TLAPM to your local OCaml environment with:
+Install TLAPS to your local OCaml environment with:
 ```sh
 make install
 ```
@@ -61,14 +61,14 @@ This should put `tlapm` on your path from your local OCaml environment, but if n
 ```sh
 opam exec -- tlapm --help
 ```
-Compile a TLAPM release distributable with:
+Compile a TLAPS release distributable with:
 ```sh
 make release
 ```
 This will output a file to `_build/tlaps-$GIT_COMMMIT_HASH-$ARCH-$OS.tar.gz`; for example, running `make release` on Linux produced the file `_build/tlaps-a7a3a0a-x86_64-linux-gnu.tar.gz`.
-This file can be used the same as any downloaded TLAPM release.
+This file can be used the same as any downloaded TLAPS release.
 
-Test TLAPM
+Test TLAPS
 ----------
 You can run all tests with:
 ```sh
@@ -102,26 +102,26 @@ There are other files and directories beyond these, but these are the most impor
 ├── README.md                   # Basic info about the project
 ├── DEVELOPING.md               # This document
 ├── CONTRIBUTING.md             # How to contribute to the project
-├── hints.txt                   # Some tips on effectively writing TLAPM proofs
+├── hints.txt                   # Some tips on effectively writing TLAPS proofs
 ├── todo.txt                    # Feature wishlist
 ├── dune-project                # Top-level Dune project file (generates tlapm.opam)
 ├── Makefile                    # Makefile for installing dependencies & launching Dune builds
 ├── index.html                  # proofs.tlapl.us root page; currently redirects to docs
 ├── deps/                       # Makefiles for dependencies (LS4, Isabelle, Z3, etc.)
-├── doc/                        # Sources for TLAPM documentation on proofs.tlapl.us
+├── doc/                        # Sources for TLAPS documentation on proofs.tlapl.us
 ├── examples/                   # Some example proofs that can be used as tests
 ├── isabelle/                   # Embedding of non-temporal parts of TLA⁺ in Isabelle
-├── library/                    # The TLAPM standard modules for TLA⁺
+├── library/                    # The TLAPS standard modules for TLA⁺
 ├── translate/                  # External library for translating temporal logic formulas to LS4
 ├── zenon/                      # The vendored source code of the Zenon theorem prover
 ├── misc/
-│   └── tla_mode/               # A TLAPM mode for Emacs
-├── lsp/                        # A language server for checking TLA⁺ proofs with TLAPM
+│   └── tla_mode/               # A TLAPS mode for Emacs
+├── lsp/                        # A language server for checking TLA⁺ proofs with TLAPS
 ├── src/                        # Main TLAPM source code directory
 │   ├── dune                    # Dune build file
 │   ├── tlapm.ml                # The main entrypoint to the TLAPM CLI
 │   └── tlapm_lib.mli           # Main interface for TLAPM when used as a library
-├── test/                       # Tests for TLAPM
+├── test/                       # Tests for TLAPS
 └── .github/
     ├── CODE_OF_CONDUCT.md      # The code of conduct
     └── workflows/              # GitHub CI workflow definition files

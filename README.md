@@ -1,19 +1,20 @@
-The TLA⁺ Proof Manager (`tlapm`)
-================================
+The TLA⁺ Proof System
+=====================
 [![Build & Test](https://github.com/tlaplus/tlapm/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tlaplus/tlapm/actions/workflows/ci.yml)
 
-This repository hosts the TLA⁺ Proof Manager TLAPM, formerly known as TLAPS.
-TLAPM translates TLA⁺ proof constructs into forms understood by an array of backend solvers & theorem provers, enabling machine-checked proofs of correctness for TLA⁺ specifications.
-TLAPM's development is managed by the [TLA⁺ Foundation](https://foundation.tlapl.us/).
+This repository hosts what is collectively called the TLA⁺ Proof System, or TLAPS.
+It consists of the TLA⁺ Proof Manager `tlapm` that interprets TLA⁺ proofs & manages their state, as well as interfaces to automatic backend provers such as [SMT](https://en.wikipedia.org/wiki/Satisfiability_modulo_theories) solvers like [Z3](https://github.com/Z3Prover/z3), the [tableau](https://en.wikipedia.org/wiki/Method_of_analytic_tableaux) prover [Zenon](https://github.com/zenon-prover/zenon), the [Isabelle](https://isabelle.in.tum.de/)/TLA⁺ object logic, and the LS4 decision procedure for [propositional temporal logic](https://plato.stanford.edu/entries/logic-temporal/).
+
+TLAPS development is managed by the [TLA⁺ Foundation](https://foundation.tlapl.us/).
 For documentation, see http://proofs.tlapl.us.
 For information on TLA⁺ generally, see http://tlapl.us.
 
 Installation & Use
 ------------------
 Past versioned releases can be downloaded from the [GitHub Releases page](https://github.com/tlaplus/tlapm/releases).
-For the latest development version, download the builds attached to the [1.6.0 rolling pre-release](https://github.com/tlaplus/tlapm/releases/tag/1.6.0-pre) or follow the instructions in [`DEVELOPING.md`](DEVELOPING.md) to build TLAPM from source.
+For the latest development version, download the builds attached to the [1.6.0 rolling pre-release](https://github.com/tlaplus/tlapm/releases/tag/1.6.0-pre) or follow the instructions in [`DEVELOPING.md`](DEVELOPING.md) to build TLAPS from source.
 
-Once TLAPM is installed, run `tlapm --help` to see documentation of the various command-line parameters.
+Once TLAPS is installed, run `tlapm --help` to see documentation of the various command-line parameters.
 Check the proofs in a simple example spec in this repo by running:
 ```sh
 tlapm examples/Euclid.tla
@@ -22,14 +23,14 @@ Documentation is hosted at http://proofs.tlapl.us, or can be viewed locally from
 
 Developing & Contributing
 -------------------------
-For instructions on building & testing TLAPM as well as setting up a development environment, see [DEVELOPING.md](DEVELOPING.md).
+For instructions on building & testing TLAPS as well as setting up a development environment, see [DEVELOPING.md](DEVELOPING.md).
 
 We welcome your contributions to this open source project!
-TLAPM is used in safety-critical systems, so we have a contribution process in place to ensure quality is maintained; read [CONTRIBUTING.md](CONTRIBUTING.md) before beginning work.
+TLAPS is used in safety-critical systems, so we have a contribution process in place to ensure quality is maintained; read [CONTRIBUTING.md](CONTRIBUTING.md) before beginning work.
 
 Authors
 -------
-The following people were instrumental in creating TLAPM:
+The following people were instrumental in creating TLAPS:
 - [Kaustuv Chaudhuri](https://chaudhuri.info/) (@[chaudhuri](https://github.com/chaudhuri))
 - Denis Cousineau
 - [Damien Doligez](http://cambium.inria.fr/~doligez/) (@[damiendoligez](https://github.com/damiendoligez))
