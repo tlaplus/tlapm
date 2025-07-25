@@ -14,16 +14,27 @@ and ts_node = {
   children : field_or_node list;
 }
 
-let leaf (name : string) : field_or_node = Node {name; children = []}
+let leaf_node (name : string) : ts_node = {
+  name;
+  children = []
+}
+
+let leaf (name : string) : field_or_node = Node (leaf_node name)
   
 let field_leaf (field_name : string) (name : string) : field_or_node =
-  Field (field_name, {name; children = []})
+  Field (field_name, leaf_node name)
   
+let node_list (ls : ts_node list) : field_or_node list =
+  List.map (fun e -> Node e) ls
+
 let node_list_map (f : 'a -> ts_node) (ls : 'a list) : field_or_node list =
-  List.map (fun e -> Node e) (List.map f ls)
+  node_list (List.map f ls)
+
+let field_list (field : string) (ls : 'a list) : field_or_node list =
+  List.map (fun e -> Field (field, e)) ls
 
 let field_list_map (field : string) (f : 'a -> ts_node) (ls : 'a list) : field_or_node list =
-  List.map (fun e -> Field (field, e)) (List.map f ls)
+  field_list field (List.map f ls)
 
 let rec ts_node_to_sexpr (node : ts_node) : Sexp.t =
   let flatten_child (child : field_or_node) : Sexp.t list =
@@ -55,16 +66,13 @@ type decl_or_ref =
 
 let as_specific_name (if_id : decl_or_ref) (id : string) : ts_node =
   match id with
-  | "Nat" -> {name = "nat_number_set"; children = []}
-  | "Int" -> {name = "int_number_set"; children = []}
-  | "Real" -> {name = "real_number_set"; children = []}
-  | "FALSE" -> {name = "boolean"; children = []}
-  | "TRUE" -> {name = "boolean"; children = []}
-  | "STRING" -> {name = "string_set"; children = []}
-  | _ -> {
-    name = (match if_id with | Declaration -> "identifier" | Reference -> "identifier_ref");
-    children = []
-  }
+  | "Nat" -> leaf_node "nat_number_set"
+  | "Int" -> leaf_node "int_number_set"
+  | "Real" -> leaf_node "real_number_set"
+  | "FALSE" -> leaf_node "boolean"
+  | "TRUE" -> leaf_node "boolean"
+  | "STRING" -> leaf_node "string_set"
+  | _ -> leaf_node (match if_id with | Declaration -> "identifier" | Reference -> "identifier_ref")
 
 (** The standardized test corpus requires counting escaped strings (for syntax
     highlighting reasons) so we do a foldl over the characters of the string
@@ -198,8 +206,8 @@ let translate_operator_parameter ((name, shape) : Util.hint * Expr.T.shape) : fi
 
 let translate_number (_number : string) (decimal : string) : ts_node =
   if String.empty = decimal
-  then {name = "nat_number"; children = []}
-  else {name = "real_number"; children = []}
+  then leaf_node "nat_number"
+  else leaf_node "real_number"
 
 (** Translates the substitution component of INSTANCE statements like s <- expr *)
 let rec translate_substitution ((hint, expr) : (Util.hint * Expr.T.expr)) : field_or_node =
@@ -279,18 +287,25 @@ and translate_jlist (bullet : Expr.T.bullet) (juncts : Expr.T.expr list) : ts_no
       children = [leaf ("bullet_" ^ jtype); Node (translate_expr expr)]
     }) juncts
   }
-and translate_quantifier_bound ((_hint, _, bound_domain) : Expr.T.bound) : ts_node =
-  match bound_domain with
-  | Domain expr -> {
-    name = "quantifier_bound";
-    children = [
-      field_leaf "intro" "identifier";
-      leaf "set_in";
-      Field ("set", translate_expr expr)
-    ]
-  }
-  | Ditto -> failwith "ditto quantifier"
-  | _ -> failwith "unknown quantifier bound type"
+and translate_quantifier_bound ((names, domain) : (ts_node list * Expr.T.expr)) : ts_node = {
+  name = "quantifier_bound";
+  children = List.flatten [
+    field_list "intro" names;
+    [leaf "set_in"];
+    [Field ("set", translate_expr domain)]
+  ]
+}
+
+and translate_quantifier_bounds (bounds : Expr.T.bound list) : ts_node list =
+  let group_bounds (bounds : Expr.T.bound list) : (ts_node list * Expr.T.expr) list =
+    let (final_groups, _) = List.fold_right (fun ((_, _, domain) : Expr.T.bound) ((groups, partial_group) : ((ts_node list * Expr.T.expr) list) * ts_node list) ->
+      match domain with
+      | Ditto -> (groups, leaf_node "identifier" :: partial_group)
+      | Domain expr -> ((leaf_node "identifier" :: partial_group, expr) :: groups, [])
+      | _ -> failwith "unknown quantifier bound type"
+    ) bounds ([], [])
+    in final_groups
+  in bounds |> group_bounds |> List.map translate_quantifier_bound
 
 and translate_tuple_quantifier_bound ((names, bound_domain) : Expr.T.tuply_name * Expr.T.bound_domain) : ts_node =
   match names, bound_domain with
@@ -445,12 +460,11 @@ and translate_tuple_set_filter (names : Util.hint list) (set : Expr.T.expr) (fil
   ]
 }
 
-and translate_set_map (map : Expr.T.expr) (bounds : Expr.T.bound list) : ts_node =
-  let bounds = Expr.T.unditto bounds in {
+and translate_set_map (map : Expr.T.expr) (bounds : Expr.T.bound list) : ts_node = {
   name = "set_map";
   children = List.flatten [
     [Field ("map", translate_expr map)];
-    field_list_map "generator" translate_quantifier_bound bounds;
+    field_list "generator" (translate_quantifier_bounds bounds);
   ]
 }
 
@@ -468,7 +482,7 @@ and translate_bounded_quantification (quantifier : Expr.T.quantifier) (bounds : 
   name = "bounded_quantification";
   children = List.flatten [
     [field_leaf "quantifier" (match quantifier with | Forall -> "forall" | Exists -> "exists")];
-    node_list_map translate_quantifier_bound bounds;
+    field_list "generator" (translate_quantifier_bounds bounds);
     [Field ("expression", translate_expr expr)];
   ]
 }
@@ -505,11 +519,11 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
   }
   | Case (cases, other) -> translate_case cases other
   | Bang (expr, selectors) -> translate_subexpression expr selectors
-  | _ -> {name = "expr_ph"; children = []}
+  | _ -> leaf_node "expr_ph"
 
 let translate_operator_definition (defn : Expr.T.defn) : ts_node =
   match defn.core with
-  | Recursive (_name, _shape) -> {name = "recursive_ph"; children = []}
+  | Recursive (_name, _shape) -> leaf_node "recursive_ph"
   | Operator (name, expr) -> (
     match expr.core with
     (* Operators with parameters are represented by a LAMBDA expression. *)
@@ -526,7 +540,7 @@ let translate_operator_definition (defn : Expr.T.defn) : ts_node =
       name = "function_definition";
       children = List.flatten [
         [field_leaf "name" "identifier"];
-        node_list_map translate_quantifier_bound bounds;
+        bounds |> translate_quantifier_bounds |> node_list;
         [leaf "def_eq"];
         [Field ("definition", translate_expr expr)]
       ]
