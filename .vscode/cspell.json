@@ -1,14 +1,25 @@
 {
-    "words": [
-        "tlaplus",
-        "tlaps",
-        "tlapm",
-        "zenon",
-        "opam",
-        "ocaml",
-        "caml",
-        "sandboxing",
-        "sprintf",
-        "printexc"
-    ]
+  "words": [
+    "tlaplus",
+    "tlaps",
+    "tlapm",
+    "zenon",
+    "opam",
+    "ocaml",
+    "caml",
+    "sandboxing",
+    "sprintf",
+    "printexc",
+    "Anoninst",
+    "Hashtbl",
+    "Pcase",
+    "Recursives",
+    "Submod",
+    "Tuply",
+    "failwith",
+    "iteri",
+    "mapi",
+    "modunit",
+    "naxs"
+  ]
 }

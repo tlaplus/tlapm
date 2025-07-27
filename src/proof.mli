@@ -101,6 +101,7 @@ module Visit : sig
     method proof  : 's scx -> proof -> unit
     method steps  : 's scx -> step list -> 's scx
     method step   : 's scx -> step -> 's scx
+    method qed    : 's scx -> qed_step -> unit
     method usable : 's scx -> usable -> unit
   end
 end

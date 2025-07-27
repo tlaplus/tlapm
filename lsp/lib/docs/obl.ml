@@ -34,7 +34,6 @@ module ObligationByProverMap = struct
 end
 
 type t = {
-  role : Role.t;
   parsed : Tlapm_lib.Proof.T.obligation option;
       [@printer fun _ fmt -> Printf.ifprintf fmt "...skipped..."]
       (** The obligation as received from the parser. *)
@@ -66,7 +65,6 @@ let of_parsed_obligation (parsed : Tlapm_lib.Proof.T.obligation) =
   let parsed_text_plain = lazy (Some (obl_to_str parsed)) in
   let parsed_text_normalized = lazy (Some (obl_to_normalized_str parsed)) in
   {
-    role = Role.Unknown;
     parsed = Some parsed;
     parsed_text_plain;
     parsed_text_normalized;
@@ -91,8 +89,14 @@ let reset obl p_ref =
     status = Proof_status.Pending;
   }
 
-let with_role role obl = { obl with role }
-let role obl = obl.role
+let role obl =
+  match obl.parsed with
+  | None -> Role.Unknown
+  | Some o -> (
+      match o.kind with
+      | Tlapm_lib.Proof.T.Ob_main -> Role.Main
+      | Tlapm_lib.Proof.T.Ob_support -> Role.Aux
+      | Tlapm_lib.Proof.T.Ob_error _ -> Role.Unexpected)
 
 (* Should exist in any case. *)
 let loc obl =
@@ -157,7 +161,6 @@ let with_prover_obligation p_ref (tlapm_obl : Toolbox.Obligation.t)
     match obl with
     | None ->
         {
-          role = Role.Unexpected;
           parsed = None;
           parsed_text_plain = lazy None;
           parsed_text_normalized = lazy None;
@@ -196,7 +199,7 @@ let with_prover_obligation p_ref (tlapm_obl : Toolbox.Obligation.t)
   else if obl.p_ref = p_ref then obl_add obl
   else obl
 
-let with_proof_state_from obl by_fp =
+let with_proof_state_from by_fp obl =
   match obl.latest_prover with
   | None -> (
       match fingerprint obl with
@@ -243,7 +246,7 @@ let as_lsp_diagnostic (obl : t) =
   | false -> None
 
 let as_lsp_tlaps_proof_obligation_state obl =
-  let role = Role.as_string obl.role in
+  let role = role obl |> Role.as_string in
   let range = Range.as_lsp_range (loc obl) in
   let status = Proof_status.to_string obl.status in
   let normalized = text_normalized obl in

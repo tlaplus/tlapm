@@ -8,10 +8,9 @@ end
 type t
 
 val of_parsed_obligation : Tlapm_lib.Proof.T.obligation -> t
-val with_role : Role.t -> t -> t
 val with_prover_terminated : int -> t -> t
 val with_prover_obligation : int -> Toolbox.Obligation.t -> t option -> t
-val with_proof_state_from : t -> (string -> t option) -> t
+val with_proof_state_from : (string -> t option) -> t -> t
 val with_prover_names : int -> int -> string list -> t -> t
 val role : t -> Role.t
 val loc : t -> Range.t

@@ -3,13 +3,34 @@
     to the tree as they are obtained from the prover. *)
 
 open Util
-open Prover
 
-type t
+module El : sig
+  type t =
+    | Module of TL.Module.T.mule
+    | Theorem of {
+        mu : TL.Module.T.modunit;
+        name : TL.Util.hint option;
+        sq : TL.Expr.T.sequent;
+        naxs : int;
+        pf : TL.Proof.T.proof;
+        orig_pf : TL.Proof.T.proof;
+        summ : TL.Module.T.summary;
+      }
+    | Mutate of { mu : TL.Module.T.modunit; usable : TL.Proof.T.usable }
+    | Step of TL.Proof.T.step
+    | Qed of TL.Proof.T.qed_step
+  [@@deriving show]
+end
+
+type t [@@deriving show]
 
 val of_module : Tlapm_lib.Module.T.mule -> t option -> t option
+val el : t -> El.t * TL.Expr.T.ctx
 val with_prover_terminated : t option -> int -> t option
-val with_prover_result : t option -> int -> Toolbox.Obligation.t -> t option
+
+val with_prover_result :
+  t option -> int -> Prover.Toolbox.Obligation.t -> t option
+
 val with_provers : t option -> int -> int -> string list -> t option
 val locate_proof_step : t option -> Range.Position.t -> t option
 val locate_proof_range : t option -> Range.t -> Range.t

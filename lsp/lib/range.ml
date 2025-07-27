@@ -100,6 +100,7 @@ let join (R (af, at)) (R (bf, bt)) =
   let t = Position.max (Position.of_pair at) (Position.of_pair bt) in
   of_points f t
 
+let join_opt a b = match a with None -> b | Some a -> join a b
 let crop_line_prefix (R ((lf, cf), t)) offset = R ((lf, cf + offset), t)
 
 let string_of_range (R ((fl, fc), (tl, tc))) : string =

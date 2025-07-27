@@ -28,6 +28,7 @@ val of_len : t -> int -> t
 val of_unknown : t
 val of_all : t
 val join : t -> t -> t
+val join_opt : t option -> t -> t
 val crop_line_prefix : t -> int -> t
 val string_of_range : t -> string
 val string_of_pos : Position.t -> string
