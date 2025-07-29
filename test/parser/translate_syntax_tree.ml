@@ -209,6 +209,25 @@ let translate_number (_number : string) (decimal : string) : ts_node =
   then leaf_node "nat_number"
   else leaf_node "real_number"
 
+(** For expressions like \A x, y \in Nat : f(x, y), the first x will have
+    bound_domain variant Domain with an associated expression corresponding
+    to the set being enumerated, and the second variable y will have
+    bound_domain variant Ditto without any associated domain information;
+    this function regroups these into a list of identifiers underneath a
+    single set expression. It is different from the unditto function which
+    clones the set expression into the y variable bound_domain. This also
+    handles unbounded quantification, which is represented by the No_domain
+    variant and bundled by this function into an option.
+*)
+let group_bounds (bounds : Expr.T.bound list) : (ts_node list * Expr.T.expr) list =
+  let (final_groups, _) = List.fold_right (fun ((_, _, domain) : Expr.T.bound) ((groups, partial_group) : ((ts_node list * Expr.T.expr) list) * ts_node list) ->
+    match domain with
+    | Ditto -> (groups, leaf_node "identifier" :: partial_group)
+    | Domain expr -> ((leaf_node "identifier" :: partial_group, expr) :: groups, [])
+    | No_domain -> failwith "Encountered unbounded domain when grouping bounds"
+  ) bounds ([], [])
+  in final_groups
+
 (** Translates the substitution component of INSTANCE statements like s <- expr *)
 let rec translate_substitution ((hint, expr) : (Util.hint * Expr.T.expr)) : field_or_node =
   Node {
@@ -287,45 +306,55 @@ and translate_jlist (bullet : Expr.T.bullet) (juncts : Expr.T.expr list) : ts_no
       children = [leaf ("bullet_" ^ jtype); Node (translate_expr expr)]
     }) juncts
   }
-and translate_quantifier_bound ((names, domain) : (ts_node list * Expr.T.expr)) : ts_node = {
-  name = "quantifier_bound";
-  children = List.flatten [
-    field_list "intro" names;
-    [leaf "set_in"];
-    [Field ("set", translate_expr domain)]
-  ]
-}
 
 and translate_quantifier_bounds (bounds : Expr.T.bound list) : ts_node list =
-  let group_bounds (bounds : Expr.T.bound list) : (ts_node list * Expr.T.expr) list =
-    let (final_groups, _) = List.fold_right (fun ((_, _, domain) : Expr.T.bound) ((groups, partial_group) : ((ts_node list * Expr.T.expr) list) * ts_node list) ->
-      match domain with
-      | Ditto -> (groups, leaf_node "identifier" :: partial_group)
-      | Domain expr -> ((leaf_node "identifier" :: partial_group, expr) :: groups, [])
-      | _ -> failwith "unknown quantifier bound type"
-    ) bounds ([], [])
-    in final_groups
+  let translate_quantifier_bound ((names, domain) : (ts_node list * Expr.T.expr)) : ts_node = {
+      name = "quantifier_bound";
+      children = List.flatten [
+        field_list "intro" names;
+        [leaf "set_in"];
+        [Field ("set", translate_expr domain)]
+      ]
+    }
   in bounds |> group_bounds |> List.map translate_quantifier_bound
 
-and translate_tuple_quantifier_bound ((names, bound_domain) : Expr.T.tuply_name * Expr.T.bound_domain) : ts_node =
-  match names, bound_domain with
-  | (Bound_names names, Domain set) -> {
-    name = "quantifier_bound";
-    children = [
-      Field ("intro", {
-        name = "tuple_of_identifiers";
-        children = List.flatten [
-          [leaf "langle_bracket"];
-          List.map (fun _ -> leaf "identifier") names;
-          [leaf "rangle_bracket"];
-        ]
-      });
-      leaf "set_in";
-      Field ("set", translate_expr set);
-    ]
-  }
-  | (Bound_names _, Ditto) -> failwith "tuple quantifier ditto"
-  | _ -> failwith "unknown tuple quantifier bound type"
+and translate_tuple_quantifier_bounds (bounds : Expr.T.tuply_bound list) : ts_node list =
+  let translate_tuple_quantifier_bound ((names, bound_domain) : Expr.T.tuply_name * Expr.T.bound_domain) : ts_node =
+    match names, bound_domain with
+    | (Bound_names names, Domain set) -> {
+      name = "quantifier_bound";
+      children = [
+        Field ("intro", {
+          name = "tuple_of_identifiers";
+          children = List.flatten [
+            [leaf "langle_bracket"];
+            List.map (fun _ -> leaf "identifier") names;
+            [leaf "rangle_bracket"];
+          ]
+        });
+        leaf "set_in";
+        Field ("set", translate_expr set);
+      ]
+    }
+    | (Bound_name _, Domain set) -> {
+      name = "quantifier_bound";
+      children = [
+        Field ("intro", {
+          name = "tuple_of_identifiers";
+          children = [
+            leaf "langle_bracket";
+            field_leaf "intro" "identifier";
+            leaf "rangle_bracket";
+          ]
+        });
+        leaf "set_in";
+        Field ("set", translate_expr set);
+      ]
+    }
+    | (Bound_names _, Ditto) -> failwith "multiple_names_ditto"
+    | (Bound_name _, Ditto) -> leaf_node "single_name_ditto"
+    | (_, No_domain) -> failwith "Tuple quantifiers must have a domain; this should not be representable"
+  in List.map translate_tuple_quantifier_bound bounds
 
 and translate_case_arm (index : int) ((pred, expr) : Expr.T.expr * Expr.T.expr) : field_or_node list =
   let case = Node {
@@ -438,20 +467,22 @@ and translate_set_filter (_name : Util.hint) (set : Expr.T.expr) (filter : Expr.
   ]
 }
 
+and translate_tuple_of_identifiers (names : Util.hint list) : ts_node = {
+    name = "tuple_of_identifiers";
+    children = List.flatten [
+      [leaf "langle_bracket"];
+      List.map (fun _ -> leaf "identifier") names;
+      [leaf "rangle_bracket"];
+    ]
+  }
+
 and translate_tuple_set_filter (names : Util.hint list) (set : Expr.T.expr) (filter : Expr.T.expr) : ts_node = {
   name = "set_filter";
   children = [
     Field ("generator", {
       name = "quantifier_bound";
       children = [
-        Field ("intro", {
-          name = "tuple_of_identifiers";
-          children = List.flatten [
-            [leaf "langle_bracket"];
-            List.map (fun _ -> leaf "identifier") names;
-            [leaf "rangle_bracket"];
-          ]
-        });
+        Field ("intro", translate_tuple_of_identifiers names);
         leaf "set_in";
         Field ("set", translate_expr set)
       ]
@@ -473,17 +504,62 @@ and translate_tuple_set_map (map : Expr.T.expr) (bounds : Expr.T.tuply_bound lis
   name = "set_map";
   children = List.flatten [
     [Field ("map", translate_expr map)];
-    field_list_map "generator" translate_tuple_quantifier_bound bounds;
+    bounds |> translate_tuple_quantifier_bounds |> field_list "generator";
   ]
 }
 
-and translate_bounded_quantification (quantifier : Expr.T.quantifier) (bounds : Expr.T.bound list) (expr : Expr.T.expr) : ts_node =
-  let bounds = Expr.T.unditto bounds in {
+and translate_quantification (quantifier : Expr.T.quantifier) (bounds : Expr.T.bound list) (body : Expr.T.expr) : ts_node =
+  let is_bound (bounds : Expr.T.bound list) : bool =
+    List.for_all (fun (_, _, domain) -> match (domain : Expr.T.bound_domain) with | No_domain -> false | _ -> true ) bounds
+  in if is_bound bounds then {
+    name = "bounded_quantification";
+    children = List.flatten [
+      [field_leaf "quantifier" (match quantifier with | Forall -> "forall" | Exists -> "exists")];
+      bounds |> translate_quantifier_bounds |> field_list "bound";
+      [Field ("expression", translate_expr body)];
+    ]
+  } else {
+    name = "unbounded_quantification";
+    children = List.flatten [
+      [field_leaf "quantifier" (match quantifier with | Forall -> "forall" | Exists -> "exists")];
+      List.map (fun _ -> field_leaf "intro" "identifier") bounds;
+      [Field ("expression", translate_expr body)];
+    ]
+  }
+
+and translate_tuple_bounded_quantification (quantifier : Expr.T.quantifier) (bounds : Expr.T.tuply_bound list) (body : Expr.T.expr) : ts_node = {
   name = "bounded_quantification";
   children = List.flatten [
     [field_leaf "quantifier" (match quantifier with | Forall -> "forall" | Exists -> "exists")];
-    field_list "generator" (translate_quantifier_bounds bounds);
-    [Field ("expression", translate_expr expr)];
+    bounds |> translate_tuple_quantifier_bounds |> field_list "bound";
+    [Field ("expression", translate_expr body)];
+  ]
+}
+
+and translate_temporal_quantification (quantifier : Expr.T.quantifier) (names : Util.hints) (body : Expr.T.expr) : ts_node = {
+  name = "unbounded_quantification";
+  children = List.flatten [
+    [field_leaf "quantifier" (match quantifier with | Forall -> "temporal_forall" | Exists -> "temporal_exists")];
+    List.map (fun _ -> field_leaf "intro" "identifier") names;
+    [Field ("expression", translate_expr body)];
+  ]
+}
+
+and translate_choose (_name : Util.hint) (set : Expr.T.expr option) (body : Expr.T.expr) : ts_node = {
+  name = "choose";
+  children = List.flatten [
+    [field_leaf "intro" "identifier"];
+    (match set with | Some expr -> [leaf "set_in"; Field ("set", translate_expr expr)] | None -> []);
+    [Field ("expression", translate_expr body)]
+  ]
+}
+
+and translate_tuple_choose (names : Util.hint list) (set : Expr.T.expr option) (body : Expr.T.expr) : ts_node = {
+  name = "choose";
+  children = List.flatten [
+    [Field ("intro", translate_tuple_of_identifiers names)];
+    (match set with | Some expr -> [leaf "set_in"; Field ("set", translate_expr expr)] | None -> []);
+    [Field ("expression", translate_expr body)]
   ]
 }
 
@@ -504,7 +580,11 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
   | SetStTuply (names, set, filter) -> translate_tuple_set_filter names set filter
   | SetOf (map, bounds) -> translate_set_map map bounds
   | SetOfTuply (map, bounds) -> translate_tuple_set_map map bounds
-  | Quant (quantifier, bounds, expr) -> translate_bounded_quantification quantifier bounds expr
+  | Quant (quantifier, bounds, expr) -> translate_quantification quantifier bounds expr
+  | QuantTuply (quantifier, bounds, expr) -> translate_tuple_bounded_quantification quantifier bounds expr
+  | Tquant (quantifier, hints, expr) -> translate_temporal_quantification quantifier hints expr
+  | Choose (name, set, expr) -> translate_choose name set expr
+  | ChooseTuply (names, set, expr) -> translate_tuple_choose names set expr
   | Tuple expr_ls -> {
     name = "tuple_literal";
     children = [leaf "langle_bracket"] @ (node_list_map translate_expr expr_ls) @ [leaf "rangle_bracket"]

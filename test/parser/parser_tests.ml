@@ -80,13 +80,6 @@ let expect_parse_failure (test : syntax_test) : bool =
     "Nonfix Double Exclamation Operator (GH TSTLA #GH97, GH tlaplus/tlaplus #884)";
   ]
 
-let expect_tree_comparison_failure (test : syntax_test) : bool =
-  List.mem test.info.name [
-    (* TLAPM appears to simply return an empty set here? *)
-    "Mistaken Set Filter Test";
-    "Mistaken Set Filter Tuples Test";
-  ]
-
 let should_skip_tree_comparison (test : syntax_test) : bool =
   List.mem test.info.path [
     "syntax_corpus/assume-prove.txt";
@@ -99,7 +92,6 @@ let should_skip_tree_comparison (test : syntax_test) : bool =
     "syntax_corpus/postfix_op.txt";
     "syntax_corpus/prefix_op.txt";
     "syntax_corpus/proofs.txt";
-    "syntax_corpus/quantification.txt";
     "syntax_corpus/records.txt";
     "syntax_corpus/recursive.txt";
     "syntax_corpus/step_expressions.txt";
@@ -117,6 +109,13 @@ let should_skip_tree_comparison (test : syntax_test) : bool =
     "Lexically-Conflicting Nonfix Operators";
     "Minus and Negative";
     "Nonfix Minus (GH tlaplus/tlaplus #GH884)";
+  ]
+
+let expect_tree_comparison_failure (test : syntax_test) : bool =
+  List.mem test.info.name [
+    (* TLAPM appears to simply return an empty set here? *)
+    "Mistaken Set Filter Test";
+    "Mistaken Set Filter Tuples Test";
   ]
 
 let tests = "Standardized syntax test corpus" >::: (
