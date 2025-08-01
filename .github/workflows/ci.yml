@@ -116,6 +116,6 @@ jobs:
                 )
                 python "$SCRIPT_DIR/check_proofs.py"            \
                   --tlapm_path "$DEPS_DIR/tlapm-install"        \
-                  --manifest_path "$EXAMPLES_DIR/manifest.json" \
+                  --examples_root "$EXAMPLES_DIR"               \
                   --skip "${SKIP[@]}"
 
