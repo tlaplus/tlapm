@@ -14,7 +14,7 @@ type error = Error of error_ * Loc.locus
 type t = error
 
 (* FIXME make this return a string *)
-let print_error ?(verbose = false) ouch (Error (err, locus)) =
+let print_error ?(send_output = output_string) ?(verbose = false) ouch (Error (err, locus)) =
   let unexp =
     match err.err_unex with
       | None -> ""
@@ -39,11 +39,11 @@ let print_error ?(verbose = false) ouch (Error (err, locus)) =
                         (List.unique (err.err_msgs)))
   in
   let loc = Printf.sprintf "%s\n" (Loc.string_of_locus locus) in
-  output_string ouch loc;
-  output_string ouch unexp ;
-  output_string ouch exps ;
-  output_string ouch msgs ;
-  output_string ouch ints ;
+  send_output ouch loc;
+  send_output ouch unexp ;
+  send_output ouch exps ;
+  send_output ouch msgs ;
+  send_output ouch ints ;
   flush ouch;
 
   Errors.set

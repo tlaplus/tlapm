@@ -43,6 +43,7 @@
   ocaml
   dune-site
   dune-build-info
+  sexp_diff
   sexplib
   cmdliner
   camlzip
