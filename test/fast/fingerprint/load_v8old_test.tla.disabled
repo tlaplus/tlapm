@@ -127,7 +127,7 @@ OBVIOUS
 command: rm -rf .tlacache
 command: mkdir .tlacache
 command: cp -r load_v8old_test.tlaps.testbase .tlacache/load_v8old_test.tlaps
-command: ${TLAPM} --toolbox 0 0 --isaprove ${FILE}
+command: ${TLAPM} --toolbox 0 0 ${FILE}
 stdout: fingerprints written
 stderr: Translating fingerprints from version 8
 stderr: already:true

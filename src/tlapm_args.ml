@@ -6,7 +6,6 @@ open Ext
 open Params
 
 
-let show_config = ref false
 let show_version () =
   print_endline (rawversion ()) ;
   exit 0
@@ -52,16 +51,6 @@ let set_default_method meth =
   with Failure msg -> raise (Arg.Bad ("--method: " ^ msg))
 
 
-(* FIXME use Arg.parse instead *)
-let parse_args args opts mods usage_fmt =
-  try
-    Arg.parse_argv (Array.of_list args) opts (fun mfile -> mods := mfile :: !mods)
-      (Printf.sprintf usage_fmt (Filename.basename Sys.executable_name))
-  with Arg.Bad msg ->
-    print_endline msg ;
-    flush stdout ;
-    exit 2
-
 let show_where () =
   match stdlib_path with
   | Some path  ->
@@ -71,10 +60,8 @@ let show_where () =
     Printf.printf "N/A\n";
     exit 1
 
-let set_nofp_start s =
-  nofp_sl := s
-
-let set_nofp_end e =
+let set_nofp (s, e) =
+  nofp_sl := s;
   nofp_el := e
 
 
@@ -86,13 +73,9 @@ let print_fp fic =
 let use_fp fic =
   fpf_in := Some fic
 
-let erase_fp_file = ref ""
-let set_erase_fp_file fic = erase_fp_file := fic
-
 (* FIXME this should share the parsing code with --method
    or maybe just remove this option... *)
-let erase_fp backend =
-  let fic = !erase_fp_file in
+let erase_fp (fic, backend) =
   if (not (Sys.file_exists fic)) then begin
     raise (Arg.Bad (Printf.sprintf "File %s does not exist." fic));
   end;
@@ -111,16 +94,6 @@ let erase_fp backend =
   exit 0
 
 
-let deprecated flag nargs =
-  let f _ = Printf.eprintf "Warning: %s is deprecated (ignored)\n%!" flag in
-  match nargs with
-  | 0 -> flag, Arg.Unit f, ""
-  | 1 -> flag, Arg.String f, ""
-  | _ ->
-     let args = Array.to_list (Array.make nargs (Arg.String f)) in
-     flag, Arg.Tuple args, ""
-
-
 let quote_if_needed s =
   let check c =
     match c with
@@ -134,140 +107,254 @@ let quote_if_needed s =
   end
 
 
-let init () =
-  let mods = ref [] in
-  let helpfn = ref (fun () -> ()) in
-  let show_help () = !helpfn () in
-  let sep = Arg.Unit show_help in
-  let blank = "", sep, " " in
-  let title s = s, sep, " " in
-  let opts = [
-    blank;
-    title "(basic options)";
-    blank;
-    "--help", Arg.Unit show_help, " show this help message and exit" ;
-    "-help", Arg.Unit show_help, " (same as --help)" ;
-    "--version", Arg.Unit show_version, " show version number and exit" ;
-    "--verbose", Arg.Set verbose, " produce verbose messages" ;
-    "-v", Arg.Set verbose, " (same as --verbose)" ;
-    blank;
-    "--where", Arg.Unit show_where,
-               " show location of standard library and exit" ;
-    "--config", Arg.Set show_config, " show configuration and exit" ;
-    "--summary", Arg.Set summary,
-                 " show summary of theorems (implies -N and not -C)" ;
-    "--timing", Arg.Set stats, " show runtime statistics" ;
-    blank;
-    "-I", Arg.String add_search_dir, "<dir> add <dir> to search path" ;
-    deprecated "-d" 1;
-    blank;
-    "-k", Arg.Set keep_going, " keep going on backend failures" ;
-    "-N", Arg.Set suppress_all, " do not run any backend verifiers" ;
-    "-C", Arg.Set check, " check proofs in Isabelle/TLA+" ;
-    blank;
-    "--threads", Arg.Int set_max_threads,
-                 "<int> set number of worker threads to <int>" ;
-    "--method", Arg.String set_default_method,
-                "<meth> set default method to <meth> (try --method help)" ;
-    "--solver", Arg.String set_smt_solver,
-                "<solver> set SMT solver to <solver>";
-    "--smt-logic", Arg.String set_smt_logic,
-                "<logic> set SMT logic to <logic>";
-    "--fast-isabelle", Arg.Unit Params.set_fast_isabelle,
-                       " (Windows-only) Launch Isabelle with fast shortcut";
-    "--stretch", Arg.Set_float Params.timeout_stretch,
-              "<f> multiply all timeouts by <f>";
-    blank;
-    title "(advanced options)" ;
-    blank;
-    "--noflatten", Arg.Clear ob_flatten, " do not flatten obligations" ;
-    "--nonormal", Arg.Clear pr_normal,
-                  " do not normalize obligations before printing" ;
-    "--debug", Arg.String set_debug_flags,
-               "{[-]<flag>} enable/disable debugging flags" ;
-    deprecated "--paranoid" 0;
-    deprecated "--isaprove" 0;
-    blank;
-    "--toolbox", (Arg.Tuple [Arg.Int set_target_start;Arg.Int set_target_end]),
-                 "<int><int> toolbox mode";
-    "--toolbox-vsn", (Arg.Int set_toolbox_vsn),
-                     "<int> Toolbox protocol version, 1|2, 1 by default.";
-    "--line", Arg.Int set_target_line,
-              "<int> line to prove";
-    "--wait", Arg.Set_int wait,
-              "<time> wait for <time> before printing obligations in progress";
-    "--stdin", Arg.Set use_stdin, " \
-        read the tla file from stdin instead of file system. \
-        Only applies if single tla file is provided as input.";
-    "--prefer-stdlib", Arg.Set prefer_stdlib, " \
-        prefer built-in standard modules if the module search path \
-        contains files with the same names as modules in stdlib.";
-    "--noproving", Arg.Set noproving,
-                   " do not prove, report fingerprinted results only";
-    blank;
-    "--printallobs", Arg.Set printallobs,
-                     " print obligations in all toolbox messages";
-    blank;
-    deprecated "--fpdir" 1;
-    "--safefp", Arg.Set Params.safefp,
-                " check tlapm, zenon, Isabelle versions for fingerprints";
-    "--nofp", Arg.Set Params.no_fp, " do not use existing fingerprints, \
-        but overwrite any preexisting fingerprints associated \
-        with the current proof obligations, \
-        using the newly computed fingerprints and results";
-    "--nofpl", (Arg.Tuple [Arg.Int set_nofp_start;Arg.Int set_nofp_end]),
-               "<int><int> disable fingerprint use between given lines";
-    "--cleanfp", Arg.Set Params.cleanfp,
-                 " erase fingerprint file before starting";
-    blank;
-    "--erasefp", (Arg.Tuple [Arg.String set_erase_fp_file;Arg.String erase_fp]),
-                 "<f><back> erase from file <f> all results of backend <back>";
-    "--printfp", Arg.String print_fp,
-                 "<f> print the fingerprints stored in file <f> and quit";
-    "--usefp", Arg.String use_fp,
-               "<f> load fingerprints from file <f> (save as usual)";
-    "--fpp", Arg.Set fp_deb,
-             " print the fingerprints of obligations in toolbox messages";
-    "--cache-dir", Arg.String set_tlapm_cache_dir,
-            "<directory> save auxiliary and \
-             temporary files under <directory>. \
+open Cmdliner
+
+let version_t =
+  let doc = "Show version number and exit." in
+  Arg.(value & flag & info ["version"] ~doc)
+
+let verbose_t =
+  let doc = "Produce verbose messages." in
+  Arg.(value & flag & info ["v"; "verbose"] ~doc)
+
+let where_t =
+  let doc = "Show location of standard library and exit." in
+  Arg.(value & flag & info ["where"] ~doc)
+
+let config_t =
+  let doc = "Show configuration and exit." in
+  Arg.(value & flag & info ["config"] ~doc)
+
+let summary_t =
+  let doc = "Show summary of theorems (implies -N and not -C)." in
+  Arg.(value & flag & info ["summary"] ~doc)
+
+let timing_t =
+  let doc = "Show runtime statistics." in
+  Arg.(value & flag & info ["timing"] ~doc)
+
+let search_dir_t =
+  let doc = "Add $(docv) to search path." in
+  Arg.(value & opt_all dir [] & info ["I"] ~docv:"DIR" ~doc)
+
+let keep_going_t =
+  let doc = "Keep going on backend failures." in
+  Arg.(value & flag & info ["k"] ~doc)
+
+let suppress_all_t =
+  let doc = "Do not run any backend verifiers." in
+  Arg.(value & flag & info ["N"] ~doc)
+
+let check_t =
+  let doc = "Check proofs in Isabelle/TLA+." in
+  Arg.(value & flag & info ["C"] ~doc)
+
+let threads_t =
+  let doc = "Set number of worker threads to $(docv)." in
+  Arg.(value & opt (some int) None & info ["threads"] ~docv:"N" ~doc)
+
+let method_t =
+  let doc = "Set default method to $(docv) (--method=help to list options)." in
+  Arg.(value & opt (some string) None & info ["method"] ~docv:"METHOD" ~doc)
+
+let solver_t =
+  let doc = "Set SMT solver to $(docv)." in
+  Arg.(value & opt (some string) None & info ["solver"] ~docv:"SOLVER" ~doc)
+
+let smt_logic_t =
+  let doc = "Set SMT logic to $(docv)." in
+  Arg.(value & opt (some string) None & info ["smt-logic"] ~docv:"LOGIC" ~doc)
+
+let fast_isabelle_t =
+  let doc = "(Windows-only) Launch Isabelle with fast shortcut." in
+  Arg.(value & flag & info ["fast-isabelle"] ~doc)
+
+let stretch_t =
+  let doc = "Multiply all timeouts by $(docv)." in
+  Arg.(value & opt float 1.0 & info ["stretch"] ~docv:"MULTIPLIER" ~doc)
+
+let noflatten_t =
+  let doc = "Do not flatten obligations." in
+  Arg.(value & flag & info ["noflatten"] ~doc)
+
+let nonormal_t =
+  let doc = "Do not normalize obligations before printing." in
+  Arg.(value & flag & info ["nonormal"] ~doc)
+
+let debug_t =
+  let doc = "Enable/disable debugging flags." in
+  Arg.(value & opt_all string [] & info ["debug"] ~docv:"[-]flag" ~doc)
+
+let toolbox_t =
+  let doc = "Toolbox mode." in
+  Arg.(value & opt (some (pair int int)) None & info ~docv:"BEGIN,END" ["toolbox"] ~doc)
+
+let toolbox_vsn_t =
+  let doc = "Toolbox protocol version." in
+  Arg.(value & opt int 1 & info ["toolbox-vsn"] ~docv:"1|2" ~doc)
+
+let line_t =
+  let doc = "Line to prove." in
+  Arg.(value & opt (some int) None & info ["line"] ~docv:"LINENO" ~doc)
+
+let wait_t =
+  let doc = "Wait for $(docv) seconds before printing obligations in progress." in
+  Arg.(value & opt int 3 & info ["wait"] ~docv:"TIME" ~doc)
+
+let stdin_t =
+  let doc = "Read the tla file from stdin instead of file system. \
+             Only applies if single tla file is provided as input." in
+  Arg.(value & flag & info ["stdin"] ~doc)
+
+let prefer_stdlib_t =
+  let doc = "Prefer build-in standard modules if the module search path \
+             contains files with the same names as modules in stdlib." in
+  Arg.(value & flag & info ["prefer-stdlib"] ~doc)
+
+let noproving_t =
+  let doc = "Do not prove, report fingerprinted results only." in
+  Arg.(value & flag & info ["noproving"] ~doc)
+
+let printallobs_t =
+  let doc = "Print obligations in all toolbox messages." in
+  Arg.(value & flag & info ["printallobs"] ~doc)
+
+let safefp_t =
+  let doc = "Check tlapm, zenon, Isabelle versions for fingerprints." in
+  Arg.(value & flag & info ["safefp"] ~doc)
+
+let nofp_t =
+  let doc = "Do not use existing fingerprints, \
+             but overwrite any preexisting fingerprints associated \
+             with the current proof obligations, \
+             using the newly computed fingerprints and results." in
+  Arg.(value & flag & info ["nofp"] ~doc)
+
+let nofpl_t =
+  let doc = "Disable fingerprint use between given lines." in
+  Arg.(value & opt (some (pair int int)) None & info ["nofpl"] ~docv:"BEGIN,END" ~doc)
+
+let cleanfp_t =
+  let doc = "Erase fingerprint file before starting." in
+  Arg.(value & flag & info ["cleanfp"] ~doc)
+
+let erasefp_t =
+  let doc = "Erase from file FILE all results of backend BACK." in
+  Arg.(value & opt (some (pair file string)) None & info ["erasefp"] ~docv:"FILE,BACK" ~doc)
+
+let printfp_t =
+  let doc = "Print the fingerprints stored in file $(docv) and quit." in
+  Arg.(value & opt (some file) None & info ["printfp"] ~docv:"FILE" ~doc)
+
+let usefp_t =
+  let doc = "Load fingerprints from file $(docv) (save as usual)." in
+  Arg.(value & opt (some file) None & info ["usefp"] ~docv:"FILE" ~doc)
+
+let fpp_t =
+  let doc = "Print the fingerprints of obligations in toolbox messages." in
+  Arg.(value & flag & info ["fpp"] ~doc)
+
+let cache_dir_t =
+  let doc = "Save auxiliary and \
+             temporary files under $(docv). \
              Alternatively, this directory \
              can be defined via the variable \
              `TLAPM_CACHE_DIR` of the runtime \
              environment. The command-line \
              parameter takes precedence over \
              the environment variable. If neither \
-             is specified, the default value is \".tlacache\".";
-  ]
+             is specified, the default value is \".tlacache\"." in
+  Arg.(value & opt (some dir) None & info ["cache-dir"] ~docv:"DIR" ~doc)
+
+let files_t =
+  let doc = "Files to process." in
+  Arg.(value & pos_all string [] & info [] ~docv:"FILE" ~doc)
+
+let final flag f () =
+  if flag then (f (); `Final) else `Continue
+
+let set value reference () =
+  if value then reference := true;
+  `Continue
+
+let clear value reference () =
+  if value then reference := false;
+  `Continue
+
+let setr value reference () =
+  reference := value;
+  `Continue
+
+let setf value f () =
+  let () =
+    match value with
+    | None -> ()
+    | Some x -> f x
   in
-  let opts = Arg.align opts in
-  let usage_fmt =
-    format_of_string "Usage: %s <options> FILE ...\noptions are:"
+  `Continue
+
+let ( *** ) a b =
+  match a () with
+  | `Final -> ()
+  | `Continue -> b
+
+let main version verbose_ where config summary_ timing search_dir keep_going_
+      suppress_all_ check_ threads method_ solver smt_logic fast_isabelle
+      stretch noflatten nonormal debug toolbox toolbox_vsn line wait_
+      stdin prefer_stdlib_ noproving_ printallobs_ safefp_ nofp nofpl cleanfp_
+      erasefp printfp usefp fpp cache_dir mods =
+  let () =
+    final version show_version
+    *** set verbose_ verbose
+    *** final where show_where
+    *** set summary_ summary
+    *** set timing stats
+    *** (fun () -> List.iter add_search_dir search_dir; `Continue)
+    *** set keep_going_ keep_going
+    *** set suppress_all_ suppress_all
+    *** set check_ check
+    *** setf threads set_max_threads
+    *** setf method_ set_default_method
+    *** setf solver set_smt_solver
+    *** setf smt_logic set_smt_logic
+    *** (fun () -> if fast_isabelle then Params.set_fast_isabelle (); `Continue)
+    *** setr stretch Params.timeout_stretch
+    *** clear noflatten ob_flatten
+    *** clear nonormal pr_normal
+    *** (fun () -> List.iter set_debug_flags debug; `Continue)
+    *** setf toolbox (fun (s, e) -> set_target_start s; set_target_end e)
+    *** (fun () -> set_toolbox_vsn toolbox_vsn; `Continue)
+    *** setf line set_target_line
+    *** setr wait_ wait
+    *** set stdin use_stdin
+    *** set prefer_stdlib_ prefer_stdlib
+    *** set noproving_ noproving
+    *** set printallobs_ printallobs
+    *** set safefp_ safefp
+    *** set nofp no_fp
+    *** setf nofpl set_nofp
+    *** set cleanfp_ cleanfp
+    *** setf erasefp erase_fp
+    *** setf printfp print_fp
+    *** setf usefp use_fp
+    *** set fpp fp_deb
+    *** setf cache_dir set_tlapm_cache_dir
+    *** ()
   in
-  helpfn := begin fun () ->
-    Arg.usage opts
-      (Printf.sprintf usage_fmt (Filename.basename Sys.executable_name)) ;
-    exit 0
-  end ;
-  let args = Array.to_list Sys.argv in
-  parse_args args opts mods usage_fmt ;
-  if !show_config || !verbose then begin
-    print_endline (printconfig true) ;
-    flush stdout
-  end ;
-  if !show_config then exit 0 ;
-  if !mods = [] then begin
-    Arg.usage opts
-      (Printf.sprintf "Need at least one module file.\n\n\
-                       Usage: %s <options> FILE ...\noptions are:"
-         (Filename.basename Sys.executable_name)) ;
-    exit 2
-  end ;
+  if config || !verbose then begin
+    print_endline (printconfig true);
+    flush stdout;
+  end;
+  if config then exit 0;
+  if mods = [] then begin
+    Printf.eprintf "Need at least one module file.\n%!";
+    exit 2;
+  end;
   if !summary then begin
-    suppress_all := true ;
-    check := false ;
-  end ;
-  check_zenon_ver () ;
+    suppress_all := true;
+    check := false;
+  end;
+  check_zenon_ver ();
   if !Params.toolbox then begin
     Printf.printf "\n\\* TLAPM version %s\n"
                   (Params.rawversion ());
@@ -279,10 +366,44 @@ let init () =
     Array.iter (fun s -> Printf.printf " %s" (quote_if_needed s)) Sys.argv;
     Printf.printf "\n\n%!"
   end;
-  if !use_stdin && (List.length !mods) <> 1 then begin
-    Arg.usage opts
+  if !use_stdin && (List.length mods) <> 1 then begin
+    Printf.eprintf
       "Exactly 1 module has to be specified if TLAPM is invoked with\
-       the --stdin option." ;
+       the --stdin option.\n%!";
     exit 2
   end;
-  !mods
+  mods
+
+let term =
+  Term.(const main $ version_t $ verbose_t $ where_t $ config_t $ summary_t $ timing_t
+        $ search_dir_t $ keep_going_t $ suppress_all_t $ check_t $ threads_t $ method_t
+        $ solver_t $ smt_logic_t $ fast_isabelle_t $ stretch_t $ noflatten_t $ nonormal_t
+        $ debug_t $ toolbox_t $ toolbox_vsn_t $ line_t $ wait_t $ stdin_t $ prefer_stdlib_t
+        $ noproving_t $ printallobs_t $ safefp_t $ nofp_t $ nofpl_t $ cleanfp_t
+        $ erasefp_t $ printfp_t $ usefp_t $ fpp_t $ cache_dir_t $ files_t)
+
+let cmd =
+  let info = Cmd.info "tlapm" in
+  Cmd.v info term
+
+let no_comma s =
+  match String.index s ',' with
+  | exception Not_found -> true
+  | _ -> false
+
+(* Preprocess command line before feeding it to Cmdliner, to preserve
+   backward compatibility. In particular, Cmdliner does not support
+   options with direct multiple arguments. *)
+let rec preprocess = function
+  | (("--toolbox" | "--nofpl" | "--erasefp") as opt) :: arg1 :: arg2 :: tail when no_comma arg1 ->
+     opt :: (arg1 ^ "," ^ arg2) :: preprocess tail
+  | ("--paranoid" | "--isaprove") :: tail -> preprocess tail
+  | ("-d" | "--fpdir") :: _ :: tail -> preprocess tail
+  | opt :: tail -> opt :: preprocess tail
+  | [] -> []
+
+let init () =
+  let argv = Sys.argv |> Array.to_list |> preprocess |> Array.of_list in
+  match Cmd.eval_value' ~argv cmd with
+  | `Ok x -> x
+  | `Exit r -> exit r
