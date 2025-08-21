@@ -22,6 +22,9 @@ module Types: sig
         }
 end
 
+module Prep: sig
+    val prepare_obligation: Proof.T.obligation -> Proof.T.obligation
+end
 
 module Fingerprints: sig
     val write_fingerprint:
