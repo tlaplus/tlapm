@@ -20,10 +20,10 @@ let leaf_node (name : string) : ts_node = {
 }
 
 let leaf (name : string) : field_or_node = Node (leaf_node name)
-  
+
 let field_leaf (field_name : string) (name : string) : field_or_node =
   Field (field_name, leaf_node name)
-  
+
 let node_list (ls : ts_node list) : field_or_node list =
   List.map (fun e -> Node e) ls
 
@@ -173,7 +173,7 @@ let translate_operator_declaration (name : string) (arity : int) : field_or_node
     Field ("name", symbol);
   ]
   | Named _ -> (Field ("name", symbol)) :: (repeat arity (field_leaf "parameter" "placeholder"))
-  
+
 let translate_extends (tree : Util.hints) : field_or_node list =
   match tree with
   | [] -> []
@@ -195,7 +195,7 @@ let translate_variable_decl (_ : Util.hint) : field_or_node =
 
 let translate_recursive_decl ((_hint, _shape) : (Util.hint * Expr.T.shape)) : field_or_node =
   leaf "recursive_ph"
-  
+
 let translate_operator_parameter ((name, shape) : Util.hint * Expr.T.shape) : field_or_node =
   match shape with
   | Shape_expr -> field_leaf "parameter" "identifier"
@@ -215,9 +215,7 @@ let translate_number (_number : string) (decimal : string) : ts_node =
     bound_domain variant Ditto without any associated domain information;
     this function regroups these into a list of identifiers underneath a
     single set expression. It is different from the unditto function which
-    clones the set expression into the y variable bound_domain. This also
-    handles unbounded quantification, which is represented by the No_domain
-    variant and bundled by this function into an option.
+    clones the set expression into the y variable bound_domain.
 *)
 let group_bounds (bounds : Expr.T.bound list) : (ts_node list * Expr.T.expr) list =
   let (final_groups, _) = List.fold_right (fun ((_, _, domain) : Expr.T.bound) ((groups, partial_group) : ((ts_node list * Expr.T.expr) list) * ts_node list) ->
@@ -225,6 +223,25 @@ let group_bounds (bounds : Expr.T.bound list) : (ts_node list * Expr.T.expr) lis
     | Ditto -> (groups, leaf_node "identifier" :: partial_group)
     | Domain expr -> ((leaf_node "identifier" :: partial_group, expr) :: groups, [])
     | No_domain -> failwith "Encountered unbounded domain when grouping bounds"
+  ) bounds ([], [])
+  in final_groups
+
+let group_tuple_bounds (bounds : Expr.T.tuply_bound list) : (ts_node list * Expr.T.expr) list =
+  let (final_groups, _) = List.fold_right (fun ((names, domain) : Expr.T.tuply_bound) ((groups, partial_group) : ((ts_node list * Expr.T.expr) list) * ts_node list) ->
+    match names, domain with
+    | (Bound_name _, Ditto) -> (groups, leaf_node "identifier" :: partial_group)
+    | (Bound_name _, Domain expr) -> ((leaf_node "identifier" :: partial_group, expr) :: groups, [])
+    | (Bound_names names, Domain expr) -> (
+        let tuple = {
+          name = "tuple_of_identifiers";
+          children = List.flatten [
+            [leaf "langle_bracket"];
+            List.map (fun _ -> leaf "identifier") names;
+            [leaf "rangle_bracket"];
+          ]
+        } in ([tuple], expr) :: groups, [])
+    | (Bound_names _, Ditto) -> failwith "Combination of multiple bound names and ditto bound is never used"
+    | (_, No_domain) -> failwith "Tuple quantifiers must have a domain; this should not be representable"
   ) bounds ([], [])
   in final_groups
 
@@ -307,54 +324,20 @@ and translate_jlist (bullet : Expr.T.bullet) (juncts : Expr.T.expr list) : ts_no
     }) juncts
   }
 
+and translate_quantifier_bound ((names, domain) : (ts_node list * Expr.T.expr)) : ts_node = {
+    name = "quantifier_bound";
+    children = List.flatten [
+      field_list "intro" names;
+      [leaf "set_in"];
+      [Field ("set", translate_expr domain)]
+    ]
+  }
+
 and translate_quantifier_bounds (bounds : Expr.T.bound list) : ts_node list =
-  let translate_quantifier_bound ((names, domain) : (ts_node list * Expr.T.expr)) : ts_node = {
-      name = "quantifier_bound";
-      children = List.flatten [
-        field_list "intro" names;
-        [leaf "set_in"];
-        [Field ("set", translate_expr domain)]
-      ]
-    }
-  in bounds |> group_bounds |> List.map translate_quantifier_bound
+  bounds |> group_bounds |> List.map translate_quantifier_bound
 
 and translate_tuple_quantifier_bounds (bounds : Expr.T.tuply_bound list) : ts_node list =
-  let translate_tuple_quantifier_bound ((names, bound_domain) : Expr.T.tuply_name * Expr.T.bound_domain) : ts_node =
-    match names, bound_domain with
-    | (Bound_names names, Domain set) -> {
-      name = "quantifier_bound";
-      children = [
-        Field ("intro", {
-          name = "tuple_of_identifiers";
-          children = List.flatten [
-            [leaf "langle_bracket"];
-            List.map (fun _ -> leaf "identifier") names;
-            [leaf "rangle_bracket"];
-          ]
-        });
-        leaf "set_in";
-        Field ("set", translate_expr set);
-      ]
-    }
-    | (Bound_name _, Domain set) -> {
-      name = "quantifier_bound";
-      children = [
-        Field ("intro", {
-          name = "tuple_of_identifiers";
-          children = [
-            leaf "langle_bracket";
-            field_leaf "intro" "identifier";
-            leaf "rangle_bracket";
-          ]
-        });
-        leaf "set_in";
-        Field ("set", translate_expr set);
-      ]
-    }
-    | (Bound_names _, Ditto) -> failwith "multiple_names_ditto"
-    | (Bound_name _, Ditto) -> leaf_node "single_name_ditto"
-    | (_, No_domain) -> failwith "Tuple quantifiers must have a domain; this should not be representable"
-  in List.map translate_tuple_quantifier_bound bounds
+  bounds |> group_tuple_bounds |> List.map translate_quantifier_bound
 
 and translate_case_arm (index : int) ((pred, expr) : Expr.T.expr * Expr.T.expr) : field_or_node list =
   let case = Node {
@@ -381,7 +364,7 @@ and translate_default_arm (default : Expr.T.expr option) : field_or_node list =
       ]
     }
   ]
-  
+
 and translate_case (cases : (Expr.T.expr * Expr.T.expr) list) (default : Expr.T.expr option) : ts_node = {
   name = "case";
   children = List.flatten [
