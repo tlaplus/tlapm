@@ -545,6 +545,22 @@ and translate_tuple_choose (names : Util.hint list) (set : Expr.T.expr option) (
   ]
 }
 
+and translate_step_expr (mode : Expr.T.modal_op) (expr : Expr.T.expr) (sub : Expr.T.expr) : ts_node =
+  match mode with
+  | Box -> {
+    name = "step_expr_or_stutter";
+    children = [Node (translate_expr expr); Node (translate_expr sub)]
+  }
+  | Dia -> {
+    name = "step_expr_no_stutter";
+    children = [
+      leaf "langle_bracket";
+      Node (translate_expr expr);
+      leaf "rangle_bracket_sub";
+      Node (translate_expr sub);
+    ]
+  }
+
 (** Top-level translation method for all expression types. *)
 and translate_expr (expr : Expr.T.expr) : ts_node =
   match expr.core with
@@ -567,6 +583,14 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
   | Tquant (quantifier, hints, expr) -> translate_temporal_quantification quantifier hints expr
   | Choose (name, set, expr) -> translate_choose name set expr
   | ChooseTuply (names, set, expr) -> translate_tuple_choose names set expr
+  | Sub (mode, expr, sub) -> translate_step_expr mode expr sub
+  | Tsub (mode, expr, sub) -> {
+    name = "bound_prefix_op";
+    children = [
+      Field ("symbol", (match mode with | Box -> leaf_node "always" | Dia -> leaf_node "eventually"));
+      Field ("rhs", translate_step_expr mode expr sub);
+    ];
+  }
   | Let (definitions, expr) -> {
     name = "let_in";
     children = List.flatten [
