@@ -591,6 +591,25 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
       Field ("rhs", translate_step_expr mode expr sub);
     ];
   }
+  | Arrow (domain, range) -> {
+    name = "set_of_functions";
+    children = [
+      Node (translate_expr domain);
+      leaf "maps_to";
+      Node (translate_expr range);
+    ]
+  }
+  | Fcn (bounds, expr) -> {
+    name = "function_literal";
+    children = 
+  }
+  | FcnApp (fn_expr, arg_exprs) -> {
+    name = "function_evaluation";
+    children = List.flatten [
+      [Node (translate_expr fn_expr)];
+      node_list_map translate_expr arg_exprs
+    ]
+  }
   | Let (definitions, expr) -> {
     name = "let_in";
     children = List.flatten [
