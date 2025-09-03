@@ -155,24 +155,27 @@ let builtin_to_op (builtin : Builtin.builtin) : operator =
   | Prime -> Postfix "prime"
   | _ -> failwith "unknown built-in"
 
-let translate_operator_declaration (name : string) (arity : int) : field_or_node list =
-  let op = str_to_op name in
-  let symbol = op_to_node Declaration op in
-  match op with
-  | Prefix _ -> [
-    Field ("name", symbol);
-    leaf "placeholder"
-  ]
-  | Infix _ -> [
-    leaf "placeholder";
-    Field ("name", symbol);
-    leaf "placeholder"
-  ]
-  | Postfix _ -> [
-    leaf "placeholder";
-    Field ("name", symbol);
-  ]
-  | Named _ -> (Field ("name", symbol)) :: (repeat arity (field_leaf "parameter" "placeholder"))
+let translate_operator_declaration (name : string) (arity : int) : ts_node = {
+    name = "operator_declaration";
+    children =
+    let op = str_to_op name in
+    let symbol = op_to_node Declaration op in
+    match op with
+    | Prefix _ -> [
+      Field ("name", symbol);
+      leaf "placeholder"
+    ]
+    | Infix _ -> [
+      leaf "placeholder";
+      Field ("name", symbol);
+      leaf "placeholder"
+    ]
+    | Postfix _ -> [
+      leaf "placeholder";
+      Field ("name", symbol);
+    ]
+    | Named _ -> (Field ("name", symbol)) :: (repeat arity (field_leaf "parameter" "placeholder"))
+  }
 
 let translate_extends (tree : Util.hints) : field_or_node list =
   match tree with
@@ -185,24 +188,20 @@ let translate_extends (tree : Util.hints) : field_or_node list =
 let translate_constant_decl ((name, shape) : (Util.hint * Expr.T.shape)) : field_or_node =
   match shape with
   | Shape_expr -> leaf "identifier"
-  | Shape_op arity -> Node {
-    name = "operator_declaration";
-    children = translate_operator_declaration name.core arity;
-  }
+  | Shape_op arity -> Node (translate_operator_declaration name.core arity)
 
 let translate_variable_decl (_ : Util.hint) : field_or_node =
   leaf "identifier"
 
-let translate_recursive_decl ((_hint, _shape) : (Util.hint * Expr.T.shape)) : field_or_node =
-  leaf "recursive_ph"
+let translate_recursive_decl ((name, shape) : (Util.hint * Expr.T.shape)) : field_or_node =
+  match shape with
+  | Shape_expr -> field_leaf "name" "identifier"
+  | Shape_op arity -> Node (translate_operator_declaration name.core arity)
 
 let translate_operator_parameter ((name, shape) : Util.hint * Expr.T.shape) : field_or_node =
   match shape with
   | Shape_expr -> field_leaf "parameter" "identifier"
-  | Shape_op arity -> Field ("parameter", {
-    name = "operator_declaration";
-    children = translate_operator_declaration name.core arity;
-  })
+  | Shape_op arity -> Field ("parameter", translate_operator_declaration name.core arity)
 
 let translate_number (_number : string) (decimal : string) : ts_node =
   if String.empty = decimal
