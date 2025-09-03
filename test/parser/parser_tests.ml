@@ -92,7 +92,6 @@ let should_skip_tree_comparison (test : syntax_test) : bool =
     "syntax_corpus/postfix_op.txt";
     "syntax_corpus/prefix_op.txt";
     "syntax_corpus/proofs.txt";
-    "syntax_corpus/records.txt";
     "syntax_corpus/recursive.txt";
     "syntax_corpus/step_expressions.txt";
     "syntax_corpus/subexpressions.txt";

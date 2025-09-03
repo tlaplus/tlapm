@@ -572,6 +572,18 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
     name = "tuple_literal";
     children = [leaf "langle_bracket"] @ (node_list_map translate_expr expr_ls) @ [leaf "rangle_bracket"]
   }
+  | Rect fields -> {
+    name = "set_of_records";
+    children = List.flatten (List.map (fun (_, expr) -> [leaf "identifier"; Node (translate_expr expr)]) fields)
+  }
+  | Record fields -> {
+    name = "record_literal";
+    children = List.flatten (List.map (fun (_, expr) -> [leaf "identifier"; leaf "all_map_to"; Node (translate_expr expr)]) fields)
+  }
+  | Dot (expr, _) -> {
+    name = "record_value";
+    children = [Node (translate_expr expr); leaf "identifier_ref"]
+  }
   | If (i, t, e) -> {
     name = "if_then_else";
     children = [
