@@ -568,6 +568,13 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
   | Tquant (quantifier, hints, expr) -> translate_temporal_quantification quantifier hints expr
   | Choose (name, set, expr) -> translate_choose name set expr
   | ChooseTuply (names, set, expr) -> translate_tuple_choose names set expr
+  | Let (definitions, expr) -> {
+    name = "let_in";
+    children = List.flatten [
+      field_list_map "definitions" translate_operator_definition definitions;
+      [Field ("expression", (translate_expr expr))]
+    ]
+  }
   | Tuple expr_ls -> {
     name = "tuple_literal";
     children = [leaf "langle_bracket"] @ (node_list_map translate_expr expr_ls) @ [leaf "rangle_bracket"]
@@ -596,7 +603,7 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
   | Bang (expr, selectors) -> translate_subexpression expr selectors
   | _ -> leaf_node "expr_ph"
 
-let translate_operator_definition (defn : Expr.T.defn) : ts_node =
+and translate_operator_definition (defn : Expr.T.defn) : ts_node =
   match defn.core with
   | Recursive (_name, _shape) -> leaf_node "recursive_ph"
   | Operator (name, expr) -> (
@@ -640,19 +647,19 @@ let translate_operator_definition (defn : Expr.T.defn) : ts_node =
   }
   | Bpragma _ -> assert false
 
-let translate_assumption (name : Util.hint option) (expr : Expr.T.expr) : field_or_node list =
+and translate_assumption (name : Util.hint option) (expr : Expr.T.expr) : field_or_node list =
   List.flatten [
     if Option.is_some name then [field_leaf "name" "identifier"; leaf "def_eq"] else [];
     [Node (translate_expr expr)]
   ]
 
-let translate_theorem (name : Util.hint option) (sequent : Expr.T.sequent) (_level : int) (_proof1 : Proof.T.proof) (_proof2 : Proof.T.proof) (_summary : Module.T.summary) : field_or_node list =
+and translate_theorem (name : Util.hint option) (sequent : Expr.T.sequent) (_level : int) (_proof1 : Proof.T.proof) (_proof2 : Proof.T.proof) (_summary : Module.T.summary) : field_or_node list =
   List.flatten [
     if Option.is_some name then [field_leaf "name" "identifier"; leaf "def_eq"] else [];
     [Field ("statement", translate_expr sequent.active)]
   ]
 
-let rec translate_module (tree : Module.T.mule) : ts_node = {
+and translate_module (tree : Module.T.mule) : ts_node = {
   name = "module";
   children = List.flatten [
     [leaf "header_line"];

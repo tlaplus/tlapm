@@ -88,7 +88,6 @@ let should_skip_tree_comparison (test : syntax_test) : bool =
     "syntax_corpus/functions.txt";
     "syntax_corpus/infix_op.txt";
     "syntax_corpus/labels.txt";
-    "syntax_corpus/let_in.txt";
     "syntax_corpus/postfix_op.txt";
     "syntax_corpus/prefix_op.txt";
     "syntax_corpus/proofs.txt";
