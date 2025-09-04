@@ -601,7 +601,19 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
   }
   | Fcn (bounds, expr) -> {
     name = "function_literal";
-    children = 
+    children = List.flatten [
+      bounds |> translate_quantifier_bounds |> node_list;
+      [leaf "all_map_to"];
+      [Node (translate_expr expr)]
+    ]
+  }
+  | FcnTuply (bounds, expr) -> {
+    name = "function_literal";
+    children = List.flatten [
+      bounds |> translate_tuple_quantifier_bounds |> node_list;
+      [leaf "all_map_to"];
+      [Node (translate_expr expr)]
+    ]
   }
   | FcnApp (fn_expr, arg_exprs) -> {
     name = "function_evaluation";
@@ -660,6 +672,7 @@ and translate_operator_definition (defn : Expr.T.defn) : ts_node =
         [Field ("definition", (translate_expr expr))]
       ]
     }
+    (* Function definitions are represented by a function literal. *)
     | Fcn (bounds, expr) -> {
       name = "function_definition";
       children = List.flatten [
