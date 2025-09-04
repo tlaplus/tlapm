@@ -82,7 +82,6 @@ let expect_parse_failure (test : syntax_test) : bool =
 
 let should_skip_tree_comparison (test : syntax_test) : bool =
   List.mem test.info.path [
-    "syntax_corpus/except.txt";
     "syntax_corpus/infix_op.txt";
     "syntax_corpus/postfix_op.txt";
     "syntax_corpus/prefix_op.txt";
@@ -94,14 +93,22 @@ let should_skip_tree_comparison (test : syntax_test) : bool =
     (* Jlist terminated by single line comment omitted in TLAPM AST *)
     "Keyword-Unit-Terminated Conjlist";
     "Keyword-Unit-Terminated Disjlist";
-    
+
     (* Unnecessary parentheses omitted in TLAPM AST *)
     "Nested Parentheses";
-    
+
     (* TLAPM AST does not distinguish between nonfix and infix ops *)
     "Lexically-Conflicting Nonfix Operators";
     "Minus and Negative";
     "Nonfix Minus (GH tlaplus/tlaplus #GH884)";
+
+    (* TLAPM uses function literals for function definitions *)
+    (* See: https://github.com/tlaplus/tlapm/issues/237 *)
+    "Function Literal";
+
+    (* TLAPM makes multi-parameter EXCEPT update statements into tuples *)
+    "Record Update with Multiple Parameters";
+    "Record Update with Tuple and Non-Tuple Parameters";
   ]
 
 let expect_tree_comparison_failure (test : syntax_test) : bool =

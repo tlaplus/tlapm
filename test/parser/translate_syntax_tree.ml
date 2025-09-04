@@ -561,6 +561,34 @@ and translate_step_expr (mode : Expr.T.modal_op) (expr : Expr.T.expr) (sub : Exp
     ]
   }
 
+and translate_except (fn : Expr.T.expr) (excepts : (Expr.T.expoint list * Expr.T.expr) list) =
+  let translate_except_update_specifier (except_specifier : Expr.T.expoint) =
+    match except_specifier with
+    | Except_dot _record_field_name -> {
+      name = "except_update_record_field";
+      children = [leaf "identifier_ref"]
+    }
+    | Except_apply expr -> {
+      name =  "except_update_fn_appl";
+      children = [Node (translate_expr expr)]
+    }
+  in let translate_except_update ((except_specifiers, new_val) : Expr.T.expoint list * Expr.T.expr) = {
+    name = "except_update";
+    children = [
+      Field ("update_specifier", {
+        name = "except_update_specifier";
+        children = node_list_map translate_except_update_specifier except_specifiers
+      });
+      Field ("new_val", translate_expr new_val)
+    ]
+  } in {
+    name = "except";
+    children = List.flatten [
+      [Field ("expr_to_update", translate_expr fn)];
+      node_list_map translate_except_update excepts
+    ]
+  }
+
 (** Top-level translation method for all expression types. *)
 and translate_expr (expr : Expr.T.expr) : ts_node =
   match expr.core with
@@ -583,6 +611,8 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
   | Tquant (quantifier, hints, expr) -> translate_temporal_quantification quantifier hints expr
   | Choose (name, set, expr) -> translate_choose name set expr
   | ChooseTuply (names, set, expr) -> translate_tuple_choose names set expr
+  | Except (fn, excepts) -> translate_except fn excepts
+  | At (_from_except) -> leaf_node "prev_func_val"
   | Sub (mode, expr, sub) -> translate_step_expr mode expr sub
   | Tsub (mode, expr, sub) -> {
     name = "bound_prefix_op";
