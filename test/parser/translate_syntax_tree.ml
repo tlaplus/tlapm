@@ -591,6 +591,13 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
       Field ("rhs", translate_step_expr mode expr sub);
     ];
   }
+  | Fair (_op, sub, expr) -> {
+    name = "fairness";
+    children = [
+      Node (translate_expr sub);
+      Node (translate_expr expr);
+    ]
+  }
   | Arrow (domain, range) -> {
     name = "set_of_functions";
     children = [
