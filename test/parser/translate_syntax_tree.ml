@@ -110,6 +110,11 @@ let str_to_op (op_str : string) : operator =
   | "ENABLED" -> Prefix "enabled"
   | "DOMAIN" -> Prefix "domain"
   | "SUBSET" -> Prefix "powerset"
+  | "UNCHANGED" -> Prefix "unchanged"
+  | "UNION" -> Prefix "union"
+  | "[]" -> Prefix "always"
+  | "<>" -> Prefix "eventually"
+  | "~" -> Prefix "lnot"
   | "-." -> Prefix "negative"
   | "-" -> Infix "minus"
   | "+" -> Infix "plus"
@@ -703,7 +708,7 @@ and translate_operator_definition (defn : Expr.T.defn) : ts_node =
     | Lambda (params, expr) -> {
       name = "operator_definition";
       children = List.flatten [
-        [field_leaf "name" "identifier"];
+        [Field ("name", name.core |> str_to_op |> op_to_node Declaration)];
         List.map translate_operator_parameter params;
         [leaf "def_eq"];
         [Field ("definition", (translate_expr expr))]
