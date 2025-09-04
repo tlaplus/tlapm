@@ -105,6 +105,14 @@ let op_to_node (if_id : decl_or_ref) (op : operator) : ts_node =
   | Postfix symbol -> {name = "postfix_op_symbol"; children = [leaf symbol]}
   | Named name -> as_specific_name if_id name
 
+let op_to_definition (arity : int) (op : operator) : field_or_node list =
+  let parameter = field_leaf "parameter" "identifier" in
+  match op with
+  | Prefix _ -> [Field ("name", op_to_node Declaration op); parameter]
+  | Infix _ -> [parameter; Field ("name", op_to_node Declaration op); parameter]
+  | Postfix _ -> [parameter; Field ("name", op_to_node Declaration op)]
+  | Named _ -> Field ("name", op_to_node Declaration op) :: repeat arity parameter
+
 let str_to_op (op_str : string) : operator =
   match op_str with
   | "ENABLED" -> Prefix "enabled"
@@ -128,6 +136,8 @@ let str_to_op (op_str : string) : operator =
   | "->" -> Infix "map_to"
   | "'" -> Postfix "prime"
   | "^+" -> Postfix "sup_plus"
+  | "^#" -> Postfix "sup_hash"
+  | "^*" -> Postfix "asterisk"
   | _ -> Named op_str
 
 let as_bound_op (op : Expr.T.expr) : operator =
@@ -708,8 +718,7 @@ and translate_operator_definition (defn : Expr.T.defn) : ts_node =
     | Lambda (params, expr) -> {
       name = "operator_definition";
       children = List.flatten [
-        [Field ("name", name.core |> str_to_op |> op_to_node Declaration)];
-        List.map translate_operator_parameter params;
+        name.core |> str_to_op |> op_to_definition (List.length params);
         [leaf "def_eq"];
         [Field ("definition", (translate_expr expr))]
       ]
