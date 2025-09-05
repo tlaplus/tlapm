@@ -9,7 +9,7 @@
 EXTENDS
   FiniteSets,
   Sequences,
-  FunctionTheorems,
+  FunctionForkTheorems,
   WellFoundedInduction,
   TLAPS
 
