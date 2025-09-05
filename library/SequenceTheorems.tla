@@ -2,7 +2,7 @@
 (***************************************************************************)
 (* This module contains theorems about operations on sequences.            *)
 (***************************************************************************)
-EXTENDS Sequences, Functions
+EXTENDS Sequences, FunctionsFork
 LOCAL INSTANCE NaturalsInduction
 LOCAL INSTANCE TLAPS
 

@@ -1,9 +1,9 @@
------------------------ MODULE SequencesExtTheorems ------------------------
+----------------------- MODULE SequencesExtForkTheorems ------------------------
 (**************************************************************************)
 (* This module contains theorems about the operators on sequences defined *)
 (* in module SequencesExt.                                                *)
 (**************************************************************************)
-EXTENDS Sequences, SequencesExt, Functions, Integers
+EXTENDS Sequences, SequencesExtFork, FunctionsFork, Integers
 LOCAL INSTANCE SequenceTheorems
 LOCAL INSTANCE NaturalsInduction
 LOCAL INSTANCE WellFoundedInduction

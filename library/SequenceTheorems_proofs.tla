@@ -3,7 +3,7 @@
 (* This module contains the proofs for theorems about sequences and the    *)
 (* corresponding operations.                                               *)
 (***************************************************************************)
-EXTENDS Sequences, Functions
+EXTENDS Sequences, FunctionsFork
 LOCAL INSTANCE NaturalsInduction
 LOCAL INSTANCE TLAPS
 
