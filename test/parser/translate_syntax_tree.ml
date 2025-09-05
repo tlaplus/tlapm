@@ -60,19 +60,9 @@ type operator =
   | Postfix of string
   | Named of string
 
-type decl_or_ref =
+type op_shape =
   | Declaration
   | Reference
-
-let as_specific_name (if_id : decl_or_ref) (id : string) : ts_node =
-  match id with
-  | "Nat" -> leaf_node "nat_number_set"
-  | "Int" -> leaf_node "int_number_set"
-  | "Real" -> leaf_node "real_number_set"
-  | "FALSE" -> leaf_node "boolean"
-  | "TRUE" -> leaf_node "boolean"
-  | "STRING" -> leaf_node "string_set"
-  | _ -> leaf_node (match if_id with | Declaration -> "identifier" | Reference -> "identifier_ref")
 
 (** The standardized test corpus requires counting escaped strings (for syntax
     highlighting reasons) so we do a foldl over the characters of the string
@@ -97,21 +87,6 @@ let translate_string (str : string) : ts_node = {
       ) (false, 0) str in
     repeat escape_count (leaf "escape_char")
 }
-
-let op_to_node (if_id : decl_or_ref) (op : operator) : ts_node =
-  match op with
-  | Prefix symbol -> {name = "prefix_op_symbol"; children = [leaf symbol]}
-  | Infix symbol -> {name = "infix_op_symbol"; children = [leaf symbol]}
-  | Postfix symbol -> {name = "postfix_op_symbol"; children = [leaf symbol]}
-  | Named name -> as_specific_name if_id name
-
-let op_to_definition (arity : int) (op : operator) : field_or_node list =
-  let parameter = field_leaf "parameter" "identifier" in
-  match op with
-  | Prefix _ -> [Field ("name", op_to_node Declaration op); parameter]
-  | Infix _ -> [parameter; Field ("name", op_to_node Declaration op); parameter]
-  | Postfix _ -> [parameter; Field ("name", op_to_node Declaration op)]
-  | Named _ -> Field ("name", op_to_node Declaration op) :: repeat arity parameter
 
 let str_to_op (op_str : string) : operator =
   match op_str with
@@ -140,6 +115,27 @@ let str_to_op (op_str : string) : operator =
   | "^*" -> Postfix "asterisk"
   | _ -> Named op_str
 
+let as_specific_name (shape : op_shape) (id : string) : ts_node =
+  match id with
+  | "Nat" -> leaf_node "nat_number_set"
+  | "Int" -> leaf_node "int_number_set"
+  | "Real" -> leaf_node "real_number_set"
+  | "FALSE" -> leaf_node "boolean"
+  | "TRUE" -> leaf_node "boolean"
+  | "STRING" -> leaf_node "string_set"
+  | _ -> leaf_node (
+    match shape with
+    | Declaration -> "identifier"
+    | Reference -> "identifier_ref"
+  )
+
+let op_to_node (shape : op_shape) (op : operator) : ts_node =
+  match op with
+  | Prefix symbol -> {name = "prefix_op_symbol"; children = [leaf symbol]}
+  | Infix symbol -> {name = "infix_op_symbol"; children = [leaf symbol]}
+  | Postfix symbol -> {name = "postfix_op_symbol"; children = [leaf symbol]}
+  | Named name -> as_specific_name shape name
+
 let as_bound_op (op : Expr.T.expr) : operator =
   match op.core with
   | Opaque name -> Named name
@@ -147,28 +143,36 @@ let as_bound_op (op : Expr.T.expr) : operator =
 
 let builtin_to_op (builtin : Builtin.builtin) : operator =
   match builtin with
-  | TRUE -> Named "TRUE"
-  | FALSE -> Named "FALSE"
-  | BOOLEAN -> Named "BOOLEAN"
-  | STRING -> Named "STRING"
-  | SUBSET -> Prefix "powerset"
-  | UNION -> Prefix "union"
-  | DOMAIN -> Prefix "domain"
-  | Neg -> Prefix "lnot"
-  | Plus -> Infix "plus"
-  | Mem -> Infix "in"
-  | Notmem -> Infix "notin"
-  | Implies -> Infix "implies"
-  | Equiv -> Infix "equiv"
-  | Conj -> Infix "land"
-  | Disj -> Infix "lor"
-  | Eq -> Infix "eq"
-  | Neq -> Infix "neq"
-  | Setminus -> Infix "setminus"
-  | Cap -> Infix "cap"
-  | Cup -> Infix "cup"
-  | Prime -> Postfix "prime"
-  | _ -> failwith "unknown built-in"
+  | TRUE      -> Named    "TRUE"
+  | FALSE     -> Named    "FALSE"
+  | BOOLEAN   -> Named    "BOOLEAN"
+  | STRING    -> Named    "STRING"
+  | UNCHANGED -> Prefix   "unchanged"
+  | ENABLED   -> Prefix   "enabled"
+  | SUBSET    -> Prefix   "powerset"
+  | UNION     -> Prefix   "union"
+  | DOMAIN    -> Prefix   "domain"
+  | Neg       -> Prefix   "lnot"
+  | Box _     -> Prefix   "always"
+  | Diamond   -> Prefix   "eventually"
+  | Plus      -> Infix    "plus"
+  | Mem       -> Infix    "in"
+  | Notmem    -> Infix    "notin"
+  | Implies   -> Infix    "implies"
+  | Equiv     -> Infix    "equiv"
+  | Conj      -> Infix    "land"
+  | Disj      -> Infix    "lor"
+  | Eq        -> Infix    "eq"
+  | Neq       -> Infix    "neq"
+  | Setminus  -> Infix    "setminus"
+  | Cap       -> Infix    "cap"
+  | Cup       -> Infix    "cup"
+  | Subseteq  -> Infix    "subseteq"
+  | Leadsto   -> Infix    "leads_to"
+  | Cdot      -> Infix    "cdot"
+  | Actplus   -> Infix    "plus_arrow"
+  | Prime     -> Postfix  "prime"
+  | _         -> failwith "unknown built-in"
 
 let translate_operator_declaration (name : string) (arity : int) : ts_node = {
     name = "operator_declaration";
@@ -300,7 +304,7 @@ in*)
   let translate_final_selector (selector : Expr.T.sel) : ts_node =
     match selector with
     | Sel_lab (name, args) ->
-      if List.is_empty args then as_specific_name Reference name else {
+      if List.is_empty args then name |> str_to_op |> op_to_node Reference else {
         name = "bound_op";
         children = List.flatten [
           [field_leaf "name" "identifier_ref"];
@@ -416,7 +420,7 @@ and translate_bound_op (callee : Expr.T.expr) (args : Expr.T.expr list) : ts_nod
       field_leaf "symbol" op;
     ]
   }
-  | Named _ -> {
+  | Named _name -> {
     name = "bound_op";
     children = List.flatten [
       [field_leaf "name" "identifier_ref"];
@@ -609,7 +613,7 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
   match expr.core with
   | Num (number, decimal) -> translate_number number decimal
   | String str -> translate_string str
-  | Opaque id -> as_specific_name Reference id
+  | Opaque id -> id |> str_to_op |> op_to_node Reference
   | Internal internal -> internal |> builtin_to_op |> op_to_node Reference
   | List (bullet, juncts) -> translate_jlist bullet juncts
   | Product exprs -> translate_cross_product exprs
@@ -715,10 +719,23 @@ and translate_operator_definition (defn : Expr.T.defn) : ts_node =
   | Operator (name, expr) -> (
     match expr.core with
     (* Operators with parameters are represented by a LAMBDA expression. *)
-    | Lambda (params, expr) -> {
+    | Lambda (params, expr) ->
+      let parameter = field_leaf "parameter" "identifier" in
+      let op = str_to_op name.core in
+      let opdef = match op with
+      | Prefix _ -> [Field ("name", op_to_node Declaration op); parameter]
+      | Infix _ -> [parameter; Field ("name", op_to_node Declaration op); parameter]
+      | Postfix _ -> [parameter; Field ("name", op_to_node Declaration op)]
+      | Named _op_name -> Field ("name", op_to_node Declaration op)
+        :: List.map (fun (param_op_name, shape : Util.hint * Expr.T.shape) ->
+          match shape with
+          | Shape_expr -> parameter
+          | Shape_op arity -> Field ("parameter", translate_operator_declaration param_op_name.core arity)
+        ) params
+      in {
       name = "operator_definition";
       children = List.flatten [
-        name.core |> str_to_op |> op_to_definition (List.length params);
+        opdef;
         [leaf "def_eq"];
         [Field ("definition", (translate_expr expr))]
       ]

@@ -100,6 +100,7 @@ let should_skip_tree_comparison (test : syntax_test) : bool =
     "Minus and Negative";
     "Nonfix Minus (GH tlaplus/tlaplus #GH884)";
     "Nonfix Prefix Operators";
+    "Nonfix Postfix Operators";
 
     (* TLAPM uses function literals for function definitions *)
     (* See: https://github.com/tlaplus/tlapm/issues/237 *)
