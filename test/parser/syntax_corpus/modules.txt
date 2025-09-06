@@ -8,7 +8,7 @@ Single module
 -------------|||
 
 (source_file
-  (module (header_line) (identifier) (header_line) (double_line))
+  (module (header_line) name: (identifier) (header_line) (double_line))
 )
 
 =============|||
@@ -21,7 +21,7 @@ EXTENDS M1, M2, M3
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
+(source_file (module (header_line) name: (identifier) (header_line)
   (extends (identifier_ref) (identifier_ref) (identifier_ref))
 (double_line)))
 
@@ -64,9 +64,9 @@ Sequential Nested modules
 -------------|||
 
 (source_file
-  (module (header_line) (identifier) (header_line)
-    (module (header_line) (identifier) (header_line) (double_line))
-    (module (header_line) (identifier) (header_line) (double_line))
+  (module (header_line) name: (identifier) (header_line)
+    (module (header_line) name: (identifier) (header_line) (double_line))
+    (module (header_line) name: (identifier) (header_line) (double_line))
   (double_line))
 )
 

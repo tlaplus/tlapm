@@ -27,4 +27,4 @@ val err_set_unexpected : string -> error -> error
   (** Set the "unexpected" message (adding one if it doesn't exist) *)
 
 (** Print the error on a given output channel. *)
-val print_error : ?verbose:bool -> Stdlib.out_channel -> error -> unit
+val print_error : ?send_output:(out_channel -> string -> unit) -> ?verbose:bool -> Stdlib.out_channel -> error -> unit

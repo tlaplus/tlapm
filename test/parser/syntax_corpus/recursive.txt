@@ -8,8 +8,13 @@ RECURSIVE f(_)
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (recursive_declaration (operator_declaration (identifier) (placeholder)))
+(source_file (module (header_line) name: (identifier) (header_line)
+  (recursive_declaration
+    (operator_declaration
+      name: (identifier)
+      parameter: (placeholder)
+    )
+  )
 (double_line)))
 
 =============|||
@@ -40,8 +45,8 @@ RECURSIVE f
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (recursive_declaration (identifier))
+(source_file (module (header_line) name: (identifier) (header_line)
+  (recursive_declaration name: (identifier))
 (double_line)))
 
 =============|||
@@ -54,10 +59,10 @@ RECURSIVE f(_), g(_)
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
+(source_file (module (header_line) name: (identifier) (header_line)
   (recursive_declaration
-    (operator_declaration (identifier) (placeholder))
-    (operator_declaration (identifier) (placeholder))
+    (operator_declaration name: (identifier) parameter: (placeholder))
+    (operator_declaration name: (identifier) parameter: (placeholder))
   )
 (double_line)))
 
@@ -71,14 +76,14 @@ RECURSIVE f(_), g, h(_, _, _), _+_, -. _, _ ^+
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
+(source_file (module (header_line) name: (identifier) (header_line)
   (recursive_declaration
-    (operator_declaration (identifier) (placeholder))
-    (identifier)
-    (operator_declaration (identifier) (placeholder) (placeholder) (placeholder))
-    (operator_declaration (placeholder) (infix_op_symbol (plus)) (placeholder))
-    (operator_declaration (prefix_op_symbol (negative)) (placeholder))
-    (operator_declaration (placeholder) (postfix_op_symbol (sup_plus)))
+    (operator_declaration name: (identifier) parameter: (placeholder))
+    name: (identifier)
+    (operator_declaration name: (identifier) parameter: (placeholder) parameter: (placeholder) parameter: (placeholder))
+    (operator_declaration (placeholder) name: (infix_op_symbol (plus)) (placeholder))
+    (operator_declaration name: (prefix_op_symbol (negative)) (placeholder))
+    (operator_declaration (placeholder) name: (postfix_op_symbol (sup_plus)))
   )
 (double_line)))
 

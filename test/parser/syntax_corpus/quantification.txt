@@ -377,3 +377,92 @@ op == CHOOSE <<x, y, z>> : FALSE
     )
   )
 (double_line)))
+
+==============================|||
+Bounded CHOOSE with Multiple Identifiers
+:error
+==============================|||
+
+---- MODULE Test ----
+op == CHOOSE x, y \in S : TRUE
+====
+
+------------------------------|||
+
+==============================|||
+Bounded Tuple CHOOSE with Multiple Identifiers
+:error
+==============================|||
+
+---- MODULE Test ----
+op == CHOOSE <<x>>, <<y>> \in S : TRUE
+====
+
+------------------------------|||
+
+==============================|||
+Unbounded CHOOSE with Multiple Identifiers
+:error
+==============================|||
+
+---- MODULE Test ----
+op == CHOOSE x, y : TRUE
+====
+
+------------------------------|||
+
+==============================|||
+Unbounded Tuple CHOOSE with Multiple Identifiers
+:error
+==============================|||
+
+---- MODULE Test ----
+op == CHOOSE <<x>>, <<y>> : TRUE
+====
+
+------------------------------|||
+
+==============================|||
+Quantifier with Mixed Tuples and Standalone Identifiers
+:error
+==============================|||
+
+---- MODULE Test ----
+op == \A x, <<y>>, z \in S : FALSE
+====
+
+------------------------------|||
+
+==============================|||
+Quantifier with Multiple Tuples for Single Bound
+:error
+==============================|||
+
+---- MODULE Test ----
+op == \A <<x>>, <<y>> \in S : FALSE
+====
+
+------------------------------|||
+
+==============================|||
+Mixed Bounded and Unbounded Quantifiers
+:error
+==============================|||
+
+---- MODULE Test ----
+op == \A x, y \in S, z : FALSE
+====
+
+------------------------------|||
+
+==============================|||
+Quantifiers with Unbounded Tuple
+:error
+==============================|||
+
+---- MODULE Test ----
+op == \A <<x, y>> : FALSE
+====
+
+------------------------------|||
+

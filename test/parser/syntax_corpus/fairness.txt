@@ -8,8 +8,8 @@ op == WF_(vars)(x)
 
 ---------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (fairness (parentheses (identifier_ref)) (identifier_ref))
   )
 (double_line)))
@@ -24,8 +24,8 @@ op == SF_(vars)(x)
 
 ---------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (fairness (parentheses (identifier_ref)) (identifier_ref))
   )
 (double_line)))
@@ -40,8 +40,8 @@ op == WF_vars(x)
 
 ---------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (fairness (identifier_ref) (identifier_ref))
   )
 (double_line)))
@@ -56,8 +56,8 @@ op == SF_vars(x)
 
 ---------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (fairness (identifier_ref) (identifier_ref))
   )
 (double_line)))
