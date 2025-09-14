@@ -95,6 +95,7 @@ let of_ints ~lf ~cf ~lt ~ct = R ((lf, cf), (lt, ct))
 let of_lines fl tl = R ((fl, 1), (tl, 1))
 let of_len (R ((fl, fc), _)) len = R ((fl, fc), (fl, fc + len - 1))
 let make_before (R ((fl, fc), _)) = R ((fl, fc), (fl, fc - 1))
+let make_before_ln (R ((fl, _), _)) = R ((fl, 1), (fl, 0))
 let make_after (R (_, (tl, tc))) = R ((tl, tc + 1), (tl, tc + 1))
 
 let join (R (af, at)) (R (bf, bt)) =

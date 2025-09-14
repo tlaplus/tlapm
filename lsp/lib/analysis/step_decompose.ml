@@ -3,19 +3,9 @@ module PS = Docs.Proof_step
 module TL = Tlapm_lib
 module LspT = Lsp.Types
 
-(* TODO: A hacked-up approach to indentation. *)
-let indent (ps : PS.t) ~nested text =
-  let nested = if nested then 2 else 0 in
-  let _line, char = PS.full_range ps |> Range.from |> Range.Position.as_pair in
-  let indent =
-    Array.make (char - 1 + nested) ' ' |> Array.to_seq |> String.of_seq
-  in
-  let template = String.cat "\n" indent in
-  Re2.rewrite_exn (Re2.create_exn "\n") ~template text
-
 (* Collect recursively multiple nested operator applications. *)
 
-type flatten_by = Conj | Disj
+type flatten_by = Conj | Disj | Equiv
 
 let rec flatten_op_list (by : flatten_by) (exs : TL.Expr.T.expr list) :
     TL.Expr.T.expr list =
@@ -29,6 +19,7 @@ and flatten_op (by : flatten_by) (ex : TL.Expr.T.expr) : TL.Expr.T.expr list =
           match bi with
           | TL.Builtin.Conj when by = Conj -> flatten_op_list by args
           | TL.Builtin.Disj when by = Disj -> flatten_op_list by args
+          | TL.Builtin.Equiv when by = Equiv -> flatten_op_list by args
           | _ -> [ ex ])
       | _ -> [ ex ])
   | TL.Expr.T.List (bullet, list) -> (
@@ -40,11 +31,37 @@ and flatten_op (by : flatten_by) (ex : TL.Expr.T.expr) : TL.Expr.T.expr list =
 
 (* Helpers for formatting the TLA code. *)
 
+(* TODO: A hacked-up approach to indentation. *)
+let indent (ps : PS.t) ~nested text =
+  let nested = if nested then 2 else 0 in
+  let _line, char = PS.full_range ps |> Range.from |> Range.Position.as_pair in
+  let indent =
+    Array.make (char - 1 + nested) ' ' |> Array.to_seq |> String.of_seq
+  in
+  let template = String.cat "\n" indent in
+  Re2.rewrite_exn (Re2.create_exn "\n") ~template text
+
+let indent_size (ps : PS.t) ~nested =
+  let nested = if nested then 2 else 0 in
+  let _line, char = PS.full_range ps |> Range.from |> Range.Position.as_pair in
+  char - 1 + nested
+
 let fmt_cx cx = (cx, TL.Ctx.dot |> TL.Ctx.with_try_print_src)
 let pp_proof cx fmt st = ignore (TL.Proof.Fmt.pp_print_proof (fmt_cx cx) fmt st)
 
 let pp_proof_step cx fmt st =
   ignore (TL.Proof.Fmt.pp_print_step (fmt_cx cx) fmt st)
+
+let pp_proof_step_with_no cx fmt (step_no, step) =
+  Fmt.pf fmt "@[%s. @[%a@]@]"
+    (TL.Proof.T.string_of_stepno step_no)
+    (pp_proof_step cx) step
+
+let pp_proof_steps_before ps cx steps =
+  let indent = indent_size ps ~nested:false in
+  Fmt.str "@[<v %d>%s%a@]@." indent (String.make indent ' ')
+    (Fmt.list ~sep:Format.pp_force_newline (pp_proof_step_with_no cx))
+    steps
 
 (* Helpers for constructing code actions. *)
 
@@ -63,18 +80,11 @@ let ca_edits ~uri ~title ~edits =
   let edit = LspT.WorkspaceEdit.create ~changes:[ (uri, edits) ] () in
   LspT.CodeAction.create ~title ~edit ()
 
-(** Replace
-    {v <1> ... v}
-
-    with
-    {v
-      <1> ...
-        OBVIOUS
-    v} *)
+(** Replace {v <1> ... v} with {v <1> ... OBVIOUS v} *)
 let ca_omitted ~uri ~ps =
-  let title = "Prove as OBVIOUS." in
+  let title = "Prove as OBVIOUS" in
   let range = PS.head_range ps |> Range.make_after in
-  let newText = indent ps ~nested:true "\nOBVIOUS" in
+  let newText = " OBVIOUS" in
   ca_edit ~uri ~title ~range ~newText
 
 (** Replace
@@ -151,33 +161,25 @@ let ps_proof_rewrite ps cx step_names =
 (* Create a code action for a goal in the form of conjunction. *)
 let cas_of_goal_conj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     cx op_args =
-  let step_names = ref [] in
+  let step_names = Seq_acc.make (PS.sub_step_name_seq ps_parent) in
   let add_steps_rewrite =
     let ps_proof = PS.proof ps |> Option.get in
-    let name_seq = ref (PS.sub_step_name_seq ps_parent) in
-    let range = Range.make_before (PS.full_range ps) in
+    let range = Range.make_before_ln (PS.full_range ps) in
     let newText =
       flatten_op_list Conj op_args
       |> List.map (fun op ->
-             let step_no, seq = Seq.uncons !name_seq |> Option.get in
-             name_seq := seq;
-             step_names := step_no :: !step_names;
-             let sequent : TL.Expr.T.sequent =
-               { context = TL.Util.Deque.empty; active = op }
+             let step_no = Seq_acc.take step_names in
+             let step =
+               TL.Proof.T.Assert
+                 ({ context = TL.Util.Deque.empty; active = op }, ps_proof)
+               |> TL.Property.noprops
              in
-             let new_ps =
-               TL.Property.noprops (TL.Proof.T.Assert (sequent, ps_proof))
-             in
-             indent ps ~nested:false
-               (Fmt.str "%s. %a\n"
-                  (TL.Proof.T.string_of_stepno step_no)
-                  (pp_proof_step cx) new_ps))
-      |> String.concat ""
-      (* TODO: Make indentation ... *)
+             (step_no, step))
+      |> pp_proof_steps_before ps cx
     in
     (range, newText)
   in
-  let ps_proof_rewrite = ps_proof_rewrite ps cx (List.rev !step_names) in
+  let ps_proof_rewrite = ps_proof_rewrite ps cx (Seq_acc.acc step_names) in
   let ca =
     ca_edits ~uri ~title:"Decompose goal (/\\)"
       ~edits:[ add_steps_rewrite; ps_proof_rewrite ]
@@ -194,9 +196,8 @@ let cas_of_goal_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   let disjuncts = flatten_op_list Disj disjuncts in
   let ps_proof = PS.proof ps |> Option.get in
   let disjunct_ca disjunct_pos disjunct =
-    let step_no, _seq =
-      PS.sub_step_name_seq ps_parent |> Seq.uncons |> Option.get
-    in
+    let step_names = Seq_acc.make (PS.sub_step_name_seq ps_parent) in
+    let step_no = Seq_acc.take step_names in
     let other_negated =
       disjuncts
       |> List.filteri (fun i _ -> i != disjunct_pos)
@@ -212,24 +213,17 @@ let cas_of_goal_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
              |> TL.Property.noprops
              |> TL.Expr.Subst.(app_hyp (shift i)))
     in
-    let sequent : TL.Expr.T.sequent =
-      {
-        context = TL.Util.Deque.of_list other_negated;
-        active =
-          (disjunct
-          |> TL.Expr.Subst.(app_expr (shift (List.length other_negated))));
-      }
+    let disjunct =
+      disjunct |> TL.Expr.Subst.(app_expr (shift (List.length other_negated)))
     in
-    let new_ps =
-      TL.Property.noprops (TL.Proof.T.Suffices (sequent, ps_proof))
+    let step =
+      TL.Proof.T.Suffices
+        ( { context = TL.Util.Deque.of_list other_negated; active = disjunct },
+          ps_proof )
+      |> TL.Property.noprops
     in
-    let new_step_text =
-      indent ps ~nested:false
-        (Fmt.str "%s. %a\n"
-           (TL.Proof.T.string_of_stepno step_no)
-           (pp_proof_step cx) new_ps)
-    in
-    let new_step_range = Range.make_before (PS.full_range ps) in
+    let new_step_text = pp_proof_steps_before ps cx [ (step_no, step) ] in
+    let new_step_range = Range.make_before_ln (PS.full_range ps) in
     let ps_proof_rewrite = ps_proof_rewrite ps cx [ step_no ] in
     ca_edits ~uri
       ~title:(Fmt.str "Decompose goal (\\/, case %d)" (disjunct_pos + 1))
@@ -237,7 +231,44 @@ let cas_of_goal_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   in
   List.mapi disjunct_ca disjuncts
 
-(* Propose proof decomposition CodeActions by the goal. *)
+(* A chain of equivalences is replaced with a list of circular implications. *)
+let cas_of_goal_equiv (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
+    cx op_args =
+  let step_names = Seq_acc.make (PS.sub_step_name_seq ps_parent) in
+  let add_steps_rewrite =
+    let ps_proof = PS.proof ps |> Option.get in
+    let range = Range.make_before_ln (PS.full_range ps) in
+    let op_args = flatten_op_list Equiv op_args in
+    let next_arg i = List.nth op_args ((i + 1) mod List.length op_args) in
+    let newText =
+      op_args
+      |> List.mapi (fun i op ->
+             let step_no = Seq_acc.take step_names in
+             let step_goal =
+               TL.Expr.T.Apply
+                 ( TL.Expr.T.Internal TL.Builtin.Implies |> TL.Property.noprops,
+                   [ op; next_arg i ] )
+               |> TL.Property.noprops
+             in
+             let step =
+               TL.Proof.T.Assert
+                 ( { context = TL.Util.Deque.empty; active = step_goal },
+                   ps_proof )
+               |> TL.Property.noprops
+             in
+             (step_no, step))
+      |> pp_proof_steps_before ps cx
+    in
+    (range, newText)
+  in
+  let ps_proof_rewrite = ps_proof_rewrite ps cx (Seq_acc.acc step_names) in
+  let ca =
+    ca_edits ~uri ~title:"Decompose goal (<=>)"
+      ~edits:[ add_steps_rewrite; ps_proof_rewrite ]
+  in
+  [ ca ]
+
+(** Propose proof decomposition CodeActions by the structure of the goal. *)
 let cas_by_goal (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     (o : TL.Proof.T.obligation) (depth : int) =
   let cx = o.obl.core.context in
@@ -259,20 +290,20 @@ let cas_by_goal (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
               [ ca ]
           | TL.Builtin.Conj -> cas_of_goal_conj uri ps ps_parent cx op_args
           | TL.Builtin.Disj -> cas_of_goal_disj uri ps ps_parent cx op_args
-          | TL.Builtin.TRUE | TL.Builtin.FALSE | TL.Builtin.Equiv
-          | TL.Builtin.Neg | TL.Builtin.Eq | TL.Builtin.Neq | TL.Builtin.STRING
-          | TL.Builtin.BOOLEAN | TL.Builtin.SUBSET | TL.Builtin.UNION
-          | TL.Builtin.DOMAIN | TL.Builtin.Subseteq | TL.Builtin.Mem
-          | TL.Builtin.Notmem | TL.Builtin.Setminus | TL.Builtin.Cap
-          | TL.Builtin.Cup | TL.Builtin.Prime | TL.Builtin.StrongPrime
-          | TL.Builtin.Leadsto | TL.Builtin.ENABLED | TL.Builtin.UNCHANGED
-          | TL.Builtin.Cdot | TL.Builtin.Actplus | TL.Builtin.Box _
-          | TL.Builtin.Diamond | TL.Builtin.Nat | TL.Builtin.Int
-          | TL.Builtin.Real | TL.Builtin.Plus | TL.Builtin.Minus
-          | TL.Builtin.Uminus | TL.Builtin.Times | TL.Builtin.Ratio
-          | TL.Builtin.Quotient | TL.Builtin.Remainder | TL.Builtin.Exp
-          | TL.Builtin.Infinity | TL.Builtin.Lteq | TL.Builtin.Lt
-          | TL.Builtin.Gteq | TL.Builtin.Gt | TL.Builtin.Divides
+          | TL.Builtin.Equiv -> cas_of_goal_equiv uri ps ps_parent cx op_args
+          | TL.Builtin.TRUE | TL.Builtin.FALSE | TL.Builtin.Neg | TL.Builtin.Eq
+          | TL.Builtin.Neq | TL.Builtin.STRING | TL.Builtin.BOOLEAN
+          | TL.Builtin.SUBSET | TL.Builtin.UNION | TL.Builtin.DOMAIN
+          | TL.Builtin.Subseteq | TL.Builtin.Mem | TL.Builtin.Notmem
+          | TL.Builtin.Setminus | TL.Builtin.Cap | TL.Builtin.Cup
+          | TL.Builtin.Prime | TL.Builtin.StrongPrime | TL.Builtin.Leadsto
+          | TL.Builtin.ENABLED | TL.Builtin.UNCHANGED | TL.Builtin.Cdot
+          | TL.Builtin.Actplus | TL.Builtin.Box _ | TL.Builtin.Diamond
+          | TL.Builtin.Nat | TL.Builtin.Int | TL.Builtin.Real | TL.Builtin.Plus
+          | TL.Builtin.Minus | TL.Builtin.Uminus | TL.Builtin.Times
+          | TL.Builtin.Ratio | TL.Builtin.Quotient | TL.Builtin.Remainder
+          | TL.Builtin.Exp | TL.Builtin.Infinity | TL.Builtin.Lteq
+          | TL.Builtin.Lt | TL.Builtin.Gteq | TL.Builtin.Gt | TL.Builtin.Divides
           | TL.Builtin.Range | TL.Builtin.Seq | TL.Builtin.Len | TL.Builtin.BSeq
           | TL.Builtin.Cat | TL.Builtin.Append | TL.Builtin.Head
           | TL.Builtin.Tail | TL.Builtin.SubSeq | TL.Builtin.SelectSeq
