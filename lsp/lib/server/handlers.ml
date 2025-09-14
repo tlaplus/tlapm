@@ -238,7 +238,7 @@ module Make (CB : Callbacks) = struct
     let pos = Range.of_lsp_position params.position in
     CB.with_docs cb_state @@ fun cb_st docs ->
     let open Analysis.Step_rename in
-    let f _vsn mule = find_ranges pos mule in
+    let f _vsn mule _ps = find_ranges pos mule in
     let docs, res = Docs.on_parsed_mule_latest docs uri f in
     let cb_st =
       match res with
@@ -267,7 +267,7 @@ module Make (CB : Callbacks) = struct
     let newText = params.newName in
     CB.with_docs cb_state @@ fun cb_st docs ->
     let open Analysis.Step_rename in
-    let f _vsn mule = find_ranges pos mule in
+    let f _vsn mule _ps = find_ranges pos mule in
     let docs, res = Docs.on_parsed_mule_latest docs uri f in
     let cb_st =
       match res with
@@ -363,7 +363,7 @@ module Make (CB : Callbacks) = struct
     let cb_state, step_renumber_cas =
       CB.with_docs_res cb_state @@ fun cb_st docs ->
       let open Analysis.Step_renumber.StepInfo in
-      let f _vsn mule =
+      let f _vsn mule _ps =
         let ranges =
           Analysis.Step_renumber.find_ranges
             (Range.of_lsp_range user_range)
@@ -395,6 +395,17 @@ module Make (CB : Callbacks) = struct
             [ action ]
       in
       (cb_st, docs, Some actions)
+    in
+
+    let cb_state, decompose_cas =
+      CB.with_docs_res cb_state @@ fun cb_st docs ->
+      let f _vsn _mule ps =
+        Some
+          (Analysis.Step_decompose.code_actions uri ps
+             (Range.of_lsp_range user_range))
+      in
+      let docs, res = Docs.on_parsed_mule_latest docs uri f in
+      (cb_st, docs, res)
     in
 
     (* Suggest "check proof step" action. *)
@@ -432,8 +443,11 @@ module Make (CB : Callbacks) = struct
 
     (* Return the actions. *)
     let acts =
-      List.append check_step_cas
-        (List.flatten (Option.to_list step_renumber_cas))
+      List.fold_left List.append check_step_cas
+        [
+          Option.value step_renumber_cas ~default:[];
+          Option.value decompose_cas ~default:[];
+        ]
     in
     match acts with
     | [] ->

@@ -127,6 +127,7 @@ let is_obl_final (act : t) p_ref obl_id =
   else None
 
 let on_parsed_mule (act : t) f =
-  match (Lazy.force act.parsed).mule with
-  | Ok mule -> ( match f mule with None -> None | Some res -> Some res)
+  let parsed = Lazy.force act.parsed in
+  match parsed.mule with
+  | Ok mule -> f mule (Option.get parsed.ps)
   | Error _ -> None

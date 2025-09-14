@@ -3,7 +3,7 @@ open Prover
 
 module Role = struct
   type t =
-    | Main  (** Main obligation for a proof step. *)
+    | Main of bool  (** Main obligation for a proof step. *)
     | Aux  (** Auxiliary, created by the prover in the BY clause. *)
     | Unknown  (** Initially all the obligations are of unknown role. *)
     | Unexpected
@@ -11,7 +11,8 @@ module Role = struct
   [@@deriving show]
 
   let as_string = function
-    | Main -> "main"
+    | Main true -> "main"
+    | Main false -> "omitted"
     | Aux -> "aux"
     | Unknown -> "unknown"
     | Unexpected -> "unexpected"
@@ -89,14 +90,25 @@ let reset obl p_ref =
     status = Proof_status.Pending;
   }
 
+let parsed obl = obl.parsed
+
+let parsed_main obl =
+  match obl.parsed with
+  | None -> None
+  | Some o -> (
+      match o.kind with
+      | TL.Proof.T.Ob_main | TL.Proof.T.Ob_omitted _ -> Some o
+      | TL.Proof.T.Ob_support | TL.Proof.T.Ob_error _ -> None)
+
 let role obl =
   match obl.parsed with
   | None -> Role.Unknown
   | Some o -> (
       match o.kind with
-      | Tlapm_lib.Proof.T.Ob_main -> Role.Main
+      | Tlapm_lib.Proof.T.Ob_main -> Role.Main true
       | Tlapm_lib.Proof.T.Ob_support -> Role.Aux
-      | Tlapm_lib.Proof.T.Ob_error _ -> Role.Unexpected)
+      | Tlapm_lib.Proof.T.Ob_error _ -> Role.Unexpected
+      | Tlapm_lib.Proof.T.Ob_omitted _ -> Role.Main false)
 
 (* Should exist in any case. *)
 let loc obl =

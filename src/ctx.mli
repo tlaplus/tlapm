@@ -36,6 +36,10 @@ val depth: 'a ctx -> string -> int option
 
 val to_list: 'a ctx -> 'a list
 
+(* To print the opaque elements without ? appended to them. *)
+val with_try_print_src : 'a ctx -> 'a ctx
+val try_print_src : 'a ctx -> bool
+
 val string_of_ident: ident -> string
 val pp_print_ident:
     Format.formatter -> ident -> unit

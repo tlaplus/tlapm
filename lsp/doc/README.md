@@ -11,12 +11,14 @@ Commands for introducing/reducing levels:
   This simplifies proof. If only a single step (QED) is left,
   then there is no point in keeping the proof with the additional level introduced.
 
+# Decomposition by the goal
+
 Decomposition by the goal works by invoking code actions at the QED step of the current level.
 This is because during the steps at that level, the goal is refined, thus the ultimate goal
 is known at the QED step, and not at the upped-level step which is decomposed.
 Decompose goal is a single command for the user, but it works dependent on the structure of the goal:
 
-# Goal is implication
+## Goal is implication
 
 The step with a goal `G == P => Q` and proof
 
@@ -38,7 +40,7 @@ or if no operator expansion is needed:
 <l>q. QED Proof
 ```
 
-# Goal is conjunction
+## Goal is conjunction
 
 If the goal is `P == P1 /\ P2 /\ ... Pn` with the proof
 
@@ -58,3 +60,23 @@ then it is transformed to steps (inserted before the QED):
 
 Here `DEF P` is only added, of the goal was an operator, which should be expanded.
 All the proof labels are introduced to be unused at that level.
+
+## Goal is disjunction
+
+Assume negations, prove the last disjunct.
+
+## Goal is equivalence
+
+Prove as conjunction of two implications.
+
+## Goal is forall
+
+TAKE or SUFFICE, depending of a need to expand something.
+
+## Goal is exists
+
+TODO: ...
+
+# Decomposition by the assumptions
+
+Only unused assumptions are proposed for the decomposition?

@@ -76,23 +76,27 @@ let show = Fmt.str "%a" pp
     clearer. *)
 module Kind : sig
   type ps := t
-  type t = Module | Struct | Leaf [@@deriving show]
+  type t = Module | Struct | Leaf | Omitted [@@deriving show]
 
   val of_proof_step : ps -> t
   val to_string : t -> string
 end = struct
-  type t = Module | Struct | Leaf
+  type t = Module | Struct | Leaf | Omitted
 
-  let show = function Module -> "module" | Struct -> "struct" | Leaf -> "leaf"
+  let show = function
+    | Module -> "module"
+    | Struct -> "struct"
+    | Leaf -> "leaf"
+    | Omitted -> "omitted"
+
   let pp fmt k = Fmt.pf fmt "%s" (show k)
   let to_string = show
 
   let of_proof (pf : TL.Proof.T.proof) : t =
     match pf.core with
     | TL.Proof.T.Steps (_, _) -> Struct
-    | TL.Proof.T.Obvious | TL.Proof.T.Omitted _ | TL.Proof.T.By _
-    | TL.Proof.T.Error _ ->
-        Leaf
+    | TL.Proof.T.Omitted _ -> Omitted
+    | TL.Proof.T.Obvious | TL.Proof.T.By _ | TL.Proof.T.Error _ -> Leaf
 
   let of_proof_step ps =
     match ps.el with
@@ -194,6 +198,76 @@ let fold f acc ps =
 
 let el { el; cx; _ } = (el, cx)
 
+let goal ({ obs; _ } : t) : TL.Proof.T.obligation option =
+  let found =
+    RangeMap.fold
+      (fun _ o acc ->
+        Option.fold ~none:acc ~some:(fun x -> x :: acc) (Obl.parsed_main o))
+      obs []
+  in
+  match found with [] -> None | [ o ] -> Some o | _ :: _ -> assert false
+
+let proof ({ el; _ } : t) : TL.Proof.T.proof option =
+  match el with
+  | El.Module _ -> None
+  | El.Theorem { orig_pf; _ } -> Some orig_pf
+  | El.Mutate _ -> None
+  | El.Step step -> (
+      match step.core with
+      | TL.Proof.T.Hide _ | TL.Proof.T.Define _
+      | TL.Proof.T.Use (_, _)
+      | TL.Proof.T.Have _ | TL.Proof.T.Take _ | TL.Proof.T.TakeTuply _
+      | TL.Proof.T.Witness _ | TL.Proof.T.Forget _ ->
+          None
+      | TL.Proof.T.Assert (_, pf)
+      | TL.Proof.T.Suffices (_, pf)
+      | TL.Proof.T.Pcase (_, pf)
+      | TL.Proof.T.Pick (_, _, pf)
+      | TL.Proof.T.PickTuply (_, _, pf) ->
+          Some pf)
+  | El.Qed qed -> ( match qed.core with TL.Proof.T.Qed pf -> Some pf)
+
+let full_range { full_range; _ } = full_range
+let head_range { head_range; _ } = head_range
+
+let step_name (ps : t) : TL.Proof.T.stepno option =
+  match ps.el with
+  | El.Module _ | El.Theorem _ | El.Mutate _ -> None
+  | El.Step step -> TL.Property.query step TL.Proof.T.Props.step
+  | El.Qed qed_step -> TL.Property.query qed_step TL.Proof.T.Props.step
+
+let sub_step_label_seq (parent : t) : int Seq.t =
+  let max_num =
+    List.fold_right
+      (fun sub acc ->
+        match step_name sub with
+        | None -> acc
+        | Some sn -> (
+            match sn with
+            | TL.Proof.T.Named (_, label, _) -> (
+                let rec trim_periods s =
+                  if String.ends_with ~suffix:"." s then
+                    String.sub s 0 (String.length s - 1) |> trim_periods
+                  else s
+                in
+                match label |> trim_periods |> int_of_string_opt with
+                | None -> acc
+                | Some x -> max x acc)
+            | TL.Proof.T.Unnamed (_, _) -> acc))
+      parent.sub 0
+  in
+  Seq.ints (max_num + 1)
+
+let sub_step_name_seq (parent : t) : TL.Proof.T.stepno Seq.t =
+  let sn =
+    match step_name parent with
+    | None -> 1
+    | Some (TL.Proof.T.Named (sn, _, _)) | Some (TL.Proof.T.Unnamed (sn, _)) ->
+        sn + 1
+  in
+  sub_step_label_seq parent
+  |> Seq.map (fun sl -> TL.Proof.T.Named (sn, string_of_int sl, false))
+
 let with_prover_terminated (ps : t option) p_ref =
   let rec traverse ps =
     let sub = List.map traverse ps.sub in
@@ -260,6 +334,16 @@ let with_prover_result (ps : t option) p_ref (pr : Prover.Toolbox.Obligation.t)
   | None -> None
   | Some ps -> (
       match traverse ps pr with None -> Some ps | Some ps -> Some ps)
+
+let locate_proof_path (ps : t) (r : Range.t) : t list =
+  let rec traverse ps =
+    if Range.lines_intersect ps.full_range r then
+      match List.find_map traverse ps.sub with
+      | None -> Some [ ps ]
+      | Some sub_ps -> Some (ps :: sub_ps)
+    else None
+  in
+  List.rev (Option.value (traverse ps) ~default:[])
 
 (* Find the deepest proof step that intersects line-wise with the specified position. *)
 let locate_proof_step (ps : t option) (position : Range.Position.t) : t option =
@@ -626,7 +710,7 @@ let%test_unit "determine proof steps" =
       assert (
         RangeMap.cardinal
           (RangeMap.filter
-             (fun _ o -> Obl.role o = Obl.Role.Main)
+             (fun _ o -> Obl.role o = Obl.Role.Main true)
              _th2_1q_2q.obs)
         = 1);
       let _, _th2_1q_2q_obl = RangeMap.choose _th2_1q_2q.obs in

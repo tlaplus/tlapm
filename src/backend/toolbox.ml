@@ -27,6 +27,7 @@ let toolbox_print ob ?(temp=false) status prover meth timeout already print_ob
       match ob.kind with
       | Ob_error msg when print_ob ->
           Some (warnings ^ msg)
+      | Ob_omitted _ -> None
       | _ when print_ob ->
           let buf = Buffer.create 100 in
           let ff = Format.formatter_of_buffer buf in

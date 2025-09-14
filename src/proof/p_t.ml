@@ -78,6 +78,7 @@ type obligation_kind =
     | Ob_main
     | Ob_support
     | Ob_error of string
+    | Ob_omitted of omission
 
 
 type obligation = {

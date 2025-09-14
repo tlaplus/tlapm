@@ -38,6 +38,8 @@ module Coll = struct
   module Hs = Set.Make (HC)
 end
 
+module Deque = Deque
+
 let prop : locus pfuncs = make ~uuid:"efa05a42-e82d-40a2-b130-9cfdb089a0d5" "Util.prop"
 
 let get_locus lw = get lw prop

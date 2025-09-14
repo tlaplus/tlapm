@@ -28,13 +28,15 @@ type 'a ctx = {
   linrep : (ident * 'a option) list ;
   idents : ident M.t ;
   defns  : ('a option * int) M.t ;
-  length : int
+  length : int ;
+  try_print_src : bool
 }
 
 let dot = { linrep = [] ;
             idents = M.empty ;
             defns  = M.empty ;
-            length = 0 }
+            length = 0 ;
+            try_print_src = false}
 
 let length cx = cx.length
 
@@ -78,7 +80,8 @@ let maybe_adj cx v a =
     { linrep = (id, a) :: cx.linrep ;
       idents = M.add v id cx.idents ;
       defns  = M.add (string_of_ident id) (a, cx.length) cx.defns ;
-      length = cx.length + 1 }
+      length = cx.length + 1;
+      try_print_src = cx.try_print_src }
 
 let adj cx v a = maybe_adj cx v (Some a)
 
@@ -123,6 +126,9 @@ let using cx v a fn =
 let pp_print_ident ff id =
   Format.fprintf ff "%s.%d" id.rep id.salt
   (* pp_print_string ff (string_of_ident id) *)
+
+let with_try_print_src cx = { cx with try_print_src = true }
+let try_print_src {try_print_src; _} = try_print_src
 
 let pp_print_ctx fmt ff cx =
   let rec pp ff = function
