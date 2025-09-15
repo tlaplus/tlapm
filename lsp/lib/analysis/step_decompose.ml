@@ -173,6 +173,18 @@ let ps_proof_rewrite ps cx step_names =
   let t = Fmt.str " %a\n" (pp_proof cx) ps_proof_new in
   (r, t)
 
+(* Create code action for a goal in the form of implication. *)
+let cas_of_goal_implies (uri : LspT.DocumentUri.t) (ps : PS.t)
+    (ps_parent : PS.t) (cx : TL.Expr.T.ctx) (op_args : TL.Expr.T.expr list) =
+  let antecedent = List.hd op_args in
+  let step = TL.Proof.T.Have antecedent |> TL.Property.noprops in
+  let title = "Decompose goal (=>)" in
+  let edit =
+    [ (PS.sub_step_unnamed ps_parent, step) ] |> pp_proof_steps_before ps cx
+  in
+  let ca = ca_edits ~uri ~title ~edits:[ edit ] in
+  [ ca ]
+
 (** Create code action for a goal in the form of universal quantification. *)
 let cas_of_goal_forall (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     (cx : TL.Expr.T.ctx) (bs : TL.Expr.T.bound list) =
@@ -410,7 +422,7 @@ let cas_of_goal_equiv (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
 
 (** Propose proof decomposition CodeActions by the structure of the goal. *)
 let cas_by_goal (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
-    (o : TL.Proof.T.obligation) (depth : int) =
+    (o : TL.Proof.T.obligation) =
   let rec match_goal cx (ex : TL.Expr.T.expr) =
     match ex.core with
     | TL.Expr.T.Apply (op, op_args) -> (
@@ -418,17 +430,7 @@ let cas_by_goal (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
         | TL.Expr.T.Internal bi -> (
             match bi with
             | TL.Builtin.Implies ->
-                (* TODO: Move to a separate function, get rid of the depth val. *)
-                let antecedent = List.hd op_args in
-                let new_ps = TL.Property.noprops (TL.Proof.T.Have antecedent) in
-                let title = "Decompose goal (=>)" in
-                let range = Range.make_before (PS.full_range ps) in
-                let newText =
-                  indent ps ~nested:false
-                    (Fmt.str "<%d> %a\n" depth (pp_proof_step cx) new_ps)
-                in
-                let ca = ca_edit ~uri ~title ~range ~newText in
-                [ ca ]
+                cas_of_goal_implies uri ps ps_parent cx op_args
             | TL.Builtin.Conj -> cas_of_goal_conj uri ps ps_parent cx op_args
             | TL.Builtin.Disj -> cas_of_goal_disj uri ps ps_parent cx op_args
             | TL.Builtin.Equiv -> cas_of_goal_equiv uri ps ps_parent cx op_args
@@ -546,8 +548,7 @@ let cas_of_ps (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) =
       let step_no = step_no qed_step in
       let cas_of_goal =
         PS.goal ps
-        |> Option.fold ~none:[] ~some:(fun g ->
-               cas_by_goal uri ps ps_parent g step_no)
+        |> Option.fold ~none:[] ~some:(fun g -> cas_by_goal uri ps ps_parent g)
       in
       let cas_of_pf =
         match TL.Property.unwrap qed_step with
