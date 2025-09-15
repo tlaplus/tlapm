@@ -236,6 +236,13 @@ let step_name (ps : t) : TL.Proof.T.stepno option =
   | El.Step step -> TL.Property.query step TL.Proof.T.Props.step
   | El.Qed qed_step -> TL.Property.query qed_step TL.Proof.T.Props.step
 
+(** Level/Depth of a sub-step of a given step. I.e. [x] in {v <x>y v}. *)
+let sub_step_no (parent : t) : int =
+  match step_name parent with
+  | None -> 1
+  | Some (TL.Proof.T.Named (sn, _, _)) | Some (TL.Proof.T.Unnamed (sn, _)) ->
+      sn + 1
+
 let sub_step_label_seq (parent : t) : int Seq.t =
   let max_num =
     List.fold_right
@@ -259,14 +266,13 @@ let sub_step_label_seq (parent : t) : int Seq.t =
   Seq.ints (max_num + 1)
 
 let sub_step_name_seq (parent : t) : TL.Proof.T.stepno Seq.t =
-  let sn =
-    match step_name parent with
-    | None -> 1
-    | Some (TL.Proof.T.Named (sn, _, _)) | Some (TL.Proof.T.Unnamed (sn, _)) ->
-        sn + 1
-  in
+  let sn = sub_step_no parent in
   sub_step_label_seq parent
   |> Seq.map (fun sl -> TL.Proof.T.Named (sn, string_of_int sl, false))
+
+let sub_step_unnamed (parent : t) : TL.Proof.T.stepno =
+  let sn = sub_step_no parent in
+  TL.Proof.T.Unnamed (sn, 0)
 
 let with_prover_terminated (ps : t option) p_ref =
   let rec traverse ps =
@@ -601,6 +607,7 @@ end = struct
         self#define_step @@ fun () ->
         let full_range = Range.of_wrapped_must st in
         let step =
+          (* TODO: Handle the omitted cases here for `status_parsed`. *)
           make ~el:(Step st) ~cx:(snd cx) ~status_parsed:None ~full_range
         in
         let step =
@@ -627,6 +634,7 @@ end = struct
           |> Range.of_locus_opt
         in
         let step =
+          (* TODO: Handle the omitted cases here for `status_parsed`. *)
           make ~el:(Qed qed) ~cx:(snd cx) ~status_parsed:None ~full_range
             ~head_range
         in

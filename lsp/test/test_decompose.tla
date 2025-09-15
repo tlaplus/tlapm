@@ -4,25 +4,55 @@ Some == TRUE
 
 \********************** \A
 
-THEOREM TestGoalForAll ==
-    \A a : a
+THEOREM TestGoalForAllBounded ==
+    ASSUME NEW S PROVE \A a, b \in S : a
 PROOF
-  <1> TAKE a
-  <1>1. QED
+  <1> TAKE a, b \in S
+  <1> QED
+
+THEOREM TestGoalForAllUnbounded ==
+    ASSUME NEW S PROVE \A a, b : a
+PROOF
+  <1> TAKE a, b
+  <1> QED
 
 
 \********************** \E
 
 (* TODO: PROOF is not counted to the proof step range. *)
 THEOREM TestGoalExists ==
-  ASSUME NEW P(_), NEW S
-  PROVE \E a \in S : P(a)
+  ASSUME NEW P(_, _), NEW S
+  PROVE \E a, b \in S : P(a, b)
 PROOF
-  <1> DEFINE a == TRUE
-  <1> HIDE DEF a
-  <1> a \in S
-  <1> WITNESS a \in S
-  <1> QED OBVIOUS
+  \* <1> DEFINE a == TRUE
+  \* <1> DEFINE b == TRUE
+  \* <1> HIDE DEF a, b
+  \* <1>1. a \in S
+  \* <1>2. b \in S
+  \* <1> WITNESS a \in S, b \in S
+  <1> a == "TODO: Replace this with actual witness"
+  <1> b == "TODO: Replace this with actual witness"
+  <1> HIDE DEFS a, b
+  <1>4. a \in S 
+  <1>5. b \in S 
+  <1> WITNESS a \in S, b \in S
+  <1>3. QED
+
+THEOREM TestGoalExistsUnderDEF ==
+  ASSUME NEW P(_, _), NEW S
+  PROVE \E a, b \in S : P(a, b)
+PROOF
+  <1> DEFINE SS == \E a, b \in S : P(a, b)
+  <1> SUFFICES SS OBVIOUS
+  <1> HIDE DEF SS
+  <1> a == "TODO: Replace this with actual witness"
+  <1> b == "TODO: Replace this with actual witness"
+  <1> HIDE DEFS a, b
+  <1>1. a \in S 
+  <1>2. b \in S 
+  <1>3. USE DEF SS
+  <1> WITNESS a \in S, b \in S
+  <1>4. QED BY DEF SS
 
 THEOREM TestGoalExists2 ==
   ASSUME NEW P(_), NEW S
@@ -98,6 +128,7 @@ PROOF
   <1>1. a => b OBVIOUS
   <1>2. b => a OBVIOUS
   <1> QED BY <1>1, <1>2
+
 
 
 THEOREM TestGoalEquiv3 (* TODO: QED Fails to be proved. *) ==

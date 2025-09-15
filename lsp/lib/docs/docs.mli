@@ -32,6 +32,7 @@ module Proof_step : sig
   val full_range : t -> Range.t
   val head_range : t -> Range.t
   val sub_step_name_seq : t -> TL.Proof.T.stepno Seq.t
+  val sub_step_unnamed : t -> TL.Proof.T.stepno
 end
 
 module Proof_status : sig

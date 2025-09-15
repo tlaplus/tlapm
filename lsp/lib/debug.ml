@@ -92,6 +92,14 @@ let pp_expr (fmt : Format.formatter) (expr : Tlapm_lib.Expr.T.expr) : unit =
   | At _ -> Format.fprintf fmt "At"
   | Parens (_, _) -> Format.fprintf fmt "Parens"
 
+let pp_hyp (fmt : Format.formatter) (hyp : Tlapm_lib.Expr.T.hyp) : unit =
+  match hyp.core with
+  | Tlapm_lib.Expr.T.Fresh (_, _, _, _) -> Format.fprintf fmt "Fresh"
+  | Tlapm_lib.Expr.T.FreshTuply (_, _) -> Format.fprintf fmt "FreshTuply"
+  | Tlapm_lib.Expr.T.Flex _ -> Format.fprintf fmt "Flex"
+  | Tlapm_lib.Expr.T.Defn (_, _, _, _) -> Format.fprintf fmt "Defn"
+  | Tlapm_lib.Expr.T.Fact (_, _, _) -> Format.fprintf fmt "Fact"
+
 let%test_unit "example use of visitor_pp" =
   let filename = "test_obl_expand.tla" in
   let content =
