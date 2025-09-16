@@ -45,14 +45,32 @@ PROOF
   <1> DEFINE SS == \E a, b \in S : P(a, b)
   <1> SUFFICES SS OBVIOUS
   <1> HIDE DEF SS
+  \* -----------
   <1> a == "TODO: Replace this with actual witness"
   <1> b == "TODO: Replace this with actual witness"
   <1> HIDE DEFS a, b
-  <1>1. a \in S 
-  <1>2. b \in S 
+  <1>1. a \in S
+  <1>2. b \in S
   <1>3. USE DEF SS
   <1> WITNESS a \in S, b \in S
   <1>4. QED BY DEF SS
+
+THEOREM TestGoalExistsUnderOP ==
+  ASSUME NEW P(_, _), NEW S
+  PROVE \E a, b \in S : P(a, b)
+PROOF
+  <1> DEFINE D(X) == \E a, b \in X : P(a, b)
+  <1> SUFFICES D(S) OBVIOUS
+  <1> HIDE DEF D
+  \* -----------
+  <1> a == "TODO: Replace this with actual witness"
+  <1> b == "TODO: Replace this with actual witness"
+  <1> HIDE DEFS a, b
+  <1>1. a \in S
+  <1>2. b \in S
+  <1>3. USE DEF D
+  <1> WITNESS a \in S, b \in S
+  <1>4. QED BY DEF D
 
 THEOREM TestGoalExists2 ==
   ASSUME NEW P(_), NEW S

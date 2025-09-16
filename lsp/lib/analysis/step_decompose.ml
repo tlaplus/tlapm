@@ -3,6 +3,8 @@ module PS = Docs.Proof_step
 module TL = Tlapm_lib
 module LspT = Lsp.Types
 
+(* TODO: CA to expand the top-level definitions in the goal. *)
+
 (* Collect recursively multiple nested operator applications. *)
 
 type flatten_by = Conj | Disj | Equiv
@@ -423,6 +425,7 @@ let cas_of_goal_equiv (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
 (** Propose proof decomposition CodeActions by the structure of the goal. *)
 let cas_by_goal (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     (o : TL.Proof.T.obligation) =
+  let o = TL.Backend.Toolbox.normalize true o in
   let rec match_goal cx (ex : TL.Expr.T.expr) =
     match ex.core with
     | TL.Expr.T.Apply (op, op_args) -> (
