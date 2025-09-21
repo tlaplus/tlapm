@@ -77,11 +77,11 @@ let maybe_adj cx v a =
         { id with salt = id.salt + 1 }
   in
   let id = find_id id in
-    { linrep = (id, a) :: cx.linrep ;
+    { cx with
+      linrep = (id, a) :: cx.linrep ;
       idents = M.add v id cx.idents ;
       defns  = M.add (string_of_ident id) (a, cx.length) cx.defns ;
-      length = cx.length + 1;
-      try_print_src = cx.try_print_src }
+      length = cx.length + 1}
 
 let adj cx v a = maybe_adj cx v (Some a)
 

@@ -16,6 +16,18 @@ PROOF
   <1> TAKE a, b
   <1> QED
 
+(* Test case: The decompose step should derive `TAKE a_1 \in S`, note `a_1`. *)
+THEOREM TestGoalForAllNameClash ==
+  ASSUME NEW P(_), NEW S
+  PROVE \A a \in S : P(a)
+PROOF
+  <1> a == TRUE
+      a_1 == TRUE
+  <1> HIDE DEF a, a_1
+  \* --------------
+  <1> TAKE a_2 \in S
+  <1>q. QED OBVIOUS
+
 
 \********************** \E
 
@@ -72,15 +84,36 @@ PROOF
   <1> WITNESS a \in S, b \in S
   <1>4. QED BY DEF D
 
+
+\* Test case: a symbol bound by \E already defined in the context.
+\* Th decomposition has to pick new/fresh name.
+THEOREM TestGoalExistsNameClash ==
+  ASSUME NEW P(_, _), NEW S
+  PROVE \E a, b \in S : P(a, b)
+PROOF
+  <1> a == TRUE
+  <1> a_1 == TRUE
+  <1> HIDE DEF a, a_1
+  \* -----------
+  <1> a_2 == "TODO: Replace this with actual witness for a_2"
+  <1> b == "TODO: Replace this with actual witness for b"
+  <1> HIDE DEFS a_2, b
+  <1>1. a_2 \in S
+  <1>2. b \in S
+  <1> WITNESS a_2 \in S, b \in S
+  <1>3. QED OBVIOUS \* Decompose here.
+
+
+(* Alternative is to use SUFFICES, but we don't go this way,
+   because we have to analyze then what's in the quantified expression. *)
 THEOREM TestGoalExists2 ==
   ASSUME NEW P(_), NEW S
   PROVE \E a \in S : P(a)
 PROOF
-    <1> DEFINE a_witness == TRUE
-    <1> HIDE DEF a_witness
-    <1> SUFFICES a_witness \in S /\ P(a_witness) OBVIOUS
-    <1> QED OBVIOUS
-
+  <1> DEFINE a_witness == TRUE
+  <1> HIDE DEF a_witness
+  <1> SUFFICES a_witness \in S /\ P(a_witness) OBVIOUS
+  <1> QED OBVIOUS
 
 
 \********************** =>

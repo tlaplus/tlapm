@@ -48,7 +48,33 @@ let indent_size (ps : PS.t) ~nested =
   let _line, char = PS.full_range ps |> Range.from |> Range.Position.as_pair in
   char - 1 + nested
 
-let fmt_cx cx = (cx, TL.Ctx.dot |> TL.Ctx.with_try_print_src)
+let fmt_cx cx =
+  let fcx = TL.Ctx.dot |> TL.Ctx.with_try_print_src in
+  let fcx =
+    (* Push all the names known in the context to have proper
+    suffixes _1, _2, ... for newly introduced identifiers. *)
+    TL.Util.Deque.fold_left
+      (fun fcx (hyp : TL.Expr.T.hyp) ->
+        let unwrap = TL.Property.unwrap in
+        match hyp.core with
+        | TL.Expr.T.Flex name | TL.Expr.T.Fresh (name, _, _, _) ->
+            TL.Ctx.push fcx (unwrap name)
+        | TL.Expr.T.FreshTuply (names, _) ->
+            List.fold_right
+              (fun name fcx -> TL.Ctx.push fcx (unwrap name))
+              names fcx
+        | TL.Expr.T.Defn (defn, _, _, _) -> (
+            match defn.core with
+            | TL.Expr.T.Recursive (name, _)
+            | TL.Expr.T.Operator (name, _)
+            | TL.Expr.T.Instance (name, _)
+            | TL.Expr.T.Bpragma (name, _, _) ->
+                TL.Ctx.push fcx (unwrap name))
+        | TL.Expr.T.Fact (_, _, _) -> fcx)
+      fcx cx
+  in
+  (cx, fcx)
+
 let pp_proof cx fmt st = ignore (TL.Proof.Fmt.pp_print_proof (fmt_cx cx) fmt st)
 
 let pp_proof_step cx fmt st =
@@ -79,6 +105,14 @@ let pp_proof_steps_before ps cx steps =
   let range = Range.make_before_ln (PS.full_range ps) in
   let text = pp_proof_step_list ps cx steps in
   (range, text) *)
+
+(** Produce new unique name in the context (can be obtained by calling fmt_cx).
+    The argument [name] is a base for generating the identifier. It might be
+    returned as is, of suffixed with some number. *)
+let fresh_ident (fmt_cx : TL.Expr.T.hyp TL.Util.Deque.dq * int TL.Ctx.ctx)
+    (name : string) : string =
+  let _ecx, fcx = fmt_cx in
+  TL.Ctx.push fcx name |> TL.Ctx.front |> TL.Ctx.string_of_ident
 
 (* Helpers for constructing code actions. *)
 
@@ -125,9 +159,7 @@ let ca_to_steps ~uri ~ps ~cx ~pf ~depth =
     | None -> PS.head_range ps |> Range.make_after
   in
   let qed_depth = depth + 1 in
-  let pf_pp =
-    TL.Proof.Fmt.pp_print_proof (cx, TL.Ctx.dot |> TL.Ctx.with_try_print_src)
-  in
+  let pf_pp = TL.Proof.Fmt.pp_print_proof (fmt_cx cx) in
   let newText =
     indent ps ~nested:true (Fmt.str "\n<%d> QED %a" qed_depth pf_pp pf)
   in
@@ -225,17 +257,23 @@ let cas_of_goal_exists (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   let step_names = Seq_acc.make (PS.sub_step_name_seq ps_parent) in
   let bs_unditto = TL.Expr.T.unditto bs in
   let noprops = TL.Property.noprops in
+  let unwrap = TL.Property.unwrap in
+  let fcx = fmt_cx cx in
+  let fresh_names = ref [] in
   let steps_def =
     bs
     |> List.map @@ fun (b_name, _, _) ->
-       (* TODO: Pick unique names. *)
+       let fresh_var_name = fresh_ident fcx (unwrap b_name) in
+       fresh_names := fresh_var_name :: !fresh_names;
        let step_no = PS.sub_step_unnamed ps_parent in
        let step =
          TL.Proof.T.Define
            [
              TL.Expr.T.Operator
                ( b_name,
-                 TL.Expr.T.String "TODO: Replace this with actual witness"
+                 TL.Expr.T.String
+                   (Fmt.str "TODO: Replace this with actual witness for %s"
+                      fresh_var_name)
                  |> noprops )
              |> noprops;
            ]
@@ -243,11 +281,10 @@ let cas_of_goal_exists (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
        in
        (step_no, step)
   in
+  let fresh_names = List.rev !fresh_names in
   let step_hide =
     let defs =
-      bs
-      |> List.map @@ fun (b_name, _, _) ->
-         TL.Proof.T.Dvar (TL.Property.unwrap b_name) |> noprops
+      fresh_names |> List.map @@ fun name -> TL.Proof.T.Dvar name |> noprops
     in
     let step_no = PS.sub_step_unnamed ps_parent in
     let step = TL.Proof.T.Hide { facts = []; defs } |> noprops in
@@ -255,27 +292,26 @@ let cas_of_goal_exists (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   in
   let steps_pf_dom =
     bs_unditto
-    |> List.filter_map @@ fun (b_name, _, b_dom) ->
-       match b_dom with
-       | TL.Expr.T.Domain dom_expr ->
-           let active =
-             TL.Expr.T.Apply
-               ( TL.Expr.T.Internal TL.Builtin.Mem |> noprops,
-                 [
-                   TL.Expr.T.Opaque (TL.Property.unwrap b_name) |> noprops;
-                   dom_expr;
-                 ] )
-             |> noprops
-           in
-           let step =
-             TL.Proof.T.Assert
-               ( { context = TL.Util.Deque.empty; active },
-                 TL.Proof.T.(Omitted Implicit) |> noprops )
-             |> noprops
-           in
-           let step_no = Seq_acc.take step_names in
-           Some (step_no, step)
-       | TL.Expr.T.No_domain | TL.Expr.T.Ditto -> None
+    |> ( List.mapi @@ fun pos (_, _, b_dom) ->
+         let fresh_name = List.nth fresh_names pos in
+         match b_dom with
+         | TL.Expr.T.Domain dom_expr ->
+             let active =
+               TL.Expr.T.Apply
+                 ( TL.Expr.T.Internal TL.Builtin.Mem |> noprops,
+                   [ TL.Expr.T.Opaque fresh_name |> noprops; dom_expr ] )
+               |> noprops
+             in
+             let step =
+               TL.Proof.T.Assert
+                 ( { context = TL.Util.Deque.empty; active },
+                   TL.Proof.T.(Omitted Implicit) |> noprops )
+               |> noprops
+             in
+             let step_no = Seq_acc.take step_names in
+             Some (step_no, step)
+         | TL.Expr.T.No_domain | TL.Expr.T.Ditto -> None )
+    |> List.filter_map (fun x -> x)
   in
   let step_use =
     Option.bind (PS.proof ps) @@ fun pf ->
@@ -292,16 +328,15 @@ let cas_of_goal_exists (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   let step_witness =
     let exprs =
       bs_unditto
-      |> List.map @@ fun (b_name, _, b_dom) ->
+      |> List.mapi @@ fun pos (_, _, b_dom) ->
+         let fresh_name = List.nth fresh_names pos in
          match b_dom with
          | TL.Expr.T.No_domain | TL.Expr.T.Ditto ->
-             TL.Expr.T.Opaque (TL.Property.unwrap b_name) |> noprops
+             TL.Expr.T.Opaque fresh_name |> noprops
          | TL.Expr.T.Domain dom ->
              TL.Expr.T.Apply
                ( TL.Expr.T.Internal TL.Builtin.Mem |> noprops,
-                 [
-                   TL.Expr.T.Opaque (TL.Property.unwrap b_name) |> noprops; dom;
-                 ] )
+                 [ TL.Expr.T.Opaque fresh_name |> noprops; dom ] )
              |> noprops
     in
     let step = TL.Proof.T.Witness exprs |> noprops in
@@ -426,7 +461,13 @@ let cas_of_goal_equiv (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
 let cas_by_goal (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     (o : TL.Proof.T.obligation) =
   let o = TL.Backend.Toolbox.normalize true o in
+  (* Fmt.epr "XXX: @[cas_by_goal, o=@[%a@]@]@."
+    Tlapm_lib.Proof.Fmt.pp_print_obligation o; *)
   let rec match_goal cx (ex : TL.Expr.T.expr) =
+    (* Fmt.epr "XXX: @[cas_by_goal::match_goal, dbg=@[%a@] ex=@[%a@]@]@."
+      Debug.pp_expr ex
+      (Tlapm_lib.Expr.Fmt.pp_print_expr (fmt_cx cx))
+      ex; *)
     match ex.core with
     | TL.Expr.T.Apply (op, op_args) -> (
         match op.core with
@@ -479,14 +520,16 @@ let cas_by_goal (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
         | TL.Expr.T.FreshTuply (_, _)
         | TL.Expr.T.Flex _ ->
             []
-        | TL.Expr.T.Defn (defn, _, _, _) -> (
+        | TL.Expr.T.Defn (defn, _, Visible, _) -> (
             match defn.core with
             | TL.Expr.T.Operator (_, ex) -> match_goal cx ex
             | TL.Expr.T.Recursive (_, _)
             | TL.Expr.T.Instance (_, _)
             | TL.Expr.T.Bpragma (_, _, _) ->
                 [])
-        | TL.Expr.T.Fact (ex, _, _) -> match_goal cx ex)
+        | TL.Expr.T.Defn (_, _, _, _) -> []
+        | TL.Expr.T.Fact (ex, Visible, _) -> match_goal cx ex
+        | TL.Expr.T.Fact (_, _, _) -> [])
     | TL.Expr.T.Opaque _ | TL.Expr.T.Internal _
     | TL.Expr.T.Lambda (_, _)
     | TL.Expr.T.Sequent _
