@@ -18,7 +18,7 @@ open Property
 open E_t
 open Format
 open Fmtutil
-open Tla_parser
+module Fu = Tla_parser.Fu
 
 
 type ctx = hyp Deque.dq * int Ctx.ctx

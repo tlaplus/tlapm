@@ -98,8 +98,6 @@ let print_new_res ob st warns time_used =
 
 (**** duplicates prep.ml *****)
 let expand_defs ?(what = fun _ -> true) ob =
-  let prefix = ref [] in
-  let emit mu = prefix := mu :: (!prefix) in
   let rec visit sq =
     match Deque.front sq.context with
     | None -> sq
@@ -108,7 +106,6 @@ let expand_defs ?(what = fun _ -> true) ob =
           | Defn ({core = Operator (_, e)}, wd, Visible, _) when what wd ->
               visit (app_sequent (scons e (shift 0)) { sq with context = hs })
           | _ ->
-              emit h ;
               let sq = visit { sq with context = hs } in
                 { sq with context = Deque.cons h sq.context }
       end
