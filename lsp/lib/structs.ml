@@ -3,7 +3,7 @@ module LspT = Lsp.Types
 let opt_str o = match o with None -> `Null | Some s -> `String s
 
 (** Corresponds to
-    ```
+    {v
     export interface CountByStepStatus {
       proved: number;
       failed: number;
@@ -12,8 +12,7 @@ let opt_str o = match o with None -> `Null | Some s -> `String s
       pending: number;
       progress: number;
     }
-    ```
-*)
+    v} *)
 module CountByStepStatus = struct
   type t = {
     proved : int;
@@ -40,16 +39,15 @@ module CountByStepStatus = struct
 end
 
 (** Corresponds to
-  ```
-  export interface TlapsProofObligationResult {
-    prover: string;
-    meth: string;
-    status: string;
-    reason: string | null;
-    obligation: string | null; // Non-null, if prover failed.
-  }
-  ```
-*)
+    {v
+    export interface TlapsProofObligationResult {
+      prover: string;
+      meth: string;
+      status: string;
+      reason: string | null;
+      obligation: string | null; // Non-null, if prover failed.
+    }
+    v} *)
 module TlapsProofObligationResult = struct
   type t = {
     prover : string;
@@ -74,16 +72,15 @@ module TlapsProofObligationResult = struct
 end
 
 (** Corresponds to
-  ```
-  export interface TlapsProofObligationState {
-    role: string;
-    range: Range;
-    status: status;
-    normalized: string;
-    results: TlapsProofObligationResult[];
-  }
-  ```
-  *)
+    {v
+    export interface TlapsProofObligationState {
+      role: string;
+      range: Range;
+      status: status;
+      normalized: string;
+      results: TlapsProofObligationResult[];
+    }
+    v} *)
 module TlapsProofObligationState = struct
   type t = {
     role : string;
@@ -109,16 +106,15 @@ module TlapsProofObligationState = struct
 end
 
 (** Corresponds to
-  ```
-  export interface TlapsProofStepDetails {
-    kind: string;
-    status: string;
-    location: Location;
-    obligations: TlapsProofObligationState[];
-    sub_count: CountByStepStatus;
-  }
-  ```
-*)
+    {v
+    export interface TlapsProofStepDetails {
+      kind: string;
+      status: string;
+      location: Location;
+      obligations: TlapsProofObligationState[];
+      sub_count: CountByStepStatus;
+    }
+    v} *)
 module TlapsProofStepDetails = struct
   type t = {
     kind : string;
@@ -159,14 +155,13 @@ module TlapsProofStepDetails = struct
 end
 
 (** Corresponds to
-   ```
-   interface ProofStepMarker {
-     status: string;
-     range: vscode.Range;
-     hover: string;
-   }
-   ```
-*)
+    {v
+    interface ProofStepMarker {
+      status: string;
+      range: vscode.Range;
+      hover: string;
+    }
+    v} *)
 module TlapsProofStepMarker : sig
   type t
 
@@ -186,14 +181,12 @@ end = struct
       ]
 end
 
-(** Passed by the client with the InitializeParams.
-    Corresponds to:
-    ```
+(** Passed by the client with the InitializeParams. Corresponds to:
+    {v
     export interface InitRequestInItializationOptions {
       moduleSearchPaths: string[] | null | undefined
     }
-    ```
-*)
+    v} *)
 module InitializationOptions : sig
   type t
 
@@ -220,14 +213,13 @@ end = struct
     | _ -> { module_search_paths = [] }
 end
 
-(** Returned by the server in response to the Initialize request.
-    Corresponds to:
-    ```
+(** Returned by the server in response to the Initialize request. Corresponds
+    to:
+    {v
     export interface InitResponseCapabilitiesExperimental {
       moduleSearchPaths: string[] | null | undefined
     }
-    ```
-*)
+    v} *)
 module ServerCapabilitiesExperimental : sig
   type t
 
