@@ -36,12 +36,6 @@ THEOREM TestGoalExists ==
   ASSUME NEW P(_, _), NEW S
   PROVE \E a, b \in S : P(a, b)
 PROOF
-  \* <1> DEFINE a == TRUE
-  \* <1> DEFINE b == TRUE
-  \* <1> HIDE DEF a, b
-  \* <1>1. a \in S
-  \* <1>2. b \in S
-  \* <1> WITNESS a \in S, b \in S
   <1> a == "TODO: Replace this with actual witness"
   <1> b == "TODO: Replace this with actual witness"
   <1> HIDE DEFS a, b

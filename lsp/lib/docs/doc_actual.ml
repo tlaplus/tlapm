@@ -22,7 +22,7 @@ module Parsed = struct
         ~filename:(LspT.DocumentUri.to_path uri)
     with
     | Ok mule ->
-        let ps = Proof_step.of_module mule ps_prev in
+        let ps = Proof_step.of_module mule ?prev:ps_prev in
         { mule = Ok mule; nts = []; ps }
     | Error (loc_opt, msg) ->
         let nts = [ Toolbox.notif_of_loc_msg loc_opt msg ] in

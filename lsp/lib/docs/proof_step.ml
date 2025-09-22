@@ -463,6 +463,19 @@ end = struct
     let acc = join_range_of_wrapped_opt usable.defs in
     join_range_of_wrapped_opt ~acc usable.facts
 
+  (** Derive a status of a step by structure of its proof (as parsed), if
+      possible. *)
+  let parsed_status_of_proof (proof : TL.Proof.T.proof) =
+    match proof.core with
+    | TL.Proof.T.Omitted omission -> (
+        match omission with
+        | TL.Proof.T.Implicit -> Some Proof_status.Missing
+        | TL.Proof.T.Explicit -> Some Proof_status.Omitted
+        | TL.Proof.T.Elsewhere _ -> Some Proof_status.Omitted)
+    | TL.Proof.T.Error _ -> Some Proof_status.Failed
+    | TL.Proof.T.Obvious | TL.Proof.T.By (_, _) | TL.Proof.T.Steps (_, _) ->
+        None
+
   class step_visitor (file : string) =
     object (self : 'self)
       inherit TL.Module.Visit.map as m_super
@@ -576,7 +589,8 @@ end = struct
                let el = El.Theorem { mu; name; sq; naxs; pf; orig_pf; summ } in
                let full_range = mu_loc in
                let head_range = Range.(of_wrapped sq.active) in
-               make ~el ~cx ~status_parsed:None ~head_range ~full_range)
+               let status_parsed = parsed_status_of_proof orig_pf in
+               make ~el ~cx ~status_parsed ~head_range ~full_range)
           else None
         in
         (m_super#theorem cx name sq naxs pf orig_pf summ, step)
@@ -606,10 +620,20 @@ end = struct
       method! step cx st =
         self#define_step @@ fun () ->
         let full_range = Range.of_wrapped_must st in
-        let step =
-          (* TODO: Handle the omitted cases here for `status_parsed`. *)
-          make ~el:(Step st) ~cx:(snd cx) ~status_parsed:None ~full_range
+        let status_parsed =
+          match TL.Property.unwrap st with
+          | TL.Proof.T.Hide _ | TL.Proof.T.Forget _ | TL.Proof.T.Define _
+          | TL.Proof.T.Have _ | TL.Proof.T.Use _ | TL.Proof.T.Take _
+          | TL.Proof.T.TakeTuply _ | TL.Proof.T.Witness _ ->
+              None
+          | TL.Proof.T.Assert (_, proof)
+          | TL.Proof.T.Suffices (_, proof)
+          | TL.Proof.T.Pcase (_, proof)
+          | TL.Proof.T.Pick (_, _, proof)
+          | TL.Proof.T.PickTuply (_, _, proof) ->
+              parsed_status_of_proof proof
         in
+        let step = make ~el:(Step st) ~cx:(snd cx) ~status_parsed ~full_range in
         let step =
           match TL.Property.unwrap st with
           | TL.Proof.T.Hide _ | TL.Proof.T.Forget _ | TL.Proof.T.Define _ ->
@@ -633,10 +657,12 @@ end = struct
           TL.Property.query qed TL.Proof.Parser.qed_loc_prop
           |> Range.of_locus_opt
         in
+        let status_parsed =
+          match qed.core with
+          | TL.Proof.T.Qed proof -> parsed_status_of_proof proof
+        in
         let step =
-          (* TODO: Handle the omitted cases here for `status_parsed`. *)
-          make ~el:(Qed qed) ~cx:(snd cx) ~status_parsed:None ~full_range
-            ~head_range
+          make ~el:(Qed qed) ~cx:(snd cx) ~status_parsed ~full_range ~head_range
         in
         ((), Some step)
 
@@ -659,7 +685,7 @@ end = struct
     v#process mule prev_obs
 end
 
-let of_module = Builder.of_module
+let of_module ?prev mule = Builder.of_module mule prev
 
 (* ========================================================================== *)
 
@@ -691,7 +717,7 @@ let%test_unit "determine proof steps" =
       (Parser.module_of_string ~content:mod_text ~filename:mod_file
          ~loader_paths:[])
   in
-  let ps = of_module mule None in
+  let ps = of_module mule in
   match flatten ps with
   | [
       _m_test_obl_expand;
@@ -754,7 +780,7 @@ let%test_unit "determine proof steps for USE statements" =
       (Parser.module_of_string ~content:mod_text ~filename:mod_file
          ~loader_paths:[])
   in
-  let ps = of_module mule None in
+  let ps = of_module mule in
   match flatten ps with
   | [
       _m_test_use;
