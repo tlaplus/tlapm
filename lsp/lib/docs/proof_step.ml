@@ -123,7 +123,11 @@ let derived_status parsed obs sub =
   let parsed = Option.value ~default:Proof_status.top parsed in
   let ps_min = Proof_status.min in
   let acc =
-    RangeMap.fold (fun _ obl acc -> ps_min acc (Obl.status obl)) obs parsed
+    RangeMap.fold
+      (fun _ (obl : Obl.t) acc ->
+        (* Do not count omitted obligations. *)
+        if Obl.is_omitted obl then acc else ps_min acc (Obl.status obl))
+      obs parsed
   in
   List.fold_left (fun acc sub -> ps_min acc sub.status_derived) acc sub
 
@@ -155,7 +159,8 @@ let with_sub ps sub =
 let with_obs ps obs_map =
   let in_range obl_loc _ = Range.intersect obl_loc ps.full_range in
   let obs, obs_map = RangeMap.partition in_range obs_map in
-  ({ ps with obs }, obs_map)
+  let status_derived = derived_status ps.status_parsed obs ps.sub in
+  ({ ps with obs; status_derived }, obs_map)
 
 let with_range ps range =
   { ps with full_range = Range.join_opt range ps.full_range }
@@ -675,7 +680,6 @@ end = struct
   (** Make a view of a module in terms of the user-visible proof steps. *)
   let of_module (mule : TL.Module.T.mule) (prev : t option) : t option =
     let prev_obs = obl_by_fp prev in
-    (* let prev_obs = Option.value prev_obs ~default:(Hashtbl.create 1024) in *)
     let file =
       match TL.Util.query_locus mule with
       | None -> failwith "of_module, has no file location"

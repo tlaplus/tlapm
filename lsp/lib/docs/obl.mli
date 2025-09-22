@@ -15,6 +15,7 @@ val with_prover_names : int -> int -> string list -> t -> t
 val parsed : t -> Tlapm_lib.Proof.T.obligation option
 val parsed_main : t -> Tlapm_lib.Proof.T.obligation option
 val role : t -> Role.t
+val is_omitted : t -> bool
 val loc : t -> Range.t
 val fingerprint : t -> string option
 val status : t -> Proof_status.t

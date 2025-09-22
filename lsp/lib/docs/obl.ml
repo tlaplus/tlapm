@@ -110,6 +110,11 @@ let role obl =
       | Tlapm_lib.Proof.T.Ob_error _ -> Role.Unexpected
       | Tlapm_lib.Proof.T.Ob_omitted _ -> Role.Main false)
 
+let is_omitted obl =
+  match role obl with
+  | Role.Main main -> not main
+  | Role.Aux | Role.Unknown | Role.Unexpected -> false
+
 (* Should exist in any case. *)
 let loc obl =
   match obl.parsed with
