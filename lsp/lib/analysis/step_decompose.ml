@@ -3,6 +3,9 @@ module PS = Docs.Proof_step
 module TL = Tlapm_lib
 module LspT = Lsp.Types
 
+let noprops = TL.Property.noprops
+let unwrap = TL.Property.unwrap
+
 (* TODO: CA to expand the top-level definitions in the goal. *)
 
 (* Collect recursively multiple nested operator applications. *)
@@ -55,7 +58,6 @@ let fmt_cx cx =
     suffixes _1, _2, ... for newly introduced identifiers. *)
     TL.Util.Deque.fold_left
       (fun fcx (hyp : TL.Expr.T.hyp) ->
-        let unwrap = TL.Property.unwrap in
         match hyp.core with
         | TL.Expr.T.Flex name | TL.Expr.T.Fresh (name, _, _, _) ->
             TL.Ctx.push fcx (unwrap name)
@@ -170,7 +172,7 @@ let ca_to_steps ~uri ~ps ~cx ~pf ~depth =
 let cas_of_el_with_pf (uri : LspT.DocumentUri.t) (ps : PS.t)
     (cx : TL.Expr.T.ctx) (pf : TL.Proof.T.proof) (depth : int) =
   let open TL.Proof.T in
-  match TL.Property.unwrap pf with
+  match unwrap pf with
   | Omitted Implicit ->
       [ ca_omitted ~uri ~ps; ca_to_steps ~uri ~ps ~cx ~pf ~depth ]
   | Omitted Explicit | Omitted (Elsewhere _) ->
@@ -196,13 +198,12 @@ let ps_proof_rewrite ps cx step_names =
           facts =
             List.map
               (fun sn ->
-                TL.Property.noprops
-                  (TL.Expr.T.Opaque (TL.Proof.T.string_of_stepno sn)))
+                TL.Expr.T.Opaque (TL.Proof.T.string_of_stepno sn) |> noprops)
               step_names;
           defs = [];
         },
         false )
-    |> TL.Property.noprops
+    |> noprops
   in
   let t = Fmt.str " %a\n" (pp_proof cx) ps_proof_new in
   (r, t)
@@ -211,7 +212,7 @@ let ps_proof_rewrite ps cx step_names =
 let cas_of_goal_implies (uri : LspT.DocumentUri.t) (ps : PS.t)
     (ps_parent : PS.t) (cx : TL.Expr.T.ctx) (op_args : TL.Expr.T.expr list) =
   let antecedent = List.hd op_args in
-  let step = TL.Proof.T.Have antecedent |> TL.Property.noprops in
+  let step = TL.Proof.T.Have antecedent |> noprops in
   let title = "Decompose goal (=>)" in
   let edit =
     [ (PS.sub_step_unnamed ps_parent, step) ] |> pp_proof_steps_before ps cx
@@ -223,7 +224,7 @@ let cas_of_goal_implies (uri : LspT.DocumentUri.t) (ps : PS.t)
 let cas_of_goal_forall (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     (cx : TL.Expr.T.ctx) (bs : TL.Expr.T.bound list) =
   let title = "Decompose goal (\\A)" in
-  let step = TL.Proof.T.Take bs |> TL.Property.noprops in
+  let step = TL.Proof.T.Take bs |> noprops in
   let edit =
     [ (PS.sub_step_unnamed ps_parent, step) ] |> pp_proof_steps_before ps cx
   in
@@ -256,8 +257,6 @@ let cas_of_goal_exists (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   let title = "Decompose goal (\\E)" in
   let step_names = Seq_acc.make (PS.sub_step_name_seq ps_parent) in
   let bs_unditto = TL.Expr.T.unditto bs in
-  let noprops = TL.Property.noprops in
-  let unwrap = TL.Property.unwrap in
   let fcx = fmt_cx cx in
   let fresh_names = ref [] in
   let steps_def =
@@ -369,7 +368,7 @@ let cas_of_goal_conj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
            let step =
              TL.Proof.T.Assert
                ({ context = TL.Util.Deque.empty; active = op }, ps_proof)
-             |> TL.Property.noprops
+             |> noprops
            in
            (step_no, step))
     |> pp_proof_steps_before ps cx
@@ -400,12 +399,11 @@ let cas_of_goal_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
              (* TODO: Drop existing negation, if there exist instead of adding yet another. *)
              let expr =
                TL.Expr.T.Apply
-                 ( TL.(Expr.T.Internal Builtin.Neg) |> TL.Property.noprops,
-                   [ disjunct ] )
-               |> TL.Property.noprops
+                 (TL.(Expr.T.Internal Builtin.Neg) |> noprops, [ disjunct ])
+               |> noprops
              in
              TL.Expr.T.(Fact (expr, Visible, NotSet))
-             |> TL.Property.noprops
+             |> noprops
              |> TL.Expr.Subst.(app_hyp (shift i)))
     in
     let disjunct =
@@ -415,7 +413,7 @@ let cas_of_goal_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
       TL.Proof.T.Suffices
         ( { context = TL.Util.Deque.of_list other_negated; active = disjunct },
           ps_proof )
-      |> TL.Property.noprops
+      |> noprops
     in
     let new_step_rewrite = pp_proof_steps_before ps cx [ (step_no, step) ] in
     let ps_proof_rewrite = ps_proof_rewrite ps cx [ step_no ] in
@@ -438,14 +436,14 @@ let cas_of_goal_equiv (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
            let step_no = Seq_acc.take step_names in
            let step_goal =
              TL.Expr.T.Apply
-               ( TL.Expr.T.Internal TL.Builtin.Implies |> TL.Property.noprops,
+               ( TL.Expr.T.Internal TL.Builtin.Implies |> noprops,
                  [ op; next_arg i ] )
-             |> TL.Property.noprops
+             |> noprops
            in
            let step =
              TL.Proof.T.Assert
                ({ context = TL.Util.Deque.empty; active = step_goal }, ps_proof)
-             |> TL.Property.noprops
+             |> noprops
            in
            (step_no, step))
     |> pp_proof_steps_before ps cx
@@ -579,7 +577,7 @@ let cas_of_ps (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) =
   | PS.El.Theorem { orig_pf; _ } -> cas_of_el_with_pf orig_pf 0
   | PS.El.Step step -> (
       let step_no = step_no step in
-      match TL.Property.unwrap step with
+      match unwrap step with
       | Assert (_, pf)
       | Suffices (_, pf)
       | Pcase (_, pf)
@@ -597,8 +595,7 @@ let cas_of_ps (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) =
         |> Option.fold ~none:[] ~some:(fun g -> cas_by_goal uri ps ps_parent g)
       in
       let cas_of_pf =
-        match TL.Property.unwrap qed_step with
-        | Qed pf -> cas_of_el_with_pf pf step_no
+        match unwrap qed_step with Qed pf -> cas_of_el_with_pf pf step_no
       in
       List.concat [ cas_of_goal; cas_of_pf ]
 
