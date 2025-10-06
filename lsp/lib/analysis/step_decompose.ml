@@ -1,4 +1,5 @@
-(* cspell:words Actplus Cdot Deque Disj Forall Gteq Leadsto Lteq Notmem Setminus Tquant Tquant Tsub Uminus Unprimable noprops stepno uncons *)
+(* cspell:words Actplus Cdot Deque Disj Forall Gteq Leadsto Lteq Notmem Setminus Tquant unditto *)
+(* cspell:words Tquant Tsub Uminus Unprimable noprops stepno uncons Bpragma Defn  Dvar  assm  filteri *)
 module PS = Docs.Proof_step
 module TL = Tlapm_lib
 module LspT = Lsp.Types
@@ -72,7 +73,7 @@ let fmt_cx cx =
             | TL.Expr.T.Instance (name, _)
             | TL.Expr.T.Bpragma (name, _, _) ->
                 TL.Ctx.push fcx (unwrap name))
-        | TL.Expr.T.Fact (_, _, _) -> fcx)
+        | TL.Expr.T.Fact (_, _, _) -> TL.Ctx.bump fcx)
       fcx cx
   in
   (cx, fcx)
@@ -211,8 +212,17 @@ let ps_proof_rewrite ps cx step_names =
 (* Create code action for a goal in the form of implication. *)
 let cas_of_goal_implies (uri : LspT.DocumentUri.t) (ps : PS.t)
     (ps_parent : PS.t) (cx : TL.Expr.T.ctx) (op_args : TL.Expr.T.expr list) =
+  (* Fmt.epr "@[XXX: cas_of_goal_implies[%d]@, [@[%a@]]@, cx=%a@]@."
+    (List.length op_args)
+    (Fmt.list ~sep:Fmt.(const string ", ") (Debug.pp_expr_text cx))
+    op_args Debug.pp_cx cx; *)
   let antecedent = List.hd op_args in
   let step = TL.Proof.T.Have antecedent |> noprops in
+  (* Fmt.epr "@[XXX: cas_of_goal_implies/step= %a || %a @]@." (pp_proof_step cx)
+    step
+    (fun fmt st ->
+      ignore (TL.Proof.Fmt.pp_print_step (cx, Tlapm_lib.Ctx.dot) fmt st))
+    step; *)
   let title = "Decompose goal (=>)" in
   let edit =
     [ (PS.sub_step_unnamed ps_parent, step) ] |> pp_proof_steps_before ps cx
@@ -455,17 +465,49 @@ let cas_of_goal_equiv (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   in
   [ ca ]
 
-(** Propose proof decomposition CodeActions by the structure of the goal. *)
-let cas_by_goal (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
+(** Propose proof decomposition CodeAction for an assumption in the form of
+    disjunction.
+    - The proof is split to multiple steps "by cases", in the same level as the
+      QED step for which the action is proposed.
+    - The decomposition is only proposed if the current context don't have one
+      of the disjuncts among the assumptions. This way we don't repeat proposing
+      the same. *)
+(*  TODO
+let cas_of_assm_disj (_uri : LspT.DocumentUri.t) (_ps : PS.t)
+    (_ps_parent : PS.t) _cx _disjuncts =
+  (* TODO *)
+  [] *)
+
+(** Propose proof decomposition CodeActions by the structure of the goal and
+    assumptions. *)
+let cas_of_obl (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     (o : TL.Proof.T.obligation) =
   let o = TL.Backend.Toolbox.normalize true o in
-  (* Fmt.epr "XXX: @[cas_by_goal, o=@[%a@]@]@."
+  (* Fmt.epr "XXX: @[cas_of_obl, o=@[%a@]@]@."
     Tlapm_lib.Proof.Fmt.pp_print_obligation o; *)
+  let expand_expr_ref cx ix f =
+    (* Fmt.epr "XXX: @[expand_expr_ref by ix=%d@]@." ix; *)
+    let hyp = TL.Expr.T.get_val_from_id cx ix in
+    let cx = TL.Expr.T.cx_front cx ix in
+    match hyp.core with
+    | TL.Expr.T.Fresh (_, _, _, _)
+    | TL.Expr.T.FreshTuply (_, _)
+    | TL.Expr.T.Flex _ ->
+        []
+    | TL.Expr.T.Defn (defn, _, Visible, _) -> (
+        match defn.core with
+        | TL.Expr.T.Operator (_, ex) -> f cx ex
+        | TL.Expr.T.Recursive (_, _)
+        | TL.Expr.T.Instance (_, _)
+        | TL.Expr.T.Bpragma (_, _, _) ->
+            [])
+    | TL.Expr.T.Defn (_, _, _, _) -> []
+    | TL.Expr.T.Fact (ex, Visible, _) -> f cx ex
+    | TL.Expr.T.Fact (_, _, _) -> []
+  in
   let rec match_goal cx (ex : TL.Expr.T.expr) =
-    (* Fmt.epr "XXX: @[cas_by_goal::match_goal, dbg=@[%a@] ex=@[%a@]@]@."
-      Debug.pp_expr ex
-      (Tlapm_lib.Expr.Fmt.pp_print_expr (fmt_cx cx))
-      ex; *)
+    (* Fmt.epr "@[match_goal@, ex=%a@, cx=%a@]@." (Debug.pp_expr_text cx) ex
+      Debug.pp_cx cx; *)
     match ex.core with
     | TL.Expr.T.Apply (op, op_args) -> (
         match op.core with
@@ -510,24 +552,7 @@ let cas_by_goal (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
         | TL.Expr.T.And -> cas_of_goal_conj uri ps ps_parent cx exprs
         | TL.Expr.T.Or -> cas_of_goal_disj uri ps ps_parent cx exprs
         | TL.Expr.T.Refs -> [])
-    | TL.Expr.T.Ix ix -> (
-        let hyp = TL.Expr.T.get_val_from_id cx ix in
-        let cx = TL.Expr.T.cx_front cx ix in
-        match hyp.core with
-        | TL.Expr.T.Fresh (_, _, _, _)
-        | TL.Expr.T.FreshTuply (_, _)
-        | TL.Expr.T.Flex _ ->
-            []
-        | TL.Expr.T.Defn (defn, _, Visible, _) -> (
-            match defn.core with
-            | TL.Expr.T.Operator (_, ex) -> match_goal cx ex
-            | TL.Expr.T.Recursive (_, _)
-            | TL.Expr.T.Instance (_, _)
-            | TL.Expr.T.Bpragma (_, _, _) ->
-                [])
-        | TL.Expr.T.Defn (_, _, _, _) -> []
-        | TL.Expr.T.Fact (ex, Visible, _) -> match_goal cx ex
-        | TL.Expr.T.Fact (_, _, _) -> [])
+    | TL.Expr.T.Ix ix -> expand_expr_ref cx ix match_goal
     | TL.Expr.T.Opaque _ | TL.Expr.T.Internal _
     | TL.Expr.T.Lambda (_, _)
     | TL.Expr.T.Sequent _
@@ -561,12 +586,94 @@ let cas_by_goal (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     | TL.Expr.T.Parens (_, _) ->
         []
   in
-  match_goal o.obl.core.context o.obl.core.active
+
+  (* let rec match_assm cx (ex : TL.Expr.T.expr) =
+    match ex.core with
+    | TL.Expr.T.Apply (op, op_args) -> (
+        match op.core with
+        | TL.Expr.T.Internal bi -> (
+            match bi with
+            | TL.Builtin.Disj -> cas_of_assm_disj uri ps ps_parent cx op_args
+            | TL.Builtin.Implies | TL.Builtin.Conj | TL.Builtin.Equiv
+            | TL.Builtin.TRUE | TL.Builtin.FALSE | TL.Builtin.Neg
+            | TL.Builtin.Eq | TL.Builtin.Neq | TL.Builtin.STRING
+            | TL.Builtin.BOOLEAN | TL.Builtin.SUBSET | TL.Builtin.UNION
+            | TL.Builtin.DOMAIN | TL.Builtin.Subseteq | TL.Builtin.Mem
+            | TL.Builtin.Notmem | TL.Builtin.Setminus | TL.Builtin.Cap
+            | TL.Builtin.Cup | TL.Builtin.Prime | TL.Builtin.StrongPrime
+            | TL.Builtin.Leadsto | TL.Builtin.ENABLED | TL.Builtin.UNCHANGED
+            | TL.Builtin.Cdot | TL.Builtin.Actplus | TL.Builtin.Box _
+            | TL.Builtin.Diamond | TL.Builtin.Nat | TL.Builtin.Int
+            | TL.Builtin.Real | TL.Builtin.Plus | TL.Builtin.Minus
+            | TL.Builtin.Uminus | TL.Builtin.Times | TL.Builtin.Ratio
+            | TL.Builtin.Quotient | TL.Builtin.Remainder | TL.Builtin.Exp
+            | TL.Builtin.Infinity | TL.Builtin.Lteq | TL.Builtin.Lt
+            | TL.Builtin.Gteq | TL.Builtin.Gt | TL.Builtin.Divides
+            | TL.Builtin.Range | TL.Builtin.Seq | TL.Builtin.Len
+            | TL.Builtin.BSeq | TL.Builtin.Cat | TL.Builtin.Append
+            | TL.Builtin.Head | TL.Builtin.Tail | TL.Builtin.SubSeq
+            | TL.Builtin.SelectSeq | TL.Builtin.OneArg | TL.Builtin.Extend
+            | TL.Builtin.Print | TL.Builtin.PrintT | TL.Builtin.Assert
+            | TL.Builtin.JavaTime | TL.Builtin.TLCGet | TL.Builtin.TLCSet
+            | TL.Builtin.Permutations | TL.Builtin.SortSeq
+            | TL.Builtin.RandomElement | TL.Builtin.Any | TL.Builtin.ToString
+            | TL.Builtin.Unprimable | TL.Builtin.Irregular ->
+                [])
+        | _ -> [])
+    | TL.Expr.T.Quant (q, _bs, _e) -> (
+        match q with TL.Expr.T.Forall -> [] | TL.Expr.T.Exists -> [])
+    | TL.Expr.T.List (bullet, exprs) -> (
+        match bullet with
+        | TL.Expr.T.And -> []
+        | TL.Expr.T.Or -> cas_of_assm_disj uri ps ps_parent cx exprs
+        | TL.Expr.T.Refs -> [])
+    | TL.Expr.T.Ix ix -> expand_expr_ref cx ix match_assm
+    | TL.Expr.T.Opaque _ | TL.Expr.T.Internal _
+    | TL.Expr.T.Lambda (_, _)
+    | TL.Expr.T.Sequent _
+    | TL.Expr.T.Bang (_, _)
+    | TL.Expr.T.With (_, _)
+    | TL.Expr.T.If (_, _, _)
+    | TL.Expr.T.Let (_, _)
+    | TL.Expr.T.QuantTuply (_, _, _)
+    | TL.Expr.T.Tquant (_, _, _)
+    | TL.Expr.T.Choose (_, _, _)
+    | TL.Expr.T.ChooseTuply (_, _, _)
+    | TL.Expr.T.SetSt (_, _, _)
+    | TL.Expr.T.SetStTuply (_, _, _)
+    | TL.Expr.T.SetOf (_, _)
+    | TL.Expr.T.SetOfTuply (_, _)
+    | TL.Expr.T.SetEnum _ | TL.Expr.T.Product _ | TL.Expr.T.Tuple _
+    | TL.Expr.T.Fcn (_, _)
+    | TL.Expr.T.FcnTuply (_, _)
+    | TL.Expr.T.FcnApp (_, _)
+    | TL.Expr.T.Arrow (_, _)
+    | TL.Expr.T.Rect _ | TL.Expr.T.Record _
+    | TL.Expr.T.Except (_, _)
+    | TL.Expr.T.Dot (_, _)
+    | TL.Expr.T.Sub (_, _, _)
+    | TL.Expr.T.Tsub (_, _, _)
+    | TL.Expr.T.Fair (_, _, _)
+    | TL.Expr.T.Case (_, _)
+    | TL.Expr.T.String _
+    | TL.Expr.T.Num (_, _)
+    | TL.Expr.T.At _
+    | TL.Expr.T.Parens (_, _) ->
+        []
+  in *)
+  (* TODO: Iterate let _ = TL.Util.Deque. *)
+  (* Fmt.epr "XXX: @[cas_of_obl::list_hyps %a@." Debug.pp_cx o.obl.core.context; *)
+  [
+    match_goal o.obl.core.context o.obl.core.active;
+    (* match_assm o.obl.core.context o.obl.core.active; *)
+  ]
+  |> List.concat
 
 (* Code Actions of Proof Step *)
 let cas_of_ps (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) =
   let open TL.Proof.T in
   let el, cx = PS.el ps in
+  (* Fmt.epr "@[XXX: cas_of_ps, ps.cx=%a@]@." Debug.pp_cx cx; *)
   let cas_of_el_with_pf = cas_of_el_with_pf uri ps cx in
   let step_no s =
     match TL.Property.get s TL.Proof.T.Props.step with
@@ -592,7 +699,7 @@ let cas_of_ps (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) =
       let step_no = step_no qed_step in
       let cas_of_goal =
         PS.goal ps
-        |> Option.fold ~none:[] ~some:(fun g -> cas_by_goal uri ps ps_parent g)
+        |> Option.fold ~none:[] ~some:(fun g -> cas_of_obl uri ps ps_parent g)
       in
       let cas_of_pf =
         match unwrap qed_step with Qed pf -> cas_of_el_with_pf pf step_no

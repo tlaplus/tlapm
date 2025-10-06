@@ -1,3 +1,5 @@
+let unwrap = Tlapm_lib.Property.unwrap
+
 class visitor_pp =
   object (self)
     val mutable acc : (Format.formatter -> unit) list = []
@@ -48,6 +50,22 @@ class visitor_pp =
       fun name f -> self#scope (Format.dprintf "%s{%t}" name) f
   end
 
+let pp_visibility fmt (v : Tlapm_lib.Expr.T.visibility) =
+  match v with
+  | Tlapm_lib.Expr.T.Visible -> Fmt.pf fmt "Visible"
+  | Tlapm_lib.Expr.T.Hidden -> Fmt.pf fmt "Hidden"
+
+let pp_bullet fmt (v : Tlapm_lib.Expr.T.bullet) =
+  match v with
+  | Tlapm_lib.Expr.T.And -> Fmt.pf fmt "And"
+  | Tlapm_lib.Expr.T.Or -> Fmt.pf fmt "Or"
+  | Tlapm_lib.Expr.T.Refs -> Fmt.pf fmt "Refs"
+
+let pp_expr_text cx fmt expr =
+  Fmt.pf fmt "@[%a@]"
+    (Tlapm_lib.Expr.Fmt.pp_print_expr (cx, Tlapm_lib.Ctx.dot))
+    expr
+
 let pp_expr (fmt : Format.formatter) (expr : Tlapm_lib.Expr.T.expr) : unit =
   let open Tlapm_lib.Expr.T in
   match expr.core with
@@ -61,7 +79,8 @@ let pp_expr (fmt : Format.formatter) (expr : Tlapm_lib.Expr.T.expr) : unit =
   | Apply (_, _) -> Format.fprintf fmt "Apply"
   | With (_, _) -> Format.fprintf fmt "With"
   | If (_, _, _) -> Format.fprintf fmt "If"
-  | List (_, _) -> Format.fprintf fmt "List"
+  | List (b, exs) ->
+      Format.fprintf fmt "List/%d-%a" (List.length exs) pp_bullet b
   | Let (_, _) -> Format.fprintf fmt "Let"
   | Quant (_, _, _) -> Format.fprintf fmt "Quant"
   | QuantTuply (_, _, _) -> Format.fprintf fmt "QuantTuply"
@@ -92,13 +111,33 @@ let pp_expr (fmt : Format.formatter) (expr : Tlapm_lib.Expr.T.expr) : unit =
   | At _ -> Format.fprintf fmt "At"
   | Parens (_, _) -> Format.fprintf fmt "Parens"
 
+let pp_defn (fmt : Format.formatter) (defn : Tlapm_lib.Expr.T.defn) : unit =
+  match defn.core with
+  | Tlapm_lib.Expr.T.Recursive (n, _) ->
+      Format.fprintf fmt "Recursive %s" (unwrap n)
+  | Tlapm_lib.Expr.T.Operator (n, _) ->
+      Format.fprintf fmt "Operator %s" (unwrap n)
+  | Tlapm_lib.Expr.T.Instance (n, _) ->
+      Format.fprintf fmt "Instance %s" (unwrap n)
+  | Tlapm_lib.Expr.T.Bpragma (n, _, _) ->
+      Format.fprintf fmt "Bpragma %s" (unwrap n)
+
 let pp_hyp (fmt : Format.formatter) (hyp : Tlapm_lib.Expr.T.hyp) : unit =
   match hyp.core with
-  | Tlapm_lib.Expr.T.Fresh (_, _, _, _) -> Format.fprintf fmt "Fresh"
+  | Tlapm_lib.Expr.T.Fresh (hint, _, _, _) ->
+      Format.fprintf fmt "Fresh %s" (unwrap hint)
   | Tlapm_lib.Expr.T.FreshTuply (_, _) -> Format.fprintf fmt "FreshTuply"
-  | Tlapm_lib.Expr.T.Flex _ -> Format.fprintf fmt "Flex"
-  | Tlapm_lib.Expr.T.Defn (_, _, _, _) -> Format.fprintf fmt "Defn"
-  | Tlapm_lib.Expr.T.Fact (_, _, _) -> Format.fprintf fmt "Fact"
+  | Tlapm_lib.Expr.T.Flex hint -> Format.fprintf fmt "Flex %s" (unwrap hint)
+  | Tlapm_lib.Expr.T.Defn (defn, _, _, _) ->
+      Format.fprintf fmt "Defn %a" pp_defn defn
+  | Tlapm_lib.Expr.T.Fact (expr, visible, _) ->
+      Format.fprintf fmt "@[Fact/%a %a@]" pp_visibility visible pp_expr expr
+
+let pp_cx (fmt : Format.formatter)
+    (cx : Tlapm_lib.Expr.T.hyp Tlapm_lib.Util.Deque.dq) : unit =
+  Fmt.pf fmt "@[%a@]"
+    (Fmt.list ~sep:Format.pp_force_newline pp_hyp)
+    (Tlapm_lib.Util.Deque.to_list cx)
 
 let%test_unit "example use of visitor_pp" =
   let filename = "test_obl_expand.tla" in
