@@ -142,7 +142,10 @@ module Make (CB : Callbacks) = struct
              (CodeActionOptions.create ~resolveProvider:false
                 ~workDoneProgress:false
                 ~codeActionKinds:
-                  [ CodeActionKind.Other "tlaplus.tlaps.check-step.ca" ]
+                  [
+                    CodeActionKind.Other "tlaplus.tlaps.check-step.ca";
+                    CodeActionKind.Refactor;
+                  ]
                 ()))
         ~renameProvider:
           (`RenameOptions

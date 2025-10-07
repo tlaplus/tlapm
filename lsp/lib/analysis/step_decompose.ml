@@ -122,7 +122,7 @@ let fresh_ident (fmt_cx : TL.Expr.T.hyp TL.Util.Deque.dq * int TL.Ctx.ctx)
 let ca_edit ~uri ~title ~range ~newText =
   let edit = LspT.TextEdit.create ~newText ~range:(Range.as_lsp_range range) in
   let edit = LspT.WorkspaceEdit.create ~changes:[ (uri, [ edit ]) ] () in
-  LspT.CodeAction.create ~title ~edit ()
+  LspT.CodeAction.create ~title ~edit ~kind:LspT.CodeActionKind.Refactor ()
 
 let ca_edits ~uri ~title ~edits =
   let edits =
@@ -136,7 +136,7 @@ let ca_edits ~uri ~title ~edits =
 
 (** Replace {v <1> ... v} with {v <1> ... OBVIOUS v} *)
 let ca_omitted ~uri ~ps =
-  let title = "Prove as OBVIOUS" in
+  let title = "⤮ Prove as OBVIOUS" in
   let range = PS.head_range ps |> Range.make_after in
   let newText = " OBVIOUS" in
   ca_edit ~uri ~title ~range ~newText
@@ -152,7 +152,7 @@ let ca_omitted ~uri ~ps =
         <2> QED proof
     v} *)
 let ca_to_steps ~uri ~ps ~cx ~pf ~depth =
-  let title = "Prove in steps." in
+  let title = "⤮ Prove in steps." in
   let range =
     match TL.Util.query_locus pf with
     | Some _ ->
@@ -223,7 +223,7 @@ let cas_of_goal_implies (uri : LspT.DocumentUri.t) (ps : PS.t)
     (fun fmt st ->
       ignore (TL.Proof.Fmt.pp_print_step (cx, Tlapm_lib.Ctx.dot) fmt st))
     step; *)
-  let title = "Decompose goal (=>)" in
+  let title = "⤮ Decompose goal (=>)" in
   let edit =
     [ (PS.sub_step_unnamed ps_parent, step) ] |> pp_proof_steps_before ps cx
   in
@@ -233,7 +233,7 @@ let cas_of_goal_implies (uri : LspT.DocumentUri.t) (ps : PS.t)
 (** Create code action for a goal in the form of universal quantification. *)
 let cas_of_goal_forall (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     (cx : TL.Expr.T.ctx) (bs : TL.Expr.T.bound list) =
-  let title = "Decompose goal (\\A)" in
+  let title = "⤮ Decompose goal (\\A)" in
   let step = TL.Proof.T.Take bs |> noprops in
   let edit =
     [ (PS.sub_step_unnamed ps_parent, step) ] |> pp_proof_steps_before ps cx
@@ -264,7 +264,7 @@ let cas_of_goal_forall (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     - Then introduce the witness step. *)
 let cas_of_goal_exists (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     (cx : TL.Expr.T.ctx) (bs : TL.Expr.T.bound list) =
-  let title = "Decompose goal (\\E)" in
+  let title = "⤮ Decompose goal (\\E)" in
   let step_names = Seq_acc.make (PS.sub_step_name_seq ps_parent) in
   let bs_unditto = TL.Expr.T.unditto bs in
   let fcx = fmt_cx cx in
@@ -385,7 +385,7 @@ let cas_of_goal_conj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   in
   let ps_proof_rewrite = ps_proof_rewrite ps cx (Seq_acc.acc step_names) in
   let ca =
-    ca_edits ~uri ~title:"Decompose goal (/\\)"
+    ca_edits ~uri ~title:"⤮ Decompose goal (/\\)"
       ~edits:[ add_steps_rewrite; ps_proof_rewrite ]
   in
   [ ca ]
@@ -428,7 +428,7 @@ let cas_of_goal_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     let new_step_rewrite = pp_proof_steps_before ps cx [ (step_no, step) ] in
     let ps_proof_rewrite = ps_proof_rewrite ps cx [ step_no ] in
     ca_edits ~uri
-      ~title:(Fmt.str "Decompose goal (\\/, case %d)" (disjunct_pos + 1))
+      ~title:(Fmt.str "⤮ Decompose goal (\\/, case %d)" (disjunct_pos + 1))
       ~edits:[ new_step_rewrite; ps_proof_rewrite ]
   in
   List.mapi disjunct_ca disjuncts
@@ -460,7 +460,7 @@ let cas_of_goal_equiv (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   in
   let ps_proof_rewrite = ps_proof_rewrite ps cx (Seq_acc.acc step_names) in
   let ca =
-    ca_edits ~uri ~title:"Decompose goal (<=>)"
+    ca_edits ~uri ~title:"⤮ Decompose goal (<=>)"
       ~edits:[ add_steps_rewrite; ps_proof_rewrite ]
   in
   [ ca ]
