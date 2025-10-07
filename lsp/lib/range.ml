@@ -98,6 +98,10 @@ let make_before (R ((fl, fc), _)) = R ((fl, fc), (fl, fc - 1))
 let make_before_ln (R ((fl, _), _)) = R ((fl, 1), (fl, 0))
 let make_after (R (_, (tl, tc))) = R ((tl, tc + 1), (tl, tc + 1))
 
+(** Make sure the last line is included completely. *)
+let with_end_line (R (f, (tl, tc))) =
+  if tc = 1 then R (f, (tl, tc)) else R (f, (tl + 1, 0))
+
 let join (R (af, at)) (R (bf, bt)) =
   let f = Position.min (Position.of_pair af) (Position.of_pair bf) in
   let t = Position.max (Position.of_pair at) (Position.of_pair bt) in

@@ -3,9 +3,38 @@
 module PS = Docs.Proof_step
 module TL = Tlapm_lib
 module LspT = Lsp.Types
+module StringSet = Set.Make (String)
 
 let noprops = TL.Property.noprops
 let unwrap = TL.Property.unwrap
+
+module ProofBy = struct
+  let empty = TL.Proof.T.{ facts = []; defs = [] }
+
+  let add_steps (step_names : TL.Proof.T.stepno list) usable =
+    let new_facts =
+      List.map
+        (fun sn -> TL.Expr.T.Opaque (TL.Proof.T.string_of_stepno sn) |> noprops)
+        step_names
+    in
+    TL.Proof.T.{ usable with facts = List.append usable.facts new_facts }
+
+  let add_defs new_defs usable =
+    TL.Proof.T.{ usable with defs = List.append usable.defs new_defs }
+
+  let add_defs_str def_names usable =
+    let new_defs =
+      def_names
+      |> List.map @@ fun def_name -> TL.Proof.T.Dvar def_name |> noprops
+    in
+    add_defs new_defs usable
+
+  let add_defs_from_pf (pf : TL.Proof.T.proof) usable =
+    let open TL.Proof.T in
+    match pf.core with
+    | By ({ defs; _ }, _) -> { usable with defs = List.append usable.defs defs }
+    | Obvious | Omitted _ | Steps (_, _) | Error _ -> usable
+end
 
 (* TODO: CA to expand the top-level definitions in the goal. *)
 
@@ -112,8 +141,8 @@ let pp_proof_steps_before ps cx steps =
 (** Produce new unique name in the context (can be obtained by calling fmt_cx).
     The argument [name] is a base for generating the identifier. It might be
     returned as is, of suffixed with some number. *)
-let fresh_ident (fmt_cx : TL.Expr.T.hyp TL.Util.Deque.dq * int TL.Ctx.ctx)
-    (name : string) : string =
+let fresh_ident (fmt_cx : TL.Expr.T.ctx * int TL.Ctx.ctx) (name : string) :
+    string =
   let _ecx, fcx = fmt_cx in
   TL.Ctx.push fcx name |> TL.Ctx.front |> TL.Ctx.string_of_ident
 
@@ -169,45 +198,162 @@ let ca_to_steps ~uri ~ps ~cx ~pf ~depth =
   (* TODO: Use the PP for all the text... *)
   ca_edit ~uri ~title ~range ~newText
 
+(** Creates a rewrite for the proof of the current step, replacing it with BY
+    and the step names listed. *)
+let ps_proof_rewrite ps cx step_info =
+  let r =
+    Range.of_points
+      (Range.from (PS.head_range ps |> Range.make_after))
+      (Range.till (PS.full_range ps |> Range.with_end_line))
+  in
+  let ps_proof_new =
+    match step_info with
+    | `StepNames step_names ->
+        TL.Proof.T.By
+          ( {
+              facts =
+                List.map
+                  (fun sn ->
+                    TL.Expr.T.Opaque (TL.Proof.T.string_of_stepno sn) |> noprops)
+                  step_names;
+              defs = [];
+            },
+            false )
+        |> noprops
+    | `Usable us -> TL.Proof.T.By (us, false) |> noprops
+    | `Proof pf -> pf
+  in
+  let t = Fmt.str " %a\n" (pp_proof cx) ps_proof_new in
+  (r, t)
+
+(** List expandable names in the expression and its context. *)
+let expandable_names (cx : TL.Expr.T.ctx) (ex : TL.Expr.T.expr) : string list =
+  let names = ref StringSet.empty in
+  let add_name n = names := StringSet.add n !names in
+  let visitor =
+    object (_self : 'self)
+      inherit [unit] TL.Expr.Visit.iter as super
+
+      method! expr (cx : unit TL.Expr.Visit.scx) (e : TL.Expr.T.expr) =
+        (match e.core with
+        | TL.Expr.T.Opaque name -> add_name name
+        | TL.Expr.T.Ix ix -> (
+            let hyp = TL.Expr.T.get_val_from_id (snd cx) ix in
+            let cx = TL.Expr.T.cx_front (snd cx) ix in
+            match hyp |> unwrap with
+            | TL.Expr.T.Fresh (_, _, _, _)
+            | TL.Expr.T.FreshTuply (_, _)
+            | TL.Expr.T.Flex _ ->
+                ()
+            | TL.Expr.T.Defn (defn, _, TL.Expr.T.Visible, _) ->
+                ignore (super#defn ((), cx) defn)
+            | TL.Expr.T.Defn (_, _, TL.Expr.T.Hidden, _) ->
+                add_name (TL.Expr.T.hyp_name hyp)
+            | TL.Expr.T.Fact (ex, TL.Expr.T.Visible, _) ->
+                super#expr ((), cx) ex
+            | TL.Expr.T.Fact (_, TL.Expr.T.Hidden, _) -> ())
+        | TL.Expr.T.Internal _
+        | TL.Expr.T.Lambda (_, _)
+        | TL.Expr.T.Sequent _
+        | TL.Expr.T.Bang (_, _)
+        | TL.Expr.T.Apply (_, _)
+        | TL.Expr.T.With (_, _)
+        | TL.Expr.T.If (_, _, _)
+        | TL.Expr.T.List (_, _)
+        | TL.Expr.T.Let (_, _)
+        | TL.Expr.T.Quant (_, _, _)
+        | TL.Expr.T.QuantTuply (_, _, _)
+        | TL.Expr.T.Tquant (_, _, _)
+        | TL.Expr.T.Choose (_, _, _)
+        | TL.Expr.T.ChooseTuply (_, _, _)
+        | TL.Expr.T.SetSt (_, _, _)
+        | TL.Expr.T.SetStTuply (_, _, _)
+        | TL.Expr.T.SetOf (_, _)
+        | TL.Expr.T.SetOfTuply (_, _)
+        | TL.Expr.T.SetEnum _ | TL.Expr.T.Product _ | TL.Expr.T.Tuple _
+        | TL.Expr.T.Fcn (_, _)
+        | TL.Expr.T.FcnTuply (_, _)
+        | TL.Expr.T.FcnApp (_, _)
+        | TL.Expr.T.Arrow (_, _)
+        | TL.Expr.T.Rect _ | TL.Expr.T.Record _
+        | TL.Expr.T.Except (_, _)
+        | TL.Expr.T.Dot (_, _)
+        | TL.Expr.T.Sub (_, _, _)
+        | TL.Expr.T.Tsub (_, _, _)
+        | TL.Expr.T.Fair (_, _, _)
+        | TL.Expr.T.Case (_, _)
+        | TL.Expr.T.String _
+        | TL.Expr.T.Num (_, _)
+        | TL.Expr.T.At _
+        | TL.Expr.T.Parens (_, _) ->
+            ());
+        super#expr cx e
+    end
+  in
+  let rec traverse_cx cx =
+    match TL.Util.Deque.rear cx with
+    | None -> ()
+    | Some (cx, hyp) ->
+        (match hyp |> unwrap with
+        | TL.Expr.T.Fresh (_, _, _, _)
+        | TL.Expr.T.FreshTuply (_, _)
+        | TL.Expr.T.Flex _
+        | TL.Expr.T.Defn (_, _, _, _) ->
+            ()
+        | TL.Expr.T.Fact (_, _, _) -> ignore (visitor#hyp ((), cx) hyp));
+        traverse_cx cx
+  in
+  visitor#expr ((), cx) ex;
+  traverse_cx cx;
+  StringSet.to_list !names |> List.sort String.compare
+
+(** Propose expand actions for all the definitions that are visible, but not yet
+    expanded. *)
+let cas_def_expand ~uri ~(ps : PS.t) ~cx ~by ~(sq : TL.Expr.T.sequent) =
+  expandable_names sq.context sq.active
+  |> List.map @@ fun def_name ->
+     let usable, only = by in
+     let usable = usable |> ProofBy.add_defs_str [ def_name ] in
+     let new_pf = TL.Proof.T.By (usable, only) |> noprops in
+     let range, newText = ps_proof_rewrite ps cx (`Proof new_pf) in
+     ca_edit ~uri ~title:(Fmt.str "⤮ Expand %s" def_name) ~range ~newText
+
 (* Propose code actions for AST nodes containing proofs. *)
 let cas_of_el_with_pf (uri : LspT.DocumentUri.t) (ps : PS.t)
     (cx : TL.Expr.T.ctx) (pf : TL.Proof.T.proof) (depth : int) =
+  let cas_def_expand (by : (TL.Proof.T.usable * bool) option) =
+    let by =
+      Option.value ~default:(TL.Proof.T.{ facts = []; defs = [] }, false) by
+    in
+    PS.goal ps
+    |> Option.fold ~none:[] ~some:(fun g ->
+           cas_def_expand ~uri ~ps ~cx ~by ~sq:TL.Proof.T.(g.obl |> unwrap))
+  in
   let open TL.Proof.T in
   match unwrap pf with
   | Omitted Implicit ->
-      [ ca_omitted ~uri ~ps; ca_to_steps ~uri ~ps ~cx ~pf ~depth ]
+      List.concat
+        [
+          [ ca_omitted ~uri ~ps; ca_to_steps ~uri ~ps ~cx ~pf ~depth ];
+          cas_def_expand None;
+        ]
   | Omitted Explicit | Omitted (Elsewhere _) ->
-      [ ca_to_steps ~uri ~ps ~cx ~pf ~depth ]
+      List.concat
+        [ [ ca_to_steps ~uri ~ps ~cx ~pf ~depth ]; cas_def_expand None ]
   | Steps ([], _) ->
       (* TODO: Drop one level. *)
       []
   | Steps (_, _) -> []
-  | Obvious | By (_, _) -> [ ca_to_steps ~uri ~ps ~cx ~pf ~depth ]
+  | Obvious ->
+      List.concat
+        [ [ ca_to_steps ~uri ~ps ~cx ~pf ~depth ]; cas_def_expand None ]
+  | By (usable, only) ->
+      List.concat
+        [
+          [ ca_to_steps ~uri ~ps ~cx ~pf ~depth ];
+          cas_def_expand (Some (usable, only));
+        ]
   | Error _ -> []
-
-(** Creates a rewrite for the proof of the current step, replacing it with BY
-    and the step names listed. *)
-let ps_proof_rewrite ps cx step_names =
-  let r =
-    Range.of_points
-      (Range.from (PS.head_range ps |> Range.make_after))
-      (Range.till (PS.full_range ps))
-  in
-  let ps_proof_new =
-    TL.Proof.T.By
-      ( {
-          facts =
-            List.map
-              (fun sn ->
-                TL.Expr.T.Opaque (TL.Proof.T.string_of_stepno sn) |> noprops)
-              step_names;
-          defs = [];
-        },
-        false )
-    |> noprops
-  in
-  let t = Fmt.str " %a\n" (pp_proof cx) ps_proof_new in
-  (r, t)
 
 (* Create code action for a goal in the form of implication. *)
 let cas_of_goal_implies (uri : LspT.DocumentUri.t) (ps : PS.t)
@@ -370,8 +516,8 @@ let cas_of_goal_exists (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
 let cas_of_goal_conj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     cx op_args =
   let step_names = Seq_acc.make (PS.sub_step_name_seq ps_parent) in
+  let ps_proof = PS.proof ps |> Option.get in
   let add_steps_rewrite =
-    let ps_proof = PS.proof ps |> Option.get in
     flatten_op_list Conj op_args
     |> List.map (fun op ->
            let step_no = Seq_acc.take step_names in
@@ -383,7 +529,14 @@ let cas_of_goal_conj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
            (step_no, step))
     |> pp_proof_steps_before ps cx
   in
-  let ps_proof_rewrite = ps_proof_rewrite ps cx (Seq_acc.acc step_names) in
+  let ps_proof_rewrite =
+    ps_proof_rewrite ps cx
+      (`Usable
+         ProofBy.(
+           empty
+           |> add_steps (Seq_acc.acc step_names)
+           |> add_defs_from_pf ps_proof))
+  in
   let ca =
     ca_edits ~uri ~title:"⤮ Decompose goal (/\\)"
       ~edits:[ add_steps_rewrite; ps_proof_rewrite ]
@@ -426,7 +579,7 @@ let cas_of_goal_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
       |> noprops
     in
     let new_step_rewrite = pp_proof_steps_before ps cx [ (step_no, step) ] in
-    let ps_proof_rewrite = ps_proof_rewrite ps cx [ step_no ] in
+    let ps_proof_rewrite = ps_proof_rewrite ps cx (`StepNames [ step_no ]) in
     ca_edits ~uri
       ~title:(Fmt.str "⤮ Decompose goal (\\/, case %d)" (disjunct_pos + 1))
       ~edits:[ new_step_rewrite; ps_proof_rewrite ]
@@ -458,7 +611,9 @@ let cas_of_goal_equiv (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
            (step_no, step))
     |> pp_proof_steps_before ps cx
   in
-  let ps_proof_rewrite = ps_proof_rewrite ps cx (Seq_acc.acc step_names) in
+  let ps_proof_rewrite =
+    ps_proof_rewrite ps cx (`StepNames (Seq_acc.acc step_names))
+  in
   let ca =
     ca_edits ~uri ~title:"⤮ Decompose goal (<=>)"
       ~edits:[ add_steps_rewrite; ps_proof_rewrite ]

@@ -31,6 +31,7 @@ val of_all : t
 val make_before : t -> t
 val make_before_ln : t -> t
 val make_after : t -> t
+val with_end_line : t -> t
 val join : t -> t -> t
 val join_opt : t option -> t -> t
 val crop_line_prefix : t -> int -> t
