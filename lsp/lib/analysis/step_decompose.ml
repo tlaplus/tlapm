@@ -8,37 +8,33 @@ module StringSet = Set.Make (String)
 let noprops = TL.Property.noprops
 let unwrap = TL.Property.unwrap
 
-module ProofBy = struct
-  let empty = TL.Proof.T.{ facts = []; defs = [] }
+(** Helpers for working with [TL.Proof.T.usable]. *)
+module Usable = struct
+  open TL.Proof.T
+  open TL.Expr.T
 
-  let add_steps (step_names : TL.Proof.T.stepno list) usable =
+  let empty : usable = { facts = []; defs = [] }
+
+  let add_steps (step_names : stepno list) (usable : usable) : usable =
     let new_facts =
-      List.map
-        (fun sn -> TL.Expr.T.Opaque (TL.Proof.T.string_of_stepno sn) |> noprops)
-        step_names
+      List.map (fun sn -> Opaque (string_of_stepno sn) |> noprops) step_names
     in
-    TL.Proof.T.{ usable with facts = List.append usable.facts new_facts }
+    { usable with facts = List.append usable.facts new_facts }
 
-  let add_defs new_defs usable =
-    TL.Proof.T.{ usable with defs = List.append usable.defs new_defs }
+  let add_defs new_defs usable : usable =
+    { usable with defs = List.append usable.defs new_defs }
 
-  let add_defs_str def_names usable =
+  let add_defs_str def_names usable : usable =
     let new_defs =
-      def_names
-      |> List.map @@ fun def_name -> TL.Proof.T.Dvar def_name |> noprops
+      def_names |> List.map @@ fun def_name -> Dvar def_name |> noprops
     in
     add_defs new_defs usable
 
-  let add_defs_from_pf (pf : TL.Proof.T.proof) usable =
-    let open TL.Proof.T in
+  let add_defs_from_pf (pf : proof) usable : usable =
     match pf.core with
     | By ({ defs; _ }, _) -> { usable with defs = List.append usable.defs defs }
     | Obvious | Omitted _ | Steps (_, _) | Error _ -> usable
 end
-
-(* TODO: CA to expand the top-level definitions in the goal. *)
-
-(* Collect recursively multiple nested operator applications. *)
 
 type flatten_by = Conj | Disj | Equiv
 
@@ -313,7 +309,7 @@ let cas_def_expand ~uri ~(ps : PS.t) ~cx ~by ~(sq : TL.Expr.T.sequent) =
   expandable_names sq.context sq.active
   |> List.map @@ fun def_name ->
      let usable, only = by in
-     let usable = usable |> ProofBy.add_defs_str [ def_name ] in
+     let usable = usable |> Usable.add_defs_str [ def_name ] in
      let new_pf = TL.Proof.T.By (usable, only) |> noprops in
      let range, newText = ps_proof_rewrite ps cx (`Proof new_pf) in
      ca_edit ~uri ~title:(Fmt.str "⤮ Expand %s" def_name) ~range ~newText
@@ -532,7 +528,7 @@ let cas_of_goal_conj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   let ps_proof_rewrite =
     ps_proof_rewrite ps cx
       (`Usable
-         ProofBy.(
+         Usable.(
            empty
            |> add_steps (Seq_acc.acc step_names)
            |> add_defs_from_pf ps_proof))
