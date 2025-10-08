@@ -20,7 +20,7 @@ let ca_omitted ~uri ~ps =
         <2> QED proof
     v} *)
 let ca_to_steps ~uri ~ps ~cx ~pf ~depth =
-  let title = "⤮ Prove in steps." in
+  let title = "⤮ Make nested" in
   let range =
     match TL.Util.query_locus pf with
     | Some _ ->
@@ -34,7 +34,7 @@ let ca_to_steps ~uri ~ps ~cx ~pf ~depth =
   let newText =
     indent ps ~nested:true (Fmt.str "\n<%d> QED %a" qed_depth pf_pp pf)
   in
-  (* TODO: Use the PP for all the text... *)
+  (* TODO: Use ps_proof_rewrite here.  *)
   ca_edit ~uri ~title ~range ~newText
 
 (* Propose code actions for AST nodes containing proofs. *)

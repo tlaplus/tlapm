@@ -90,4 +90,4 @@ let cas_def_expand ~uri ~(ps : PS.t) ~cx ~by ~(sq : TL.Expr.T.sequent) =
      let usable = usable |> Usable.add_defs_str [ def_name ] in
      let new_pf = TL.Proof.T.By (usable, only) |> noprops in
      let range, newText = ps_proof_rewrite ps cx (`Proof new_pf) in
-     ca_edit ~uri ~title:(Fmt.str "⤮ Expand %s" def_name) ~range ~newText
+     ca_edit ~uri ~title:(Fmt.str "→ Expand %s" def_name) ~range ~newText

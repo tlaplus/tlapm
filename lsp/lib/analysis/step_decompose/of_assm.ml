@@ -1,5 +1,40 @@
 open Util
 
+(** Transform context so that all the hypotheses become hidden. That's to make
+    printed expression as small/compact as possible. *)
+let make_cx_hidden (cx : TL.Expr.T.ctx) : TL.Expr.T.ctx =
+  let open TL.Expr.T in
+  cx
+  |> TL.Util.Deque.map @@ fun _ hyp ->
+     match unwrap hyp with
+     | Fresh (_, _, _, _) | FreshTuply (_, _) | Flex _ -> hyp
+     | Defn (defn, wheredef, _, export) ->
+         TL.Property.( @@ ) (Defn (defn, wheredef, Hidden, export)) hyp
+     | Fact (expr, _, time) ->
+         TL.Property.( @@ ) (Fact (expr, Hidden, time)) hyp
+
+let make_disjunction disjuncts =
+  let open TL.Expr.T in
+  let open TL.Builtin in
+  let ex =
+    disjuncts
+    |> List.fold_left
+         (fun acc disj ->
+           match acc with
+           | None -> Some disj
+           | Some acc ->
+               let op = Internal Disj |> noprops in
+               Some (Apply (op, [ acc; disj ]) |> noprops))
+         None
+  in
+  Option.value ~default:(Internal FALSE |> noprops) ex
+
+(** Limit length of a title, when referring to expressions. *)
+let limit_title title =
+  let max_len = 50 in
+  if String.length title > max_len then String.sub title 0 (max_len - 1) ^ "…"
+  else title
+
 (** Propose proof decomposition CodeAction for an assumption in the form of
     disjunction.
     - The proof is split to multiple steps "by cases", in the same level as the
@@ -13,8 +48,9 @@ let cas_of_assm_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   (* TODO: Name code actions by the nearest definition? *)
   let step_names = Seq_acc.make (PS.sub_step_name_seq ps_parent) in
   let ps_proof = PS.proof ps |> Option.get in
+  let disjuncts = flatten_op_list Disj disjuncts in
   let add_steps_rewrite =
-    flatten_op_list Disj disjuncts
+    disjuncts
     |> List.map (fun disj ->
            let step_no = Seq_acc.take step_names in
            let step = TL.Proof.T.Pcase (disj, ps_proof) |> noprops in
@@ -29,9 +65,13 @@ let cas_of_assm_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
            |> add_steps (Seq_acc.acc step_names)
            |> add_defs_from_pf ps_proof))
   in
+  let title_ex = make_disjunction disjuncts in
+  let title =
+    Fmt.str "⤮ Case split %a" (Debug.pp_expr_text (make_cx_hidden cx)) title_ex
+    |> limit_title
+  in
   let ca =
-    ca_edits ~uri ~title:"⤮ Decompose given (\\/)"
-      ~edits:[ add_steps_rewrite; ps_proof_rewrite ]
+    ca_edits ~uri ~title ~edits:[ add_steps_rewrite; ps_proof_rewrite ]
   in
   [ ca ]
 

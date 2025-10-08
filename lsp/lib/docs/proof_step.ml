@@ -646,9 +646,13 @@ end = struct
           | TL.Proof.T.Assert (sequent, _proof)
           | TL.Proof.T.Suffices (sequent, _proof) ->
               Some (step ~head_range:(Range.of_wrapped sequent.active))
-          | TL.Proof.T.Use _ | TL.Proof.T.Pcase _ | TL.Proof.T.Pick _
-          | TL.Proof.T.PickTuply _ | TL.Proof.T.Have _ | TL.Proof.T.Take _
-          | TL.Proof.T.TakeTuply _ | TL.Proof.T.Witness _ ->
+          | TL.Proof.T.Pcase (expr, _)
+          | TL.Proof.T.Pick (_, expr, _)
+          | TL.Proof.T.PickTuply (_, expr, _) ->
+              Some (step ~head_range:(Range.of_wrapped expr))
+          | TL.Proof.T.Have _ | TL.Proof.T.Take _ | TL.Proof.T.TakeTuply _
+          | TL.Proof.T.Use (_, _)
+          | TL.Proof.T.Witness _ ->
               Some (step ~head_range:(Some full_range))
         in
         (p_super#step cx st, step)

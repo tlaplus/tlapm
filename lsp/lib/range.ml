@@ -108,6 +108,13 @@ let join (R (af, at)) (R (bf, bt)) =
   of_points f t
 
 let join_opt a b = match a with None -> b | Some a -> join a b
+
+let join_opt2 a b =
+  match (a, b) with
+  | _, None -> a
+  | None, _ -> b
+  | Some a, Some b -> Some (join a b)
+
 let crop_line_prefix (R ((lf, cf), t)) offset = R ((lf, cf + offset), t)
 
 let string_of_range (R ((fl, fc), (tl, tc))) : string =
