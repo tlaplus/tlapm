@@ -16,6 +16,10 @@ let step_number = function
     | Named (n, _, _)
     | Unnamed (n, _) -> n
 
+let sub_step_number (sn : stepno option) : int =
+    match sn with
+    | None -> 1
+    | Some step -> (step_number step) + 1
 
 let string_of_stepno ?(anonid=false) = function
     | Named (sn, sl, _) ->

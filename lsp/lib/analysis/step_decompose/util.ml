@@ -61,7 +61,7 @@ let expand_sub modal_op action_ex subscript_ex =
       let changed = Apply (Internal Neg |> noprops, [ unchanged ]) |> noprops in
       make_conjunction [ action_ex; changed ]
 
-type flatten_by = Conj | Disj | Equiv
+type flatten_by = Conj | Disj | Equiv | Implies
 
 let rec flatten_op_list (by : flatten_by) (exs : TL.Expr.T.expr list) :
     TL.Expr.T.expr list =
@@ -78,6 +78,7 @@ and flatten_op (by : flatten_by) (ex : TL.Expr.T.expr) : TL.Expr.T.expr list =
           | Conj when by = Conj -> flatten_op_list by args
           | Disj when by = Disj -> flatten_op_list by args
           | Equiv when by = Equiv -> flatten_op_list by args
+          | Implies when by = Implies -> flatten_op_list by args
           | _ -> [ ex ])
       | _ -> [ ex ])
   | List (bullet, list) -> (

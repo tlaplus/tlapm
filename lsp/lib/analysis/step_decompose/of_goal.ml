@@ -4,7 +4,7 @@ open Util
 let cas_of_goal_implies (uri : LspT.DocumentUri.t) (ps : PS.t)
     (ps_parent : PS.t) (cx : TL.Expr.T.ctx) (op_args : TL.Expr.T.expr list) =
   let ps_proof = PS.proof ps |> Option.get in
-  let step_names = Seq_acc.make (PS.sub_step_name_seq ps_parent) in
+  let step_names = Seq_acc.make (PS.stepno_seq_under_proof_step ps_parent) in
   let antecedent = List.hd op_args in
   let step = TL.Proof.T.Have antecedent |> noprops in
   let step_no = Seq_acc.take step_names in
@@ -58,7 +58,7 @@ let cas_of_goal_forall (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
 let cas_of_goal_exists (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     (cx : TL.Expr.T.ctx) (bs : TL.Expr.T.bound list) =
   let title = "⤮ Decompose goal (\\E)" in
-  let step_names = Seq_acc.make (PS.sub_step_name_seq ps_parent) in
+  let step_names = Seq_acc.make (PS.stepno_seq_under_proof_step ps_parent) in
   let bs_unditto = TL.Expr.T.unditto bs in
   let fcx = fmt_cx cx in
   let fresh_names = ref [] in
@@ -106,7 +106,7 @@ let cas_of_goal_exists (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
              in
              let step =
                TL.Proof.T.Assert
-                 ( { context = TL.Util.Deque.empty; active },
+                 ( Sequent.of_goal active,
                    TL.Proof.T.(Omitted Implicit) |> noprops )
                |> noprops
              in
@@ -162,16 +162,14 @@ let cas_of_goal_exists (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
 (** Create a code action for a goal in the form of conjunction. *)
 let cas_of_goal_conj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     cx op_args =
-  let step_names = Seq_acc.make (PS.sub_step_name_seq ps_parent) in
+  let step_names = Seq_acc.make (PS.stepno_seq_under_proof_step ps_parent) in
   let ps_proof = PS.proof ps |> Option.get in
   let add_steps_rewrite =
     flatten_op_list Conj op_args
     |> List.map (fun op ->
            let step_no = Seq_acc.take step_names in
            let step =
-             TL.Proof.T.Assert
-               ({ context = TL.Util.Deque.empty; active = op }, ps_proof)
-             |> noprops
+             TL.Proof.T.Assert (Sequent.of_goal op, ps_proof) |> noprops
            in
            (step_no, step))
     |> pp_proof_steps_before ps cx
@@ -200,7 +198,7 @@ let cas_of_goal_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   let disjuncts = flatten_op_list Disj disjuncts in
   let ps_proof = PS.proof ps |> Option.get in
   let disjunct_ca disjunct_pos disjunct =
-    let step_names = Seq_acc.make (PS.sub_step_name_seq ps_parent) in
+    let step_names = Seq_acc.make (PS.stepno_seq_under_proof_step ps_parent) in
     let step_no = Seq_acc.take step_names in
     let other_negated =
       disjuncts
@@ -236,7 +234,7 @@ let cas_of_goal_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
 (* A chain of equivalences is replaced with a list of circular implications. *)
 let cas_of_goal_equiv (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     cx op_args =
-  let step_names = Seq_acc.make (PS.sub_step_name_seq ps_parent) in
+  let step_names = Seq_acc.make (PS.stepno_seq_under_proof_step ps_parent) in
   let add_steps_rewrite =
     let ps_proof = PS.proof ps |> Option.get in
     let op_args = flatten_op_list Equiv op_args in
@@ -251,9 +249,7 @@ let cas_of_goal_equiv (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
              |> noprops
            in
            let step =
-             TL.Proof.T.Assert
-               ({ context = TL.Util.Deque.empty; active = step_goal }, ps_proof)
-             |> noprops
+             TL.Proof.T.Assert (Sequent.of_goal step_goal, ps_proof) |> noprops
            in
            (step_no, step))
     |> pp_proof_steps_before ps cx

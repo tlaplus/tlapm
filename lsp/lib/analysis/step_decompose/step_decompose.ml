@@ -2,7 +2,10 @@
 (* cspell:words Tquant Tsub Uminus Unprimable noprops stepno uncons Bpragma Defn  Dvar  assm  filteri *)
 open Util
 
-(** Replace {v <1> ... v} with {v <1> ... OBVIOUS v} *)
+(** Replace
+    {v <1> ... v}
+    with
+    {v <1> ... OBVIOUS v} *)
 let ca_omitted ~uri ~ps =
   let title = "⤮ Prove as OBVIOUS" in
   let range = PS.head_range ps |> Range.make_after in
@@ -80,7 +83,8 @@ let cas_of_el_with_pf (uri : LspT.DocumentUri.t) (ps : PS.t)
 let cas_of_obl (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     (o : TL.Proof.T.obligation) =
   let o = TL.Backend.Toolbox.normalize true o in
-  Fmt.epr "XXX: goal=%a@." Debug.pp_expr o.obl.core.active;
+  Fmt.epr "XXX: goal=%a, cx=%a@." Debug.pp_expr o.obl.core.active Debug.pp_cx
+    o.obl.core.context;
   List.concat
     [
       Of_goal.code_actions uri ps ps_parent o.obl.core;

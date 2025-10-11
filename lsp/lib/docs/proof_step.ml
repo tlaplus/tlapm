@@ -241,12 +241,10 @@ let step_name (ps : t) : TL.Proof.T.stepno option =
   | El.Step step -> TL.Property.query step TL.Proof.T.Props.step
   | El.Qed qed_step -> TL.Property.query qed_step TL.Proof.T.Props.step
 
-(** Level/Depth of a sub-step of a given step. I.e. [x] in {v <x>y v}. *)
+(** Level/Depth of a sub-step of a given step. I.e. [x] in
+    {v <x>y v} *)
 let sub_step_no (parent : t) : int =
-  match step_name parent with
-  | None -> 1
-  | Some (TL.Proof.T.Named (sn, _, _)) | Some (TL.Proof.T.Unnamed (sn, _)) ->
-      sn + 1
+  step_name parent |> TL.Proof.T.sub_step_number
 
 let sub_step_label_seq (parent : t) : int Seq.t =
   let max_num =
@@ -270,9 +268,15 @@ let sub_step_label_seq (parent : t) : int Seq.t =
   in
   Seq.ints (max_num + 1)
 
-let sub_step_name_seq (parent : t) : TL.Proof.T.stepno Seq.t =
+let stepno_seq_under_proof_step (parent : t) : TL.Proof.T.stepno Seq.t =
   let sn = sub_step_no parent in
   sub_step_label_seq parent
+  |> Seq.map (fun sl -> TL.Proof.T.Named (sn, string_of_int sl, false))
+
+let stepno_seq_under_stepno (parent : TL.Proof.T.stepno option) :
+    TL.Proof.T.stepno Seq.t =
+  let sn = TL.Proof.T.sub_step_number parent in
+  Seq.ints 1
   |> Seq.map (fun sl -> TL.Proof.T.Named (sn, string_of_int sl, false))
 
 let sub_step_unnamed (parent : t) : TL.Proof.T.stepno =

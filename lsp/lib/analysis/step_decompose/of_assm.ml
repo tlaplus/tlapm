@@ -19,11 +19,22 @@ let limit_title title =
   if String.length title > max_len then String.sub title 0 (max_len - 1) ^ "…"
   else title
 
+(** Propose the decomposition Code Action for an assumption which is in the form
+    of conjunction. If we have an assumption
+    {v
+      A /\ B /\ ...
+    v}
+    with the current proof [pf], we will add steps before the QED step:
+    {v
+      <1>a. A [pf]
+      <1>b. B [pf]
+      ...
+    v} *)
 let cas_of_assm_conj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     cx conjuncts =
   (* TODO: Stop proposing the conjunction... *)
   (* TODO: Name code actions by the nearest definition? *)
-  let step_names = Seq_acc.make (PS.sub_step_name_seq ps_parent) in
+  let step_names = Seq_acc.make (PS.stepno_seq_under_proof_step ps_parent) in
   let ps_proof = PS.proof ps |> Option.get in
   let conjuncts = flatten_op_list Conj conjuncts in
   let add_steps_rewrite =
@@ -31,9 +42,7 @@ let cas_of_assm_conj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     |> List.map (fun conj ->
            let step_no = Seq_acc.take step_names in
            let step =
-             TL.Proof.T.Assert
-               ({ context = TL.Util.Deque.empty; active = conj }, ps_proof)
-             |> noprops
+             TL.Proof.T.Assert (Sequent.of_goal conj, ps_proof) |> noprops
            in
            (step_no, step))
     |> pp_proof_steps_before ps cx
@@ -56,18 +65,30 @@ let cas_of_assm_conj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   in
   [ ca ]
 
-(** Propose proof decomposition CodeAction for an assumption in the form of
+(** Propose proof decomposition Code Action for an assumption in the form of
     disjunction.
     - The proof is split to multiple steps "by cases", in the same level as the
       QED step for which the action is proposed.
     - The decomposition is only proposed if the current context don't have one
       of the disjuncts among the assumptions. This way we don't repeat proposing
-      the same. *)
+      the same.
+
+    Thus, if we have an assumption
+    {v
+      A \/ B \/ ...
+    v}
+    with the current proof [pf], we will add steps before the QED step:
+    {v
+      <1>a. CASE A [pf + <1>a]
+      <1>b. CASE B [pf + <1>b]
+      ...
+      <1> QED [<1>a, <1>b, ... + defs from pf]
+    v} *)
 let cas_of_assm_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     cx disjuncts =
   (* TODO: Stop proposing the disjunction... *)
   (* TODO: Name code actions by the nearest definition? *)
-  let step_names = Seq_acc.make (PS.sub_step_name_seq ps_parent) in
+  let step_names = Seq_acc.make (PS.stepno_seq_under_proof_step ps_parent) in
   let ps_proof = PS.proof ps |> Option.get in
   let disjuncts = flatten_op_list Disj disjuncts in
   let add_steps_rewrite =
@@ -99,6 +120,95 @@ let cas_of_assm_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   in
   [ ca ]
 
+(** Propose use of an assumption in the form of an implication. Thus, if we have
+    assumption
+    {v
+      A => B => ... => C
+    v}
+    with the current proof [pf] we will produce
+    {v
+      <1>a. C
+        <2>a. A [pf]
+        <2>b. B [pf]
+        ...
+        <2> QED [<2>a, <2>b, ... + pf]
+      <1> QED [<1>a + pf]
+    v} *)
+let cas_of_assm_implies (uri : LspT.DocumentUri.t) (ps : PS.t)
+    (ps_parent : PS.t) cx args =
+  Fmt.epr "XXX: cas_of_assm_implies, args=%a@."
+    (Fmt.list ~sep:Fmt.(const string ", ") (Debug.pp_expr_text cx))
+    args;
+  let antecedents, consequent =
+    match args |> flatten_op_list Implies |> List.rev with
+    | c :: a -> (List.rev a, c)
+    | [] -> assert false
+  in
+  Fmt.epr "XXX: cas_of_assm_implies, antecedents=%a@."
+    (Fmt.list ~sep:Fmt.(const string ", ") (Debug.pp_expr_text cx))
+    antecedents;
+  Fmt.epr "XXX: cas_of_assm_implies, consequent=%a@." (Debug.pp_expr_text cx)
+    consequent;
+  let step_names = Seq_acc.make (PS.stepno_seq_under_proof_step ps_parent) in
+  let ps_proof = PS.proof ps |> Option.get in
+  let add_steps_rewrite =
+    let step_no = Seq_acc.take step_names in
+    let step_pf =
+      let sub_stepno_seq =
+        PS.stepno_seq_under_stepno (Some step_no) |> Seq_acc.make
+      in
+      let sub_steps =
+        antecedents
+        |> List.mapi @@ fun i antecedent ->
+           let antecedent =
+             (* On the shift and cx. My [KP] guess follows:
+               - Each assert takes 1 bump (1 for main step, and 1 for each sub-step)
+               - Each named step does a bump for a name (of a step).
+               - The current step has the name, but not the assert yet, thus +1.
+             *)
+             antecedent |> TL.Expr.Subst.(app_expr (shift (2 + (i * 2) + 1)))
+           in
+           let sub_step_no = Seq_acc.take sub_stepno_seq in
+           let sub_step =
+             TL.Proof.T.(Assert (Sequent.of_goal antecedent, ps_proof))
+             |> noprops
+           in
+           TL.Property.assign sub_step TL.Proof.T.Props.step sub_step_no
+      in
+      let step_qed_pf =
+        Usable.(
+          empty |> add_steps (Seq_acc.acc sub_stepno_seq) |> add_to_pf ps_proof)
+      in
+      let step_qed_sn = Seq_acc.take sub_stepno_seq in
+      let step_qed = TL.Proof.T.Qed step_qed_pf |> noprops in
+      let step_qed =
+        TL.Property.assign step_qed TL.Proof.T.Props.step step_qed_sn
+      in
+      TL.Proof.T.Steps (sub_steps, step_qed) |> noprops
+    in
+    let step =
+      TL.Proof.T.(Assert (Sequent.of_goal consequent, step_pf)) |> noprops
+    in
+    [ (step_no, step) ] |> pp_proof_steps_before ps cx
+  in
+  let ps_proof_rewrite =
+    ps_proof_rewrite ps cx
+      (`Proof
+         Usable.(
+           empty |> add_steps (Seq_acc.acc step_names) |> add_to_pf ps_proof))
+  in
+  let title_ex =
+    TL.Expr.T.(Apply (Internal TL.Builtin.Implies |> noprops, args)) |> noprops
+  in
+  let title =
+    Fmt.str "⤮ Use %a" (Debug.pp_expr_text (make_cx_hidden cx)) title_ex
+    |> limit_title
+  in
+  let ca =
+    ca_edits ~uri ~title ~edits:[ add_steps_rewrite; ps_proof_rewrite ]
+  in
+  [ ca ]
+
 (** Match an assumption expression by its structure and propose the LSP Code
     actions to decompose them. *)
 let cas_of_assm (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) cx ex
@@ -112,8 +222,10 @@ let cas_of_assm (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) cx ex
             match bi with
             | TL.Builtin.Conj -> cas_of_assm_conj uri ps ps_parent cx op_args
             | TL.Builtin.Disj -> cas_of_assm_disj uri ps ps_parent cx op_args
-            | TL.Builtin.Implies | TL.Builtin.Equiv | TL.Builtin.TRUE
-            | TL.Builtin.FALSE | TL.Builtin.Neg | TL.Builtin.Eq | TL.Builtin.Neq
+            | TL.Builtin.Implies ->
+                cas_of_assm_implies uri ps ps_parent cx op_args
+            | TL.Builtin.Equiv | TL.Builtin.TRUE | TL.Builtin.FALSE
+            | TL.Builtin.Neg | TL.Builtin.Eq | TL.Builtin.Neq
             | TL.Builtin.STRING | TL.Builtin.BOOLEAN | TL.Builtin.SUBSET
             | TL.Builtin.UNION | TL.Builtin.DOMAIN | TL.Builtin.Subseteq
             | TL.Builtin.Mem | TL.Builtin.Notmem | TL.Builtin.Setminus

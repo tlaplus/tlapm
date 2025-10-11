@@ -39,7 +39,11 @@ val sub_step_label_seq : t -> int Seq.t
 (** Returns a sequence of fresh step names to be used for sub-steps of the
     provided proof step. *)
 
-val sub_step_name_seq : t -> TL.Proof.T.stepno Seq.t
+val stepno_seq_under_proof_step : t -> TL.Proof.T.stepno Seq.t
+(** Returns a sequence of fresh step names to be used as sub-steps. *)
+
+val stepno_seq_under_stepno :
+  TL.Proof.T.stepno option -> TL.Proof.T.stepno Seq.t
 (** Returns a sequence of fresh step names to be used as sub-steps. *)
 
 val sub_step_unnamed : t -> TL.Proof.T.stepno

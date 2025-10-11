@@ -100,3 +100,4 @@ val get_qed_proof:
     qed_step_ Property.wrapped -> proof
 (* `proof/p_simplify.ml` *)
 val step_number: stepno -> int
+val sub_step_number : stepno option -> int
