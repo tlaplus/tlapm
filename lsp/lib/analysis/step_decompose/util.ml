@@ -26,6 +26,41 @@ let expand_expr_ref cx ix f =
   | TL.Expr.T.Fact (ex, Visible, _) -> f cx ex
   | TL.Expr.T.Fact (_, _, _) -> []
 
+let join_exs ~unit ~op exs =
+  let open TL.Expr.T in
+  let ex =
+    exs
+    |> List.fold_left
+         (fun acc ex ->
+           match acc with
+           | None -> Some ex
+           | Some acc -> Some (Apply (op, [ acc; ex ]) |> noprops))
+         None
+  in
+  Option.value ~default:unit ex
+
+let make_disjunction exs =
+  let open TL.Expr.T in
+  let open TL.Builtin in
+  join_exs ~unit:(Internal FALSE |> noprops) ~op:(Internal Disj |> noprops) exs
+
+let make_conjunction exs =
+  let open TL.Expr.T in
+  let open TL.Builtin in
+  join_exs ~unit:(Internal TRUE |> noprops) ~op:(Internal Conj |> noprops) exs
+
+let expand_sub modal_op action_ex subscript_ex =
+  let open TL.Expr.T in
+  let open TL.Builtin in
+  let unchanged =
+    Apply (Internal UNCHANGED |> noprops, [ subscript_ex ]) |> noprops
+  in
+  match modal_op with
+  | TL.Expr.T.Box -> make_disjunction [ action_ex; unchanged ]
+  | TL.Expr.T.Dia ->
+      let changed = Apply (Internal Neg |> noprops, [ unchanged ]) |> noprops in
+      make_conjunction [ action_ex; changed ]
+
 type flatten_by = Conj | Disj | Equiv
 
 let rec flatten_op_list (by : flatten_by) (exs : TL.Expr.T.expr list) :
@@ -33,20 +68,30 @@ let rec flatten_op_list (by : flatten_by) (exs : TL.Expr.T.expr list) :
   exs |> List.map (fun arg -> flatten_op by arg) |> List.flatten
 
 and flatten_op (by : flatten_by) (ex : TL.Expr.T.expr) : TL.Expr.T.expr list =
+  let open TL.Expr.T in
+  let open TL.Builtin in
   match ex.core with
-  | TL.Expr.T.Apply (op, args) -> (
+  | Apply (op, args) -> (
       match op.core with
-      | TL.Expr.T.Internal bi -> (
+      | Internal bi -> (
           match bi with
-          | TL.Builtin.Conj when by = Conj -> flatten_op_list by args
-          | TL.Builtin.Disj when by = Disj -> flatten_op_list by args
-          | TL.Builtin.Equiv when by = Equiv -> flatten_op_list by args
+          | Conj when by = Conj -> flatten_op_list by args
+          | Disj when by = Disj -> flatten_op_list by args
+          | Equiv when by = Equiv -> flatten_op_list by args
           | _ -> [ ex ])
       | _ -> [ ex ])
-  | TL.Expr.T.List (bullet, list) -> (
+  | List (bullet, list) -> (
       match bullet with
-      | TL.Expr.T.And when by = Conj -> flatten_op_list by list
-      | TL.Expr.T.Or when by = Disj -> flatten_op_list by list
+      | And when by = Conj -> flatten_op_list by list
+      | Refs when by = Conj -> flatten_op_list by list
+      | Or when by = Disj -> flatten_op_list by list
+      | _ -> [ ex ])
+  | Sub (modal_op, action_ex, subscript_ex) -> (
+      match modal_op with
+      | Box when by = Disj ->
+          flatten_op_list by [ expand_sub modal_op action_ex subscript_ex ]
+      | Dia when by = Conj ->
+          flatten_op_list by [ expand_sub modal_op action_ex subscript_ex ]
       | _ -> [ ex ])
   | _ -> [ ex ]
 

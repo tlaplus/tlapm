@@ -80,7 +80,7 @@ let expandable_names (cx : TL.Expr.T.ctx) (ex : TL.Expr.T.expr) : string list =
 (** Propose expand actions for all the definitions that are visible, but not yet
     expanded.
 
-    TODO: "Expand all definitions". *)
+    TODO: "Expand all definitions"? *)
 let cas_def_expand ~uri ~(ps : PS.t) ~cx ~by ~(sq : TL.Expr.T.sequent) =
   expandable_names sq.context sq.active
   |> List.map @@ fun def_name ->

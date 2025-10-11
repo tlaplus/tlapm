@@ -13,27 +13,48 @@ let make_cx_hidden (cx : TL.Expr.T.ctx) : TL.Expr.T.ctx =
      | Fact (expr, _, time) ->
          TL.Property.( @@ ) (Fact (expr, Hidden, time)) hyp
 
-let make_disjunction disjuncts =
-  let open TL.Expr.T in
-  let open TL.Builtin in
-  let ex =
-    disjuncts
-    |> List.fold_left
-         (fun acc disj ->
-           match acc with
-           | None -> Some disj
-           | Some acc ->
-               let op = Internal Disj |> noprops in
-               Some (Apply (op, [ acc; disj ]) |> noprops))
-         None
-  in
-  Option.value ~default:(Internal FALSE |> noprops) ex
-
 (** Limit length of a title, when referring to expressions. *)
 let limit_title title =
   let max_len = 50 in
   if String.length title > max_len then String.sub title 0 (max_len - 1) ^ "…"
   else title
+
+let cas_of_assm_conj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
+    cx conjuncts =
+  (* TODO: Stop proposing the conjunction... *)
+  (* TODO: Name code actions by the nearest definition? *)
+  let step_names = Seq_acc.make (PS.sub_step_name_seq ps_parent) in
+  let ps_proof = PS.proof ps |> Option.get in
+  let conjuncts = flatten_op_list Conj conjuncts in
+  let add_steps_rewrite =
+    conjuncts
+    |> List.map (fun conj ->
+           let step_no = Seq_acc.take step_names in
+           let step =
+             TL.Proof.T.Assert
+               ({ context = TL.Util.Deque.empty; active = conj }, ps_proof)
+             |> noprops
+           in
+           (step_no, step))
+    |> pp_proof_steps_before ps cx
+  in
+  let ps_proof_rewrite =
+    ps_proof_rewrite ps cx
+      (`Usable
+         Usable.(
+           empty
+           |> add_steps (Seq_acc.acc step_names)
+           |> add_defs_from_pf ps_proof))
+  in
+  let title_ex = make_conjunction conjuncts in
+  let title =
+    Fmt.str "⤮ Split %a" (Debug.pp_expr_text (make_cx_hidden cx)) title_ex
+    |> limit_title
+  in
+  let ca =
+    ca_edits ~uri ~title ~edits:[ add_steps_rewrite; ps_proof_rewrite ]
+  in
+  [ ca ]
 
 (** Propose proof decomposition CodeAction for an assumption in the form of
     disjunction.
@@ -79,41 +100,49 @@ let cas_of_assm_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     actions to decompose them. *)
 let cas_of_assm (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) cx ex
     =
+  Fmt.epr "XXX: assm=%a@." Debug.pp_expr ex;
   let rec match_expr cx (ex : TL.Expr.T.expr) =
     match ex.core with
     | TL.Expr.T.Apply (op, op_args) -> (
         match op.core with
         | TL.Expr.T.Internal bi -> (
             match bi with
+            | TL.Builtin.Conj -> cas_of_assm_conj uri ps ps_parent cx op_args
             | TL.Builtin.Disj -> cas_of_assm_disj uri ps ps_parent cx op_args
-            | TL.Builtin.Implies | TL.Builtin.Conj | TL.Builtin.Equiv
-            | TL.Builtin.TRUE | TL.Builtin.FALSE | TL.Builtin.Neg
-            | TL.Builtin.Eq | TL.Builtin.Neq | TL.Builtin.STRING
-            | TL.Builtin.BOOLEAN | TL.Builtin.SUBSET | TL.Builtin.UNION
-            | TL.Builtin.DOMAIN | TL.Builtin.Subseteq | TL.Builtin.Mem
-            | TL.Builtin.Notmem | TL.Builtin.Setminus | TL.Builtin.Cap
-            | TL.Builtin.Cup | TL.Builtin.Prime | TL.Builtin.StrongPrime
-            | TL.Builtin.Leadsto | TL.Builtin.ENABLED | TL.Builtin.UNCHANGED
-            | TL.Builtin.Cdot | TL.Builtin.Actplus | TL.Builtin.Box _
-            | TL.Builtin.Diamond | TL.Builtin.Nat | TL.Builtin.Int
-            | TL.Builtin.Real | TL.Builtin.Plus | TL.Builtin.Minus
-            | TL.Builtin.Uminus | TL.Builtin.Times | TL.Builtin.Ratio
-            | TL.Builtin.Quotient | TL.Builtin.Remainder | TL.Builtin.Exp
-            | TL.Builtin.Infinity | TL.Builtin.Lteq | TL.Builtin.Lt
-            | TL.Builtin.Gteq | TL.Builtin.Gt | TL.Builtin.Divides
-            | TL.Builtin.Range | TL.Builtin.Seq | TL.Builtin.Len
-            | TL.Builtin.BSeq | TL.Builtin.Cat | TL.Builtin.Append
-            | TL.Builtin.Head | TL.Builtin.Tail | TL.Builtin.SubSeq
-            | TL.Builtin.SelectSeq | TL.Builtin.OneArg | TL.Builtin.Extend
-            | TL.Builtin.Print | TL.Builtin.PrintT | TL.Builtin.Assert
-            | TL.Builtin.JavaTime | TL.Builtin.TLCGet | TL.Builtin.TLCSet
-            | TL.Builtin.Permutations | TL.Builtin.SortSeq
+            | TL.Builtin.Implies | TL.Builtin.Equiv | TL.Builtin.TRUE
+            | TL.Builtin.FALSE | TL.Builtin.Neg | TL.Builtin.Eq | TL.Builtin.Neq
+            | TL.Builtin.STRING | TL.Builtin.BOOLEAN | TL.Builtin.SUBSET
+            | TL.Builtin.UNION | TL.Builtin.DOMAIN | TL.Builtin.Subseteq
+            | TL.Builtin.Mem | TL.Builtin.Notmem | TL.Builtin.Setminus
+            | TL.Builtin.Cap | TL.Builtin.Cup | TL.Builtin.Prime
+            | TL.Builtin.StrongPrime | TL.Builtin.Leadsto | TL.Builtin.ENABLED
+            | TL.Builtin.UNCHANGED | TL.Builtin.Cdot | TL.Builtin.Actplus
+            | TL.Builtin.Box _ | TL.Builtin.Diamond | TL.Builtin.Nat
+            | TL.Builtin.Int | TL.Builtin.Real | TL.Builtin.Plus
+            | TL.Builtin.Minus | TL.Builtin.Uminus | TL.Builtin.Times
+            | TL.Builtin.Ratio | TL.Builtin.Quotient | TL.Builtin.Remainder
+            | TL.Builtin.Exp | TL.Builtin.Infinity | TL.Builtin.Lteq
+            | TL.Builtin.Lt | TL.Builtin.Gteq | TL.Builtin.Gt
+            | TL.Builtin.Divides | TL.Builtin.Range | TL.Builtin.Seq
+            | TL.Builtin.Len | TL.Builtin.BSeq | TL.Builtin.Cat
+            | TL.Builtin.Append | TL.Builtin.Head | TL.Builtin.Tail
+            | TL.Builtin.SubSeq | TL.Builtin.SelectSeq | TL.Builtin.OneArg
+            | TL.Builtin.Extend | TL.Builtin.Print | TL.Builtin.PrintT
+            | TL.Builtin.Assert | TL.Builtin.JavaTime | TL.Builtin.TLCGet
+            | TL.Builtin.TLCSet | TL.Builtin.Permutations | TL.Builtin.SortSeq
             | TL.Builtin.RandomElement | TL.Builtin.Any | TL.Builtin.ToString
             | TL.Builtin.Unprimable | TL.Builtin.Irregular ->
                 [])
         | _ -> [])
-    | TL.Expr.T.Quant (_, _, _) | TL.Expr.T.List (_, _) -> []
+    | TL.Expr.T.List (bullet, exprs) -> (
+        match bullet with
+        | TL.Expr.T.And | TL.Expr.T.Refs ->
+            cas_of_assm_conj uri ps ps_parent cx exprs
+        | TL.Expr.T.Or -> cas_of_assm_disj uri ps ps_parent cx exprs)
+    | TL.Expr.T.Sub (modal_op, action_ex, subscript_ex) ->
+        expand_sub modal_op action_ex subscript_ex |> match_expr cx
     | TL.Expr.T.Ix ix -> expand_expr_ref cx ix match_expr
+    | TL.Expr.T.Quant (_, _, _)
     | TL.Expr.T.Opaque _ | TL.Expr.T.Internal _
     | TL.Expr.T.Lambda (_, _)
     | TL.Expr.T.Sequent _
@@ -137,7 +166,6 @@ let cas_of_assm (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) cx ex
     | TL.Expr.T.Rect _ | TL.Expr.T.Record _
     | TL.Expr.T.Except (_, _)
     | TL.Expr.T.Dot (_, _)
-    | TL.Expr.T.Sub (_, _, _)
     | TL.Expr.T.Tsub (_, _, _)
     | TL.Expr.T.Fair (_, _, _)
     | TL.Expr.T.Case (_, _)
@@ -157,6 +185,7 @@ let code_actions (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     match TL.Util.Deque.rear cx with
     | None -> ()
     | Some (cx, hyp) ->
+        Fmt.epr "XXX: hyp=%a@." Debug.pp_hyp hyp;
         (match hyp |> unwrap with
         | TL.Expr.T.Fresh (_, _, _, _)
         | TL.Expr.T.FreshTuply (_, _)

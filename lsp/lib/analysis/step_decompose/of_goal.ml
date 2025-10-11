@@ -3,22 +3,24 @@ open Util
 (* Create code action for a goal in the form of implication. *)
 let cas_of_goal_implies (uri : LspT.DocumentUri.t) (ps : PS.t)
     (ps_parent : PS.t) (cx : TL.Expr.T.ctx) (op_args : TL.Expr.T.expr list) =
-  (* Fmt.epr "@[XXX: cas_of_goal_implies[%d]@, [@[%a@]]@, cx=%a@]@."
-    (List.length op_args)
-    (Fmt.list ~sep:Fmt.(const string ", ") (Debug.pp_expr_text cx))
-    op_args Debug.pp_cx cx; *)
+  let ps_proof = PS.proof ps |> Option.get in
+  let step_names = Seq_acc.make (PS.sub_step_name_seq ps_parent) in
   let antecedent = List.hd op_args in
   let step = TL.Proof.T.Have antecedent |> noprops in
-  (* Fmt.epr "@[XXX: cas_of_goal_implies/step= %a || %a @]@." (pp_proof_step cx)
-    step
-    (fun fmt st ->
-      ignore (TL.Proof.Fmt.pp_print_step (cx, Tlapm_lib.Ctx.dot) fmt st))
-    step; *)
+  let step_no = Seq_acc.take step_names in
   let title = "⤮ Decompose goal (=>)" in
-  let edit =
-    [ (PS.sub_step_unnamed ps_parent, step) ] |> pp_proof_steps_before ps cx
+  let add_steps_rewrite = [ (step_no, step) ] |> pp_proof_steps_before ps cx in
+  let ps_proof_rewrite =
+    ps_proof_rewrite ps cx
+      (`Usable
+         Usable.(
+           empty
+           |> add_steps (Seq_acc.acc step_names)
+           |> add_defs_from_pf ps_proof))
   in
-  let ca = ca_edits ~uri ~title ~edits:[ edit ] in
+  let ca =
+    ca_edits ~uri ~title ~edits:[ add_steps_rewrite; ps_proof_rewrite ]
+  in
   [ ca ]
 
 (** Create code action for a goal in the form of universal quantification. *)
@@ -267,7 +269,7 @@ let cas_of_goal_equiv (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
 
 let code_actions (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     (sq : TL.Expr.T.sequent) =
-  let rec match_goal cx (ex : TL.Expr.T.expr) =
+  let rec match_expr cx (ex : TL.Expr.T.expr) =
     (* Fmt.epr "@[match_goal@, ex=%a@, cx=%a@]@." (Debug.pp_expr_text cx) ex
       Debug.pp_cx cx; *)
     match ex.core with
@@ -311,10 +313,12 @@ let code_actions (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
         | TL.Expr.T.Exists -> cas_of_goal_exists uri ps ps_parent cx bs)
     | TL.Expr.T.List (bullet, exprs) -> (
         match bullet with
-        | TL.Expr.T.And -> cas_of_goal_conj uri ps ps_parent cx exprs
-        | TL.Expr.T.Or -> cas_of_goal_disj uri ps ps_parent cx exprs
-        | TL.Expr.T.Refs -> [])
-    | TL.Expr.T.Ix ix -> expand_expr_ref cx ix match_goal
+        | TL.Expr.T.And | TL.Expr.T.Refs ->
+            cas_of_goal_conj uri ps ps_parent cx exprs
+        | TL.Expr.T.Or -> cas_of_goal_disj uri ps ps_parent cx exprs)
+    | TL.Expr.T.Sub (modal_op, action_ex, subscript_ex) ->
+        expand_sub modal_op action_ex subscript_ex |> match_expr cx
+    | TL.Expr.T.Ix ix -> expand_expr_ref cx ix match_expr
     | TL.Expr.T.Opaque _ | TL.Expr.T.Internal _
     | TL.Expr.T.Lambda (_, _)
     | TL.Expr.T.Sequent _
@@ -338,7 +342,6 @@ let code_actions (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     | TL.Expr.T.Rect _ | TL.Expr.T.Record _
     | TL.Expr.T.Except (_, _)
     | TL.Expr.T.Dot (_, _)
-    | TL.Expr.T.Sub (_, _, _)
     | TL.Expr.T.Tsub (_, _, _)
     | TL.Expr.T.Fair (_, _, _)
     | TL.Expr.T.Case (_, _)
@@ -348,4 +351,4 @@ let code_actions (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     | TL.Expr.T.Parens (_, _) ->
         []
   in
-  match_goal sq.context sq.active
+  match_expr sq.context sq.active

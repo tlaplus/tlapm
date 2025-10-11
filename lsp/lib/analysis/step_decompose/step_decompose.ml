@@ -80,6 +80,7 @@ let cas_of_el_with_pf (uri : LspT.DocumentUri.t) (ps : PS.t)
 let cas_of_obl (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     (o : TL.Proof.T.obligation) =
   let o = TL.Backend.Toolbox.normalize true o in
+  Fmt.epr "XXX: goal=%a@." Debug.pp_expr o.obl.core.active;
   List.concat
     [
       Of_goal.code_actions uri ps ps_parent o.obl.core;
