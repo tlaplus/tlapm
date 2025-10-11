@@ -14,3 +14,6 @@ val add_defs_str : string list -> TL.Proof.T.usable -> TL.Proof.T.usable
 
 val add_defs_from_pf :
   TL.Proof.T.proof -> TL.Proof.T.usable -> TL.Proof.T.usable
+
+val add_to_pf : TL.Proof.T.proof -> TL.Proof.T.usable -> TL.Proof.T.proof
+(** Merge usable into an existing proof. *)

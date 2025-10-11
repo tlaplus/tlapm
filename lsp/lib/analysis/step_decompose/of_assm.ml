@@ -74,7 +74,10 @@ let cas_of_assm_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     disjuncts
     |> List.map (fun disj ->
            let step_no = Seq_acc.take step_names in
-           let step = TL.Proof.T.Pcase (disj, ps_proof) |> noprops in
+           let step_pf =
+             Usable.(empty |> add_steps [ step_no ] |> add_to_pf ps_proof)
+           in
+           let step = TL.Proof.T.Pcase (disj, step_pf) |> noprops in
            (step_no, step))
     |> pp_proof_steps_before ps cx
   in
