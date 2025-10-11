@@ -68,9 +68,10 @@ let expandable_names (cx : TL.Expr.T.ctx) (ex : TL.Expr.T.expr) : string list =
         | T.Fresh (_, _, _, _)
         | T.FreshTuply (_, _)
         | T.Flex _
-        | T.Defn (_, _, _, _) ->
+        | T.Defn (_, _, _, _)
+        | T.Fact (_, T.Hidden, _) ->
             ()
-        | T.Fact (_, _, _) -> ignore (visitor#hyp ((), cx) hyp));
+        | T.Fact (_, T.Visible, _) -> ignore (visitor#hyp ((), cx) hyp));
         traverse_cx cx
   in
   visitor#expr ((), cx) ex;
