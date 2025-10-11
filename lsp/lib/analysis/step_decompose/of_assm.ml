@@ -104,11 +104,9 @@ let cas_of_assm_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   in
   let ps_proof_rewrite =
     ps_proof_rewrite ps cx
-      (`Usable
+      (`Proof
          Usable.(
-           empty
-           |> add_steps (Seq_acc.acc step_names)
-           |> add_defs_from_pf ps_proof))
+           empty |> add_steps (Seq_acc.acc step_names) |> add_to_pf ps_proof))
   in
   let title_ex = make_disjunction disjuncts in
   let title =
@@ -209,6 +207,33 @@ let cas_of_assm_implies (uri : LspT.DocumentUri.t) (ps : PS.t)
   in
   [ ca ]
 
+(** For each assumption in the form of existential quantifier,
+    {v
+      \A x \in X : P(x)
+    v}
+    and [pf] as the current proof, we introduce
+    {v
+      <1>a. PICK x \in X : P(x)
+        <2>1. X # {}
+        <2>2. QED [pf + <2>1]
+    v} *)
+let cas_of_assm_forall (_uri : LspT.DocumentUri.t) (_ps : PS.t)
+    (_ps_parent : PS.t) _cx _args =
+  (* TODO: ... *)
+  []
+
+(** For each assumption in the form of existential quantifier,
+    {v
+      \E x \in X : P(x)
+    v}
+    and [pf] as the current proof, we introduce
+    {v
+      <1>a. PICK x \in X : P(x) [pf]
+    v} *)
+let cas_of_assm_exists (_uri : LspT.DocumentUri.t) (_ps : PS.t)
+    (_ps_parent : PS.t) _cx _args =
+  []
+
 (** Match an assumption expression by its structure and propose the LSP Code
     actions to decompose them. *)
 let cas_of_assm (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) cx ex
@@ -249,15 +274,22 @@ let cas_of_assm (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) cx ex
             | TL.Builtin.Unprimable | TL.Builtin.Irregular ->
                 [])
         | _ -> [])
+    | TL.Expr.T.Quant (q, bs, _e) -> (
+        match q with
+        | TL.Expr.T.Forall -> cas_of_assm_forall uri ps ps_parent cx bs
+        | TL.Expr.T.Exists -> cas_of_assm_exists uri ps ps_parent cx bs)
     | TL.Expr.T.List (bullet, exprs) -> (
-        match bullet with
-        | TL.Expr.T.And | TL.Expr.T.Refs ->
-            cas_of_assm_conj uri ps ps_parent cx exprs
-        | TL.Expr.T.Or -> cas_of_assm_disj uri ps ps_parent cx exprs)
+        match exprs with
+        | [] -> []
+        | [ expr ] -> match_expr cx expr
+        | _ :: _ -> (
+            match bullet with
+            | TL.Expr.T.And | TL.Expr.T.Refs ->
+                cas_of_assm_conj uri ps ps_parent cx exprs
+            | TL.Expr.T.Or -> cas_of_assm_disj uri ps ps_parent cx exprs))
     | TL.Expr.T.Sub (modal_op, action_ex, subscript_ex) ->
         expand_sub modal_op action_ex subscript_ex |> match_expr cx
     | TL.Expr.T.Ix ix -> expand_expr_ref cx ix match_expr
-    | TL.Expr.T.Quant (_, _, _)
     | TL.Expr.T.Opaque _ | TL.Expr.T.Internal _
     | TL.Expr.T.Lambda (_, _)
     | TL.Expr.T.Sequent _

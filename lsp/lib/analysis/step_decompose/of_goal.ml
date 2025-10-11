@@ -308,10 +308,14 @@ let code_actions (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
         | TL.Expr.T.Forall -> cas_of_goal_forall uri ps ps_parent cx bs
         | TL.Expr.T.Exists -> cas_of_goal_exists uri ps ps_parent cx bs)
     | TL.Expr.T.List (bullet, exprs) -> (
-        match bullet with
-        | TL.Expr.T.And | TL.Expr.T.Refs ->
-            cas_of_goal_conj uri ps ps_parent cx exprs
-        | TL.Expr.T.Or -> cas_of_goal_disj uri ps ps_parent cx exprs)
+        match exprs with
+        | [] -> []
+        | [ expr ] -> match_expr cx expr
+        | _ :: _ -> (
+            match bullet with
+            | TL.Expr.T.And | TL.Expr.T.Refs ->
+                cas_of_goal_conj uri ps ps_parent cx exprs
+            | TL.Expr.T.Or -> cas_of_goal_disj uri ps ps_parent cx exprs))
     | TL.Expr.T.Sub (modal_op, action_ex, subscript_ex) ->
         expand_sub modal_op action_ex subscript_ex |> match_expr cx
     | TL.Expr.T.Ix ix -> expand_expr_ref cx ix match_expr
