@@ -36,6 +36,13 @@
     "Tsub",
     "Uminus",
     "Unprimable",
-    "noprops"
+    "noprops",
+    "stepno",
+    "wheredef",
+    "forall",
+    "unditto",
+    "dvar",
+    "filteri",
+    "bpragma"
   ]
 }

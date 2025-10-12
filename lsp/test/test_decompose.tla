@@ -188,4 +188,68 @@ PROOF
   <1> QED BY <1>1, <1>2, <1>3
 
 
+
+\********************** Assm \/
+
+THEOREM TestAssmDisj ==
+    ASSUME NEW a, NEW b, NEW c, a \/ b
+    PROVE c
+PROOF
+    <1>1. CASE a 
+    <1>2. CASE b 
+    <1> QED BY <1>1, <1>2
+
+\********************** Assm =>
+
+THEOREM TestAssmImplies ==
+    ASSUME NEW a, NEW b, NEW c, NEW d, a => b => c => d
+    PROVE d
+PROOF
+    <1> QED OMITTED
+
+THEOREM TestAssmImplies2 ==
+    ASSUME NEW a, NEW b, NEW c, NEW d, ((a => b) => c) => d
+    PROVE d
+PROOF
+    <1> QED OMITTED
+
+
+
+\********************** Assm \E
+
+THEOREM TestAssmExists ==
+    ASSUME NEW S, \E x \in S : TRUE
+    PROVE S # {}
+PROOF
+    <1>1. PICK x \in S : TRUE OBVIOUS
+    <1> QED BY <1>1
+
+
+\********************** Assm \A
+
+THEOREM TestAssmForall ==
+    ASSUME
+      NEW S,
+      NEW P(_),
+      \A x \in S : P(x),
+      NEW a \in S
+    PROVE P(a)
+PROOF
+    <1>1. PICK x \in S : P(x)
+          <2>1. \E x \in S : TRUE OMITTED
+          <2>2. QED BY <2>1
+    <1> QED BY <1>1
+
+
+
+\* ------------------------------------- TODO: debug, temp
+
+DebugOp(S) == \A a, b \in S : a
+
+THEOREM DebugTh1 ==
+    ASSUME NEW S, S = S PROVE DebugOp(S)
+PROOF
+  \* <1> TAKE a, b \in S
+  <1> QED \* BY DEF DebugOp
+
 ====
