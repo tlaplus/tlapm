@@ -57,7 +57,7 @@ let cas_of_assm_conj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   in
   let title_ex = make_conjunction conjuncts in
   let title =
-    Fmt.str "⤮ Split %a" (Debug.pp_expr_text (make_cx_hidden cx)) title_ex
+    Fmt.str "⤮ Split (∧): %a" (Debug.pp_expr_text (make_cx_hidden cx)) title_ex
     |> limit_title
   in
   let ca =
@@ -110,7 +110,9 @@ let cas_of_assm_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   in
   let title_ex = make_disjunction disjuncts in
   let title =
-    Fmt.str "⤮ Case split %a" (Debug.pp_expr_text (make_cx_hidden cx)) title_ex
+    Fmt.str "⤮ Case split (∨): %a"
+      (Debug.pp_expr_text (make_cx_hidden cx))
+      title_ex
     |> limit_title
   in
   let ca =
@@ -198,7 +200,7 @@ let cas_of_assm_implies (uri : LspT.DocumentUri.t) (ps : PS.t)
     Expr.T.(Apply (Internal Builtin.Implies |> noprops, args)) |> noprops
   in
   let title =
-    Fmt.str "⤮ Use %a" (Debug.pp_expr_text (make_cx_hidden cx)) title_ex
+    Fmt.str "⤮ Use (⇒): %a" (Debug.pp_expr_text (make_cx_hidden cx)) title_ex
     |> limit_title
   in
   let ca =
@@ -263,7 +265,7 @@ let cas_of_assm_forall (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   in
   let title_ex = Expr.T.(Quant (Expr.T.Forall, bs, ex)) |> noprops in
   let title =
-    Fmt.str "⤮ Use %a" (Debug.pp_expr_text (make_cx_hidden cx)) title_ex
+    Fmt.str "⤮ Use (∀): %a" (Debug.pp_expr_text (make_cx_hidden cx)) title_ex
     |> limit_title
   in
   let ca =
@@ -297,7 +299,7 @@ let cas_of_assm_exists (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   in
   let title_ex = Expr.T.(Quant (Expr.T.Exists, bs, ex)) |> noprops in
   let title =
-    Fmt.str "⤮ Use %a" (Debug.pp_expr_text (make_cx_hidden cx)) title_ex
+    Fmt.str "⤮ Use (∃): %a" (Debug.pp_expr_text (make_cx_hidden cx)) title_ex
     |> limit_title
   in
   let ca =

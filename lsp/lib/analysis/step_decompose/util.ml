@@ -165,37 +165,6 @@ let pp_proof_steps_before ps cx steps =
   let text = pp_proof_step_list ps cx steps in
   (range, text)
 
-(* let pp_proof_step_replace ps cx steps =
-  (* TODO: Calculate the range properly. *)
-  let range = Range.make_before_ln (PS.full_range ps) in
-  let text = pp_proof_step_list ps cx steps in
-  (range, text) *)
-
-(** Produce new unique name in the context (can be obtained by calling fmt_cx).
-    The argument [name] is a base for generating the identifier. It might be
-    returned as is, of suffixed with some number. *)
-let fresh_ident (fmt_cx : TL.Expr.T.ctx * int TL.Ctx.ctx) (name : string) :
-    string =
-  let _ecx, fcx = fmt_cx in
-  TL.Ctx.push fcx name |> TL.Ctx.front |> TL.Ctx.string_of_ident
-
-(* Helpers for constructing code actions. *)
-
-let ca_edit ~uri ~title ~range ~newText =
-  let edit = LspT.TextEdit.create ~newText ~range:(Range.as_lsp_range range) in
-  let edit = LspT.WorkspaceEdit.create ~changes:[ (uri, [ edit ]) ] () in
-  LspT.CodeAction.create ~title ~edit ~kind:LspT.CodeActionKind.Refactor ()
-
-let ca_edits ~uri ~title ~edits =
-  let edits =
-    List.map
-      (fun (r, t) ->
-        LspT.TextEdit.create ~newText:t ~range:(Range.as_lsp_range r))
-      edits
-  in
-  let edit = LspT.WorkspaceEdit.create ~changes:[ (uri, edits) ] () in
-  LspT.CodeAction.create ~title ~edit ()
-
 (** Creates a rewrite for the proof of the current step, replacing it with BY
     and the step names listed. *)
 let ps_proof_rewrite ps cx step_info =
@@ -221,5 +190,38 @@ let ps_proof_rewrite ps cx step_info =
     | `Usable us -> TL.Proof.T.By (us, false) |> noprops
     | `Proof pf -> pf
   in
-  let t = Fmt.str " %a\n" (pp_proof cx) ps_proof_new in
+  let t =
+    match ps_proof_new.core with
+    | Obvious | Omitted _ | By (_, _) | Error _ ->
+        Fmt.str "@[@ %a@]@." (pp_proof cx) ps_proof_new
+    | Steps (_, _) ->
+        let indent = indent_size ps ~nested:true in
+        Fmt.str "@.@[<v %d>%s%a@]@." indent (String.make indent ' ')
+          (pp_proof cx) ps_proof_new
+  in
   (r, t)
+
+(** Produce new unique name in the context (can be obtained by calling fmt_cx).
+    The argument [name] is a base for generating the identifier. It might be
+    returned as is, of suffixed with some number. *)
+let fresh_ident (fmt_cx : TL.Expr.T.ctx * int TL.Ctx.ctx) (name : string) :
+    string =
+  let _ecx, fcx = fmt_cx in
+  TL.Ctx.push fcx name |> TL.Ctx.front |> TL.Ctx.string_of_ident
+
+(** {1 Helpers for constructing code actions.} *)
+
+let ca_edit ~uri ~title ~range ~newText =
+  let edit = LspT.TextEdit.create ~newText ~range:(Range.as_lsp_range range) in
+  let edit = LspT.WorkspaceEdit.create ~changes:[ (uri, [ edit ]) ] () in
+  LspT.CodeAction.create ~title ~edit ~kind:LspT.CodeActionKind.Refactor ()
+
+let ca_edits ~uri ~title ~edits =
+  let edits =
+    List.map
+      (fun (r, t) ->
+        LspT.TextEdit.create ~newText:t ~range:(Range.as_lsp_range r))
+      edits
+  in
+  let edit = LspT.WorkspaceEdit.create ~changes:[ (uri, edits) ] () in
+  LspT.CodeAction.create ~title ~edit ()

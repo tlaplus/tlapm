@@ -2,6 +2,14 @@
 
 Some == TRUE
 
+
+\********************** sub-steps.
+
+THEOREM TestToSubSteps ==
+    ASSUME NEW S PROVE \A a, b \in S : a
+  <1>1. QED OBVIOUS
+
+
 \********************** \A
 
 THEOREM TestGoalForAllBounded ==
@@ -235,11 +243,10 @@ THEOREM TestAssmForall ==
       NEW a \in S
     PROVE P(a)
 PROOF
-    <1>1. PICK x \in S : P(x)
-          <2>1. \E x \in S : TRUE OMITTED
-          <2>2. QED BY <2>1
-    <1> QED BY <1>1
-
+  <1>1. PICK x \in S : P(x)
+        <2>1. \E x \in S : TRUE OBVIOUS
+        <2>2. QED BY <2>1
+  <1>q. QED BY <1>1
 
 
 \* ------------------------------------- TODO: debug, temp
