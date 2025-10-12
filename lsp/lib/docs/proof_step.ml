@@ -210,7 +210,27 @@ let goal ({ obs; _ } : t) : TL.Proof.T.obligation option =
         Option.fold ~none:acc ~some:(fun x -> x :: acc) (Obl.parsed_main o))
       obs []
   in
-  match found with [] -> None | [ o ] -> Some o | _ :: _ -> assert false
+  match found with
+  | [] -> None
+  | [ o ] -> Some o
+  | _ :: _ -> (
+      (* Pick the "best" obligation if several of them are found. *)
+      let obl_kind_priority (kind : TL.Proof.T.obligation_kind) : int =
+        match kind with
+        | TL.Proof.T.Ob_main -> 1
+        | TL.Proof.T.Ob_omitted _ -> 2
+        | TL.Proof.T.Ob_support -> 3
+        | TL.Proof.T.Ob_error _ -> 4
+      in
+      match
+        List.sort
+          (fun o1 o2 ->
+            let open TL.Proof.T in
+            compare (obl_kind_priority o1.kind) (obl_kind_priority o2.kind))
+          found
+      with
+      | [] -> assert false
+      | o :: _ -> Some o)
 
 let proof ({ el; _ } : t) : TL.Proof.T.proof option =
   match el with

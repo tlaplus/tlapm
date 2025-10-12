@@ -218,7 +218,7 @@ let cas_of_assm_implies (uri : LspT.DocumentUri.t) (ps : PS.t)
         <2>2. QED [pf + <2>1]
     v} *)
 let cas_of_assm_forall (_uri : LspT.DocumentUri.t) (_ps : PS.t)
-    (_ps_parent : PS.t) _cx _args =
+    (_ps_parent : PS.t) _cx _bs _e =
   (* TODO: ... *)
   []
 
@@ -230,9 +230,31 @@ let cas_of_assm_forall (_uri : LspT.DocumentUri.t) (_ps : PS.t)
     {v
       <1>a. PICK x \in X : P(x) [pf]
     v} *)
-let cas_of_assm_exists (_uri : LspT.DocumentUri.t) (_ps : PS.t)
-    (_ps_parent : PS.t) _cx _args =
-  []
+let cas_of_assm_exists (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
+    cx bs ex =
+  let open TL in
+  let step_names = Seq_acc.make (PS.stepno_seq_under_proof_step ps_parent) in
+  let ps_proof = PS.proof ps |> Option.get in
+  let add_steps_rewrite =
+    let step_no = Seq_acc.take step_names in
+    let step = Proof.T.Pick (bs, ex, ps_proof) |> noprops in
+    [ (step_no, step) ] |> pp_proof_steps_before ps cx
+  in
+  let ps_proof_rewrite =
+    ps_proof_rewrite ps cx
+      (`Proof
+         Usable.(
+           empty |> add_steps (Seq_acc.acc step_names) |> add_to_pf ps_proof))
+  in
+  let title_ex = TL.Expr.T.(Quant (Expr.T.Exists, bs, ex)) |> noprops in
+  let title =
+    Fmt.str "⤮ Use %a" (Debug.pp_expr_text (make_cx_hidden cx)) title_ex
+    |> limit_title
+  in
+  let ca =
+    ca_edits ~uri ~title ~edits:[ add_steps_rewrite; ps_proof_rewrite ]
+  in
+  [ ca ]
 
 (** Match an assumption expression by its structure and propose the LSP Code
     actions to decompose them. *)
@@ -274,10 +296,10 @@ let cas_of_assm (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) cx ex
             | TL.Builtin.Unprimable | TL.Builtin.Irregular ->
                 [])
         | _ -> [])
-    | TL.Expr.T.Quant (q, bs, _e) -> (
+    | TL.Expr.T.Quant (q, bs, e) -> (
         match q with
-        | TL.Expr.T.Forall -> cas_of_assm_forall uri ps ps_parent cx bs
-        | TL.Expr.T.Exists -> cas_of_assm_exists uri ps ps_parent cx bs)
+        | TL.Expr.T.Forall -> cas_of_assm_forall uri ps ps_parent cx bs e
+        | TL.Expr.T.Exists -> cas_of_assm_exists uri ps ps_parent cx bs e)
     | TL.Expr.T.List (bullet, exprs) -> (
         match exprs with
         | [] -> []
