@@ -704,25 +704,24 @@ let of_module ?prev mule = Builder.of_module mule prev
 let%test_unit "determine proof steps" =
   let mod_file = "test_obl_expand.tla" in
   let mod_text =
-    String.concat "\n"
-      [
-        "---- MODULE test_obl_expand ----";
-        "EXTENDS FiniteSetTheorems";
-        "THEOREM FALSE";
-        "    <1>1. TRUE OBVIOUS";
-        "    <1>2. TRUE";
-        "    <1>3. TRUE";
-        "    <1>q. QED BY <1>1, <1>2, <1>3";
-        "THEOREM FALSE";
-        "    <1>q. QED";
-        "       <2>1. TRUE";
-        "       <2>q. QED BY <2>1";
-        "  ----- MODULE sub ------";
-        "  VARIABLE X";
-        "  LEMMA X = X";
-        "  =======================";
-        "====";
-      ]
+    {|
+      ---- MODULE test_obl_expand ----
+      EXTENDS FiniteSetTheorems
+      THEOREM FALSE
+          <1>1. TRUE OBVIOUS
+          <1>2. TRUE
+          <1>3. TRUE
+          <1>q. QED BY <1>1, <1>2, <1>3
+      THEOREM FALSE
+          <1>q. QED
+              <2>1. TRUE
+              <2>q. QED BY <2>1
+        ----- MODULE sub ------
+        VARIABLE X
+        LEMMA X = X
+        =======================
+      ====
+    |}
   in
   let mule =
     Result.get_ok
@@ -771,21 +770,20 @@ let%test_unit "determine proof steps" =
 let%test_unit "determine proof steps for USE statements" =
   let mod_file = "test_use.tla" in
   let mod_text =
-    String.concat "\n"
-      [
-        "---- MODULE test_use ----";
-        "op == TRUE";
-        "USE DEF op";
-        "USE TRUE";
-        "USE FALSE";
-        "HIDE TRUE";
-        "THEOREM TRUE";
-        "    <1> USE TRUE";
-        "    <1> USE FALSE";
-        "    <1> HIDE TRUE";
-        "    <1> QED";
-        "====";
-      ]
+    {|
+      ---- MODULE test_use ----
+      op == TRUE
+      USE DEF op
+      USE TRUE
+      USE FALSE
+      HIDE TRUE
+      THEOREM TRUE
+          <1> USE TRUE
+          <1> USE FALSE
+          <1> HIDE TRUE
+          <1> QED
+      ====
+    |}
   in
   let mule =
     Result.get_ok
@@ -819,13 +817,11 @@ let%test_unit "determine proof steps for USE statements" =
 let%test_unit "check if parsing works with nested local instances." =
   let mod_file = "test_loc_ins.tla" in
   let mod_text =
-    String.concat "\n"
-      [
-        (* Just to keep the items wrapped by line. *)
-        "---- MODULE test_loc_ins ----";
-        "LOCAL INSTANCE FiniteSets";
-        "====";
-      ]
+    {|
+      ---- MODULE test_loc_ins ----
+      LOCAL INSTANCE FiniteSets
+      ====
+    |}
   in
   let _mule =
     Result.get_ok
