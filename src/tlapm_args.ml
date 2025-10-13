@@ -53,10 +53,11 @@ let set_default_method meth =
 
 
 (* FIXME use Arg.parse instead *)
-let parse_args args opts mods usage_fmt =
+let parse_args executable_name args opts mods usage_fmt =
   try
-    Arg.parse_argv (Array.of_list args) opts (fun mfile -> mods := mfile :: !mods)
-      (Printf.sprintf usage_fmt (Filename.basename Sys.executable_name))
+    Arg.current := 0;
+    Arg.parse_argv args opts (fun mfile -> mods := mfile :: !mods)
+      (Printf.sprintf usage_fmt (Filename.basename executable_name))
   with Arg.Bad msg ->
     print_endline msg ;
     flush stdout ;
@@ -134,7 +135,7 @@ let quote_if_needed s =
   end
 
 
-let init () =
+let init (executable_name : string) (args : string array) =
   let mods = ref [] in
   let helpfn = ref (fun () -> ()) in
   let show_help () = !helpfn () in
@@ -246,13 +247,12 @@ let init () =
   in
   helpfn := begin fun () ->
     Arg.usage opts
-      (Printf.sprintf usage_fmt (Filename.basename Sys.executable_name)) ;
+      (Printf.sprintf usage_fmt (Filename.basename executable_name)) ;
     exit 0
   end ;
-  let args = Array.to_list Sys.argv in
-  parse_args args opts mods usage_fmt ;
+  parse_args executable_name args opts mods usage_fmt ;
   if !show_config || !verbose then begin
-    print_endline (printconfig true) ;
+    (*print_endline (printconfig true) ;*)
     flush stdout
   end ;
   if !show_config then exit 0 ;
@@ -260,7 +260,7 @@ let init () =
     Arg.usage opts
       (Printf.sprintf "Need at least one module file.\n\n\
                        Usage: %s <options> FILE ...\noptions are:"
-         (Filename.basename Sys.executable_name)) ;
+         (Filename.basename executable_name)) ;
     exit 2
   end ;
   if !summary then begin
@@ -276,7 +276,7 @@ let init () =
                   (tm.Unix.tm_year + 1900) (tm.Unix.tm_mon + 1) tm.Unix.tm_mday
                   tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec;
     Printf.printf " with command line:\n\\*";
-    Array.iter (fun s -> Printf.printf " %s" (quote_if_needed s)) Sys.argv;
+    Array.iter (fun s -> Printf.printf " %s" (quote_if_needed s)) args;
     Printf.printf "\n\n%!"
   end;
   if !use_stdin && (List.length !mods) <> 1 then begin
@@ -286,3 +286,108 @@ let init () =
     exit 2
   end;
   !mods
+
+(** Unit tests to ensure CLI parameter format does not change.
+*)
+
+type setting = [`B of bool | `I of int | `S of string]
+
+let settings = [
+  (`B Params.toolbox, `B !Params.toolbox);
+  (`I Params.toolbox_vsn, `I !Params.toolbox_vsn);
+]
+
+type setting_value = [
+  `B of string * bool ref * bool
+  | `I of string * int ref * int 
+  | `F of string * float ref * float
+  | `S of string * string ref * string
+  | `SO of string * string option ref * string option
+]
+
+let display_setting_value (v : setting_value) : string =
+  match v with
+  | `B (n, rf, v) -> Printf.sprintf "%s: %b [%b]" n v !rf
+  | `I (n, rf, v) -> Printf.sprintf "%s: %d [%d]" n v !rf
+  | `F (n, rf, v) -> Printf.sprintf "%s: %f [%f]" n v !rf
+  | `S (n, rf, v) -> Printf.sprintf "%s: %s [%s]" n v !rf
+  | `SO (n, rf, v) -> Printf.sprintf "%s: %s [%s]" n (Option.default "None" v) (Option.default "None" !rf)
+
+let setting_values () : setting_value list = [
+  `B ("toolbox", Params.toolbox, !Params.toolbox);
+  `I ("toolbox_vsn", Params.toolbox_vsn, !Params.toolbox_vsn);
+  `B ("use_stdin", Params.use_stdin, !Params.use_stdin);
+  `B ("prefer_stdlib", Params.prefer_stdlib, !Params.prefer_stdlib);
+  `B ("notl", Params.notl, !Params.notl);
+  `B ("verbose", Params.verbose, !Params.verbose);
+  `B ("check", Params.check, !Params.check);
+  `S ("output_dir", Params.output_dir, !Params.output_dir);
+  `I ("wait", Params.wait, !Params.wait);
+  `B ("no_fp", Params.no_fp, !Params.no_fp);
+  `I ("nofp_sl", Params.nofp_sl, !Params.nofp_sl);
+  `I ("nofp_el", Params.nofp_el, !Params.nofp_el);
+  `B ("printallobs", Params.printallobs, !Params.printallobs);
+  `B ("pr_normal", Params.pr_normal, !Params.pr_normal);
+  `B ("ob_flatten", Params.ob_flatten, !Params.ob_flatten);
+  `B ("noproving", Params.noproving, !Params.noproving);
+  `S ("fp_hist_dir", Params.fp_hist_dir, !Params.fp_hist_dir);
+  `I ("fp_original_number", Params.fp_original_number, !Params.fp_original_number);
+  `B ("safefp", Params.safefp, !Params.safefp);
+  `B ("fp_deb", Params.fp_deb, !Params.fp_deb);
+  `B ("use_xtla", Params.use_xtla, !Params.use_xtla);
+  `B ("xtla", Params.xtla, !Params.xtla);
+  `I ("tb_sl", Params.tb_sl, !Params.tb_sl);
+  `I ("tb_el", Params.tb_el, !Params.tb_el);
+  `B ("cleanfp", Params.cleanfp, !Params.cleanfp);
+  `SO ("fpf_in", Params.fpf_in, !Params.fpf_in);
+  `SO ("fpf_out", Params.fpf_out, !Params.fpf_out);
+  `B ("fp_loaded", Params.fp_loaded, !Params.fp_loaded);
+  `B ("summary", Params.summary, !Params.summary);
+  `B ("stats", Params.stats, !Params.stats);
+  `B ("keep_going", Params.keep_going, !Params.keep_going);
+  `B ("suppress_all", Params.suppress_all, !Params.suppress_all);
+  `F ("timeout_stretch", Params.timeout_stretch, !Params.timeout_stretch);
+  `F ("backend_timeout", Params.backend_timeout, !Params.backend_timeout);
+]
+
+let default_setting_values = setting_values ()
+
+let setting_value_changed =
+  (fun (setting : setting_value) ->
+    match setting with
+    | `B (_, rf, v) -> not (!rf = v)
+    | `I (_, rf, v) -> not (!rf = v)
+    | `F (_, rf, v) -> not (!rf = v)
+    | `S (_, rf, v) -> not (!rf = v)
+    | `SO (_, rf, v) -> not (!rf = v)
+  )
+
+let set_setting_value =
+  (fun (setting : setting_value) ->
+    match setting with
+    | `B (_, rf, v) -> rf := v
+    | `I (_, rf, v) -> rf := v
+    | `F (_, rf, v) -> rf := v
+    | `S (_, rf, v) -> rf := v
+    | `SO (_, rf, v) -> rf := v
+  )
+  
+let reset_setting_values () = List.iter set_setting_value default_setting_values
+
+let changed_setting_values () = List.filter setting_value_changed default_setting_values
+
+let%test "basic" =
+  reset_setting_values ();
+  init "tlapm" [|"tlapm"; "Test.tla";|] = ["Test.tla"]
+  && changed_setting_values () = []
+
+let%test "verbose_short" =
+  reset_setting_values ();
+  init "tlapm" [|"tlapm"; "-v"; "Test.tla";|] = ["Test.tla"]
+  && changed_setting_values () = [`B ("verbose", Params.verbose, false)]
+
+let%test "verbose_long" =
+  reset_setting_values ();
+  init "tlapm" [|"tlapm"; "--verbose"; "Test.tla";|] = ["Test.tla"]
+  && changed_setting_values () = [`B ("verbose", Params.verbose, false)]
+

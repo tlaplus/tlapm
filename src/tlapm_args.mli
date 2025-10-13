@@ -2,4 +2,10 @@
 
 Copyright (C) 2011  INRIA and Microsoft Corporation
 *)
-val init: unit -> string list
+
+(** Given the executable name and an array of command-line arguments, parses
+    those arguments then either sets associated values in the Params module
+    or directly takes action such as printing out file contents or deleting
+    directories. Returns a list of files for proof checking.
+*)
+val init: string -> string array -> string list
