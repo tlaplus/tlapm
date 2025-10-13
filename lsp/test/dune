@@ -1,3 +1,4 @@
 (test
  (name tlapm_lsp_test)
- (libraries tlapm_lsp_lib alcotest ocolor))
+ (libraries tlapm_lsp_lib lsp alcotest ocolor)
+ (deps ../bin/tlapm_lsp.exe))
