@@ -50,7 +50,8 @@
   ppx_inline_test
   ppx_assert
   ppx_deriving
-  ounit2)
+  (ounit2 :with-test)
+  (alcotest :with-test))
  (depopts
   lsp         ; https://github.com/ocaml/ocaml-lsp
   eio_main))  ; https://github.com/ocaml-multicore/eio, only available on OCaml version >= 5.

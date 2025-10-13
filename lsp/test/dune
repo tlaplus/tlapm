@@ -1,0 +1,3 @@
+(test
+ (name tlapm_lsp_test)
+ (libraries tlapm_lsp_lib alcotest ocolor))
