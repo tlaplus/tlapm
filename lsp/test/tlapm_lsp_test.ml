@@ -1,3 +1,5 @@
+open Test_utils
+
 let init () =
   let lsp = Test_lsp_client.run "../bin/tlapm_lsp.exe" in
   let init_response = Test_lsp_client.call_init lsp in
@@ -68,7 +70,7 @@ let test_lsp_decompose () =
                if ca.title = "⤮ To sub-steps" then Some ca else None)
     |> Option.get
   in
-  let (doc_after : Lsp.Text_document.t) =
+  let (actual : Lsp.Text_document.t) =
     let text_doc =
       Lsp.Text_document.make ~position_encoding:`UTF8 did_open_doc_params
     in
@@ -79,9 +81,7 @@ let test_lsp_decompose () =
                e.changes |> Option.get |> List.map snd |> List.flatten)
         |> List.flatten)
   in
-  Alcotest.(
-    check string "refactoring output" expected
-      (Lsp.Text_document.text doc_after));
+  check_multiline_diff_td ~title:"refactoring output" ~expected ~actual;
   Test_lsp_client.close lsp
 
 let () =
