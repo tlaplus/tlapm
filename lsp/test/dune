@@ -1,4 +1,7 @@
 (test
  (name tlapm_lsp_test)
+ (optional) ; Only build, if eio is available, which is only the case for ocaml > 5.
+ (enabled_if
+  (>= %{ocaml_version}, "5.0.0"))
  (libraries tlapm_lsp_lib lsp alcotest ocolor)
  (deps ../bin/tlapm_lsp.exe))
