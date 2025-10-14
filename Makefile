@@ -22,7 +22,7 @@ opam-update: # Update the package lists and install updates.
 	opam upgrade
 
 opam-deps:
-	opam install ./ --deps-only --yes --working-dir
+	opam install ./ --deps-only --with-test --yes --working-dir
 
 opam-deps-opt:
 	opam install --yes eio_main lsp
