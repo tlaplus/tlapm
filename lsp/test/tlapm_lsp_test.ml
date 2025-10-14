@@ -24,9 +24,26 @@ let test_lsp_decompose () =
     ====
     |}
   in
+  let expected =
+    {|
+    ---- MODULE some ----
+    THEOREM TestToSubSteps ==
+        ASSUME NEW S PROVE \A a, b \in S : a
+    PROOF
+      <1>1. QED
+        <2>1. QED OBVIOUS
+    ====
+    |}
+  in
+  let languageId = "tlaplus" in
+  let did_open_doc_params =
+    Lsp.Types.(
+      DidOpenTextDocumentParams.create
+        ~textDocument:
+          (TextDocumentItem.create ~languageId ~text ~uri ~version:1))
+  in
   Test_lsp_client.send_notification lsp
-    (Lsp.Client_notification.TextDocumentDidOpen
-       { textDocument = { uri; version = 1; languageId = "tlaplus"; text } });
+    (Lsp.Client_notification.TextDocumentDidOpen did_open_doc_params);
 
   let ca_response =
     let open Lsp.Types in
@@ -41,8 +58,7 @@ let test_lsp_decompose () =
          ())
     |> Test_lsp_client.call lsp |> CodeActionResult.t_of_yojson |> Option.get
   in
-  (* TODO: Apply the code action. *)
-  let _ca_to_sub_steps =
+  let ca_to_sub_steps =
     ca_response
     |> List.find_map (fun x ->
            let open Lsp.Types in
@@ -52,6 +68,20 @@ let test_lsp_decompose () =
                if ca.title = "⤮ To sub-steps" then Some ca else None)
     |> Option.get
   in
+  let (doc_after : Lsp.Text_document.t) =
+    let text_doc =
+      Lsp.Text_document.make ~position_encoding:`UTF8 did_open_doc_params
+    in
+    Lsp.Text_document.apply_text_document_edits text_doc
+      Lsp.Types.(
+        ca_to_sub_steps.edit |> Option.to_list
+        |> List.map (fun (e : WorkspaceEdit.t) ->
+               e.changes |> Option.get |> List.map snd |> List.flatten)
+        |> List.flatten)
+  in
+  Alcotest.(
+    check string "refactoring output" expected
+      (Lsp.Text_document.text doc_after));
   Test_lsp_client.close lsp
 
 let () =
