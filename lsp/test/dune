@@ -1,6 +1,6 @@
 (test
  (name tlapm_lsp_test)
- (enabled_if
+ (build_if
   (>= %{ocaml_version}, "5.0.0"))
  (libraries tlapm_lsp_lib lsp alcotest ocolor)
  (deps ../bin/tlapm_lsp.exe))
