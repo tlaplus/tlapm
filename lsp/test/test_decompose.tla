@@ -44,8 +44,8 @@ THEOREM TestGoalExists ==
   ASSUME NEW P(_, _), NEW S
   PROVE \E a, b \in S : P(a, b)
 PROOF
-  <1> a == "TODO: Replace this with actual witness"
-  <1> b == "TODO: Replace this with actual witness"
+  <1> a == "TODO: Replace this with actual witness for a"
+  <1> b == "TODO: Replace this with actual witness for b"
   <1> HIDE DEFS a, b
   <1>4. a \in S 
   <1>5. b \in S 

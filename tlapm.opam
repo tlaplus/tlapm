@@ -40,7 +40,7 @@ depends: [
   "ounit2" {with-test}
   "alcotest" {with-test}
   "ocolor" {with-test}
-  "simple-diff" {with-test}
+  "patdiff" {with-test}
   "odoc" {with-doc}
 ]
 depopts: ["lsp" "eio_main"]

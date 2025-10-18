@@ -2,7 +2,7 @@
  (name tlapm_lsp_test)
  (build_if
   (>= %{ocaml_version}, "5.0.0"))
- (libraries tlapm_lsp_lib lsp alcotest ocolor simple-diff)
+ (libraries tlapm_lsp_lib lsp alcotest ocolor patdiff)
  (deps ../bin/tlapm_lsp.exe)
  (preprocess
   (pps ppx_deriving.show ppx_deriving.eq)))

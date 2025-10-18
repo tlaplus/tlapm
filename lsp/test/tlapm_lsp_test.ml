@@ -1,25 +1,15 @@
 open Test_utils
 
-let init () =
-  let lsp = Test_lsp_client.run "../bin/tlapm_lsp.exe" in
-  let init_response = Test_lsp_client.call_init lsp in
-  Alcotest.(
-    check string "serverInfo.name" "tlapm-lsp"
-      (init_response.serverInfo |> Option.get).name);
-  Test_lsp_client.send_notification lsp Lsp.Client_notification.Initialized;
-  lsp
+(** {1 Misc} *)
 
-let test_lsp_init () = init () |> Test_lsp_client.close
+let test_lsp_init () = lsp_init () |> lsp_stop
 
-let test_lsp_decompose () =
-  let lsp = init () in
-  let name = "some" in
-  let path = Fmt.str "file:///tmp/%s.tla" name in
-  let uri = Lsp.Uri.of_string path in
+let test_to_sub_steps () =
+  let lsp = lsp_init () in
   let text =
     {|
-    ---- MODULE some ----
-    THEOREM TestToSubSteps ==
+    ---- MODULE test ----
+    THEOREM Test ==
         ASSUME NEW S PROVE \A a, b \in S : a
     PROOF
       <1>1. QED OBVIOUS
@@ -28,8 +18,8 @@ let test_lsp_decompose () =
   in
   let expected =
     {|
-    ---- MODULE some ----
-    THEOREM TestToSubSteps ==
+    ---- MODULE test ----
+    THEOREM Test ==
         ASSUME NEW S PROVE \A a, b \in S : a
     PROOF
       <1>1. QED
@@ -37,52 +27,136 @@ let test_lsp_decompose () =
     ====
     |}
   in
-  let languageId = "tlaplus" in
-  let did_open_doc_params =
-    Lsp.Types.(
-      DidOpenTextDocumentParams.create
-        ~textDocument:
-          (TextDocumentItem.create ~languageId ~text ~uri ~version:1))
-  in
-  Test_lsp_client.send_notification lsp
-    (Lsp.Client_notification.TextDocumentDidOpen did_open_doc_params);
-
-  let ca_response =
-    let open Lsp.Types in
-    Lsp.Client_request.CodeAction
-      (CodeActionParams.create
-         ~textDocument:(TextDocumentIdentifier.create ~uri)
-         ~range:
-           (Range.create
-              ~start:(Position.create ~line:5 ~character:0)
-              ~end_:(Position.create ~line:5 ~character:0))
-         ~context:(CodeActionContext.create ~diagnostics:[] ())
-         ())
-    |> Test_lsp_client.call lsp |> CodeActionResult.t_of_yojson |> Option.get
-  in
-  let ca_to_sub_steps =
-    ca_response
-    |> List.find_map (fun x ->
-           let open Lsp.Types in
-           match x with
-           | `Command (_ : Command.t) -> None
-           | `CodeAction (ca : CodeAction.t) ->
-               if ca.title = "⤮ To sub-steps" then Some ca else None)
-    |> Option.get
-  in
-  let (actual : Lsp.Text_document.t) =
-    let text_doc =
-      Lsp.Text_document.make ~position_encoding:`UTF8 did_open_doc_params
-    in
-    Lsp.Text_document.apply_text_document_edits text_doc
-      Lsp.Types.(
-        ca_to_sub_steps.edit |> Option.to_list
-        |> List.map (fun (e : WorkspaceEdit.t) ->
-               e.changes |> Option.get |> List.map snd |> List.flatten)
-        |> List.flatten)
-  in
+  let actual = lsp_ca ~lsp ~text ~line:5 "⤮ To sub-steps" in
   check_multiline_diff_td ~title:"refactoring output" ~expected ~actual;
-  Test_lsp_client.close lsp
+  lsp_stop lsp
+
+(** {1 Goal: ∀} *)
+
+let test_goal_forall_bounded () =
+  let lsp = lsp_init () in
+  let text =
+    {|
+    ---- MODULE test ----
+    THEOREM Test ==
+        ASSUME NEW S PROVE \A a, b \in S : a
+    PROOF
+      <1> QED
+    ====
+    |}
+  in
+  let expected =
+    {|
+    ---- MODULE test ----
+    THEOREM Test ==
+        ASSUME NEW S PROVE \A a, b \in S : a
+    PROOF
+      <1> TAKE a, b \in S
+      <1> QED
+    ====
+    |}
+  in
+  let actual = lsp_ca ~lsp ~text ~line:5 "⤮ Decompose goal (∀)" in
+  check_multiline_diff_td ~title:"refactoring output" ~expected ~actual;
+  lsp_stop lsp
+
+let test_goal_forall_unbounded () =
+  let lsp = lsp_init () in
+  let text =
+    {|
+    ---- MODULE test ----
+    THEOREM Test ==
+        \A a, b : a
+    PROOF
+      <1> QED
+    ====
+    |}
+  in
+  let expected =
+    {|
+    ---- MODULE test ----
+    THEOREM Test ==
+        \A a, b : a
+    PROOF
+      <1> TAKE a, b
+      <1> QED
+    ====
+    |}
+  in
+  let actual = lsp_ca ~lsp ~text ~line:5 "⤮ Decompose goal (∀)" in
+  check_multiline_diff_td ~title:"refactoring output" ~expected ~actual;
+  lsp_stop lsp
+
+let test_goal_forall_name_clash () =
+  let lsp = lsp_init () in
+  let text =
+    {|
+    ---- MODULE test ----
+    THEOREM Test ==
+      ASSUME NEW P(_), NEW S
+      PROVE \A a \in S : P(a)
+    PROOF
+      <1> a == TRUE
+          a_1 == TRUE
+      <1> HIDE DEF a, a_1
+      <1>q. QED OBVIOUS
+    ====
+    |}
+  in
+  let expected =
+    {|
+    ---- MODULE test ----
+    THEOREM Test ==
+      ASSUME NEW P(_), NEW S
+      PROVE \A a \in S : P(a)
+    PROOF
+      <1> a == TRUE
+          a_1 == TRUE
+      <1> HIDE DEF a, a_1
+      <1> TAKE a_2 \in S
+      <1>q. QED OBVIOUS
+    ====
+    |}
+  in
+  let actual = lsp_ca ~lsp ~text ~line:9 "⤮ Decompose goal (∀)" in
+  check_multiline_diff_td ~title:"refactoring output" ~expected ~actual;
+  lsp_stop lsp
+
+(** {1 Goal: ∃} *)
+
+let test_goal_exists_basic () =
+  let lsp = lsp_init () in
+  let text =
+    {|
+    ---- MODULE test ----
+    THEOREM Test ==
+      ASSUME NEW P(_, _), NEW S
+      PROVE \E a, b \in S : P(a, b)
+    PROOF
+      <1>3. QED
+    ====
+    |}
+  in
+  let expected =
+    {|
+    ---- MODULE test ----
+    THEOREM Test ==
+      ASSUME NEW P(_, _), NEW S
+      PROVE \E a, b \in S : P(a, b)
+    PROOF
+      <1> a == "TODO: Replace this with actual witness for a"
+      <1> b == "TODO: Replace this with actual witness for b"
+      <1> HIDE DEFS a, b
+      <1>4. a \in S
+      <1>5. b \in S
+      <1> WITNESS a \in S, b \in S
+      <1>3. QED
+    ====
+    |}
+  in
+  let actual = lsp_ca ~lsp ~text ~line:6 "⤮ Decompose goal (∃)" in
+  check_multiline_diff_td ~title:"refactoring output" ~expected ~actual;
+  lsp_stop lsp
 
 let () =
   let open Alcotest in
@@ -91,6 +165,10 @@ let () =
       ( "meta",
         [
           test_case "Init" `Quick test_lsp_init;
-          test_case "Decompose: to-steps" `Quick test_lsp_decompose;
+          test_case "To-steps" `Quick test_to_sub_steps;
+          test_case "Goal ∀, bounded" `Quick test_goal_forall_bounded;
+          test_case "Goal ∀, unbounded" `Quick test_goal_forall_unbounded;
+          test_case "Goal ∀, name clash" `Quick test_goal_forall_name_clash;
+          test_case "Goal ∃, basic" `Quick test_goal_exists_basic;
         ] );
     ]

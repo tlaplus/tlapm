@@ -6,41 +6,21 @@ module MultilineDiff : sig
   val same : t
   val diff : string -> string -> t
 end = struct
-  module Diff = Simple_diff.Make (String)
-
-  type t = Same | Differs of Diff.t
+  type t = Same | Differs of string
 
   let same = Same
 
   let diff a b =
-    let line_array s = String.split_on_char '\n' s |> Array.of_list in
-    let diff = Diff.get_diff (line_array a) (line_array b) in
-    let same =
-      List.for_all
-        (fun d ->
-          match d with
-          | Diff.Deleted _ | Diff.Added _ -> false
-          | Diff.Equal _ -> true)
-        diff
-    in
-    if same then Same else Differs diff
-
-  let string_of_diff (diff : Diff.t) : string =
-    diff
-    |> List.map (fun d ->
-           match d with
-           | Diff.Deleted lines ->
-               lines |> Array.to_list |> List.map (fun l -> "- " ^ l)
-           | Diff.Added lines ->
-               lines |> Array.to_list |> List.map (fun l -> "+ " ^ l)
-           | Diff.Equal lines ->
-               lines |> Array.to_list |> List.map (fun l -> "  " ^ l))
-    |> List.flatten |> String.concat "\n"
+    let open Patdiff in
+    let prev = Diff_input.{ name = "a"; text = a } in
+    let next = Diff_input.{ name = "b"; text = b } in
+    let diff = Compare_core.diff_strings Configuration.default ~prev ~next in
+    match diff with `Same -> Same | `Different s -> Differs s
 
   let pp fmt (t : t) =
     match t with
     | Same -> Fmt.string fmt "Same"
-    | Differs d -> Fmt.pf fmt "Differs\n%s" (string_of_diff d)
+    | Differs d -> Fmt.pf fmt "Differs\n%s@." d
 
   let equal a b =
     match (a, b) with
@@ -58,3 +38,68 @@ let check_multiline_diff ~title ~expected ~actual =
 
 let check_multiline_diff_td ~title ~expected ~actual =
   check_multiline_diff ~title ~expected ~actual:(Lsp.Text_document.text actual)
+
+(** {1 Helpers for invoking LSP}*)
+
+let lsp_init () =
+  let lsp = Test_lsp_client.run "../bin/tlapm_lsp.exe" in
+  let init_response = Test_lsp_client.call_init lsp in
+  Alcotest.(
+    check string "serverInfo.name" "tlapm-lsp"
+      (init_response.serverInfo |> Option.get).name);
+  Test_lsp_client.send_notification lsp Lsp.Client_notification.Initialized;
+  lsp
+
+let lsp_stop lsp = Test_lsp_client.close lsp
+
+(** Invoke a Code Action at the specified line. *)
+let lsp_ca ~lsp ?(name = "test") ~text ~line ca_regex =
+  let path = Fmt.str "file:///tmp/%s.tla" name in
+  let uri = Lsp.Uri.of_string path in
+
+  let languageId = "tlaplus" in
+  let did_open_doc_params =
+    Lsp.Types.(
+      DidOpenTextDocumentParams.create
+        ~textDocument:
+          (TextDocumentItem.create ~languageId ~text ~uri ~version:1))
+  in
+  Test_lsp_client.send_notification lsp
+    (Lsp.Client_notification.TextDocumentDidOpen did_open_doc_params);
+
+  let ca_response =
+    let open Lsp.Types in
+    Lsp.Client_request.CodeAction
+      (CodeActionParams.create
+         ~textDocument:(TextDocumentIdentifier.create ~uri)
+         ~range:
+           (Range.create
+              ~start:(Position.create ~line ~character:0)
+              ~end_:(Position.create ~line ~character:0))
+         ~context:(CodeActionContext.create ~diagnostics:[] ())
+         ())
+    |> Test_lsp_client.call lsp |> CodeActionResult.t_of_yojson |> Option.get
+  in
+  let ca_to_sub_steps =
+    ca_response
+    |> List.find_map (fun x ->
+           let open Lsp.Types in
+           match x with
+           | `Command (_ : Command.t) -> None
+           | `CodeAction (ca : CodeAction.t) ->
+               if Str.string_match (Str.regexp ca_regex) ca.title 0 then Some ca
+               else None)
+    |> Option.get
+  in
+  let (actual : Lsp.Text_document.t) =
+    let text_doc =
+      Lsp.Text_document.make ~position_encoding:`UTF8 did_open_doc_params
+    in
+    Lsp.Text_document.apply_text_document_edits text_doc
+      Lsp.Types.(
+        ca_to_sub_steps.edit |> Option.to_list
+        |> List.map (fun (e : WorkspaceEdit.t) ->
+               e.changes |> Option.get |> List.map snd |> List.flatten)
+        |> List.flatten)
+  in
+  actual

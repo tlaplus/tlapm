@@ -43,6 +43,9 @@
     "unditto",
     "dvar",
     "filteri",
-    "bpragma"
+    "bpragma",
+    "alcotest",
+    "yojson",
+    "patdiff"
   ]
 }
