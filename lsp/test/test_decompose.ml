@@ -60,7 +60,7 @@ let test_cases =
   List.concat
     [
       [
-        test_case "To-steps" `Quick test_to_sub_steps;
+        test_case "To sub-steps" `Quick test_to_sub_steps;
         test_case "Expand DEF" `Quick test_expand_def;
       ];
       Test_decompose_goal.test_cases;
