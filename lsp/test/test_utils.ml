@@ -39,6 +39,73 @@ let check_multiline_diff ~title ~expected ~actual =
 let check_multiline_diff_td ~title ~expected ~actual =
   check_multiline_diff ~title ~expected ~actual:(Lsp.Text_document.text actual)
 
+module CodeActionFound : sig
+  (** Attempt to make test results a bit more understandable in the case of
+      wrong code actions proposed. *)
+
+  include Alcotest.TESTABLE
+
+  val find :
+    string ->
+    [ `CodeAction of Lsp.Types.CodeAction.t | `Command of Lsp.Types.Command.t ]
+    list ->
+    t * t
+
+  val get : t -> Lsp.Types.CodeAction.t
+end = struct
+  type t =
+    | Found of Lsp.Types.CodeAction.t
+    | NotFound of string * string list
+    | Expected of string
+
+  let pp fmt (t : t) =
+    match t with
+    | Found _ -> Fmt.string fmt "Found"
+    | Expected pattern -> Fmt.pf fmt "Expected %s" pattern
+    | NotFound (pattern, titles) ->
+        Fmt.pf fmt "\nNotFound %s\nReceived:\n  %a" pattern
+          (Fmt.list ~sep:Fmt.(const string "\n  ") Fmt.string)
+          titles
+
+  let equal a b =
+    match (a, b) with Found _, _ | _, Found _ -> true | _ -> false
+
+  let get a = match a with Found x -> x | _ -> assert false
+
+  let strings_of_cas cas =
+    cas
+    |> List.map (fun x ->
+           let open Lsp.Types in
+           match x with
+           | `Command ({ title; _ } : Command.t) -> Fmt.str "Command: %s" title
+           | `CodeAction ({ title; _ } : CodeAction.t) ->
+               Fmt.str "CodeAction: %s" title)
+
+  let find pattern cas =
+    let found =
+      cas
+      |> List.find_map (fun x ->
+             let open Lsp.Types in
+             match x with
+             | `Command (_ : Command.t) -> None
+             | `CodeAction (ca : CodeAction.t) ->
+                 if Str.string_match (Str.regexp pattern) ca.title 0 then
+                   Some ca
+                 else None)
+    in
+    let found =
+      match found with
+      | None -> NotFound (pattern, strings_of_cas cas)
+      | Some ca -> Found ca
+    in
+    (found, Expected pattern)
+end
+
+let check_ca_proposed ~expected ~actual =
+  Alcotest.check
+    (module CodeActionFound)
+    "Code Action should be proposed" expected actual
+
 (** {1 Helpers for invoking LSP}*)
 
 let lsp_init () =
@@ -80,16 +147,10 @@ let lsp_ca ~lsp ?(name = "test") ~text ~line ca_regex =
          ())
     |> Test_lsp_client.call lsp |> CodeActionResult.t_of_yojson |> Option.get
   in
-  let ca_to_sub_steps =
-    ca_response
-    |> List.find_map (fun x ->
-           let open Lsp.Types in
-           match x with
-           | `Command (_ : Command.t) -> None
-           | `CodeAction (ca : CodeAction.t) ->
-               if Str.string_match (Str.regexp ca_regex) ca.title 0 then Some ca
-               else None)
-    |> Option.get
+  let ca_expected =
+    let found, expected = CodeActionFound.find ca_regex ca_response in
+    check_ca_proposed ~expected ~actual:found;
+    CodeActionFound.get found
   in
   let (actual : Lsp.Text_document.t) =
     let text_doc =
@@ -97,7 +158,7 @@ let lsp_ca ~lsp ?(name = "test") ~text ~line ca_regex =
     in
     Lsp.Text_document.apply_text_document_edits text_doc
       Lsp.Types.(
-        ca_to_sub_steps.edit |> Option.to_list
+        ca_expected.edit |> Option.to_list
         |> List.map (fun (e : WorkspaceEdit.t) ->
                e.changes |> Option.get |> List.map snd |> List.flatten)
         |> List.flatten)

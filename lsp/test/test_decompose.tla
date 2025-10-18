@@ -56,18 +56,18 @@ THEOREM TestGoalExistsUnderDEF ==
   ASSUME NEW P(_, _), NEW S
   PROVE \E a, b \in S : P(a, b)
 PROOF
-  <1> DEFINE SS == \E a, b \in S : P(a, b)
-  <1> SUFFICES SS OBVIOUS
-  <1> HIDE DEF SS
+  <1> DEFINE Tmp == \E a, b \in S : P(a, b)
+  <1> SUFFICES Tmp OBVIOUS
+  <1> HIDE DEF Tmp
   \* -----------
-  <1> a == "TODO: Replace this with actual witness"
-  <1> b == "TODO: Replace this with actual witness"
+  <1> a == "TODO: Replace this with actual witness for a"
+  <1> b == "TODO: Replace this with actual witness for b"
   <1> HIDE DEFS a, b
-  <1>1. a \in S
-  <1>2. b \in S
-  <1>3. USE DEF SS
+  <1>5. a \in S 
+  <1>6. b \in S 
+  <1>7. USE DEF Tmp
   <1> WITNESS a \in S, b \in S
-  <1>4. QED BY DEF SS
+  <1>4. QED BY DEF Tmp
 
 THEOREM TestGoalExistsUnderOP ==
   ASSUME NEW P(_, _), NEW S
@@ -77,12 +77,12 @@ PROOF
   <1> SUFFICES D(S) OBVIOUS
   <1> HIDE DEF D
   \* -----------
-  <1> a == "TODO: Replace this with actual witness"
-  <1> b == "TODO: Replace this with actual witness"
+  <1> a == "TODO: Replace this with actual witness for a"
+  <1> b == "TODO: Replace this with actual witness for b"
   <1> HIDE DEFS a, b
-  <1>1. a \in S
-  <1>2. b \in S
-  <1>3. USE DEF D
+  <1>5. a \in S 
+  <1>6. b \in S 
+  <1>7. USE DEF D
   <1> WITNESS a \in S, b \in S
   <1>4. QED BY DEF D
 
@@ -121,21 +121,19 @@ PROOF
 \********************** =>
 
 THEOREM TestGoalImplies ==
-    \A a : a => a
+    ASSUME NEW a PROVE a => a
 PROOF
-  <1> TAKE a
-  <1> HAVE a
-  <1>1. QED OBVIOUS
+  <1>2. HAVE a
+  <1>1. QED BY <1>2
 
 \********************** /\
 
 THEOREM TestGoalConjunction ==
-    \A a, b, c \in Some : a /\ b /\ c
+  ASSUME NEW a, NEW b, NEW c PROVE a /\ b /\ c
 PROOF
-  <1> TAKE a, b, c \in Some
-  <1>1. a BY DEF Some
-  <1>2. b BY DEF Some
-  <1>3. c BY DEF Some
+  <1>1. a OBVIOUS
+  <1>2. b OBVIOUS
+  <1>3. c OBVIOUS
   <1> QED BY <1>1, <1>2, <1>3
 
 THEOREM TestGoalConjunctionList ==
@@ -156,7 +154,11 @@ THEOREM TestGoalDisjunction ==
     \A a, b, c \in Some : a \/ b \/ c
 PROOF
   <1> TAKE a, b, c \in Some
-  <1> QED OBVIOUS
+  <1>1. SUFFICES ASSUME ~a ,
+                        ~c 
+                 PROVE  b
+        OBVIOUS
+  <1> QED BY <1>1
 
 THEOREM TestGoalDisjunctionList ==
     \A a, b, c, d \in Some :
