@@ -586,9 +586,9 @@ let init () =
   Printexc.record_backtrace true;
   Format.pp_set_max_indent Format.err_formatter 35;
   if Params.debugging "main" then
-    main (Tlapm_args.init Sys.executable_name Sys.argv)
+    main (Tlapm_args.init Sys.executable_name Sys.argv Format.err_formatter exit)
   else
-    try main (Tlapm_args.init Sys.executable_name Sys.argv) with
+    try main (Tlapm_args.init Sys.executable_name Sys.argv Format.err_formatter exit) with
     | Errors.Fatal ->
        Util.eprintf "tlapm: Exiting because of the above error.";
        exit 0;
