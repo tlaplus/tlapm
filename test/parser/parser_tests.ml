@@ -99,6 +99,7 @@ let should_skip_tree_comparison (test : syntax_test) : bool =
     "Minus and Negative";
     "Nonfix Minus (GH tlaplus/tlaplus #GH884)";
     "Nonfix Prefix Operators";
+    "Nonfix Infix Operators";
     "Nonfix Postfix Operators";
 
     (* TLAPM uses function literals for function definitions *)
@@ -108,6 +109,9 @@ let should_skip_tree_comparison (test : syntax_test) : bool =
     (* TLAPM makes multi-parameter EXCEPT update statements into tuples *)
     "Record Update with Multiple Parameters";
     "Record Update with Tuple and Non-Tuple Parameters";
+    
+    (* TLAPM does not distinguish between <=> and \equiv *)
+    "IFF Disambiguation"
   ]
 
 let expect_tree_comparison_failure (test : syntax_test) : bool =
