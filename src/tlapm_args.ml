@@ -7,10 +7,10 @@ open Params
 
 
 let show_config = ref false
-let show_version () =
-  print_endline (rawversion ()) ;
-  exit 0
-
+let show_version formatter terminate =
+  Format.pp_print_text formatter (rawversion ());
+  Format.pp_print_cut formatter ();
+  terminate 0
 
 let set_debug_flags flgs =
   let flgs = Ext.split flgs ',' in
@@ -135,7 +135,7 @@ let quote_if_needed s =
   end
 
 
-let init (executable_name : string) (args : string array) (err : Format.formatter) (terminate : int -> unit) =
+let init ?(out=Format.std_formatter) ?(err=Format.err_formatter) ?(terminate=exit) (executable_name : string) (args : string array) =
   let mods = ref [] in
   let helpfn = ref (fun () -> ()) in
   let show_help () = !helpfn () in
@@ -148,7 +148,7 @@ let init (executable_name : string) (args : string array) (err : Format.formatte
     blank;
     "--help", Arg.Unit show_help, " show this help message and exit" ;
     "-help", Arg.Unit show_help, " (same as --help)" ;
-    "--version", Arg.Unit show_version, " show version number and exit" ;
+    "--version", Arg.Unit (fun () -> show_version out terminate), " show version number and exit" ;
     "--verbose", Arg.Set verbose, " produce verbose messages" ;
     "-v", Arg.Set verbose, " (same as --verbose)" ;
     blank;
@@ -252,15 +252,15 @@ let init (executable_name : string) (args : string array) (err : Format.formatte
   end ;
   parse_args executable_name args opts mods usage_fmt ;
   if !show_config || !verbose then begin
-    (*print_endline (printconfig true) ;*)
-    flush stdout
+    Format.pp_print_text out (printconfig true);
+    Format.pp_print_cut out ();
   end ;
   if !show_config then terminate 0 ;
   if !mods = [] then begin
-    Arg.usage opts
+    Format.pp_print_text err (Arg.usage_string opts
       (Printf.sprintf "Need at least one module file.\n\n\
                        Usage: %s <options> FILE ...\noptions are:"
-         (Filename.basename executable_name)) ;
+         (Filename.basename executable_name)));
     terminate 2
   end ;
   if !summary then begin

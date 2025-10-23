@@ -8,4 +8,4 @@ Copyright (C) 2011  INRIA and Microsoft Corporation
     or directly takes action such as printing out file contents or deleting
     directories. Returns a list of files for proof checking.
 *)
-val init: string -> string array -> Format.formatter -> (int -> unit) -> string list
+val init: ?out:Format.formatter -> ?err:Format.formatter -> ?terminate:(int -> unit) -> string -> string array -> string list

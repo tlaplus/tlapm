@@ -107,71 +107,107 @@ let reset_setting_values () = List.iter set_setting_value default_setting_values
 
 let changed_setting_values () = List.filter_map changed_setting_value default_setting_values
 
-let parse_args (args : string list) : string list * string * int option =
-  let buffer = Buffer.create 0 in
+let parse_args (args : string list) : string list * string * string * int option =
+  let out = Buffer.create 0 in
+  let out_format = Format.formatter_of_buffer out in
+  let err = Buffer.create 0 in
+  let err_format = Format.formatter_of_buffer err in
   let exception TrappedExit of int in
   let terminate (code : int) = raise (TrappedExit code) in
-  try let mods = Tlapm_lib__Tlapm_args.init "tlapm" (Array.of_list ("tlapm" :: args)) (Format.formatter_of_buffer buffer) terminate in
-    (mods, Buffer.contents buffer, None)
-  with TrappedExit exit_code -> ([], Buffer.contents buffer, Some exit_code)
+  try let mods = Tlapm_lib__Tlapm_args.init ~out:out_format ~err:err_format ~terminate:terminate "tlapm" (Array.of_list ("tlapm" :: args)) in
+    Format.pp_print_flush out_format ();
+    Format.pp_print_flush err_format ();
+    (mods, Buffer.contents out, Buffer.contents err, None)
+  with TrappedExit exit_code ->
+    Format.pp_print_flush out_format ();
+    Format.pp_print_flush err_format ();
+    ([], Buffer.contents out, Buffer.contents err, Some exit_code)
 
 open OUnit2;;
 
 let test_help _test_ctxt =
   reset_setting_values ();
-  let (mods, output, exit_code) = parse_args ["--help"] in
+  let (mods, out, err, exit_code) = parse_args ["--help"] in
   assert_equal [] mods;
-  assert_bool "Should print help text" (String.starts_with output ~prefix:"Usage: tlapm <options> FILE");
+  assert_equal "" out;
+  assert_bool "Should print help text" (String.starts_with err ~prefix:"Usage: tlapm <options> FILE");
+  assert_equal (Some 0) exit_code;
+  let (mods, out, err, exit_code) = parse_args ["-help"] in
+  assert_equal [] mods;
+  assert_equal "" out;
+  assert_bool "Should print help text" (String.starts_with err ~prefix:"Usage: tlapm <options> FILE");
+  assert_equal (Some 0) exit_code;
+  assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+let test_version _test_ctxt =
+  reset_setting_values ();
+  let (mods, out, err, exit_code) = parse_args ["--version"] in
+  assert_equal [] mods;
+  assert_equal (rawversion () ^ "\n") out;
+  assert_equal "" err;
   assert_equal (Some 0) exit_code;
   assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
 
 let test_basic _test_ctxt =
   reset_setting_values ();
-  let (mods, output, exit_code) = parse_args ["Test.tla"] in
+  let (mods, out, err, exit_code) = parse_args ["Test.tla"] in
   assert_equal ["Test.tla"] mods;
-  assert_equal "" output;
+  assert_equal "" out;
+  assert_equal "" err;
   assert_equal None exit_code;
   assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
 
-let test_verbose_short _test_ctxt =
+let test_no_mods _test_ctxt =
   reset_setting_values ();
-  let (mods, output, exit_code) = parse_args ["-v"; "Test.tla"] in
+  let (mods, out, err, exit_code) = parse_args [] in
+  assert_equal [] mods;
+  assert_equal "" out;
+  assert_bool "Need module req message" (String.starts_with err ~prefix:"Need at least one module file");
+  assert_equal (Some 2) exit_code;
+  assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+let test_verbose _test_ctxt =
+  reset_setting_values ();
+  let (mods, out, err, exit_code) = parse_args ["-v"; "Test.tla"] in
   assert_equal ["Test.tla"] mods;
-  assert_equal "" output;
+  assert_bool "Need config" (String.starts_with out ~prefix:"-------------------- tlapm configuration --------------------");
+  assert_equal "" err;
   assert_equal None exit_code;
   assert_equal [`B ("verbose", verbose, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
-
-let test_verbose_long _test_ctxt =
   reset_setting_values ();
-  let (mods, output, exit_code) = parse_args ["--verbose"; "Test.tla"] in
+  let (mods, out, err, exit_code) = parse_args ["--verbose"; "Test.tla"] in
   assert_equal ["Test.tla"] mods;
-  assert_equal "" output;
+  assert_bool "Need config" (String.starts_with out ~prefix:"-------------------- tlapm configuration --------------------");
+  assert_equal "" err;
   assert_equal None exit_code;
   assert_equal [`B ("verbose", verbose, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
 
 let test_use_stdin _test_ctxt =
   reset_setting_values ();
-  let (mods, output, exit_code) = parse_args ["--stdin"; "Test.tla"] in
+  let (mods, out, err, exit_code) = parse_args ["--stdin"; "Test.tla"] in
   assert_equal ["Test.tla"] mods;
-  assert_equal "" output;
+  assert_equal "" out;
+  assert_equal "" err;
   assert_equal None exit_code;
   assert_equal [`B ("use_stdin", use_stdin, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
 
 let test_prefer_stdlib _test_ctxt =
   reset_setting_values ();
-  let (mods, output, exit_code) = parse_args ["--prefer-stdlib"; "Test.tla"] in
+  let (mods, out, err, exit_code) = parse_args ["--prefer-stdlib"; "Test.tla"] in
   assert_equal ["Test.tla"] mods;
-  assert_equal "" output;
+  assert_equal "" out;
+  assert_equal "" err;
   assert_equal None exit_code;
   assert_equal [`B ("prefer_stdlib", prefer_stdlib, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
 
 let cli_test_suite = "Test CLI Parsing" >::: [
   "Help Test" >:: test_help;
   "Basic Test" >:: test_basic;
-  "Verbose Short" >:: test_verbose_short;
-  "Verbose Long" >:: test_verbose_long;
-  "Use Stdin" >:: test_use_stdin;
-  "Prefer Stdlib" >:: test_prefer_stdlib;
+  "Version Test" >:: test_version;
+  "No Mods Test" >:: test_no_mods;
+  "Verbose Test" >:: test_verbose;
+  "Use Stdin Test" >:: test_use_stdin;
+  "Prefer Stdlib Test" >:: test_prefer_stdlib;
 ];;
 
 let () = run_test_tt_main cli_test_suite
