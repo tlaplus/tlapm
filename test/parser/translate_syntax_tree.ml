@@ -54,6 +54,14 @@ let rec ts_node_to_sexpr (node : ts_node) : Sexp.t =
 let rec repeat (count : int) (elem : 't) : 't list =
   if count = 0 then [] else elem :: (repeat (count - 1) elem)
 
+let rec take (count : int) (ls : 't list) : 't list =
+  match count, ls with
+  | 0, _ -> []
+  | _, [] -> failwith "Attempted to take too many elements from list"
+  | n, x :: xs -> x :: (take (n - 1) xs)
+
+let last (ls : 't list) : 't = List.nth ls ((List.length ls) - 1)
+
 type operator =
   | Prefix of string
   | Infix of string
@@ -396,36 +404,91 @@ and translate_cross_product (exprs : Expr.T.expr list) : ts_node =
       ]
     }) (translate_expr hd) tl
 
+
+(** Subexpression selectors. The core difficulty with this translation is
+    that TLAPM groups the selectors as first_expr :: selectors, while the
+    output format expects selectors :: final_op. Depending on the nature of
+    the final op, the output format is either a prefixed_op (if the final op
+    is an operator) or a subexpression (if the final op is some kind of tree
+    navigation construct like @ or :). Thus this is quite a complicated
+    translation, with information being moved multiple levels up or down the
+    tree.
+*)
 and translate_subexpression (expr : Expr.T.expr) (selectors : Expr.T.sel list) : ts_node =
-  (*let _ =match expr.core with
-  | Opaque s -> failwith s;
-  | _ -> failwith "Something else"
-in*)
-  let translate_final_selector (selector : Expr.T.sel) : ts_node =
-    match selector with
-    | Sel_lab (name, args) ->
-      if List.is_empty args then name |> str_to_op |> op_to_node Reference else {
+  let translate_subexpression_component (name : string) (args : Expr.T.expr list) : ts_node =
+    let op = name |> str_to_op in
+    match args with
+    (** If no args, then either this is a naked reference to a symbolic op
+        that ordinarily takes arguments (prefix, infix, or postfix), or it
+        is a bound operator that takes no arguments.
+    *)
+    | [] -> op |> op_to_node Reference
+    (** If there are args, then this is either a standard invocation of a
+        bound operator, or a nonfix invocation of a prefix, infix, or postfix
+        operator. Ordinarily the TLAPM parse tree does not disambiguate
+        between nonfix and standard-fix invocations of operators, but here we
+        know it must be nonfix like +(1, 2) as that is the only way to invoke
+        these operators when they are defined in other modules imported using
+        M == INSTANCE ModuleName.
+    *)
+    | args -> match op with
+    | Named _name -> {
         name = "bound_op";
         children = List.flatten [
           [field_leaf "name" "identifier_ref"];
           List.map (fun arg -> Field ("parameter", (translate_expr arg))) args
         ]
       }
-    | _ -> failwith "final_selector"
-  in {
-    name = "prefixed_op";
-    children = [
-      Field ("prefix", {
-        name = "subexpr_prefix";
-        children = [Node {
-          name = "subexpr_component";
-          children = [Node (translate_expr expr)]
-        }]
-      });
-      let last (ls : 'a list) : 'a = List.nth ls ((List.length ls) - 1) in
-      Field ("op", translate_final_selector (last selectors));
-    ]
-  }
+    | _ -> {
+      name = "bound_nonfix_op";
+      children = List.flatten [
+        [Field ("symbol", (op_to_node Reference op))];
+        node_list_map translate_expr args
+      ]
+    }
+  in let as_wrapped_subexpr_component (component : ts_node) : ts_node =
+    {name = "subexpr_component"; children = [Node component]}
+  in let translate_selector ?(wrap_subexpr_component=true) (selector : Expr.T.sel) : ts_node =
+    match selector with
+    | Sel_down -> {name = "subexpr_tree_nav"; children = [leaf "colon"]}
+    | Sel_num _num -> {name = "subexpr_tree_nav"; children = [leaf "child_id"]}
+    | Sel_left -> {name = "subexpr_tree_nav"; children = [leaf "langle_bracket"]}
+    | Sel_right -> {name = "subexpr_tree_nav"; children = [leaf "rangle_bracket"]}
+    | Sel_at -> {name = "subexpr_tree_nav"; children = [leaf "address"]}
+    | Sel_inst exprs -> {name = "subexpr_tree_nav"; children = [Node {name = "operator_args"; children = node_list_map translate_expr exprs}]}
+    | Sel_lab (name, args) ->
+      let component = translate_subexpression_component name args in
+      if wrap_subexpr_component then as_wrapped_subexpr_component component else component
+  in let prefix = take ((List.length selectors) - 1) selectors in
+  let final_op = last selectors in
+  (** The final op decides whether this is a prefixed_op or a subexpression. *)
+  match final_op with
+  | Sel_lab (_name, _args) -> {
+      name = "prefixed_op";
+      children = [
+        Field ("prefix", {
+          name = "subexpr_prefix";
+          children = List.flatten [
+            [Node (as_wrapped_subexpr_component (translate_expr expr))];
+            node_list_map translate_selector prefix;
+          ]
+        });
+        Field ("op", translate_selector ~wrap_subexpr_component:false final_op);
+      ]
+    }
+  | _ -> {
+      name = "subexpression";
+      children = [
+        Node {
+          name = "subexpr_prefix";
+          children = List.flatten [
+            [Node (as_wrapped_subexpr_component (translate_expr expr))];
+            node_list_map translate_selector prefix;
+          ]
+        };
+        Node (translate_selector final_op);
+      ]
+    }
 
 (** Translate conjunction & disjunction lists like
   /\ e1

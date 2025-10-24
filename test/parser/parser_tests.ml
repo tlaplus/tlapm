@@ -83,10 +83,12 @@ let expect_parse_failure (test : syntax_test) : bool =
 let should_skip_tree_comparison (test : syntax_test) : bool =
   List.mem test.info.path [
     "syntax_corpus/proofs.txt";
-    "syntax_corpus/subexpressions.txt";
     "syntax_corpus/assume-prove.txt";
     "syntax_corpus/use_or_hide.txt";
   ] || List.mem test.info.name [
+    (* TODO with proofs *)
+    "Proof Step ID Subexpression Tree Navigation";
+
     (* Jlist terminated by single line comment omitted in TLAPM AST *)
     "Keyword-Unit-Terminated Conjlist";
     "Keyword-Unit-Terminated Disjlist";
@@ -117,6 +119,7 @@ let should_skip_tree_comparison (test : syntax_test) : bool =
 let expect_tree_comparison_failure (test : syntax_test) : bool =
   List.mem test.info.name [
     (* TLAPM appears to simply return an empty set here? *)
+    (* https://github.com/tlaplus/tlapm/issues/235 *)
     "Mistaken Set Filter Test";
     "Mistaken Set Filter Tuples Test";
   ]
