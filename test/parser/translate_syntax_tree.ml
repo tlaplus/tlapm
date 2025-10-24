@@ -771,6 +771,32 @@ and translate_except (fn : Expr.T.expr) (excepts : (Expr.T.expoint list * Expr.T
     ]
   }
 
+and translate_use_or_hide (usable : Proof.T.usable) : ts_node =
+  let translate_def (def : Proof.T.use_def Property.wrapped) : ts_node =
+    match def.core with
+    | Dvar name -> name |> str_to_op |> op_to_node Reference
+    | Dx _ -> failwith "use_or_hide Dx translation not implemented"
+  in {
+  name = "use_or_hide";
+  children = [Node {
+    name = "use_body";
+    children = List.flatten [
+      (match usable.facts with
+      | [] -> []
+      | facts -> [Node {
+        name = "use_body_expr";
+        children = node_list_map translate_expr facts
+      }]);
+      (match usable.defs with
+      | [] -> []
+      | defs -> [Node {
+        name = "use_body_def";
+        children = node_list_map translate_def defs
+      }]);
+    ]
+  }]
+}
+
 (** Top-level translation method for all expression types. *)
 and translate_expr (expr : Expr.T.expr) : ts_node =
   match expr.core with
@@ -988,7 +1014,8 @@ and translate_unit (unit : Module.T.modunit) : field_or_node =
     children = translate_theorem hint sequent level proof1 proof2 summary
   }
   | Submod mule -> Node (translate_module mule)
-  | Mutate _ -> leaf "mutate_ph"
+  | Mutate (`Use _, usable) -> Node (translate_use_or_hide usable)
+  | Mutate (`Hide, usable) -> Node (translate_use_or_hide usable)
   | Anoninst (instance, Local) -> Node {
       name = "local_definition";
       children = [Node (translate_instance instance)]

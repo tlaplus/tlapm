@@ -84,7 +84,6 @@ let should_skip_tree_comparison (test : syntax_test) : bool =
   List.mem test.info.path [
     "syntax_corpus/proofs.txt";
     "syntax_corpus/assume-prove.txt";
-    "syntax_corpus/use_or_hide.txt";
   ] || List.mem test.info.name [
     (* TODO with proofs *)
     "Proof Step ID Subexpression Tree Navigation";
