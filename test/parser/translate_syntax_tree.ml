@@ -605,7 +605,7 @@ and translate_parentheses (expr : Expr.T.expr) (pform : Expr.T.pform) : ts_node 
     name = "parentheses";
     children = [Node (translate_expr expr)]
   }
-  | Nlabel (_, params) -> {
+  | Nlabel (_label_name, params) -> {
     name = "label";
     children = List.flatten [
       [field_leaf "name" "identifier"];
@@ -614,7 +614,10 @@ and translate_parentheses (expr : Expr.T.expr) (pform : Expr.T.pform) : ts_node 
       [Field ("expression", translate_expr expr)]
     ]
   }
-  | Xlabel _ -> failwith "parens_xlabel"
+  | Xlabel (_label_name, _indices) -> {
+    name = "inner_assume_prove";
+    children = [leaf "identifier"; leaf "label_as"; Node (translate_expr expr)]
+  }
 
 and translate_set_filter (_name : Util.hint) (set : Expr.T.expr) (filter : Expr.T.expr) : ts_node = {
   name = "set_filter";
@@ -900,6 +903,8 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
   }
   | Case (cases, other) -> translate_case cases other
   | Bang (expr, selectors) -> translate_subexpression expr selectors
+  | Sequent sequent -> translate_assume_prove sequent
+  | Ix _num -> leaf_node "ix_expr_todo"
   | _ -> leaf_node "expr_ph"
 
 and translate_operator_definition (defn : Expr.T.defn) : ts_node =
@@ -965,11 +970,63 @@ and translate_assumption (name : Util.hint option) (expr : Expr.T.expr) : field_
     [Node (translate_expr expr)]
   ]
 
-and translate_theorem (name : Util.hint option) (sequent : Expr.T.sequent) (_level : int) (_proof1 : Proof.T.proof) (_proof2 : Proof.T.proof) (_summary : Module.T.summary) : field_or_node list =
+and translate_theorem (name : Util.hint option) (sequent : Expr.T.sequent) (_level : int) (proof1 : Proof.T.proof) (_proof2 : Proof.T.proof) (_summary : Module.T.summary) : field_or_node list =
   List.flatten [
     if Option.is_some name then [field_leaf "name" "identifier"; leaf "def_eq"] else [];
-    [Field ("statement", translate_expr sequent.active)]
+    [Field ("statement", translate_assume_prove sequent)];
+    match translate_proof proof1 with
+    | Some proof -> [Field ("proof", proof)]
+    | None -> []
   ]
+
+and translate_assume_prove (sequent : Expr.T.sequent) : ts_node =
+  let translate_hypothesis (hyp : Expr.T.hyp) : ts_node =
+    match hyp.core with
+    | Fresh (name, shape, kind, domain) -> {
+      name = "new";
+      children = List.flatten [
+        (match kind with | Unknown -> [] | _ -> [leaf "statement_level"]);
+        match shape with
+        | Shape_expr -> leaf "identifier" :: (
+          match domain with
+          | Unbounded -> []
+          | Bounded (set, _visibility) -> [leaf "set_in"; Node (translate_expr set)]
+        )
+        | Shape_op arity -> [Node (translate_operator_declaration name.core arity)]
+      ]
+    }
+    | FreshTuply (_hints, _hdom) -> leaf_node "fresh_tuply_todo"
+    | Flex _name -> leaf_node "flex_todo"
+    | Defn (_defn, _where, _visiblity, _export) -> leaf_node "defn_todo"
+    | Fact (expr, _visibility, _time) -> (
+      match expr.core with
+      | Sequent _ -> {
+        name = "inner_assume_prove";
+        children = [Node (translate_expr expr)]
+      }
+      | _ -> translate_expr expr
+    )
+  in match Tlapm_lib__Deque.to_list sequent.context with
+  (* No assumptions; this is a simple expression. *)
+  | [] -> translate_expr sequent.active
+  (* This is an ASSUME/PROVE statement with multiple assumptions. *)
+  | hypotheses -> {
+    name = "assume_prove";
+    children = List.append
+      (field_list_map "assumption" translate_hypothesis hypotheses)
+      [Field ("conclusion", translate_expr sequent.active)]
+  }
+
+and translate_proof (proof : Proof.T.proof) : ts_node option =
+  match proof.core with
+  | Omitted omission -> (
+    match omission with
+    | Implicit -> None
+    | Explicit -> Some (leaf_node "terminal_proof")
+    | Elsewhere (_location) -> Some (leaf_node "todo_omitted_elsewhere_proof")
+  )
+  | Obvious -> Some (leaf_node "terminal_proof")
+  | _ -> Some (leaf_node "proof_todo")
 
 and translate_module (tree : Module.T.mule) : ts_node = {
   name = "module";

@@ -24,6 +24,37 @@ OBVIOUS
 (double_line)))
 
 ===============================|||
+Nested Assume/Prove
+===============================|||
+
+---- MODULE Test ----
+THEOREM thm ==
+  ASSUME
+    ASSUME P
+    PROVE Q
+  PROVE C
+OMITTED
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem
+    name: (identifier) (def_eq)
+    statement: (assume_prove
+      assumption: (inner_assume_prove
+        (assume_prove
+          assumption: (identifier_ref)
+          conclusion: (identifier_ref)
+        )
+      )
+      conclusion: (identifier_ref)
+    )
+    proof: (terminal_proof)
+  )
+(double_line)))
+
+===============================|||
 Nested Assume/Prove With Label
 ===============================|||
 
@@ -140,7 +171,7 @@ Assume/Prove with Mixed Assumptions
 ---- MODULE Test ----
 THEOREM thm ==
   ASSUME
-    NEW f,
+    NEW CONSTANT f,
     1 + 2,
     /\ 1
     /\ 2,
@@ -155,7 +186,7 @@ OMITTED
   (theorem
     name: (identifier) (def_eq)
     statement: (assume_prove
-      assumption: (new (identifier))
+      assumption: (new (statement_level) (identifier))
       assumption: (bound_infix_op lhs: (nat_number) symbol: (plus) rhs: (nat_number))
       assumption: (conj_list (conj_item (bullet_conj) (nat_number)) (conj_item (bullet_conj) (nat_number)))
       assumption: (inner_assume_prove

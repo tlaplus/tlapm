@@ -83,10 +83,10 @@ let expect_parse_failure (test : syntax_test) : bool =
 let should_skip_tree_comparison (test : syntax_test) : bool =
   List.mem test.info.path [
     "syntax_corpus/proofs.txt";
-    "syntax_corpus/assume-prove.txt";
   ] || List.mem test.info.name [
     (* TODO with proofs *)
     "Proof Step ID Subexpression Tree Navigation";
+    "Assume/Prove in Suffices Step";
 
     (* Jlist terminated by single line comment omitted in TLAPM AST *)
     "Keyword-Unit-Terminated Conjlist";
