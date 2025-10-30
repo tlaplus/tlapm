@@ -218,6 +218,56 @@ let str_to_op (op_str : string) : operator =
 
   | _           -> Named    op_str
 
+type proof_step_id_parse_state =
+| Start
+| LessThan
+| Level
+| Name
+
+(** Manual parsing function so we don't need to import a regex library. *)
+let is_proof_step_id (shape : op_shape) (id : string) : bool =
+  let is_number (c : char) : bool =
+    let ord = Char.code c in
+    48 <= ord && ord <= 57
+  in let is_letter (c : char) : bool =
+    let ord = Char.code c in
+    65 <= ord && ord <= 90 || 97 <= ord && ord <= 122
+  in let is_proof_name (c : char) : bool =
+    match shape with
+    | Reference -> is_letter c
+    | Declaration -> is_letter c || c = '.'
+  in let rec parse_proof_step_id (state : proof_step_id_parse_state) (idx : int) : bool =
+    if idx < (String.length id)
+    then let c = String.get id idx
+    in match state with
+    | Start ->
+      if c = '<'
+      then parse_proof_step_id LessThan (idx + 1)
+      else false
+    | LessThan ->
+      if is_number c
+      then parse_proof_step_id Level (idx + 1)
+      else false
+    | Level ->
+      if is_number c
+      then parse_proof_step_id Level (idx + 1)
+      else if c = '>' then parse_proof_step_id Name (idx + 1) else false
+    | Name ->
+      if is_proof_name c
+      then parse_proof_step_id Name (idx + 1)
+      else false
+    else match state with
+    | Name -> true
+    | _ -> false
+  in parse_proof_step_id Start 0
+
+let translate_proof_step_id (shape : op_shape) : ts_node = {
+  name = (match shape with
+    | Reference -> "proof_step_ref"
+    | Declaration -> "proof_step_id");
+  children = [leaf "level"; leaf "name"]
+}
+
 let as_specific_name (shape : op_shape) (id : string) : ts_node =
   match id with
   | "Nat" -> leaf_node "nat_number_set"
@@ -226,11 +276,14 @@ let as_specific_name (shape : op_shape) (id : string) : ts_node =
   | "FALSE" -> leaf_node "boolean"
   | "TRUE" -> leaf_node "boolean"
   | "STRING" -> leaf_node "string_set"
-  | _ -> leaf_node (
-    match shape with
-    | Declaration -> "identifier"
-    | Reference -> "identifier_ref"
-  )
+  | _ ->
+    if is_proof_step_id shape id
+    then translate_proof_step_id shape
+    else leaf_node (
+      match shape with
+      | Declaration -> "identifier"
+      | Reference -> "identifier_ref"
+    )
 
 let op_to_node (shape : op_shape) (op : operator) : ts_node =
   match op with
@@ -774,14 +827,12 @@ and translate_except (fn : Expr.T.expr) (excepts : (Expr.T.expoint list * Expr.T
     ]
   }
 
-and translate_use_or_hide (usable : Proof.T.usable) : ts_node =
+and translate_use_body (usable : Proof.T.usable) : ts_node =
   let translate_def (def : Proof.T.use_def Property.wrapped) : ts_node =
     match def.core with
     | Dvar name -> name |> str_to_op |> op_to_node Reference
     | Dx _ -> failwith "use_or_hide Dx translation not implemented"
   in {
-  name = "use_or_hide";
-  children = [Node {
     name = "use_body";
     children = List.flatten [
       (match usable.facts with
@@ -797,8 +848,7 @@ and translate_use_or_hide (usable : Proof.T.usable) : ts_node =
         children = node_list_map translate_def defs
       }]);
     ]
-  }]
-}
+  }
 
 (** Top-level translation method for all expression types. *)
 and translate_expr (expr : Expr.T.expr) : ts_node =
@@ -1017,16 +1067,44 @@ and translate_assume_prove (sequent : Expr.T.sequent) : ts_node =
       [Field ("conclusion", translate_expr sequent.active)]
   }
 
+and translate_proof_step (_step : Proof.T.step) : ts_node =
+  leaf_node "todo_proof_step"
+
+and translate_qed_step (qed_step : Proof.T.qed_step) : ts_node = {
+  name = "qed_step";
+  children = List.flatten [
+    [Node (translate_proof_step_id Declaration)];
+    match qed_step.core with
+    | Qed proof -> (
+      match translate_proof proof with
+      | Some node -> [Node node]
+      | None -> []
+    )
+  ]
+}
+
+and translate_non_terminal_proof (steps : Proof.T.step list) (qed_step : Proof.T.qed_step) : ts_node = {
+  name = "non_terminal_proof";
+  children = List.append
+    (node_list_map translate_proof_step steps)
+    [Node (translate_qed_step qed_step)]
+}
+
 and translate_proof (proof : Proof.T.proof) : ts_node option =
   match proof.core with
+  | Obvious -> Some (leaf_node "terminal_proof")
   | Omitted omission -> (
     match omission with
     | Implicit -> None
     | Explicit -> Some (leaf_node "terminal_proof")
     | Elsewhere (_location) -> Some (leaf_node "todo_omitted_elsewhere_proof")
   )
-  | Obvious -> Some (leaf_node "terminal_proof")
-  | _ -> Some (leaf_node "proof_todo")
+  | By (usable, _) -> Some {
+    name = "terminal_proof";
+    children = [Node (translate_use_body usable)]
+  }
+  | Steps (steps, qed_step) -> Some (translate_non_terminal_proof steps qed_step)
+  | Error msg -> failwith ("Error translating proof: " ^ msg)
 
 and translate_module (tree : Module.T.mule) : ts_node = {
   name = "module";
@@ -1071,8 +1149,8 @@ and translate_unit (unit : Module.T.modunit) : field_or_node =
     children = translate_theorem hint sequent level proof1 proof2 summary
   }
   | Submod mule -> Node (translate_module mule)
-  | Mutate (`Use _, usable) -> Node (translate_use_or_hide usable)
-  | Mutate (`Hide, usable) -> Node (translate_use_or_hide usable)
+  | Mutate (`Use _, usable) -> Node {name = "use_or_hide"; children = [Node (translate_use_body usable)]}
+  | Mutate (`Hide, usable) -> Node {name = "use_or_hide"; children = [Node (translate_use_body usable)]}
   | Anoninst (instance, Local) -> Node {
       name = "local_definition";
       children = [Node (translate_instance instance)]

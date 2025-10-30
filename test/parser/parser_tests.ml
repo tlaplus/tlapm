@@ -82,7 +82,6 @@ let expect_parse_failure (test : syntax_test) : bool =
 
 let should_skip_tree_comparison (test : syntax_test) : bool =
   List.mem test.info.path [
-    "syntax_corpus/proofs.txt";
   ] || List.mem test.info.name [
     (* TODO with proofs *)
     "Proof Step ID Subexpression Tree Navigation";
