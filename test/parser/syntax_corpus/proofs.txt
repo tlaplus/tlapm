@@ -245,8 +245,8 @@ THEOREM TRUE
 (source_file (module (header_line) name: (identifier) (header_line)
   (theorem statement: (boolean) proof:
     (non_terminal_proof
-      (proof_step (proof_step_id (level) (name)) (definition_proof_step (operator_definition (identifier) (def_eq) (nat_number))))
-      (proof_step (proof_step_id (level) (name)) (definition_proof_step (operator_definition (identifier) (def_eq) (nat_number))))
+      (proof_step (proof_step_id (level) (name)) (definition_proof_step (operator_definition name: (identifier) (def_eq) definition: (nat_number))))
+      (proof_step (proof_step_id (level) (name)) (definition_proof_step (operator_definition name: (identifier) (def_eq) definition: (nat_number))))
       (proof_step (proof_step_id (level) (name)) (have_proof_step (nat_number)))
       (proof_step (proof_step_id (level) (name)) (witness_proof_step (nat_number) (nat_number)))
       (proof_step (proof_step_id (level) (name)) (take_proof_step (identifier) (identifier) (identifier)))

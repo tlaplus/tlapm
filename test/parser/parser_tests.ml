@@ -1,15 +1,13 @@
-(** This test runs a battery of TLA+ syntax fragments against TLAPM's syntax
-    parser. In the future it will check the actual parse tree emitted by
-    TLAPM, but for now it just checks whether TLAPM parses without error all
-    the syntax it is expected to parse. Tests sourced from:
+(** This file runs a battery of TLA+ syntax fragments against TLAPM's syntax
+    parser. It then takes the resulting parse tree and translates it into a
+    normalized S-expression form to compare with the associated expected AST.
+    Tests are sourced from the standardized syntax test corpus at:
     https://github.com/tlaplus/rfcs/tree/2a772d9dd11acec5d7dedf30abfab91a49de48b8/language_standard/tests/tlaplus_syntax
 *)
 
 open Tlapm_lib;;
 
 open Syntax_corpus_file_parser;;
-
-open OUnit2;;
 
 (** Calls TLAPM's parser with the given input. Catches all exceptions and
     treats them as parse failures.
@@ -80,13 +78,15 @@ let expect_parse_failure (test : syntax_test) : bool =
     "Nonfix Double Exclamation Operator (GH TSTLA #GH97, GH tlaplus/tlaplus #884)";
   ]
 
+(** Names of tests that are unable to match the expected output tree, but not
+    because of a bug; instead, the TLAPM syntax tree doesn't contain the
+    (usually extraneous) necessary information to fully populate the output
+    tree with the expected children.
+    @param test Information about the test.
+    @return Whether the test should skip the tree comparison phase.
+*)
 let should_skip_tree_comparison (test : syntax_test) : bool =
-  List.mem test.info.path [
-  ] || List.mem test.info.name [
-    (* TODO with proofs *)
-    "Proof Step ID Subexpression Tree Navigation";
-    "Assume/Prove in Suffices Step";
-
+  List.mem test.info.name [
     (* Jlist terminated by single line comment omitted in TLAPM AST *)
     "Keyword-Unit-Terminated Conjlist";
     "Keyword-Unit-Terminated Disjlist";
@@ -114,6 +114,11 @@ let should_skip_tree_comparison (test : syntax_test) : bool =
     "IFF Disambiguation"
   ]
 
+(** Names of tests that are expected to fail the tree comparison phase due to
+    bugs in TLAPM's syntax parser.
+    @param test Information about the test.
+    @return Whether the test is expected to fail the tree comparison phase.
+*)
 let expect_tree_comparison_failure (test : syntax_test) : bool =
   List.mem test.info.name [
     (* TLAPM appears to simply return an empty set here? *)
@@ -122,6 +127,12 @@ let expect_tree_comparison_failure (test : syntax_test) : bool =
     "Mistaken Set Filter Tuples Test";
   ]
 
+open OUnit2;;
+
+(** Gathers all syntax test files, parses them, then runs the cases they
+    contain as tests against TLAPM's syntax parser, skipping or expecting
+    failure as appropriate.
+*)
 let tests = "Standardized syntax test corpus" >::: (
   get_all_tests_under "syntax_corpus"
   |> List.map (fun test ->
@@ -155,4 +166,5 @@ let tests = "Standardized syntax test corpus" >::: (
   )
 )
 
-let _ = run_test_tt_main tests
+(** The OUnit2 test entrypoint. *)
+let () = run_test_tt_main tests

@@ -55,9 +55,11 @@ let rec repeat (count : int) (elem : 't) : 't list =
   if count = 0 then [] else elem :: (repeat (count - 1) elem)
 
 let rec take (count : int) (ls : 't list) : 't list =
-  match count, ls with
+  if count > (List.length ls)
+  then failwith (Printf.sprintf "Attempted to take %d elements from list of length %d" count (List.length ls))
+  else match count, ls with
   | 0, _ -> []
-  | _, [] -> failwith "Attempted to take too many elements from list"
+  | n, [] -> failwith (Printf.sprintf "Attempted to take %d elements from empty list" n)
   | n, x :: xs -> x :: (take (n - 1) xs)
 
 let last (ls : 't list) : 't = List.nth ls ((List.length ls) - 1)
@@ -850,6 +852,11 @@ and translate_use_body (usable : Proof.T.usable) : ts_node =
     ]
   }
 
+and translate_use_or_hide (usable : Proof.T.usable) : ts_node = {
+  name = "use_or_hide";
+  children = [Node (translate_use_body usable)]
+}
+
 (** Top-level translation method for all expression types. *)
 and translate_expr (expr : Expr.T.expr) : ts_node =
   match expr.core with
@@ -1067,8 +1074,65 @@ and translate_assume_prove (sequent : Expr.T.sequent) : ts_node =
       [Field ("conclusion", translate_expr sequent.active)]
   }
 
-and translate_proof_step (_step : Proof.T.step) : ts_node =
-  leaf_node "todo_proof_step"
+and translate_suffices_proof_step (sequent : Expr.T.sequent) (proof : Proof.T.proof) : ts_node = {
+  name = "suffices_proof_step";
+  children = List.flatten [
+    [Node (translate_assume_prove sequent)];
+    match translate_proof proof with
+    | Some node -> [Node node]
+    | None -> []
+  ]
+}
+
+and translate_define_proof_step (definitions : Expr.T.defn list) : ts_node = {
+  name = "definition_proof_step";
+  children = node_list_map translate_operator_definition definitions
+}
+
+and translate_have_proof_step (expr : Expr.T.expr) : ts_node = {
+  name = "have_proof_step";
+  children = [Node (translate_expr expr)]  
+}
+
+and translate_witness_proof_step (exprs : Expr.T.expr list) : ts_node = {
+  name = "witness_proof_step";
+  children = node_list_map translate_expr exprs
+}
+
+and translate_take_proof_step (_bounds : Expr.T.bound list) : ts_node = {
+  name = "take_proof_step";
+  children = []  
+}
+
+and translate_case_proof_step (_expr : Expr.T.expr) (_proof : Proof.T.proof) : ts_node = {
+  name = "case_proof_step";
+  children = []
+}
+
+and translate_pick_proof_step (_bounds : Expr.T.bounds) (_expr : Expr.T.expr) (_proof : Proof.T.proof) : ts_node = {
+  name = "pick_proof_step";
+  children = []
+}
+
+and translate_proof_step (step : Proof.T.step) : ts_node = {
+  name = "proof_step";
+  children = [
+    Node (translate_proof_step_id Declaration);
+    Node (match step.core with
+    | Suffices (sequent, proof) -> translate_suffices_proof_step sequent proof
+    | Assert (sequent, proof) -> translate_suffices_proof_step sequent proof
+    | Use (usable, _visility) -> translate_use_or_hide usable
+    | Hide usable -> translate_use_or_hide usable
+    | Define definitions -> translate_define_proof_step definitions
+    | Have expr -> translate_have_proof_step expr
+    | Witness exprs -> translate_witness_proof_step exprs
+    | Take bounds -> translate_take_proof_step bounds
+    | TakeTuply (_bounds : Expr.T.tuply_bounds) -> leaf_node "todo_take_tuply_proof_step"
+    | Pcase (expr, proof) -> translate_case_proof_step expr proof
+    | Pick (bounds, expr, proof) -> translate_pick_proof_step bounds expr proof
+    | PickTuply ((_bounds, _expr, _proof) : Expr.T.tuply_bounds * Expr.T.expr * Proof.T.proof) -> leaf_node "todo_pick_tuply_proof_step"
+    | Forget (_num : int) -> leaf_node "todo_forget_proof_step"
+  )]}
 
 and translate_qed_step (qed_step : Proof.T.qed_step) : ts_node = {
   name = "qed_step";
@@ -1149,8 +1213,8 @@ and translate_unit (unit : Module.T.modunit) : field_or_node =
     children = translate_theorem hint sequent level proof1 proof2 summary
   }
   | Submod mule -> Node (translate_module mule)
-  | Mutate (`Use _, usable) -> Node {name = "use_or_hide"; children = [Node (translate_use_body usable)]}
-  | Mutate (`Hide, usable) -> Node {name = "use_or_hide"; children = [Node (translate_use_body usable)]}
+  | Mutate (`Use _, usable) -> Node (translate_use_or_hide usable)
+  | Mutate (`Hide, usable) -> Node (translate_use_or_hide usable)
   | Anoninst (instance, Local) -> Node {
       name = "local_definition";
       children = [Node (translate_instance instance)]
