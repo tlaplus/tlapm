@@ -68,6 +68,7 @@ type operator =
   | Prefix of string
   | Infix of string
   | Postfix of string
+  | ProofStepId
   | Named of string
 
 type op_shape =
@@ -97,6 +98,45 @@ let translate_string (str : string) : ts_node = {
       ) (false, 0) str in
     repeat escape_count (leaf "escape_char")
 }
+
+type proof_step_id_parse_state =
+| Start
+| LessThan
+| Level
+| Name
+
+(** Manual parsing function so we don't need to import a regex library. *)
+let is_proof_step_id (id : string) : bool =
+  let is_number (c : char) : bool =
+    let ord = Char.code c in
+    48 <= ord && ord <= 57
+  in let is_letter (c : char) : bool =
+    let ord = Char.code c in
+    65 <= ord && ord <= 90 || 97 <= ord && ord <= 122
+  in let rec parse_proof_step_id (state : proof_step_id_parse_state) (idx : int) : bool =
+    if idx < (String.length id)
+    then let c = String.get id idx
+    in match state with
+    | Start ->
+      if c = '<'
+      then parse_proof_step_id LessThan (idx + 1)
+      else false
+    | LessThan ->
+      if is_number c
+      then parse_proof_step_id Level (idx + 1)
+      else false
+    | Level ->
+      if is_number c
+      then parse_proof_step_id Level (idx + 1)
+      else if c = '>' then parse_proof_step_id Name (idx + 1) else false
+    | Name ->
+      if is_letter c
+      then parse_proof_step_id Name (idx + 1)
+      else false
+    else match state with
+    | Name -> true
+    | _ -> false
+  in parse_proof_step_id Start 0
 
 let str_to_op (op_str : string) : operator =
   match op_str with
@@ -218,50 +258,7 @@ let str_to_op (op_str : string) : operator =
   | "^#"        -> Postfix  "sup_hash"
   | "^*"        -> Postfix  "asterisk"
 
-  | _           -> Named    op_str
-
-type proof_step_id_parse_state =
-| Start
-| LessThan
-| Level
-| Name
-
-(** Manual parsing function so we don't need to import a regex library. *)
-let is_proof_step_id (shape : op_shape) (id : string) : bool =
-  let is_number (c : char) : bool =
-    let ord = Char.code c in
-    48 <= ord && ord <= 57
-  in let is_letter (c : char) : bool =
-    let ord = Char.code c in
-    65 <= ord && ord <= 90 || 97 <= ord && ord <= 122
-  in let is_proof_name (c : char) : bool =
-    match shape with
-    | Reference -> is_letter c
-    | Declaration -> is_letter c || c = '.'
-  in let rec parse_proof_step_id (state : proof_step_id_parse_state) (idx : int) : bool =
-    if idx < (String.length id)
-    then let c = String.get id idx
-    in match state with
-    | Start ->
-      if c = '<'
-      then parse_proof_step_id LessThan (idx + 1)
-      else false
-    | LessThan ->
-      if is_number c
-      then parse_proof_step_id Level (idx + 1)
-      else false
-    | Level ->
-      if is_number c
-      then parse_proof_step_id Level (idx + 1)
-      else if c = '>' then parse_proof_step_id Name (idx + 1) else false
-    | Name ->
-      if is_proof_name c
-      then parse_proof_step_id Name (idx + 1)
-      else false
-    else match state with
-    | Name -> true
-    | _ -> false
-  in parse_proof_step_id Start 0
+  | _           -> if is_proof_step_id op_str then ProofStepId else Named op_str
 
 let translate_proof_step_id (shape : op_shape) : ts_node = {
   name = (match shape with
@@ -278,10 +275,7 @@ let as_specific_name (shape : op_shape) (id : string) : ts_node =
   | "FALSE" -> leaf_node "boolean"
   | "TRUE" -> leaf_node "boolean"
   | "STRING" -> leaf_node "string_set"
-  | _ ->
-    if is_proof_step_id shape id
-    then translate_proof_step_id shape
-    else leaf_node (
+  | _ -> leaf_node (
       match shape with
       | Declaration -> "identifier"
       | Reference -> "identifier_ref"
@@ -292,6 +286,7 @@ let op_to_node (shape : op_shape) (op : operator) : ts_node =
   | Prefix symbol -> {name = "prefix_op_symbol"; children = [leaf symbol]}
   | Infix symbol -> {name = "infix_op_symbol"; children = [leaf symbol]}
   | Postfix symbol -> {name = "postfix_op_symbol"; children = [leaf symbol]}
+  | ProofStepId -> translate_proof_step_id shape
   | Named name -> as_specific_name shape name
 
 let as_bound_op (op : Expr.T.expr) : operator =
@@ -357,6 +352,7 @@ let translate_operator_declaration (name : string) (arity : int) : ts_node = {
       Field ("name", symbol);
     ]
     | Named _ -> (Field ("name", symbol)) :: (repeat arity (field_leaf "parameter" "placeholder"))
+    | ProofStepId -> failwith "Proof Step ID not allowed as operator declaration"
   }
 
 let translate_extends (tree : Util.hints) : field_or_node list =
@@ -470,6 +466,7 @@ and translate_cross_product (exprs : Expr.T.expr list) : ts_node =
     tree.
 *)
 and translate_subexpression (expr : Expr.T.expr) (selectors : Expr.T.sel list) : ts_node =
+  if selectors = [] then translate_expr expr else
   let translate_subexpression_component (name : string) (args : Expr.T.expr list) : ts_node =
     let op = name |> str_to_op in
     match args with
@@ -477,7 +474,7 @@ and translate_subexpression (expr : Expr.T.expr) (selectors : Expr.T.sel list) :
         that ordinarily takes arguments (prefix, infix, or postfix), or it
         is a bound operator that takes no arguments.
     *)
-    | [] -> op |> op_to_node Reference
+    | [] -> op_to_node Reference op
     (** If there are args, then this is either a standard invocation of a
         bound operator, or a nonfix invocation of a prefix, infix, or postfix
         operator. Ordinarily the TLAPM parse tree does not disambiguate
@@ -486,23 +483,24 @@ and translate_subexpression (expr : Expr.T.expr) (selectors : Expr.T.sel list) :
         these operators when they are defined in other modules imported using
         M == INSTANCE ModuleName.
     *)
-    | args -> match op with
-    | Named _name -> {
-        name = "bound_op";
+    | args -> (match op with
+      | Named _ -> {
+          name = "bound_op";
+          children = List.flatten [
+            [Field ("name", (op_to_node Reference op))];
+            List.map (fun arg -> Field ("parameter", (translate_expr arg))) args
+          ]
+        }
+      | _ -> {
+        name = "bound_nonfix_op";
         children = List.flatten [
-          [field_leaf "name" "identifier_ref"];
-          List.map (fun arg -> Field ("parameter", (translate_expr arg))) args
+          [Field ("symbol", (op_to_node Reference op))];
+          node_list_map translate_expr args
         ]
       }
-    | _ -> {
-      name = "bound_nonfix_op";
-      children = List.flatten [
-        [Field ("symbol", (op_to_node Reference op))];
-        node_list_map translate_expr args
-      ]
-    }
+    )
   in let as_wrapped_subexpr_component (component : ts_node) : ts_node =
-    {name = "subexpr_component"; children = [Node component]}
+      {name = "subexpr_component"; children = [Node component]}
   in let translate_selector ?(wrap_subexpr_component=true) (selector : Expr.T.sel) : ts_node =
     match selector with
     | Sel_down -> {name = "subexpr_tree_nav"; children = [leaf "colon"]}
@@ -514,7 +512,7 @@ and translate_subexpression (expr : Expr.T.expr) (selectors : Expr.T.sel list) :
     | Sel_lab (name, args) ->
       let component = translate_subexpression_component name args in
       if wrap_subexpr_component then as_wrapped_subexpr_component component else component
-  in let prefix = take ((List.length selectors) - 1) selectors in
+  in let prefix = take (max ((List.length selectors) - 1) 0) selectors in
   let final_op = last selectors in
   (** The final op decides whether this is a prefixed_op or a subexpression. *)
   match final_op with
@@ -537,7 +535,10 @@ and translate_subexpression (expr : Expr.T.expr) (selectors : Expr.T.sel list) :
         Node {
           name = "subexpr_prefix";
           children = List.flatten [
-            [Node (as_wrapped_subexpr_component (translate_expr expr))];
+            [let node = translate_expr expr in
+              if node.name = "proof_step_ref"
+              then Node node
+              else Node (as_wrapped_subexpr_component node)];
             node_list_map translate_selector prefix;
           ]
         };
@@ -645,6 +646,7 @@ and translate_bound_op (callee : Expr.T.expr) (args : Expr.T.expr list) : ts_nod
       List.map (fun arg -> Field ("parameter", (translate_expr arg))) args
     ]
   }
+  | ProofStepId -> failwith "Proof Step ID not allowed as bound operator"
 
 and translate_lambda (params : (Util.hint * Expr.T.shape) list) (expr : Expr.T.expr) : ts_node = {
   name = "lambda";
@@ -983,6 +985,7 @@ and translate_operator_definition (defn : Expr.T.defn) : ts_node =
           | Shape_expr -> parameter
           | Shape_op arity -> Field ("parameter", translate_operator_declaration param_op_name.core arity)
         ) params
+      | ProofStepId -> failwith "Proof Step ID not allowed in operator definition"
       in {
       name = "operator_definition";
       children = List.flatten [
@@ -1099,19 +1102,28 @@ and translate_witness_proof_step (exprs : Expr.T.expr list) : ts_node = {
   children = node_list_map translate_expr exprs
 }
 
+and translate_case_proof_step (expr : Expr.T.expr) (proof : Proof.T.proof) : ts_node = {
+  name = "case_proof_step";
+  children = List.flatten [
+    [Node (translate_expr expr)];
+    match translate_proof proof with
+    | Some node -> [Node node]
+    | None -> []
+  ]
+}
+
 and translate_take_proof_step (_bounds : Expr.T.bound list) : ts_node = {
   name = "take_proof_step";
   children = []  
 }
 
-and translate_case_proof_step (_expr : Expr.T.expr) (_proof : Proof.T.proof) : ts_node = {
-  name = "case_proof_step";
-  children = []
-}
-
-and translate_pick_proof_step (_bounds : Expr.T.bounds) (_expr : Expr.T.expr) (_proof : Proof.T.proof) : ts_node = {
+and translate_pick_proof_step (_bounds : Expr.T.bounds) (_expr : Expr.T.expr) (proof : Proof.T.proof) : ts_node = {
   name = "pick_proof_step";
-  children = []
+  children = List.flatten [
+    match translate_proof proof with
+    | Some node -> [Node node]
+    | None -> []
+  ]
 }
 
 and translate_proof_step (step : Proof.T.step) : ts_node = {
