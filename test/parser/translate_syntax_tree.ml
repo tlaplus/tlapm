@@ -330,7 +330,7 @@ let builtin_to_op (builtin : Builtin.builtin) : operator =
   | Cdot      -> Infix    "cdot"
   | Actplus   -> Infix    "plus_arrow"
   | Prime     -> Postfix  "prime"
-  | _         -> failwith "unknown built-in"
+  | _         -> failwith "Translation failure: unknown built-in operator"
 
 let translate_operator_declaration (name : string) (arity : int) : ts_node = {
     name = "operator_declaration";
@@ -352,7 +352,7 @@ let translate_operator_declaration (name : string) (arity : int) : ts_node = {
       Field ("name", symbol);
     ]
     | Named _ -> (Field ("name", symbol)) :: (repeat arity (field_leaf "parameter" "placeholder"))
-    | ProofStepId -> failwith "Proof Step ID not allowed as operator declaration"
+    | ProofStepId -> failwith "Translation failure: Proof Step ID not allowed as operator declaration"
   }
 
 let translate_extends (tree : Util.hints) : field_or_node list =
@@ -399,7 +399,7 @@ let group_bounds (bounds : Expr.T.bound list) : (ts_node list * Expr.T.expr) lis
     match domain with
     | Ditto -> (groups, leaf_node "identifier" :: partial_group)
     | Domain expr -> ((leaf_node "identifier" :: partial_group, expr) :: groups, [])
-    | No_domain -> failwith "Encountered unbounded domain when grouping bounds"
+    | No_domain -> failwith "Translation failure: encountered unbounded domain when grouping bounds"
   ) bounds ([], [])
   in final_groups
 
@@ -417,8 +417,8 @@ let group_tuple_bounds (bounds : Expr.T.tuply_bound list) : (ts_node list * Expr
             [leaf "rangle_bracket"];
           ]
         } in ([tuple], expr) :: groups, [])
-    | (Bound_names _, Ditto) -> failwith "Combination of multiple bound names and ditto bound is never used"
-    | (_, No_domain) -> failwith "Tuple quantifiers must have a domain; this should not be representable"
+    | (Bound_names _, Ditto) -> failwith "Translation failure: combination of multiple bound names and ditto bound is never used"
+    | (_, No_domain) -> failwith "Translation failure: tuple quantifiers must have a domain; this should not be representable"
   ) bounds ([], [])
   in final_groups
 
@@ -444,7 +444,7 @@ and translate_instance (instance : Expr.T.instance) : ts_node = {
 
 and translate_cross_product (exprs : Expr.T.expr list) : ts_node =
   match exprs with
-  | [] -> failwith "Empty cross product"
+  | [] -> failwith "Translation failure: empty cross product"
   | hd :: tl -> List.fold_left (
     fun lhs rhs -> {
       name = "bound_infix_op";
@@ -552,7 +552,11 @@ and translate_subexpression (expr : Expr.T.expr) (selectors : Expr.T.sel list) :
   /\ e3
 *)
 and translate_jlist (bullet : Expr.T.bullet) (juncts : Expr.T.expr list) : ts_node =
-  let jtype = match bullet with | And -> "conj" | Or -> "disj" | _ -> failwith "jlist"
+  let jtype =
+    match bullet with
+    | And -> "conj"
+    | Or -> "disj" 
+    | Refs -> failwith "Translation undefined for 'Refs' jlist bullet type"
   in {
     name = jtype ^ "_list";
     children = List.map (fun expr -> Node {
@@ -615,7 +619,7 @@ and translate_bound_op (callee : Expr.T.expr) (args : Expr.T.expr list) : ts_nod
     match callee.core with
     | Opaque op -> str_to_op op
     | Internal builtin -> builtin_to_op builtin
-    | _ -> failwith "bound_op callee"
+    | _ -> failwith "Translation failure: bound operator callee must be a named operator or built-in"
   in match op with
   | Prefix op -> {
     name = "bound_prefix_op";
@@ -646,7 +650,7 @@ and translate_bound_op (callee : Expr.T.expr) (args : Expr.T.expr list) : ts_nod
       List.map (fun arg -> Field ("parameter", (translate_expr arg))) args
     ]
   }
-  | ProofStepId -> failwith "Proof Step ID not allowed as bound operator"
+  | ProofStepId -> failwith "Translation failure: proof Step ID not allowed as bound operator"
 
 and translate_lambda (params : (Util.hint * Expr.T.shape) list) (expr : Expr.T.expr) : ts_node = {
   name = "lambda";
@@ -836,7 +840,7 @@ and translate_use_body (usable : Proof.T.usable) : ts_node =
   let translate_def (def : Proof.T.use_def Property.wrapped) : ts_node =
     match def.core with
     | Dvar name -> name |> str_to_op |> op_to_node Reference
-    | Dx _ -> failwith "use_or_hide Dx translation not implemented"
+    | Dx _ -> failwith "Translation undefined for 'Dx' use definition"
   in {
     name = "use_body";
     children = List.flatten [
@@ -964,8 +968,8 @@ and translate_expr (expr : Expr.T.expr) : ts_node =
   | Case (cases, other) -> translate_case cases other
   | Bang (expr, selectors) -> translate_subexpression expr selectors
   | Sequent sequent -> translate_assume_prove sequent
-  | Ix _num -> leaf_node "ix_expr_todo"
-  | _ -> leaf_node "expr_ph"
+  | Ix _ -> failwith "Translation undefined for 'Ix' expression"
+  | With (_, _) -> failwith "Translation undefined for 'With' expression"
 
 and translate_operator_definition (defn : Expr.T.defn) : ts_node =
   match defn.core with
@@ -986,7 +990,7 @@ and translate_operator_definition (defn : Expr.T.defn) : ts_node =
           | Shape_expr -> parameter
           | Shape_op arity -> Field ("parameter", translate_operator_declaration param_op_name.core arity)
         ) params
-      | ProofStepId -> failwith "Proof Step ID not allowed in operator definition"
+      | ProofStepId -> failwith "Translation failure: proof Step ID not allowed in operator definition"
       in {
       name = "operator_definition";
       children = List.flatten [
@@ -1056,9 +1060,10 @@ and translate_assume_prove (sequent : Expr.T.sequent) : ts_node =
         | Shape_op arity -> [Node (translate_operator_declaration name.core arity)]
       ]
     }
-    | FreshTuply (_hints, _hdom) -> leaf_node "fresh_tuply_todo"
-    | Flex _name -> leaf_node "flex_todo"
-    | Defn (_defn, _where, _visiblity, _export) -> leaf_node "defn_todo"
+    | FreshTuply (_hints, _hdom) -> failwith "Translation error: NEW tuples in ASSUME/PROVE blocks are invalid"
+    (* The Flex variant results from ASSUME NEW VARIABLE x *)
+    | Flex _name -> {name = "new"; children = [leaf "statement_level"; leaf "identifier"]}
+    | Defn (_defn, _where, _visiblity, _export) -> failwith "Translation undefined for 'Defn' hypothesis type"
     | Fact (expr, _visibility, _time) -> (
       match expr.core with
       | Sequent _ -> {
@@ -1151,7 +1156,7 @@ and translate_proof_step (step : Proof.T.step) : ts_node = {
     | Pcase (expr, proof) -> translate_case_proof_step expr proof
     | Pick (bounds, expr, proof) -> translate_pick_proof_step bounds expr proof
     | PickTuply ((_bounds, _expr, _proof) : Expr.T.tuply_bounds * Expr.T.expr * Proof.T.proof) -> leaf_node "todo_pick_tuply_proof_step"
-    | Forget (_num : int) -> leaf_node "todo_forget_proof_step"
+    | Forget _ -> failwith "Translation undefined for 'Forget' proof step type"
   )]}
 
 and translate_qed_step (qed_step : Proof.T.qed_step) : ts_node = {
@@ -1181,14 +1186,14 @@ and translate_proof (proof : Proof.T.proof) : ts_node option =
     match omission with
     | Implicit -> None
     | Explicit -> Some (leaf_node "terminal_proof")
-    | Elsewhere (_location) -> Some (leaf_node "todo_omitted_elsewhere_proof")
+    | Elsewhere _ -> failwith "Translation undefined for 'Elsewhere' Omitted proof type"
   )
   | By (usable, _) -> Some {
     name = "terminal_proof";
     children = [Node (translate_use_body usable)]
   }
   | Steps (steps, qed_step) -> Some (translate_non_terminal_proof steps qed_step)
-  | Error msg -> failwith ("Error translating proof: " ^ msg)
+  | Error msg -> failwith ("Translation failure: proof type error " ^ msg)
 
 and translate_module (tree : Module.T.mule) : ts_node = {
   name = "module";

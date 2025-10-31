@@ -87,6 +87,10 @@ let expect_parse_failure (test : syntax_test) : bool =
 *)
 let should_skip_tree_comparison (test : syntax_test) : bool =
   List.mem test.info.name [
+    (* In TLAPM's ASSUME/PROVE parsing, NEW identifiers with unspecified 
+       level are by default Constant instead of Unknown *)
+    "Assume/Prove With New Identifier of Unspecified Level";
+    
     (* Jlist terminated by single line comment omitted in TLAPM AST *)
     "Keyword-Unit-Terminated Conjlist";
     "Keyword-Unit-Terminated Disjlist";

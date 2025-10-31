@@ -60,7 +60,7 @@ Nested Assume/Prove With Label
 
 ---- MODULE Test ----
 THEOREM thm ==
-  ASSUME asm :: 
+  ASSUME asm ::
     ASSUME P
     PROVE Q
   PROVE C
@@ -87,7 +87,31 @@ OMITTED
 (double_line)))
 
 ===============================|||
-Assume/Prove With New Constant
+Assume/Prove With New Identifier of Unspecified Level
+===============================|||
+
+---- MODULE Test ----
+THEOREM thm ==
+  ASSUME NEW x \in S
+  PROVE C
+OBVIOUS
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem
+    name: (identifier) (def_eq)
+    statement: (assume_prove
+      assumption: (new (identifier) (set_in) (identifier_ref))
+      conclusion: (identifier_ref)
+    )
+    proof: (terminal_proof)
+  )
+(double_line)))
+
+===============================|||
+Assume/Prove With New Bound Constant
 ===============================|||
 
 ---- MODULE Test ----
@@ -103,6 +127,79 @@ OBVIOUS
   (theorem
     name: (identifier) (def_eq)
     statement: (assume_prove
+      assumption: (new (statement_level) (identifier) (set_in) (identifier_ref))
+      conclusion: (identifier_ref)
+    )
+    proof: (terminal_proof)
+  )
+(double_line)))
+
+===============================|||
+Assume/Prove With New Bound Variable
+===============================|||
+
+---- MODULE Test ----
+THEOREM thm ==
+  ASSUME NEW VARIABLE x
+  PROVE C
+OBVIOUS
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem
+    name: (identifier) (def_eq)
+    statement: (assume_prove
+      assumption: (new (statement_level) (identifier))
+      conclusion: (identifier_ref)
+    )
+    proof: (terminal_proof)
+  )
+(double_line)))
+
+===============================|||
+Assume/Prove With New Unbound Constant
+===============================|||
+
+---- MODULE Test ----
+THEOREM thm ==
+  ASSUME NEW CONSTANT x
+  PROVE C
+OBVIOUS
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem
+    name: (identifier) (def_eq)
+    statement: (assume_prove
+      assumption: (new (statement_level) (identifier))
+      conclusion: (identifier_ref)
+    )
+    proof: (terminal_proof)
+  )
+(double_line)))
+
+===============================|||
+Assume/Prove With Multiple New Bound Constants
+===============================|||
+
+---- MODULE Test ----
+THEOREM thm ==
+  ASSUME CONSTANT x \in S, CONSTANT y \in S
+  PROVE C
+OBVIOUS
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem
+    name: (identifier) (def_eq)
+    statement: (assume_prove
+      assumption: (new (statement_level) (identifier) (set_in) (identifier_ref))
       assumption: (new (statement_level) (identifier) (set_in) (identifier_ref))
       conclusion: (identifier_ref)
     )
@@ -137,13 +234,41 @@ OMITTED
 (double_line)))
 
 ===============================|||
+Assume/Prove with Multiple New Identifiers
+:error
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+  ASSUME NEW x, y \in S
+  PROVE TRUE
+====
+
+-------------------------------|||
+
+===============================|||
+Assume/Prove with Tupled New Identifiers
+:error
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+  ASSUME NEW <<x, y>> \in S
+  PROVE TRUE
+====
+
+-------------------------------|||
+
+===============================|||
 Assume/Prove in Suffices Step
+:error
 ===============================|||
 
 ---- MODULE Test ----
 THEOREM TRUE
 <1>a. SUFFICES
   ASSUME CONSTANT x \in S
+  ASSUME NEW x, y \in S
   PROVE TRUE
 <1>b. QED
 ====
