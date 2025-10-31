@@ -732,10 +732,11 @@ and translate_tuple_set_map (map : Expr.T.expr) (bounds : Expr.T.tuply_bound lis
   ]
 }
 
+and is_bound (bounds : Expr.T.bound list) : bool =
+  List.for_all (fun (_, _, domain) -> match (domain : Expr.T.bound_domain) with | No_domain -> false | _ -> true ) bounds
+
 and translate_quantification (quantifier : Expr.T.quantifier) (bounds : Expr.T.bound list) (body : Expr.T.expr) : ts_node =
-  let is_bound (bounds : Expr.T.bound list) : bool =
-    List.for_all (fun (_, _, domain) -> match (domain : Expr.T.bound_domain) with | No_domain -> false | _ -> true ) bounds
-  in if is_bound bounds then {
+  if is_bound bounds then {
     name = "bounded_quantification";
     children = List.flatten [
       [field_leaf "quantifier" (match quantifier with | Forall -> "forall" | Exists -> "exists")];
@@ -1112,14 +1113,21 @@ and translate_case_proof_step (expr : Expr.T.expr) (proof : Proof.T.proof) : ts_
   ]
 }
 
-and translate_take_proof_step (_bounds : Expr.T.bound list) : ts_node = {
+and translate_take_proof_step (bounds : Expr.T.bound list) : ts_node = {
   name = "take_proof_step";
-  children = []  
+  children =
+    if is_bound bounds
+    then bounds |> group_bounds |> node_list_map translate_quantifier_bound
+    else List.map (fun _ -> leaf "identifier") bounds;
 }
 
-and translate_pick_proof_step (_bounds : Expr.T.bounds) (_expr : Expr.T.expr) (proof : Proof.T.proof) : ts_node = {
+and translate_pick_proof_step (bounds : Expr.T.bounds) (expr : Expr.T.expr) (proof : Proof.T.proof) : ts_node = {
   name = "pick_proof_step";
   children = List.flatten [
+    if is_bound bounds
+    then bounds |> group_bounds |> node_list_map translate_quantifier_bound
+    else List.map (fun _ -> leaf "identifier") bounds;
+    [Node (translate_expr expr)];
     match translate_proof proof with
     | Some node -> [Node node]
     | None -> []
