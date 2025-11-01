@@ -51,7 +51,6 @@ x \geq y == 27
 x \gg y == 28
 x > y == 29
 x ## y == 30
-x <=> y == 31
 x => y == 32
 x \in y == 33
 x /\ y == 34
@@ -157,7 +156,6 @@ x \wr y == 101
   (operator_definition parameter: (identifier) name: (infix_op_symbol (gg)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (gt)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (hashhash)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (iff)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (implies)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (in)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (land)) parameter: (identifier) (def_eq) definition: (nat_number))
@@ -283,7 +281,6 @@ op(
   _ \gg _,
   _ > _,
   _ ## _,
-  _ <=> _,
   _ => _,
   _ \in _,
   _ /\ _,
@@ -391,7 +388,6 @@ op(
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (gg)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (gt)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (hashhash)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (iff)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (implies)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (in)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (land)) (placeholder))
@@ -503,7 +499,6 @@ op == {
   x \gg y,
   x > y,
   x ## y,
-  x <=> y,
   x => y,
   x \in y,
   x /\ y,
@@ -613,7 +608,6 @@ op == {
     (bound_infix_op lhs: (identifier_ref) symbol: (gg) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (gt) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (hashhash) rhs: (identifier_ref))
-    (bound_infix_op lhs: (identifier_ref) symbol: (iff) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (implies) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (in) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (land) rhs: (identifier_ref))
@@ -757,7 +751,6 @@ op == f(
   \gg,
   >,
   ##,
-  <=>,
   =>,
   \in,
   /\,
@@ -863,7 +856,6 @@ op == f(
     parameter: (infix_op_symbol (gg))
     parameter: (infix_op_symbol (gt))
     parameter: (infix_op_symbol (hashhash))
-    parameter: (infix_op_symbol (iff))
     parameter: (infix_op_symbol (implies))
     parameter: (infix_op_symbol (in))
     parameter: (infix_op_symbol (land))
@@ -970,7 +962,6 @@ op == {
   A!B!\gg(x, y),
   A!B!>(x, y),
   A!B!##(x, y),
-  A!B!<=>(x, y),
   A!B!=>(x, y),
   A!B!\in(x, y),
   A!B!\land(x, y),
@@ -1106,8 +1097,6 @@ op == {
       (bound_nonfix_op symbol: (infix_op_symbol (gt)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (hashhash)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (iff)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (implies)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
@@ -1245,5 +1234,33 @@ op == {
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (wr)) (identifier_ref) (identifier_ref)))
   ))
+(double_line)))
+
+=============|||
+IFF Disambiguation
+=============|||
+
+---- MODULE Test ----
+x <=> y == 0
+op(_ <=> _) == 0
+op == x <=> y
+op == f(<=>)
+op == A!B!<=>(x, y)
+====
+
+-------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition parameter: (identifier) name: (infix_op_symbol (iff)) parameter: (identifier) (def_eq) definition: (nat_number))
+  (operator_definition name: (identifier)
+    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (iff)) (placeholder))
+    (def_eq) definition: (nat_number))
+  (operator_definition name: (identifier) (def_eq) definition:
+    (bound_infix_op lhs: (identifier_ref) symbol: (iff) rhs: (identifier_ref)))
+  (operator_definition name: (identifier) (def_eq) definition: (bound_op name: (identifier_ref)
+    parameter: (infix_op_symbol (iff))))
+  (operator_definition name: (identifier) (def_eq) definition:
+    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
+      (bound_nonfix_op symbol: (infix_op_symbol (iff)) (identifier_ref) (identifier_ref))))
 (double_line)))
 

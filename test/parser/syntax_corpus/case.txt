@@ -11,8 +11,8 @@ op ==
 
 --------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (case
       (case_arm (nat_number) (case_arrow) (nat_number))
       (case_box) (case_arm (nat_number) (case_arrow) (nat_number))
@@ -31,8 +31,8 @@ op == CASE 1 -> 2
 
 --------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (case (case_arm (nat_number) (case_arrow) (nat_number)))
   )
 (double_line)))
@@ -50,8 +50,8 @@ op ==
 
 --------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (case (case_arm (nat_number) (case_arrow)
       (case
         (case_arm (nat_number) (case_arrow) (nat_number))
@@ -75,8 +75,8 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item
         (bullet_conj)
@@ -116,8 +116,8 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (case
       (case_arm
         (conj_list (conj_item (bullet_conj) (nat_number)) (conj_item (bullet_conj) (nat_number)))
@@ -152,8 +152,8 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (disj_list
       (disj_item
         (bullet_disj)
@@ -193,8 +193,8 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (case
       (case_arm
         (disj_list (disj_item (bullet_disj) (nat_number)) (disj_item (bullet_disj) (nat_number)))
@@ -230,8 +230,8 @@ op ==
 
 --------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item
         (bullet_conj)
@@ -278,8 +278,8 @@ op3 ==
 
 -------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (case
       (case_arm (identifier_ref) (case_arrow) (conj_list (conj_item (bullet_conj)
         (case
@@ -292,7 +292,7 @@ op3 ==
       (case_arm (identifier_ref) (case_arrow) (identifier_ref))
     )
   )
-  (operator_definition (identifier) (def_eq)
+  (operator_definition name: (identifier) (def_eq) definition:
     (case
       (case_arm (identifier_ref) (case_arrow) (conj_list (conj_item (bullet_conj)
         (case
@@ -305,7 +305,7 @@ op3 ==
       (case_arm (identifier_ref) (case_arrow) (identifier_ref))
     )
   )
-  (operator_definition (identifier) (def_eq)
+  (operator_definition name: (identifier) (def_eq) definition:
     (case
       (case_arm (identifier_ref) (case_arrow) (conj_list
         (conj_item (bullet_conj)

@@ -9,9 +9,9 @@ op == 12345.12345
 
 ----------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq) (nat_number))
-  (operator_definition (identifier) (def_eq) (real_number))
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition: (nat_number))
+  (operator_definition name: (identifier) (def_eq) definition: (real_number))
 (double_line)))
 
 ======================|||
@@ -29,13 +29,13 @@ op == \H9876543210FEDCBA
 
 ----------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq) (binary_number (format) (value)))
-  (operator_definition (identifier) (def_eq) (binary_number (format) (value)))
-  (operator_definition (identifier) (def_eq) (octal_number (format) (value)))
-  (operator_definition (identifier) (def_eq) (octal_number (format) (value)))
-  (operator_definition (identifier) (def_eq) (hex_number (format) (value)))
-  (operator_definition (identifier) (def_eq) (hex_number (format) (value)))
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition: (binary_number (format) (value)))
+  (operator_definition name: (identifier) (def_eq) definition: (binary_number (format) (value)))
+  (operator_definition name: (identifier) (def_eq) definition: (octal_number (format) (value)))
+  (operator_definition name: (identifier) (def_eq) definition: (octal_number (format) (value)))
+  (operator_definition name: (identifier) (def_eq) definition: (hex_number (format) (value)))
+  (operator_definition name: (identifier) (def_eq) definition: (hex_number (format) (value)))
 (double_line)))
 
 ======================|||
@@ -99,6 +99,6 @@ op == .5
 
 ----------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq) (real_number))
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition: (real_number))
 (double_line)))
