@@ -555,7 +555,7 @@ and translate_jlist (bullet : Expr.T.bullet) (juncts : Expr.T.expr list) : ts_no
   let jtype =
     match bullet with
     | And -> "conj"
-    | Or -> "disj" 
+    | Or -> "disj"
     | Refs -> failwith "Translation undefined for 'Refs' jlist bullet type"
   in {
     name = jtype ^ "_list";
@@ -1100,7 +1100,7 @@ and translate_define_proof_step (definitions : Expr.T.defn list) : ts_node = {
 
 and translate_have_proof_step (expr : Expr.T.expr) : ts_node = {
   name = "have_proof_step";
-  children = [Node (translate_expr expr)]  
+  children = [Node (translate_expr expr)]
 }
 
 and translate_witness_proof_step (exprs : Expr.T.expr list) : ts_node = {
@@ -1118,12 +1118,17 @@ and translate_case_proof_step (expr : Expr.T.expr) (proof : Proof.T.proof) : ts_
   ]
 }
 
-and translate_take_proof_step (bounds : Expr.T.bound list) : ts_node = {
+and translate_take_proof_step (bounds : Expr.T.bounds) : ts_node = {
   name = "take_proof_step";
   children =
     if is_bound bounds
     then bounds |> group_bounds |> node_list_map translate_quantifier_bound
     else List.map (fun _ -> leaf "identifier") bounds;
+}
+
+and translate_take_tuple_proof_step (bounds : Expr.T.tuply_bounds) : ts_node = {
+  name = "take_proof_step";
+  children = bounds |> group_tuple_bounds |> node_list_map translate_quantifier_bound
 }
 
 and translate_pick_proof_step (bounds : Expr.T.bounds) (expr : Expr.T.expr) (proof : Proof.T.proof) : ts_node = {
@@ -1132,6 +1137,17 @@ and translate_pick_proof_step (bounds : Expr.T.bounds) (expr : Expr.T.expr) (pro
     if is_bound bounds
     then bounds |> group_bounds |> node_list_map translate_quantifier_bound
     else List.map (fun _ -> leaf "identifier") bounds;
+    [Node (translate_expr expr)];
+    match translate_proof proof with
+    | Some node -> [Node node]
+    | None -> []
+  ]
+}
+
+and translate_pick_tuple_proof_step (bounds : Expr.T.tuply_bounds) (expr : Expr.T.expr) (proof : Proof.T.proof) : ts_node = {
+  name = "pick_proof_step";
+  children = List.flatten [
+    bounds |> group_tuple_bounds |> node_list_map translate_quantifier_bound;
     [Node (translate_expr expr)];
     match translate_proof proof with
     | Some node -> [Node node]
@@ -1152,10 +1168,10 @@ and translate_proof_step (step : Proof.T.step) : ts_node = {
     | Have expr -> translate_have_proof_step expr
     | Witness exprs -> translate_witness_proof_step exprs
     | Take bounds -> translate_take_proof_step bounds
-    | TakeTuply (_bounds : Expr.T.tuply_bounds) -> leaf_node "todo_take_tuply_proof_step"
+    | TakeTuply bounds -> translate_take_tuple_proof_step bounds
     | Pcase (expr, proof) -> translate_case_proof_step expr proof
     | Pick (bounds, expr, proof) -> translate_pick_proof_step bounds expr proof
-    | PickTuply ((_bounds, _expr, _proof) : Expr.T.tuply_bounds * Expr.T.expr * Proof.T.proof) -> leaf_node "todo_pick_tuply_proof_step"
+    | PickTuply (bounds, expr, proof) -> translate_pick_tuple_proof_step bounds expr proof
     | Forget _ -> failwith "Translation undefined for 'Forget' proof step type"
   )]}
 

@@ -709,3 +709,398 @@ PROOF
 
 ------------------------------|||
 
+===============================|||
+Take Proof Steps
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> TAKE x
+<1> TAKE x, y, z
+<1> TAKE x \in S
+<1> TAKE x, y, z \in S
+<1> TAKE x \in S, y \in S, z \in S
+<1> TAKE u, v, w \in S, x, y \in S, z \in S
+<1> QED
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
+    (non_terminal_proof
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (identifier)
+      ))
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (identifier) (identifier) (identifier)
+      ))
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (quantifier_bound intro: (identifier) (set_in) set: (identifier_ref))
+      ))
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (quantifier_bound
+          intro: (identifier)
+          intro: (identifier)
+          intro: (identifier)
+          (set_in)
+          set: (identifier_ref))
+      ))
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (quantifier_bound intro: (identifier) (set_in) set: (identifier_ref))
+        (quantifier_bound intro: (identifier) (set_in) set: (identifier_ref))
+        (quantifier_bound intro: (identifier) (set_in) set: (identifier_ref))
+      ))
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (quantifier_bound
+          intro: (identifier)
+          intro: (identifier)
+          intro: (identifier)
+          (set_in)
+          set: (identifier_ref)
+        )
+        (quantifier_bound
+          intro: (identifier)
+          intro: (identifier)
+          (set_in)
+          set: (identifier_ref)
+        )
+        (quantifier_bound
+          intro: (identifier)
+          (set_in)
+          set: (identifier_ref)
+        )
+      ))
+      (qed_step (proof_step_id (level) (name)))
+    )
+  )
+(double_line)))
+
+===============================|||
+Take Proof Steps With Tuples
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> TAKE <<x>> \in S
+<1> TAKE <<x, y, z>> \in S
+<1> TAKE <<x>> \in S, <<y, z>> \in S
+<1> QED
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
+    (non_terminal_proof
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket)
+            (identifier)
+          (rangle_bracket))
+          (set_in)
+          set: (identifier_ref))
+      ))
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket)
+            (identifier)
+            (identifier)
+            (identifier)
+          (rangle_bracket))
+          (set_in)
+          set: (identifier_ref))
+      ))
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket)
+            (identifier)
+          (rangle_bracket))
+          (set_in)
+          set: (identifier_ref)
+        )
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket)
+            (identifier)
+            (identifier)
+          (rangle_bracket))
+          (set_in)
+          set: (identifier_ref)
+        )
+      ))
+      (qed_step (proof_step_id (level) (name)))
+    )
+  )
+(double_line)))
+
+===============================|||
+Pick Proof Steps
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> PICK x : TRUE
+<1> PICK x, y, z : TRUE
+<1> PICK x \in S : TRUE
+<1> PICK x, y, z \in S : TRUE
+<1> PICK x \in S, y \in S, z \in S : TRUE
+<1> PICK u, v, w \in S, x, y \in S, z \in S : TRUE
+<1> QED
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
+    (non_terminal_proof
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (identifier)
+        (boolean)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (identifier) (identifier) (identifier)
+        (boolean)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (quantifier_bound intro: (identifier) (set_in) set: (identifier_ref))
+        (boolean)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (quantifier_bound
+          intro: (identifier)
+          intro: (identifier)
+          intro: (identifier)
+          (set_in)
+          set: (identifier_ref)
+        )
+        (boolean)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (quantifier_bound intro: (identifier) (set_in) set: (identifier_ref))
+        (quantifier_bound intro: (identifier) (set_in) set: (identifier_ref))
+        (quantifier_bound intro: (identifier) (set_in) set: (identifier_ref))
+        (boolean)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (quantifier_bound
+          intro: (identifier)
+          intro: (identifier)
+          intro: (identifier)
+          (set_in)
+          set: (identifier_ref)
+        )
+        (quantifier_bound
+          intro: (identifier)
+          intro: (identifier)
+          (set_in)
+          set: (identifier_ref)
+        )
+        (quantifier_bound
+          intro: (identifier)
+          (set_in)
+          set: (identifier_ref)
+        )
+        (boolean)
+      ))
+      (qed_step (proof_step_id (level) (name)))
+    )
+  )
+(double_line)))
+
+===============================|||
+Pick Proof Steps With Tuples
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> PICK <<x>> \in S : TRUE
+<1> PICK <<x, y, z>> \in S : TRUE
+<1> PICK <<x>> \in S, <<y, z>> \in S : TRUE
+<1> QED
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
+    (non_terminal_proof
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket)
+            (identifier)
+          (rangle_bracket))
+          (set_in)
+          set: (identifier_ref)
+        )
+        (boolean)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket)
+            (identifier)
+            (identifier)
+            (identifier)
+          (rangle_bracket))
+          (set_in)
+          set: (identifier_ref)
+        )
+        (boolean)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket)
+            (identifier)
+          (rangle_bracket))
+          (set_in)
+          set: (identifier_ref)
+        )
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket)
+            (identifier)
+            (identifier)
+          (rangle_bracket))
+          (set_in)
+          set: (identifier_ref)
+        )
+        (boolean)
+      ))
+      (qed_step (proof_step_id (level) (name)))
+    )
+  )
+(double_line)))
+
+===============================|||
+Proof Steps With Terminal Proofs
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> SUFFICES TRUE OBVIOUS
+<1> TRUE OBVIOUS
+<1> CASE TRUE OBVIOUS
+<1> PICK x : TRUE OBVIOUS
+<1> PICK <<x>> \in S : TRUE OBVIOUS
+<1> QED
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
+    (non_terminal_proof
+      (proof_step (proof_step_id (level) (name)) (suffices_proof_step
+        (boolean) (terminal_proof)
+      ))
+      (proof_step (proof_step_id (level) (name)) (suffices_proof_step
+        (boolean) (terminal_proof)
+      ))
+      (proof_step (proof_step_id (level) (name)) (case_proof_step
+        (boolean) (terminal_proof)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (identifier) (boolean) (terminal_proof)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket) (identifier) (rangle_bracket))
+          (set_in)
+          set: (identifier_ref)
+        )
+        (boolean) (terminal_proof)
+      ))
+      (qed_step (proof_step_id (level) (name)))
+    )
+  )
+(double_line)))
+
+===============================|||
+Use Proof Step With Disallowed Terminal Proof
+:error
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> USE TRUE OBVIOUS
+<1> QED
+====
+
+-------------------------------|||
+
+===============================|||
+Hide Proof Step With Disallowed Terminal Proof
+:error
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> HIDE TRUE OBVIOUS
+<1> QED
+====
+
+-------------------------------|||
+
+===============================|||
+Define Proof Step With Disallowed Terminal Proof
+:error
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> x == TRUE OBVIOUS
+<1> QED
+====
+
+-------------------------------|||
+
+===============================|||
+Have Proof Step With Disallowed Terminal Proof
+:error
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> HAVE TRUE OBVIOUS
+<1> QED
+====
+
+-------------------------------|||
+
+===============================|||
+Witness Proof Step With Disallowed Terminal Proof
+:error
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> WITNESS TRUE OBVIOUS
+<1> QED
+====
+
+-------------------------------|||
+
+===============================|||
+Take Proof Step With Disallowed Terminal Proof
+:error
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> TAKE x OBVIOUS
+<1> QED
+====
+
+-------------------------------|||
+
+===============================|||
+Take Tuple Proof Step With Disallowed Terminal Proof
+:error
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> TAKE <<x>> \in S OBVIOUS
+<1> QED
+====
+
+-------------------------------|||
+
