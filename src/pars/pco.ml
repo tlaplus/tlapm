@@ -26,7 +26,6 @@ module type Make_sig = sig
       possible parsed value. On success, the input contains the
       unparsed suffix. On failure, the input is left untouched. *)
   val run :
-    ?send_output:(out_channel -> string -> unit) ->
     ('s, 'a) prs ->
     init:'s ->
     source:Tok.token LazyList.t ->
@@ -243,7 +242,7 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
 
   let exec (Prs ap) pst = ap pst
 
-  let execute ?(send_output = output_string) ap pst =
+  let execute ap pst =
     let rep = exec ap pst in
       match rep.res with
         | Parsed a -> Some a
@@ -254,10 +253,10 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
               | Message msg -> Error.err_add_message msg err
               | Internal msg -> Error.err_add_internal msg err
             in
-              Error.print_error ~send_output ~verbose:true stderr err ;
+              Error.print_error ~verbose:true stderr err ;
               None
 
-  let run ?(send_output = output_string) ap ~init ~source =
+  let run ap ~init ~source =
     let pst = { source = source ;
                 ustate = init ;
                 lastpos = begin
@@ -268,7 +267,7 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
                             { loc with Loc.start = loc.Loc.stop }
                 end ;
               }
-    in execute ~send_output ap pst
+    in execute ap pst
 
   (* primitive parsers *)
 

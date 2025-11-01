@@ -11,7 +11,7 @@ module Error : sig
   val err_add_internal : string -> error -> error
   val err_add_expecting : string -> error -> error
   val err_set_unexpected : string -> error -> error
-  val print_error : ?send_output:(out_channel -> string -> unit) -> ?verbose:bool -> Stdlib.out_channel -> error -> unit
+  val print_error : ?verbose:bool -> Stdlib.out_channel -> error -> unit
 end
 
 module Intf : sig
@@ -65,7 +65,6 @@ module Pco : sig
     module Prec : Intf.Prec
     type ('s, 'a) prs
     val run :
-      ?send_output:(out_channel -> string -> unit) ->
       ('s, 'a) prs ->
       init:'s ->
       source:Tok.token LazyList.t ->

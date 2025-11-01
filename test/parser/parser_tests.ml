@@ -15,8 +15,7 @@ open Syntax_corpus_file_parser;;
     @return None if parse failure, syntax tree root if successful.
 *)
 let parse (input : string) : Module.T.mule option =
-  let send_output (_ : out_channel) (_ : string) : unit = () in
-  try module_of_string ~send_output input
+  try module_of_string input
   with _ -> None
 
 (** Names of tests that are known to fail due to TLAPM parser bugs.

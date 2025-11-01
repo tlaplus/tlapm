@@ -26,7 +26,6 @@ module type Make_sig = sig
       possible parsed value. On success, the input contains the
       unparsed suffix. On failure, the input is left untouched. *)
   val run :
-    ?send_output:(out_channel -> string -> unit) ->
     ('s, 'a) prs ->
     init:'s ->
     source:Tok.token LazyList.t ->
