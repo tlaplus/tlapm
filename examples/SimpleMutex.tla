@@ -113,7 +113,7 @@ THEOREM Invariance == TypeOK /\ Inv /\ Next => TypeOK' /\ Inv'
         /\ 1-j \in {0, 1}
         /\ i # j => /\ 1-i = j
                     /\ 1-j = i
-    BY IsaM("auto")
+    OBVIOUS
   <2>2. USE DEF TypeOK, Inv
   <2>3. CASE a(i)
      BY <2>1, <1>3, <2>3 DEF a

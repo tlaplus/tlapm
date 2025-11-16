@@ -392,7 +392,12 @@ let of_module (mule : Tlapm_lib.Module.T.mule) prev : t option =
            proof status between the modifications. *)
         let o =
           match o.fingerprint with
-          | None -> Tlapm_lib.Backend.Fingerprints.write_fingerprint o
+          | None ->
+              (* `Tlapm_lib.Backend.Prep.prepare_obligation o` works too slow here. *)
+              let fingerprint =
+                Tlapm_lib.Backend.Fingerprints.fingerprint ~ignore_levels:true o
+              in
+              { o with fingerprint = Some fingerprint }
           | Some _ -> o
         in
         let o = Obl.of_parsed_obligation o in

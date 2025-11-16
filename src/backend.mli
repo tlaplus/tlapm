@@ -22,10 +22,13 @@ module Types: sig
         }
 end
 
+module Prep: sig
+    val prepare_obligation: Proof.T.obligation -> Proof.T.obligation
+end
 
 module Fingerprints: sig
-    val write_fingerprint:
-        Proof.T.obligation -> Proof.T.obligation
+    val fingerprint:
+        ?ignore_levels:bool -> Proof.T.obligation -> string
 end
 
 module Fpfile: sig
