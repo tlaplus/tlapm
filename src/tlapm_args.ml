@@ -53,24 +53,23 @@ let set_default_method meth =
 
 
 (* FIXME use Arg.parse instead *)
-let parse_args executable_name args opts mods usage_fmt =
+let parse_args executable_name args opts mods usage_fmt err terminate =
   try
     Arg.current := 0;
     Arg.parse_argv args opts (fun mfile -> mods := mfile :: !mods)
       (Printf.sprintf usage_fmt (Filename.basename executable_name))
   with Arg.Bad msg ->
-    print_endline msg ;
-    flush stdout ;
-    exit 2
+    Format.pp_print_text err msg;
+    terminate 2
 
-let show_where () =
+let show_where out terminate =
   match stdlib_path with
   | Some path  ->
-    Printf.printf "%s\n" path;
-    exit 0
+    Printf.sprintf "%s\n" path |> Format.pp_print_text out;
+    terminate 0
   | None ->
-    Printf.printf "N/A\n";
-    exit 1
+    Format.pp_print_text out "N/A\n";
+    terminate 1
 
 let set_nofp_start s =
   nofp_sl := s
@@ -152,7 +151,7 @@ let init ?(out=Format.std_formatter) ?(err=Format.err_formatter) ?(terminate=exi
     "--verbose", Arg.Set verbose, " produce verbose messages" ;
     "-v", Arg.Set verbose, " (same as --verbose)" ;
     blank;
-    "--where", Arg.Unit show_where,
+    "--where", Arg.Unit (fun () -> show_where out terminate),
                " show location of standard library and exit" ;
     "--config", Arg.Set show_config, " show configuration and exit" ;
     "--summary", Arg.Set summary,
@@ -246,21 +245,21 @@ let init ?(out=Format.std_formatter) ?(err=Format.err_formatter) ?(terminate=exi
     format_of_string "Usage: %s <options> FILE ...\noptions are:"
   in
   helpfn := begin fun () ->
-    Format.pp_print_text err (Arg.usage_string opts
-      (Printf.sprintf usage_fmt (Filename.basename executable_name)));
+    Arg.usage_string opts
+      (Printf.sprintf usage_fmt (Filename.basename executable_name)) |> Format.pp_print_text err;
     terminate 0
   end ;
-  parse_args executable_name args opts mods usage_fmt ;
+  parse_args executable_name args opts mods usage_fmt err terminate;
   if !show_config || !verbose then begin
-    Format.pp_print_text out (printconfig true);
+    Format.pp_print_text out (printconfig err true);
     Format.pp_print_cut out ();
   end ;
   if !show_config then terminate 0 ;
   if !mods = [] then begin
-    Format.pp_print_text err (Arg.usage_string opts
+    Arg.usage_string opts
       (Printf.sprintf "Need at least one module file.\n\n\
                        Usage: %s <options> FILE ...\noptions are:"
-         (Filename.basename executable_name)));
+         (Filename.basename executable_name)) |> Format.pp_print_text err;
     terminate 2
   end ;
   if !summary then begin
@@ -269,15 +268,17 @@ let init ?(out=Format.std_formatter) ?(err=Format.err_formatter) ?(terminate=exi
   end ;
   check_zenon_ver () ;
   if !Params.toolbox then begin
-    Printf.printf "\n\\* TLAPM version %s\n"
-                  (Params.rawversion ());
+    Printf.sprintf "\n\\* TLAPM version %s\n"
+                  (Params.rawversion ())
+      |> Format.pp_print_text out;
     let tm = Unix.localtime (Unix.gettimeofday ()) in
-    Printf.printf "\\* launched at %04d-%02d-%02d %02d:%02d:%02d"
+    Printf.sprintf "\\* launched at %04d-%02d-%02d %02d:%02d:%02d"
                   (tm.Unix.tm_year + 1900) (tm.Unix.tm_mon + 1) tm.Unix.tm_mday
-                  tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec;
-    Printf.printf " with command line:\n\\*";
-    Array.iter (fun s -> Printf.printf " %s" (quote_if_needed s)) args;
-    Printf.printf "\n\n%!"
+                  tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec
+      |> Format.pp_print_text out;
+    Printf.sprintf " with command line:\n\\*" |> Format.pp_print_text out;
+    Array.iter (fun s -> Printf.sprintf " %s" (quote_if_needed s) |> Format.pp_print_text out) args;
+    Format.pp_print_text out "\n\n%!"
   end;
   if !use_stdin && (List.length !mods) <> 1 then begin
     Arg.usage opts

@@ -175,10 +175,10 @@ let test_verbose _test_ctxt =
   assert_equal None exit_code;
   assert_equal [`B ("verbose", verbose, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
   reset_setting_values ();
-  let (mods, out, err, exit_code) = parse_args ["--verbose"; "Test.tla"] in
+  let (mods, out, _err, exit_code) = parse_args ["--verbose"; "Test.tla"] in
   assert_equal ["Test.tla"] mods;
   assert_bool "Need config" (String.starts_with out ~prefix:"-------------------- tlapm configuration --------------------");
-  assert_equal "" err;
+  (* err probably has output due to being unable to find tools; ignore *)
   assert_equal None exit_code;
   assert_equal [`B ("verbose", verbose, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
 
@@ -200,6 +200,16 @@ let test_prefer_stdlib _test_ctxt =
   assert_equal None exit_code;
   assert_equal [`B ("prefer_stdlib", prefer_stdlib, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
 
+
+let test_where _test_ctxt =
+  reset_setting_values ();
+  let (mods, out, err, exit_code) = parse_args ["--where"; "Test.tla"] in
+  assert_equal [] mods;
+  assert_bool "Need stlib path" (not (String.equal out ""));
+  assert_equal "" err;
+  assert_equal (Some 0) exit_code;
+  assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
 let cli_test_suite = "Test CLI Parsing" >::: [
   "Help Test" >:: test_help;
   "Basic Test" >:: test_basic;
@@ -208,6 +218,7 @@ let cli_test_suite = "Test CLI Parsing" >::: [
   "Verbose Test" >:: test_verbose;
   "Use Stdin Test" >:: test_use_stdin;
   "Prefer Stdlib Test" >:: test_prefer_stdlib;
+  "Print Stlib Location Test" >:: test_where;
 ];;
 
 let () = run_test_tt_main cli_test_suite
