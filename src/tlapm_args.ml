@@ -6,7 +6,6 @@ open Ext
 open Params
 
 
-let show_config = ref false
 let show_version formatter terminate =
   Format.pp_print_text formatter (rawversion ());
   Format.pp_print_cut formatter ();
@@ -135,6 +134,7 @@ let quote_if_needed s =
 
 
 let init ?(out=Format.std_formatter) ?(err=Format.err_formatter) ?(terminate=exit) (executable_name : string) (args : string array) =
+  let show_config = ref false in
   let mods = ref [] in
   let helpfn = ref (fun () -> ()) in
   let show_help () = !helpfn () in
