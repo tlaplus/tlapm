@@ -64,7 +64,7 @@ let parse_args executable_name args opts mods usage_fmt err terminate =
 let show_where out terminate =
   match stdlib_path with
   | Some path  ->
-    Printf.sprintf "%s\n" path |> Format.pp_print_text out;
+    Format.fprintf out "%s\n" path;
     terminate 0
   | None ->
     Format.pp_print_text out "N/A\n";
@@ -268,16 +268,14 @@ let init ?(out=Format.std_formatter) ?(err=Format.err_formatter) ?(terminate=exi
   end ;
   check_zenon_ver () ;
   if !Params.toolbox then begin
-    Printf.sprintf "\n\\* TLAPM version %s\n"
-                  (Params.rawversion ())
-      |> Format.pp_print_text out;
+    Format.fprintf out "\n\\* TLAPM version %s\n"
+                  (Params.rawversion ());
     let tm = Unix.localtime (Unix.gettimeofday ()) in
-    Printf.sprintf "\\* launched at %04d-%02d-%02d %02d:%02d:%02d"
+    Format.fprintf out "\\* launched at %04d-%02d-%02d %02d:%02d:%02d"
                   (tm.Unix.tm_year + 1900) (tm.Unix.tm_mon + 1) tm.Unix.tm_mday
-                  tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec
-      |> Format.pp_print_text out;
-    Printf.sprintf " with command line:\n\\*" |> Format.pp_print_text out;
-    Array.iter (fun s -> Printf.sprintf " %s" (quote_if_needed s) |> Format.pp_print_text out) args;
+                  tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec;
+    Format.fprintf out " with command line:\n\\*";
+    Array.iter (fun s -> Format.fprintf out " %s" (quote_if_needed s)) args;
     Format.pp_print_text out "\n\n%!"
   end;
   if !use_stdin && (List.length !mods) <> 1 then begin

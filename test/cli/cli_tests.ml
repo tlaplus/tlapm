@@ -8,7 +8,16 @@ type setting_value = [
   | `S of string * string ref * string
   | `SO of string * string option ref * string option
   | `SL of string * string list ref * string list
+  | `ML of string * Tlapm_lib__Method.t list ref * Tlapm_lib__Method.t list
 ]
+
+let capture_output (f : Format.formatter -> unit) : string =
+  let out = Buffer.create 0 in
+  let out_format = Format.formatter_of_buffer out in
+  f out_format;
+  Format.pp_print_flush out_format ();
+  Buffer.contents out
+  
 
 let rec string_contains (needle : string) (haystack : string) : bool =
   match haystack with
@@ -18,7 +27,7 @@ let rec string_contains (needle : string) (haystack : string) : bool =
     string_contains needle
 
 let str_ls_as_str (ls : string list) : string =
-  List.fold_left (^) "[" ls
+  "[" ^ (String.concat "; " ls) ^ "]"
 
 let display_setting_value (v : setting_value) : string =
   match v with
@@ -28,6 +37,7 @@ let display_setting_value (v : setting_value) : string =
   | `S (n, rf, v) -> Printf.sprintf "%s: %s [%s]" n v !rf
   | `SO (n, rf, v) -> Printf.sprintf "%s: %s [%s]" n (Option.value ~default:"None" v) (Option.value ~default:"None" !rf)
   | `SL (n, rf, v) -> Printf.sprintf "%s: %s [%s]" n (str_ls_as_str v) (str_ls_as_str !rf)
+  | `ML (n, rf, v) -> Printf.sprintf "%s: %s [%s]" n (str_ls_as_str (List.map (fun m -> capture_output (fun f -> Tlapm_lib__Method.pp_print_tactic f m)) v)) (str_ls_as_str (List.map (fun m -> capture_output (fun f -> Tlapm_lib__Method.pp_print_tactic f m)) !rf))
 
 let print_string_diff (formatter : Format.formatter) ((expected, actual) : string * string) : unit =
   Printf.sprintf "exp/act: (%s)/(%s)" expected actual |> Format.pp_print_text formatter
@@ -59,6 +69,7 @@ let setting_value_changed (setting : setting_value) =
   | `S (_, rf, v) -> not (!rf = v)
   | `SO (_, rf, v) -> not (!rf = v)
   | `SL (_, rf, v) -> not (List.equal String.equal !rf v)
+  | `ML (_, rf, v) -> not (!rf = v)
 
 let changed_setting_value (setting : setting_value) =
   if setting_value_changed setting then
@@ -69,6 +80,7 @@ let changed_setting_value (setting : setting_value) =
     | `S (n, rf, _) -> Some (`S (n, rf, !rf))
     | `SO (n, rf, _) -> Some (`SO (n, rf, !rf))
     | `SL (n, rf, _) -> Some (`SL (n, rf, !rf))
+    | `ML (n, rf, _) -> Some (`ML (n, rf, !rf))
   else None
 
 let set_setting_value (setting : setting_value) =
@@ -79,6 +91,7 @@ let set_setting_value (setting : setting_value) =
   | `S (_, rf, v) -> rf := v
   | `SO (_, rf, v) -> rf := v
   | `SL (_, rf, v) -> rf := v
+  | `ML (_, rf, v) -> rf := v
 
 open Tlapm_lib__Params;;
 
@@ -119,6 +132,9 @@ let setting_values () : setting_value list = [
   `F ("timeout_stretch", timeout_stretch, !timeout_stretch);
   `F ("backend_timeout", backend_timeout, !backend_timeout);
   `SL ("rev_search_path", rev_search_path, !rev_search_path);
+  `ML ("default_method", default_method, !default_method);
+  `S ("smt_logic", smt_logic, !smt_logic);
+  `S ("cachedir", cachedir, !cachedir);
 ]
 
 let default_setting_values = setting_values ()
@@ -289,6 +305,117 @@ let test_set_max_threads _test_ctxt =
   assert_equal None exit_code;
   assert_equal [`I ("max_threads", max_threads, thread_count)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
 
+let test_set_method _text_ctxt =
+  reset_setting_values ();
+  let (mods, out, err, exit_code) = parse_args ["--method"; "fail"; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`ML ("default_method", default_method, [Tlapm_lib__Method.Fail])] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+let test_set_solver _test_ctxt =
+  reset_setting_values ();
+  let solver_cmd = "my_solver_cmd" in
+  let (mods, out, err, exit_code) = parse_args ["--solver"; solver_cmd; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  (* Params.exec is unfortunately an opaque type whose value we cannot directly access *)
+  assert_bool "Solver command should be custom" (string_contains solver_cmd (solve_cmd smt "file.tla"));;
+
+let test_set_smt_logic _test_ctxt =
+  reset_setting_values ();
+  let expected_smt_logic = "my_smt_logic" in
+  let (mods, out, err, exit_code) = parse_args ["--smt-logic"; expected_smt_logic; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`S ("smt_logic", smt_logic, expected_smt_logic)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+let test_stretch _test_ctxt =
+  reset_setting_values ();
+  let expected_stretch = Float.add !timeout_stretch 1.0 in
+  let (mods, out, err, exit_code) = parse_args ["--stretch"; Float.to_string expected_stretch; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`F ("timeout_stretch", timeout_stretch, expected_stretch)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+let test_no_flatten _test_ctxt =
+  reset_setting_values ();
+  let (mods, out, err, exit_code) = parse_args ["--noflatten"; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`B ("ob_flatten", ob_flatten, false)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+let test_no_normalize _test_ctxt =
+  reset_setting_values ();
+  let (mods, out, err, exit_code) = parse_args ["--nonormal"; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`B ("pr_normal", pr_normal, false)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+let test_debug_flags _test_ctxt =
+  reset_setting_values ();
+  let expected_debug_flags = ["foo"; "bar"; "baz"] in
+  let (mods, out, err, exit_code) = parse_args ["--debug"; String.concat "," expected_debug_flags; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  List.iter (fun flag -> assert_bool flag (debugging flag)) expected_debug_flags;
+  List.iter rm_debug_flag expected_debug_flags;;
+
+let test_toolbox_mode _test_ctxt =
+  reset_setting_values ();
+  let (tb_start, tb_end) = (1, 2) in
+  let (mods, out, err, exit_code) = parse_args ["--toolbox"; Int.to_string tb_start; Int.to_string tb_end; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_bool "Expect toolbox output" (out <> "");
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`B ("toolbox", toolbox, true); `I ("tb_sl", tb_sl, tb_start); `I ("tb_el", tb_el, tb_end)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+let test_toolbox_protocol_version _test_ctxt =
+  reset_setting_values ();
+  let expected_toolbox_version = 3 in
+  let (mods, out, err, exit_code) = parse_args ["--toolbox-vsn"; Int.to_string expected_toolbox_version; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_bool "Expect toolbox output" (out <> "");
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`B ("toolbox", toolbox, true); `I ("toolbox_vsn", toolbox_vsn, expected_toolbox_version)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+let test_line _test_ctxt =
+  reset_setting_values ();
+  let expected_line = 10 in
+  let (mods, out, err, exit_code) = parse_args ["--line"; Int.to_string expected_line; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_bool "Expect toolbox output" (out <> "");
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`B ("toolbox", toolbox, true); `I ("tb_sl", tb_sl, expected_line); `I ("tb_el", tb_el, expected_line)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+let test_wait _test_ctxt =
+  reset_setting_values ();
+  let expected_wait = 30 in
+  let (mods, out, err, exit_code) = parse_args ["--wait"; Int.to_string expected_wait; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`I ("wait", wait, expected_wait)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
 let test_use_stdin _test_ctxt =
   reset_setting_values ();
   let (mods, out, err, exit_code) = parse_args ["--stdin"; "Test.tla"] in
@@ -307,6 +434,93 @@ let test_prefer_stdlib _test_ctxt =
   assert_equal None exit_code;
   assert_equal [`B ("prefer_stdlib", prefer_stdlib, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
 
+let test_no_prove _test_ctxt =
+  reset_setting_values ();
+  let (mods, out, err, exit_code) = parse_args ["--noproving"; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`B ("noproving", noproving, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+let test_print_all_obligations _test_ctxt =
+  reset_setting_values ();
+  let (mods, out, err, exit_code) = parse_args ["--printallobs"; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`B ("printallobs", printallobs, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+let test_safe_fingerprints _test_ctxt =
+  reset_setting_values ();
+  let (mods, out, err, exit_code) = parse_args ["--safefp"; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`B ("safefp", safefp, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+let test_no_fingerprints _test_ctxt =
+  reset_setting_values ();
+  let (mods, out, err, exit_code) = parse_args ["--nofp"; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`B ("no_fp", no_fp, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+let test_no_fingerprints_between_lines _test_ctxt =
+  reset_setting_values ();
+  let (expected_start, expected_end) = (10, 20) in
+  let (mods, out, err, exit_code) = parse_args ["--nofpl"; Int.to_string expected_start; Int.to_string expected_end; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`I ("nofp_sl", nofp_sl, expected_start); `I ("nofp_el", nofp_el, expected_end)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+let test_clean_fingerprints _test_ctxt =
+  reset_setting_values ();
+  let (mods, out, err, exit_code) = parse_args ["--cleanfp"; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`B ("cleanfp", cleanfp, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+(* Cannot test --erasefp due to side-effects *)
+(* Cannot test --printfp due to side-effects *)
+
+let test_use_fingerprints _test_ctxt =
+  reset_setting_values ();
+  let expected_fp_file = "FingerprintFile.txt" in
+  let (mods, out, err, exit_code) = parse_args ["--usefp"; expected_fp_file; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`SO ("fpf_in", fpf_in, Some expected_fp_file)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+let test_fp_deb _test_ctxt =
+  reset_setting_values ();
+  let (mods, out, err, exit_code) = parse_args ["--fpp"; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`B ("fp_deb", fp_deb, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+
+let test_cache_dir _test_ctxt =
+  reset_setting_values ();
+  let expected_cache_dir = "some/cache/dir" in
+  let (mods, out, err, exit_code) = parse_args ["--cache-dir"; expected_cache_dir; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`S ("cachedir", cachedir, expected_cache_dir)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  
 let cli_test_suite = "Test CLI Parsing" >::: [
   "Help Test" >:: test_help;
   "Basic Test" >:: test_basic;
@@ -322,8 +536,28 @@ let cli_test_suite = "Test CLI Parsing" >::: [
   "Suppress All Test" >:: test_suppress_all;
   "Isabelle/TLA+ Check Test" >:: test_use_isabelle_tla;
   "Max Threads Test" >:: test_set_max_threads;
+  "Set Method Test" >:: test_set_method;
+  "Custom Solver Test" >:: test_set_solver;
+  "Custom SMT Logic Test" >:: test_set_smt_logic;
+  "Stretch Test" >:: test_stretch;
+  "No Flatten Test" >:: test_no_flatten;
+  "No Normalize Test" >:: test_no_normalize;
+  "Debug Flag Test" >:: test_debug_flags;
+  "Toolbox Mode Test" >:: test_toolbox_mode;
+  "Toolbox Protocol Version Test" >:: test_toolbox_protocol_version;
+  "Check Specific Line Test" >:: test_line;
+  "Wait Before Printing Obligations Test" >:: test_wait;
   "Use Stdin Test" >:: test_use_stdin;
   "Prefer Stdlib Test" >:: test_prefer_stdlib;
+  "Skip Proving Test" >:: test_no_prove;
+  "Print All Obligations Test" >:: test_print_all_obligations;
+  "Safe Fingerprint Check Test" >:: test_safe_fingerprints;
+  "No Fingerprints Test" >:: test_no_fingerprints;
+  "No Fingerprints Between Specific Lines Test" >:: test_no_fingerprints_between_lines;
+  "Clean Fingerprints Test" >:: test_clean_fingerprints;
+  "Use Specififc Fingerprint File Test" >:: test_use_fingerprints;
+  "Test Print Fingerprints in Toolbox Messages" >:: test_fp_deb;
+  "Cache Dir Test" >:: test_cache_dir;
 ];;
 
 let () = run_test_tt_main cli_test_suite
