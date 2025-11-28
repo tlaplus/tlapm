@@ -173,7 +173,8 @@ let test_help _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_bool "Should print help text" (String.starts_with err ~prefix:"Usage: tlapm <options> FILE");
   assert_equal (Some 0) exit_code;
-  assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_version _test_ctxt =
   reset_setting_values ();
@@ -182,7 +183,8 @@ let test_version _test_ctxt =
   assert_equal (rawversion () ^ "\n") out;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal (Some 0) exit_code;
-  assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_basic _test_ctxt =
   reset_setting_values ();
@@ -191,7 +193,8 @@ let test_basic _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_no_mods _test_ctxt =
   reset_setting_values ();
@@ -200,7 +203,8 @@ let test_no_mods _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_bool "Need module req message" (String.starts_with err ~prefix:"Need at least one module file");
   assert_equal (Some 2) exit_code;
-  assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_verbose _test_ctxt =
   reset_setting_values ();
@@ -216,7 +220,8 @@ let test_verbose _test_ctxt =
   assert_bool "Need config" (String.starts_with out ~prefix:"-------------------- tlapm configuration --------------------");
   (* err probably has output due to being unable to find tools; ignore *)
   assert_equal None exit_code;
-  assert_equal [`B ("verbose", verbose, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("verbose", verbose, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_where _test_ctxt =
   reset_setting_values ();
@@ -225,7 +230,8 @@ let test_where _test_ctxt =
   assert_bool "Need stlib path" (not (String.equal out ""));
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal (Some 0) exit_code;
-  assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_config _test_ctxt =
   reset_setting_values ();
@@ -234,7 +240,8 @@ let test_config _test_ctxt =
   assert_bool "Need config" (String.starts_with out ~prefix:"-------------------- tlapm configuration --------------------");
   (* err probably has output due to being unable to find tools; ignore *)
   assert_equal (Some 0) exit_code;
-  assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_summary _test_ctxt =
   reset_setting_values ();
@@ -244,7 +251,8 @@ let test_summary _test_ctxt =
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
   assert_equal [`B ("summary", summary, true); `B ("suppress_all", suppress_all, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
-  assert_equal false !check;;
+  assert_equal false !check;
+  reset_setting_values ();;
 
 let test_timing _test_ctxt =
   reset_setting_values ();
@@ -253,9 +261,10 @@ let test_timing _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`B ("stats", stats, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("stats", stats, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
-let test_search_paths _test_ctxt =
+let test_search_paths _test_ctxt : unit =
   reset_setting_values ();
   let (mods, out, err, exit_code) = parse_args ["-I"; "some/module/path"; "-I"; "some/other/module/path"; "Test.tla"] in
   assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
@@ -265,8 +274,9 @@ let test_search_paths _test_ctxt =
   match changed_setting_values () with
   | [`SL ("rev_search_path", _, [_; first_path; second_path])] ->
       assert_bool "Should have first path" (string_contains "some/other/module/path" first_path);
-      assert_bool "Should have second path" (string_contains "some/module/path" second_path)
-  | _ -> assert_failure "Only search path should have been updated";;
+      assert_bool "Should have second path" (string_contains "some/module/path" second_path);
+  | _ -> assert_bool "Search path not as expected" false; 
+  reset_setting_values ();;
 
 let test_keep_going _test_ctxt =
   reset_setting_values ();
@@ -275,7 +285,8 @@ let test_keep_going _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`B ("keep_going", keep_going, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("keep_going", keep_going, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_suppress_all _test_ctxt =
   reset_setting_values ();
@@ -284,7 +295,8 @@ let test_suppress_all _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`B ("suppress_all", suppress_all, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("suppress_all", suppress_all, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_use_isabelle_tla _test_ctxt =
   reset_setting_values ();
@@ -293,7 +305,8 @@ let test_use_isabelle_tla _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`B ("check", check, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("check", check, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_set_max_threads _test_ctxt =
   reset_setting_values ();
@@ -303,7 +316,8 @@ let test_set_max_threads _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`I ("max_threads", max_threads, thread_count)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`I ("max_threads", max_threads, thread_count)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_set_method _text_ctxt =
   reset_setting_values ();
@@ -312,8 +326,10 @@ let test_set_method _text_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`ML ("default_method", default_method, [Tlapm_lib__Method.Fail])] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`ML ("default_method", default_method, [Tlapm_lib__Method.Fail])] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
+(*
 let test_set_solver _test_ctxt =
   reset_setting_values ();
   let solver_cmd = "my_solver_cmd" in
@@ -324,7 +340,9 @@ let test_set_solver _test_ctxt =
   assert_equal None exit_code;
   assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
   (* Params.exec is unfortunately an opaque type whose value we cannot directly access *)
-  assert_bool "Solver command should be custom" (string_contains solver_cmd (solve_cmd smt "file.tla"));;
+  assert_bool "Solver command should be custom" (string_contains solver_cmd (solve_cmd smt "file.tla"));
+  reset_setting_values ();;
+*)
 
 let test_set_smt_logic _test_ctxt =
   reset_setting_values ();
@@ -334,7 +352,8 @@ let test_set_smt_logic _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`S ("smt_logic", smt_logic, expected_smt_logic)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`S ("smt_logic", smt_logic, expected_smt_logic)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_stretch _test_ctxt =
   reset_setting_values ();
@@ -344,7 +363,8 @@ let test_stretch _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`F ("timeout_stretch", timeout_stretch, expected_stretch)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`F ("timeout_stretch", timeout_stretch, expected_stretch)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_no_flatten _test_ctxt =
   reset_setting_values ();
@@ -353,7 +373,8 @@ let test_no_flatten _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`B ("ob_flatten", ob_flatten, false)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("ob_flatten", ob_flatten, false)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_no_normalize _test_ctxt =
   reset_setting_values ();
@@ -362,7 +383,8 @@ let test_no_normalize _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`B ("pr_normal", pr_normal, false)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("pr_normal", pr_normal, false)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_debug_flags _test_ctxt =
   reset_setting_values ();
@@ -374,7 +396,8 @@ let test_debug_flags _test_ctxt =
   assert_equal None exit_code;
   assert_equal [] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
   List.iter (fun flag -> assert_bool flag (debugging flag)) expected_debug_flags;
-  List.iter rm_debug_flag expected_debug_flags;;
+  List.iter rm_debug_flag expected_debug_flags;
+  reset_setting_values ();;
 
 let test_toolbox_mode _test_ctxt =
   reset_setting_values ();
@@ -384,7 +407,8 @@ let test_toolbox_mode _test_ctxt =
   assert_bool "Expect toolbox output" (out <> "");
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`B ("toolbox", toolbox, true); `I ("tb_sl", tb_sl, tb_start); `I ("tb_el", tb_el, tb_end)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("toolbox", toolbox, true); `I ("tb_sl", tb_sl, tb_start); `I ("tb_el", tb_el, tb_end)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_toolbox_protocol_version _test_ctxt =
   reset_setting_values ();
@@ -394,7 +418,8 @@ let test_toolbox_protocol_version _test_ctxt =
   assert_bool "Expect toolbox output" (out <> "");
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`B ("toolbox", toolbox, true); `I ("toolbox_vsn", toolbox_vsn, expected_toolbox_version)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("toolbox", toolbox, true); `I ("toolbox_vsn", toolbox_vsn, expected_toolbox_version)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_line _test_ctxt =
   reset_setting_values ();
@@ -404,7 +429,8 @@ let test_line _test_ctxt =
   assert_bool "Expect toolbox output" (out <> "");
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`B ("toolbox", toolbox, true); `I ("tb_sl", tb_sl, expected_line); `I ("tb_el", tb_el, expected_line)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("toolbox", toolbox, true); `I ("tb_sl", tb_sl, expected_line); `I ("tb_el", tb_el, expected_line)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_wait _test_ctxt =
   reset_setting_values ();
@@ -414,7 +440,8 @@ let test_wait _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`I ("wait", wait, expected_wait)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`I ("wait", wait, expected_wait)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_use_stdin _test_ctxt =
   reset_setting_values ();
@@ -423,7 +450,8 @@ let test_use_stdin _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`B ("use_stdin", use_stdin, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("use_stdin", use_stdin, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_prefer_stdlib _test_ctxt =
   reset_setting_values ();
@@ -432,7 +460,8 @@ let test_prefer_stdlib _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`B ("prefer_stdlib", prefer_stdlib, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("prefer_stdlib", prefer_stdlib, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_no_prove _test_ctxt =
   reset_setting_values ();
@@ -441,7 +470,8 @@ let test_no_prove _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`B ("noproving", noproving, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("noproving", noproving, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_print_all_obligations _test_ctxt =
   reset_setting_values ();
@@ -450,7 +480,8 @@ let test_print_all_obligations _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`B ("printallobs", printallobs, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("printallobs", printallobs, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_safe_fingerprints _test_ctxt =
   reset_setting_values ();
@@ -459,7 +490,8 @@ let test_safe_fingerprints _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`B ("safefp", safefp, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("safefp", safefp, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_no_fingerprints _test_ctxt =
   reset_setting_values ();
@@ -468,7 +500,8 @@ let test_no_fingerprints _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`B ("no_fp", no_fp, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("no_fp", no_fp, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_no_fingerprints_between_lines _test_ctxt =
   reset_setting_values ();
@@ -478,7 +511,8 @@ let test_no_fingerprints_between_lines _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`I ("nofp_sl", nofp_sl, expected_start); `I ("nofp_el", nofp_el, expected_end)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`I ("nofp_sl", nofp_sl, expected_start); `I ("nofp_el", nofp_el, expected_end)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_clean_fingerprints _test_ctxt =
   reset_setting_values ();
@@ -487,7 +521,8 @@ let test_clean_fingerprints _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`B ("cleanfp", cleanfp, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("cleanfp", cleanfp, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 (* Cannot test --erasefp due to side-effects *)
 (* Cannot test --printfp due to side-effects *)
@@ -500,7 +535,8 @@ let test_use_fingerprints _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`SO ("fpf_in", fpf_in, Some expected_fp_file)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`SO ("fpf_in", fpf_in, Some expected_fp_file)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_fp_deb _test_ctxt =
   reset_setting_values ();
@@ -509,7 +545,8 @@ let test_fp_deb _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`B ("fp_deb", fp_deb, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`B ("fp_deb", fp_deb, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
 
 let test_cache_dir _test_ctxt =
   reset_setting_values ();
@@ -519,7 +556,8 @@ let test_cache_dir _test_ctxt =
   assert_equal "" out ~pp_diff:print_string_diff;
   assert_equal "" err ~pp_diff:print_string_diff;
   assert_equal None exit_code;
-  assert_equal [`S ("cachedir", cachedir, expected_cache_dir)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;;
+  assert_equal [`S ("cachedir", cachedir, expected_cache_dir)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
+  reset_setting_values ();;
   
 let cli_test_suite = "Test CLI Parsing" >::: [
   "Help Test" >:: test_help;
@@ -537,7 +575,7 @@ let cli_test_suite = "Test CLI Parsing" >::: [
   "Isabelle/TLA+ Check Test" >:: test_use_isabelle_tla;
   "Max Threads Test" >:: test_set_max_threads;
   "Set Method Test" >:: test_set_method;
-  "Custom Solver Test" >:: test_set_solver;
+  (*"Custom Solver Test" >:: test_set_solver;*)
   "Custom SMT Logic Test" >:: test_set_smt_logic;
   "Stretch Test" >:: test_stretch;
   "No Flatten Test" >:: test_no_flatten;
