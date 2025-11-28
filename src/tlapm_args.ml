@@ -7,8 +7,7 @@ open Params
 
 
 let show_version formatter terminate =
-  Format.pp_print_text formatter (rawversion ());
-  Format.pp_print_cut formatter ();
+  Format.fprintf formatter "%s\n" (rawversion ());
   terminate 0
 
 let set_debug_flags flgs =
@@ -58,7 +57,7 @@ let parse_args executable_name args opts mods usage_fmt err terminate =
     Arg.parse_argv args opts (fun mfile -> mods := mfile :: !mods)
       (Printf.sprintf usage_fmt (Filename.basename executable_name))
   with Arg.Bad msg ->
-    Format.pp_print_text err msg;
+    Format.fprintf err "%s\n" msg;
     terminate 2
 
 let show_where out terminate =
@@ -67,7 +66,7 @@ let show_where out terminate =
     Format.fprintf out "%s\n" path;
     terminate 0
   | None ->
-    Format.pp_print_text out "N/A\n";
+    Format.fprintf out "N/A\n";
     terminate 1
 
 let set_nofp_start s =
@@ -246,20 +245,21 @@ let init ?(out=Format.std_formatter) ?(err=Format.err_formatter) ?(terminate=exi
   in
   helpfn := begin fun () ->
     Arg.usage_string opts
-      (Printf.sprintf usage_fmt (Filename.basename executable_name)) |> Format.pp_print_text err;
+      (Printf.sprintf usage_fmt (Filename.basename executable_name))
+      |> Format.fprintf err "%s";
     terminate 0
   end ;
   parse_args executable_name args opts mods usage_fmt err terminate;
   if !show_config || !verbose then begin
-    Format.pp_print_text out (printconfig err true);
-    Format.pp_print_cut out ();
+    Format.fprintf out "%s\n" (printconfig err true);
   end ;
   if !show_config then terminate 0 ;
   if !mods = [] then begin
     Arg.usage_string opts
       (Printf.sprintf "Need at least one module file.\n\n\
                        Usage: %s <options> FILE ...\noptions are:"
-         (Filename.basename executable_name)) |> Format.pp_print_text err;
+         (Filename.basename executable_name))
+         |> Format.fprintf err "%s";
     terminate 2
   end ;
   if !summary then begin
@@ -276,7 +276,7 @@ let init ?(out=Format.std_formatter) ?(err=Format.err_formatter) ?(terminate=exi
                   tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec;
     Format.fprintf out " with command line:\n\\*";
     Array.iter (fun s -> Format.fprintf out " %s" (quote_if_needed s)) args;
-    Format.pp_print_text out "\n\n%!"
+    Format.fprintf out "\n\n%!"
   end;
   if !use_stdin && (List.length !mods) <> 1 then begin
     Arg.usage opts

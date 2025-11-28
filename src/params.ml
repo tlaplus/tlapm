@@ -131,7 +131,7 @@ let get_exec err e =
           else "."
         in
         let msg = msg1 ^ msg2 in
-        Format.pp_print_text err msg;
+        Format.fprintf err "%s" msg;
         e := NotFound msg;
         failwith msg;
      end;
