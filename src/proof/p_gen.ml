@@ -267,7 +267,8 @@ let rec generate (sq : sequent) prf time_flag =
             | Elsewhere _ ->
                 ()
           end;
-          prf
+          let ob = obligate (sq @@ prf) (Ob_omitted h) in
+          assign prf Props.obs [ob]
       | Steps (inits, qed) ->
           let (sq, inits, time_flag) = List.fold_left gen_step (sq, [], time_flag) inits in
           let inits = List.rev inits in
@@ -397,7 +398,8 @@ let collect prf =
     inherit [unit] P_visit.map as super
     method proof scx prf =
       let prf = match prf.core with
-        | Obvious | By _ | Error _ ->
+        | Obvious | By _ | Error _ | Omitted _ ->
+            (* The omitted obs will be removed later, they are useful in LSP. *)
             let () = match query prf Props.obs, query prf Props.supp with
               | Some obs, None ->
                   Stats.checked := List.length obs + !Stats.checked ;
@@ -408,8 +410,6 @@ let collect prf =
                                         :: !Stats.suppressed
                   end obs
               | _ -> () in
-            prf
-        | Omitted _ ->
             prf
         | Steps (sts, qed) ->
             let qed_prf = self#proof scx (get_qed_proof qed) in

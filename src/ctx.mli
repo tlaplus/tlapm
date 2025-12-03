@@ -3,6 +3,8 @@
 Copyright (C) 2008-2010  INRIA and Microsoft Corporation
 *)
 type 'a ctx
+
+(** Stands for an identifier. Used to resolve name clashes by appending a number suffix. *)
 type ident = { rep : string ; salt : int }
 
 val length: 'a ctx -> int
@@ -35,6 +37,10 @@ val find: 'a ctx -> string -> 'a option
 val depth: 'a ctx -> string -> int option
 
 val to_list: 'a ctx -> 'a list
+
+(** To print the opaque elements without ? appended to them. *)
+val with_try_print_src : 'a ctx -> 'a ctx
+val try_print_src : 'a ctx -> bool
 
 val string_of_ident: ident -> string
 val pp_print_ident:

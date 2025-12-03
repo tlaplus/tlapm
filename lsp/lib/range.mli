@@ -4,6 +4,7 @@ module Position : sig
   type t [@@deriving show]
 
   val compare : t -> t -> int
+  val as_pair : t -> int * int
 end
 
 type t [@@deriving show]
@@ -27,7 +28,13 @@ val of_lines : int -> int -> t
 val of_len : t -> int -> t
 val of_unknown : t
 val of_all : t
+val make_before : t -> t
+val make_before_ln : t -> t
+val make_after : t -> t
+val with_end_line : t -> t
 val join : t -> t -> t
+val join_opt : t option -> t -> t
+val join_opt2 : t option -> t option -> t option
 val crop_line_prefix : t -> int -> t
 val string_of_range : t -> string
 val string_of_pos : Position.t -> string
