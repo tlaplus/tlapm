@@ -111,7 +111,7 @@ p4:   unread := P \ {self} ;
       or  { flag[self] := FALSE } ;
 p5:   while (unread # {}) {
         with (i \in unread) { nxt := i ; };
-        await ~ flag[nxt];
+        await (flag[nxt] = FALSE);
 p6:     await \/ num[nxt] = 0
               \/ LL(self, nxt) ;
         unread := unread \ {nxt};
@@ -127,7 +127,7 @@ p7:   with (repeat \in BOOLEAN, k \in Nat) {
 ****     this ends the comment containg the pluscal code      **********)
 
 \* BEGIN TRANSLATION  (this begins the translation of the PlusCal code)
-VARIABLES num, flag, pc
+VARIABLES pc, num, flag
 
 (* define statement *)
 LL(j, i) == \/ num[j] < num[i]
@@ -136,7 +136,7 @@ LL(j, i) == \/ num[j] < num[i]
 
 VARIABLES unread, max, nxt
 
-vars == << num, flag, pc, unread, max, nxt >>
+vars == << pc, num, flag, unread, max, nxt >>
 
 ProcSet == (P)
 
@@ -194,7 +194,7 @@ p5(self) == /\ pc[self] = "p5"
             /\ IF unread[self] # {}
                   THEN /\ \E i \in unread[self]:
                             nxt' = [nxt EXCEPT ![self] = i]
-                       /\ ~ flag[nxt'[self]]
+                       /\ (flag[nxt'[self]] = FALSE)
                        /\ pc' = [pc EXCEPT ![self] = "p6"]
                   ELSE /\ pc' = [pc EXCEPT ![self] = "cs"]
                        /\ nxt' = nxt
@@ -329,7 +329,11 @@ THEOREM Spec => []MutualExclusion
   <2>3. ASSUME NEW self \in P,
                p3(self)
         PROVE  Inv'
-    BY <2>3, Z3T(60) DEF p3, TypeOK, IInv, After, LL
+    <3>1. TypeOK'
+      BY <2>3 DEF p3, TypeOK
+    <3>2. ASSUME NEW i \in P  PROVE IInv(i)'
+      BY <2>3, SMTT(60) DEF p3, TypeOK, IInv, After, LL
+    <3>. QED  BY <3>1, <3>2
   <2>4. ASSUME NEW self \in P,
                p4(self)
         PROVE  Inv'
@@ -341,7 +345,21 @@ THEOREM Spec => []MutualExclusion
   <2>5. ASSUME NEW self \in P,
                p5(self)
         PROVE  Inv'
-    BY <2>5, Z3T(60) DEF p5, TypeOK, IInv, After, LL
+    <3>1. TypeOK'
+      <4>1. /\ num' \in [P -> Nat]
+            /\ flag' \in [P -> BOOLEAN]
+            /\ unread' \in [P -> SUBSET P]
+            /\ max' \in [P -> Nat]
+            /\ nxt' \in [P -> P]
+            /\ pc' \in [P -> {"p1", "p2", "p3", "p4", "p5", "p6", "cs", "p7"}]
+        BY <2>5 DEF p5, TypeOK
+      <4>2. /\ \A i \in P : pc'[i] \in {"p2", "p5", "p6"} => i \notin unread'[i]
+            /\ \A i \in P : (pc'[i] = "p6") => nxt'[i] # i
+        BY <2>5 DEF p5, TypeOK
+      <4>. QED  BY <4>1, <4>2 DEF TypeOK
+    <3>2. ASSUME NEW i \in P PROVE IInv(i)'
+      BY <2>5, SMTT(20) DEF p5, TypeOK, IInv, After, LL
+    <3>. QED  BY <3>1, <3>2
   <2>6. ASSUME NEW self \in P,
                p6(self)
         PROVE  Inv'
@@ -349,7 +367,7 @@ THEOREM Spec => []MutualExclusion
   <2>7. ASSUME NEW self \in P,
                cs(self)
         PROVE  Inv'
-    BY <2>7 DEF cs, TypeOK, IInv, After, LL
+    BY <2>7, SMTT(20) DEF cs, TypeOK, IInv, After, LL
   <2>8. ASSUME NEW self \in P,
                p7(self)
         PROVE  Inv'

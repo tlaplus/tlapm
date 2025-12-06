@@ -69,7 +69,7 @@ PROOF
         <3> QED
             BY <1>1, <3>2, <3>3, <3>4, <3>5, <3>6, <3>7, <3>8, PTL DEF System
     <2> QED
-        BY <2>1, <2>2, NatInduction
+        BY <2>1, <2>2, NatInduction, Isa
 <1>3. P(20)
     BY <1>2
 <1> QED
