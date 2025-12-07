@@ -56,6 +56,9 @@ let prefer_stdlib = ref false
 (* If set to true, the TLAPM will prefer the modules from the STDLIB
    instead of modules with the same names in the search path. *)
 
+type parser = | Tlapm | Sany
+let parser_backend = ref Tlapm
+
 let noproving = ref false (* Don't send any obligation to the back-ends. *)
 
 let printallobs = ref false

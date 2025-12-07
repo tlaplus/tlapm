@@ -7,6 +7,8 @@ val toolbox: bool ref
 val toolbox_vsn: int ref
 val use_stdin: bool ref
 val prefer_stdlib: bool ref
+type parser = | Tlapm | Sany
+val parser_backend: parser ref
 
 (* expr/fmt.ml *)
 val debugging: string -> bool
