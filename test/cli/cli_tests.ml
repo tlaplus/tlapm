@@ -134,6 +134,7 @@ let setting_values () : setting_value list = [
   `F ("timeout_stretch", timeout_stretch, !timeout_stretch);
   `F ("backend_timeout", backend_timeout, !backend_timeout);
   `SL ("rev_search_path", rev_search_path, !rev_search_path);
+  `SL ("module_jar_paths", module_jar_paths, !module_jar_paths);
   `ML ("default_method", default_method, !default_method);
   `S ("smt_logic", smt_logic, !smt_logic);
   `S ("cachedir", cachedir, !cachedir);
@@ -278,6 +279,16 @@ let test_search_paths _test_ctxt : unit =
       assert_bool "Should have first path" (string_contains "some/other/module/path" first_path);
       assert_bool "Should have second path" (string_contains "some/module/path" second_path);
   | _ -> assert_bool "Search path not as expected" false;
+  reset_setting_values ();;
+
+let test_module_jar_paths _test_ctxt : unit =
+  reset_setting_values ();
+  let (mods, out, err, exit_code) = parse_args ["--module-jar"; "some/module.jar"; "--module-jar"; "some/other/module.jar"; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`SL ("module_jar_paths", module_jar_paths, ["some/other/module.jar"; "some/module.jar"])] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
   reset_setting_values ();;
 
 let test_keep_going _test_ctxt =
@@ -570,6 +581,7 @@ let cli_test_suite = "Test CLI Parsing" >::: [
   "Print Summary Test" >:: test_summary;
   "Print Stats Test" >:: test_timing;
   "Search Paths Test" >:: test_search_paths;
+  "Module Jar Test" >:: test_module_jar_paths;
   "Keep Going Test" >:: test_keep_going;
   "Suppress All Test" >:: test_suppress_all;
   "Isabelle/TLA+ Check Test" >:: test_use_isabelle_tla;

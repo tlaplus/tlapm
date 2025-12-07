@@ -49,6 +49,14 @@ let set_default_method meth =
   try set_default_method meth
   with Failure msg -> raise (Arg.Bad ("--method: " ^ msg))
 
+let set_parser_backend parser_str =
+  match String.lowercase_ascii parser_str with
+  | "sany" -> Params.parser_backend := Sany
+  | "tlapm" -> Params.parser_backend := Tlapm
+  | _ -> raise (Arg.Bad ("--parser: " ^ parser_str))
+
+let add_module_jar_path jar_path =
+  Params.module_jar_paths := jar_path :: !Params.module_jar_paths
 
 let parse_args executable_name args opts mods usage_fmt err terminate =
   try
@@ -200,6 +208,12 @@ let init ?(out=Format.std_formatter) ?(err=Format.err_formatter) ?(terminate=exi
     "--prefer-stdlib", Arg.Set prefer_stdlib, " \
         prefer built-in standard modules if the module search path \
         contains files with the same names as modules in stdlib.";
+    "--parser", Arg.String set_parser_backend, " \
+        Set parser backend to use: TLAPM (default) or SANY.";
+    "--module-jar", Arg.String add_module_jar_path, " \
+        Add a path to a .jar file containing additional TLA+ modules, such
+        as the community modules. Multiple .jar files can be added by using
+        this option multiple times.";
     "--noproving", Arg.Set noproving,
                    " do not prove, report fingerprinted results only";
     blank;
