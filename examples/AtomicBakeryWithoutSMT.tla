@@ -198,24 +198,29 @@ Inv == TypeOK /\ \A i \in P : IInv(i)
 -----------------------------------------------------------------------------
 
 THEOREM GTAxiom  == \A n, m \in Nat : ~ (n > m /\ m > n)
-  OBVIOUS (*{ by (isabelle "(auto dest: nat_less_trans)") }*)
+  BY Isa
 
 THEOREM GEQAxiom == \A n, m \in Nat : (n = m) \/ n > m \/ m > n
-  OBVIOUS (*{ by (isabelle "(auto elim: nat_less_cases)") }*)
+  BY Isa
 
 THEOREM GEQTransitive == \A n, m, q \in Nat : n >= m /\ m >= q => n >= q
-  OBVIOUS (*{ by (isabelle "(auto dest: nat_leq_trans)") }*)
+  OBVIOUS (*{ by (isabelle "(auto dest: int_leq_trans)") }*)
 
 THEOREM Transitivity2 == \A n, m, q \in Nat : n > m /\ m >= q => n > q
-  OBVIOUS (*{ by (isabelle "(auto dest: nat_leq_less_trans)") }*)
+  OBVIOUS (*{ by (isabelle "(auto dest: int_leq_less_trans)") }*)
 
 THEOREM GEQorLT == \A n, m \in Nat : n >= m <=> ~(m > n)
-  OBVIOUS (*{ by (isabelle "(auto simp: nat_not_less[simplified])") }*)
+  BY Isa 
+\*  OBVIOUS (*{ by (isabelle "(auto simp: nat_not_less[simplified])") }*)
 
 THEOREM NatGEQZero == \A n \in Nat: (n > 0) <=> (n # 0)
-  OBVIOUS (*{ by (isabelle "(auto simp: nat_gt0_not0)") }*)
+  BY Isa 
+\*  OBVIOUS (*{ by (isabelle "(auto simp: nat_gt0_not0)") }*)
 
 THEOREM Plus1 == \A n \in Nat: n+1 \in Nat /\ n+1 # 0
+  BY Isa
+
+THEOREM Plus1GT == \A n \in Nat : n+1 > n 
   BY Isa
 
 THEOREM GGIrreflexive == ASSUME NEW i \in P,
@@ -390,13 +395,21 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
  (* We start by proving two auxiliary assertions *)
  <2>1. max'[self] >= max[self] /\ max'[self] >= num[k]
    <3>1. CASE num[k] > max[self]
-     BY <3>1, k \in P, SimplifyAndSolve
-        (* FIXME: Isabelle needs "k \in P" but doesn't find it by itself *)
+     <4>. /\ k \in P 
+          /\ num[k] \in Nat
+          /\ max'[self] = num[k]
+       BY <3>1, Zenon
+     <4>. QED  BY <3>1, Isa
    <3>2. CASE ~(num[k] > max[self])
+     <4>. /\ max[self] \in Nat 
+          /\ UNCHANGED max
+       BY <3>2, Zenon
      <4>1. max[self] >= num[k]
        BY <3>2, GEQorLT, Zenon
-     <4>2. QED
-       BY <3>2, <4>1, SimplifyAndSolve
+     <4>2. max[self] >= max[self]
+       BY Isa
+     <4>. QED
+       BY <3>2, <4>1, <4>2, Zenon
    <3>3. QED
     BY <3>1, <3>2, Zenon
  <2>2. After(self,i) => After(self,i)'
@@ -438,7 +451,7 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
      <4>1. max[j] >= num[i]
        BY <3>1, Zenon DEF After
      <4>2. num'[j] > max[j]
-       BY SimplifyAndSolve
+       BY Plus1GT, Zenon
      <4>3. num'[j] > num[i]
        BY <4>1, <4>2, Plus1, Transitivity2, Zenon
      <4>4. GG(i,j)'

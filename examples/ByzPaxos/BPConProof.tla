@@ -605,7 +605,13 @@ Quorum == {S \cap Acceptor : S \in ByzQuorum}
 THEOREM QuorumTheorem ==
          /\ \A Q1, Q2 \in Quorum : Q1 \cap Q2 # {}
          /\ \A Q \in Quorum : Q \subseteq Acceptor
-BY BQA DEF Quorum
+<1>1. ASSUME NEW Q1 \in Quorum, NEW Q2 \in Quorum 
+      PROVE  Q1 \cap Q2 # {}
+  BY BQA, ZenonT(20) DEF Quorum 
+<1>2. ASSUME NEW Q \in Quorum 
+      PROVE  Q \subseteq Acceptor
+  BY BQA DEF Quorum 
+<1>. QED  BY <1>1, <1>2
 
 (***************************************************************************)
 (* We now define refinement mapping under which our algorithm implements   *)
@@ -719,7 +725,7 @@ LEMMA MaxBallotLemma1 ==
      /\ y >= MaxBallot(S)
   BY MaxBallotProp
 <1>3. MaxBallot(S) \in Int /\ y \in Int
-  BY <1>1, <1>2, Isa DEF Ballot
+  BY <1>1, <1>2 DEF Ballot
 <1>. QED  BY <1>1, <1>2, <1>3
 
 LEMMA MaxBallotLemma2 ==
@@ -844,7 +850,10 @@ bmsgsFinite == IsFiniteSet(1bOr2bMsgs)
 LEMMA FiniteMsgsLemma ==
         ASSUME NEW m, bmsgsFinite, bmsgs' = bmsgs \cup {m}
         PROVE  bmsgsFinite'
-BY FS_AddElement DEF bmsgsFinite, 1bOr2bMsgs
+<1>. \/ 1bOr2bMsgs' = 1bOr2bMsgs
+     \/ 1bOr2bMsgs' = 1bOr2bMsgs \cup {m}
+  BY DEF 1bOr2bMsgs
+<1>. QED  BY FS_AddElement DEF bmsgsFinite
 
 (***************************************************************************)
 (* Invariant 1bInv1 asserts that if (good) acceptor `a' has mCBal[a] # -1, *)
@@ -1126,7 +1135,7 @@ TypeOK =>
         /\ 1cmsgs' = 1cmsgs
         /\ 2amsgs' = 2amsgs
         /\ acceptorMsgsOfType("2b")' = acceptorMsgsOfType("2b")
-    BY <2>1 DEF msgsOfType, 1bmsgs, acceptorMsgsOfType, KnowsSafeAt, 1cmsgs, 2amsgs
+    BY <2>1, Isa DEF msgsOfType, 1bmsgs, acceptorMsgsOfType, KnowsSafeAt, 1cmsgs, 2amsgs
   <2>. QED
     BY <2>a DEF msgs, 1bRestrict
 
@@ -1158,8 +1167,12 @@ TypeOK =>
           /\ 1cmsgs' = 1cmsgs
           /\ acceptorMsgsOfType("2b")' = acceptorMsgsOfType("2b")
       BY <2>1, <3>1 DEF msgsOfType, 1bmsgs, 1bRestrict, acceptorMsgsOfType, KnowsSafeAt, 1cmsgs
+    <3>3. 2amsgs \subseteq 2amsgs'
+      BY <2>1 DEF 2amsgs, acceptorMsgsOfType, msgsOfType
+    <3>4. 2amsgs' \subseteq 2amsgs \cup {ma}
+      BY <2>1 DEF 2amsgs, acceptorMsgsOfType, msgsOfType
     <3>. QED
-      BY <3>1, <3>2, <2>1, <2>3 DEF msgs, 2amsgs, msgsOfType, acceptorMsgsOfType
+      BY <2>3, <3>2, <3>3, <3>4, Zenon DEF msgs
   <2>6. QED
     BY <2>4, <2>5
 
@@ -1190,7 +1203,7 @@ TypeOK =>
         /\ 1cmsgs' = 1cmsgs
         /\ 2amsgs' = 2amsgs
         /\ acceptorMsgsOfType("2b")' = acceptorMsgsOfType("2b") \cup {bm}
-    BY <2>1 DEF msgsOfType, 1bmsgs, 1bRestrict, 1cmsgs, KnowsSafeAt, 2amsgs, acceptorMsgsOfType
+    BY <2>1, Isa DEF msgsOfType, 1bmsgs, 1bRestrict, 1cmsgs, KnowsSafeAt, 2amsgs, acceptorMsgsOfType
   <2>4. msgs' = msgs \cup {bm}
     BY <2>2 DEF msgs
   <2>. QED
@@ -1212,7 +1225,16 @@ TypeOK =>
       BY <1>4, Zenon DEF LearnsSent
     <3>3. ASSUME NEW m \in 1cmsgs
           PROVE  m \in 1cmsgs'
-      BY <3>1, <3>2 DEF TypeOK, KnowsSafeAt, 1cmsgs, msgsOfType
+      <4>1. PICK a \in Acceptor : 
+                 /\ m \in msgsOfType("1c")
+                 /\ KnowsSafeAt(a, m.bal, m.val)
+        BY DEF 1cmsgs
+      <4>2. m \in msgsOfType("1c")'
+        BY <3>1, <4>1 DEF msgsOfType
+      <4>3. KnowsSafeAt(a, m.bal, m.val)'
+        BY <3>2, <4>1 DEF TypeOK, KnowsSafeAt
+      <4>. QED
+        BY <4>2, <4>3 DEF 1cmsgs
     <3>4. ASSUME NEW m \in 1cmsgs', m \notin 1cmsgs
           PROVE  m \in msgsOfType("1c") /\ m.bal = b
       <4>1. m \in msgsOfType("1c")
@@ -1258,17 +1280,41 @@ TypeOK =>
     BY <2>1, Zenon
   <2>2. /\ msgsOfType("1a")' = msgsOfType("1a")
         /\ 1bmsgs' = 1bmsgs
-        /\ 1cmsgs' = 1cmsgs \cup SS
-        /\ 2amsgs' = 2amsgs
         /\ acceptorMsgsOfType("2b")' = acceptorMsgsOfType("2b")
-   BY <2>1 DEF msgsOfType, 1bmsgs, 1bRestrict, 1cmsgs, KnowsSafeAt, 2amsgs, acceptorMsgsOfType
-  <2>3. QED
-    BY <2>2 DEF msgs
+    BY <2>1 DEF msgsOfType, 1bmsgs, 1bRestrict, 1cmsgs, KnowsSafeAt, 2amsgs, acceptorMsgsOfType
+  <2>3. \A a,b,v : KnowsSafeAt(a,b,v)' <=> KnowsSafeAt(a,b,v)
+    BY <2>1 DEF KnowsSafeAt
+  <2>4. 1cmsgs' = 1cmsgs \cup SS 
+    BY <2>1, <2>3 DEF 1cmsgs, msgsOfType
+  <2>5. acceptorMsgsOfType("2av")' = acceptorMsgsOfType("2av")
+    BY <2>1 DEF acceptorMsgsOfType, msgsOfType
+  <2>6. 2amsgs' = 2amsgs
+    BY <2>5 DEF 2amsgs
+  <2>. QED
+    BY <2>2, <2>4, <2>6 DEF msgs
 
 <1>7. ASSUME NEW  self \in FakeAcceptor, FakingAcceptor(self)
       PROVE  msgs' = msgs
-  BY <1>7, BQA DEF FakingAcceptor, msgs, 1bMessage, 2avMessage, 2bMessage,
-       msgsOfType, 1cmsgs, KnowsSafeAt, 1bmsgs, 2amsgs, acceptorMsgsOfType, msgsOfType
+  <2>1. PICK m \in 1bMessage \cup 2avMessage \cup 2bMessage : 
+             /\ m.acc = self
+             /\ bmsgs' = bmsgs \cup {m}
+             /\ knowsSent' = knowsSent
+    BY <1>7 DEF FakingAcceptor
+  <2>2. \A a,b,v : KnowsSafeAt(a,b,v)' <=> KnowsSafeAt(a,b,v)
+    BY <2>1 DEF KnowsSafeAt
+  <2>3. /\ msgsOfType("1a")' = msgsOfType("1a")
+        /\ 1cmsgs' = 1cmsgs
+    BY <2>1, <2>2 DEF msgsOfType, 1cmsgs, 1bMessage, 2avMessage, 2bMessage
+  <2>4. 1bmsgs' = 1bmsgs 
+    BY <2>1, BQA DEF 1bmsgs, acceptorMsgsOfType, msgsOfType, 1bRestrict, 1bMessage, 2avMessage, 2bMessage
+  <2>5. acceptorMsgsOfType("2av")' = acceptorMsgsOfType("2av")
+    BY <2>1, BQA DEF acceptorMsgsOfType, msgsOfType, 1bMessage, 2avMessage, 2bMessage
+  <2>6. 2amsgs' = 2amsgs 
+    BY <2>1, <2>5 DEF 2amsgs
+  <2>7. acceptorMsgsOfType("2b")' = acceptorMsgsOfType("2b")
+    BY <2>1, BQA DEF acceptorMsgsOfType, msgsOfType, 1bMessage, 2avMessage, 2bMessage
+  <2>. QED
+    BY <2>3, <2>4, <2>6, <2>7 DEF msgs
 
 <1>9. QED
   BY <1>1, <1>2, <1>3, <1>4, <1>5, <1>6, <1>7, Zenon
@@ -1302,7 +1348,21 @@ THEOREM Invariance == Spec => []Inv
       <4>1. msgs' = msgs \cup {mc}
         BY <3>1, MsgsLemma DEF Inv
       <4>2. TypeOK'
-        BY <3>1 DEF Inv, TypeOK, BMessage, 1bMessage, ByzAcceptor, Phase1b
+        <5>1. /\ maxBal' \in [Acceptor -> Ballot \cup {-1}]
+              /\ 2avSent' \in [Acceptor -> SUBSET [val : Value, bal : Ballot]]
+              /\ maxVBal' \in [Acceptor -> Ballot \cup {-1}]
+              /\ maxVVal' \in [Acceptor -> Value \cup {None}]
+              /\ knowsSent' \in [Acceptor -> SUBSET 1bMessage]
+          BY <3>1 DEF Inv, TypeOK, Phase1b
+        <5>2. bmsgs' = bmsgs \cup {mb}
+          BY <3>1 DEF Phase1b
+        <5>3. mb \in BMessage
+          BY Zenon DEF Inv, TypeOK, BMessage, 1bMessage, ByzAcceptor
+        <5>4. bmsgs' \subseteq BMessage
+          BY <5>2, <5>3 DEF Inv, TypeOK
+        <5>. QED
+          BY <5>1, <5>4 DEF TypeOK
+      \*  BY <3>1 DEF Inv, TypeOK, BMessage, 1bMessage, ByzAcceptor, Phase1b
       <4>3. bmsgsFinite'
         BY <3>1, FiniteMsgsLemma, Zenon DEF Inv, bmsgsFinite, Phase1b
       <4>4. 1bInv1'
@@ -1343,7 +1403,7 @@ THEOREM Invariance == Spec => []Inv
                         ![self] = {r \in 2avSent[self] : r.val # mc.val}
                                     \cup {[val |-> mc.val, bal |-> b]}]
         BY <3>2, Zenon DEF Phase2av
-      <4>2. mc = [type |-> "1c", bal |-> mc.bal, val |-> mc.val]
+      <4>2. mc = [type |-> "1c", bal |-> b, val |-> mc.val]
         BY <4>1, BMessageLemma DEF sentMsgs, Inv, TypeOK, 1cMessage
       <4> DEFINE mb == [type |-> "2av", bal |-> b,
                         val |-> mc.val, acc |-> self]
@@ -1415,8 +1475,18 @@ THEOREM Invariance == Spec => []Inv
         <5>2. CASE r \in 2avSent[a]
           BY <5>2, <4>4, <4>5, <3>2 DEF Phase2av, Inv, TypeOK, accInv, Ballot
         <5>3. CASE r \notin 2avSent[a]
-          BY <5>3, <3>2, <4>1, <4>2, <4>4
-             DEF Phase2av, Inv, TypeOK, sentMsgs, msgsOfType, msgs, 1cmsgs, Ballot
+          <6>1. /\ a = self
+                /\ r = [val |-> mc.val, bal |-> b]
+            BY <4>1, <5>1, <5>3 DEF Inv, TypeOK 
+          <6>2. /\ \A r \in 2avSent[self] : r.bal < b 
+                /\ maxBal' = [maxBal EXCEPT ![self] = b]
+            BY <3>2 DEF Phase2av
+          <6>3. r.bal =< maxBal'[a]
+            BY <6>1, <6>2 DEF Inv, TypeOK, Ballot
+          <6>4. mc \in msgs 
+            BY <4>1, <4>2 DEF sentMsgs, msgs, 1cmsgs, msgsOfType
+          <6>. QED 
+            BY <4>2, <4>4, <6>1, <6>3, <6>4
         <5>4. QED
           BY <5>2, <5>3
       <4>14. knowsSentInv'
@@ -1544,7 +1614,7 @@ THEOREM Invariance == Spec => []Inv
       <4>3. TypeOK'
         BY <3>2, <4>1 DEF Phase1c, Inv, TypeOK, BMessage, 1cMessage
       <4>4. bmsgsFinite'
-        BY <4>1 DEF Inv, bmsgsFinite, 1bOr2bMsgs
+        BY <4>1, Zenon DEF Inv, bmsgsFinite, 1bOr2bMsgs
       <4>5. 1bInv1'
         BY <3>2, <4>2, Zenon DEF Phase1c, Inv, 1bInv1
       <4>6. 1bInv2'
@@ -1600,7 +1670,7 @@ THEOREM Invariance == Spec => []Inv
         PROVE  Inv'
     <3> USE UNCHANGED vars DEF Inv, vars
     <3> msgs = msgs'
-      BY DEF msgs, msgsOfType, 1bmsgs, 1bRestrict, acceptorMsgsOfType, 1cmsgs,
+      BY Isa DEF msgs, msgsOfType, 1bmsgs, 1bRestrict, acceptorMsgsOfType, 1cmsgs,
        KnowsSafeAt, 2amsgs
     <3> QED
       BY DEF TypeOK, bmsgsFinite, 1bOr2bMsgs, 1bInv1, 1bInv2,
@@ -1623,9 +1693,9 @@ THEOREM Spec => P!Spec
   <2>1. MaxBallot({}) = -1
     BY MaxBallotProp, FS_EmptySet
   <2>2. P!Init!1 /\ P!Init!2 /\ P!Init!3
-    BY <2>1 DEF Init, PmaxBal, 1bOr2bMsgs, None, P!None
+    BY <2>1, Zenon DEF Init, PmaxBal, 1bOr2bMsgs, None, P!None
   <2>3. msgs = {}
-    BY BQA DEF Init, msgsOfType, acceptorMsgsOfType, 1bmsgs, 1cmsgs, 2amsgs, Quorum, msgs
+    BY QuorumTheorem, Zenon DEF Init, msgsOfType, acceptorMsgsOfType, 1bmsgs, 1cmsgs, 2amsgs, msgs
   <2>4. QED
     BY <2>2, <2>3 DEF  P!Init
 
@@ -1634,8 +1704,8 @@ THEOREM Spec => P!Spec
   <2> SUFFICES ASSUME Inv, InvP, Next
                PROVE  P!TLANext \/ P!vars' = P!vars
     <3> UNCHANGED vars => UNCHANGED P!vars
-      BY DEF vars, P!vars, PmaxBal, 1bOr2bMsgs, msgs, msgsOfType, acceptorMsgsOfType,
-             1bmsgs, 2amsgs, 1cmsgs, KnowsSafeAt
+      BY Isa DEF vars, P!vars, PmaxBal, 1bOr2bMsgs, msgs, msgsOfType, acceptorMsgsOfType,
+                 1bmsgs, 2amsgs, 1cmsgs, KnowsSafeAt
     <3> QED
       BY PNextDef DEF Inv, P!ProcSet, P!Init, Ballot, P!Ballot
   <2> HIDE DEF InvP
@@ -1819,7 +1889,7 @@ THEOREM Spec => P!Spec
           <6> MaxBallot({b}) = b
             BY FS_Singleton, MaxBallotLemma1, Isa DEF Ballot
           <6> QED
-            BY <5>4, <5>5
+            BY <5>4, <5>5, Zenon
         <5>6. CASE S # {}
           <6> \A bb \in T : b >= bb
             BY <3>1, <5>1, <5>3, MaxBallotProp, PmaxBalLemma5 DEF Inv, Ballot
@@ -2118,9 +2188,4 @@ BY Isa DEF chosen, P!chosen, Quorum, Ballot, P!Ballot
 
 ==============================================================================
 \* Modification History
-\* Last modified Fri Jul 24 17:51:34 CEST 2020 by merz
-\* Last modified Wed Apr 15 15:16:26 CEST 2020 by doligez
-\* Last modified Mon Aug 18 14:57:27 CEST 2014 by tomer
-\* Last modified Mon Mar 04 17:24:05 CET 2013 by doligez
-\* Last modified Wed Nov 30 15:47:26 PST 2011 by lamport
 \* Last modified Wed Dec 01 11:35:29 PST 2010 by lamport

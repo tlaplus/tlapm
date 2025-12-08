@@ -1,5 +1,5 @@
 ---------------------------- MODULE GraphTheorem ----------------------------
-EXTENDS FiniteSetTheorems, FunctionTheorems, TLAPS
+EXTENDS FiniteSetTheorems, FunctionForkTheorems, TLAPS
 
 Edges(Nodes) == { {m[1], m[2]} : m \in Nodes \X Nodes }
   (*************************************************************************)
@@ -10,11 +10,17 @@ Edges(Nodes) == { {m[1], m[2]} : m \in Nodes \X Nodes }
   (* However, this construct isn't supported by TLAPS yet.                 *)
   (*************************************************************************)
 
-LEMMA EdgesAxiom == \A Nodes :
-                       /\ \A m, n \in Nodes : {m, n} \in Edges(Nodes)
-                       /\ \A e \in Edges(Nodes) :
-                            \E m, n \in Nodes : e = {m, n}
-BY IsaM("force") DEF Edges
+LEMMA EdgesAxiom == 
+    ASSUME NEW Nodes
+    PROVE  /\ \A m, n \in Nodes : {m, n} \in Edges(Nodes)
+           /\ \A e \in Edges(Nodes) : \E m, n \in Nodes : e = {m, n}
+<1>1. ASSUME NEW m \in Nodes, NEW n \in Nodes 
+      PROVE  {m, n} \in Edges(Nodes)
+  BY DEF Edges 
+<1>2. ASSUME NEW e \in Edges(Nodes)
+      PROVE  \E m,n \in Nodes : e = {m,n}
+  BY DEF Edges 
+<1>. QED  BY <1>1, <1>2
 
 -------------------------------------------------------
 LEMMA EdgesFinite ==
@@ -39,7 +45,7 @@ LEMMA NLEdgeElements ==
 <1>. SUFFICES ASSUME m = n PROVE FALSE
   OBVIOUS
 <1>. QED
-  BY FS_Singleton, Isa DEF NonLoopEdges
+  BY FS_Singleton DEF NonLoopEdges
 
 ------------------------------------------------------------------
 (***************************************************************************)
@@ -97,10 +103,16 @@ THEOREM
     <3>1. IsFiniteSet(Isolated) /\ Cardinality(Isolated) \in Nat
       BY FS_Subset, FS_CardinalityType
     <3>2. CASE Cardinality(Isolated) > 1
-      <4>1. PICK x \in Isolated, y \in Isolated : x # y
-        BY <3>1, <3>2, FS_CardinalityType, CVC4 DEF ExistsBijection, Bijection, Injection
+      <4>1. PICK x \in Isolated : TRUE
+        BY <3>1, <3>2, FS_EmptySet
+      <4>. DEFINE IX == Isolated \ {x}
+      <4>2. /\ IsFiniteSet(IX)
+            /\ Cardinality(IX) > 0
+        BY <3>1, <3>2, FS_RemoveElement
+      <4>3. PICK y \in IX : TRUE
+        BY <4>2, FS_EmptySet
       <4>. QED
-        BY <1>3, <4>1
+        BY <1>3, <4>3
     <3>3. QED
       BY <3>1, <3>2
   <2>4. Cardinality(Connected) \geq 1
@@ -125,7 +137,9 @@ THEOREM
     <3>2. ASSUME NEW e \in G,
                  NEW n \in e
           PROVE  \E m \in Connected : n # m /\ e = {m, n}
-      BY <2>5, NLEdgeElements DEF SimpleGraphs
+      <4>. PICK m, n \in Nodes : m # n /\ e = {m,n}
+        BY NLEdgeElements DEF SimpleGraphs
+      <4>. QED  BY <2>5
     <3>3. SUFFICES ASSUME NEW n \in Connected
                    PROVE  Cardinality({e \in G : n \in e}) < Cardinality(Connected)
       BY <3>1, <3>3 DEF Degree
