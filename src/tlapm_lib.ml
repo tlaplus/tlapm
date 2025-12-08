@@ -616,8 +616,7 @@ let init () =
        end;
        exit 3
 
-(* Access to this function has to be synchronized. *)
-let modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~prefer_stdlib : (modctx * Module.T.mule, string option * string) result =
+let tlapm_modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~prefer_stdlib : (modctx * Module.T.mule, string option * string) result =
     let parse_it () =
         Errors.reset ();
         Params.prefer_stdlib := prefer_stdlib;
@@ -651,6 +650,13 @@ let modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~pre
          | None, Some m -> Error (None, m)
          | Some l, None -> Error (Some l, Printexc.to_string e)
          | None, None -> Error (None, Printexc.to_string e))
+
+
+(* Access to this function has to be synchronized. *)
+let modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~prefer_stdlib : (modctx * Module.T.mule, string option * string) result =
+    match !Params.parser_backend with
+    | Tlapm -> tlapm_modctx_of_string ~content ~filename ~loader_paths ~prefer_stdlib
+    | Sany -> Sany.parse filename
 
 let module_of_string module_str =
     let hparse = Tla_parser.P.use Module.Parser.parse in
