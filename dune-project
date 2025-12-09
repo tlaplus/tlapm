@@ -51,6 +51,7 @@
   ppx_inline_test
   ppx_assert
   ppx_deriving
+  xmlm
   ounit2)
  (depopts
   lsp         ; https://github.com/ocaml/ocaml-lsp

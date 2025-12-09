@@ -38,6 +38,7 @@ depends: [
   "ppx_inline_test"
   "ppx_assert"
   "ppx_deriving"
+  "xmlm"
   "ounit2"
   "odoc" {with-doc}
 ]
