@@ -562,8 +562,8 @@ end = struct
             if_in_file_opt file o.obl @@ fun o_range ->
             let o =
               (match o.fingerprint with
-              | None -> Tlapm_lib.Backend.Fingerprints.write_fingerprint o
-              | Some _ -> o)
+                | None -> Tlapm_lib.Backend.Fingerprints.write_fingerprint o
+                | Some _ -> o)
               |> Obl.of_parsed_obligation
               |> Obl.with_proof_state_from (Hashtbl.find_opt prev_obs)
             in
@@ -571,10 +571,10 @@ end = struct
           in
           obs <-
             (match mule.core.stage with
-            | TL.Module.T.Special -> []
-            | TL.Module.T.Parsed -> []
-            | TL.Module.T.Flat -> []
-            | TL.Module.T.Final final -> Array.to_list final.final_obs)
+              | TL.Module.T.Special -> []
+              | TL.Module.T.Parsed -> []
+              | TL.Module.T.Flat -> []
+              | TL.Module.T.Final final -> Array.to_list final.final_obs)
             |> List.filter_map mule_obl |> RangeMap.of_list;
           ignore (self#tla_module_root mule);
           assert (RangeMap.is_empty obs);

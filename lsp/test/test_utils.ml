@@ -75,23 +75,22 @@ end = struct
   let strings_of_cas cas =
     cas
     |> List.map (fun x ->
-           let open Lsp.Types in
-           match x with
-           | `Command ({ title; _ } : Command.t) -> Fmt.str "Command: %s" title
-           | `CodeAction ({ title; _ } : CodeAction.t) ->
-               Fmt.str "CodeAction: %s" title)
+        let open Lsp.Types in
+        match x with
+        | `Command ({ title; _ } : Command.t) -> Fmt.str "Command: %s" title
+        | `CodeAction ({ title; _ } : CodeAction.t) ->
+            Fmt.str "CodeAction: %s" title)
 
   let find pattern cas =
     let found =
       cas
       |> List.find_map (fun x ->
-             let open Lsp.Types in
-             match x with
-             | `Command (_ : Command.t) -> None
-             | `CodeAction (ca : CodeAction.t) ->
-                 if Str.string_match (Str.regexp pattern) ca.title 0 then
-                   Some ca
-                 else None)
+          let open Lsp.Types in
+          match x with
+          | `Command (_ : Command.t) -> None
+          | `CodeAction (ca : CodeAction.t) ->
+              if Str.string_match (Str.regexp pattern) ca.title 0 then Some ca
+              else None)
     in
     let found =
       match found with
@@ -160,7 +159,7 @@ let lsp_ca ~lsp ?(name = "test") ~text ~line ca_regex =
       Lsp.Types.(
         ca_expected.edit |> Option.to_list
         |> List.map (fun (e : WorkspaceEdit.t) ->
-               e.changes |> Option.get |> List.map snd |> List.flatten)
+            e.changes |> Option.get |> List.map snd |> List.flatten)
         |> List.flatten)
   in
   actual

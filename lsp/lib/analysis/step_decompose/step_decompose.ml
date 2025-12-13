@@ -43,8 +43,7 @@ let cas_of_el_with_pf (uri : LspT.DocumentUri.t) (ps : PS.t)
     in
     PS.goal ps
     |> Option.fold ~none:[] ~some:(fun g ->
-           Of_defs.cas_def_expand ~uri ~ps ~cx ~by
-             ~sq:TL.Proof.T.(g.obl |> unwrap))
+        Of_defs.cas_def_expand ~uri ~ps ~cx ~by ~sq:TL.Proof.T.(g.obl |> unwrap))
   in
   let open TL.Proof.T in
   match unwrap pf with

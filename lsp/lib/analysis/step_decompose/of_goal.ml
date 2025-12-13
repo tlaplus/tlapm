@@ -167,11 +167,11 @@ let cas_of_goal_conj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   let add_steps_rewrite =
     flatten_op_list Conj op_args
     |> List.map (fun op ->
-           let step_no = Seq_acc.take step_names in
-           let step =
-             TL.Proof.T.Assert (Sequent.of_goal op, ps_proof) |> noprops
-           in
-           (step_no, step))
+        let step_no = Seq_acc.take step_names in
+        let step =
+          TL.Proof.T.Assert (Sequent.of_goal op, ps_proof) |> noprops
+        in
+        (step_no, step))
     |> pp_proof_steps_before ps cx
   in
   let ps_proof_rewrite =
@@ -204,15 +204,15 @@ let cas_of_goal_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
       disjuncts
       |> List.filteri (fun i _ -> i != disjunct_pos)
       |> List.mapi (fun i disjunct ->
-             (* TODO: Drop existing negation, if there exist instead of adding yet another. *)
-             let expr =
-               TL.Expr.T.Apply
-                 (TL.(Expr.T.Internal Builtin.Neg) |> noprops, [ disjunct ])
-               |> noprops
-             in
-             TL.Expr.T.(Fact (expr, Visible, NotSet))
-             |> noprops
-             |> TL.Expr.Subst.(app_hyp (shift i)))
+          (* TODO: Drop existing negation, if there exist instead of adding yet another. *)
+          let expr =
+            TL.Expr.T.Apply
+              (TL.(Expr.T.Internal Builtin.Neg) |> noprops, [ disjunct ])
+            |> noprops
+          in
+          TL.Expr.T.(Fact (expr, Visible, NotSet))
+          |> noprops
+          |> TL.Expr.Subst.(app_hyp (shift i)))
     in
     let disjunct =
       disjunct |> TL.Expr.Subst.(app_expr (shift (List.length other_negated)))
@@ -241,17 +241,17 @@ let cas_of_goal_equiv (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     let next_arg i = List.nth op_args ((i + 1) mod List.length op_args) in
     op_args
     |> List.mapi (fun i op ->
-           let step_no = Seq_acc.take step_names in
-           let step_goal =
-             TL.Expr.T.Apply
-               ( TL.Expr.T.Internal TL.Builtin.Implies |> noprops,
-                 [ op; next_arg i ] )
-             |> noprops
-           in
-           let step =
-             TL.Proof.T.Assert (Sequent.of_goal step_goal, ps_proof) |> noprops
-           in
-           (step_no, step))
+        let step_no = Seq_acc.take step_names in
+        let step_goal =
+          TL.Expr.T.Apply
+            ( TL.Expr.T.Internal TL.Builtin.Implies |> noprops,
+              [ op; next_arg i ] )
+          |> noprops
+        in
+        let step =
+          TL.Proof.T.Assert (Sequent.of_goal step_goal, ps_proof) |> noprops
+        in
+        (step_no, step))
     |> pp_proof_steps_before ps cx
   in
   let ps_proof_rewrite =
