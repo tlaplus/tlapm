@@ -102,7 +102,7 @@ type exec = executable ref
 let path_prefix =
   sprintf "PATH='%s';" Paths.backend_path_string
 
-let get_exec e =
+let get_exec err e =
   match !e with
   | Unchecked (exec, cmd, vers) ->
     (*
@@ -131,7 +131,7 @@ let get_exec e =
           else "."
         in
         let msg = msg1 ^ msg2 in
-        eprintf "%s" msg;
+        Format.fprintf err "%s" msg;
         e := NotFound msg;
         failwith msg;
      end;
@@ -450,14 +450,14 @@ let stats        = ref false
 
 let solve_cmd cmd file =
   if Sys.os_type = "Cygwin" then
-    sprintf "file=%s; winfile=\"`cygpath -a -w \"%s\"`\"; %s" file file (get_exec cmd)
+    sprintf "file=%s; winfile=\"`cygpath -a -w \"%s\"`\"; %s" file file (get_exec Format.err_formatter cmd)
   else
-    sprintf "file=%s; %s" file (get_exec cmd)
+    sprintf "file=%s; %s" file (get_exec Format.err_formatter cmd)
 
 
-let external_tool_config force (name, tool) =
+let external_tool_config (err : Format.formatter) force (name, tool) =
   if force then begin
-    try ignore (get_exec tool) with Failure _ -> ()
+    try ignore (get_exec err tool) with Failure _ -> ()
   end;
   match !tool with
   | Checked (cmd, []) ->
@@ -470,7 +470,7 @@ let external_tool_config force (name, tool) =
   | _ -> []
 
 
-let configuration toolbox force =
+let configuration err toolbox force =
   let library_path = (match stdlib_path with
   | Some path -> "\"" ^ (String.escaped path) ^ "\"";
   | None -> "N/A")
@@ -494,7 +494,7 @@ let configuration toolbox force =
           first_line :: mid_lines @ [last_line]
         end
       end
-    @ List.flatten (List.map (external_tool_config force)
+    @ List.flatten (List.map (external_tool_config err force)
                              [("Isabelle", isabelle);
                               ("zenon", zenon);
                               ("CVC4", cvc4);
@@ -517,17 +517,17 @@ let configuration toolbox force =
   header @ lines @ footer
 
 
-let printconfig force =
-  String.concat "\n" (configuration false force)
+let printconfig err force =
+  String.concat "\n" (configuration err false force)
 
 let print_config_toolbox force =
-  String.concat "\n" (configuration true force)
+  String.concat "\n" (configuration Format.err_formatter true force)
 
 
 let zenon_version = ref None
 
 let check_zenon_ver () =
-  let zen = get_exec zenon in
+  let zen = get_exec Format.err_formatter zenon in
   match get_version zenon with
   | [] -> ()
   | ret :: _ ->
@@ -543,7 +543,7 @@ let get_zenon_verfp () = if !zenon_version = None then check_zenon_ver ();
 let isabelle_version = ref None
 
 let check_isabelle_ver () =
-  (try ignore (get_exec isabelle) with Failure _ -> ());
+  (try ignore (get_exec Format.err_formatter isabelle) with Failure _ -> ());
   match get_version isabelle with
   | [] -> ()
   | ret :: _ ->

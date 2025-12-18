@@ -1,0 +1,5 @@
+(test
+ (name cli_tests)
+ (modes exe)
+ (libraries tlapm_lib ounit2)
+)

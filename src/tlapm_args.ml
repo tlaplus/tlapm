@@ -6,11 +6,9 @@ open Ext
 open Params
 
 
-let show_config = ref false
-let show_version () =
-  print_endline (rawversion ()) ;
-  exit 0
-
+let show_version formatter terminate =
+  Format.fprintf formatter "%s\n" (rawversion ());
+  terminate 0
 
 let set_debug_flags flgs =
   let flgs = Ext.split flgs ',' in
@@ -52,24 +50,23 @@ let set_default_method meth =
   with Failure msg -> raise (Arg.Bad ("--method: " ^ msg))
 
 
-(* FIXME use Arg.parse instead *)
-let parse_args args opts mods usage_fmt =
+let parse_args executable_name args opts mods usage_fmt err terminate =
   try
-    Arg.parse_argv (Array.of_list args) opts (fun mfile -> mods := mfile :: !mods)
-      (Printf.sprintf usage_fmt (Filename.basename Sys.executable_name))
+    Arg.current := 0;
+    Arg.parse_argv args opts (fun mfile -> mods := mfile :: !mods)
+      (Printf.sprintf usage_fmt (Filename.basename executable_name))
   with Arg.Bad msg ->
-    print_endline msg ;
-    flush stdout ;
-    exit 2
+    Format.fprintf err "%s\n" msg;
+    terminate 2
 
-let show_where () =
+let show_where out terminate =
   match stdlib_path with
   | Some path  ->
-    Printf.printf "%s\n" path;
-    exit 0
+    Format.fprintf out "%s\n" path;
+    terminate 0
   | None ->
-    Printf.printf "N/A\n";
-    exit 1
+    Format.fprintf out "N/A\n";
+    terminate 1
 
 let set_nofp_start s =
   nofp_sl := s
@@ -134,7 +131,8 @@ let quote_if_needed s =
   end
 
 
-let init () =
+let init ?(out=Format.std_formatter) ?(err=Format.err_formatter) ?(terminate=exit) (executable_name : string) (args : string array) =
+  let show_config = ref false in
   let mods = ref [] in
   let helpfn = ref (fun () -> ()) in
   let show_help () = !helpfn () in
@@ -147,11 +145,11 @@ let init () =
     blank;
     "--help", Arg.Unit show_help, " show this help message and exit" ;
     "-help", Arg.Unit show_help, " (same as --help)" ;
-    "--version", Arg.Unit show_version, " show version number and exit" ;
+    "--version", Arg.Unit (fun () -> show_version out terminate), " show version number and exit" ;
     "--verbose", Arg.Set verbose, " produce verbose messages" ;
     "-v", Arg.Set verbose, " (same as --verbose)" ;
     blank;
-    "--where", Arg.Unit show_where,
+    "--where", Arg.Unit (fun () -> show_where out terminate),
                " show location of standard library and exit" ;
     "--config", Arg.Set show_config, " show configuration and exit" ;
     "--summary", Arg.Set summary,
@@ -245,23 +243,23 @@ let init () =
     format_of_string "Usage: %s <options> FILE ...\noptions are:"
   in
   helpfn := begin fun () ->
-    Arg.usage opts
-      (Printf.sprintf usage_fmt (Filename.basename Sys.executable_name)) ;
-    exit 0
+    Arg.usage_string opts
+      (Printf.sprintf usage_fmt (Filename.basename executable_name))
+      |> Format.fprintf err "%s";
+    terminate 0
   end ;
-  let args = Array.to_list Sys.argv in
-  parse_args args opts mods usage_fmt ;
+  parse_args executable_name args opts mods usage_fmt err terminate;
   if !show_config || !verbose then begin
-    print_endline (printconfig true) ;
-    flush stdout
+    Format.fprintf out "%s\n" (printconfig err true);
   end ;
-  if !show_config then exit 0 ;
+  if !show_config then terminate 0 ;
   if !mods = [] then begin
-    Arg.usage opts
+    Arg.usage_string opts
       (Printf.sprintf "Need at least one module file.\n\n\
                        Usage: %s <options> FILE ...\noptions are:"
-         (Filename.basename Sys.executable_name)) ;
-    exit 2
+         (Filename.basename executable_name))
+         |> Format.fprintf err "%s";
+    terminate 2
   end ;
   if !summary then begin
     suppress_all := true ;
@@ -269,20 +267,20 @@ let init () =
   end ;
   check_zenon_ver () ;
   if !Params.toolbox then begin
-    Printf.printf "\n\\* TLAPM version %s\n"
+    Format.fprintf out "\n\\* TLAPM version %s\n"
                   (Params.rawversion ());
     let tm = Unix.localtime (Unix.gettimeofday ()) in
-    Printf.printf "\\* launched at %04d-%02d-%02d %02d:%02d:%02d"
+    Format.fprintf out "\\* launched at %04d-%02d-%02d %02d:%02d:%02d"
                   (tm.Unix.tm_year + 1900) (tm.Unix.tm_mon + 1) tm.Unix.tm_mday
                   tm.Unix.tm_hour tm.Unix.tm_min tm.Unix.tm_sec;
-    Printf.printf " with command line:\n\\*";
-    Array.iter (fun s -> Printf.printf " %s" (quote_if_needed s)) Sys.argv;
-    Printf.printf "\n\n%!"
+    Format.fprintf out " with command line:\n\\*";
+    Array.iter (fun s -> Format.fprintf out " %s" (quote_if_needed s)) args;
+    Format.fprintf out "\n\n%!"
   end;
   if !use_stdin && (List.length !mods) <> 1 then begin
     Arg.usage opts
       "Exactly 1 module has to be specified if TLAPM is invoked with\
        the --stdin option." ;
-    exit 2
+    terminate 2
   end;
   !mods
