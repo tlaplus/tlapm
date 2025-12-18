@@ -50,7 +50,6 @@ let set_default_method meth =
   with Failure msg -> raise (Arg.Bad ("--method: " ^ msg))
 
 
-(* FIXME use Arg.parse instead *)
 let parse_args executable_name args opts mods usage_fmt err terminate =
   try
     Arg.current := 0;

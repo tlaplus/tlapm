@@ -17,8 +17,10 @@ let capture_output (f : Format.formatter -> unit) : string =
   f out_format;
   Format.pp_print_flush out_format ();
   Buffer.contents out
-  
 
+(** This function is a quick hack that is very inefficient; avoid using
+    it on large haystacks.
+*)
 let rec string_contains (needle : string) (haystack : string) : bool =
   match haystack with
   | "" -> false
@@ -68,7 +70,7 @@ let setting_value_changed (setting : setting_value) =
   | `F (_, rf, v) -> not (!rf = v)
   | `S (_, rf, v) -> not (!rf = v)
   | `SO (_, rf, v) -> not (!rf = v)
-  | `SL (_, rf, v) -> not (List.equal String.equal !rf v)
+  | `SL (_, rf, v) -> not (!rf = v)
   | `ML (_, rf, v) -> not (!rf = v)
 
 let changed_setting_value (setting : setting_value) =
@@ -275,7 +277,7 @@ let test_search_paths _test_ctxt : unit =
   | [`SL ("rev_search_path", _, [_; first_path; second_path])] ->
       assert_bool "Should have first path" (string_contains "some/other/module/path" first_path);
       assert_bool "Should have second path" (string_contains "some/module/path" second_path);
-  | _ -> assert_bool "Search path not as expected" false; 
+  | _ -> assert_bool "Search path not as expected" false;
   reset_setting_values ();;
 
 let test_keep_going _test_ctxt =
@@ -329,7 +331,6 @@ let test_set_method _text_ctxt =
   assert_equal [`ML ("default_method", default_method, [Tlapm_lib__Method.Fail])] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
   reset_setting_values ();;
 
-(*
 let test_set_solver _test_ctxt =
   reset_setting_values ();
   let solver_cmd = "my_solver_cmd" in
@@ -342,7 +343,6 @@ let test_set_solver _test_ctxt =
   (* Params.exec is unfortunately an opaque type whose value we cannot directly access *)
   assert_bool "Solver command should be custom" (string_contains solver_cmd (solve_cmd smt "file.tla"));
   reset_setting_values ();;
-*)
 
 let test_set_smt_logic _test_ctxt =
   reset_setting_values ();
@@ -558,7 +558,7 @@ let test_cache_dir _test_ctxt =
   assert_equal None exit_code;
   assert_equal [`S ("cachedir", cachedir, expected_cache_dir)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
   reset_setting_values ();;
-  
+
 let cli_test_suite = "Test CLI Parsing" >::: [
   "Help Test" >:: test_help;
   "Basic Test" >:: test_basic;
@@ -575,7 +575,7 @@ let cli_test_suite = "Test CLI Parsing" >::: [
   "Isabelle/TLA+ Check Test" >:: test_use_isabelle_tla;
   "Max Threads Test" >:: test_set_max_threads;
   "Set Method Test" >:: test_set_method;
-  (*"Custom Solver Test" >:: test_set_solver;*)
+  "Custom Solver Test" >:: test_set_solver;
   "Custom SMT Logic Test" >:: test_set_smt_logic;
   "Stretch Test" >:: test_stretch;
   "No Flatten Test" >:: test_no_flatten;
@@ -599,3 +599,4 @@ let cli_test_suite = "Test CLI Parsing" >::: [
 ];;
 
 let () = run_test_tt_main cli_test_suite
+
