@@ -1,0 +1,4 @@
+---- MODULE Test ----
+EXTENDS Naturals
+====
+
