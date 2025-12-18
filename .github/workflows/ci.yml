@@ -97,16 +97,6 @@ jobs:
                 rm "$DEPS_DIR/tlapm.tar.gz"
                 mv $DEPS_DIR/tlapm* "$DEPS_DIR/tlapm-install"
                 SKIP=(
-                  ## ATD/EWD require TLAPS' update_enabled_cdot branch
-                  specifications/ewd998/AsyncTerminationDetection_proof.tla
-                  specifications/ewd998/EWD998_proof.tla
-                  # Failing; see https://github.com/tlaplus/Examples/issues/67
-                  specifications/Bakery-Boulangerie/Bakery.tla
-                  specifications/Bakery-Boulangerie/Boulanger.tla
-                  specifications/Paxos/Consensus.tla
-                  specifications/PaxosHowToWinATuringAward/Consensus.tla
-                  specifications/lamport_mutex/LamportMutex_proofs.tla
-                  specifications/byzpaxos/VoteProof.tla
                   # Long-running
                   specifications/LoopInvariance/Quicksort.tla
                   specifications/LoopInvariance/SumSequence.tla
