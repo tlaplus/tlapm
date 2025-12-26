@@ -1,4 +1,4 @@
-let source_to_sany_xml (module_path : string) : (string, (string * int)) result =
+let source_to_sany_xml_str (module_path : string) : (string, (string * int)) result =
   let open Unix in
   let open Paths in
   let (stdout, stdin, stderr) =
@@ -11,7 +11,7 @@ let source_to_sany_xml (module_path : string) : (string, (string * int)) result 
   | WEXITED 0 -> Ok output
   | WEXITED exit_code -> Error (output ^ "\n" ^ err_output, exit_code)
   | _ -> failwith "Process terminated abnormally"
-  
+
 open Xmlm;;
 
 type tree =
@@ -19,7 +19,7 @@ type tree =
   | Value of string
 [@@deriving show]
 
-let parse_xml_str (xml_str: string) : tree =
+let str_to_xml (xml_str: string) : tree =
   let xml = Xmlm.make_input (`String (0, xml_str)) in
   let el tag childs = Node (tag, childs) in
   let data d = Value d in
@@ -321,7 +321,6 @@ let xml_to_user_defined_op_kind_ref xml =
     uid = children |> xml_to_tagged_int "UID";
   }
   | _ -> conversion_failure __FUNCTION__ xml
-  
 
 type built_in_kind = {
   uniquename : string
@@ -571,11 +570,11 @@ let xml_to_modules xml =
     }
   | _ -> conversion_failure __FUNCTION__ xml
 
-let parse_xml (ast : tree) : (modules, (string * string)) result =
+let xml_to_ast (xml : tree) : (modules, (string * string)) result =
   let prev_backtrace = Printexc.backtrace_status () in
   if Params.debugging "sany" then Printexc.record_backtrace true;
   try
-    let modules = xml_to_modules ast in
+    let modules = xml_to_modules xml in
     Printexc.record_backtrace prev_backtrace;
     Result.ok modules
   with Invalid_argument e ->
@@ -583,24 +582,10 @@ let parse_xml (ast : tree) : (modules, (string * string)) result =
     Printexc.record_backtrace prev_backtrace;
     Result.error (e, trace)
 
-let convert_ast (ast : modules) : Module.T.modctx * Module.T.mule =
-  let open Util.Coll in
-  let open Property in
-  let open Module.T in
-  (Sm.empty, noprops {
-    name = noprops "Placeholder";
-    extendees = [];
-    instancees = [];
-    body = [];
-    defdepth = 0;
-    stage = Parsed;
-    important = true
-  })
-
-let parse (module_path : string) : (Module.T.modctx * Module.T.mule, (string option * string)) result =
-  match module_path |> source_to_sany_xml with
-  | Error (output, exit_code) -> Error (None, Printf.sprintf "%d\n%s" exit_code output)
+let get_module_ast_xml (module_path : string) : (modules, string) result =
+  match module_path |> source_to_sany_xml_str with
+  | Error (output, exit_code) -> Error (Printf.sprintf "%d\n%s" exit_code output)
   | Ok xml_str ->
-    match xml_str |> parse_xml_str |> parse_xml with
-    | Error (msg, trace) -> Error (None, Printf.sprintf "%s\n%s" msg trace)
-    | Ok ast -> ast |> convert_ast |> Result.ok
+    match xml_str |> str_to_xml |> xml_to_ast with
+    | Error (msg, trace) -> Error (Printf.sprintf "%s\n%s" msg trace)
+    | Ok ast -> ast |> Result.ok
