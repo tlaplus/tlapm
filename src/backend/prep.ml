@@ -585,7 +585,7 @@ let trying_to_prove_true = function
 (* FIXME printing should probably be done in save_result *)
 let trivial ob =
   match ob.kind with
-  | Ob_main -> raise Nontrivial
+  | Ob_main | Ob_omitted _ -> raise Nontrivial
   | Ob_support ->
       let sq = ob.obl.core in
       let cx = if (trying_to_prove_true sq.active.core)

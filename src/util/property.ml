@@ -86,6 +86,8 @@ let query w pf =
 let assign w pf v =
   { w with props = pf.set v :: List.filter (fun p -> pf.pid <> fst p) w.props }
 
+let with_prop pf v w = assign w pf v
+
 let remove w pf =
   { w with props = List.filter (fun p -> pf.pid <> fst p) w.props }
 

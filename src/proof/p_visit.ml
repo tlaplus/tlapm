@@ -187,7 +187,7 @@ class virtual ['hyp] iter = object (self : 'self)
         self#usable scx us
     | Steps (inits, qed) ->
         let scx = self#steps scx inits in
-        self#proof scx (get_qed_proof qed)
+        self#qed scx qed
 
   method steps scx = function
     | [] -> scx
@@ -195,6 +195,9 @@ class virtual ['hyp] iter = object (self : 'self)
         let scx = self#step scx st in
         let scx = self#steps scx sts in
         scx
+
+  method qed scx qed =
+    self#proof scx (get_qed_proof qed)
 
   method step scx st =
     let stepnm = string_of_stepno (Property.get st Props.step) in

@@ -94,11 +94,26 @@ let of_points f t = R (Position.as_pair f, Position.as_pair t)
 let of_ints ~lf ~cf ~lt ~ct = R ((lf, cf), (lt, ct))
 let of_lines fl tl = R ((fl, 1), (tl, 1))
 let of_len (R ((fl, fc), _)) len = R ((fl, fc), (fl, fc + len - 1))
+let make_before (R ((fl, fc), _)) = R ((fl, fc), (fl, fc - 1))
+let make_before_ln (R ((fl, _), _)) = R ((fl, 1), (fl, 0))
+let make_after (R (_, (tl, tc))) = R ((tl, tc + 1), (tl, tc + 1))
+
+(** Make sure the last line is included completely. *)
+let with_end_line (R (f, (tl, tc))) =
+  if tc = 1 then R (f, (tl, tc)) else R (f, (tl + 1, 0))
 
 let join (R (af, at)) (R (bf, bt)) =
   let f = Position.min (Position.of_pair af) (Position.of_pair bf) in
   let t = Position.max (Position.of_pair at) (Position.of_pair bt) in
   of_points f t
+
+let join_opt a b = match a with None -> b | Some a -> join a b
+
+let join_opt2 a b =
+  match (a, b) with
+  | _, None -> a
+  | None, _ -> b
+  | Some a, Some b -> Some (join a b)
 
 let crop_line_prefix (R ((lf, cf), t)) offset = R ((lf, cf + offset), t)
 
