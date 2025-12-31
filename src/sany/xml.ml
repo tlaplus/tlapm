@@ -550,27 +550,20 @@ let xml_to_entry xml =
     }
   | _ -> conversion_failure __FUNCTION__ xml
 
-type context = {
-  entry : entry list
-}
-[@@deriving show]
-
-let xml_to_context xml =
-  match xml with
-  | Node (((_, "context"), _), children) -> {
-      entry = children |> List.find_all (is_tag "entry") |> List.map xml_to_entry;
-    }
-  | _ -> conversion_failure __FUNCTION__ xml
-
 type modules = {
   root_module: string;
-  context: context;
+  context: entry list;
   module_node_ref : int list;
 }
 [@@deriving show]
 
 let xml_to_modules xml =
-  match xml with
+  let xml_to_context xml =
+    match xml with
+    | Node (((_, "context"), _), children) ->
+        children |> List.find_all (is_tag "entry") |> List.map xml_to_entry;
+    | _ -> conversion_failure __FUNCTION__ xml
+  in match xml with
   | Node (((_, "modules"), _), children) -> {
       root_module = xml_to_tagged_string "RootModule" children;
       context = children |> find_tag "context" |> xml_to_context;
@@ -593,11 +586,9 @@ let xml_to_ast (xml : tree) : (modules, (string * string)) result =
 let ( >>= ) = Result.bind
 
 let get_module_ast_xml (module_path : string) (stdlib_path : string) : (modules, (string option * string)) result =
-  print_endline ("Parsing file " ^ module_path);
   match source_to_sany_xml_str module_path stdlib_path with
   | Error (output, exit_code) -> Error (None, Printf.sprintf "%d\n%s" exit_code output)
   | Ok xml_str ->
-    print_endline "Retrieved XML from SANY";
     match xml_str |> str_to_xml |> xml_to_ast with
     | Error (msg, trace) -> Error (None, Printf.sprintf "%s\n%s" msg trace)
     | Ok ast -> ast |> Result.ok
