@@ -1,15 +1,17 @@
 let source_to_sany_xml_str (module_path : string) (stdlib_path : string) : (string, (string * int)) result =
   let open Unix in
   let open Paths in
-  let (stdout, stdin, stderr) =
-    Unix.open_process_args_full
-      "java"
-      [|"java"; "-cp"; backend_classpath_string "tla2tools.jar"; "tla2sany.xml.XMLExporter"; "-I"; stdlib_path; "-t"; module_path|]
-      (Unix.environment ())
-  in let (output, err_output) = (In_channel.input_all stdout, In_channel.input_all stderr) in
-  match Unix.close_process_full (stdout, stdin, stderr) with
-  | WEXITED 0 -> Ok output
-  | WEXITED exit_code -> Error (output ^ "\n" ^ err_output, exit_code)
+  let cmd = Printf.sprintf "java -cp %s tla2sany.xml.XMLExporter -I %s -t %s" 
+    (backend_classpath_string "tla2tools.jar") 
+    (Filename.quote stdlib_path) 
+    (Filename.quote module_path) in
+  let (pid, out_fd) = System.launch_process cmd in
+  let in_chan = Unix.in_channel_of_descr out_fd in
+  let output = In_channel.input_all in_chan in
+  In_channel.close in_chan;
+  match Unix.waitpid [] pid with
+  | (_, WEXITED 0) -> Ok output
+  | (_, WEXITED exit_code) -> Error (output, exit_code)
   | _ -> failwith "Process terminated abnormally"
 
 open Xmlm;;
@@ -65,6 +67,11 @@ let xml_child_to_int xml =
   
 let xml_to_tagged_int (tag_name : string) (children : tree list) : int =
   find_tag tag_name children |> xml_child_to_int
+
+let xml_ref_to_int (xml : tree) : int =
+  match xml with
+  | Node (((_, _), _), children) -> xml_to_tagged_int "UID" children
+  | _ -> conversion_failure __FUNCTION__ xml
 
 type range = {
   start   : int;
@@ -235,18 +242,6 @@ and xml_to_inline_expression children =
   children
   |> List.find_opt (fun xml -> is_tag "NumeralNode" xml || is_tag "OpApplNode" xml)
   |> Option.map xml_to_expression
-
-type module_node_ref = {
-  uid : int
-}
-[@@deriving show]
-
-let xml_to_module_node_ref xml =
-  match xml with
-  | Node (((_, "ModuleNodeRef"), _), children) -> {
-      uid = children |> xml_to_tagged_int "UID";
-    }
-  | _ -> conversion_failure __FUNCTION__ xml
 
 type module_node = {
   location : location;
@@ -570,8 +565,7 @@ let xml_to_context xml =
 type modules = {
   root_module: string;
   context: context;
-  module_node_ref : module_node_ref list;
-  module_node : module_node list;
+  module_node_ref : int list;
 }
 [@@deriving show]
 
@@ -580,8 +574,7 @@ let xml_to_modules xml =
   | Node (((_, "modules"), _), children) -> {
       root_module = xml_to_tagged_string "RootModule" children;
       context = children |> find_tag "context" |> xml_to_context;
-      module_node_ref = children |> List.find_all (is_tag "ModuleNodeRef") |> List.map xml_to_module_node_ref;
-      module_node = children |> List.find_all (is_tag "ModuleNode") |> List.map xml_to_module_node;
+      module_node_ref = children |> List.filter (is_tag "ModuleNodeRef") |> List.map xml_ref_to_int;
     }
   | _ -> conversion_failure __FUNCTION__ xml
 
@@ -600,9 +593,11 @@ let xml_to_ast (xml : tree) : (modules, (string * string)) result =
 let ( >>= ) = Result.bind
 
 let get_module_ast_xml (module_path : string) (stdlib_path : string) : (modules, (string option * string)) result =
+  print_endline ("Parsing file " ^ module_path);
   match source_to_sany_xml_str module_path stdlib_path with
   | Error (output, exit_code) -> Error (None, Printf.sprintf "%d\n%s" exit_code output)
   | Ok xml_str ->
+    print_endline "Retrieved XML from SANY";
     match xml_str |> str_to_xml |> xml_to_ast with
     | Error (msg, trace) -> Error (None, Printf.sprintf "%s\n%s" msg trace)
     | Ok ast -> ast |> Result.ok

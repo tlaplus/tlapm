@@ -2,6 +2,7 @@ open Tlapm_lib;;
 open Tlapm_lib__Params;;
 
 let _ =
+  print_endline "RUNNING TEST";
   parser_backend := Sany;
   add_debug_flag "sany";
   match modctx_of_string ~content:"" ~filename:"AddTwo.tla" ~loader_paths:[] ~prefer_stdlib:true with
