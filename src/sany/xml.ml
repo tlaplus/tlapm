@@ -1,10 +1,10 @@
-let source_to_sany_xml_str (module_path : string) : (string, (string * int)) result =
+let source_to_sany_xml_str (module_path : string) (stdlib_path : string) : (string, (string * int)) result =
   let open Unix in
   let open Paths in
   let (stdout, stdin, stderr) =
     Unix.open_process_args_full
       "java"
-      [|"java"; "-cp"; backend_classpath_string "tla2tools.jar"; "tla2sany.xml.XMLExporter"; "-t"; module_path|]
+      [|"java"; "-cp"; backend_classpath_string "tla2tools.jar"; "tla2sany.xml.XMLExporter"; "-I"; stdlib_path; "-t"; module_path|]
       (Unix.environment ())
   in let (output, err_output) = (In_channel.input_all stdout, In_channel.input_all stderr) in
   match Unix.close_process_full (stdout, stdin, stderr) with
@@ -248,46 +248,32 @@ let xml_to_module_node_ref xml =
     }
   | _ -> conversion_failure __FUNCTION__ xml
 
-type unit_kind =
-  | OpDeclNodeRef of int
-  | ModuleInstanceKindRef of int
-  | UserDefinedOpKindRef of int
-  | BuiltInKindRef of int
-  | TheoremDefRef of int
-  | AssumeDefRef of int
-  | AssumeNodeRef of int
-  (* TODO
-  | InstanceNode
-  | UseOrHideNode
-  *)
-  | TheoremNodeRef of int
-[@@deriving show]
-
-let xml_to_unit_kind (xml : tree) : unit_kind =
-  match xml with
-  | Node (((_, "OpDeclNodeRef"), _), children) -> OpDeclNodeRef (children |> xml_to_tagged_int "UID")
-  | Node (((_, "ModuleInstanceKindRef"), _), children) -> ModuleInstanceKindRef (children |> xml_to_tagged_int "UID")
-  | Node (((_, "UserDefinedOpKindRef"), _), children) -> UserDefinedOpKindRef (children |> xml_to_tagged_int "UID")
-  | Node (((_, "BuiltInKindRef"), _), children) -> BuiltInKindRef (children |> xml_to_tagged_int "UID")
-  | Node (((_, "TheoremDefRef"), _), children) -> TheoremDefRef (children |> xml_to_tagged_int "UID")
-  | Node (((_, "AssumeDefRef"), _), children) -> AssumeDefRef (children |> xml_to_tagged_int "UID")
-  | Node (((_, "AssumeNodeRef"), _), children) -> AssumeNodeRef (children |> xml_to_tagged_int "UID")
-  | Node (((_, "TheoremNodeRef"), _), children) -> TheoremNodeRef (children |> xml_to_tagged_int "UID")
-  | _ -> conversion_failure __FUNCTION__ xml
-
 type module_node = {
   location : location;
   uniquename : string;
-  units : unit_kind list;
+  units : [`Ref of int | `OtherTODO of string] list;
 }
 [@@deriving show]
 
 let xml_to_module_node xml =
-  match xml with
+  let ref_child child =
+    match child with
+    | Node (((_, "OpDeclNodeRef"), _), children) -> Some (`Ref (xml_to_tagged_int "UID" children))
+    | Node (((_, "ModuleInstanceKindRef"), _), children) -> Some (`Ref (xml_to_tagged_int "UID" children))
+    | Node (((_, "UserDefinedOpKindRef"), _), children) -> Some (`Ref (xml_to_tagged_int "UID" children))
+    | Node (((_, "BuiltInKindRef"), _), children) -> Some (`Ref (xml_to_tagged_int "UID" children))
+    | Node (((_, "TheoremDefRef"), _), children) -> Some (`Ref (xml_to_tagged_int "UID" children))
+    | Node (((_, "AssumeDefRef"), _), children) -> Some (`Ref (xml_to_tagged_int "UID" children))
+    | Node (((_, "AssumeNodeRef"), _), children) -> Some (`Ref (xml_to_tagged_int "UID" children))
+    | Node (((_, "TheoremNodeRef"), _), children) -> Some (`Ref (xml_to_tagged_int "UID" children))
+    | Node (((_, "InstanceNode"), _), children) -> Some (`OtherTODO "InstanceNode")
+    | Node (((_, "UseOrHideNode"), _), children) -> Some (`OtherTODO "UseOrHideNode")
+    | _ -> None
+  in match xml with
   | Node (((_, "ModuleNode"), _), children) -> {
       uniquename = children |> xml_to_tagged_string "uniquename";
       location = children |> find_tag "location" |> xml_to_location;
-      units = List.map xml_to_unit_kind children
+      units = List.filter_map ref_child children
     }
   | _ -> conversion_failure __FUNCTION__ xml
 
@@ -611,10 +597,12 @@ let xml_to_ast (xml : tree) : (modules, (string * string)) result =
     Printexc.record_backtrace prev_backtrace;
     Result.error (e, trace)
 
-let get_module_ast_xml (module_path : string) : (modules, string) result =
-  match module_path |> source_to_sany_xml_str with
-  | Error (output, exit_code) -> Error (Printf.sprintf "%d\n%s" exit_code output)
+let ( >>= ) = Result.bind
+
+let get_module_ast_xml (module_path : string) (stdlib_path : string) : (modules, (string option * string)) result =
+  match source_to_sany_xml_str module_path stdlib_path with
+  | Error (output, exit_code) -> Error (None, Printf.sprintf "%d\n%s" exit_code output)
   | Ok xml_str ->
     match xml_str |> str_to_xml |> xml_to_ast with
-    | Error (msg, trace) -> Error (Printf.sprintf "%s\n%s" msg trace)
+    | Error (msg, trace) -> Error (None, Printf.sprintf "%s\n%s" msg trace)
     | Ok ast -> ast |> Result.ok

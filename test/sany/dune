@@ -2,6 +2,6 @@
  (name sany_tests)
  (modes exe)
  (libraries tlapm_lib ounit2 sexplib sexp_diff)
- (deps Test.tla)
+ (deps Test.tla AddTwo.tla)
  (preprocess (pps ppx_deriving.show))
 )
