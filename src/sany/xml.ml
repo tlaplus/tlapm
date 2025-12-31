@@ -63,7 +63,7 @@ let xml_child_to_int xml =
   | (Node (_, [Value d])) -> int_of_string d
   | _ -> conversion_failure __FUNCTION__ xml
   
-let xml_to_tagged_int (tag_name : string) (children : tree list) =
+let xml_to_tagged_int (tag_name : string) (children : tree list) : int =
   find_tag tag_name children |> xml_child_to_int
 
 type range = {
@@ -248,9 +248,37 @@ let xml_to_module_node_ref xml =
     }
   | _ -> conversion_failure __FUNCTION__ xml
 
+type unit_kind =
+  | OpDeclNodeRef of int
+  | ModuleInstanceKindRef of int
+  | UserDefinedOpKindRef of int
+  | BuiltInKindRef of int
+  | TheoremDefRef of int
+  | AssumeDefRef of int
+  | AssumeNodeRef of int
+  (* TODO
+  | InstanceNode
+  | UseOrHideNode
+  *)
+  | TheoremNodeRef of int
+[@@deriving show]
+
+let xml_to_unit_kind (xml : tree) : unit_kind =
+  match xml with
+  | Node (((_, "OpDeclNodeRef"), _), children) -> OpDeclNodeRef (children |> xml_to_tagged_int "UID")
+  | Node (((_, "ModuleInstanceKindRef"), _), children) -> ModuleInstanceKindRef (children |> xml_to_tagged_int "UID")
+  | Node (((_, "UserDefinedOpKindRef"), _), children) -> UserDefinedOpKindRef (children |> xml_to_tagged_int "UID")
+  | Node (((_, "BuiltInKindRef"), _), children) -> BuiltInKindRef (children |> xml_to_tagged_int "UID")
+  | Node (((_, "TheoremDefRef"), _), children) -> TheoremDefRef (children |> xml_to_tagged_int "UID")
+  | Node (((_, "AssumeDefRef"), _), children) -> AssumeDefRef (children |> xml_to_tagged_int "UID")
+  | Node (((_, "AssumeNodeRef"), _), children) -> AssumeNodeRef (children |> xml_to_tagged_int "UID")
+  | Node (((_, "TheoremNodeRef"), _), children) -> TheoremNodeRef (children |> xml_to_tagged_int "UID")
+  | _ -> conversion_failure __FUNCTION__ xml
+
 type module_node = {
   location : location;
-  uniquename : string
+  uniquename : string;
+  units : unit_kind list;
 }
 [@@deriving show]
 
@@ -259,6 +287,7 @@ let xml_to_module_node xml =
   | Node (((_, "ModuleNode"), _), children) -> {
       uniquename = children |> xml_to_tagged_string "uniquename";
       location = children |> find_tag "location" |> xml_to_location;
+      units = List.map xml_to_unit_kind children
     }
   | _ -> conversion_failure __FUNCTION__ xml
 
