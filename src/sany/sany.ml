@@ -23,7 +23,7 @@ let convert_location (location : Xml.location) : Loc.locus = {
   file = location.filename;
 }
 
-let locate_opt (value : 'a) (location : Xml.location option) : 'a wrapped =
+let locate_opt (location : Xml.location option) (value : 'a) : 'a wrapped =
   match location with
   | Some loc -> Util.locate value (convert_location loc)
   | None -> noprops value
@@ -39,12 +39,23 @@ let resolve_ref (uid : int) : Xml.entry =
 let resolve_formal_param_node (param : Xml.leibniz_param) : (hint * shape) =
   match Coll.Im.find_opt param.ref.uid !entries with
   | Some (Xml.FormalParamNode xml) -> (
-    locate_opt xml.uniquename xml.node.location,
+    locate_opt xml.node.location xml.uniquename,
     match xml.arity with
     | 0 -> Shape_expr
     | n -> Shape_op n
   )
   | _ -> failwith ("Unresolved formal parameter node UID: " ^ string_of_int param.ref.uid)
+
+let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
+  match builtin.uniquename with
+  | "=" -> Some Builtin.Eq
+  | "TRUE" -> Some Builtin.TRUE
+  | "FALSE" -> Some Builtin.FALSE
+  | "\\in" -> Some Builtin.Mem
+  | "'" -> Some Builtin.Prime
+  | "\\land" -> Some Builtin.Conj
+  | "[]" -> Some (Builtin.Box false)
+  | _ -> None
 
 let rec convert_module_node (uid : int) (mule : Xml.module_node) : Module.T.mule =
   match Coll.Im.find_opt uid !converted_modules with
@@ -66,22 +77,95 @@ let rec convert_module_node (uid : int) (mule : Xml.module_node) : Module.T.mule
 
 and convert_op_decl_node (xml : Xml.op_decl_node) : Module.T.modunit =
   match xml.kind with
-  | Variable -> noprops (Variables [(locate_opt xml.uniquename xml.node.location)])
+  | Variable -> noprops (Variables [locate_opt xml.node.location xml.uniquename])
 
-and convert_expression (xml : Xml.expression) : Expr.T.expr =
-  match xml with
-  | NumeralNode xml -> failwith "NumeralNode conversion not yet supported"
-  | OpApplNode xml -> failwith "OpApplNode conversion not yet supported"
+(** Conversion of application of all traditional built-in operators like = or
+    \cup but also things like CHOOSE and \A which one would ordinarily not
+    view as built-in operators. However, the 
+*)
+and convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_kind) : Expr.T.expr = (
+  match try_convert_builtin op with
+  (* Traditional built-in operators *)
+  | Some builtin -> Apply (
+      Internal builtin |> locate_opt op.node.location,
+      List.map convert_expression_or_operator_argument apply.operands
+    )
+  (* More abstract kinds of built-in operators *)
+  | None -> (
+      match op.uniquename with
+      | "$SetEnumerate" -> SetEnum (List.map convert_expression_or_operator_argument apply.operands)
+      | "$UnboundedChoose" -> Choose (noprops "TODO", None, apply.operands |> List.hd |> convert_expression_or_operator_argument)
+      | "$Tuple" -> Tuple (List.map convert_expression_or_operator_argument apply.operands)
+      | s -> failwith ("Built-in operator application not yet supported: " ^ s)
+    )
+  ) |> locate_opt apply.node.location
+
+(** Conversion of application of user-defined operators, including operators
+    defined in the standard modules.
+*)
+and convert_user_defined_op_appl (apply : Xml.op_appl_node) (op : Xml.user_defined_op_kind) : Expr.T.expr =
+  Apply (
+    Opaque "TODO" |> noprops,
+    List.map convert_expression_or_operator_argument apply.operands
+  ) |> locate_opt apply.node.location
+
+(** Conversion of reference to in-scope operator parameters.
+*)
+and convert_formal_param_node_op_appl (apply : Xml.op_appl_node) (param : Xml.formal_param_node) : Expr.T.expr =
+  match param.arity with
+  | 0 -> Opaque param.uniquename |> locate_opt param.node.location
+  | n -> Apply (
+      Opaque param.uniquename |> locate_opt param.node.location,
+      List.map convert_expression_or_operator_argument apply.operands
+    ) |> locate_opt apply.node.location
+
+(** Conversion of reference to constants or variables. *)
+and convert_op_decl_node_op_appl (apply : Xml.op_appl_node) (decl : Xml.op_decl_node) : Expr.T.expr =
+  match decl.arity with
+  | 0 -> Opaque decl.uniquename |> locate_opt decl.node.location
+  | n -> Apply (
+      Opaque decl.uniquename |> locate_opt decl.node.location,
+      List.map convert_expression_or_operator_argument apply.operands
+    ) |> locate_opt apply.node.location
+
+(** OpApplNode is a very general node used by SANY to represent essentially
+    all expression types. Things like \A x \in S : P are represented as an
+    application of the built-in "forall" operator, with argument P and symbol
+    x bound by S. This complicated method de-abstracts this into the more
+    detailed Expr.T.expr type used by TLAPS.
+*)
+and convert_op_appl_node (apply : Xml.op_appl_node) : Expr.T.expr =
+  let op_kind = (resolve_ref apply.operator).kind in
+  match op_kind with
+  (* Operators like = and \cup but also CHOOSE and \A *)
+  | BuiltInKind op -> convert_built_in_op_appl apply op
+  (* An operator defined by the user, including operators in the standard modules *)
+  | UserDefinedOpKind userdef -> convert_user_defined_op_appl apply userdef
+  (* A reference to an in-scope operator parameter *)
+  | FormalParamNode param -> convert_formal_param_node_op_appl apply param
+  (* A reference to a CONSTANT or VARIABLE identifier *)
+  | OpDeclNode decl -> convert_op_decl_node_op_appl apply decl
+  | _ -> failwith ("Invalid operator reference in OpApplNode : " ^ (Xml.show_entry_kind op_kind) )
+
+and convert_expression_or_operator_argument (op_expr : Xml.expr_or_op_arg) : Expr.T.expr =
+  match op_expr with
+  | Expression expr -> convert_expression expr
+
+and convert_expression (expr : Xml.expression) : Expr.T.expr =
+  match expr with
+  | NumeralNode expr -> Num (Int.to_string expr.value, "") |> locate_opt expr.node.location
+  | OpApplNode apply -> convert_op_appl_node apply
 
 and convert_user_defined_op_kind (xml: Xml.user_defined_op_kind) : Module.T.modunit =
   match xml.recursive with
   | true -> failwith "TLAPS does not yet support recursive operators"
   | false -> noprops (Definition (
       Operator (
-        locate_opt xml.uniquename xml.node.location,
+        locate_opt xml.node.location xml.uniquename,
         let expr = xml.body |> convert_expression in
         match xml.params with
         | [] -> expr
+        (* TLAPS represents op(x) == expr as op == LAMBDA x : expr *)
         | params -> Lambda (List.map resolve_formal_param_node params, expr) |> noprops
       ) |> noprops,
       User,

@@ -187,8 +187,9 @@ let xml_to_unbound_symbol xml =
 
 type op_appl_node = {
   node      : node;
+  operator  : int;
   operands  : expr_or_op_arg list;
-  bound_symbols : symbols list;
+  bound_symbols : symbol list;
 }
 [@@deriving show]
 
@@ -214,7 +215,7 @@ and bound_symbol = {
   expression : expression
 }
 
-and symbols =
+and symbol =
   | Unbound of unbound_symbol
   | Bound of bound_symbol
 [@@deriving show]
@@ -242,6 +243,7 @@ and xml_to_op_appl_node xml =
   match xml with
   | Node (((_, "OpApplNode"), _), children) -> {
     node    = children |> xml_to_inline_node;
+    operator = children |> find_tag "operator" |> child_of |> xml_ref_to_int;
     operands = children |> find_tag "operands" |> children_of |> List.map xml_to_expr_or_op_arg;
     bound_symbols = children |> List.find_opt (is_tag "boundSymbols") |> Option.map children_of |> Option.value ~default:[] |> List.map xml_to_symbols;
   }
@@ -363,14 +365,20 @@ let xml_to_user_defined_op_kind_ref xml =
   | _ -> conversion_failure __FUNCTION__ xml
 
 type built_in_kind = {
-  uniquename : string
+  node       : node;
+  uniquename : string;
+  arity      : int;
+  params     : leibniz_param list;
 }
 [@@deriving show]
 
 let xml_to_built_in_kind xml : built_in_kind =
   match xml with
   | Node (((_, "BuiltInKind"), _), children) -> {
+      node       = children |> xml_to_inline_node;
       uniquename = children |> xml_to_tagged_string "uniquename";
+      arity      = children |> xml_to_tagged_int "arity";
+      params     = children |> List.find_opt (is_tag "params") |> Option.map children_of |> Option.value ~default:[] |> List.map xml_to_leibniz_param;
     }
   | _ -> conversion_failure __FUNCTION__ xml
 
