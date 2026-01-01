@@ -103,15 +103,30 @@ let xml_to_location xml =
     }
   | _ -> conversion_failure __FUNCTION__ xml
 
+type level =
+  | Constant
+  | Variable
+  | Action
+  | Temporal
+[@@deriving show]
+
+let int_to_level (n : int) : level =
+  match n with
+  | 0 -> Constant
+  | 1 -> Variable
+  | 2 -> Action
+  | 3 -> Temporal
+  | _ -> Invalid_argument (Printf.sprintf "Invalid level value: %d" n) |> raise
+
 type node = {
   location  : location option;
-  level     : int option;
+  level     : level option;
 }
 [@@deriving show]
 
 let xml_to_inline_node (children : tree list) = {
   location  = children |> List.find_opt (is_tag "location") |> Option.map xml_to_location;
-  level     = children |> List.find_opt (is_tag "level") |> Option.map xml_child_to_int;
+  level     = children |> List.find_opt (is_tag "level") |> Option.map xml_child_to_int |> Option.map int_to_level;
 }
 
 type numeral_node = {
@@ -271,9 +286,21 @@ let xml_to_module_node xml =
       units = List.filter_map ref_child children
     }
   | _ -> conversion_failure __FUNCTION__ xml
+  
+type declaration_kind =
+  | Variable
+[@@deriving show]
+
+let int_to_declaration_kind (n : int) : declaration_kind =
+  match n with
+  | 3 -> Variable
+  | _ -> Invalid_argument (Printf.sprintf "Invalid declaration kind value: %d" n) |> raise
 
 type op_decl_node = {
-  uniquename : string
+  uniquename : string;
+  node       : node;
+  arity      : int;
+  kind       : declaration_kind;
 }
 [@@deriving show]
 
@@ -281,6 +308,9 @@ let xml_to_op_decl_node (xml : tree) : op_decl_node =
   match xml with
   | Node (((_, "OpDeclNode"), _), children) -> ({
       uniquename = children |> xml_to_tagged_string "uniquename";
+      node = children |> xml_to_inline_node;
+      arity = children |> xml_to_tagged_int "arity";
+      kind = children |> xml_to_tagged_int "kind" |> int_to_declaration_kind;
     } : op_decl_node)
   | _ -> conversion_failure __FUNCTION__ xml
 
