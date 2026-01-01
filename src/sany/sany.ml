@@ -1,5 +1,6 @@
 open Property;;
 open Module.T;;
+open Expr.T;;
 open Util;;
 
 let entries : Xml.entry_kind Coll.Im.t ref = ref Coll.Im.empty
@@ -35,6 +36,16 @@ let resolve_ref (uid : int) : Xml.entry =
   | Some kind -> {uid; kind}
   | None -> failwith ("Unresolved reference to entry UID: " ^ string_of_int uid)
 
+let resolve_formal_param_node (param : Xml.leibniz_param) : (hint * shape) =
+  match Coll.Im.find_opt param.ref.uid !entries with
+  | Some (Xml.FormalParamNode xml) -> (
+    locate_opt xml.uniquename xml.node.location,
+    match xml.arity with
+    | 0 -> Shape_expr
+    | n -> Shape_op n
+  )
+  | _ -> failwith ("Unresolved formal parameter node UID: " ^ string_of_int param.ref.uid)
+
 let rec convert_module_node (uid : int) (mule : Xml.module_node) : Module.T.mule =
   match Coll.Im.find_opt uid !converted_modules with
   | Some kind -> kind
@@ -53,12 +64,30 @@ let rec convert_module_node (uid : int) (mule : Xml.module_node) : Module.T.mule
     important = true
   } mule.location
 
-and convert_op_decl_node (node : Xml.op_decl_node) : Module.T.modunit =
-  match node.kind with
-  | Variable -> noprops (Variables [(locate_opt node.uniquename node.node.location)])
+and convert_op_decl_node (xml : Xml.op_decl_node) : Module.T.modunit =
+  match xml.kind with
+  | Variable -> noprops (Variables [(locate_opt xml.uniquename xml.node.location)])
 
-and convert_user_defined_op_kind (user_defined_op_kind : Xml.user_defined_op_kind) : Module.T.modunit =
-  failwith "UserDefinedOpKind conversion not yet supported"
+and convert_expression (xml : Xml.expression) : Expr.T.expr =
+  match xml with
+  | NumeralNode xml -> failwith "NumeralNode conversion not yet supported"
+  | OpApplNode xml -> failwith "OpApplNode conversion not yet supported"
+
+and convert_user_defined_op_kind (xml: Xml.user_defined_op_kind) : Module.T.modunit =
+  match xml.recursive with
+  | true -> failwith "TLAPS does not yet support recursive operators"
+  | false -> noprops (Definition (
+      Operator (
+        locate_opt xml.uniquename xml.node.location,
+        let expr = xml.body |> convert_expression in
+        match xml.params with
+        | [] -> expr
+        | params -> Lambda (List.map resolve_formal_param_node params, expr) |> noprops
+      ) |> noprops,
+      User,
+      Visible,
+      Export
+    ))
 
 and convert_built_in_kind (built_in_kind : Xml.built_in_kind) : Module.T.modunit =
   failwith "BuiltInKind conversion not yet supported"
