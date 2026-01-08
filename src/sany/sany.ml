@@ -67,8 +67,10 @@ let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
   | "[]" -> Some (Builtin.Box false)
   | "=" -> Some Builtin.Eq
   | "\\in" -> Some Builtin.Mem
+  | "\\notin" -> Some Builtin.Notmem
   | "\\land" -> Some Builtin.Conj
   | "=>" -> Some Builtin.Implies
+  | "\\equiv" -> Some Builtin.Equiv
   | _ -> None
 
 let rec convert_module_node (uid : int) (mule : Xml.module_node) : Module.T.mule =
@@ -114,53 +116,75 @@ and convert_action_expr (op : modal_op) (apply : Xml.op_appl_node) : Expr.T.expr
     must be handled in OCaml match statements.
 *)
 and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr =
-  let convert_bounded_choose (symbol : Xml.formal_param_node_ref) (set : Xml.expression) (body : Xml.expr_or_op_arg) : Expr.T.expr =
+  match apply.bound_symbols, apply.operands with
+  (* Case 1: Bounded non-tuple CHOOSE expression *)
+  | [Bound {is_tuple = false; formal_param_node_refs = [param]; expression}], [body] ->
     Choose (
-      resolve_bound_symbol symbol,
-      Some (convert_expression set),
+      resolve_bound_symbol param,
+      Some (convert_expression expression),
       convert_expression_or_operator_argument body
     ) |> locate_opt apply.node.location
-  in let convert_bounded_tuple_choose (symbols : Xml.formal_param_node_ref list) (set : Xml.expression) (body : Xml.expr_or_op_arg) : Expr.T.expr =
+  (* Case 2: Bounded tuple CHOOSE expression *)
+  | [Bound ({is_tuple = true} as symbol)], [body] ->
     ChooseTuply (
-      List.map resolve_bound_symbol symbols,
-      Some (convert_expression set),
+      List.map resolve_bound_symbol symbol.formal_param_node_refs,
+      Some (convert_expression symbol.expression),
       convert_expression_or_operator_argument body
     ) |> locate_opt apply.node.location
-  in let convert_unbounded_choose (symbol : Xml.formal_param_node_ref) (body : Xml.expr_or_op_arg) : Expr.T.expr =
+  (* Case 3: Unbounded non-tuple CHOOSE expression *)
+  | [Unbound ({is_tuple = false} as symbol)], [body] ->
     Choose (
-      resolve_bound_symbol symbol,
+      resolve_bound_symbol symbol.formal_param_node_ref,
       None,
       convert_expression_or_operator_argument body
     ) |> locate_opt apply.node.location
-  in let convert_unbounded_tuple_choose (symbols : Xml.formal_param_node_ref list) (body : Xml.expr_or_op_arg) : Expr.T.expr =
-    ChooseTuply (
-      List.map resolve_bound_symbol symbols,
-      None,
-      convert_expression_or_operator_argument body
-    ) |> locate_opt apply.node.location
-  in match (apply.bound_symbols, apply.operands) with
-  | ([Bound ({is_tuple = false; formal_param_node_refs = [param]} as symbol)], [body]) ->
-      convert_bounded_choose param symbol.expression body
-  | ([Bound ({is_tuple = true} as symbol)], [body]) ->
-      convert_bounded_tuple_choose symbol.formal_param_node_refs symbol.expression body
-  | ([Unbound ({is_tuple = false} as symbol)], [body]) ->
-      convert_unbounded_choose symbol.formal_param_node_ref body
-  | (Unbound {is_tuple = true} :: _, [body]) ->
+  (* Case 4: Unbounded tuple CHOOSE expression *)
+  | Unbound {is_tuple = true} :: _, [body] ->
     let symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Unbound ({is_tuple = true} as u) -> Some u | _ -> None) apply.bound_symbols in
     if List.length symbols <> List.length apply.bound_symbols
     then failwith "Inconsistent bound/unbound or tuple/non-tuple symbols in CHOOSE"
-    else convert_unbounded_tuple_choose (List.map (fun (s : Xml.unbound_symbol) -> s.formal_param_node_ref) symbols) body
+    else ChooseTuply (
+      List.map (fun (s : Xml.unbound_symbol) -> resolve_bound_symbol s.formal_param_node_ref) symbols,
+      None,
+      convert_expression_or_operator_argument body
+    ) |> locate_opt apply.node.location
   | _ -> failwith "Invalid number of bounds or operands to CHOOSE"
 
-and convert_bounded_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node) (op : Xml.built_in_kind) : Expr.T.expr =
-  match apply.operands with
-  | [body] -> Opaque "TODO_bounded_quantification" |> locate_opt apply.node.location
-  | _ -> failwith "Wrong number of operands to bounded exists"
-
-and convert_unbounded_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node) (op : Xml.built_in_kind) : Expr.T.expr =
-  match apply.operands with
-  | [body] -> Opaque "TODO_unbounded_quantification" |> locate_opt apply.node.location
-  | _ -> failwith "Wrong number of operands to unbounded quantification"
+(** Handles conversion of both bounded & unbounded quantification. Both sides
+    of the conversion here are fairly weird. The SANY AST has the same issues
+    as in the CHOOSE conversion where many invalid states are unrepresentable
+    although at least the troublesome unbounded tuple case does not exist.
+    The TLAPM AST has an artificial distinction between tuple and non-tuple
+    quantification due to support for tuple quantification being added at a
+    later date. In reality, mixed tuple/non-tuple quantification is a regular
+    feature of TLA+ so ideally these would be folded into a single variant.
+    This is perhaps a good target for future refactoring. TLAPM's method of
+    representing bounds is also very odd (and that oddity is, unfortunately,
+    made worse by its duplication in the tuply_bounds type). Of particular
+    note is the bound_domain type, a variant which encompasses an ordinary
+    domain expression, no domain, and also "ditto". The latter is used to
+    indicate that the domain of a bound is the same as the previous bound's
+    domain. At a functional level this is complex to deal with as it means
+    each bound must be processed in sequence with knowledge of the previous
+    bound's domain, necessitating use of fold instead of map. The resulting
+    code never fails to be mind-bending.
+*)
+and convert_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node) (op : Xml.built_in_kind) : Expr.T.expr =
+  match apply.bound_symbols, apply.operands with
+  | _ :: _, [body] -> (
+    if List.exists (fun (b : Xml.symbol) -> match b with | Bound {is_tuple = true} -> true | _ -> false) apply.bound_symbols
+    then QuantTuply (
+      quant,
+      [],
+      convert_expression_or_operator_argument body
+    )
+    else Quant (
+      quant,
+      [],
+      convert_expression_or_operator_argument body
+    )
+  ) |> locate_opt apply.node.location
+  | _ -> failwith "Invalid number of bounds or operands to quantification"
 
 (** Conversion of application of all traditional built-in operators like = or
     \cup but also things like CHOOSE and \A which one would ordinarily not
@@ -182,12 +206,13 @@ and convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_kind)
       | "$Tuple" -> Tuple (
         List.map convert_expression_or_operator_argument apply.operands
       ) |> locate_opt apply.node.location
+      | "$BoundedChoose" -> convert_choose apply
       | "$UnboundedChoose" -> convert_choose apply
       | "$SquareAct" -> convert_action_expr Box apply
-      | "$BoundedExists" -> convert_bounded_quantification Exists apply op
-      | "$BoundedForall" -> convert_bounded_quantification Forall apply op
-      | "$UnboundedExists" -> convert_unbounded_quantification Exists apply op
-      | "$UnboundedForall" -> convert_unbounded_quantification Forall apply op
+      | "$BoundedExists" -> convert_quantification Exists apply op
+      | "$BoundedForall" -> convert_quantification Forall apply op
+      | "$UnboundedExists" -> convert_quantification Exists apply op
+      | "$UnboundedForall" -> convert_quantification Forall apply op
       | s -> todo "Built-in operator" s apply.node.location
     )
 
