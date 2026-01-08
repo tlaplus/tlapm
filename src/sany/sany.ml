@@ -115,7 +115,7 @@ and convert_action_expr (op : modal_op) (apply : Xml.op_appl_node) : Expr.T.expr
     possible input data that theoretically should never occur but nonetheless
     must be handled in OCaml match statements.
 *)
-and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr =
+and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
   (* Case 1: Bounded non-tuple CHOOSE expression *)
   | [Bound {is_tuple = false; formal_param_node_refs = [param]; expression}], [body] ->
@@ -123,21 +123,21 @@ and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr =
       resolve_bound_symbol param,
       Some (convert_expression expression),
       convert_expression_or_operator_argument body
-    ) |> locate_opt apply.node.location
+    )
   (* Case 2: Bounded tuple CHOOSE expression *)
   | [Bound ({is_tuple = true} as symbol)], [body] ->
     ChooseTuply (
       List.map resolve_bound_symbol symbol.formal_param_node_refs,
       Some (convert_expression symbol.expression),
       convert_expression_or_operator_argument body
-    ) |> locate_opt apply.node.location
+    )
   (* Case 3: Unbounded non-tuple CHOOSE expression *)
   | [Unbound ({is_tuple = false} as symbol)], [body] ->
     Choose (
       resolve_bound_symbol symbol.formal_param_node_ref,
       None,
       convert_expression_or_operator_argument body
-    ) |> locate_opt apply.node.location
+    )
   (* Case 4: Unbounded tuple CHOOSE expression *)
   | Unbound {is_tuple = true} :: _, [body] ->
     let symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Unbound ({is_tuple = true} as u) -> Some u | _ -> None) apply.bound_symbols in
@@ -147,12 +147,13 @@ and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr =
       List.map (fun (s : Xml.unbound_symbol) -> resolve_bound_symbol s.formal_param_node_ref) symbols,
       None,
       convert_expression_or_operator_argument body
-    ) |> locate_opt apply.node.location
+    )
   | _ -> failwith "Invalid number of bounds or operands to CHOOSE"
+) |> locate_opt apply.node.location
 
 (** Handles conversion of both bounded & unbounded quantification. Both sides
     of the conversion here are fairly weird. The SANY AST has the same issues
-    as in the CHOOSE conversion where many invalid states are unrepresentable
+    as in the CHOOSE conversion where many invalid states are representable
     although at least the troublesome unbounded tuple case does not exist.
     The TLAPM AST has an artificial distinction between tuple and non-tuple
     quantification due to support for tuple quantification being added at a
@@ -167,24 +168,64 @@ and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr =
     domain. At a functional level this is complex to deal with as it means
     each bound must be processed in sequence with knowledge of the previous
     bound's domain, necessitating use of fold instead of map. The resulting
-    code never fails to be mind-bending.
+    code never fails to be mind-bending. It also allows representation of
+    invalid states, as bound & unbound quantification cannot be mixed in
+    valid TLA⁺ syntax. Ideally quantification would be split at the top level
+    between bound & unbound, where the bound case has a nonempty list of
+    bounds, each of which is either tuple or non-tuple and consists of a
+    nonempty list of symbols and a domain expression. The unbound case would
+    be a simple nonempty list of symbols.
 *)
-and convert_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node) (op : Xml.built_in_kind) : Expr.T.expr =
+and convert_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node) (op : Xml.built_in_kind) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
-  | _ :: _, [body] -> (
-    if List.exists (fun (b : Xml.symbol) -> match b with | Bound {is_tuple = true} -> true | _ -> false) apply.bound_symbols
-    then QuantTuply (
+  | _ :: _, [body] ->
+    let bound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Bound b -> Some b | _ -> None) apply.bound_symbols in
+    let unbound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Unbound b -> Some b | _ -> None) apply.bound_symbols in
+    if unbound_symbols <> []
+    then
+      if bound_symbols <> []
+      then failwith "Cannot mix bound and unbound symbols in quantification"
+      else if List.exists (fun (b : Xml.unbound_symbol) -> b.is_tuple) unbound_symbols
+      then failwith "Unbounded tuple quantification is not supported"
+      (* Unbounded quantification *)
+      else let mk_bound (bound : Xml.unbound_symbol) : bound = (
+        resolve_bound_symbol bound.formal_param_node_ref,
+        Unknown, (* TODO: figure out purpose of this parameter *)
+        No_domain
+      ) in Quant (
+        quant,
+        List.map mk_bound unbound_symbols,
+        convert_expression_or_operator_argument body
+      )
+    else if List.exists (fun (b : Xml.bound_symbol) -> b.is_tuple) bound_symbols
+    (* Bounded quantification that includes at least one tuple *)
+    then let mk_bounds (bound : Xml.bound_symbol) : tuply_bounds =
+      if bound.is_tuple
+      then match List.map resolve_bound_symbol bound.formal_param_node_refs with
+      | (_ :: _ as symbols) -> [(Bound_names symbols, Domain (convert_expression bound.expression))]
+      | [] -> failwith "Tuple bound symbol groups must have at least one symbol"
+      else match List.map resolve_bound_symbol bound.formal_param_node_refs with
+      | hd :: tl -> (Bound_name hd, Domain (convert_expression bound.expression))
+        :: List.map (fun s -> (Bound_name s, Ditto)) tl
+      | [] -> failwith "Bound symbol groups must have at least one symbol"
+    in QuantTuply (
       quant,
-      [],
+      List.map mk_bounds bound_symbols |> List.flatten,
       convert_expression_or_operator_argument body
     )
-    else Quant (
+    (* Bounded quantification without any tuples *)
+    else let mk_bounds (bound : Xml.bound_symbol) : bounds =
+      match List.map resolve_bound_symbol bound.formal_param_node_refs with
+      | hd :: tl -> (hd, Unknown, Domain (convert_expression bound.expression))
+        :: List.map (fun s -> (s, Unknown, Ditto)) tl
+      | [] -> failwith "Bound symbol groups must have at least one symbol"
+    in Quant (
       quant,
-      [],
+      List.map mk_bounds bound_symbols |> List.flatten,
       convert_expression_or_operator_argument body
     )
-  ) |> locate_opt apply.node.location
   | _ -> failwith "Invalid number of bounds or operands to quantification"
+) |> locate_opt apply.node.location
 
 (** Conversion of application of all traditional built-in operators like = or
     \cup but also things like CHOOSE and \A which one would ordinarily not
