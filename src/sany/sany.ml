@@ -1,7 +1,14 @@
 open Property;;
 open Module.T;;
 open Expr.T;;
+open Proof.T;;
 open Util;;
+
+let todo (category : string) (msg : string) (loc : Xml.location option) : 'a =
+  let loc = match loc with
+  | Some loc -> Xml.show_location loc
+  | None -> "Unknown location"
+  in failwith (Printf.sprintf "%s not yet implemented: %s\n%s" category msg loc)
 
 let entries : Xml.entry_kind Coll.Im.t ref = ref Coll.Im.empty
 
@@ -46,15 +53,22 @@ let resolve_formal_param_node (param : Xml.leibniz_param) : (hint * shape) =
   )
   | _ -> failwith ("Unresolved formal parameter node UID: " ^ string_of_int param.ref.uid)
 
+let resolve_bound_symbol (symbol : Xml.formal_param_node_ref) : hint =
+  match Coll.Im.find_opt symbol.uid !entries with
+  | Some (Xml.FormalParamNode ({arity = 0} as xml)) -> locate_opt xml.node.location xml.uniquename
+  | Some (Xml.FormalParamNode _) -> failwith ("Bound symbol cannot be an operator: " ^ string_of_int symbol.uid)
+  | _ -> failwith ("Unresolved formal parameter node UID: " ^ string_of_int symbol.uid)
+
 let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
   match builtin.uniquename with
-  | "=" -> Some Builtin.Eq
   | "TRUE" -> Some Builtin.TRUE
   | "FALSE" -> Some Builtin.FALSE
-  | "\\in" -> Some Builtin.Mem
   | "'" -> Some Builtin.Prime
-  | "\\land" -> Some Builtin.Conj
   | "[]" -> Some (Builtin.Box false)
+  | "=" -> Some Builtin.Eq
+  | "\\in" -> Some Builtin.Mem
+  | "\\land" -> Some Builtin.Conj
+  | "=>" -> Some Builtin.Implies
   | _ -> None
 
 let rec convert_module_node (uid : int) (mule : Xml.module_node) : Module.T.mule =
@@ -64,7 +78,7 @@ let rec convert_module_node (uid : int) (mule : Xml.module_node) : Module.T.mule
   let inline_unit unit =
     match unit with
     | `Ref uid -> resolve_ref uid
-    | `OtherTODO name -> failwith (name ^ " unit not yet supported")
+    | `OtherTODO name -> todo "Module unit" (name ^ " unit not yet supported") None
   in locate {
     name = noprops mule.uniquename;
     extendees = [];
@@ -79,26 +93,103 @@ and convert_op_decl_node (xml : Xml.op_decl_node) : Module.T.modunit =
   match xml.kind with
   | Variable -> noprops (Variables [locate_opt xml.node.location xml.uniquename])
 
+and convert_action_expr (op : modal_op) (apply : Xml.op_appl_node) : Expr.T.expr =
+  match apply.operands with
+  | [expr; sub] -> Sub (
+    op,
+    convert_expression_or_operator_argument expr,
+    convert_expression_or_operator_argument sub
+  ) |> locate_opt apply.node.location
+  | _ -> failwith "Wrong number of operands to $SquareAct"
+
+(** This method handles conversion of four cases:
+    1. Bounded non-tuple choice like CHOOSE x \in S : P
+    2. Bounded tuple choice like CHOOSE <<x, y>> \in S : P
+    3. Unbounded non-tuple choice like CHOOSE x : P
+    4. Unbounded tuple choice like CHOOSE <<x, y>> : P
+
+    The XML representation of these does not really adhere very well to the
+    principle of making invalid state unrepresentable, so there is a range of
+    possible input data that theoretically should never occur but nonetheless
+    must be handled in OCaml match statements.
+*)
+and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr =
+  let convert_bounded_choose (symbol : Xml.formal_param_node_ref) (set : Xml.expression) (body : Xml.expr_or_op_arg) : Expr.T.expr =
+    Choose (
+      resolve_bound_symbol symbol,
+      Some (convert_expression set),
+      convert_expression_or_operator_argument body
+    ) |> locate_opt apply.node.location
+  in let convert_bounded_tuple_choose (symbols : Xml.formal_param_node_ref list) (set : Xml.expression) (body : Xml.expr_or_op_arg) : Expr.T.expr =
+    ChooseTuply (
+      List.map resolve_bound_symbol symbols,
+      Some (convert_expression set),
+      convert_expression_or_operator_argument body
+    ) |> locate_opt apply.node.location
+  in let convert_unbounded_choose (symbol : Xml.formal_param_node_ref) (body : Xml.expr_or_op_arg) : Expr.T.expr =
+    Choose (
+      resolve_bound_symbol symbol,
+      None,
+      convert_expression_or_operator_argument body
+    ) |> locate_opt apply.node.location
+  in let convert_unbounded_tuple_choose (symbols : Xml.formal_param_node_ref list) (body : Xml.expr_or_op_arg) : Expr.T.expr =
+    ChooseTuply (
+      List.map resolve_bound_symbol symbols,
+      None,
+      convert_expression_or_operator_argument body
+    ) |> locate_opt apply.node.location
+  in match (apply.bound_symbols, apply.operands) with
+  | ([Bound ({is_tuple = false; formal_param_node_refs = [param]} as symbol)], [body]) ->
+      convert_bounded_choose param symbol.expression body
+  | ([Bound ({is_tuple = true} as symbol)], [body]) ->
+      convert_bounded_tuple_choose symbol.formal_param_node_refs symbol.expression body
+  | ([Unbound ({is_tuple = false} as symbol)], [body]) ->
+      convert_unbounded_choose symbol.formal_param_node_ref body
+  | (Unbound {is_tuple = true} :: _, [body]) ->
+    let symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Unbound ({is_tuple = true} as u) -> Some u | _ -> None) apply.bound_symbols in
+    if List.length symbols <> List.length apply.bound_symbols
+    then failwith "Inconsistent bound/unbound or tuple/non-tuple symbols in CHOOSE"
+    else convert_unbounded_tuple_choose (List.map (fun (s : Xml.unbound_symbol) -> s.formal_param_node_ref) symbols) body
+  | _ -> failwith "Invalid number of bounds or operands to CHOOSE"
+
+and convert_bounded_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node) (op : Xml.built_in_kind) : Expr.T.expr =
+  match apply.operands with
+  | [body] -> Opaque "TODO_bounded_quantification" |> locate_opt apply.node.location
+  | _ -> failwith "Wrong number of operands to bounded exists"
+
+and convert_unbounded_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node) (op : Xml.built_in_kind) : Expr.T.expr =
+  match apply.operands with
+  | [body] -> Opaque "TODO_unbounded_quantification" |> locate_opt apply.node.location
+  | _ -> failwith "Wrong number of operands to unbounded quantification"
+
 (** Conversion of application of all traditional built-in operators like = or
     \cup but also things like CHOOSE and \A which one would ordinarily not
-    view as built-in operators. However, the 
+    view as built-in operators.
 *)
-and convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_kind) : Expr.T.expr = (
+and convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_kind) : Expr.T.expr =
   match try_convert_builtin op with
   (* Traditional built-in operators *)
   | Some builtin -> Apply (
       Internal builtin |> locate_opt op.node.location,
       List.map convert_expression_or_operator_argument apply.operands
-    )
+    ) |> locate_opt apply.node.location
   (* More abstract kinds of built-in operators *)
   | None -> (
       match op.uniquename with
-      | "$SetEnumerate" -> SetEnum (List.map convert_expression_or_operator_argument apply.operands)
-      | "$UnboundedChoose" -> Choose (noprops "TODO", None, apply.operands |> List.hd |> convert_expression_or_operator_argument)
-      | "$Tuple" -> Tuple (List.map convert_expression_or_operator_argument apply.operands)
-      | s -> failwith ("Built-in operator application not yet supported: " ^ s)
+      | "$SetEnumerate" -> SetEnum (
+        List.map convert_expression_or_operator_argument apply.operands
+      ) |> locate_opt apply.node.location
+      | "$Tuple" -> Tuple (
+        List.map convert_expression_or_operator_argument apply.operands
+      ) |> locate_opt apply.node.location
+      | "$UnboundedChoose" -> convert_choose apply
+      | "$SquareAct" -> convert_action_expr Box apply
+      | "$BoundedExists" -> convert_bounded_quantification Exists apply op
+      | "$BoundedForall" -> convert_bounded_quantification Forall apply op
+      | "$UnboundedExists" -> convert_unbounded_quantification Exists apply op
+      | "$UnboundedForall" -> convert_unbounded_quantification Forall apply op
+      | s -> todo "Built-in operator" s apply.node.location
     )
-  ) |> locate_opt apply.node.location
 
 (** Conversion of application of user-defined operators, including operators
     defined in the standard modules.
@@ -174,16 +265,23 @@ and convert_user_defined_op_kind (xml: Xml.user_defined_op_kind) : Module.T.modu
     ))
 
 and convert_built_in_kind (built_in_kind : Xml.built_in_kind) : Module.T.modunit =
-  failwith "BuiltInKind conversion not yet supported"
+  todo "BuiltInKind" "" built_in_kind.node.location
 
 and convert_formal_param_node (formal_param_node : Xml.formal_param_node) : Module.T.modunit =
-  failwith "FormalParamNode conversion not yet supported"
+  todo "FormalParamNode" "" formal_param_node.node.location
 
 and convert_theorem_def_node (theorem_def_node : Xml.theorem_def_node) : Module.T.modunit =
-  failwith "TheoremDefNode conversion not yet supported"
+  todo "TheoremDefNode" "" theorem_def_node.node.location
 
-and convert_theorem_node (theorem_node : Xml.theorem_node) : Module.T.modunit =
-  failwith "TheoremNode conversion not yet supported"
+and convert_theorem_node (thm : Xml.theorem_node) : Module.T.modunit = Theorem (
+  Some (noprops "TODO_thm_name"),
+  (match thm.body with
+  | Expression expr -> { context = Deque.empty; active = convert_expression expr}),
+  0 (* TODO figure out what this integer parameter means *),
+  noprops Obvious, (* TODO convert proof *)
+  noprops Obvious, (* TODO figure out why there are two proofs *)
+  empty_summary  (* TODO figure out purpose of summary *)
+) |> locate_opt thm.node.location
 
 and convert_entry (entry : Xml.entry) : Module.T.modunit =
   match entry.kind with
@@ -210,7 +308,7 @@ let convert_ast (ast : Xml.modules) : (Module.T.modctx * Module.T.mule, (string 
   in let root = convert_module_node root_module_id root_module in
   converted_modules := Coll.Im.add root_module_id root !converted_modules;
   Ok (Coll.Sm.empty, root)
-  
+
 let parse (module_path : string) : (Module.T.modctx * Module.T.mule, (string option * string)) result =
   let ( >>= ) = Result.bind in
   Option.to_result ~none:(None, "TLAPS standard library cannot be found") Params.stdlib_path
