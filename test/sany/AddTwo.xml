@@ -19,6 +19,7 @@
         <level>0</level>
         <uniquename>SlowSimplification</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"clarsimp") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -61,6 +62,7 @@
         <level>0</level>
         <uniquename>SlowerSimplification</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"clarsimp"; timeout:120) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -103,6 +105,7 @@
         <level>0</level>
         <uniquename>SlowestSimplification</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"clarsimp"; timeout:480) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -145,6 +148,17 @@
         <level>0</level>
         <uniquename>Blast</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"clarsimp"; timeout:960) }*)
+(**************************************************************************)
+(* Backend pragma: Isabelle's tableau prover ("blast")                    *)
+(*                                                                        *)
+(* This pragma bypasses Zenon and uses Isabelle's built-in theorem        *)
+(* prover, Blast. It is almost never better than Zenon by itself, but     *)
+(* becomes very useful in combination with the Auto pragma above. The     *)
+(* AutoBlast pragma first attempts Auto and then uses Blast to prove what *)
+(* Auto could not prove. (There is currently no way to use Zenon on the   *)
+(* results left over from Auto.)                                          *)
+(**************************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -187,6 +201,7 @@
         <level>0</level>
         <uniquename>SlowBlast</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"blast") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -229,6 +244,7 @@
         <level>0</level>
         <uniquename>SlowerBlast</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"blast"; timeout:120) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -271,6 +287,7 @@
         <level>0</level>
         <uniquename>SlowestBlast</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"blast"; timeout:480) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -313,6 +330,7 @@
         <level>0</level>
         <uniquename>AutoBlast</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"blast"; timeout:960) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -355,6 +373,17 @@
         <level>0</level>
         <uniquename>AllProvers</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"auto, blast") }*)
+(**************************************************************************)
+(* Backend pragmas: multi-back-ends                                       *)
+(*                                                                        *)
+(* These pragmas just run a bunch of back-ends one after the other in the *)
+(* hope that one will succeed. This saves time and effort for the user at *)
+(* the expense of computation time.                                       *)
+(**************************************************************************)
+(* CVC3 goes first because it's bundled with TLAPS, then the other SMT
+   solvers are unlikely to succeed if CVC3 fails, so we run zenon and
+   Isabelle before them. *)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -415,6 +444,21 @@
         <level>0</level>
         <uniquename>AllProversT</uniquename>
         <arity>1</arity>
+        <pre-comments><![CDATA[(*{
+    by (prover:"cvc33")
+    by (prover:"zenon")
+    by (prover:"isabelle"; tactic:"auto")
+    by (prover:"spass")
+    by (prover:"smt3")
+    by (prover:"yices3")
+    by (prover:"verit")
+    by (prover:"z33")
+    by (prover:"isabelle"; tactic:"force")
+    by (prover:"isabelle"; tactic:"(auto intro: setEqualI)")
+    by (prover:"isabelle"; tactic:"clarsimp auto?")
+    by (prover:"isabelle"; tactic:"clarsimp")
+    by (prover:"isabelle"; tactic:"auto, blast")
+  }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -464,6 +508,21 @@
         <level>0</level>
         <uniquename>AllSMT</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{
+    by (prover:"cvc33"; timeout:@)
+    by (prover:"zenon"; timeout:@)
+    by (prover:"isabelle"; tactic:"auto"; timeout:@)
+    by (prover:"spass"; timeout:@)
+    by (prover:"smt3"; timeout:@)
+    by (prover:"yices3"; timeout:@)
+    by (prover:"verit"; timeout:@)
+    by (prover:"z33"; timeout:@)
+    by (prover:"isabelle"; tactic:"force"; timeout:@)
+    by (prover:"isabelle"; tactic:"(auto intro: setEqualI)"; timeout:@)
+    by (prover:"isabelle"; tactic:"clarsimp auto?"; timeout:@)
+    by (prover:"isabelle"; tactic:"clarsimp"; timeout:@)
+    by (prover:"isabelle"; tactic:"auto, blast"; timeout:@)
+  }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -524,6 +583,13 @@
         <level>0</level>
         <uniquename>AllSMTT</uniquename>
         <arity>1</arity>
+        <pre-comments><![CDATA[(*{
+    by (prover:"cvc33")
+    by (prover:"smt3")
+    by (prover:"yices3")
+    by (prover:"verit")
+    by (prover:"z33")
+  }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -573,6 +639,13 @@
         <level>0</level>
         <uniquename>AllIsa</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{
+    by (prover:"cvc33"; timeout:@)
+    by (prover:"smt3"; timeout:@)
+    by (prover:"yices3"; timeout:@)
+    by (prover:"verit"; timeout:@)
+    by (prover:"z33"; timeout:@)
+  }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -633,6 +706,14 @@
         <level>0</level>
         <uniquename>AllIsaT</uniquename>
         <arity>1</arity>
+        <pre-comments><![CDATA[(*{
+    by (prover:"isabelle"; tactic:"auto")
+    by (prover:"isabelle"; tactic:"force")
+    by (prover:"isabelle"; tactic:"(auto intro: setEqualI)")
+    by (prover:"isabelle"; tactic:"clarsimp auto?")
+    by (prover:"isabelle"; tactic:"clarsimp")
+    by (prover:"isabelle"; tactic:"auto, blast")
+  }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -682,6 +763,28 @@
         <level>0</level>
         <uniquename>ExpandENABLED</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{
+    by (prover:"isabelle"; tactic:"auto"; timeout:@)
+    by (prover:"isabelle"; tactic:"force"; timeout:@)
+    by (prover:"isabelle"; tactic:"(auto intro: setEqualI)"; timeout:@)
+    by (prover:"isabelle"; tactic:"clarsimp auto?"; timeout:@)
+    by (prover:"isabelle"; tactic:"clarsimp"; timeout:@)
+    by (prover:"isabelle"; tactic:"auto, blast"; timeout:@)
+  }*)
+(**************************************************************************)
+(* The pragma ExpandEnabled invokes expansion of the operator ENABLED.    *)
+(*                                                                        *)
+(* The pragma ExpandCdot invokes expansion of the operator \cdot.         *)
+(*                                                                        *)
+(* The pragma AutoUSE invokes automated expansion of definitions,         *)
+(* for both of ExpandEnabled and ExpandCdot, when each is present.        *)
+(*                                                                        *)
+(* The pragma Lambdify invokes expansion of the operators                 *)
+(* ENABLED and \cdot to an intermediate form with bound VARIABLES,        *)
+(* which is a form before introducing rigid quantifiers.                  *)
+(* The pragma Lambdify is sound for occurrences of ENABLED and \cdot      *)
+(* that are not nested.                                                   *)
+(**************************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -724,6 +827,7 @@
         <level>0</level>
         <uniquename>ExpandCdot</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"expandenabled") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -766,6 +870,7 @@
         <level>0</level>
         <uniquename>AutoUSE</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"expandcdot") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -808,6 +913,7 @@
         <level>0</level>
         <uniquename>Lambdify</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"autouse") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -850,6 +956,7 @@
         <level>0</level>
         <uniquename>ENABLEDaxioms</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"lambdify") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -892,6 +999,7 @@
         <level>0</level>
         <uniquename>LevelComparison</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"enabledaxioms") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -952,6 +1060,9 @@
         <level>0</level>
         <uniquename>EnabledWrapper</uniquename>
         <arity>1</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"levelcomparison") }*)
+(* The operators EnabledWrapper and CdotWrapper occur in an intermediate  *)
+(* representation within TLAPM.                                           *)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -1068,6 +1179,10 @@
         <level>0</level>
         <uniquename>Trivial</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(***************************************************************************)
+(* The following may be used in a `BY ONLY ThmName` for unit testing the   *)
+(* triviality checks in TLAPM.                                             *)
+(***************************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -1376,7 +1491,7 @@
           <UID>476</UID>
         </TheoremNodeRef>
         <TheoremNodeRef>
-          <UID>670</UID>
+          <UID>671</UID>
         </TheoremNodeRef>
       </ModuleNode>
     </entry>
@@ -2230,7 +2345,107 @@
       </UserDefinedOpKind>
     </entry>
     <entry>
-      <UID>612</UID>
+      <UID>608</UID>
+      <TheoremDefNode>
+        <location>
+          <column>
+            <begin>1</begin>
+            <end>43</end>
+          </column>
+          <line>
+            <begin>20</begin>
+            <end>28</end>
+          </line>
+          <filename>AddTwo</filename>
+        </location>
+        <level>3</level>
+        <uniquename>thm</uniquename>
+        <OpApplNode>
+          <location>
+            <column>
+              <begin>16</begin>
+              <end>29</end>
+            </column>
+            <line>
+              <begin>20</begin>
+              <end>20</end>
+            </line>
+            <filename>AddTwo</filename>
+          </location>
+          <level>3</level>
+          <operator>
+            <BuiltInKindRef>
+              <UID>178</UID>
+            </BuiltInKindRef>
+          </operator>
+          <operands>
+            <OpApplNode>
+              <location>
+                <column>
+                  <begin>16</begin>
+                  <end>19</end>
+                </column>
+                <line>
+                  <begin>20</begin>
+                  <end>20</end>
+                </line>
+                <filename>AddTwo</filename>
+              </location>
+              <level>3</level>
+              <operator>
+                <UserDefinedOpKindRef>
+                  <UID>592</UID>
+                </UserDefinedOpKindRef>
+              </operator>
+              <operands/>
+            </OpApplNode>
+            <OpApplNode>
+              <location>
+                <column>
+                  <begin>24</begin>
+                  <end>29</end>
+                </column>
+                <line>
+                  <begin>20</begin>
+                  <end>20</end>
+                </line>
+                <filename>AddTwo</filename>
+              </location>
+              <level>3</level>
+              <operator>
+                <BuiltInKindRef>
+                  <UID>211</UID>
+                </BuiltInKindRef>
+              </operator>
+              <operands>
+                <OpApplNode>
+                  <location>
+                    <column>
+                      <begin>26</begin>
+                      <end>29</end>
+                    </column>
+                    <line>
+                      <begin>20</begin>
+                      <end>20</end>
+                    </line>
+                    <filename>AddTwo</filename>
+                  </location>
+                  <level>1</level>
+                  <operator>
+                    <UserDefinedOpKindRef>
+                      <UID>607</UID>
+                    </UserDefinedOpKindRef>
+                  </operator>
+                  <operands/>
+                </OpApplNode>
+              </operands>
+            </OpApplNode>
+          </operands>
+        </OpApplNode>
+      </TheoremDefNode>
+    </entry>
+    <entry>
+      <UID>613</UID>
       <TheoremDefNode>
         <location>
           <column>
@@ -2309,7 +2524,7 @@
       </TheoremDefNode>
     </entry>
     <entry>
-      <UID>618</UID>
+      <UID>619</UID>
       <TheoremNode>
         <location>
           <column>
@@ -2325,7 +2540,7 @@
         <level>1</level>
         <definition>
           <TheoremDefRef>
-            <UID>612</UID>
+            <UID>613</UID>
           </TheoremDefRef>
         </definition>
         <body>
@@ -2420,7 +2635,7 @@
       </TheoremNode>
     </entry>
     <entry>
-      <UID>619</UID>
+      <UID>620</UID>
       <TheoremDefNode>
         <location>
           <column>
@@ -2582,7 +2797,7 @@
       </TheoremDefNode>
     </entry>
     <entry>
-      <UID>629</UID>
+      <UID>630</UID>
       <TheoremNode>
         <location>
           <column>
@@ -2598,7 +2813,7 @@
         <level>2</level>
         <definition>
           <TheoremDefRef>
-            <UID>619</UID>
+            <UID>620</UID>
           </TheoremDefRef>
         </definition>
         <body>
@@ -2773,7 +2988,7 @@
       </TheoremNode>
     </entry>
     <entry>
-      <UID>630</UID>
+      <UID>631</UID>
       <TheoremDefNode>
         <location>
           <column>
@@ -2914,7 +3129,7 @@
       </TheoremDefNode>
     </entry>
     <entry>
-      <UID>638</UID>
+      <UID>639</UID>
       <FormalParamNode>
         <location>
           <column>
@@ -2933,7 +3148,7 @@
       </FormalParamNode>
     </entry>
     <entry>
-      <UID>660</UID>
+      <UID>661</UID>
       <TheoremNode>
         <location>
           <column>
@@ -2949,7 +3164,7 @@
         <level>2</level>
         <definition>
           <TheoremDefRef>
-            <UID>630</UID>
+            <UID>631</UID>
           </TheoremDefRef>
         </definition>
         <body>
@@ -3182,7 +3397,7 @@
                               <level>0</level>
                               <operator>
                                 <FormalParamNodeRef>
-                                  <UID>638</UID>
+                                  <UID>639</UID>
                                 </FormalParamNodeRef>
                               </operator>
                               <operands/>
@@ -3313,7 +3528,7 @@
                                   <level>0</level>
                                   <operator>
                                     <FormalParamNodeRef>
-                                      <UID>638</UID>
+                                      <UID>639</UID>
                                     </FormalParamNodeRef>
                                   </operator>
                                   <operands/>
@@ -3405,7 +3620,7 @@
                                   <level>0</level>
                                   <operator>
                                     <FormalParamNodeRef>
-                                      <UID>638</UID>
+                                      <UID>639</UID>
                                     </FormalParamNodeRef>
                                   </operator>
                                   <operands/>
@@ -3437,7 +3652,7 @@
               <boundSymbols>
                 <bound>
                   <FormalParamNodeRef>
-                    <UID>638</UID>
+                    <UID>639</UID>
                   </FormalParamNodeRef>
                   <OpApplNode>
                     <location>
@@ -3588,7 +3803,7 @@
       </FormalParamNode>
     </entry>
     <entry>
-      <UID>668</UID>
+      <UID>669</UID>
       <TheoremNode>
         <location>
           <column>
@@ -3673,7 +3888,7 @@
               <level>1</level>
               <operator>
                 <TheoremDefRef>
-                  <UID>612</UID>
+                  <UID>613</UID>
                 </TheoremDefRef>
               </operator>
               <operands/>
@@ -3693,7 +3908,7 @@
               <level>2</level>
               <operator>
                 <TheoremDefRef>
-                  <UID>619</UID>
+                  <UID>620</UID>
                 </TheoremDefRef>
               </operator>
               <operands/>
@@ -3713,7 +3928,7 @@
               <level>2</level>
               <operator>
                 <TheoremDefRef>
-                  <UID>630</UID>
+                  <UID>631</UID>
                 </TheoremDefRef>
               </operator>
               <operands/>
@@ -3728,7 +3943,7 @@
       </TheoremNode>
     </entry>
     <entry>
-      <UID>670</UID>
+      <UID>671</UID>
       <TheoremNode>
         <location>
           <column>
@@ -3742,12 +3957,17 @@
           <filename>AddTwo</filename>
         </location>
         <level>3</level>
+        <definition>
+          <TheoremDefRef>
+            <UID>608</UID>
+          </TheoremDefRef>
+        </definition>
         <body>
           <OpApplNode>
             <location>
               <column>
-                <begin>9</begin>
-                <end>22</end>
+                <begin>16</begin>
+                <end>29</end>
               </column>
               <line>
                 <begin>20</begin>
@@ -3765,8 +3985,8 @@
               <OpApplNode>
                 <location>
                   <column>
-                    <begin>9</begin>
-                    <end>12</end>
+                    <begin>16</begin>
+                    <end>19</end>
                   </column>
                   <line>
                     <begin>20</begin>
@@ -3785,8 +4005,8 @@
               <OpApplNode>
                 <location>
                   <column>
-                    <begin>17</begin>
-                    <end>22</end>
+                    <begin>24</begin>
+                    <end>29</end>
                   </column>
                   <line>
                     <begin>20</begin>
@@ -3804,8 +4024,8 @@
                   <OpApplNode>
                     <location>
                       <column>
-                        <begin>19</begin>
-                        <end>22</end>
+                        <begin>26</begin>
+                        <end>29</end>
                       </column>
                       <line>
                         <begin>20</begin>
@@ -3840,16 +4060,16 @@
           </location>
           <level>2</level>
           <TheoremNodeRef>
-            <UID>618</UID>
+            <UID>619</UID>
           </TheoremNodeRef>
           <TheoremNodeRef>
-            <UID>629</UID>
+            <UID>630</UID>
           </TheoremNodeRef>
           <TheoremNodeRef>
-            <UID>660</UID>
+            <UID>661</UID>
           </TheoremNodeRef>
           <TheoremNodeRef>
-            <UID>668</UID>
+            <UID>669</UID>
           </TheoremNodeRef>
         </steps>
       </TheoremNode>
@@ -4501,6 +4721,18 @@
         <level>0</level>
         <uniquename>Nat</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(***************************************************************************)
+(* This module provides dummy definitions of the operators that are        *)
+(* defined by the real Naturals module.  It is expected that any tool will *)
+(* provide its own implementations of these operators.  See the book       *)
+(* "Specifying Systems" for the real Naturals module.                      *)
+(***************************************************************************)
+(***************************************************************************)
+(* These definitions are all overridden by TLC in the Java class           *)
+(* tlc2.module.Naturals. Each operator is overridden by the Java method    *)
+(* with the same name, except that the mapping for TLA+ infix operators    *)
+(* is defined in the static block at the beginning of the Java class.      *)
+(***************************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -5698,6 +5930,15 @@
         <level>0</level>
         <uniquename>%</uniquename>
         <arity>2</arity>
+        <pre-comments><![CDATA[(***************************************************************************)
+(* a .. b  is defined to equal  {i \in Int : (a \leq i) /\ (i \leq b)}     *)
+(* where  Int  is the set of all integers.                                 *)
+(*                                                                         *)
+(* a % b  and  a \div b  are defined so that for any integers  a  and  b   *)
+(* with  b > 0 , the following formula is true:                            *)
+(*                                                                         *)
+(*    a  =  b * (a \div b) + (a % b)                                       *)
+(***************************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -6286,6 +6527,23 @@
         <level>0</level>
         <uniquename>SimpleArithmetic</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(* Backend pragmas. *)
+(***************************************************************************)
+(* Each of these pragmas can be cited with a BY or a USE.  The pragma that *)
+(* is added to the context of an obligation most recently is the one whose *)
+(* effects are triggered.                                                  *)
+(***************************************************************************)
+(***************************************************************************)
+(* The following pragmas should be used only as a last resource.  They are *)
+(* dependent upon the particular backend provers, and are unlikely to have *)
+(* any effect if the set of backend provers changes.  Moreover, they are   *)
+(* meaningless to a reader of the proof.                                   *)
+(***************************************************************************)
+(**************************************************************************)
+(* Backend pragma: use the SMT solver for arithmetic.                     *)
+(*                                                                        *)
+(* This method exists under this name for historical reasons.             *)
+(**************************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -6328,6 +6586,16 @@
         <level>0</level>
         <uniquename>SMT</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"smt3") }*)
+(**************************************************************************)
+(* Backend pragma: SMT solver                                             *)
+(*                                                                        *)
+(* This method translates the proof obligation to SMTLIB2. The supported  *)
+(* fragment includes first-order logic, set theory, functions and         *)
+(* records.                                                               *)
+(* SMT calls the smt-solver with the default timeout of 5 seconds         *)
+(* while SMTT(n) calls the smt-solver with a timeout of n seconds.        *)
+(**************************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -6388,6 +6656,7 @@
         <level>0</level>
         <uniquename>SMTT</uniquename>
         <arity>1</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"smt3") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -6437,6 +6706,13 @@
         <level>0</level>
         <uniquename>CVC3</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"smt3"; timeout:@) }*)
+(**************************************************************************)
+(* Backend pragma: CVC4 SMT solver                                        *)
+(*                                                                        *)
+(* These methods translate the proof obligation to SMTLIB2 and call CVC4. *)
+(**************************************************************************)
+(* The CVC3* methods are here for backward compatibility. They call CVC4. *)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -6497,6 +6773,7 @@
         <level>0</level>
         <uniquename>CVC3T</uniquename>
         <arity>1</arity>
+        <pre-comments><![CDATA[(*{ by (prover: "cvc33") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -6546,6 +6823,7 @@
         <level>0</level>
         <uniquename>CVC4</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"cvc33"; timeout:@) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -6606,6 +6884,7 @@
         <level>0</level>
         <uniquename>CVC4T</uniquename>
         <arity>1</arity>
+        <pre-comments><![CDATA[(*{ by (prover: "cvc33") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -6655,6 +6934,12 @@
         <level>0</level>
         <uniquename>Yices</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"cvc33"; timeout:@) }*)
+(**************************************************************************)
+(* Backend pragma: Yices SMT solver                                       *)
+(*                                                                        *)
+(* This method translates the proof obligation to Yices native language.  *)
+(**************************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -6715,6 +7000,7 @@
         <level>0</level>
         <uniquename>YicesT</uniquename>
         <arity>1</arity>
+        <pre-comments><![CDATA[(*{ by (prover: "yices3") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -6764,6 +7050,12 @@
         <level>0</level>
         <uniquename>veriT</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"yices3"; timeout:@) }*)
+(**************************************************************************)
+(* Backend pragma: veriT SMT solver                                       *)
+(*                                                                        *)
+(* This method translates the proof obligation to SMTLIB2 and calls veriT.*)
+(**************************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -6824,6 +7116,7 @@
         <level>0</level>
         <uniquename>veriTT</uniquename>
         <arity>1</arity>
+        <pre-comments><![CDATA[(*{ by (prover: "verit") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -6873,6 +7166,13 @@
         <level>0</level>
         <uniquename>Zipper</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"verit"; timeout:@) }*)
+(**************************************************************************)
+(* Backend pragma: Zipperposition solver                                  *)
+(*                                                                        *)
+(* This method translates the proof obligation to TPTP and                *)
+(* calls Zipperposition.                                                  *)
+(**************************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -6933,6 +7233,7 @@
         <level>0</level>
         <uniquename>ZipperT</uniquename>
         <arity>1</arity>
+        <pre-comments><![CDATA[(*{ by (prover: "zipper") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -6982,6 +7283,13 @@
         <level>0</level>
         <uniquename>Z3</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"zipper"; timeout:@) }*)
+(**************************************************************************)
+(* Backend pragma: Z3 SMT solver                                          *)
+(*                                                                        *)
+(* This method translates the proof obligation to SMTLIB2 and calls Z3.   *)
+(* Z3 is used by default but you can also explicitly call it.             *)
+(**************************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -7042,6 +7350,7 @@
         <level>0</level>
         <uniquename>Z3T</uniquename>
         <arity>1</arity>
+        <pre-comments><![CDATA[(*{ by (prover: "z33") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -7091,6 +7400,13 @@
         <level>0</level>
         <uniquename>Spass</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"z33"; timeout:@) }*)
+(**************************************************************************)
+(* Backend pragma: SPASS superposition prover                             *)
+(*                                                                        *)
+(* This method translates the proof obligation to the DFG format language *)
+(* supported by the ATP SPASS. The translation is based on the SMT one.   *)
+(**************************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -7151,6 +7467,7 @@
         <level>0</level>
         <uniquename>SpassT</uniquename>
         <arity>1</arity>
+        <pre-comments><![CDATA[(*{ by (prover: "spass") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -7200,6 +7517,14 @@
         <level>0</level>
         <uniquename>LS4</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"spass"; timeout:@) }*)
+(**************************************************************************)
+(* Backend pragma: The PTL propositional linear time temporal logic       *)
+(* prover.  It currently is the LS4 backend.                              *)
+(*                                                                        *)
+(* This method translates the negetation of the proof obligation to       *)
+(* Seperated Normal Form (TRP++ format) and checks for unsatisfiability   *)
+(**************************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -7260,6 +7585,7 @@
         <level>0</level>
         <uniquename>LS4T</uniquename>
         <arity>1</arity>
+        <pre-comments><![CDATA[(*{ by (prover: "ls4") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -7309,6 +7635,7 @@
         <level>0</level>
         <uniquename>PTL</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover: "ls4"; timeout:@) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -7351,6 +7678,11 @@
         <level>0</level>
         <uniquename>Zenon</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover: "ls4") }*)
+(**************************************************************************)
+(* Backend pragma: Zenon with different timeouts (default is 10 seconds)  *)
+(*                                                                        *)
+(**************************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -7411,6 +7743,7 @@
         <level>0</level>
         <uniquename>ZenonT</uniquename>
         <arity>1</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"zenon") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -7460,6 +7793,11 @@
         <level>0</level>
         <uniquename>Isa</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"zenon"; timeout:@) }*)
+(********************************************************************)
+(* Backend pragma: Isabelle with different timeouts and tactics     *)
+(*  (default is 30 seconds/auto)                                    *)
+(********************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -7520,6 +7858,7 @@
         <level>0</level>
         <uniquename>IsaT</uniquename>
         <arity>1</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -7587,6 +7926,7 @@
         <level>0</level>
         <uniquename>IsaM</uniquename>
         <arity>1</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; timeout:@) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -7672,6 +8012,7 @@
         <level>0</level>
         <uniquename>IsaMT</uniquename>
         <arity>2</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:@) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -7727,6 +8068,19 @@
         <level>0</level>
         <uniquename>IsaWithSetExtensionality</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:@; timeout:@) }*)
+(***************************************************************************)
+(* The following theorem expresses the (useful implication of the) law of  *)
+(* set extensionality, which can be written as                             *)
+(*                                                                         *)
+(*    THEOREM  \A S, T : (S = T) <=> (\A x : (x \in S) <=> (x \in T))      *)
+(*                                                                         *)
+(* Theorem SetExtensionality is sometimes required by the SMT backend for  *)
+(* reasoning about sets. It is usually counterproductive to include        *)
+(* theorem SetExtensionality in a BY clause for the Zenon or Isabelle      *)
+(* backends. Instead, use the pragma IsaWithSetExtensionality to instruct  *)
+(* the Isabelle backend to use the rule of set extensionality.             *)
+(***************************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -8782,6 +9136,17 @@
         <level>0</level>
         <uniquename>SlowZenon</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(********************************************************************)
+(********************************************************************)
+(********************************************************************)
+(********************************************************************)
+(* Old versions of Zenon and Isabelle pragmas below                 *)
+(* (kept for compatibility)                                         *)
+(********************************************************************)
+(**************************************************************************)
+(* Backend pragma: Zenon with different timeouts (default is 10 seconds)  *)
+(*                                                                        *)
+(**************************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -8824,6 +9189,7 @@
         <level>0</level>
         <uniquename>SlowerZenon</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"zenon"; timeout:20) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -8866,6 +9232,7 @@
         <level>0</level>
         <uniquename>VerySlowZenon</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"zenon"; timeout:40) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -8908,6 +9275,7 @@
         <level>0</level>
         <uniquename>SlowestZenon</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"zenon"; timeout:80) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -8950,6 +9318,14 @@
         <level>0</level>
         <uniquename>Auto</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"zenon"; timeout:160) }*)
+(********************************************************************)
+(* Backend pragma: Isabelle's automatic search ("auto")             *)
+(*                                                                  *)
+(* This pragma bypasses Zenon. It is useful in situations involving *)
+(* essentially simplification and equational reasoning.             *)
+(* Default imeout for all isabelle tactics is 30 seconds.           *)
+(********************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -8992,6 +9368,7 @@
         <level>0</level>
         <uniquename>SlowAuto</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"auto") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -9034,6 +9411,7 @@
         <level>0</level>
         <uniquename>SlowerAuto</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"auto"; timeout:120) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -9076,6 +9454,7 @@
         <level>0</level>
         <uniquename>SlowestAuto</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"auto"; timeout:480) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -9118,6 +9497,13 @@
         <level>0</level>
         <uniquename>Force</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"auto"; timeout:960) }*)
+(********************************************************************)
+(* Backend pragma: Isabelle's "force" tactic                        *)
+(*                                                                  *)
+(* This pragma bypasses Zenon. It is useful in situations involving *)
+(* quantifier reasoning.                                            *)
+(********************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -9160,6 +9546,7 @@
         <level>0</level>
         <uniquename>SlowForce</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"force") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -9202,6 +9589,7 @@
         <level>0</level>
         <uniquename>SlowerForce</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"force"; timeout:120) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -9244,6 +9632,7 @@
         <level>0</level>
         <uniquename>SlowestForce</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"force"; timeout:480) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -9286,6 +9675,15 @@
         <level>0</level>
         <uniquename>SimplifyAndSolve</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"force"; timeout:960) }*)
+(***********************************************************************)
+(* Backend pragma: Isabelle's "simplification" tactics                 *)
+(*                                                                     *)
+(* These tactics simplify the goal before running one of the automated *)
+(* tactics. They are often necessary for obligations involving record  *)
+(* or tuple projections. Use the SimplfyAndSolve tactic unless you're  *)
+(* sure you can get away with just Simplification                      *)
+(***********************************************************************)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -9328,6 +9726,7 @@
         <level>0</level>
         <uniquename>SlowSimplifyAndSolve</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"clarsimp auto?") }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -9370,6 +9769,7 @@
         <level>0</level>
         <uniquename>SlowerSimplifyAndSolve</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"clarsimp auto?"; timeout:120) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -9412,6 +9812,7 @@
         <level>0</level>
         <uniquename>SlowestSimplifyAndSolve</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"clarsimp auto?"; timeout:480) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>
@@ -9454,6 +9855,7 @@
         <level>0</level>
         <uniquename>Simplification</uniquename>
         <arity>0</arity>
+        <pre-comments><![CDATA[(*{ by (prover:"isabelle"; tactic:"clarsimp auto?"; timeout:960) }*)]]></pre-comments>
         <body>
           <OpApplNode>
             <location>

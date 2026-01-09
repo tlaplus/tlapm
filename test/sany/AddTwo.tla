@@ -17,7 +17,7 @@ a|b == \E c \in Nat : a*c = b
 
 Even == 2|x
 
-THEOREM Spec => []Even
+THEOREM thm == Spec => []Even
   <1>a. Init => Even
     BY DEF Init, Even, |
   <1>b. Even /\ UNCHANGED vars => Even'

@@ -262,7 +262,7 @@ and convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_kind)
 *)
 and convert_user_defined_op_appl (apply : Xml.op_appl_node) (op : Xml.user_defined_op_kind) : Expr.T.expr =
   Apply (
-    Opaque "TODO" |> noprops,
+    Opaque op.uniquename |> locate_opt op.node.location,
     List.map convert_expression_or_operator_argument apply.operands
   ) |> locate_opt apply.node.location
 
@@ -339,15 +339,26 @@ and convert_formal_param_node (formal_param_node : Xml.formal_param_node) : Modu
 and convert_theorem_def_node (theorem_def_node : Xml.theorem_def_node) : Module.T.modunit =
   todo "TheoremDefNode" "" theorem_def_node.node.location
 
-and convert_theorem_node (thm : Xml.theorem_node) : Module.T.modunit = Theorem (
-  Some (noprops "TODO_thm_name"),
-  (match thm.body with
-  | Expression expr -> { context = Deque.empty; active = convert_expression expr}),
-  0 (* TODO figure out what this integer parameter means *),
-  noprops Obvious, (* TODO convert proof *)
-  noprops Obvious, (* TODO figure out why there are two proofs *)
-  empty_summary  (* TODO figure out purpose of summary *)
-) |> locate_opt thm.node.location
+(** Converts theorem nodes. Oddly, SANY has two different theorem node types
+    containing identical information except TheoremDefNode contains the name
+    and TheoremNode does not. TLAPM's theorem node construction has some
+    oddities in the form of additional metadata.
+*)
+and convert_theorem_node (thm : Xml.theorem_node) : Module.T.modunit =
+  let get_thm_name (thm : Xml.theorem_def_ref) : hint =
+    match (resolve_ref thm.uid).kind with
+    | TheoremDefNode def -> locate_opt def.node.location def.uniquename
+    | _ -> failwith ("Unresolved theorem definition UID: " ^ string_of_int thm.uid)
+  in Theorem (
+    Option.map get_thm_name thm.definition,
+    (match thm.body with
+    | Expression expr -> { context = Deque.empty; active = convert_expression expr}),
+    (* TODO handle assume/prove *)
+    0 (* TODO figure out what this integer parameter means *),
+    noprops Obvious, (* TODO convert proof *)
+    noprops Obvious, (* TODO figure out why there are two proofs *)
+    empty_summary  (* TODO figure out purpose of summary *)
+  ) |> locate_opt thm.node.location
 
 and convert_entry (entry : Xml.entry) : Module.T.modunit =
   match entry.kind with
