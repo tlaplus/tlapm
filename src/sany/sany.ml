@@ -16,6 +16,9 @@ let converted_modules : Module.T.mule Coll.Im.t ref = ref Coll.Im.empty
 
 let converted_units : Module.T.modunit Coll.Im.t ref = ref Coll.Im.empty
 
+(** Converts SANY's location format to TLAPM's, for attachment to node
+    metadata.
+*)
 let convert_location (location : Xml.location) : Loc.locus = {
   start = Actual {
     line = location.line.start;
@@ -30,13 +33,15 @@ let convert_location (location : Xml.location) : Loc.locus = {
   file = location.filename;
 }
 
-let locate_opt (location : Xml.location option) (value : 'a) : 'a wrapped =
-  match location with
-  | Some loc -> Util.locate value (convert_location loc)
-  | None -> noprops value
-
 let locate (value : 'a) (location : Xml.location) : 'a wrapped =
   Util.locate value (convert_location location)
+
+(** Wrap the given object in location and (eventually) level information.
+*)
+let attach_props (props : Xml.node) (value : 'a) : 'a wrapped =
+  match props.location with
+  | Some loc -> Util.locate value (convert_location loc)
+  | None -> noprops value
 
 let resolve_ref (uid : int) : Xml.entry =
   match Coll.Im.find_opt uid !entries with
@@ -46,7 +51,7 @@ let resolve_ref (uid : int) : Xml.entry =
 let resolve_formal_param_node (param : Xml.leibniz_param) : (hint * shape) =
   match Coll.Im.find_opt param.ref.uid !entries with
   | Some (Xml.FormalParamNode xml) -> (
-    locate_opt xml.node.location xml.uniquename,
+    attach_props xml.node xml.uniquename,
     match xml.arity with
     | 0 -> Shape_expr
     | n -> Shape_op n
@@ -55,10 +60,12 @@ let resolve_formal_param_node (param : Xml.leibniz_param) : (hint * shape) =
 
 let resolve_bound_symbol (symbol : Xml.formal_param_node_ref) : hint =
   match Coll.Im.find_opt symbol.uid !entries with
-  | Some (Xml.FormalParamNode ({arity = 0} as xml)) -> locate_opt xml.node.location xml.uniquename
+  | Some (Xml.FormalParamNode ({arity = 0} as xml)) -> attach_props xml.node xml.uniquename
   | Some (Xml.FormalParamNode _) -> failwith ("Bound symbol cannot be an operator: " ^ string_of_int symbol.uid)
   | _ -> failwith ("Unresolved formal parameter node UID: " ^ string_of_int symbol.uid)
 
+(** Converts built-in prefix, infix, and postfix operators along with keywords.
+*)
 let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
   match builtin.uniquename with
   | "TRUE" -> Some Builtin.TRUE
@@ -73,6 +80,7 @@ let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
   | "\\equiv" -> Some Builtin.Equiv
   | _ -> None
 
+(** Converts a top-level module node. *)
 let rec convert_module_node (uid : int) (mule : Xml.module_node) : Module.T.mule =
   match Coll.Im.find_opt uid !converted_modules with
   | Some kind -> kind
@@ -81,6 +89,22 @@ let rec convert_module_node (uid : int) (mule : Xml.module_node) : Module.T.mule
     match unit with
     | `Ref uid -> resolve_ref uid
     | `OtherTODO name -> todo "Module unit" (name ^ " unit not yet supported") None
+  (** Converts an entry, which is an abstract type that can be all sorts of
+      things; SANY heavily uses GUIDs to reference one entity from another and
+      those GUIDs are resolved in a global table with no real type information.
+      Thus in-scope operator parameters coexist alongside entire modules, and
+      here we branch out to the appropriate conversion method. Some types are
+      invalid here at the global scope, and we avoid handling them.
+  *)
+  in let convert_entry (entry : Xml.entry) : Module.T.modunit =
+    match entry.kind with
+    | ModuleNode mule -> noprops (Submod (convert_module_node entry.uid mule))
+    | OpDeclNode op_decl_node -> convert_op_decl_node op_decl_node
+    | UserDefinedOpKind user_defined_op_kind -> convert_user_defined_op_kind user_defined_op_kind
+    | BuiltInKind built_in_kind -> convert_built_in_kind built_in_kind
+    | FormalParamNode formal_param_node -> convert_formal_param_node formal_param_node
+    | TheoremDefNode theorem_def_node -> convert_theorem_def_node theorem_def_node
+    | TheoremNode theorem_node -> convert_theorem_node theorem_node
   in locate {
     name = noprops mule.uniquename;
     extendees = [];
@@ -91,18 +115,22 @@ let rec convert_module_node (uid : int) (mule : Xml.module_node) : Module.T.mule
     important = true
   } mule.location
 
+(** Converts operator declarations such as CONSTANTS and VARIABLES.
+*)
 and convert_op_decl_node (xml : Xml.op_decl_node) : Module.T.modunit =
   match xml.kind with
-  | Variable -> noprops (Variables [locate_opt xml.node.location xml.uniquename])
+  | Variable -> noprops (Variables [attach_props xml.node xml.uniquename])
 
+(** Converts action-level expressions such as [][expr]_sub and <><<expr>>_sub.
+*)
 and convert_action_expr (op : modal_op) (apply : Xml.op_appl_node) : Expr.T.expr =
   match apply.operands with
   | [expr; sub] -> Sub (
     op,
     convert_expression_or_operator_argument expr,
     convert_expression_or_operator_argument sub
-  ) |> locate_opt apply.node.location
-  | _ -> failwith "Wrong number of operands to $SquareAct"
+  ) |> attach_props apply.node
+  | _ -> failwith "Wrong number of operands to action expression"
 
 (** This method handles conversion of four cases:
     1. Bounded non-tuple choice like CHOOSE x \in S : P
@@ -149,7 +177,7 @@ and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr = (
       convert_expression_or_operator_argument body
     )
   | _ -> failwith "Invalid number of bounds or operands to CHOOSE"
-) |> locate_opt apply.node.location
+) |> attach_props apply.node
 
 (** Handles conversion of both bounded & unbounded quantification. Both sides
     of the conversion here are fairly weird. The SANY AST has the same issues
@@ -225,7 +253,7 @@ and convert_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node
       convert_expression_or_operator_argument body
     )
   | _ -> failwith "Invalid number of bounds or operands to quantification"
-) |> locate_opt apply.node.location
+) |> attach_props apply.node
 
 (** Conversion of application of all traditional built-in operators like = or
     \cup but also things like CHOOSE and \A which one would ordinarily not
@@ -235,18 +263,18 @@ and convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_kind)
   match try_convert_builtin op with
   (* Traditional built-in operators *)
   | Some builtin -> Apply (
-      Internal builtin |> locate_opt op.node.location,
+      Internal builtin |> attach_props op.node,
       List.map convert_expression_or_operator_argument apply.operands
-    ) |> locate_opt apply.node.location
+    ) |> attach_props apply.node
   (* More abstract kinds of built-in operators *)
   | None -> (
       match op.uniquename with
       | "$SetEnumerate" -> SetEnum (
         List.map convert_expression_or_operator_argument apply.operands
-      ) |> locate_opt apply.node.location
+      ) |> attach_props apply.node
       | "$Tuple" -> Tuple (
         List.map convert_expression_or_operator_argument apply.operands
-      ) |> locate_opt apply.node.location
+      ) |> attach_props apply.node
       | "$BoundedChoose" -> convert_choose apply
       | "$UnboundedChoose" -> convert_choose apply
       | "$SquareAct" -> convert_action_expr Box apply
@@ -262,28 +290,35 @@ and convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_kind)
 *)
 and convert_user_defined_op_appl (apply : Xml.op_appl_node) (op : Xml.user_defined_op_kind) : Expr.T.expr =
   Apply (
-    Opaque op.uniquename |> locate_opt op.node.location,
+    Opaque op.uniquename |> attach_props op.node,
     List.map convert_expression_or_operator_argument apply.operands
-  ) |> locate_opt apply.node.location
+  ) |> attach_props apply.node
 
-(** Conversion of reference to in-scope operator parameters.
+(** Conversion of reference to in-scope operator parameters, such as in
+    op(a, b, c) == a. This is a case where information is actually lost,
+    since the reference is converted to a simple string that will be resolved
+    again later on by turning it into a De Bruijn index (Ix) type. It might
+    be possible to convert the reference into a De Bruijn index directly.
 *)
 and convert_formal_param_node_op_appl (apply : Xml.op_appl_node) (param : Xml.formal_param_node) : Expr.T.expr =
   match param.arity with
-  | 0 -> Opaque param.uniquename |> locate_opt param.node.location
+  | 0 -> Opaque param.uniquename |> attach_props param.node
   | n -> Apply (
-      Opaque param.uniquename |> locate_opt param.node.location,
+      Opaque param.uniquename |> attach_props param.node,
       List.map convert_expression_or_operator_argument apply.operands
-    ) |> locate_opt apply.node.location
+    ) |> attach_props apply.node
 
-(** Conversion of reference to constants or variables. *)
+(** Conversion of reference to module-level constants or variables. Again
+    information is lost and the string will need to be resolved into a De
+    Bruijn index later on.
+*)
 and convert_op_decl_node_op_appl (apply : Xml.op_appl_node) (decl : Xml.op_decl_node) : Expr.T.expr =
   match decl.arity with
-  | 0 -> Opaque decl.uniquename |> locate_opt decl.node.location
+  | 0 -> Opaque decl.uniquename |> attach_props decl.node
   | n -> Apply (
-      Opaque decl.uniquename |> locate_opt decl.node.location,
+      Opaque decl.uniquename |> attach_props decl.node,
       List.map convert_expression_or_operator_argument apply.operands
-    ) |> locate_opt apply.node.location
+    ) |> attach_props apply.node
 
 (** OpApplNode is a very general node used by SANY to represent essentially
     all expression types. Things like \A x \in S : P are represented as an
@@ -304,21 +339,34 @@ and convert_op_appl_node (apply : Xml.op_appl_node) : Expr.T.expr =
   | OpDeclNode decl -> convert_op_decl_node_op_appl apply decl
   | _ -> failwith ("Invalid operator reference in OpApplNode : " ^ (Xml.show_entry_kind op_kind) )
 
+(** Some places in TLA⁺ syntax allow both normal expressions and also
+    operators. Mainly this occurs when applying an operator that could accept
+    another operator as a parameter. So any time the user calls an operator
+    like op(x, y, z), x, y, and z can each be either expressions or operator
+    references. LAMBDA operators can also appear here.
+*)
 and convert_expression_or_operator_argument (op_expr : Xml.expr_or_op_arg) : Expr.T.expr =
   match op_expr with
   | Expression expr -> convert_expression expr
+  (* TODO: add support for operators here *)
 
+(** Converts a basic expression type, which will be either a primitive value
+    or an operator application.
+*)
 and convert_expression (expr : Xml.expression) : Expr.T.expr =
   match expr with
-  | NumeralNode expr -> Num (Int.to_string expr.value, "") |> locate_opt expr.node.location
+  | NumeralNode expr -> Num (Int.to_string expr.value, "") |> attach_props expr.node
   | OpApplNode apply -> convert_op_appl_node apply
 
+(** Converts user-defined operators defined in a module top-level or within
+    LET/IN expressions.
+*)
 and convert_user_defined_op_kind (xml: Xml.user_defined_op_kind) : Module.T.modunit =
   match xml.recursive with
   | true -> failwith "TLAPS does not yet support recursive operators"
   | false -> noprops (Definition (
       Operator (
-        locate_opt xml.node.location xml.uniquename,
+        attach_props xml.node xml.uniquename,
         let expr = xml.body |> convert_expression in
         match xml.params with
         | [] -> expr
@@ -336,6 +384,12 @@ and convert_built_in_kind (built_in_kind : Xml.built_in_kind) : Module.T.modunit
 and convert_formal_param_node (formal_param_node : Xml.formal_param_node) : Module.T.modunit =
   todo "FormalParamNode" "" formal_param_node.node.location
 
+(** This type is redundant with the below TheoremNode type and its conversion
+    does not need to be handled. Probably the SANY XML exporter should be
+    refactored to combine these two types. The only difference is that this
+    type contains the name of the theorem, like in THEOREM thm == expr, while
+    the other does not.
+*)
 and convert_theorem_def_node (theorem_def_node : Xml.theorem_def_node) : Module.T.modunit =
   todo "TheoremDefNode" "" theorem_def_node.node.location
 
@@ -347,7 +401,7 @@ and convert_theorem_def_node (theorem_def_node : Xml.theorem_def_node) : Module.
 and convert_theorem_node (thm : Xml.theorem_node) : Module.T.modunit =
   let get_thm_name (thm : Xml.theorem_def_ref) : hint =
     match (resolve_ref thm.uid).kind with
-    | TheoremDefNode def -> locate_opt def.node.location def.uniquename
+    | TheoremDefNode def -> attach_props def.node def.uniquename
     | _ -> failwith ("Unresolved theorem definition UID: " ^ string_of_int thm.uid)
   in Theorem (
     Option.map get_thm_name thm.definition,
@@ -358,18 +412,14 @@ and convert_theorem_node (thm : Xml.theorem_node) : Module.T.modunit =
     noprops Obvious, (* TODO convert proof *)
     noprops Obvious, (* TODO figure out why there are two proofs *)
     empty_summary  (* TODO figure out purpose of summary *)
-  ) |> locate_opt thm.node.location
+  ) |> attach_props thm.node
 
-and convert_entry (entry : Xml.entry) : Module.T.modunit =
-  match entry.kind with
-  | ModuleNode mule -> noprops (Submod (convert_module_node entry.uid mule))
-  | OpDeclNode op_decl_node -> convert_op_decl_node op_decl_node
-  | UserDefinedOpKind user_defined_op_kind -> convert_user_defined_op_kind user_defined_op_kind
-  | BuiltInKind built_in_kind -> convert_built_in_kind built_in_kind
-  | FormalParamNode formal_param_node -> convert_formal_param_node formal_param_node
-  | TheoremDefNode theorem_def_node -> convert_theorem_def_node theorem_def_node
-  | TheoremNode theorem_node -> convert_theorem_node theorem_node
-
+(** The top-level method converting the entire SANY AST to TLAPM's AST. SANY
+    uses a lot of GUIDs for one entity to reference another, so we load those
+    into a global table for fast lookup. This table would have to be a
+    parameter to every conversion method in this file; for simplicity we make
+    it a module-level mutable variable instead.
+*)
 let convert_ast (ast : Xml.modules) : (Module.T.modctx * Module.T.mule, (string option * string)) result =
   entries :=
     List.fold_left
@@ -386,6 +436,9 @@ let convert_ast (ast : Xml.modules) : (Module.T.modctx * Module.T.mule, (string 
   converted_modules := Coll.Im.add root_module_id root !converted_modules;
   Ok (Coll.Sm.empty, root)
 
+(** Calls SANY to parse the given module, then converts SANY's AST into the
+    TLAPM AST format.
+*)
 let parse (module_path : string) : (Module.T.modctx * Module.T.mule, (string option * string)) result =
   let ( >>= ) = Result.bind in
   Option.to_result ~none:(None, "TLAPS standard library cannot be found") Params.stdlib_path
