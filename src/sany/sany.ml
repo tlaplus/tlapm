@@ -409,10 +409,22 @@ and convert_theorem_node (thm : Xml.theorem_node) : Module.T.modunit =
     | Expression expr -> { context = Deque.empty; active = convert_expression expr}),
     (* TODO handle assume/prove *)
     0 (* TODO figure out what this integer parameter means *),
-    noprops Obvious, (* TODO convert proof *)
+    convert_proof thm.proof,
     noprops Obvious, (* TODO figure out why there are two proofs *)
     empty_summary  (* TODO figure out purpose of summary *)
   ) |> attach_props thm.node
+
+(** Converts a proof, which can either be OMITTED, OBVIOUS, BY, or a series
+    of individual proof steps culminated in a QED step.
+*)
+and convert_proof (proof : Xml.proof_node_group) : Proof.T.proof =
+  match proof with
+  | Omitted {node} -> Omitted Explicit |> attach_props node
+  | Obvious {node} -> Obvious |> attach_props node
+  | By proof -> todo "Proof" "By" proof.node.location
+  | Steps proof -> convert_proof_steps proof
+
+and convert_proof_steps (proof : Xml.steps_proof_node) : Proof.T.proof = todo "Proof" "Steps" proof.node.location
 
 (** The top-level method converting the entire SANY AST to TLAPM's AST. SANY
     uses a lot of GUIDs for one entity to reference another, so we load those
