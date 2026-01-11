@@ -8,8 +8,8 @@ THEOREM TRUE
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean))
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean))
 (double_line)))
 
 ===============================|||
@@ -22,8 +22,8 @@ PROPOSITION x == TRUE
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (identifier) (def_eq) (boolean))
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem name: (identifier) (def_eq) statement: (boolean))
 (double_line)))
 
 ===============================|||
@@ -37,8 +37,8 @@ OBVIOUS
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean) (terminal_proof))
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof: (terminal_proof))
 (double_line)))
 
 ===============================|||
@@ -52,8 +52,8 @@ PROOF OBVIOUS
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (identifier) (def_eq) (boolean) (terminal_proof))
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem name: (identifier) (def_eq) statement: (boolean) proof: (terminal_proof))
 (double_line)))
 
 ===============================|||
@@ -67,8 +67,8 @@ PROOF OMITTED
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (identifier) (def_eq) (boolean) (terminal_proof))
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem name: (identifier) (def_eq) statement: (boolean) proof: (terminal_proof))
 (double_line)))
 
 ===============================|||
@@ -82,8 +82,8 @@ PROOF BY DEF >
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
     (terminal_proof (use_body
       (use_body_def (infix_op_symbol (gt)))
     ))
@@ -107,8 +107,8 @@ PROOF BY ONLY
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
     (terminal_proof (use_body
       (use_body_expr
         (identifier_ref)
@@ -139,8 +139,8 @@ PROOF BY ONLY
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
     (terminal_proof (use_body
       (use_body_expr
         (module_ref (identifier_ref))
@@ -165,8 +165,8 @@ PROOF <1>a QED BY <1>a, <1>b
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
     (non_terminal_proof
       (qed_step (proof_step_id (level) (name))
         (terminal_proof (use_body (use_body_expr
@@ -191,8 +191,8 @@ PROOF
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
     (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (suffices_proof_step (boolean)))
       (qed_step (proof_step_id (level) (name))
@@ -242,11 +242,11 @@ THEOREM TRUE
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
     (non_terminal_proof
-      (proof_step (proof_step_id (level) (name)) (definition_proof_step (operator_definition (identifier) (def_eq) (nat_number))))
-      (proof_step (proof_step_id (level) (name)) (definition_proof_step (operator_definition (identifier) (def_eq) (nat_number))))
+      (proof_step (proof_step_id (level) (name)) (definition_proof_step (operator_definition name: (identifier) (def_eq) definition: (nat_number))))
+      (proof_step (proof_step_id (level) (name)) (definition_proof_step (operator_definition name: (identifier) (def_eq) definition: (nat_number))))
       (proof_step (proof_step_id (level) (name)) (have_proof_step (nat_number)))
       (proof_step (proof_step_id (level) (name)) (witness_proof_step (nat_number) (nat_number)))
       (proof_step (proof_step_id (level) (name)) (take_proof_step (identifier) (identifier) (identifier)))
@@ -273,8 +273,8 @@ THEOREM TRUE
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
     (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (instance (identifier_ref)))
       (qed_step (proof_step_id (level) (name)))
@@ -297,8 +297,12 @@ PROOF
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (bound_infix_op (identifier_ref) (implies) (identifier_ref))
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (bound_infix_op
+    lhs: (identifier_ref)
+    symbol: (implies)
+    rhs: (identifier_ref)
+  ) proof:
     (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (suffices_proof_step (identifier_ref)))
       (proof_step (proof_step_id (level) (name)) (suffices_proof_step (identifier_ref)
@@ -325,8 +329,8 @@ LEMMA TRUE
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
     (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (suffices_proof_step (nat_number)))
       (proof_step (proof_step_id (level) (name)) (suffices_proof_step (nat_number)))
@@ -354,8 +358,8 @@ COROLLARY TRUE
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
     (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (suffices_proof_step (nat_number)))
       (proof_step (proof_step_id (level) (name)) (suffices_proof_step (nat_number)))
@@ -386,8 +390,8 @@ PROOF
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
     (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (suffices_proof_step (nat_number)))
       (proof_step (proof_step_id (level) (name)) (suffices_proof_step (nat_number) (non_terminal_proof
@@ -423,8 +427,8 @@ PROOF
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
     (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (suffices_proof_step (nat_number) (non_terminal_proof
         (proof_step (proof_step_id (level) (name)) (suffices_proof_step (nat_number)))
@@ -467,8 +471,8 @@ PROOF
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
     (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (suffices_proof_step (nat_number) (non_terminal_proof
         (proof_step (proof_step_id (level) (name)) (suffices_proof_step (nat_number)))
@@ -510,8 +514,8 @@ COROLLARY TRUE
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
     (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (suffices_proof_step (nat_number) (non_terminal_proof
         (proof_step (proof_step_id (level) (name)) (suffices_proof_step (nat_number) (non_terminal_proof
@@ -545,8 +549,8 @@ THEOREM TRUE
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
     (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (suffices_proof_step (nat_number)))
       (qed_step (proof_step_id (level) (name)))
@@ -568,8 +572,8 @@ THEOREM TRUE
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
     (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (suffices_proof_step (nat_number)
         (non_terminal_proof
@@ -611,8 +615,8 @@ THEOREM TRUE
 ------------------------------|||
 
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean) (non_terminal_proof
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof: (non_terminal_proof
     (proof_step (proof_step_id (level) (name)) (suffices_proof_step
       (conj_list
         (conj_item (bullet_conj) (nat_number))
@@ -671,8 +675,8 @@ THEOREM TRUE
 
 ------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (theorem (boolean) (non_terminal_proof
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof: (non_terminal_proof
     (proof_step (proof_step_id (level) (name)) (suffices_proof_step
       (conj_list
         (conj_item (bullet_conj) (nat_number))
@@ -704,4 +708,399 @@ PROOF
 ====
 
 ------------------------------|||
+
+===============================|||
+Take Proof Steps
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> TAKE x
+<1> TAKE x, y, z
+<1> TAKE x \in S
+<1> TAKE x, y, z \in S
+<1> TAKE x \in S, y \in S, z \in S
+<1> TAKE u, v, w \in S, x, y \in S, z \in S
+<1> QED
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
+    (non_terminal_proof
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (identifier)
+      ))
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (identifier) (identifier) (identifier)
+      ))
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (quantifier_bound intro: (identifier) (set_in) set: (identifier_ref))
+      ))
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (quantifier_bound
+          intro: (identifier)
+          intro: (identifier)
+          intro: (identifier)
+          (set_in)
+          set: (identifier_ref))
+      ))
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (quantifier_bound intro: (identifier) (set_in) set: (identifier_ref))
+        (quantifier_bound intro: (identifier) (set_in) set: (identifier_ref))
+        (quantifier_bound intro: (identifier) (set_in) set: (identifier_ref))
+      ))
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (quantifier_bound
+          intro: (identifier)
+          intro: (identifier)
+          intro: (identifier)
+          (set_in)
+          set: (identifier_ref)
+        )
+        (quantifier_bound
+          intro: (identifier)
+          intro: (identifier)
+          (set_in)
+          set: (identifier_ref)
+        )
+        (quantifier_bound
+          intro: (identifier)
+          (set_in)
+          set: (identifier_ref)
+        )
+      ))
+      (qed_step (proof_step_id (level) (name)))
+    )
+  )
+(double_line)))
+
+===============================|||
+Take Proof Steps With Tuples
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> TAKE <<x>> \in S
+<1> TAKE <<x, y, z>> \in S
+<1> TAKE <<x>> \in S, <<y, z>> \in S
+<1> QED
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
+    (non_terminal_proof
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket)
+            (identifier)
+          (rangle_bracket))
+          (set_in)
+          set: (identifier_ref))
+      ))
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket)
+            (identifier)
+            (identifier)
+            (identifier)
+          (rangle_bracket))
+          (set_in)
+          set: (identifier_ref))
+      ))
+      (proof_step (proof_step_id (level) (name)) (take_proof_step
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket)
+            (identifier)
+          (rangle_bracket))
+          (set_in)
+          set: (identifier_ref)
+        )
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket)
+            (identifier)
+            (identifier)
+          (rangle_bracket))
+          (set_in)
+          set: (identifier_ref)
+        )
+      ))
+      (qed_step (proof_step_id (level) (name)))
+    )
+  )
+(double_line)))
+
+===============================|||
+Pick Proof Steps
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> PICK x : TRUE
+<1> PICK x, y, z : TRUE
+<1> PICK x \in S : TRUE
+<1> PICK x, y, z \in S : TRUE
+<1> PICK x \in S, y \in S, z \in S : TRUE
+<1> PICK u, v, w \in S, x, y \in S, z \in S : TRUE
+<1> QED
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
+    (non_terminal_proof
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (identifier)
+        (boolean)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (identifier) (identifier) (identifier)
+        (boolean)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (quantifier_bound intro: (identifier) (set_in) set: (identifier_ref))
+        (boolean)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (quantifier_bound
+          intro: (identifier)
+          intro: (identifier)
+          intro: (identifier)
+          (set_in)
+          set: (identifier_ref)
+        )
+        (boolean)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (quantifier_bound intro: (identifier) (set_in) set: (identifier_ref))
+        (quantifier_bound intro: (identifier) (set_in) set: (identifier_ref))
+        (quantifier_bound intro: (identifier) (set_in) set: (identifier_ref))
+        (boolean)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (quantifier_bound
+          intro: (identifier)
+          intro: (identifier)
+          intro: (identifier)
+          (set_in)
+          set: (identifier_ref)
+        )
+        (quantifier_bound
+          intro: (identifier)
+          intro: (identifier)
+          (set_in)
+          set: (identifier_ref)
+        )
+        (quantifier_bound
+          intro: (identifier)
+          (set_in)
+          set: (identifier_ref)
+        )
+        (boolean)
+      ))
+      (qed_step (proof_step_id (level) (name)))
+    )
+  )
+(double_line)))
+
+===============================|||
+Pick Proof Steps With Tuples
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> PICK <<x>> \in S : TRUE
+<1> PICK <<x, y, z>> \in S : TRUE
+<1> PICK <<x>> \in S, <<y, z>> \in S : TRUE
+<1> QED
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
+    (non_terminal_proof
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket)
+            (identifier)
+          (rangle_bracket))
+          (set_in)
+          set: (identifier_ref)
+        )
+        (boolean)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket)
+            (identifier)
+            (identifier)
+            (identifier)
+          (rangle_bracket))
+          (set_in)
+          set: (identifier_ref)
+        )
+        (boolean)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket)
+            (identifier)
+          (rangle_bracket))
+          (set_in)
+          set: (identifier_ref)
+        )
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket)
+            (identifier)
+            (identifier)
+          (rangle_bracket))
+          (set_in)
+          set: (identifier_ref)
+        )
+        (boolean)
+      ))
+      (qed_step (proof_step_id (level) (name)))
+    )
+  )
+(double_line)))
+
+===============================|||
+Proof Steps With Terminal Proofs
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> SUFFICES TRUE OBVIOUS
+<1> TRUE OBVIOUS
+<1> CASE TRUE OBVIOUS
+<1> PICK x : TRUE OBVIOUS
+<1> PICK <<x>> \in S : TRUE OBVIOUS
+<1> QED
+====
+
+-------------------------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (theorem statement: (boolean) proof:
+    (non_terminal_proof
+      (proof_step (proof_step_id (level) (name)) (suffices_proof_step
+        (boolean) (terminal_proof)
+      ))
+      (proof_step (proof_step_id (level) (name)) (suffices_proof_step
+        (boolean) (terminal_proof)
+      ))
+      (proof_step (proof_step_id (level) (name)) (case_proof_step
+        (boolean) (terminal_proof)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (identifier) (boolean) (terminal_proof)
+      ))
+      (proof_step (proof_step_id (level) (name)) (pick_proof_step
+        (quantifier_bound
+          intro: (tuple_of_identifiers (langle_bracket) (identifier) (rangle_bracket))
+          (set_in)
+          set: (identifier_ref)
+        )
+        (boolean) (terminal_proof)
+      ))
+      (qed_step (proof_step_id (level) (name)))
+    )
+  )
+(double_line)))
+
+===============================|||
+Use Proof Step With Disallowed Terminal Proof
+:error
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> USE TRUE OBVIOUS
+<1> QED
+====
+
+-------------------------------|||
+
+===============================|||
+Hide Proof Step With Disallowed Terminal Proof
+:error
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> HIDE TRUE OBVIOUS
+<1> QED
+====
+
+-------------------------------|||
+
+===============================|||
+Define Proof Step With Disallowed Terminal Proof
+:error
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> x == TRUE OBVIOUS
+<1> QED
+====
+
+-------------------------------|||
+
+===============================|||
+Have Proof Step With Disallowed Terminal Proof
+:error
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> HAVE TRUE OBVIOUS
+<1> QED
+====
+
+-------------------------------|||
+
+===============================|||
+Witness Proof Step With Disallowed Terminal Proof
+:error
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> WITNESS TRUE OBVIOUS
+<1> QED
+====
+
+-------------------------------|||
+
+===============================|||
+Take Proof Step With Disallowed Terminal Proof
+:error
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> TAKE x OBVIOUS
+<1> QED
+====
+
+-------------------------------|||
+
+===============================|||
+Take Tuple Proof Step With Disallowed Terminal Proof
+:error
+===============================|||
+
+---- MODULE Test ----
+THEOREM TRUE
+<1> TAKE <<x>> \in S OBVIOUS
+<1> QED
+====
+
+-------------------------------|||
 

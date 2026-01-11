@@ -135,33 +135,7 @@ LEMMA TypeOK_inv == Spec => []TypeOK
 <1>1. Init => TypeOK
   BY DEF Init
 <1>2. TypeOK /\ [Next]_vars => TypeOK'
-(* FIXME: Although each of the steps below is proved instantly,
-   the attempt to prove the assertion all at once fails??
-  BY NAssumption DEF Next, vars, TypeOK, Nodes, Color, Controlled, Environment,
-                     InitiateProbe, PassToken, SendMsg, Deactivate
-*)
-  <2> SUFFICES ASSUME TypeOK,
-                      [Next]_vars
-               PROVE  TypeOK'
-    OBVIOUS
-  <2>1. CASE InitiateProbe
-    BY <2>1 DEF InitiateProbe
-  <2>2. ASSUME NEW i \in Nodes \ {0},
-               PassToken(i)
-        PROVE  TypeOK'
-    BY <2>2 DEF PassToken
-  <2>3. ASSUME NEW i \in Nodes,
-               Deactivate(i)
-        PROVE  TypeOK'
-    BY <2>3 DEF Deactivate
-  <2>4. ASSUME NEW i \in Nodes,
-               SendMsg(i)
-        PROVE  TypeOK'
-    BY <2>4 DEF SendMsg
-  <2>5. CASE UNCHANGED vars
-    BY <2>5 DEF vars
-  <2>6. QED
-    BY <2>1, <2>2, <2>3, <2>4, <2>5 DEF Controlled, Environment, Next
+  BY DEFS Next, vars, InitiateProbe, PassToken, Deactivate, SendMsg, Controlled, Environment
 <1>3. QED
   BY <1>1, <1>2, PTL DEF Spec
 
@@ -222,7 +196,4 @@ LEMMA Inv_implies_Termination == Inv => TerminationDetection
 
 =============================================================================
 \* Modification History
-\* Last modified Wed Jan 08 15:06:01 CET 2020 by merz
-\* Last modified Fri May 30 23:04:12 CEST 2014 by shaolin
-\* Last modified Wed May 21 11:36:56 CEST 2014 by jael
 \* Created Mon Sep 09 11:33:10 CEST 2013 by merz

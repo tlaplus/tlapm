@@ -282,7 +282,7 @@ LEMMA SafeAtStable == Inv /\ Next /\ TypeOK' =>
 THEOREM Invariant == Spec => []Inv
 <1> USE DEF Ballots
 <1>1. Init => Inv
-  BY Isa DEF Init, Inv, TypeOK, AccInv, MsgInv, VotedForIn
+  BY DEF Init, Inv, TypeOK, AccInv, MsgInv, VotedForIn
 
 <1>2. Inv /\ [Next]_vars => Inv'
   <2> SUFFICES ASSUME Inv, Next
@@ -324,7 +324,7 @@ THEOREM Invariant == Spec => []Inv
         BY <2>1, <4>1, NoneNotAValue DEF AccInv, TypeOK, Messages
       <4>3. \A aa,vv,bb : VotedForIn(aa,vv,bb)' <=>
                           VotedForIn(aa,vv,bb) \/ (aa = a /\ vv = maxVal'[a] /\ bb = maxVBal'[a])
-        BY <4>1, Isa DEF VotedForIn, Send, TypeOK, Messages
+        BY <4>1 DEF VotedForIn, Send, TypeOK, Messages
       <4>4. ASSUME NEW acc \in Acceptors, maxVBal'[acc] >= 0
             PROVE  VotedForIn(acc, maxVal[acc], maxVBal[acc])'
         BY <4>1, <4>3, <4>4 DEF AccInv, TypeOK
@@ -386,7 +386,7 @@ THEOREM Invariant == Spec => []Inv
         BY <4>3 DEF VotedForIn
       <4>6. \A m,ma \in msgs' : m.type = "2a" /\ ma.type = "2a" /\ ma.bal = m.bal
                                 => ma = m
-        BY <4>1, <4>3, Isa DEF MsgInv
+        BY <4>1, <4>3 DEF MsgInv
       <4>10. SafeAt(v,b)
         <5>0. PICK Q \in Quorums,
                    S \in SUBSET {m \in msgs : (m.type = "1b") /\ (m.bal = b)} :
@@ -400,7 +400,17 @@ THEOREM Invariant == Spec => []Inv
         <5>1. CASE \A m \in S : m.maxVBal = -1
           \* In that case, no acceptor in Q voted in any ballot less than b,
           \* by the last conjunct of MsgInv for type "1b" messages, and that's enough
-          BY <5>1, <5>0 DEF TypeOK, MsgInv, SafeAt, WontVoteIn, Messages
+          <6>1. \A m \in S : 
+                   /\ m.bal =< maxBal[m.acc]
+                   /\ \A c \in (m.maxVBal+1) .. (m.bal-1) :
+                         ~ \E v \in Values : VotedForIn(m.acc, v, c)
+            BY DEF MsgInv
+          <6>2. \A c \in 0..(b-1) : \A a \in Q : \A v \in Values : 
+                    ~ VotedForIn(a, v, c)
+            BY <5>0, <5>1, <6>1
+          <6>3. \A c \in 0..(b-1) : \A a \in Q : maxBal[a] > c
+            BY <5>0, <6>1, QuorumAssumption DEF TypeOK
+          <6>. QED  BY <6>2, <6>3 DEF SafeAt, WontVoteIn
         <5>2. ASSUME NEW c \in 0 .. (b-1),
                      \A m \in S : m.maxVBal =< c,
                      NEW ma \in S, ma.maxVBal = c, ma.maxVal = v
@@ -464,15 +474,13 @@ THEOREM Consistent == Spec => []Consistency
                PROVE  v1 = v2
     BY DEF Consistency, Chosen
   <2>1. CASE b1 = b2
-    BY <2>1, VotedOnce, QuorumAssumption DEF ChosenIn, Inv
-(*
+\*    BY <2>1, VotedOnce, QuorumAssumption DEF ChosenIn, Inv
     <3>1. PICK a1 \in Acceptors : VotedForIn(a1, v1, b1)
-      BY QuorumAssumption DEF ChosenIn
+      BY QuorumAssumption, Zenon DEF ChosenIn
     <3>2. PICK a2 \in Acceptors : VotedForIn(a2, v2, b2)
-      BY QuorumAssumption DEF ChosenIn
+      BY QuorumAssumption, Zenon DEF ChosenIn
     <3>. QED
       BY <3>1, <3>2, <2>1, VotedOnce DEF Inv
-*)
   <2>2. CASE b1 < b2
     <3>1. SafeAt(v2, b2)
       BY VotedInv, QuorumNonEmpty, QuorumAssumption DEF ChosenIn, Inv
@@ -500,29 +508,23 @@ THEOREM Refinement == Spec => C!Spec
   BY QuorumNonEmpty, Zenon DEF Init, C!Init, chosenBar, Chosen, ChosenIn, VotedForIn
 
 <1>2. TypeOK' /\ Consistency' /\ [Next]_vars => [C!Next]_chosenBar
-  <2> SUFFICES ASSUME TypeOK', Consistency', Next, chosenBar' # chosenBar
-               PROVE  C!Next
-    BY DEF vars, chosenBar, Chosen, ChosenIn, VotedForIn
-  <2>1. chosenBar \subseteq chosenBar'
-    BY DEF Send, chosenBar, Chosen, ChosenIn, VotedForIn, Next, Phase1a, Phase1b, Phase2a, Phase2b
-  <2>2. \A v, w \in chosenBar': v = w
-    BY DEF Consistency, chosenBar, ChosenIn, TypeOK
-  <2>3. chosenBar = {}
-    BY <2>1, <2>2\*, SetExtensionality
-  <2>. QED
-    BY <2>1, <2>2, <2>3 DEF C!Next, chosenBar
+  <2> SUFFICES ASSUME TypeOK', Consistency', [Next]_vars
+               PROVE  [C!Next]_chosenBar
+    OBVIOUS
+  <2>1. CASE Next
+    <3>1. chosenBar \subseteq chosenBar'
+      BY <2>1 DEF Send, chosenBar, Chosen, ChosenIn, VotedForIn, Next, Phase1a, Phase1b, Phase2a, Phase2b
+    <3>2. \A v, w \in chosenBar': v = w
+      BY DEF Consistency, chosenBar, ChosenIn, TypeOK
+    <3>. QED
+      BY <3>1, <3>2 DEF C!Next, chosenBar
+  <2>2. CASE UNCHANGED vars 
+    BY <2>2 DEF vars, chosenBar, Chosen, ChosenIn, VotedForIn
+  <2>. QED  BY <2>1, <2>2
 
 <1>3. QED
   BY <1>1, <1>2, Invariant, Consistent, PTL DEF Spec, C!Spec, Inv
 
 =============================================================================
 \* Modification History
-\* Last modified Fri Jan 10 17:34:42 CET 2020 by merz
-\* Last modified Sun Oct 20 18:25:27 CEST 2019 by merz
-\* Last modified Fri Nov 28 10:39:17 PST 2014 by lamport
-\* Last modified Sun Nov 23 14:45:09 PST 2014 by lamport
-\* Last modified Sat Nov 22 12:04:19 CET 2014 by merz
-\* Last modified Fri Nov 21 17:40:41 PST 2014 by lamport
-\* Last modified Tue Mar 18 11:37:57 CET 2014 by doligez
-\* Last modified Sat Nov 24 18:53:09 GMT-03:00 2012 by merz
 \* Created Sat Nov 17 16:02:06 PST 2012 by lamport

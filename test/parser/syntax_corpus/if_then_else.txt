@@ -8,9 +8,9 @@ op == IF "A" THEN "B" ELSE "C"
 
 ------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
-    (if_then_else (string) (string) (string))
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
+    (if_then_else if: (string) then: (string) else: (string))
   )
 (double_line)))
 
@@ -28,15 +28,15 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item
         (bullet_conj)
         (if_then_else
-          (nat_number)
-          (nat_number)
-          (nat_number)
+          if: (nat_number)
+          then: (nat_number)
+          else: (nat_number)
         )
       )
       (conj_item (bullet_conj) (nat_number))
@@ -59,15 +59,15 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (if_then_else
-      (conj_list
+      if: (conj_list
         (conj_item (bullet_conj) (nat_number))
         (conj_item (bullet_conj) (nat_number))
       )
-      (nat_number)
-      (nat_number)
+      then: (nat_number)
+      else: (nat_number)
     )
   )
 (double_line)))
@@ -86,15 +86,15 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (disj_list
       (disj_item
         (bullet_disj)
         (if_then_else
-          (nat_number)
-          (nat_number)
-          (nat_number)
+          if: (nat_number)
+          then: (nat_number)
+          else: (nat_number)
         )
       )
       (disj_item (bullet_disj) (nat_number))
@@ -117,15 +117,16 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (if_then_else
-      (disj_list
+      if: (disj_list
         (disj_item (bullet_disj) (nat_number))
         (disj_item (bullet_disj) (nat_number))
       )
-      (nat_number)
-      (nat_number)
+      then: (nat_number)
+      else: (nat_number)
     )
   )
 (double_line)))
+

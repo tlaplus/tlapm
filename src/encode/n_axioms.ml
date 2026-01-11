@@ -4295,15 +4295,9 @@ let seqsubseq_typing ~disable_arithmetic =
     ] %% []
   ] ]
   ( appb B.Implies
-    [ List (And,
-      [ apps T.Mem
-        [ Ix 3 %% []
-        ; apps T.SeqSeq
-          [ Ix 4 %% []
-          ] %% []
-        ] %% []
-      ] @
-      (if disable_arithmetic then
+    [ List (Or,
+      [ if disable_arithmetic then
+        List (And,
         [ apps T.Mem
           [ Ix 2 %% []
           ; apps T.IntSet [] %% []
@@ -4312,34 +4306,66 @@ let seqsubseq_typing ~disable_arithmetic =
           [ Ix 1 %% []
           ; apps T.IntSet [] %% []
           ] %% []
-        ]
-      else []) @
-      [ if disable_arithmetic then
-        apps T.IntLteq
-        [ apps (T.IntLit 1) [] %% []
-        ; Ix 2 %% []
-        ] %% []
-      else
-        apps T.TIntLteq
-        [ apps (T.TIntLit 1) [] %% []
-        ; Ix 2 %% []
-        ] %% []
-      ; if disable_arithmetic then
-        apps T.IntLteq
-        [ Ix 1 %% []
-        ; apps T.SeqLen
-          [ Ix 3 %% []
+        ; apps T.IntLteq
+          [ Ix 1 %% []
+          ; Ix 2 %% []
           ] %% []
-        ] %% []
+        ; appb ~tys:[ t_idv ] B.Neq
+          [ Ix 1 %% []
+          ; Ix 2 %% []
+          ] %% []
+        ]) %% []
       else
-        apps T.TIntLteq
+        apps T.TIntLt
         [ Ix 1 %% []
-        ; apps (T.Proj t_int)
-          [ apps T.SeqLen
+        ; Ix 2 %% []
+        ] %% []
+      ; List (And,
+        [ apps T.Mem
+          [ Ix 3 %% []
+          ; apps T.SeqSeq
+            [ Ix 4 %% []
+            ] %% []
+          ] %% []
+        ] @
+        (if disable_arithmetic then
+          [ apps T.Mem
+            [ Ix 2 %% []
+            ; apps T.IntSet [] %% []
+            ] %% []
+          ; apps T.Mem
+            [ Ix 1 %% []
+            ; apps T.IntSet [] %% []
+            ] %% []
+          ]
+        else []) @
+        [ if disable_arithmetic then
+          apps T.IntLteq
+          [ apps (T.IntLit 1) [] %% []
+          ; Ix 2 %% []
+          ] %% []
+        else
+          apps T.TIntLteq
+          [ apps (T.TIntLit 1) [] %% []
+          ; Ix 2 %% []
+          ] %% []
+        ; if disable_arithmetic then
+          apps T.IntLteq
+          [ Ix 1 %% []
+          ; apps T.SeqLen
             [ Ix 3 %% []
             ] %% []
           ] %% []
-        ] %% []
+        else
+          apps T.TIntLteq
+          [ Ix 1 %% []
+          ; apps (T.Proj t_int)
+            [ apps T.SeqLen
+              [ Ix 3 %% []
+              ] %% []
+            ] %% []
+          ] %% []
+        ]) %% []
       ]) %% []
     ; apps T.Mem
       [ apps T.SeqSubSeq

@@ -8,8 +8,8 @@ op == <<>>
 
 ----------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (tuple_literal (langle_bracket) (rangle_bracket))
   )
 (double_line)))
@@ -24,8 +24,8 @@ op == <<1, 2, 3, 4, 5>>
 
 ----------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (tuple_literal (langle_bracket)
       (nat_number)
       (nat_number)
@@ -46,8 +46,8 @@ op == <<x, y, z>>
 
 ----------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (tuple_literal (langle_bracket)
       (identifier_ref)
       (identifier_ref)
@@ -66,8 +66,8 @@ op == <<<<x, y>>, <<z>>>>
 
 ----------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (tuple_literal (langle_bracket)
       (tuple_literal (langle_bracket)
         (identifier_ref)

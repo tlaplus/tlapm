@@ -119,7 +119,7 @@ let bug ?at msg =
       "Please file a bug report, including as much information" ;
       "as you can. Mention the following in your report: " ;
       "" ]
-      @ Params.configuration false false
+      @ Params.configuration Format.err_formatter false false
     in
     String.concat "\n" lines ^ "\n"
   in

@@ -6,7 +6,7 @@
 (*  \vspace{12pt}}^'                                                       *)
 (***************************************************************************)
 
-EXTENDS FiniteSets, Integers, Functions, WellFoundedInduction
+EXTENDS FiniteSets, Integers, FunctionsFork, WellFoundedInduction
 
 (***************************************************************************)
 (* `.  .'                                                                  *)
@@ -224,7 +224,7 @@ THEOREM FS_BoundedSetOfNaturals ==
 THEOREM FS_Induction ==
   ASSUME NEW S, IsFiniteSet(S),
          NEW P(_), P({}),
-         ASSUME NEW T, NEW x, IsFiniteSet(T), P(T), x \notin T
+         ASSUME NEW T \in SUBSET S, IsFiniteSet(T), P(T), NEW x \in S \ T
          PROVE  P(T \cup {x})
   PROVE  P(S)
 

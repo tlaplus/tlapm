@@ -1,7 +1,7 @@
 (* Zenon.thy --- Support lemmas for Zenon proofs
  * Author: Damien Doligez <damien.doligez@inria.fr>
- * Copyright (C) 2008-2024  INRIA and Microsoft Corporation
- * Version:    Isabelle2024
+ * Copyright (C) 2008-2025  INRIA and Microsoft Corporation
+ * Version:    Isabelle2025
  *)
 
 (* isabelle usedir -b Pure TLA+ *)

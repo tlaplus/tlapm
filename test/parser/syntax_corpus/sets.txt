@@ -8,8 +8,8 @@ op == { }
 
 ----------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (finite_set_literal)
   )
 (double_line)))
@@ -228,6 +228,29 @@ op == {<<x, y, z>> \in Nat \X Int \X Real : P(x, y, z)}
   )
 (double_line)))
 
+======================|||
+Set Filter with Single Element Tuple
+======================|||
+
+---- MODULE Test ----
+op == {<<x>> \in Nat : P(x, y, z)}
+====
+
+----------------------|||
+
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq)
+    definition: (set_filter
+      generator: (quantifier_bound
+        intro: (tuple_of_identifiers (langle_bracket) (identifier) (rangle_bracket))
+        (set_in)
+        set: (nat_number_set)
+      )
+      filter: (bound_op name: (identifier_ref) parameter: (identifier_ref) parameter: (identifier_ref) parameter: (identifier_ref))
+    )
+  )
+(double_line)))
+
 =====================|||
 Set Filter Precedence
 =====================|||
@@ -270,18 +293,18 @@ op == {
 
 ----------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (set_filter
-      (quantifier_bound
-        (identifier) (set_in)
-        (conj_list
+      generator: (quantifier_bound
+        intro: (identifier) (set_in)
+        set: (conj_list
           (conj_item (bullet_conj) (identifier_ref))
           (conj_item (bullet_conj) (identifier_ref))
           (conj_item (bullet_conj) (identifier_ref))
         )
       )
-      (conj_list
+      filter: (conj_list
         (conj_item (bullet_conj) (identifier_ref))
         (conj_item (bullet_conj) (identifier_ref))
         (conj_item (bullet_conj) (identifier_ref))

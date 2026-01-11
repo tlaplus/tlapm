@@ -66,7 +66,7 @@ val safefp: bool ref
 val fp_deb: bool ref
 
 (* util/util.ml *)
-val configuration: bool -> bool -> string list
+val configuration: Format.formatter -> bool -> bool -> string list
 
 (* module/save.ml *)
 val stdlib_search_paths : string list
@@ -97,7 +97,7 @@ val suppress_all: bool ref
 val set_smt_logic: string -> unit
 val set_smt_solver: string -> unit
 val set_tlapm_cache_dir: string -> unit
-val printconfig: bool -> string
+val printconfig: Format.formatter -> bool -> string
 val print_config_toolbox: bool -> string
 val check_zenon_ver: unit -> unit
 val fpf_out: string option ref

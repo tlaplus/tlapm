@@ -27,7 +27,7 @@ EXTENDS Naturals, TLAPS
 (* is a natural number.                                                    *)
 (***************************************************************************)
 CONSTANT N
-ASSUME N \in Nat
+ASSUME NAssumption == N \in Nat
 
 (***************************************************************************)
 (* We define P to be the set {1, 2, ...  , N} of processes.                *)
@@ -67,7 +67,7 @@ p4:   flag[self] := FALSE;
       unread := P \ {self} ;
 p5:   while (unread # {}) {
         with (i \in unread) { nxt := i ; };
-        await ~ flag[nxt];
+        await (flag[nxt] = FALSE);
 p6:     await \/ num[nxt] = 0
               \/ LL(self, nxt) ;
         unread := unread \ {nxt};
@@ -79,7 +79,7 @@ p7:   num[self] := 0;
 ****     this ends the comment containg the pluscal code      **********)
 
 \* BEGIN TRANSLATION  (this begins the translation of the PlusCal code)
-VARIABLES num, flag, pc
+VARIABLES pc, num, flag
 
 (* define statement *)
 LL(j, i) == \/ num[j] < num[i]
@@ -88,7 +88,7 @@ LL(j, i) == \/ num[j] < num[i]
 
 VARIABLES unread, max, nxt
 
-vars == << num, flag, pc, unread, max, nxt >>
+vars == << pc, num, flag, unread, max, nxt >>
 
 ProcSet == (P)
 
@@ -136,7 +136,7 @@ p5(self) == /\ pc[self] = "p5"
             /\ IF unread[self] # {}
                   THEN /\ \E i \in unread[self]:
                             nxt' = [nxt EXCEPT ![self] = i]
-                       /\ ~ flag[nxt'[self]]
+                       /\ (flag[nxt'[self]] = FALSE)
                        /\ pc' = [pc EXCEPT ![self] = "p6"]
                   ELSE /\ pc' = [pc EXCEPT ![self] = "cs"]
                        /\ nxt' = nxt
@@ -192,6 +192,13 @@ TypeOK == /\ num \in [P -> Nat]
           /\ pc \in
               [P -> {"p1", "p2", "p3", "p4", "p5", "p6", "cs", "p7"}]
 
+THEOREM Typing == Spec => []TypeOK 
+<1>. USE DEF ProcSet, TypeOK
+<1>1. Init => TypeOK 
+  BY DEF Init
+<1>2. TypeOK /\ [Next]_vars => TypeOK'
+  BY DEF Next, vars, p, p1, p2, p3, p4, p5, p6, p7, cs
+<1>. QED  BY <1>1, <1>2, PTL DEF Spec 
 
 (***************************************************************************)
 (* After(i, j) is a condition that implies that num[j] > 0 and, if i is    *)
@@ -226,9 +233,9 @@ IInv(i) ==
   /\ (pc[i] \in {"cs", "p7"}) => \A j \in P \ {i} : After(j, i)
 
 (***************************************************************************)
-(* Inv is the complete inductive invariant.                                *)
+(* Inv is the main inductive invariant, modulo type correctness.           *)
 (***************************************************************************)
-Inv == TypeOK /\ \A i \in P : IInv(i)
+Inv == \A i \in P : IInv(i)
 -----------------------------------------------------------------------------
 (***************************************************************************)
 (* Proof of Mutual Exclusion                                               *)
@@ -238,54 +245,35 @@ Inv == TypeOK /\ \A i \in P : IInv(i)
 (* which Inv is true leaves Inv true.  Step <1>4 follows easily from       *)
 (* <1>1-<1>3 by simple temporal reasoning.                                 *)
 (***************************************************************************)
-THEOREM Spec => []Inv
-<1> USE DEFS TypeOK, Inv, IInv, ProcSet
-<1>1. Init => Inv
-  BY DEFS Init, Inv
-<1>2. Inv /\ [Next]_vars => Inv'
-  <2> SUFFICES ASSUME Inv, [Next]_vars PROVE Inv'
-    OBVIOUS
-  <2> USE DEFS After, LL
+THEOREM Spec => []MutualExclusion
+<1>. USE NAssumption DEFS ProcSet, TypeOK
+<1>1. Init => Inv 
+  BY DEF Init, Inv, IInv
+<1>2. TypeOK /\ Inv /\ [Next]_vars => Inv'
+  <2>. SUFFICES ASSUME TypeOK, Inv, Next
+                PROVE  Inv'
+    BY DEF Inv, IInv, After, LL, vars
+  <2>. USE DEFS Inv, IInv, After, LL, P
   <2>1. ASSUME NEW self \in P, p1(self) PROVE Inv'
     BY <2>1 DEF p1
   <2>2. ASSUME NEW self \in P, p2(self) PROVE Inv'
-    <3>1. CASE unread[self] = {}
-      BY <2>2, <3>1 DEF p2
-    <3>2. CASE unread[self] # {}
-      BY <2>2, <3>2 DEF p2
-    <3>3. QED
-      BY <3>1, <3>2
+    BY <2>2 DEF p2
   <2>3. ASSUME NEW self \in P, p3(self) PROVE Inv'
     BY <2>3 DEF p3
   <2>4. ASSUME NEW self \in P, p4(self) PROVE Inv'
     BY <2>4 DEF p4
   <2>5. ASSUME NEW self \in P, p5(self) PROVE Inv'
-    <3>1. CASE unread[self] = {}
-      BY <2>5, <3>1 DEF p5
-    <3>2. CASE unread[self] # {}
-      BY <2>5, <3>2, CVC4T(30) DEF p5
-    <3>3. QED
-      BY <3>1, <3>2
+    BY <2>5, SMTT(20) DEF p5
   <2>6. ASSUME NEW self \in P, p6(self) PROVE Inv'
-    <3>p. P \subseteq Nat
-      BY N \in Nat DEF P
-    <3>1. CASE num[nxt[self]] = 0
-      BY <2>6, <3>1 DEF p6
-    <3>2. CASE LL(self, nxt[self])
-      BY <2>6, <3>2, <3>p DEF p6
-    <3>3. QED
-      BY <2>6, <3>1, <3>2 DEF p6
+    BY <2>6, SMTT(20) DEF p6
   <2>7. ASSUME NEW self \in P, cs(self) PROVE Inv'
-    BY <2>7 DEF cs
+    BY <2>7, SMTT(20) DEF cs
   <2>8. ASSUME NEW self \in P, p7(self) PROVE Inv'
     BY <2>8 DEF p7
-  <2>9. CASE UNCHANGED vars
-    BY <2>9 DEF vars
-  <2>10. QED
-    BY <2>1, <2>2, <2>3, <2>4, <2>5, <2>6, <2>7, <2>8, <2>9 DEF Next, p
+  <2>. QED  BY <2>1, <2>2, <2>3, <2>4, <2>5, <2>6, <2>7, <2>8 DEF Next, p
 <1>3. Inv => MutualExclusion
-  BY DEFS Inv, After, MutualExclusion
-<1>4. QED
-  BY <1>1, <1>2, <1>3, PTL DEF Spec
+  BY DEF Inv, IInv, After, MutualExclusion
+<1>. QED  BY <1>1, <1>2, <1>3, Typing, PTL DEF Spec
+
 =============================================================================
 

@@ -107,7 +107,7 @@ subsection \<open>Integers\<close>
 lemma PlusTyping: "x \<in> Int \<and> y \<in> Int \<Rightarrow> x+y \<in> Int"
   by simp
 
-lemma UminusTyping: "x \<in> Int \<Rightarrow> -.x \<in> Int"
+lemma UminusTyping: "x \<in> Int \<Rightarrow> -x \<in> Int"
   by simp
 
 lemma MinusTyping: "x \<in> Int \<and> y \<in> Int \<Rightarrow> x-y \<in> Int"
@@ -116,33 +116,14 @@ lemma MinusTyping: "x \<in> Int \<and> y \<in> Int \<Rightarrow> x-y \<in> Int"
 lemma TimesTyping: "x \<in> Int \<and> y \<in> Int \<Rightarrow> x*y \<in> Int"
   by simp
 
-(* Isabelle currently provides integer division only for natural
-   numbers, so we cannot prove the following.
-
-lemma DivTyping: "x \<in> Int \<and> y \<in> Int \<and> y \<noteq> 0 \<Rightarrow> x \\div y \<in> Int"
-*)
+lemma DivTyping: "x \<in> Int \<and> y \<in> Int \<and> y > 0 \<Rightarrow> x div y \<in> Int"
+  by simp
 
 lemma NatDef: "x \<in> Nat \<Leftrightarrow> x \<in> Int \<and> 0 \<le> x"
-proof
-  assume "x \<in> Nat"
-  then show "x \<in> Int \<and> 0 \<le> x" by simp
-next
-  assume "x \<in> Int \<and> 0 \<le> x"
-  hence "x \<in> Int" "0 \<le> x" by blast+
-  from \<open>x \<in> Int\<close> show "x \<in> Nat"
-  proof (rule intCases)
-    fix m
-    assume "m \<in> Nat" "x = -.m"
-    with \<open>0 \<le> x\<close> show ?thesis
-      by (cases m) auto
-  qed
-qed
-
-(* Isabelle currently does not support integer intervals,
-   so we cannot prove the following.
+  by simp
 
 lemma RangeDef: "x \<in> a .. b \<Leftrightarrow> x \<in> Int \<and> a \<le> x \<and> x \<le> b"
-*)
+  by simp
 
 
 subsection \<open>Booleans\<close>
@@ -219,7 +200,16 @@ lemma SeqIntro:
      "\<forall>i : i \<in> DOMAIN s \<Leftrightarrow> i \<in> Nat \<and> 1 \<le> i \<and> i \<le> Len(s)"
      "\<forall>i \<in> Nat : 1 \<le> i \<and> i \<le> Len(s) \<Rightarrow> s[i] \<in> a"
    shows  "s \<in> Seq(a)"
-  using assms by auto
+proof
+  from assms show "isASeq(s)" by auto
+next
+  fix k
+  assume "k \<in> 1 .. Len(s)"
+  hence k: "k \<in> Int" "1 \<le> k" "k \<le> Len(s)" by auto
+  with \<open>Len(s) \<in> Nat\<close> have "k \<in> Nat" by auto
+  with \<open>\<forall>i \<in> Nat : 1 \<le> i \<and> i \<le> Len(s) \<Rightarrow> s[i] \<in> a\<close> k
+  show "s[k] \<in> a" by blast
+qed
 
 lemma SeqElim1:
   "s \<in> Seq(a) \<Rightarrow> isAFcn(s) \<and> Len(s) \<in> Nat \<and> DOMAIN s = 1 .. Len(s)"
@@ -258,14 +248,24 @@ text \<open>
 \<close>
 lemma AppendApp1:
   assumes "Len(s) \<in> Nat" (* missing from original formulation *)
-          "i \<in> Nat"  (* changed from Int because Isabelle doesn't support Int intervals *)
+          "i \<in> Int"
           "1 \<le> i" "i \<le> Len(s)"
   shows   "Append(s,x)[i] = s[i]"
   using assms unfolding Append_def by auto
 
 lemma AppendApp2:
-  "Len(s) \<in> Nat \<Rightarrow> Append(s,x)[Len(s)+1] = x"
-  unfolding Append_def by auto
+  assumes "Len(s) \<in> Nat"
+  shows "Append(s,x)[Len(s)+1] = x"
+proof -
+  from assms have "Len(s)+1 = succ[Len(s)]"
+    by simp
+  moreover
+  from assms have "Len(s)+1 \<in> DOMAIN Append(s,x)"
+    by (auto simp: Append_def)
+  ultimately
+  show ?thesis
+    using assms by (auto simp: Append_def)
+qed
 
 text \<open>
   Isabelle/TLA+ doesn't know about the remaining operations on sequences.

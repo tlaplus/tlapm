@@ -8,15 +8,15 @@ op == M!X!Y!Z
 
 ------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (prefixed_op
-      (subexpr_prefix
+      prefix: (subexpr_prefix
         (subexpr_component (identifier_ref))
         (subexpr_component (identifier_ref))
         (subexpr_component (identifier_ref))
       )
-      (identifier_ref)
+      op: (identifier_ref)
     )
   )
 (double_line)))

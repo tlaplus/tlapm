@@ -1,4 +1,6 @@
------------------------------- MODULE Functions -----------------------------
+https://github.com/tlaplus/tlapm/issues/171 explains why this module has been renamed from Functions to FunctionsFork.
+
+------------------------------ MODULE FunctionsFork -----------------------------
 (***************************************************************************)
 (* `^{\large\bf \vspace{12pt}                                              *)
 (*  Notions about functions including injection, surjection, and bijection.*)

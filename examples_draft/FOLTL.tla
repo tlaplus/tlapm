@@ -29,16 +29,6 @@ THEOREM ASSUME NEW n \in Nat, STATE x
         PROVE  (\A i \in 1..n : []<>(x=i)) <=> [](\A i \in 1..n : <>(x=i))
 OBVIOUS
 
-(***************************************************************************)
-(* Attempting to prove the above theorem for a non-constant set S fails,   *)
-(* as it should. However, the proof obligation sent to the backend provers *)
-(* LOOKS WRONG because the universal quantifier on the right-hand side is  *)
-(* moved out of the scope of the [] formula.                               *)
-(***************************************************************************)
-THEOREM ASSUME TEMPORAL A(_), STATE S
-        PROVE  (\A x \in S : []A(x)) <=> [](\A x \in S : A(x))
-OBVIOUS
-
 -----------------------------------------------------------------------------
 
 (***************************************************************************)
@@ -71,12 +61,9 @@ THEOREM STL6_gen ==
       OBVIOUS
     <3>. QED  BY <3>1, PTL
   <2>. QED  BY <2>1, <2>2, <2>3
-<1>. QED
-  <2>. HIDE DEF G
-  <2>1. ASSUME NEW T, IsFiniteSet(T)  PROVE G(T)
-    BY <1>1, <1>2, IsFiniteSet(T), FS_Induction, IsaM("blast")
-  <2>2.G(S) BY <2>1  \* why does the proof fail without this step?
-  <2>. QED  BY <2>2 DEF G
+<1>. HIDE DEF G
+<1>3. G(S)  BY <1>1, <1>2, FS_Induction, IsaM("blast")
+<1>. QED  BY <1>3 DEF G
 
 -----------------------------------------------------------------------------
 
@@ -139,8 +126,4 @@ THEOREM Barcan ==
 <1>. QED  BY <1>3, <1>4, <1>6
 
 =============================================================================
-\* Modification History
-\* Last modified Sun Apr 12 09:34:48 CEST 2020 by merz
-\* Last modified Tue Nov 05 18:40:17 CET 2019 by merz
-\* Last modified Tue Nov 05 05:30:04 PST 2019 by lamport
 \* Created Wed Mar 15 11:46:27 PDT 2017 by lamport

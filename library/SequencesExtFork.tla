@@ -1,4 +1,6 @@
----------------------------- MODULE SequencesExt ----------------------------
+https://github.com/tlaplus/tlapm/issues/171 explains why this module has been renamed from SequencesExt to SequencesExtFork.
+
+---------------------------- MODULE SequencesExtFork ----------------------------
 (***************************************************************************)
 (* This module is a copy taken from the Community Modules, with one        *)
 (* operator commented out that depends on an operator defined in           *)
@@ -12,7 +14,7 @@ LOCAL INSTANCE Sequences
 LOCAL INSTANCE Naturals
 LOCAL INSTANCE FiniteSets
 \* LOCAL INSTANCE FiniteSetsExt
-LOCAL INSTANCE Functions
+LOCAL INSTANCE FunctionsFork
   (*************************************************************************)
   (* Imports the definitions from the modules, but doesn't export them.    *)
   (*************************************************************************)
