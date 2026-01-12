@@ -69,8 +69,6 @@ let cas_of_el_with_pf (uri : LspT.DocumentUri.t) (ps : PS.t)
 let cas_of_obl (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     (o : TL.Proof.T.obligation) =
   let o = TL.Backend.Toolbox.normalize true o in
-  Fmt.epr "XXX: goal=%a, cx=%a@." Debug.pp_expr o.obl.core.active Debug.pp_cx
-    o.obl.core.context;
   List.concat
     [
       Of_goal.code_actions uri ps ps_parent o.obl.core;
@@ -81,7 +79,6 @@ let cas_of_obl (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
 let cas_of_ps (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) =
   let open TL.Proof.T in
   let el, cx = PS.el ps in
-  (* Fmt.epr "@[XXX: cas_of_ps, ps.cx=%a@]@." Debug.pp_cx cx; *)
   let cas_of_el_with_pf = cas_of_el_with_pf uri ps cx in
   match el with
   | PS.El.Mutate _ | PS.El.Module _ -> []

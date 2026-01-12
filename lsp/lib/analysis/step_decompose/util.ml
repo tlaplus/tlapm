@@ -8,7 +8,6 @@ let unwrap = TL.Property.unwrap
 let with_stepno sn w = TL.Property.with_prop TL.Proof.T.Props.step sn w
 
 let expand_expr_ref cx ix f =
-  (* Fmt.epr "XXX: @[expand_expr_ref by ix=%d@]@." ix; *)
   let hyp = TL.Expr.T.get_val_from_id cx ix in
   let cx = TL.Expr.T.cx_front cx ix in
   match hyp.core with

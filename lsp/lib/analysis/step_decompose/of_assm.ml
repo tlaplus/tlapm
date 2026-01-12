@@ -137,19 +137,11 @@ let cas_of_assm_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
 let cas_of_assm_implies (uri : LspT.DocumentUri.t) (ps : PS.t)
     (ps_parent : PS.t) cx args =
   let open TL in
-  Fmt.epr "XXX: cas_of_assm_implies, args=%a@."
-    (Fmt.list ~sep:Fmt.(const string ", ") (Debug.pp_expr_text cx))
-    args;
   let antecedents, consequent =
     match args |> flatten_op_list Implies |> List.rev with
     | c :: a -> (List.rev a, c)
     | [] -> assert false
   in
-  Fmt.epr "XXX: cas_of_assm_implies, antecedents=%a@."
-    (Fmt.list ~sep:Fmt.(const string ", ") (Debug.pp_expr_text cx))
-    antecedents;
-  Fmt.epr "XXX: cas_of_assm_implies, consequent=%a@." (Debug.pp_expr_text cx)
-    consequent;
   let step_names = Seq_acc.make (PS.stepno_seq_under_proof_step ps_parent) in
   let ps_proof = PS.proof ps |> Option.get in
   let add_steps_rewrite =
@@ -312,7 +304,6 @@ let cas_of_assm_exists (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
 let cas_of_assm (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) cx ex
     =
   let open TL in
-  Fmt.epr "XXX: assm=%a@." Debug.pp_expr ex;
   let rec match_expr cx (ex : Expr.T.expr) =
     match ex.core with
     | Apply (op, op_args) -> (
@@ -392,9 +383,8 @@ let code_actions (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     match Util.Deque.rear cx with
     | None -> ()
     | Some (cx, hyp) ->
-        Fmt.epr "XXX: hyp=%a@." Debug.pp_hyp hyp;
         (match hyp |> unwrap with
-        | Fresh (_, _, _, _)
+        | Expr.T.Fresh (_, _, _, _)
         | FreshTuply (_, _)
         | Flex _
         | Defn (_, _, _, _)

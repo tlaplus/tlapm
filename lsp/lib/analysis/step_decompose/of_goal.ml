@@ -266,8 +266,6 @@ let cas_of_goal_equiv (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
 let code_actions (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     (sq : TL.Expr.T.sequent) =
   let rec match_expr cx (ex : TL.Expr.T.expr) =
-    (* Fmt.epr "@[match_goal@, ex=%a@, cx=%a@]@." (Debug.pp_expr_text cx) ex
-      Debug.pp_cx cx; *)
     match ex.core with
     | TL.Expr.T.Apply (op, op_args) -> (
         match op.core with
