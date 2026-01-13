@@ -457,21 +457,10 @@ let xml_to_obvious_proof_node xml =
   }
   | _ -> conversion_failure __FUNCTION__ xml
 
-type definition_reference =
-  | UserDefinedOpKindRef of user_defined_op_kind_ref
-  | TheoremDefRef of theorem_def_ref
-[@@deriving show]
-
-let xml_to_definition_reference xml =
-  match xml with
-  | Node (((_, "UserDefinedOpKindRef"), _), _) -> UserDefinedOpKindRef (xml_to_user_defined_op_kind_ref xml)
-  | Node (((_, "TheoremDefRef"), _), _) -> TheoremDefRef (xml_to_theorem_def_ref xml)
-  | _ -> conversion_failure __FUNCTION__ xml
-
 type by_proof_node = {
   node  : node;
   facts : expression list;
-  defs  : definition_reference list;
+  defs  : int list;
 }
 [@@deriving show]
 
@@ -480,12 +469,19 @@ let xml_to_by_proof_node xml =
   | Node (((_, "by"), _), children) -> {
       node  = children |> xml_to_inline_node;
       facts = children |> List.find_opt (is_tag "facts") |> Option.map children_of |> Option.value ~default:[] |> List.map xml_to_expression;
-      defs = children |> List.find_opt (is_tag "defs") |> Option.map children_of |> Option.value ~default:[] |> List.map xml_to_definition_reference;
+      defs = children |> List.find_opt (is_tag "defs") |> Option.map children_of |> Option.value ~default:[] |> List.map xml_ref_to_int;
     }
   | _ -> conversion_failure __FUNCTION__ xml
 
 type proof_step_group =
   | TheoremNodeRef of theorem_node_ref
+  (*
+  | DefStepNode
+  | UseOrHideNode
+  | InstanceNode
+  | TheoremNodeRef
+  | TheoremNode
+  *)
 [@@deriving show]
 
 let xml_to_inline_list_proof_step_group children =

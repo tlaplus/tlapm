@@ -58,6 +58,16 @@ let resolve_formal_param_node (param : Xml.leibniz_param) : (hint * shape) =
   )
   | _ -> failwith ("Unresolved formal parameter node UID: " ^ string_of_int param.ref.uid)
 
+let resolve_theorem_def_node (uid : int) : Xml.theorem_def_node =
+  match (resolve_ref uid).kind with
+  | TheoremDefNode xml -> xml
+  | _ -> failwith ("Expected theorem definition node for UID: " ^ string_of_int uid)
+
+let resolve_theorem_node (uid : int) : Xml.theorem_node =
+  match (resolve_ref uid).kind with
+  | TheoremNode xml -> xml
+  | _ -> failwith ("Expected theorem node for UID: " ^ string_of_int uid)
+
 let resolve_bound_symbol (symbol : Xml.formal_param_node_ref) : hint =
   match Coll.Im.find_opt symbol.uid !entries with
   | Some (Xml.FormalParamNode ({arity = 0} as xml)) -> attach_props xml.node xml.uniquename
@@ -70,6 +80,7 @@ let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
   match builtin.uniquename with
   | "TRUE" -> Some Builtin.TRUE
   | "FALSE" -> Some Builtin.FALSE
+  | "UNCHANGED" -> Some Builtin.UNCHANGED
   | "'" -> Some Builtin.Prime
   | "[]" -> Some (Builtin.Box false)
   | "=" -> Some Builtin.Eq
@@ -337,6 +348,8 @@ and convert_op_appl_node (apply : Xml.op_appl_node) : Expr.T.expr =
   | FormalParamNode param -> convert_formal_param_node_op_appl apply param
   (* A reference to a CONSTANT or VARIABLE identifier *)
   | OpDeclNode decl -> convert_op_decl_node_op_appl apply decl
+  (* A reference to a named THEOREM or a proof step *)
+  | TheoremDefNode thm -> Opaque thm.uniquename |> attach_props thm.node
   | _ -> failwith ("Invalid operator reference in OpApplNode : " ^ (Xml.show_entry_kind op_kind) )
 
 (** Some places in TLA⁺ syntax allow both normal expressions and also
@@ -399,20 +412,25 @@ and convert_theorem_def_node (theorem_def_node : Xml.theorem_def_node) : Module.
     oddities in the form of additional metadata.
 *)
 and convert_theorem_node (thm : Xml.theorem_node) : Module.T.modunit =
-  let get_thm_name (thm : Xml.theorem_def_ref) : hint =
-    match (resolve_ref thm.uid).kind with
-    | TheoremDefNode def -> attach_props def.node def.uniquename
-    | _ -> failwith ("Unresolved theorem definition UID: " ^ string_of_int thm.uid)
+  let get_thm_name ({uid} : Xml.theorem_def_ref) : hint =
+    let def = resolve_theorem_def_node uid in
+    attach_props def.node def.uniquename
   in Theorem (
     Option.map get_thm_name thm.definition,
-    (match thm.body with
-    | Expression expr -> { context = Deque.empty; active = convert_expression expr}),
+    convert_sequent thm.body,
     (* TODO handle assume/prove *)
     0 (* TODO figure out what this integer parameter means *),
     convert_proof thm.proof,
     noprops Obvious, (* TODO figure out why there are two proofs *)
     empty_summary  (* TODO figure out purpose of summary *)
   ) |> attach_props thm.node
+
+(** Sequents are theorem bodies, which are either simple expressions or
+    ASSUME/PROVE constructs.
+*)
+and convert_sequent (seq : Xml.expr_or_assume_prove) : sequent =
+  match seq with
+  | Expression expr -> {context = Deque.empty; active = convert_expression expr}
 
 (** Converts a proof, which can either be OMITTED, OBVIOUS, BY, or a series
     of individual proof steps culminated in a QED step.
@@ -421,10 +439,49 @@ and convert_proof (proof : Xml.proof_node_group) : Proof.T.proof =
   match proof with
   | Omitted {node} -> Omitted Explicit |> attach_props node
   | Obvious {node} -> Obvious |> attach_props node
-  | By proof -> todo "Proof" "By" proof.node.location
+  | By proof -> convert_by_proof proof
   | Steps proof -> convert_proof_steps proof
 
-and convert_proof_steps (proof : Xml.steps_proof_node) : Proof.T.proof = todo "Proof" "Steps" proof.node.location
+(** One possible proof form is a series of steps, culminating in a QED step.
+    This method converts that structure.
+*)
+and convert_proof_steps ({node; steps} : Xml.steps_proof_node) : Proof.T.proof = (
+  let rec split_steps (steps : Xml.proof_step_group list) : (Xml.proof_step_group list * Xml.proof_step_group) =
+    match List.rev steps with
+    | [] -> failwith "Step-based proofs must have at least one step"
+    | last :: rest -> (List.rev rest, last)
+  in let convert_proof_step (step : Xml.proof_step_group) : Proof.T.step =
+    match step with
+    (* TODO: handle other proof step types *)
+    | TheoremNodeRef {uid} ->
+      let thm = resolve_theorem_node uid in
+      Suffices (convert_sequent thm.body, convert_proof thm.proof) |> attach_props thm.node
+  in let convert_qed_step (step : Xml.proof_step_group) : Proof.T.qed_step =
+    match step with
+    (* TODO: handle other proof step types *)
+    | TheoremNodeRef {uid} ->
+      let thm = resolve_theorem_node uid in
+      Qed (convert_proof thm.proof) |> attach_props thm.node
+  in let steps, qed = split_steps steps
+  in Steps (List.map convert_proof_step steps, convert_qed_step qed)
+) |> attach_props node
+
+(** Converts proofs of the form BY x, y, z DEF a, b, c. This is another place
+    where information is lost, as the facts and definitions are converted to
+    strings that will need to be resolved later on.
+*)
+and convert_by_proof ({node; facts; defs} : Xml.by_proof_node) : Proof.T.proof =
+  let resolve_def (ref : int) : use_def wrapped =
+    match (resolve_ref ref).kind with
+    | UserDefinedOpKind op -> Dvar op.uniquename |> attach_props op.node
+    | TheoremDefNode thm -> Dvar thm.uniquename |> attach_props thm.node
+    | other -> failwith ("Invalid definition reference in BY proof: " ^ (Xml.show_entry_kind other))
+  in By ({
+    facts = List.map convert_expression facts;
+    defs = List.map resolve_def defs;
+  },
+  true (* TODO: figure out meaning of this parameter *)
+) |> attach_props node
 
 (** The top-level method converting the entire SANY AST to TLAPM's AST. SANY
     uses a lot of GUIDs for one entity to reference another, so we load those
