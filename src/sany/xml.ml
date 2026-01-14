@@ -16,15 +16,21 @@ let source_to_sany_xml_str (module_path : string) (stdlib_path : string) : (stri
 
 open Xmlm;;
 
+(** This simple XML representation only consists of nodes and values, where
+    node is a tag with a list of children. For example, the XML snippet
+    <SomeName>"value"</SomeName> would be Node ("SomeName", [Value "value"]).
+    XML can also have attributes on tags, like <SomeName attr="value">, but
+    these are not used in SANY's XML format.
+*)
 type tree =
-  | Node of Xmlm.tag * tree list
+  | Node of string * tree list
   | Value of string
 [@@deriving show]
 
 let str_to_xml (xml_str: string) : tree =
   let xml = Xmlm.make_input (`String (0, xml_str)) in
-  let el tag childs = Node (tag, childs) in
-  let data d = Value d in
+  let el (((_, name), _) : tag) (children : tree list) = Node (name, children) in
+  let data (d : string) = Value d in
   Xmlm.input_doc_tree ~el ~data xml |> snd
 
 let conversion_failure fn_name xml =
@@ -33,7 +39,7 @@ let conversion_failure fn_name xml =
 
 let is_tag (tag_name : string) (node : tree) =
   match node with
-  | Node (((_, name), _), _) -> String.equal name tag_name
+  | Node (name, _) -> String.equal name tag_name
   | _ -> false
 
 let children_of (xml : tree) =
@@ -68,9 +74,29 @@ let xml_child_to_int xml =
 let xml_to_tagged_int (tag_name : string) (children : tree list) : int =
   find_tag tag_name children |> xml_child_to_int
 
-let xml_ref_to_int (xml : tree) : int =
+(** Use this in conjunction with List.filter_map on children of a node to get
+    all references of various types.
+*)
+let get_ref_opt (xml : tree) : int option =
   match xml with
-  | Node (((_, _), _), children) -> xml_to_tagged_int "UID" children
+  | Node ("AssumeDefRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
+  | Node ("BuiltInKindRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
+  | Node ("FormalParamNodeRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
+  | Node ("ModuleInstanceKindRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
+  | Node ("ModuleNodeRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
+  | Node ("OpDeclNodeRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
+  | Node ("TheoremDefRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
+  | Node ("TheoremNodeRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
+  | Node ("UserDefinedOpKindRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
+  | _ -> None
+
+(** Use this either on a single node that must have a UID child, or in
+    conjunction with List.map on children of a node that all must have UID
+    children.
+*)
+let get_ref (xml : tree) : int =
+  match get_ref_opt xml with
+  | Some uid -> uid
   | _ -> conversion_failure __FUNCTION__ xml
 
 type range = {
@@ -81,7 +107,7 @@ type range = {
 
 let xml_to_range xml =
   match xml with
-  | Node (((_, _), _), children) -> {
+  | Node (_, children) -> {
       start = children |> xml_to_tagged_int "begin";
       finish = children |> xml_to_tagged_int "end";
     }
@@ -96,10 +122,14 @@ type location = {
 
 let xml_to_location xml =
   match xml with
-  | Node (((_, "location"), _), children) -> {
-      column = children |> find_tag "column" |> xml_to_range;
-      line = children |> find_tag "line" |> xml_to_range;
-      filename = children |> xml_to_tagged_string "filename";
+  | Node ("location", [
+    Node ("column", [Node ("begin", [Value column_begin]); Node ("end", [Value column_end])]);
+    Node ("line", [Node ("begin", [Value line_begin]); Node ("end", [Value line_end])]);
+    Node ("filename", [Value filename])
+  ]) -> {
+      column = {start = int_of_string column_begin; finish = int_of_string column_end};
+      line = {start = int_of_string line_begin; finish = int_of_string line_end};
+      filename;
     }
   | _ -> conversion_failure __FUNCTION__ xml
 
@@ -137,7 +167,7 @@ type numeral_node = {
 
 let xml_to_numeral_node (xml : tree) =
   match xml with
-  | Node (((_, "NumeralNode"), _), children) -> {
+  | Node ("NumeralNode", children) -> {
       node  = children |> xml_to_inline_node;
       value = children |> xml_to_tagged_int "IntValue"
     }
@@ -150,7 +180,7 @@ type formal_param_node_ref = {
 
 let xml_to_formal_param_node_ref xml =
   match xml with
-  | Node (((_, "FormalParamNodeRef"), _), children) -> {
+  | Node ("FormalParamNodeRef", children) -> {
     uid = children |> xml_to_tagged_int "UID";
   }
   | _ -> conversion_failure __FUNCTION__ xml
@@ -164,7 +194,7 @@ type formal_param_node = {
 
 let xml_to_formal_param_node xml =
   match xml with
-  | Node (((_, "FormalParamNode"), _), children) -> {
+  | Node ("FormalParamNode", children) -> {
     node        = xml_to_inline_node children;
     uniquename  = xml_to_tagged_string "uniquename" children;
     arity       = xml_to_tagged_int "arity" children;
@@ -179,7 +209,7 @@ type unbound_symbol = {
 
 let xml_to_unbound_symbol xml =
   match xml with
-  | Node (((_, "unbound"), _), children) -> {
+  | Node ("unbound", children) -> {
     formal_param_node_ref = children |> find_tag "FormalParamNodeRef" |> xml_to_formal_param_node_ref;
     is_tuple = children |> List.exists (is_tag "tuple")
   }
@@ -222,13 +252,13 @@ and symbol =
 
 let rec xml_to_symbols xml =
   match xml with
-  | Node (((_, "unbound"), _), _) -> Unbound (xml_to_unbound_symbol xml)
-  | Node (((_, "bound"), _), _) -> Bound (xml_to_bound_symbol xml)
+  | Node ("unbound", _) -> Unbound (xml_to_unbound_symbol xml)
+  | Node ("bound", _) -> Bound (xml_to_bound_symbol xml)
   | _ -> conversion_failure __FUNCTION__ xml
 
 and xml_to_bound_symbol xml =
   match xml with
-  | Node (((_, "bound"), _), children) -> {
+  | Node ("bound", children) -> {
     formal_param_node_refs = children |> List.filter (is_tag "FormalParamNodeRef") |> List.map xml_to_formal_param_node_ref;
     is_tuple = children |> List.exists (is_tag "tuple");
     expression = children |> xml_to_inline_expression |> Option.get;
@@ -241,9 +271,9 @@ with Invalid_argument _ -> conversion_failure __FUNCTION__ xml
 
 and xml_to_op_appl_node xml =
   match xml with
-  | Node (((_, "OpApplNode"), _), children) -> {
+  | Node ("OpApplNode", children) -> {
     node    = children |> xml_to_inline_node;
-    operator = children |> find_tag "operator" |> child_of |> xml_ref_to_int;
+    operator = children |> find_tag "operator" |> child_of |> get_ref;
     operands = children |> find_tag "operands" |> children_of |> List.map xml_to_expr_or_op_arg;
     bound_symbols = children |> List.find_opt (is_tag "boundSymbols") |> Option.map children_of |> Option.value ~default:[] |> List.map xml_to_symbols;
   }
@@ -251,8 +281,8 @@ and xml_to_op_appl_node xml =
 
 and xml_to_expression xml =
   match xml with
-  | Node (((_, "NumeralNode"), _), _) -> NumeralNode (xml_to_numeral_node xml)
-  | Node (((_, "OpApplNode"), _), _) -> OpApplNode (xml_to_op_appl_node xml)
+  | Node ("NumeralNode", _) -> NumeralNode (xml_to_numeral_node xml)
+  | Node ("OpApplNode", _) -> OpApplNode (xml_to_op_appl_node xml)
   | _ -> conversion_failure __FUNCTION__ xml
 
 and xml_to_inline_expression children =
@@ -270,19 +300,19 @@ type module_node = {
 let xml_to_module_node xml =
   let ref_child child =
     match child with
-    | Node (((_, "OpDeclNodeRef"), _), children) -> Some (`Ref (xml_to_tagged_int "UID" children))
-    | Node (((_, "ModuleInstanceKindRef"), _), children) -> Some (`Ref (xml_to_tagged_int "UID" children))
-    | Node (((_, "UserDefinedOpKindRef"), _), children) -> Some (`Ref (xml_to_tagged_int "UID" children))
-    | Node (((_, "BuiltInKindRef"), _), children) -> Some (`Ref (xml_to_tagged_int "UID" children))
-    | Node (((_, "TheoremDefRef"), _), children) -> Some (`Ref (xml_to_tagged_int "UID" children))
-    | Node (((_, "AssumeDefRef"), _), children) -> Some (`Ref (xml_to_tagged_int "UID" children))
-    | Node (((_, "AssumeNodeRef"), _), children) -> Some (`Ref (xml_to_tagged_int "UID" children))
-    | Node (((_, "TheoremNodeRef"), _), children) -> Some (`Ref (xml_to_tagged_int "UID" children))
-    | Node (((_, "InstanceNode"), _), children) -> Some (`OtherTODO "InstanceNode")
-    | Node (((_, "UseOrHideNode"), _), children) -> Some (`OtherTODO "UseOrHideNode")
+    | Node ("OpDeclNodeRef", children) -> Some (`Ref (xml_to_tagged_int "UID" children))
+    | Node ("ModuleInstanceKindRef", children) -> Some (`Ref (xml_to_tagged_int "UID" children))
+    | Node ("UserDefinedOpKindRef", children) -> Some (`Ref (xml_to_tagged_int "UID" children))
+    | Node ("BuiltInKindRef", children) -> Some (`Ref (xml_to_tagged_int "UID" children))
+    | Node ("TheoremDefRef", children) -> Some (`Ref (xml_to_tagged_int "UID" children))
+    | Node ("AssumeDefRef", children) -> Some (`Ref (xml_to_tagged_int "UID" children))
+    | Node ("AssumeNodeRef", children) -> Some (`Ref (xml_to_tagged_int "UID" children))
+    | Node ("TheoremNodeRef", children) -> Some (`Ref (xml_to_tagged_int "UID" children))
+    | Node ("InstanceNode", children) -> Some (`OtherTODO "InstanceNode")
+    | Node ("UseOrHideNode", children) -> Some (`OtherTODO "UseOrHideNode")
     | _ -> None
   in match xml with
-  | Node (((_, "ModuleNode"), _), children) -> {
+  | Node ("ModuleNode", children) -> {
       uniquename = children |> xml_to_tagged_string "uniquename";
       location = children |> find_tag "location" |> xml_to_location;
       units = List.filter_map ref_child children
@@ -308,7 +338,7 @@ type op_decl_node = {
 
 let xml_to_op_decl_node (xml : tree) : op_decl_node =
   match xml with
-  | Node (((_, "OpDeclNode"), _), children) -> ({
+  | Node ("OpDeclNode", children) -> ({
       uniquename = children |> xml_to_tagged_string "uniquename";
       node = children |> xml_to_inline_node;
       arity = children |> xml_to_tagged_int "arity";
@@ -324,7 +354,7 @@ type leibniz_param = {
 
 let xml_to_leibniz_param xml =
   match xml with
-  | Node (((_, "leibnizparam"), _), children) -> {
+  | Node ("leibnizparam", children) -> {
       ref         = children |> find_tag "FormalParamNodeRef" |> xml_to_formal_param_node_ref;
       is_leibniz  = children |> List.exists (is_tag "leibniz");
     }
@@ -342,7 +372,7 @@ type user_defined_op_kind = {
 
 let xml_to_user_defined_op_kind xml : user_defined_op_kind =
   match xml with
-  | Node (((_, "UserDefinedOpKind"), _), children) -> {
+  | Node ("UserDefinedOpKind", children) -> {
       node        = children |> xml_to_inline_node;
       uniquename  = children |> xml_to_tagged_string  "uniquename";
       arity       = children |> xml_to_tagged_int     "arity";
@@ -359,7 +389,7 @@ type user_defined_op_kind_ref = {
 
 let xml_to_user_defined_op_kind_ref xml =
   match xml with
-  | Node (((_, "UserDefinedOpKindRef"), _), children) -> {
+  | Node ("UserDefinedOpKindRef", children) -> {
     uid = children |> xml_to_tagged_int "UID";
   }
   | _ -> conversion_failure __FUNCTION__ xml
@@ -374,7 +404,7 @@ type built_in_kind = {
 
 let xml_to_built_in_kind xml : built_in_kind =
   match xml with
-  | Node (((_, "BuiltInKind"), _), children) -> {
+  | Node ("BuiltInKind", children) -> {
       node       = children |> xml_to_inline_node;
       uniquename = children |> xml_to_tagged_string "uniquename";
       arity      = children |> xml_to_tagged_int "arity";
@@ -401,7 +431,7 @@ type theorem_def_node = {
 
 let xml_to_theorem_def_node xml =
   match xml with
-  | Node (((_, "TheoremDefNode"), _), children) -> {
+  | Node ("TheoremDefNode", children) -> {
       node = children |> xml_to_inline_node;
       uniquename = children |> xml_to_tagged_string "uniquename";
       body = children |> xml_to_inline_expr_or_assume_prove |> Option.get ;
@@ -415,7 +445,7 @@ type theorem_def_ref = {
 
 let xml_to_theorem_def_ref xml =
   match xml with
-  | Node (((_, "TheoremDefRef"), _), children) -> {
+  | Node ("TheoremDefRef", children) -> {
       uid = xml_to_tagged_int "UID" children
     }
   | _ -> conversion_failure __FUNCTION__ xml
@@ -427,7 +457,7 @@ type theorem_node_ref = {
 
 let xml_to_theorem_node_ref xml =
   match xml with
-  | Node (((_, "TheoremNodeRef"), _), children) -> {
+  | Node ("TheoremNodeRef", children) -> {
       uid = xml_to_tagged_int "UID" children
     }
   | _ -> conversion_failure __FUNCTION__ xml
@@ -440,7 +470,7 @@ type omitted_proof_node = {
 
 let xml_to_omitted_proof_node xml =
   match xml with
-  | Node (((_, "omitted"), _), children) -> {
+  | Node ("omitted", children) -> {
     node = children |> xml_to_inline_node;
   }
   | _ -> conversion_failure __FUNCTION__ xml
@@ -452,7 +482,7 @@ type obvious_proof_node = {
 
 let xml_to_obvious_proof_node xml =
   match xml with
-  | Node (((_, "obvious"), _), children) -> {
+  | Node ("obvious", children) -> {
     node = children |> xml_to_inline_node;
   }
   | _ -> conversion_failure __FUNCTION__ xml
@@ -466,10 +496,10 @@ type by_proof_node = {
 
 let xml_to_by_proof_node xml =
   match xml with
-  | Node (((_, "by"), _), children) -> {
+  | Node ("by", children) -> {
       node  = children |> xml_to_inline_node;
-      facts = children |> List.find_opt (is_tag "facts") |> Option.map children_of |> Option.value ~default:[] |> List.map xml_to_expression;
-      defs = children |> List.find_opt (is_tag "defs") |> Option.map children_of |> Option.value ~default:[] |> List.map xml_ref_to_int;
+      facts = children |> find_tag "facts" |> children_of |> List.map xml_to_expression;
+      defs = children |> find_tag "defs" |> children_of |> List.filter_map get_ref_opt
     }
   | _ -> conversion_failure __FUNCTION__ xml
 
@@ -498,7 +528,7 @@ type steps_proof_node = {
 
 let xml_to_steps_proof_node xml =
   match xml with
-  | Node (((_, "steps"), _), children) -> {
+  | Node ("steps", children) -> {
       node  = children |> xml_to_inline_node;
       steps = children |> xml_to_inline_list_proof_step_group;
     }
@@ -516,10 +546,10 @@ let xml_to_inline_proof_node_group children =
     match ls with
     | x::xs -> (
         match x with
-        | Node (((_, "omitted"), _), _) -> Omitted (xml_to_omitted_proof_node x)
-        | Node (((_, "obvious"), _), _) -> Obvious (xml_to_obvious_proof_node x)
-        | Node (((_, "by"), _), _) -> By (xml_to_by_proof_node x)
-        | Node (((_, "steps"), _), _) -> Steps (xml_to_steps_proof_node x)
+        | Node ("omitted", _) -> Omitted (xml_to_omitted_proof_node x)
+        | Node ("obvious", _) -> Obvious (xml_to_obvious_proof_node x)
+        | Node ("by", _) -> By (xml_to_by_proof_node x)
+        | Node ("steps", _) -> Steps (xml_to_steps_proof_node x)
         | _ -> search_children xs
       )
     | _ -> conversion_failure __FUNCTION__ (List.hd children)
@@ -535,7 +565,7 @@ type theorem_node = {
 
 let xml_to_theorem_node xml =
   match xml with
-  | Node (((_, "TheoremNode"), _), children) -> {
+  | Node ("TheoremNode", children) -> {
       node        = children |> xml_to_inline_node;
       definition  = children |> List.find_opt (is_tag "definition") |> Option.map child_of |> Option.map xml_to_theorem_def_ref;
       body        = children |> find_tag "body" |> children_of |> xml_to_inline_expr_or_assume_prove |> Option.get;
@@ -558,13 +588,13 @@ let xml_to_entry_kind (children : tree list) =
     match candidates with
     | x :: xs -> (
       match x with
-      | Node (((_, "ModuleNode"), _), _)        -> ModuleNode (xml_to_module_node x)
-      | Node (((_, "OpDeclNode"), _), _)        -> OpDeclNode (xml_to_op_decl_node x)
-      | Node (((_, "UserDefinedOpKind"), _), _) -> UserDefinedOpKind (xml_to_user_defined_op_kind x)
-      | Node (((_, "BuiltInKind"), _), _)       -> BuiltInKind (xml_to_built_in_kind x)
-      | Node (((_, "FormalParamNode"), _), _)   -> FormalParamNode (xml_to_formal_param_node x)
-      | Node (((_, "TheoremDefNode"), _), _)    -> TheoremDefNode (xml_to_theorem_def_node x)
-      | Node (((_, "TheoremNode"), _), _)       -> TheoremNode (xml_to_theorem_node x)
+      | Node ("ModuleNode", _)        -> ModuleNode (xml_to_module_node x)
+      | Node ("OpDeclNode", _)        -> OpDeclNode (xml_to_op_decl_node x)
+      | Node ("UserDefinedOpKind", _) -> UserDefinedOpKind (xml_to_user_defined_op_kind x)
+      | Node ("BuiltInKind", _)       -> BuiltInKind (xml_to_built_in_kind x)
+      | Node ("FormalParamNode", _)   -> FormalParamNode (xml_to_formal_param_node x)
+      | Node ("TheoremDefNode", _)    -> TheoremDefNode (xml_to_theorem_def_node x)
+      | Node ("TheoremNode", _)       -> TheoremNode (xml_to_theorem_node x)
       | _ -> find_variant xs
     )
     | [] -> Invalid_argument (Printf.sprintf "Unable to find entry_kind variant in children %s" (show_tree_list children)) |> raise
@@ -578,7 +608,7 @@ type entry = {
 
 let xml_to_entry xml =
   match xml with
-  | Node (((_, "entry"), _), children) -> {
+  | Node ("entry", children) -> {
       uid = children |> xml_to_tagged_int "UID";
       kind = xml_to_entry_kind children;
     }
@@ -594,14 +624,14 @@ type modules = {
 let xml_to_modules xml =
   let xml_to_context xml =
     match xml with
-    | Node (((_, "context"), _), children) ->
+    | Node ("context", children) ->
         children |> List.find_all (is_tag "entry") |> List.map xml_to_entry;
     | _ -> conversion_failure __FUNCTION__ xml
   in match xml with
-  | Node (((_, "modules"), _), children) -> {
+  | Node ("modules", children) -> {
       root_module = xml_to_tagged_string "RootModule" children;
       context = children |> find_tag "context" |> xml_to_context;
-      module_node_ref = children |> List.filter (is_tag "ModuleNodeRef") |> List.map xml_ref_to_int;
+      module_node_ref = children |> List.filter_map get_ref_opt
     }
   | _ -> conversion_failure __FUNCTION__ xml
 

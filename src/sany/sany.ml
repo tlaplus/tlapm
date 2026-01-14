@@ -418,7 +418,6 @@ and convert_theorem_node (thm : Xml.theorem_node) : Module.T.modunit =
   in Theorem (
     Option.map get_thm_name thm.definition,
     convert_sequent thm.body,
-    (* TODO handle assume/prove *)
     0 (* TODO figure out what this integer parameter means *),
     convert_proof thm.proof,
     noprops Obvious, (* TODO figure out why there are two proofs *)
@@ -427,6 +426,7 @@ and convert_theorem_node (thm : Xml.theorem_node) : Module.T.modunit =
 
 (** Sequents are theorem bodies, which are either simple expressions or
     ASSUME/PROVE constructs.
+    TODO: handle ASSUME/PROVE
 *)
 and convert_sequent (seq : Xml.expr_or_assume_prove) : sequent =
   match seq with
