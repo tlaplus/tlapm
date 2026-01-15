@@ -19,18 +19,18 @@ let converted_units : Module.T.modunit Coll.Im.t ref = ref Coll.Im.empty
 (** Converts SANY's location format to TLAPM's, for attachment to node
     metadata.
 *)
-let convert_location (location : Xml.location) : Loc.locus = {
+let convert_location ({column = (col_start, col_finish); line = (line_start, line_finish); filename} : Xml.location) : Loc.locus = {
   start = Actual {
-    line = location.line.start;
+    line = line_start;
     bol = 0;
-    col = location.column.start;
+    col = col_start;
   };
   stop = Actual {
-    line = location.line.finish;
+    line = line_finish;
     bol = 0;
-    col = location.column.finish;
+    col = col_finish;
   };
-  file = location.filename;
+  file = filename;
 }
 
 let locate (value : 'a) (location : Xml.location) : 'a wrapped =
@@ -49,14 +49,14 @@ let resolve_ref (uid : int) : Xml.entry =
   | None -> failwith ("Unresolved reference to entry UID: " ^ string_of_int uid)
 
 let resolve_formal_param_node (param : Xml.leibniz_param) : (hint * shape) =
-  match Coll.Im.find_opt param.ref.uid !entries with
+  match Coll.Im.find_opt param.ref !entries with
   | Some (Xml.FormalParamNode xml) -> (
     attach_props xml.node xml.uniquename,
     match xml.arity with
     | 0 -> Shape_expr
     | n -> Shape_op n
   )
-  | _ -> failwith ("Unresolved formal parameter node UID: " ^ string_of_int param.ref.uid)
+  | _ -> failwith ("Unresolved formal parameter node UID: " ^ string_of_int param.ref)
 
 let resolve_theorem_def_node (uid : int) : Xml.theorem_def_node =
   match (resolve_ref uid).kind with
@@ -68,11 +68,11 @@ let resolve_theorem_node (uid : int) : Xml.theorem_node =
   | TheoremNode xml -> xml
   | _ -> failwith ("Expected theorem node for UID: " ^ string_of_int uid)
 
-let resolve_bound_symbol (symbol : Xml.formal_param_node_ref) : hint =
-  match Coll.Im.find_opt symbol.uid !entries with
+let resolve_bound_symbol (uid : int) : hint =
+  match Coll.Im.find_opt uid !entries with
   | Some (Xml.FormalParamNode ({arity = 0} as xml)) -> attach_props xml.node xml.uniquename
-  | Some (Xml.FormalParamNode _) -> failwith ("Bound symbol cannot be an operator: " ^ string_of_int symbol.uid)
-  | _ -> failwith ("Unresolved formal parameter node UID: " ^ string_of_int symbol.uid)
+  | Some (Xml.FormalParamNode _) -> failwith ("Bound symbol cannot be an operator: " ^ string_of_int uid)
+  | _ -> failwith ("Unresolved formal parameter node UID: " ^ string_of_int uid)
 
 (** Converts built-in prefix, infix, and postfix operators along with keywords.
 *)
@@ -157,7 +157,7 @@ and convert_action_expr (op : modal_op) (apply : Xml.op_appl_node) : Expr.T.expr
 and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
   (* Case 1: Bounded non-tuple CHOOSE expression *)
-  | [Bound {is_tuple = false; formal_param_node_refs = [param]; expression}], [body] ->
+  | [Bound {is_tuple = false; symbol_refs = [param]; expression}], [body] ->
     Choose (
       resolve_bound_symbol param,
       Some (convert_expression expression),
@@ -166,14 +166,14 @@ and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr = (
   (* Case 2: Bounded tuple CHOOSE expression *)
   | [Bound ({is_tuple = true} as symbol)], [body] ->
     ChooseTuply (
-      List.map resolve_bound_symbol symbol.formal_param_node_refs,
+      List.map resolve_bound_symbol symbol.symbol_refs,
       Some (convert_expression symbol.expression),
       convert_expression_or_operator_argument body
     )
   (* Case 3: Unbounded non-tuple CHOOSE expression *)
   | [Unbound ({is_tuple = false} as symbol)], [body] ->
     Choose (
-      resolve_bound_symbol symbol.formal_param_node_ref,
+      resolve_bound_symbol symbol.symbol_ref,
       None,
       convert_expression_or_operator_argument body
     )
@@ -183,7 +183,7 @@ and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr = (
     if List.length symbols <> List.length apply.bound_symbols
     then failwith "Inconsistent bound/unbound or tuple/non-tuple symbols in CHOOSE"
     else ChooseTuply (
-      List.map (fun (s : Xml.unbound_symbol) -> resolve_bound_symbol s.formal_param_node_ref) symbols,
+      List.map (fun (s : Xml.unbound_symbol) -> resolve_bound_symbol s.symbol_ref) symbols,
       None,
       convert_expression_or_operator_argument body
     )
@@ -228,7 +228,7 @@ and convert_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node
       then failwith "Unbounded tuple quantification is not supported"
       (* Unbounded quantification *)
       else let mk_bound (bound : Xml.unbound_symbol) : bound = (
-        resolve_bound_symbol bound.formal_param_node_ref,
+        resolve_bound_symbol bound.symbol_ref,
         Unknown, (* TODO: figure out purpose of this parameter *)
         No_domain
       ) in Quant (
@@ -240,10 +240,10 @@ and convert_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node
     (* Bounded quantification that includes at least one tuple *)
     then let mk_bounds (bound : Xml.bound_symbol) : tuply_bounds =
       if bound.is_tuple
-      then match List.map resolve_bound_symbol bound.formal_param_node_refs with
+      then match List.map resolve_bound_symbol bound.symbol_refs with
       | (_ :: _ as symbols) -> [(Bound_names symbols, Domain (convert_expression bound.expression))]
       | [] -> failwith "Tuple bound symbol groups must have at least one symbol"
-      else match List.map resolve_bound_symbol bound.formal_param_node_refs with
+      else match List.map resolve_bound_symbol bound.symbol_refs with
       | hd :: tl -> (Bound_name hd, Domain (convert_expression bound.expression))
         :: List.map (fun s -> (Bound_name s, Ditto)) tl
       | [] -> failwith "Bound symbol groups must have at least one symbol"
@@ -254,7 +254,7 @@ and convert_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node
     )
     (* Bounded quantification without any tuples *)
     else let mk_bounds (bound : Xml.bound_symbol) : bounds =
-      match List.map resolve_bound_symbol bound.formal_param_node_refs with
+      match List.map resolve_bound_symbol bound.symbol_refs with
       | hd :: tl -> (hd, Unknown, Domain (convert_expression bound.expression))
         :: List.map (fun s -> (s, Unknown, Ditto)) tl
       | [] -> failwith "Bound symbol groups must have at least one symbol"
@@ -412,11 +412,8 @@ and convert_theorem_def_node (theorem_def_node : Xml.theorem_def_node) : Module.
     oddities in the form of additional metadata.
 *)
 and convert_theorem_node (thm : Xml.theorem_node) : Module.T.modunit =
-  let get_thm_name ({uid} : Xml.theorem_def_ref) : hint =
-    let def = resolve_theorem_def_node uid in
-    attach_props def.node def.uniquename
-  in Theorem (
-    Option.map get_thm_name thm.definition,
+  Theorem (
+    Option.map (fun uid -> let def = resolve_theorem_def_node uid in attach_props def.node def.uniquename) thm.definition,
     convert_sequent thm.body,
     0 (* TODO figure out what this integer parameter means *),
     convert_proof thm.proof,
@@ -437,8 +434,8 @@ and convert_sequent (seq : Xml.expr_or_assume_prove) : sequent =
 *)
 and convert_proof (proof : Xml.proof_node_group) : Proof.T.proof =
   match proof with
-  | Omitted {node} -> Omitted Explicit |> attach_props node
-  | Obvious {node} -> Obvious |> attach_props node
+  | Omitted node -> Omitted Explicit |> attach_props node
+  | Obvious node -> Obvious |> attach_props node
   | By proof -> convert_by_proof proof
   | Steps proof -> convert_proof_steps proof
 
@@ -453,13 +450,13 @@ and convert_proof_steps ({node; steps} : Xml.steps_proof_node) : Proof.T.proof =
   in let convert_proof_step (step : Xml.proof_step_group) : Proof.T.step =
     match step with
     (* TODO: handle other proof step types *)
-    | TheoremNodeRef {uid} ->
+    | TheoremNodeRef uid ->
       let thm = resolve_theorem_node uid in
       Suffices (convert_sequent thm.body, convert_proof thm.proof) |> attach_props thm.node
   in let convert_qed_step (step : Xml.proof_step_group) : Proof.T.qed_step =
     match step with
     (* TODO: handle other proof step types *)
-    | TheoremNodeRef {uid} ->
+    | TheoremNodeRef uid ->
       let thm = resolve_theorem_node uid in
       Qed (convert_proof thm.proof) |> attach_props thm.node
   in let steps, qed = split_steps steps
