@@ -1,5 +1,5 @@
 ---------------------------- MODULE GraphTheorem ----------------------------
-EXTENDS FiniteSetTheorems, FunctionForkTheorems, TLAPS
+EXTENDS FiniteSetTheorems, FunctionTheorems, TLAPS
 
 Edges(Nodes) == { {m[1], m[2]} : m \in Nodes \X Nodes }
   (*************************************************************************)

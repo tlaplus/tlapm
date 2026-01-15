@@ -9,7 +9,7 @@
 EXTENDS
   FiniteSets,
   Sequences,
-  FunctionForkTheorems,
+  FunctionTheorems,
   WellFoundedInduction,
   TLAPS
 
@@ -47,7 +47,7 @@ LEMMA FS_NatSurjection ==
 <1>2. ASSUME NEW n \in Nat, ExistsSurjection(1..n,S)  PROVE  IsFiniteSet(S)
   <2>1. PICK M \in [1..n -> S] : \A t \in S : \E s \in 1..n : M[s] = t
     BY <1>2 DEF ExistsSurjection, Surjection
-  <2>. QED  BY <2>1 DEF IsFiniteSet
+  <2>. QED  BY <2>1, M \in Seq(S) DEF IsFiniteSet
 
 <1> QED BY <1>1, <1>2
 
@@ -316,7 +316,7 @@ THEOREM FS_SurjSameCardinalityImpliesInj ==
         BY <3>1, <3>2, <3>4
       <4>. QED  OBVIOUS
     <3>5. CASE l # j /\ l # n
-      BY <3>1, <3>2, <3>5
+      BY <3>1, <3>2, <3>5, l \in 1 .. n-1
     <3>. QED  BY <3>3, <3>4, <3>5
   <2>. QED  BY <2>1, <2>2 DEF Surjection
 <1>4. Cardinality(T) <= n-1  BY <1>3, FS_SurjCardinalityBound DEF ExistsSurjection
