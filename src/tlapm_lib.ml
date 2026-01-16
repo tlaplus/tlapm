@@ -656,7 +656,9 @@ let tlapm_modctx_of_string ~(content : string) ~(filename : string) ~loader_path
 let modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~prefer_stdlib : (modctx * Module.T.mule, string option * string) result =
     match !Params.parser_backend with
     | Tlapm -> tlapm_modctx_of_string ~content ~filename ~loader_paths ~prefer_stdlib
-    | Sany -> Sany.parse filename
+    | Sany -> let transform (ctx, mule : modctx * Module.T.mule) : (modctx * Module.T.mule, string option * string) result =
+        let (mcx, m, _summ) = Module.Elab.normalize ctx Deque.empty mule in Ok (mcx, m) 
+        in Result.bind (Sany.parse filename) transform
 
 let module_of_string module_str =
     let hparse = Tla_parser.P.use Module.Parser.parse in

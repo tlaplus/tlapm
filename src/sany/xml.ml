@@ -1,3 +1,11 @@
+(** This module provides functions to interact with SANY to parse TLA+ source
+    files into an XML representation, and then convert that XML representation
+    into something with a semblance of a type system.
+*)
+
+(** Calls SANY in another process to parse the given TLA+ file, then collects
+    the XML parse tree output.
+*)
 let source_to_sany_xml_str (module_path : string) (stdlib_path : string) : (string, (string * int)) result =
   let open Unix in
   let open Paths in
@@ -27,45 +35,76 @@ type tree =
   | Value of string
 [@@deriving show]
 
+(** Uses the Xmlm library to parse an XML string into the simple XML tree
+    representation defined above.
+*)
 let str_to_xml (xml_str: string) : tree =
   let xml = Xmlm.make_input (`String (0, xml_str)) in
   let el (((_, name), _) : tag) (children : tree list) = Node (name, children) in
   let data (d : string) = Value d in
   Xmlm.input_doc_tree ~el ~data xml |> snd
 
+(** Error method which raises an exception when parsing the SANY XML output
+    fails. If this is ever triggered it indicates a bug either in this code
+    (most likely) or in the SANY XML output. It is also possible this could
+    be triggered if SANY's XML output format changes in a future version.
+*)
 let conversion_failure (fn_name : string) (xml : tree) : 'a =
   let err_msg = Printf.sprintf "%s conversion failure on %s" fn_name (show_tree xml) in
   Invalid_argument err_msg |> raise
 
+(** Utility function most often used with List.find or List.exists to search
+    for a tag in the children of an XML node.
+*)
 let is_tag (tag_name : string) (node : tree) : bool =
   match node with
   | Node (name, _) -> String.equal name tag_name
   | _ -> false
 
+(** Utility function that simply returns the children of an XML node. Raises
+    an exception if called on a leaf node.
+*)
 let children_of (xml : tree) : tree list =
   match xml with
   | Node (_, children) -> children
   | Value _ -> Invalid_argument (Printf.sprintf "Cannot get children of node %s" (show_tree xml)) |> raise
 
+(** Utility function that returns the single child of an XML node. Raises an
+    exception if there is not exactly one child.
+*)
 let child_of (xml : tree) : tree =
   match xml with
   | Node (_, [child]) -> child
   | Node (_, _) -> Invalid_argument (Printf.sprintf "Require single child of node %s" (show_tree xml)) |> raise
   | Value _ -> Invalid_argument (Printf.sprintf "Cannot get children of node %s" (show_tree xml)) |> raise
 
+(** Utility function to print a list of XML trees for debugging or error
+    message purposes.
+*)
 let show_tree_list (xs : tree list) : string =
   Printf.sprintf "[%s]" (xs |> List.map show_tree |> String.concat "; ")
 
+(** Searches for a tag in the children of an XML node, and raises a detailed
+    exception if it is not found.
+*)
 let find_tag (tag_name : string) (children : tree list) : tree =
   match List.find_opt (is_tag tag_name) children with
   | Some v -> v
   | None -> Invalid_argument (Printf.sprintf "Unable to find tag %s in children %s" tag_name (show_tree_list children)) |> raise
 
+(** Utility function to extract the string value from a tagged XML node.
+    Raises a detailed exception if the tag is not found or if the tagged node
+    does not contain a single string value.
+*)
 let xml_to_tagged_string (tag_name : string) (children : tree list) : string =
   match find_tag tag_name children with
   | (Node (_, [Value d])) -> d
   | xml -> conversion_failure __FUNCTION__ xml
 
+(** Utility function to extract the int value from a tagged XML node.
+    Raises a detailed exception if the tag is not found or if the tagged node
+    does not contain a single int value.
+*)
 let xml_child_to_int (xml : tree) : int =
   match xml with
   | (Node (_, [Value d])) -> int_of_string d
@@ -284,14 +323,14 @@ type module_node = {
 let xml_to_module_node xml =
   let ref_child child =
     match child with
-    | Node ("OpDeclNodeRef", children) -> Some (`Ref (xml_to_tagged_int "UID" children))
-    | Node ("ModuleInstanceKindRef", children) -> Some (`Ref (xml_to_tagged_int "UID" children))
-    | Node ("UserDefinedOpKindRef", children) -> Some (`Ref (xml_to_tagged_int "UID" children))
-    | Node ("BuiltInKindRef", children) -> Some (`Ref (xml_to_tagged_int "UID" children))
-    | Node ("TheoremDefRef", children) -> Some (`Ref (xml_to_tagged_int "UID" children))
-    | Node ("AssumeDefRef", children) -> Some (`Ref (xml_to_tagged_int "UID" children))
-    | Node ("AssumeNodeRef", children) -> Some (`Ref (xml_to_tagged_int "UID" children))
-    | Node ("TheoremNodeRef", children) -> Some (`Ref (xml_to_tagged_int "UID" children))
+    | Node ("OpDeclNodeRef", [Node ("UID", [Value uid])]) -> Some (`Ref (int_of_string uid))
+    | Node ("ModuleInstanceKindRef", [Node ("UID", [Value uid])]) -> Some (`Ref (int_of_string uid))
+    | Node ("UserDefinedOpKindRef", [Node ("UID", [Value uid])]) -> Some (`Ref (int_of_string uid))
+    | Node ("BuiltInKindRef", [Node ("UID", [Value uid])]) -> Some (`Ref (int_of_string uid))
+    | Node ("TheoremDefRef", [Node ("UID", [Value uid])]) -> Some (`Ref (int_of_string uid))
+    | Node ("AssumeDefRef", [Node ("UID", [Value uid])]) -> Some (`Ref (int_of_string uid))
+    | Node ("AssumeNodeRef", [Node ("UID", [Value uid])]) -> Some (`Ref (int_of_string uid))
+    | Node ("TheoremNodeRef", [Node ("UID", [Value uid])]) -> Some (`Ref (int_of_string uid))
     | Node ("InstanceNode", children) -> Some (`OtherTODO "InstanceNode")
     | Node ("UseOrHideNode", children) -> Some (`OtherTODO "UseOrHideNode")
     | _ -> None
@@ -574,8 +613,6 @@ let xml_to_ast (xml : tree) : (modules, (string * string)) result =
     let trace = Printexc.get_backtrace () in
     Printexc.record_backtrace prev_backtrace;
     Result.error (e, trace)
-
-let ( >>= ) = Result.bind
 
 let get_module_ast_xml (module_path : string) (stdlib_path : string) : (modules, (string option * string)) result =
   match source_to_sany_xml_str module_path stdlib_path with

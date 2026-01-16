@@ -12,10 +12,6 @@ let todo (category : string) (msg : string) (loc : Xml.location option) : 'a =
 
 let entries : Xml.entry_kind Coll.Im.t ref = ref Coll.Im.empty
 
-let converted_modules : Module.T.mule Coll.Im.t ref = ref Coll.Im.empty
-
-let converted_units : Module.T.modunit Coll.Im.t ref = ref Coll.Im.empty
-
 (** Converts SANY's location format to TLAPM's, for attachment to node
     metadata.
 *)
@@ -48,15 +44,20 @@ let resolve_ref (uid : int) : Xml.entry =
   | Some kind -> {uid; kind}
   | None -> failwith ("Unresolved reference to entry UID: " ^ string_of_int uid)
 
+let resolve_module_node (uid : int) : Xml.module_node =
+  match (resolve_ref uid).kind with
+  | ModuleNode mule -> mule
+  | _ -> failwith ("Expected module node for UID: " ^ string_of_int uid)
+
 let resolve_formal_param_node (param : Xml.leibniz_param) : (hint * shape) =
-  match Coll.Im.find_opt param.ref !entries with
-  | Some (Xml.FormalParamNode xml) -> (
+  match (resolve_ref param.ref).kind with
+  | Xml.FormalParamNode xml -> (
     attach_props xml.node xml.uniquename,
     match xml.arity with
     | 0 -> Shape_expr
     | n -> Shape_op n
   )
-  | _ -> failwith ("Unresolved formal parameter node UID: " ^ string_of_int param.ref)
+  | _ -> failwith ("Expected formal parameter node for UID: " ^ string_of_int param.ref)
 
 let resolve_theorem_def_node (uid : int) : Xml.theorem_def_node =
   match (resolve_ref uid).kind with
@@ -92,10 +93,7 @@ let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
   | _ -> None
 
 (** Converts a top-level module node. *)
-let rec convert_module_node (uid : int) (mule : Xml.module_node) : Module.T.mule =
-  match Coll.Im.find_opt uid !converted_modules with
-  | Some kind -> kind
-  | None ->
+let rec convert_module_node (mule : Xml.module_node) : Module.T.mule =
   let inline_unit unit =
     match unit with
     | `Ref uid -> resolve_ref uid
@@ -109,7 +107,7 @@ let rec convert_module_node (uid : int) (mule : Xml.module_node) : Module.T.mule
   *)
   in let convert_entry (entry : Xml.entry) : Module.T.modunit =
     match entry.kind with
-    | ModuleNode mule -> noprops (Submod (convert_module_node entry.uid mule))
+    | ModuleNode xml_mule -> locate (Submod (convert_module_node mule)) xml_mule.location
     | OpDeclNode op_decl_node -> convert_op_decl_node op_decl_node
     | UserDefinedOpKind user_defined_op_kind -> convert_user_defined_op_kind user_defined_op_kind
     | BuiltInKind built_in_kind -> convert_built_in_kind built_in_kind
@@ -126,7 +124,10 @@ let rec convert_module_node (uid : int) (mule : Xml.module_node) : Module.T.mule
     important = true
   } mule.location
 
-(** Converts operator declarations such as CONSTANTS and VARIABLES.
+(** Converts operator declarations such as CONSTANTS and VARIABLES. In a
+    declaration like VARIABLES x, y, z, each of x, y, and z are given as
+    separate OpDeclNode entries. In contrast, TLAPM wraps all of these in a
+    single Variables modunit.
 *)
 and convert_op_decl_node (xml : Xml.op_decl_node) : Module.T.modunit =
   match xml.kind with
@@ -492,15 +493,13 @@ let convert_ast (ast : Xml.modules) : (Module.T.modctx * Module.T.mule, (string 
       (fun m (e : Xml.entry) -> Coll.Im.add e.uid e.kind m)
       Coll.Im.empty
       ast.context;
-  converted_modules := Coll.Im.empty;
-  converted_units := Coll.Im.empty;
-  let root_module_id, root_module = List.find_map (fun (entry : Xml.entry) ->
-      match entry.kind with
-      | Xml.ModuleNode mule -> if mule.uniquename = ast.root_module then Some (entry.uid, mule) else None
-      | _ -> None) ast.context |> Option.get
-  in let root = convert_module_node root_module_id root_module in
-  converted_modules := Coll.Im.add root_module_id root !converted_modules;
-  Ok (Coll.Sm.empty, root)
+  let ctx = List.fold_left
+    (fun m mule_ref ->
+      let mule = mule_ref |> resolve_module_node |> convert_module_node in
+      Coll.Sm.add mule.core.name.core mule m)
+    Coll.Sm.empty
+    ast.module_node_ref
+  in Ok (ctx, Coll.Sm.find ast.root_module ctx)
 
 (** Calls SANY to parse the given module, then converts SANY's AST into the
     TLAPM AST format.
