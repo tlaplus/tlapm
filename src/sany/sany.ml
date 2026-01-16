@@ -107,22 +107,22 @@ let rec convert_module_node (mule : Xml.module_node) : Module.T.mule =
   *)
   in let convert_entry (entry : Xml.entry) : Module.T.modunit =
     match entry.kind with
-    | ModuleNode xml_mule -> locate (Submod (convert_module_node mule)) xml_mule.location
+    | ModuleNode submod -> Submod (convert_module_node submod) |> attach_props submod.node
     | OpDeclNode op_decl_node -> convert_op_decl_node op_decl_node
     | UserDefinedOpKind user_defined_op_kind -> convert_user_defined_op_kind user_defined_op_kind
     | BuiltInKind built_in_kind -> convert_built_in_kind built_in_kind
     | FormalParamNode formal_param_node -> convert_formal_param_node formal_param_node
     | TheoremDefNode theorem_def_node -> convert_theorem_def_node theorem_def_node
     | TheoremNode theorem_node -> convert_theorem_node theorem_node
-  in locate {
-    name = noprops mule.uniquename;
+  in {
+    name = noprops mule.name;
     extendees = [];
     instancees = [];
     body = mule.units |> List.map inline_unit |> List.map convert_entry;
     defdepth = 0;
     stage = Parsed;
     important = true
-  } mule.location
+  } |> attach_props mule.node
 
 (** Converts operator declarations such as CONSTANTS and VARIABLES. In a
     declaration like VARIABLES x, y, z, each of x, y, and z are given as

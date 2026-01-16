@@ -26,22 +26,25 @@ open Xmlm;;
 
 (** This simple XML representation only consists of nodes and values, where
     node is a tag with a list of children. For example, the XML snippet
-    <SomeName>"value"</SomeName> would be Node ("SomeName", [Value "value"]).
+    <SomeName>"value"</SomeName> would be Node ("SomeName", [SValue "value"]).
     XML can also have attributes on tags, like <SomeName attr="value">, but
     these are not used in SANY's XML format.
 *)
 type tree =
   | Node of string * tree list
-  | Value of string
+  | SValue of string
+  | IValue of int
 [@@deriving show]
 
 (** Uses the Xmlm library to parse an XML string into the simple XML tree
-    representation defined above.
+    representation defined above. If SANY's XML output format is ever changed
+    to make use of attributes or namespaces, this function and the tree type
+    will both need to be updated accordingly.
 *)
 let str_to_xml (xml_str: string) : tree =
   let xml = Xmlm.make_input (`String (0, xml_str)) in
-  let el (((_, name), _) : tag) (children : tree list) = Node (name, children) in
-  let data (d : string) = Value d in
+  let el (((_namespace, name), _attributes) : tag) (children : tree list) = Node (name, children) in
+  let data (s : string) = match int_of_string_opt s with | Some n -> IValue n | None -> SValue s in
   Xmlm.input_doc_tree ~el ~data xml |> snd
 
 (** Error method which raises an exception when parsing the SANY XML output
@@ -67,7 +70,7 @@ let is_tag (tag_name : string) (node : tree) : bool =
 let children_of (xml : tree) : tree list =
   match xml with
   | Node (_, children) -> children
-  | Value _ -> Invalid_argument (Printf.sprintf "Cannot get children of node %s" (show_tree xml)) |> raise
+  | _ -> Invalid_argument (Printf.sprintf "Cannot get children of node %s" (show_tree xml)) |> raise
 
 (** Utility function that returns the single child of an XML node. Raises an
     exception if there is not exactly one child.
@@ -76,7 +79,7 @@ let child_of (xml : tree) : tree =
   match xml with
   | Node (_, [child]) -> child
   | Node (_, _) -> Invalid_argument (Printf.sprintf "Require single child of node %s" (show_tree xml)) |> raise
-  | Value _ -> Invalid_argument (Printf.sprintf "Cannot get children of node %s" (show_tree xml)) |> raise
+  | _ -> Invalid_argument (Printf.sprintf "Cannot get children of node %s" (show_tree xml)) |> raise
 
 (** Utility function to print a list of XML trees for debugging or error
     message purposes.
@@ -98,7 +101,7 @@ let find_tag (tag_name : string) (children : tree list) : tree =
 *)
 let xml_to_tagged_string (tag_name : string) (children : tree list) : string =
   match find_tag tag_name children with
-  | (Node (_, [Value d])) -> d
+  | (Node (_, [SValue s])) -> s
   | xml -> conversion_failure __FUNCTION__ xml
 
 (** Utility function to extract the int value from a tagged XML node.
@@ -107,7 +110,7 @@ let xml_to_tagged_string (tag_name : string) (children : tree list) : string =
 *)
 let xml_child_to_int (xml : tree) : int =
   match xml with
-  | (Node (_, [Value d])) -> int_of_string d
+  | (Node (_, [IValue n])) -> n
   | _ -> conversion_failure __FUNCTION__ xml
   
 let xml_to_tagged_int (tag_name : string) (children : tree list) : int =
@@ -118,15 +121,15 @@ let xml_to_tagged_int (tag_name : string) (children : tree list) : int =
 *)
 let get_ref_opt (xml : tree) : int option =
   match xml with
-  | Node ("AssumeDefRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
-  | Node ("BuiltInKindRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
-  | Node ("FormalParamNodeRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
-  | Node ("ModuleInstanceKindRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
-  | Node ("ModuleNodeRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
-  | Node ("OpDeclNodeRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
-  | Node ("TheoremDefRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
-  | Node ("TheoremNodeRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
-  | Node ("UserDefinedOpKindRef", [Node ("UID", [Value uid])]) -> Some (int_of_string uid)
+  | Node ("AssumeDefRef", [Node ("UID", [IValue uid])]) -> Some uid
+  | Node ("BuiltInKindRef", [Node ("UID", [IValue uid])]) -> Some uid
+  | Node ("FormalParamNodeRef", [Node ("UID", [IValue uid])]) -> Some uid
+  | Node ("ModuleInstanceKindRef", [Node ("UID", [IValue uid])]) -> Some uid
+  | Node ("ModuleNodeRef", [Node ("UID", [IValue uid])]) -> Some uid
+  | Node ("OpDeclNodeRef", [Node ("UID", [IValue uid])]) -> Some uid
+  | Node ("TheoremDefRef", [Node ("UID", [IValue uid])]) -> Some uid
+  | Node ("TheoremNodeRef", [Node ("UID", [IValue uid])]) -> Some uid
+  | Node ("UserDefinedOpKindRef", [Node ("UID", [IValue uid])]) -> Some uid
   | _ -> None
 
 (** Use this either on a single node that must have a UID child, or in
@@ -148,34 +151,19 @@ type location = {
 let xml_to_location (xml : tree) : location =
   match xml with
   | Node ("location", [
-    Node ("column", [Node ("begin", [Value column_begin]); Node ("end", [Value column_end])]);
-    Node ("line", [Node ("begin", [Value line_begin]); Node ("end", [Value line_end])]);
-    Node ("filename", [Value filename])
+    Node ("column", [Node ("begin", [IValue column_begin]); Node ("end", [IValue column_end])]);
+    Node ("line", [Node ("begin", [IValue line_begin]); Node ("end", [IValue line_end])]);
+    Node ("filename", [SValue filename])
   ]) -> {
-      column = (int_of_string column_begin, int_of_string column_end);
-      line = (int_of_string line_begin, int_of_string line_end);
+      column = (column_begin, column_end);
+      line = (line_begin, line_end);
       filename;
     }
   | _ -> conversion_failure __FUNCTION__ xml
 
-type level =
-  | Constant
-  | Variable
-  | Action
-  | Temporal
-[@@deriving show]
-
-let int_to_level (n : int) : level =
-  match n with
-  | 0 -> Constant
-  | 1 -> Variable
-  | 2 -> Action
-  | 3 -> Temporal
-  | _ -> Invalid_argument (Printf.sprintf "Invalid level value: %d" n) |> raise
-
 type node = {
   location  : location option;
-  level     : level option;
+  level     : int option;
 }
 [@@deriving show]
 
@@ -186,9 +174,9 @@ type node = {
 *)
 let extract_inline_node (children : tree list) : (node * tree list) =
   match children with
-  | Node ("location", _) as loc :: Node ("level", [Value lvl]) :: rest -> {location = Some (xml_to_location loc); level = Some (lvl |> int_of_string |> int_to_level)}, rest
+  | Node ("location", _) as loc :: Node ("level", [IValue lvl]) :: rest -> {location = Some (xml_to_location loc); level = Some lvl}, rest
   | Node ("location", _) as loc :: rest -> {location = Some (xml_to_location loc); level = None}, rest
-  | Node ("level", [Value lvl]) :: rest -> {location = None; level = Some (lvl |> int_of_string |> int_to_level)}, rest
+  | Node ("level", [IValue lvl]) :: rest -> {location = None; level = Some lvl}, rest
   | rest -> {location = None; level = None}, rest
 
 type numeral_node = {
@@ -231,8 +219,8 @@ type unbound_symbol = {
 
 let xml_to_unbound_symbol xml =
   match xml with
-  | Node ("unbound", Node ("FormalParamNodeRef", [Node ("UID", [Value uid])]) :: tuple_tag_opt) -> {
-    symbol_ref = int_of_string uid;
+  | Node ("unbound", Node ("FormalParamNodeRef", [Node ("UID", [IValue symbol_ref])]) :: tuple_tag_opt) -> {
+    symbol_ref;
     is_tuple = match tuple_tag_opt with | [Node ("tuple", [])] -> true | _ -> false;
   }
   | _ -> conversion_failure __FUNCTION__ xml
@@ -314,32 +302,30 @@ and xml_to_inline_expression children =
   |> Option.map xml_to_expression
 
 type module_node = {
-  location : location;
-  uniquename : string;
+  node  : node;
+  name  : string;
   units : [`Ref of int | `OtherTODO of string] list;
 }
 [@@deriving show]
 
 let xml_to_module_node xml =
   let ref_child child =
-    match child with
-    | Node ("OpDeclNodeRef", [Node ("UID", [Value uid])]) -> Some (`Ref (int_of_string uid))
-    | Node ("ModuleInstanceKindRef", [Node ("UID", [Value uid])]) -> Some (`Ref (int_of_string uid))
-    | Node ("UserDefinedOpKindRef", [Node ("UID", [Value uid])]) -> Some (`Ref (int_of_string uid))
-    | Node ("BuiltInKindRef", [Node ("UID", [Value uid])]) -> Some (`Ref (int_of_string uid))
-    | Node ("TheoremDefRef", [Node ("UID", [Value uid])]) -> Some (`Ref (int_of_string uid))
-    | Node ("AssumeDefRef", [Node ("UID", [Value uid])]) -> Some (`Ref (int_of_string uid))
-    | Node ("AssumeNodeRef", [Node ("UID", [Value uid])]) -> Some (`Ref (int_of_string uid))
-    | Node ("TheoremNodeRef", [Node ("UID", [Value uid])]) -> Some (`Ref (int_of_string uid))
-    | Node ("InstanceNode", children) -> Some (`OtherTODO "InstanceNode")
-    | Node ("UseOrHideNode", children) -> Some (`OtherTODO "UseOrHideNode")
-    | _ -> None
+    match get_ref_opt child with
+    | Some uid -> `Ref uid
+    | None -> match child with
+      | Node ("InstanceNode", children) -> `OtherTODO "InstanceNode"
+      | Node ("UseOrHideNode", children) -> `OtherTODO "UseOrHideNode"
+      | _ -> conversion_failure __FUNCTION__ child
   in match xml with
-  | Node ("ModuleNode", children) -> {
-      uniquename = children |> xml_to_tagged_string "uniquename";
-      location = children |> find_tag "location" |> xml_to_location;
-      units = List.filter_map ref_child children
+  | Node ("ModuleNode", children) ->
+    let (node, children) = extract_inline_node children in (
+    match children with
+    | Node ("uniquename", [SValue name]) :: units -> {
+      node;
+      name;
+      units = List.map ref_child units
     }
+    | _ -> conversion_failure __FUNCTION__ xml)
   | _ -> conversion_failure __FUNCTION__ xml
   
 type declaration_kind =
@@ -378,8 +364,8 @@ type leibniz_param = {
 
 let xml_to_leibniz_param xml =
   match xml with
-  | Node ("leibnizparam", Node ("FormalParamNodeRef", [Node ("UID", [Value uid])]) :: is_leibniz_opt) -> {
-      ref         = int_of_string uid;
+  | Node ("leibnizparam", Node ("FormalParamNodeRef", [Node ("UID", [IValue ref])]) :: is_leibniz_opt) -> {
+      ref;
       is_leibniz  = match is_leibniz_opt with | [Node ("leibniz", [])] -> true | _ -> false;
     }
   | _ -> conversion_failure __FUNCTION__ xml
@@ -482,7 +468,7 @@ type proof_step_group =
 
 let xml_to_proof_step_group xml =
   match xml with
-  | Node ("TheoremNodeRef", [Node ("UID", [Value uid])]) -> TheoremNodeRef (int_of_string uid)
+  | Node ("TheoremNodeRef", [Node ("UID", [IValue uid])]) -> TheoremNodeRef uid
   | _ -> conversion_failure __FUNCTION__ xml
 
 type steps_proof_node = {
