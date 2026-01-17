@@ -38,7 +38,10 @@ depends: [
   "ppx_inline_test"
   "ppx_assert"
   "ppx_deriving"
-  "ounit2"
+  "ounit2" {with-test}
+  "alcotest" {with-test}
+  "ocolor" {with-test}
+  "patdiff" {with-test}
   "odoc" {with-doc}
 ]
 depopts: ["lsp" "eio_main"]

@@ -24,4 +24,7 @@ class visitor_pp : object
   (** Simplified version od the `scope` method. *)
 end
 
+val pp_expr_text : Tlapm_lib.Expr.T.ctx -> Tlapm_lib.Expr.T.expr Fmt.t
 val pp_expr : Format.formatter -> Tlapm_lib.Expr.T.expr -> unit
+val pp_hyp : Format.formatter -> Tlapm_lib.Expr.T.hyp -> unit
+val pp_cx : Tlapm_lib.Expr.T.hyp Tlapm_lib.Util.Deque.dq Fmt.t

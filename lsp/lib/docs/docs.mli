@@ -2,9 +2,41 @@
 
 open Prover
 module LspT := Lsp.Types
+module TL := Tlapm_lib
 
 module Proof_step : sig
   type t
+
+  module El : sig
+    type t =
+      | Module of TL.Module.T.mule
+      | Theorem of {
+          mu : TL.Module.T.modunit;
+          name : TL.Util.hint option;
+          sq : TL.Expr.T.sequent;
+          naxs : int;
+          pf : TL.Proof.T.proof;
+          orig_pf : TL.Proof.T.proof;
+          summ : TL.Module.T.summary;
+        }
+      | Mutate of { mu : TL.Module.T.modunit; usable : TL.Proof.T.usable }
+      | Step of TL.Proof.T.step
+      | Qed of TL.Proof.T.qed_step
+    [@@deriving show]
+  end
+
+  val locate_proof_path : t -> Range.t -> t list
+  val el : t -> El.t * TL.Expr.T.ctx
+  val goal : t -> TL.Proof.T.obligation option
+  val proof : t -> TL.Proof.T.proof option
+  val full_range : t -> Range.t
+  val head_range : t -> Range.t
+  val stepno_seq_under_proof_step : t -> TL.Proof.T.stepno Seq.t
+
+  val stepno_seq_under_stepno :
+    TL.Proof.T.stepno option -> TL.Proof.T.stepno Seq.t
+
+  val sub_step_unnamed : t -> TL.Proof.T.stepno
 end
 
 module Proof_status : sig
@@ -92,9 +124,16 @@ val get_proof_step_details_latest :
     version of the document. *)
 
 val on_parsed_mule :
-  t -> tk -> int -> (Tlapm_lib.Module.T.mule -> 'a option) -> t * 'a option
+  t ->
+  tk ->
+  int ->
+  (Tlapm_lib.Module.T.mule -> Proof_step.t -> 'a option) ->
+  t * 'a option
 (** Apply [f] on a parsed module, if any. *)
 
 val on_parsed_mule_latest :
-  t -> tk -> (int -> Tlapm_lib.Module.T.mule -> 'a option) -> t * 'a option
+  t ->
+  tk ->
+  (int -> Tlapm_lib.Module.T.mule -> Proof_step.t -> 'a option) ->
+  t * 'a option
 (** Apply [f] on a parsed module of the latest version, if any. *)

@@ -38,7 +38,11 @@ module T : sig
   and use_def =
     | Dvar of string
     | Dx   of int
-  type obligation_kind = Ob_main | Ob_support | Ob_error of string
+  type obligation_kind =
+    | Ob_main
+    | Ob_support
+    | Ob_error of string
+    | Ob_omitted of omission
   type obligation = {
     id  : int option;
     obl : sequent wrapped;
@@ -62,6 +66,7 @@ module T : sig
   val string_of_stepno: ?anonid:bool -> stepno -> string
   val get_qed_proof: qed_step_ Property.wrapped -> proof
   val step_number: stepno -> int
+  val sub_step_number : stepno option -> int
 end
 
 module Fmt : sig
@@ -101,6 +106,7 @@ module Visit : sig
     method proof  : 's scx -> proof -> unit
     method steps  : 's scx -> step list -> 's scx
     method step   : 's scx -> step -> 's scx
+    method qed    : 's scx -> qed_step -> unit
     method usable : 's scx -> usable -> unit
   end
 end

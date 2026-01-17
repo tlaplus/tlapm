@@ -18,7 +18,7 @@ open Property
 open E_t
 open Format
 open Fmtutil
-open Tla_parser
+module Fu = Tla_parser.Fu
 
 
 type ctx = hyp Deque.dq * int Ctx.ctx
@@ -463,7 +463,9 @@ and fmt_apply (hx, vx as cx) op args = match op.core, args with
             let top = Optable.lookup s in
             (* coalescing leads to this case, prepending "?" to the newly
             introduced identifiers. *)
-            { top with Optable.name = "?" ^ top.Optable.name }
+            if Ctx.try_print_src (snd cx)
+              then top
+              else { top with Optable.name = "?" ^ top.Optable.name }
         | Internal b ->
             Optable.standard_form b
         | _ ->

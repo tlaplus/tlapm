@@ -27,6 +27,7 @@ let toolbox_print ob ?(temp=false) status prover meth timeout already print_ob
       match ob.kind with
       | Ob_error msg when print_ob ->
           Some (warnings ^ msg)
+      | Ob_omitted _ -> None
       | _ when print_ob ->
           let buf = Buffer.create 100 in
           let ff = Format.formatter_of_buffer buf in
@@ -97,8 +98,6 @@ let print_new_res ob st warns time_used =
 
 (**** duplicates prep.ml *****)
 let expand_defs ?(what = fun _ -> true) ob =
-  let prefix = ref [] in
-  let emit mu = prefix := mu :: (!prefix) in
   let rec visit sq =
     match Deque.front sq.context with
     | None -> sq
@@ -107,7 +106,6 @@ let expand_defs ?(what = fun _ -> true) ob =
           | Defn ({core = Operator (_, e)}, wd, Visible, _) when what wd ->
               visit (app_sequent (scons e (shift 0)) { sq with context = hs })
           | _ ->
-              emit h ;
               let sq = visit { sq with context = hs } in
                 { sq with context = Deque.cons h sq.context }
       end

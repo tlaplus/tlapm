@@ -400,6 +400,7 @@ let process_module
         in
         let obs = Array.mapi add_id fin.final_obs in  (* add obligation ids *)
         let obs = toolbox_clean obs in (* only consider specified obligations *)
+        let obs = List.filter (fun ob -> match ob.kind with Ob_omitted _ -> false | _ -> true) obs in
         let fin = {
                 fin with final_obs = Array.of_list obs ;
                 final_status = (Incomplete, summ) } in

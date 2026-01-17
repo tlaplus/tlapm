@@ -83,6 +83,9 @@ val query  : 'a wrapped -> 'b pfuncs -> 'b option
     doesn't already exist. *)
 val assign : 'a wrapped -> 'b pfuncs -> 'b -> 'a wrapped
 
+(** An [|>] friendly variant of [assign]. *)
+val with_prop : 'b pfuncs -> 'b -> 'a wrapped -> 'a wrapped
+
 (** [remove w pf] removes the property with pid [wf.pid] (if any) from
     [w]. *)
 val remove : 'a wrapped -> 'b pfuncs -> 'a wrapped

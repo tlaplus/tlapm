@@ -22,7 +22,7 @@ module Parsed = struct
         ~filename:(LspT.DocumentUri.to_path uri)
     with
     | Ok mule ->
-        let ps = Proof_step.of_module mule ps_prev in
+        let ps = Proof_step.of_module mule ?prev:ps_prev in
         { mule = Ok mule; nts = []; ps }
     | Error (loc_opt, msg) ->
         let nts = [ Toolbox.notif_of_loc_msg loc_opt msg ] in
@@ -127,6 +127,7 @@ let is_obl_final (act : t) p_ref obl_id =
   else None
 
 let on_parsed_mule (act : t) f =
-  match (Lazy.force act.parsed).mule with
-  | Ok mule -> ( match f mule with None -> None | Some res -> Some res)
+  let parsed = Lazy.force act.parsed in
+  match parsed.mule with
+  | Ok mule -> f mule (Option.get parsed.ps)
   | Error _ -> None
