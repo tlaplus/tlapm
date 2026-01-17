@@ -1,3 +1,44 @@
+(** This module converts SANY's abstract syntax tree (AST) into TLAPM's AST.
+    The two trees are quite different. SANY makes great use of globally unique
+    identifiers to reference one entity from another; for example, when the
+    symbol "x" is declared in a module, it is given a unique integer ID, and
+    all subsequent references to "x" use that ID. TLAPM, in contrast, uses De
+    Bruijn indices to represent variable references and has no equivalent to
+    a global symbol table. TLAPM also makes greater use of variants, as would
+    be expected in OCaml code; SANY is written in Java, so has a greater focus
+    on abstracting different AST nodes into a single AST node type. Nowhere is
+    this more apparent than in SANY's OpApplNode type, which is used for
+    everything from simple expressions like 1 + 3 to complex constructs like
+    \A x, y, z \in S : P.
+    
+    Much of the challenge of this module, in addition to the sheer number of
+    TLA+ syntax node types it has to convert, is the difficulty in mapping
+    the information in each SANY AST node to the fields expected in each
+    TLAPM node type. Often, TLAPM fields have no obvious use at this point in
+    the parsing process; they are clearly set up to be used later on during
+    proof elaboration or level-checking. TLAPM also wraps many AST nodes with
+    a generic key-value map used to store all kinds of things, most
+    prominently location & level information. SANY does not have an
+    equivalent, and prefers to store such information directly as fields in
+    each AST node. Internally, SANY actually has two different AST formats:
+    a very low-level one with close conformance to TLA+ syntax, and a more
+    abstract which is presented to us here. Thus the SANY AST has already
+    been processed significantly, and we are translating it to a form that is
+    comparatively much rougher & earlier in the parse process.
+    
+    Given these challenges, much SANY information such as identifier reference
+    IDs and levels are attached as metadata to TLAPM AST nodes for use later
+    on: not as the basis for final calculations, but rather to cross-check
+    them with TLAPM's own internal calculations. In particular, the difference
+    between UIDs and De Bruijn indices is so large that it is not feasible to
+    directly translate the logic without significant risk of introducing bugs.
+    Instead, the conversion to De Bruijn indices is modified to check that the
+    calculation matches the original UID-based reference, and error if not.
+    While this does not alleviate TLAPM maintenance costs as much as hoped,
+    it at least provides a strong safeguard against bugs. Future work can
+    possibly at least remove level-checking from TLAPM.
+*)
+
 open Property;;
 open Module.T;;
 open Expr.T;;
@@ -10,6 +51,8 @@ let todo (category : string) (msg : string) (loc : Xml.location option) : 'a =
   | None -> "Unknown location"
   in failwith (Printf.sprintf "%s not yet implemented: %s\n%s" category msg loc)
 
+(** A module-global table of SANY AST entities, indexed by UID.
+*)
 let entries : Xml.entry_kind Coll.Im.t ref = ref Coll.Im.empty
 
 (** Converts SANY's location format to TLAPM's, for attachment to node
@@ -29,56 +72,71 @@ let convert_location ({column = (col_start, col_finish); line = (line_start, lin
   file = filename;
 }
 
-let locate (value : 'a) (location : Xml.location) : 'a wrapped =
-  Util.locate value (convert_location location)
-
-(** Wrap the given object in location and (eventually) level information.
+(** Wrap the given object in location data.
+    TODO: also wrap with level data.
 *)
 let attach_props (props : Xml.node) (value : 'a) : 'a wrapped =
   match props.location with
   | Some loc -> Util.locate value (convert_location loc)
   | None -> noprops value
 
+(** Look up the given ref in the global entries table, failing if not found.
+*)
 let resolve_ref (uid : int) : Xml.entry =
   match Coll.Im.find_opt uid !entries with
   | Some kind -> {uid; kind}
   | None -> failwith ("Unresolved reference to entry UID: " ^ string_of_int uid)
 
+(** A typed version of resolve_ref for module nodes.
+*)
 let resolve_module_node (uid : int) : Xml.module_node =
   match (resolve_ref uid).kind with
   | ModuleNode mule -> mule
   | _ -> failwith ("Expected module node for UID: " ^ string_of_int uid)
 
+(** A typed version of resolve_ref for operator parameter nodes.
+*)
 let resolve_formal_param_node (param : Xml.leibniz_param) : (hint * shape) =
   match (resolve_ref param.ref).kind with
   | Xml.FormalParamNode xml -> (
-    attach_props xml.node xml.uniquename,
+    attach_props xml.node xml.name,
     match xml.arity with
     | 0 -> Shape_expr
     | n -> Shape_op n
   )
   | _ -> failwith ("Expected formal parameter node for UID: " ^ string_of_int param.ref)
 
+(** A typed version of resolve_ref for theorem definition nodes.
+*)
 let resolve_theorem_def_node (uid : int) : Xml.theorem_def_node =
   match (resolve_ref uid).kind with
   | TheoremDefNode xml -> xml
   | _ -> failwith ("Expected theorem definition node for UID: " ^ string_of_int uid)
 
+(** A typed version of resolve_ref for theorem nodes.
+*)
 let resolve_theorem_node (uid : int) : Xml.theorem_node =
   match (resolve_ref uid).kind with
   | TheoremNode xml -> xml
   | _ -> failwith ("Expected theorem node for UID: " ^ string_of_int uid)
 
+(** A typed version of resolve_ref for bound symbols.
+*)
 let resolve_bound_symbol (uid : int) : hint =
   match Coll.Im.find_opt uid !entries with
-  | Some (Xml.FormalParamNode ({arity = 0} as xml)) -> attach_props xml.node xml.uniquename
+  | Some (Xml.FormalParamNode ({arity = 0} as xml)) -> attach_props xml.node xml.name
   | Some (Xml.FormalParamNode _) -> failwith ("Bound symbol cannot be an operator: " ^ string_of_int uid)
   | _ -> failwith ("Unresolved formal parameter node UID: " ^ string_of_int uid)
+
+let convert_proof_step_name (step_number : int) (theorem_def_ref : int option) : stepno =
+  match theorem_def_ref with
+  | Some uid -> let _name = (resolve_theorem_def_node uid).name in Unnamed (1, step_number)
+  | None -> failwith "Proof steps must have a name"
 
 (** Converts built-in prefix, infix, and postfix operators along with keywords.
 *)
 let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
-  match builtin.uniquename with
+  match builtin.name with
   | "TRUE" -> Some Builtin.TRUE
   | "FALSE" -> Some Builtin.FALSE
   | "UNCHANGED" -> Some Builtin.UNCHANGED
@@ -102,8 +160,7 @@ let rec convert_module_node (mule : Xml.module_node) : Module.T.mule =
       things; SANY heavily uses GUIDs to reference one entity from another and
       those GUIDs are resolved in a global table with no real type information.
       Thus in-scope operator parameters coexist alongside entire modules, and
-      here we branch out to the appropriate conversion method. Some types are
-      invalid here at the global scope, and we avoid handling them.
+      here we branch out to the appropriate conversion method.
   *)
   in let convert_entry (entry : Xml.entry) : Module.T.modunit =
     match entry.kind with
@@ -131,7 +188,7 @@ let rec convert_module_node (mule : Xml.module_node) : Module.T.mule =
 *)
 and convert_op_decl_node (xml : Xml.op_decl_node) : Module.T.modunit =
   match xml.kind with
-  | Variable -> noprops (Variables [attach_props xml.node xml.uniquename])
+  | Variable -> noprops (Variables [attach_props xml.node xml.name])
 
 (** Converts action-level expressions such as [][expr]_sub and <><<expr>>_sub.
 *)
@@ -280,7 +337,7 @@ and convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_kind)
     ) |> attach_props apply.node
   (* More abstract kinds of built-in operators *)
   | None -> (
-      match op.uniquename with
+      match op.name with
       | "$SetEnumerate" -> SetEnum (
         List.map convert_expression_or_operator_argument apply.operands
       ) |> attach_props apply.node
@@ -302,21 +359,20 @@ and convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_kind)
 *)
 and convert_user_defined_op_appl (apply : Xml.op_appl_node) (op : Xml.user_defined_op_kind) : Expr.T.expr =
   Apply (
-    Opaque op.uniquename |> attach_props op.node,
+    Opaque op.name |> attach_props op.node,
     List.map convert_expression_or_operator_argument apply.operands
   ) |> attach_props apply.node
 
 (** Conversion of reference to in-scope operator parameters, such as in
     op(a, b, c) == a. This is a case where information is actually lost,
     since the reference is converted to a simple string that will be resolved
-    again later on by turning it into a De Bruijn index (Ix) type. It might
-    be possible to convert the reference into a De Bruijn index directly.
+    again later on by turning it into a De Bruijn index (Ix) type.
 *)
 and convert_formal_param_node_op_appl (apply : Xml.op_appl_node) (param : Xml.formal_param_node) : Expr.T.expr =
   match param.arity with
-  | 0 -> Opaque param.uniquename |> attach_props param.node
+  | 0 -> Opaque param.name |> attach_props param.node
   | n -> Apply (
-      Opaque param.uniquename |> attach_props param.node,
+      Opaque param.name |> attach_props param.node,
       List.map convert_expression_or_operator_argument apply.operands
     ) |> attach_props apply.node
 
@@ -326,9 +382,9 @@ and convert_formal_param_node_op_appl (apply : Xml.op_appl_node) (param : Xml.fo
 *)
 and convert_op_decl_node_op_appl (apply : Xml.op_appl_node) (decl : Xml.op_decl_node) : Expr.T.expr =
   match decl.arity with
-  | 0 -> Opaque decl.uniquename |> attach_props decl.node
+  | 0 -> Opaque decl.name |> attach_props decl.node
   | n -> Apply (
-      Opaque decl.uniquename |> attach_props decl.node,
+      Opaque decl.name |> attach_props decl.node,
       List.map convert_expression_or_operator_argument apply.operands
     ) |> attach_props apply.node
 
@@ -336,7 +392,7 @@ and convert_op_decl_node_op_appl (apply : Xml.op_appl_node) (decl : Xml.op_decl_
     all expression types. Things like \A x \in S : P are represented as an
     application of the built-in "forall" operator, with argument P and symbol
     x bound by S. This complicated method de-abstracts this into the more
-    detailed Expr.T.expr type used by TLAPS.
+    detailed Expr.T.expr variant type used by TLAPS.
 *)
 and convert_op_appl_node (apply : Xml.op_appl_node) : Expr.T.expr =
   let op_kind = (resolve_ref apply.operator).kind in
@@ -350,7 +406,7 @@ and convert_op_appl_node (apply : Xml.op_appl_node) : Expr.T.expr =
   (* A reference to a CONSTANT or VARIABLE identifier *)
   | OpDeclNode decl -> convert_op_decl_node_op_appl apply decl
   (* A reference to a named THEOREM or a proof step *)
-  | TheoremDefNode thm -> Opaque thm.uniquename |> attach_props thm.node
+  | TheoremDefNode thm -> Opaque thm.name |> attach_props thm.node
   | _ -> failwith ("Invalid operator reference in OpApplNode : " ^ (Xml.show_entry_kind op_kind) )
 
 (** Some places in TLA⁺ syntax allow both normal expressions and also
@@ -380,7 +436,7 @@ and convert_user_defined_op_kind (xml: Xml.user_defined_op_kind) : Module.T.modu
   | true -> failwith "TLAPS does not yet support recursive operators"
   | false -> noprops (Definition (
       Operator (
-        attach_props xml.node xml.uniquename,
+        attach_props xml.node xml.name,
         let expr = xml.body |> convert_expression in
         match xml.params with
         | [] -> expr
@@ -414,7 +470,7 @@ and convert_theorem_def_node (theorem_def_node : Xml.theorem_def_node) : Module.
 *)
 and convert_theorem_node (thm : Xml.theorem_node) : Module.T.modunit =
   Theorem (
-    Option.map (fun uid -> let def = resolve_theorem_def_node uid in attach_props def.node def.uniquename) thm.definition,
+    Option.map (fun uid -> let def = resolve_theorem_def_node uid in attach_props def.node def.name) thm.definition,
     convert_sequent thm.body,
     0 (* TODO figure out what this integer parameter means *),
     convert_proof thm.proof,
@@ -448,31 +504,33 @@ and convert_proof_steps ({node; steps} : Xml.steps_proof_node) : Proof.T.proof =
     match List.rev steps with
     | [] -> failwith "Step-based proofs must have at least one step"
     | last :: rest -> (List.rev rest, last)
-  in let convert_proof_step (step : Xml.proof_step_group) : Proof.T.step =
+  in let convert_proof_step (step_number : int) (step : Xml.proof_step_group) : Proof.T.step =
     match step with
     (* TODO: handle other proof step types *)
     | TheoremNodeRef uid ->
       let thm = resolve_theorem_node uid in
-      Suffices (convert_sequent thm.body, convert_proof thm.proof) |> attach_props thm.node
-  in let convert_qed_step (step : Xml.proof_step_group) : Proof.T.qed_step =
+      let step = Suffices (convert_sequent thm.body, convert_proof thm.proof) |> attach_props thm.node in
+      assign step Props.step (convert_proof_step_name step_number thm.definition)
+  in let convert_qed_step (step_number : int) (step : Xml.proof_step_group) : Proof.T.qed_step =
     match step with
     (* TODO: handle other proof step types *)
     | TheoremNodeRef uid ->
       let thm = resolve_theorem_node uid in
-      Qed (convert_proof thm.proof) |> attach_props thm.node
+      let step = Qed (convert_proof thm.proof) |> attach_props thm.node in
+      assign step Props.step (Unnamed (1, step_number))
   in let steps, qed = split_steps steps
-  in Steps (List.map convert_proof_step steps, convert_qed_step qed)
+  in Steps (List.mapi convert_proof_step steps, convert_qed_step (List.length steps) qed)
 ) |> attach_props node
 
 (** Converts proofs of the form BY x, y, z DEF a, b, c. This is another place
     where information is lost, as the facts and definitions are converted to
-    strings that will need to be resolved later on.
+    strings that will need to be resolved to De Bruijn indices later on.
 *)
 and convert_by_proof ({node; facts; defs} : Xml.by_proof_node) : Proof.T.proof =
   let resolve_def (ref : int) : use_def wrapped =
     match (resolve_ref ref).kind with
-    | UserDefinedOpKind op -> Dvar op.uniquename |> attach_props op.node
-    | TheoremDefNode thm -> Dvar thm.uniquename |> attach_props thm.node
+    | UserDefinedOpKind op -> Dvar op.name |> attach_props op.node
+    | TheoremDefNode thm -> Dvar thm.name |> attach_props thm.node
     | other -> failwith ("Invalid definition reference in BY proof: " ^ (Xml.show_entry_kind other))
   in By ({
     facts = List.map convert_expression facts;
@@ -488,6 +546,7 @@ and convert_by_proof ({node; facts; defs} : Xml.by_proof_node) : Proof.T.proof =
     it a module-level mutable variable instead.
 *)
 let convert_ast (ast : Xml.modules) : (Module.T.modctx * Module.T.mule, (string option * string)) result =
+  if ast.modules <> [] then failwith "SANY AST cannot have multiple top-level modules";
   entries :=
     List.fold_left
       (fun m (e : Xml.entry) -> Coll.Im.add e.uid e.kind m)
@@ -498,7 +557,7 @@ let convert_ast (ast : Xml.modules) : (Module.T.modctx * Module.T.mule, (string 
       let mule = mule_ref |> resolve_module_node |> convert_module_node in
       Coll.Sm.add mule.core.name.core mule m)
     Coll.Sm.empty
-    ast.module_node_ref
+    ast.module_refs
   in Ok (ctx, Coll.Sm.find ast.root_module ctx)
 
 (** Calls SANY to parse the given module, then converts SANY's AST into the
