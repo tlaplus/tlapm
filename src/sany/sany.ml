@@ -56,7 +56,8 @@ let todo (category : string) (msg : string) (loc : Xml.location option) : 'a =
 let entries : Xml.entry_kind Coll.Im.t ref = ref Coll.Im.empty
 
 (** Converts SANY's location format to TLAPM's, for attachment to node
-    metadata.
+    metadata. Since the SANY location does not include data for byte offsets
+    from beginning of file, we set those to 0 here.
 *)
 let convert_location ({column = (col_start, col_finish); line = (line_start, line_finish); filename} : Xml.location) : Loc.locus = {
   start = Actual {
@@ -71,6 +72,36 @@ let convert_location ({column = (col_start, col_finish); line = (line_start, lin
   };
   file = filename;
 }
+
+(** Parses proof step names like <1>a as given in SANY's XML output, where
+    they are escaped using &lt; and &rt; for < and > respectively.
+*)
+let parse_proof_step_name (proof_name : string) (index : int) : stepno =
+  let parse_name (parse_state, level, name : int * int list * char list ) (c : char) : int * int list * char list =
+    match parse_state, c with
+    | 0, '<' -> (4, level, name)
+    | 0, '&' -> (1, level, name)
+    | 1, 'l' -> (2, level, name)
+    | 2, 't' -> (3, level, name)
+    | 3, ';' -> (4, level, name)
+    | 4, '0' .. '9' -> (4, int_of_char c - int_of_char '0' :: level, name)
+    | 4, '>' -> (8, level, name)
+    | 4, '&' -> (5, level, name)
+    | 5, 'r' -> (6, level, name)
+    | 6, 't' -> (7, level, name)
+    | 7, ';' -> (8, level, name)
+    | 8, 'a' .. 'z' -> (8, level, c :: name)
+    | 8, 'A' .. 'Z' -> (8, level, c :: name)
+    | 8, '0' .. '9' -> (8, level, c :: name)
+    | 8, '_' -> (8, level, c :: name)
+    | 8, '.' -> (9, level, name)
+    | 9, '.' -> (9, level, name)
+    | _ -> failwith (Format.sprintf "Invalid character '%c' in proof step name '%s' at parsing state %d" c proof_name parse_state)
+  in let (_, level, name) = String.fold_left parse_name (0, [], []) proof_name in
+  if level = [] then failwith (Format.sprintf "Proof step name '%s' missing level information" proof_name) else
+  let level = List.fold_right (fun (d : int) (acc : int) : int -> d + acc * 10) level 0 in
+  if name = [] then Unnamed (level, index) else
+  Named (level, name |> List.rev |> List.to_seq |> String.of_seq, true)
 
 (** Wrap the given object in location data.
     TODO: also wrap with level data.
@@ -130,7 +161,7 @@ let resolve_bound_symbol (uid : int) : hint =
 
 let convert_proof_step_name (step_number : int) (theorem_def_ref : int option) : stepno =
   match theorem_def_ref with
-  | Some uid -> let _name = (resolve_theorem_def_node uid).name in Unnamed (1, step_number)
+  | Some uid -> parse_proof_step_name (resolve_theorem_def_node uid).name step_number
   | None -> failwith "Proof steps must have a name"
 
 (** Converts built-in prefix, infix, and postfix operators along with keywords.
