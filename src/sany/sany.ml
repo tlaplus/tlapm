@@ -103,6 +103,18 @@ let parse_proof_step_name (proof_name : string) (index : int) : stepno =
   if name = [] then Unnamed (level, index) else
   Named (level, name |> List.rev |> List.to_seq |> String.of_seq, true)
 
+(** Wraps the given proof step with its name in the metadata.
+*)
+let attach_proof_step_name (step : 'a) (proof_name : stepno) : 'a =
+  assign step Props.step proof_name
+
+(** Extracts the proof step level from its metadata.
+*)
+let get_proof_step_level (step : 'a) : int =
+  match get step Props.step with
+  | Unnamed (level, _) -> level
+  | Named (level, _, _) -> level
+
 (** Wrap the given object in location data.
     TODO: also wrap with level data.
 *)
@@ -159,10 +171,10 @@ let resolve_bound_symbol (uid : int) : hint =
   | Some (Xml.FormalParamNode _) -> failwith ("Bound symbol cannot be an operator: " ^ string_of_int uid)
   | _ -> failwith ("Unresolved formal parameter node UID: " ^ string_of_int uid)
 
-let convert_proof_step_name (step_number : int) (theorem_def_ref : int option) : stepno =
+let convert_proof_step_name (proof_level : int option) (step_number : int) (theorem_def_ref : int option) : stepno =
   match theorem_def_ref with
   | Some uid -> parse_proof_step_name (resolve_theorem_def_node uid).name step_number
-  | None -> failwith "Proof steps must have a name"
+  | None -> Unnamed (Option.get proof_level, step_number)
 
 (** Converts built-in prefix, infix, and postfix operators along with keywords.
 *)
@@ -535,22 +547,25 @@ and convert_proof_steps ({node; steps} : Xml.steps_proof_node) : Proof.T.proof =
     match List.rev steps with
     | [] -> failwith "Step-based proofs must have at least one step"
     | last :: rest -> (List.rev rest, last)
-  in let convert_proof_step (step_number : int) (step : Xml.proof_step_group) : Proof.T.step =
+  in let convert_proof_step (steps, level, number : Proof.T.step list * int option * int) (step : Xml.proof_step_group) : Proof.T.step list * int option * int =
     match step with
     (* TODO: handle other proof step types *)
     | TheoremNodeRef uid ->
       let thm = resolve_theorem_node uid in
       let step = Suffices (convert_sequent thm.body, convert_proof thm.proof) |> attach_props thm.node in
-      assign step Props.step (convert_proof_step_name step_number thm.definition)
-  in let convert_qed_step (step_number : int) (step : Xml.proof_step_group) : Proof.T.qed_step =
+      let step = assign step Props.step (convert_proof_step_name level number thm.definition) in
+      let level = match level with | Some l -> Some l | None -> Some (get_proof_step_level step) in
+      (step :: steps, level, number + 1)
+  in let convert_qed_step (proof_level : int option) (step_number : int) (step : Xml.proof_step_group) : Proof.T.qed_step =
     match step with
     (* TODO: handle other proof step types *)
     | TheoremNodeRef uid ->
       let thm = resolve_theorem_node uid in
       let step = Qed (convert_proof thm.proof) |> attach_props thm.node in
-      assign step Props.step (Unnamed (1, step_number))
+      attach_proof_step_name step (convert_proof_step_name proof_level step_number thm.definition)
   in let steps, qed = split_steps steps
-  in Steps (List.mapi convert_proof_step steps, convert_qed_step (List.length steps) qed)
+  in let (steps, level, number) = List.fold_left convert_proof_step ([], None, 0) steps in
+  Steps (List.rev steps, convert_qed_step level number qed)
 ) |> attach_props node
 
 (** Converts proofs of the form BY x, y, z DEF a, b, c. This is another place
