@@ -74,38 +74,51 @@ let convert_location ({column = (col_start, col_finish); line = (line_start, lin
 }
 
 (** Parses proof step names like <1>a as given in SANY's XML output, where
-    they are escaped using &lt; and &rt; for < and > respectively.
+    they are escaped using &lt; and &rt; for < and > respectively. Proof step
+    name can also be <+>, meaning one more than the previous proof level, or
+    <*>, meaning same as the current proof level.
 *)
-let parse_proof_step_name (proof_name : string) (index : int) : stepno =
-  let parse_name (parse_state, level, name : int * int list * char list ) (c : char) : int * int list * char list =
+let parse_proof_step_name (previous_proof_level : int option) (current_proof_level : int option) (uid : int) (proof_name : string) : stepno =
+  let parse_name (parse_state, level, name : int * char list * char list ) (c : char) : int * char list * char list =
     match parse_state, c with
+    (* Start state: expect < or &lt; *)
     | 0, '<' -> (4, level, name)
     | 0, '&' -> (1, level, name)
     | 1, 'l' -> (2, level, name)
     | 2, 't' -> (3, level, name)
     | 3, ';' -> (4, level, name)
-    | 4, '0' .. '9' -> (4, int_of_char c - int_of_char '0' :: level, name)
-    | 4, '>' -> (8, level, name)
-    | 4, '&' -> (5, level, name)
-    | 5, 'r' -> (6, level, name)
-    | 6, 't' -> (7, level, name)
-    | 7, ';' -> (8, level, name)
-    | 8, 'a' .. 'z' -> (8, level, c :: name)
-    | 8, 'A' .. 'Z' -> (8, level, c :: name)
-    | 8, '0' .. '9' -> (8, level, c :: name)
-    | 8, '_' -> (8, level, c :: name)
-    | 8, '.' -> (9, level, name)
-    | 9, '.' -> (9, level, name)
+    (* Level parsing state: expect '+', '*', or digit *)
+    | 4, '+' | 4, '*' -> (6, [c], name)
+    (* Parse at least one digit then consume another digit, >, or &rt; *)
+    | 4, '0' .. '9' | 5, '0' .. '9' -> (5, c :: level, name)
+    | 5, '>' -> (10, level, name)
+    | 5, '&' -> (7, level, name)
+    (* Have seen + or *, expect > or &rt; *)
+    | 6, '>' -> (10, level, name)
+    | 6, '&' -> (7, level, name)
+    | 7, 'r' -> (8, level, name)
+    | 8, 't' -> (9, level, name)
+    | 9, ';' -> (10, level, name)
+    (* Proof name parsing state: read in zero or more a-zA-Z0-9_ *)
+    | 10, 'a' .. 'z' | 10, 'A' .. 'Z' | 10, '0' .. '9' | 10, '_' -> (10, level, c :: name)
+    (* Terminating '.' state; consume & ignore *)
+    | 10, '.' | 11, '.' -> (11, level, name)
     | _ -> failwith (Format.sprintf "Invalid character '%c' in proof step name '%s' at parsing state %d" c proof_name parse_state)
   in let (_, level, name) = String.fold_left parse_name (0, [], []) proof_name in
-  if level = [] then failwith (Format.sprintf "Proof step name '%s' missing level information" proof_name) else
-  let level = List.fold_right (fun (d : int) (acc : int) : int -> d + acc * 10) level 0 in
-  if name = [] then Unnamed (level, index) else
-  Named (level, name |> List.rev |> List.to_seq |> String.of_seq, true)
+  let level = match level, previous_proof_level, current_proof_level with
+  | ['+'], None, None -> 0
+  | ['+'], Some previous_proof_level, None -> previous_proof_level + 1
+  | ['+'], _, Some _ -> failwith "Cannot have explicit proof level followed by <+>"
+  | ['*'], None, None -> 0
+  | ['*'], Some previous_proof_level, None -> previous_proof_level + 1
+  | ['*'], _, Some current_proof_level -> current_proof_level
+  | _ -> List.fold_right (fun (d : char) (acc : int) : int -> (int_of_char d - int_of_char '0') + acc * 10) level 0 in
+  if name = [] then Unnamed (level, uid) else
+  Named (level, name |> List.rev |> List.to_seq |> String.of_seq, false)
 
 (** Wraps the given proof step with its name in the metadata.
 *)
-let attach_proof_step_name (step : 'a) (proof_name : stepno) : 'a =
+let attach_proof_step_name (proof_name : stepno) (step : 'a) : 'a =
   assign step Props.step proof_name
 
 (** Extracts the proof step level from its metadata.
@@ -171,10 +184,10 @@ let resolve_bound_symbol (uid : int) : hint =
   | Some (Xml.FormalParamNode _) -> failwith ("Bound symbol cannot be an operator: " ^ string_of_int uid)
   | _ -> failwith ("Unresolved formal parameter node UID: " ^ string_of_int uid)
 
-let convert_proof_step_name (proof_level : int option) (step_number : int) (theorem_def_ref : int option) : stepno =
+let convert_proof_step_name (proof_level : int option) (theorem_def_ref : int option) : stepno =
   match theorem_def_ref with
-  | Some uid -> parse_proof_step_name (resolve_theorem_def_node uid).name step_number
-  | None -> Unnamed (Option.get proof_level, step_number)
+  | Some uid -> parse_proof_step_name None proof_level uid (resolve_theorem_def_node uid).name
+  | None -> Unnamed (Option.get proof_level, let open Ext in Std.unique ())
 
 (** Converts built-in prefix, infix, and postfix operators along with keywords.
 *)
@@ -542,31 +555,32 @@ and convert_proof (proof : Xml.proof_node_group) : Proof.T.proof =
 (** One possible proof form is a series of steps, culminating in a QED step.
     This method converts that structure.
 *)
-and convert_proof_steps ({node; steps} : Xml.steps_proof_node) : Proof.T.proof = (
+and convert_proof_steps ({node; steps} : Xml.steps_proof_node) : Proof.T.proof =
   let rec split_steps (steps : Xml.proof_step_group list) : (Xml.proof_step_group list * Xml.proof_step_group) =
     match List.rev steps with
     | [] -> failwith "Step-based proofs must have at least one step"
     | last :: rest -> (List.rev rest, last)
-  in let convert_proof_step (steps, level, number : Proof.T.step list * int option * int) (step : Xml.proof_step_group) : Proof.T.step list * int option * int =
+  in let convert_proof_step (steps, level : Proof.T.step list * int option) (step : Xml.proof_step_group) : Proof.T.step list * int option =
     match step with
     (* TODO: handle other proof step types *)
     | TheoremNodeRef uid ->
       let thm = resolve_theorem_node uid in
       let step = Suffices (convert_sequent thm.body, convert_proof thm.proof) |> attach_props thm.node in
-      let step = assign step Props.step (convert_proof_step_name level number thm.definition) in
+      let step = attach_proof_step_name (convert_proof_step_name level thm.definition) step in
       let level = match level with | Some l -> Some l | None -> Some (get_proof_step_level step) in
-      (step :: steps, level, number + 1)
-  in let convert_qed_step (proof_level : int option) (step_number : int) (step : Xml.proof_step_group) : Proof.T.qed_step =
+      (step :: steps, level)
+  in let convert_qed_step (proof_level : int option) (step : Xml.proof_step_group) : Proof.T.qed_step =
     match step with
     (* TODO: handle other proof step types *)
     | TheoremNodeRef uid ->
       let thm = resolve_theorem_node uid in
-      let step = Qed (convert_proof thm.proof) |> attach_props thm.node in
-      attach_proof_step_name step (convert_proof_step_name proof_level step_number thm.definition)
+      Qed (convert_proof thm.proof) |> attach_props thm.node
+      |> attach_proof_step_name (convert_proof_step_name proof_level thm.definition)
   in let steps, qed = split_steps steps
-  in let (steps, level, number) = List.fold_left convert_proof_step ([], None, 0) steps in
-  Steps (List.rev steps, convert_qed_step level number qed)
-) |> attach_props node
+  in let (steps, level) = List.fold_left convert_proof_step ([], None) steps in
+  Steps (List.rev steps, convert_qed_step level qed)
+  |> attach_props node
+  |> attach_proof_step_name (Unnamed (Option.get level, let open Ext in Std.unique ()))
 
 (** Converts proofs of the form BY x, y, z DEF a, b, c. This is another place
     where information is lost, as the facts and definitions are converted to
