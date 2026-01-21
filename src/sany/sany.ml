@@ -185,12 +185,12 @@ let resolve_bound_symbol (uid : int) : hint =
   | Some (Xml.FormalParamNode _) -> failwith ("Bound symbol cannot be an operator: " ^ string_of_int uid)
   | _ -> failwith ("Unresolved formal parameter node UID: " ^ string_of_int uid)
 
-let convert_proof_step_name (proof_level : proof_level) (theorem_def_ref : int option) : stepno =
+let convert_proof_step_name (uid : int) (proof_level : proof_level) (theorem_def_ref : int option) : stepno =
   match theorem_def_ref with
   | Some uid -> parse_proof_step_name proof_level uid (resolve_theorem_def_node uid).name
   | None -> match proof_level with
-    | Previous n -> Unnamed (n + 1, let open Ext in Std.unique ())
-    | Known n -> Unnamed (n, let open Ext in Std.unique ())
+    | Previous n -> Unnamed (n + 1, uid)
+    | Known n -> Unnamed (n, uid)
 
 (** Converts built-in prefix, infix, and postfix operators along with keywords.
 *)
@@ -229,7 +229,7 @@ let rec convert_module_node (mule : Xml.module_node) : Module.T.mule =
     | BuiltInKind built_in_kind -> convert_built_in_kind built_in_kind
     | FormalParamNode formal_param_node -> convert_formal_param_node formal_param_node
     | TheoremDefNode theorem_def_node -> convert_theorem_def_node theorem_def_node
-    | TheoremNode theorem_node -> convert_theorem_node 0 theorem_node
+    | TheoremNode theorem_node -> convert_theorem_node entry.uid 0 theorem_node
   in {
     name = noprops mule.name;
     extendees = [];
@@ -237,7 +237,7 @@ let rec convert_module_node (mule : Xml.module_node) : Module.T.mule =
     body = mule.units |> List.map inline_unit |> List.map convert_entry;
     defdepth = 0;
     stage = Parsed;
-    important = true
+    important = false
   } |> attach_props mule.node
 
 (** Converts operator declarations such as CONSTANTS and VARIABLES. In a
@@ -527,12 +527,12 @@ and convert_theorem_def_node (theorem_def_node : Xml.theorem_def_node) : Module.
     and TheoremNode does not. TLAPM's theorem node construction has some
     oddities in the form of additional metadata.
 *)
-and convert_theorem_node (previous_proof_level : int) (thm : Xml.theorem_node) : Module.T.modunit =
+and convert_theorem_node (uid : int) (previous_proof_level : int) (thm : Xml.theorem_node) : Module.T.modunit =
   Theorem (
     Option.map (fun uid -> let def = resolve_theorem_def_node uid in attach_props def.node def.name) thm.definition,
     convert_sequent thm.body,
     0 (* TODO figure out what this integer parameter means *),
-    convert_proof previous_proof_level thm.proof,
+    convert_proof uid previous_proof_level thm.proof,
     noprops Obvious, (* TODO figure out why there are two proofs *)
     empty_summary  (* TODO figure out purpose of summary *)
   ) |> attach_props thm.node
@@ -548,18 +548,27 @@ and convert_sequent (seq : Xml.expr_or_assume_prove) : sequent =
 (** Converts a proof, which can either be OMITTED, OBVIOUS, BY, or a series
     of individual proof steps culminated in a QED step.
 *)
-and convert_proof (previous_proof_level : int) (proof : Xml.proof_node_group) : Proof.T.proof =
-  let open Ext in
+and convert_proof (uid : int) (previous_proof_level : int) (proof : Xml.proof_node_group) : Proof.T.proof =
   match proof with
-  | Omitted node -> Omitted Explicit |> attach_props node |> attach_proof_step_name (Unnamed (previous_proof_level + 1, Std.unique ()))
-  | Obvious node -> Obvious |> attach_props node |> attach_proof_step_name (Unnamed (previous_proof_level + 1, Std.unique ())) 
-  | By proof -> convert_by_proof proof |> attach_proof_step_name (Unnamed (previous_proof_level + 1, Std.unique ()))
-  | Steps proof -> convert_proof_steps previous_proof_level proof
+  | Omitted node -> Omitted Explicit |> attach_props node |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
+  | Obvious node -> Obvious |> attach_props node |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid)) 
+  | By proof -> convert_by_proof proof |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
+  | Steps proof -> convert_proof_steps uid previous_proof_level proof
 
 (** One possible proof form is a series of steps, culminating in a QED step.
-    This method converts that structure.
+    This method converts that structure. This is the most complex part of the
+    proof conversion, primarily due to the necessity of appending proof step
+    names and levels to each step and overall proof. SANY does not export the
+    proof level in its parse tree, and looking at the code on that side there
+    does not seem to be an easy method of doing so. Thus we have to parse the
+    first proof step name to get the initial proof level, which might be <*>
+    or <+> and thus relative to the previous proof level. This information is
+    propagated both up & down the parse tree to assign correct proof levels
+    elsewhere. Proof names can be either named or unnamed; in the latter case
+    TLAPM requires a unique ID to be assigned, so we use the UID of the SANY
+    AST node.
 *)
-and convert_proof_steps (previous_proof_level : int) ({node; steps} : Xml.steps_proof_node) : Proof.T.proof =
+and convert_proof_steps (uid : int) (previous_proof_level : int) ({node; steps} : Xml.steps_proof_node) : Proof.T.proof =
   let rec split_steps (steps : Xml.proof_step_group list) : (Xml.proof_step_group list * Xml.proof_step_group) =
     match List.rev steps with
     | [] -> failwith "Step-based proofs must have at least one step"
@@ -569,16 +578,16 @@ and convert_proof_steps (previous_proof_level : int) ({node; steps} : Xml.steps_
     (* TODO: handle other proof step types *)
     | TheoremNodeRef uid ->
       let thm = resolve_theorem_node uid in
-      let step_name = convert_proof_step_name proof_level thm.definition in
-      let step = Suffices (convert_sequent thm.body, convert_proof (step_number step_name) thm.proof) |> attach_props thm.node in
+      let step_name = convert_proof_step_name uid proof_level thm.definition in
+      let step = Suffices (convert_sequent thm.body, convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node in
       (attach_proof_step_name step_name step :: steps, Known (step_number step_name))
   in let convert_qed_step (proof_level : proof_level) (step : Xml.proof_step_group) : Proof.T.qed_step * proof_level =
     match step with
     (* TODO: handle other proof step types *)
     | TheoremNodeRef uid ->
       let thm = resolve_theorem_node uid in
-      let step_name = convert_proof_step_name proof_level thm.definition in
-      let qed_step = Qed (convert_proof (step_number step_name) thm.proof) |> attach_props thm.node in
+      let step_name = convert_proof_step_name uid proof_level thm.definition in
+      let qed_step = Qed (convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node in
       (attach_proof_step_name step_name qed_step, Known (step_number step_name))
   in let steps, qed = split_steps steps
   in let steps, proof_level = List.fold_left convert_proof_step ([], Previous previous_proof_level) steps
@@ -588,7 +597,7 @@ and convert_proof_steps (previous_proof_level : int) ({node; steps} : Xml.steps_
    | Known n -> n
   in Steps (List.rev steps, qed_step)
   |> attach_props node
-  |> attach_proof_step_name (Unnamed (proof_level, let open Ext in Std.unique ()))
+  |> attach_proof_step_name (Unnamed (proof_level, uid))
 
 (** Converts proofs of the form BY x, y, z DEF a, b, c. This is another place
     where information is lost, as the facts and definitions are converted to

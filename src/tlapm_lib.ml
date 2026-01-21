@@ -657,7 +657,8 @@ let modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~pre
     match !Params.parser_backend with
     | Tlapm -> tlapm_modctx_of_string ~content ~filename ~loader_paths ~prefer_stdlib
     | Sany -> let transform (ctx, mule : modctx * Module.T.mule) : (modctx * Module.T.mule, string option * string) result =
-        let (mcx, m, _summ) = Module.Elab.normalize ctx Deque.empty mule in Ok (mcx, m) 
+        let (mule, _) = let open Module.Flatten in flatten ctx mule Ss.empty in
+        let (ctx, m, _summ) = Module.Elab.normalize ctx Deque.empty mule in Ok (ctx, m) 
         in Result.bind (Sany.parse filename) transform
 
 let module_of_string module_str =
