@@ -70,7 +70,7 @@ let convert_location ({column = (col_start, col_finish); line = (line_start, lin
     bol = 0;
     col = col_finish;
   };
-  file = filename;
+  file = filename ^ ".tla";
 }
 
 type proof_level =
@@ -629,13 +629,17 @@ let convert_ast (ast : Xml.modules) : (Module.T.modctx * Module.T.mule, (string 
       (fun m (e : Xml.entry) -> Coll.Im.add e.uid e.kind m)
       Coll.Im.empty
       ast.context;
-  let ctx = List.fold_left
-    (fun m mule_ref ->
-      let mule = mule_ref |> resolve_module_node |> convert_module_node in
-      Coll.Sm.add mule.core.name.core mule m)
-    Coll.Sm.empty
+  let ctx : Module.T.modctx = List.fold_left
+    (fun (map : Module.T.modctx) (mule_ref : int) ->
+      let mule : Xml.module_node = mule_ref |> resolve_module_node in
+      if Coll.Sm.mem mule.name map then map
+      else Coll.Sm.add mule.name (convert_module_node mule) map
+    )
+    Module.Standard.initctx
     ast.module_refs
-  in Ok (ctx, Coll.Sm.find ast.root_module ctx)
+  in let root_module = Coll.Sm.find ast.root_module ctx in
+  root_module.core.important <- true;
+  Ok (ctx, root_module)
 
 (** Calls SANY to parse the given module, then converts SANY's AST into the
     TLAPM AST format.
