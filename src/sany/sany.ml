@@ -503,7 +503,7 @@ and convert_user_defined_op_kind (xml: Xml.user_defined_op_kind) : Module.T.modu
         | params -> Lambda (List.map resolve_formal_param_node params, expr) |> noprops
       ) |> noprops,
       User,
-      Visible,
+      Hidden, (* If Visible, will be auto-included in all BY proofs *)
       Export
     ))
 
@@ -613,7 +613,7 @@ and convert_by_proof ({node; facts; defs} : Xml.by_proof_node) : Proof.T.proof =
     facts = List.map convert_expression facts;
     defs = List.map resolve_def defs;
   },
-  true (* TODO: figure out meaning of this parameter *)
+  true (* This should be true if the ONLY keyword is present *)
 ) |> attach_props node
 
 (** The top-level method converting the entire SANY AST to TLAPM's AST. SANY
