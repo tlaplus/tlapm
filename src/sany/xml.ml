@@ -9,9 +9,10 @@
 let source_to_sany_xml_str (module_path : string) (stdlib_path : string) : (string, (string * int)) result =
   let open Unix in
   let open Paths in
-  let cmd = Printf.sprintf "java -cp %s tla2sany.xml.XMLExporter -I %s -t %s" 
+  let cmd = Printf.sprintf "java -cp %s tla2sany.xml.XMLExporter -I %s -I %s -t %s" 
     (backend_classpath_string "tla2tools.jar") 
     (Filename.quote stdlib_path) 
+    (Filename.dirname module_path)
     (Filename.quote module_path) in
   let (pid, out_fd) = System.launch_process cmd in
   let in_chan = Unix.in_channel_of_descr out_fd in
@@ -180,13 +181,13 @@ let extract_inline_node (children : tree list) : (node * tree list) =
   | Node ("level", [IValue lvl]) :: rest -> {location = None; level = Some lvl}, rest
   | rest -> {location = None; level = None}, rest
 
-type numeral_node = {
+type 'a literal = {
   node  : node;
-  value : int;
+  value : 'a
 }
 [@@deriving show]
 
-let xml_to_numeral_node (xml : tree) =
+let xml_to_numeral_node (xml : tree) : int literal =
   match xml with
   | Node ("NumeralNode", children) -> (
     match extract_inline_node children with
@@ -194,10 +195,32 @@ let xml_to_numeral_node (xml : tree) =
     | _ -> ls_conversion_failure __FUNCTION__ children)
   | _ -> conversion_failure __FUNCTION__ xml
 
+let xml_to_string_node (xml : tree) : string literal =
+  match xml with
+  | Node ("StringNode", children) -> (
+    match extract_inline_node children with
+    | node, [Node ("StringValue", [SValue value])] -> {node; value}
+    | _ -> ls_conversion_failure __FUNCTION__ children)
+  | _ -> conversion_failure __FUNCTION__ xml
+
+type leibniz_param = {
+  ref         : int;
+  is_leibniz  : bool;
+}
+[@@deriving show]
+
+let xml_to_leibniz_param xml =
+  match xml with
+  | Node ("leibnizparam", Node ("FormalParamNodeRef", [Node ("UID", [IValue ref])]) :: is_leibniz_opt) -> {
+      ref;
+      is_leibniz  = match is_leibniz_opt with | [Node ("leibniz", [])] -> true | _ -> false;
+    }
+  | _ -> conversion_failure __FUNCTION__ xml
+
 type formal_param_node = {
-  node        : node;
+  node  : node;
   name  : string;
-  arity       : int;
+  arity : int;
 }
 [@@deriving show]
 
@@ -231,14 +254,21 @@ type op_appl_node = {
 }
 [@@deriving show]
 
+and let_in_node = {
+  node     : node;
+  def_refs : int list;
+  body     : expression;
+}
+[@@deriving show]
+
 and expression =
 (*| AtNode of at_node*)
 (*| DecimalNode of decimal_node*)
 (*| LabelNode of label_node*)
-(*| LetInNode of let_in_node*)
-  | NumeralNode of numeral_node
+  | LetInNode of let_in_node
+  | NumeralNode of int literal
   | OpApplNode of op_appl_node
-(*| StringNode of string_node*)
+  | StringNode of string literal
 (*| SubstInNode of subst_in_node*)
 (*| TheoremDefRef of theorem_def_ref*)
 (*| AssumeDefRef of assume_def_ref*)
@@ -258,6 +288,16 @@ and symbol =
   | Bound of bound_symbol
 [@@deriving show]
 
+and user_defined_op_kind = {
+  node        : node;
+  name        : string;
+  arity       : int;
+  body        : expression;
+  params      : leibniz_param list;
+  recursive   : bool;
+}
+[@@deriving show]
+
 let rec xml_to_symbols xml =
   match xml with
   | Node ("unbound", _) -> Unbound (xml_to_unbound_symbol xml)
@@ -273,31 +313,63 @@ and xml_to_bound_symbol xml =
   }
   | _ -> conversion_failure __FUNCTION__ xml
 
-and xml_to_expr_or_op_arg xml =
-  try Expression (xml_to_expression xml)
-with Invalid_argument _ -> conversion_failure __FUNCTION__ xml
+and xml_to_expr_or_op_arg (xml : tree) : expr_or_op_arg =
+  match xml with
+  | Node ("LambdaNode", _) -> conversion_failure __FUNCTION__ xml
+  | _ -> Expression (xml_to_expression xml)
 
 and xml_to_op_appl_node xml =
   match xml with
-  | Node ("OpApplNode", children) -> 
-    let (node, children) = extract_inline_node children in {
-    node;
-    operator = children |> find_tag "operator" |> child_of |> get_ref;
-    operands = children |> find_tag "operands" |> children_of |> List.map xml_to_expr_or_op_arg;
-    bound_symbols = children |> List.find_opt (is_tag "boundSymbols") |> Option.map children_of |> Option.value ~default:[] |> List.map xml_to_symbols;
-  }
+  | Node ("OpApplNode", children) -> (
+    match extract_inline_node children with
+    | node, Node ("operator", [ref_node]) ::
+      Node ("operands", operand_nodes) ::
+      bound_symbols -> {
+        node;
+        operator = get_ref ref_node;
+        operands = List.map xml_to_expr_or_op_arg operand_nodes;
+        bound_symbols = List.nth_opt bound_symbols 0 |> Option.map children_of |> Option.value ~default:[] |> List.map xml_to_symbols;
+      }
+    | _ -> conversion_failure __FUNCTION__ xml)
   | _ -> conversion_failure __FUNCTION__ xml
 
-and xml_to_expression xml =
+and xml_to_let_in_node (xml : tree) : let_in_node =
+  match xml with
+  | Node ("LetInNode", children) -> (
+    match extract_inline_node children with
+    | node, [Node ("body", [body]); Node ("opDefs", op_defs)]-> {
+        node;
+        body = xml_to_expression body;
+        def_refs = List.map get_ref op_defs;
+      }
+    | _ -> conversion_failure __FUNCTION__ xml)
+  | _ -> conversion_failure __FUNCTION__ xml
+
+and xml_to_expression (xml : tree) : expression =
   match xml with
   | Node ("NumeralNode", _) -> NumeralNode (xml_to_numeral_node xml)
+  | Node ("StringNode", _) -> StringNode (xml_to_string_node xml)
   | Node ("OpApplNode", _) -> OpApplNode (xml_to_op_appl_node xml)
+  | Node ("LetInNode", _) -> LetInNode (xml_to_let_in_node xml)
   | _ -> conversion_failure __FUNCTION__ xml
 
 and xml_to_inline_expression children =
   children
   |> List.find_opt (fun xml -> is_tag "NumeralNode" xml || is_tag "OpApplNode" xml)
   |> Option.map xml_to_expression
+
+and xml_to_user_defined_op_kind xml : user_defined_op_kind =
+  match xml with
+  | Node ("UserDefinedOpKind", children) ->
+    let (node, children) = extract_inline_node children in {
+      node;
+      name        = children |> xml_to_tagged_string  "uniquename";
+      arity       = children |> xml_to_tagged_int     "arity";
+      body        = children |> find_tag "body" |> child_of |> xml_to_expression;
+      params      = children |> List.find_opt (is_tag "params") |> Option.map children_of |> Option.value ~default:[] |> List.map xml_to_leibniz_param;
+      recursive   = children |> List.exists (is_tag "recursive");
+    }
+  | _ -> conversion_failure __FUNCTION__ xml
 
 type module_node = {
   node  : node;
@@ -351,43 +423,6 @@ let xml_to_op_decl_node (xml : tree) : op_decl_node =
       name = children |> xml_to_tagged_string "uniquename";
       arity = children |> xml_to_tagged_int "arity";
       kind = children |> xml_to_tagged_int "kind" |> int_to_declaration_kind;
-    }
-  | _ -> conversion_failure __FUNCTION__ xml
-
-type leibniz_param = {
-  ref         : int;
-  is_leibniz  : bool;
-}
-[@@deriving show]
-
-let xml_to_leibniz_param xml =
-  match xml with
-  | Node ("leibnizparam", Node ("FormalParamNodeRef", [Node ("UID", [IValue ref])]) :: is_leibniz_opt) -> {
-      ref;
-      is_leibniz  = match is_leibniz_opt with | [Node ("leibniz", [])] -> true | _ -> false;
-    }
-  | _ -> conversion_failure __FUNCTION__ xml
-
-type user_defined_op_kind = {
-  node        : node;
-  name        : string;
-  arity       : int;
-  body        : expression;
-  params      : leibniz_param list;
-  recursive   : bool;
-}
-[@@deriving show]
-
-let xml_to_user_defined_op_kind xml : user_defined_op_kind =
-  match xml with
-  | Node ("UserDefinedOpKind", children) ->
-    let (node, children) = extract_inline_node children in {
-      node;
-      name        = children |> xml_to_tagged_string  "uniquename";
-      arity       = children |> xml_to_tagged_int     "arity";
-      body        = children |> find_tag "body" |> child_of |> xml_to_expression;
-      params      = children |> List.find_opt (is_tag "params") |> Option.map children_of |> Option.value ~default:[] |> List.map xml_to_leibniz_param;
-      recursive   = children |> List.exists (is_tag "recursive");
     }
   | _ -> conversion_failure __FUNCTION__ xml
 

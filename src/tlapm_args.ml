@@ -206,7 +206,7 @@ let init ?(out=Format.std_formatter) ?(err=Format.err_formatter) ?(terminate=exi
         prefer built-in standard modules if the module search path \
         contains files with the same names as modules in stdlib.";
     "--parser", Arg.String set_parser_backend, " \
-        Set parser backend to use: SANY or TLAPM.";
+        Set parser backend to use: TLAPM (default) or SANY.";
     "--noproving", Arg.Set noproving,
                    " do not prove, report fingerprinted results only";
     blank;

@@ -225,14 +225,14 @@ let rec convert_module_node (mule : Xml.module_node) : Module.T.mule =
     match entry.kind with
     | ModuleNode submod -> Submod (convert_module_node submod) |> attach_props submod.node
     | OpDeclNode op_decl_node -> convert_op_decl_node op_decl_node
-    | UserDefinedOpKind user_defined_op_kind -> convert_user_defined_op_kind user_defined_op_kind
-    | BuiltInKind built_in_kind -> convert_built_in_kind built_in_kind
-    | FormalParamNode formal_param_node -> convert_formal_param_node formal_param_node
+    | UserDefinedOpKind user_defined_op_kind -> convert_unit_user_defined_op_kind user_defined_op_kind
     | TheoremDefNode theorem_def_node -> convert_theorem_def_node theorem_def_node
     | TheoremNode theorem_node -> convert_theorem_node entry.uid 0 theorem_node
+    | BuiltInKind _ -> failwith "BuiltInKind not expected at module top-level"
+    | FormalParamNode _ -> failwith "FormalParamNode not expected at module top-level"
   in {
     name = noprops mule.name;
-    extendees = [];
+    extendees = []; (* TODO: figure out how to get list of modules imported by this module *)
     instancees = [];
     body = mule.units |> List.map inline_unit |> List.map convert_entry;
     defdepth = 0;
@@ -247,7 +247,7 @@ let rec convert_module_node (mule : Xml.module_node) : Module.T.mule =
 *)
 and convert_op_decl_node (xml : Xml.op_decl_node) : Module.T.modunit =
   match xml.kind with
-  | Variable -> noprops (Variables [attach_props xml.node xml.name])
+  | Variable -> attach_props xml.node (Variables [attach_props xml.node xml.name])
 
 (** Converts action-level expressions such as [][expr]_sub and <><<expr>>_sub.
 *)
@@ -484,34 +484,41 @@ and convert_expression_or_operator_argument (op_expr : Xml.expr_or_op_arg) : Exp
 *)
 and convert_expression (expr : Xml.expression) : Expr.T.expr =
   match expr with
-  | NumeralNode expr -> Num (Int.to_string expr.value, "") |> attach_props expr.node
+  | NumeralNode n -> Num (Int.to_string n.value, "") |> attach_props n.node
+  | StringNode s -> String s.value |> attach_props s.node
   | OpApplNode apply -> convert_op_appl_node apply
+  | LetInNode let_in -> convert_let_in_node let_in
 
-(** Converts user-defined operators defined in a module top-level or within
-    LET/IN expressions.
+and convert_let_in_node ({node; def_refs; body} : Xml.let_in_node) : Expr.T.expr =
+  let definitions = List.map (fun ref ->
+    match (resolve_ref ref).kind with
+    | UserDefinedOpKind op -> convert_user_defined_op_kind op
+    | _ -> todo "LET/IN definition" "Probably an instance" None
+  ) def_refs in
+  Let (definitions, convert_expression body) |> attach_props node
+
+(** Converts user-defined operators defined within LET/IN expressions.
 *)
-and convert_user_defined_op_kind (xml: Xml.user_defined_op_kind) : Module.T.modunit =
+and convert_user_defined_op_kind (xml : Xml.user_defined_op_kind) : Expr.T.defn =
+  let name = attach_props xml.node xml.name in
+  let body = xml.body |> convert_expression in
+  (* TLAPS represents op(x) == expr as op == LAMBDA x : expr *)
+  let expr = match xml.params with
+  | [] -> body
+  | params -> Lambda (List.map resolve_formal_param_node params, body) |> attach_props xml.node
+  in Operator (name, expr) |> attach_props xml.node
+
+(** Converts user-defined operators defined in a module top-level.
+*)
+and convert_unit_user_defined_op_kind (xml: Xml.user_defined_op_kind) : Module.T.modunit =
   match xml.recursive with
   | true -> failwith "TLAPS does not yet support recursive operators"
-  | false -> noprops (Definition (
-      Operator (
-        attach_props xml.node xml.name,
-        let expr = xml.body |> convert_expression in
-        match xml.params with
-        | [] -> expr
-        (* TLAPS represents op(x) == expr as op == LAMBDA x : expr *)
-        | params -> Lambda (List.map resolve_formal_param_node params, expr) |> noprops
-      ) |> noprops,
+  | false -> (Definition (
+      convert_user_defined_op_kind xml,
       User,
       Hidden, (* If Visible, will be auto-included in all BY proofs *)
-      Export
-    ))
-
-and convert_built_in_kind (built_in_kind : Xml.built_in_kind) : Module.T.modunit =
-  todo "BuiltInKind" "" built_in_kind.node.location
-
-and convert_formal_param_node (formal_param_node : Xml.formal_param_node) : Module.T.modunit =
-  todo "FormalParamNode" "" formal_param_node.node.location
+      Export (* Whether definition is declared LOCAL *)
+    )) |> attach_props xml.node
 
 (** This type is redundant with the below TheoremNode type and its conversion
     does not need to be handled. Probably the SANY XML exporter should be
@@ -525,16 +532,19 @@ and convert_theorem_def_node (theorem_def_node : Xml.theorem_def_node) : Module.
 (** Converts theorem nodes. Oddly, SANY has two different theorem node types
     containing identical information except TheoremDefNode contains the name
     and TheoremNode does not. TLAPM's theorem node construction has some
-    oddities in the form of additional metadata.
+    oddities in the form of additional metadata. The proof is stored twice,
+    as one copy is rewritten during proof elaboration while the other remains
+    unchanged for error message purposes.
 *)
 and convert_theorem_node (uid : int) (previous_proof_level : int) (thm : Xml.theorem_node) : Module.T.modunit =
+  let proof = convert_proof uid previous_proof_level thm.proof in
   Theorem (
     Option.map (fun uid -> let def = resolve_theorem_def_node uid in attach_props def.node def.name) thm.definition,
     convert_sequent thm.body,
-    0 (* TODO figure out what this integer parameter means *),
-    convert_proof uid previous_proof_level thm.proof,
-    noprops Obvious, (* TODO figure out why there are two proofs *)
-    empty_summary  (* TODO figure out purpose of summary *)
+    0 (* The purpose of this integer parameter is unknown. *),
+    proof,
+    proof,
+    empty_summary
   ) |> attach_props thm.node
 
 (** Sequents are theorem bodies, which are either simple expressions or
@@ -620,7 +630,10 @@ and convert_by_proof ({node; facts; defs} : Xml.by_proof_node) : Proof.T.proof =
     uses a lot of GUIDs for one entity to reference another, so we load those
     into a global table for fast lookup. This table would have to be a
     parameter to every conversion method in this file; for simplicity we make
-    it a module-level mutable variable instead.
+    it a module-level mutable variable instead. This method returns both the
+    converted root module and a context, which is a mapping from module names
+    to module structures for the transitive closure of modules imported from
+    root.
 *)
 let convert_ast (ast : Xml.modules) : (Module.T.modctx * Module.T.mule, (string option * string)) result =
   if ast.modules <> [] then failwith "SANY AST cannot have multiple top-level modules";
