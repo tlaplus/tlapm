@@ -247,7 +247,8 @@ let rec convert_module_node (mule : Xml.module_node) : Module.T.mule =
 *)
 and convert_op_decl_node (xml : Xml.op_decl_node) : Module.T.modunit =
   match xml.kind with
-  | Variable -> attach_props xml.node (Variables [attach_props xml.node xml.name])
+  | 3 -> attach_props xml.node (Variables [attach_props xml.node xml.name])
+  | _ -> todo "Operator declaration" (string_of_int xml.kind) xml.node.location
 
 (** Converts action-level expressions such as [][expr]_sub and <><<expr>>_sub.
 *)
@@ -477,7 +478,13 @@ and convert_op_appl_node (apply : Xml.op_appl_node) : Expr.T.expr =
 and convert_expression_or_operator_argument (op_expr : Xml.expr_or_op_arg) : Expr.T.expr =
   match op_expr with
   | Expression expr -> convert_expression expr
-  (* TODO: add support for operators here *)
+  | OpArg uid -> match (resolve_ref uid).kind with
+    | FormalParamNode param -> Opaque param.name |> attach_props param.node
+    | UserDefinedOpKind userdef -> Opaque userdef.name |> attach_props userdef.node
+    | BuiltInKind builtin -> (match try_convert_builtin builtin with
+      | Some b -> Internal b |> attach_props builtin.node
+      | None -> todo "Built-in operator argument" builtin.name builtin.node.location)
+    | _ -> failwith ("Invalid operator argument reference: " ^ string_of_int uid)
 
 (** Converts a basic expression type, which will be either a primitive value
     or an operator application.
@@ -488,6 +495,7 @@ and convert_expression (expr : Xml.expression) : Expr.T.expr =
   | StringNode s -> String s.value |> attach_props s.node
   | OpApplNode apply -> convert_op_appl_node apply
   | LetInNode let_in -> convert_let_in_node let_in
+  | AtNode at_node -> todo "AtNode" "@" at_node.node.location
 
 and convert_let_in_node ({node; def_refs; body} : Xml.let_in_node) : Expr.T.expr =
   let definitions = List.map (fun ref ->
@@ -558,12 +566,13 @@ and convert_sequent (seq : Xml.expr_or_assume_prove) : sequent =
 (** Converts a proof, which can either be OMITTED, OBVIOUS, BY, or a series
     of individual proof steps culminated in a QED step.
 *)
-and convert_proof (uid : int) (previous_proof_level : int) (proof : Xml.proof_node_group) : Proof.T.proof =
+and convert_proof (uid : int) (previous_proof_level : int) (proof : Xml.proof_node_group option) : Proof.T.proof =
   match proof with
-  | Omitted node -> Omitted Explicit |> attach_props node |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
-  | Obvious node -> Obvious |> attach_props node |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid)) 
-  | By proof -> convert_by_proof proof |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
-  | Steps proof -> convert_proof_steps uid previous_proof_level proof
+  | None -> Omitted Implicit |> noprops |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
+  | Some Omitted node -> Omitted Explicit |> attach_props node |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
+  | Some Obvious node -> Obvious |> attach_props node |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid)) 
+  | Some By proof -> convert_by_proof proof |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
+  | Some Steps proof -> convert_proof_steps uid previous_proof_level proof
 
 (** One possible proof form is a series of steps, culminating in a QED step.
     This method converts that structure. This is the most complex part of the
