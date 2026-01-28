@@ -51,6 +51,12 @@ let todo (category : string) (msg : string) (loc : Xml.location option) : 'a =
   | None -> "Unknown location"
   in failwith (Printf.sprintf "%s not yet implemented: %s\n%s" category msg loc)
 
+let conversion_failure (msg : string) (loc : Xml.location option) : 'a =
+  let loc = match loc with
+  | Some loc -> Xml.show_location loc
+  | None -> "Unknown location"
+  in failwith (Printf.sprintf "Conversion failure:\n%s\n%s" msg loc)
+
 (** A module-global table of SANY AST entities, indexed by UID.
 *)
 let entries : Xml.entry_kind Coll.Im.t ref = ref Coll.Im.empty
@@ -107,19 +113,19 @@ let parse_proof_step_name (proof_level : proof_level) (uid : int) (proof_name : 
     | 10, 'a' .. 'z' | 10, 'A' .. 'Z' | 10, '0' .. '9' | 10, '_' -> (10, level, c :: name)
     (* Terminating '.' state; consume & ignore *)
     | 10, '.' | 11, '.' -> (11, level, name)
-    | _ -> failwith (Format.sprintf "Invalid character '%c' in proof step name '%s' at parsing state %d" c proof_name parse_state)
+    | _ -> conversion_failure (Format.sprintf "Invalid character '%c' in proof step name '%s' at parsing state %d" c proof_name parse_state) None
   in let (_, level, name) = String.fold_left parse_name (0, [], []) proof_name
   in let digits_to_int (digits : char list) : int =
     List.fold_right (fun (d : char) (acc : int) : int -> (int_of_char d - int_of_char '0') + acc * 10) digits 0
   in let level = match level, proof_level with
   | ['+'], Previous n -> n + 1
-  | ['+'], Known _ -> failwith "Cannot have explicit proof level followed by <+>"
+  | ['+'], Known _ -> conversion_failure "Cannot have explicit proof level followed by <+>" None
   | ['*'], Previous n -> n + 1
   | ['*'], Known n -> n
   | digits, Previous _ -> digits_to_int digits
   | digits, Known n ->
     let level = digits_to_int digits in
-    if level <> n then failwith ("Mismatched proof level: expected " ^ string_of_int n ^ " but got " ^ string_of_int level)
+    if level <> n then conversion_failure ("Mismatched proof level: expected " ^ string_of_int n ^ " but got " ^ string_of_int level) None
     else level
   in if name = [] then Unnamed (level, uid) else
   Named (level, name |> List.rev |> List.to_seq |> String.of_seq, false)
@@ -142,14 +148,14 @@ let attach_props (props : Xml.node) (value : 'a) : 'a wrapped =
 let resolve_ref (uid : int) : Xml.entry =
   match Coll.Im.find_opt uid !entries with
   | Some kind -> {uid; kind}
-  | None -> failwith ("Unresolved reference to entry UID: " ^ string_of_int uid)
+  | None -> conversion_failure ("Unresolved reference to entry UID: " ^ string_of_int uid) None
 
 (** A typed version of resolve_ref for module nodes.
 *)
 let resolve_module_node (uid : int) : Xml.module_node =
   match (resolve_ref uid).kind with
   | ModuleNode mule -> mule
-  | _ -> failwith ("Expected module node for UID: " ^ string_of_int uid)
+  | _ -> conversion_failure ("Expected module node for UID: " ^ string_of_int uid) None
 
 (** A typed version of resolve_ref for operator parameter nodes.
 *)
@@ -161,36 +167,36 @@ let resolve_formal_param_node (param : Xml.leibniz_param) : (hint * shape) =
     | 0 -> Shape_expr
     | n -> Shape_op n
   )
-  | _ -> failwith ("Expected formal parameter node for UID: " ^ string_of_int param.ref)
+  | _ -> conversion_failure ("Expected formal parameter node for UID: " ^ string_of_int param.ref) None
 
 (** A typed version of resolve_ref for theorem definition nodes.
 *)
 let resolve_theorem_def_node (uid : int) : Xml.theorem_def_node =
   match (resolve_ref uid).kind with
   | TheoremDefNode xml -> xml
-  | _ -> failwith ("Expected theorem definition node for UID: " ^ string_of_int uid)
+  | _ -> conversion_failure ("Expected theorem definition node for UID: " ^ string_of_int uid) None
 
 (** A typed version of resolve_ref for assume definition nodes.
 *)
 let resolve_assume_def_node (uid : int) : Xml.assume_def_node =
   match (resolve_ref uid).kind with
   | AssumeDefNode xml -> xml
-  | _ -> failwith ("Expected assume definition node for UID: " ^ string_of_int uid)
+  | _ -> conversion_failure ("Expected assume definition node for UID: " ^ string_of_int uid) None
 
 (** A typed version of resolve_ref for theorem nodes.
 *)
 let resolve_theorem_node (uid : int) : Xml.theorem_node =
   match (resolve_ref uid).kind with
   | TheoremNode xml -> xml
-  | _ -> failwith ("Expected theorem node for UID: " ^ string_of_int uid)
+  | _ -> conversion_failure ("Expected theorem node for UID: " ^ string_of_int uid) None
 
 (** A typed version of resolve_ref for bound symbols.
 *)
 let resolve_bound_symbol (uid : int) : hint =
   match Coll.Im.find_opt uid !entries with
   | Some (Xml.FormalParamNode ({arity = 0} as xml)) -> attach_props xml.node xml.name
-  | Some (Xml.FormalParamNode _) -> failwith ("Bound symbol cannot be an operator: " ^ string_of_int uid)
-  | _ -> failwith ("Unresolved formal parameter node UID: " ^ string_of_int uid)
+  | Some (Xml.FormalParamNode _) -> conversion_failure ("Bound symbol cannot be an operator: " ^ string_of_int uid) None
+  | _ -> conversion_failure ("Unresolved formal parameter node UID: " ^ string_of_int uid) None
 
 let convert_proof_step_name (uid : int) (proof_level : proof_level) (theorem_def_ref : int option) : stepno =
   match theorem_def_ref with
@@ -235,10 +241,10 @@ let rec convert_module_node (mule : Xml.module_node) : Module.T.mule =
     | OpDeclNode op_decl_node -> convert_op_decl_node op_decl_node
     | UserDefinedOpKind user_defined_op_kind -> convert_unit_user_defined_op_kind user_defined_op_kind
     | TheoremNode theorem_node -> convert_theorem_node entry.uid 0 theorem_node
-    | BuiltInKind _ -> failwith "BuiltInKind not expected at module top-level"
-    | FormalParamNode _ -> failwith "FormalParamNode not expected at module top-level"
-    | AssumeDefNode assume -> failwith "AssumeDefNode should not be converted directly"
-    | TheoremDefNode theorem_def_node -> failwith "TheoremDefNode should not be converted directly"
+    | BuiltInKind _ -> conversion_failure "BuiltInKind not expected at module top-level" None
+    | FormalParamNode _ -> conversion_failure "FormalParamNode not expected at module top-level" None
+    | AssumeDefNode assume -> conversion_failure "AssumeDefNode should not be converted directly" None
+    | TheoremDefNode theorem_def_node -> conversion_failure "TheoremDefNode should not be converted directly" None
   in {
     name = noprops mule.name;
     extendees = []; (* TODO: figure out how to get list of modules imported by this module *)
@@ -280,7 +286,7 @@ and convert_action_expr (op : modal_op) (apply : Xml.op_appl_node) : Expr.T.expr
     convert_expression_or_operator_argument expr,
     convert_expression_or_operator_argument sub
   ) |> attach_props apply.node
-  | _ -> failwith "Wrong number of operands to action expression"
+  | _ -> conversion_failure "Wrong number of operands to action expression" apply.node.location
 
 (** This method handles conversion of four cases:
     1. Bounded non-tuple choice like CHOOSE x \in S : P
@@ -320,14 +326,30 @@ and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr = (
   | Unbound {is_tuple = true} :: _, [body] ->
     let symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Unbound ({is_tuple = true} as u) -> Some u | _ -> None) apply.bound_symbols in
     if List.length symbols <> List.length apply.bound_symbols
-    then failwith "Inconsistent bound/unbound or tuple/non-tuple symbols in CHOOSE"
+    then conversion_failure "Inconsistent bound/unbound or tuple/non-tuple symbols in CHOOSE" apply.node.location
     else ChooseTuply (
       List.map (fun (s : Xml.unbound_symbol) -> resolve_bound_symbol s.symbol_ref) symbols,
       None,
       convert_expression_or_operator_argument body
     )
-  | _ -> failwith "Invalid number of bounds or operands to CHOOSE"
+  | _ -> conversion_failure "Invalid number of bounds or operands to CHOOSE" apply.node.location
 ) |> attach_props apply.node
+
+and convert_tuply_bounds (node : Xml.node) (bound : Xml.bound_symbol) : tuply_bounds =
+  if bound.is_tuple
+  then match List.map resolve_bound_symbol bound.symbol_refs with
+  | (_ :: _ as symbols) -> [(Bound_names symbols, Domain (convert_expression bound.expression))]
+  | [] -> conversion_failure "Tuple bound symbol groups must have at least one symbol" node.location
+  else match List.map resolve_bound_symbol bound.symbol_refs with
+  | hd :: tl -> (Bound_name hd, Domain (convert_expression bound.expression))
+    :: List.map (fun s -> (Bound_name s, Ditto)) tl
+  | [] -> conversion_failure "Bound symbol groups must have at least one symbol" node.location
+
+and convert_non_tuply_bounds (node : Xml.node) (bound : Xml.bound_symbol) : bounds =
+  match List.map resolve_bound_symbol bound.symbol_refs with
+  | hd :: tl -> (hd, Unknown, Domain (convert_expression bound.expression))
+    :: List.map (fun s -> (s, Unknown, Ditto)) tl
+  | [] -> conversion_failure "Bound symbol groups must have at least one symbol" node.location
 
 (** Handles conversion of both bounded & unbounded quantification. Both sides
     of the conversion here are fairly weird. The SANY AST has the same issues
@@ -356,15 +378,15 @@ and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr = (
 *)
 and convert_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node) (op : Xml.built_in_kind) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
-  | _ :: _, [body] ->
+  | _ :: _, [Expression body] ->
     let bound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Bound b -> Some b | _ -> None) apply.bound_symbols in
     let unbound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Unbound b -> Some b | _ -> None) apply.bound_symbols in
     if unbound_symbols <> []
     then
       if bound_symbols <> []
-      then failwith "Cannot mix bound and unbound symbols in quantification"
+      then conversion_failure "Cannot mix bound and unbound symbols in quantification" apply.node.location
       else if List.exists (fun (b : Xml.unbound_symbol) -> b.is_tuple) unbound_symbols
-      then failwith "Unbounded tuple quantification is not supported"
+      then conversion_failure "Unbounded tuple quantification is not supported" apply.node.location
       (* Unbounded quantification *)
       else let mk_bound (bound : Xml.unbound_symbol) : bound = (
         resolve_bound_symbol bound.symbol_ref,
@@ -373,36 +395,42 @@ and convert_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node
       ) in Quant (
         quant,
         List.map mk_bound unbound_symbols,
-        convert_expression_or_operator_argument body
+        convert_expression body
       )
     else if List.exists (fun (b : Xml.bound_symbol) -> b.is_tuple) bound_symbols
     (* Bounded quantification that includes at least one tuple *)
-    then let mk_bounds (bound : Xml.bound_symbol) : tuply_bounds =
-      if bound.is_tuple
-      then match List.map resolve_bound_symbol bound.symbol_refs with
-      | (_ :: _ as symbols) -> [(Bound_names symbols, Domain (convert_expression bound.expression))]
-      | [] -> failwith "Tuple bound symbol groups must have at least one symbol"
-      else match List.map resolve_bound_symbol bound.symbol_refs with
-      | hd :: tl -> (Bound_name hd, Domain (convert_expression bound.expression))
-        :: List.map (fun s -> (Bound_name s, Ditto)) tl
-      | [] -> failwith "Bound symbol groups must have at least one symbol"
-    in QuantTuply (
+    then QuantTuply (
       quant,
-      List.map mk_bounds bound_symbols |> List.flatten,
-      convert_expression_or_operator_argument body
+      List.map (convert_tuply_bounds apply.node) bound_symbols |> List.flatten,
+      convert_expression body
     )
     (* Bounded quantification without any tuples *)
-    else let mk_bounds (bound : Xml.bound_symbol) : bounds =
-      match List.map resolve_bound_symbol bound.symbol_refs with
-      | hd :: tl -> (hd, Unknown, Domain (convert_expression bound.expression))
-        :: List.map (fun s -> (s, Unknown, Ditto)) tl
-      | [] -> failwith "Bound symbol groups must have at least one symbol"
-    in Quant (
+    else Quant (
       quant,
-      List.map mk_bounds bound_symbols |> List.flatten,
-      convert_expression_or_operator_argument body
+      List.map (convert_non_tuply_bounds apply.node) bound_symbols |> List.flatten,
+      convert_expression body
     )
-  | _ -> failwith "Invalid number of bounds or operands to quantification"
+  | _ -> conversion_failure "Invalid number of bounds or operands to quantification" apply.node.location
+) |> attach_props apply.node
+
+(** Conversion of recursive functions where the function body refers to the
+    function definition, for example f[x \in Nat] == f[x - 1]. Both SANY and
+    TLAPM represent these as f == [x \in Nat |-> f[x - 1]], and here we
+    convert the right-hand side of this definition. The function name is
+    introduced as the first symbol, unbound.
+*)
+and convert_recursive_function (apply : Xml.op_appl_node) (op : Xml.built_in_kind) : Expr.T.expr = (
+  match apply.bound_symbols, apply.operands with
+  | Unbound function_name :: (_ :: _ as all_bound_symbols), [Expression body] ->
+    let bound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Bound b -> Some b | _ -> None) all_bound_symbols in
+    if List.length bound_symbols <> List.length all_bound_symbols
+    then conversion_failure "Function definitions cannot have unbound symbols" apply.node.location
+    else if List.exists (fun (b : Xml.bound_symbol) -> b.is_tuple) bound_symbols
+    (* Function definition bounds that include at least one tuple *)
+    then FcnTuply (List.map (convert_tuply_bounds apply.node) bound_symbols |> List.flatten, convert_expression body)
+    (* Function definition bounds without any tuples *)
+    else Fcn (List.map (convert_non_tuply_bounds apply.node) bound_symbols |> List.flatten, convert_expression body)
+  | _ -> conversion_failure "Invalid number of bounds or operands to function definition" apply.node.location
 ) |> attach_props apply.node
 
 (** Conversion of application of all traditional built-in operators like = or
@@ -432,6 +460,7 @@ and convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_kind)
       | "$BoundedForall" -> convert_quantification Forall apply op
       | "$UnboundedExists" -> convert_quantification Exists apply op
       | "$UnboundedForall" -> convert_quantification Forall apply op
+      | "$RecursiveFcnSpec" -> convert_recursive_function apply op
       | s -> todo "Built-in operator" s apply.node.location
     )
 
@@ -488,7 +517,7 @@ and convert_op_appl_node (apply : Xml.op_appl_node) : Expr.T.expr =
   | OpDeclNode decl -> convert_op_decl_node_op_appl apply decl
   (* A reference to a named THEOREM or a proof step *)
   | TheoremDefNode thm -> Opaque thm.name |> attach_props thm.node
-  | _ -> failwith ("Invalid operator reference in OpApplNode : " ^ (Xml.show_entry_kind op_kind) )
+  | _ -> conversion_failure ("Invalid operator reference in OpApplNode : " ^ (Xml.show_entry_kind op_kind)) apply.node.location
 
 (** Some places in TLA⁺ syntax allow both normal expressions and also
     operators. Mainly this occurs when applying an operator that could accept
@@ -505,7 +534,7 @@ and convert_expression_or_operator_argument (op_expr : Xml.expr_or_op_arg) : Exp
     | BuiltInKind builtin -> (match try_convert_builtin builtin with
       | Some b -> Internal b |> attach_props builtin.node
       | None -> todo "Built-in operator argument" builtin.name builtin.node.location)
-    | _ -> failwith ("Invalid operator argument reference: " ^ string_of_int uid)
+    | _ -> conversion_failure ("Invalid operator argument reference: " ^ string_of_int uid) None
 
 (** Converts a basic expression type, which will be either a primitive value
     or an operator application.
@@ -541,7 +570,7 @@ and convert_user_defined_op_kind (xml : Xml.user_defined_op_kind) : Expr.T.defn 
 *)
 and convert_unit_user_defined_op_kind (xml: Xml.user_defined_op_kind) : Module.T.modunit =
   match xml.recursive with
-  | true -> failwith "TLAPS does not yet support recursive operators"
+  | true -> conversion_failure "TLAPS does not yet support recursive operators" xml.node.location
   | false -> (Definition (
       convert_user_defined_op_kind xml,
       User,
@@ -611,7 +640,7 @@ and convert_proof (uid : int) (previous_proof_level : int) (proof : Xml.proof_no
 and convert_proof_steps (uid : int) (previous_proof_level : int) ({node; steps} : Xml.steps_proof_node) : Proof.T.proof =
   let rec split_steps (steps : Xml.proof_step_group list) : (Xml.proof_step_group list * Xml.proof_step_group) =
     match List.rev steps with
-    | [] -> failwith "Step-based proofs must have at least one step"
+    | [] -> conversion_failure "Step-based proofs must have at least one step" node.location
     | last :: rest -> (List.rev rest, last)
   in let convert_proof_step (steps, proof_level : Proof.T.step list * proof_level) (step : Xml.proof_step_group) : Proof.T.step list * proof_level =
     match step with
@@ -633,7 +662,7 @@ and convert_proof_steps (uid : int) (previous_proof_level : int) ({node; steps} 
   in let steps, proof_level = List.fold_left convert_proof_step ([], Previous previous_proof_level) steps
   in let qed_step, proof_level = convert_qed_step proof_level qed
   in let proof_level = match proof_level with
-   | Previous _ -> failwith "Current proof level should be known after processing all steps"
+   | Previous _ -> conversion_failure "Current proof level should be known after processing all steps" node.location
    | Known n -> n
   in Steps (List.rev steps, qed_step)
   |> attach_props node
@@ -648,7 +677,7 @@ and convert_by_proof ({node; facts; defs} : Xml.by_proof_node) : Proof.T.proof =
     match (resolve_ref ref).kind with
     | UserDefinedOpKind op -> Dvar op.name |> attach_props op.node
     | TheoremDefNode thm -> Dvar thm.name |> attach_props thm.node
-    | other -> failwith ("Invalid definition reference in BY proof: " ^ (Xml.show_entry_kind other))
+    | other -> conversion_failure ("Invalid definition reference in BY proof: " ^ (Xml.show_entry_kind other)) node.location
   in By ({
     facts = List.map convert_expression facts;
     defs = List.map resolve_def defs;
@@ -666,7 +695,7 @@ and convert_by_proof ({node; facts; defs} : Xml.by_proof_node) : Proof.T.proof =
     root.
 *)
 let convert_ast (ast : Xml.modules) : (Module.T.modctx * Module.T.mule, (string option * string)) result =
-  if ast.modules <> [] then failwith "SANY AST cannot have multiple top-level modules";
+  if ast.modules <> [] then conversion_failure "SANY AST cannot have multiple top-level modules" None;
   entries :=
     List.fold_left
       (fun m (e : Xml.entry) -> Coll.Im.add e.uid e.kind m)

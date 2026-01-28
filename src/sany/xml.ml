@@ -151,6 +151,12 @@ type location = {
 }
 [@@deriving show]
 
+let show_location (loc : location) : string =
+  Printf.sprintf "Location: %s module, line %d column %d to line %d column %d"
+    loc.filename
+    (fst loc.line) (fst loc.column)
+    (snd loc.line) (snd loc.column)
+
 let xml_to_location (xml : tree) : location =
   match xml with
   | Node ("location", [
@@ -344,20 +350,21 @@ and xml_to_expr_or_op_arg (xml : tree) : expr_or_op_arg =
   )
   | _ -> Expression (xml_to_expression xml)
 
-and xml_to_op_appl_node xml =
-  match xml with
-  | Node ("OpApplNode", children) -> (
-    match extract_inline_node children with
-    | node, Node ("operator", [ref_node]) ::
-      Node ("operands", operand_nodes) ::
-      bound_symbols -> {
-        node;
-        operator = get_ref ref_node;
-        operands = List.map xml_to_expr_or_op_arg operand_nodes;
-        bound_symbols = List.nth_opt bound_symbols 0 |> Option.map children_of |> Option.value ~default:[] |> List.map xml_to_symbols;
-      }
-    | _ -> conversion_failure __FUNCTION__ xml)
-  | _ -> conversion_failure __FUNCTION__ xml
+and xml_to_op_appl_node (children : tree list) : op_appl_node =
+  match extract_inline_node children with
+  | node, [Node ("operator", [ref_node]); Node ("operands", operands); Node ("boundSymbols", bound_symbols)] -> {
+      node;
+      operator = get_ref ref_node;
+      operands = List.map xml_to_expr_or_op_arg operands;
+      bound_symbols = List.map xml_to_symbols bound_symbols;
+    }
+  | node, [Node ("operator", [ref_node]); Node ("operands", operands)] -> {
+    node;
+    operator = get_ref ref_node;
+    operands = List.map xml_to_expr_or_op_arg operands;
+    bound_symbols = []
+  }
+  | _ -> ls_conversion_failure __FUNCTION__ children
 
 and xml_to_let_in_node (children : tree list) : let_in_node =
   match extract_inline_node children with
@@ -376,7 +383,7 @@ and xml_to_expression (xml : tree) : expression =
   match xml with
   | Node ("NumeralNode", _) -> NumeralNode (xml_to_numeral_node xml)
   | Node ("StringNode", _) -> StringNode (xml_to_string_node xml)
-  | Node ("OpApplNode", _) -> OpApplNode (xml_to_op_appl_node xml)
+  | Node ("OpApplNode", children) -> OpApplNode (xml_to_op_appl_node children)
   | Node ("LetInNode", children) -> LetInNode (xml_to_let_in_node children)
   | Node ("AtNode", children) -> AtNode (xml_to_at_node children)
   | _ -> conversion_failure __FUNCTION__ xml
