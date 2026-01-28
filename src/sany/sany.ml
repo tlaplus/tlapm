@@ -170,6 +170,13 @@ let resolve_theorem_def_node (uid : int) : Xml.theorem_def_node =
   | TheoremDefNode xml -> xml
   | _ -> failwith ("Expected theorem definition node for UID: " ^ string_of_int uid)
 
+(** A typed version of resolve_ref for assume definition nodes.
+*)
+let resolve_assume_def_node (uid : int) : Xml.assume_def_node =
+  match (resolve_ref uid).kind with
+  | AssumeDefNode xml -> xml
+  | _ -> failwith ("Expected assume definition node for UID: " ^ string_of_int uid)
+
 (** A typed version of resolve_ref for theorem nodes.
 *)
 let resolve_theorem_node (uid : int) : Xml.theorem_node =
@@ -211,34 +218,48 @@ let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
 
 (** Converts a top-level module node. *)
 let rec convert_module_node (mule : Xml.module_node) : Module.T.mule =
-  let inline_unit unit =
-    match unit with
-    | `Ref uid -> resolve_ref uid
-    | `OtherTODO name -> todo "Module unit" (name ^ " unit not yet supported") None
   (** Converts an entry, which is an abstract type that can be all sorts of
       things; SANY heavily uses GUIDs to reference one entity from another and
       those GUIDs are resolved in a global table with no real type information.
       Thus in-scope operator parameters coexist alongside entire modules, and
       here we branch out to the appropriate conversion method.
   *)
-  in let convert_entry (entry : Xml.entry) : Module.T.modunit =
+  let convert_entry (unit : Xml.unit_kind) : Module.T.modunit =
+    match unit with
+    | Instance instance -> convert_instance instance
+    | UseOrHide use_or_hide -> convert_use_or_hide use_or_hide
+    | Ref uid -> let entry = resolve_ref uid in
     match entry.kind with
     | ModuleNode submod -> Submod (convert_module_node submod) |> attach_props submod.node
+    | AssumeNode assume -> convert_assume_node assume
     | OpDeclNode op_decl_node -> convert_op_decl_node op_decl_node
     | UserDefinedOpKind user_defined_op_kind -> convert_unit_user_defined_op_kind user_defined_op_kind
-    | TheoremDefNode theorem_def_node -> convert_theorem_def_node theorem_def_node
     | TheoremNode theorem_node -> convert_theorem_node entry.uid 0 theorem_node
     | BuiltInKind _ -> failwith "BuiltInKind not expected at module top-level"
     | FormalParamNode _ -> failwith "FormalParamNode not expected at module top-level"
+    | AssumeDefNode assume -> failwith "AssumeDefNode should not be converted directly"
+    | TheoremDefNode theorem_def_node -> failwith "TheoremDefNode should not be converted directly"
   in {
     name = noprops mule.name;
     extendees = []; (* TODO: figure out how to get list of modules imported by this module *)
     instancees = [];
-    body = mule.units |> List.map inline_unit |> List.map convert_entry;
+    body = List.map convert_entry mule.units;
     defdepth = 0;
     stage = Parsed;
     important = false
   } |> attach_props mule.node
+
+and convert_instance (instance : Xml.instance_node) : Module.T.modunit =
+  todo "Instance" "" instance.node.location
+
+and convert_use_or_hide (use_or_hide : Xml.use_or_hide_node) : Module.T.modunit =
+  todo "UseOrHide" "" use_or_hide.node.location
+
+and convert_assume_node (assume : Xml.assume_node) : Module.T.modunit =
+  Module.T.Axiom (
+    Option.map (fun uid -> let def = resolve_assume_def_node uid in attach_props def.node def.name) assume.definition,
+    convert_expression assume.body
+  ) |> attach_props assume.node
 
 (** Converts operator declarations such as CONSTANTS and VARIABLES. In a
     declaration like VARIABLES x, y, z, each of x, y, and z are given as

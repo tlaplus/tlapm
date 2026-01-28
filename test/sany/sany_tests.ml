@@ -13,11 +13,15 @@ let find_tla_files dir =
   in
   loop []
 
-let parse_tla_file filename = 
+let parse_tla_file filename =
+  let open Stdlib in
   print_endline ("Parsing " ^ filename ^ " ...");
-  match modctx_of_string ~content:"" ~filename ~loader_paths:[] ~prefer_stdlib:true with
+  try match modctx_of_string ~content:"" ~filename ~loader_paths:[] ~prefer_stdlib:true with
   | Error (_, msg) -> Printf.eprintf "%s\n" msg; failwith "Parsing failed"
   | Ok _ -> print_endline (filename ^ " success")
+  with Failure (e : string) ->
+    Printf.eprintf "%s\n" e;
+    failwith "Parsing failed"
 
 let _ =
   parser_backend := Sany;

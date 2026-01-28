@@ -123,6 +123,7 @@ let xml_to_tagged_int (tag_name : string) (children : tree list) : int =
 *)
 let get_ref_opt (xml : tree) : int option =
   match xml with
+  | Node ("AssumeNodeRef", [Node ("UID", [IValue uid])]) -> Some uid
   | Node ("AssumeDefRef", [Node ("UID", [IValue uid])]) -> Some uid
   | Node ("BuiltInKindRef", [Node ("UID", [IValue uid])]) -> Some uid
   | Node ("FormalParamNodeRef", [Node ("UID", [IValue uid])]) -> Some uid
@@ -180,6 +181,18 @@ let extract_inline_node (children : tree list) : (node * tree list) =
   | Node ("location", _) as loc :: rest -> {location = Some (xml_to_location loc); level = None}, rest
   | Node ("level", [IValue lvl]) :: rest -> {location = None; level = Some lvl}, rest
   | rest -> {location = None; level = None}, rest
+
+
+(** A few XML nodes have an inline definition reference as their first child
+    after the location and level tags. This function is meant to be chained
+    after extract_inline_node to extract that definition reference if it
+    exists.
+*)
+let extract_inline_definition_opt (node, children : node * tree list) : (node * int option * tree list) =
+  match children with
+  | Node ("definition", [Node ("AssumeDefRef", [Node ("UID", [IValue uid])])]) :: children -> (node, Some uid, children);
+  | Node ("definition", [Node ("TheoremDefRef", [Node ("UID", [IValue uid])])]) :: children -> (node, Some uid, children);
+  | _ -> (node, None, children)
 
 type 'a literal = {
   node  : node;
@@ -385,22 +398,74 @@ and xml_to_user_defined_op_kind xml : user_defined_op_kind =
       recursive   = children |> List.exists (is_tag "recursive");
     }
   | _ -> conversion_failure __FUNCTION__ xml
+  
+type substitution = {
+  target_uid : int;
+  substitute : expr_or_op_arg;
+}
+[@@deriving show]
+
+let xml_to_substitution (xml : tree) : substitution =
+  match xml with
+  | Node ("Subst", [Node ("OpDeclNodeRef", [Node ("UID", [IValue target_uid])]); substitute]) -> {
+      target_uid;
+      substitute = xml_to_expr_or_op_arg substitute;
+    }
+  | _ -> conversion_failure __FUNCTION__ xml
+
+type instance_node = {
+  node          : node;
+  name          : string option;
+  module_name   : string;
+  substitutions : substitution list;
+  parameters    : int list;
+}
+[@@deriving show]
+
+let xml_to_instance_node (children : tree list) : instance_node =
+  let extract_inline_name_opt (node, children : node * tree list) : (node * string option * tree list) =
+    match children with
+    | Node ("uniquename", [SValue name]) :: children -> (node, Some name, children)
+    | _ -> (node, None, children)
+  in match children |> extract_inline_node |> extract_inline_name_opt with
+  | node, name, [Node ("module", [SValue module_name]); Node ("substs", substitutions); Node ("params", params)] -> {
+    node;
+    name;
+    module_name;
+    substitutions = List.map xml_to_substitution substitutions;
+    parameters = List.map get_ref params;
+  }
+  | _ -> ls_conversion_failure __FUNCTION__ children
+
+type use_or_hide_node = {
+  node : node;
+}
+[@@deriving show]
+
+let xml_to_use_or_hide_node (children : tree list) : use_or_hide_node =
+  match extract_inline_node children with
+  | node, _ -> {node}
+
+type unit_kind =
+| Ref of int
+| Instance of instance_node
+| UseOrHide of use_or_hide_node
+[@@deriving show]
 
 type module_node = {
   node  : node;
   name  : string;
-  units : [`Ref of int | `OtherTODO of string] list;
+  units : unit_kind list;
 }
 [@@deriving show]
 
 let xml_to_module_node (children : tree list) : module_node =
   let ref_child child =
     match get_ref_opt child with
-    | Some uid -> `Ref uid
+    | Some uid -> Ref uid
     | None -> match child with
-      | Node ("InstanceNode", children) -> `OtherTODO "InstanceNode"
-      | Node ("UseOrHideNode", children) -> `OtherTODO "UseOrHideNode"
-      | Node ("AssumeNodeRef", children) -> `OtherTODO "AssumeNodeRef"
+      | Node ("InstanceNode", children) -> Instance (xml_to_instance_node children)
+      | Node ("UseOrHideNode", children) -> UseOrHide (xml_to_use_or_hide_node children)
       | _ -> conversion_failure __FUNCTION__ child
   in match extract_inline_node children with
   | node, Node ("uniquename", [SValue name]) :: units -> {
@@ -448,12 +513,44 @@ let xml_to_built_in_kind xml : built_in_kind =
     }
   | _ -> conversion_failure __FUNCTION__ xml
 
+type assume_def_node = {
+  node        : node;
+  name        : string;
+  body        : expression;
+}
+[@@deriving show]
+
+let xml_to_assume_def_node (children : tree list) : assume_def_node =
+  match extract_inline_node children with
+  | node, [Node ("uniquename", [SValue name]); Node ("body", [body])] -> {
+    node;
+    name;
+    body = xml_to_expression body;
+  }
+  | _ -> ls_conversion_failure __FUNCTION__ children
+
+type assume_node = {
+  node        : node;
+  definition  : int option;
+  body        : expression;
+}
+[@@deriving show]
+
+let xml_to_assume_node (children : tree list) : assume_node =
+  match children |> extract_inline_node |> extract_inline_definition_opt with
+  | node, definition, [Node ("body", [body])] -> {
+    node;
+    definition;
+    body = xml_to_expression body;
+  }
+  | _ -> ls_conversion_failure __FUNCTION__ children
+
 type expr_or_assume_prove =
   | Expression of expression
 (*| AssumeProveLike of assume_prove_like*)
 [@@deriving show]
 
-let xml_to_inline_expr_or_assume_prove (children : tree list) : expr_or_assume_prove =
+let xml_to_expr_or_assume_prove (children : tree list) : expr_or_assume_prove =
   match children with
   | Node ("AssumeProveLike", _) :: _ -> ls_conversion_failure __FUNCTION__ children
   | expr :: _ -> Expression (xml_to_expression expr)
@@ -473,7 +570,7 @@ let xml_to_theorem_def_node xml =
     | node, Node ("uniquename", [SValue name]) :: body -> {
       node;
       name;
-      body = xml_to_inline_expr_or_assume_prove body
+      body = xml_to_expr_or_assume_prove body
     }
     | _ -> conversion_failure __FUNCTION__ xml)
   | _ -> conversion_failure __FUNCTION__ xml
@@ -546,26 +643,19 @@ type theorem_node = {
 [@@deriving show]
 
 let xml_to_theorem_node (children : tree list) : theorem_node =
-
-  match extract_inline_node children with
-  | node,
-    Node ("definition", [Node ("TheoremDefRef", [Node ("UID", [IValue uid])])]) ::
-    Node ("body", body) :: proof -> {
+  match children |> extract_inline_node |> extract_inline_definition_opt with
+  | node, definition, Node ("body", body) :: proof -> {
       node;
-      definition  = Some uid;
-      body        = xml_to_inline_expr_or_assume_prove body;
+      definition;
+      body        = xml_to_expr_or_assume_prove body;
       proof       = xml_to_inline_proof_node_group proof;
     }
-  | node, Node ("body", body) :: proof -> {
-    node;
-    definition = None;
-    body = xml_to_inline_expr_or_assume_prove body;
-    proof = xml_to_inline_proof_node_group proof;
-  }
   | _ -> ls_conversion_failure __FUNCTION__ children
 
 type entry_kind =
   | ModuleNode of module_node
+  | AssumeNode of assume_node
+  | AssumeDefNode of assume_def_node
   | OpDeclNode of op_decl_node
   | UserDefinedOpKind of user_defined_op_kind
   | BuiltInKind of built_in_kind
@@ -576,8 +666,9 @@ type entry_kind =
 
 let xml_to_entry_kind (xml : tree) : entry_kind =
   match xml with
-  | Node ("AssumeNode", children) -> ModuleNode (xml_to_assume_node children)
   | Node ("ModuleNode", children) -> ModuleNode (xml_to_module_node children)
+  | Node ("AssumeNode", children) -> AssumeNode (xml_to_assume_node children)
+  | Node ("AssumeDefNode", children) -> AssumeDefNode (xml_to_assume_def_node children)
   | Node ("OpDeclNode", _)        -> OpDeclNode (xml_to_op_decl_node xml)
   | Node ("UserDefinedOpKind", _) -> UserDefinedOpKind (xml_to_user_defined_op_kind xml)
   | Node ("BuiltInKind", _)       -> BuiltInKind (xml_to_built_in_kind xml)
