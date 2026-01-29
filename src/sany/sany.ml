@@ -221,6 +221,7 @@ let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
   match builtin.name with
   | "TRUE" -> Some Builtin.TRUE
   | "FALSE" -> Some Builtin.FALSE
+  | "STRING" -> Some Builtin.STRING
   | "DOMAIN" -> Some Builtin.DOMAIN
   | "SUBSET" -> Some Builtin.SUBSET
   | "UNCHANGED" -> Some Builtin.UNCHANGED
@@ -239,8 +240,51 @@ let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
   | "\\equiv" -> Some Builtin.Equiv
   | _ -> None
 
+(** Conversion of application of all traditional built-in operators like = or
+    \cup but also things like CHOOSE and \A which one would ordinarily not
+    view as built-in operators.
+*)
+let rec convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_kind) : Expr.T.expr =
+  match try_convert_builtin op with
+  (* Traditional built-in operators *)
+  | Some builtin -> Apply (
+      Internal builtin |> attach_props op.node,
+      List.map convert_expression_or_operator_argument apply.operands
+    ) |> attach_props apply.node
+  (* More abstract kinds of built-in operators *)
+  | None ->
+    match op.name with
+    | "$SetEnumerate" -> SetEnum (
+      List.map convert_expression_or_operator_argument apply.operands
+    ) |> attach_props apply.node
+    | "$Tuple" -> Tuple (
+      List.map convert_expression_or_operator_argument apply.operands
+    ) |> attach_props apply.node
+    | "$ConjList" -> List (
+      And, List.map convert_expression_or_operator_argument apply.operands
+    ) |> attach_props apply.node
+    | "$BoundedChoose" -> convert_choose apply
+    | "$UnboundedChoose" -> convert_choose apply
+    | "$SquareAct" -> convert_action_expr Box apply
+    | "$BoundedExists" -> convert_quantification Exists apply
+    | "$BoundedForall" -> convert_quantification Forall apply
+    | "$UnboundedExists" -> convert_quantification Exists apply
+    | "$UnboundedForall" -> convert_quantification Forall apply
+    | "$SetOfAll" -> convert_set_map apply
+    | "$SubsetOf" -> convert_set_filter apply
+    | "$SetOfFcns" -> convert_function_set apply
+    | "$FcnConstructor" -> convert_function_constructor apply
+    | "$RecursiveFcnSpec" -> convert_recursive_function apply
+    | "$FcnApply" -> convert_function_application apply
+    | "$SetOfRcds" -> convert_record_set apply
+    | "$RcdConstructor" -> convert_record_constructor apply
+    | "$RcdSelect" -> convert_record_select apply
+    | "$IfThenElse" -> convert_if_then_else apply
+    | "$Case" -> convert_case apply
+    | s -> todo "Built-in operator" s apply.node.location
+
 (** Converts a top-level module node. *)
-let rec convert_module_node (mule : Xml.module_node) : Module.T.mule =
+and convert_module_node (mule : Xml.module_node) : Module.T.mule =
   (** Converts an entry, which is an abstract type that can be all sorts of
       things; SANY heavily uses GUIDs to reference one entity from another and
       those GUIDs are resolved in a global table with no real type information.
@@ -564,7 +608,19 @@ and convert_record_select (apply : Xml.op_appl_node) : Expr.T.expr = (
 
 (** Conversion of record set expressions like [field1 : expr1, field2 : expr2, ...]
 *)
-and convert_record_set (apply : Xml.op_appl_node) : Expr.T.expr = (
+and convert_record_set (apply : Xml.op_appl_node) : Expr.T.expr =
+  convert_record_operator apply (fun arg -> Rect arg)
+
+(** Conversion of record construction expressions like [field1 |-> expr1, field2 |-> expr2, ...]
+*)
+and convert_record_constructor (apply : Xml.op_appl_node) : Expr.T.expr =
+  convert_record_operator apply (fun arg -> Record arg)
+
+(** The conversion logic for both record sets and record constructors is
+    identical except for the wrapping constructor (Rect vs Record). This
+    method captures that shared logic, taking the constructor as a parameter.
+*)
+and convert_record_operator (apply : Xml.op_appl_node) (constructor : (string * Expr.T.expr) list -> Expr.T.expr_) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
   | [], (_ :: _ as pairs) ->
     let mk_field (operand : Xml.expr_or_op_arg) : (string * Expr.T.expr) option =
@@ -576,50 +632,10 @@ and convert_record_set (apply : Xml.op_appl_node) : Expr.T.expr = (
       ) | _ -> None
     in let fields = List.filter_map mk_field pairs in
     if List.length fields <> List.length pairs
-    then conversion_failure "Invalid operands to record set; expected pairs of expressions" apply.node.location
-    else Rect (fields)
-  | _ -> conversion_failure "Invalid operands to record set" apply.node.location
+    then conversion_failure "Invalid operands to record operator; expected pairs of expressions" apply.node.location
+    else constructor fields
+  | _ -> conversion_failure "Invalid operands to record operator" apply.node.location
 ) |> attach_props apply.node
-
-(** Conversion of application of all traditional built-in operators like = or
-    \cup but also things like CHOOSE and \A which one would ordinarily not
-    view as built-in operators.
-*)
-and convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_kind) : Expr.T.expr =
-  match try_convert_builtin op with
-  (* Traditional built-in operators *)
-  | Some builtin -> Apply (
-      Internal builtin |> attach_props op.node,
-      List.map convert_expression_or_operator_argument apply.operands
-    ) |> attach_props apply.node
-  (* More abstract kinds of built-in operators *)
-  | None -> (
-      match op.name with
-      | "$SetEnumerate" -> SetEnum (
-        List.map convert_expression_or_operator_argument apply.operands
-      ) |> attach_props apply.node
-      | "$Tuple" -> Tuple (
-        List.map convert_expression_or_operator_argument apply.operands
-      ) |> attach_props apply.node
-      | "$BoundedChoose" -> convert_choose apply
-      | "$UnboundedChoose" -> convert_choose apply
-      | "$SquareAct" -> convert_action_expr Box apply
-      | "$BoundedExists" -> convert_quantification Exists apply
-      | "$BoundedForall" -> convert_quantification Forall apply
-      | "$UnboundedExists" -> convert_quantification Exists apply
-      | "$UnboundedForall" -> convert_quantification Forall apply
-      | "$SetOfAll" -> convert_set_map apply
-      | "$SubsetOf" -> convert_set_filter apply
-      | "$SetOfFcns" -> convert_function_set apply
-      | "$FcnConstructor" -> convert_function_constructor apply
-      | "$RecursiveFcnSpec" -> convert_recursive_function apply
-      | "$FcnApply" -> convert_function_application apply
-      | "$RcdSelect" -> convert_record_select apply
-      | "$SetOfRcds" -> convert_record_set apply
-      | "$IfThenElse" -> convert_if_then_else apply
-      | "$Case" -> convert_case apply
-      | s -> todo "Built-in operator" s apply.node.location
-    )
 
 (** Conversion of expression IF predicate THEN A ELSE B
 *)
