@@ -316,8 +316,9 @@ and convert_assume_node (assume : Xml.assume_node) : Module.T.modunit =
 *)
 and convert_op_decl_node (xml : Xml.op_decl_node) : Module.T.modunit =
   match xml.kind with
+  | 2 -> attach_props xml.node (Constants [attach_props xml.node xml.name, match xml.arity with | 0 -> Shape_expr | n -> Shape_op n])
   | 3 -> attach_props xml.node (Variables [attach_props xml.node xml.name])
-  | _ -> todo "Operator declaration" (string_of_int xml.kind) xml.node.location
+  | _ -> todo "Operator declaration kind" (string_of_int xml.kind) xml.node.location
 
 (** Converts action-level expressions such as [][expr]_sub and <><<expr>>_sub.
 *)
