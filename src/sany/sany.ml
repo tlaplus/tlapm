@@ -234,7 +234,7 @@ let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
   | "\\" -> Some Builtin.Setminus
   | "\\union" -> Some Builtin.Cup
   | "\\land" -> Some Builtin.Conj
-  | "$Pair" -> Some Builtin.Range
+  | "\\lor" -> Some Builtin.Disj
   | "=>" -> Some Builtin.Implies
   | "\\equiv" -> Some Builtin.Equiv
   | _ -> None
@@ -516,7 +516,8 @@ and convert_recursive_function (apply : Xml.op_appl_node) : Expr.T.expr = (
   | _ -> conversion_failure "Invalid number of bounds or operands to recursive function definition" apply.node.location
 ) |> attach_props apply.node
 
-(** Converts function construction expressions like [x \in S, y \in P |-> x + y]
+(** Converts function construction expressions like [x \in S, y \in P |-> x + y];
+    also handles record construction, like [x |-> expr1, y |-> expr2].
 *)
 and convert_function_constructor (apply : Xml.op_appl_node) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
@@ -553,6 +554,33 @@ and convert_function_application (apply : Xml.op_appl_node) : Expr.T.expr = (
   | _ -> conversion_failure "Invalid operands to function application" apply.node.location
 ) |> attach_props apply.node
 
+(** Conversion of record selection expressions like r.fieldName
+*)
+and convert_record_select (apply : Xml.op_appl_node) : Expr.T.expr = (
+  match apply.bound_symbols, apply.operands with
+  | [], [Expression record; Expression (StringNode {value})] -> Dot (convert_expression record, value)
+  | _ -> conversion_failure "Invalid operands to record selection" apply.node.location
+) |> attach_props apply.node
+
+(** Conversion of record set expressions like [field1 : expr1, field2 : expr2, ...]
+*)
+and convert_record_set (apply : Xml.op_appl_node) : Expr.T.expr = (
+  match apply.bound_symbols, apply.operands with
+  | [], (_ :: _ as pairs) ->
+    let mk_field (operand : Xml.expr_or_op_arg) : (string * Expr.T.expr) option =
+      match operand with
+      | Expression OpApplNode {operator; bound_symbols = []; operands = [Expression StringNode {value}; Expression right]} -> (
+        match (resolve_ref operator).kind with
+        | BuiltInKind {name = "$Pair"} -> Some (value, convert_expression right)
+        | _ -> None
+      ) | _ -> None
+    in let fields = List.filter_map mk_field pairs in
+    if List.length fields <> List.length pairs
+    then conversion_failure "Invalid operands to record set; expected pairs of expressions" apply.node.location
+    else Rect (fields)
+  | _ -> conversion_failure "Invalid operands to record set" apply.node.location
+) |> attach_props apply.node
+
 (** Conversion of application of all traditional built-in operators like = or
     \cup but also things like CHOOSE and \A which one would ordinarily not
     view as built-in operators.
@@ -586,6 +614,8 @@ and convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_kind)
       | "$FcnConstructor" -> convert_function_constructor apply
       | "$RecursiveFcnSpec" -> convert_recursive_function apply
       | "$FcnApply" -> convert_function_application apply
+      | "$RcdSelect" -> convert_record_select apply
+      | "$SetOfRcds" -> convert_record_set apply
       | "$IfThenElse" -> convert_if_then_else apply
       | "$Case" -> convert_case apply
       | s -> todo "Built-in operator" s apply.node.location
@@ -601,20 +631,25 @@ and convert_if_then_else (apply : Xml.op_appl_node) : Expr.T.expr = (
 ) |> attach_props apply.node
 
 (** Conversion of expression CASE p1 -> e1 [] p2 -> e2 [] ... [] OTHER -> e
+    
+    TODO: SANY XML exporter cannot currently handle OTHER branches; see:
+    https://github.com/tlaplus/tlaplus/issues/1291
 *)
 and convert_case (apply : Xml.op_appl_node) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
-  | [], cases ->
-    let rec group_expr (exprs : Xml.expr_or_op_arg list) : ((Expr.T.expr * Expr.T.expr) list * expr option) =
-      match exprs with
-      | [Expression other] -> ([], Some (convert_expression other))
-      | [Expression pred; Expression expr] -> ([(convert_expression pred, convert_expression expr)], None)
-      | Expression pred :: Expression expr :: rest ->
-        let cases, other = group_expr rest in
-        (cases @ [(convert_expression pred, convert_expression expr)], other)
-      | _ -> conversion_failure "Invalid operands of CASE expression" apply.node.location
-    in let cases, other = group_expr apply.operands in Case (cases, other)
-  | _ -> conversion_failure "Invalid operands to CASE" apply.node.location
+  | [], (_ :: _ as pairs) ->
+    let mk_case (operand : Xml.expr_or_op_arg) : (Expr.T.expr * Expr.T.expr) option =
+      match operand with
+      | Expression OpApplNode {operator; bound_symbols = []; operands = [Expression cond; Expression result]} -> (
+        match (resolve_ref operator).kind with
+        | BuiltInKind {name = "$Pair"} -> Some (convert_expression cond, convert_expression result)
+        | _ -> None
+      ) | _ -> None
+    in let cases = List.filter_map mk_case pairs in
+    if List.length cases <> List.length pairs
+    then conversion_failure "Invalid operands to CASE; expected pairs of expressions" apply.node.location
+    else Case (cases, None)
+  | _ -> conversion_failure "Invalid bound symbols or operands to CASE" apply.node.location
 ) |> attach_props apply.node
 
 (** Conversion of application of user-defined operators, including operators
