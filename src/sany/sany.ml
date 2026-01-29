@@ -232,6 +232,7 @@ let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
   | "\\in" -> Some Builtin.Mem
   | "\\notin" -> Some Builtin.Notmem
   | "\\" -> Some Builtin.Setminus
+  | "\\union" -> Some Builtin.Cup
   | "\\land" -> Some Builtin.Conj
   | "$Pair" -> Some Builtin.Range
   | "=>" -> Some Builtin.Implies
@@ -478,6 +479,23 @@ and convert_set_map (apply : Xml.op_appl_node) : Expr.T.expr = (
   | _ -> conversion_failure "Invalid number of bounds or operands to set mapping" apply.node.location
 ) |> attach_props apply.node
 
+(** Conversion of expressions of the form {x \in S : P(x)} or {<<x, y>> \in S \X T : P(x, y)}
+*)
+and convert_set_filter (apply : Xml.op_appl_node) : Expr.T.expr = (
+  match apply.bound_symbols, apply.operands with
+  | [Bound {symbol_refs = [symbol_ref]; is_tuple = false; expression}], [Expression predicate] -> SetSt (
+    resolve_bound_symbol symbol_ref,
+    convert_expression expression,
+    convert_expression predicate
+  )
+  | [Bound {symbol_refs = (_ :: _) as symbol_refs; is_tuple = true; expression}], [Expression predicate] -> SetStTuply (
+    List.map resolve_bound_symbol symbol_refs,
+    convert_expression expression,
+    convert_expression predicate
+  )
+  | _ -> conversion_failure "Invalid bounds or operands to set filter" apply.node.location
+) |> attach_props apply.node
+
 (** Conversion of recursive functions where the function body refers to the
     function definition, for example f[x \in Nat] == f[x - 1]. Both SANY and
     TLAPM represent these as f == [x \in Nat |-> f[x - 1]], and here we
@@ -563,6 +581,7 @@ and convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_kind)
       | "$UnboundedExists" -> convert_quantification Exists apply
       | "$UnboundedForall" -> convert_quantification Forall apply
       | "$SetOfAll" -> convert_set_map apply
+      | "$SubsetOf" -> convert_set_filter apply
       | "$SetOfFcns" -> convert_function_set apply
       | "$FcnConstructor" -> convert_function_constructor apply
       | "$RecursiveFcnSpec" -> convert_recursive_function apply
