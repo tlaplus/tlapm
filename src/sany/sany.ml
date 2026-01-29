@@ -212,6 +212,7 @@ let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
   | "TRUE" -> Some Builtin.TRUE
   | "FALSE" -> Some Builtin.FALSE
   | "UNCHANGED" -> Some Builtin.UNCHANGED
+  | "UNION" -> Some Builtin.UNION
   | "'" -> Some Builtin.Prime
   | "[]" -> Some (Builtin.Box false)
   | "=" -> Some Builtin.Eq
@@ -376,7 +377,7 @@ and convert_non_tuply_bounds (node : Xml.node) (bound : Xml.bound_symbol) : boun
     nonempty list of symbols and a domain expression. The unbound case would
     be a simple nonempty list of symbols.
 *)
-and convert_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node) (op : Xml.built_in_kind) : Expr.T.expr = (
+and convert_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
   | _ :: _, [Expression body] ->
     let bound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Bound b -> Some b | _ -> None) apply.bound_symbols in
@@ -413,13 +414,35 @@ and convert_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node
   | _ -> conversion_failure "Invalid number of bounds or operands to quantification" apply.node.location
 ) |> attach_props apply.node
 
+(** Conversion of expressions of the form {f(x, y) : x \in S, y \in Z}
+*)
+and convert_set_map (apply : Xml.op_appl_node) : Expr.T.expr = (
+  match apply.bound_symbols, apply.operands with
+  | _ :: _, [Expression body] ->
+    let bound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Bound b -> Some b | _ -> None) apply.bound_symbols in
+    if List.length bound_symbols <> List.length apply.bound_symbols
+    then conversion_failure "Set mappings cannot have unbound symbols" apply.node.location
+    else if List.exists (fun (b : Xml.bound_symbol) -> b.is_tuple) bound_symbols
+    (* Set mapping that includes at least one tuple *)
+    then SetOfTuply (
+      convert_expression body,
+      List.map (convert_tuply_bounds apply.node) bound_symbols |> List.flatten
+    )
+    (* Set mapping without any tuples *)
+    else SetOf (
+      convert_expression body,
+      List.map (convert_non_tuply_bounds apply.node) bound_symbols |> List.flatten
+    )
+  | _ -> conversion_failure "Invalid number of bounds or operands to set mapping" apply.node.location
+) |> attach_props apply.node
+
 (** Conversion of recursive functions where the function body refers to the
     function definition, for example f[x \in Nat] == f[x - 1]. Both SANY and
     TLAPM represent these as f == [x \in Nat |-> f[x - 1]], and here we
     convert the right-hand side of this definition. The function name is
     introduced as the first symbol, unbound.
 *)
-and convert_recursive_function (apply : Xml.op_appl_node) (op : Xml.built_in_kind) : Expr.T.expr = (
+and convert_recursive_function (apply : Xml.op_appl_node) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
   | Unbound function_name :: (_ :: _ as all_bound_symbols), [Expression body] ->
     let bound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Bound b -> Some b | _ -> None) all_bound_symbols in
@@ -430,7 +453,44 @@ and convert_recursive_function (apply : Xml.op_appl_node) (op : Xml.built_in_kin
     then FcnTuply (List.map (convert_tuply_bounds apply.node) bound_symbols |> List.flatten, convert_expression body)
     (* Function definition bounds without any tuples *)
     else Fcn (List.map (convert_non_tuply_bounds apply.node) bound_symbols |> List.flatten, convert_expression body)
-  | _ -> conversion_failure "Invalid number of bounds or operands to function definition" apply.node.location
+  | _ -> conversion_failure "Invalid number of bounds or operands to recursive function definition" apply.node.location
+) |> attach_props apply.node
+
+(** Converts function construction expressions like [x \in S, y \in P |-> x + y]
+*)
+and convert_function_constructor (apply : Xml.op_appl_node) : Expr.T.expr = (
+  match apply.bound_symbols, apply.operands with
+  | _ :: _, [Expression body] ->
+    let bound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Bound b -> Some b | _ -> None) apply.bound_symbols in
+    if List.length bound_symbols <> List.length apply.bound_symbols
+    then conversion_failure "Function definitions cannot have unbound symbols" apply.node.location
+    else if List.exists (fun (b : Xml.bound_symbol) -> b.is_tuple) bound_symbols
+    (* Function definition bounds that include at least one tuple *)
+    then FcnTuply (List.map (convert_tuply_bounds apply.node) bound_symbols |> List.flatten, convert_expression body)
+    (* Function definition bounds without any tuples *)
+    else Fcn (List.map (convert_non_tuply_bounds apply.node) bound_symbols |> List.flatten, convert_expression body)
+  | _ -> conversion_failure "Invalid operands to function constructor" apply.node.location
+) |> attach_props apply.node
+
+(** Converts function set expressions of the form [P -> Q]
+*)
+and convert_function_set (apply : Xml.op_appl_node) : Expr.T.expr = (
+  match apply.bound_symbols, apply.operands with
+  | [], [Expression domain; Expression range] ->
+    Arrow (convert_expression domain, convert_expression range)
+  | _ -> conversion_failure "Invalid operands to function set expression" apply.node.location
+) |> attach_props apply.node
+
+(** Conversion of function application, like f[x, y, z].
+*)
+and convert_function_application (apply : Xml.op_appl_node) : Expr.T.expr = (
+  match apply.bound_symbols, apply.operands with
+  | [], Expression fn :: all_args ->
+    let args = List.filter_map (fun (arg: Xml.expr_or_op_arg) -> match arg with | Expression e -> Some (convert_expression e) | _ -> None) all_args in
+    if List.length args <> List.length all_args
+    then conversion_failure "Function application arguments must all be expressions" apply.node.location
+    else FcnApp (convert_expression fn, args)
+  | _ -> conversion_failure "Invalid operands to function application" apply.node.location
 ) |> attach_props apply.node
 
 (** Conversion of application of all traditional built-in operators like = or
@@ -456,13 +516,45 @@ and convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_kind)
       | "$BoundedChoose" -> convert_choose apply
       | "$UnboundedChoose" -> convert_choose apply
       | "$SquareAct" -> convert_action_expr Box apply
-      | "$BoundedExists" -> convert_quantification Exists apply op
-      | "$BoundedForall" -> convert_quantification Forall apply op
-      | "$UnboundedExists" -> convert_quantification Exists apply op
-      | "$UnboundedForall" -> convert_quantification Forall apply op
-      | "$RecursiveFcnSpec" -> convert_recursive_function apply op
+      | "$BoundedExists" -> convert_quantification Exists apply
+      | "$BoundedForall" -> convert_quantification Forall apply
+      | "$UnboundedExists" -> convert_quantification Exists apply
+      | "$UnboundedForall" -> convert_quantification Forall apply
+      | "$SetOfAll" -> convert_set_map apply
+      | "$SetOfFcns" -> convert_function_set apply
+      | "$FcnConstructor" -> convert_function_constructor apply
+      | "$RecursiveFcnSpec" -> convert_recursive_function apply
+      | "$FcnApply" -> convert_function_application apply
+      | "$IfThenElse" -> convert_if_then_else apply
+      | "$Case" -> convert_case apply
       | s -> todo "Built-in operator" s apply.node.location
     )
+
+(** Conversion of expression IF predicate THEN A ELSE B
+*)
+and convert_if_then_else (apply : Xml.op_appl_node) : Expr.T.expr = (
+  match apply.bound_symbols, apply.operands with
+  | [], [Expression cond; Expression then_branch; Expression else_branch] ->
+    If (convert_expression cond, convert_expression then_branch, convert_expression else_branch)
+  | _ -> conversion_failure "Invalid operands to IF/THEN/ELSE" apply.node.location
+) |> attach_props apply.node
+
+(** Conversion of expression CASE p1 -> e1 [] p2 -> e2 [] ... [] OTHER -> e
+*)
+and convert_case (apply : Xml.op_appl_node) : Expr.T.expr = (
+  match apply.bound_symbols, apply.operands with
+  | [], cases ->
+    let rec group_expr (exprs : Xml.expr_or_op_arg list) : ((Expr.T.expr * Expr.T.expr) list * expr option) =
+      match exprs with
+      | [Expression other] -> ([], Some (convert_expression other))
+      | [Expression pred; Expression expr] -> ([(convert_expression pred, convert_expression expr)], None)
+      | Expression pred :: Expression expr :: rest ->
+        let cases, other = group_expr rest in
+        (cases @ [(convert_expression pred, convert_expression expr)], other)
+      | _ -> conversion_failure "Invalid operands of CASE expression" apply.node.location
+    in let cases, other = group_expr apply.operands in Case (cases, other)
+  | _ -> conversion_failure "Invalid operands to CASE" apply.node.location
+) |> attach_props apply.node
 
 (** Conversion of application of user-defined operators, including operators
     defined in the standard modules.
