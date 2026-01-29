@@ -263,6 +263,9 @@ let rec convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_k
     | "$ConjList" -> List (
       And, List.map convert_expression_or_operator_argument apply.operands
     ) |> attach_props apply.node
+    | "$CartesianProd" -> Product (
+      List.map convert_expression_or_operator_argument apply.operands
+    ) |> attach_props apply.node
     | "$BoundedChoose" -> convert_choose apply
     | "$UnboundedChoose" -> convert_choose apply
     | "$SquareAct" -> convert_action_expr Box apply
