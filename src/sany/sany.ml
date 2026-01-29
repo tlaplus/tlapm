@@ -157,17 +157,27 @@ let resolve_module_node (uid : int) : Xml.module_node =
   | ModuleNode mule -> mule
   | _ -> conversion_failure ("Expected module node for UID: " ^ string_of_int uid) None
 
+let resolve_op_decl_node (uid : int) : Xml.op_decl_node =
+  match (resolve_ref uid).kind with
+  | OpDeclNode odn -> odn
+  | _ -> conversion_failure ("Expected operator declaration node for UID: " ^ string_of_int uid) None
+
 (** A typed version of resolve_ref for operator parameter nodes.
 *)
-let resolve_formal_param_node (param : Xml.leibniz_param) : (hint * shape) =
-  match (resolve_ref param.ref).kind with
-  | Xml.FormalParamNode xml -> (
-    attach_props xml.node xml.name,
-    match xml.arity with
+let resolve_formal_param_node (uid : int) : Xml.formal_param_node =
+  match (resolve_ref uid).kind with
+  | Xml.FormalParamNode xml -> xml
+  | _ -> conversion_failure ("Expected formal parameter node for UID: " ^ string_of_int uid) None
+
+(** A typed version of resolve_ref for Leibniz operator parameter nodes.
+*)
+let resolve_leibniz_formal_param_node (param : Xml.leibniz_param) : (hint * shape) =
+  let fpn = resolve_formal_param_node param.ref in (
+    attach_props fpn.node fpn.name,
+    match fpn.arity with
     | 0 -> Shape_expr
     | n -> Shape_op n
   )
-  | _ -> conversion_failure ("Expected formal parameter node for UID: " ^ string_of_int param.ref) None
 
 (** A typed version of resolve_ref for theorem definition nodes.
 *)
@@ -211,14 +221,19 @@ let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
   match builtin.name with
   | "TRUE" -> Some Builtin.TRUE
   | "FALSE" -> Some Builtin.FALSE
+  | "DOMAIN" -> Some Builtin.DOMAIN
+  | "SUBSET" -> Some Builtin.SUBSET
   | "UNCHANGED" -> Some Builtin.UNCHANGED
   | "UNION" -> Some Builtin.UNION
   | "'" -> Some Builtin.Prime
   | "[]" -> Some (Builtin.Box false)
   | "=" -> Some Builtin.Eq
+  | "/=" -> Some Builtin.Neq
   | "\\in" -> Some Builtin.Mem
   | "\\notin" -> Some Builtin.Notmem
+  | "\\" -> Some Builtin.Setminus
   | "\\land" -> Some Builtin.Conj
+  | "$Pair" -> Some Builtin.Range
   | "=>" -> Some Builtin.Implies
   | "\\equiv" -> Some Builtin.Equiv
   | _ -> None
@@ -256,8 +271,34 @@ let rec convert_module_node (mule : Xml.module_node) : Module.T.mule =
     important = false
   } |> attach_props mule.node
 
-and convert_instance (instance : Xml.instance_node) : Module.T.modunit =
-  todo "Instance" "" instance.node.location
+(** Converts M(x, y) == INSTANCE ModuleName WITH op <- x, op2 <- y. Also
+    converts non-named (anonymous) unit-level instances.
+
+    TODO: SANY can handle named instances accepting an operator as a
+    parameter, but TLAPM does not seem to be able to represent this; it uses
+    a simple 'hint' for the parameter name instead of a hint * shape tuple
+    which would capture arity. This doesn't *necessarily* mean that TLAPM
+    does not handle operator parameters, but it is odd that arity info is not
+    captured. For now we will just error in that case.
+*)
+and convert_instance (instance : Xml.instance_node) : Module.T.modunit = (
+  let mk_arg (param : Xml.formal_param_node) : hint =
+    match param.arity with
+    | 0 -> attach_props param.node param.name
+    | _ -> conversion_failure "TLAPM cannot handle operators as instance arguments" param.node.location
+  in let mk_substitution (sub : Xml.substitution) : (hint * Expr.T.expr) =
+    let target = resolve_op_decl_node sub.target_uid in (
+      attach_props target.node target.name,
+      convert_expression_or_operator_argument sub.substitute
+    )
+  in let instantiation : Expr.T.instance = {
+    inst_args = instance.parameters |> List.map resolve_formal_param_node |> List.map mk_arg;
+    inst_mod = instance.module_name;
+    inst_sub = List.map mk_substitution instance.substitutions;
+  } in match instance.name with
+  | Some name -> Definition (Instance (noprops name, instantiation) |> noprops, User, Hidden, Export)
+  | None -> Anoninst (instantiation, Export)
+) |> attach_props instance.node
 
 and convert_use_or_hide (use_or_hide : Xml.use_or_hide_node) : Module.T.modunit =
   todo "UseOrHide" "" use_or_hide.node.location
@@ -655,7 +696,7 @@ and convert_user_defined_op_kind (xml : Xml.user_defined_op_kind) : Expr.T.defn 
   (* TLAPS represents op(x) == expr as op == LAMBDA x : expr *)
   let expr = match xml.params with
   | [] -> body
-  | params -> Lambda (List.map resolve_formal_param_node params, body) |> attach_props xml.node
+  | params -> Lambda (List.map resolve_leibniz_formal_param_node params, body) |> attach_props xml.node
   in Operator (name, expr) |> attach_props xml.node
 
 (** Converts user-defined operators defined in a module top-level.
