@@ -13,6 +13,15 @@ let find_tla_files dir =
   in
   loop []
 
+let should_run (path : string) : bool =
+  let preds = [
+    (* RECURSIVE operators *)
+    String.ends_with ~suffix:"Chameneos.tla";
+    (* Community modules *)
+    String.ends_with ~suffix:"MCtcp.tla";
+    String.ends_with ~suffix:"tcp.tla";
+  ] in not (List.exists (fun pred -> pred path) preds)
+
 let parse_tla_file filename =
   let open Stdlib in
   print_endline ("Parsing " ^ filename ^ " ...");
@@ -26,5 +35,5 @@ let parse_tla_file filename =
 let _ =
   parser_backend := Sany;
   add_debug_flag "sany";
-  let tla_files = find_tla_files "/mnt/data/ahelwer/src/tlaplus/examples/specifications" in
+  let tla_files = find_tla_files "/mnt/data/ahelwer/src/tlaplus/examples/specifications" |> List.filter should_run in
   List.map parse_tla_file tla_files

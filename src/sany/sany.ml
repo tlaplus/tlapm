@@ -226,14 +226,18 @@ let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
   | "SUBSET" -> Some Builtin.SUBSET
   | "UNCHANGED" -> Some Builtin.UNCHANGED
   | "UNION" -> Some Builtin.UNION
+  | "\\lnot" -> Some Builtin.Neg
   | "'" -> Some Builtin.Prime
   | "[]" -> Some (Builtin.Box false)
+  | "<>" -> Some Builtin.Diamond
   | "=" -> Some Builtin.Eq
   | "/=" -> Some Builtin.Neq
   | "\\in" -> Some Builtin.Mem
   | "\\notin" -> Some Builtin.Notmem
   | "\\" -> Some Builtin.Setminus
   | "\\union" -> Some Builtin.Cup
+  | "\\intersect" -> Some Builtin.Cap
+  | "\\subseteq" -> Some Builtin.Subseteq
   | "\\land" -> Some Builtin.Conj
   | "\\lor" -> Some Builtin.Disj
   | "=>" -> Some Builtin.Implies
@@ -263,9 +267,13 @@ let rec convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_k
     | "$ConjList" -> List (
       And, List.map convert_expression_or_operator_argument apply.operands
     ) |> attach_props apply.node
+    | "$DisjList" -> List (
+      Or, List.map convert_expression_or_operator_argument apply.operands
+    ) |> attach_props apply.node
     | "$CartesianProd" -> Product (
       List.map convert_expression_or_operator_argument apply.operands
     ) |> attach_props apply.node
+    | "$WF" -> convert_fairness Weak apply
     | "$BoundedChoose" -> convert_choose apply
     | "$UnboundedChoose" -> convert_choose apply
     | "$SquareAct" -> convert_action_expr Box apply
@@ -368,6 +376,14 @@ and convert_op_decl_node (xml : Xml.op_decl_node) : Module.T.modunit =
   | 2 -> attach_props xml.node (Constants [attach_props xml.node xml.name, match xml.arity with | 0 -> Shape_expr | n -> Shape_op n])
   | 3 -> attach_props xml.node (Variables [attach_props xml.node xml.name])
   | _ -> todo "Operator declaration kind" (string_of_int xml.kind) xml.node.location
+
+(** Converts fairness expressions such as WF_sub(expr) and SF_sub(expr).
+*)
+and convert_fairness (fairness : fairness_op) (apply : Xml.op_appl_node) : Expr.T.expr = (
+  match apply.bound_symbols, apply.operands with
+  | [], [Expression sub; Expression expr] -> Fair (fairness, convert_expression sub, convert_expression expr)
+  | _ -> conversion_failure "Wrong number of operands to fairness expression" apply.node.location
+) |> attach_props apply.node
 
 (** Converts action-level expressions such as [][expr]_sub and <><<expr>>_sub.
 *)
@@ -785,7 +801,8 @@ and convert_expression (expr : Xml.expression) : Expr.T.expr =
   | StringNode s -> String s.value |> attach_props s.node
   | OpApplNode apply -> convert_op_appl_node apply
   | LetInNode let_in -> convert_let_in_node let_in
-  | AtNode at_node -> todo "AtNode" "@" at_node.node.location
+  (* TODO: true means @ from EXCEPT, false means @ from proof step (???) *)
+  | AtNode at_node -> At true |> attach_props at_node.node
 
 and convert_let_in_node ({node; def_refs; body} : Xml.let_in_node) : Expr.T.expr =
   let definitions = List.map (fun ref ->
@@ -947,7 +964,7 @@ let convert_ast (ast : Xml.modules) : (Module.T.modctx * Module.T.mule, (string 
       if Coll.Sm.mem mule.name map then map
       else Coll.Sm.add mule.name (convert_module_node mule) map
     )
-    Module.Standard.initctx
+    Coll.Sm.empty
     ast.module_refs
   in let root_module = Coll.Sm.find ast.root_module ctx in
   root_module.core.important <- true;
