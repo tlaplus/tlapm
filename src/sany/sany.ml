@@ -10,7 +10,7 @@
     this more apparent than in SANY's OpApplNode type, which is used for
     everything from simple expressions like 1 + 3 to complex constructs like
     \A x, y, z \in S : P.
-    
+
     Much of the challenge of this module, in addition to the sheer number of
     TLA+ syntax node types it has to convert, is the difficulty in mapping
     the information in each SANY AST node to the fields expected in each
@@ -25,7 +25,7 @@
     abstract which is presented to us here. Thus the SANY AST has already
     been processed significantly, and we are translating it to a form that is
     comparatively much rougher & earlier in the parse process.
-    
+
     Given these challenges, much SANY information such as identifier reference
     IDs and levels are attached as metadata to TLAPM AST nodes for use later
     on: not as the basis for final calculations, but rather to cross-check
@@ -282,6 +282,7 @@ let rec convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_k
     | "$SetOfRcds" -> convert_record_set apply
     | "$RcdConstructor" -> convert_record_constructor apply
     | "$RcdSelect" -> convert_record_select apply
+    | "$Except" -> convert_except apply
     | "$IfThenElse" -> convert_if_then_else apply
     | "$Case" -> convert_case apply
     | s -> todo "Built-in operator" s apply.node.location
@@ -640,6 +641,38 @@ and convert_record_operator (apply : Xml.op_appl_node) (constructor : (string * 
   | _ -> conversion_failure "Invalid operands to record operator" apply.node.location
 ) |> attach_props apply.node
 
+(** Converts expressions of the form [f EXCEPT ![1].2[<<3, 4>>] = val, ![2] = val2, ...]
+    Note that SANY does not distinguish between function and record EXCEPT;
+    the expression [f EXCEPT !["field"] = val] is the same as [f EXCEPT !.field = val].
+    TLAPM *does* distinguish these with the Except_dot and Except_apply variants,
+    so we make a best-effort attempt to determine which is which. Whether this
+    leads to buggy behavior is currently unknown (TODO).
+*)
+and convert_except (apply : Xml.op_appl_node) : Expr.T.expr = (
+  match apply.bound_symbols, apply.operands with
+  | [], Expression base :: (_ :: _ as updates) ->
+    let mk_path (path_item : Expr.T.expr) : Expr.T.expoint =
+      match path_item.core with
+      | String s -> Except_dot s
+      | _ -> Except_apply path_item
+    in let mk_update (operand : Xml.expr_or_op_arg) : (Expr.T.expoint list * Expr.T.expr) option =
+      match operand with
+      | Expression OpApplNode {operator; bound_symbols = []; operands = [Expression OpApplNode {operator = update_op; bound_symbols = []; operands = update_path}; Expression new_value]} -> (
+        match (resolve_ref operator).kind, (resolve_ref update_op).kind with
+        | BuiltInKind {name = "$Pair"}, BuiltInKind {name = "$Seq"} ->
+          let path = List.filter_map (fun (p : Xml.expr_or_op_arg) -> match p with | Expression e -> Some (convert_expression e) | _ -> None) update_path in
+          if List.length path <> List.length update_path
+          then conversion_failure "Invalid path in EXCEPT update; expected sequence of expressions" apply.node.location
+          else Some (List.map mk_path path, convert_expression new_value)
+        | _ -> None
+      ) | _ -> None
+    in let updates_converted = List.filter_map mk_update updates in
+    if List.length updates_converted <> List.length updates
+    then conversion_failure "Invalid operands to EXCEPT; expected pairs of update paths and new values" apply.node.location
+    else Except (convert_expression base, updates_converted)
+  | _ -> conversion_failure "Invalid operands to EXCEPT" apply.node.location
+) |> attach_props apply.node
+
 (** Conversion of expression IF predicate THEN A ELSE B
 *)
 and convert_if_then_else (apply : Xml.op_appl_node) : Expr.T.expr = (
@@ -650,7 +683,7 @@ and convert_if_then_else (apply : Xml.op_appl_node) : Expr.T.expr = (
 ) |> attach_props apply.node
 
 (** Conversion of expression CASE p1 -> e1 [] p2 -> e2 [] ... [] OTHER -> e
-    
+
     TODO: SANY XML exporter cannot currently handle OTHER branches; see:
     https://github.com/tlaplus/tlaplus/issues/1291
 *)
@@ -827,7 +860,7 @@ and convert_proof (uid : int) (previous_proof_level : int) (proof : Xml.proof_no
   match proof with
   | None -> Omitted Implicit |> noprops |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
   | Some Omitted node -> Omitted Explicit |> attach_props node |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
-  | Some Obvious node -> Obvious |> attach_props node |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid)) 
+  | Some Obvious node -> Obvious |> attach_props node |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
   | Some By proof -> convert_by_proof proof |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
   | Some Steps proof -> convert_proof_steps uid previous_proof_level proof
 

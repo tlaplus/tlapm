@@ -9,10 +9,10 @@
 let source_to_sany_xml_str (module_path : string) (stdlib_path : string) : (string, (string * int)) result =
   let open Unix in
   let open Paths in
-  let cmd = Printf.sprintf "java -cp %s tla2sany.xml.XMLExporter -I %s -I %s -t %s" 
-    (backend_classpath_string "tla2tools.jar") 
-    (Filename.quote stdlib_path) 
+  let cmd = Printf.sprintf "java -cp %s tla2sany.xml.XMLExporter -I %s -I %s -t %s"
+    (backend_classpath_string "tla2tools.jar")
     (Filename.dirname module_path)
+    (Filename.quote stdlib_path)
     (Filename.quote module_path) in
   let (pid, out_fd) = System.launch_process cmd in
   let in_chan = Unix.in_channel_of_descr out_fd in
@@ -114,7 +114,7 @@ let xml_child_to_int (xml : tree) : int =
   match xml with
   | (Node (_, [IValue n])) -> n
   | _ -> conversion_failure __FUNCTION__ xml
-  
+
 let xml_to_tagged_int (tag_name : string) (children : tree list) : int =
   find_tag tag_name children |> xml_child_to_int
 
@@ -405,7 +405,7 @@ and xml_to_user_defined_op_kind xml : user_defined_op_kind =
       recursive   = children |> List.exists (is_tag "recursive");
     }
   | _ -> conversion_failure __FUNCTION__ xml
-  
+
 type substitution = {
   target_uid : int;
   substitute : expr_or_op_arg;
@@ -481,7 +481,7 @@ let xml_to_module_node (children : tree list) : module_node =
     units = List.map ref_child units
   }
   | _ -> ls_conversion_failure __FUNCTION__ children
-  
+
 type op_decl_node = {
   node  : node;
   name  : string;
