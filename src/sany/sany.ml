@@ -798,7 +798,12 @@ and convert_expression_or_operator_argument (op_expr : Xml.expr_or_op_arg) : Exp
     | BuiltInKind builtin -> (match try_convert_builtin builtin with
       | Some b -> Internal b |> attach_props builtin.node
       | None -> todo "Built-in operator argument" builtin.name builtin.node.location)
-    | _ -> conversion_failure ("Invalid operator argument reference: " ^ string_of_int uid) None
+    | OpDeclNode decl -> Opaque decl.name |> attach_props decl.node
+    | AssumeNode assume -> conversion_failure "Invalid operator argument reference to ASSUME" assume.node.location
+    | AssumeDefNode assume -> conversion_failure ("Invalid operator argument reference to ASSUME: " ^ assume.name) assume.node.location
+    | TheoremNode thm -> conversion_failure "Invalid operator argument reference to THEOREM" thm.node.location
+    | TheoremDefNode thm -> conversion_failure ("Invalid operator argument reference to THEOREM: " ^ thm.name) thm.node.location
+    | ModuleNode mule -> conversion_failure ("Invalid operator argument reference to MODULE: " ^ mule.name) mule.node.location
 
 (** Converts a basic expression type, which will be either a primitive value
     or an operator application.
@@ -809,8 +814,15 @@ and convert_expression (expr : Xml.expression) : Expr.T.expr =
   | StringNode s -> String s.value |> attach_props s.node
   | OpApplNode apply -> convert_op_appl_node apply
   | LetInNode let_in -> convert_let_in_node let_in
+  | LabelNode label -> convert_label label
   (* TODO: true means @ from EXCEPT, false means @ from proof step (???) *)
   | AtNode at_node -> At true |> attach_props at_node.node
+
+and convert_label (label : Xml.label_node) : Expr.T.expr = (
+  match label.body with
+  | Expression expr -> Parens (convert_expression expr, noprops Syntax)
+  | AssumeProve ap -> Parens (Sequent (convert_assume_prove ap) |> noprops, noprops Syntax)
+) |> attach_props label.node
 
 and convert_let_in_node ({node; def_refs; body} : Xml.let_in_node) : Expr.T.expr =
   let definitions = List.map (fun ref ->
@@ -870,6 +882,11 @@ and convert_theorem_node (uid : int) (previous_proof_level : int) (thm : Xml.the
     empty_summary
   ) |> attach_props thm.node
 
+and convert_assume_prove (ap : Xml.assume_prove_node) : sequent = {
+  context = Deque.empty; (* TODO: fill in context from ASSUME part *)
+  active = convert_expression ap.prove;
+}
+
 (** Sequents are theorem bodies, which are either simple expressions or
     ASSUME/PROVE constructs.
     TODO: handle ASSUME/PROVE
@@ -877,10 +894,7 @@ and convert_theorem_node (uid : int) (previous_proof_level : int) (thm : Xml.the
 and convert_sequent (seq : Xml.expr_or_assume_prove) : sequent =
   match seq with
   | Expression expr -> {context = Deque.empty; active = convert_expression expr}
-  | AssumeProve ap -> {
-    context = Deque.empty; (* TODO: fill in context from ASSUME part *)
-    active = convert_expression ap.prove;
-  }
+  | AssumeProve ap -> convert_assume_prove ap
 
 (** Converts a proof, which can either be OMITTED, OBVIOUS, BY, or a series
     of individual proof steps culminated in a QED step.
@@ -919,6 +933,8 @@ and convert_proof_steps (uid : int) (previous_proof_level : int) ({node; steps} 
       let step_name = convert_proof_step_name uid proof_level thm.definition in
       let step = Suffices (convert_sequent thm.body, convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node in
       (attach_proof_step_name step_name step :: steps, Known (step_number step_name))
+    | DefStep _ -> todo "Proof Step" "DefStepNode" None
+    | UseOrHide _ -> todo "Proof Step" "UseOrHide" None
   in let convert_qed_step (proof_level : proof_level) (step : Xml.proof_step_group) : Proof.T.qed_step * proof_level =
     match step with
     (* TODO: handle other proof step types *)
@@ -927,6 +943,8 @@ and convert_proof_steps (uid : int) (previous_proof_level : int) ({node; steps} 
       let step_name = convert_proof_step_name uid proof_level thm.definition in
       let qed_step = Qed (convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node in
       (attach_proof_step_name step_name qed_step, Known (step_number step_name))
+    | DefStep _ -> todo "QED" "DefStepNode" None
+    | UseOrHide _ -> todo "QED" "UseOrHide" None
   in let steps, qed = split_steps steps
   in let steps, proof_level = List.fold_left convert_proof_step ([], Previous previous_proof_level) steps
   in let qed_step, proof_level = convert_qed_step proof_level qed
