@@ -520,19 +520,74 @@ let xml_to_built_in_kind xml : built_in_kind =
     }
   | _ -> conversion_failure __FUNCTION__ xml
 
+type new_symbol_node = {
+  node        : node;
+  symbol_ref  : int;
+  domain      : expression option;
+}
+[@@deriving show]
+
+let xml_to_new_symbol_node (children : tree list) : new_symbol_node =
+  match extract_inline_node children with
+  | node, [Node ("OpDeclNodeRef", [Node ("UID", [IValue uid])])] -> {
+    node;
+    symbol_ref = uid;
+    domain = None;
+  }
+  | node, [Node ("OpDeclNodeRef", [Node ("UID", [IValue uid])]); domain] -> {
+    node;
+    symbol_ref = uid;
+    domain = Some (xml_to_expression domain);
+  }
+  | _ -> ls_conversion_failure __FUNCTION__ children
+
+type assume_prove_node = {
+  node        : node;
+  assumptions : assumption_kind list;
+  prove       : expression;
+}
+and assumption_kind =
+  | Expression of expression
+  | AssumeProve of assume_prove_node
+  | NewSymbol of new_symbol_node
+and expr_or_assume_prove =
+  | Expression of expression
+  | AssumeProve of assume_prove_node
+[@@deriving show]
+
+let rec xml_to_assume_prove_node (children : tree list) : assume_prove_node =
+  match extract_inline_node children with
+  | node, Node ("assumes", assumptions) :: Node ("prove", [prove]) :: _ -> {
+    node;
+    assumptions = List.map xml_to_assumption_kind assumptions;
+    prove = xml_to_expression prove;
+  }
+  | _ -> ls_conversion_failure __FUNCTION__ children
+
+and xml_to_assumption_kind (xml : tree) : assumption_kind =
+  match xml with
+  | Node ("AssumeProveNode", children) -> AssumeProve (xml_to_assume_prove_node children)
+  | Node ("NewSymbNode", children) -> NewSymbol (xml_to_new_symbol_node children)
+  | expr -> Expression (xml_to_expression expr)
+
+and xml_to_expr_or_assume_prove (xml : tree) : expr_or_assume_prove =
+  match xml with
+  | Node ("AssumeProveNode", children) -> AssumeProve (xml_to_assume_prove_node children)
+  | expr -> Expression (xml_to_expression expr)
+
 type assume_def_node = {
   node        : node;
   name        : string;
-  body        : expression;
+  body        : expr_or_assume_prove;
 }
 [@@deriving show]
 
 let xml_to_assume_def_node (children : tree list) : assume_def_node =
   match extract_inline_node children with
-  | node, [Node ("uniquename", [SValue name]); Node ("body", [body])] -> {
+  | node, [Node ("uniquename", [SValue name]); body] -> {
     node;
     name;
-    body = xml_to_expression body;
+    body = xml_to_expr_or_assume_prove body;
   }
   | _ -> ls_conversion_failure __FUNCTION__ children
 
@@ -552,17 +607,6 @@ let xml_to_assume_node (children : tree list) : assume_node =
   }
   | _ -> ls_conversion_failure __FUNCTION__ children
 
-type expr_or_assume_prove =
-  | Expression of expression
-(*| AssumeProveLike of assume_prove_like*)
-[@@deriving show]
-
-let xml_to_expr_or_assume_prove (children : tree list) : expr_or_assume_prove =
-  match children with
-  | Node ("AssumeProveLike", _) :: _ -> ls_conversion_failure __FUNCTION__ children
-  | expr :: _ -> Expression (xml_to_expression expr)
-  | _ -> ls_conversion_failure __FUNCTION__ children
-
 type theorem_def_node = {
   node        : node;
   name        : string;
@@ -574,7 +618,7 @@ let xml_to_theorem_def_node xml =
   match xml with
   | Node ("TheoremDefNode", children) -> (
     match extract_inline_node children with
-    | node, Node ("uniquename", [SValue name]) :: body -> {
+    | node, [Node ("uniquename", [SValue name]); body] -> {
       node;
       name;
       body = xml_to_expr_or_assume_prove body
@@ -651,7 +695,7 @@ type theorem_node = {
 
 let xml_to_theorem_node (children : tree list) : theorem_node =
   match children |> extract_inline_node |> extract_inline_definition_opt with
-  | node, definition, Node ("body", body) :: proof -> {
+  | node, definition, Node ("body", [body]) :: proof -> {
       node;
       definition;
       body        = xml_to_expr_or_assume_prove body;
@@ -675,7 +719,7 @@ let xml_to_entry_kind (xml : tree) : entry_kind =
   match xml with
   | Node ("ModuleNode", children) -> ModuleNode (xml_to_module_node children)
   | Node ("AssumeNode", children) -> AssumeNode (xml_to_assume_node children)
-  | Node ("AssumeDefNode", children) -> AssumeDefNode (xml_to_assume_def_node children)
+  | Node ("AssumeDef", children)  -> AssumeDefNode (xml_to_assume_def_node children)
   | Node ("OpDeclNode", _)        -> OpDeclNode (xml_to_op_decl_node xml)
   | Node ("UserDefinedOpKind", _) -> UserDefinedOpKind (xml_to_user_defined_op_kind xml)
   | Node ("BuiltInKind", _)       -> BuiltInKind (xml_to_built_in_kind xml)

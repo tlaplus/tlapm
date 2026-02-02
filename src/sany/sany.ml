@@ -135,6 +135,18 @@ let parse_proof_step_name (proof_level : proof_level) (uid : int) (proof_name : 
 let attach_proof_step_name (proof_name : stepno) (step : 'a) : 'a =
   assign step Props.step proof_name
 
+(** An OpApplNode's operands can be either expressions or operator arguments.
+    Often we only want them to be expressions. This function coerces the list
+    items into expressions, raising an error if they are operators.
+*)
+let as_expr_ls (name : string) (loc : Xml.location option) (operands : Xml.expr_or_op_arg list) : Xml.expression list =
+  let exprs = List.filter_map
+    (fun (operand : Xml.expr_or_op_arg) -> match operand with Expression e -> Some e | _ -> None)
+    operands
+  in if List.length exprs <> List.length operands
+  then conversion_failure (Format.sprintf "Expected all operands to be expressions in %s" name) loc
+  else exprs
+
 (** Wrap the given object in location data.
     TODO: also wrap with level data.
 *)
@@ -253,25 +265,25 @@ let rec convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_k
   (* Traditional built-in operators *)
   | Some builtin -> Apply (
       Internal builtin |> attach_props op.node,
-      List.map convert_expression_or_operator_argument apply.operands
+      apply.operands |> as_expr_ls (Builtin.builtin_to_string builtin) apply.node.location |> List.map convert_expression
     ) |> attach_props apply.node
   (* More abstract kinds of built-in operators *)
   | None ->
     match op.name with
     | "$SetEnumerate" -> SetEnum (
-      List.map convert_expression_or_operator_argument apply.operands
+      apply.operands |> as_expr_ls "$SetEnumerate" apply.node.location |> List.map convert_expression
     ) |> attach_props apply.node
     | "$Tuple" -> Tuple (
-      List.map convert_expression_or_operator_argument apply.operands
+      apply.operands |> as_expr_ls "$Tuple" apply.node.location |> List.map convert_expression
     ) |> attach_props apply.node
     | "$ConjList" -> List (
-      And, List.map convert_expression_or_operator_argument apply.operands
+      And, apply.operands |> as_expr_ls "$ConjList" apply.node.location |> List.map convert_expression
     ) |> attach_props apply.node
     | "$DisjList" -> List (
-      Or, List.map convert_expression_or_operator_argument apply.operands
+      Or, apply.operands |> as_expr_ls "$DisjList" apply.node.location |> List.map convert_expression
     ) |> attach_props apply.node
     | "$CartesianProd" -> Product (
-      List.map convert_expression_or_operator_argument apply.operands
+      apply.operands |> as_expr_ls "$CartesianProd" apply.node.location |> List.map convert_expression
     ) |> attach_props apply.node
     | "$WF" -> convert_fairness Weak apply
     | "$BoundedChoose" -> convert_choose apply
@@ -389,10 +401,10 @@ and convert_fairness (fairness : fairness_op) (apply : Xml.op_appl_node) : Expr.
 *)
 and convert_action_expr (op : modal_op) (apply : Xml.op_appl_node) : Expr.T.expr =
   match apply.operands with
-  | [expr; sub] -> Sub (
+  | [Expression expr; Expression sub] -> Sub (
     op,
-    convert_expression_or_operator_argument expr,
-    convert_expression_or_operator_argument sub
+    convert_expression expr,
+    convert_expression sub
   ) |> attach_props apply.node
   | _ -> conversion_failure "Wrong number of operands to action expression" apply.node.location
 
@@ -410,35 +422,35 @@ and convert_action_expr (op : modal_op) (apply : Xml.op_appl_node) : Expr.T.expr
 and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
   (* Case 1: Bounded non-tuple CHOOSE expression *)
-  | [Bound {is_tuple = false; symbol_refs = [param]; expression}], [body] ->
+  | [Bound {is_tuple = false; symbol_refs = [param]; expression}], [Expression body] ->
     Choose (
       resolve_bound_symbol param,
       Some (convert_expression expression),
-      convert_expression_or_operator_argument body
+      convert_expression body
     )
   (* Case 2: Bounded tuple CHOOSE expression *)
-  | [Bound ({is_tuple = true} as symbol)], [body] ->
+  | [Bound ({is_tuple = true} as symbol)], [Expression body] ->
     ChooseTuply (
       List.map resolve_bound_symbol symbol.symbol_refs,
       Some (convert_expression symbol.expression),
-      convert_expression_or_operator_argument body
+      convert_expression body
     )
   (* Case 3: Unbounded non-tuple CHOOSE expression *)
-  | [Unbound ({is_tuple = false} as symbol)], [body] ->
+  | [Unbound ({is_tuple = false} as symbol)], [Expression body] ->
     Choose (
       resolve_bound_symbol symbol.symbol_ref,
       None,
-      convert_expression_or_operator_argument body
+      convert_expression body
     )
   (* Case 4: Unbounded tuple CHOOSE expression *)
-  | Unbound {is_tuple = true} :: _, [body] ->
+  | Unbound {is_tuple = true} :: _, [Expression body] ->
     let symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Unbound ({is_tuple = true} as u) -> Some u | _ -> None) apply.bound_symbols in
     if List.length symbols <> List.length apply.bound_symbols
     then conversion_failure "Inconsistent bound/unbound or tuple/non-tuple symbols in CHOOSE" apply.node.location
     else ChooseTuply (
       List.map (fun (s : Xml.unbound_symbol) -> resolve_bound_symbol s.symbol_ref) symbols,
       None,
-      convert_expression_or_operator_argument body
+      convert_expression body
     )
   | _ -> conversion_failure "Invalid number of bounds or operands to CHOOSE" apply.node.location
 ) |> attach_props apply.node
@@ -611,10 +623,8 @@ and convert_function_set (apply : Xml.op_appl_node) : Expr.T.expr = (
 and convert_function_application (apply : Xml.op_appl_node) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
   | [], Expression fn :: all_args ->
-    let args = List.filter_map (fun (arg: Xml.expr_or_op_arg) -> match arg with | Expression e -> Some (convert_expression e) | _ -> None) all_args in
-    if List.length args <> List.length all_args
-    then conversion_failure "Function application arguments must all be expressions" apply.node.location
-    else FcnApp (convert_expression fn, args)
+    let args = apply.operands |> as_expr_ls __FUNCTION__ apply.node.location |> List.map convert_expression in
+    FcnApp (convert_expression fn, args)
   | _ -> conversion_failure "Invalid operands to function application" apply.node.location
 ) |> attach_props apply.node
 
@@ -643,14 +653,14 @@ and convert_record_constructor (apply : Xml.op_appl_node) : Expr.T.expr =
 and convert_record_operator (apply : Xml.op_appl_node) (constructor : (string * Expr.T.expr) list -> Expr.T.expr_) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
   | [], (_ :: _ as pairs) ->
-    let mk_field (operand : Xml.expr_or_op_arg) : (string * Expr.T.expr) option =
+    let mk_field (operand : Xml.expression) : (string * Expr.T.expr) option =
       match operand with
-      | Expression OpApplNode {operator; bound_symbols = []; operands = [Expression StringNode {value}; Expression right]} -> (
+      | OpApplNode {operator; bound_symbols = []; operands = [Expression StringNode {value}; Expression right]} -> (
         match (resolve_ref operator).kind with
         | BuiltInKind {name = "$Pair"} -> Some (value, convert_expression right)
         | _ -> None
       ) | _ -> None
-    in let fields = List.filter_map mk_field pairs in
+    in let fields = pairs |> as_expr_ls __FUNCTION__ apply.node.location |> List.filter_map mk_field in
     if List.length fields <> List.length pairs
     then conversion_failure "Invalid operands to record operator; expected pairs of expressions" apply.node.location
     else constructor fields
@@ -676,10 +686,8 @@ and convert_except (apply : Xml.op_appl_node) : Expr.T.expr = (
       | Expression OpApplNode {operator; bound_symbols = []; operands = [Expression OpApplNode {operator = update_op; bound_symbols = []; operands = update_path}; Expression new_value]} -> (
         match (resolve_ref operator).kind, (resolve_ref update_op).kind with
         | BuiltInKind {name = "$Pair"}, BuiltInKind {name = "$Seq"} ->
-          let path = List.filter_map (fun (p : Xml.expr_or_op_arg) -> match p with | Expression e -> Some (convert_expression e) | _ -> None) update_path in
-          if List.length path <> List.length update_path
-          then conversion_failure "Invalid path in EXCEPT update; expected sequence of expressions" apply.node.location
-          else Some (List.map mk_path path, convert_expression new_value)
+          let path = update_path |> as_expr_ls __FUNCTION__ apply.node.location |> List.map convert_expression in
+          Some (List.map mk_path path, convert_expression new_value)
         | _ -> None
       ) | _ -> None
     in let updates_converted = List.filter_map mk_update updates in
@@ -869,6 +877,10 @@ and convert_theorem_node (uid : int) (previous_proof_level : int) (thm : Xml.the
 and convert_sequent (seq : Xml.expr_or_assume_prove) : sequent =
   match seq with
   | Expression expr -> {context = Deque.empty; active = convert_expression expr}
+  | AssumeProve ap -> {
+    context = Deque.empty; (* TODO: fill in context from ASSUME part *)
+    active = convert_expression ap.prove;
+  }
 
 (** Converts a proof, which can either be OMITTED, OBVIOUS, BY, or a series
     of individual proof steps culminated in a QED step.
