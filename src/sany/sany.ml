@@ -220,6 +220,14 @@ let resolve_bound_symbol (uid : int) : hint =
   | Some (Xml.FormalParamNode _) -> conversion_failure ("Bound symbol cannot be an operator: " ^ string_of_int uid) None
   | _ -> conversion_failure ("Unresolved formal parameter node UID: " ^ string_of_int uid) None
 
+(** Resolves definitions referenced in BY proofs or USE/HIDE statements.
+*)
+let resolve_def (node : Xml.node) (ref : int) : use_def wrapped =
+    match (resolve_ref ref).kind with
+    | UserDefinedOpKind op -> Dvar op.name |> attach_props op.node
+    | TheoremDefNode thm -> Dvar thm.name |> attach_props thm.node
+    | other -> conversion_failure ("Invalid definition reference in BY proof: " ^ (Xml.show_entry_kind other)) node.location
+
 let convert_proof_step_name (uid : int) (proof_level : proof_level) (theorem_def_ref : int option) : stepno =
   match theorem_def_ref with
   | Some uid -> parse_proof_step_name proof_level uid (resolve_theorem_def_node uid).name
@@ -369,8 +377,15 @@ and convert_instance (instance : Xml.instance_node) : Module.T.modunit = (
   | None -> Anoninst (instantiation, Export)
 ) |> attach_props instance.node
 
+and convert_usable (use_or_hide : Xml.use_or_hide_node) : Proof.T.usable = {
+  facts = List.map convert_expression use_or_hide.facts;
+  defs = List.map (resolve_def use_or_hide.node) use_or_hide.def_refs;
+}
+
 and convert_use_or_hide (use_or_hide : Xml.use_or_hide_node) : Module.T.modunit =
-  todo "UseOrHide" "" use_or_hide.node.location
+  (* TODO: confirm `Use boolean parameter really is the ONLY keyword *)
+  let action = if use_or_hide.hide then `Hide else `Use use_or_hide.only in
+  Mutate (action, convert_usable use_or_hide) |> attach_props use_or_hide.node
 
 and convert_assume_node (assume : Xml.assume_node) : Module.T.modunit =
   Module.T.Axiom (
@@ -933,8 +948,9 @@ and convert_proof_steps (uid : int) (previous_proof_level : int) ({node; steps} 
       let step_name = convert_proof_step_name uid proof_level thm.definition in
       let step = Suffices (convert_sequent thm.body, convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node in
       (attach_proof_step_name step_name step :: steps, Known (step_number step_name))
-    | DefStep _ -> todo "Proof Step" "DefStepNode" None
-    | UseOrHide _ -> todo "Proof Step" "UseOrHide" None
+    | DefStep def -> todo "Proof Step" "DefStepNode" None
+    (* TODO: confirm boolean parameter corresponds to ONLY keyword *)
+    | UseOrHide use_or_hide -> ((Use (convert_usable use_or_hide, use_or_hide.only) |> attach_props use_or_hide.node) :: steps, proof_level)
   in let convert_qed_step (proof_level : proof_level) (step : Xml.proof_step_group) : Proof.T.qed_step * proof_level =
     match step with
     (* TODO: handle other proof step types *)
@@ -960,14 +976,9 @@ and convert_proof_steps (uid : int) (previous_proof_level : int) ({node; steps} 
     strings that will need to be resolved to De Bruijn indices later on.
 *)
 and convert_by_proof ({node; facts; defs} : Xml.by_proof_node) : Proof.T.proof =
-  let resolve_def (ref : int) : use_def wrapped =
-    match (resolve_ref ref).kind with
-    | UserDefinedOpKind op -> Dvar op.name |> attach_props op.node
-    | TheoremDefNode thm -> Dvar thm.name |> attach_props thm.node
-    | other -> conversion_failure ("Invalid definition reference in BY proof: " ^ (Xml.show_entry_kind other)) node.location
-  in By ({
+  By ({
     facts = List.map convert_expression facts;
-    defs = List.map resolve_def defs;
+    defs = List.map (resolve_def node) defs;
   },
   true (* This should be true if the ONLY keyword is present *)
 ) |> attach_props node
