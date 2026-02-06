@@ -1,6 +1,9 @@
 (** This module provides functions to interact with SANY to parse TLA+ source
     files into an XML representation, and then convert that XML representation
-    into something with a semblance of a type system.
+    into something with a semblance of a type system. For example, different
+    node types will have fields of type int or string or even a variant. This
+    makes it much more tractable to convert SANY's XML output into the format
+    expected by TLAPM.
 *)
 
 (** Calls SANY in another process to parse the given TLA+ file, then collects
@@ -118,18 +121,6 @@ let xml_to_tagged_string (tag_name : string) (children : tree list) : string =
   match xml_to_tagged_string_opt tag_name children with
   | Some s -> s
   | None -> ls_conversion_failure __FUNCTION__ children
-
-(** Utility function to extract the int value from a tagged XML node.
-    Raises a detailed exception if the tag is not found or if the tagged node
-    does not contain a single int value.
-*)
-let xml_child_to_int (xml : tree) : int =
-  match xml with
-  | (Node (_, [IValue n])) -> n
-  | _ -> conversion_failure __FUNCTION__ xml
-
-let xml_to_tagged_int (tag_name : string) (children : tree list) : int =
-  find_tag tag_name children |> xml_child_to_int
 
 (** Use this in conjunction with List.filter_map on children of a node to get
     all references of various types.
@@ -256,13 +247,10 @@ type formal_param_node = {
 }
 [@@deriving show]
 
-let xml_to_formal_param_node xml =
-  match xml with
-  | Node ("FormalParamNode", children) -> (
-    match extract_inline_node children with
-    | node, [Node ("uniquename", [SValue name]); Node ("arity", [IValue arity])] -> {node; name; arity}
-    | _ -> conversion_failure __FUNCTION__ xml)
-  | _ -> conversion_failure __FUNCTION__ xml
+let xml_to_formal_param_node (children : tree list) : formal_param_node =
+  match extract_inline_node children with
+  | node, [Node ("uniquename", [SValue name]); Node ("arity", [IValue arity])] -> {node; name; arity}
+  | _ -> ls_conversion_failure __FUNCTION__ children
 
 type unbound_symbol = {
   symbol_ref : int;
@@ -389,11 +377,7 @@ and xml_to_expr_or_op_arg (xml : tree) : expr_or_op_arg =
   match xml with
   | Node ("OpArgNode", children) -> (
     match extract_inline_node children with
-    | node, [Node ("argument", [argument])] -> (
-      match get_ref_opt argument with
-      | Some uid -> OpArg uid
-      | None -> conversion_failure __FUNCTION__ argument
-    )
+    | node, [Node ("argument", [argument])] -> OpArg (get_ref argument)
     | _ -> conversion_failure __FUNCTION__ xml
   )
   | _ -> Expression (xml_to_expression xml)
@@ -642,16 +626,21 @@ type built_in_kind = {
 }
 [@@deriving show]
 
-let xml_to_built_in_kind xml : built_in_kind =
-  match xml with
-  | Node ("BuiltInKind", children) ->
-    let (node, children) = extract_inline_node children in {
+let xml_to_built_in_kind (children : tree list) : built_in_kind =
+  match extract_inline_node children with
+  | node, [Node ("uniquename", [SValue name]); Node ("arity", [IValue arity]); Node ("params", params)] -> {
       node;
-      name       = children |> xml_to_tagged_string "uniquename";
-      arity      = children |> xml_to_tagged_int "arity";
-      params     = children |> List.find_opt (is_tag "params") |> Option.map children_of |> Option.value ~default:[] |> List.map xml_to_leibniz_param;
+      name;
+      arity;
+      params = List.map xml_to_leibniz_param params;
     }
-  | _ -> conversion_failure __FUNCTION__ xml
+  | node, [Node ("uniquename", [SValue name]); Node ("arity", [IValue arity])] -> {
+      node;
+      name;
+      arity;
+      params = [];
+    }
+  | _ -> ls_conversion_failure __FUNCTION__ children
 
 type assume_def_node = {
   node        : node;
@@ -692,17 +681,14 @@ type theorem_def_node = {
 }
 [@@deriving show]
 
-let xml_to_theorem_def_node xml =
-  match xml with
-  | Node ("TheoremDefNode", children) -> (
-    match extract_inline_node children with
-    | node, [Node ("uniquename", [SValue name]); body] -> {
-      node;
-      name;
-      body = xml_to_expr_or_assume_prove body
-    }
-    | _ -> conversion_failure __FUNCTION__ xml)
-  | _ -> conversion_failure __FUNCTION__ xml
+let xml_to_theorem_def_node (children : tree list) : theorem_def_node =
+  match extract_inline_node children with
+  | node, [Node ("uniquename", [SValue name]); body] -> {
+    node;
+    name;
+    body = xml_to_expr_or_assume_prove body
+  }
+| _ -> ls_conversion_failure __FUNCTION__ children
 
 type by_proof_node = {
   node  : node;
@@ -737,10 +723,8 @@ type proof_step_group =
   | TheoremNodeRef of int
   | DefStep of def_proof_step
   | UseOrHide of use_or_hide_node
-  (* TODO
-  | InstanceNode
+  | InstanceNode of instance_node
   | TheoremNode
-  *)
 [@@deriving show]
 
 type steps_proof_node = {
@@ -755,6 +739,7 @@ let xml_to_steps_proof_node (children : tree list) : steps_proof_node =
     | Node ("TheoremNodeRef", [Node ("UID", [IValue uid])]) -> TheoremNodeRef uid
     | Node ("DefStepNode", children) -> DefStep (xml_to_def_proof_step children)
     | Node ("UseOrHideNode", children) -> UseOrHide (xml_to_use_or_hide_node children)
+    | Node ("InstanceNode", children) -> InstanceNode (xml_to_instance_node children)
     | _ -> conversion_failure __FUNCTION__ xml
   in match extract_inline_node children with
   | node, steps ->{
@@ -769,15 +754,6 @@ type proof_node_group =
   | Steps of steps_proof_node
 [@@deriving show]
 
-let xml_to_inline_proof_node_group (children : tree list) : proof_node_group option =
-  match children with
-  | Node ("omitted", children)  :: _ -> let (node, _) = extract_inline_node children in Some (Omitted node)
-  | Node ("obvious", children)  :: _ -> let (node, _) = extract_inline_node children in Some (Obvious node)
-  | Node ("by", children)       :: _ -> Some (By (xml_to_by_proof_node children))
-  | Node ("steps", children)    :: _ -> Some (Steps (xml_to_steps_proof_node children))
-  | [] -> None
-  | _ -> ls_conversion_failure __FUNCTION__ children
-
 type theorem_node = {
   node        : node;
   definition  : int option;
@@ -787,7 +763,15 @@ type theorem_node = {
 [@@deriving show]
 
 let xml_to_theorem_node (children : tree list) : theorem_node =
-  match children |> extract_inline_node |> extract_inline_definition_opt with
+  let xml_to_inline_proof_node_group (children : tree list) : proof_node_group option =
+    match children with
+    | Node ("omitted", children)  :: _ -> let (node, _) = extract_inline_node children in Some (Omitted node)
+    | Node ("obvious", children)  :: _ -> let (node, _) = extract_inline_node children in Some (Obvious node)
+    | Node ("by", children)       :: _ -> Some (By (xml_to_by_proof_node children))
+    | Node ("steps", children)    :: _ -> Some (Steps (xml_to_steps_proof_node children))
+    | [] -> None
+    | _ -> ls_conversion_failure __FUNCTION__ children
+  in match children |> extract_inline_node |> extract_inline_definition_opt with
   | node, definition, Node ("body", [body]) :: proof -> {
       node;
       definition;
@@ -815,9 +799,9 @@ let xml_to_entry_kind (xml : tree) : entry_kind =
   | Node ("AssumeDef", children)  -> AssumeDefNode (xml_to_assume_def_node children)
   | Node ("OpDeclNode", children) -> OpDeclNode (xml_to_op_decl_node children)
   | Node ("UserDefinedOpKind", children) -> UserDefinedOpKind (xml_to_user_defined_op_kind children)
-  | Node ("BuiltInKind", _)       -> BuiltInKind (xml_to_built_in_kind xml)
-  | Node ("FormalParamNode", _)   -> FormalParamNode (xml_to_formal_param_node xml)
-  | Node ("TheoremDefNode", _)    -> TheoremDefNode (xml_to_theorem_def_node xml)
+  | Node ("BuiltInKind", children) -> BuiltInKind (xml_to_built_in_kind children)
+  | Node ("FormalParamNode", children) -> FormalParamNode (xml_to_formal_param_node children)
+  | Node ("TheoremDefNode", children) -> TheoremDefNode (xml_to_theorem_def_node children)
   | Node ("TheoremNode", children)-> TheoremNode (xml_to_theorem_node children)
   | _ -> conversion_failure __FUNCTION__ xml
 

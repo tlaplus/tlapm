@@ -169,10 +169,19 @@ let resolve_module_node (uid : int) : Xml.module_node =
   | ModuleNode mule -> mule
   | _ -> conversion_failure ("Expected module node for UID: " ^ string_of_int uid) None
 
+(** A typed version of resolve_ref for operator declaration nodes.
+*)
 let resolve_op_decl_node (uid : int) : Xml.op_decl_node =
   match (resolve_ref uid).kind with
   | OpDeclNode odn -> odn
   | _ -> conversion_failure ("Expected operator declaration node for UID: " ^ string_of_int uid) None
+
+(** A typed version of resolve_ref for user-defined operators.
+*)
+let resolve_user_defined_op_kind (uid : int) : Xml.user_defined_op_kind =
+  match (resolve_ref uid).kind with
+  | UserDefinedOpKind udok -> udok
+  | _ -> conversion_failure ("Expected user defined operator for UID: " ^ string_of_int uid) None
 
 (** A typed version of resolve_ref for operator parameter nodes.
 *)
@@ -922,6 +931,18 @@ and convert_proof (uid : int) (previous_proof_level : int) (proof : Xml.proof_no
   | Some By proof -> convert_by_proof proof |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
   | Some Steps proof -> convert_proof_steps uid previous_proof_level proof
 
+(** Converts proofs of the form BY x, y, z DEF a, b, c. This is another place
+    where information is lost, as the facts and definitions are converted to
+    strings that will need to be resolved to De Bruijn indices later on.
+*)
+and convert_by_proof ({node; facts; defs} : Xml.by_proof_node) : Proof.T.proof =
+  By ({
+    facts = List.map convert_expression facts;
+    defs = List.map (resolve_def node) defs;
+  },
+  true (* This should be true if the ONLY keyword is present *)
+) |> attach_props node
+
 (** One possible proof form is a series of steps, culminating in a QED step.
     This method converts that structure. This is the most complex part of the
     proof conversion, primarily due to the necessity of appending proof step
@@ -936,29 +957,17 @@ and convert_proof (uid : int) (previous_proof_level : int) (proof : Xml.proof_no
     AST node.
 *)
 and convert_proof_steps (uid : int) (previous_proof_level : int) ({node; steps} : Xml.steps_proof_node) : Proof.T.proof =
-  let rec split_steps (steps : Xml.proof_step_group list) : (Xml.proof_step_group list * Xml.proof_step_group) =
+  (* Splits the proof steps into ordinary proof steps and a final QED step. *)
+  let split_steps (steps : Xml.proof_step_group list) : (Xml.proof_step_group list * int) =
     match List.rev steps with
     | [] -> conversion_failure "Step-based proofs must have at least one step" node.location
-    | last :: rest -> (List.rev rest, last)
-  in let convert_proof_step (steps, proof_level : Proof.T.step list * proof_level) (step : Xml.proof_step_group) : Proof.T.step list * proof_level =
-    match step with
-    (* TODO: handle other proof step types *)
-    | TheoremNodeRef uid ->
-      let thm = resolve_theorem_node uid in
-      let step_name = convert_proof_step_name uid proof_level thm.definition in
-      let step = Suffices (convert_sequent thm.body, convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node in
-      attach_proof_step_name step_name step :: steps, Known (step_number step_name)
-    | DefStep {node; def_refs} -> todo "Proof Step" "DefStepNode" node.location
-    (* TODO: confirm boolean parameter corresponds to ONLY keyword *)
-    | UseOrHide use_or_hide -> (Use (convert_usable use_or_hide, use_or_hide.only) |> attach_props use_or_hide.node) :: steps, proof_level
-  in let convert_qed_step (proof_level : proof_level) (step : Xml.proof_step_group) : Proof.T.qed_step * proof_level =
-    match step with
-    | TheoremNodeRef uid ->
-      let thm = resolve_theorem_node uid in
-      let step_name = convert_proof_step_name uid proof_level thm.definition in
-      let qed_step = Qed (convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node in
-      (attach_proof_step_name step_name qed_step, Known (step_number step_name))
-    | _ -> conversion_failure "Final proof step must be a theorem reference (QED)" node.location
+    | TheoremNodeRef uid :: rest -> (List.rev rest, uid)
+    | _ -> conversion_failure "Final (QED) step of a step-based proof must be a theorem reference" node.location
+  in let convert_qed_step (proof_level : proof_level) (uid : int) : Proof.T.qed_step * proof_level =
+    let thm = resolve_theorem_node uid in
+    let step_name = convert_proof_step_name uid proof_level thm.definition in
+    let qed_step = Qed (convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node in
+    attach_proof_step_name step_name qed_step, Known (step_number step_name)
   in let steps, qed = split_steps steps
   in let steps, proof_level = List.fold_left convert_proof_step ([], Previous previous_proof_level) steps
   in let qed_step, proof_level = convert_qed_step proof_level qed
@@ -969,17 +978,47 @@ and convert_proof_steps (uid : int) (previous_proof_level : int) ({node; steps} 
   |> attach_props node
   |> attach_proof_step_name (Unnamed (proof_level, uid))
 
-(** Converts proofs of the form BY x, y, z DEF a, b, c. This is another place
-    where information is lost, as the facts and definitions are converted to
-    strings that will need to be resolved to De Bruijn indices later on.
+(** Converts a specific proof step into the Proof.T.step variant expected by
+    TLAPM. While TLAPM has thirteen proof variants as of this writing, SANY
+    bundles everything into only five: DefStepNode (where the user introduces 
+    new operator definitions into scope), UseOrHideNode, InstanceNode (removed
+    from TLA+; see https://github.com/tlaplus/rfcs/issues/18), TheoremNodeRef,
+    and TheoremNode. In keeping with the odd duplication of purpose between
+    TheoremDefNode and TheoremNode, the TheoremNode type is not believed to be
+    used. TheoremNodeRef is the real workhorse proof step type, as it is used
+    for all proof step types that can have sub-proofs. The specific proof step
+    subtype is identified by a special built-in operator as the theorem body.
+
+    This function has an odd type signature because it's intended for use in
+    a List.fold_left over the list of proof steps; the reason we need to do
+    this is to identify the proof level of this proof by parsing the actual
+    proof step names, then propagating this knowledge forward in the fold.
+    The resulting list of proof steps is returned in reverse order, and must
+    be reversed to be in the correct order for TLAPM.
 *)
-and convert_by_proof ({node; facts; defs} : Xml.by_proof_node) : Proof.T.proof =
-  By ({
-    facts = List.map convert_expression facts;
-    defs = List.map (resolve_def node) defs;
-  },
-  true (* This should be true if the ONLY keyword is present *)
-) |> attach_props node
+and convert_proof_step (steps, proof_level : Proof.T.step list * proof_level) (step : Xml.proof_step_group) : Proof.T.step list * proof_level =
+  match step with
+  | InstanceNode {node} -> conversion_failure "INSTANCE proof steps are deprecated from the TLA+ language standard" node.location
+  | TheoremNode -> todo "TheoremNode proof step" "" None
+  (* TODO: attach name to DefStep step *)
+  | DefStep {node; def_refs} ->
+    let step = Define (def_refs |> List.map resolve_user_defined_op_kind |> List.map convert_user_defined_op_kind) |> attach_props node in
+    step :: steps, proof_level
+  (* TODO: confirm boolean parameter corresponds to ONLY keyword *)
+  (* TODO: attach name to UseOrHide step *)
+  | UseOrHide use_or_hide -> (Use (convert_usable use_or_hide, use_or_hide.only) |> attach_props use_or_hide.node) :: steps, proof_level
+  | TheoremNodeRef uid ->
+    let is_op (uid : int) (op_name : string) : bool =
+      match (resolve_ref uid).kind with
+      | BuiltInKind op when op.name = op_name -> true
+      | _ -> false
+    in let thm = resolve_theorem_node uid in
+    let step_name = convert_proof_step_name uid proof_level thm.definition in
+    let step = match thm.body with
+    | Expression OpApplNode {operands = [Expression expr]; operator} when is_op operator "$Pfcase" ->
+        Pcase (convert_expression expr, convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node
+    | _ -> Suffices (convert_sequent thm.body, convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node
+    in attach_proof_step_name step_name step :: steps, Known (step_number step_name)
 
 (** The top-level method converting the entire SANY AST to TLAPM's AST. SANY
     uses a lot of GUIDs for one entity to reference another, so we load those
