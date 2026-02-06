@@ -1014,11 +1014,34 @@ and convert_proof_step (steps, proof_level : Proof.T.step list * proof_level) (s
       | _ -> false
     in let thm = resolve_theorem_node uid in
     let step_name = convert_proof_step_name uid proof_level thm.definition in
+    let proof = convert_proof uid (step_number step_name) thm.proof in
     let step = match thm.body with
-    | Expression OpApplNode {operands = [Expression expr]; operator} when is_op operator "$Pfcase" ->
-        Pcase (convert_expression expr, convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node
-    | _ -> Suffices (convert_sequent thm.body, convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node
-    in attach_proof_step_name step_name step :: steps, Known (step_number step_name)
+    | Expression OpApplNode ({operator} as apply) when is_op operator "$Pfcase" ->
+      convert_case_proof_step apply proof
+    | Expression OpApplNode ({operator} as apply) when is_op operator "$Pick" ->
+      convert_pick_proof_step apply proof
+    | _ -> Suffices (convert_sequent thm.body, proof)
+    in (step |> attach_props thm.node |> attach_proof_step_name step_name) :: steps, Known (step_number step_name)
+
+(** Converts CASE proof steps, like: <2>7. CASE UNCHANGED vars
+*)
+and convert_case_proof_step (apply : Xml.op_appl_node) (proof : Proof.T.proof) : Proof.T.step_ =
+  match apply.bound_symbols, apply.operands with
+  | [], [Expression expr] -> Pcase (convert_expression expr, proof)
+  | _ -> conversion_failure "Invalid operands to CASE proof step" apply.node.location
+
+(** Converts PICK proofs steps, like PICK i \in 1 .. Len(s) : P(i)
+    This is yet another conversion where quantifiers rear their tedious head.
+    In this case, only a single bound is supported.
+*)
+and convert_pick_proof_step (apply : Xml.op_appl_node) (proof : Proof.T.proof) : Proof.T.step_ = (
+  match apply.bound_symbols, apply.operands with
+  | [Bound ({is_tuple = false} as bound)], [Expression predicate] ->
+      Pick (convert_non_tuply_bounds apply.node bound, convert_expression predicate, proof)
+  | [Bound ({is_tuple = true} as bound)], [Expression predicate] ->
+      PickTuply (convert_tuply_bounds apply.node bound, convert_expression predicate, proof)
+  | _ -> conversion_failure "Invalid bounds or operands to PICK proof step" apply.node.location;
+)
 
 (** The top-level method converting the entire SANY AST to TLAPM's AST. SANY
     uses a lot of GUIDs for one entity to reference another, so we load those
