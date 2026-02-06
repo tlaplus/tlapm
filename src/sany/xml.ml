@@ -69,7 +69,7 @@ let ls_conversion_failure (fn_name : string) (children : tree list) : 'a =
 *)
 let is_tag (tag_name : string) (node : tree) : bool =
   match node with
-  | Node (name, _) -> String.equal name tag_name
+  | Node (name, _) when name = tag_name -> true
   | _ -> false
 
 (** Utility function that simply returns the children of an XML node. Raises
@@ -89,22 +89,35 @@ let child_of (xml : tree) : tree =
   | Node (_, _) -> Invalid_argument (Printf.sprintf "Require single child of node %s" (show_tree xml)) |> raise
   | _ -> Invalid_argument (Printf.sprintf "Cannot get children of node %s" (show_tree xml)) |> raise
 
+(** Searches for an optional tag in the children of an XML node.
+*)
+let find_tag_opt (tag_name : string) (children : tree list) : tree option =
+  List.find_opt (is_tag tag_name) children
+
 (** Searches for a tag in the children of an XML node, and raises a detailed
     exception if it is not found.
 *)
 let find_tag (tag_name : string) (children : tree list) : tree =
-  match List.find_opt (is_tag tag_name) children with
+  match find_tag_opt tag_name children with
   | Some v -> v
   | None -> ls_conversion_failure __FUNCTION__ children
+
+(** Utility function to extract the string value from a tagged XML node which
+    may or may not be present.
+*)
+let xml_to_tagged_string_opt (tag_name : string) (children : tree list) : string option =
+  match find_tag_opt tag_name children with
+  | Some (Node (_, [SValue s])) -> Some s
+  | _ -> None
 
 (** Utility function to extract the string value from a tagged XML node.
     Raises a detailed exception if the tag is not found or if the tagged node
     does not contain a single string value.
 *)
 let xml_to_tagged_string (tag_name : string) (children : tree list) : string =
-  match find_tag tag_name children with
-  | (Node (_, [SValue s])) -> s
-  | xml -> conversion_failure __FUNCTION__ xml
+  match xml_to_tagged_string_opt tag_name children with
+  | Some s -> s
+  | None -> ls_conversion_failure __FUNCTION__ children
 
 (** Utility function to extract the int value from a tagged XML node.
     Raises a detailed exception if the tag is not found or if the tagged node
@@ -319,6 +332,7 @@ and user_defined_op_kind = {
   node        : node;
   name        : string;
   arity       : int;
+  precomments : string option;
   body        : expression;
   params      : leibniz_param list;
   recursive   : bool;
@@ -349,17 +363,27 @@ and expr_or_assume_prove =
 let rec xml_to_symbols xml =
   match xml with
   | Node ("unbound", _) -> Unbound (xml_to_unbound_symbol xml)
-  | Node ("bound", _) -> Bound (xml_to_bound_symbol xml)
+  | Node ("bound", children) -> Bound (xml_to_bound_symbol children)
   | _ -> conversion_failure __FUNCTION__ xml
 
-and xml_to_bound_symbol xml =
-  match xml with
-  | Node ("bound", children) -> {
-    symbol_refs = children |> List.filter_map get_ref_opt;
-    is_tuple = children |> List.exists (is_tag "tuple");
-    expression = children |> xml_to_inline_expression |> Option.get;
-  }
-  | _ -> conversion_failure __FUNCTION__ xml
+and xml_to_bound_symbol (children : tree list) : bound_symbol =
+  let rec consume_symbol_refs (acc : int list) (children : tree list) : int list * tree list =
+    match children with
+    | Node ("FormalParamNodeRef", [Node ("UID", [IValue symbol_ref])]) :: rest ->
+      consume_symbol_refs (symbol_ref :: acc) rest
+    | _ -> (List.rev acc, children)
+  in match consume_symbol_refs [] children with
+  | symbol_refs, [Node ("tuple", _); expression] -> {
+      symbol_refs;
+      is_tuple = true;
+      expression = xml_to_expression expression;
+    }
+  | symbol_refs, [expression] -> {
+      symbol_refs;
+      is_tuple = false;
+      expression = xml_to_expression expression;
+    }
+  | _ -> ls_conversion_failure __FUNCTION__ children
 
 and xml_to_expr_or_op_arg (xml : tree) : expr_or_op_arg =
   match xml with
@@ -462,23 +486,18 @@ and xml_to_expression (xml : tree) : expression =
   | Node ("LabelNode", children) -> LabelNode (xml_to_label_node children)
   | _ -> conversion_failure __FUNCTION__ xml
 
-and xml_to_inline_expression children =
-  children
-  |> List.find_opt (fun xml -> is_tag "NumeralNode" xml || is_tag "OpApplNode" xml)
-  |> Option.map xml_to_expression
-
-and xml_to_user_defined_op_kind xml : user_defined_op_kind =
-  match xml with
-  | Node ("UserDefinedOpKind", children) ->
-    let (node, children) = extract_inline_node children in {
+and xml_to_user_defined_op_kind (children : tree list) : user_defined_op_kind =
+  match extract_inline_node children with
+  | node, Node ("uniquename", [SValue name]) :: Node ("arity", [IValue arity]) :: children -> {
       node;
-      name        = children |> xml_to_tagged_string  "uniquename";
-      arity       = children |> xml_to_tagged_int     "arity";
+      name;
+      arity;
+      precomments = children |> xml_to_tagged_string_opt "pre-comments";
       body        = children |> find_tag "body" |> child_of |> xml_to_expression;
-      params      = children |> List.find_opt (is_tag "params") |> Option.map children_of |> Option.value ~default:[] |> List.map xml_to_leibniz_param;
+      params      = children |> find_tag "params" |> children_of |> List.map xml_to_leibniz_param;
       recursive   = children |> List.exists (is_tag "recursive");
     }
-  | _ -> conversion_failure __FUNCTION__ xml
+  | _ -> ls_conversion_failure __FUNCTION__ children
 
 type substitution = {
   target_uid : int;
@@ -574,24 +593,46 @@ let xml_to_module_node (children : tree list) : module_node =
   }
   | _ -> ls_conversion_failure __FUNCTION__ children
 
+type declaration_kind =
+  | Constant
+  | Variable
+  | BoundSymbol
+  | NewConstant
+  | NewVariable
+  | NewState
+  | NewAction
+  | NewTemporal
+[@@deriving show]
+
+let xml_to_declaration_kind (kind : int) : declaration_kind =
+  match kind with
+  | 2 -> Constant
+  | 3 -> Variable
+  | 4 -> BoundSymbol
+  | 24 -> NewConstant
+  | 25 -> NewVariable
+  | 26 -> NewState
+  | 27 -> NewAction
+  | 28 -> NewTemporal
+  | _ -> conversion_failure __FUNCTION__ (IValue kind)
+
 type op_decl_node = {
   node  : node;
   name  : string;
   arity : int;
-  kind  : int;
+  kind  : declaration_kind;
 }
 [@@deriving show]
 
-let xml_to_op_decl_node (xml : tree) : op_decl_node =
-  match xml with
-  | Node ("OpDeclNode", children) ->
-    let (node, children) = extract_inline_node children in {
+let xml_to_op_decl_node (children : tree list) : op_decl_node =
+  match extract_inline_node children with
+  | node, [Node ("uniquename", [SValue name]); Node ("arity", [IValue arity]); Node ("kind", [IValue kind])] -> {
       node;
-      name = children |> xml_to_tagged_string "uniquename";
-      arity = children |> xml_to_tagged_int "arity";
-      kind = children |> xml_to_tagged_int "kind";
+      name;
+      arity;
+      kind = xml_to_declaration_kind kind;
     }
-  | _ -> conversion_failure __FUNCTION__ xml
+  | _ -> ls_conversion_failure __FUNCTION__ children
 
 type built_in_kind = {
   node       : node;
@@ -772,8 +813,8 @@ let xml_to_entry_kind (xml : tree) : entry_kind =
   | Node ("ModuleNode", children) -> ModuleNode (xml_to_module_node children)
   | Node ("AssumeNode", children) -> AssumeNode (xml_to_assume_node children)
   | Node ("AssumeDef", children)  -> AssumeDefNode (xml_to_assume_def_node children)
-  | Node ("OpDeclNode", _)        -> OpDeclNode (xml_to_op_decl_node xml)
-  | Node ("UserDefinedOpKind", _) -> UserDefinedOpKind (xml_to_user_defined_op_kind xml)
+  | Node ("OpDeclNode", children) -> OpDeclNode (xml_to_op_decl_node children)
+  | Node ("UserDefinedOpKind", children) -> UserDefinedOpKind (xml_to_user_defined_op_kind children)
   | Node ("BuiltInKind", _)       -> BuiltInKind (xml_to_built_in_kind xml)
   | Node ("FormalParamNode", _)   -> FormalParamNode (xml_to_formal_param_node xml)
   | Node ("TheoremDefNode", _)    -> TheoremDefNode (xml_to_theorem_def_node xml)

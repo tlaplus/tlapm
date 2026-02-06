@@ -400,9 +400,9 @@ and convert_assume_node (assume : Xml.assume_node) : Module.T.modunit =
 *)
 and convert_op_decl_node (xml : Xml.op_decl_node) : Module.T.modunit =
   match xml.kind with
-  | 2 -> attach_props xml.node (Constants [attach_props xml.node xml.name, match xml.arity with | 0 -> Shape_expr | n -> Shape_op n])
-  | 3 -> attach_props xml.node (Variables [attach_props xml.node xml.name])
-  | _ -> todo "Operator declaration kind" (string_of_int xml.kind) xml.node.location
+  | Constant -> attach_props xml.node (Constants [attach_props xml.node xml.name, match xml.arity with | 0 -> Shape_expr | n -> Shape_op n])
+  | Variable -> attach_props xml.node (Variables [attach_props xml.node xml.name])
+  | _ -> todo "Operator declaration kind" (Xml.show_declaration_kind xml.kind) xml.node.location
 
 (** Converts fairness expressions such as WF_sub(expr) and SF_sub(expr).
 *)
@@ -947,20 +947,18 @@ and convert_proof_steps (uid : int) (previous_proof_level : int) ({node; steps} 
       let thm = resolve_theorem_node uid in
       let step_name = convert_proof_step_name uid proof_level thm.definition in
       let step = Suffices (convert_sequent thm.body, convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node in
-      (attach_proof_step_name step_name step :: steps, Known (step_number step_name))
-    | DefStep def -> todo "Proof Step" "DefStepNode" None
+      attach_proof_step_name step_name step :: steps, Known (step_number step_name)
+    | DefStep {node; def_refs} -> todo "Proof Step" "DefStepNode" node.location
     (* TODO: confirm boolean parameter corresponds to ONLY keyword *)
-    | UseOrHide use_or_hide -> ((Use (convert_usable use_or_hide, use_or_hide.only) |> attach_props use_or_hide.node) :: steps, proof_level)
+    | UseOrHide use_or_hide -> (Use (convert_usable use_or_hide, use_or_hide.only) |> attach_props use_or_hide.node) :: steps, proof_level
   in let convert_qed_step (proof_level : proof_level) (step : Xml.proof_step_group) : Proof.T.qed_step * proof_level =
     match step with
-    (* TODO: handle other proof step types *)
     | TheoremNodeRef uid ->
       let thm = resolve_theorem_node uid in
       let step_name = convert_proof_step_name uid proof_level thm.definition in
       let qed_step = Qed (convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node in
       (attach_proof_step_name step_name qed_step, Known (step_number step_name))
-    | DefStep _ -> todo "QED" "DefStepNode" None
-    | UseOrHide _ -> todo "QED" "UseOrHide" None
+    | _ -> conversion_failure "Final proof step must be a theorem reference (QED)" node.location
   in let steps, qed = split_steps steps
   in let steps, proof_level = List.fold_left convert_proof_step ([], Previous previous_proof_level) steps
   in let qed_step, proof_level = convert_qed_step proof_level qed
