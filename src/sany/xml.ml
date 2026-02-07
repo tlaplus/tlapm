@@ -210,21 +210,15 @@ type 'a literal = {
 }
 [@@deriving show]
 
-let xml_to_numeral_node (xml : tree) : int literal =
-  match xml with
-  | Node ("NumeralNode", children) -> (
-    match extract_inline_node children with
-    | node, [Node ("IntValue", [IValue value])] -> {node; value}
-    | _ -> ls_conversion_failure __FUNCTION__ children)
-  | _ -> conversion_failure __FUNCTION__ xml
+let xml_to_numeral_node (children : tree list) : int literal =
+  match extract_inline_node children with
+  | node, [Node ("IntValue", [IValue value])] -> {node; value}
+  | _ -> ls_conversion_failure __FUNCTION__ children
 
-let xml_to_string_node (xml : tree) : string literal =
-  match xml with
-  | Node ("StringNode", children) -> (
-    match extract_inline_node children with
-    | node, [Node ("StringValue", [SValue value])] -> {node; value}
-    | _ -> ls_conversion_failure __FUNCTION__ children)
-  | _ -> conversion_failure __FUNCTION__ xml
+let xml_to_string_node (children : tree list) : string literal =
+  match extract_inline_node children with
+  | node, [Node ("StringValue", [SValue value])] -> {node; value}
+  | _ -> ls_conversion_failure __FUNCTION__ children
 
 type leibniz_param = {
   ref         : int;
@@ -290,17 +284,21 @@ and label_node = {
   parameters  : int list
 }
 
+and subst_in_node = {
+  node : node;
+}
+
 and expression =
   | AtNode of at_node
-(*| DecimalNode of decimal_node*)
+  | DecimalNode of int * int
   | LabelNode of label_node
   | LetInNode of let_in_node
   | NumeralNode of int literal
   | OpApplNode of op_appl_node
   | StringNode of string literal
-(*| SubstInNode of subst_in_node*)
-(*| TheoremDefRef of theorem_def_ref*)
-(*| AssumeDefRef of assume_def_ref*)
+  | SubstInNode of subst_in_node
+  | TheoremDefRef of int
+  | AssumeDefRef of int
 
 and expr_or_op_arg =
   | Expression of expression
@@ -460,14 +458,22 @@ and xml_to_expr_or_assume_prove (xml : tree) : expr_or_assume_prove =
   | Node ("AssumeProveNode", children) -> AssumeProve (xml_to_assume_prove_node children)
   | expr -> Expression (xml_to_expression expr)
 
+and xml_to_subst_in_node (children : tree list) : subst_in_node =
+  match extract_inline_node children with
+  | node, _ -> {node}
+
 and xml_to_expression (xml : tree) : expression =
   match xml with
-  | Node ("NumeralNode", _) -> NumeralNode (xml_to_numeral_node xml)
-  | Node ("StringNode", _) -> StringNode (xml_to_string_node xml)
-  | Node ("OpApplNode", children) -> OpApplNode (xml_to_op_appl_node children)
-  | Node ("LetInNode", children) -> LetInNode (xml_to_let_in_node children)
   | Node ("AtNode", children) -> AtNode (xml_to_at_node children)
+  | Node ("DecimalNode", [Node ("mantissa", [IValue mantissa]); Node ("exponent", [IValue exponent])]) -> DecimalNode (mantissa, exponent)
   | Node ("LabelNode", children) -> LabelNode (xml_to_label_node children)
+  | Node ("LetInNode", children) -> LetInNode (xml_to_let_in_node children)
+  | Node ("NumeralNode", children) -> NumeralNode (xml_to_numeral_node children)
+  | Node ("OpApplNode", children) -> OpApplNode (xml_to_op_appl_node children)
+  | Node ("StringNode", children) -> StringNode (xml_to_string_node children)
+  | Node ("SubstInNode", children) -> SubstInNode (xml_to_subst_in_node children)
+  | Node ("TheoremDefRef", [Node ("UID", [IValue uid])]) -> TheoremDefRef uid
+  | Node ("AssumeDefRef", [Node ("UID", [IValue uid])]) -> AssumeDefRef uid
   | _ -> conversion_failure __FUNCTION__ xml
 
 and xml_to_user_defined_op_kind (children : tree list) : user_defined_op_kind =

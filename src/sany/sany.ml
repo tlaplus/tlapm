@@ -805,6 +805,8 @@ and convert_op_appl_node (apply : Xml.op_appl_node) : Expr.T.expr =
   | OpDeclNode decl -> convert_op_decl_node_op_appl apply decl
   (* A reference to a named THEOREM or a proof step *)
   | TheoremDefNode thm -> Opaque thm.name |> attach_props thm.node
+  (* A reference to a named ASSUME node *)
+  | AssumeDefNode assume -> Opaque assume.name |> attach_props assume.node
   | _ -> conversion_failure ("Invalid operator reference in OpApplNode : " ^ (Xml.show_entry_kind op_kind)) apply.node.location
 
 (** Some places in TLA⁺ syntax allow both normal expressions and also
@@ -834,13 +836,17 @@ and convert_expression_or_operator_argument (op_expr : Xml.expr_or_op_arg) : Exp
 *)
 and convert_expression (expr : Xml.expression) : Expr.T.expr =
   match expr with
-  | NumeralNode n -> Num (Int.to_string n.value, "") |> attach_props n.node
-  | StringNode s -> String s.value |> attach_props s.node
-  | OpApplNode apply -> convert_op_appl_node apply
-  | LetInNode let_in -> convert_let_in_node let_in
-  | LabelNode label -> convert_label label
   (* TODO: true means @ from EXCEPT, false means @ from proof step (???) *)
   | AtNode at_node -> At true |> attach_props at_node.node
+  | DecimalNode (mantissa, exponent) -> todo "Decimal literals" (Int.to_string mantissa ^ "e" ^ Int.to_string exponent) None
+  | LabelNode label -> convert_label label
+  | LetInNode let_in -> convert_let_in_node let_in
+  | NumeralNode n -> Num (Int.to_string n.value, "") |> attach_props n.node
+  | OpApplNode apply -> convert_op_appl_node apply
+  | StringNode s -> String s.value |> attach_props s.node
+  | SubstInNode subst -> todo "SubstInNode" "" subst.node.location
+  | TheoremDefRef uid -> todo "Expression" "TheoremDefRef" None
+  | AssumeDefRef uid -> todo "Expression" "AssumeDefRef" None
 
 and convert_label (label : Xml.label_node) : Expr.T.expr = (
   match label.body with
@@ -1034,14 +1040,13 @@ and convert_case_proof_step (apply : Xml.op_appl_node) (proof : Proof.T.proof) :
     This is yet another conversion where quantifiers rear their tedious head.
     In this case, only a single bound is supported.
 *)
-and convert_pick_proof_step (apply : Xml.op_appl_node) (proof : Proof.T.proof) : Proof.T.step_ = (
+and convert_pick_proof_step (apply : Xml.op_appl_node) (proof : Proof.T.proof) : Proof.T.step_ =
   match apply.bound_symbols, apply.operands with
   | [Bound ({is_tuple = false} as bound)], [Expression predicate] ->
       Pick (convert_non_tuply_bounds apply.node bound, convert_expression predicate, proof)
   | [Bound ({is_tuple = true} as bound)], [Expression predicate] ->
       PickTuply (convert_tuply_bounds apply.node bound, convert_expression predicate, proof)
-  | _ -> conversion_failure "Invalid bounds or operands to PICK proof step" apply.node.location;
-)
+  | _ -> conversion_failure "Invalid bounds or operands to PICK proof step" apply.node.location
 
 (** The top-level method converting the entire SANY AST to TLAPM's AST. SANY
     uses a lot of GUIDs for one entity to reference another, so we load those
