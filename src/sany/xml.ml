@@ -286,6 +286,15 @@ and label_node = {
 
 and subst_in_node = {
   node : node;
+  substitutions : substitution list;
+  body : expression;
+  instance_from_mule_ref : int;
+  instance_to_mule_ref : int;
+}
+
+and substitution = {
+  target_uid : int;
+  substitute : expr_or_op_arg;
 }
 
 and expression =
@@ -330,6 +339,10 @@ and assume_prove_node = {
   prove       : expression;
 }
 
+and assume_prove_like =
+  | AssumeProveNode of assume_prove_node
+  | AssumeProveSubstitution of subst_in_node
+
 and new_symbol_node = {
   node        : node;
   symbol_ref  : int;
@@ -338,12 +351,12 @@ and new_symbol_node = {
 
 and assumption_kind =
   | Expression of expression
-  | AssumeProve of assume_prove_node
+  | AssumeProveLike of assume_prove_like
   | NewSymbol of new_symbol_node
 
 and expr_or_assume_prove =
   | Expression of expression
-  | AssumeProve of assume_prove_node
+  | AssumeProveLike of assume_prove_like
 [@@deriving show]
 
 let rec xml_to_symbols xml =
@@ -435,7 +448,7 @@ and xml_to_assume_prove_node (children : tree list) : assume_prove_node =
 
 and xml_to_assumption_kind (xml : tree) : assumption_kind =
   match xml with
-  | Node ("AssumeProveNode", children) -> AssumeProve (xml_to_assume_prove_node children)
+  | Node ("AssumeProveNode", children) -> AssumeProveLike (AssumeProveNode (xml_to_assume_prove_node children))
   | Node ("NewSymbNode", children) -> NewSymbol (xml_to_new_symbol_node children)
   | expr -> Expression (xml_to_expression expr)
 
@@ -455,12 +468,32 @@ and xml_to_new_symbol_node (children : tree list) : new_symbol_node =
 
 and xml_to_expr_or_assume_prove (xml : tree) : expr_or_assume_prove =
   match xml with
-  | Node ("AssumeProveNode", children) -> AssumeProve (xml_to_assume_prove_node children)
+  | Node ("AssumeProveNode", children) -> AssumeProveLike (AssumeProveNode (xml_to_assume_prove_node children))
+  | Node ("APSubstInNode", children) -> AssumeProveLike (AssumeProveSubstitution (xml_to_subst_in_node children))
   | expr -> Expression (xml_to_expression expr)
+
+and xml_to_substitution (xml : tree) : substitution =
+  match xml with
+  | Node ("Subst", [Node ("OpDeclNodeRef", [Node ("UID", [IValue target_uid])]); substitute]) -> {
+      target_uid;
+      substitute = xml_to_expr_or_op_arg substitute;
+    }
+  | _ -> conversion_failure __FUNCTION__ xml
 
 and xml_to_subst_in_node (children : tree list) : subst_in_node =
   match extract_inline_node children with
-  | node, _ -> {node}
+  | node, [
+    Node ("substs", substitutions);
+    Node ("body", [body]);
+    Node ("instFrom", [Node ("ModuleNodeRef", [Node ("UID", [IValue instance_from_mule_ref])])]);
+    Node ("instTo", [Node ("ModuleNodeRef", [Node ("UID", [IValue instance_to_mule_ref])])])] -> {
+      node;
+      substitutions = List.map xml_to_substitution substitutions;
+      body = xml_to_expression body;
+      instance_from_mule_ref;
+      instance_to_mule_ref
+    }
+  | _ -> ls_conversion_failure __FUNCTION__ children
 
 and xml_to_expression (xml : tree) : expression =
   match xml with
@@ -489,19 +522,7 @@ and xml_to_user_defined_op_kind (children : tree list) : user_defined_op_kind =
     }
   | _ -> ls_conversion_failure __FUNCTION__ children
 
-type substitution = {
-  target_uid : int;
-  substitute : expr_or_op_arg;
-}
 [@@deriving show]
-
-let xml_to_substitution (xml : tree) : substitution =
-  match xml with
-  | Node ("Subst", [Node ("OpDeclNodeRef", [Node ("UID", [IValue target_uid])]); substitute]) -> {
-      target_uid;
-      substitute = xml_to_expr_or_op_arg substitute;
-    }
-  | _ -> conversion_failure __FUNCTION__ xml
 
 type instance_node = {
   node          : node;
@@ -787,15 +808,15 @@ let xml_to_theorem_node (children : tree list) : theorem_node =
   | _ -> ls_conversion_failure __FUNCTION__ children
 
 type entry_kind =
+  | FormalParamNode of formal_param_node
   | ModuleNode of module_node
-  | AssumeNode of assume_node
-  | AssumeDefNode of assume_def_node
   | OpDeclNode of op_decl_node
+  | AssumeNode of assume_node
   | UserDefinedOpKind of user_defined_op_kind
   | BuiltInKind of built_in_kind
-  | FormalParamNode of formal_param_node
-  | TheoremDefNode of theorem_def_node
   | TheoremNode of theorem_node
+  | TheoremDefNode of theorem_def_node
+  | AssumeDefNode of assume_def_node
 [@@deriving show]
 
 let xml_to_entry_kind (xml : tree) : entry_kind =

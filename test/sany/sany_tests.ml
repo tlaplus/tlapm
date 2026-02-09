@@ -13,13 +13,30 @@ let find_tla_files dir =
   in
   loop []
 
+let has_substring needle haystack =
+  match Str.search_forward (Str.regexp_string needle) haystack 0 with
+  | _ -> true
+  | exception Not_found -> false
+
 let should_run (path : string) : bool =
   let preds = [
     (* RECURSIVE operators *)
     String.ends_with ~suffix:"Chameneos.tla";
+    String.ends_with ~suffix:"Stones.tla";
+    String.ends_with ~suffix:"glowingRaccoon/product.tla";
+    (* Subexpressions *)
+    String.ends_with ~suffix:"MCPaxos.tla";
+    String.ends_with ~suffix:"MCVoting.tla";
     (* Community modules *)
     String.ends_with ~suffix:"MCtcp.tla";
     String.ends_with ~suffix:"tcp.tla";
+    String.ends_with ~suffix:"MCReplicatedLog.tla";
+    String.ends_with ~suffix:"MCCRDT.tla";
+    String.ends_with ~suffix:"DistributedReplicatedLog.tla";
+    String.ends_with ~suffix:"SimTokenRing.tla";
+    String.ends_with ~suffix:"EWD687a_anim.tla";
+    String.ends_with ~suffix:"EWD687a.tla";
+    has_substring "/ewd998/";
   ] in not (List.exists (fun pred -> pred path) preds)
 
 let parse_tla_file filename =

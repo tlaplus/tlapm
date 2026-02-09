@@ -25,6 +25,24 @@
     abstract which is presented to us here. Thus the SANY AST has already
     been processed significantly, and we are translating it to a form that is
     comparatively much rougher & earlier in the parse process.
+    
+    There are two places in this conversion code where we revert to actually
+    just parsing the underlying "raw" TLA+ syntax from SANY's AST: proof names
+    and references to named instanced modules. We need to parse proof names
+    because we have to extract the proof level, which TLAPM expects as some
+    metadata attached to proof objects. SANY could possibly be modified to
+    export proof level data with its XML, but for now we just extract the
+    level from the proof name. We need to parse references to named instanced
+    modules because if a module is imported with M == INSTANCE Modname, all
+    definitions from Modname will be inlined in the importing module while
+    prefixed like M!Defname. This is mostly fine because TLAPM runs its own
+    De Bruijn-index-based name resolution algorithm, except for the case where
+    Defname == OtherDefname. Then when analyzing M!Defname, TLAPM will search
+    for OtherDefname instead of M!OtherDefname. Thus we need to "undo" the
+    SANY name resolution process further by filtering out all inlined operators
+    and breaking references like M!Defname down into [M; Defname] components.
+    We crudely do this by splitting on !, making allowances for the possibility
+    that the !! operator is used.
 
     Given these challenges, much SANY information such as identifier reference
     IDs and levels are attached as metadata to TLAPM AST nodes for use later
@@ -78,6 +96,12 @@ let convert_location ({column = (col_start, col_finish); line = (line_start, lin
   };
   file = filename ^ ".tla";
 }
+
+type bounds_kind =
+  | Tuply of tuply_bounds
+  | NonTuply of bounds
+
+type bound_
 
 type proof_level =
  | Previous of int
@@ -245,32 +269,49 @@ let convert_proof_step_name (uid : int) (proof_level : proof_level) (theorem_def
     | Known n -> Unnamed (n, uid)
 
 (** Converts built-in prefix, infix, and postfix operators along with keywords.
+    Also includes some standard module operators like + and -.
+    TODO: handle case where user overrides a standard module operator name.
 *)
 let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
   match builtin.name with
+  (* Reserved words *)
   | "TRUE" -> Some Builtin.TRUE
   | "FALSE" -> Some Builtin.FALSE
+  | "BOOLEAN" -> Some Builtin.BOOLEAN
   | "STRING" -> Some Builtin.STRING
-  | "DOMAIN" -> Some Builtin.DOMAIN
-  | "SUBSET" -> Some Builtin.SUBSET
-  | "UNCHANGED" -> Some Builtin.UNCHANGED
-  | "UNION" -> Some Builtin.UNION
+
+  (* Prefix operators *)
   | "\\lnot" -> Some Builtin.Neg
-  | "'" -> Some Builtin.Prime
+  | "UNION" -> Some Builtin.UNION
+  | "SUBSET" -> Some Builtin.SUBSET
+  | "DOMAIN" -> Some Builtin.DOMAIN
+  | "ENABLED" -> Some Builtin.ENABLED
+  | "UNCHANGED" -> Some Builtin.UNCHANGED
   | "[]" -> Some (Builtin.Box false)
   | "<>" -> Some Builtin.Diamond
-  | "=" -> Some Builtin.Eq
-  | "/=" -> Some Builtin.Neq
+  
+  (* Postfix operators *)
+  | "'" -> Some Builtin.Prime
+  
+  (* Infix operators *)
+  | "+" -> Some Builtin.Plus
+  | "-" -> Some Builtin.Minus
+  | "*" -> Some Builtin.Times
   | "\\in" -> Some Builtin.Mem
   | "\\notin" -> Some Builtin.Notmem
-  | "\\" -> Some Builtin.Setminus
-  | "\\union" -> Some Builtin.Cup
-  | "\\intersect" -> Some Builtin.Cap
-  | "\\subseteq" -> Some Builtin.Subseteq
-  | "\\land" -> Some Builtin.Conj
-  | "\\lor" -> Some Builtin.Disj
   | "=>" -> Some Builtin.Implies
   | "\\equiv" -> Some Builtin.Equiv
+  | "\\land" -> Some Builtin.Conj
+  | "\\lor" -> Some Builtin.Disj
+  | "=" -> Some Builtin.Eq
+  | "/=" -> Some Builtin.Neq
+  | "\\" -> Some Builtin.Setminus
+  | "\\intersect" -> Some Builtin.Cap
+  | "\\union" -> Some Builtin.Cup
+  | "\\subseteq" -> Some Builtin.Subseteq
+  | "~>" -> Some Builtin.Leadsto
+  | "\\cdot" -> Some Builtin.Cdot
+  | "-+->" -> Some Builtin.Actplus
   | _ -> None
 
 (** Conversion of application of all traditional built-in operators like = or
@@ -303,9 +344,11 @@ let rec convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_k
       apply.operands |> as_expr_ls "$CartesianProd" apply.node.location |> List.map convert_expression
     ) |> attach_props apply.node
     | "$WF" -> convert_fairness Weak apply
+    | "$SF" -> convert_fairness Strong apply
     | "$BoundedChoose" -> convert_choose apply
     | "$UnboundedChoose" -> convert_choose apply
     | "$SquareAct" -> convert_action_expr Box apply
+    | "$AngleAct" -> convert_action_expr Dia apply
     | "$BoundedExists" -> convert_quantification Exists apply
     | "$BoundedForall" -> convert_quantification Forall apply
     | "$UnboundedExists" -> convert_quantification Exists apply
@@ -314,7 +357,8 @@ let rec convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_k
     | "$SubsetOf" -> convert_set_filter apply
     | "$SetOfFcns" -> convert_function_set apply
     | "$FcnConstructor" -> convert_function_constructor apply
-    | "$RecursiveFcnSpec" -> convert_recursive_function apply
+    | "$RecursiveFcnSpec" -> convert_function_definition true apply
+    | "$NonRecursiveFcnSpec" -> convert_function_definition false apply
     | "$FcnApply" -> convert_function_application apply
     | "$SetOfRcds" -> convert_record_set apply
     | "$RcdConstructor" -> convert_record_constructor apply
@@ -479,6 +523,23 @@ and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr = (
   | _ -> conversion_failure "Invalid number of bounds or operands to CHOOSE" apply.node.location
 ) |> attach_props apply.node
 
+(** General utility function to convert the given bound symbol into a non-
+    tuple bound type.
+*)
+and convert_non_tuply_bounds (node : Xml.node) (bound : Xml.bound_symbol) : bounds =
+  if bound.is_tuple then conversion_failure "Tuple bound passed to non-tuple bound conversion" node.location else
+  match List.map resolve_bound_symbol bound.symbol_refs with
+  (* TODO: figure out meaning of "Unknown" parameter *)
+  | hd :: tl -> (hd, Unknown, Domain (convert_expression bound.expression))
+    :: List.map (fun s -> (s, Unknown, Ditto)) tl
+  | [] -> conversion_failure "Bound symbol groups must have at least one symbol" node.location
+
+(** General utility function to convert the given bound symbol into a tuply
+    bound type, regardless of whether it is of the form <<x, y>> \in S. If
+    even one quantifier bound in a list of quantifier bounds has tuple form,
+    then all must be put in the tuply_bounds type; see comment on the
+    convert_quantification function for more info.
+*)
 and convert_tuply_bounds (node : Xml.node) (bound : Xml.bound_symbol) : tuply_bounds =
   if bound.is_tuple
   then match List.map resolve_bound_symbol bound.symbol_refs with
@@ -489,11 +550,48 @@ and convert_tuply_bounds (node : Xml.node) (bound : Xml.bound_symbol) : tuply_bo
     :: List.map (fun s -> (Bound_name s, Ditto)) tl
   | [] -> conversion_failure "Bound symbol groups must have at least one symbol" node.location
 
-and convert_non_tuply_bounds (node : Xml.node) (bound : Xml.bound_symbol) : bounds =
-  match List.map resolve_bound_symbol bound.symbol_refs with
-  | hd :: tl -> (hd, Unknown, Domain (convert_expression bound.expression))
-    :: List.map (fun s -> (s, Unknown, Ditto)) tl
-  | [] -> conversion_failure "Bound symbol groups must have at least one symbol" node.location
+(** General utility function to convert a list of quantifier bounds either to
+    tuple or non-tuple type. If even one quantifier bound in a list of quantifier
+    bounds has tuple form, then all must be put in the tuply_bounds type; see
+    comment on the convert_quantification function for more info. This function
+    requires all bounds to actually have a set bound, and will error if given
+    an unbounded quantifier bound.
+*)
+and convert_bounds (node : Xml.node) (all_bound_symbols : Xml.symbol list) : bounds_kind =
+  let bound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Bound b -> Some b | _ -> None) all_bound_symbols in
+  if List.length bound_symbols <> List.length all_bound_symbols
+  then conversion_failure "Cannot have unbound symbols" node.location
+  else if List.exists (fun (b : Xml.bound_symbol) -> b.is_tuple) bound_symbols
+  then Tuply (List.map (convert_tuply_bounds node) bound_symbols |> List.flatten)
+  else NonTuply (List.map (convert_non_tuply_bounds node) bound_symbols |> List.flatten)
+
+(** General utility function to convert a list of quantifier bounds either to
+    tuple or non-tuple type. As above, one tuple bound means all are given as
+    tuple bounds. The difference between this and the convert_bounds function
+    is that unbounded symbols are accepted here, albeit not unbounded tuple
+    bounds (those are only acceptable within a CHOOSE expression). However,
+    if one quantifier bound is unbounded, then all must be unbounded.
+*)
+and convert_bound_or_unbound_symbols (node : Xml.node) (all_symbols : Xml.symbol list) : bounds_kind =
+  let bound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Bound b -> Some b | _ -> None) all_symbols in
+  let unbound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Unbound b -> Some b | _ -> None) all_symbols in
+  if unbound_symbols <> []
+  then
+    if bound_symbols <> []
+    then conversion_failure "Cannot mix bound and unbound symbols" node.location
+    else if List.exists (fun (b : Xml.unbound_symbol) -> b.is_tuple) unbound_symbols
+    then conversion_failure "Unbounded tuple quantification is not supported" node.location
+    (* Unbounded *)
+    else let mk_bound (bound : Xml.unbound_symbol) : bound = (
+      resolve_bound_symbol bound.symbol_ref,
+      Unknown, (* TODO: figure out purpose of this parameter *)
+      No_domain
+    ) in NonTuply (List.map mk_bound unbound_symbols)
+  else if List.exists (fun (b : Xml.bound_symbol) -> b.is_tuple) bound_symbols
+  (* Bounded, includes at least one tuple *)
+  then Tuply (List.map (convert_tuply_bounds node) bound_symbols |> List.flatten)
+  (* Bounded, no tuples *)
+  else NonTuply (List.map (convert_non_tuply_bounds node) bound_symbols |> List.flatten)
 
 (** Handles conversion of both bounded & unbounded quantification. Both sides
     of the conversion here are fairly weird. The SANY AST has the same issues
@@ -522,62 +620,24 @@ and convert_non_tuply_bounds (node : Xml.node) (bound : Xml.bound_symbol) : boun
 *)
 and convert_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
-  | _ :: _, [Expression body] ->
-    let bound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Bound b -> Some b | _ -> None) apply.bound_symbols in
-    let unbound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Unbound b -> Some b | _ -> None) apply.bound_symbols in
-    if unbound_symbols <> []
-    then
-      if bound_symbols <> []
-      then conversion_failure "Cannot mix bound and unbound symbols in quantification" apply.node.location
-      else if List.exists (fun (b : Xml.unbound_symbol) -> b.is_tuple) unbound_symbols
-      then conversion_failure "Unbounded tuple quantification is not supported" apply.node.location
-      (* Unbounded quantification *)
-      else let mk_bound (bound : Xml.unbound_symbol) : bound = (
-        resolve_bound_symbol bound.symbol_ref,
-        Unknown, (* TODO: figure out purpose of this parameter *)
-        No_domain
-      ) in Quant (
-        quant,
-        List.map mk_bound unbound_symbols,
-        convert_expression body
-      )
-    else if List.exists (fun (b : Xml.bound_symbol) -> b.is_tuple) bound_symbols
-    (* Bounded quantification that includes at least one tuple *)
-    then QuantTuply (
-      quant,
-      List.map (convert_tuply_bounds apply.node) bound_symbols |> List.flatten,
-      convert_expression body
-    )
-    (* Bounded quantification without any tuples *)
-    else Quant (
-      quant,
-      List.map (convert_non_tuply_bounds apply.node) bound_symbols |> List.flatten,
-      convert_expression body
+  | _ :: _, [Expression body] -> (
+      match convert_bound_or_unbound_symbols apply.node apply.bound_symbols with
+      | Tuply tuply_bounds -> QuantTuply (quant, tuply_bounds, convert_expression body)
+      | NonTuply bounds -> Quant (quant, bounds, convert_expression body)
     )
   | _ -> conversion_failure "Invalid number of bounds or operands to quantification" apply.node.location
 ) |> attach_props apply.node
 
 (** Conversion of expressions of the form {f(x, y) : x \in S, y \in Z}
 *)
-and convert_set_map (apply : Xml.op_appl_node) : Expr.T.expr = (
+and convert_set_map (apply : Xml.op_appl_node) : Expr.T.expr =
   match apply.bound_symbols, apply.operands with
-  | _ :: _, [Expression body] ->
-    let bound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Bound b -> Some b | _ -> None) apply.bound_symbols in
-    if List.length bound_symbols <> List.length apply.bound_symbols
-    then conversion_failure "Set mappings cannot have unbound symbols" apply.node.location
-    else if List.exists (fun (b : Xml.bound_symbol) -> b.is_tuple) bound_symbols
-    (* Set mapping that includes at least one tuple *)
-    then SetOfTuply (
-      convert_expression body,
-      List.map (convert_tuply_bounds apply.node) bound_symbols |> List.flatten
-    )
-    (* Set mapping without any tuples *)
-    else SetOf (
-      convert_expression body,
-      List.map (convert_non_tuply_bounds apply.node) bound_symbols |> List.flatten
-    )
+  | _ :: _, [Expression body] -> (
+      match convert_bounds apply.node apply.bound_symbols with
+      | Tuply tuply_bounds -> SetOfTuply (convert_expression body, tuply_bounds)
+      | NonTuply bounds -> SetOf (convert_expression body, bounds)
+    ) |> attach_props apply.node
   | _ -> conversion_failure "Invalid number of bounds or operands to set mapping" apply.node.location
-) |> attach_props apply.node
 
 (** Conversion of expressions of the form {x \in S : P(x)} or {<<x, y>> \in S \X T : P(x, y)}
 *)
@@ -596,42 +656,38 @@ and convert_set_filter (apply : Xml.op_appl_node) : Expr.T.expr = (
   | _ -> conversion_failure "Invalid bounds or operands to set filter" apply.node.location
 ) |> attach_props apply.node
 
-(** Conversion of recursive functions where the function body refers to the
+(** Conversion of function definitions where the function body does not refer
+    to the function definition.
+
+    Conversion of recursive functions where the function body refers to the
     function definition, for example f[x \in Nat] == f[x - 1]. Both SANY and
     TLAPM represent these as f == [x \in Nat |-> f[x - 1]], and here we
     convert the right-hand side of this definition. The function name is
     introduced as the first symbol, unbound.
 *)
-and convert_recursive_function (apply : Xml.op_appl_node) : Expr.T.expr = (
-  match apply.bound_symbols, apply.operands with
-  | Unbound function_name :: (_ :: _ as all_bound_symbols), [Expression body] ->
-    let bound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Bound b -> Some b | _ -> None) all_bound_symbols in
-    if List.length bound_symbols <> List.length all_bound_symbols
-    then conversion_failure "Function definitions cannot have unbound symbols" apply.node.location
-    else if List.exists (fun (b : Xml.bound_symbol) -> b.is_tuple) bound_symbols
-    (* Function definition bounds that include at least one tuple *)
-    then FcnTuply (List.map (convert_tuply_bounds apply.node) bound_symbols |> List.flatten, convert_expression body)
-    (* Function definition bounds without any tuples *)
-    else Fcn (List.map (convert_non_tuply_bounds apply.node) bound_symbols |> List.flatten, convert_expression body)
-  | _ -> conversion_failure "Invalid number of bounds or operands to recursive function definition" apply.node.location
+and convert_function_definition (is_recursive : bool) (apply : Xml.op_appl_node) : Expr.T.expr = (
+  let bounds, body = match is_recursive, apply.bound_symbols, apply.operands with
+    | true, Unbound function_name :: (_ :: _ as all_bound_symbols), [Expression body] ->
+      all_bound_symbols, convert_expression body
+    | false, (_ :: _), [Expression body] ->
+      apply.bound_symbols, convert_expression body
+    | _ -> conversion_failure "Invalid number of bounds or operands to function definition" apply.node.location
+  in match convert_bounds apply.node bounds with
+  | Tuply tuply_bounds -> FcnTuply (tuply_bounds, body)
+  | NonTuply bounds -> Fcn (bounds, body)
 ) |> attach_props apply.node
 
 (** Converts function construction expressions like [x \in S, y \in P |-> x + y];
     also handles record construction, like [x |-> expr1, y |-> expr2].
 *)
-and convert_function_constructor (apply : Xml.op_appl_node) : Expr.T.expr = (
+and convert_function_constructor (apply : Xml.op_appl_node) : Expr.T.expr =
   match apply.bound_symbols, apply.operands with
-  | _ :: _, [Expression body] ->
-    let bound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Bound b -> Some b | _ -> None) apply.bound_symbols in
-    if List.length bound_symbols <> List.length apply.bound_symbols
-    then conversion_failure "Function definitions cannot have unbound symbols" apply.node.location
-    else if List.exists (fun (b : Xml.bound_symbol) -> b.is_tuple) bound_symbols
-    (* Function definition bounds that include at least one tuple *)
-    then FcnTuply (List.map (convert_tuply_bounds apply.node) bound_symbols |> List.flatten, convert_expression body)
-    (* Function definition bounds without any tuples *)
-    else Fcn (List.map (convert_non_tuply_bounds apply.node) bound_symbols |> List.flatten, convert_expression body)
+  | _ :: _, [Expression body] -> (
+      match convert_bounds apply.node apply.bound_symbols with
+      | Tuply tuply_bounds -> FcnTuply (tuply_bounds, convert_expression body)
+      | NonTuply bounds -> Fcn (bounds, convert_expression body)
+    ) |> attach_props apply.node
   | _ -> conversion_failure "Invalid operands to function constructor" apply.node.location
-) |> attach_props apply.node
 
 (** Converts function set expressions of the form [P -> Q]
 *)
@@ -844,23 +900,56 @@ and convert_expression (expr : Xml.expression) : Expr.T.expr =
   | NumeralNode n -> Num (Int.to_string n.value, "") |> attach_props n.node
   | OpApplNode apply -> convert_op_appl_node apply
   | StringNode s -> String s.value |> attach_props s.node
-  | SubstInNode subst -> todo "SubstInNode" "" subst.node.location
+  | SubstInNode subst -> convert_substitution_in subst
   | TheoremDefRef uid -> todo "Expression" "TheoremDefRef" None
   | AssumeDefRef uid -> todo "Expression" "AssumeDefRef" None
 
+(** When a module has been imported using INSTANCE along with one or more
+    substitutions, and then an expression referencing an operator or definition
+    from that module is used, that reference is given as a subst_in_node by
+    SANY. This provides various details on the substitutions necessary in the
+    given expression to properly evaluate it. Here, we throw away all of that
+    information and let TLAPM re-derive the substitutions later on in the parse
+    process.
+    
+    Example:
+
+    M == INSTANCE Mod WITH x <- y
+    op == M!op
+    
+    Here, the expression M!op is given as a subst_in_node. Compare this with
+    an INSTANCE import that does not use substitution:
+      
+    M == INSTANCE Naturals
+    op == M!Nat
+    
+    In this case, M!Nat is actually introduced as a new operator named M!Nat
+    in the importing module, and directly referenced with the usual uid-based
+    resolution mechanism. This might spell trouble for TLAPM as M!Nat is not
+    a valid TLA+ identifier name; TODO check whether this causes trouble.
+*)
+and convert_substitution_in (subst : Xml.subst_in_node) : Expr.T.expr =
+  convert_expression subst.body
+
+(** Converts lbl(a, b, c) :: expr
+    TODO: Handle conversion in all cases
+*)
 and convert_label (label : Xml.label_node) : Expr.T.expr = (
   match label.body with
   | Expression expr -> Parens (convert_expression expr, noprops Syntax)
-  | AssumeProve ap -> Parens (Sequent (convert_assume_prove ap) |> noprops, noprops Syntax)
+  | AssumeProveLike AssumeProveNode ap -> Parens (Sequent (convert_assume_prove ap) |> noprops, noprops Syntax)
+  | AssumeProveLike AssumeProveSubstitution aps -> todo "Label" "AssumeProveSubstitution" aps.node.location
 ) |> attach_props label.node
 
+(** Converts LET/IN definition sets, consisting of one or more definitions
+    followed by a body expression in which the definitions are available.
+*)
 and convert_let_in_node ({node; def_refs; body} : Xml.let_in_node) : Expr.T.expr =
-  let definitions = List.map (fun ref ->
-    match (resolve_ref ref).kind with
+  let convert_definition (def_ref : int) : Expr.T.defn =
+    match (resolve_ref def_ref).kind with
     | UserDefinedOpKind op -> convert_user_defined_op_kind op
     | _ -> todo "LET/IN definition" "Probably an instance" None
-  ) def_refs in
-  Let (definitions, convert_expression body) |> attach_props node
+  in Let (List.map convert_definition def_refs, convert_expression body) |> attach_props node
 
 (** Converts user-defined operators defined within LET/IN expressions.
 *)
@@ -924,7 +1013,8 @@ and convert_assume_prove (ap : Xml.assume_prove_node) : sequent = {
 and convert_sequent (seq : Xml.expr_or_assume_prove) : sequent =
   match seq with
   | Expression expr -> {context = Deque.empty; active = convert_expression expr}
-  | AssumeProve ap -> convert_assume_prove ap
+  | AssumeProveLike AssumeProveNode ap -> convert_assume_prove ap
+  | AssumeProveLike AssumeProveSubstitution aps -> todo "Sequent" "AssumeProveSubstitution" aps.node.location
 
 (** Converts a proof, which can either be OMITTED, OBVIOUS, BY, or a series
     of individual proof steps culminated in a QED step.
@@ -1026,6 +1116,12 @@ and convert_proof_step (steps, proof_level : Proof.T.step list * proof_level) (s
       convert_case_proof_step apply proof
     | Expression OpApplNode ({operator} as apply) when is_op operator "$Pick" ->
       convert_pick_proof_step apply proof
+    | Expression OpApplNode ({operator} as apply) when is_op operator "$Take" ->
+      convert_take_proof_step apply
+    | Expression OpApplNode ({operator} as apply) when is_op operator "$Witness" ->
+      convert_witness_proof_step apply
+    | Expression OpApplNode ({operator} as apply) when is_op operator "$Suffices" ->
+      convert_suffices_proof_step apply proof
     | _ -> Suffices (convert_sequent thm.body, proof)
     in (step |> attach_props thm.node |> attach_proof_step_name step_name) :: steps, Known (step_number step_name)
 
@@ -1036,17 +1132,43 @@ and convert_case_proof_step (apply : Xml.op_appl_node) (proof : Proof.T.proof) :
   | [], [Expression expr] -> Pcase (convert_expression expr, proof)
   | _ -> conversion_failure "Invalid operands to CASE proof step" apply.node.location
 
-(** Converts PICK proofs steps, like PICK i \in 1 .. Len(s) : P(i)
-    This is yet another conversion where quantifiers rear their tedious head.
-    In this case, only a single bound is supported.
+(** Converts PICK proofs steps, like PICK a, b, c : P
 *)
 and convert_pick_proof_step (apply : Xml.op_appl_node) (proof : Proof.T.proof) : Proof.T.step_ =
   match apply.bound_symbols, apply.operands with
-  | [Bound ({is_tuple = false} as bound)], [Expression predicate] ->
-      Pick (convert_non_tuply_bounds apply.node bound, convert_expression predicate, proof)
-  | [Bound ({is_tuple = true} as bound)], [Expression predicate] ->
-      PickTuply (convert_tuply_bounds apply.node bound, convert_expression predicate, proof)
-  | _ -> conversion_failure "Invalid bounds or operands to PICK proof step" apply.node.location
+  | _ :: _, [Expression body] -> (
+      match convert_bound_or_unbound_symbols apply.node apply.bound_symbols with
+      | Tuply tuply_bounds -> PickTuply (tuply_bounds, convert_expression body, proof)
+      | NonTuply bounds -> Pick (bounds, convert_expression body, proof)
+    )
+  | _ -> conversion_failure "Invalid number of bounds or operands to PICK proof step" apply.node.location
+
+(** Converts TAKE a, b, c, d or TAKE a, b \in S, c \in P, <<d, e>> \in Q
+    proof step type.
+*)
+and convert_take_proof_step (apply : Xml.op_appl_node) : Proof.T.step_ =
+  match apply.bound_symbols, apply.operands with
+  | _ :: _, [] -> (
+      match convert_bound_or_unbound_symbols apply.node apply.bound_symbols with
+      | Tuply tuply_bounds -> TakeTuply tuply_bounds
+      | NonTuply bounds -> Take bounds
+    )
+  | _ -> conversion_failure "Invalid number of bounds or operands to TAKE proof step" apply.node.location
+
+(** Converts WITNESS x, y, z proof steps.
+*)
+and convert_witness_proof_step (apply : Xml.op_appl_node) : Proof.T.step_ =
+  match apply.bound_symbols, apply.operands with
+  | [], expressions ->
+      Witness (expressions |> as_expr_ls __FUNCTION__ apply.node.location |> List.map convert_expression)
+  | _ -> conversion_failure "Invalid bounds or operands to WITNESS proof step" apply.node.location
+
+(** Converts SUFFICES P PROOF BY x, y, z proof steps.
+*)
+and convert_suffices_proof_step (apply : Xml.op_appl_node) (proof : Proof.T.proof) : Proof.T.step_ =
+  match apply.bound_symbols, apply.operands with
+  | [], [Expression expr] -> Suffices (convert_sequent (Expression expr), proof)
+  | _ -> conversion_failure "Invalid bounds or operands to SUFFICES proof step" apply.node.location
 
 (** The top-level method converting the entire SANY AST to TLAPM's AST. SANY
     uses a lot of GUIDs for one entity to reference another, so we load those
