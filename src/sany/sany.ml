@@ -362,6 +362,8 @@ let rec convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_k
     | "$BoundedForall" -> convert_quantification Forall apply
     | "$UnboundedExists" -> convert_quantification Exists apply
     | "$UnboundedForall" -> convert_quantification Forall apply
+    | "$TemporalExists" -> convert_temporal_quantification Exists apply
+    | "$TemporalForall" -> convert_temporal_quantification Forall apply
     | "$SetOfAll" -> convert_set_map apply
     | "$SubsetOf" -> convert_set_filter apply
     | "$SetOfFcns" -> convert_function_set apply
@@ -635,6 +637,21 @@ and convert_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node
       | NonTuply bounds -> Quant (quant, bounds, convert_expression body)
     )
   | _ -> conversion_failure "Invalid number of bounds or operands to quantification" apply.node.location
+) |> attach_props apply.node
+
+(** Temporal quantification; these symbols are always unbound.
+*)
+and convert_temporal_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node) : Expr.T.expr = (
+  match apply.bound_symbols, apply.operands with
+  | _ :: _, [Expression body] -> 
+    let unbound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Unbound b -> Some b | _ -> None) apply.bound_symbols in
+    if List.length unbound_symbols <> List.length apply.bound_symbols
+    then conversion_failure "Temporal quantification requires unbound symbols" apply.node.location
+    else if List.exists (fun (b : Xml.unbound_symbol) -> b.is_tuple) unbound_symbols
+    then conversion_failure "Unbounded tuple quantification is not supported" apply.node.location
+    else let bounds = List.map (fun (b : Xml.unbound_symbol) -> resolve_bound_symbol b.symbol_ref) unbound_symbols in
+    Tquant (quant, bounds, convert_expression body)
+  | _ -> conversion_failure "Invalid number of bounds or operands to temporal quantification" apply.node.location
 ) |> attach_props apply.node
 
 (** Conversion of expressions of the form {f(x, y) : x \in S, y \in Z}

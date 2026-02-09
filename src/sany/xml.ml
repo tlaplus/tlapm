@@ -218,7 +218,9 @@ let xml_to_numeral_node (children : tree list) : int literal =
 let xml_to_string_node (children : tree list) : string literal =
   match extract_inline_node children with
   | node, [Node ("StringValue", [SValue value])] -> {node; value}
-  | _ -> ls_conversion_failure __FUNCTION__ children
+  (* Sometimes strings can accidentally be converted into integers! *)
+  | node, [Node ("StringValue", [IValue value])] -> {node; value = Int.to_string value}
+  | node, children -> ls_conversion_failure __FUNCTION__ children
 
 type leibniz_param = {
   ref         : int;
