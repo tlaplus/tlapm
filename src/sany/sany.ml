@@ -75,6 +75,15 @@ let conversion_failure (msg : string) (loc : Xml.location option) : 'a =
   | None -> "Unknown location"
   in failwith (Printf.sprintf "Conversion failure:\n%s\n%s" msg loc)
 
+(** Several places require special handling of the last element of a list,
+    for example proof steps which end in a QED and CASE pairs which end
+    (possibly) in an OTHER statement. This utility function helps with that.
+*)
+let split_last_ls (node : Xml.node) (ls : 'a list) : 'a list * 'a =
+  match List.rev ls with
+  | [] -> conversion_failure "Cannot get last element of empty list" node.location
+  | hd :: tl -> (List.rev tl, hd)
+
 (** A module-global table of SANY AST entities, indexed by UID.
 *)
 let entries : Xml.entry_kind Coll.Im.t ref = ref Coll.Im.empty
@@ -787,24 +796,27 @@ and convert_if_then_else (apply : Xml.op_appl_node) : Expr.T.expr = (
 ) |> attach_props apply.node
 
 (** Conversion of expression CASE p1 -> e1 [] p2 -> e2 [] ... [] OTHER -> e
-
-    TODO: SANY XML exporter cannot currently handle OTHER branches; see:
-    https://github.com/tlaplus/tlaplus/issues/1291
 *)
 and convert_case (apply : Xml.op_appl_node) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
-  | [], (_ :: _ as pairs) ->
-    let mk_case (operand : Xml.expr_or_op_arg) : (Expr.T.expr * Expr.T.expr) option =
+  | [], _ :: _ -> (
+    let as_pair (operand : Xml.expr_or_op_arg) : (Xml.expression * Xml.expression) option =
       match operand with
       | Expression OpApplNode {operator; bound_symbols = []; operands = [Expression cond; Expression result]} -> (
         match (resolve_ref operator).kind with
-        | BuiltInKind {name = "$Pair"} -> Some (convert_expression cond, convert_expression result)
+        | BuiltInKind {name = "$Pair"} -> Some (cond, result)
         | _ -> None
       ) | _ -> None
-    in let cases = List.filter_map mk_case pairs in
-    if List.length cases <> List.length pairs
+    in let cases = List.filter_map as_pair apply.operands in
+    if List.length cases <> List.length apply.operands
     then conversion_failure "Invalid operands to CASE; expected pairs of expressions" apply.node.location
-    else Case (cases, None)
+    else
+      let mk_case ((predicate, expr) : Xml.expression * Xml.expression) : (Expr.T.expr * Expr.T.expr) =
+        (convert_expression predicate, convert_expression expr)
+      in match split_last_ls apply.node cases with
+      | prefix, (StringNode {value = "$Other"}, other) -> Case (List.map mk_case prefix, Some (convert_expression other))
+      | _ -> Case (List.map mk_case cases, None)
+    )
   | _ -> conversion_failure "Invalid bound symbols or operands to CASE" apply.node.location
 ) |> attach_props apply.node
 
@@ -1031,12 +1043,12 @@ and convert_proof (uid : int) (previous_proof_level : int) (proof : Xml.proof_no
     where information is lost, as the facts and definitions are converted to
     strings that will need to be resolved to De Bruijn indices later on.
 *)
-and convert_by_proof ({node; facts; defs} : Xml.by_proof_node) : Proof.T.proof =
+and convert_by_proof ({node; facts; defs; only} : Xml.by_proof_node) : Proof.T.proof =
   By ({
     facts = List.map convert_expression facts;
     defs = List.map (resolve_def node) defs;
   },
-  true (* This should be true if the ONLY keyword is present *)
+  only
 ) |> attach_props node
 
 (** One possible proof form is a series of steps, culminating in a QED step.

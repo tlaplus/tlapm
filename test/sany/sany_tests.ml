@@ -24,9 +24,18 @@ let should_run (path : string) : bool =
     String.ends_with ~suffix:"Chameneos.tla";
     String.ends_with ~suffix:"Stones.tla";
     String.ends_with ~suffix:"glowingRaccoon/product.tla";
+    String.ends_with ~suffix:"CarTalkPuzzle.tla";
+    String.ends_with ~suffix:"CarTalkPuzzle.toolbox/Model_1/MC.tla";
+    String.ends_with ~suffix:"CarTalkPuzzle.toolbox/Model_2/MC.tla";
+    String.ends_with ~suffix:"CarTalkPuzzle.toolbox/Model_3/MC.tla";
+    String.ends_with ~suffix:"EWD840_json.tla";
+    String.ends_with ~suffix:"SingleLaneBridge.tla";
+    String.ends_with ~suffix:"SingleLaneBridge/MC.tla";
+    has_substring "/tower_of_hanoi/";
     (* Subexpressions *)
     String.ends_with ~suffix:"MCPaxos.tla";
     String.ends_with ~suffix:"MCVoting.tla";
+    String.ends_with ~suffix:"EWD840_proof.tla";
     (* Community modules *)
     String.ends_with ~suffix:"MCtcp.tla";
     String.ends_with ~suffix:"tcp.tla";
@@ -36,8 +45,22 @@ let should_run (path : string) : bool =
     String.ends_with ~suffix:"SimTokenRing.tla";
     String.ends_with ~suffix:"EWD687a_anim.tla";
     String.ends_with ~suffix:"EWD687a.tla";
+    String.ends_with ~suffix:"Huang.tla";
+    String.ends_with ~suffix:"EWD840_anim.tla";
+    String.ends_with ~suffix:"KnuthYao.tla";
     has_substring "/ewd998/";
+    (* PlusCal? *)
+    String.ends_with ~suffix:"AddTwo.tla";
   ] in not (List.exists (fun pred -> pred path) preds)
+
+let start_at (filename : string) (files : string list) : string list =
+  let rec drop_until (paths : string list) : string list =
+    match paths with
+    | [] -> []
+    | hd :: tl ->
+      if String.ends_with ~suffix:filename hd then tl
+      else drop_until tl
+  in drop_until files
 
 let parse_tla_file filename =
   let open Stdlib in
@@ -52,5 +75,8 @@ let parse_tla_file filename =
 let _ =
   parser_backend := Sany;
   add_debug_flag "sany";
-  let tla_files = find_tla_files "/mnt/data/ahelwer/src/tlaplus/examples/specifications" |> List.filter should_run in
-  List.map parse_tla_file tla_files
+  let tla_files =
+    find_tla_files "/mnt/data/ahelwer/src/tlaplus/examples/specifications"
+    |> List.filter should_run
+    |> start_at "EWD840.tla"
+  in List.map parse_tla_file tla_files

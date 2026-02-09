@@ -721,15 +721,17 @@ type by_proof_node = {
   node  : node;
   facts : expression list;
   defs  : int list;
+  only  : bool;
 }
 [@@deriving show]
 
 let xml_to_by_proof_node (children : tree list) : by_proof_node =
   match extract_inline_node children with
-  | node, [Node ("facts", facts); Node ("defs", defs)] -> {
+  | node, Node ("facts", facts) :: Node ("defs", defs) :: children -> {
     node;
     facts = List.map xml_to_expression facts;
     defs = List.filter_map get_ref_opt defs;
+    only = match children with | [Node ("only", _)] -> true | _ -> false
   }
   | _ -> ls_conversion_failure __FUNCTION__ children
 
