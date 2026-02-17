@@ -66,7 +66,7 @@ let should_run (path : string) : bool =
     has_substring "/ewd998/";
     (* Apalache *)
     String.ends_with ~suffix:"Einstein.tla";
-    (* PlusCal? *)
+    (* PlusCal validation output bug *)
     String.ends_with ~suffix:"AddTwo.tla";
   ] in not (List.exists (fun pred -> pred path) preds)
 
@@ -75,7 +75,7 @@ let _start_at (filename : string) (files : string list) : string list =
     match paths with
     | [] -> []
     | hd :: tl ->
-      if String.ends_with ~suffix:filename hd then tl
+      if String.ends_with ~suffix:filename hd then paths
       else drop_until tl
   in drop_until files
 
@@ -95,5 +95,5 @@ let _ =
   let tla_files =
     find_tla_files "/mnt/data/ahelwer/src/tlaplus/examples/specifications"
     |> List.filter should_run
-    (*|> _start_at "SimpleAllocator.tla"*)
+    (*|> _start_at "AddTwo.tla"*)
   in List.map parse_tla_file tla_files

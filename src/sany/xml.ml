@@ -647,29 +647,171 @@ let xml_to_op_decl_node (children : tree list) : op_decl_node =
     }
   | _ -> ls_conversion_failure __FUNCTION__ children
 
+type built_in_operator =
+  (* Reserved words *)
+  | TRUE
+  | FALSE
+  | BOOLEAN
+  | STRING
+  (* Prefix operators *)
+  | LogicalNegation
+  | UNION
+  | SUBSET
+  | DOMAIN
+  | ENABLED
+  | UNCHANGED
+  | Always
+  | Eventually
+  (* Postfix operators *)
+  | Prime
+  (* Infix operators *)
+  | SetIn
+  | SetNotIn
+  | Implies
+  | Equivalent
+  | Conjunction
+  | Disjunction
+  | Equals
+  | NotEquals
+  | SetMinus
+  | Union
+  | Intersect
+  | SubsetEq
+  | LeadsTo
+  | ActionComposition
+  | PlusArrow
+  (* Language operators *)
+  | FiniteSetLiteral
+  | TupleLiteral
+  | ConjunctionList
+  | DisjunctionList
+  | CartesianProduct
+  | WeakFairness
+  | StrongFairness
+  | BoundedChoose
+  | UnboundedChoose
+  | ActionOrStutter
+  | ActionNoStutter
+  | BoundedExists
+  | BoundedForAll
+  | UnboundedExists
+  | UnboundedForAll
+  | TemporalExists
+  | TemporalForAll
+  | FiniteSetMap
+  | FiniteSetFilter
+  | FunctionSet
+  | FunctionConstructor
+  | FunctionDefinition
+  | RecursiveFunctionDefinition
+  | FunctionApplication
+  | RecordSet
+  | RecordConstructor
+  | RecordSelect
+  | Except
+  | IfThenElse
+  | Case
+  | Pair
+  | Sequence
+  | CaseProofStep
+  | PickProofStep
+  | TakeProofStep
+  | WitnessProofStep
+  | SufficesProofStep
+  | QedProofStep
+[@@deriving show]
+
+let xml_to_built_in_operator (name : string) : built_in_operator =
+  match name with
+  | "TRUE" -> TRUE
+  | "FALSE" -> FALSE
+  | "BOOLEAN" -> BOOLEAN
+  | "STRING" -> STRING
+  | "\\lnot" -> LogicalNegation
+  | "UNION" -> UNION
+  | "SUBSET" -> SUBSET
+  | "DOMAIN" -> DOMAIN
+  | "ENABLED" -> ENABLED
+  | "UNCHANGED" -> UNCHANGED
+  | "[]" -> Always
+  | "<>" -> Eventually
+  | "'" -> Prime
+  | "\\in" -> SetIn
+  | "\\notin" -> SetNotIn
+  | "=>" -> Implies
+  | "\\equiv" -> Equivalent
+  | "\\land" -> Conjunction
+  | "\\lor" -> Disjunction
+  | "=" -> Equals
+  | "/=" -> NotEquals
+  | "\\" -> SetMinus
+  | "\\union" -> Union
+  | "\\intersect" -> Intersect
+  | "\\subseteq" -> SubsetEq
+  | "~>" -> LeadsTo
+  | "\\cdot" -> ActionComposition
+  | "-+->" -> PlusArrow
+  | "$SetEnumerate" -> FiniteSetLiteral
+  | "$Tuple" -> TupleLiteral
+  | "$ConjList" -> ConjunctionList
+  | "$DisjList" -> DisjunctionList
+  | "$CartesianProd" -> CartesianProduct
+  | "$WF" -> WeakFairness
+  | "$SF" -> StrongFairness
+  | "$BoundedChoose" -> BoundedChoose
+  | "$UnboundedChoose" -> UnboundedChoose
+  | "$SquareAct" -> ActionOrStutter
+  | "$AngleAct" -> ActionNoStutter
+  | "$BoundedExists" -> BoundedExists
+  | "$BoundedForall" -> BoundedForAll
+  | "$UnboundedExists" -> UnboundedExists
+  | "$UnboundedForall" -> UnboundedForAll
+  | "$TemporalExists" -> TemporalExists
+  | "$TemporalForall" -> TemporalForAll
+  | "$SetOfAll" -> FiniteSetMap
+  | "$SubsetOf" -> FiniteSetFilter
+  | "$SetOfFcns" -> FunctionSet
+  | "$FcnConstructor" -> FunctionConstructor
+  | "$NonRecursiveFcnSpec" -> FunctionDefinition
+  | "$RecursiveFcnSpec" -> RecursiveFunctionDefinition
+  | "$FcnApply" -> FunctionApplication
+  | "$SetOfRcds" -> RecordSet
+  | "$RcdConstructor" -> RecordConstructor
+  | "$RcdSelect" -> RecordSelect
+  | "$Except" -> Except
+  | "$IfThenElse" -> IfThenElse
+  | "$Case" -> Case
+  | "$Pair" -> Pair
+  | "$Seq" -> Sequence
+  | "$Pfcase" -> CaseProofStep
+  | "$Pick" -> PickProofStep
+  | "$Take" -> TakeProofStep
+  | "$Witness" -> WitnessProofStep
+  | "$Suffices" -> SufficesProofStep
+  | "$Qed" -> QedProofStep
+  | name -> conversion_failure __FUNCTION__ (SValue name)
+
 type built_in_kind = {
   node       : node;
-  name       : string;
+  operator   : built_in_operator;
   arity      : int;
   params     : leibniz_param list;
 }
 [@@deriving show]
 
 let xml_to_built_in_kind (children : tree list) : built_in_kind =
-  match extract_inline_node children with
-  | node, [Node ("uniquename", [SValue name]); Node ("arity", [IValue arity]); Node ("params", params)] -> {
-      node;
-      name;
-      arity;
-      params = List.map xml_to_leibniz_param params;
-    }
-  | node, [Node ("uniquename", [SValue name]); Node ("arity", [IValue arity])] -> {
-      node;
-      name;
-      arity;
-      params = [];
-    }
-  | _ -> ls_conversion_failure __FUNCTION__ children
+  let node, name, arity, params = match extract_inline_node children with
+    | node, [Node ("uniquename", [SValue name]); Node ("arity", [IValue arity]); Node ("params", params)] ->
+        node, name, arity, List.map xml_to_leibniz_param params
+    | node, [Node ("uniquename", [SValue name]); Node ("arity", [IValue arity])] ->
+        node, name, arity, []
+    | _ -> ls_conversion_failure __FUNCTION__ children
+  in {
+    node;
+    operator = xml_to_built_in_operator name;
+    arity;
+    params
+  }
 
 type assume_def_node = {
   node        : node;

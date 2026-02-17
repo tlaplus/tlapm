@@ -25,7 +25,7 @@
     abstract which is presented to us here. Thus the SANY AST has already
     been processed significantly, and we are translating it to a form that is
     comparatively much rougher & earlier in the parse process.
-    
+
     There are two places in this conversion code where we revert to actually
     just parsing the underlying "raw" TLA+ syntax from SANY's AST: proof names
     and references to named instanced modules. We need to parse proof names
@@ -277,107 +277,134 @@ let convert_proof_step_name (uid : int) (proof_level : proof_level) (theorem_def
     | Previous n -> Unnamed (n + 1, uid)
     | Known n -> Unnamed (n, uid)
 
-(** Converts built-in prefix, infix, and postfix operators along with keywords.
-    Also includes some standard module operators like + and -.
-    TODO: handle case where user overrides a standard module operator name.
-*)
-let try_convert_builtin (builtin : Xml.built_in_kind) : Builtin.builtin option =
-  match builtin.name with
+let sany_to_tlapm_builtin (node : Xml.node) (builtin : Xml.built_in_operator) : Builtin.builtin =
+  match builtin with
   (* Reserved words *)
-  | "TRUE" -> Some Builtin.TRUE
-  | "FALSE" -> Some Builtin.FALSE
-  | "BOOLEAN" -> Some Builtin.BOOLEAN
-  | "STRING" -> Some Builtin.STRING
-
+  | TRUE -> Builtin.TRUE
+  | FALSE -> Builtin.FALSE
+  | BOOLEAN -> Builtin.BOOLEAN
+  | STRING -> Builtin.STRING
   (* Prefix operators *)
-  | "\\lnot" -> Some Builtin.Neg
-  | "UNION" -> Some Builtin.UNION
-  | "SUBSET" -> Some Builtin.SUBSET
-  | "DOMAIN" -> Some Builtin.DOMAIN
-  | "ENABLED" -> Some Builtin.ENABLED
-  | "UNCHANGED" -> Some Builtin.UNCHANGED
-  | "[]" -> Some (Builtin.Box false)
-  | "<>" -> Some Builtin.Diamond
-  
+  | LogicalNegation -> Builtin.Neg
+  | UNION -> Builtin.UNION
+  | SUBSET -> Builtin.SUBSET
+  | DOMAIN -> Builtin.DOMAIN
+  | ENABLED -> Builtin.ENABLED
+  | UNCHANGED -> Builtin.UNCHANGED
+  | Always -> (Builtin.Box false) (* TODO: figure out meaning of false parameter *)
+  | Eventually -> Builtin.Diamond
   (* Postfix operators *)
-  | "'" -> Some Builtin.Prime
-  
+  | Prime -> Builtin.Prime
   (* Infix operators *)
-  | "+" -> Some Builtin.Plus
-  | "-" -> Some Builtin.Minus
-  | "*" -> Some Builtin.Times
-  | "\\in" -> Some Builtin.Mem
-  | "\\notin" -> Some Builtin.Notmem
-  | "=>" -> Some Builtin.Implies
-  | "\\equiv" -> Some Builtin.Equiv
-  | "\\land" -> Some Builtin.Conj
-  | "\\lor" -> Some Builtin.Disj
-  | "=" -> Some Builtin.Eq
-  | "/=" -> Some Builtin.Neq
-  | "\\" -> Some Builtin.Setminus
-  | "\\intersect" -> Some Builtin.Cap
-  | "\\union" -> Some Builtin.Cup
-  | "\\subseteq" -> Some Builtin.Subseteq
-  | "~>" -> Some Builtin.Leadsto
-  | "\\cdot" -> Some Builtin.Cdot
-  | "-+->" -> Some Builtin.Actplus
-  | _ -> None
+  | SetIn -> Builtin.Mem
+  | SetNotIn -> Builtin.Notmem
+  | Implies -> Builtin.Implies
+  | Equivalent -> Builtin.Equiv
+  | Conjunction -> Builtin.Conj
+  | Disjunction -> Builtin.Disj
+  | Equals -> Builtin.Eq
+  | NotEquals -> Builtin.Neq
+  | SetMinus -> Builtin.Setminus
+  | Union -> Builtin.Cup
+  | Intersect -> Builtin.Cap
+  | SubsetEq -> Builtin.Subseteq
+  | LeadsTo -> Builtin.Leadsto
+  | ActionComposition -> Builtin.Cdot
+  | PlusArrow -> Builtin.Actplus
+  | _ -> conversion_failure ("SANY built-in operator cannot be translated to TLAPM built-in operator: " ^ Xml.show_built_in_operator builtin) node.location
 
 (** Conversion of application of all traditional built-in operators like = or
     \cup but also things like CHOOSE and \A which one would ordinarily not
     view as built-in operators.
 *)
 let rec convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_kind) : Expr.T.expr =
-  match try_convert_builtin op with
-  (* Traditional built-in operators *)
-  | Some builtin -> Apply (
+  (** TLAPM has a specific set of operators it considers "built in" which is
+      different from the set that SANY consideres "built-in"; this function
+      constructs operators for the TLAPM built-in operator set.
+  *)
+  let mk (builtin : Builtin.builtin) : Expr.T.expr = Apply (
       Internal builtin |> attach_props op.node,
       apply.operands |> as_expr_ls (Builtin.builtin_to_string builtin) apply.node.location |> List.map convert_expression
     ) |> attach_props apply.node
-  (* More abstract kinds of built-in operators *)
-  | None ->
-    match op.name with
-    | "$SetEnumerate" -> SetEnum (
-      apply.operands |> as_expr_ls "$SetEnumerate" apply.node.location |> List.map convert_expression
+  in match op.operator with
+  (* Reserved words *)
+  | TRUE -> mk Builtin.TRUE
+  | FALSE -> mk Builtin.FALSE
+  | BOOLEAN -> mk Builtin.BOOLEAN
+  | STRING -> mk Builtin.STRING
+  (* Prefix operators *)
+  | LogicalNegation -> mk Builtin.Neg
+  | UNION -> mk Builtin.UNION
+  | SUBSET -> mk Builtin.SUBSET
+  | DOMAIN -> mk Builtin.DOMAIN
+  | ENABLED -> mk Builtin.ENABLED
+  | UNCHANGED -> mk Builtin.UNCHANGED
+  | Always -> mk (Builtin.Box false) (* TODO: figure out meaning of false parameter *)
+  | Eventually -> mk Builtin.Diamond
+  (* Postfix operators *)
+  | Prime -> mk Builtin.Prime
+  (* Infix operators *)
+  | SetIn -> mk Builtin.Mem
+  | SetNotIn -> mk Builtin.Notmem
+  | Implies -> mk Builtin.Implies
+  | Equivalent -> mk Builtin.Equiv
+  | Conjunction -> mk Builtin.Conj
+  | Disjunction -> mk Builtin.Disj
+  | Equals -> mk Builtin.Eq
+  | NotEquals -> mk Builtin.Neq
+  | SetMinus -> mk Builtin.Setminus
+  | Union -> mk Builtin.Cup
+  | Intersect -> mk Builtin.Cap
+  | SubsetEq -> mk Builtin.Subseteq
+  | LeadsTo -> mk Builtin.Leadsto
+  | ActionComposition -> mk Builtin.Cdot
+  | PlusArrow -> mk Builtin.Actplus
+  (* Language operators *)
+  | FiniteSetLiteral -> SetEnum (
+      apply.operands |> as_expr_ls "FiniteSetLiteral" apply.node.location |> List.map convert_expression
     ) |> attach_props apply.node
-    | "$Tuple" -> Tuple (
-      apply.operands |> as_expr_ls "$Tuple" apply.node.location |> List.map convert_expression
+  | TupleLiteral -> Tuple (
+      apply.operands |> as_expr_ls "TupleLiteral" apply.node.location |> List.map convert_expression
     ) |> attach_props apply.node
-    | "$ConjList" -> List (
-      And, apply.operands |> as_expr_ls "$ConjList" apply.node.location |> List.map convert_expression
+  | ConjunctionList -> List (
+      And, apply.operands |> as_expr_ls "ConjunctionList" apply.node.location |> List.map convert_expression
     ) |> attach_props apply.node
-    | "$DisjList" -> List (
-      Or, apply.operands |> as_expr_ls "$DisjList" apply.node.location |> List.map convert_expression
+  | DisjunctionList -> List (
+      Or, apply.operands |> as_expr_ls "DisjunctionList" apply.node.location |> List.map convert_expression
     ) |> attach_props apply.node
-    | "$CartesianProd" -> Product (
-      apply.operands |> as_expr_ls "$CartesianProd" apply.node.location |> List.map convert_expression
+  | CartesianProduct -> Product (
+      apply.operands |> as_expr_ls "CartesianProduct" apply.node.location |> List.map convert_expression
     ) |> attach_props apply.node
-    | "$WF" -> convert_fairness Weak apply
-    | "$SF" -> convert_fairness Strong apply
-    | "$BoundedChoose" -> convert_choose apply
-    | "$UnboundedChoose" -> convert_choose apply
-    | "$SquareAct" -> convert_action_expr Box apply
-    | "$AngleAct" -> convert_action_expr Dia apply
-    | "$BoundedExists" -> convert_quantification Exists apply
-    | "$BoundedForall" -> convert_quantification Forall apply
-    | "$UnboundedExists" -> convert_quantification Exists apply
-    | "$UnboundedForall" -> convert_quantification Forall apply
-    | "$TemporalExists" -> convert_temporal_quantification Exists apply
-    | "$TemporalForall" -> convert_temporal_quantification Forall apply
-    | "$SetOfAll" -> convert_set_map apply
-    | "$SubsetOf" -> convert_set_filter apply
-    | "$SetOfFcns" -> convert_function_set apply
-    | "$FcnConstructor" -> convert_function_constructor apply
-    | "$RecursiveFcnSpec" -> convert_function_definition true apply
-    | "$NonRecursiveFcnSpec" -> convert_function_definition false apply
-    | "$FcnApply" -> convert_function_application apply
-    | "$SetOfRcds" -> convert_record_set apply
-    | "$RcdConstructor" -> convert_record_constructor apply
-    | "$RcdSelect" -> convert_record_select apply
-    | "$Except" -> convert_except apply
-    | "$IfThenElse" -> convert_if_then_else apply
-    | "$Case" -> convert_case apply
-    | s -> todo "Built-in operator" s apply.node.location
+    | WeakFairness -> convert_fairness Weak apply
+    | StrongFairness -> convert_fairness Strong apply
+    | BoundedChoose -> convert_choose apply
+    | UnboundedChoose -> convert_choose apply
+    | ActionOrStutter -> convert_action_expr Box apply
+    | ActionNoStutter -> convert_action_expr Dia apply
+    | BoundedExists -> convert_quantification Exists apply
+    | BoundedForAll -> convert_quantification Forall apply
+    | UnboundedExists -> convert_quantification Exists apply
+    | UnboundedForAll -> convert_quantification Forall apply
+    | TemporalExists -> convert_temporal_quantification Exists apply
+    | TemporalForAll -> convert_temporal_quantification Forall apply
+    | FiniteSetMap -> convert_set_map apply
+    | FiniteSetFilter -> convert_set_filter apply
+    | FunctionSet -> convert_function_set apply
+    | FunctionConstructor -> convert_function_constructor apply
+    | FunctionDefinition -> convert_function_definition false apply
+    | RecursiveFunctionDefinition -> convert_function_definition true apply
+    | FunctionApplication -> convert_function_application apply
+    | RecordSet -> convert_record_set apply
+    | RecordConstructor -> convert_record_constructor apply
+    | RecordSelect -> convert_record_select apply
+    | Except -> convert_except apply
+    | IfThenElse -> convert_if_then_else apply
+    | Case -> convert_case apply
+    (* Grouping operators *)
+    | Pair | Sequence
+    (* Proof step operators *)
+    | CaseProofStep | PickProofStep | TakeProofStep | WitnessProofStep | SufficesProofStep | QedProofStep
+      -> conversion_failure ("Operator invalid at this location : " ^ Xml.show_built_in_operator op.operator) apply.node.location
 
 (** Converts a top-level module node. *)
 and convert_module_node (mule : Xml.module_node) : Module.T.mule =
@@ -592,7 +619,6 @@ and convert_bound_or_unbound_symbols (node : Xml.node) (all_symbols : Xml.symbol
     then conversion_failure "Cannot mix bound and unbound symbols" node.location
     else if List.exists (fun (b : Xml.unbound_symbol) -> b.is_tuple) unbound_symbols
     then conversion_failure "Unbounded tuple quantification is not supported" node.location
-    (* Unbounded *)
     else let mk_bound (bound : Xml.unbound_symbol) : bound = (
       resolve_bound_symbol bound.symbol_ref,
       Unknown, (* TODO: figure out purpose of this parameter *)
@@ -643,7 +669,7 @@ and convert_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node
 *)
 and convert_temporal_quantification (quant : Expr.T.quantifier) (apply : Xml.op_appl_node) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
-  | _ :: _, [Expression body] -> 
+  | _ :: _, [Expression body] ->
     let unbound_symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Unbound b -> Some b | _ -> None) apply.bound_symbols in
     if List.length unbound_symbols <> List.length apply.bound_symbols
     then conversion_failure "Temporal quantification requires unbound symbols" apply.node.location
@@ -752,24 +778,28 @@ and convert_record_set (apply : Xml.op_appl_node) : Expr.T.expr =
 and convert_record_constructor (apply : Xml.op_appl_node) : Expr.T.expr =
   convert_record_operator apply (fun arg -> Record arg)
 
+(** Utility function to convert a list of operands to a list of expression pairs.
+*)
+and as_pair (node : Xml.node) (operand : Xml.expr_or_op_arg) : (Xml.expression * Xml.expression) =
+  match operand with
+  | Expression OpApplNode {operator; bound_symbols = []; operands = [Expression left; Expression right]} -> (
+    match (resolve_ref operator).kind with
+    | BuiltInKind {operator = Pair} -> (left, right)
+    | _ -> conversion_failure "Expected pair of expressions" node.location
+  ) | _ -> conversion_failure "Expected pair of expressions" node.location
+
 (** The conversion logic for both record sets and record constructors is
     identical except for the wrapping constructor (Rect vs Record). This
     method captures that shared logic, taking the constructor as a parameter.
 *)
 and convert_record_operator (apply : Xml.op_appl_node) (constructor : (string * Expr.T.expr) list -> Expr.T.expr_) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
-  | [], (_ :: _ as pairs) ->
-    let mk_field (operand : Xml.expression) : (string * Expr.T.expr) option =
-      match operand with
-      | OpApplNode {operator; bound_symbols = []; operands = [Expression StringNode {value}; Expression right]} -> (
-        match (resolve_ref operator).kind with
-        | BuiltInKind {name = "$Pair"} -> Some (value, convert_expression right)
-        | _ -> None
-      ) | _ -> None
-    in let fields = pairs |> as_expr_ls __FUNCTION__ apply.node.location |> List.filter_map mk_field in
-    if List.length fields <> List.length pairs
-    then conversion_failure "Invalid operands to record operator; expected pairs of expressions" apply.node.location
-    else constructor fields
+  | [], _ :: _ ->
+    let mk_field (left, right : Xml.expression * Xml.expression) : (string * Expr.T.expr) =
+      match left, right with
+      | StringNode {value}, expr -> (value, convert_expression expr)
+      | _ -> conversion_failure "Expected field name to be a string" apply.node.location
+    in apply.operands |> List.map (as_pair apply.node) |> List.map mk_field |> constructor
   | _ -> conversion_failure "Invalid operands to record operator" apply.node.location
 ) |> attach_props apply.node
 
@@ -791,7 +821,7 @@ and convert_except (apply : Xml.op_appl_node) : Expr.T.expr = (
       match operand with
       | Expression OpApplNode {operator; bound_symbols = []; operands = [Expression OpApplNode {operator = update_op; bound_symbols = []; operands = update_path}; Expression new_value]} -> (
         match (resolve_ref operator).kind, (resolve_ref update_op).kind with
-        | BuiltInKind {name = "$Pair"}, BuiltInKind {name = "$Seq"} ->
+        | BuiltInKind {operator = Pair}, BuiltInKind {operator = Sequence} ->
           let path = update_path |> as_expr_ls __FUNCTION__ apply.node.location |> List.map convert_expression in
           Some (List.map mk_path path, convert_expression new_value)
         | _ -> None
@@ -817,17 +847,7 @@ and convert_if_then_else (apply : Xml.op_appl_node) : Expr.T.expr = (
 and convert_case (apply : Xml.op_appl_node) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
   | [], _ :: _ -> (
-    let as_pair (operand : Xml.expr_or_op_arg) : (Xml.expression * Xml.expression) option =
-      match operand with
-      | Expression OpApplNode {operator; bound_symbols = []; operands = [Expression cond; Expression result]} -> (
-        match (resolve_ref operator).kind with
-        | BuiltInKind {name = "$Pair"} -> Some (cond, result)
-        | _ -> None
-      ) | _ -> None
-    in let cases = List.filter_map as_pair apply.operands in
-    if List.length cases <> List.length apply.operands
-    then conversion_failure "Invalid operands to CASE; expected pairs of expressions" apply.node.location
-    else
+      let cases = List.map (as_pair apply.node) apply.operands in
       let mk_case ((predicate, expr) : Xml.expression * Xml.expression) : (Expr.T.expr * Expr.T.expr) =
         (convert_expression predicate, convert_expression expr)
       in match split_last_ls apply.node cases with
@@ -906,9 +926,9 @@ and convert_expression_or_operator_argument (op_expr : Xml.expr_or_op_arg) : Exp
   | OpArg uid -> match (resolve_ref uid).kind with
     | FormalParamNode param -> Opaque param.name |> attach_props param.node
     | UserDefinedOpKind userdef -> Opaque userdef.name |> attach_props userdef.node
-    | BuiltInKind builtin -> (match try_convert_builtin builtin with
-      | Some b -> Internal b |> attach_props builtin.node
-      | None -> todo "Built-in operator argument" builtin.name builtin.node.location)
+    | BuiltInKind builtin ->
+      let op = sany_to_tlapm_builtin builtin.node builtin.operator in
+      Internal op |> attach_props builtin.node
     | OpDeclNode decl -> Opaque decl.name |> attach_props decl.node
     | AssumeNode assume -> conversion_failure "Invalid operator argument reference to ASSUME" assume.node.location
     | AssumeDefNode assume -> conversion_failure ("Invalid operator argument reference to ASSUME: " ^ assume.name) assume.node.location
@@ -940,18 +960,18 @@ and convert_expression (expr : Xml.expression) : Expr.T.expr =
     given expression to properly evaluate it. Here, we throw away all of that
     information and let TLAPM re-derive the substitutions later on in the parse
     process.
-    
+
     Example:
 
     M == INSTANCE Mod WITH x <- y
     op == M!op
-    
+
     Here, the expression M!op is given as a subst_in_node. Compare this with
     an INSTANCE import that does not use substitution:
-      
+
     M == INSTANCE Naturals
     op == M!Nat
-    
+
     In this case, M!Nat is actually introduced as a new operator named M!Nat
     in the importing module, and directly referenced with the usual uid-based
     resolution mechanism. This might spell trouble for TLAPM as M!Nat is not
@@ -982,14 +1002,13 @@ and convert_let_in_node ({node; def_refs; body} : Xml.let_in_node) : Expr.T.expr
 
 (** Converts user-defined operators defined within LET/IN expressions.
 *)
-and convert_user_defined_op_kind (xml : Xml.user_defined_op_kind) : Expr.T.defn =
-  let name = attach_props xml.node xml.name in
-  let body = xml.body |> convert_expression in
+and convert_user_defined_op_kind (op : Xml.user_defined_op_kind) : Expr.T.defn =
+  let body = convert_expression op.body in
   (* TLAPS represents op(x) == expr as op == LAMBDA x : expr *)
-  let expr = match xml.params with
+  let expr = match op.params with
   | [] -> body
-  | params -> Lambda (List.map resolve_leibniz_formal_param_node params, body) |> attach_props xml.node
-  in Operator (name, expr) |> attach_props xml.node
+  | params -> Lambda (List.map resolve_leibniz_formal_param_node params, body) |> attach_props op.node
+  in Operator (attach_props op.node op.name, expr) |> attach_props op.node
 
 (** Converts user-defined operators defined in a module top-level.
 *)
@@ -1082,18 +1101,15 @@ and convert_by_proof ({node; facts; defs; only} : Xml.by_proof_node) : Proof.T.p
     AST node.
 *)
 and convert_proof_steps (uid : int) (previous_proof_level : int) ({node; steps} : Xml.steps_proof_node) : Proof.T.proof =
-  (* Splits the proof steps into ordinary proof steps and a final QED step. *)
-  let split_steps (steps : Xml.proof_step_group list) : (Xml.proof_step_group list * int) =
-    match List.rev steps with
-    | [] -> conversion_failure "Step-based proofs must have at least one step" node.location
-    | TheoremNodeRef uid :: rest -> (List.rev rest, uid)
-    | _ -> conversion_failure "Final (QED) step of a step-based proof must be a theorem reference" node.location
-  in let convert_qed_step (proof_level : proof_level) (uid : int) : Proof.T.qed_step * proof_level =
-    let thm = resolve_theorem_node uid in
-    let step_name = convert_proof_step_name uid proof_level thm.definition in
-    let qed_step = Qed (convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node in
-    attach_proof_step_name step_name qed_step, Known (step_number step_name)
-  in let steps, qed = split_steps steps
+  let convert_qed_step (proof_level : proof_level) (qed_proof_step : Xml.proof_step_group) : Proof.T.qed_step * proof_level =
+    match qed_proof_step with
+    | TheoremNodeRef uid ->
+      let thm = resolve_theorem_node uid in
+      let step_name = convert_proof_step_name uid proof_level thm.definition in
+      let qed_step = Qed (convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node in
+      attach_proof_step_name step_name qed_step, Known (step_number step_name)
+    | _ -> conversion_failure "QED step must be a theorem node" node.location
+  in let steps, qed = split_last_ls node steps
   in let steps, proof_level = List.fold_left convert_proof_step ([], Previous previous_proof_level) steps
   in let qed_step, proof_level = convert_qed_step proof_level qed
   in let proof_level = match proof_level with
@@ -1105,7 +1121,7 @@ and convert_proof_steps (uid : int) (previous_proof_level : int) ({node; steps} 
 
 (** Converts a specific proof step into the Proof.T.step variant expected by
     TLAPM. While TLAPM has thirteen proof variants as of this writing, SANY
-    bundles everything into only five: DefStepNode (where the user introduces 
+    bundles everything into only five: DefStepNode (where the user introduces
     new operator definitions into scope), UseOrHideNode, InstanceNode (removed
     from TLA+; see https://github.com/tlaplus/rfcs/issues/18), TheoremNodeRef,
     and TheoremNode. In keeping with the odd duplication of purpose between
@@ -1133,23 +1149,23 @@ and convert_proof_step (steps, proof_level : Proof.T.step list * proof_level) (s
   (* TODO: attach name to UseOrHide step *)
   | UseOrHide use_or_hide -> (Use (convert_usable use_or_hide, use_or_hide.only) |> attach_props use_or_hide.node) :: steps, proof_level
   | TheoremNodeRef uid ->
-    let is_op (uid : int) (op_name : string) : bool =
+    let is_op (uid : int) (op : Xml.built_in_operator) : bool =
       match (resolve_ref uid).kind with
-      | BuiltInKind op when op.name = op_name -> true
+      | BuiltInKind {operator} when operator = op -> true
       | _ -> false
     in let thm = resolve_theorem_node uid in
     let step_name = convert_proof_step_name uid proof_level thm.definition in
     let proof = convert_proof uid (step_number step_name) thm.proof in
     let step = match thm.body with
-    | Expression OpApplNode ({operator} as apply) when is_op operator "$Pfcase" ->
+    | Expression OpApplNode ({operator} as apply) when is_op operator CaseProofStep ->
       convert_case_proof_step apply proof
-    | Expression OpApplNode ({operator} as apply) when is_op operator "$Pick" ->
+    | Expression OpApplNode ({operator} as apply) when is_op operator PickProofStep ->
       convert_pick_proof_step apply proof
-    | Expression OpApplNode ({operator} as apply) when is_op operator "$Take" ->
+    | Expression OpApplNode ({operator} as apply) when is_op operator TakeProofStep ->
       convert_take_proof_step apply
-    | Expression OpApplNode ({operator} as apply) when is_op operator "$Witness" ->
+    | Expression OpApplNode ({operator} as apply) when is_op operator WitnessProofStep ->
       convert_witness_proof_step apply
-    | Expression OpApplNode ({operator} as apply) when is_op operator "$Suffices" ->
+    | Expression OpApplNode ({operator} as apply) when is_op operator SufficesProofStep ->
       convert_suffices_proof_step apply proof
     | _ -> Suffices (convert_sequent thm.body, proof)
     in (step |> attach_props thm.node |> attach_proof_step_name step_name) :: steps, Known (step_number step_name)
