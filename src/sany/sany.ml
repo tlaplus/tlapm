@@ -954,7 +954,7 @@ and convert_expression (expr : Xml.expression) : Expr.T.expr =
   match expr with
   (* TODO: true means @ from EXCEPT, false means @ from proof step (???) *)
   | AtNode at_node -> At true |> attach_props at_node.node
-  | DecimalNode (mantissa, exponent) -> todo "Decimal literals" (Int.to_string mantissa ^ "e" ^ Int.to_string exponent) None
+  | DecimalNode {node; integralPart; fractionalPart} -> Num (Int.to_string integralPart, Int.to_string fractionalPart) |> attach_props node
   | LabelNode label -> convert_label label
   | LetInNode let_in -> convert_let_in_node let_in
   | NumeralNode n -> Num (Int.to_string n.value, "") |> attach_props n.node

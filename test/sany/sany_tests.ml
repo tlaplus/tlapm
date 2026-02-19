@@ -20,24 +20,6 @@ let has_substring needle haystack =
 
 let should_run (path : string) : bool =
   let preds = [
-    (* RECURSIVE operators *)
-    (*
-    String.ends_with ~suffix:"Chameneos.tla";
-    String.ends_with ~suffix:"Stones.tla";
-    String.ends_with ~suffix:"glowingRaccoon/product.tla";
-    String.ends_with ~suffix:"CarTalkPuzzle.tla";
-    String.ends_with ~suffix:"CarTalkPuzzle.toolbox/Model_1/MC.tla";
-    String.ends_with ~suffix:"CarTalkPuzzle.toolbox/Model_2/MC.tla";
-    String.ends_with ~suffix:"CarTalkPuzzle.toolbox/Model_3/MC.tla";
-    String.ends_with ~suffix:"EWD840_json.tla";
-    String.ends_with ~suffix:"SingleLaneBridge.tla";
-    String.ends_with ~suffix:"SingleLaneBridge/MC.tla";
-    String.ends_with ~suffix:"GameOfLife.tla";
-    String.ends_with ~suffix:"btree.tla";
-    String.ends_with ~suffix:"Nano.tla";
-    String.ends_with ~suffix:"Huang.tla";
-    has_substring "/tower_of_hanoi/";
-    *)
     (* Subexpressions *)
     String.ends_with ~suffix:"MCPaxos.tla";
     String.ends_with ~suffix:"MCVoting.tla";

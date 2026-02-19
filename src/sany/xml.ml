@@ -211,6 +211,31 @@ let extract_inline_definition_opt (node, children : node * tree list) : (node * 
   | Node ("definition", [Node ("TheoremDefRef", [Node ("UID", [IValue uid])])]) :: children -> (node, Some uid, children);
   | _ -> (node, None, children)
 
+type decimal_node = {
+  node : node;
+  mantissa : int;
+  exponent : int;
+  integralPart : int;
+  fractionalPart : int
+}
+[@@deriving show]
+
+let xml_to_decimal_node (children : tree list) : decimal_node =
+  match extract_inline_node children with
+  | node, [
+      Node ("mantissa", [IValue mantissa]);
+      Node ("exponent", [IValue exponent]);
+      Node ("integralPart", [IValue integralPart]);
+      Node ("fractionalPart", [IValue fractionalPart]);
+    ] -> {
+      node;
+      mantissa;
+      exponent;
+      integralPart;
+      fractionalPart;
+    }
+  | _ -> ls_conversion_failure __FUNCTION__ children
+
 type 'a literal = {
   node  : node;
   value : 'a
@@ -310,7 +335,7 @@ and substitution = {
 
 and expression =
   | AtNode of at_node
-  | DecimalNode of int * int
+  | DecimalNode of decimal_node
   | LabelNode of label_node
   | LetInNode of let_in_node
   | NumeralNode of int literal
@@ -509,7 +534,7 @@ and xml_to_subst_in_node (children : tree list) : subst_in_node =
 and xml_to_expression (xml : tree) : expression =
   match xml with
   | Node ("AtNode", children) -> AtNode (xml_to_at_node children)
-  | Node ("DecimalNode", [Node ("mantissa", [IValue mantissa]); Node ("exponent", [IValue exponent])]) -> DecimalNode (mantissa, exponent)
+  | Node ("DecimalNode", children) -> DecimalNode (xml_to_decimal_node children)
   | Node ("LabelNode", children) -> LabelNode (xml_to_label_node children)
   | Node ("LetInNode", children) -> LetInNode (xml_to_let_in_node children)
   | Node ("NumeralNode", children) -> NumeralNode (xml_to_numeral_node children)
