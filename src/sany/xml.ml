@@ -623,12 +623,17 @@ type unit_kind =
 type module_node = {
   node  : node;
   name  : string;
+  extends : string list;
   units : unit_kind list;
 }
 [@@deriving show]
 
 let xml_to_module_node (children : tree list) : module_node =
-  let ref_child child =
+  let extract_extends (xml : tree) : string =
+    match xml with
+    | Node ("uniquename", [SValue name]) -> name
+    | _ -> conversion_failure __FUNCTION__ xml
+  in let ref_child child =
     match get_ref_opt child with
     | Some uid -> Ref uid
     | None -> match child with
@@ -636,9 +641,10 @@ let xml_to_module_node (children : tree list) : module_node =
       | Node ("UseOrHideNode", children) -> UseOrHide (xml_to_use_or_hide_node children)
       | _ -> conversion_failure __FUNCTION__ child
   in match extract_inline_node children with
-  | node, Node ("uniquename", [SValue name]) :: units -> {
+  | node, Node ("uniquename", [SValue name]) :: Node ("extends", extends) :: units -> {
     node;
     name;
+    extends = List.map extract_extends extends;
     units = List.map ref_child units
   }
   | _ -> ls_conversion_failure __FUNCTION__ children

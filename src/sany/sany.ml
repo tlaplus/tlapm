@@ -393,8 +393,8 @@ and convert_module_node (mule : Xml.module_node) : Module.T.mule =
     | TheoremDefNode theorem_def_node -> conversion_failure "TheoremDefNode should not be converted directly" None
   in {
     name = noprops mule.name;
-    extendees = []; (* TODO: figure out how to get list of modules imported by this module *)
-    instancees = [];
+    extendees = List.map (fun name -> noprops name) mule.extends;
+    instancees = []; (* TODO: collate list of instancees from units *)
     body = List.map convert_entry mule.units;
     defdepth = 0;
     stage = Parsed;
@@ -1200,7 +1200,7 @@ let convert_ast (ast : Xml.modules) : (Module.T.modctx * Module.T.mule, (string 
       if Coll.Sm.mem mule.name map then map
       else Coll.Sm.add mule.name (convert_module_node mule) map
     )
-    Coll.Sm.empty
+    Coll.Sm.empty (* TODO: use standard modules here *)
     ast.module_refs
   in let root_module = Coll.Sm.find ast.root_module ctx in
   root_module.core.important <- true;
