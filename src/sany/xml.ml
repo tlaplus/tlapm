@@ -23,7 +23,6 @@ let source_to_sany_xml_str (module_path : string) (stdlib_path : string) : (stri
     (Filename.dirname module_path)
     (Filename.quote stdlib_path)
     (Filename.quote module_path) in
-  print_endline cmd;
   let (pid, out_fd) = System.launch_process cmd in
   let in_chan = Unix.in_channel_of_descr out_fd in
   let output = In_channel.input_all in_chan in
@@ -940,6 +939,7 @@ type proof_step_group =
 
 type steps_proof_node = {
   node  : node;
+  proof_level : int;
   steps : proof_step_group list;
 }
 [@@deriving show]
@@ -953,10 +953,12 @@ let xml_to_steps_proof_node (children : tree list) : steps_proof_node =
     | Node ("InstanceNode", children) -> InstanceNode (xml_to_instance_node children)
     | _ -> conversion_failure __FUNCTION__ xml
   in match extract_inline_node children with
-  | node, steps ->{
-    node;
-    steps = List.map xml_to_proof_step_group steps
-  }
+  | node, Node ("proofLevel", [IValue proof_level]) :: steps -> {
+      node;
+      proof_level;
+      steps = List.map xml_to_proof_step_group steps
+    }
+  | _ -> ls_conversion_failure __FUNCTION__ children
 
 type proof_node_group =
   | Omitted of node

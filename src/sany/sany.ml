@@ -117,56 +117,14 @@ type bounds_kind =
 
 type bound_
 
-type proof_level =
- | Previous of int
- | Known of int
-
-(** Parses proof step names like <1>a as given in SANY's XML output, where
-    they are escaped using &lt; and &rt; for < and > respectively. Proof step
-    name can also be <+>, meaning one more than the previous proof level, or
-    <*>, meaning same as the current proof level.
+(** Extracts the name from named proof steps like <1>abc.
 *)
-let parse_proof_step_name (proof_level : proof_level) (uid : int) (proof_name : string) : stepno =
-  let parse_name (parse_state, level, name : int * char list * char list ) (c : char) : int * char list * char list =
-    match parse_state, c with
-    (* Start state: expect < or &lt; *)
-    | 0, '<' -> (4, level, name)
-    | 0, '&' -> (1, level, name)
-    | 1, 'l' -> (2, level, name)
-    | 2, 't' -> (3, level, name)
-    | 3, ';' -> (4, level, name)
-    (* Level parsing state: expect '+', '*', or digit *)
-    | 4, '+' | 4, '*' -> (6, [c], name)
-    (* Parse at least one digit then consume another digit, >, or &rt; *)
-    | 4, '0' .. '9' | 5, '0' .. '9' -> (5, c :: level, name)
-    | 5, '>' -> (10, level, name)
-    | 5, '&' -> (7, level, name)
-    (* Have seen + or *, expect > or &rt; *)
-    | 6, '>' -> (10, level, name)
-    | 6, '&' -> (7, level, name)
-    | 7, 'r' -> (8, level, name)
-    | 8, 't' -> (9, level, name)
-    | 9, ';' -> (10, level, name)
-    (* Proof name parsing state: read in zero or more a-zA-Z0-9_ *)
-    | 10, 'a' .. 'z' | 10, 'A' .. 'Z' | 10, '0' .. '9' | 10, '_' -> (10, level, c :: name)
-    (* Terminating '.' state; consume & ignore *)
-    | 10, '.' | 11, '.' -> (11, level, name)
-    | _ -> conversion_failure (Format.sprintf "Invalid character '%c' in proof step name '%s' at parsing state %d" c proof_name parse_state) None
-  in let (_, level, name) = String.fold_left parse_name (0, [], []) proof_name
-  in let digits_to_int (digits : char list) : int =
-    List.fold_right (fun (d : char) (acc : int) : int -> (int_of_char d - int_of_char '0') + acc * 10) digits 0
-  in let level = match level, proof_level with
-  | ['+'], Previous n -> n + 1
-  | ['+'], Known _ -> conversion_failure "Cannot have explicit proof level followed by <+>" None
-  | ['*'], Previous n -> n + 1
-  | ['*'], Known n -> n
-  | digits, Previous _ -> digits_to_int digits
-  | digits, Known n ->
-    let level = digits_to_int digits in
-    if level <> n then conversion_failure ("Mismatched proof level: expected " ^ string_of_int n ^ " but got " ^ string_of_int level) None
-    else level
-  in if name = [] then Unnamed (level, uid) else
-  Named (level, name |> List.rev |> List.to_seq |> String.of_seq, false)
+let parse_proof_step_name (proof_level : int) (proof_name : string) : stepno =
+  let name_start = String.index proof_name '>' in
+  let name_end = match String.index_opt proof_name '.' with | Some n -> n | None -> String.length proof_name in
+  let name_len = name_end - name_start in
+  let name = String.sub proof_name name_start name_len in
+  Named (proof_level, name, false)
 
 (** Wraps the given proof step with its name in the metadata.
 *)
@@ -274,13 +232,6 @@ let resolve_def (node : Xml.node) (ref : int) : use_def wrapped =
     | UserDefinedOpKind op -> Dvar op.name |> attach_props op.node
     | TheoremDefNode thm -> Dvar thm.name |> attach_props thm.node
     | other -> conversion_failure ("Invalid definition reference in BY proof: " ^ (Xml.show_entry_kind other)) node.location
-
-let convert_proof_step_name (uid : int) (proof_level : proof_level) (theorem_def_ref : int option) : stepno =
-  match theorem_def_ref with
-  | Some uid -> parse_proof_step_name proof_level uid (resolve_theorem_def_node uid).name
-  | None -> match proof_level with
-    | Previous n -> Unnamed (n + 1, uid)
-    | Known n -> Unnamed (n, uid)
 
 (** Converts a SANY built-in operator to a TLAPM built-in operator. This is
     only defined for a subset of the operators that SANY considers built-in,
@@ -1084,7 +1035,7 @@ and convert_proof (uid : int) (previous_proof_level : int) (proof : Xml.proof_no
   | Some Omitted node -> Omitted Explicit |> attach_props node |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
   | Some Obvious node -> Obvious |> attach_props node |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
   | Some By proof -> convert_by_proof proof |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
-  | Some Steps proof -> convert_proof_steps uid previous_proof_level proof
+  | Some Steps proof -> convert_proof_steps uid proof
 
 (** Converts proofs of the form BY x, y, z DEF a, b, c. This is another place
     where information is lost, as the facts and definitions are converted to
@@ -1097,6 +1048,11 @@ and convert_by_proof ({node; facts; defs; only} : Xml.by_proof_node) : Proof.T.p
   },
   only
 ) |> attach_props node
+
+and convert_proof_step_name (uid : int) (proof_level : int) (theorem_def_ref : int option) : stepno =
+  match theorem_def_ref with
+  | Some uid -> parse_proof_step_name proof_level (resolve_theorem_def_node uid).name
+  | None -> Unnamed (proof_level, uid)
 
 (** One possible proof form is a series of steps, culminating in a QED step.
     This method converts that structure. This is the most complex part of the
@@ -1111,21 +1067,18 @@ and convert_by_proof ({node; facts; defs; only} : Xml.by_proof_node) : Proof.T.p
     TLAPM requires a unique ID to be assigned, so we use the UID of the SANY
     AST node.
 *)
-and convert_proof_steps (uid : int) (previous_proof_level : int) ({node; steps} : Xml.steps_proof_node) : Proof.T.proof =
-  let convert_qed_step (proof_level : proof_level) (qed_proof_step : Xml.proof_step_group) : Proof.T.qed_step * proof_level =
+and convert_proof_steps (uid : int) ({node; proof_level; steps} : Xml.steps_proof_node) : Proof.T.proof =
+  let convert_qed_step (qed_proof_step : Xml.proof_step_group) : Proof.T.qed_step =
     match qed_proof_step with
     | TheoremNodeRef uid ->
       let thm = resolve_theorem_node uid in
       let step_name = convert_proof_step_name uid proof_level thm.definition in
-      let qed_step = Qed (convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node in
-      attach_proof_step_name step_name qed_step, Known (step_number step_name)
+      Qed (convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node
+      |> attach_proof_step_name step_name
     | _ -> conversion_failure "QED step must be a theorem node" node.location
   in let steps, qed = split_last_ls node steps
-  in let steps, proof_level = List.fold_left convert_proof_step ([], Previous previous_proof_level) steps
-  in let qed_step, proof_level = convert_qed_step proof_level qed
-  in let proof_level = match proof_level with
-   | Previous _ -> conversion_failure "Current proof level should be known after processing all steps" node.location
-   | Known n -> n
+  in let steps = List.map (convert_proof_step proof_level) steps
+  in let qed_step = convert_qed_step qed
   in Steps (List.rev steps, qed_step)
   |> attach_props node
   |> attach_proof_step_name (Unnamed (proof_level, uid))
@@ -1148,17 +1101,16 @@ and convert_proof_steps (uid : int) (previous_proof_level : int) ({node; steps} 
     The resulting list of proof steps is returned in reverse order, and must
     be reversed to be in the correct order for TLAPM.
 *)
-and convert_proof_step (steps, proof_level : Proof.T.step list * proof_level) (step : Xml.proof_step_group) : Proof.T.step list * proof_level =
+and convert_proof_step (proof_level : int) (step : Xml.proof_step_group) : Proof.T.step =
   match step with
   | InstanceNode {node} -> conversion_failure "INSTANCE proof steps are deprecated from the TLA+ language standard" node.location
   | TheoremNode -> todo "TheoremNode proof step" "" None
   (* TODO: attach name to DefStep step *)
   | DefStep {node; def_refs} ->
-    let step = Define (def_refs |> List.map resolve_user_defined_op_kind |> List.map convert_user_defined_op_kind) |> attach_props node in
-    step :: steps, proof_level
+    Define (def_refs |> List.map resolve_user_defined_op_kind |> List.map convert_user_defined_op_kind) |> attach_props node
   (* TODO: confirm boolean parameter corresponds to ONLY keyword *)
   (* TODO: attach name to UseOrHide step *)
-  | UseOrHide use_or_hide -> (Use (convert_usable use_or_hide, use_or_hide.only) |> attach_props use_or_hide.node) :: steps, proof_level
+  | UseOrHide use_or_hide -> Use (convert_usable use_or_hide, use_or_hide.only) |> attach_props use_or_hide.node
   | TheoremNodeRef uid ->
     let is_op (uid : int) (op : Xml.built_in_operator) : bool =
       match (resolve_ref uid).kind with
@@ -1179,7 +1131,7 @@ and convert_proof_step (steps, proof_level : Proof.T.step list * proof_level) (s
     | Expression OpApplNode ({operator} as apply) when is_op operator SufficesProofStep ->
       convert_suffices_proof_step apply proof
     | _ -> Suffices (convert_sequent thm.body, proof)
-    in (step |> attach_props thm.node |> attach_proof_step_name step_name) :: steps, Known (step_number step_name)
+    in step |> attach_props thm.node |> attach_proof_step_name step_name
 
 (** Converts CASE proof steps, like: <2>7. CASE UNCHANGED vars
 *)
