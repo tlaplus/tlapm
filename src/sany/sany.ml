@@ -476,7 +476,7 @@ and convert_instance (instance : Xml.instance_node) : Module.T.modunit = (
     inst_sub = List.map mk_substitution instance.substitutions;
   } in match instance.name with
   | Some name -> Definition (Instance (noprops name, instantiation) |> noprops, User, Hidden, Export)
-  | None -> Anoninst (instantiation, Export)
+  | None -> Anoninst (instantiation, if instance.local then Local else Export)
 ) |> attach_props instance.node
 
 and convert_usable (use_or_hide : Xml.use_or_hide_node) : Proof.T.usable = {
@@ -1030,7 +1030,7 @@ and convert_unit_user_defined_op_kind (xml: Xml.user_defined_op_kind) : Module.T
       convert_user_defined_op_kind xml,
       User,
       Hidden, (* If Visible, will be auto-included in all BY proofs *)
-      Export (* Whether definition is declared LOCAL *)
+      if xml.local then Local else Export
     )) |> attach_props xml.node
 
 (** This type is redundant with the below TheoremNode type and its conversion

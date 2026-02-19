@@ -367,6 +367,7 @@ and user_defined_op_kind = {
   body        : expression;
   params      : leibniz_param list;
   recursive   : bool;
+  local       : bool;
 }
 
 and assume_prove_node = {
@@ -555,6 +556,7 @@ and xml_to_user_defined_op_kind (children : tree list) : user_defined_op_kind =
       body        = children |> find_tag "body" |> child_of |> xml_to_expression;
       params      = children |> find_tag "params" |> children_of |> List.map xml_to_leibniz_param;
       recursive   = children |> List.exists (is_tag "recursive");
+      local       = children |> List.exists (is_tag "local");
     }
   | _ -> ls_conversion_failure __FUNCTION__ children
 
@@ -566,6 +568,7 @@ type instance_node = {
   module_name   : string;
   substitutions : substitution list;
   parameters    : int list;
+  local         : bool;
 }
 [@@deriving show]
 
@@ -575,12 +578,13 @@ let xml_to_instance_node (children : tree list) : instance_node =
     | Node ("uniquename", [SValue name]) :: children -> (node, Some name, children)
     | _ -> (node, None, children)
   in match children |> extract_inline_node |> extract_inline_name_opt with
-  | node, name, [Node ("module", [SValue module_name]); Node ("substs", substitutions); Node ("params", params)] -> {
+  | node, name, Node ("module", [SValue module_name]) :: Node ("substs", substitutions) :: Node ("params", params) :: local -> {
     node;
     name;
     module_name;
     substitutions = List.map xml_to_substitution substitutions;
     parameters = List.map get_ref params;
+    local = match local with | [Node ("local", _)] -> true | _ -> false;
   }
   | _ -> ls_conversion_failure __FUNCTION__ children
 
