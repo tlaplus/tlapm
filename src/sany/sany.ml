@@ -63,6 +63,11 @@ open Expr.T;;
 open Proof.T;;
 open Util;;
 
+type language_feature =
+  | RecursiveOperator
+
+exception Unsupported_language_feature of Loc.locus option * language_feature
+
 let todo (category : string) (msg : string) (loc : Xml.location option) : 'a =
   let loc = match loc with
   | Some loc -> Xml.show_location loc
@@ -277,6 +282,12 @@ let convert_proof_step_name (uid : int) (proof_level : proof_level) (theorem_def
     | Previous n -> Unnamed (n + 1, uid)
     | Known n -> Unnamed (n, uid)
 
+(** Converts a SANY built-in operator to a TLAPM built-in operator. This is
+    only defined for a subset of the operators that SANY considers built-in,
+    and not all operators that TLAPM considers built-in are represented in
+    the SANY built-in operators. TLAPM also considers all the standard module
+    operators to be built-in operators.
+*)
 let sany_to_tlapm_builtin (node : Xml.node) (builtin : Xml.built_in_operator) : Builtin.builtin =
   match builtin with
   (* Reserved words *)
@@ -400,7 +411,7 @@ let rec convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_k
     | Except -> convert_except apply
     | IfThenElse -> convert_if_then_else apply
     | Case -> convert_case apply
-    (* Grouping operators *)
+    (* Grouping operators used within other operators *)
     | Pair | Sequence
     (* Proof step operators *)
     | CaseProofStep | PickProofStep | TakeProofStep | WitnessProofStep | SufficesProofStep | QedProofStep
@@ -1014,7 +1025,7 @@ and convert_user_defined_op_kind (op : Xml.user_defined_op_kind) : Expr.T.defn =
 *)
 and convert_unit_user_defined_op_kind (xml: Xml.user_defined_op_kind) : Module.T.modunit =
   match xml.recursive with
-  | true -> conversion_failure "TLAPS does not yet support recursive operators" xml.node.location
+  | true -> raise (Unsupported_language_feature (Option.map convert_location xml.node.location, RecursiveOperator))
   | false -> (Definition (
       convert_user_defined_op_kind xml,
       User,

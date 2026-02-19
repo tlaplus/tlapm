@@ -12,11 +12,18 @@
 let source_to_sany_xml_str (module_path : string) (stdlib_path : string) : (string, (string * int)) result =
   let open Unix in
   let open Paths in
+  (** Module jars must be appended at the end of the classpath; the reason
+      for this is that some commonly-used jars like Apalache's embed SANY
+      along with the XMLExporter class, so we accidentally use Apalache's
+      (old) embedded version instead of the one from tla2tools.jar if we put
+      Apalache earlier in the classpath.
+  *)
   let cmd = Printf.sprintf "java -cp %s tla2sany.xml.XMLExporter -I %s -I %s -t %s"
-    (backend_classpath_string "tla2tools.jar")
+    ((backend_classpath_string "tla2tools.jar") ^ (String.concat ":" !Params.module_jar_paths))
     (Filename.dirname module_path)
     (Filename.quote stdlib_path)
     (Filename.quote module_path) in
+  print_endline cmd;
   let (pid, out_fd) = System.launch_process cmd in
   let in_chan = Unix.in_channel_of_descr out_fd in
   let output = In_channel.input_all in_chan in
@@ -218,9 +225,11 @@ let xml_to_numeral_node (children : tree list) : int literal =
 let xml_to_string_node (children : tree list) : string literal =
   match extract_inline_node children with
   | node, [Node ("StringValue", [SValue value])] -> {node; value}
+  (* In the case of an empty string "", node has no children *)
+  | node, [Node ("StringValue", [])] -> {node; value = ""}
   (* Sometimes strings can accidentally be converted into integers! *)
   | node, [Node ("StringValue", [IValue value])] -> {node; value = Int.to_string value}
-  | node, children -> ls_conversion_failure __FUNCTION__ children
+  | node, _ -> ls_conversion_failure __FUNCTION__ children
 
 type leibniz_param = {
   ref         : int;

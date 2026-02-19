@@ -59,6 +59,8 @@ let prefer_stdlib = ref false
 type parser = | Tlapm | Sany
 let parser_backend = ref Tlapm
 
+let module_jar_paths = ref []
+
 let noproving = ref false (* Don't send any obligation to the back-ends. *)
 
 let printallobs = ref false

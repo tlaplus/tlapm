@@ -21,6 +21,7 @@ let has_substring needle haystack =
 let should_run (path : string) : bool =
   let preds = [
     (* RECURSIVE operators *)
+    (*
     String.ends_with ~suffix:"Chameneos.tla";
     String.ends_with ~suffix:"Stones.tla";
     String.ends_with ~suffix:"glowingRaccoon/product.tla";
@@ -34,7 +35,9 @@ let should_run (path : string) : bool =
     String.ends_with ~suffix:"GameOfLife.tla";
     String.ends_with ~suffix:"btree.tla";
     String.ends_with ~suffix:"Nano.tla";
+    String.ends_with ~suffix:"Huang.tla";
     has_substring "/tower_of_hanoi/";
+    *)
     (* Subexpressions *)
     String.ends_with ~suffix:"MCPaxos.tla";
     String.ends_with ~suffix:"MCVoting.tla";
@@ -42,32 +45,9 @@ let should_run (path : string) : bool =
     String.ends_with ~suffix:"BPConProof.tla";
     String.ends_with ~suffix:"PConProof.tla";
     String.ends_with ~suffix:"VoteProof.tla";
-    (* Community modules *)
-    String.ends_with ~suffix:"MCtcp.tla";
-    String.ends_with ~suffix:"tcp.tla";
-    String.ends_with ~suffix:"MCReplicatedLog.tla";
-    String.ends_with ~suffix:"MCCRDT.tla";
-    String.ends_with ~suffix:"DistributedReplicatedLog.tla";
-    String.ends_with ~suffix:"SimTokenRing.tla";
-    String.ends_with ~suffix:"EWD687a_anim.tla";
-    String.ends_with ~suffix:"EWD687a.tla";
-    String.ends_with ~suffix:"Huang.tla";
-    String.ends_with ~suffix:"EWD840_anim.tla";
-    String.ends_with ~suffix:"KnuthYao.tla";
-    String.ends_with ~suffix:"TransitiveClosure.tla";
-    String.ends_with ~suffix:"ClientCentric.tla";
-    String.ends_with ~suffix:"KVsnap.tla";
-    String.ends_with ~suffix:"KeyValueStore/Util.tla";
-    String.ends_with ~suffix:"YoYoNoPruning.tla";
-    String.ends_with ~suffix:"YoYoPruning.tla";
-    String.ends_with ~suffix:"YoYoAllGraphs.tla";
-    has_substring "/SDP_Attack_New_Solution_Spec/";
-    has_substring "/SDP_Attack_Spec/";
-    has_substring "/ewd998/";
-    (* Apalache *)
-    String.ends_with ~suffix:"Einstein.tla";
     (* PlusCal validation output bug *)
     String.ends_with ~suffix:"AddTwo.tla";
+    has_substring "/ewd998/";
   ] in not (List.exists (fun pred -> pred path) preds)
 
 let _start_at (filename : string) (files : string list) : string list =
@@ -81,19 +61,27 @@ let _start_at (filename : string) (files : string list) : string list =
 
 let parse_tla_file filename =
   let open Stdlib in
+  let open Tlapm_lib__Sany in
   print_endline ("Parsing " ^ filename ^ " ...");
   try match modctx_of_string ~content:"" ~filename ~loader_paths:[] ~prefer_stdlib:true with
   | Error (_, msg) -> Printf.eprintf "%s\n" msg; failwith "Parsing failed"
   | Ok _ -> print_endline (filename ^ " success")
-  with Failure (e : string) ->
+  with
+    (* This is okay, we just don't support recursive operators *)
+  | Unsupported_language_feature (_, RecursiveOperator) -> ()
+  | Failure (e : string) ->
     Printf.eprintf "%s\n" e;
     failwith "Parsing failed"
 
 let _ =
   parser_backend := Sany;
+  module_jar_paths := [
+    "/mnt/data/ahelwer/src/tlaplus/examples/deps/apalache/lib/apalache.jar";
+    "/mnt/data/ahelwer/src/tlaplus/examples/deps/community/modules.jar";
+  ];
   add_debug_flag "sany";
   let tla_files =
     find_tla_files "/mnt/data/ahelwer/src/tlaplus/examples/specifications"
     |> List.filter should_run
-    (*|> _start_at "AddTwo.tla"*)
+    (*|> _start_at "SimTokenRing.tla"*)
   in List.map parse_tla_file tla_files
