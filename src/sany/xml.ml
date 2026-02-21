@@ -754,6 +754,7 @@ type built_in_operator =
   | Except
   | IfThenElse
   | Case
+  | Subexpression
   | Pair
   | Sequence
   | CaseProofStep
@@ -824,6 +825,7 @@ let xml_to_built_in_operator (name : string) : built_in_operator =
   | "$Except" -> Except
   | "$IfThenElse" -> IfThenElse
   | "$Case" -> Case
+  | "$Nop" -> Subexpression
   | "$Pair" -> Pair
   | "$Seq" -> Sequence
   | "$Pfcase" -> CaseProofStep

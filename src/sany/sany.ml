@@ -65,6 +65,7 @@ open Util;;
 
 type language_feature =
   | RecursiveOperator
+  | Subexpression
 
 exception Unsupported_language_feature of Loc.locus option * language_feature
 
@@ -362,6 +363,7 @@ let rec convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_k
     | Except -> convert_except apply
     | IfThenElse -> convert_if_then_else apply
     | Case -> convert_case apply
+    | Subexpression -> convert_subexpression apply
     (* Grouping operators used within other operators *)
     | Pair | Sequence
     (* Proof step operators *)
@@ -818,6 +820,12 @@ and convert_case (apply : Xml.op_appl_node) : Expr.T.expr = (
     )
   | _ -> conversion_failure "Invalid bound symbols or operands to CASE" apply.node.location
 ) |> attach_props apply.node
+
+(** Subexpressions like M!N!op(expr)!1.
+    TODO: SANY currently does not export all the info needed for this.
+*)
+and convert_subexpression (apply : Xml.op_appl_node) : Expr.T.expr = (
+  raise (Unsupported_language_feature (Option.map convert_location apply.node.location, Subexpression)))
 
 (** Conversion of application of user-defined operators, including operators
     defined in the standard modules.

@@ -13,7 +13,7 @@ let find_tla_files dir =
   in
   loop []
 
-let has_substring needle haystack =
+let _has_substring needle haystack =
   match Str.search_forward (Str.regexp_string needle) haystack 0 with
   | _ -> true
   | exception Not_found -> false
@@ -21,15 +21,17 @@ let has_substring needle haystack =
 let should_run (path : string) : bool =
   let preds = [
     (* Subexpressions *)
+    (*
     String.ends_with ~suffix:"MCPaxos.tla";
     String.ends_with ~suffix:"MCVoting.tla";
     String.ends_with ~suffix:"EWD840_proof.tla";
     String.ends_with ~suffix:"BPConProof.tla";
     String.ends_with ~suffix:"PConProof.tla";
     String.ends_with ~suffix:"VoteProof.tla";
+    *)
     (* PlusCal validation output bug *)
     String.ends_with ~suffix:"AddTwo.tla";
-    has_substring "/ewd998/";
+    _has_substring "/ewd998/";
   ] in not (List.exists (fun pred -> pred path) preds)
 
 let _start_at (filename : string) (files : string list) : string list =
@@ -51,6 +53,8 @@ let parse_tla_file filename =
   with
     (* This is okay, we just don't support recursive operators *)
   | Unsupported_language_feature (_, RecursiveOperator) -> ()
+    (* This is okay, we just don't support subexpressions *)
+  | Unsupported_language_feature (_, Subexpression) -> ()
   | Failure (e : string) ->
     Printf.eprintf "%s\n" e;
     failwith "Parsing failed"
@@ -65,5 +69,5 @@ let _ =
   let tla_files =
     find_tla_files "/mnt/data/ahelwer/src/tlaplus/examples/specifications"
     |> List.filter should_run
-    (*|> _start_at "SimTokenRing.tla"*)
+    |> _start_at "MCPaxos.tla"
   in List.map parse_tla_file tla_files
