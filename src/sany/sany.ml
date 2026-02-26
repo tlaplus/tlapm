@@ -234,6 +234,14 @@ let resolve_def (node : Xml.node) (ref : int) : use_def wrapped =
     | TheoremDefNode thm -> Dvar thm.name |> attach_props thm.node
     | other -> conversion_failure ("Invalid definition reference in BY proof: " ^ (Xml.show_entry_kind other)) node.location
 
+(** Predicate for quickly checking whether a given UID corresponds to the
+    given built-in operator.
+*)
+let is_builtin_op (uid : int) (op : Xml.built_in_operator) : bool =
+  match (resolve_ref uid).kind with
+  | BuiltInKind {operator} when operator = op -> true
+  | _ -> false
+
 (** Converts a SANY built-in operator to a TLAPM built-in operator. This is
     only defined for a subset of the operators that SANY considers built-in,
     and not all operators that TLAPM considers built-in are represented in
@@ -354,8 +362,8 @@ let rec convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_k
     | FiniteSetFilter -> convert_set_filter apply
     | FunctionSet -> convert_function_set apply
     | FunctionConstructor -> convert_function_constructor apply
-    | FunctionDefinition -> convert_function_definition false apply
-    | RecursiveFunctionDefinition -> convert_function_definition true apply
+    | FunctionDefinition -> convert_function_constructor apply
+    | RecursiveFunctionDefinition -> convert_recursive_function_definition apply
     | FunctionApplication -> convert_function_application apply
     | RecordSet -> convert_record_set apply
     | RecordConstructor -> convert_record_constructor apply
@@ -367,7 +375,7 @@ let rec convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_k
     (* Grouping operators used within other operators *)
     | Pair | Sequence
     (* Proof step operators *)
-    | CaseProofStep | PickProofStep | TakeProofStep | WitnessProofStep | SufficesProofStep | QedProofStep
+    | CaseProofStep | PickProofStep | TakeProofStep | HaveProofStep | WitnessProofStep | SufficesProofStep | QedProofStep
       -> conversion_failure ("Operator invalid at this location : " ^ Xml.show_built_in_operator op.operator) apply.node.location
 
 (** Converts a top-level module node. *)
@@ -438,7 +446,6 @@ and convert_usable (use_or_hide : Xml.use_or_hide_node) : Proof.T.usable = {
 }
 
 and convert_use_or_hide (use_or_hide : Xml.use_or_hide_node) : Module.T.modunit =
-  (* TODO: confirm `Use boolean parameter really is the ONLY keyword *)
   let action = if use_or_hide.hide then `Hide else `Use use_or_hide.only in
   Mutate (action, convert_usable use_or_hide) |> attach_props use_or_hide.node
 
@@ -672,29 +679,24 @@ and convert_set_filter (apply : Xml.op_appl_node) : Expr.T.expr = (
   | _ -> conversion_failure "Invalid bounds or operands to set filter" apply.node.location
 ) |> attach_props apply.node
 
-(** Conversion of function definitions where the function body does not refer
-    to the function definition.
-
-    Conversion of recursive functions where the function body refers to the
+(** Conversion of recursive functions where the function body refers to the
     function definition, for example f[x \in Nat] == f[x - 1]. Both SANY and
     TLAPM represent these as f == [x \in Nat |-> f[x - 1]], and here we
     convert the right-hand side of this definition. The function name is
     introduced as the first symbol, unbound.
 *)
-and convert_function_definition (is_recursive : bool) (apply : Xml.op_appl_node) : Expr.T.expr = (
-  let bounds, body = match is_recursive, apply.bound_symbols, apply.operands with
-    | true, Unbound function_name :: (_ :: _ as all_bound_symbols), [Expression body] ->
+and convert_recursive_function_definition (apply : Xml.op_appl_node) : Expr.T.expr = (
+  let bounds, body = match apply.bound_symbols, apply.operands with
+    | Unbound function_name :: (_ :: _ as all_bound_symbols), [Expression body] ->
       all_bound_symbols, convert_expression body
-    | false, (_ :: _), [Expression body] ->
-      apply.bound_symbols, convert_expression body
     | _ -> conversion_failure "Invalid number of bounds or operands to function definition" apply.node.location
   in match convert_bounds apply.node bounds with
   | Tuply tuply_bounds -> FcnTuply (tuply_bounds, body)
   | NonTuply bounds -> Fcn (bounds, body)
 ) |> attach_props apply.node
 
-(** Converts function construction expressions like [x \in S, y \in P |-> x + y];
-    also handles record construction, like [x |-> expr1, y |-> expr2].
+(** Converts function construction expressions like [x \in S, y \in P |-> x + y]
+    and also f[x \in S, y \in P] == x + y.
 *)
 and convert_function_constructor (apply : Xml.op_appl_node) : Expr.T.expr =
   match apply.bound_symbols, apply.operands with
@@ -714,13 +716,31 @@ and convert_function_set (apply : Xml.op_appl_node) : Expr.T.expr = (
   | _ -> conversion_failure "Invalid operands to function set expression" apply.node.location
 ) |> attach_props apply.node
 
-(** Conversion of function application, like f[x, y, z].
+(** Conversion of function application, like f[x, y, z]. Function application
+    with multiple arguments is represented using a tuple, with the special
+    case of a tuple with a single element being just that tuple itself as an
+    argument instead of the argument being destructured from it. The empty
+    tuple argument is also a weird one which must be handled. So:
+     - f[x] args given as expression x, transformed into list [x]
+     - f[x, y] args given as a tuple <<x, y>>, transformed into list [x; y]
+     - f[<<x>>] args given as tuple <<x>>, transformed into list [<<x>>]
+     - f[<<>>] args given as tuple <<>>, transformed into list [<<>>]
+
+     TODO: validate all of these cases
 *)
 and convert_function_application (apply : Xml.op_appl_node) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
-  | [], Expression fn :: all_args ->
-    let args = apply.operands |> as_expr_ls __FUNCTION__ apply.node.location |> List.map convert_expression in
-    FcnApp (convert_expression fn, args)
+  | [], [Expression fn; Expression args] -> (
+      let args = match args with
+      | OpApplNode {node; operator; operands} when is_builtin_op operator TupleLiteral -> (
+        match operands with
+        | [] -> [args] (* Empty tuple *)
+        | [Expression single_arg] -> [args] (* Tuple with single element *)
+        | _ -> as_expr_ls __FUNCTION__ node.location operands (* Tuple with multiple elements *)
+        )
+      | _ -> [args] (* Not a tuple; single expression *)
+      in FcnApp (convert_expression fn, List.map convert_expression args)
+    )
   | _ -> conversion_failure "Invalid operands to function application" apply.node.location
 ) |> attach_props apply.node
 
@@ -1120,23 +1140,21 @@ and convert_proof_step (proof_level : int) (step : Xml.proof_step_group) : Proof
   (* TODO: attach name to UseOrHide step *)
   | UseOrHide use_or_hide -> Use (convert_usable use_or_hide, use_or_hide.only) |> attach_props use_or_hide.node
   | TheoremNodeRef uid ->
-    let is_op (uid : int) (op : Xml.built_in_operator) : bool =
-      match (resolve_ref uid).kind with
-      | BuiltInKind {operator} when operator = op -> true
-      | _ -> false
-    in let thm = resolve_theorem_node uid in
+    let thm = resolve_theorem_node uid in
     let step_name = convert_proof_step_name uid proof_level thm.definition in
     let proof = convert_proof uid (step_number step_name) thm.proof in
     let step = match thm.body with
-    | Expression OpApplNode ({operator} as apply) when is_op operator CaseProofStep ->
+    | Expression OpApplNode ({operator} as apply) when is_builtin_op operator CaseProofStep ->
       convert_case_proof_step apply proof
-    | Expression OpApplNode ({operator} as apply) when is_op operator PickProofStep ->
+    | Expression OpApplNode ({operator} as apply) when is_builtin_op operator PickProofStep ->
       convert_pick_proof_step apply proof
-    | Expression OpApplNode ({operator} as apply) when is_op operator TakeProofStep ->
+    | Expression OpApplNode ({operator} as apply) when is_builtin_op operator TakeProofStep ->
       convert_take_proof_step apply
-    | Expression OpApplNode ({operator} as apply) when is_op operator WitnessProofStep ->
+    | Expression OpApplNode ({operator} as apply) when is_builtin_op operator HaveProofStep ->
+      convert_have_proof_step apply
+    | Expression OpApplNode ({operator} as apply) when is_builtin_op operator WitnessProofStep ->
       convert_witness_proof_step apply
-    | Expression OpApplNode ({operator} as apply) when is_op operator SufficesProofStep ->
+    | Expression OpApplNode ({operator} as apply) when is_builtin_op operator SufficesProofStep ->
       convert_suffices_proof_step apply proof
     | _ -> Suffices (convert_sequent thm.body, proof)
     in step |> attach_props thm.node |> attach_proof_step_name step_name
@@ -1170,6 +1188,13 @@ and convert_take_proof_step (apply : Xml.op_appl_node) : Proof.T.step_ =
       | NonTuply bounds -> Take bounds
     )
   | _ -> conversion_failure "Invalid number of bounds or operands to TAKE proof step" apply.node.location
+
+(** Converts HAVE P proof steps.
+*)
+and convert_have_proof_step (apply : Xml.op_appl_node) : Proof.T.step_ =
+  match apply.bound_symbols, apply.operands with
+  | [], [Expression expr] -> Have (convert_expression expr)
+  | _ -> conversion_failure "Invalid bounds or operands to HAVE proof step" apply.node.location
 
 (** Converts WITNESS x, y, z proof steps.
 *)

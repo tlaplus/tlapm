@@ -23,6 +23,7 @@ let source_to_sany_xml_str (module_path : string) (stdlib_path : string) : (stri
     (Filename.dirname module_path)
     (Filename.quote stdlib_path)
     (Filename.quote module_path) in
+  if Params.debugging "sany" then print_endline cmd else ();
   let (pid, out_fd) = System.launch_process cmd in
   let in_chan = Unix.in_channel_of_descr out_fd in
   let output = In_channel.input_all in_chan in
@@ -454,6 +455,8 @@ and xml_to_let_in_node (children : tree list) : let_in_node =
     }
   | _ -> ls_conversion_failure __FUNCTION__ children
 
+(** TODO: there are more fields to parse in this structure
+*)
 and xml_to_at_node (children : tree list) : at_node =
   match extract_inline_node children with
   | node, _ -> {node}
@@ -760,6 +763,7 @@ type built_in_operator =
   | CaseProofStep
   | PickProofStep
   | TakeProofStep
+  | HaveProofStep
   | WitnessProofStep
   | SufficesProofStep
   | QedProofStep
@@ -826,14 +830,15 @@ let xml_to_built_in_operator (name : string) : built_in_operator =
   | "$IfThenElse" -> IfThenElse
   | "$Case" -> Case
   | "$Nop" -> Subexpression
-  | "$Pair" -> Pair
-  | "$Seq" -> Sequence
   | "$Pfcase" -> CaseProofStep
   | "$Pick" -> PickProofStep
   | "$Take" -> TakeProofStep
+  | "$Have" -> HaveProofStep
   | "$Witness" -> WitnessProofStep
   | "$Suffices" -> SufficesProofStep
   | "$Qed" -> QedProofStep
+  | "$Pair" -> Pair
+  | "$Seq" -> Sequence
   | name -> conversion_failure __FUNCTION__ (SValue name)
 
 type built_in_kind = {

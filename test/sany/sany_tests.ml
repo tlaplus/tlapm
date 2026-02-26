@@ -20,18 +20,7 @@ let _has_substring needle haystack =
 
 let should_run (path : string) : bool =
   let preds = [
-    (* Subexpressions *)
-    (*
-    String.ends_with ~suffix:"MCPaxos.tla";
-    String.ends_with ~suffix:"MCVoting.tla";
-    String.ends_with ~suffix:"EWD840_proof.tla";
-    String.ends_with ~suffix:"BPConProof.tla";
-    String.ends_with ~suffix:"PConProof.tla";
-    String.ends_with ~suffix:"VoteProof.tla";
-    *)
-    (* PlusCal validation output bug *)
-    String.ends_with ~suffix:"AddTwo.tla";
-    _has_substring "/ewd998/";
+    (* String.ends_with ~suffix:"NameOfSpecToSkip.tla"; *)
   ] in not (List.exists (fun pred -> pred path) preds)
 
 let _start_at (filename : string) (files : string list) : string list =
@@ -66,8 +55,11 @@ let _ =
     "/mnt/data/ahelwer/src/tlaplus/examples/deps/community/modules.jar";
   ];
   add_debug_flag "sany";
-  let tla_files =
-    find_tla_files "/mnt/data/ahelwer/src/tlaplus/examples/specifications"
+  let tla_files = [
+    "/mnt/data/ahelwer/src/tlaplus/examples/specifications";
+    "/mnt/data/ahelwer/src/tlaplus/proofs/examples";
+    "/mnt/data/ahelwer/src/tlaplus/proofs/library"
+    ] |> List.map find_tla_files |> List.flatten
     |> List.filter should_run
-    |> _start_at "MCPaxos.tla"
+    (*|> _start_at "MCPaxos.tla"*)
   in List.map parse_tla_file tla_files
