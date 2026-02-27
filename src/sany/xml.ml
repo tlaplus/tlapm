@@ -590,6 +590,29 @@ let xml_to_instance_node (children : tree list) : instance_node =
   }
   | _ -> ls_conversion_failure __FUNCTION__ children
 
+(** This is a weird case that is almost definitely just a bug on SANY's side.
+    For some reason SANY treats DEFINE M == INSTANCE Naturals proof steps
+    differently from any other INSTANCE node, which always are either
+    immediately inlined as M!-prefixed operators (in LET/IN blocks) or given
+    as an InstanceNode type. This is the ModuleInstanceKind node type, which
+    cannot even represent parameterization or substitution. In fact, it does
+    not even export the name of the instance at all! Thankfully very few
+    proofs seem to include DEFINE steps with an INSTANCE.
+
+    TODO: fix this on SANY's side.
+*)
+let xml_to_define_step_instance_node (children : tree list) : instance_node =
+  match extract_inline_node children with
+  | node, Node ("uniquename", [SValue name]) :: local -> {
+    node;
+    name = Some name;
+    module_name = "";
+    substitutions = [];
+    parameters = [];
+    local = match local with | [Node ("local", _)] -> true | _ -> false;
+  }
+  | _ -> ls_conversion_failure __FUNCTION__ children
+
 type use_or_hide_node = {
   node      : node;
   facts     : expression list;
@@ -1011,6 +1034,7 @@ type entry_kind =
   | ModuleNode of module_node
   | OpDeclNode of op_decl_node
   | AssumeNode of assume_node
+  | ModuleInstanceKind of instance_node
   | UserDefinedOpKind of user_defined_op_kind
   | BuiltInKind of built_in_kind
   | TheoremNode of theorem_node
@@ -1027,6 +1051,7 @@ let xml_to_entry_kind (xml : tree) : entry_kind =
   | Node ("UserDefinedOpKind", children) -> UserDefinedOpKind (xml_to_user_defined_op_kind children)
   | Node ("BuiltInKind", children) -> BuiltInKind (xml_to_built_in_kind children)
   | Node ("FormalParamNode", children) -> FormalParamNode (xml_to_formal_param_node children)
+  | Node ("ModuleInstanceKind", children) -> ModuleInstanceKind (xml_to_define_step_instance_node children)
   | Node ("TheoremDefNode", children) -> TheoremDefNode (xml_to_theorem_def_node children)
   | Node ("TheoremNode", children)-> TheoremNode (xml_to_theorem_node children)
   | _ -> conversion_failure __FUNCTION__ xml

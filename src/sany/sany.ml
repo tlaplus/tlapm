@@ -145,82 +145,72 @@ let attach_props (props : Xml.node) (value : 'a) : 'a wrapped =
 
 (** Look up the given ref in the global entries table, failing if not found.
 *)
-let resolve_ref (uid : int) : Xml.entry =
+let resolve_ref (node : Xml.node) (uid : int) : Xml.entry =
   match Coll.Im.find_opt uid !entries with
   | Some kind -> {uid; kind}
-  | None -> conversion_failure ("Unresolved reference to entry UID: " ^ string_of_int uid) None
+  | None -> conversion_failure ("Unresolved reference to entry UID: " ^ string_of_int uid) node.location
 
 (** A typed version of resolve_ref for module nodes.
 *)
-let resolve_module_node (uid : int) : Xml.module_node =
-  match (resolve_ref uid).kind with
+let resolve_module_node (node : Xml.node) (uid : int) : Xml.module_node =
+  match (resolve_ref node uid).kind with
   | ModuleNode mule -> mule
-  | _ -> conversion_failure ("Expected module node for UID: " ^ string_of_int uid) None
+  | _ -> conversion_failure ("Expected module node for UID: " ^ string_of_int uid) node.location
 
 (** A typed version of resolve_ref for operator declaration nodes.
 *)
-let resolve_op_decl_node (uid : int) : Xml.op_decl_node =
-  match (resolve_ref uid).kind with
+let resolve_op_decl_node (node : Xml.node) (uid : int) : Xml.op_decl_node =
+  match (resolve_ref node uid).kind with
   | OpDeclNode odn -> odn
-  | _ -> conversion_failure ("Expected operator declaration node for UID: " ^ string_of_int uid) None
+  | _ -> conversion_failure ("Expected operator declaration node for UID: " ^ string_of_int uid) node.location
 
 (** A typed version of resolve_ref for user-defined operators.
 *)
-let resolve_user_defined_op_kind (uid : int) : Xml.user_defined_op_kind =
-  match (resolve_ref uid).kind with
+let resolve_user_defined_op_kind (node : Xml.node) (uid : int) : Xml.user_defined_op_kind =
+  match (resolve_ref node uid).kind with
   | UserDefinedOpKind udok -> udok
-  | _ -> conversion_failure ("Expected user defined operator for UID: " ^ string_of_int uid) None
+  | _ -> conversion_failure ("Expected user defined operator for UID: " ^ string_of_int uid) node.location
 
 (** A typed version of resolve_ref for operator parameter nodes.
 *)
-let resolve_formal_param_node (uid : int) : Xml.formal_param_node =
-  match (resolve_ref uid).kind with
+let resolve_formal_param_node (node : Xml.node) (uid : int) : Xml.formal_param_node =
+  match (resolve_ref node uid).kind with
   | Xml.FormalParamNode xml -> xml
-  | _ -> conversion_failure ("Expected formal parameter node for UID: " ^ string_of_int uid) None
-
-(** A typed version of resolve_ref for Leibniz operator parameter nodes.
-*)
-let resolve_leibniz_formal_param_node (param : Xml.leibniz_param) : (hint * shape) =
-  let fpn = resolve_formal_param_node param.ref in (
-    attach_props fpn.node fpn.name,
-    match fpn.arity with
-    | 0 -> Shape_expr
-    | n -> Shape_op n
-  )
+  | _ -> conversion_failure ("Expected formal parameter node for UID: " ^ string_of_int uid) node.location
 
 (** A typed version of resolve_ref for theorem definition nodes.
 *)
-let resolve_theorem_def_node (uid : int) : Xml.theorem_def_node =
-  match (resolve_ref uid).kind with
+let resolve_theorem_def_node (node : Xml.node) (uid : int) : Xml.theorem_def_node =
+  match (resolve_ref node uid).kind with
   | TheoremDefNode xml -> xml
-  | _ -> conversion_failure ("Expected theorem definition node for UID: " ^ string_of_int uid) None
+  | _ -> conversion_failure ("Expected theorem definition node for UID: " ^ string_of_int uid) node.location
 
 (** A typed version of resolve_ref for assume definition nodes.
 *)
-let resolve_assume_def_node (uid : int) : Xml.assume_def_node =
-  match (resolve_ref uid).kind with
+let resolve_assume_def_node (node : Xml.node) (uid : int) : Xml.assume_def_node =
+  match (resolve_ref node uid).kind with
   | AssumeDefNode xml -> xml
-  | _ -> conversion_failure ("Expected assume definition node for UID: " ^ string_of_int uid) None
+  | _ -> conversion_failure ("Expected assume definition node for UID: " ^ string_of_int uid) node.location
 
 (** A typed version of resolve_ref for theorem nodes.
 *)
-let resolve_theorem_node (uid : int) : Xml.theorem_node =
-  match (resolve_ref uid).kind with
+let resolve_theorem_node (node : Xml.node) (uid : int) : Xml.theorem_node =
+  match (resolve_ref node uid).kind with
   | TheoremNode xml -> xml
-  | _ -> conversion_failure ("Expected theorem node for UID: " ^ string_of_int uid) None
+  | _ -> conversion_failure ("Expected theorem node for UID: " ^ string_of_int uid) node.location
 
 (** A typed version of resolve_ref for bound symbols.
 *)
-let resolve_bound_symbol (uid : int) : hint =
-  match Coll.Im.find_opt uid !entries with
-  | Some (Xml.FormalParamNode ({arity = 0} as xml)) -> attach_props xml.node xml.name
-  | Some (Xml.FormalParamNode _) -> conversion_failure ("Bound symbol cannot be an operator: " ^ string_of_int uid) None
-  | _ -> conversion_failure ("Unresolved formal parameter node UID: " ^ string_of_int uid) None
+let resolve_bound_symbol (node : Xml.node) (uid : int) : hint =
+  match (resolve_ref node uid).kind with
+  | FormalParamNode ({arity = 0} as xml) -> attach_props xml.node xml.name
+  | FormalParamNode _ -> conversion_failure ("Bound symbol cannot be an operator: " ^ string_of_int uid) node.location
+  | _ -> conversion_failure ("Unresolved formal parameter node UID: " ^ string_of_int uid) node.location
 
 (** Resolves definitions referenced in BY proofs or USE/HIDE statements.
 *)
 let resolve_def (node : Xml.node) (ref : int) : use_def wrapped =
-    match (resolve_ref ref).kind with
+    match (resolve_ref node ref).kind with
     | UserDefinedOpKind op -> Dvar op.name |> attach_props op.node
     | TheoremDefNode thm -> Dvar thm.name |> attach_props thm.node
     | other -> conversion_failure ("Invalid definition reference in BY proof: " ^ (Xml.show_entry_kind other)) node.location
@@ -228,8 +218,8 @@ let resolve_def (node : Xml.node) (ref : int) : use_def wrapped =
 (** Predicate for quickly checking whether a given UID corresponds to the
     given built-in operator.
 *)
-let is_builtin_op (uid : int) (op : Xml.built_in_operator) : bool =
-  match (resolve_ref uid).kind with
+let is_builtin_op (node : Xml.node) (uid : int) (op : Xml.built_in_operator) : bool =
+  match (resolve_ref node uid).kind with
   | BuiltInKind {operator} when operator = op -> true
   | _ -> false
 
@@ -381,13 +371,14 @@ and convert_module_node (mule : Xml.module_node) : Module.T.mule =
     match unit with
     | Instance instance -> Some (convert_instance instance)
     | UseOrHide use_or_hide -> Some (convert_use_or_hide use_or_hide)
-    | Ref uid -> let entry = resolve_ref uid in
+    | Ref uid -> let entry = resolve_ref mule.node uid in
     match entry.kind with
     | ModuleNode submod -> Some (Submod (convert_module_node submod) |> attach_props submod.node)
     | AssumeNode assume -> Some (convert_assume_node assume)
     | OpDeclNode op_decl_node -> Some (convert_op_decl_node op_decl_node)
     | UserDefinedOpKind user_defined_op_kind -> convert_unit_user_defined_op_kind user_defined_op_kind mule.name
     | TheoremNode theorem_node -> Some (convert_theorem_node entry.uid 0 theorem_node)
+    | ModuleInstanceKind instance -> Some (convert_instance instance)
     | BuiltInKind _ -> conversion_failure "BuiltInKind not expected at module top-level" None
     | FormalParamNode _ -> conversion_failure "FormalParamNode not expected at module top-level" None
     | AssumeDefNode assume -> conversion_failure "AssumeDefNode should not be converted directly" None
@@ -418,12 +409,12 @@ and convert_instance (instance : Xml.instance_node) : Module.T.modunit = (
     | 0 -> attach_props param.node param.name
     | _ -> conversion_failure "TLAPM cannot handle operators as instance arguments" param.node.location
   in let mk_substitution (sub : Xml.substitution) : (hint * Expr.T.expr) =
-    let target = resolve_op_decl_node sub.target_uid in (
+    let target = resolve_op_decl_node instance.node sub.target_uid in (
       attach_props target.node target.name,
-      convert_expression_or_operator_argument sub.substitute
+      convert_expression_or_operator_argument instance.node sub.substitute
     )
   in let instantiation : Expr.T.instance = {
-    inst_args = instance.parameters |> List.map resolve_formal_param_node |> List.map mk_arg;
+    inst_args = instance.parameters |> List.map (resolve_formal_param_node instance.node) |> List.map mk_arg;
     inst_mod = instance.module_name;
     inst_sub = List.map mk_substitution instance.substitutions;
   } in match instance.name with
@@ -442,7 +433,7 @@ and convert_use_or_hide (use_or_hide : Xml.use_or_hide_node) : Module.T.modunit 
 
 and convert_assume_node (assume : Xml.assume_node) : Module.T.modunit =
   Module.T.Axiom (
-    Option.map (fun uid -> let def = resolve_assume_def_node uid in attach_props def.node def.name) assume.definition,
+    Option.map (fun uid -> let def = resolve_assume_def_node assume.node uid in attach_props def.node def.name) assume.definition,
     convert_expression assume.body
   ) |> attach_props assume.node
 
@@ -492,21 +483,21 @@ and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr = (
   (* Case 1: Bounded non-tuple CHOOSE expression *)
   | [Bound {is_tuple = false; symbol_refs = [param]; expression}], [Expression body] ->
     Choose (
-      resolve_bound_symbol param,
+      resolve_bound_symbol apply.node param,
       Some (convert_expression expression),
       convert_expression body
     )
   (* Case 2: Bounded tuple CHOOSE expression *)
   | [Bound ({is_tuple = true} as symbol)], [Expression body] ->
     ChooseTuply (
-      List.map resolve_bound_symbol symbol.symbol_refs,
+      List.map (resolve_bound_symbol apply.node) symbol.symbol_refs,
       Some (convert_expression symbol.expression),
       convert_expression body
     )
   (* Case 3: Unbounded non-tuple CHOOSE expression *)
   | [Unbound ({is_tuple = false} as symbol)], [Expression body] ->
     Choose (
-      resolve_bound_symbol symbol.symbol_ref,
+      resolve_bound_symbol apply.node symbol.symbol_ref,
       None,
       convert_expression body
     )
@@ -516,7 +507,7 @@ and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr = (
     if List.length symbols <> List.length apply.bound_symbols
     then conversion_failure "Inconsistent bound/unbound or tuple/non-tuple symbols in CHOOSE" apply.node.location
     else ChooseTuply (
-      List.map (fun (s : Xml.unbound_symbol) -> resolve_bound_symbol s.symbol_ref) symbols,
+      List.map (fun (s : Xml.unbound_symbol) -> resolve_bound_symbol apply.node s.symbol_ref) symbols,
       None,
       convert_expression body
     )
@@ -528,7 +519,7 @@ and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr = (
 *)
 and convert_non_tuply_bounds (node : Xml.node) (bound : Xml.bound_symbol) : bounds =
   if bound.is_tuple then conversion_failure "Tuple bound passed to non-tuple bound conversion" node.location else
-  match List.map resolve_bound_symbol bound.symbol_refs with
+  match List.map (resolve_bound_symbol node) bound.symbol_refs with
   (* TODO: figure out meaning of "Unknown" parameter *)
   | hd :: tl -> (hd, Unknown, Domain (convert_expression bound.expression))
     :: List.map (fun s -> (s, Unknown, Ditto)) tl
@@ -542,10 +533,10 @@ and convert_non_tuply_bounds (node : Xml.node) (bound : Xml.bound_symbol) : boun
 *)
 and convert_tuply_bounds (node : Xml.node) (bound : Xml.bound_symbol) : tuply_bounds =
   if bound.is_tuple
-  then match List.map resolve_bound_symbol bound.symbol_refs with
+  then match List.map (resolve_bound_symbol node) bound.symbol_refs with
   | (_ :: _ as symbols) -> [(Bound_names symbols, Domain (convert_expression bound.expression))]
   | [] -> conversion_failure "Tuple bound symbol groups must have at least one symbol" node.location
-  else match List.map resolve_bound_symbol bound.symbol_refs with
+  else match List.map (resolve_bound_symbol node) bound.symbol_refs with
   | hd :: tl -> (Bound_name hd, Domain (convert_expression bound.expression))
     :: List.map (fun s -> (Bound_name s, Ditto)) tl
   | [] -> conversion_failure "Bound symbol groups must have at least one symbol" node.location
@@ -582,7 +573,7 @@ and convert_bound_or_unbound_symbols (node : Xml.node) (all_symbols : Xml.symbol
     else if List.exists (fun (b : Xml.unbound_symbol) -> b.is_tuple) unbound_symbols
     then conversion_failure "Unbounded tuple quantification is not supported" node.location
     else let mk_bound (bound : Xml.unbound_symbol) : bound = (
-      resolve_bound_symbol bound.symbol_ref,
+      resolve_bound_symbol node bound.symbol_ref,
       Unknown, (* TODO: figure out purpose of this parameter *)
       No_domain
     ) in NonTuply (List.map mk_bound unbound_symbols)
@@ -637,7 +628,7 @@ and convert_temporal_quantification (quant : Expr.T.quantifier) (apply : Xml.op_
     then conversion_failure "Temporal quantification requires unbound symbols" apply.node.location
     else if List.exists (fun (b : Xml.unbound_symbol) -> b.is_tuple) unbound_symbols
     then conversion_failure "Unbounded tuple quantification is not supported" apply.node.location
-    else let bounds = List.map (fun (b : Xml.unbound_symbol) -> resolve_bound_symbol b.symbol_ref) unbound_symbols in
+    else let bounds = List.map (fun (b : Xml.unbound_symbol) -> resolve_bound_symbol apply.node b.symbol_ref) unbound_symbols in
     Tquant (quant, bounds, convert_expression body)
   | _ -> conversion_failure "Invalid number of bounds or operands to temporal quantification" apply.node.location
 ) |> attach_props apply.node
@@ -658,12 +649,12 @@ and convert_set_map (apply : Xml.op_appl_node) : Expr.T.expr =
 and convert_set_filter (apply : Xml.op_appl_node) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
   | [Bound {symbol_refs = [symbol_ref]; is_tuple = false; expression}], [Expression predicate] -> SetSt (
-    resolve_bound_symbol symbol_ref,
+    resolve_bound_symbol apply.node symbol_ref,
     convert_expression expression,
     convert_expression predicate
   )
   | [Bound {symbol_refs = (_ :: _) as symbol_refs; is_tuple = true; expression}], [Expression predicate] -> SetStTuply (
-    List.map resolve_bound_symbol symbol_refs,
+    List.map (resolve_bound_symbol apply.node) symbol_refs,
     convert_expression expression,
     convert_expression predicate
   )
@@ -723,7 +714,7 @@ and convert_function_application (apply : Xml.op_appl_node) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
   | [], [Expression fn; Expression args] -> (
       let args = match args with
-      | OpApplNode {node; operator; operands} when is_builtin_op operator TupleLiteral -> (
+      | OpApplNode {node; operator; operands} when is_builtin_op apply.node operator TupleLiteral -> (
         match operands with
         | [] -> [args] (* Empty tuple *)
         | [Expression single_arg] -> [args] (* Tuple with single element *)
@@ -758,7 +749,7 @@ and convert_record_constructor (apply : Xml.op_appl_node) : Expr.T.expr =
 and as_pair (node : Xml.node) (operand : Xml.expr_or_op_arg) : (Xml.expression * Xml.expression) =
   match operand with
   | Expression OpApplNode {operator; bound_symbols = []; operands = [Expression left; Expression right]} -> (
-    match (resolve_ref operator).kind with
+    match (resolve_ref node operator).kind with
     | BuiltInKind {operator = Pair} -> (left, right)
     | _ -> conversion_failure "Expected pair of expressions" node.location
   ) | _ -> conversion_failure "Expected pair of expressions" node.location
@@ -795,7 +786,7 @@ and convert_except (apply : Xml.op_appl_node) : Expr.T.expr = (
     in let mk_update (operand : Xml.expr_or_op_arg) : (Expr.T.expoint list * Expr.T.expr) option =
       match operand with
       | Expression OpApplNode {operator; bound_symbols = []; operands = [Expression OpApplNode {operator = update_op; bound_symbols = []; operands = update_path}; Expression new_value]} -> (
-        match (resolve_ref operator).kind, (resolve_ref update_op).kind with
+        match (resolve_ref apply.node operator).kind, (resolve_ref apply.node update_op).kind with
         | BuiltInKind {operator = Pair}, BuiltInKind {operator = Sequence} ->
           let path = update_path |> as_expr_ls __FUNCTION__ apply.node.location |> List.map convert_expression in
           Some (List.map mk_path path, convert_expression new_value)
@@ -857,11 +848,11 @@ and convert_definition_reference (node : Xml.node) (name : string) (args : Xml.e
   | [] -> conversion_failure "Unexpected empty definition reference" node.location
   | [component] -> Apply (
     Opaque name |> attach_props node,
-    List.map convert_expression_or_operator_argument args
+    List.map (convert_expression_or_operator_argument node) args
   ) |> attach_props node
   | head :: tail ->
     let prefix, last = split_last_ls node tail in
-    let last = Sel_lab (last, List.map convert_expression_or_operator_argument args) in
+    let last = Sel_lab (last, List.map (convert_expression_or_operator_argument node) args) in
     Bang (
       Opaque head |> noprops,
       List.map convert_selector prefix @ [last]
@@ -883,7 +874,7 @@ and convert_formal_param_node_op_appl (apply : Xml.op_appl_node) (param : Xml.fo
   | 0 -> Opaque param.name |> attach_props param.node
   | n -> Apply (
       Opaque param.name |> attach_props param.node,
-      List.map convert_expression_or_operator_argument apply.operands
+      List.map (convert_expression_or_operator_argument apply.node) apply.operands
     ) |> attach_props apply.node
 
 (** Conversion of reference to module-level constants or variables. Again
@@ -900,7 +891,7 @@ and convert_op_decl_node_op_appl (apply : Xml.op_appl_node) (decl : Xml.op_decl_
     detailed Expr.T.expr variant type used by TLAPS.
 *)
 and convert_op_appl_node (apply : Xml.op_appl_node) : Expr.T.expr =
-  let op_kind = (resolve_ref apply.operator).kind in
+  let op_kind = (resolve_ref apply.node apply.operator).kind in
   match op_kind with
   (* Operators like = and \cup but also CHOOSE and \A *)
   | BuiltInKind op -> convert_built_in_op_appl apply op
@@ -922,16 +913,17 @@ and convert_op_appl_node (apply : Xml.op_appl_node) : Expr.T.expr =
     like op(x, y, z), x, y, and z can each be either expressions or operator
     references. LAMBDA operators can also appear here.
 *)
-and convert_expression_or_operator_argument (op_expr : Xml.expr_or_op_arg) : Expr.T.expr =
+and convert_expression_or_operator_argument (node : Xml.node) (op_expr : Xml.expr_or_op_arg) : Expr.T.expr =
   match op_expr with
   | Expression expr -> convert_expression expr
-  | OpArg uid -> match (resolve_ref uid).kind with
+  | OpArg uid -> match (resolve_ref node uid).kind with
     | FormalParamNode param -> Opaque param.name |> attach_props param.node
     | UserDefinedOpKind userdef -> convert_definition_reference userdef.node userdef.name []
     | BuiltInKind builtin ->
       let op = sany_to_tlapm_builtin builtin.node builtin.operator in
       Internal op |> attach_props builtin.node
     | OpDeclNode decl -> convert_definition_reference decl.node decl.name []
+    | ModuleInstanceKind instance -> conversion_failure ("Invalid operator argument reference to module instance: " ^ Option.get instance.name) instance.node.location
     | AssumeNode assume -> conversion_failure "Invalid operator argument reference to ASSUME" assume.node.location
     | AssumeDefNode assume -> conversion_failure ("Invalid operator argument reference to ASSUME: " ^ assume.name) assume.node.location
     | TheoremNode thm -> conversion_failure "Invalid operator argument reference to THEOREM" thm.node.location
@@ -997,7 +989,7 @@ and convert_label (label : Xml.label_node) : Expr.T.expr = (
 *)
 and convert_let_in_node ({node; def_refs; body} : Xml.let_in_node) : Expr.T.expr =
   let convert_definition (def_ref : int) : Expr.T.defn =
-    match (resolve_ref def_ref).kind with
+    match (resolve_ref node def_ref).kind with
     | UserDefinedOpKind op -> convert_user_defined_op_kind op
     | _ -> todo "LET/IN definition" "Probably an instance" None
   in Let (List.map convert_definition def_refs, convert_expression body) |> attach_props node
@@ -1005,11 +997,20 @@ and convert_let_in_node ({node; def_refs; body} : Xml.let_in_node) : Expr.T.expr
 (** Converts user-defined operators defined within LET/IN expressions.
 *)
 and convert_user_defined_op_kind (op : Xml.user_defined_op_kind) : Expr.T.defn =
+  let mk_params ({ref} : Xml.leibniz_param) : (hint * shape) = (
+    let fpn = resolve_formal_param_node op.node ref in
+    attach_props fpn.node fpn.name,
+    match fpn.arity with
+    | 0 -> Shape_expr
+    | n -> Shape_op n
+  ) in
   let body = convert_expression op.body in
   (* TLAPS represents op(x) == expr as op == LAMBDA x : expr *)
   let expr = match op.params with
   | [] -> body
-  | params -> Lambda (List.map resolve_leibniz_formal_param_node params, body) |> attach_props op.node
+  | params ->
+    Lambda (List.map mk_params params, body)
+    |> attach_props op.node
   in Operator (attach_props op.node op.name, expr) |> attach_props op.node
 
 (** Converts user-defined operators defined in a module top-level. If operator
@@ -1045,7 +1046,7 @@ and convert_theorem_def_node (theorem_def_node : Xml.theorem_def_node) : Module.
 and convert_theorem_node (uid : int) (previous_proof_level : int) (thm : Xml.theorem_node) : Module.T.modunit =
   let proof = convert_proof uid previous_proof_level thm.proof in
   Theorem (
-    Option.map (fun uid -> let def = resolve_theorem_def_node uid in attach_props def.node def.name) thm.definition,
+    Option.map (fun uid -> let def = resolve_theorem_def_node thm.node uid in attach_props def.node def.name) thm.definition,
     convert_sequent thm.body,
     0 (* The purpose of this integer parameter is unknown. *),
     proof,
@@ -1091,10 +1092,10 @@ and convert_by_proof ({node; facts; defs; only} : Xml.by_proof_node) : Proof.T.p
   only
 ) |> attach_props node
 
-and convert_proof_step_name (uid : int) (proof_level : int) (theorem_def_ref : int option) : stepno =
+and convert_proof_step_name (node : Xml.node) (uid : int) (proof_level : int) (theorem_def_ref : int option) : stepno =
   match theorem_def_ref with
   | Some uid ->
-    let proof_name = (resolve_theorem_def_node uid).name in
+    let proof_name = (resolve_theorem_def_node node uid).name in
     let name_start = String.index proof_name '>' in
     let name_end = match String.index_opt proof_name '.' with | Some n -> n | None -> String.length proof_name in
     let name_len = name_end - name_start in
@@ -1119,13 +1120,13 @@ and convert_proof_steps (uid : int) ({node; proof_level; steps} : Xml.steps_proo
   let convert_qed_step (qed_proof_step : Xml.proof_step_group) : Proof.T.qed_step =
     match qed_proof_step with
     | TheoremNodeRef uid ->
-      let thm = resolve_theorem_node uid in
-      let step_name = convert_proof_step_name uid proof_level thm.definition in
+      let thm = resolve_theorem_node node uid in
+      let step_name = convert_proof_step_name node uid proof_level thm.definition in
       Qed (convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node
       |> attach_proof_step_name step_name
     | _ -> conversion_failure "QED step must be a theorem node" node.location
   in let steps, qed = split_last_ls node steps
-  in let steps = List.map (convert_proof_step proof_level) steps
+  in let steps = List.map (convert_proof_step node proof_level) steps
   in let qed_step = convert_qed_step qed
   in Steps (List.rev steps, qed_step)
   |> attach_props node
@@ -1149,32 +1150,32 @@ and convert_proof_steps (uid : int) ({node; proof_level; steps} : Xml.steps_proo
     The resulting list of proof steps is returned in reverse order, and must
     be reversed to be in the correct order for TLAPM.
 *)
-and convert_proof_step (proof_level : int) (step : Xml.proof_step_group) : Proof.T.step =
+and convert_proof_step (node : Xml.node) (proof_level : int) (step : Xml.proof_step_group) : Proof.T.step =
   match step with
   | InstanceNode {node} -> conversion_failure "INSTANCE proof steps are deprecated from the TLA+ language standard" node.location
   | TheoremNode -> todo "TheoremNode proof step" "" None
   (* TODO: attach name to DefStep step *)
   | DefStep {node; def_refs} ->
-    Define (def_refs |> List.map resolve_user_defined_op_kind |> List.map convert_user_defined_op_kind) |> attach_props node
+    Define (def_refs |> List.map (resolve_user_defined_op_kind node) |> List.map convert_user_defined_op_kind) |> attach_props node
   (* TODO: confirm boolean parameter corresponds to ONLY keyword *)
   (* TODO: attach name to UseOrHide step *)
   | UseOrHide use_or_hide -> Use (convert_usable use_or_hide, use_or_hide.only) |> attach_props use_or_hide.node
   | TheoremNodeRef uid ->
-    let thm = resolve_theorem_node uid in
-    let step_name = convert_proof_step_name uid proof_level thm.definition in
+    let thm = resolve_theorem_node node uid in
+    let step_name = convert_proof_step_name node uid proof_level thm.definition in
     let proof = convert_proof uid (step_number step_name) thm.proof in
     let step = match thm.body with
-    | Expression OpApplNode ({operator} as apply) when is_builtin_op operator CaseProofStep ->
+    | Expression OpApplNode ({operator} as apply) when is_builtin_op node operator CaseProofStep ->
       convert_case_proof_step apply proof
-    | Expression OpApplNode ({operator} as apply) when is_builtin_op operator PickProofStep ->
+    | Expression OpApplNode ({operator} as apply) when is_builtin_op node operator PickProofStep ->
       convert_pick_proof_step apply proof
-    | Expression OpApplNode ({operator} as apply) when is_builtin_op operator TakeProofStep ->
+    | Expression OpApplNode ({operator} as apply) when is_builtin_op node operator TakeProofStep ->
       convert_take_proof_step apply
-    | Expression OpApplNode ({operator} as apply) when is_builtin_op operator HaveProofStep ->
+    | Expression OpApplNode ({operator} as apply) when is_builtin_op node operator HaveProofStep ->
       convert_have_proof_step apply
-    | Expression OpApplNode ({operator} as apply) when is_builtin_op operator WitnessProofStep ->
+    | Expression OpApplNode ({operator} as apply) when is_builtin_op node operator WitnessProofStep ->
       convert_witness_proof_step apply
-    | Expression OpApplNode ({operator} as apply) when is_builtin_op operator SufficesProofStep ->
+    | Expression OpApplNode ({operator} as apply) when is_builtin_op node operator SufficesProofStep ->
       convert_suffices_proof_step apply proof
     | _ -> Suffices (convert_sequent thm.body, proof)
     in step |> attach_props thm.node |> attach_proof_step_name step_name
@@ -1249,7 +1250,8 @@ let convert_ast (ast : Xml.modules) : (Module.T.modctx * Module.T.mule, (string 
       ast.context;
   let ctx : Module.T.modctx = List.fold_left
     (fun (map : Module.T.modctx) (mule_ref : int) ->
-      let mule : Xml.module_node = mule_ref |> resolve_module_node in
+      let toplevel_node : Xml.node = {location = None; level = None} in
+      let mule : Xml.module_node = resolve_module_node toplevel_node mule_ref in
       if Coll.Sm.mem mule.name map then map
       else Coll.Sm.add mule.name (convert_module_node mule) map
     )

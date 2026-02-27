@@ -58,6 +58,7 @@ let _ =
   ];
   add_debug_flag "sany";
   let tla_files = [
+    "/home/ahelwer/src/tlaplus/java-tools/tlatools/org.lamport.tlatools/test/tla2sany/semantic/corpus";
     "/mnt/data/ahelwer/src/tlaplus/proofs/examples";
     "/mnt/data/ahelwer/src/tlaplus/proofs/library";
     "/mnt/data/ahelwer/src/tlaplus/examples/specifications";
