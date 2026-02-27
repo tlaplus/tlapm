@@ -57,6 +57,7 @@ let set_parser_backend parser_str =
 
 let add_module_jar_path jar_path =
   Params.module_jar_paths := jar_path :: !Params.module_jar_paths
+
 let parse_args executable_name args opts mods usage_fmt err terminate =
   try
     Arg.current := 0;

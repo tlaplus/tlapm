@@ -118,15 +118,6 @@ type bounds_kind =
 
 type bound_
 
-(** Extracts the name from named proof steps like <1>abc.
-*)
-let parse_proof_step_name (proof_level : int) (proof_name : string) : stepno =
-  let name_start = String.index proof_name '>' in
-  let name_end = match String.index_opt proof_name '.' with | Some n -> n | None -> String.length proof_name in
-  let name_len = name_end - name_start in
-  let name = String.sub proof_name name_start name_len in
-  Named (proof_level, name, false)
-
 (** Wraps the given proof step with its name in the metadata.
 *)
 let attach_proof_step_name (proof_name : stepno) (step : 'a) : 'a =
@@ -386,17 +377,17 @@ and convert_module_node (mule : Xml.module_node) : Module.T.mule =
       Thus in-scope operator parameters coexist alongside entire modules, and
       here we branch out to the appropriate conversion method.
   *)
-  let convert_entry (unit : Xml.unit_kind) : Module.T.modunit =
+  let convert_entry (unit : Xml.unit_kind) : Module.T.modunit option =
     match unit with
-    | Instance instance -> convert_instance instance
-    | UseOrHide use_or_hide -> convert_use_or_hide use_or_hide
+    | Instance instance -> Some (convert_instance instance)
+    | UseOrHide use_or_hide -> Some (convert_use_or_hide use_or_hide)
     | Ref uid -> let entry = resolve_ref uid in
     match entry.kind with
-    | ModuleNode submod -> Submod (convert_module_node submod) |> attach_props submod.node
-    | AssumeNode assume -> convert_assume_node assume
-    | OpDeclNode op_decl_node -> convert_op_decl_node op_decl_node
-    | UserDefinedOpKind user_defined_op_kind -> convert_unit_user_defined_op_kind user_defined_op_kind
-    | TheoremNode theorem_node -> convert_theorem_node entry.uid 0 theorem_node
+    | ModuleNode submod -> Some (Submod (convert_module_node submod) |> attach_props submod.node)
+    | AssumeNode assume -> Some (convert_assume_node assume)
+    | OpDeclNode op_decl_node -> Some (convert_op_decl_node op_decl_node)
+    | UserDefinedOpKind user_defined_op_kind -> convert_unit_user_defined_op_kind user_defined_op_kind mule.name
+    | TheoremNode theorem_node -> Some (convert_theorem_node entry.uid 0 theorem_node)
     | BuiltInKind _ -> conversion_failure "BuiltInKind not expected at module top-level" None
     | FormalParamNode _ -> conversion_failure "FormalParamNode not expected at module top-level" None
     | AssumeDefNode assume -> conversion_failure "AssumeDefNode should not be converted directly" None
@@ -405,7 +396,7 @@ and convert_module_node (mule : Xml.module_node) : Module.T.mule =
     name = noprops mule.name;
     extendees = List.map (fun name -> noprops name) mule.extends;
     instancees = []; (* TODO: collate list of instancees from units *)
-    body = List.map convert_entry mule.units;
+    body = List.filter_map convert_entry mule.units;
     defdepth = 0;
     stage = Parsed;
     important = false
@@ -847,14 +838,40 @@ and convert_case (apply : Xml.op_appl_node) : Expr.T.expr = (
 and convert_subexpression (apply : Xml.op_appl_node) : Expr.T.expr = (
   raise (Unsupported_language_feature (Option.map convert_location apply.node.location, Subexpression)))
 
+(** SANY gives references like M!op as opaque strings; these are resolved
+    using the UID system. We need to parse these back into Bang instances.
+    Probably this could most easily be done on the SANY side then attached
+    to various references, but we will do it here for now. Note that these
+    will not contain subexpression elements like :, <<, @, etc. because those
+    would have been given by SANY as the $Nop operator and thus are handled
+    in the convert_subexpression method.
+*)
+and convert_definition_reference (node : Xml.node) (name : string) (args : Xml.expr_or_op_arg list) : Expr.T.expr =
+  let convert_selector (component : string) : Expr.T.sel =
+    if String.contains component '('
+    then todo "Definition reference" "Function application in selector" node.location
+    else Sel_lab (component, [])
+  in let components = String.split_on_char '!' name in
+  if List.mem "" components then todo "Definition reference" "!!" node.location
+  else match components with
+  | [] -> conversion_failure "Unexpected empty definition reference" node.location
+  | [component] -> Apply (
+    Opaque name |> attach_props node,
+    List.map convert_expression_or_operator_argument args
+  ) |> attach_props node
+  | head :: tail ->
+    let prefix, last = split_last_ls node tail in
+    let last = Sel_lab (last, List.map convert_expression_or_operator_argument args) in
+    Bang (
+      Opaque head |> noprops,
+      List.map convert_selector prefix @ [last]
+    ) |> attach_props node
+
 (** Conversion of application of user-defined operators, including operators
     defined in the standard modules.
 *)
 and convert_user_defined_op_appl (apply : Xml.op_appl_node) (op : Xml.user_defined_op_kind) : Expr.T.expr =
-  Apply (
-    Opaque op.name |> attach_props op.node,
-    List.map convert_expression_or_operator_argument apply.operands
-  ) |> attach_props apply.node
+  convert_definition_reference apply.node op.name apply.operands
 
 (** Conversion of reference to in-scope operator parameters, such as in
     op(a, b, c) == a. This is a case where information is actually lost,
@@ -874,12 +891,7 @@ and convert_formal_param_node_op_appl (apply : Xml.op_appl_node) (param : Xml.fo
     Bruijn index later on.
 *)
 and convert_op_decl_node_op_appl (apply : Xml.op_appl_node) (decl : Xml.op_decl_node) : Expr.T.expr =
-  match decl.arity with
-  | 0 -> Opaque decl.name |> attach_props decl.node
-  | n -> Apply (
-      Opaque decl.name |> attach_props decl.node,
-      List.map convert_expression_or_operator_argument apply.operands
-    ) |> attach_props apply.node
+  convert_definition_reference apply.node decl.name apply.operands
 
 (** OpApplNode is a very general node used by SANY to represent essentially
     all expression types. Things like \A x \in S : P are represented as an
@@ -899,9 +911,9 @@ and convert_op_appl_node (apply : Xml.op_appl_node) : Expr.T.expr =
   (* A reference to a CONSTANT or VARIABLE identifier *)
   | OpDeclNode decl -> convert_op_decl_node_op_appl apply decl
   (* A reference to a named THEOREM or a proof step *)
-  | TheoremDefNode thm -> Opaque thm.name |> attach_props thm.node
+  | TheoremDefNode thm -> convert_definition_reference thm.node thm.name []
   (* A reference to a named ASSUME node *)
-  | AssumeDefNode assume -> Opaque assume.name |> attach_props assume.node
+  | AssumeDefNode assume -> convert_definition_reference assume.node assume.name []
   | _ -> conversion_failure ("Invalid operator reference in OpApplNode : " ^ (Xml.show_entry_kind op_kind)) apply.node.location
 
 (** Some places in TLA⁺ syntax allow both normal expressions and also
@@ -915,11 +927,11 @@ and convert_expression_or_operator_argument (op_expr : Xml.expr_or_op_arg) : Exp
   | Expression expr -> convert_expression expr
   | OpArg uid -> match (resolve_ref uid).kind with
     | FormalParamNode param -> Opaque param.name |> attach_props param.node
-    | UserDefinedOpKind userdef -> Opaque userdef.name |> attach_props userdef.node
+    | UserDefinedOpKind userdef -> convert_definition_reference userdef.node userdef.name []
     | BuiltInKind builtin ->
       let op = sany_to_tlapm_builtin builtin.node builtin.operator in
       Internal op |> attach_props builtin.node
-    | OpDeclNode decl -> Opaque decl.name |> attach_props decl.node
+    | OpDeclNode decl -> convert_definition_reference decl.node decl.name []
     | AssumeNode assume -> conversion_failure "Invalid operator argument reference to ASSUME" assume.node.location
     | AssumeDefNode assume -> conversion_failure ("Invalid operator argument reference to ASSUME: " ^ assume.name) assume.node.location
     | TheoremNode thm -> conversion_failure "Invalid operator argument reference to THEOREM" thm.node.location
@@ -1000,17 +1012,19 @@ and convert_user_defined_op_kind (op : Xml.user_defined_op_kind) : Expr.T.defn =
   | params -> Lambda (List.map resolve_leibniz_formal_param_node params, body) |> attach_props op.node
   in Operator (attach_props op.node op.name, expr) |> attach_props op.node
 
-(** Converts user-defined operators defined in a module top-level.
+(** Converts user-defined operators defined in a module top-level. If operator
+    was defined in a different module, return None.
 *)
-and convert_unit_user_defined_op_kind (xml: Xml.user_defined_op_kind) : Module.T.modunit =
+and convert_unit_user_defined_op_kind (xml: Xml.user_defined_op_kind) (enclosing_module_name : string) : Module.T.modunit option =
+  if (Option.get xml.node.location).filename <> enclosing_module_name then None else
   match xml.recursive with
   | true -> raise (Unsupported_language_feature (Option.map convert_location xml.node.location, RecursiveOperator))
-  | false -> (Definition (
+  | false -> Definition (
       convert_user_defined_op_kind xml,
       User,
       Hidden, (* If Visible, will be auto-included in all BY proofs *)
       if xml.local then Local else Export
-    )) |> attach_props xml.node
+    ) |> attach_props xml.node |> Option.some
 
 (** This type is redundant with the below TheoremNode type and its conversion
     does not need to be handled. Probably the SANY XML exporter should be
@@ -1079,7 +1093,13 @@ and convert_by_proof ({node; facts; defs; only} : Xml.by_proof_node) : Proof.T.p
 
 and convert_proof_step_name (uid : int) (proof_level : int) (theorem_def_ref : int option) : stepno =
   match theorem_def_ref with
-  | Some uid -> parse_proof_step_name proof_level (resolve_theorem_def_node uid).name
+  | Some uid ->
+    let proof_name = (resolve_theorem_def_node uid).name in
+    let name_start = String.index proof_name '>' in
+    let name_end = match String.index_opt proof_name '.' with | Some n -> n | None -> String.length proof_name in
+    let name_len = name_end - name_start in
+    let name = String.sub proof_name name_start name_len in
+    Named (proof_level, name, false)
   | None -> Unnamed (proof_level, uid)
 
 (** One possible proof form is a series of steps, culminating in a QED step.

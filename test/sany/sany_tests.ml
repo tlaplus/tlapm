@@ -20,7 +20,9 @@ let _has_substring needle haystack =
 
 let should_run (path : string) : bool =
   let preds = [
-    (* String.ends_with ~suffix:"NameOfSpecToSkip.tla"; *)
+    String.ends_with ~suffix:"paxos/Paxos.tla";
+    String.ends_with ~suffix:"ByzPaxos/BPConProof.tla";
+    String.ends_with ~suffix:"GraphTheorem.tla";
   ] in not (List.exists (fun pred -> pred path) preds)
 
 let _start_at (filename : string) (files : string list) : string list =
@@ -56,10 +58,10 @@ let _ =
   ];
   add_debug_flag "sany";
   let tla_files = [
-    "/mnt/data/ahelwer/src/tlaplus/examples/specifications";
     "/mnt/data/ahelwer/src/tlaplus/proofs/examples";
-    "/mnt/data/ahelwer/src/tlaplus/proofs/library"
+    "/mnt/data/ahelwer/src/tlaplus/proofs/library";
+    "/mnt/data/ahelwer/src/tlaplus/examples/specifications";
     ] |> List.map find_tla_files |> List.flatten
     |> List.filter should_run
-    (*|> _start_at "MCPaxos.tla"*)
+    (*|> _start_at "paxos/Paxos.tla"*)
   in List.map parse_tla_file tla_files
