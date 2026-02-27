@@ -369,7 +369,7 @@ and convert_module_node (mule : Xml.module_node) : Module.T.mule =
   *)
   let convert_entry (unit : Xml.unit_kind) : Module.T.modunit option =
     match unit with
-    | Instance instance -> Some (convert_instance instance)
+    | Instance instance -> Some (convert_unit_instance instance)
     | UseOrHide use_or_hide -> Some (convert_use_or_hide use_or_hide)
     | Ref uid -> let entry = resolve_ref mule.node uid in
     match entry.kind with
@@ -378,7 +378,7 @@ and convert_module_node (mule : Xml.module_node) : Module.T.mule =
     | OpDeclNode op_decl_node -> Some (convert_op_decl_node op_decl_node)
     | UserDefinedOpKind user_defined_op_kind -> convert_unit_user_defined_op_kind user_defined_op_kind mule.name
     | TheoremNode theorem_node -> Some (convert_theorem_node entry.uid 0 theorem_node)
-    | ModuleInstanceKind instance -> Some (convert_instance instance)
+    | ModuleInstanceKind instance -> Some (convert_unit_instance instance)
     | BuiltInKind _ -> conversion_failure "BuiltInKind not expected at module top-level" None
     | FormalParamNode _ -> conversion_failure "FormalParamNode not expected at module top-level" None
     | AssumeDefNode assume -> conversion_failure "AssumeDefNode should not be converted directly" None
@@ -403,7 +403,7 @@ and convert_module_node (mule : Xml.module_node) : Module.T.mule =
     does not handle operator parameters, but it is odd that arity info is not
     captured. For now we will just error in that case.
 *)
-and convert_instance (instance : Xml.instance_node) : Module.T.modunit = (
+and convert_instance (instance : Xml.instance_node) : Expr.T.instance =
   let mk_arg (param : Xml.formal_param_node) : hint =
     match param.arity with
     | 0 -> attach_props param.node param.name
@@ -413,11 +413,17 @@ and convert_instance (instance : Xml.instance_node) : Module.T.modunit = (
       attach_props target.node target.name,
       convert_expression_or_operator_argument instance.node sub.substitute
     )
-  in let instantiation : Expr.T.instance = {
+  in {
     inst_args = instance.parameters |> List.map (resolve_formal_param_node instance.node) |> List.map mk_arg;
     inst_mod = instance.module_name;
     inst_sub = List.map mk_substitution instance.substitutions;
-  } in match instance.name with
+  }
+
+(** INSTANCE conversion at the module unit level.
+*)
+and convert_unit_instance (instance : Xml.instance_node) : Module.T.modunit = (
+  let instantiation = convert_instance instance in
+  match instance.name with
   | Some name -> Definition (Instance (noprops name, instantiation) |> noprops, User, Hidden, Export)
   | None -> Anoninst (instantiation, if instance.local then Local else Export)
 ) |> attach_props instance.node
@@ -1154,10 +1160,7 @@ and convert_proof_step (node : Xml.node) (proof_level : int) (step : Xml.proof_s
   match step with
   | InstanceNode {node} -> conversion_failure "INSTANCE proof steps are deprecated from the TLA+ language standard" node.location
   | TheoremNode -> todo "TheoremNode proof step" "" None
-  (* TODO: attach name to DefStep step *)
-  | DefStep {node; def_refs} ->
-    Define (def_refs |> List.map (resolve_user_defined_op_kind node) |> List.map convert_user_defined_op_kind) |> attach_props node
-  (* TODO: confirm boolean parameter corresponds to ONLY keyword *)
+  | DefStep {node; def_refs} -> convert_definition_proof_step node def_refs
   (* TODO: attach name to UseOrHide step *)
   | UseOrHide use_or_hide -> Use (convert_usable use_or_hide, use_or_hide.only) |> attach_props use_or_hide.node
   | TheoremNodeRef uid ->
@@ -1179,6 +1182,26 @@ and convert_proof_step (node : Xml.node) (proof_level : int) (step : Xml.proof_s
       convert_suffices_proof_step apply proof
     | _ -> Suffices (convert_sequent thm.body, proof)
     in step |> attach_props thm.node |> attach_proof_step_name step_name
+
+(** Converts DEFINE proof steps, like
+      DEFINE
+        P(x) == x
+        Q(y) == y
+        M(z) == INSTANCE Naturals
+
+    TODO: attach name to DefStep step
+*)
+and convert_definition_proof_step (node : Xml.node) (def_refs : int list) : Proof.T.step =
+  let mk_def (uid : int) : Expr.T.defn =
+    match (resolve_ref node uid).kind with
+    | UserDefinedOpKind op -> convert_user_defined_op_kind op
+    | ModuleInstanceKind m -> (
+      match m.name with
+      | Some name -> Instance (noprops name, convert_instance m) |> attach_props m.node
+      | None -> conversion_failure "Unnamed module instance in DEFINE proof step" m.node.location
+    )
+    | _ -> conversion_failure "Invalid reference type in DEFINE proof step" node.location
+  in Define (List.map mk_def def_refs) |> attach_props node
 
 (** Converts CASE proof steps, like: <2>7. CASE UNCHANGED vars
 *)

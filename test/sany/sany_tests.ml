@@ -23,6 +23,7 @@ let should_run (path : string) : bool =
     String.ends_with ~suffix:"paxos/Paxos.tla";
     String.ends_with ~suffix:"ByzPaxos/BPConProof.tla";
     String.ends_with ~suffix:"GraphTheorem.tla";
+    String.ends_with ~suffix:"NegativeOpTest.tla";
   ] in not (List.exists (fun pred -> pred path) preds)
 
 let _start_at (filename : string) (files : string list) : string list =
