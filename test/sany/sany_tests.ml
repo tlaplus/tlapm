@@ -40,16 +40,18 @@ let parse_tla_file filename =
   let open Tlapm_lib__Sany in
   print_endline ("Parsing " ^ filename ^ " ...");
   try match modctx_of_string ~content:"" ~filename ~loader_paths:[] ~prefer_stdlib:true with
-  | Error (_, msg) -> Printf.eprintf "%s\n" msg; failwith "Parsing failed"
+  | Error (_, msg) -> failwith msg
   | Ok _ -> print_endline (filename ^ " success")
   with
+  | Unsupported_language_feature (location, RecursiveOperator) ->
     (* This is okay, we just don't support recursive operators *)
-  | Unsupported_language_feature (_, RecursiveOperator) -> ()
+    Printf.eprintf "%s:\nUnsupported recursive operator at %s\n" filename (Loc.string_of_locus (Option.get location))
+  | Unsupported_language_feature (location, Subexpression) ->
     (* This is okay, we just don't support subexpressions *)
-  | Unsupported_language_feature (_, Subexpression) -> ()
+    Printf.eprintf "%s:\nUnsupported subexpression at %s\n" filename (Loc.string_of_locus (Option.get location))
   | Failure (e : string) ->
     Printf.eprintf "%s\n" e;
-    failwith "Parsing failed"
+    failwith filename
 
 let _ =
   parser_backend := Sany;

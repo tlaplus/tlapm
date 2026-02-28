@@ -9,7 +9,7 @@
 (** Calls SANY in another process to parse the given TLA+ file, then collects
     the XML parse tree output.
 *)
-let source_to_sany_xml_str (module_path : string) (stdlib_path : string) : (string, (string * int)) result =
+let source_to_sany_xml_str (module_path : string) (stdlib_path : string) : (string, (string option * string)) result =
   let open Unix in
   let open Paths in
   (** Module jars must be appended at the end of the classpath; the reason
@@ -30,7 +30,7 @@ let source_to_sany_xml_str (module_path : string) (stdlib_path : string) : (stri
   In_channel.close in_chan;
   match Unix.waitpid [] pid with
   | (_, WEXITED 0) -> Ok output
-  | (_, WEXITED exit_code) -> Error (output, exit_code)
+  | (_, WEXITED exit_code) -> Error (None, Printf.sprintf "%d\n%s" exit_code output)
   | _ -> failwith "Process terminated abnormally"
 
 open Xmlm;;
@@ -52,11 +52,14 @@ type tree =
     to make use of attributes or namespaces, this function and the tree type
     will both need to be updated accordingly.
 *)
-let str_to_xml (xml_str: string) : tree =
-  let xml = Xmlm.make_input (`String (0, xml_str)) in
-  let el (((_namespace, name), _attributes) : tag) (children : tree list) = Node (name, children) in
-  let data (s : string) = match int_of_string_opt s with | Some n -> IValue n | None -> SValue s in
-  Xmlm.input_doc_tree ~el ~data xml |> snd
+let str_to_xml (xml_str: string) : (tree, (string option * string)) result =
+  try
+    let xml = Xmlm.make_input (`String (0, xml_str)) in
+    let el (((_namespace, name), _attributes) : tag) (children : tree list) = Node (name, children) in
+    let data (s : string) = match int_of_string_opt s with | Some n -> IValue n | None -> SValue s in
+    let _, tree = Xmlm.input_doc_tree ~el ~data xml in Ok tree
+  with Xmlm.Error ((line, column), err) ->
+    Error (Some (Printf.sprintf "Line: %d, Column: %d" line column), "XML parsing failed: " ^ Xmlm.error_message err)
 
 (** Error method which raises an exception when parsing the SANY XML output
     fails. If this is ever triggered it indicates a bug either in this code
@@ -1099,7 +1102,7 @@ let xml_to_modules (xml : tree) : modules =
     | _ -> ls_conversion_failure __FUNCTION__ children)
   | _ -> conversion_failure __FUNCTION__ xml
 
-let xml_to_ast (xml : tree) : (modules, (string * string)) result =
+let xml_to_ast (xml : tree) : (modules, (string option * string)) result =
   let prev_backtrace = Printexc.backtrace_status () in
   if Params.debugging "sany" then Printexc.record_backtrace true;
   try
@@ -1109,12 +1112,8 @@ let xml_to_ast (xml : tree) : (modules, (string * string)) result =
   with Invalid_argument e ->
     let trace = Printexc.get_backtrace () in
     Printexc.record_backtrace prev_backtrace;
-    Result.error (e, trace)
+    Result.error (None, Printf.sprintf "%s\n%s" e trace)
 
 let get_module_ast_xml (module_path : string) (stdlib_path : string) : (modules, (string option * string)) result =
-  match source_to_sany_xml_str module_path stdlib_path with
-  | Error (output, exit_code) -> Error (None, Printf.sprintf "%d\n%s" exit_code output)
-  | Ok xml_str ->
-    match xml_str |> str_to_xml |> xml_to_ast with
-    | Error (msg, trace) -> Error (None, Printf.sprintf "%s\n%s" msg trace)
-    | Ok ast -> ast |> Result.ok
+  let ( >>= ) = Result.bind in
+  (source_to_sany_xml_str module_path stdlib_path) >>= str_to_xml >>= xml_to_ast
