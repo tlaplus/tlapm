@@ -1275,10 +1275,11 @@ let convert_ast (ast : Xml.modules) : (Module.T.modctx * Module.T.mule, (string 
     (fun (map : Module.T.modctx) (mule_ref : int) ->
       let toplevel_node : Xml.node = {location = None; level = None} in
       let mule : Xml.module_node = resolve_module_node toplevel_node mule_ref in
-      if Coll.Sm.mem mule.name map then map
-      else Coll.Sm.add mule.name (convert_module_node mule) map
+      match Coll.Sm.find_opt mule.name Module.Standard.initctx with
+      | Some std_mule -> Coll.Sm.add mule.name std_mule map
+      | None -> Coll.Sm.add mule.name (convert_module_node mule) map
     )
-    Coll.Sm.empty (* TODO: use standard modules here *)
+    Coll.Sm.empty
     ast.module_refs
   in let root_module = Coll.Sm.find ast.root_module ctx in
   root_module.core.important <- true;
