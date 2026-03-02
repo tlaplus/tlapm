@@ -271,6 +271,7 @@ and at_node = {
 
 and label_node = {
   node        : node;
+  name        : string;
   arity       : int;
   body        : expr_or_assume_prove;
   parameters  : int list
@@ -426,6 +427,7 @@ and xml_to_label_node (children : tree list) : label_node =
     Node ("params", parameters)
     ] -> {
       node;
+      name;
       arity;
       body = xml_to_expr_or_assume_prove body;
       parameters = List.map get_ref parameters;

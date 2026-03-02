@@ -1126,14 +1126,21 @@ and convert_sequent (seq : Xml.expr_or_assume_prove) : sequent =
   | AssumeProveLike AssumeProveNode ap -> convert_assume_prove ap
   | AssumeProveLike AssumeProveSubstitution aps -> todo "Sequent" "ASSUME/PROVE with substitution" aps.node.location
 
-(** Converts lbl(a, b, c) :: expr
-    TODO: Handle conversion in all cases
+(** Converts lbl(a, b, c) :: expr and lbl(a, b, c) :: ASSUME ... PROVE. TLAPM
+    treats labels as parentheses subtypes.
+    TODO: Determine whether labels should be able to handle operators here.
 *)
 and convert_label (label : Xml.label_node) : Expr.T.expr = (
+  let mk_arg (param : Xml.formal_param_node) : hint =
+    match param.arity with
+    | 0 -> attach_props param.node param.name
+    | _ -> conversion_failure "TLAPM cannot handle operators as label arguments" param.node.location
+  in let parameters = List.map (resolve_formal_param_node label.node) label.parameters |> List.map mk_arg in
+  let lbl = Nlabel (label.name, parameters) |> attach_props label.node in
   match label.body with
-  | Expression expr -> Parens (convert_expression expr, noprops Syntax)
-  | AssumeProveLike AssumeProveNode ap -> Parens (Sequent (convert_assume_prove ap) |> noprops, noprops Syntax)
-  | AssumeProveLike AssumeProveSubstitution aps -> todo "Label" "AssumeProveSubstitution" aps.node.location
+  | Expression expr -> Parens (convert_expression expr, lbl)
+  | AssumeProveLike AssumeProveNode ap -> Parens (Sequent (convert_assume_prove ap) |> attach_props ap.node, lbl)
+  | AssumeProveLike AssumeProveSubstitution aps -> todo "Label" "ASSUME/PROVE with substitution" aps.node.location
 ) |> attach_props label.node
 
 (** Converts a proof, which can either be OMITTED, OBVIOUS, BY, or a series
