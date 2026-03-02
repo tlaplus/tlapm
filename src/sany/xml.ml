@@ -85,53 +85,6 @@ let is_tag (tag_name : string) (node : tree) : bool =
   | Node (name, _) when name = tag_name -> true
   | _ -> false
 
-(** Utility function that simply returns the children of an XML node. Raises
-    an exception if called on a leaf node.
-*)
-let children_of (xml : tree) : tree list =
-  match xml with
-  | Node (_, children) -> children
-  | _ -> Invalid_argument (Printf.sprintf "Cannot get children of node %s" (show_tree xml)) |> raise
-
-(** Utility function that returns the single child of an XML node. Raises an
-    exception if there is not exactly one child.
-*)
-let child_of (xml : tree) : tree =
-  match xml with
-  | Node (_, [child]) -> child
-  | Node (_, _) -> Invalid_argument (Printf.sprintf "Require single child of node %s" (show_tree xml)) |> raise
-  | _ -> Invalid_argument (Printf.sprintf "Cannot get children of node %s" (show_tree xml)) |> raise
-
-(** Searches for an optional tag in the children of an XML node.
-*)
-let find_tag_opt (tag_name : string) (children : tree list) : tree option =
-  List.find_opt (is_tag tag_name) children
-
-(** Searches for a tag in the children of an XML node, and raises a detailed
-    exception if it is not found.
-*)
-let find_tag (tag_name : string) (children : tree list) : tree =
-  match find_tag_opt tag_name children with
-  | Some v -> v
-  | None -> ls_conversion_failure __FUNCTION__ children
-
-(** Utility function to extract the string value from a tagged XML node which
-    may or may not be present.
-*)
-let xml_to_tagged_string_opt (tag_name : string) (children : tree list) : string option =
-  match find_tag_opt tag_name children with
-  | Some (Node (_, [SValue s])) -> Some s
-  | _ -> None
-
-(** Utility function to extract the string value from a tagged XML node.
-    Raises a detailed exception if the tag is not found or if the tagged node
-    does not contain a single string value.
-*)
-let xml_to_tagged_string (tag_name : string) (children : tree list) : string =
-  match xml_to_tagged_string_opt tag_name children with
-  | Some s -> s
-  | None -> ls_conversion_failure __FUNCTION__ children
-
 (** Use this in conjunction with List.filter_map on children of a node to get
     all references of various types.
 *)
@@ -552,16 +505,22 @@ and xml_to_expression (xml : tree) : expression =
   | _ -> conversion_failure __FUNCTION__ xml
 
 and xml_to_user_defined_op_kind (children : tree list) : user_defined_op_kind =
-  match extract_inline_node children with
-  | node, Node ("uniquename", [SValue name]) :: Node ("arity", [IValue arity]) :: children -> {
+  let node, name, arity, precomments, children = match extract_inline_node children with
+  | node, Node ("uniquename", [SValue name]) :: Node ("arity", [IValue arity]) :: Node ("pre-comments", [SValue precomments]) :: children -> 
+    node, name, arity, Some precomments, children
+  | node, Node ("uniquename", [SValue name]) :: Node ("arity", [IValue arity]) :: children -> 
+    node, name, arity, None, children
+  | _ -> ls_conversion_failure __FUNCTION__ children
+  in match children with
+  | Node ("body", [body]) :: Node ("params", parameters) :: flags -> {
       node;
       name;
       arity;
-      precomments = children |> xml_to_tagged_string_opt "pre-comments";
-      body        = children |> find_tag "body" |> child_of |> xml_to_expression;
-      params      = children |> find_tag "params" |> children_of |> List.map xml_to_leibniz_param;
-      recursive   = children |> List.exists (is_tag "recursive");
-      local       = children |> List.exists (is_tag "local");
+      precomments;
+      body        = xml_to_expression body;
+      params      = List.map xml_to_leibniz_param parameters;
+      recursive   = flags |> List.exists (is_tag "recursive");
+      local       = flags |> List.exists (is_tag "local");
     }
   | _ -> ls_conversion_failure __FUNCTION__ children
 
