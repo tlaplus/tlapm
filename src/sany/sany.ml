@@ -65,30 +65,34 @@ open Util;;
 
 type language_feature =
   | RecursiveOperator
+  | InstanceProofStep
   | Subexpression
 
 exception Unsupported_language_feature of Loc.locus option * language_feature
 
-let todo (category : string) (msg : string) (loc : Xml.location option) : 'a =
-  let loc = match loc with
-  | Some loc -> Xml.show_location loc
-  | None -> "Unknown location"
-  in failwith (Printf.sprintf "%s not yet implemented: %s\n%s" category msg loc)
+type conversion_failure_kind =
+  | NotYetImplemented
+  | InvalidBoundsOrOperands
 
-let conversion_failure (msg : string) (loc : Xml.location option) : 'a =
-  let loc = match loc with
-  | Some loc -> Xml.show_location loc
-  | None -> "Unknown location"
-  in failwith (Printf.sprintf "Conversion failure:\n%s\n%s" msg loc)
+exception Conversion_failure of conversion_failure_kind * string option * string
 
-(** Several places require special handling of the last element of a list,
-    for example proof steps which end in a QED and CASE pairs which end
-    (possibly) in an OTHER statement. This utility function helps with that.
+(** Utility function constructing & raising an exception for when conversion
+    of a TLA+ language feature is not yet implemented, although is planned to
+    be; Unsupported_language_feature is used when support is not currently
+    planned although could be added in the future.
 *)
-let split_last_ls (node : Xml.node) (ls : 'a list) : 'a list * 'a =
-  match List.rev ls with
-  | [] -> conversion_failure "Cannot get last element of empty list" node.location
-  | hd :: tl -> (List.rev tl, hd)
+let todo (category : string) (msg : string) (loc : Xml.location option) : 'a =
+  raise (Conversion_failure (NotYetImplemented, Option.map Xml.show_location loc, Printf.sprintf "%s not yet implemented: %s" category msg))
+
+(** Utility function constructing & raising an exception for when conversion
+    of a TLA+ language construct fails due to invalid bounds or operands from
+    SANY's parse output. This can broadly be viewed as a way to account for
+    the projection from Java's type system to OCaml's variants, in that Java
+    allows representation of invalid data (for example: more than one arg to
+    existential quantification) which is occluded by OCaml's variants.
+*)
+let conversion_failure (msg : string) (loc : Xml.location option) : 'a =
+  raise (Conversion_failure (InvalidBoundsOrOperands, Option.map Xml.show_location loc, msg))
 
 (** A module-global table of SANY AST entities, indexed by UID.
 *)
@@ -112,28 +116,17 @@ let convert_location ({column = (col_start, col_finish); line = (line_start, lin
   file = filename ^ ".tla";
 }
 
+(** An attempt to reduce code duplication between tuple & non-tuple bounds by
+    wrapping them in a variant.
+*)
 type bounds_kind =
   | Tuply of tuply_bounds
   | NonTuply of bounds
-
-type bound_
 
 (** Wraps the given proof step with its name in the metadata.
 *)
 let attach_proof_step_name (proof_name : stepno) (step : 'a) : 'a =
   assign step Props.step proof_name
-
-(** An OpApplNode's operands can be either expressions or operator arguments.
-    Often we only want them to be expressions. This function coerces the list
-    items into expressions, raising an error if they are operators.
-*)
-let as_expr_ls (name : string) (loc : Xml.location option) (operands : Xml.expr_or_op_arg list) : Xml.expression list =
-  let exprs = List.filter_map
-    (fun (operand : Xml.expr_or_op_arg) -> match operand with Expression e -> Some e | _ -> None)
-    operands
-  in if List.length exprs <> List.length operands
-  then conversion_failure (Format.sprintf "Expected all operands to be expressions in %s" name) loc
-  else exprs
 
 (** Wrap the given object in location data.
     TODO: also wrap with level data.
@@ -222,6 +215,37 @@ let is_builtin_op (node : Xml.node) (uid : int) (op : Xml.built_in_operator) : b
   match (resolve_ref node uid).kind with
   | BuiltInKind {operator} when operator = op -> true
   | _ -> false
+
+(** An OpApplNode's operands can be either expressions or operator arguments.
+    Often we only want them to be expressions. This function coerces the list
+    items into expressions, raising an error if they are operators.
+*)
+let as_expr_ls (name : string) (loc : Xml.location option) (operands : Xml.expr_or_op_arg list) : Xml.expression list =
+  let exprs = List.filter_map
+    (fun (operand : Xml.expr_or_op_arg) -> match operand with Expression e -> Some e | _ -> None)
+    operands
+  in if List.length exprs <> List.length operands
+  then conversion_failure (Format.sprintf "Expected all operands to be expressions in %s" name) loc
+  else exprs
+
+(** Several places require special handling of the last element of a list,
+    for example proof steps which end in a QED and CASE pairs which end
+    (possibly) in an OTHER statement. This utility function helps with that.
+*)
+let split_last_ls (node : Xml.node) (ls : 'a list) : 'a list * 'a =
+  match List.rev ls with
+  | [] -> conversion_failure "Cannot get last element of empty list" node.location
+  | hd :: tl -> (List.rev tl, hd)
+
+(** Utility function to convert a list of operands to a list of expression pairs.
+*)
+let as_pair (node : Xml.node) (operand : Xml.expr_or_op_arg) : (Xml.expression * Xml.expression) =
+  match operand with
+  | Expression OpApplNode {operator; bound_symbols = []; operands = [Expression left; Expression right]} -> (
+    match (resolve_ref node operator).kind with
+    | BuiltInKind {operator = Pair} -> (left, right)
+    | _ -> conversion_failure "Expected pair of expressions" node.location
+  ) | _ -> conversion_failure "Expected pair of expressions" node.location
 
 (** Converts a SANY built-in operator to a TLAPM built-in operator. This is
     only defined for a subset of the operators that SANY considers built-in,
@@ -419,7 +443,8 @@ and convert_instance (instance : Xml.instance_node) : Expr.T.instance =
     inst_sub = List.map mk_substitution instance.substitutions;
   }
 
-(** INSTANCE conversion at the module unit level.
+(** INSTANCE conversion at the module unit level. This just wraps a converted
+    instance in a Definition or Anoninst variant.
 *)
 and convert_unit_instance (instance : Xml.instance_node) : Module.T.modunit = (
   let instantiation = convert_instance instance in
@@ -428,15 +453,28 @@ and convert_unit_instance (instance : Xml.instance_node) : Module.T.modunit = (
   | None -> Anoninst (instantiation, if instance.local then Local else Export)
 ) |> attach_props instance.node
 
+(** Converts USE x, y, z and HIDE a, b, c statements. These statements will
+    reveal or conceal the given definitions to all subsequent proof steps.
+    The USE ONLY x, y, z statement ensures that only the given definitions
+    will be considered in subsequent proof steps.
+*)
+and convert_use_or_hide (use_or_hide : Xml.use_or_hide_node) : Module.T.modunit =
+  let action = if use_or_hide.hide then `Hide else `Use use_or_hide.only in
+  Mutate (action, convert_usable use_or_hide) |> attach_props use_or_hide.node
+
+(** Called both from unit-level USE/HIDE conversion and from proof step USE/
+    HIDE conversion. De-duplication of shared conversion logic.
+*)
 and convert_usable (use_or_hide : Xml.use_or_hide_node) : Proof.T.usable = {
   facts = List.map convert_expression use_or_hide.facts;
   defs = List.map (resolve_def use_or_hide.node) use_or_hide.def_refs;
 }
 
-and convert_use_or_hide (use_or_hide : Xml.use_or_hide_node) : Module.T.modunit =
-  let action = if use_or_hide.hide then `Hide else `Use use_or_hide.only in
-  Mutate (action, convert_usable use_or_hide) |> attach_props use_or_hide.node
-
+(** Converts an ASSUME unit-level construct. This can be named or unnamed. If
+    named, this name is given by resolving a reference to an AssumeDefNode,
+    which is different from an AssumeNode. Probably this duplication will be
+    removed on the SANY side eventually.
+*)
 and convert_assume_node (assume : Xml.assume_node) : Module.T.modunit =
   Module.T.Axiom (
     Option.map (fun uid -> let def = resolve_assume_def_node assume.node uid in attach_props def.node def.name) assume.definition,
@@ -462,7 +500,8 @@ and convert_fairness (fairness : fairness_op) (apply : Xml.op_appl_node) : Expr.
   | _ -> conversion_failure "Wrong number of operands to fairness expression" apply.node.location
 ) |> attach_props apply.node
 
-(** Converts action-level expressions such as [][expr]_sub and <><<expr>>_sub.
+(** Converts action-level expressions such as [expr]_sub and <<expr>>_sub.
+    TODO: construct the TSub type if this is prefixed with [] or <>.
 *)
 and convert_action_expr (op : modal_op) (apply : Xml.op_appl_node) : Expr.T.expr =
   match apply.operands with
@@ -507,7 +546,7 @@ and convert_choose (apply : Xml.op_appl_node) : Expr.T.expr = (
       None,
       convert_expression body
     )
-  (* Case 4: Unbounded tuple CHOOSE expression *)
+  (* Case 4: Unbounded tuple CHOOSE expression; this is the only place in TLA+ where an unbounded tuple quantifier is valid. *)
   | Unbound {is_tuple = true} :: _, [Expression body] ->
     let symbols = List.filter_map (fun (s : Xml.symbol) -> match s with | Unbound ({is_tuple = true} as u) -> Some u | _ -> None) apply.bound_symbols in
     if List.length symbols <> List.length apply.bound_symbols
@@ -750,16 +789,6 @@ and convert_record_set (apply : Xml.op_appl_node) : Expr.T.expr =
 and convert_record_constructor (apply : Xml.op_appl_node) : Expr.T.expr =
   convert_record_operator apply (fun arg -> Record arg)
 
-(** Utility function to convert a list of operands to a list of expression pairs.
-*)
-and as_pair (node : Xml.node) (operand : Xml.expr_or_op_arg) : (Xml.expression * Xml.expression) =
-  match operand with
-  | Expression OpApplNode {operator; bound_symbols = []; operands = [Expression left; Expression right]} -> (
-    match (resolve_ref node operator).kind with
-    | BuiltInKind {operator = Pair} -> (left, right)
-    | _ -> conversion_failure "Expected pair of expressions" node.location
-  ) | _ -> conversion_failure "Expected pair of expressions" node.location
-
 (** The conversion logic for both record sets and record constructors is
     identical except for the wrapping constructor (Rect vs Record). This
     method captures that shared logic, taking the constructor as a parameter.
@@ -814,7 +843,12 @@ and convert_if_then_else (apply : Xml.op_appl_node) : Expr.T.expr = (
   | _ -> conversion_failure "Invalid operands to IF/THEN/ELSE" apply.node.location
 ) |> attach_props apply.node
 
-(** Conversion of expression CASE p1 -> e1 [] p2 -> e2 [] ... [] OTHER -> e
+(** Conversion of expression CASE p1 -> e1 [] p2 -> e2 [] ... [] OTHER -> e.
+    Operands are given as a list of (predicate, expression) pairs, with the
+    optional final OTHER node having its predicate represented as a string
+    with value "$Other"; this will likely be changed on the SANY side in the
+    future, as it's equivalent in representation to the plausible syntax
+    CASE "$Other" -> expr.
 *)
 and convert_case (apply : Xml.op_appl_node) : Expr.T.expr = (
   match apply.bound_symbols, apply.operands with
@@ -842,6 +876,7 @@ and convert_subexpression (apply : Xml.op_appl_node) : Expr.T.expr = (
     will not contain subexpression elements like :, <<, @, etc. because those
     would have been given by SANY as the $Nop operator and thus are handled
     in the convert_subexpression method.
+    TODO: How are things like M!N(a)!op represented?
 *)
 and convert_definition_reference (node : Xml.node) (name : string) (args : Xml.expr_or_op_arg list) : Expr.T.expr =
   let convert_selector (component : string) : Expr.T.sel =
@@ -892,7 +927,7 @@ and convert_op_decl_node_op_appl (apply : Xml.op_appl_node) (decl : Xml.op_decl_
 
 (** OpApplNode is a very general node used by SANY to represent essentially
     all expression types. Things like \A x \in S : P are represented as an
-    application of the built-in "forall" operator, with argument P and symbol
+    application of the built-in "forall" operator, with operand P and symbol
     x bound by S. This complicated method de-abstracts this into the more
     detailed Expr.T.expr variant type used by TLAPS.
 *)
@@ -980,16 +1015,6 @@ and convert_expression (expr : Xml.expression) : Expr.T.expr =
 and convert_substitution_in (subst : Xml.subst_in_node) : Expr.T.expr =
   convert_expression subst.body
 
-(** Converts lbl(a, b, c) :: expr
-    TODO: Handle conversion in all cases
-*)
-and convert_label (label : Xml.label_node) : Expr.T.expr = (
-  match label.body with
-  | Expression expr -> Parens (convert_expression expr, noprops Syntax)
-  | AssumeProveLike AssumeProveNode ap -> Parens (Sequent (convert_assume_prove ap) |> noprops, noprops Syntax)
-  | AssumeProveLike AssumeProveSubstitution aps -> todo "Label" "AssumeProveSubstitution" aps.node.location
-) |> attach_props label.node
-
 (** Converts LET/IN definition sets, consisting of one or more definitions
     followed by a body expression in which the definitions are available.
 *)
@@ -997,7 +1022,7 @@ and convert_let_in_node ({node; def_refs; body} : Xml.let_in_node) : Expr.T.expr
   let convert_definition (def_ref : int) : Expr.T.defn =
     match (resolve_ref node def_ref).kind with
     | UserDefinedOpKind op -> convert_user_defined_op_kind op
-    | _ -> todo "LET/IN definition" "Probably an instance" None
+    | _ -> todo "LET/IN definition" "" None
   in Let (List.map convert_definition def_refs, convert_expression body) |> attach_props node
 
 (** Converts user-defined operators defined within LET/IN expressions.
@@ -1060,14 +1085,19 @@ and convert_theorem_node (uid : int) (previous_proof_level : int) (thm : Xml.the
     empty_summary
   ) |> attach_props thm.node
 
+(** Converts ASSUME/PROVE constructs; this method de-duplicates some logic
+    and is called both from the theorem sequent conversion method and also
+    the label conversion method.
+    TODO: fill in context from ASSUME
+*)
 and convert_assume_prove (ap : Xml.assume_prove_node) : sequent = {
-  context = Deque.empty; (* TODO: fill in context from ASSUME part *)
+  context = Deque.empty;
   active = convert_expression ap.prove;
 }
 
 (** Sequents are theorem bodies, which are either simple expressions or
     ASSUME/PROVE constructs.
-    TODO: handle ASSUME/PROVE
+    TODO: handle ASSUME/PROVE substitution case (uncertain what this is).
 *)
 and convert_sequent (seq : Xml.expr_or_assume_prove) : sequent =
   match seq with
@@ -1075,15 +1105,29 @@ and convert_sequent (seq : Xml.expr_or_assume_prove) : sequent =
   | AssumeProveLike AssumeProveNode ap -> convert_assume_prove ap
   | AssumeProveLike AssumeProveSubstitution aps -> todo "Sequent" "AssumeProveSubstitution" aps.node.location
 
+(** Converts lbl(a, b, c) :: expr
+    TODO: Handle conversion in all cases
+*)
+and convert_label (label : Xml.label_node) : Expr.T.expr = (
+  match label.body with
+  | Expression expr -> Parens (convert_expression expr, noprops Syntax)
+  | AssumeProveLike AssumeProveNode ap -> Parens (Sequent (convert_assume_prove ap) |> noprops, noprops Syntax)
+  | AssumeProveLike AssumeProveSubstitution aps -> todo "Label" "AssumeProveSubstitution" aps.node.location
+) |> attach_props label.node
+
 (** Converts a proof, which can either be OMITTED, OBVIOUS, BY, or a series
-    of individual proof steps culminated in a QED step.
+    of individual proof steps culminated in a QED step. We need to attach a
+    proof name to each proof step type, which in most of them is fairly
+    meaningless but is required by subsequent TLAPM processing. Thus we just
+    attach the incremented previous proof level and the reference UID.
 *)
 and convert_proof (uid : int) (previous_proof_level : int) (proof : Xml.proof_node_group option) : Proof.T.proof =
+  let proof_name = Unnamed (previous_proof_level + 1, uid) in
   match proof with
-  | None -> Omitted Implicit |> noprops |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
-  | Some Omitted node -> Omitted Explicit |> attach_props node |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
-  | Some Obvious node -> Obvious |> attach_props node |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
-  | Some By proof -> convert_by_proof proof |> attach_proof_step_name (Unnamed (previous_proof_level + 1, uid))
+  | None -> Omitted Implicit |> noprops |> attach_proof_step_name proof_name
+  | Some Omitted node -> Omitted Explicit |> attach_props node |> attach_proof_step_name proof_name
+  | Some Obvious node -> Obvious |> attach_props node |> attach_proof_step_name proof_name
+  | Some By proof -> convert_by_proof proof |> attach_proof_step_name proof_name
   | Some Steps proof -> convert_proof_steps uid proof
 
 (** Converts proofs of the form BY x, y, z DEF a, b, c. This is another place
@@ -1098,6 +1142,11 @@ and convert_by_proof ({node; facts; defs; only} : Xml.by_proof_node) : Proof.T.p
   only
 ) |> attach_props node
 
+(** Extracts the proof step name from a string like <1>abc. This is done by
+    taking the substring between the > and either the end of the string or
+    the first '.' character. Probably this information should be exposed by
+    SANY.
+*)
 and convert_proof_step_name (node : Xml.node) (uid : int) (proof_level : int) (theorem_def_ref : int option) : stepno =
   match theorem_def_ref with
   | Some uid ->
@@ -1110,17 +1159,7 @@ and convert_proof_step_name (node : Xml.node) (uid : int) (proof_level : int) (t
   | None -> Unnamed (proof_level, uid)
 
 (** One possible proof form is a series of steps, culminating in a QED step.
-    This method converts that structure. This is the most complex part of the
-    proof conversion, primarily due to the necessity of appending proof step
-    names and levels to each step and overall proof. SANY does not export the
-    proof level in its parse tree, and looking at the code on that side there
-    does not seem to be an easy method of doing so. Thus we have to parse the
-    first proof step name to get the initial proof level, which might be <*>
-    or <+> and thus relative to the previous proof level. This information is
-    propagated both up & down the parse tree to assign correct proof levels
-    elsewhere. Proof names can be either named or unnamed; in the latter case
-    TLAPM requires a unique ID to be assigned, so we use the UID of the SANY
-    AST node.
+    This method converts that structure.
 *)
 and convert_proof_steps (uid : int) ({node; proof_level; steps} : Xml.steps_proof_node) : Proof.T.proof =
   let convert_qed_step (qed_proof_step : Xml.proof_step_group) : Proof.T.qed_step =
@@ -1132,11 +1171,10 @@ and convert_proof_steps (uid : int) ({node; proof_level; steps} : Xml.steps_proo
       |> attach_proof_step_name step_name
     | _ -> conversion_failure "QED step must be a theorem node" node.location
   in let steps, qed = split_last_ls node steps
-  in let steps = List.map (convert_proof_step node proof_level) steps
-  in let qed_step = convert_qed_step qed
-  in Steps (List.rev steps, qed_step)
-  |> attach_props node
-  |> attach_proof_step_name (Unnamed (proof_level, uid))
+  in Steps (
+    List.map (convert_proof_step node proof_level) steps,
+    convert_qed_step qed
+  ) |> attach_props node |> attach_proof_step_name (Unnamed (proof_level, uid))
 
 (** Converts a specific proof step into the Proof.T.step variant expected by
     TLAPM. While TLAPM has thirteen proof variants as of this writing, SANY
@@ -1148,17 +1186,10 @@ and convert_proof_steps (uid : int) ({node; proof_level; steps} : Xml.steps_proo
     used. TheoremNodeRef is the real workhorse proof step type, as it is used
     for all proof step types that can have sub-proofs. The specific proof step
     subtype is identified by a special built-in operator as the theorem body.
-
-    This function has an odd type signature because it's intended for use in
-    a List.fold_left over the list of proof steps; the reason we need to do
-    this is to identify the proof level of this proof by parsing the actual
-    proof step names, then propagating this knowledge forward in the fold.
-    The resulting list of proof steps is returned in reverse order, and must
-    be reversed to be in the correct order for TLAPM.
 *)
 and convert_proof_step (node : Xml.node) (proof_level : int) (step : Xml.proof_step_group) : Proof.T.step =
   match step with
-  | InstanceNode {node} -> conversion_failure "INSTANCE proof steps are deprecated from the TLA+ language standard" node.location
+  | InstanceNode {node} -> raise (Unsupported_language_feature (Option.map convert_location node.location, InstanceProofStep))
   | TheoremNode -> todo "TheoremNode proof step" "" None
   | DefStep {node; def_refs} -> convert_definition_proof_step node def_refs
   (* TODO: attach name to UseOrHide step *)
