@@ -1088,12 +1088,33 @@ and convert_theorem_node (uid : int) (previous_proof_level : int) (thm : Xml.the
 (** Converts ASSUME/PROVE constructs; this method de-duplicates some logic
     and is called both from the theorem sequent conversion method and also
     the label conversion method.
-    TODO: fill in context from ASSUME
 *)
-and convert_assume_prove (ap : Xml.assume_prove_node) : sequent = {
-  context = Deque.empty;
-  active = convert_expression ap.prove;
-}
+and convert_assume_prove (ap : Xml.assume_prove_node) : sequent =
+  let convert_hypothesis (hypothesis : Xml.assumption_kind) : Expr.T.hyp =
+    match hypothesis with
+    | Expression expr -> Fact (convert_expression expr, Visible, NotSet) |> attach_props ap.node
+    | NewSymbol ns ->
+      let symbol = resolve_op_decl_node ns.node ns.symbol_ref in
+      let arity = match symbol.arity with | 0 -> Shape_expr | n -> Shape_op n in
+      let kind = match symbol.kind with
+        | NewConstant -> Constant
+        | NewVariable -> State
+        | NewState -> State
+        | NewAction -> Action
+        | NewTemporal -> Temporal
+        | _ -> conversion_failure "Invalid symbol kind in NEW" ns.node.location
+      in let domain = match ns.domain with
+      | Some domain -> Bounded (convert_expression domain, Hidden)
+      | None -> Unbounded
+      in Fresh (noprops symbol.name, arity, kind, domain)
+      |> attach_props ns.node
+    | AssumeProveLike AssumeProveNode apl ->
+      Fact (Sequent (convert_assume_prove apl) |> attach_props apl.node, Visible, NotSet) |> attach_props apl.node
+    | AssumeProveLike AssumeProveSubstitution apl -> todo "ASSUME/PROVE" "nested ASSUME/PROVE with substitution" apl.node.location
+  in {
+    context = List.map convert_hypothesis ap.assumptions |> Deque.of_list;
+    active = convert_expression ap.prove;
+  }
 
 (** Sequents are theorem bodies, which are either simple expressions or
     ASSUME/PROVE constructs.
@@ -1103,7 +1124,7 @@ and convert_sequent (seq : Xml.expr_or_assume_prove) : sequent =
   match seq with
   | Expression expr -> {context = Deque.empty; active = convert_expression expr}
   | AssumeProveLike AssumeProveNode ap -> convert_assume_prove ap
-  | AssumeProveLike AssumeProveSubstitution aps -> todo "Sequent" "AssumeProveSubstitution" aps.node.location
+  | AssumeProveLike AssumeProveSubstitution aps -> todo "Sequent" "ASSUME/PROVE with substitution" aps.node.location
 
 (** Converts lbl(a, b, c) :: expr
     TODO: Handle conversion in all cases
