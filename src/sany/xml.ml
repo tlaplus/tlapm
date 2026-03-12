@@ -244,13 +244,13 @@ type unbound_symbol = {
 }
 [@@deriving show]
 
-let xml_to_unbound_symbol xml =
-  match xml with
-  | Node ("unbound", Node ("FormalParamNodeRef", [Node ("UID", [IValue symbol_ref])]) :: tuple_tag_opt) -> {
+let xml_to_unbound_symbol (children : tree list) : unbound_symbol =
+  match children with
+  | Node ("FormalParamNodeRef", [Node ("UID", [IValue symbol_ref])]) :: tuple_tag_opt -> {
     symbol_ref;
     is_tuple = match tuple_tag_opt with | [Node ("tuple", [])] -> true | _ -> false;
   }
-  | _ -> conversion_failure __FUNCTION__ xml
+  | _ -> ls_conversion_failure __FUNCTION__ children
 
 type op_appl_node = {
   node      : node;
@@ -353,9 +353,9 @@ and expr_or_assume_prove =
   | AssumeProveLike of assume_prove_like
 [@@deriving show]
 
-let rec xml_to_symbols xml =
+let rec xml_to_symbols (xml : tree) : symbol =
   match xml with
-  | Node ("unbound", _) -> Unbound (xml_to_unbound_symbol xml)
+  | Node ("unbound", children) -> Unbound (xml_to_unbound_symbol children)
   | Node ("bound", children) -> Bound (xml_to_bound_symbol children)
   | _ -> conversion_failure __FUNCTION__ xml
 
@@ -1037,7 +1037,6 @@ let xml_to_entry (xml : tree) : entry =
 type modules = {
   root_module: string;
   context: entry list;
-  modules: module_node list;
   module_refs : int list;
 }
 [@@deriving show]
@@ -1049,16 +1048,7 @@ let xml_to_modules (xml : tree) : modules =
     | Node ("RootModule", [SValue root_module]) :: Node ("context", entries) :: modules -> {
       root_module;
       context = List.map xml_to_entry entries;
-      modules = modules |> List.filter_map (fun entry ->
-        match entry with
-        | Node ("ModuleNode", children) -> Some (xml_to_module_node children)
-        | _ -> None
-      );
-      module_refs = List.filter_map (fun entry ->
-        match entry with
-        | Node ("ModuleNodeRef", [Node ("UID", [IValue uid])]) -> Some uid
-        | _ -> None
-      ) modules;
+      module_refs = List.map get_ref modules;
     }
     | _ -> ls_conversion_failure __FUNCTION__ children)
   | _ -> conversion_failure __FUNCTION__ xml

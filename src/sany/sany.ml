@@ -216,6 +216,16 @@ let is_builtin_op (node : Xml.node) (uid : int) (op : Xml.built_in_operator) : b
   | BuiltInKind {operator} when operator = op -> true
   | _ -> false
 
+(** Unboxes the Leibniz param into a formal param node and converts it into
+    the form usually (but not always; see labels) used within TLAPM.
+*)
+let convert_leibniz_param_node (node : Xml.node) ({ref} : Xml.leibniz_param) : (hint * shape) =
+  let fpn = resolve_formal_param_node node ref in
+  attach_props fpn.node fpn.name,
+  match fpn.arity with
+  | 0 -> Shape_expr
+  | n -> Shape_op n
+
 (** An OpApplNode's operands can be either expressions or operator arguments.
     Often we only want them to be expressions. This function coerces the list
     items into expressions, raising an error if they are operators.
@@ -878,7 +888,7 @@ and convert_subexpression (apply : Xml.op_appl_node) : Expr.T.expr = (
     in the convert_subexpression method.
     TODO: How are things like M!N(a)!op represented?
 *)
-and convert_definition_reference (node : Xml.node) (name : string) (args : Xml.expr_or_op_arg list) : Expr.T.expr =
+and convert_definition_reference (node : Xml.node) (name : string) (op_or_apply : [ `Op | `Apply of Xml.expr_or_op_arg list]) : Expr.T.expr =
   let convert_selector (component : string) : Expr.T.sel =
     if String.contains component '('
     then todo "Definition reference" "Function application in selector" node.location
@@ -887,14 +897,20 @@ and convert_definition_reference (node : Xml.node) (name : string) (args : Xml.e
   if List.mem "" components then todo "Definition reference" "!!" node.location
   else match components with
   | [] -> conversion_failure "Unexpected empty definition reference" node.location
-  | [component] -> Apply (
-    Opaque name |> attach_props node,
-    List.map (convert_expression_or_operator_argument node) args
-  ) |> attach_props node
+  | [component] -> (
+    match op_or_apply with
+    | `Op -> Opaque name |> attach_props node
+    | `Apply args -> Apply (
+        Opaque name |> attach_props node,
+        List.map (convert_expression_or_operator_argument node) args
+      ) |> attach_props node
+    )
   | head :: tail ->
     let prefix, last = split_last_ls node tail in
-    let last = Sel_lab (last, List.map (convert_expression_or_operator_argument node) args) in
-    Bang (
+    let last = Sel_lab (
+      last,
+      List.map (convert_expression_or_operator_argument node) (match op_or_apply with | `Op -> [] | `Apply args -> args)
+    ) in Bang (
       Opaque head |> noprops,
       List.map convert_selector prefix @ [last]
     ) |> attach_props node
@@ -903,7 +919,7 @@ and convert_definition_reference (node : Xml.node) (name : string) (args : Xml.e
     defined in the standard modules.
 *)
 and convert_user_defined_op_appl (apply : Xml.op_appl_node) (op : Xml.user_defined_op_kind) : Expr.T.expr =
-  convert_definition_reference apply.node op.name apply.operands
+  convert_definition_reference apply.node op.name (`Apply apply.operands)
 
 (** Conversion of reference to in-scope operator parameters, such as in
     op(a, b, c) == a. This is a case where information is actually lost,
@@ -923,7 +939,7 @@ and convert_formal_param_node_op_appl (apply : Xml.op_appl_node) (param : Xml.fo
     Bruijn index later on.
 *)
 and convert_op_decl_node_op_appl (apply : Xml.op_appl_node) (decl : Xml.op_decl_node) : Expr.T.expr =
-  convert_definition_reference apply.node decl.name apply.operands
+  convert_definition_reference apply.node decl.name (`Apply apply.operands)
 
 (** OpApplNode is a very general node used by SANY to represent essentially
     all expression types. Things like \A x \in S : P are represented as an
@@ -943,9 +959,9 @@ and convert_op_appl_node (apply : Xml.op_appl_node) : Expr.T.expr =
   (* A reference to a CONSTANT or VARIABLE identifier *)
   | OpDeclNode decl -> convert_op_decl_node_op_appl apply decl
   (* A reference to a named THEOREM or a proof step *)
-  | TheoremDefNode thm -> convert_definition_reference thm.node thm.name []
+  | TheoremDefNode thm -> convert_definition_reference thm.node thm.name `Op
   (* A reference to a named ASSUME node *)
-  | AssumeDefNode assume -> convert_definition_reference assume.node assume.name []
+  | AssumeDefNode assume -> convert_definition_reference assume.node assume.name `Op
   | _ -> conversion_failure ("Invalid operator reference in OpApplNode : " ^ (Xml.show_entry_kind op_kind)) apply.node.location
 
 (** Some places in TLA⁺ syntax allow both normal expressions and also
@@ -959,11 +975,14 @@ and convert_expression_or_operator_argument (node : Xml.node) (op_expr : Xml.exp
   | Expression expr -> convert_expression expr
   | OpArg uid -> match (resolve_ref node uid).kind with
     | FormalParamNode param -> Opaque param.name |> attach_props param.node
-    | UserDefinedOpKind userdef -> convert_definition_reference userdef.node userdef.name []
+    | UserDefinedOpKind userdef ->
+      (* The XML export format identifies lambda operators with just the string name LAMBDA *)
+      if userdef.name = "LAMBDA" then convert_lambda userdef else
+      convert_definition_reference userdef.node userdef.name `Op
     | BuiltInKind builtin ->
       let op = sany_to_tlapm_builtin builtin.node builtin.operator in
       Internal op |> attach_props builtin.node
-    | OpDeclNode decl -> convert_definition_reference decl.node decl.name []
+    | OpDeclNode decl -> convert_definition_reference decl.node decl.name `Op
     | ModuleInstanceKind instance -> conversion_failure ("Invalid operator argument reference to module instance: " ^ Option.get instance.name) instance.node.location
     | AssumeNode assume -> conversion_failure "Invalid operator argument reference to ASSUME" assume.node.location
     | AssumeDefNode assume -> conversion_failure ("Invalid operator argument reference to ASSUME: " ^ assume.name) assume.node.location
@@ -987,6 +1006,15 @@ and convert_expression (expr : Xml.expression) : Expr.T.expr =
   | SubstInNode subst -> convert_substitution_in subst
   | TheoremDefRef uid -> todo "Expression" "TheoremDefRef" None
   | AssumeDefRef uid -> todo "Expression" "AssumeDefRef" None
+
+(** Converts LAMBDA x : x + 1 type operators, which can only appear as
+    parameters to other operators.
+*)
+and convert_lambda (op : Xml.user_defined_op_kind) : Expr.T.expr =
+  Lambda (
+    List.map (convert_leibniz_param_node op.node) op.params,
+    convert_expression op.body
+  ) |> attach_props op.node
 
 (** When a module has been imported using INSTANCE along with one or more
     substitutions, and then an expression referencing an operator or definition
@@ -1028,19 +1056,12 @@ and convert_let_in_node ({node; def_refs; body} : Xml.let_in_node) : Expr.T.expr
 (** Converts user-defined operators defined within LET/IN expressions.
 *)
 and convert_user_defined_op_kind (op : Xml.user_defined_op_kind) : Expr.T.defn =
-  let mk_params ({ref} : Xml.leibniz_param) : (hint * shape) = (
-    let fpn = resolve_formal_param_node op.node ref in
-    attach_props fpn.node fpn.name,
-    match fpn.arity with
-    | 0 -> Shape_expr
-    | n -> Shape_op n
-  ) in
   let body = convert_expression op.body in
   (* TLAPS represents op(x) == expr as op == LAMBDA x : expr *)
   let expr = match op.params with
   | [] -> body
   | params ->
-    Lambda (List.map mk_params params, body)
+    Lambda (List.map (convert_leibniz_param_node op.node) params, body)
     |> attach_props op.node
   in Operator (attach_props op.node op.name, expr) |> attach_props op.node
 
@@ -1324,7 +1345,6 @@ and convert_suffices_proof_step (apply : Xml.op_appl_node) (proof : Proof.T.proo
     root.
 *)
 let convert_ast (ast : Xml.modules) : (Module.T.modctx * Module.T.mule, (string option * string)) result =
-  if ast.modules <> [] then conversion_failure "SANY AST cannot have multiple top-level modules" None;
   entries :=
     List.fold_left
       (fun m (e : Xml.entry) -> Coll.Im.add e.uid e.kind m)
@@ -1335,8 +1355,12 @@ let convert_ast (ast : Xml.modules) : (Module.T.modctx * Module.T.mule, (string 
       let toplevel_node : Xml.node = {location = None; level = None} in
       let mule : Xml.module_node = resolve_module_node toplevel_node mule_ref in
       match Coll.Sm.find_opt mule.name Module.Standard.initctx with
-      | Some std_mule -> Coll.Sm.add mule.name std_mule map
-      | None -> Coll.Sm.add mule.name (convert_module_node mule) map
+      | Some std_mule ->
+        print_endline ("Using built-in standard module " ^ mule.name);
+        Coll.Sm.add mule.name std_mule map
+      | None ->
+        print_endline ("Converting parsed module " ^ mule.name);
+        Coll.Sm.add mule.name (convert_module_node mule) map
     )
     Coll.Sm.empty
     ast.module_refs

@@ -49,9 +49,9 @@ let parse_tla_file filename =
   | Unsupported_language_feature (location, Subexpression) ->
     (* This is okay, we just don't support subexpressions *)
     Printf.eprintf "%s:\nUnsupported subexpression at %s\n" filename (Loc.string_of_locus (Option.get location))
-  | Failure (e : string) ->
+  (*| Failure (e : string) ->
     Printf.eprintf "%s\n" e;
-    failwith filename
+    failwith filename*)
 
 let _ =
   parser_backend := Sany;
@@ -61,10 +61,10 @@ let _ =
   ];
   add_debug_flag "sany";
   let tla_files = [
-    "/home/ahelwer/src/tlaplus/java-tools/tlatools/org.lamport.tlatools/test/tla2sany/semantic/corpus";
-    "/mnt/data/ahelwer/src/tlaplus/proofs/examples";
-    "/mnt/data/ahelwer/src/tlaplus/proofs/library";
     "/mnt/data/ahelwer/src/tlaplus/examples/specifications";
+    "/mnt/data/ahelwer/src/tlaplus/proofs/library";
+    "/mnt/data/ahelwer/src/tlaplus/proofs/examples";
+    "/home/ahelwer/src/tlaplus/java-tools/tlatools/org.lamport.tlatools/test/tla2sany/semantic/corpus";
     ] |> List.map find_tla_files |> List.flatten
     |> List.filter should_run
     (*|> _start_at "paxos/Paxos.tla"*)

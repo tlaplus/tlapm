@@ -544,13 +544,14 @@ let setup_loader fs loader_paths =
   let loader_paths = List.fold_left add_if_new loader_paths fs in
   Loader.Global.setup loader_paths
 
-let sany_modctx_of_string filename =
-  (*let transform (ctx, mule : modctx * Module.T.mule) : (modctx * Module.T.mule, string option * string) result =
+let sany_modctx_of_string filename = (*
+  let transform (ctx, mule : modctx * Module.T.mule) : (modctx * Module.T.mule, string option * string) result =
   Params.input_files := [Filename.basename filename];
   Params.set_search_path [Filename.basename filename];
   let (mule, _) = let open Module.Flatten in flatten ctx mule Ss.empty
   in let (ctx, m, _summ) = Module.Elab.normalize ctx Deque.empty mule in Ok (ctx, m)
-  in Result.bind (Sany.parse filename) transform*)
+  in Result.bind (Sany.parse filename) transform
+  *)
   Sany.parse filename
 
 let main fs =
