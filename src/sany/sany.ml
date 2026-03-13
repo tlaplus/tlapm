@@ -421,6 +421,7 @@ and convert_module_node (mule : Xml.module_node) : Module.T.mule =
     name = noprops mule.name;
     extendees = List.map (fun name -> noprops name) mule.extends;
     instancees = []; (* TODO: collate list of instancees from units *)
+    (* Filter map to skip all operators which were inlined during import. *)
     body = List.filter_map convert_entry mule.units;
     defdepth = 0;
     stage = Parsed;
@@ -1007,8 +1008,7 @@ and convert_expression (expr : Xml.expression) : Expr.T.expr =
   | TheoremDefRef uid -> todo "Expression" "TheoremDefRef" None
   | AssumeDefRef uid -> todo "Expression" "AssumeDefRef" None
 
-(** Converts LAMBDA x : x + 1 type operators, which can only appear as
-    parameters to other operators.
+(** Converts LAMBDA x : x + 1 type operators.
 *)
 and convert_lambda (op : Xml.user_defined_op_kind) : Expr.T.expr =
   Lambda (
@@ -1069,6 +1069,7 @@ and convert_user_defined_op_kind (op : Xml.user_defined_op_kind) : Expr.T.defn =
     was defined in a different module, return None.
 *)
 and convert_unit_user_defined_op_kind (xml: Xml.user_defined_op_kind) (enclosing_module_name : string) : Module.T.modunit option =
+  (* TODO: this comparison does not work for nested modules, since location.filename uses enclosing module name. *)
   if (Option.get xml.node.location).filename <> enclosing_module_name then None else
   match xml.recursive with
   | true -> raise (Unsupported_language_feature (Option.map convert_location xml.node.location, RecursiveOperator))

@@ -36,10 +36,9 @@ let _start_at (filename : string) (files : string list) : string list =
   in drop_until files
 
 let parse_tla_file filename =
-  let open Stdlib in
   let open Tlapm_lib__Sany in
   print_endline ("Parsing " ^ filename ^ " ...");
-  try match modctx_of_string ~content:"" ~filename ~loader_paths:[] ~prefer_stdlib:true with
+  try match parse filename with
   | Error (_, msg) -> failwith msg
   | Ok _ -> print_endline (filename ^ " success")
   with
