@@ -1,6 +1,3 @@
-open Tlapm_lib;;
-open Tlapm_lib__Params;;
-
 let find_tla_files dir =
   let cmd = Printf.sprintf "find %s -name '*.tla'" (Filename.quote dir) in
   let ic = Unix.open_process_in cmd in
@@ -36,6 +33,7 @@ let _start_at (filename : string) (files : string list) : string list =
   in drop_until files
 
 let parse_tla_file filename =
+  let open Tlapm_lib in
   let open Tlapm_lib__Sany in
   print_endline ("Parsing " ^ filename ^ " ...");
   try match parse filename with
@@ -53,6 +51,7 @@ let parse_tla_file filename =
     failwith filename*)
 
 let _ =
+  let open Tlapm_lib__Params in
   parser_backend := Sany;
   module_jar_paths := [
     "/mnt/data/ahelwer/src/tlaplus/examples/deps/apalache/lib/apalache.jar";
