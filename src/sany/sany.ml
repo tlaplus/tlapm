@@ -1357,10 +1357,10 @@ let convert_ast (ast : Xml.modules) : (Module.T.modctx * Module.T.mule, (string 
       let mule : Xml.module_node = resolve_module_node toplevel_node mule_ref in
       match Coll.Sm.find_opt mule.name Module.Standard.initctx with
       | Some std_mule ->
-        print_endline ("Using built-in standard module " ^ mule.name);
+        if Params.debugging "sany" then print_endline ("Using built-in standard module " ^ mule.name) else ();
         Coll.Sm.add mule.name std_mule map
       | None ->
-        print_endline ("Converting parsed module " ^ mule.name);
+        if Params.debugging "sany" then print_endline ("Converting parsed module " ^ mule.name) else ();
         Coll.Sm.add mule.name (convert_module_node mule) map
     )
     Coll.Sm.empty
