@@ -1377,3 +1377,10 @@ let parse (module_path : string) : (Module.T.modctx * Module.T.mule, (string opt
   Option.to_result ~none:(None, "TLAPS standard library cannot be found") Params.stdlib_path
   >>= (Xml.get_module_ast_xml module_path)
   >>= convert_ast
+
+open Sexplib;;
+
+let module_to_sexp (mule : Module.T.mule) : Sexp.t =
+  mule
+  |> Translate_syntax_tree.translate_tla_source_file
+  |> Translate_syntax_tree.ts_node_to_sexpr

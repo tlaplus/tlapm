@@ -11,29 +11,48 @@ let find_tla_files dir =
   in
   loop []
 
-open OUnit2;;
-
-let run_test (filename : string) (_ctx: test_ctxt) : unit =
-  let open Tlapm_lib in
-  let open Stdlib in
-  let open Tlapm_lib__Params in
-  (*add_debug_flag "sany";*)
-  let ic = open_in filename in
+let read_file (filepath : string) : string =
+  let ic = open_in filepath in
   let content = really_input_string ic (in_channel_length ic) in
   close_in ic;
-  let check_tlapm (loc, msg) =
-    parser_backend := Tlapm;
-    match modctx_of_string ~content ~filename ~loader_paths:[] ~prefer_stdlib:true with
-    | Error (_, _) -> Printf.eprintf "WARNING: Both SANY and TLAPM failed"
-    | Ok _ -> assert_failure (Printf.sprintf "SANY failed, but TLAPM succeeded\n%s\n%s" msg (Option.value ~default:"<no location>" loc))
-  in
+  content
+
+open OUnit2;;
+open Tlapm_lib;;
+open Stdlib;;
+open Tlapm_lib__Params;;
+open Tlapm_lib__Sany;;
+
+let compare_syntax_trees (filepath : string) (source_code : string) : unit =
+  parser_backend := Tlapm;
+  match module_of_string source_code with
+  | None -> assert_failure "TLAPM failed to parse the test input"
+  | Some tlapm_mule ->
+    parser_backend := Sany;
+    match parse filepath with
+    | Error _ -> assert_failure "SANY failed to parse the test input"
+    | Ok (_, sany_mule) ->
+      let open Sexplib in
+      let tlapm_tree = module_to_sexp tlapm_mule in
+      let sany_tree = module_to_sexp sany_mule in
+      if Sexp.equal tlapm_tree sany_tree
+      then ()
+      else
+        let open Sexp_diff in
+        let diff = Algo.diff ~original:tlapm_tree ~updated:sany_tree () in
+        let options = Display.Display_options.(create Layout.Single_column) in
+        let text = Display.display_with_ansi_colors options diff in
+        assert_failure (Printf.sprintf "Parse trees differ:\n%s" text)
+
+let run_test (filename : string) (_ctx: test_ctxt) : unit =
+  (*add_debug_flag "sany";*)
+  let content = read_file filename in
   parser_backend := Sany;
   try match modctx_of_string ~content ~filename ~loader_paths:[] ~prefer_stdlib:true with
-  | Error msg -> check_tlapm msg
+  | Error _ -> compare_syntax_trees filename content
   | Ok _ -> ()
   with
-  | Failure (msg : string) -> check_tlapm (None, msg)
-
+  | Failure _ -> compare_syntax_trees filename content
 
 let mk_test (filepath : string) : test =
   Filename.basename filepath >:: (run_test filepath)

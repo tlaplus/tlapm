@@ -12,3 +12,6 @@ type conversion_failure_kind =
 exception Conversion_failure of conversion_failure_kind * string option * string
 
 val parse : string -> (Module.T.modctx * Module.T.mule, string option * string) result
+
+open Sexplib;;
+val module_to_sexp : Module.T.mule -> Sexp.t
