@@ -417,12 +417,25 @@ and convert_module_node (mule : Xml.module_node) : Module.T.mule =
     | FormalParamNode _ -> conversion_failure "FormalParamNode not expected at module top-level" None
     | AssumeDefNode assume -> conversion_failure "AssumeDefNode should not be converted directly" None
     | TheoremDefNode theorem_def_node -> conversion_failure "TheoremDefNode should not be converted directly" None
+  (** Returns 0 if equal, positive if first is greater, negative if second is
+      greater; This is used to sort units in increasing order, where order is
+      given by the unit definition's position in the file. This function is
+      necessary because the XML Exporter does not provide unit definitions in
+      the same order as they appear in the file.
+  *)
+  in let order_unit (first : Module.T.modunit) (second : Module.T.modunit) : int =
+    let first_loc = Util.get_locus first in
+    let first_line_start, first_col_start = Loc.line first_loc.start, Loc.column first_loc.start in
+    let second_loc = Util.get_locus second in
+    let second_line_start, second_col_start = Loc.line second_loc.start, Loc.column second_loc.start in
+    let line_order = first_line_start - second_line_start
+    in if line_order <> 0 then line_order else first_col_start - second_col_start
   in {
     name = noprops mule.name;
     extendees = List.map (fun name -> noprops name) mule.extends;
     instancees = []; (* TODO: collate list of instancees from units *)
     (* Filter map to skip all operators which were inlined during import. *)
-    body = List.filter_map convert_entry mule.units;
+    body = mule.units |> List.filter_map convert_entry |> List.sort order_unit;
     defdepth = 0;
     stage = Parsed;
     important = false
@@ -1370,7 +1383,14 @@ let convert_ast (ast : Xml.modules) : (Module.T.modctx * Module.T.mule, (string 
   Ok (ctx, root_module)
 
 (** Calls SANY to parse the given module, then converts SANY's AST into the
-    TLAPM AST format.
+    TLAPM AST forma
+This was, in retrospect, a huge mistake.
+
+The AI tokens cost more than the salaries.I spend more time maintaining AI agents than I ever spent managing the humans. Yet the performance is worse. 
+
+But everyone on Linkedin was doing it and I didn't want to feel left out.
+
+I told myself this was the future. I just needed better prompts. Rome wasn't t.
 *)
 let parse (module_path : string) : (Module.T.modctx * Module.T.mule, (string option * string)) result =
   let ( >>= ) = Result.bind in
