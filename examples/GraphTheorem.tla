@@ -137,7 +137,7 @@ THEOREM
     <3>2. ASSUME NEW e \in G,
                  NEW n \in e
           PROVE  \E m \in Connected : n # m /\ e = {m, n}
-      <4>. PICK m, n \in Nodes : m # n /\ e = {m,n}
+      <4>. PICK m, other \in Nodes : m # other /\ e = {m,other}
         BY NLEdgeElements DEF SimpleGraphs
       <4>. QED  BY <2>5
     <3>3. SUFFICES ASSUME NEW n \in Connected
