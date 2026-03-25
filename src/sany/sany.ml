@@ -1114,7 +1114,7 @@ and convert_theorem_def_node (theorem_def_node : Xml.theorem_def_node) : Module.
     unchanged for error message purposes.
 *)
 and convert_theorem_node (uid : int) (previous_proof_level : int) (thm : Xml.theorem_node) : Module.T.modunit =
-  let proof = convert_proof uid previous_proof_level thm.proof in
+  let proof = convert_proof thm.node uid previous_proof_level thm.proof in
   Theorem (
     Option.map (fun uid -> let def = resolve_theorem_def_node thm.node uid in attach_props def.node def.name) thm.definition,
     convert_sequent thm.body,
@@ -1188,10 +1188,10 @@ and convert_label (label : Xml.label_node) : Expr.T.expr = (
     meaningless but is required by subsequent TLAPM processing. Thus we just
     attach the incremented previous proof level and the reference UID.
 *)
-and convert_proof (uid : int) (previous_proof_level : int) (proof : Xml.proof_node_group option) : Proof.T.proof =
+and convert_proof (enclosing_thm : Xml.node) (uid : int) (previous_proof_level : int) (proof : Xml.proof_node_group option) : Proof.T.proof =
   let proof_name = Unnamed (previous_proof_level + 1, uid) in
   match proof with
-  | None -> Omitted Implicit |> noprops |> attach_proof_step_name proof_name
+  | None -> Omitted Implicit |> attach_props enclosing_thm |> attach_proof_step_name proof_name
   | Some Omitted node -> Omitted Explicit |> attach_props node |> attach_proof_step_name proof_name
   | Some Obvious node -> Obvious |> attach_props node |> attach_proof_step_name proof_name
   | Some By proof -> convert_by_proof proof |> attach_proof_step_name proof_name
@@ -1234,7 +1234,7 @@ and convert_proof_steps (uid : int) ({node; proof_level; steps} : Xml.steps_proo
     | TheoremNodeRef uid ->
       let thm = resolve_theorem_node node uid in
       let step_name = convert_proof_step_name node uid proof_level thm.definition in
-      Qed (convert_proof uid (step_number step_name) thm.proof) |> attach_props thm.node
+      Qed (convert_proof thm.node uid (step_number step_name) thm.proof) |> attach_props thm.node
       |> attach_proof_step_name step_name
     | _ -> conversion_failure "QED step must be a theorem node" node.location
   in let steps, qed = split_last_ls node steps
@@ -1264,7 +1264,7 @@ and convert_proof_step (node : Xml.node) (proof_level : int) (step : Xml.proof_s
   | TheoremNodeRef uid ->
     let thm = resolve_theorem_node node uid in
     let step_name = convert_proof_step_name node uid proof_level thm.definition in
-    let proof = convert_proof uid (step_number step_name) thm.proof in
+    let proof = convert_proof thm.node uid (step_number step_name) thm.proof in
     let step = match thm.body with
     | Expression OpApplNode ({operator} as apply) when is_builtin_op node operator CaseProofStep ->
       convert_case_proof_step apply proof

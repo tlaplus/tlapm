@@ -2,5 +2,5 @@
 CONSTANT x
 CONSTANT y
 CONSTANT z
-op == <<x, y, z>> 
+op == <<x, y, z>>
 ====

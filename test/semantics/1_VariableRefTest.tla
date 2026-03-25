@@ -2,5 +2,5 @@
 VARIABLE x
 VARIABLE y
 VARIABLE z
-op == <<x, y, z>> 
+op == <<x, y, z>>
 ====

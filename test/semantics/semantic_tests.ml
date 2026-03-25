@@ -23,7 +23,7 @@ open Stdlib;;
 open Tlapm_lib__Params;;
 open Tlapm_lib__Sany;;
 
-let compare_syntax_trees (filepath : string) (source_code : string) : unit =
+let compare_syntax_trees (filepath : string) (source_code : string) (is_error : bool) : unit =
   parser_backend := Tlapm;
   match module_of_string source_code with
   | None -> assert_failure "TLAPM failed to parse the test input"
@@ -36,23 +36,26 @@ let compare_syntax_trees (filepath : string) (source_code : string) : unit =
       let tlapm_tree = module_to_sexp tlapm_mule in
       let sany_tree = module_to_sexp sany_mule in
       if Sexp.equal tlapm_tree sany_tree
-      then ()
+      then assert_bool "Syntax trees equivalent but SANY failed" (not is_error)
       else
         let open Sexp_diff in
         let diff = Algo.diff ~original:tlapm_tree ~updated:sany_tree () in
         let options = Display.Display_options.(create Layout.Single_column) in
         let text = Display.display_with_ansi_colors options diff in
-        assert_failure (Printf.sprintf "Parse trees differ:\n%s" text)
+        assert_failure (
+        if is_error then (Printf.sprintf "SANY failed and parse trees differ:\n%s" text)
+        else (Printf.sprintf "SANY succeeded but parse trees differ:\n%s" text))
 
 let run_test (filename : string) (_ctx: test_ctxt) : unit =
   (*add_debug_flag "sany";*)
   let content = read_file filename in
   parser_backend := Sany;
   try match modctx_of_string ~content ~filename ~loader_paths:[] ~prefer_stdlib:true with
-  | Error _ -> compare_syntax_trees filename content
-  | Ok _ -> compare_syntax_trees filename content
+  | Error _ -> compare_syntax_trees filename content true
+  | Ok _ -> compare_syntax_trees filename content false
   with
-  | Failure _ -> compare_syntax_trees filename content
+  | Failure _ -> compare_syntax_trees filename content true
+  | Not_found -> compare_syntax_trees filename content true
 
 let mk_test (filepath : string) : test =
   Filename.basename filepath >:: (run_test filepath)
