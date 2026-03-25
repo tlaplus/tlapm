@@ -1,4 +1,6 @@
 ---- MODULE 1_VariableRefTest ----
-VARIABLES x, y, z
+VARIABLE x
+VARIABLE y
+VARIABLE z
 op == <<x, y, z>> 
 ====

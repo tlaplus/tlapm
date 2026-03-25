@@ -1,4 +1,6 @@
 ---- MODULE 0_ConstantRefTest ----
-CONSTANTS x, y, z
+CONSTANT x
+CONSTANT y
+CONSTANT z
 op == <<x, y, z>> 
 ====

@@ -50,7 +50,7 @@ let run_test (filename : string) (_ctx: test_ctxt) : unit =
   parser_backend := Sany;
   try match modctx_of_string ~content ~filename ~loader_paths:[] ~prefer_stdlib:true with
   | Error _ -> compare_syntax_trees filename content
-  | Ok _ -> ()
+  | Ok _ -> compare_syntax_trees filename content
   with
   | Failure _ -> compare_syntax_trees filename content
 

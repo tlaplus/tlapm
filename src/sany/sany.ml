@@ -308,9 +308,12 @@ let rec convert_built_in_op_appl (apply : Xml.op_appl_node) (op : Xml.built_in_k
       different from the set that SANY consideres "built-in"; this function
       constructs operators for the TLAPM built-in operator set.
   *)
-  let mk (builtin : Builtin.builtin) : Expr.T.expr = Apply (
+  let mk (builtin : Builtin.builtin) : Expr.T.expr =
+    match apply.operands with
+    | [] -> Internal builtin |> attach_props apply.node
+    | args -> Apply (
       Internal builtin |> attach_props op.node,
-      apply.operands |> as_expr_ls (Builtin.builtin_to_string builtin) apply.node.location |> List.map convert_expression
+      args |> as_expr_ls (Builtin.builtin_to_string builtin) apply.node.location |> List.map convert_expression
     ) |> attach_props apply.node
   in match op.operator with
   (* Reserved words *)
@@ -914,6 +917,7 @@ and convert_definition_reference (node : Xml.node) (name : string) (op_or_apply 
   | [component] -> (
     match op_or_apply with
     | `Op -> Opaque name |> attach_props node
+    | `Apply [] -> Opaque name |> attach_props node
     | `Apply args -> Apply (
         Opaque name |> attach_props node,
         List.map (convert_expression_or_operator_argument node) args
