@@ -1,0 +1,7 @@
+(test
+ (name semantic_tests)
+ (modes exe)
+ (libraries tlapm_lib ounit2 sexp_diff)
+ (deps (glob_files *.tla))
+ (preprocess (pps ppx_deriving.show))
+)

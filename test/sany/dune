@@ -1,0 +1,6 @@
+(test
+ (name sany_tests)
+ (modes exe)
+ (libraries tlapm_lib ounit2 sexplib sexp_diff)
+ (preprocess (pps ppx_deriving.show))
+)

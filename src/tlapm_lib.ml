@@ -544,7 +544,22 @@ let setup_loader fs loader_paths =
   let loader_paths = List.fold_left add_if_new loader_paths fs in
   Loader.Global.setup loader_paths
 
+let sany_modctx_of_string filename =
+  let transform (ctx, mule : modctx * Module.T.mule) : (modctx * Module.T.mule, string option * string) result =
+  Params.input_files := [Filename.basename filename];
+  Params.set_search_path [Filename.basename filename];
+  let (mule, _) = let open Module.Flatten in flatten ctx mule Ss.empty
+  in let (ctx, m, _summ) = Module.Elab.normalize ctx Deque.empty mule in Ok (ctx, m)
+  in Result.bind (Sany.parse filename) transform
+
 let main fs =
+  match !Params.parser_backend, fs with
+  | Sany, [root_module_path] -> (match sany_modctx_of_string root_module_path with
+    | Ok (mcx, mule) -> process_module mcx mule |> ignore
+    | Error (_, msg) -> failwith ("Error parsing module using Sany backend: " ^ msg)
+  )
+  | Sany, _ -> failwith "When using Sany parser backend, exactly one input file must be provided."
+  | Tlapm, _ ->
   setup_loader fs !Params.rev_search_path;
   Params.input_files := map_paths_to_filenames fs;
   let () =
@@ -616,8 +631,7 @@ let init () =
        end;
        exit 3
 
-(* Access to this function has to be synchronized. *)
-let modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~prefer_stdlib : (modctx * Module.T.mule, string option * string) result =
+let tlapm_modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~prefer_stdlib : (modctx * Module.T.mule, string option * string) result =
     let parse_it () =
         Errors.reset ();
         Params.prefer_stdlib := prefer_stdlib;
@@ -652,9 +666,18 @@ let modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~pre
          | Some l, None -> Error (Some l, Printexc.to_string e)
          | None, None -> Error (None, Printexc.to_string e))
 
+(* Access to this function has to be synchronized. *)
+let modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~prefer_stdlib : (modctx * Module.T.mule, string option * string) result =
+    match !Params.parser_backend with
+    | Tlapm -> tlapm_modctx_of_string ~content ~filename ~loader_paths ~prefer_stdlib
+    | Sany -> sany_modctx_of_string filename
+
 let module_of_string module_str =
-    let hparse = Tla_parser.P.use Module.Parser.parse in
-    let (flex, _) = Alexer.lex_string module_str in
-    Tla_parser.P.run hparse ~init:Tla_parser.init ~source:flex
+    match !Params.parser_backend with
+    | Tlapm -> 
+        let hparse = Tla_parser.P.use Module.Parser.parse in
+        let (flex, _) = Alexer.lex_string module_str in
+        Tla_parser.P.run hparse ~init:Tla_parser.init ~source:flex
+    | Sany -> failwith "SANY cannot parse modules from a string"
 
 let stdlib_search_paths = Params.stdlib_search_paths
