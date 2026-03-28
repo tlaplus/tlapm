@@ -1,0 +1,11 @@
+---- MODULE 12_BasicCaseStepProofTest ----
+A == TRUE
+B == TRUE
+THEOREM A /\ B
+PROOF
+<1> CASE A
+  PROOF BY ONLY DEF A
+<1> CASE B
+  PROOF BY ONLY DEF B
+<1> QED
+====

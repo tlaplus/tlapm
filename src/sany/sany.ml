@@ -1263,7 +1263,7 @@ and convert_proof_step (node : Xml.node) (proof_level : int) (step : Xml.proof_s
   | UseOrHide use_or_hide -> Use (convert_usable use_or_hide, use_or_hide.only) |> attach_props use_or_hide.node
   | TheoremNodeRef uid ->
     let thm = resolve_theorem_node node uid in
-    let step_name = convert_proof_step_name node uid proof_level thm.definition in
+    let step_name = convert_proof_step_name thm.node uid proof_level thm.definition in
     let proof = convert_proof thm.node uid (step_number step_name) thm.proof in
     let step = match thm.body with
     | Expression OpApplNode ({operator} as apply) when is_builtin_op node operator CaseProofStep ->
