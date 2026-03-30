@@ -1,0 +1,4 @@
+[submodule "library/CommunityModules"]
+	path = library/CommunityModules
+	url = https://github.com/tlaplus/CommunityModules.git
+  branch = master

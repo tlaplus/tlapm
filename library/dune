@@ -3,4 +3,7 @@
   (site
    (tlapm stdlib)))
  (files
-  (glob_files "*.tla")))
+  (glob_files "*.tla")
+  (glob_files ("CommunityModules/modules/*.tla" with_prefix .))
+ )
+)

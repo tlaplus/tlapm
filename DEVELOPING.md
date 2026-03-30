@@ -40,8 +40,8 @@ You can put the `eval` statement in your shell init file (`~/.bashrc` or similar
 
 Build & Install TLAPS
 ---------------------
-Clone this repo & open a shell in its root.
-Install OCaml package dependencies with:
+This repo uses git submodules, so clone it with the `--recurse-submodules` parameter or run `git submodule update --init --recursive` if you already cloned it without that parameter.
+Open a shell in the root of this module and install OCaml package dependencies with:
 ```sh
 make opam-update
 make opam-deps
