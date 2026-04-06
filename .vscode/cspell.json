@@ -46,6 +46,17 @@
     "bpragma",
     "alcotest",
     "yojson",
-    "patdiff"
+    "patdiff",
+    "snoc",
+    "assms",
+    "bumpn",
+    "scons",
+    "ssnoc",
+    "hyps",
+    "nums",
+    "pfuncs",
+    "usables",
+    "defns",
+    "fprintf"
   ]
 }

@@ -8,6 +8,16 @@ open Ctx
 
 
 type ctx = hyp Deque.dq * int Ctx.ctx
+
+val pp_ctx : Format.formatter -> ctx -> unit
+(** Print internal representation. *)
+
+val empty_ctx : ctx
+(** Empty context. With no hypotheses. *)
+
+val ctx_of_expr_ctx : E_t.ctx -> ctx
+(** Make Fmt context out of hypothesis context. *)
+
 val bump : ctx -> ctx
 
 val adj : ctx -> Util.hint -> ctx * string

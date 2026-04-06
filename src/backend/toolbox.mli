@@ -43,4 +43,4 @@ val print_message_url:
     string -> string -> unit
 
 (* lsp *)
-val normalize : bool -> Proof.T.obligation -> Proof.T.obligation
+val normalize : bool -> ?keep_defs:bool -> Proof.T.obligation -> Proof.T.obligation
