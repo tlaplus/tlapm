@@ -79,6 +79,11 @@ jobs:
                 find ./library -type f -iname "*_proofs.tla"  \
                 -print0 | xargs --null --max-args=1           \
                 ./_build/tlapm/bin/tlapm --cleanfp --stretch 5
+            - name: Check local example proofs
+              run: |
+                find ./examples -type f -name "*.tla"          \
+                -print0 | xargs --verbose --null --max-args=1  \
+                sh -c 'time ./_build/tlapm/bin/tlapm --cleanfp --stretch 5 "$1"' sh
             - name: Clone tlaplus/examples
               uses: actions/checkout@v6
               with:
@@ -107,4 +112,3 @@ jobs:
                   | join("")' \
                 | xargs --verbose --null --no-run-if-empty -I {TLA_FILE} \
                 time "$DEPS_DIR/tlapm-install/bin/tlapm" "$EXAMPLES_DIR/{TLA_FILE}" -I "$DEPS_DIR/community" --stretch 5
-
