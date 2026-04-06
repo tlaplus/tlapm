@@ -80,6 +80,9 @@ jobs:
               run: |
                 find ./library -type f -iname "*_proofs.tla" -print0 |
                 xargs --null --max-args=1 ./_build/tlapm/bin/tlapm --cleanfp --stretch 5
+            - name: Check local example proofs
+              run: |
+                bash ./.github/scripts/check_local_examples.sh "./_build/tlapm/bin/tlapm"
             - name: Clone tlaplus/examples
               uses: actions/checkout@v4
               with:
@@ -108,4 +111,3 @@ jobs:
                   --tlapm_path "$DEPS_DIR/tlapm-install"        \
                   --examples_root "$EXAMPLES_DIR"               \
                   --skip "${SKIP[@]}"
-
