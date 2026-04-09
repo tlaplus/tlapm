@@ -13,9 +13,7 @@ let ca_omitted ~uri ~ps =
   ca_edit ~uri ~title ~range ~newText
 
 (** Replace
-    {v
-      <1> ... [proof]
-    v}
+    {v <1> ... [proof] v}
     with
     {v
       <1> ...
@@ -66,17 +64,18 @@ let cas_of_el_with_pf (uri : LspT.DocumentUri.t) (ps : PS.t)
 
 (** Propose proof decomposition CodeActions by the structure of the goal and
     assumptions. *)
-let cas_of_obl (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
-    (o : TL.Proof.T.obligation) =
+let cas_of_obl ~(cfg : Config.t) (uri : LspT.DocumentUri.t) (ps : PS.t)
+    (ps_parent : PS.t) (o : TL.Proof.T.obligation) =
   let o = TL.Backend.Toolbox.normalize true o in
   List.concat
     [
-      Of_goal.code_actions uri ps ps_parent o.obl.core;
-      Of_assm.code_actions uri ps ps_parent o.obl.core.context;
+      Of_goal.code_actions ~cfg uri ps ps_parent o.obl.core;
+      Of_assm.code_actions ~cfg uri ps ps_parent o.obl.core.context;
     ]
 
 (* Code Actions of Proof Step *)
-let cas_of_ps (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) =
+let cas_of_ps (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
+    ~(cfg : Config.t) =
   let open TL.Proof.T in
   let el, cx = PS.el ps in
   let cas_of_el_with_pf = cas_of_el_with_pf uri ps cx in
@@ -98,16 +97,17 @@ let cas_of_ps (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) =
   | PS.El.Qed qed_step ->
       let cas_of_goal =
         PS.goal ps
-        |> Option.fold ~none:[] ~some:(fun g -> cas_of_obl uri ps ps_parent g)
+        |> Option.fold ~none:[] ~some:(fun g ->
+            cas_of_obl ~cfg uri ps ps_parent g)
       in
       let cas_of_pf =
         match unwrap qed_step with Qed pf -> cas_of_el_with_pf pf
       in
       List.concat [ cas_of_goal; cas_of_pf ]
 
-let code_actions (uri : LspT.DocumentUri.t) (mule_ps : PS.t) (range : Range.t) :
-    LspT.CodeAction.t list =
+let code_actions ~(cfg : Config.t) (uri : LspT.DocumentUri.t) (mule_ps : PS.t)
+    (range : Range.t) : LspT.CodeAction.t list =
   match PS.locate_proof_path mule_ps range with
-  | ps :: parent :: _ -> cas_of_ps uri ps parent
+  | ps :: parent :: _ -> cas_of_ps ~cfg uri ps parent
   | _ :: _ -> [] (* Module is the root, no decompositions there. *)
   | [] -> [] (* Should not be possible. *)

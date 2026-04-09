@@ -347,7 +347,7 @@ let test_goal_conj_list () =
 (** {1 Goal: ∨} *)
 
 let test_goal_disj_basic_case2 () =
-  let lsp = lsp_init () in
+  let lsp = lsp_init ~decomposition_disj_cases:true () in
   let text =
     {|
     ---- MODULE test ----
@@ -377,7 +377,7 @@ let test_goal_disj_basic_case2 () =
   lsp_stop lsp
 
 let test_goal_disj_list_case3 () =
-  let lsp = lsp_init () in
+  let lsp = lsp_init ~decomposition_disj_cases:true () in
   let text =
     {|
     ---- MODULE test ----
@@ -407,6 +407,41 @@ let test_goal_disj_list_case3 () =
     |}
   in
   let actual = lsp_ca ~lsp ~text ~line:7 "⤮ Decompose goal (∨, case 3)" in
+  check_multiline_diff_td ~title:"refactoring output" ~expected ~actual;
+  lsp_stop lsp
+
+let test_goal_disj_contra () =
+  let lsp = lsp_init () in
+  let text =
+    {|
+    ---- MODULE test ----
+    THEOREM Test ==
+      ASSUME NEW a, NEW b, NEW c PROVE
+        \/ a
+        \/ b \/ c
+    PROOF
+      <1> QED OBVIOUS
+    ====
+    |}
+  in
+  let expected =
+    {|
+    ---- MODULE test ----
+    THEOREM Test ==
+      ASSUME NEW a, NEW b, NEW c PROVE
+        \/ a
+        \/ b \/ c
+    PROOF
+      <1>1. SUFFICES ASSUME ~a ,
+                            ~b ,
+                            ~c
+                    PROVE  FALSE
+            OBVIOUS
+      <1> QED BY <1>1
+    ====
+    |}
+  in
+  let actual = lsp_ca ~lsp ~text ~line:7 "⤮ Decompose goal (∨)" in
   check_multiline_diff_td ~title:"refactoring output" ~expected ~actual;
   lsp_stop lsp
 
@@ -484,6 +519,7 @@ let test_cases =
     test_case "Goal ∧, list" `Quick test_goal_conj_list;
     test_case "Goal ∨, basic, case 2" `Quick test_goal_disj_basic_case2;
     test_case "Goal ∨, list, case 3" `Quick test_goal_disj_list_case3;
+    test_case "Goal ∨, contra" `Quick test_goal_disj_contra;
     test_case "Goal ≡, basic" `Quick test_goal_equiv_basic;
     test_case "Goal ≡, circular" `Quick test_goal_equiv_circular;
   ]

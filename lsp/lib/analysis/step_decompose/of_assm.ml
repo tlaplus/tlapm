@@ -21,9 +21,7 @@ let limit_title title =
 
 (** Propose the decomposition Code Action for an assumption which is in the form
     of conjunction. If we have an assumption
-    {v
-      A /\ B /\ ...
-    v}
+    {v A /\ B /\ ... v}
     with the current proof [pf], we will add steps before the QED step:
     {v
       <1>a. A [pf]
@@ -74,9 +72,7 @@ let cas_of_assm_conj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
       the same.
 
     Thus, if we have an assumption
-    {v
-      A \/ B \/ ...
-    v}
+    {v A \/ B \/ ... v}
     with the current proof [pf], we will add steps before the QED step:
     {v
       <1>a. CASE A [pf + <1>a]
@@ -122,9 +118,7 @@ let cas_of_assm_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
 
 (** Propose use of an assumption in the form of an implication. Thus, if we have
     assumption
-    {v
-      A => B => ... => C
-    v}
+    {v A => B => ... => C v}
     with the current proof [pf] we will produce
     {v
       <1>a. C
@@ -201,9 +195,7 @@ let cas_of_assm_implies (uri : LspT.DocumentUri.t) (ps : PS.t)
   [ ca ]
 
 (** For each assumption in the form of existential quantifier,
-    {v
-      \A x \in X : P(x)
-    v}
+    {v \A x \in X : P(x) v}
     and [pf] as the current proof, we introduce
     {v
       <1>a. PICK x \in X : P(x)
@@ -266,13 +258,9 @@ let cas_of_assm_forall (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   [ ca ]
 
 (** For each assumption in the form of existential quantifier,
-    {v
-      \E x \in X : P(x)
-    v}
+    {v \E x \in X : P(x) v}
     and [pf] as the current proof, we introduce
-    {v
-      <1>a. PICK x \in X : P(x) [pf]
-    v} *)
+    {v <1>a. PICK x \in X : P(x) [pf] v} *)
 let cas_of_assm_exists (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     cx bs ex =
   let open TL in
@@ -374,8 +362,8 @@ let cas_of_assm (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) cx ex
   in
   match_expr cx ex
 
-let code_actions (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
-    (cx : TL.Expr.T.ctx) =
+let code_actions ~cfg:_ (uri : LspT.DocumentUri.t) (ps : PS.t)
+    (ps_parent : PS.t) (cx : TL.Expr.T.ctx) =
   let open TL in
   let acc = ref [] in
   let append add = acc := List.append !acc add in

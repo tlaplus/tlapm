@@ -4,6 +4,7 @@ type t = {
   stdout : in_channel;
   stderr : in_channel;
   mutable id_seq : Jsonrpc.Id.t Seq.t;
+  decomposition_disj_cases : bool;
 }
 
 module LspIoState = struct
@@ -38,7 +39,7 @@ end
 
 module LspIo = Lsp.Io.Make (LspIoState) (LspIoChan)
 
-let run cmd : t =
+let run ?(decomposition_disj_cases = false) cmd : t =
   let stdin_r, stdin_w = Unix.pipe () in
   let stdout_r, stdout_w = Unix.pipe () in
   let stderr_r, stderr_w = Unix.pipe () in
@@ -53,6 +54,7 @@ let run cmd : t =
     stdout = Unix.in_channel_of_descr stdout_r;
     stderr = Unix.in_channel_of_descr stderr_r;
     id_seq = Seq.ints 1 |> Seq.map (fun i -> `Int i);
+    decomposition_disj_cases;
   }
 
 let close (t : t) : unit =
@@ -120,7 +122,10 @@ let call_init t =
         locale = None;
         rootPath = None;
         rootUri = None;
-        initializationOptions = None;
+        initializationOptions =
+          Some
+            (`Assoc
+               [ ("decompositionDisjCases", `Bool t.decomposition_disj_cases) ]);
         trace = None;
         workDoneToken = None;
         workspaceFolders = None;

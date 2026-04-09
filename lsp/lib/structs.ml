@@ -188,14 +188,17 @@ end
     }
     v} *)
 module InitializationOptions : sig
-  type t
+  type t = private {
+    module_search_paths : string list;
+    decomposition_disj_cases : bool;
+  }
 
-  val module_search_paths : t -> string list
   val t_of_yojson : Yojson.Safe.t option -> t
 end = struct
-  type t = { module_search_paths : string list }
-
-  let module_search_paths t = t.module_search_paths
+  type t = {
+    module_search_paths : string list;
+    decomposition_disj_cases : bool;
+  }
 
   let t_of_yojson (y : Yojson.Safe.t option) : t =
     match y with
@@ -209,8 +212,13 @@ end = struct
                 cps
           | Some _ -> []
         in
-        { module_search_paths }
-    | _ -> { module_search_paths = [] }
+        let decomposition_disj_cases =
+          match List.assoc_opt "decompositionDisjCases" els with
+          | Some (`Bool true) -> true
+          | Some _ | None -> false
+        in
+        { module_search_paths; decomposition_disj_cases }
+    | _ -> { module_search_paths = []; decomposition_disj_cases = false }
 end
 
 (** Returned by the server in response to the Initialize request. Corresponds

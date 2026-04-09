@@ -193,8 +193,8 @@ let cas_of_goal_conj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     - We don't know which one to pick, thus propose user all of them.
     - The current step proof is then replaced with the BY <x>y referring to the
       introduced SUFFICES. *)
-let cas_of_goal_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
-    cx disjuncts =
+let cas_of_goal_disj_cases (uri : LspT.DocumentUri.t) (ps : PS.t)
+    (ps_parent : PS.t) cx disjuncts =
   let disjuncts = flatten_op_list Disj disjuncts in
   let ps_proof = PS.proof ps |> Option.get in
   let disjunct_ca disjunct_pos disjunct =
@@ -231,6 +231,51 @@ let cas_of_goal_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   in
   List.mapi disjunct_ca disjuncts
 
+(** Make decomposition code actions for a goal of the form of disjunction. In
+    this case we assume all the cases negated and prove false -- proof by
+    contradiction. *)
+let cas_of_goal_disj_contra (uri : LspT.DocumentUri.t) (ps : PS.t)
+    (ps_parent : PS.t) cx disjuncts =
+  let disjuncts = flatten_op_list Disj disjuncts in
+  let ps_proof = PS.proof ps |> Option.get in
+  let step_names = Seq_acc.make (PS.stepno_seq_under_proof_step ps_parent) in
+  let step_no = Seq_acc.take step_names in
+  let negated =
+    disjuncts
+    |> List.mapi (fun i disjunct ->
+        let expr =
+          TL.Expr.T.Apply
+            (TL.(Expr.T.Internal Builtin.Neg) |> noprops, [ disjunct ])
+          |> noprops
+        in
+        TL.Expr.T.(Fact (expr, Visible, NotSet))
+        |> noprops
+        |> TL.Expr.Subst.(app_hyp (shift i)))
+  in
+  let step =
+    TL.Proof.T.Suffices
+      ( {
+          context = TL.Util.Deque.of_list negated;
+          active = TL.(Expr.T.Internal Builtin.FALSE) |> noprops;
+        },
+        ps_proof )
+    |> noprops
+  in
+  let new_step_rewrite = pp_proof_steps_before ps cx [ (step_no, step) ] in
+  let ps_proof_rewrite = ps_proof_rewrite ps cx (`StepNames [ step_no ]) in
+  let ca =
+    ca_edits ~uri
+      ~title:(Fmt.str "⤮ Decompose goal (∨)")
+      ~edits:[ new_step_rewrite; ps_proof_rewrite ]
+  in
+  [ ca ]
+
+let cas_of_goal_disj ~(cfg : Config.t) (uri : LspT.DocumentUri.t) (ps : PS.t)
+    (ps_parent : PS.t) cx disjuncts =
+  match cfg.decomposition_disj_cases with
+  | true -> cas_of_goal_disj_cases uri ps ps_parent cx disjuncts
+  | false -> cas_of_goal_disj_contra uri ps ps_parent cx disjuncts
+
 (* A chain of equivalences is replaced with a list of circular implications. *)
 let cas_of_goal_equiv (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
     cx op_args =
@@ -263,8 +308,8 @@ let cas_of_goal_equiv (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
   in
   [ ca ]
 
-let code_actions (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
-    (sq : TL.Expr.T.sequent) =
+let code_actions ~(cfg : Config.t) (uri : LspT.DocumentUri.t) (ps : PS.t)
+    (ps_parent : PS.t) (sq : TL.Expr.T.sequent) =
   let rec match_expr cx (ex : TL.Expr.T.expr) =
     match ex.core with
     | TL.Expr.T.Apply (op, op_args) -> (
@@ -274,7 +319,8 @@ let code_actions (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
             | TL.Builtin.Implies ->
                 cas_of_goal_implies uri ps ps_parent cx op_args
             | TL.Builtin.Conj -> cas_of_goal_conj uri ps ps_parent cx op_args
-            | TL.Builtin.Disj -> cas_of_goal_disj uri ps ps_parent cx op_args
+            | TL.Builtin.Disj ->
+                cas_of_goal_disj ~cfg uri ps ps_parent cx op_args
             | TL.Builtin.Equiv -> cas_of_goal_equiv uri ps ps_parent cx op_args
             | TL.Builtin.TRUE | TL.Builtin.FALSE | TL.Builtin.Neg
             | TL.Builtin.Eq | TL.Builtin.Neq | TL.Builtin.STRING
@@ -313,7 +359,7 @@ let code_actions (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
             match bullet with
             | TL.Expr.T.And | TL.Expr.T.Refs ->
                 cas_of_goal_conj uri ps ps_parent cx exprs
-            | TL.Expr.T.Or -> cas_of_goal_disj uri ps ps_parent cx exprs))
+            | TL.Expr.T.Or -> cas_of_goal_disj ~cfg uri ps ps_parent cx exprs))
     | TL.Expr.T.Sub (modal_op, action_ex, subscript_ex) ->
         expand_sub modal_op action_ex subscript_ex |> match_expr cx
     | TL.Expr.T.Ix ix -> expand_expr_ref cx ix match_expr
