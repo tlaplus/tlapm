@@ -194,7 +194,7 @@ let cas_of_assm_implies (uri : LspT.DocumentUri.t) (ps : PS.t)
   in
   [ ca ]
 
-(** For each assumption in the form of existential quantifier,
+(** For each assumption in the form of universal quantifier,
     {v \A x \in X : P(x) v}
     and [pf] as the current proof, we introduce
     {v
