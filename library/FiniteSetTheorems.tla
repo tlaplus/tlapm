@@ -6,7 +6,7 @@
 (*  \vspace{12pt}}^'                                                       *)
 (***************************************************************************)
 
-EXTENDS FiniteSets, Integers, FunctionsFork, WellFoundedInduction
+EXTENDS FiniteSets, Integers, Functions, WellFoundedInduction
 
 (***************************************************************************)
 (* `.  .'                                                                  *)
