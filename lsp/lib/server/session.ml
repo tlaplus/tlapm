@@ -32,6 +32,7 @@ type t = {
   current_ps : LspT.Location.t option;
       (** The proof step that is currently selected. We will send state updates
           for it. *)
+  config : Config.t;
 }
 
 let with_docs_res' st f =
@@ -192,6 +193,11 @@ module SessionHandlers = Handlers.Make (struct
     let docs = Docs.with_parser st.docs (parser_fun paths) in
     { st with paths; docs }
 
+  let use_config (use : [ `decomposition_disj_cases of bool ]) (st : t) =
+    match use with
+    | `decomposition_disj_cases v ->
+        { st with config = Config.set_decomposition_disj_cases v st.config }
+
   let prove_step st (uri : LspT.DocumentUri.t) (vsn : int)
       (range : LspT.Range.t) =
     Eio.traceln "PROVE_STEP: %s#%d lines %d--%d"
@@ -248,6 +254,7 @@ module SessionHandlers = Handlers.Make (struct
     (st, (0, []))
 
   let diagnostic_source = Const.diagnostic_source
+  let config (st : t) = st.config
 
   let%test_unit "basics" =
     Eio_main.run @@ fun env ->
@@ -268,6 +275,7 @@ module SessionHandlers = Handlers.Make (struct
         prov = Prover.create sw fs proc_mgr;
         delayed = DocUriSet.empty;
         current_ps = None;
+        config = Config.default;
       }
     in
     let () =
@@ -381,6 +389,7 @@ let run event_taker event_adder output_adder sw fs proc_mgr =
       prov = Prover.create sw fs proc_mgr;
       delayed = DocUriSet.empty;
       current_ps = None;
+      config = Config.default;
     }
   in
   loop st

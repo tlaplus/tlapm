@@ -106,6 +106,13 @@ let rec pp_print_proof cx ff prf =
               (prmeth prf)
         | Obvious ->
             fprintf ff "%sOBVIOUS%t" supp (prmeth prf)
+        | Omitted h when Ctx.try_print_src (snd cx) ->
+            fprintf ff "%s%s" supp begin
+              match h with
+                | Explicit -> "OMITTED"
+                | Implicit -> ""
+                | Elsewhere loc -> Printf.sprintf "OMITTED (* see %s *)" (Loc.string_of_locus ~cap:false loc)
+            end
         | Omitted h ->
             fprintf ff "%sOMITTED%s" supp begin
               match h with
@@ -125,8 +132,8 @@ let rec pp_print_proof cx ff prf =
                    cx)
                 cx ff inits
             in
-            fprintf ff "@[<hv2>%s%s QED%a@]"
-              (step_name prf) (step_dot prf)
+            fprintf ff "@[<hv2>%s%s QED %a@]"
+              (step_name qed) (step_dot qed)
               (pp_print_qed_step(*proof_nl*) cx) qed
         | Error msg ->
             fprintf ff "%sERROR (*%s*)" supp msg
