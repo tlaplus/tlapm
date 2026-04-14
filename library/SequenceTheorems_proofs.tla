@@ -262,7 +262,7 @@ THEOREM SequenceEmptyOrAppend ==
       PROVE  seq[i] = Append(front, last)[i]
   OBVIOUS
 <1>4. seq = Append(front, last)
-  BY <1>2, <1>3, SeqEqual
+  BY <1>1, <1>2, <1>3, SeqEqual
 <1>. QED  BY <1>1, <1>4
 
 (***************************************************************************)
