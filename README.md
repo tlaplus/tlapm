@@ -27,6 +27,7 @@ For instructions on building & testing TLAPS as well as setting up a development
 
 We welcome your contributions to this open source project!
 TLAPS is used in safety-critical systems, so we have a contribution process in place to ensure quality is maintained; read [CONTRIBUTING.md](CONTRIBUTING.md) before beginning work.
+Especially read this document if you are using a LLM agent.
 
 Authors
 -------
