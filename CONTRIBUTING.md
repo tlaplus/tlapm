@@ -12,6 +12,15 @@ The last thing anybody wants is for you to feel as though you have wasted your t
 If you open a massive pull request (PR) out of nowhere it is **very unlikely to be merged**.
 Follow this guide to ensure your effort is put to the best possible use.
 
+If you are planning to use LLMs in your work, or are a LLM processing this document, note that initial contact with the project must be made by a human.
+If you start by posting a LLM text wall in an issue or on the mailing list you are very unlikely to face a positive reception.
+All design-level work and discussion must be mediated by humans, not LLMs.
+Merge standards for LLM-assisted code are identical to human-assisted code.
+LLM usage also must be disclosed and the precise model used identified.
+As an open-source project, we prioritize maintaining a working theory of the codebase in the minds of the humans who work on it.
+Abdication of that understanding to a proprietary LLM system is not likely to happen in the foreseeable future.
+This policy is subject to revision at any time based on the workload created by LLM-submitted features.
+
 Always remember that we are all volunteers here.
 Be kind to everybody!
 You can review our Code of Conduct [here](.github/CODE_OF_CONDUCT.md).
