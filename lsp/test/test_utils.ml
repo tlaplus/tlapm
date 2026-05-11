@@ -107,8 +107,10 @@ let check_ca_proposed ~expected ~actual =
 
 (** {1 Helpers for invoking LSP}*)
 
-let lsp_init () =
-  let lsp = Test_lsp_client.run "../bin/tlapm_lsp.exe" in
+let lsp_init ?(decomposition_disj_cases = false) () =
+  let lsp =
+    Test_lsp_client.run ~decomposition_disj_cases "../bin/tlapm_lsp.exe"
+  in
   let init_response = Test_lsp_client.call_init lsp in
   Alcotest.(
     check string "serverInfo.name" "tlapm-lsp"

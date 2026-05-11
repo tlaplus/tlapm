@@ -194,7 +194,7 @@ let cas_of_assm_implies (uri : LspT.DocumentUri.t) (ps : PS.t)
   in
   [ ca ]
 
-(** For each assumption in the form of existential quantifier,
+(** For each assumption in the form of universal quantifier,
     {v \A x \in X : P(x) v}
     and [pf] as the current proof, we introduce
     {v
@@ -362,8 +362,8 @@ let cas_of_assm (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t) cx ex
   in
   match_expr cx ex
 
-let code_actions (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
-    (cx : TL.Expr.T.ctx) =
+let code_actions ~cfg:_ (uri : LspT.DocumentUri.t) (ps : PS.t)
+    (ps_parent : PS.t) (cx : TL.Expr.T.ctx) =
   let open TL in
   let acc = ref [] in
   let append add = acc := List.append !acc add in

@@ -1478,7 +1478,7 @@ THEOREM Invariance == Spec => []Inv
           <6>1. /\ a = self
                 /\ r = [val |-> mc.val, bal |-> b]
             BY <4>1, <5>1, <5>3 DEF Inv, TypeOK 
-          <6>2. /\ \A r \in 2avSent[self] : r.bal < b 
+          <6>2. /\ \A other \in 2avSent[self] : other.bal < b 
                 /\ maxBal' = [maxBal EXCEPT ![self] = b]
             BY <3>2 DEF Phase2av
           <6>3. r.bal =< maxBal'[a]

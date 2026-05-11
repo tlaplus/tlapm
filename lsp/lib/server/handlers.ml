@@ -15,6 +15,7 @@ module type Callbacks = sig
   val prove_step : t -> LspT.DocumentUri.t -> int -> LspT.Range.t -> t
   val cancel : t -> LspT.ProgressToken.t -> t
   val use_paths : t -> string list -> t
+  val use_config : [ `decomposition_disj_cases of bool ] -> t -> t
 
   val suggest_proof_range :
     t -> LspT.DocumentUri.t -> LspT.Range.t -> t * (int * LspT.Range.t) option
@@ -26,6 +27,7 @@ module type Callbacks = sig
     t -> LspT.DocumentUri.t -> t * (int * LspT.Diagnostic.t list)
 
   val diagnostic_source : string
+  val config : t -> Config.t
 end
 
 module Make (CB : Callbacks) = struct
@@ -116,7 +118,9 @@ module Make (CB : Callbacks) = struct
     let cb_state =
       let open Structs.InitializationOptions in
       let init_opts = t_of_yojson params.initializationOptions in
-      CB.use_paths cb_state (module_search_paths init_opts)
+      CB.use_paths cb_state init_opts.module_search_paths
+      |> CB.use_config
+           (`decomposition_disj_cases init_opts.decomposition_disj_cases)
     in
     let supported_commands =
       [
@@ -404,7 +408,7 @@ module Make (CB : Callbacks) = struct
       CB.with_docs_res cb_state @@ fun cb_st docs ->
       let f _vsn _mule ps =
         Some
-          (Analysis.Step_decompose.code_actions uri ps
+          (Analysis.Step_decompose.code_actions ~cfg:(CB.config cb_state) uri ps
              (Range.of_lsp_range user_range))
       in
       let docs, res = Docs.on_parsed_mule_latest docs uri f in

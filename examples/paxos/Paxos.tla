@@ -403,10 +403,10 @@ THEOREM Invariant == Spec => []Inv
           <6>1. \A m \in S : 
                    /\ m.bal =< maxBal[m.acc]
                    /\ \A c \in (m.maxVBal+1) .. (m.bal-1) :
-                         ~ \E v \in Values : VotedForIn(m.acc, v, c)
+                         ~ \E other \in Values : VotedForIn(m.acc, other, c)
             BY DEF MsgInv
-          <6>2. \A c \in 0..(b-1) : \A a \in Q : \A v \in Values : 
-                    ~ VotedForIn(a, v, c)
+          <6>2. \A c \in 0..(b-1) : \A a \in Q : \A other \in Values : 
+                    ~ VotedForIn(a, other, c)
             BY <5>0, <5>1, <6>1
           <6>3. \A c \in 0..(b-1) : \A a \in Q : maxBal[a] > c
             BY <5>0, <6>1, QuorumAssumption DEF TypeOK

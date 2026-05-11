@@ -1,6 +1,14 @@
+(rule
+ (targets CommunityModules.jar)
+ (action (run "wget" "https://github.com/tlaplus/CommunityModules/releases/latest/download/CommunityModules.jar")))
+(rule
+  (deps "CommunityModules.jar")
+  (targets Functions.tla Folds.tla FunctionTheorems.tla)
+  (action (run "unzip" "CommunityModules.jar")))
 (install
- (section
-  (site
-   (tlapm stdlib)))
+ (section (site (tlapm stdlib)))
  (files
-  (glob_files "*.tla")))
+  CommunityModules.jar
+  (glob_files "*.tla")
+ )
+)

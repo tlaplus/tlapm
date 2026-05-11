@@ -1,6 +1,6 @@
 type t
 
-val run : string -> t
+val run : ?decomposition_disj_cases:bool -> string -> t
 val close : t -> unit
 val send_packet : t -> Jsonrpc.Packet.t -> unit
 val send_request : t -> 'a Lsp.Client_request.t -> Jsonrpc.Id.t

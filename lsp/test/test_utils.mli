@@ -4,7 +4,7 @@ val check_multiline_diff :
 val check_multiline_diff_td :
   title:string -> expected:string -> actual:Lsp.Text_document.t -> unit
 
-val lsp_init : unit -> Test_lsp_client.t
+val lsp_init : ?decomposition_disj_cases:bool -> unit -> Test_lsp_client.t
 val lsp_stop : Test_lsp_client.t -> unit
 
 val lsp_ca :

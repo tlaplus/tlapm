@@ -65,8 +65,8 @@ let rename_steps ~(ps_parent : PS.t) (pf : Proof.T.proof) : Proof.T.proof =
       in
       Property.(Proof.T.Steps (inits, qed) @@ pf)
 
-let code_actions (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
-    (sq : TL.Expr.T.sequent) =
+let code_actions ~cfg:_ (uri : LspT.DocumentUri.t) (ps : PS.t)
+    (ps_parent : PS.t) (sq : TL.Expr.T.sequent) =
   (* For now we mark decomposition rules with `ASSUME NEW DECOMPOSITION_RULE`. *)
   let has_marker (sq : Expr.T.sequent) =
     TL.Util.Deque.find sq.context (fun (h : Expr.T.hyp) ->
