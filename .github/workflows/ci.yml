@@ -22,12 +22,10 @@ jobs:
               - '5.1.0'
         env:
           EXAMPLES_DIR: "tlaplus-examples"
-          SCRIPT_DIR: "tlaplus-examples/.github/scripts"
           DEPS_DIR: "tlaplus-examples/deps"
-          DIST_DIR: "tlatools/org.lamport.tlatools/dist"
         steps:
             - name: Clone repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
             - name: Install deps (ubuntu)
               if: matrix.os == 'ubuntu-latest'
               run: |
@@ -82,14 +80,10 @@ jobs:
                 -print0 | xargs --null --max-args=1           \
                 ./_build/tlapm/bin/tlapm --cleanfp --stretch 5
             - name: Clone tlaplus/examples
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
               with:
                 repository: tlaplus/examples
                 path: ${{ env.EXAMPLES_DIR }}
-            - name: Set up Python
-              uses: actions/setup-python@v5
-              with:
-                python-version: '3.12'
             - name: Check proofs in TLA+ examples
               run: |
                 mkdir -p "$DEPS_DIR"
@@ -97,16 +91,20 @@ jobs:
                 tar -xzf "$DEPS_DIR/tlapm.tar.gz" -C "$DEPS_DIR"
                 rm "$DEPS_DIR/tlapm.tar.gz"
                 mv $DEPS_DIR/tlapm* "$DEPS_DIR/tlapm-install"
-                SKIP=(
-                  # Long-running
-                  specifications/LoopInvariance/Quicksort.tla
-                  specifications/LoopInvariance/SumSequence.tla
-                  specifications/bcastByz/bcastByz.tla
-                  specifications/MisraReachability/ReachabilityProofs.tla
-                  specifications/byzpaxos/BPConProof.tla # Takes about 30 minutes
-                )
-                python "$SCRIPT_DIR/check_proofs.py"            \
-                  --tlapm_path "$DEPS_DIR/tlapm-install"        \
-                  --examples_root "$EXAMPLES_DIR"               \
-                  --skip "${SKIP[@]}"
+                mkdir -p "$DEPS_DIR/community"
+                wget -nv https://github.com/tlaplus/CommunityModules/releases/latest/download/CommunityModules-deps.jar -O "$DEPS_DIR/community/modules.jar"
+                unzip "$DEPS_DIR/community/modules.jar" -d "$DEPS_DIR/community"
+                find "$EXAMPLES_DIR/specifications" -iname "manifest.json" -print0 \
+                | xargs --null --no-run-if-empty \
+                jq --join-output '
+                  .modules
+                  | map(select(has("proof")))
+                  # Failing on Linux
+                  | map(select(.path != "specifications/LoopInvariance/SumSequence.tla"))
+                  # Skip checking long-running proofs
+                  | map(select(.proof.maxRuntimeMinutes <= 1))
+                  | map(.path + "\u0000")
+                  | join("")' \
+                | xargs --verbose --null --no-run-if-empty -I {TLA_FILE} \
+                time "$DEPS_DIR/tlapm-install/bin/tlapm" "$EXAMPLES_DIR/{TLA_FILE}" -I "$DEPS_DIR/community" --stretch 5
 
