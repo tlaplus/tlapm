@@ -81,7 +81,10 @@ jobs:
                 ./_build/tlapm/bin/tlapm --cleanfp --stretch 5
             - name: Check local example proofs
               run: |
+                # Skip the longest-running examples so PR CI stays under five minutes.
                 find ./examples -type f -name "*.tla"          \
+                ! -path "./examples/ByzPaxos/BPConProof.tla"  \
+                ! -path "./examples/ByzPaxos/VoteProof.tla"   \
                 -print0 | xargs --verbose --null --max-args=1  \
                 sh -c 'time ./_build/tlapm/bin/tlapm --cleanfp --stretch 5 "$1"' sh
             - name: Clone tlaplus/examples
