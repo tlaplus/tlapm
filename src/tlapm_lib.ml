@@ -147,7 +147,11 @@ let print_unproved_obligations
         Util.eprintf
             "There were backend errors processing module `%S`."
             tla_module.core.name.core;
-        if not !Params.toolbox then
+        if !Params.strict then
+            (* Record the most severe condition and keep processing so that all
+               modules are reported before exiting (see [Params.exit_status]). *)
+            Params.note_strict_failure 10
+        else if not !Params.toolbox then
             failwith "backend errors: there are unproved obligations"
     end else begin
         Util.eprintf
@@ -443,6 +447,46 @@ let process_module
             | _ -> []
         in
 
+        (* `--strict` checks that are independent of the backends. *)
+        if !Params.strict then begin
+            (* #271: missing or omitted proof steps leave the proof incomplete,
+               even though such steps generate no obligation and would otherwise
+               be reported as a successful run. *)
+            let (_, summ) = fin.final_status in
+            let (n_absent, absent) = summ.sum_absent in
+            let (n_omitted, omitted) = summ.sum_omitted in
+            (* `--summary` already lists each missing/omitted proof location, so
+               skip the per-locus lines to avoid duplicate output. *)
+            if not !Params.summary then begin
+                List.iter
+                    (fun loc -> Util.eprintf ~prefix:"[ERROR]: "
+                        "Missing proof at %s" (Loc.string_of_locus loc))
+                    absent;
+                List.iter
+                    (fun loc -> Util.eprintf ~prefix:"[ERROR]: "
+                        "Omitted proof at %s" (Loc.string_of_locus loc))
+                    omitted
+            end;
+            (* Emit one module-level summary line and raise the exit status to
+               11 (incomplete proof) whenever any step is missing or omitted. *)
+            if n_absent + n_omitted > 0 then begin
+                Util.eprintf ~at:t ~prefix:"[ERROR]: "
+                    "Proof incomplete in module %S: %d missing, %d omitted \
+                     proof step(s)."
+                    t.core.name.core n_absent n_omitted;
+                Params.note_strict_failure 11
+            end;
+            (* #276: an explicit target (e.g. `--line`) that selects no
+               obligation usually means an off-by-one line number rather than a
+               genuine proof. A whole-module run with zero obligations is fine. *)
+            if Params.has_explicit_target ()
+               && Array.length fin.final_obs = 0 then begin
+                Util.eprintf ~at:t ~prefix:"[ERROR]: "
+                    "No proof obligation found for the selected target.";
+                Params.note_strict_failure 12
+            end
+        end;
+
         begin
         if not !Params.suppress_all then
             process_obs t fin.final_obs
@@ -579,7 +623,12 @@ let main fs =
       in
       ignore (List.fold_left f mcx mods)
   end ;
-  if !Params.stats then Clocks.report ()
+  if !Params.stats then Clocks.report () ;
+  (* Under `--strict`, exit with the most severe condition encountered. A clean
+     run leaves [exit_status] at 0 and falls through to the normal exit. The
+     `--strict` guard keeps non-strict runs unaffected even if [exit_status] is
+     ever set elsewhere or retained across in-process invocations. *)
+  if !Params.strict && !Params.exit_status <> 0 then exit !Params.exit_status
 
 
 let init () =

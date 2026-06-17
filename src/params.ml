@@ -448,6 +448,44 @@ let check        = ref false
 let summary      = ref false
 let stats        = ref false
 
+(* `--strict`: treat conditions that otherwise look like a successful run as
+   errors (incomplete proofs, an explicit target that selects no obligation,
+   failed obligations) and exit with a non-zero, condition-specific code. *)
+let strict       = ref false
+
+(* Accumulated process exit status used under `--strict`. 0 means a clean,
+   complete verification. Several conditions may co-occur in a single run; the
+   exit code reflects the most severe one. Severity ordering (most severe
+   first):
+     3   internal error           (emitted by the top-level exception handler)
+     10  proof obligation failed  (proof-wrong)
+     11  incomplete proof         (missing/omitted steps; proof-gappy)
+     12  empty proof target       (explicit target selected no obligation)
+   The numeric values are stable identifiers; severity is defined by
+   [strict_severity], not by numeric magnitude (3 is the most severe but the
+   smallest non-zero code, kept for backwards compatibility). *)
+let exit_status  = ref 0
+
+let strict_severity = function
+  | 0  -> 0
+  | 12 -> 1
+  | 11 -> 2
+  | 10 -> 3
+  | 3  -> 4
+  | _  -> 5
+
+(* Raise [exit_status] to [code] if [code] is more severe than what was already
+   recorded. *)
+let note_strict_failure code =
+  if strict_severity code > strict_severity !exit_status then
+    exit_status := code
+
+(* True when the user restricted the run to an explicit proof target, e.g. via
+   `--line` or a `--toolbox` range. A whole-module run keeps the defaults
+   [tb_sl = 0] and [tb_el = max_int]. *)
+let has_explicit_target () =
+  !tb_sl > 0 || !tb_el < max_int
+
 let solve_cmd cmd file =
   if Sys.os_type = "Cygwin" then
     sprintf "file=%s; winfile=\"`cygpath -a -w \"%s\"`\"; %s" file file (get_exec Format.err_formatter cmd)
