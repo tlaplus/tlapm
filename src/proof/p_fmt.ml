@@ -77,7 +77,7 @@ let rec pp_print_proof cx ff prf =
               orig_prf
         in
         pp_print_proof cx ff orig_prf
-    | _ ->
+    | Some _ | None ->
         fprintf ff "@[<v0>" ;
         if not (is_omitted prf) && (Params.debugging "proof" || Params.debugging "leafproofs") then begin
           let not_steps = match prf.core with
@@ -121,24 +121,28 @@ let rec pp_print_proof cx ff prf =
                 | Elsewhere loc -> Printf.sprintf " (* see %s *)" (Loc.string_of_locus ~cap:false loc)
             end
         | Steps (inits, qed) ->
-            let cx =
-              pp_print_delimited_fold
-                ~sep:(fun ff () -> ())
-                (fun cx ff stp ->
-                   fprintf ff "@[<hv2>%s%s "
-                     (step_name stp) (step_dot stp) ;
-                   let cx = pp_print_step cx ff stp in
-                   fprintf ff "@]@," ;
-                   cx)
-                cx ff inits
-            in
-            fprintf ff "@[<hv2>%s%s QED %a@]"
-              (step_name qed) (step_dot qed)
-              (pp_print_qed_step(*proof_nl*) cx) qed
+            let cx = pp_print_steps_inits cx ff inits in
+            pp_print_steps_qed cx ff qed
         | Error msg ->
             fprintf ff "%sERROR (*%s*)" supp msg
         end;
         fprintf ff "@]"
+
+and pp_print_steps_inits cx ff inits =
+  pp_print_delimited_fold
+    ~sep:(fun ff () -> ())
+    (fun cx ff stp ->
+        fprintf ff "@[<hv2>%s%s "
+          (step_name stp) (step_dot stp) ;
+        let cx = pp_print_step cx ff stp in
+        fprintf ff "@]@," ;
+        cx)
+    cx ff inits
+
+and pp_print_steps_qed cx ff qed =
+  fprintf ff "@[<hv2>%s%s QED %a@]"
+    (step_name qed) (step_dot qed)
+    (pp_print_qed_step(*proof_nl*) cx) qed
 
 and pp_print_step cx ff stp =
   if Params.debugging "proof" then begin
@@ -295,7 +299,7 @@ and pp_print_step cx ff stp =
         (* negation of old goal *)
         let cx = bump cx in
         (* step name definition for the SUFFICES *)
-        let cx = bump cx in
+        let (cx, _) = adj cx stepnm in
         (* conjunction of nondom facts in the SUFFICES *)
         bump cx
     | TakeTuply _
