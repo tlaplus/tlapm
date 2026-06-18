@@ -89,6 +89,10 @@ val stdlib_path: string option
 val cleanfp: bool ref
 val fpf_in: string option ref
 val summary: bool ref
+val strict: bool ref
+val exit_status: int ref
+val note_strict_failure: int -> unit
+val has_explicit_target: unit -> bool
 val stats: bool ref
 val add_search_dir: string -> unit
 val set_search_path: string list -> unit

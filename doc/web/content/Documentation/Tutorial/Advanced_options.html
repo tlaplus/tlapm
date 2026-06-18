@@ -134,8 +134,24 @@
   <li><code>--stretch</code> <em>f</em> : multiply all timeouts by a
   factor of <em>f</em>. This is particularly useful when using a
   slower machine to re-check proofs made on a faster machine.</li>
+  <li><code>--strict</code> : treat conditions that otherwise look like a
+  successful run as errors and exit with a non-zero status. Useful for CI,
+  where these cases would otherwise be reported as "All 0 obligations proved".</li>
   </ul>
   </p>
+
+  <h3>Exit codes</h3>
+  <p>By default <code>tlapm</code> exits 0 on a completed run. Under
+  <code>--strict</code> it exits with the most severe condition encountered:</p>
+  <table frame="box" rules="all">
+    <tr><th>code</th><th>meaning</th></tr>
+    <tr><td>0</td><td>clean, complete verification</td></tr>
+    <tr><td>3</td><td>internal error (reported regardless of <code>--strict</code>)</td></tr>
+    <tr><td>10</td><td>a proof obligation failed</td></tr>
+    <tr><td>11</td><td>incomplete proof (missing or omitted steps)</td></tr>
+    <tr><td>12</td><td>explicit target selected no obligation</td></tr>
+  </table>
+  <p>Code 3 takes precedence over the <code>--strict</code> codes above.</p>
 
 <!--
   Document at least these command-line options:

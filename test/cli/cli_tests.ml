@@ -128,6 +128,7 @@ let setting_values () : setting_value list = [
   `SO ("fpf_out", fpf_out, !fpf_out);
   `B ("fp_loaded", fp_loaded, !fp_loaded);
   `B ("summary", summary, !summary);
+  `B ("strict", strict, !strict);
   `B ("stats", stats, !stats);
   `B ("keep_going", keep_going, !keep_going);
   `B ("suppress_all", suppress_all, !suppress_all);
@@ -254,6 +255,16 @@ let test_summary _test_ctxt =
   assert_equal None exit_code;
   assert_equal [`B ("summary", summary, true); `B ("suppress_all", suppress_all, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
   assert_equal false !check;
+  reset_setting_values ();;
+
+let test_strict _test_ctxt =
+  reset_setting_values ();
+  let (mods, out, err, exit_code) = parse_args ["--strict"; "Test.tla"] in
+  assert_equal ["Test.tla"] mods ~pp_diff:print_mod_diff;
+  assert_equal "" out ~pp_diff:print_string_diff;
+  assert_equal "" err ~pp_diff:print_string_diff;
+  assert_equal None exit_code;
+  assert_equal [`B ("strict", strict, true)] (changed_setting_values ()) ~pp_diff:print_setting_list_diff;
   reset_setting_values ();;
 
 let test_timing _test_ctxt =
@@ -568,6 +579,7 @@ let cli_test_suite = "Test CLI Parsing" >::: [
   "Print Stlib Location Test" >:: test_where;
   "Print Config Test" >:: test_config;
   "Print Summary Test" >:: test_summary;
+  "Strict Test" >:: test_strict;
   "Print Stats Test" >:: test_timing;
   "Search Paths Test" >:: test_search_paths;
   "Keep Going Test" >:: test_keep_going;
