@@ -532,20 +532,20 @@ let emptycomprehension_trigger () =
   ) %% []
 
 let assert_issetof n =
-  seq [ "P" ] [ Ty1 ([ t_idv ], t_idv) ]
+  seq [ "P" ] [ Ty1 (dupl t_idv n, t_idv) ]
   ( quant Forall
-    [ "a" ] [ t_idv ]
+    (gen "a" n) (dupl t_idv n)
     ~pats:[ [
       apps (T.SetOf n)
-      [ Ix 1 %% []
-      ; Ix 2 %% []
-      ] %% []
+      (ixi n @
+      [ Ix (n+1) %% []
+      ]) %% []
     ] ]
     ( apps T.IsSetOf
       [ apps (T.SetOf n)
-        [ Ix 1 %% []
-        ; Ix 2 %% []
-        ] %% []
+        (ixi n @
+        [ Ix (n+1) %% []
+        ]) %% []
       ] %% []
     ) %% []
   ) %% []
@@ -5057,4 +5057,3 @@ let get_axm ~solver ?(disable_arithmetic=false) ?(smt_set_extensionality=false) 
   | T.AssertIsSetOf n -> assert_issetof n |> mark (T.SetOf n)
   | T.CompareSetOfTrigger -> compare_setof_trigger ()
   | T.ExtTrigEqCardPropagate -> exttrigeq_card ()
-
