@@ -1,0 +1,9 @@
+; Download SANY
+(rule
+ (deps "Makefile")
+ (targets tla2tools.jar)
+ (action (run "make" "-C" "." "sany")))
+
+(install
+ (section (site (tlapm backends)))
+ (files (tla2tools.jar as bin/tla2tools.jar)))

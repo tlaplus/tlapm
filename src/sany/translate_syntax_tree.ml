@@ -4,7 +4,10 @@
 *)
 
 open Sexplib;;
-open Tlapm_lib;;
+open Module.T;;
+open Expr.T;;
+open Proof.T;;
+open Util;;
 
 type field_or_node =
   | Field of string * ts_node
