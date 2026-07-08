@@ -106,5 +106,23 @@ jobs:
                   | map(.path + "\u0000")
                   | join("")' \
                 | xargs --verbose --null --no-run-if-empty -I {TLA_FILE} \
-                time "$DEPS_DIR/tlapm-install/bin/tlapm" "$EXAMPLES_DIR/{TLA_FILE}" -I "$DEPS_DIR/community" --stretch 5
+                time "$DEPS_DIR/tlapm-install/bin/tlapm" --cleanfp "$EXAMPLES_DIR/{TLA_FILE}" -I "$DEPS_DIR/community" --stretch 5
+            - name: SANY backend examples test
+              run: |
+                find "$EXAMPLES_DIR/specifications" -iname "manifest.json" -print0 \
+                | xargs --null --no-run-if-empty \
+                jq --join-output '
+                  .modules
+                  | map(select(has("proof")))
+                  # Failing on Linux
+                  | map(select(.path != "specifications/LoopInvariance/SumSequence.tla"))
+                  # Failing in SANY due to subexpression usage
+                  | map(select(.path != "specifications/ewd840/EWD840_proof.tla"))
+                  | map(select(.path != "specifications/byzpaxos/PConProof.tla"))
+                  # Skip checking long-running proofs
+                  | map(select(.proof.maxRuntimeMinutes <= 1))
+                  | map(.path + "\u0000")
+                  | join("")' \
+                | xargs --verbose --null --no-run-if-empty -I {TLA_FILE} \
+                time "$DEPS_DIR/tlapm-install/bin/tlapm" --cleanfp --parser SANY "$EXAMPLES_DIR/{TLA_FILE}" -I "$DEPS_DIR/community" --stretch 5
 
