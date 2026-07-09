@@ -79,6 +79,14 @@ jobs:
                 find ./library -type f -iname "*_proofs.tla"  \
                 -print0 | xargs --null --max-args=1           \
                 ./_build/tlapm/bin/tlapm --cleanfp --stretch 5
+            - name: Check local example proofs
+              run: |
+                # Skip the longest-running examples so PR CI stays under five minutes.
+                find ./examples -type f -name "*.tla"          \
+                ! -path "./examples/ByzPaxos/BPConProof.tla"   \
+                ! -path "./examples/ByzPaxos/VoteProof.tla"    \
+                -print0 | xargs --verbose --null --max-args=1  \
+                /usr/bin/time ./_build/tlapm/bin/tlapm --cleanfp --stretch 5
             - name: Clone tlaplus/examples
               uses: actions/checkout@v6
               with:
@@ -107,4 +115,3 @@ jobs:
                   | join("")' \
                 | xargs --verbose --null --no-run-if-empty -I {TLA_FILE} \
                 time "$DEPS_DIR/tlapm-install/bin/tlapm" "$EXAMPLES_DIR/{TLA_FILE}" -I "$DEPS_DIR/community" --stretch 5
-
