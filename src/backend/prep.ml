@@ -428,7 +428,7 @@ let spass_unsat_re = Str.regexp "SPASS beiseite: Proof found"
 let eprover_unsat_re = Str.regexp "SZS status Theorem"
 let generic_unsat_re = Str.regexp "^unsat"
 
-let gen_smt_solve suffix exec desc fmt_expr meth ob org_ob f res_cont comm =
+let gen_smt_solve ?(rlimit=None) suffix exec desc fmt_expr meth ob org_ob f res_cont comm =
   let cleanup = ref (fun () -> ()) in
   try
     let (inf, inc, outf, outc) = mk_temps cleanup suffix in
@@ -440,6 +440,13 @@ let gen_smt_solve suffix exec desc fmt_expr meth ob org_ob f res_cont comm =
       Format.flush_str_formatter ()
       in
     pp_print_ob ~comm:comm inc ob;
+    (* A deterministic Z3 `rlimit` budget makes the pass/fail outcome
+       independent of CPU speed and load, so it reproduces on any machine and
+       every rerun (see issue #281). It is a Z3 mechanism, hence only emitted
+       for the Z3-based backends. *)
+    (match rlimit with
+     | Some n -> Printf.fprintf inc "(set-option :rlimit %d)\n" n
+     | None -> ());
     output_string inc in_text;
     flush inc;
     let warnings = Errors.get_warnings () in
@@ -504,9 +511,9 @@ let get_encode_fof () =
   if Params.debugging "oldsmt" then Smt.encode_fof
   else Smtlib.pp_print_obligation ~solver:"fof"
 
-let smt_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt" Params.smt "default SMT solver" (get_encode_smtlib ())
-                (Method.Smt3 f) ob org_ob f res_cont ";;"
+let smt_solve ?(rlimit=None) ob org_ob f res_cont =
+  gen_smt_solve ~rlimit ".smt" Params.smt "default SMT solver" (get_encode_smtlib ())
+                (Method.Smt3 (f, rlimit)) ob org_ob f res_cont ";;"
 
 
 let cvc3_solve ob org_ob f res_cont =
@@ -519,9 +526,9 @@ let yices_solve ob org_ob f res_cont =
                 (Method.Yices3 f) ob org_ob f res_cont ";;"
 
 
-let z3_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt2" Params.z3 "Z3" ((get_encode_smtlib ()) ~solver:"Z3")
-                (Method.Z33 f) ob org_ob f res_cont ";;"
+let z3_solve ?(rlimit=None) ob org_ob f res_cont =
+  gen_smt_solve ~rlimit ".smt2" Params.z3 "Z3" ((get_encode_smtlib ()) ~solver:"Z3")
+                (Method.Z33 (f, rlimit)) ob org_ob f res_cont ";;"
 
 
 let verit_solve ob org_ob f res_cont =
@@ -781,12 +788,12 @@ let prove_with ob org_ob meth save =  (* FIXME add success fuction *)
   | Method.Smt2z3 f ->
      vprintf "(* ... using Z3(2) *)\n" ;
      z3_solve ob org_ob f res_cont
-  | Method.Smt3 f ->
+  | Method.Smt3 (f, rlimit) ->
      vprintf "(* ... using SMT(v3) *)\n" ;
-     smt_solve ob org_ob f res_cont
-  | Method.Z33 f ->
+     smt_solve ~rlimit ob org_ob f res_cont
+  | Method.Z33 (f, rlimit) ->
      vprintf "(* ... using Z3(v3) *)\n" ;
-     z3_solve ob org_ob f res_cont
+     z3_solve ~rlimit ob org_ob f res_cont
   | Method.Cvc33 f ->
      vprintf "(* ... using CVC4(v3) *)\n" ;
      cvc3_solve ob org_ob f res_cont
@@ -1106,7 +1113,34 @@ let compute_meth def args usept =
   let prover = ref None in
   let prover_loc = ref None in
   let timeout = ref None in
+  let rlimit = ref None in
   let tactic = ref None in
+  (* A string budget of the form "rN" (e.g. "r5") denotes a deterministic Z3
+     `rlimit` budget rather than a wall-clock timeout (see issue #281). N is a
+     multiple of a fixed base resource count, so a small readable budget like
+     "r5" is meaningful; unlike a timeout the outcome does not depend on the
+     machine's speed. *)
+  let parse_rlimit at s =
+    let bad () =
+      Errors.err ~at
+        "Invalid SMT budget %S: expected a number of seconds (wall-clock \
+         timeout), or a deterministic Z3 rlimit budget of the form \"rN\" \
+         (e.g. \"r5\")."
+        s;
+      raise Exit
+    in
+    let n = String.length s in
+    if n >= 2 && (s.[0] = 'r' || s.[0] = 'R') then
+      match float_of_string_opt (String.sub s 1 (n - 1)) with
+      | Some f when Float.is_finite f && f > 0. ->
+         let scaled =
+           Float.min (f *. float_of_int Method.rlimit_base)
+                     (float_of_int Method.max_rlimit)
+         in
+         rlimit := Some (int_of_float scaled)
+      | _ -> bad ()
+    else bad ()
+  in
   let rec read def args =
     match def with
     | [] ->
@@ -1142,21 +1176,27 @@ let compute_meth def args usept =
        | Bfloat f ->
           timeout := Some f;
           read t args;
+       | Bstring s ->
+          parse_rlimit (() @@ defpt) s;
+          read t args;
        | Bdef ->
           begin match args with
           | {core = Num (s1, s2)} :: tt ->
              timeout := Some (float_of_string (Printf.sprintf "%s.%s" s1 s2));
              read t tt;
+          | {core = String s} as x :: tt ->
+             parse_rlimit x s;
+             read t tt;
           | x :: tt ->
-             Errors.err ~at:x "This argument should be a number (timeout)";
+             Errors.err ~at:x
+               "This argument should be a number of seconds (wall-clock \
+                timeout), or a deterministic Z3 rlimit budget of the form \
+                \"rN\" (e.g. \"r5\")";
              raise Exit;
           | [] ->
              Errors.err ~at:usept "Some arguments are missing";
              raise Exit;
           end
-       | _ ->
-          Errors.err ~at:defpt "Argument should be a number or @";
-          raise Exit;
        end
     | ({core = "tactic"} as defpt, a) :: t ->
        begin match a with
@@ -1187,7 +1227,14 @@ let compute_meth def args usept =
   begin try read def args;
   with Exit -> failwith "error in prover specification"
   end;
-  match !prover with  (* FIXME should factor with Params.mk_meth *)
+  (* When a Z3 `rlimit` budget is given, the wall-clock timeout is disabled
+     (set to infinity) so that the deterministic budget alone bounds Z3. *)
+  let smt_budget default =
+    match !rlimit with
+    | Some _ -> (infinity, !rlimit)
+    | None -> (Option.default default !timeout, None)
+  in
+  let meth = match !prover with  (* FIXME should factor with Params.mk_meth *)
   | Some "zenon" ->
      let tmo = Option.default Method.default_zenon_timeout !timeout in
      Method.Zenon tmo
@@ -1202,28 +1249,28 @@ let compute_meth def args usept =
      let tmo = Option.default Method.default_ls4_timeout !timeout in
      Method.LS4 tmo;
   | Some "z3" ->
-     let tmo = Option.default Method.default_z3_timeout !timeout in
-     Method.Z33 tmo;
+     let (tmo, r) = smt_budget Method.default_z3_timeout in
+     Method.Z33 (tmo, r);
   | Some "smt" ->
-     let tmo = Option.default Method.default_smt_timeout !timeout in
-     Method.Smt3 tmo;
+     let (tmo, r) = smt_budget Method.default_smt_timeout in
+     Method.Smt3 (tmo, r);
   | Some "cvc3" ->
      let tmo = Option.default Method.default_cvc3_timeout !timeout in
      Method.Cvc33 tmo;
   | Some "cooper" -> Method.Cooper
   | Some "fail" -> Method.Fail
   | Some "smt2lib" ->
-     let tmo = Option.default Method.default_smt2_timeout !timeout in
-     Method.Smt3 tmo
+     let (tmo, r) = smt_budget Method.default_smt2_timeout in
+     Method.Smt3 (tmo, r)
   | Some "smt2z3" ->
-     let tmo = Option.default Method.default_smt2_timeout !timeout in
-     Method.Z33 tmo
+     let (tmo, r) = smt_budget Method.default_smt2_timeout in
+     Method.Z33 (tmo, r)
   | Some "smt3" ->
-     let tmo = Option.default Method.default_smt2_timeout !timeout in
-     Method.Smt3 tmo
+     let (tmo, r) = smt_budget Method.default_smt2_timeout in
+     Method.Smt3 (tmo, r)
   | Some "z33" ->
-     let tmo = Option.default Method.default_smt2_timeout !timeout in
-     Method.Z33 tmo
+     let (tmo, r) = smt_budget Method.default_smt2_timeout in
+     Method.Z33 (tmo, r)
   | Some "cvc33" ->
      let tmo = Option.default Method.default_smt2_timeout !timeout in
      Method.Cvc33 tmo
@@ -1267,6 +1314,15 @@ let compute_meth def args usept =
      in
      Errors.err ~at:defpt "Missing prover name";
      failwith "error in prover specification"
+  in
+  (* A Z3 `rlimit` budget only makes sense for the Z3-based backends. *)
+  if !rlimit <> None && Method.smt_rlimit meth = None then begin
+    Errors.err ~at:usept
+      "A Z3 rlimit budget (\"rN\") is only supported by the SMT and Z3 \
+       backends.";
+    failwith "error in prover specification"
+  end;
+  meth
 
 
 let find_meth ob =
