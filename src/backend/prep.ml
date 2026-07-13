@@ -1137,7 +1137,10 @@ let compute_meth def args usept =
            Float.min (f *. float_of_int Method.rlimit_base)
                      (float_of_int Method.max_rlimit)
          in
-         rlimit := Some (int_of_float scaled)
+         (* Never let a positive budget truncate to 0: Z3 reads `rlimit 0` as
+            "no limit", which would be the opposite of a tiny budget. *)
+         let r = int_of_float scaled in
+         rlimit := Some (if r < 1 then 1 else r)
       | _ -> bad ()
     else bad ()
   in
