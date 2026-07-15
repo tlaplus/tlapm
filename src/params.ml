@@ -57,7 +57,16 @@ let prefer_stdlib = ref false
    instead of modules with the same names in the search path. *)
 
 type parser = | Tlapm | Sany
-let parser_backend = ref Tlapm
+
+let parser_backend =
+  ref
+    (match Sys.getenv_opt "TLAPM_PARSER_BACKEND" with
+     | None -> Tlapm
+     | Some parser_str -> (
+         match String.lowercase_ascii parser_str with
+         | "sany" -> Sany
+         | "tlapm" -> Tlapm
+         | _ -> failwith ("TLAPM_PARSER_BACKEND: " ^ parser_str)))
 
 let module_jar_paths = ref []
 
