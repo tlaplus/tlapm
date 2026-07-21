@@ -102,6 +102,34 @@ type exec = executable ref
 let path_prefix =
   sprintf "PATH='%s';" Paths.backend_path_string
 
+(* Prefix that makes a prover process die together with tlapm.
+
+   On Linux we run the prover through util-linux `setpriv --pdeathsig KILL`,
+   which arms the kernel's parent-death signal (PR_SET_PDEATHSIG): the kernel
+   sends SIGKILL to the prover as soon as its parent (tlapm) dies, including
+   when tlapm is itself SIGKILLed or OOM-killed and can no longer run any
+   cleanup. The leading `exec` is essential: it makes the prover *replace* the
+   shell that launches it, so the prover becomes tlapm's direct child (the one
+   the parent-death signal watches) instead of a grandchild under an
+   intermediate `/bin/sh` that would keep the prover alive. This also leaves no
+   stray shell behind.
+
+   On platforms without this mechanism (macOS, Cygwin, or Linux without a
+   recent enough `setpriv`) the prefix is empty and behaviour is unchanged. *)
+let pdeathsig_prefix = lazy (
+  let is_linux = Sys.os_type = "Unix" && Sys.file_exists "/proc/version" in
+  (* Functional probe: run the no-op `true` under setpriv with the option we
+     rely on. This checks in one shot that setpriv exists *and* actually
+     supports --pdeathsig (util-linux >= 2.28); an older setpriv that has the
+     binary but not the option would otherwise make every prover launch fail.
+     A missing binary (127) or an unsupported option (non-zero) both fall back
+     to the unchanged behaviour. *)
+  let setpriv_ok () =
+    Sys.command "setpriv --pdeathsig KILL true >/dev/null 2>&1" = 0 in
+  if is_linux && setpriv_ok ()
+  then "exec setpriv --pdeathsig KILL "
+  else "")
+
 let get_exec err e =
   match !e with
   | Unchecked (exec, cmd, vers) ->
@@ -120,7 +148,7 @@ let get_exec err e =
      | 0 ->
         let p = Unix.open_process_in (path_prefix ^ vers) in
         let v = Std.input_list p in
-        let c = sprintf "%s %s" path_prefix cmd in
+        let c = sprintf "%s %s%s" path_prefix (Lazy.force pdeathsig_prefix) cmd in
         e := Checked (c, v);
         c
      | _ ->
