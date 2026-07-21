@@ -1624,7 +1624,18 @@ let ship ob fpout thyout record =
             (* let f () = Schedule.Immediate false *)
            in
            begin
-           match Util.run_with_timeout tmo f () with
+           (* When the method carries a deterministic Z3 `rlimit` budget, the
+              wall-clock "internal timeout" watchdog is disabled so that the
+              outcome depends only on the rlimit and stays reproducible under
+              CPU load (see issue #281). Bounding the (deterministic) front-end
+              processing by wall-clock time would otherwise reintroduce the very
+              load-dependent non-determinism that `rlimit` is meant to remove. *)
+           let outcome =
+             if Method.smt_rlimit meth <> None
+             then Some (f ())
+             else Util.run_with_timeout tmo f ()
+           in
+           match outcome with
            | Some result -> result
            | None ->
                  let msg =
