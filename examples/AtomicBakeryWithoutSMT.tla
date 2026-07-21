@@ -198,30 +198,30 @@ Inv == TypeOK /\ \A i \in P : IInv(i)
 -----------------------------------------------------------------------------
 
 THEOREM GTAxiom  == \A n, m \in Nat : ~ (n > m /\ m > n)
-  BY Isa
+  BY Zenon, SMT
 
 THEOREM GEQAxiom == \A n, m \in Nat : (n = m) \/ n > m \/ m > n
-  BY Isa
+  BY Zenon, SMT
 
 THEOREM GEQTransitive == \A n, m, q \in Nat : n >= m /\ m >= q => n >= q
-  OBVIOUS (*{ by (isabelle "(auto dest: int_leq_trans)") }*)
+  BY SMT
 
 THEOREM Transitivity2 == \A n, m, q \in Nat : n > m /\ m >= q => n > q
-  OBVIOUS (*{ by (isabelle "(auto dest: int_leq_less_trans)") }*)
+  BY SMT
 
 THEOREM GEQorLT == \A n, m \in Nat : n >= m <=> ~(m > n)
-  BY Isa 
+  BY Zenon, SMT
 \*  OBVIOUS (*{ by (isabelle "(auto simp: nat_not_less[simplified])") }*)
 
 THEOREM NatGEQZero == \A n \in Nat: (n > 0) <=> (n # 0)
-  BY Isa 
+  BY Zenon, SMT
 \*  OBVIOUS (*{ by (isabelle "(auto simp: nat_gt0_not0)") }*)
 
 THEOREM Plus1 == \A n \in Nat: n+1 \in Nat /\ n+1 # 0
-  BY Isa
+  BY Zenon, SMT
 
 THEOREM Plus1GT == \A n \in Nat : n+1 > n 
-  BY Isa
+  BY Zenon, SMT
 
 THEOREM GGIrreflexive == ASSUME NEW i \in P,
                                 NEW j \in P,
@@ -279,7 +279,7 @@ THEOREM TypeOKInvariant ==
 
 <1>2. CASE p2(self)
   <2>1. CASE unread[self] = {}
-    BY <1>2, <2>1, SimplifyAndSolve DEF p2
+    BY <1>2, <2>1, Zenon, SMT DEF p2
   <2>2. CASE unread[self] # {}
     <3>1. PICK k \in unread[self] :
                 /\ pc[self] = "p2"
@@ -399,7 +399,7 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
           /\ num[k] \in Nat
           /\ max'[self] = num[k]
        BY <3>1, Zenon
-     <4>. QED  BY <3>1, Isa
+     <4>. QED  BY <3>1, Zenon, SMT
    <3>2. CASE ~(num[k] > max[self])
      <4>. /\ max[self] \in Nat 
           /\ UNCHANGED max
@@ -407,7 +407,7 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
      <4>1. max[self] >= num[k]
        BY <3>2, GEQorLT, Zenon
      <4>2. max[self] >= max[self]
-       BY Isa
+       BY Zenon, SMT
      <4>. QED
        BY <3>2, <4>1, <4>2, Zenon
    <3>3. QED
@@ -455,7 +455,7 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
      <4>3. num'[j] > num[i]
        BY <4>1, <4>2, Plus1, Transitivity2, Zenon
      <4>4. GG(i,j)'
-       BY <4>3, SimplifyAndSolve, Zenon DEF GG
+       BY <4>3, Zenon, SMT, Zenon DEF GG
      <4>5. QED
        BY <3>1, <4>4, Zenon DEF After
    <3>3. CASE j # self
@@ -636,14 +636,14 @@ THEOREM InductiveInvariant == Inv /\ Next => Inv'
    (* This proof takes the PM & Isabelle 42 sec on SVC-LAMPORT-5           *)
    (* Down to 2 sec on Stephan's laptop.                                   *)
    (************************************************************************)
-   BY <1>9, SimplifyAndSolve DEF IInv, After, GG, vars
+   BY <1>9, Zenon, SMT DEF IInv, After, GG, vars
 
 <1>. QED
   BY <1>1, <1>2a, <1>2b, <1>3, <1>4, <1>5a, <1>5b, <1>6, <1>7, <1>8, <1>9, Zenon DEF p
 
 THEOREM Safety == Spec => [] MutualExclusion
 <1>1 Inv /\ UNCHANGED vars => Inv'
-  BY Isa DEF vars, TypeOK, Inv, IInv, After, GG
+  BY Zenon, SMT DEF vars, TypeOK, Inv, IInv, After, GG
 <1> QED
   BY <1>1, InitInv, InductiveInvariant, InvExclusion, PTL
      DEF Spec
