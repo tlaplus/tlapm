@@ -220,9 +220,19 @@ let set_timer t =
 
 
 let clear_timer () =
-  Sys.set_signal Sys.sigalrm Sys.Signal_ignore;
-  ignore (Unix.setitimer Unix.ITIMER_REAL
-    {Unix.it_interval = 0.; Unix.it_value = 0.})
+  (* [set_timer] arms a *repeating* real-time alarm (non-zero [it_interval]),
+     so SIGALRM can still be delivered while we tear the timer down. The
+     handler raises [Internal_timeout]; if that delivery races the
+     [Sys.set_signal] call below the exception would escape [clear_timer]
+     uncaught and abort the whole tlapm run (observed under heavy CPU load,
+     where signal delivery is bursty). Install the ignore handler first so any
+     further SIGALRM is a no-op, then disable the itimer, and swallow a timeout
+     that races the [set_signal] call itself. *)
+  (try
+     Sys.set_signal Sys.sigalrm Sys.Signal_ignore;
+     ignore (Unix.setitimer Unix.ITIMER_REAL
+       {Unix.it_interval = 0.; Unix.it_value = 0.})
+   with Internal_timeout -> ())
 
 
 let run_with_timeout tmo f x =
