@@ -211,7 +211,6 @@ let%test_module _ = (module struct
   let compare_string = Base.compare_string
 
   let parse_expr = Tla_parser.P.use (E_parser.expr true)
-  let nullctx = (Deque.empty, Ctx.dot)
 
   let create_expression str =
     let (flex, _) = Alexer.lex_string str in
@@ -221,7 +220,7 @@ let%test_module _ = (module struct
 
   let prn_exp exp =
     Tla_parser.Fu.pp_print_minimal
-    Format.str_formatter (E_fmt.fmt_expr nullctx exp);
+    Format.str_formatter (E_fmt.fmt_expr E_fmt.empty_ctx exp);
     Format.flush_str_formatter ()
 
   let prn_str str = str

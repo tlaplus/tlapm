@@ -79,6 +79,9 @@ end
 module Gen : sig
   open Proof.T
   open T
+  val proof_prop : proof Property.pfuncs
+  val proof_orig_prop : proof Property.pfuncs
+  val proof_orig_indexed_prop : proof Property.pfuncs
   val generate : Expr.T.hyp Deque.dq -> mule -> mule * obligation list * summary
   val collect_usables : mule -> usable option
 end

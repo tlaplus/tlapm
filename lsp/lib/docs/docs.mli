@@ -29,6 +29,7 @@ module Proof_step : sig
   val el : t -> El.t * TL.Expr.T.ctx
   val goal : t -> TL.Proof.T.obligation option
   val proof : t -> TL.Proof.T.proof option
+  val step_name : t -> TL.Proof.T.stepno option
   val full_range : t -> Range.t
   val head_range : t -> Range.t
   val stepno_seq_under_proof_step : t -> TL.Proof.T.stepno Seq.t

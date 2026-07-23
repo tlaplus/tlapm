@@ -14,6 +14,19 @@ open M_t
 
 (* let debug = Printf.eprintf *)
 
+(** Attach proof to a sequent produced of a theorem.
+    Used to handle decomposition rules. *)
+let proof_prop: proof pfuncs =
+    Property.make
+        "Module.proof_prop"
+
+let proof_orig_prop: proof pfuncs =
+    Property.make
+        "Module.proof_orig_prop"
+
+let proof_orig_indexed_prop: proof pfuncs =
+    Property.make
+        "Module.proof_orig_indexed_prop"
 
 let rec generate cx m =
   let obs : obligation list ref = ref [] in
@@ -30,9 +43,13 @@ let rec generate cx m =
                 | Some nm ->
                     Deque.snoc cx (Defn (Operator (nm, exprify_sequent sq @@ nm)
                     @@ mu, Proof Always , Visible, Export) @@ mu)
-                | _ ->
+                | None ->
                     cx
               in
+              let prf_orig_indexed =
+                let psq = if nm = None then sq else app_sequent (shift 1) sq in
+                let cx = Deque.append cx psq.context in
+                Proof.Anon.anon#proof ([], cx) prf_orig in
               let prf, summ =
                 let psq = if nm = None then sq else app_sequent (shift 1) sq in
                 (* the addition of the sequent context to the global context
@@ -72,7 +89,10 @@ let rec generate cx m =
                 rsumm := cat_summary !rsumm summ ;
                 let mu = { mu with core = Theorem (nm, sq, naxs, prf, prf_orig, summ) } in
                 let he = if nm = None then exprify_sequent sq else Ix 1 in
-                let cx = Deque.snoc cx (Fact (he @@ mu, Hidden, Always) @@ mu) in
+                let cx = Deque.snoc cx (Fact (he @@ mu, Hidden, Always) @@ mu
+                                                |> Property.with_prop proof_prop prf
+                                                |> Property.with_prop proof_orig_prop prf_orig
+                                                |> Property.with_prop proof_orig_indexed_prop prf_orig_indexed) in
                   mu :: visit cx mus
           | Submod m ->
               let (m, obs, summ) = generate cx m in

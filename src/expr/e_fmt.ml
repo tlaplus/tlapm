@@ -20,8 +20,44 @@ open Format
 open Fmtutil
 module Fu = Tla_parser.Fu
 
-
 type ctx = hyp Deque.dq * int Ctx.ctx
+(** The hypothesis stack is clear.
+
+    TODO: What is int ctx.ctx? *)
+
+let pp_ctx fmt ((ecx, ctx) : ctx) =
+  Format.fprintf fmt "(@[Expr.Ctx,@ hyp_ctx=%a,@ ctx=%a@])"
+    (E_t.pp_ctx ~pp_props:Property.pp_wrapped_props_none)
+    ecx
+    (Ctx.pp Format.pp_print_int)
+    ctx
+
+let ctx_of_expr_ctx (ecx : E_t.ctx) : ctx =
+  let fcx = Ctx.dot in
+  let fcx =
+    (* Push all the names known in the context to have proper
+    suffixes _1, _2, ... for newly introduced identifiers. *)
+    Deque.fold_left
+      (fun fcx (hyp : hyp) ->
+        match hyp.core with
+        | Flex name | Fresh (name, _, _, _) -> Ctx.push fcx (unwrap name)
+        | FreshTuply (names, _) ->
+            List.fold_right
+              (fun name fcx -> Ctx.push fcx (unwrap name))
+              names fcx
+        | Defn (defn, _, _, _) -> (
+            match defn.core with
+            | Recursive (name, _)
+            | Operator (name, _)
+            | Instance (name, _)
+            | Bpragma (name, _, _) ->
+                Ctx.push fcx (unwrap name))
+        | Fact (_, _, _) -> Ctx.bump fcx)
+      fcx ecx
+  in
+  (ecx, fcx)
+
+let empty_ctx : ctx = (Deque.empty, Ctx.dot)
 
 let is_letter c =
   match c with
