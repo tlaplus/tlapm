@@ -102,33 +102,68 @@ let except_normalize =
 
     method expr scx e = match e.core with
       | Except (f, xs) ->
-          let rec simplify f x =
-            match x with
-            | [[tr], bod] -> { e with core = Except (f, [[tr], self#expr scx bod]) }
-            | [tr :: trs, bod] ->
-                let g = match tr with
-                  | Except_dot x -> { f with core = Dot (f, x) }
-                  | Except_apply e -> { f with core = FcnApp (f, [self#expr scx e]) }
+          (* Fold [f EXCEPT p1 = b1, ...] into [f] left-to-right, materialising
+             each shared prefix once, to avoid the multiplicative blow-up of the
+             naive desugaring (test/regression_tests/
+             record_except_explosion_test.tla).  Soundness of each reduction --
+             fold into a record constructor only on an existing field (its
+             DOMAIN), never push a selection/update through IF, group only
+             *adjacent* same-prefix updates and only on provably equal keys
+             (so opaque/CONSTANT keys are never merged or reordered) -- is
+             pinned by the [let%test_module] below.  Precondition: [@]/[At] are
+             already resolved by [Elab.desugar]. *)
+          let access b hd =
+            match hd with
+            | Except_dot x -> { b with core = Dot (b, x) }
+            | Except_apply k -> { b with core = FcnApp (b, [k]) }
+          in
+          let head_eq a b =
+            match a, b with
+            | Except_dot x, Except_dot y -> x = y
+            | Except_apply e1, Except_apply e2 -> E_eq.expr e1 e2
+            | _, _ -> false
+          in
+          let sel r hd =
+            match r.core, hd with
+            | Record fs, (Except_dot h | Except_apply {core = String h})
+              when List.mem_assoc h fs -> List.assoc h fs
+            | _ -> access r hd
+          in
+          let set b hd v =
+            match b.core, hd with
+            | Record fs, (Except_dot h | Except_apply {core = String h})
+              when List.mem_assoc h fs ->
+                { b with core =
+                    Record (List.map (fun (k, x) -> if k = h then (k, v) else (k, x)) fs) }
+            | _ -> { e with core = Except (b, [[hd], v]) }
+          in
+          let rec apply base subs =
+            match subs with
+            | [] -> base
+            | ([], bod) :: rest ->
+                apply bod rest
+            | (tr, _) :: _ ->
+                let hd = List.hd tr in
+                let same t = match t with h :: _ -> head_eq h hd | [] -> false in
+                let rec span acc = function
+                  | (t, b) :: tl when same t -> span ((List.tl t, b) :: acc) tl
+                  | rest -> (List.rev acc, rest)
                 in
-                { e with core = Except (f, [[tr], simplify g [trs, self#expr scx bod]]) }
-            | x :: xs ->
-                let ex = simplify f [x] in
-                simplify ex xs
-(*
-                let exs = simplify ex xs in
-                begin match exs.core with
-                  | Except (f, xs) ->
-                      { ex with core = Except (f, xs) }
-                  | _ ->
-                      Errors.bug ~at:ex "Expr.Elab.desugar: simplify/except/1"
-                end
-*)
-            | _ ->
-                Errors.bug ~at:f "Expr.Elab.desugar: simplify/except/2"
+                let subtails, rest = span [] subs in
+                let v = apply (sel base hd) subtails in
+                apply (set base hd v) rest
           in
           let f = self#expr scx f in
           let xs = List.map (self#exspec scx) xs in
-          simplify f xs
+          apply f xs
+      (* No top-level "collapse a selection over a record constructor" case:
+         that rewrite is equality-preserving but NOT proof-stable -- it would
+         collapse a hand-cited fact like [m2b.acc = self] to [self = self] and
+         drop it, erasing a term a backend needs (regressed
+         examples/ByzPaxos/BPConProof.tla).  It is also unnecessary: the fold
+         above already collapses every selection EXCEPT desugaring itself
+         produces.  See "a field selection over a record constructor is left
+         intact" in the [let%test_module] below. *)
       | _ -> super#expr scx e
   end in
   fun scx e -> visitor#expr scx e
@@ -165,8 +200,13 @@ let normalize cx e =
   let nte = non_temporal e in
   (* moved to action frontend *)
   (* let e = if nte then action_normalize scx e else e in *)
-  let e = if nte then except_normalize scx e else e in
+  (* let_normalize before except_normalize: refinement mappings bind the
+     updated state to LET operators, so inlining them first exposes the record
+     constructors that except_normalize folds into.  With the opposite order
+     the bases stay opaque LET variables and get re-embedded (and then
+     multiplied out) per path component. *)
   let e = let_normalize scx e in
+  let e = if nte then except_normalize scx e else e in
   (* moved to action frontend *)
   (* let e = if nte then unchanged_normalize scx e else e in
   let e = prime_normalize cx e in
@@ -238,6 +278,10 @@ let%test_module _ = (module struct
       [%test_eq: string] (prn_exp target_case) (prn_exp (normalize Deque.empty test_case))
 
   let%test_unit "t2" =
+    (* Only *adjacent* same-prefix updates are grouped, so the two updates to
+       key [0] are not merged and left-to-right order is preserved.  Keys are
+       compared by provable equality only, so opaque/CONSTANT keys are never
+       assumed equal and hence never merged or reordered. *)
     let test_case = create_expression "[[f EXCEPT ![0] = 10, ![1] = 1] EXCEPT ![0] = 0]" in
     let target_case = create_expression "[[[f EXCEPT ![0] = 10] EXCEPT ![1] = 1] EXCEPT ![0] = 0]" in
       [%test_eq: string] (prn_exp target_case) (prn_exp (normalize Deque.empty test_case))
@@ -264,6 +308,107 @@ let%test_module _ = (module struct
       "[[arr EXCEPT ![x] = [arr[x] EXCEPT ![y] = foo]] EXCEPT ![u] = \
       [[arr EXCEPT ![x] = [arr[x] EXCEPT ![y] = foo]][u] EXCEPT ![v] = bar]]" in
         [%test_eq: string] (prn_exp target_case) (prn_exp (normalize Deque.empty test_case))
+
+  let%test_unit "except does not add a record field" =
+    (* EXCEPT preserves the domain of its base function.  Since [b] is not in
+       the domain of this record, selecting [.b] cannot be reduced to the
+       replacement value. *)
+    let test_case =
+      create_expression "[[a |-> 1] EXCEPT !.b = 2].b"
+    in
+    let target_case =
+      create_expression "[[a |-> 1] EXCEPT !.b = 2].b"
+    in
+    [%test_eq: string]
+      (prn_exp target_case)
+      (prn_exp (normalize Deque.empty test_case))
+
+  let%test_unit "projection does not distribute through a non-Boolean IF" =
+    (* TLA+ is untyped.  IF is guaranteed to select a branch only when its
+       condition is Boolean, so this projection cannot be distributed without
+       first establishing that condition. *)
+    let conditional =
+      create_expression "IF 0 THEN [a |-> 1] ELSE [a |-> 2]"
+    in
+    (* Parentheses are retained explicitly by the parser and would hide the
+       [If] node from this normalization rule, so construct the projection AST
+       directly. *)
+    let test_case = Dot (conditional, "a") @@ conditional in
+    let target_case = Dot (conditional, "a") @@ conditional in
+    [%test_eq: string]
+      (prn_exp target_case)
+      (prn_exp (normalize Deque.empty test_case))
+
+  let%test_unit "matching EXCEPT over an opaque base needs field membership" =
+    (* Unlike a record literal, an opaque base has an unknown domain.
+       [r EXCEPT !.b = 2].b] equals 2 only when [b \in DOMAIN r], which cannot
+       be assumed here, so the selection must not be reduced to 2. *)
+    let test_case = create_expression "[r EXCEPT !.b = 2].b" in
+    let target_case = create_expression "[r EXCEPT !.b = 2].b" in
+    [%test_eq: string]
+      (prn_exp target_case)
+      (prn_exp (normalize Deque.empty test_case))
+
+  let%test_unit "nonmatching EXCEPT over an opaque base is not the base selection" =
+    (* [[r EXCEPT !.a = 2].b] is not provably [r.b]: when [b \notin DOMAIN r]
+       both sides are unspecified but need not be the same unspecified value
+       (their function arguments differ).  With an opaque, unknown-domain base
+       this reduction is therefore unsound. *)
+    let test_case = create_expression "[r EXCEPT !.a = 2].b" in
+    let target_case = create_expression "[r EXCEPT !.a = 2].b" in
+    [%test_eq: string]
+      (prn_exp target_case)
+      (prn_exp (normalize Deque.empty test_case))
+
+  let%test_unit "projection does not distribute through an unknown-condition IF" =
+    (* Even when the condition is not a manifest non-Boolean, its Boolean-ness
+       is unknown for an opaque [p]; distributing the projection over the
+       branches is unsound unless [p \in BOOLEAN] has been established. *)
+    let conditional =
+      create_expression "IF p THEN [a |-> 1] ELSE [a |-> 2]"
+    in
+    let test_case = Dot (conditional, "a") @@ conditional in
+    let target_case = Dot (conditional, "a") @@ conditional in
+    [%test_eq: string]
+      (prn_exp target_case)
+      (prn_exp (normalize Deque.empty test_case))
+
+  (* Positive counterparts of the guard tests above.  The blow-up in
+     test/regression_tests/record_except_explosion_test.tla is defused by
+     *folding* EXCEPT updates into the record constructor they update, so a wide
+     base is materialised once instead of being re-embedded per path component
+     -- NOT by collapsing field selections.  We deliberately do not collapse
+     selections (see the note in [except_normalize]): that is equality-
+     preserving but not proof-stable. *)
+
+  let%test_unit "EXCEPT over a record constructor folds the update in place" =
+    (* [b \in DOMAIN [a |-> 1, b |-> 2]], so the update is folded into the
+       constructor, keeping the result linear in the record's width. *)
+    let test_case = create_expression "[[a |-> 1, b |-> 2] EXCEPT !.b = 3]" in
+    let target_case = create_expression "[a |-> 1, b |-> 3]" in
+    [%test_eq: string]
+      (prn_exp target_case)
+      (prn_exp (normalize Deque.empty test_case))
+
+  let%test_unit "multiple EXCEPT updates fold into a single constructor" =
+    let test_case =
+      create_expression "[[a |-> 1, b |-> 2] EXCEPT !.a = 3, !.b = 4]"
+    in
+    let target_case = create_expression "[a |-> 3, b |-> 4]" in
+    [%test_eq: string]
+      (prn_exp target_case)
+      (prn_exp (normalize Deque.empty test_case))
+
+  let%test_unit "a field selection over a record constructor is left intact" =
+    (* Proof-stability: even though [[a |-> 1, b |-> 2].b = 2] is provable, we
+       must not rewrite it, since the same collapse applied to a hand-cited fact
+       (e.g. [m2b.acc = self]) erases the term a backend needs.  Folding keeps
+       the obligation linear without touching the selection. *)
+    let test_case = create_expression "[a |-> 1, b |-> 2].b" in
+    let target_case = create_expression "[a |-> 1, b |-> 2].b" in
+    [%test_eq: string]
+      (prn_exp target_case)
+      (prn_exp (normalize Deque.empty test_case))
 
   (*
   let%test_unit "t7" [@tags "disabled"] = (* doesnt work because we need to anonimie the created expressions from the parser*)
