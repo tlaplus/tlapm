@@ -16,6 +16,7 @@ module Rewrite : sig
   val elim_tuples : sequent -> sequent
   val elim_records : sequent -> sequent
   val sort_recfields : sequent -> sequent
+  val simpl_receq : sequent -> sequent
 
   val simplify_range : sequent -> sequent
   val simplify_sets : ?limit:int -> ?rwlvl:int -> disable_arithmetic:bool -> sequent -> sequent

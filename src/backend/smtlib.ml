@@ -456,6 +456,15 @@ let preprocess ~solver sq =
   let sq = sq
     |> debug "Original Obligation:"
     |> Encode.Rewrite.elim_flex
+    (* Decompose equalities of two record constructors with equal domains into
+       the field-wise conjunction, e.g.
+         [a |-> e1, b |-> e2] = [a |-> f1, b |-> f2]  -->  e1 = f1 /\ e2 = f2
+       Must run before Type.Synthesize: the constructors are then gone before
+       Axiomatize, so no record/function-extensionality axioms (FunExt,
+       RecDomDef, RecAppDef, ...) are emitted -- those are what make
+       wide-record equalities expensive for Z3.  Sound with no typing
+       assumption; see Encode.Rewrite.simpl_receq. *)
+    |> Encode.Rewrite.simpl_receq
     |> Type.Synthesize.main ~typelvl
     |> Encode.Rewrite.elim_notmem
     |> Encode.Rewrite.elim_compare
