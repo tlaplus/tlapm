@@ -39,6 +39,12 @@ val elim_records : sequent -> sequent
 (** Sort fields of records and record sets *)
 val sort_recfields : sequent -> sequent
 
+(** Decompose equalities between record constructors with identical field
+    sets into the conjunction of their field-wise equalities.  Sound without
+    typing assumptions; avoids the wide record-extensionality axiom on the
+    SMT side.  Intended to run before type synthesis. *)
+val simpl_receq : sequent -> sequent
+
 (** Simplify propositions involving ranges *)
 val simplify_range : sequent -> sequent
 
