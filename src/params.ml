@@ -310,7 +310,7 @@ let output_dir = ref "."
 
 let default_method =
   ref [
-    Method.Smt3 Method.default_smt2_timeout;
+    Method.Smt3 (Method.default_smt2_timeout, None);
     Method.Zenon Method.default_zenon_timeout;
     Method.Isabelle (Method.default_isabelle_timeout,
                      Method.default_isabelle_tactic);
@@ -327,10 +327,10 @@ let mk_meth name timeout =
      Method.Isabelle (timeout, name)
   | "smt" ->
      let timeout = Option.default Method.default_smt2_timeout timeout in
-     Method.Smt3 timeout
+     Method.Smt3 (timeout, None)
   | "z3" ->
      let timeout = Option.default Method.default_smt2_timeout timeout in
-     Method.Z33 timeout
+     Method.Z33 (timeout, None)
   | "cvc4" ->
      let timeout = Option.default Method.default_smt2_timeout timeout in
      Method.Cvc33 timeout
