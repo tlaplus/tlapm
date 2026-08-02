@@ -14,7 +14,7 @@
 (*    pages = "398--461"                                                   *)
 (***************************************************************************)
 
-EXTENDS Integers, FiniteSets, FiniteSetTheorems, TLAPS
+EXTENDS Integers, FiniteSets, FiniteSetTheorems, FunctionTheorems, TLAPS
 
 ----------------------------------------------------------------------------
 (***************************************************************************)
@@ -679,19 +679,18 @@ MaxBallot(S) ==
 (* maximum of S when S is nonempty, we need the following fact.            *)
 (***************************************************************************)
 LEMMA FiniteSetHasMax ==
-        \A S \in SUBSET Int :
-          IsFiniteSet(S) /\ (S # {}) => \E max \in S : \A x \in S : max >= x
-<1>. DEFINE P(S) == S \subseteq Int /\ S # {} =>
-                      \E max \in S : \A x \in S : max >= x
+  ASSUME NEW S \in SUBSET Int, IsFiniteSet(S), S # {}
+  PROVE  \E max \in S : \A x \in S : max >= x
+<1>. DEFINE P(T) == T # {} => \E max \in T : \A x \in T : max >= x
 <1>1. P({})
   OBVIOUS
-<1>2. ASSUME NEW T, NEW x, P(T)
+<1>2. ASSUME NEW T \in SUBSET S, P(T), NEW x \in S \ T
       PROVE  P(T \cup {x})
   BY <1>2
-<1>3. \A S : IsFiniteSet(S) => P(S)
+<1>3. P(S)
   <2>. HIDE DEF P
   <2>. QED  BY <1>1, <1>2, FS_Induction, IsaM("blast")
-<1>. QED  BY <1>3, Zenon
+<1>. QED  BY <1>3
 
 (***************************************************************************)
 (* Our proofs use this property of MaxBallot.                              *)
@@ -958,11 +957,14 @@ LEMMA PMaxBalLemma3 ==
 <1> DEFINE T == {ma \in bmsgs : /\ ma.type \in {"1b", "2b"}
                                 /\ ma.acc = a}
            S == {m.bal : m \in T}
+           f == [m \in T |-> m.bal]
 <1>1. IsFiniteSet(S)
   <2>1. IsFiniteSet(T)
     BY FS_Subset DEF bmsgsFinite, 1bOr2bMsgs
+  <2>2. f \in Surjection(T, S)
+    BY Fun_IsSurj, Zenon DEF S
   <2>. QED
-    BY <2>1, FS_Image, Isa
+    BY <2>1, <2>2, FS_Surjection
 <1>. QED  BY <1>1, BMessageLemma DEF 1bMessage, 2bMessage, TypeOK
 
 LEMMA PmaxBalLemma4 ==
@@ -1366,7 +1368,7 @@ THEOREM Invariance == Spec => []Inv
       <4>3. bmsgsFinite'
         BY <3>1, FiniteMsgsLemma, Zenon DEF Inv, bmsgsFinite, Phase1b
       <4>4. 1bInv1'
-        BY <3>1, <4>1, Isa DEF Phase1b, 1bInv1, Inv, accInv
+        BY <3>1, <4>1, Zenon, SMT DEF Phase1b, 1bInv1, Inv, accInv
       <4>5. 1bInv2'
         BY <3>1 DEF Phase1b, 1bInv2, Inv, maxBalInv, TypeOK, 1bMessage, Ballot
       <4>6. maxBalInv'
@@ -1422,7 +1424,7 @@ THEOREM Invariance == Spec => []Inv
       <4>6. bmsgsFinite'
         BY <4>1, FiniteMsgsLemma, Zenon DEF Inv, bmsgsFinite
       <4>7. 1bInv1'
-        BY <3>2, <4>1, <4>3, Isa DEF Phase2av, 1bInv1, Inv
+        BY <3>2, <4>1, <4>3, Zenon, SMT DEF Phase2av, 1bInv1, Inv
       <4>8. 1bInv2'
         BY <4>1 DEF Inv, 1bInv2
       <4>9. maxBalInv'
@@ -1438,7 +1440,7 @@ THEOREM Invariance == Spec => []Inv
           BY DEF 2avInv2
         <5>2. CASE m.acc = self
           <6>1. CASE m = mb
-            BY <4>1, <6>1, Isa DEF Inv, TypeOK, Ballot
+            BY <4>1, <6>1, Zenon, SMT DEF Inv, TypeOK, Ballot
           <6>2. CASE m # mb
             <7>1. m \in bmsgs
               BY <4>1, <6>2
@@ -1511,7 +1513,7 @@ THEOREM Invariance == Spec => []Inv
       <4>3. bmsgsFinite'
          BY <4>1, FiniteMsgsLemma, Zenon DEF Inv, bmsgsFinite
       <4>4. 1bInv1'
-        BY <4>1, Isa DEF Inv, 1bInv1
+        BY <4>1, Zenon, SMT DEF Inv, 1bInv1
       <4>5. 1bInv2'
         BY <4>1 DEF Inv, 1bInv2
       <4>6. maxBalInv'
@@ -1584,7 +1586,7 @@ THEOREM Invariance == Spec => []Inv
       <4>3. bmsgsFinite'
         BY <3>1, FiniteMsgsLemma, Zenon DEF Inv, bmsgsFinite, Phase1a
       <4>4. 1bInv1'
-        BY <3>1, <4>1, Isa DEF Phase1a, Inv, 1bInv1
+        BY <3>1, <4>1, Zenon, SMT DEF Phase1a, Inv, 1bInv1
       <4>5. 1bInv2'
         BY <3>1 DEF Phase1a, Inv, 1bInv2
       <4>6. maxBalInv'
@@ -1739,14 +1741,17 @@ THEOREM Spec => P!Spec
         BY DEF PmaxBal, 1bOr2bMsgs
       <4> HIDE DEF mA
       <4>4. S(self)' = S(self) \cup {b}
-        BY <4>2, Isa
+        BY <4>2, Zenon, SMT
       <4>5. MaxBallot(S(self) \cup {b}) = b
         <5> DEFINE SS == S(self) \cup {b}
         <5>1. IsFiniteSet(S(self))
-          <6>. IsFiniteSet(mA(self))
+          <6>1. IsFiniteSet(mA(self))
             BY FS_Subset DEF Inv, bmsgsFinite, mA, 1bOr2bMsgs
+          <6> DEFINE f == [ma \in mA(self) |-> ma.bal]
+          <6>2. f \in Surjection(mA(self), S(self))
+            BY Fun_IsSurj, Zenon DEF S
           <6>. QED
-            BY FS_Image, Isa
+            BY <6>1, <6>2, FS_Surjection
         <5>2. IsFiniteSet(SS)
           BY <5>1, FS_AddElement
         <5>3. S(self) \subseteq Ballot \cup {-1}
@@ -1804,7 +1809,7 @@ THEOREM Spec => P!Spec
                          /\ m2av.acc = a
                          /\ m2av.bal = b
                          /\ m2av.val = v
-          BY <4>1, MsgsTypeLemmaPrime, Isa DEF 2amsgs
+          BY <4>1, MsgsTypeLemmaPrime, Zenon, SMT DEF 2amsgs
         <5>5. PICK a \in Q \cap Q2 : a \in Acceptor
           BY QuorumTheorem
         <5>6. PICK mav \in acceptorMsgsOfType("2av") :
@@ -1861,7 +1866,7 @@ THEOREM Spec => P!Spec
                    \A a \in Q :
                       \E mm \in sentMsgs("2av", b) : /\ mm.val = v
                                                      /\ mm.acc = a
-        BY <3>2, Isa DEF Quorum
+        BY <3>2, Zenon, SMT DEF Quorum
       <4>2. m \in 2amsgs
         BY <4>1 DEF sentMsgs, Quorum, acceptorMsgsOfType, msgsOfType, 2amsgs
       <4>3. QED
@@ -1887,7 +1892,7 @@ THEOREM Spec => P!Spec
         <5> HIDE DEF S
         <5>5. CASE S = {}
           <6> MaxBallot({b}) = b
-            BY FS_Singleton, MaxBallotLemma1, Isa DEF Ballot
+            BY FS_Singleton, MaxBallotLemma1, Zenon, SMT DEF Ballot
           <6> QED
             BY <5>4, <5>5, Zenon
         <5>6. CASE S # {}
@@ -1949,7 +1954,7 @@ THEOREM Spec => P!Spec
           BY <4>4
         <5>2. \A a \in Q(BQ) : \E m \in SQ(BQ) : /\ m.acc = a
                                                  /\ m.mbal = -1
-          BY <5>1, Isa DEF 1bRestrict
+          BY <5>1, Zenon, SMT DEF 1bRestrict
         <5>3. \A m \in SQ(BQ) : m.mbal = -1
           BY <4>2, <5>2
              DEF InvP, Inv, knowsSentInv, msgsOfType, 1bRestrict, 1bInv2
@@ -2033,7 +2038,7 @@ THEOREM Spec => P!Spec
         <5>7. P!ShowsSafeAt(Q(BQ), b, v)!1!2!2!(m1c)
           BY <5>5, <5>6
         <5>. QED
-          BY <5>4, <5>7, Isa DEF P!ShowsSafeAt, Quorum
+          BY <5>4, <5>7, Zenon, SMT DEF P!ShowsSafeAt, Quorum
       <4>6. QED
         BY <3>1, <4>1, <4>4, <4>5 DEF KnowsSafeAt
     <3>6. QED
@@ -2045,7 +2050,7 @@ THEOREM Spec => P!Spec
     <3>1. msgs' = msgs \cup {[type |-> "1a", bal |-> self]}
       BY <2>7, MsgsLemma DEF Inv
     <3>2. UNCHANGED << PmaxBal, maxVBal, maxVVal >>
-      BY <2>7, Isa DEF Phase1a, PmaxBal, 1bOr2bMsgs
+      BY <2>7, Zenon, SMT DEF Phase1a, PmaxBal, 1bOr2bMsgs
     <3>. QED
       BY <3>1, <3>2 DEF P!Phase1a, P!TLANext, Ballot, P!Ballot
   <2>8. ASSUME NEW self \in Ballot,
