@@ -556,6 +556,57 @@ let sort_recfields sq =
   snd (sort_recfields_visitor#sequent cx sq)
 
 
+(* {3 Record Equality Decomposition} *)
+
+(* Decompose an equality of two record constructors with the same field set
+   into the conjunction of field-wise equalities:
+     [h1 |-> a1, ...] = [h1 |-> b1, ...]  -->  a1 = b1 /\ ...
+   Run in the SMT-LIB pipeline before type synthesis.  The soundness argument
+   and the guards -- equal field set, pairing by name, field values copied
+   verbatim (so [=] is never pushed through IF), and rewriting equalities only
+   -- are stated and checked by test/unit/h_records/recordeq_*_smt_test.tla and
+   test/soundness_tests/recordeq_swap_stest.tla. *)
+let same_fieldset fs1 fs2 =
+  List.length fs1 = List.length fs2
+  && List.for_all (fun (h, _) -> List.mem_assoc h fs2) fs1
+  && List.for_all (fun (h, _) -> List.mem_assoc h fs1) fs2
+
+let rec mk_conj = function
+  | [] -> Internal B.TRUE %% []
+  | [ e ] -> e
+  | e :: es -> Apply (Internal B.Conj %% [], [ e ; mk_conj es ]) %% []
+
+let rec decompose_receq lhs rhs =
+  match lhs.core, rhs.core with
+  | Record fs1, Record fs2 when same_fieldset fs1 fs2 ->
+      mk_conj
+        (List.map (fun (h, e1) -> decompose_receq e1 (List.assoc h fs2)) fs1)
+  | _ ->
+      Apply (Internal B.Eq %% [], [ lhs ; rhs ]) %% []
+
+let simpl_receq_visitor = object (self : 'self)
+  inherit [unit] Visit.map as super
+
+  method expr scx oe =
+    match oe.core with
+    | Apply ({ core = Internal B.Eq } as op, [ e ; f ])
+      when not (has oe Props.tpars_prop) ->
+        let e = self#expr scx e in
+        let f = self#expr scx f in
+        begin match e.core, f.core with
+        | Record _, Record _ ->
+            (decompose_receq e f).core @@ oe
+        | _ ->
+            Apply (op, [ e ; f ]) @@ oe
+        end
+    | _ -> super#expr scx oe
+end
+
+let simpl_receq sq =
+  let cx = ((), Deque.empty) in
+  snd (simpl_receq_visitor#sequent cx sq)
+
+
 (* {3 Range Simplification} *)
 
 let simplify_range_visitor = object (self : 'self)
