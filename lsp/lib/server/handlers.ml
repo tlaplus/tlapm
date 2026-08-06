@@ -498,6 +498,7 @@ module Make (CB : Callbacks) = struct
         with exc ->
           let open Jsonrpc.Response.Error in
           let exc_str = Printexc.to_string exc in
+          (* Printexc.print_backtrace stderr; *)
           Eio.traceln "LSP request failed with exception %s" exc_str;
           reply_error req Code.InternalError exc_str state)
     | Response resp -> handle_jsonrpc_response resp state

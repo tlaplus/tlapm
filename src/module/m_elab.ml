@@ -85,13 +85,8 @@ module StringSet = Util.Coll.Ss  (* Set.Make(String) *)
 
 open Util
 
-module HC = struct
-  type t = hint
-  let compare x y = Stdlib.compare x.core y.core
-end
-
-module HintMap = Util.Coll.Hm  (* Map.Make(HC) *)
-module HintSet = Util.Coll.Hs  (* Set.Make(HC) *)
+module HintMap = Util.Coll.Hm
+module HintSet = Util.Coll.Hs
 
 
 let module_parameters (tla_module: M_t.mule):

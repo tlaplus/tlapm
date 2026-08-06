@@ -54,10 +54,9 @@ and app_step s stp = match stp.core with
       let prf = app_proof s prf in
       (bumpn (Deque.size sq.context) s, Suffices (sq, prf) @@ stp)
   | Pcase (e, p) ->
-      let s = bumpn 1 s in
       let e = app_expr s e in
-      let s = bumpn 1 s in
       let p = app_proof s p in
+      let s = bumpn 2 s in
       (s, Pcase (e, p) @@ stp)
   | Pick (bs, e, p) ->
       let p = app_proof (bumpn 3 s) p in

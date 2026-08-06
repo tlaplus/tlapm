@@ -65,4 +65,5 @@ let test_cases =
       ];
       Test_decompose_goal.test_cases;
       Test_decompose_assm.test_cases;
+      Test_decompose_rule.test_cases;
     ]
