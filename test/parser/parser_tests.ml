@@ -9,6 +9,8 @@ open Tlapm_lib;;
 
 open Syntax_corpus_file_parser;;
 
+let last_parse_error = ref "<none>"
+
 (** Calls TLAPM's parser with the given input. Catches all exceptions and
     treats them as parse failures.
     @param input The TLA+ fragment to parse.
@@ -16,7 +18,9 @@ open Syntax_corpus_file_parser;;
 *)
 let parse (input : string) : Module.T.mule option =
   try module_of_string input
-  with _ -> None
+  with e ->
+    last_parse_error := Printexc.to_string e;
+    None
 
 (** Names of tests that are known to fail due to TLAPM parser bugs.
     @param test Information about the test.
@@ -145,7 +149,8 @@ let run_test test _ =
       match parse input with
       | None ->
          let b = expect_parse_failure test in
-         assert_bool "Expected parse success" b
+         let msg = Printf.sprintf "Expected parse success, got: %S" !last_parse_error in
+         assert_bool msg b
       | Some tlapm_output ->
         skip_if (should_skip_tree_comparison test) "Skipping parse tree comparison";
         let open Translate_syntax_tree in
