@@ -442,9 +442,8 @@ let rec localize body body_len iname niargs iargs not_complained inst local =
             not_complained inst local mus
       | Theorem (nm, sq, naxs, prf, prf_orig, summ) ->
           let nm = Option.map (tweak iname) nm in
-          let s = resub_for body_len niargs iargs inst in
           let e = exprify_sequent sq @@ mu in
-          let e = app_expr s e in
+          let e = app_expr (resub_for body_len niargs iargs inst) e in
           if niargs > 0 && !not_complained then begin
             Util.eprintf ~at:inst ~prefix:"Warning: "
               "%s@\n%s@\n(%s)"
