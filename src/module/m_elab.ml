@@ -208,6 +208,8 @@ let remove_pf mu =
     (* Erase proofs from module `mu`. *)
     match mu.core with
     | Theorem (nm, sq, naxs, prf, prf_orig, summ) ->
+        (* Proofs are not valid after substituting definitions with composite expressions. *)
+        let mu = Property.remove mu indexed_prf_prop in
         Theorem (nm, sq, naxs, (Omitted Implicit @@ prf), prf_orig, summ) @@ mu
     | _ -> mu
 
@@ -459,11 +461,6 @@ let rec localize body body_len iname niargs iargs not_complained inst local =
           in
           let prf = Omitted (Elsewhere (Util.get_locus mu)) @@ mu in
           let mu = Theorem (nm, sq, naxs, prf, prf_orig, summ) @@ mu in
-          (* Apply the same substitution to `indexed_prf_prop` as it contains the original proof. *)
-          let mu = match Property.query mu indexed_prf_prop with
-            | Some p -> Property.with_prop indexed_prf_prop (Proof.Subst.app_proof s p) mu
-            | None -> mu
-          in
           localize (mu :: body) (body_len + 1) iname niargs iargs
             not_complained inst local mus
       | Mutate (`Hide, _) ->
