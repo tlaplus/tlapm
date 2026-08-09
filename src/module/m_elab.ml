@@ -440,8 +440,9 @@ let rec localize body body_len iname niargs iargs not_complained inst local =
             not_complained inst local mus
       | Theorem (nm, sq, naxs, prf, prf_orig, summ) ->
           let nm = Option.map (tweak iname) nm in
+          let s = resub_for body_len niargs iargs inst in
           let e = exprify_sequent sq @@ mu in
-          let e = app_expr (resub_for body_len niargs iargs inst) e in
+          let e = app_expr s e in
           if niargs > 0 && !not_complained then begin
             Util.eprintf ~at:inst ~prefix:"Warning: "
               "%s@\n%s@\n(%s)"
@@ -458,6 +459,11 @@ let rec localize body body_len iname niargs iargs not_complained inst local =
           in
           let prf = Omitted (Elsewhere (Util.get_locus mu)) @@ mu in
           let mu = Theorem (nm, sq, naxs, prf, prf_orig, summ) @@ mu in
+          (* Apply the same substitution to `indexed_prf_prop` as it contains the original proof. *)
+          let mu = match Property.query mu indexed_prf_prop with
+            | Some p -> Property.with_prop indexed_prf_prop (Proof.Subst.app_proof s p) mu
+            | None -> mu
+          in
           localize (mu :: body) (body_len + 1) iname niargs iargs
             not_complained inst local mus
       | Mutate (`Hide, _) ->
@@ -1135,6 +1141,7 @@ let rec normalize mcx cx m =
             in
             visitor1#proof ((),cx) pf in*)
             let pf = anon#mproof mcx ([], cx) pf in
+            let indexed_pf = pf in
             (* comment this condition check to generate proofs for
             all modules, including submodules, even when the parser
             marks submodules as not important.
@@ -1146,10 +1153,10 @@ let rec normalize mcx cx m =
                     cx pf in
                 let pf = if has then check_enabled_axioms_map#proof
                     ((ref 0, StringMap.empty), cx) pf else pf in
-                pf
+                (pf, indexed_pf)
                 end
             else
-                pf
+                (pf, indexed_pf)
             end
             in
         let create_instance inst mcx cx mu ~local ~iname =
@@ -1231,7 +1238,7 @@ let rec normalize mcx cx m =
             begin
               let (_, sq) = anon#msequent mcx ([], cx) sq in
               let (_, sq) = const_visitor#sequent ((),cx) sq in
-              let pf = map_proof cx nm sq pf mu m in
+              let (pf, indexed_pf) = map_proof cx nm sq pf mu m in
               (* we apply it later to obligations so we can skip the proofs
                * themselves *)
               (*
@@ -1252,6 +1259,7 @@ let rec normalize mcx cx m =
                 in
                 visitor#proof ((),cx) pf in *)
               let mu = Theorem (nm, sq, naxs, pf, pf_orig, summ) @@ mu in
+              let mu = Property.with_prop indexed_prf_prop indexed_pf mu in
               continue mcx cx mu "Theorem"
             end
         | Mutate (uh, us) ->

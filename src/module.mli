@@ -52,6 +52,7 @@ module T : sig
   val hyps_of_modunit: modunit -> Expr.T.hyp_ Property.wrapped list
   val hyp_size: modunit -> int
   val salt_prop: unit Property.pfuncs
+  val indexed_prf_prop: proof Property.pfuncs
 end
 
 module Fmt : sig
@@ -79,9 +80,6 @@ end
 module Gen : sig
   open Proof.T
   open T
-  val proof_prop : proof Property.pfuncs
-  val proof_orig_prop : proof Property.pfuncs
-  val proof_orig_indexed_prop : proof Property.pfuncs
   val generate : Expr.T.hyp Deque.dq -> mule -> mule * obligation list * summary
   val collect_usables : mule -> usable option
 end

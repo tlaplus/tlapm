@@ -78,7 +78,7 @@ let code_actions ~cfg:_ (uri : LspT.DocumentUri.t) (ps : PS.t)
     |> Option.is_some
   in
   let is_rule_sq (h : Expr.T.hyp) =
-    match (h.core, Property.query h Module.Gen.proof_orig_indexed_prop) with
+    match (h.core, Property.query h Module.T.indexed_prf_prop) with
     | Fact (expr, _, _), Some pf -> (
         match expr.core with
         | Sequent sq -> if has_marker sq then Some (sq, pf) else None
