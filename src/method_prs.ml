@@ -73,7 +73,7 @@ and isa_zenon = lazy begin
 end
 
 and isa_smt =
-  ident "smt" <!> Smt3 default_smt_timeout
+  ident "smt" <!> Smt3 (default_smt_timeout, None)
 
 and isa_cvc3 =
   ident "cvc3" <!> Cvc33 default_cvc3_timeout
@@ -82,7 +82,7 @@ and isa_yices =
   ident "yices" <!> Yices3 default_yices_timeout
 
 and isa_z3 =
-  ident "z3" <!> Z33 default_z3_timeout
+  ident "z3" <!> Z33 (default_z3_timeout, None)
 
 and isa_ls4 =
   ident "ls4" <!> LS4 default_ls4_timeout
@@ -95,13 +95,13 @@ and isa_cooper =
 and isa_fail =
   ident "fail" <!> Fail
 
-and isa_smt2lib = ident "smt2lib" <!> Smt3 default_smt2_timeout
+and isa_smt2lib = ident "smt2lib" <!> Smt3 (default_smt2_timeout, None)
 
-and isa_smt2z3 = ident "smt2z3" <!> Z33 default_smt2_timeout
+and isa_smt2z3 = ident "smt2z3" <!> Z33 (default_smt2_timeout, None)
 
-and isa_smt3 = ident "smt3" <!> Smt3 default_smt2_timeout
+and isa_smt3 = ident "smt3" <!> Smt3 (default_smt2_timeout, None)
 
-and isa_z33 = ident "z33" <!> Z33 default_smt2_timeout
+and isa_z33 = ident "z33" <!> Z33 (default_smt2_timeout, None)
 
 and isa_cvc33 = ident "cvc33" <!> Cvc33 default_smt2_timeout
 

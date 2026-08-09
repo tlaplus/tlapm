@@ -15,8 +15,8 @@ type t =
   | LS4 of float
   | Smt2lib of float
   | Smt2z3 of float
-  | Smt3 of float
-  | Z33 of float
+  | Smt3 of float * int option
+  | Z33 of float * int option
   | Cvc33 of float
   | Yices3 of float
   | Verit of float
@@ -41,6 +41,7 @@ val prover_name_of_tac: t -> string option
 
 (* backend/prep.ml *)
 val timeout: t -> float
+val smt_rlimit: t -> int option
 val scale_time: t -> float -> t
 val pp_print_tactic: Format.formatter -> t -> unit
 
@@ -56,6 +57,9 @@ val default_smt2_timeout: float
 val default_zipper_timeout : float
 val default_spass_timeout: float
 val default_tptp_timeout: float
+
+val rlimit_base: int
+val max_rlimit: int
 
 val is_temporal : t -> bool
 

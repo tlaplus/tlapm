@@ -15,6 +15,19 @@ let default_zipper_timeout = 30.
 let default_spass_timeout = 5.
 let default_tptp_timeout = 5.
 
+(* A Z3 `rlimit` budget of "rN" (see issue #281) grants N times this many raw
+   Z3 resource units. The base is deliberately large so that a small, readable
+   budget like "r5" is a meaningful amount of work. Its purpose is
+   reproducibility, not timing: the resource count -- and hence the pass/fail
+   outcome -- is deterministic across machines, whereas how long it takes to
+   consume that budget depends on the machine and the obligation. As a rough
+   rule of thumb it is comparable to a few seconds on a typical machine, but
+   that correspondence is only intuition for picking N, not a guarantee. *)
+let rlimit_base = 3_000_000
+
+(* Z3 stores `rlimit` as an unsigned 32-bit integer. *)
+let max_rlimit = 0xFFFF_FFFF
+
 type t =
   | Isabelle of float * string
   | Zenon of float
@@ -27,8 +40,8 @@ type t =
   | LS4 of float
   | Smt2lib of float
   | Smt2z3 of float
-  | Smt3 of float
-  | Z33 of float
+  | Smt3 of float * int option
+  | Z33 of float * int option
   | Cvc33 of float
   | Yices3 of float
   | Verit of float
@@ -44,6 +57,15 @@ type t =
   | Trivial
 
 
+(* The deterministic Z3 `rlimit` budget, if the method carries one (see
+   issue #281). Only the Z3-based methods `Smt3` and `Z33` can have one. *)
+let smt_rlimit m =
+  match m with
+  | Smt3 (_, r) -> r
+  | Z33 (_, r) -> r
+  | _ -> None
+
+
 let timeout m =
   match m with
   | Zenon f -> f
@@ -56,8 +78,8 @@ let timeout m =
   | Smt2lib f -> f
   | Smt2z3 f -> f
   | Cooper | Fail -> infinity
-  | Smt3 f -> f
-  | Z33 f -> f
+  | Smt3 (f, _) -> f
+  | Z33 (f, _) -> f
   | Cvc33 f -> f
   | Yices3 f -> f
   | Verit f -> f
@@ -90,8 +112,8 @@ let scale_time m s =
   | Smt2z3 f -> Smt2z3 (f *. s)
   | Cooper -> Cooper
   | Fail -> Fail
-  | Smt3 f -> Smt3 (f *. s)
-  | Z33 f -> Z33 (f *. s)
+  | Smt3 (f, r) -> Smt3 (f *. s, r)
+  | Z33 (f, r) -> Z33 (f *. s, r)
   | Cvc33 f -> Cvc33 (f *. s)
   | Yices3 f -> Yices3 (f *. s)
   | Verit f -> Verit (f *. s)
@@ -122,8 +144,10 @@ let pp_print_tactic ff m =
   | Z3T f -> fprintf ff "(z3_1 %g s)" f
   | Smt2lib f -> fprintf ff "(smt_2 %g s)" f
   | Smt2z3 f -> fprintf ff "(z3_2 %g s)" f
-  | Smt3 f -> fprintf ff "(smt %g s)" f
-  | Z33 f -> fprintf ff "(z3 %g s)" f
+  | Smt3 (f, None) -> fprintf ff "(smt %g s)" f
+  | Smt3 (_, Some r) -> fprintf ff "(smt rlimit %d)" r
+  | Z33 (f, None) -> fprintf ff "(z3 %g s)" f
+  | Z33 (_, Some r) -> fprintf ff "(z3 rlimit %d)" r
   | Cvc33 f -> fprintf ff "(cvc4 %g s)" f
   | Yices3 f -> fprintf ff "(yices %g s)" f
   | Verit f -> fprintf ff "(verit %g s)" f
@@ -156,8 +180,8 @@ let prover_meth_of_tac tac =
     | Z3T f -> (Some "z3_1", None)
     | Smt2lib f -> (Some "smt2lib", None)
     | Smt2z3 f -> (Some "smt2z3", None)
-    | Smt3 f -> (Some "smt", None)
-    | Z33 f -> (Some "z3", None)
+    | Smt3 _ -> (Some "smt", None)
+    | Z33 _ -> (Some "z3", None)
     | Cvc33 f -> (Some "cvc4", None)
     | Yices3 f -> (Some "yices", None)
     | Verit f -> (Some "verit", None)

@@ -495,10 +495,12 @@ LEMMA VT0 == /\ TypeOK
     <3> PICK aa \in QQ \cap Q : TRUE
       BY QA
     <3>4. c \leq d
+      <4>. SUFFICES ASSUME c \in (d+1) .. (b-1) PROVE FALSE 
+        BY <3>1
       <4>1. CASE d = -1
-        BY <3>1, <3>2, <3>3, <4>1 DEF DidNotVoteIn
+        BY <3>2, <3>3, <4>1 DEF DidNotVoteIn
       <4>2. CASE d \in 0 .. (b-1)
-        BY <3>1, <3>2, <3>3, <4>2 DEF DidNotVoteIn
+        BY <3>2, <3>3, <4>2 DEF DidNotVoteIn
       <4>. QED  BY <4>1, <4>2
     <3>5. CASE c = d
       BY <3>2, <3>3, <3>4, <3>5

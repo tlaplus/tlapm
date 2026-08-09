@@ -18,11 +18,48 @@
 
 <div class="section">
   <h2><img class="blogo" src="images/logo_macosx30s.png"
-           alt="[Apple logo]"/>Mac OS X (10.13 and later)</h2>
-  <p class="first"> The package:
+           alt="[Apple logo]"/>macOS</h2>
+
+  <p class="first">Builds of the latest development version are attached to
+    the <a href="https://github.com/tlaplus/tlapm/releases/tag/1.6.0-pre">1.6.0
+    rolling pre-release</a>. For Apple silicon:
+    <code><a type="application/gzip"
+             href="https://github.com/tlaplus/tlapm/releases/download/1.6.0-pre/tlapm-1.6.0-pre-arm64-darwin.tar.gz">tlapm-1.6.0-pre-arm64-darwin.tar.gz</a></code>
+  </p>
+
+  <p>This archive is relocatable and needs no installer: unpack it wherever
+  you like, then put its <code>bin</code> directory on your
+  <code>PATH</code>.</p>
+
+  <div class="terminal">$ tar -xzf tlapm-1.6.0-pre-arm64-darwin.tar.gz</div>
+  <div class="terminal">$ export PATH="$PWD/tlapm/bin:$PATH"</div>
+
+  <p>Verify with <code>tlapm --version</code>; <code>tlapm --config</code>
+  lists the bundled backend provers. If you use the Toolbox or the
+  VS&nbsp;Code extension, the <code>TLAPS.tla</code> standard module is
+  under <code>tlapm/lib/tlapm/stdlib</code> &mdash; add that directory to the
+  TLA<sup>+</sup> library path.</p>
+
+  <p>The rolling pre-release currently carries an Apple-silicon build only.
+  On an Intel Mac, follow
+  <a href="https://github.com/tlaplus/tlapm/blob/main/DEVELOPING.md">DEVELOPING.md</a>
+  to build TLAPS from source, or use the 1.5.0 installer below.</p>
+</div>
+
+
+<div class="section" style="position:relative; top:40px">
+  <h2>Release 1.5.0 (October 2022, macOS 10.13 and later)</h2>
+
+  <p class="first">Past versioned releases are listed on the
+  <a href="https://github.com/tlaplus/tlapm/releases">GitHub releases
+  page</a>. The most recent of those, 1.5.0, ships as an Intel installer:
     <code><a type="application/octet-stream"
              href="https://github.com/tlaplus/tlapm/releases/download/202210041448/tlaps-1.5.0-i386-darwin-inst.bin">tlaps-1.5.0-i386-darwin-inst.bin</a></code>
   </p>
+
+  <p>It predates several years of development, so prefer the build above
+  unless you specifically need this version. The remaining instructions on
+  this page apply to it.</p>
 
   <h3>1. Install &nbsp; <code>make</code> </h3>
   <p><code>make</code> is required. You can install either Apple's

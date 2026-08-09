@@ -154,6 +154,9 @@ let init ?(out=Format.std_formatter) ?(err=Format.err_formatter) ?(terminate=exi
     "--config", Arg.Set show_config, " show configuration and exit" ;
     "--summary", Arg.Set summary,
                  " show summary of theorems (implies -N and not -C)" ;
+    "--strict", Arg.Set strict,
+                " report incomplete proofs, empty proof targets and failed \
+                  obligations as errors and exit with a non-zero status" ;
     "--timing", Arg.Set stats, " show runtime statistics" ;
     blank;
     "-I", Arg.String add_search_dir, "<dir> add <dir> to search path" ;

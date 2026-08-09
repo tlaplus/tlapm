@@ -225,8 +225,16 @@ and meth_to_Vx m =
   | M.Cvc3T tmo -> Cvc3T (floatomega_to_Vx tmo)
   | M.Smt2lib tmo -> Smt2lib (floatomega_to_Vx tmo)
   | M.Smt2z3 tmo -> Smt2z3 (floatomega_to_Vx tmo)
-  | M.Smt3 tmo -> Smt3 (floatomega_to_Vx tmo)
-  | M.Z33 tmo -> Z33 (floatomega_to_Vx tmo)
+  (* Fingerprint an `rlimit` budget by the resource count itself (not the
+     disabled wall-clock timeout, which is `infinity` for every rlimit
+     budget). This keeps the existing "a larger budget re-attempts an
+     obligation that failed under a smaller one" logic working for rlimit
+     budgets, so raising `SMTT("rN")` is not skipped by a prior failure with a
+     smaller N (see issue #281). *)
+  | M.Smt3 (_, Some r) -> Smt3 (F (float_of_int r))
+  | M.Z33 (_, Some r) -> Z33 (F (float_of_int r))
+  | M.Smt3 (tmo, None) -> Smt3 (floatomega_to_Vx tmo)
+  | M.Z33 (tmo, None) -> Z33 (floatomega_to_Vx tmo)
   | M.Cvc33 tmo -> Cvc33 (floatomega_to_Vx tmo)
   | M.Yices3 tmo -> Yices3 (floatomega_to_Vx tmo)
   | M.Verit tmo -> Verit (floatomega_to_Vx tmo)
@@ -931,8 +939,8 @@ and vx_to_meth m =
   | Cvc3T tmo -> Some (M.Cvc3T (vx_to_floatomega tmo))
   | Smt2lib tmo -> Some (M.Smt2lib (vx_to_floatomega tmo))
   | Smt2z3 tmo -> Some (M.Smt2z3 (vx_to_floatomega tmo))
-  | Smt3 tmo -> Some (M.Smt3 (vx_to_floatomega tmo))
-  | Z33 tmo -> Some (M.Z33 (vx_to_floatomega tmo))
+  | Smt3 tmo -> Some (M.Smt3 (vx_to_floatomega tmo, None))
+  | Z33 tmo -> Some (M.Z33 (vx_to_floatomega tmo, None))
   | Cvc33 tmo -> Some (M.Cvc33 (vx_to_floatomega tmo))
   | Yices3 tmo -> Some (M.Yices3 (vx_to_floatomega tmo))
   | Verit tmo -> Some (M.Verit (vx_to_floatomega tmo))

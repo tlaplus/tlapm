@@ -195,6 +195,51 @@
   <p>The SMT backend should not require similar help for reasoning about
     records.</p>
 
+  <h3>Using theorems from instantiated modules</h3>
+  <div class="hr"></div>
+
+  <p>When you create an instance <tla>I == INSTANCE M</tla> of a
+    module <tla>M</tla>, all assumptions of <tla>M</tla> become
+    additional hypotheses of every theorem instance (see Section
+    17.5.5 of <i>Specifying Systems</i>). For example, consider the
+    following modules, where the theorem <tla>Thm</tla> of
+    module <tla>A</tla> is proved using the assumption <tla>NA</tla>:</p>
+
+  <div lines="MODULE Lib/1-12"></div>
+
+  <p>If a module <tla>B</tla> imports <tla>A</tla>
+    via <tla>I == INSTANCE A</tla>, then the theorem
+    instance <tla>I!Thm</tla> does <em>not</em> stand for the bare
+    fact <tla>N &gt; 0</tla>. Instead, it carries the (instantiated)
+    assumptions of <tla>A</tla> as hypotheses, so it represents the
+    sequent</p>
+
+<div class="sole" style="line-height:200%">
+<tla>ASSUME I!Pos(N) PROVE N &gt; 0</tla>
+</div>
+
+  <p>In order to use <tla>I!Thm</tla> you therefore have to discharge
+    its hypothesis <tla>I!Pos(N)</tla> explicitly. The importing
+    module declares the matching assumption <tla>NA == Pos(N)</tla>,
+    so one might expect <tla>BY I!Thm, NA</tla> to close the goal.</p>
+
+  <p>However, a subtlety arises because the assumption mentions an
+    operator imported through <tla>EXTENDS</tla> (here <tla>Pos</tla>,
+    defined in the common module <tla>Lib</tla>). The instance
+    re-exports that operator under the <tla>I!</tla>
+    prefix (<tla>I!Pos</tla>), while the importing module keeps the
+    unprefixed name (<tla>Pos</tla>). These denote the same operator
+    but are two distinct internal symbols, and the back-ends do not
+    automatically relate them. The hypothesis carried
+    by <tla>I!Thm</tla> is thus <tla>I!Pos(N)</tla>, whereas the local
+    assumption <tla>NA</tla> only establishes <tla>Pos(N)</tla>, so
+    even <tla>BY I!Thm, NA</tla> is not enough. The remedy is
+    a <em>bridge</em> theorem that equates the prefixed operator with
+    its local counterpart and is then cited alongside the instantiated
+    theorem:</p>
+
+  <div lines="MODULE B/1-14"></div>
+
   <h3>Divide and Conquer</h3>
   <div class="hr"></div>
 
@@ -381,6 +426,33 @@ ASSUME GCDProperty3 ==
 Nat == 0..50
 *)
 ====
+====
+
+---- MODULE Lib ----
+EXTENDS Integers
+Pos(n) == n > 0
+====
+---- MODULE A ----
+EXTENDS Lib
+CONSTANT N
+ASSUME NA == Pos(N)
+
+THEOREM Thm == N > 0
+BY NA DEF Pos
+====
+---- MODULE B ----
+EXTENDS Lib
+CONSTANT N
+ASSUME NA == Pos(N)
+
+I == INSTANCE A
+
+THEOREM Bridge == \A n : I!Pos(n) = Pos(n)
+BY DEF I!Pos, Pos
+
+THEOREM Test == N > 0
+\* BY I!Thm, NA          \* FAILS: I!Pos and Pos are distinct symbols
+BY I!Thm, NA, Bridge     \* WORKS
 ====
 --></file>
 
