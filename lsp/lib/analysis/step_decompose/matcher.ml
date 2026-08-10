@@ -49,11 +49,17 @@ let merge_binding_cont f bs =
     the wildcard variable indexes to replacement expressions. *)
 let rec match_expr' ~(cx : Expr.T.ctx) ~(depth : int) ~(t : Expr.T.expr)
     ~(p : Expr.T.expr) : bindings option =
-  (* TODO: Use visitor to maintain the stack properly. *)
   match (t.core, p.core) with
+  (* Explicit parens carry no meaning for matching purposes. *)
+  | Expr.T.Parens (t, _), _ -> match_expr' ~cx ~depth ~t ~p
+  | _, Expr.T.Parens (p, _) -> match_expr' ~cx ~depth ~t ~p
   | Expr.T.Ix t_ix, Expr.T.Ix p_ix when t_ix = p_ix ->
       (* Expressions are the same, thus they match with no substitutions needed. *)
       Some []
+  | _, Expr.T.Ix p_ix when p_ix <= depth ->
+      (* [p_ix] refers to a hypothesis introduced in the expression,
+         but indexes are different, thus don't match. *)
+      None
   | _, Expr.T.Ix p_ix -> (
       let p_hyp = Expr.T.get_val_from_id cx p_ix in
       match p_hyp.core with
@@ -63,98 +69,232 @@ let rec match_expr' ~(cx : Expr.T.ctx) ~(depth : int) ~(t : Expr.T.expr)
       | Expr.T.Fresh (_name, _shape, _kind, _dom) ->
           (* For now, only unbounded NEW _ are considered placeholders. *)
           None
-      | Expr.T.FreshTuply (_names, _dom) -> assert false
-      | Expr.T.Flex _name -> assert false
-      | Expr.T.Defn (_defn, _where_def, _visibility, _export) -> assert false
-      | Expr.T.Fact (_expr, _visibility, _time) -> assert false)
+      | Expr.T.FreshTuply (_names, _dom) ->
+          (* Tuply placeholders are not supported. *)
+          None
+      | Expr.T.Flex _name ->
+          (* A reference to a state variable is not a placeholder. *)
+          None
+      | Expr.T.Defn (defn, _where_def, _visibility, _export) -> (
+          match defn.core with
+          | Expr.T.Operator (_hint, expr) ->
+              let expr = Expr.Subst.(app_expr (shift p_ix) expr) in
+              match_expr' ~cx ~depth ~t ~p:expr
+          | Expr.T.Recursive _ | Expr.T.Instance _ | Expr.T.Bpragma _ -> None)
+      | Expr.T.Fact (_expr, _visibility, _time) ->
+          (* Facts are not nameable, thus cannot be referenced by an [Ix]. *)
+          None)
   | Expr.T.Ix t_ix, _ -> (
       let t_hyp = Expr.T.get_val_from_id cx t_ix in
       match t_hyp.core with
       | Expr.T.Fresh (_, _, _, _) | Expr.T.FreshTuply (_, _) | Expr.T.Flex _ ->
-          (* TODO: How do we match these? *)
-          assert false
+          (* A bare variable/state reference cannot match a compound pattern. *)
+          None
       | Expr.T.Defn ((defn : Expr.T.defn), _wheredef, _visible, _export) -> (
           match defn.core with
           | Expr.T.Operator (_hint, expr) ->
               let expr = Expr.Subst.(app_expr (shift t_ix) expr) in
               match_expr' ~cx ~depth ~t:expr ~p
-          | Expr.T.Recursive (_, _)
-          | Expr.T.Instance (_, _)
-          | Expr.T.Bpragma (_, _, _) ->
-              assert false)
-      | Expr.T.Fact (_, _, _) ->
-          (* ... *)
-          assert false)
+          | Expr.T.Recursive _ | Expr.T.Instance _ | Expr.T.Bpragma _ -> None)
+      | Expr.T.Fact (_, _, _) -> None)
+  | Expr.T.Lambda _, _ | _, Expr.T.Lambda _ -> None
+  | Expr.T.Sequent _, _ | _, Expr.T.Sequent _ -> None
+  | Expr.T.Bang _, _ | _, Expr.T.Bang _ -> None
+  | Expr.T.With _, _ | _, Expr.T.With _ -> None
+  | Expr.T.Let _, _ | _, Expr.T.Let _ -> None
   | Expr.T.Opaque ex, Expr.T.Opaque pt ->
       if String.equal ex pt then Some [] else None
   | Expr.T.Opaque _, _ | _, Expr.T.Opaque _ -> None
   | Expr.T.Internal _, Expr.T.Internal _ ->
       if Expr.Eq.expr t p then Some [] else None
   | Expr.T.Internal _, _ | _, Expr.T.Internal _ -> None
-  | Expr.T.Apply (t_op, t_args), Expr.T.Apply (p_op, p_args) -> (
-      match match_expr' ~cx ~depth ~t:t_op ~p:p_op with
-      | Some bindings ->
-          if List.compare_lengths t_args p_args = 0 then
-            List.fold_left2
-              (fun acc t_arg p_arg ->
-                match acc with
-                | None -> None
-                | Some acc -> (
-                    match match_expr' ~cx ~depth ~t:t_arg ~p:p_arg with
-                    | None -> None
-                    | Some arg_bindings -> Some (List.append acc arg_bindings)))
-              (Some bindings) t_args p_args
-          else None
-      | None -> None)
+  | Expr.T.String t_s, Expr.T.String p_s ->
+      if String.equal t_s p_s then Some [] else None
+  | Expr.T.String _, _ | _, Expr.T.String _ -> None
+  | Expr.T.Num (t_m, t_n), Expr.T.Num (p_m, p_n) ->
+      if String.equal t_m p_m && String.equal t_n p_n then Some [] else None
+  | Expr.T.Num _, _ | _, Expr.T.Num _ -> None
+  | Expr.T.At t_b, Expr.T.At p_b -> if t_b = p_b then Some [] else None
+  | Expr.T.At _, _ | _, Expr.T.At _ -> None
+  | Expr.T.Apply (t_op, t_args), Expr.T.Apply (p_op, p_args) ->
+      match_expr' ~cx ~depth ~t:t_op ~p:p_op
+      |> merge_binding_cont @@ fun () -> match_exprs ~cx ~depth t_args p_args
   | Expr.T.Apply _, _ | _, Expr.T.Apply _ -> None
-  | Expr.T.Lambda (_, _), _
-  | Expr.T.Sequent _, _
-  | Expr.T.Bang (_, _), _
-  | Expr.T.With (_, _), _
-  | Expr.T.If (_, _, _), _
-  | Expr.T.List (_, _), _
-  | Expr.T.Let (_, _), _
-  | Expr.T.Quant (_, _, _), _
-  | Expr.T.QuantTuply (_, _, _), _
-  | Expr.T.Tquant (_, _, _), _
-  | Expr.T.Choose (_, _, _), _
-  | Expr.T.ChooseTuply (_, _, _), _
-  | Expr.T.SetSt (_, _, _), _
-  | Expr.T.SetStTuply (_, _, _), _ ->
-      assert false
-  (* SetOf *)
+  | Expr.T.List (t_b, t_es), Expr.T.List (p_b, p_es) ->
+      if t_b = p_b then match_exprs ~cx ~depth t_es p_es else None
+  | Expr.T.List _, _ | _, Expr.T.List _ -> None
+  | Expr.T.If (t1, t2, t3), Expr.T.If (p1, p2, p3) ->
+      match_expr' ~cx ~depth ~t:t1 ~p:p1
+      |> merge_binding_cont (fun () -> match_expr' ~cx ~depth ~t:t2 ~p:p2)
+      |> merge_binding_cont (fun () -> match_expr' ~cx ~depth ~t:t3 ~p:p3)
+  | Expr.T.If _, _ | _, Expr.T.If _ -> None
+  | Expr.T.Quant (t_q, t_bs, t_ex), Expr.T.Quant (p_q, p_bs, p_ex) ->
+      if t_q = p_q then match_bound_body ~cx ~depth ~t_bs ~p_bs ~t_ex ~p_ex
+      else None
+  | Expr.T.Quant _, _ | _, Expr.T.Quant _ -> None
+  | Expr.T.QuantTuply _, _ | _, Expr.T.QuantTuply _ -> None
+  | Expr.T.Tquant _, _ | _, Expr.T.Tquant _ -> None
+  | Expr.T.Choose (t_hint, t_dom, t_ex), Expr.T.Choose (_, p_dom, p_ex) ->
+      match_single_bound ~cx ~depth ~t_hint ~t_dom ~p_dom ~t_ex ~p_ex
+  | Expr.T.Choose _, _ | _, Expr.T.Choose _ -> None
+  | Expr.T.ChooseTuply _, _ | _, Expr.T.ChooseTuply _ -> None
+  | Expr.T.SetSt (t_hint, t_dom, t_ex), Expr.T.SetSt (_, p_dom, p_ex) ->
+      match_single_bound ~cx ~depth ~t_hint ~t_dom:(Some t_dom)
+        ~p_dom:(Some p_dom) ~t_ex ~p_ex
+  | Expr.T.SetSt _, _ | _, Expr.T.SetSt _ -> None
+  | Expr.T.SetStTuply _, _ | _, Expr.T.SetStTuply _ -> None
   | Expr.T.SetOf (t_ex, t_bs), Expr.T.SetOf (p_ex, p_bs) ->
-      (* TODO: We have to maintain the stack here. *)
-      (* let cx' = Expr.Subst.bumpn (List.length bs_a) cx in *)
-      let hs = Expr.Visit.hyps_of_bounds t_bs in
-      let (), cx' = Expr.Visit.adjs ((), cx) hs in
-      match_bounds ~cx ~depth ~t:t_bs ~p:p_bs
-      |> merge_binding_cont @@ fun () ->
-         match_expr' ~cx:cx' ~depth:(depth + List.length t_bs) ~t:t_ex ~p:p_ex
+      match_bound_body ~cx ~depth ~t_bs ~p_bs ~t_ex ~p_ex
   | Expr.T.SetOf _, _ | _, Expr.T.SetOf _ -> None
-  (* ... *)
-  | Expr.T.SetOfTuply (_, _), _
-  | Expr.T.SetEnum _, _
-  | Expr.T.Product _, _
-  | Expr.T.Tuple _, _
-  | Expr.T.Fcn (_, _), _
-  | Expr.T.FcnTuply (_, _), _
-  | Expr.T.FcnApp (_, _), _
-  | Expr.T.Arrow (_, _), _
-  | Expr.T.Rect _, _
-  | Expr.T.Record _, _
-  | Expr.T.Except (_, _), _
-  | Expr.T.Dot (_, _), _
-  | Expr.T.Sub (_, _, _), _
-  | Expr.T.Tsub (_, _, _), _
-  | Expr.T.Fair (_, _, _), _
-  | Expr.T.Case (_, _), _
-  | Expr.T.String _, _
-  | Expr.T.Num (_, _), _
-  | Expr.T.At _, _
-  | Expr.T.Parens (_, _), _ ->
-      (* TODO: Impl. *)
-      assert false
+  | Expr.T.SetOfTuply _, _ | _, Expr.T.SetOfTuply _ -> None
+  | Expr.T.SetEnum t_es, Expr.T.SetEnum p_es -> match_exprs ~cx ~depth t_es p_es
+  | Expr.T.SetEnum _, _ | _, Expr.T.SetEnum _ -> None
+  | Expr.T.Product t_es, Expr.T.Product p_es -> match_exprs ~cx ~depth t_es p_es
+  | Expr.T.Product _, _ | _, Expr.T.Product _ -> None
+  | Expr.T.Tuple t_es, Expr.T.Tuple p_es -> match_exprs ~cx ~depth t_es p_es
+  | Expr.T.Tuple _, _ | _, Expr.T.Tuple _ -> None
+  | Expr.T.Fcn (t_bs, t_ex), Expr.T.Fcn (p_bs, p_ex) ->
+      match_bound_body ~cx ~depth ~t_bs ~p_bs ~t_ex ~p_ex
+  | Expr.T.Fcn _, _ | _, Expr.T.Fcn _ -> None
+  | Expr.T.FcnTuply _, _ | _, Expr.T.FcnTuply _ -> None
+  | Expr.T.FcnApp (t_f, t_es), Expr.T.FcnApp (p_f, p_es) ->
+      match_exprs ~cx ~depth (t_f :: t_es) (p_f :: p_es)
+  | Expr.T.FcnApp _, _ | _, Expr.T.FcnApp _ -> None
+  | Expr.T.Arrow (t_a, t_b), Expr.T.Arrow (p_a, p_b) ->
+      match_exprs ~cx ~depth [ t_a; t_b ] [ p_a; p_b ]
+  | Expr.T.Arrow _, _ | _, Expr.T.Arrow _ -> None
+  | Expr.T.Rect t_fs, Expr.T.Rect p_fs -> match_fields ~cx ~depth t_fs p_fs
+  | Expr.T.Rect _, _ | _, Expr.T.Rect _ -> None
+  | Expr.T.Record t_fs, Expr.T.Record p_fs -> match_fields ~cx ~depth t_fs p_fs
+  | Expr.T.Record _, _ | _, Expr.T.Record _ -> None
+  | Expr.T.Except (t_e, t_xs), Expr.T.Except (p_e, p_xs) ->
+      match_expr' ~cx ~depth ~t:t_e ~p:p_e
+      |> merge_binding_cont @@ fun () -> match_exspecs ~cx ~depth t_xs p_xs
+  | Expr.T.Except _, _ | _, Expr.T.Except _ -> None
+  | Expr.T.Dot (t_e, t_f), Expr.T.Dot (p_e, p_f) ->
+      if String.equal t_f p_f then match_expr' ~cx ~depth ~t:t_e ~p:p_e
+      else None
+  | Expr.T.Dot _, _ | _, Expr.T.Dot _ -> None
+  | Expr.T.Sub (t_m, t_e, t_f), Expr.T.Sub (p_m, p_e, p_f) ->
+      if t_m = p_m then match_exprs ~cx ~depth [ t_e; t_f ] [ p_e; p_f ]
+      else None
+  | Expr.T.Sub _, _ | _, Expr.T.Sub _ -> None
+  | Expr.T.Tsub (t_m, t_e, t_f), Expr.T.Tsub (p_m, p_e, p_f) ->
+      if t_m = p_m then match_exprs ~cx ~depth [ t_e; t_f ] [ p_e; p_f ]
+      else None
+  | Expr.T.Tsub _, _ | _, Expr.T.Tsub _ -> None
+  | Expr.T.Fair (t_fop, t_e, t_f), Expr.T.Fair (p_fop, p_e, p_f) ->
+      if t_fop = p_fop then match_exprs ~cx ~depth [ t_e; t_f ] [ p_e; p_f ]
+      else None
+  | Expr.T.Fair _, _ | _, Expr.T.Fair _ -> None
+  | Expr.T.Case (t_arms, t_oth), Expr.T.Case (p_arms, p_oth) ->
+      match_case_arms ~cx ~depth t_arms p_arms
+      |> merge_binding_cont @@ fun () -> match_case_other ~cx ~depth t_oth p_oth
+
+(** Match each pair of expressions at the same [depth], threading and
+    conflict-checking the bindings collected along the way. *)
+and match_exprs ~(cx : Expr.T.ctx) ~(depth : int) (ts : Expr.T.expr list)
+    (ps : Expr.T.expr list) : bindings option =
+  if List.compare_lengths ts ps <> 0 then None
+  else
+    List.fold_left2
+      (fun bs t p ->
+        bs |> merge_binding_cont @@ fun () -> match_expr' ~cx ~depth ~t ~p)
+      (Some []) ts ps
+
+(** Match a binder over [bounds] (Quant/SetOf/Fcn) together with its body. *)
+and match_bound_body ~(cx : Expr.T.ctx) ~(depth : int) ~(t_bs : Expr.T.bounds)
+    ~(p_bs : Expr.T.bounds) ~(t_ex : Expr.T.expr) ~(p_ex : Expr.T.expr) :
+    bindings option =
+  if List.compare_lengths t_bs p_bs <> 0 then None
+  else
+    let hs = Expr.Visit.hyps_of_bounds t_bs in
+    let (), cx' = Expr.Visit.adjs ((), cx) hs in
+    match_bounds ~cx ~depth ~t:t_bs ~p:p_bs
+    |> merge_binding_cont @@ fun () ->
+       match_expr' ~cx:cx' ~depth:(depth + List.length t_bs) ~t:t_ex ~p:p_ex
+
+(** Match a single-variable binder together with its body. *)
+and match_single_bound ~(cx : Expr.T.ctx) ~(depth : int) ~(t_hint : Util.hint)
+    ~(t_dom : Expr.T.expr option) ~(p_dom : Expr.T.expr option)
+    ~(t_ex : Expr.T.expr) ~(p_ex : Expr.T.expr) : bindings option =
+  (match (t_dom, p_dom) with
+    | None, None -> Some []
+    | Some t_d, Some p_d -> match_expr' ~cx ~depth ~t:t_d ~p:p_d
+    | Some _, None | None, Some _ -> None)
+  |> merge_binding_cont @@ fun () ->
+     let h =
+       match t_dom with
+       | None -> Expr.T.From_hint.make_fresh t_hint Expr.T.Constant
+       | Some d -> Expr.T.From_hint.make_bounded_fresh t_hint d
+     in
+     let (), cx' = Expr.Visit.adj ((), cx) h in
+     match_expr' ~cx:cx' ~depth:(depth + 1) ~t:t_ex ~p:p_ex
+
+(** Match fields, pairing them up by name regardless of the order in which they
+    were written. *)
+and match_fields ~(cx : Expr.T.ctx) ~(depth : int)
+    (t_fs : (string * Expr.T.expr) list) (p_fs : (string * Expr.T.expr) list) :
+    bindings option =
+  if List.compare_lengths t_fs p_fs <> 0 then None
+  else
+    let by_name = List.sort (fun (a, _) (b, _) -> String.compare a b) in
+    List.fold_left2
+      (fun bs (t_k, t_v) (p_k, p_v) ->
+        if not (String.equal t_k p_k) then None
+        else
+          bs
+          |> merge_binding_cont @@ fun () ->
+             match_expr' ~cx ~depth ~t:t_v ~p:p_v)
+      (Some []) (by_name t_fs) (by_name p_fs)
+
+and match_exspecs ~(cx : Expr.T.ctx) ~(depth : int) (t_xs : Expr.T.exspec list)
+    (p_xs : Expr.T.exspec list) : bindings option =
+  if List.compare_lengths t_xs p_xs <> 0 then None
+  else
+    List.fold_left2
+      (fun bs (t_trail, t_res) (p_trail, p_res) ->
+        bs
+        |> merge_binding_cont (fun () ->
+            match_exspec_trail ~cx ~depth t_trail p_trail)
+        |> merge_binding_cont (fun () ->
+            match_expr' ~cx ~depth ~t:t_res ~p:p_res))
+      (Some []) t_xs p_xs
+
+and match_exspec_trail ~(cx : Expr.T.ctx) ~(depth : int)
+    (t_trail : Expr.T.expoint list) (p_trail : Expr.T.expoint list) :
+    bindings option =
+  match (t_trail, p_trail) with
+  | [], [] -> Some []
+  | Expr.T.Except_dot t_x :: t_tr, Expr.T.Except_dot p_x :: p_tr ->
+      if String.equal t_x p_x then match_exspec_trail ~cx ~depth t_tr p_tr
+      else None
+  | Expr.T.Except_apply t_e :: t_tr, Expr.T.Except_apply p_e :: p_tr ->
+      match_expr' ~cx ~depth ~t:t_e ~p:p_e
+      |> merge_binding_cont @@ fun () -> match_exspec_trail ~cx ~depth t_tr p_tr
+  | _, _ -> None
+
+and match_case_arms ~(cx : Expr.T.ctx) ~(depth : int)
+    (t_arms : (Expr.T.expr * Expr.T.expr) list)
+    (p_arms : (Expr.T.expr * Expr.T.expr) list) : bindings option =
+  if List.compare_lengths t_arms p_arms <> 0 then None
+  else
+    List.fold_left2
+      (fun bs (t_guard, t_body) (p_guard, p_body) ->
+        bs
+        |> merge_binding_cont (fun () ->
+            match_expr' ~cx ~depth ~t:t_guard ~p:p_guard)
+        |> merge_binding_cont (fun () ->
+            match_expr' ~cx ~depth ~t:t_body ~p:p_body))
+      (Some []) t_arms p_arms
+
+and match_case_other ~(cx : Expr.T.ctx) ~(depth : int)
+    (t_oth : Expr.T.expr option) (p_oth : Expr.T.expr option) : bindings option
+    =
+  match (t_oth, p_oth) with
+  | None, None -> Some []
+  | Some t_o, Some p_o -> match_expr' ~cx ~depth ~t:t_o ~p:p_o
+  | Some _, None | None, Some _ -> None
 
 and match_bound ~(cx : Expr.T.ctx) ~(depth : int) ~(t : Expr.T.bound)
     ~(p : Expr.T.bound) =
@@ -175,7 +315,6 @@ and match_bounds ~(cx : Expr.T.ctx) ~(depth : int) ~(t : Expr.T.bounds)
   if List.compare_lengths t p = 0 then
     List.fold_left2
       (fun bs t p ->
-        (* TODO: Have to adjust the depth here as well (or replace it with proper use of subst?) *)
         bs |> merge_binding_cont @@ fun () -> match_bound ~cx ~depth ~t ~p)
       (Some []) t p
   else None

@@ -308,11 +308,55 @@ let test_assm_set_map () =
   check_multiline_diff_td ~title:"refactoring output" ~expected ~actual;
   lsp_stop lsp
 
+let test_assm_forall () =
+  let lsp = lsp_init () in
+  let text =
+    {|
+    ---- MODULE a ----
+    THEOREM
+        ASSUME NEW DECOMPOSITION_RULE,
+            NEW S, NEW P(_), NEW Q,
+            \A x \in S : P(x)
+        PROVE Q
+    PROOF
+        <1>1. PICK x \in S : P(x) OBVIOUS
+        <1>q. QED BY <1>1
+
+    flag(a) == TRUE
+    LEMMA ASSUME NEW j, \A i \in {1, 2} : flag(i) PROVE TRUE
+        <1>q. QED OBVIOUS
+    ====
+    |}
+  in
+  let expected =
+    {|
+    ---- MODULE a ----
+    THEOREM
+        ASSUME NEW DECOMPOSITION_RULE,
+            NEW S, NEW P(_), NEW Q,
+            \A x \in S : P(x)
+        PROVE Q
+    PROOF
+        <1>1. PICK x \in S : P(x) OBVIOUS
+        <1>q. QED BY <1>1
+
+    flag(a) == TRUE
+    LEMMA ASSUME NEW j, \A i \in {1, 2} : flag(i) PROVE TRUE
+        <1>1. PICK x \in {1, 2} : flag(x) OBVIOUS
+        <1>q. QED BY <1>1
+    ====
+    |}
+  in
+  let actual = lsp_ca ~lsp ~text ~line:13 "⤮ Decompose by rule" in
+  check_multiline_diff_td ~title:"refactoring output" ~expected ~actual;
+  lsp_stop lsp
+
 let test_cases =
   let open Alcotest in
   [
-    test_case "How Subst works" `Quick test_subst;
-    test_case "Experiments" `Quick test_pattern_match;
-    test_case "Goal: x ∈ A ∩ B" `Quick test_goal_cap;
-    test_case "Assm: x ∈ {f(y) : y ∈ S}" `Quick test_assm_set_map;
+    test_case "Rule: How Subst works" `Quick test_subst;
+    test_case "Rule: Experiments" `Quick test_pattern_match;
+    test_case "Rule: Goal: x ∈ A ∩ B" `Quick test_goal_cap;
+    test_case "Rule: Assm: x ∈ {f(y) : y ∈ S}" `Quick test_assm_set_map;
+    test_case "Rule: Assm: ∀ x ∈ S : P(x)" `Quick test_assm_forall;
   ]
