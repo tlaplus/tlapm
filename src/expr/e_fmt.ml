@@ -20,10 +20,9 @@ open Format
 open Fmtutil
 module Fu = Tla_parser.Fu
 
-type ctx = hyp Deque.dq * int Ctx.ctx
-(** The hypothesis stack is clear.
 
-    TODO: What is int ctx.ctx? *)
+type ctx = hyp Deque.dq * int Ctx.ctx
+
 
 let pp_ctx fmt ((ecx, ctx) : ctx) =
   Format.fprintf fmt "(@[Expr.Ctx,@ hyp_ctx=%a,@ ctx=%a@])"

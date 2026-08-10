@@ -16,7 +16,7 @@ val empty_ctx : ctx
 (** Empty context. With no hypotheses. *)
 
 val ctx_of_expr_ctx : E_t.ctx -> ctx
-(** Make Fmt context out of hypothesis context. *)
+(** Construct Fmt context from a hypothesis context. *)
 
 val bump : ctx -> ctx
 
