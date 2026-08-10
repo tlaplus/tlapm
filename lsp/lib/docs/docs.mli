@@ -38,6 +38,7 @@ module Proof_step : sig
     TL.Proof.T.stepno option -> TL.Proof.T.stepno Seq.t
 
   val sub_step_unnamed : t -> TL.Proof.T.stepno
+  val unnamed_under_stepno : TL.Proof.T.stepno option -> TL.Proof.T.stepno
 end
 
 module Proof_status : sig

@@ -23,47 +23,55 @@ let process_rule (base_sq : Expr.T.sequent) (rule_sq : Expr.T.sequent)
 (** We pulled the proof to different context, thus all the step names/levels
     have to be adjusted to match the new context. *)
 let rename_steps ~(ps_parent : PS.t) (pf : Proof.T.proof) : Proof.T.proof =
-  let step_names = Seq_acc.make (PS.stepno_seq_under_proof_step ps_parent) in
-  let rename_sn sn =
-    match sn with
-    | Proof.T.Named _ -> Seq_acc.take step_names
-    | Proof.T.Unnamed _ -> PS.sub_step_unnamed ps_parent
-  in
-  let rename_step : 'a. 'a Property.wrapped -> 'a Property.wrapped =
-   fun w ->
-    match Property.query w Proof.T.Props.step with
+  let open Proof.T in
+  let rename_step_prop :
+      'a.
+      stepno_seq:stepno Seq_acc.t ->
+      parent_sn:stepno option ->
+      'a Property.wrapped ->
+      'a Property.wrapped =
+   fun ~stepno_seq ~parent_sn w ->
+    match Property.query w Props.step with
     | None -> w
-    | Some sn -> Property.assign w Proof.T.Props.step (rename_sn sn)
+    | Some (Named _) -> Property.assign w Props.step (Seq_acc.take stepno_seq)
+    | Some (Unnamed _) ->
+        Property.assign w Props.step (PS.unnamed_under_stepno parent_sn)
   in
-  match pf.core with
-  | Proof.T.Obvious | Proof.T.Omitted _ | Proof.T.By _ | Proof.T.Error _ -> pf
-  | Proof.T.Steps (inits, qed) ->
-      let inits =
-        inits
-        |> List.map (fun (stp : Proof.T.step) ->
-            (* TODO: make it recursive over all the steps. Probably we have to replace PS.t with something else. *)
-            (* let () =
-              match stp.core with
-              | Proof.T.Hide _ | Proof.T.Define _
-              | Proof.T.Assert (_, _)
-              | Proof.T.Suffices (_, _)
-              | Proof.T.Pcase (_, _)
-              | Proof.T.Pick (_, _, _)
-              | Proof.T.PickTuply (_, _, _)
-              | Proof.T.Use (_, _)
-              | Proof.T.Have _ | Proof.T.Take _ | Proof.T.TakeTuply _
-              | Proof.T.Witness _ | Proof.T.Forget _ ->
-                  ()
-            in *)
-            rename_step stp)
-      in
-      let qed =
-        rename_step qed |> fun (qed : Proof.T.qed_step) ->
-        (* TODO: make it recursive over all the steps. Probably we have to replace PS.t with something else. *)
-        (* let () = match qed.core with Proof.T.Qed pf -> rename_steps ~ps_parent in *)
-        qed
-      in
-      Property.(Proof.T.Steps (inits, qed) @@ pf)
+  let rec rename_proof ~stepno_seq ~parent_sn (pf : proof) : proof =
+    match pf.core with
+    | Obvious | Omitted _ | By _ | Error _ -> pf
+    | Steps (inits, qed) ->
+        let inits = List.map (rename_step ~stepno_seq ~parent_sn) inits in
+        let qed = rename_qed ~stepno_seq ~parent_sn qed in
+        Property.(Steps (inits, qed) @@ pf)
+  and rename_step ~stepno_seq ~parent_sn (stp : step) : step =
+    let stp = rename_step_prop ~stepno_seq ~parent_sn stp in
+    let recurse sub_pf =
+      let parent_sn = Property.query stp Props.step in
+      let stepno_seq = PS.stepno_seq_under_stepno parent_sn |> Seq_acc.make in
+      rename_proof ~stepno_seq ~parent_sn sub_pf
+    in
+    match stp.core with
+    | Assert (sq, sub_pf) -> Property.(Assert (sq, recurse sub_pf) @@ stp)
+    | Suffices (sq, sub_pf) -> Property.(Suffices (sq, recurse sub_pf) @@ stp)
+    | Pcase (ex, sub_pf) -> Property.(Pcase (ex, recurse sub_pf) @@ stp)
+    | Pick (bs, ex, sub_pf) -> Property.(Pick (bs, ex, recurse sub_pf) @@ stp)
+    | PickTuply (bs, ex, sub_pf) ->
+        Property.(PickTuply (bs, ex, recurse sub_pf) @@ stp)
+    | Hide _ | Define _ | Use _ | Have _ | Take _ | TakeTuply _ | Witness _
+    | Forget _ ->
+        stp
+  and rename_qed ~stepno_seq ~parent_sn (qed : qed_step) : qed_step =
+    let qed = rename_step_prop ~stepno_seq ~parent_sn qed in
+    match qed.core with
+    | Qed sub_pf ->
+        let parent_sn = Property.query qed Props.step in
+        let stepno_seq = PS.stepno_seq_under_stepno parent_sn |> Seq_acc.make in
+        Property.(Qed (rename_proof ~stepno_seq ~parent_sn sub_pf) @@ qed)
+  in
+  let stepno_seq = PS.stepno_seq_under_proof_step ps_parent |> Seq_acc.make in
+  let parent_sn = PS.step_name ps_parent in
+  rename_proof ~stepno_seq ~parent_sn pf
 
 let code_actions ~cfg:_ (uri : LspT.DocumentUri.t) (ps : PS.t)
     (ps_parent : PS.t) (sq : TL.Expr.T.sequent) =
