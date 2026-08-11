@@ -3,8 +3,8 @@ Common Number Formats
 ======================|||
 
 ---- MODULE Test ----
-op == 12345
-op == 12345.12345
+op1 == 12345
+op2 == 12345.12345
 ====
 
 ----------------------|||
@@ -19,12 +19,12 @@ Bitfield Number Formats
 ======================|||
 
 ---- MODULE Test ----
-op == \b01010101
-op == \B10101010
-op == \o01234567
-op == \O76543210
-op == \h0123456789abcdef
-op == \H9876543210FEDCBA
+op1 == \b01010101
+op2 == \B10101010
+op3 == \o01234567
+op4 == \O76543210
+op5 == \h0123456789abcdef
+op6 == \H9876543210FEDCBA
 ====
 
 ----------------------|||
@@ -43,14 +43,19 @@ All Number Sets
 ======================|||
 
 ---- MODULE Test ----
-op == Nat
-op == Int
-op == Real
+EXTENDS TestPrelude
+op1 == Nat
+op2 == Int
+op3 == Real
+====
+---- MODULE TestPrelude ----
+CONSTANTS Nat, Int, Real
 ====
 
 ----------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition: (nat_number_set))
   (operator_definition name: (identifier) (def_eq) definition: (int_number_set))
   (operator_definition name: (identifier) (def_eq) definition: (real_number_set))
@@ -61,17 +66,27 @@ Number Set Definitions
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 Nat == {}
-op == A!Nat
+op1 == A!Nat
 Int == {}
-op == A!Int
+op2 == A!Int
 Real == {}
-op == A!Real
+op3 == A!Real
+====
+---- MODULE TestPrelude ----
+A == INSTANCE M
+====
+---- MODULE M ----
+Nat == {}
+Int == {}
+Real == {}
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (nat_number_set) (def_eq) definition: (finite_set_literal))
   (operator_definition name: (identifier) (def_eq) definition: (prefixed_op
     prefix: (subexpr_prefix (subexpr_component (identifier_ref)))

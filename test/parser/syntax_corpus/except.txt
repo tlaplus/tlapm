@@ -3,12 +3,17 @@ Basic record update
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 r == [a EXCEPT ![2] = "a"]
+====
+---- MODULE TestPrelude ----
+VARIABLE a
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition:
         (except
@@ -26,12 +31,17 @@ Record Update with Multiple Parameters
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 r == [f EXCEPT ![1, 1] = 0]
+====
+---- MODULE TestPrelude ----
+VARIABLE f
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition:
         (except
@@ -49,12 +59,17 @@ Record Update with Multi-Value Tuple Parameter
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 r == [f EXCEPT ![<<1, 1>>] = 0]
+====
+---- MODULE TestPrelude ----
+VARIABLE f
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition:
         (except
@@ -74,12 +89,17 @@ Record Update with Single-Value Tuple Parameter
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 r == [f EXCEPT ![<<1>>] = 0]
+====
+---- MODULE TestPrelude ----
+VARIABLE f
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition:
         (except
@@ -99,12 +119,17 @@ Record Update with Tuple and Non-Tuple Parameters
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 r == [f EXCEPT ![<<1, 1>>, 1] = 0]
+====
+---- MODULE TestPrelude ----
+VARIABLE f
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition:
         (except
@@ -124,12 +149,18 @@ Single nested record update
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 r == [a EXCEPT ![2]["a"][3] = @ + 1]
+====
+---- MODULE TestPrelude ----
+VARIABLE a
+CONSTANT _ + _
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (except
       expr_to_update: (identifier_ref)
@@ -150,12 +181,17 @@ Single nested record update with dot syntax
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 r == [a EXCEPT !.x.y.z = "b"]
+====
+---- MODULE TestPrelude ----
+VARIABLE a
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition:
         (except
@@ -175,12 +211,17 @@ Multiple nested record updates
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 r == [a EXCEPT ![2]["a"][3] = @, !["b"][x] = 5, ![y][z] = "c"]
+====
+---- MODULE TestPrelude ----
+VARIABLES a, x, y, z
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition:
         (except
@@ -212,12 +253,17 @@ Multiple nested record updates with dot syntax
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 r == [a EXCEPT !.a.b.c = @, !.b.x = 5]
+====
+---- MODULE TestPrelude ----
+VARIABLE a
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition:
         (except
@@ -243,12 +289,17 @@ Multiple nested record updates with mixed dot/function syntax
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 r == [a EXCEPT !.a.b["c"] = "b", ![2].x = @]
+====
+---- MODULE TestPrelude ----
+VARIABLE a
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition:
         (except

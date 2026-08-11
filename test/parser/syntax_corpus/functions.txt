@@ -3,15 +3,21 @@ Function Definition
 ===============================|||
 
 ---- MODULE Test ----
-f[x \in Nat] == x
-f[x, y \in Nat] == x
-f[x, y \in Nat, z \in Real] == x
-f[x \in [Nat -> Nat]] == x
+EXTENDS TestPrelude
+f1[x \in Nat] == a
+f2[x, y \in Nat] == a
+f3[x, y \in Nat, z \in Real] == a
+f4[x \in [Nat -> Nat]] == a
+====
+---- MODULE TestPrelude ----
+CONSTANTS Nat, Real
+VARIABLE a
 ====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (function_definition
     name: (identifier)
     (quantifier_bound
@@ -68,12 +74,17 @@ Function Evaluation
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == f[1,2,3]
+====
+---- MODULE TestPrelude ----
+VARIABLE f
 ====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (function_evaluation (identifier_ref) (nat_number) (nat_number) (nat_number))
   )
@@ -84,6 +95,7 @@ Jlist Inside Function Evaluation
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
     /\ 1
     /\ f[
@@ -92,10 +104,14 @@ op ==
         /\ 4
           ]
 ====
+---- MODULE TestPrelude ----
+VARIABLE f
+====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj) (nat_number))
@@ -117,18 +133,24 @@ Function Literal
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == [n \in Nat |-> 2*n]
+====
+---- MODULE TestPrelude ----
+CONSTANT Nat, _ * _
 ====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
-  (operator_definition name: (identifier) (def_eq)
+  (extends (identifier_ref))
+  (function_definition
+    name:
+      (identifier)
+      (quantifier_bound intro: (identifier) (set_in) set: (nat_number_set))
+      (def_eq)
     definition:
-      (function_literal
-        (quantifier_bound intro: (identifier) (set_in) set: (nat_number_set))
-        (all_map_to)
-        (bound_infix_op lhs: (nat_number) symbol: (mul) rhs: (identifier_ref)))
+      (bound_infix_op lhs: (nat_number) symbol: (mul) rhs: (identifier_ref))
   )
 (double_line)))
 
@@ -137,6 +159,7 @@ Function Literal with Multiple Parameters and Jlist
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == [
   x, y \in Nat, <<a, b>> \in
     /\ A
@@ -146,10 +169,15 @@ op == [
         /\ B
             ]
 ====
+---- MODULE TestPrelude ----
+CONSTANT Nat
+VARIABLES A, B
+====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (function_literal
       (quantifier_bound intro: (identifier) intro: (identifier) (set_in) set: (nat_number_set))
@@ -175,12 +203,17 @@ Function Set
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == [Nat -> [Nat -> Real]]
+====
+---- MODULE TestPrelude ----
+CONSTANTS Nat, Real
 ====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (set_of_functions
       (nat_number_set)
@@ -199,6 +232,7 @@ Jlist Inside Function Set
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == [
   /\ A
   /\ B
@@ -209,10 +243,14 @@ op == [
       /\ F
         ]
 ====
+---- MODULE TestPrelude ----
+VARIABLES A, B, C, D, E, F
+====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (set_of_functions
       (conj_list
