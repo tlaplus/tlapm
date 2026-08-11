@@ -3,14 +3,19 @@ Lexically-Conflicting Nonfix Operators
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 conflicts_with_octal == \o (1,2)
+====
+---- MODULE TestPrelude ----
+x \o y == 0
 ====
 
 --------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
-    (bound_nonfix_op symbol: (infix_op_symbol (circ)) (nat_number) (nat_number))
+    (bound_infix_op lhs: (nat_number) symbol: (circ) rhs: (nat_number))
   )
 (double_line)))
 
@@ -19,19 +24,25 @@ Minus and Negative
 =============|||
 
 ---- MODULE Test ----
-op == -. (1)
-op == - (1)
-op == - 1 - 2
+EXTENDS TestPrelude
+op1 == -. (1)
+op2 == - (1)
+op3 == - 1 - 2
+====
+---- MODULE TestPrelude ----
+-. x == 0
+x - y == 1
 ====
 
 --------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
-    (bound_nonfix_op (prefix_op_symbol (negative)) (nat_number))
+    (bound_prefix_op symbol: (negative) rhs: (nat_number))
   )
   (operator_definition name: (identifier) (def_eq) definition:
-    (bound_prefix_op symbol: (negative) rhs: (parentheses (nat_number)))
+    (bound_prefix_op symbol: (negative) rhs: (nat_number))
   )
   (operator_definition name: (identifier) (def_eq) definition:
     (bound_infix_op lhs: (bound_prefix_op symbol: (negative) rhs: (nat_number)) symbol: (minus) rhs: (nat_number))
@@ -63,12 +74,18 @@ LAMBDA Parameter
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == f(LAMBDA x, y : x + y, LAMBDA x : 0)
+====
+---- MODULE TestPrelude ----
+f(x(_, _), y(_)) == 0
+x + y == 1
 ====
 
 --------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (bound_op name: (identifier_ref)
       parameter: (lambda (identifier) (identifier) (bound_infix_op lhs: (identifier_ref) symbol: (plus) rhs: (identifier_ref)))
@@ -98,7 +115,17 @@ Nonfix Submodule Excl (GH tlaplus/tlaplus #GH884)
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == A!B!!!(x,y)
+====
+---- MODULE TestPrelude ----
+A == INSTANCE M1
+====
+---- MODULE M1 ----
+B == INSTANCE M2
+====
+---- MODULE M2 ----
+x !! y == 0
 ====
 
 --------------|||
@@ -191,6 +218,7 @@ Operators with Colon Prefixes & Jlists (GH TSTLA #87)
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
   /\ A :> B
   /\ A := B
@@ -198,10 +226,15 @@ op ==
   /\ A :: B
   /\ A
 ====
+---- MODULE TestPrelude ----
+VARIABLES A, B
+CONSTANTS _ :> _, _ := _, _ ::= _
+====
 
 --------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj)
@@ -226,13 +259,19 @@ Junct Tokens as Higher-Level Parameters (GH TSTLA #96)
 =============|||
 
 ---- MODULE Test ----
-op == op(/\, x, /\)
-op == op(\/, x, \/)
+EXTENDS TestPrelude
+op1 == op(/\, x, /\)
+op2 == op(\/, x, \/)
+====
+---- MODULE TestPrelude ----
+VARIABLE x
+op(a(_, _), b, c(_, _)) == 0
 ====
 
 --------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (bound_op name: (identifier_ref)
       parameter: (infix_op_symbol (land))

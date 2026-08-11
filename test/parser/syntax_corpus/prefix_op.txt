@@ -4,34 +4,14 @@ Prefix Operator Definition
 
 ---- MODULE Test ----
 
-~x == 1
-\lnot x == 2
-\neg x == 3
-UNION x == 4
-SUBSET x == 5
-DOMAIN x == 6
--. x == 7
-ENABLED x == 8
-UNCHANGED x == 9
-[] x == 10
-<> x == 11
+-. x == 3
 
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
-  (operator_definition name: (prefix_op_symbol (lnot)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition name: (prefix_op_symbol (lnot)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition name: (prefix_op_symbol (lnot)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition name: (prefix_op_symbol (union)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition name: (prefix_op_symbol (powerset)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition name: (prefix_op_symbol (domain)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition name: (prefix_op_symbol (negative)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition name: (prefix_op_symbol (enabled)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition name: (prefix_op_symbol (unchanged)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition name: (prefix_op_symbol (always)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition name: (prefix_op_symbol (eventually)) parameter: (identifier) (def_eq) definition: (nat_number))
 (double_line)))
 
 =============|||
@@ -41,17 +21,7 @@ Prefix Operator Declaration as Parameter
 ---- MODULE Test ----
 
 op(
-  ~ _,
-  \lnot _,
-  \neg _,
-  UNION _,
-  SUBSET _,
-  DOMAIN _,
-  -. _,
-  ENABLED _,
-  UNCHANGED _,
-  [] _,
-  <> _
+  -. _
 ) == 11
 
 ====
@@ -60,17 +30,7 @@ op(
 
 (source_file (module (header_line) name: (identifier) (header_line)
   (operator_definition name: (identifier)
-    parameter: (operator_declaration name: (prefix_op_symbol (lnot)) (placeholder))
-    parameter: (operator_declaration name: (prefix_op_symbol (lnot)) (placeholder))
-    parameter: (operator_declaration name: (prefix_op_symbol (lnot)) (placeholder))
-    parameter: (operator_declaration name: (prefix_op_symbol (union)) (placeholder))
-    parameter: (operator_declaration name: (prefix_op_symbol (powerset)) (placeholder))
-    parameter: (operator_declaration name: (prefix_op_symbol (domain)) (placeholder))
     parameter: (operator_declaration name: (prefix_op_symbol (negative)) (placeholder))
-    parameter: (operator_declaration name: (prefix_op_symbol (enabled)) (placeholder))
-    parameter: (operator_declaration name: (prefix_op_symbol (unchanged)) (placeholder))
-    parameter: (operator_declaration name: (prefix_op_symbol (always)) (placeholder))
-    parameter: (operator_declaration name: (prefix_op_symbol (eventually)) (placeholder))
     (def_eq)
     definition: (nat_number)
   )
@@ -119,6 +79,7 @@ Prefix Operator References
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == f(
   ~,
   \lnot,
@@ -133,10 +94,15 @@ op == f(
   <>
 )
 ====
+---- MODULE TestPrelude ----
+-. x == x
+f(a1(_),a2(_),a3(_),a4(_),a5(_),a6(_),a7(_),a8(_),a9(_),a10(_),a11(_)) == 0
+====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition: (bound_op name: (identifier_ref)
     parameter: (prefix_op_symbol (lnot))
     parameter: (prefix_op_symbol (lnot))
@@ -157,47 +123,29 @@ Nonfix Prefix Operators
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == {
-  A!B!~(x),
-  A!B!\lnot(x),
-  A!B!\neg(x),
-  A!B!UNION(x),
-  A!B!SUBSET(x),
-  A!B!DOMAIN(x),
-  A!B!-.(x),
-  A!B!ENABLED(x),
-  A!B!UNCHANGED(x),
-  A!B![](x),
-  A!B!<>(x)
+  A!B!-.(x)
 }
+====
+---- MODULE TestPrelude ----
+A == INSTANCE M1
+VARIABLE x
+====
+---- MODULE M1 ----
+B == INSTANCE M2
+====
+---- MODULE M2 ----
+-. x == x
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition: (finite_set_literal
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (prefix_op_symbol (lnot)) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (prefix_op_symbol (lnot)) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (prefix_op_symbol (lnot)) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (prefix_op_symbol (union)) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (prefix_op_symbol (powerset)) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (prefix_op_symbol (domain)) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (prefix_op_symbol (negative)) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (prefix_op_symbol (enabled)) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (prefix_op_symbol (unchanged)) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (prefix_op_symbol (always)) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (prefix_op_symbol (eventually)) (identifier_ref)))
   ))
 (double_line)))
 

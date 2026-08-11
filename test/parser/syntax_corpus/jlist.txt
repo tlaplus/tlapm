@@ -140,6 +140,8 @@ Jlists Containing Colon-Prefixed Infix Operators (GH87)
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
+
 conj ==
   /\ lbl :: A
   /\ B := C
@@ -151,9 +153,14 @@ disj ==
   \/ D ::= E
 ====
 
+---- MODULE TestPrelude ----
+CONSTANTS A, B, C, D, E, _ := _, _ ::= _
+====
+
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj) (label name: (identifier) (label_as) expression: (identifier_ref)))
