@@ -76,13 +76,18 @@ Proof by Definition
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 PROPOSITION TRUE
 PROOF BY DEF >
+====
+---- MODULE TestPrelude ----
+x > y == TRUE
 ====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem statement: (boolean) proof:
     (terminal_proof (use_body
       (use_body_def (infix_op_symbol (gt)))
@@ -95,19 +100,26 @@ Proof by Multiple Definitions
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 LEMMA TRUE
 PROOF BY ONLY
   P,
   Q
   DEFS
     >,
-    R,
-    =
+    R
+====
+---- MODULE TestPrelude ----
+x > y == TRUE
+P == TRUE
+Q == TRUE
+R == TRUE
 ====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem statement: (boolean) proof:
     (terminal_proof (use_body
       (use_body_expr
@@ -117,7 +129,6 @@ PROOF BY ONLY
       (use_body_def
         (infix_op_symbol (gt))
         (identifier_ref)
-        (infix_op_symbol (eq))
       )
     ))
   )
@@ -226,11 +237,11 @@ Proof with Variety of Step Types
 
 ---- MODULE Test ----
 THEOREM TRUE
-<1>a..... op == 1
+<1>a..... TRUE
 <1>b..... DEFINE op2 == 2
 <1>c..... HAVE 3
 <1>d..... WITNESS 2, 3
-<1>e..... TAKE a, b, c
+<1>e..... TAKE x, y, z
 <1>f..... <1>a
 <1>g..... SUFFICES 5
 <1>h..... CASE 6
@@ -245,7 +256,7 @@ THEOREM TRUE
 (source_file (module (header_line) name: (identifier) (header_line)
   (theorem statement: (boolean) proof:
     (non_terminal_proof
-      (proof_step (proof_step_id (level) (name)) (definition_proof_step (operator_definition name: (identifier) (def_eq) definition: (nat_number))))
+      (proof_step (proof_step_id (level) (name)) (suffices_proof_step (boolean)))
       (proof_step (proof_step_id (level) (name)) (definition_proof_step (operator_definition name: (identifier) (def_eq) definition: (nat_number))))
       (proof_step (proof_step_id (level) (name)) (have_proof_step (nat_number)))
       (proof_step (proof_step_id (level) (name)) (witness_proof_step (nat_number) (nat_number)))
@@ -287,6 +298,7 @@ Stepped Proof by Definition
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 PROPOSITION P => Q
 PROOF
   <1> P
@@ -294,10 +306,14 @@ PROOF
     PROOF BY P
   <1> QED
 =====================
+---- MODULE TestPrelude ----
+VARIABLES P, Q
+====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem statement: (bound_infix_op
     lhs: (identifier_ref)
     symbol: (implies)
@@ -451,6 +467,7 @@ Proof with Nested Terminal Proof
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 LEMMA TRUE
 PROOF
 <*> 1
@@ -468,10 +485,14 @@ PROOF
 <*> 7
 <0> QED
 ====
+---- MODULE TestPrelude ----
+VARIABLE P
+====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem statement: (boolean) proof:
     (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (suffices_proof_step (nat_number) (non_terminal_proof
@@ -714,19 +735,24 @@ Take Proof Steps
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM TRUE
-<1> TAKE x
-<1> TAKE x, y, z
-<1> TAKE x \in S
-<1> TAKE x, y, z \in S
-<1> TAKE x \in S, y \in S, z \in S
-<1> TAKE u, v, w \in S, x, y \in S, z \in S
+<1> TAKE x1
+<1> TAKE x2, y2, z2
+<1> TAKE x3 \in S
+<1> TAKE x4, y4, z4 \in S
+<1> TAKE x5 \in S, y5 \in S, z5 \in S
+<1> TAKE u, v, w \in S, x6, y6 \in S, z6 \in S
 <1> QED
+====
+---- MODULE TestPrelude ----
+VARIABLE S
 ====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem statement: (boolean) proof:
     (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (take_proof_step
@@ -781,16 +807,21 @@ Take Proof Steps With Tuples
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM TRUE
-<1> TAKE <<x>> \in S
-<1> TAKE <<x, y, z>> \in S
-<1> TAKE <<x>> \in S, <<y, z>> \in S
+<1> TAKE <<x1>> \in S
+<1> TAKE <<x2, y2, z2>> \in S
+<1> TAKE <<x3>> \in S, <<y3, z3>> \in S
 <1> QED
+====
+---- MODULE TestPrelude ----
+VARIABLE S
 ====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem statement: (boolean) proof:
     (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (take_proof_step
@@ -838,19 +869,24 @@ Pick Proof Steps
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM TRUE
-<1> PICK x : TRUE
-<1> PICK x, y, z : TRUE
-<1> PICK x \in S : TRUE
-<1> PICK x, y, z \in S : TRUE
-<1> PICK x \in S, y \in S, z \in S : TRUE
-<1> PICK u, v, w \in S, x, y \in S, z \in S : TRUE
+<1> PICK x1 : TRUE
+<1> PICK x2, y2, z2 : TRUE
+<1> PICK x3 \in S : TRUE
+<1> PICK x4, y4, z4 \in S : TRUE
+<1> PICK x5 \in S, y5 \in S, z5 \in S : TRUE
+<1> PICK u, v, w \in S, x6, y6 \in S, z6 \in S : TRUE
 <1> QED
+====
+---- MODULE TestPrelude ----
+VARIABLE S
 ====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem statement: (boolean) proof:
     (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (pick_proof_step
@@ -912,16 +948,21 @@ Pick Proof Steps With Tuples
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM TRUE
-<1> PICK <<x>> \in S : TRUE
-<1> PICK <<x, y, z>> \in S : TRUE
-<1> PICK <<x>> \in S, <<y, z>> \in S : TRUE
+<1> PICK <<x1>> \in S : TRUE
+<1> PICK <<x2, y2, z2>> \in S : TRUE
+<1> PICK <<x3>> \in S, <<y3, z3>> \in S : TRUE
 <1> QED
+====
+---- MODULE TestPrelude ----
+VARIABLE S
 ====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem statement: (boolean) proof:
     (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (pick_proof_step
@@ -974,18 +1015,23 @@ Proof Steps With Terminal Proofs
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM TRUE
 <1> SUFFICES TRUE OBVIOUS
 <1> TRUE OBVIOUS
 <1> CASE TRUE OBVIOUS
-<1> PICK x : TRUE OBVIOUS
-<1> PICK <<x>> \in S : TRUE OBVIOUS
+<1> PICK x1 : TRUE OBVIOUS
+<1> PICK <<x2>> \in S : TRUE OBVIOUS
 <1> QED
+====
+---- MODULE TestPrelude ----
+VARIABLE S
 ====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem statement: (boolean) proof:
     (non_terminal_proof
       (proof_step (proof_step_id (level) (name)) (suffices_proof_step

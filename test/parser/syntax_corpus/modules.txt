@@ -18,6 +18,12 @@ Module with EXTENDS
 ---- MODULE Test ----
 EXTENDS M1, M2, M3
 ====
+---- MODULE M1 ----
+====
+---- MODULE M2 ----
+====
+---- MODULE M3 ----
+====
 
 -------------|||
 
@@ -75,15 +81,20 @@ Definition After Nested Module
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 ---- MODULE Inner ----
 ====
 op == x
+====
+---- MODULE TestPrelude ----
+VARIABLE x
 ====
 
 -------------|||
 
 (source_file
   (module (header_line) name: (identifier) (header_line)
+    (extends (identifier_ref))
     (module (header_line) name: (identifier) (header_line) (double_line))
     (operator_definition name: (identifier) (def_eq) definition: (identifier_ref))
   (double_line))

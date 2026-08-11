@@ -3,31 +3,40 @@ RECURSIVE inside LET/IN
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
   LET
     RECURSIVE f(_)
     f(n) == IF n =< 0 THEN 1 ELSE n * f(n-1)
   IN f(5)
 ====
+---- MODULE TestPrelude ----
+x =< y == TRUE
+x * y == 0
+x - y == 0
+====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
-  (operator_definition name: (identifier) (def_eq)
+  (extends (identifier_ref))
+  (operator_definition name: (identifier) (def_eq) definition:
     (let_in
       (recursive_declaration (operator_declaration (identifier) (placeholder)))
-      (operator_definition name: (identifier) (def_eq)
-        (if_then_else
-          if: (bound_infix_op (identifier_ref) (leq) (nat_number))
-          then: (nat_number)
-          else: (bound_infix_op (identifier_ref) (mul)
-            (bound_op (identifier_ref)
-              (bound_infix_op (identifier_ref) (minus) (nat_number))
+      definitions:
+        (operator_definition name: (identifier) parameter: (identifier) (def_eq) definition:
+          (if_then_else
+            if: (bound_infix_op lhs: (identifier_ref) symbol: (leq) rhs: (nat_number))
+            then: (nat_number)
+            else: (bound_infix_op lhs: (identifier_ref) symbol: (mul) rhs:
+              (bound_op name: (identifier_ref) parameter:
+                (bound_infix_op lhs: (identifier_ref) symbol: (minus) rhs: (nat_number))
+              )
             )
           )
         )
-      )
-      (bound_op (identifier_ref) (nat_number))
+      expression:
+        (bound_op name: (identifier_ref) parameter: (nat_number))
     )
   )
 (double_line)))
@@ -64,20 +73,32 @@ Conjlist with RECURSIVE in LET/IN
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
-  /\ LET RECURSIVE f IN P
+  /\ LET
+       RECURSIVE f
+       f == f
+     IN P
   /\ Q
+====
+---- MODULE TestPrelude ----
+P == TRUE
+Q == TRUE
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item
         (bullet_conj)
         (let_in
-          definitions: (recursive_declaration (identifier))
+          definitions:
+            (recursive_declaration (identifier))
+            (operator_definition name: (identifier) (def_eq) definition:
+              (identifier_ref))
           expression: (identifier_ref)
         )
       )
@@ -91,14 +112,22 @@ Conjlist with INSTANCE in LET/IN
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
   /\ LET M1 == INSTANCE M2 IN P
   /\ Q
+====
+---- MODULE M2 ----
+====
+---- MODULE TestPrelude ----
+P == TRUE
+Q == TRUE
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item
@@ -178,20 +207,31 @@ Disjlist with RECURSIVE in LET/IN
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
-  \/ LET RECURSIVE f IN P
+  \/ LET
+       RECURSIVE f
+       f == f
+     IN P
   \/ Q
+====
+---- MODULE TestPrelude ----
+P == TRUE
+Q == TRUE
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
-  (operator_definition name: (identifier) (def_eq)
+  (extends (identifier_ref))
+  (operator_definition name: (identifier) (def_eq) definition:
     (disj_list
       (disj_item
         (bullet_disj)
-        (let_in
+        (let_in definitions:
           (recursive_declaration (identifier))
+          (operator_definition name: (identifier) (def_eq) definition: (identifier_ref))
+          expression:
           (identifier_ref)
         )
       )
@@ -205,14 +245,22 @@ Disjlist with INSTANCE in LET/IN
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
   \/ LET M1 == INSTANCE M2 IN P
   \/ Q
+====
+---- MODULE M2 ----
+====
+---- MODULE TestPrelude ----
+P == TRUE
+Q == TRUE
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (disj_list
       (disj_item
