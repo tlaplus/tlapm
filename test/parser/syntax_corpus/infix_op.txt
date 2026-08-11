@@ -682,19 +682,25 @@ op == {
 (double_line)))
 
 =============|||
-Cartesian Product as Parameter
+Infix Operator as Parameter
 =============|||
 
 ---- MODULE Test ----
-op == f(\X, \times)
+EXTENDS TestPrelude
+op == f(##, \otimes)
+====
+---- MODULE TestPrelude----
+CONSTANTS _ ## _, _ \otimes _
+f(x(_, _), y(_, _)) == 0
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition: (bound_op name: (identifier_ref)
-    parameter: (infix_op_symbol (times))
-    parameter: (infix_op_symbol (times))
+    parameter: (infix_op_symbol (hashhash))
+    parameter: (infix_op_symbol (otimes))
   ))
 (double_line)))
 
