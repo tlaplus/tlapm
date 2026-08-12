@@ -124,6 +124,7 @@ let rec get_all_files_under (path : string) : string list =
   if Sys.is_directory path then
     Sys.readdir path
     |> Array.to_list
+    |> List.sort String.compare
     |> List.map (Filename.concat path)
     |> List.map get_all_files_under
     |> List.flatten
