@@ -41,7 +41,8 @@ Prefix Operator Application
 =============|||
 
 ---- MODULE Test ----
-op == {
+EXTENDS TestPrelude
+op1 == {
   ~x,
   \lnot x,
   \neg x,
@@ -50,15 +51,20 @@ op == {
   DOMAIN x,
   -x,
   ENABLED x,
-  UNCHANGED x,
-  []x,
-  <>x
+  UNCHANGED x
 }
+op2 == []x
+op3 == <>x
+====
+---- MODULE TestPrelude ----
+VARIABLE x
+-. y == y
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition: (finite_set_literal
     (bound_prefix_op symbol: (lnot) rhs: (identifier_ref))
     (bound_prefix_op symbol: (lnot) rhs: (identifier_ref))
@@ -69,9 +75,11 @@ op == {
     (bound_prefix_op symbol: (negative) rhs: (identifier_ref))
     (bound_prefix_op symbol: (enabled) rhs: (identifier_ref))
     (bound_prefix_op symbol: (unchanged) rhs: (identifier_ref))
-    (bound_prefix_op symbol: (always) rhs: (identifier_ref))
-    (bound_prefix_op symbol: (eventually) rhs: (identifier_ref))
   ))
+  (operator_definition name: (identifier) (def_eq) definition:
+   (bound_prefix_op symbol: (always) rhs: (identifier_ref)))
+  (operator_definition name: (identifier) (def_eq) definition:
+   (bound_prefix_op symbol: (eventually) rhs: (identifier_ref)))
 (double_line)))
 
 =============|||

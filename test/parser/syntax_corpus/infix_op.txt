@@ -344,7 +344,6 @@ op == {
   x ... y,
   x = y,
   x \equiv y,
-  x !! y,
   x >= y,
   x \geq y,
   x \gg y,
@@ -355,7 +354,6 @@ op == {
   x /\ y,
   x \land y,
   x =| y,
-  x ~> y,
   x <= y,
   x =< y,
   x \leq y,
@@ -386,7 +384,6 @@ op == {
   x (\X) y,
   x \otimes y,
   x + y,
-  x -+-> y,
   x ++ y,
   x ^ y,
   x ^^ y,
@@ -535,7 +532,6 @@ CONSTANTS
     (bound_infix_op lhs: (identifier_ref) symbol: (dots_3) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (eq) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (equiv) rhs: (identifier_ref))
-    (bound_infix_op lhs: (identifier_ref) symbol: (excl) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (geq) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (geq) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (gg) rhs: (identifier_ref))
@@ -546,7 +542,6 @@ CONSTANTS
     (bound_infix_op lhs: (identifier_ref) symbol: (land) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (land) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (ld_ttile) rhs: (identifier_ref))
-    (bound_infix_op lhs: (identifier_ref) symbol: (leads_to) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (leq) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (leq) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (leq) rhs: (identifier_ref))
@@ -577,7 +572,6 @@ CONSTANTS
     (bound_infix_op lhs: (identifier_ref) symbol: (otimes) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (otimes) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (plus) rhs: (identifier_ref))
-    (bound_infix_op lhs: (identifier_ref) symbol: (plus_arrow) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (plusplus) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (pow) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (powpow) rhs: (identifier_ref))
@@ -691,7 +685,6 @@ op == f(
   ...,
   =,
   \equiv,
-  !!,
   >=,
   \geq,
   \gg,
@@ -877,7 +870,6 @@ f(a1(_,_),a2(_,_),a3(_,_),a4(_,_),a5(_,_),a6(_,_),a7(_,_),a8(_,_),a9(_,_),a10(_,
     parameter: (infix_op_symbol (dots_3))
     parameter: (infix_op_symbol (eq))
     parameter: (infix_op_symbol (equiv))
-    parameter: (infix_op_symbol (excl))
     parameter: (infix_op_symbol (geq))
     parameter: (infix_op_symbol (geq))
     parameter: (infix_op_symbol (gg))
