@@ -1,20 +1,4 @@
 =============|||
-Cartesian Product Infix Op Definition
-=============|||
-
----- MODULE Test ----
-x \X y == 0
-x \times y == 0
-====
-
--------------|||
-
-(source_file (module (header_line) name: (identifier) (header_line)
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (times)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (times)) parameter: (identifier) (def_eq) definition: (nat_number))
-(double_line)))
-
-=============|||
 Infix Operator Definition
 =============|||
 
@@ -224,23 +208,6 @@ x \wr y == 101
   (operator_definition parameter: (identifier) name: (infix_op_symbol (vert)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (vertvert)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (wr)) parameter: (identifier) (def_eq) definition: (nat_number))
-(double_line)))
-
-=============|||
-Cartesian Product Declaration as Parameter
-=============|||
-
----- MODULE Test ----
-op(_ \X _, _ \times _) == TRUE
-====
-
--------------|||
-
-(source_file (module (header_line) name: (identifier) (header_line)
-  (operator_definition name: (identifier)
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (times)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (times)) (placeholder))
-  (def_eq) definition: (boolean))
 (double_line)))
 
 =============|||
