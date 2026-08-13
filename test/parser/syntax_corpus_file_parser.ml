@@ -115,25 +115,45 @@ let parse_test_file (path : string) : syntax_test list =
     close_in_noerr test_file;
     raise e
 
+module Shape = struct
+  type 'a t = { label : string; content : 'a content }
+  and 'a content =
+    | Atom of 'a
+    | List of 'a t list
+
+  let rec map f x = { x with content = map_content f x.content }
+  and map_content f = function
+    | Atom x -> f x
+    | List xs -> List (List.map (map f) xs)
+end
+
 (** Given the path to a directory, recursively find all files located within
     that directory.
     @param path The path to a directory to search under.
     @return A list of paths to files under the directory.
 *)
-let rec get_all_files_under (path : string) : string list =
+let rec get_all_files_under (path : string) : string Shape.content =
   if Sys.is_directory path then
     Sys.readdir path
     |> Array.to_list
     |> List.sort String.compare
-    |> List.map (Filename.concat path)
-    |> List.map get_all_files_under
-    |> List.flatten
-  else [path]
+    |> List.map (fun label ->
+           let content = get_all_files_under (Filename.concat path label) in
+           Shape.{ label; content })
+    |> (fun x -> Shape.List x)
+  else Atom path
 
 (** Given the path to a directory, return a list of all syntax tests in all
     files under that directory.
     @param path The path to a directory to search under.
     @return A list of syntax tests from the files under the directory.
 *)
-let get_all_tests_under (path : string) : syntax_test list =
-  path |> get_all_files_under |> List.map parse_test_file |> List.flatten
+let get_all_tests_under (path : string) : syntax_test Shape.content =
+  path |> get_all_files_under
+  |> Shape.map_content
+       (fun path ->
+         parse_test_file path
+         |> List.map
+              (fun (t : syntax_test) ->
+                Shape.{ label = t.info.name; content = Atom t })
+         |> (fun x -> Shape.List x))

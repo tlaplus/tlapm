@@ -162,17 +162,23 @@ let run_test test _ =
           assert_bool text b
   )
 
+let rec ounit_of_shape (x : _ Shape.t) =
+  ounit_of_shape_content x.label x.content
+
+and ounit_of_shape_content label : _ Shape.content -> _ = function
+  | Atom t -> label >:: run_test t
+  | List xs -> label >::: List.map ounit_of_shape xs
+
 (** Gathers all syntax test files, parses them, then runs the cases they
     contain as tests against TLAPM's syntax parser, skipping or expecting
     failure as appropriate.
 *)
-let tests = "Standardized syntax test corpus" >::: (
-  get_all_tests_under "syntax_corpus"
-  |> List.map
-       (fun test ->
-         Format.sprintf "[%s] %s" test.info.path test.info.name >::
-           (run_test test))
-  )
+let tests =
+  Shape.{
+      label = "Standardized syntax test corpus";
+      content = get_all_tests_under "syntax_corpus";
+  }
+  |> ounit_of_shape
 
 (** The OUnit2 test entrypoint. *)
 let () = run_test_tt_main tests
