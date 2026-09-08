@@ -52,7 +52,9 @@ $(ISABELLE_ARCHIVE): $(CACHE_DIR)/$(ISABELLE_ARCHIVE)
 	rm -f $@
 	ln -s $< $@
 
-# Extract the isabelle archive and remove broken symlinks.
+# Extract the isabelle archive and remove the symlinks.
+# TODO: This is is a workaround to eliminate symlinks to directories
+# 		until https://github.com/ocaml/dune/issues/7831 is resolved.
 $(ISABELLE_DIR) $(ISABELLE_TEST): $(ISABELLE_ARCHIVE)
 	rm -rf $(ISABELLE_DIR)
 ifeq ($(ISABELLE_ARCHIVE_TYPE),tgz)
@@ -60,6 +62,14 @@ ifeq ($(ISABELLE_ARCHIVE_TYPE),tgz)
 	mv $(ISABELLE_ARCHIVE_DIR) $(ISABELLE_DIR)
 endif
 	cd $(ISABELLE_DIR) && rm -rf ./contrib/e-3.1-1/src/lib/
+ifeq ($(OS_TYPE),Darwin)
+	cd $(ISABELLE_DIR) && cd contrib/jdk-21.0.6/arm64-darwin/ \
+		&& (find . -type link | xargs rm) \
+		&& mv zulu-21.jdk/Contents/Home/* ./
+	cd $(ISABELLE_DIR) && cd contrib/jdk-21.0.6/x86_64-darwin/ \
+		&& (find . -type link | xargs rm) \
+		&& mv zulu-21.jdk/Contents/Home/* ./
+endif
 	cp -r $(ISABELLE_DIR) $(ISABELLE_TEST)
 
 # Build the TLA+ theory.
