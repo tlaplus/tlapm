@@ -576,7 +576,6 @@ A == TRUE
       (disj_item (bullet_disj) (nat_number))
     )
   )
-  (single_line)
   (operator_definition name: (identifier) (def_eq) definition:
     (disj_list
       (disj_item (bullet_disj) (nat_number))
