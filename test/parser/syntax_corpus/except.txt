@@ -49,7 +49,9 @@ VARIABLE f
             (except_update
               update_specifier:
                 (except_update_specifier
-                    (except_update_fn_appl (nat_number) (nat_number)))
+                    (except_update_fn_appl (tuple_literal (langle_bracket)
+                      (nat_number) (nat_number)
+                    (rangle_bracket))))
               new_val: (nat_number))
         ))
 (double_line)))
@@ -138,8 +140,10 @@ VARIABLE f
               update_specifier:
                 (except_update_specifier
                     (except_update_fn_appl
-                      (tuple_literal (langle_bracket) (nat_number)(nat_number) (rangle_bracket))
-                      (nat_number)))
+                      (tuple_literal (langle_bracket)
+                        (tuple_literal (langle_bracket) (nat_number) (nat_number) (rangle_bracket))
+                        (nat_number)
+                      (rangle_bracket))))
               new_val: (nat_number))
         ))
 (double_line)))
