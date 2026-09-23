@@ -9,6 +9,8 @@ open Tlapm_lib;;
 
 open Syntax_corpus_file_parser;;
 
+let last_parse_error = ref "<none>"
+
 (** Calls TLAPM's parser with the given input. Catches all exceptions and
     treats them as parse failures.
     @param input The TLA+ fragment to parse.
@@ -16,7 +18,9 @@ open Syntax_corpus_file_parser;;
 *)
 let parse (input : string) : Module.T.mule option =
   try module_of_string input
-  with _ -> None
+  with e ->
+    last_parse_error := Printexc.to_string e;
+    None
 
 (** Names of tests that are known to fail due to TLAPM parser bugs.
     @param test Information about the test.
@@ -132,42 +136,54 @@ let expect_tree_comparison_failure (test : syntax_test) : bool =
 
 open OUnit2;;
 
+let run_test test _ =
+  skip_if test.skip "Test has skip attribute";
+  match test.test with
+  | Error_test input -> (
+    let b = expect_parse_failure test in
+    match parse input with
+    | None -> assert_bool "Expected error test to fail" (not b)
+    | Some _ -> assert_bool "Expected parse failure" b
+  )
+  | Expected_test (input, expected) -> (
+      match parse input with
+      | None ->
+         let b = expect_parse_failure test in
+         let msg = Printf.sprintf "Expected parse success, got: %S" !last_parse_error in
+         assert_bool msg b
+      | Some tlapm_output ->
+        skip_if (should_skip_tree_comparison test) "Skipping parse tree comparison";
+        let open Translate_syntax_tree in
+        let open Sexplib in
+        let actual = tlapm_output |> translate_tla_source_file |> ts_node_to_sexpr in
+        let b = expect_tree_comparison_failure test in
+        if Sexp.equal expected actual
+        then assert_bool "Expected parse test to fail" (not b)
+        else
+          let open Sexp_diff in
+          let diff = Algo.diff ~original:expected ~updated:actual () in
+          let options = Display.Display_options.(create Layout.Single_column) in
+          let text = Display.display_with_ansi_colors options diff in
+          assert_bool text b
+  )
+
+let rec ounit_of_shape (x : _ Shape.t) =
+  ounit_of_shape_content x.label x.content
+
+and ounit_of_shape_content label : _ Shape.content -> _ = function
+  | Atom t -> label >:: run_test t
+  | List xs -> label >::: List.map ounit_of_shape xs
+
 (** Gathers all syntax test files, parses them, then runs the cases they
     contain as tests against TLAPM's syntax parser, skipping or expecting
     failure as appropriate.
 *)
-let tests = "Standardized syntax test corpus" >::: (
-  get_all_tests_under "syntax_corpus"
-  |> List.map (fun test ->
-    Format.sprintf "[%s] %s" test.info.path test.info.name >::
-    (fun _ ->
-      skip_if test.skip "Test has skip attribute";
-      match test.test with
-      | Error_test input -> (
-        match parse input with
-        | None -> assert_bool "Expected error test to fail" (not (expect_parse_failure test))
-        | Some _ -> assert_bool "Expected parse failure" (expect_parse_failure test)
-      )
-      | Expected_test (input, expected) -> (
-          match parse input with
-          | None -> assert_bool "Expected parse success" (expect_parse_failure test)
-          | Some tlapm_output ->
-            skip_if (should_skip_tree_comparison test) "Skipping parse tree comparison";
-            let open Translate_syntax_tree in
-            let open Sexplib in
-            let actual = tlapm_output |> translate_tla_source_file |> ts_node_to_sexpr in
-            if Sexp.equal expected actual
-            then assert_bool "Expected parse test to fail" (not (expect_tree_comparison_failure test))
-            else
-              let open Sexp_diff in
-              let diff = Algo.diff ~original:expected ~updated:actual () in
-              let options = Display.Display_options.(create Layout.Single_column) in
-              let text = Display.display_with_ansi_colors options diff in
-              assert_bool text (expect_tree_comparison_failure test)
-      )
-    )
-  )
-)
+let tests =
+  Shape.{
+      label = "Standardized syntax test corpus";
+      content = get_all_tests_under "syntax_corpus";
+  }
+  |> ounit_of_shape
 
 (** The OUnit2 test entrypoint. *)
 let () = run_test_tt_main tests
