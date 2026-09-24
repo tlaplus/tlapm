@@ -35,6 +35,8 @@ build:
 
 check: test
 
+# To run single alcotest test:
+# (cd _build/default/lsp/test/ && dune exec ./tlapm_lsp_test.exe test decompose 1)
 test:
 	dune runtest
 

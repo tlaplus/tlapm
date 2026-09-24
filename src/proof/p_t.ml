@@ -92,6 +92,125 @@ type obligation = {
     kind: obligation_kind}
 
 
+let pp_use_def fmt (ud : use_def) =
+  match ud with
+  | Dvar s -> Format.fprintf fmt "DVar[%s]" s
+  | Dx i -> Format.fprintf fmt "Dx[%i]" i
+
+let pp_usable ~pp_props (fmt : Format.formatter) (u : usable) =
+  Format.(
+    fprintf fmt "(@[Usable,@ facts=%a,@ defs=%a@])"
+      (pp_print_list ~pp_sep:pp_print_cut (Expr.T.pp_expr ~pp_props))
+      u.facts
+      (pp_print_list ~pp_sep:pp_print_cut
+         (pp_wrapped ~pp_props ~pp_core:pp_use_def))
+      u.defs)
+
+let pp_usable_wrapped ~pp_props (fmt : Format.formatter) (u : usable wrapped) =
+  Format.fprintf fmt "%a"
+    (pp_wrapped ~pp_props ~pp_core:(pp_usable ~pp_props))
+    u
+
+let rec pp_proof ~pp_props (fmt : Format.formatter) (pf : proof) =
+  Format.fprintf fmt "%a"
+    (pp_wrapped ~pp_props ~pp_core:(pp_proof_ ~pp_props))
+    pf
+
+and pp_proof_ ~pp_props (fmt : Format.formatter) (pf : proof_) =
+  match pf with
+  | Obvious -> Format.fprintf fmt "Obvious"
+  | Omitted Implicit -> Format.fprintf fmt "Omitted/Implicit"
+  | Omitted Explicit -> Format.fprintf fmt "Omitted/Explicit"
+  | Omitted (Elsewhere _) -> Format.fprintf fmt "Omitted/Elsewhere"
+  | By (usable, only) ->
+      Format.fprintf fmt "(@[By[only=%b],@ %a@])" only (pp_usable ~pp_props)
+        usable
+  | Steps (inits, qed) ->
+      Format.(
+        fprintf fmt "(@[Steps,@ inits=%a,@ qed=%a@])"
+          (pp_print_list ~pp_sep:pp_print_cut (pp_step ~pp_props))
+          inits (pp_qed_step ~pp_props) qed)
+  | Error s -> Format.fprintf fmt "Error[%s]" s
+
+and pp_step ~pp_props (fmt : Format.formatter) (st : step) =
+  Format.fprintf fmt "@[%a@]"
+    (pp_wrapped ~pp_props ~pp_core:(pp_step_ ~pp_props))
+    st
+
+and pp_step_ ~pp_props (fmt : Format.formatter) (st : step_) =
+  match st with
+  | Hide usables ->
+      Format.fprintf fmt "(@[Hide,@ %a@])" (pp_usable ~pp_props) usables
+  | Define defns ->
+      Format.(
+        fprintf fmt "(@[Define,@ %a@])"
+          (pp_print_list ~pp_sep:pp_print_cut (Expr.T.pp_defn ~pp_props))
+          defns)
+  | Assert (sq, pf) ->
+      Format.fprintf fmt "(@[Assert,@ %a,@ %a@])"
+        (Expr.T.pp_sequent ~pp_props)
+        sq (pp_proof ~pp_props) pf
+  | Suffices (sq, pf) ->
+      Format.fprintf fmt "(@[Suffices,@ %a,@ %a@])"
+        (Expr.T.pp_sequent ~pp_props)
+        sq (pp_proof ~pp_props) pf
+  | Pcase (ex, pf) ->
+      Format.fprintf fmt "(@[Pcase,@ %a,@ %a@])" (Expr.T.pp_expr ~pp_props) ex
+        (pp_proof ~pp_props) pf
+  | Pick (bs, ex, pf) ->
+      Format.fprintf fmt "(@[Pick,@ bounds=%a,@ ex=%a,@ pf=%a@])"
+        (Expr.T.pp_bounds ~pp_props)
+        bs (pp_expr ~pp_props) ex (pp_proof ~pp_props) pf
+  | PickTuply (bs, ex, pf) ->
+      Format.fprintf fmt "(@[PickTuply,@ bounds=%a,@ ex=%a,@ pf=%a@])"
+        (Expr.T.pp_tuply_bounds ~pp_props)
+        bs (pp_expr ~pp_props) ex (pp_proof ~pp_props) pf
+  | Use (usable, only) ->
+      Format.fprintf fmt "(@[Use[only=%b],@ %a@])" only (pp_usable ~pp_props) usable
+  | Have ex -> Format.fprintf fmt "(@[Have,@ %a@])" (pp_expr ~pp_props) ex
+  | Take bs -> Format.fprintf fmt "(@[Take,@ %a@])" (Expr.T.pp_bounds ~pp_props) bs
+  | TakeTuply bs ->
+      Format.fprintf fmt "(@[TakeTuply,@ %a@])" (Expr.T.pp_tuply_bounds ~pp_props) bs
+  | Witness exs ->
+      Format.(
+        fprintf fmt "(@[Witness,@ %a@])"
+          (pp_print_list ~pp_sep:pp_print_cut (pp_expr ~pp_props))
+          exs)
+  | Forget num -> Format.fprintf fmt "(@[Forget,@ %d@])" num
+
+and pp_qed_step ~pp_props (fmt : Format.formatter) (qed : qed_step) =
+  Format.fprintf fmt "%a"
+    (pp_wrapped ~pp_props ~pp_core:(pp_qed_step_ ~pp_props))
+    qed
+
+and pp_qed_step_ ~pp_props (fmt : Format.formatter) (qed : qed_step_) =
+  match qed with
+  | Qed pf -> Format.fprintf fmt "(@[Qed,@ %a@])" (pp_proof ~pp_props) pf
+
+let pp_omission (fmt : Format.formatter) (o : omission) =
+  match o with
+  | Implicit -> Format.fprintf fmt "Implicit"
+  | Explicit -> Format.fprintf fmt "Explicit"
+  | Elsewhere loc ->
+      Format.fprintf fmt "(@[Elsewhere@ %a@])" Loc.pp_locus_compact loc
+
+let pp_obligation_kind (fmt : Format.formatter) (ok : obligation_kind) =
+  match ok with
+  | Ob_main -> Format.fprintf fmt "Ob_main"
+  | Ob_support -> Format.fprintf fmt "Ob_support"
+  | Ob_error str -> Format.fprintf fmt "(@[Ob_error,@ %s@])" str
+  | Ob_omitted om -> Format.fprintf fmt "(@[Ob_omitted %a@])" pp_omission om
+
+let pp_obligation ~pp_props (fmt : Format.formatter) (o : obligation) =
+  Format.fprintf fmt
+    "(@[Obligation,@ id=%a, obl=%a@, fingerprint=%a@, kind=%a@])"
+    (Format.pp_print_option Format.pp_print_int)
+    o.id
+    (Expr.T.pp_sequent_wrapped ~pp_props)
+    o.obl
+    (Format.pp_print_option Format.pp_print_string)
+    o.fingerprint pp_obligation_kind o.kind
+
 module Props = struct
     let step: stepno Property.pfuncs =
         Property.make

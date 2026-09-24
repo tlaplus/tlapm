@@ -1945,3 +1945,281 @@ let has_enabledaxioms x = Property.has
     x enabledaxioms
 let get_enabledaxioms x = Property.get
     x enabledaxioms
+
+
+let pp_bullet fmt (v : bullet) =
+  match v with
+  | And -> Format.fprintf fmt "And"
+  | Or -> Format.fprintf fmt "Or"
+  | Refs -> Format.fprintf fmt "Refs"
+
+let pp_visibility fmt (v : visibility) =
+  match v with
+  | Visible -> Format.fprintf fmt "Visible"
+  | Hidden -> Format.fprintf fmt "Hidden"
+
+let pp_modal_op fmt (o : modal_op) =
+  match o with
+  | Box -> Format.fprintf fmt "Box"
+  | Dia -> Format.fprintf fmt "Dia"
+
+let pp_fairness_op fmt (o : fairness_op) =
+  match o with
+  | Weak -> Format.fprintf fmt "Weak"
+  | Strong -> Format.fprintf fmt "Strong"
+
+let pp_quantifier fmt (k : quantifier) =
+  match k with
+  | Forall -> Format.fprintf fmt "Forall"
+  | Exists -> Format.fprintf fmt "Exists"
+
+let pp_kind fmt (k : kind) =
+  match k with
+  | Constant -> Format.fprintf fmt "Kind/Constant"
+  | State -> Format.fprintf fmt "Kind/State"
+  | Action -> Format.fprintf fmt "Kind/Action"
+  | Temporal -> Format.fprintf fmt "Kind/Temporal"
+  | Unknown -> Format.fprintf fmt "Kind/Unknown"
+
+let rec pp_expr ~pp_props fmt (expr : expr) =
+  pp_wrapped ~pp_props ~pp_core:(pp_expr_ ~pp_props) fmt expr
+
+and pp_expr_ ~pp_props fmt (expr : expr_) =
+  let pf = Format.fprintf in
+  let pp_expr = pp_expr ~pp_props in
+  let pp_field fmt (str, ex) = Format.(fprintf fmt "%s:%a" str pp_expr ex) in
+  match expr with
+  | Ix i -> pf fmt "(@[Ix@ %d@])" i
+  | Opaque n -> pf fmt "(@[Opaque@ %s@])" n
+  | Internal b -> pf fmt "(@[Internal@ %s@])" (Builtin.builtin_to_string b)
+  | Lambda (params, body) ->
+      let pp_param fmt (hint, shape) =
+        pf fmt "%a:%a" pp_print_hint hint pp_shape shape
+      in
+      Format.(
+        fprintf fmt "(@[Lambda,@ %a,@ %a@])"
+          (pp_print_list ~pp_sep:pp_print_cut pp_param)
+          params pp_expr body)
+  | Sequent sq -> pf fmt "(@[Sequent@ %a@])" (pp_sequent ~pp_props) sq
+  | Bang (expr, _) -> pf fmt "(@[Bang,@ %a, _@])" pp_expr expr
+  | Apply (op, args) ->
+      Format.(
+        fprintf fmt "(@[Apply,@ op=%a,@ args=[@[%a@]]@])" pp_expr op
+          (pp_print_list ~pp_sep:pp_print_cut pp_expr)
+          args)
+  | With (expr, _) -> pf fmt "(@[With,@ %a,@ _@])" pp_expr expr
+  | If (cond, then_body, else_body) ->
+      pf fmt "(@[If %a@ Then %a@ Else %a@])" pp_expr cond pp_expr then_body
+        pp_expr else_body
+  | List (b, exs) -> pf fmt "(@[List/%d@ %a@])" (List.length exs) pp_bullet b
+  | Let (defns, expr) ->
+      pf fmt "(@[Let %a@ In %a@])"
+        Format.(pp_print_list ~pp_sep:pp_print_cut (pp_defn ~pp_props))
+        defns pp_expr expr
+  | Quant (quant, bs, ex) ->
+      pf fmt "(@[Quant,@ %a,@ %a,@ %a@])" pp_quantifier quant
+        (pp_bounds ~pp_props) bs pp_expr ex
+  | QuantTuply (quant, bs, ex) ->
+      pf fmt "(@[QuantTuply,@ %a,@ %a,@ %a@])" pp_quantifier quant
+        (pp_tuply_bounds ~pp_props)
+        bs pp_expr ex
+  | Tquant (quant, hints, ex) ->
+      pf fmt "(@[Tquant,@ %a,@ %a,@ %a@])" pp_quantifier quant
+        Format.(pp_print_list ~pp_sep:pp_print_cut pp_print_hint)
+        hints pp_expr ex
+  | Choose (hint, dom, pred) ->
+      pf fmt "(@[Choose,@ %a,@ dom=%a,@ pred=%a@])" pp_print_hint hint
+        Format.(pp_print_option pp_expr)
+        dom pp_expr pred
+  | ChooseTuply (hints, dom, pred) ->
+      pf fmt "(@[ChooseTuply,@ %a,@ dom=%a,@ pred=%a@])"
+        Format.(pp_print_list ~pp_sep:pp_print_cut pp_print_hint)
+        hints
+        Format.(pp_print_option pp_expr)
+        dom pp_expr pred
+  | SetSt (hint, ex_set, ex_pred) ->
+      pf fmt "(@[SetSt,@ name=%a,@ set=%a,@ pred=%a@])" pp_print_hint hint
+        pp_expr ex_set pp_expr ex_pred
+  | SetStTuply (hints, ex_set, ex_pred) ->
+      pf fmt "(@[SetStTuply,@ %a,@ %a,@ %a@])"
+        Format.(pp_print_list ~pp_sep:pp_print_cut pp_print_hint)
+        hints pp_expr ex_set pp_expr ex_pred
+  | SetOf (ex, bs) ->
+      pf fmt "(@[SetOf,@ set=@[%a@],@ bounds=@[%a@]@])" pp_expr ex
+        (pp_bounds ~pp_props) bs
+  | SetOfTuply (ex, bs) ->
+      pf fmt "(@[SetOfTuply,@ set=@[%a@],@ bounds=@[%a@]@])" pp_expr ex
+        (pp_tuply_bounds ~pp_props)
+        bs
+  | SetEnum exs ->
+      pf fmt "(@[SetEnum,@ %a@])"
+        Format.(pp_print_list ~pp_sep:pp_print_cut pp_expr)
+        exs
+  | Product exs ->
+      pf fmt "(@[Product,@ %a@])"
+        Format.(pp_print_list ~pp_sep:pp_print_cut pp_expr)
+        exs
+  | Tuple exs ->
+      pf fmt "(@[Tuple,@ %a@])"
+        Format.(pp_print_list ~pp_sep:pp_print_cut pp_expr)
+        exs
+  | Fcn (params, body) ->
+      pf fmt "(@[Fcn@ %a,@ %a@])" (pp_bounds ~pp_props) params pp_expr body
+  | FcnTuply (params, body) ->
+      pf fmt "(@[FcnTuply@ %a,@ %a@])"
+        (pp_tuply_bounds ~pp_props)
+        params pp_expr body
+  | FcnApp (fn, args) ->
+      pf fmt "(@[FcnApp,@ %a,@ %a@])" pp_expr fn
+        Format.(pp_print_list ~pp_sep:pp_print_cut pp_expr)
+        args
+  | Arrow (ex1, ex2) -> pf fmt "(@[Arrow,@ %a,@ %a@])" pp_expr ex1 pp_expr ex2
+  | Rect fs ->
+      pf fmt "(@[Rect@ %a@])"
+        Format.(pp_print_list ~pp_sep:pp_print_cut pp_field)
+        fs
+  | Record fs ->
+      pf fmt "(@[Record@ %a@])"
+        Format.(pp_print_list ~pp_sep:pp_print_cut pp_field)
+        fs
+  | Except (expr, specs) ->
+      pf fmt "(@[Except,@ expr=%a,@ specs=%a@])" pp_expr expr
+        Format.(pp_print_list ~pp_sep:pp_print_cut (pp_excpspec ~pp_props))
+        specs
+  | Dot (ex, str) -> pf fmt "(@[Dot,@ %a,@ %s@])" pp_expr ex str
+  | Sub (op, ex, sub) ->
+      pf fmt "(@[Sub,@ op=%a,@ ex=%a,@ sub=%a@])" pp_modal_op op pp_expr ex
+        pp_expr sub
+  | Tsub (op, ex, sub) ->
+      pf fmt "(@[TSub,@ op=%a,@ ex=%a,@ sub=%a@])" pp_modal_op op pp_expr ex
+        pp_expr sub
+  | Fair (op, ex, sub) ->
+      pf fmt "(@[Fair,@ op=%a,@ ex=%a,@ sub=%a@])" pp_fairness_op op pp_expr ex
+        pp_expr sub
+  | Case (cases, default) ->
+      let pp_case fmt (pattern, body) =
+        Format.fprintf fmt "(%a => %a)" pp_expr pattern pp_expr body
+      in
+      pf fmt "(@[Case,@ cases=@[%a@],@ default=%a@])"
+        Format.(pp_print_list ~pp_sep:pp_print_cut pp_case)
+        cases
+        Format.(pp_print_option pp_expr)
+        default
+  | String s -> pf fmt "(@[String@ %s@])" s
+  | Num (n1, n2) -> pf fmt "(@[Num@ %s.%s@])" n1 n2
+  | At where -> pf fmt "(@[At %b@])" where
+  | Parens (expr, _pform) -> pf fmt "(@[Parens@ %a@])" pp_expr expr
+
+and pp_hyp ~pp_props fmt (h : hyp) =
+  pp_wrapped ~pp_props ~pp_core:(pp_hyp_ ~pp_props) fmt h
+
+and pp_hyp_ ~pp_props fmt (h : hyp_) =
+  match h with
+  | Fresh (hint, _, _, _) ->
+      Format.fprintf fmt "(@[Fresh@ %a@])" pp_print_hint hint
+  | FreshTuply (hints, hdom) ->
+      Format.(
+        fprintf fmt "(@[FreshTuply@ hints=%a,@ dom=%a@])"
+          (pp_print_list ~pp_sep:pp_print_cut pp_print_hint)
+          hints (pp_hdom ~pp_props) hdom)
+  | Flex hint -> Format.fprintf fmt "(@[Flex@ %a@])" pp_print_hint hint
+  | Defn (defn, _, visible, _) ->
+      Format.fprintf fmt "(@[Defn[%a]@ %a@])" pp_visibility visible
+        (pp_defn ~pp_props) defn
+  | Fact (expr, visible, _) ->
+      Format.fprintf fmt "(@[Fact/%a@ %a@])" pp_visibility visible
+        (pp_expr ~pp_props) expr
+
+and pp_defn ~pp_props fmt (d : defn) =
+  pp_wrapped ~pp_props ~pp_core:(pp_defn_ ~pp_props) fmt d
+
+and pp_defn_ ~pp_props fmt (d : defn_) =
+  match d with
+  | Recursive (hint, shape) ->
+      Format.fprintf fmt "(@[Recursive,@ %a,@ %a@])" pp_print_hint hint pp_shape
+        shape
+  | Operator (hint, expr) ->
+      Format.fprintf fmt "(@[Operator,@ name=%a,@ body=@[%a@]@])" pp_print_hint
+        hint (pp_expr ~pp_props) expr
+  | Instance (hint, _) ->
+      Format.fprintf fmt "(@[Instance,@ %a,@ _@])" pp_print_hint hint
+  | Bpragma (hint, _, _) ->
+      Format.fprintf fmt "(@[Bpragma,@ %a,@ _,@ _@])" pp_print_hint hint
+
+and pp_sequent ~pp_props fmt (sq : sequent) =
+  Format.(
+    fprintf fmt "(@[sequent@ context=[%a]@ active=%a@])" (pp_ctx ~pp_props)
+      sq.context (pp_expr ~pp_props) sq.active)
+
+and pp_sequent_wrapped ~pp_props fmt (sq : sequent wrapped) =
+  pp_wrapped ~pp_props ~pp_core:(pp_sequent ~pp_props) fmt sq
+
+and pp_ctx ~pp_props fmt (cx : ctx) =
+  Format.(
+    fprintf fmt "@[<hv>%a@]"
+      (pp_print_list ~pp_sep:pp_print_cut (pp_hyp ~pp_props))
+      (Deque.to_list cx))
+
+and pp_shape fmt (sh : shape) =
+  match sh with
+  | Shape_expr -> Format.fprintf fmt "Expr"
+  | Shape_op arity -> Format.fprintf fmt "Op/%d" arity
+
+and pp_hdom ~pp_props fmt (hd : hdom) =
+  match hd with
+  | Unbounded -> Format.fprintf fmt "Unbounded"
+  | Bounded (expr, visibility) ->
+      Format.fprintf fmt "(@[Bounded/%a,@ %a@])" pp_visibility visibility
+        (pp_expr ~pp_props) expr
+
+and pp_bounds ~pp_props fmt (bs : bounds) =
+  Format.(
+    fprintf fmt "%a"
+      (pp_print_list ~pp_sep:pp_print_cut (pp_bound ~pp_props))
+      bs)
+
+and pp_bound ~pp_props fmt ((hint, kind, domain) : bound) =
+  Format.fprintf fmt "(@[Bound,@ %a,@ %a,@ %a@])" pp_print_hint hint pp_kind
+    kind
+    (pp_bound_domain ~pp_props)
+    domain
+
+and pp_bound_domain ~pp_props fmt (bd : bound_domain) =
+  match bd with
+  | No_domain -> Format.fprintf fmt "No_domain"
+  | Domain expr ->
+      Format.fprintf fmt "(@[Domain@ %a@])" (pp_expr ~pp_props) expr
+  | Ditto -> Format.fprintf fmt "Ditto"
+
+and pp_tuply_bounds ~pp_props fmt (tbs : tuply_bounds) =
+  Format.(
+    fprintf fmt "%a"
+      (pp_print_list ~pp_sep:pp_print_cut (pp_tuply_bound ~pp_props))
+      tbs)
+
+and pp_tuply_bound ~pp_props fmt ((name, domain) : tuply_bound) =
+  Format.fprintf fmt "(@[TuplyBound,@ %a,@ %a@])" pp_tuply_name name
+    (pp_bound_domain ~pp_props)
+    domain
+
+and pp_tuply_name fmt (tn : tuply_name) =
+  match tn with
+  | Bound_name name ->
+      Format.fprintf fmt "(@[Bound_name@ %a@])" pp_print_hint name
+  | Bound_names names ->
+      Format.(
+        fprintf fmt "(@[Bound_names@ %a@])"
+          (pp_print_list ~pp_sep:pp_print_cut pp_print_hint)
+          names)
+
+and pp_excpspec ~pp_props fmt ((eps, ex) : exspec) =
+  Format.(
+    fprintf fmt "(@[ExcpSpec,@ %a,@ %a@])"
+      (pp_print_list ~pp_sep:pp_print_cut (pp_expoint ~pp_props))
+      eps (pp_expr ~pp_props) ex)
+
+and pp_expoint ~pp_props fmt (ep : expoint) =
+  match ep with
+  | Except_dot str -> Format.(fprintf fmt "(@[Except_dot@ %s@])" str)
+  | Except_apply ex ->
+      Format.(fprintf fmt "(@[Except_apply@ %a@])" (pp_expr ~pp_props) ex)

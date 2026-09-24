@@ -66,11 +66,12 @@ let cas_of_el_with_pf (uri : LspT.DocumentUri.t) (ps : PS.t)
     assumptions. *)
 let cas_of_obl ~(cfg : Config.t) (uri : LspT.DocumentUri.t) (ps : PS.t)
     (ps_parent : PS.t) (o : TL.Proof.T.obligation) =
-  let o = TL.Backend.Toolbox.normalize true o in
+  let o = TL.Backend.Toolbox.normalize true ~keep_defs:true o in
   List.concat
     [
       Of_goal.code_actions ~cfg uri ps ps_parent o.obl.core;
       Of_assm.code_actions ~cfg uri ps ps_parent o.obl.core.context;
+      Of_rule.code_actions ~cfg uri ps ps_parent o.obl.core;
     ]
 
 (* Code Actions of Proof Step *)

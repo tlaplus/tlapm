@@ -85,13 +85,8 @@ module StringSet = Util.Coll.Ss  (* Set.Make(String) *)
 
 open Util
 
-module HC = struct
-  type t = hint
-  let compare x y = Stdlib.compare x.core y.core
-end
-
-module HintMap = Util.Coll.Hm  (* Map.Make(HC) *)
-module HintSet = Util.Coll.Hs  (* Set.Make(HC) *)
+module HintMap = Util.Coll.Hm
+module HintSet = Util.Coll.Hs
 
 
 let module_parameters (tla_module: M_t.mule):
@@ -213,6 +208,8 @@ let remove_pf mu =
     (* Erase proofs from module `mu`. *)
     match mu.core with
     | Theorem (nm, sq, naxs, prf, prf_orig, summ) ->
+        (* Proofs are not valid after substituting definitions with composite expressions. *)
+        let mu = Property.remove mu indexed_prf_prop in
         Theorem (nm, sq, naxs, (Omitted Implicit @@ prf), prf_orig, summ) @@ mu
     | _ -> mu
 
@@ -1140,6 +1137,7 @@ let rec normalize mcx cx m =
             in
             visitor1#proof ((),cx) pf in*)
             let pf = anon#mproof mcx ([], cx) pf in
+            let indexed_pf = pf in
             (* comment this condition check to generate proofs for
             all modules, including submodules, even when the parser
             marks submodules as not important.
@@ -1151,10 +1149,10 @@ let rec normalize mcx cx m =
                     cx pf in
                 let pf = if has then check_enabled_axioms_map#proof
                     ((ref 0, StringMap.empty), cx) pf else pf in
-                pf
+                (pf, indexed_pf)
                 end
             else
-                pf
+                (pf, indexed_pf)
             end
             in
         let create_instance inst mcx cx mu ~local ~iname =
@@ -1236,7 +1234,7 @@ let rec normalize mcx cx m =
             begin
               let (_, sq) = anon#msequent mcx ([], cx) sq in
               let (_, sq) = const_visitor#sequent ((),cx) sq in
-              let pf = map_proof cx nm sq pf mu m in
+              let (pf, indexed_pf) = map_proof cx nm sq pf mu m in
               (* we apply it later to obligations so we can skip the proofs
                * themselves *)
               (*
@@ -1257,6 +1255,7 @@ let rec normalize mcx cx m =
                 in
                 visitor#proof ((),cx) pf in *)
               let mu = Theorem (nm, sq, naxs, pf, pf_orig, summ) @@ mu in
+              let mu = Property.with_prop indexed_prf_prop indexed_pf mu in
               continue mcx cx mu "Theorem"
             end
         | Mutate (uh, us) ->

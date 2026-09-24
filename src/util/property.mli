@@ -66,6 +66,17 @@ type 'a wrapped = {
   props : props ;
 }
 
+
+type pp_wrapped_props = { pp : 'a. (Format.formatter -> 'a wrapped -> unit) option }
+
+val pp_wrapped_props_none : pp_wrapped_props
+val pp_wrapped :
+    pp_props:pp_wrapped_props ->
+    pp_core:(Format.formatter -> 'a -> unit) ->
+    Format.formatter ->
+    'a wrapped ->
+    unit
+
 (** [has w pf] checks if the properties of [w] include any with pid
     [pf.pid]. *)
 val has    : 'a wrapped -> 'b pfuncs -> bool

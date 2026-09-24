@@ -49,6 +49,9 @@ type 'a pfuncs = {
   rep : string ;
 }
 
+(** [is_prop_of ~pf prop] checks if a property is of [pf] pfuncs. *)
+let is_prop_of ~pf prop = pf.pid = fst prop
+
 let ids : int ref = ref 0
 
 let fresh () = incr ids ; !ids
@@ -73,14 +76,37 @@ type 'a wrapped = {
   props : props ;
 }
 
+(** Printing options. *)
+type pp_wrapped_props = { pp : 'a. (Format.formatter -> 'a wrapped -> unit) option }
+
+(** Print no properties when printing AST. *)
+let pp_wrapped_props_none = { pp = None }
+
+(** Print the wrapped, possibly with props. *)
+let pp_wrapped :
+      pp_props:pp_wrapped_props ->
+      pp_core:(Format.formatter -> 'a -> unit) ->
+      Format.formatter ->
+      'a wrapped ->
+      unit =
+  fun ~pp_props ~pp_core fmt (wrapped : 'a wrapped) ->
+    match pp_props.pp with
+    | None ->
+      Format.fprintf fmt "%a" 
+        pp_core wrapped.core
+    | Some pp_props ->
+      Format.fprintf fmt "<%a>%a"
+        pp_props wrapped
+        pp_core wrapped.core
+
 let has w pf =
-  List.exists (fun p -> pf.pid = fst p) w.props
+  List.exists (is_prop_of ~pf) w.props
 
 let get w pf =
-  pf.get (List.find (fun p -> pf.pid = fst p) w.props)
+  pf.get (List.find (is_prop_of ~pf) w.props)
 
 let query w pf =
-  try Some (pf.get (List.find (fun p -> pf.pid = fst p) w.props)) with
+  try Some (pf.get (List.find (is_prop_of ~pf) w.props)) with
     | Not_found -> None
 
 let assign w pf v =
@@ -125,14 +151,14 @@ let props_of a =
   else invalid_arg "props_of"
 
 let unsafe_has a pf =
-  List.exists (fun p -> pf.pid = fst p) (props_of a)
+  List.exists (is_prop_of ~pf) (props_of a)
 
 let unsafe_get a pf = (* should this be really unsafe ? *)
-  try pf.get (List.find (fun p -> pf.pid = fst p) (props_of a))
+  try pf.get (List.find (is_prop_of ~pf) (props_of a))
   with Not_found -> assert false
 
 let unsafe_query a pf =
-  try Some (pf.get (List.find (fun p -> pf.pid = fst p) (props_of a))) with
+  try Some (pf.get (List.find (is_prop_of ~pf) (props_of a))) with
     | Not_found -> None
 
 let unsafe_assign (a : 'a) pf v : 'a =
