@@ -44,8 +44,14 @@ LEMMA NLEdgeElements ==
   BY EdgesAxiom DEF NonLoopEdges
 <1>. SUFFICES ASSUME m = n PROVE FALSE
   OBVIOUS
+<1>1. Cardinality(e) = 2
+  BY DEF NonLoopEdges
+<1>2. e = {m}
+  BY Zenon
+<1>3. Cardinality(e) = 1
+  BY <1>2, FS_Singleton
 <1>. QED
-  BY FS_Singleton DEF NonLoopEdges
+  BY <1>1, <1>3, SMT
 
 ------------------------------------------------------------------
 (***************************************************************************)
@@ -125,8 +131,12 @@ THEOREM
     <3>2. Degree(n, G) # 0
       <4>2. IsFiniteSet({ee \in G : n \in ee})
         BY EdgesFinite, FS_Subset, Zenon DEF NonLoopEdges, SimpleGraphs
+      <4>3a. e \in {ee \in G : n \in ee}
+        BY Zenon
+      <4>3b. {ee \in G : n \in ee} # {}
+        BY <4>3a, Zenon
       <4>3. Cardinality({ee \in G : n \in ee}) # 0
-        BY <4>2, FS_EmptySet, Isa
+        BY <4>2, <4>3b, FS_EmptySet, SMT
       <4>. QED
         BY <4>3 DEF Degree
     <3>. QED  BY <3>1, <3>2
@@ -145,19 +155,21 @@ THEOREM
       BY <3>1, <3>3 DEF Degree
     <3> DEFINE  nEdges == {e \in G : n \in e}
                 PossibleNEdges == {{m, n} : m \in Connected \ {n}}
+                f == [m \in Connected \ {n} |-> {m,n}]
     <3>4. /\ Cardinality(nEdges) \in Nat
           /\ Cardinality(nEdges) \leq Cardinality(PossibleNEdges)
       <4>1. IsFiniteSet(Connected \ {n})
         BY FS_Subset
-      <4>2. IsFiniteSet(PossibleNEdges)
-        BY <4>1, FS_Image, Isa
-      <4>. QED  BY <4>2, <3>2, FS_Subset, FS_CardinalityType
+      <4>2. f \in Surjection(Connected \ {n}, PossibleNEdges)
+        BY Fun_IsSurj, Zenon DEF PossibleNEdges
+      <4>3. IsFiniteSet(PossibleNEdges)
+        BY <4>1, <4>2, FS_Surjection
+      <4>. QED  BY <4>3, <3>2, FS_Subset, FS_CardinalityType
     <3> DEFINE NC == Cardinality(Connected \ {n})
     <3>5. /\ IsFiniteSet(Connected \ {n})
           /\ NC \in Nat
           /\ NC < Cardinality(Connected)
       BY FS_Subset, FS_CardinalityType
-    <3>. DEFINE f == [m \in Connected \ {n} |-> {m,n}]
     <3>6. f \in Bijection(Connected \ {n}, PossibleNEdges)
       BY Fun_IsBij, Zenon
     <3>7. NC = Cardinality(PossibleNEdges)
@@ -171,7 +183,7 @@ THEOREM
     <3>1. /\ IsFiniteSet(1 .. CC1)
           /\ Cardinality(1 .. CC1) < Cardinality(Connected)
       BY <2>2, <2>4, FS_Interval
-    <3> QED  BY <2>2, <2>4, <2>8, <3>1, FS_PigeonHole, Isa
+    <3> QED  BY <2>2, <2>4, <2>8, <3>1, FS_PigeonHole, SMT DEF CC1
   <2>. QED  BY <1>1, <1>3, <2>9
 <1>. QED  BY <1>2, <1>3
 =============================================================================
