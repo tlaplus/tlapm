@@ -10,7 +10,7 @@
 (**************************************************************************)
 EXTENDS Bags,
         FiniteSetTheorems,
-        SequenceTheorems
+        TLAPS
 
 LOCAL INSTANCE Naturals
 
