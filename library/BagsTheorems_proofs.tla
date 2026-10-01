@@ -8,10 +8,9 @@
 (* subset of the positive integers.  An element e belongs to bag B iff e  *)
 (* is in the domain of B, in which case bag B contains B[e] copies of e.  *)
 (**************************************************************************)
-EXTENDS TLC,
-        Bags,
+EXTENDS Bags,
         FiniteSetTheorems,
-        SequenceTheorems
+        TLAPS
 
 LOCAL INSTANCE Naturals
 
@@ -183,7 +182,7 @@ THEOREM Bags_Difference ==
   BY DEF IsABag, BagIn, BagToSet, CopiesIn
 <1>. HIDE DEF D
 <1>5. IsABag(R)
-  BY <1>2 DEF IsABag
+  BY <1>2, Zenon DEF IsABag
 <1>. QED  BY <1>1, <1>2, <1>3, <1>4, <1>5
 
 (***************************************************************************)

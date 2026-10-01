@@ -174,10 +174,9 @@ let init ?(out=Format.std_formatter) ?(err=Format.err_formatter) ?(terminate=exi
                 "<solver> set SMT solver to <solver>";
     "--smt-logic", Arg.String set_smt_logic,
                 "<logic> set SMT logic to <logic>";
-    "--fast-isabelle", Arg.Unit Params.set_fast_isabelle,
-                       " (Windows-only) Launch Isabelle with fast shortcut";
     "--stretch", Arg.Set_float Params.timeout_stretch,
               "<f> multiply all timeouts by <f>";
+    deprecated "--fast-isabelle" 0;
     blank;
     title "(advanced options)" ;
     blank;

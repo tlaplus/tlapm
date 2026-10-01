@@ -66,7 +66,7 @@ let printallobs = ref false
    If the sites are not available, then we assume this file layout to locate
    the Isabelle installation.
     - bin/tlapm
-    - lib/tlapm/backends/Isabelle
+    - lib/tlapm/backends/Isabelle-install
   *)
 let isabelle_base_path =
   let rec find paths =
@@ -77,16 +77,13 @@ let isabelle_base_path =
       List.fold_left
         Filename.concat
         prefix
-        ["lib"; "tlapm"; "backends"; "Isabelle"]
+        ["lib"; "tlapm"; "backends"; "Isabelle-install"]
     | path :: other ->
-      let isabelle_base = Filename.concat path "Isabelle" in
+      let isabelle_base = Filename.concat path "Isabelle-install" in
       match Sys.file_exists isabelle_base with
       | true -> isabelle_base
       | false -> find other
   in find Setup_paths.Sites.backends
-
-let isabelle_tla_path =
-  List.fold_left Filename.concat isabelle_base_path ["src"; "TLA+"]
 
 
 type executable =
@@ -152,45 +149,29 @@ let make_exec cmd args version = ref (Unchecked (cmd, args, version))
 
 let isabelle_success_string = "((TLAPS SUCCESS))"
 
+(* tlapm talks to Isabelle by loading a prebuilt heap directly into Poly/ML
+   and evaluating ML, rather than going through the "isabelle process"
+   wrapper which would need the JVM/Scala/rest of the Isabelle distribution.
+   `Options` is a small heap/layer on top of the TLA+ heap containing
+   the system options that "isabelle process" would otherwise reload via the
+   JVM on every invocation. *)
 let isabelle =
+  let path sub = List.fold_left Filename.concat isabelle_base_path sub in
+  let poly = path ["poly"; "poly"] in
+  let ml_home = path ["poly"] in
+  let heap = path ["heaps"; "Options"] in
+  let identifier_file = path ["etc"; "ISABELLE_IDENTIFIER"] in
   let cmd =
-    Printf.sprintf "isabelle process -e \"(use_thy \\\"$file\\\"; \
-                        writeln \\\"%s\\\");\" -d %s -l TLA+"
-                   isabelle_success_string
-                   isabelle_tla_path
+    Printf.sprintf
+      "export ISABELLE_HOME='%s'; \
+       export ML_HOME='%s'; \
+       echo 'PolyML.SaveState.loadState \"%s\"; \
+             (use_thy \"'\"$file\"'\"; writeln \"%s\");' | %s"
+      isabelle_base_path ml_home
+      heap
+      isabelle_success_string poly
   in
-  make_exec "isabelle" cmd "isabelle version"
-;;
-
-let set_fast_isabelle () =
-  if Sys.os_type <> "Cygwin" then
-    eprintf "Warning: --fast-isabelle is not available on this architecture \
-             (ignored)\n%!"
-  else begin try
-    let echos =
-      "echo \"$ISABELLE_HOME\"; echo \"$ML_HOME\"; echo \"$ISABELLE_OUTPUT\""
-    in
-    let pr_cmd =
-      sprintf "%s isabelle env sh -c %s" path_prefix (Filename.quote echos)
-    in
-    let ic = Unix.open_process_in pr_cmd in
-    let isabelle_home = input_line ic in
-    let ml_home = input_line ic in
-    let isabelle_output = input_line ic in
-    close_in ic;
-    let poly = Filename.concat ml_home "poly" in
-    let cmd =
-      Printf.sprintf "export ISABELLE_HOME='%s'; \
-                      export ML_HOME='%s'; \
-                      (echo 'PolyML.SaveState.loadState \"%s/TLA+\"; \
-                             (use_thy \"'\"$file\"'\"; writeln \"%s\");') | \
-                      %s"
-                     isabelle_home ml_home
-                     isabelle_output isabelle_success_string poly
-    in
-    isabelle := Unchecked (poly, cmd, "isabelle version");
-  with _ -> eprintf "Warning: error trying to set up fast-isabelle\n%!";
-  end
+  make_exec poly cmd (sprintf "cat %s" identifier_file)
 
 
 let zenon =

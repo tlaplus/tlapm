@@ -89,9 +89,10 @@ jobs:
                 TAG_REF_NAME: ${{ github.ref }}
                 REPOSITORY_NAME: ${{ github.repository }}
             - uses: actions/checkout@v2
-            - uses: ocaml/setup-ocaml@v2
+            - uses: ocaml/setup-ocaml@v3
               with:
                 ocaml-compiler: ${{ matrix.ocaml-compiler }}
+                opam-disable-sandboxing: true
             - uses: actions/cache@v4
               id: cache
               with:

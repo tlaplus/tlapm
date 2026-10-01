@@ -37,7 +37,7 @@
   "Jean-Baptiste Tristan"
   "Hernan Vanzetto")
  (sites
-  (lib backends) ; will contain all the provers, approx lib/tlapm/backends/.
+  (libexec backends) ; will contain all the provers, approx lib/tlapm/backends/.
   (lib stdlib))  ; TLA files composing the StdLib.
  (depends
   ocaml

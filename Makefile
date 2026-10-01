@@ -53,14 +53,12 @@ fmt:
 
 install:
 	dune install --prefix=$(PREFIX)
-	make -C $(PREFIX)/lib/tlapm/ -f Makefile.post-install
 
 TLAPM_RELEASE_DIR_NAME=tlapm
 TLAPM_RELEASE_DIR=$(DUNE_BUILD_DIR)/$(TLAPM_RELEASE_DIR_NAME)
 $(TLAPM_RELEASE_DIR): build
 #	rm -rf $(TLAPM_RELEASE_DIR)
 	dune install --relocatable --prefix $(TLAPM_RELEASE_DIR)
-	make -C $(TLAPM_RELEASE_DIR)/lib/tlapm -f Makefile.post-install
 	cd test && env \
 		USE_TLAPM=../$(TLAPM_RELEASE_DIR)/bin/tlapm \
 		USE_LIB=../$(TLAPM_RELEASE_DIR)/lib/tlapm/stdlib \

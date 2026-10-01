@@ -20,9 +20,7 @@ let stdlib_paths =
       specified site locations. *)
 let backend_path_string =
   let site_bin bs = Filename.concat bs "bin" in
-  let site_isa bs = List.fold_left Filename.concat bs [ "Isabelle"; "bin" ] in
-  let site_paths bs = [ site_bin bs; site_isa bs ] in
-  let path_elems = List.concat (List.map site_paths backend_paths) in
+  let path_elems = List.map site_bin backend_paths in
   Printf.sprintf "%s:%s" (String.concat ":" path_elems) (Sys.getenv "PATH")
 
 let find_path_containing paths file =
