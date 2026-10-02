@@ -96,15 +96,26 @@ let print_new_res ob st warns time_used =
 
 
 
-(**** duplicates prep.ml *****)
-let expand_defs ?(what = fun _ -> true) ob =
+(** Expands definitions.
+
+    NOTE: Largely duplicates prep.ml
+
+    If [~keep_defs:true], the returned sequent will contain all the original
+    definitions in the context. Otherwise, the visible definitions are removed.
+*)
+let expand_defs ?(what = fun _ -> true) ~(keep_defs : bool) ob =
   let rec visit sq =
     match Deque.front sq.context with
     | None -> sq
     | Some (h, hs) -> begin
         match h.core with
           | Defn ({core = Operator (_, e)}, wd, Visible, _) when what wd ->
-              visit (app_sequent (scons e (shift 0)) { sq with context = hs })
+              if keep_defs then (
+                let sq = visit (app_sequent (scons e (shift 0)) { sq with context = hs }) in
+                let sq = app_sequent (shift 1) sq in
+                { sq with context = Deque.cons h sq.context }
+              ) else (
+                visit (app_sequent (scons e (shift 0)) { sq with context = hs }))
           | _ ->
               let sq = visit { sq with context = hs } in
                 { sq with context = Deque.cons h sq.context }
@@ -116,9 +127,9 @@ let expand_defs ?(what = fun _ -> true) ob =
 
 
 
-let normalize really ob =
+let normalize really ?(keep_defs=false) ob =
 if not really then ob else
-  let ob = expand_defs ob in
+  let ob = expand_defs ~keep_defs ob in
   match (Expr.Elab.normalize Deque.empty (noprops (Expr.T.Sequent ob.obl.core))).core with
     | Expr.T.Sequent sq ->
        { ob with obl = { ob.obl with core = sq } }

@@ -303,6 +303,11 @@ let sub_step_unnamed (parent : t) : TL.Proof.T.stepno =
   let sn = sub_step_no parent in
   TL.Proof.T.Unnamed (sn, 0)
 
+let unnamed_under_stepno (parent : TL.Proof.T.stepno option) : TL.Proof.T.stepno
+    =
+  let sn = TL.Proof.T.sub_step_number parent in
+  TL.Proof.T.Unnamed (sn, 0)
+
 let with_prover_terminated (ps : t option) p_ref =
   let rec traverse ps =
     let sub = List.map traverse ps.sub in
