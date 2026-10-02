@@ -154,21 +154,29 @@ let isabelle_success_string = "((TLAPS SUCCESS))"
    wrapper which would need the JVM/Scala/rest of the Isabelle distribution.
    `Options` is a small heap/layer on top of the TLA+ heap containing
    the system options that "isabelle process" would otherwise reload via the
-   JVM on every invocation. *)
+   JVM on every invocation.
+   Each child heap records the absolute path of its parent as it was at
+   build time, so `loadState` on the top heap breaks once the installation
+   is moved. `loadHierarchy` takes the whole chain explicitly instead
+   (this is also what Isabelle itself does). *)
 let isabelle =
   let path sub = List.fold_left Filename.concat isabelle_base_path sub in
   let poly = path ["poly"; "poly"] in
   let ml_home = path ["poly"] in
-  let heap = path ["heaps"; "Options"] in
+  let heaps =
+    ["Pure"; "TLA+"; "Options"]
+    |> List.map (fun h -> sprintf "\"%s\"" (path ["heaps"; h]))
+    |> String.concat ", "
+  in
   let identifier_file = path ["etc"; "ISABELLE_IDENTIFIER"] in
   let cmd =
     Printf.sprintf
       "export ISABELLE_HOME='%s'; \
        export ML_HOME='%s'; \
-       echo 'PolyML.SaveState.loadState \"%s\"; \
+       echo 'PolyML.SaveState.loadHierarchy [%s]; \
              (use_thy \"'\"$file\"'\"; writeln \"%s\");' | %s"
       isabelle_base_path ml_home
-      heap
+      heaps
       isabelle_success_string poly
   in
   make_exec poly cmd (sprintf "cat %s" identifier_file)
