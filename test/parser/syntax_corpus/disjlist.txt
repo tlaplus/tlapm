@@ -214,15 +214,20 @@ Infix Op Disjlist
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
  \/ 1
   + 2 
  \/ 3
 ====
+---- MODULE TestPrelude ----
+CONSTANT _ + _
+====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (disj_list
       (disj_item
@@ -243,15 +248,20 @@ Division Infix Op Disjlist
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
  \/ 1
   / 2 
  \/ 3
 ====
+---- MODULE TestPrelude ----
+CONSTANT _ / _
+====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (disj_list
       (disj_item
@@ -272,15 +282,20 @@ Infix Op Terminated Disjlist
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
  \/ 1
  + 2 
  \/ 3
 ====
+---- MODULE TestPrelude ----
+CONSTANT _ + _
+====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (bound_infix_op
       lhs: (bound_infix_op
@@ -299,15 +314,20 @@ Division Infix Op Terminated Disjlist
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
  \/ 1
  / 2 
  \/ 3
 ====
+---- MODULE TestPrelude ----
+CONSTANT _ / _
+====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (bound_infix_op
       lhs: (bound_infix_op
@@ -428,6 +448,7 @@ Double-Nested Disjlist Terminated by Parentheses
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
   \/ 1
   \/  \/ 2 + (
@@ -437,10 +458,14 @@ op ==
       \/ 5
   \/ 6
 ====
+---- MODULE TestPrelude ----
+CONSTANT _ + _
+====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (disj_list
       (disj_item (bullet_disj) (nat_number))
@@ -493,10 +518,12 @@ Keyword-Unit-Terminated Disjlist
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
+
 op1 ==
   \/ 1
   \/ 2
-      ASSUME x
+      ASSUME A
 
 op2 ==
   \/ 3
@@ -519,10 +546,16 @@ op5 ==
   \/ 10
       VARIABLES x, y
 ====
+---- MODULE TestPrelude ----
+A == TRUE
+====
+---- MODULE ModuleName ----
+====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (disj_list
       (disj_item (bullet_disj) (nat_number))
@@ -543,7 +576,6 @@ op5 ==
       (disj_item (bullet_disj) (nat_number))
     )
   )
-  (single_line)
   (operator_definition name: (identifier) (def_eq) definition:
     (disj_list
       (disj_item (bullet_disj) (nat_number))
@@ -557,7 +589,8 @@ op5 ==
       (disj_item (bullet_disj) (nat_number))
     )
   )
-  (variable_declaration (identifier) (identifier))
+  (variable_declaration (identifier))
+  (variable_declaration (identifier))
 (double_line)))
 
 =============|||

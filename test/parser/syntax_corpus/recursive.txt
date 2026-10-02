@@ -1,23 +1,4 @@
 =============|||
-Basic Recursive Declaration
-=============|||
-
----- MODULE Test ----
-RECURSIVE f(_)
-====
-
--------------|||
-
-(source_file (module (header_line) name: (identifier) (header_line)
-  (recursive_declaration
-    (operator_declaration
-      name: (identifier)
-      parameter: (placeholder)
-    )
-  )
-(double_line)))
-
-=============|||
 Recursive Declaration With Reference
 =============|||
 
@@ -41,12 +22,17 @@ Recursive Declaration Without Parameters
 
 ---- MODULE Test ----
 RECURSIVE f
+f == f
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
   (recursive_declaration name: (identifier))
+  (operator_definition
+    name: (identifier) (def_eq)
+    definition: (identifier_ref)
+  )
 (double_line)))
 
 =============|||
@@ -55,6 +41,8 @@ Multiple Recursive Declarations
 
 ---- MODULE Test ----
 RECURSIVE f(_), g(_)
+f(x) == f(x)
+g(x) == g(x)
 ====
 
 -------------|||
@@ -64,6 +52,10 @@ RECURSIVE f(_), g(_)
     (operator_declaration name: (identifier) parameter: (placeholder))
     (operator_declaration name: (identifier) parameter: (placeholder))
   )
+  (operator_definition name: (identifier) parameter: (identifier) (def_eq)
+   definition: (bound_op name: (identifier_ref) parameter: (identifier_ref)))
+  (operator_definition name: (identifier) parameter: (identifier) (def_eq)
+   definition: (bound_op name: (identifier_ref) parameter: (identifier_ref)))
 (double_line)))
 
 =============|||
@@ -72,6 +64,12 @@ Mixed Recursive Declarations
 
 ---- MODULE Test ----
 RECURSIVE f(_), g, h(_, _, _), _+_, -. _, _ ^+
+f(x) == f(x)
+g == g
+h(x, y, z) == h(x, y, z)
+x + y == x + y
+-. x == -. x
+x ^+ == x ^+
 ====
 
 -------------|||
@@ -85,5 +83,22 @@ RECURSIVE f(_), g, h(_, _, _), _+_, -. _, _ ^+
     (operator_declaration name: (prefix_op_symbol (negative)) (placeholder))
     (operator_declaration (placeholder) name: (postfix_op_symbol (sup_plus)))
   )
+  (operator_definition name: (identifier) parameter: (identifier) (def_eq)
+   definition: (bound_op name: (identifier_ref) parameter: (identifier_ref)))
+  (operator_definition name: (identifier) (def_eq) definition:
+   (identifier_ref))
+  (operator_definition name: (identifier) parameter: (identifier) parameter:
+   (identifier) parameter: (identifier) (def_eq) definition:
+   (bound_op name: (identifier_ref) parameter: (identifier_ref) parameter:
+    (identifier_ref) parameter: (identifier_ref)))
+  (operator_definition parameter: (identifier) name: (infix_op_symbol (plus))
+   parameter: (identifier) (def_eq) definition:
+   (bound_infix_op lhs: (identifier_ref) symbol: (plus) rhs: (identifier_ref)))
+  (operator_definition name: (prefix_op_symbol (negative)) parameter:
+   (identifier) (def_eq) definition:
+   (bound_prefix_op symbol: (negative) rhs: (identifier_ref)))
+  (operator_definition parameter: (identifier) name:
+   (postfix_op_symbol (sup_plus)) (def_eq) definition:
+   (bound_postfix_op lhs: (identifier_ref) symbol: (sup_plus)))
 (double_line)))
 

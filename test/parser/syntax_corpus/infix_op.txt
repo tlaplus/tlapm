@@ -1,20 +1,4 @@
 =============|||
-Cartesian Product Infix Op Definition
-=============|||
-
----- MODULE Test ----
-x \X y == 0
-x \times y == 0
-====
-
--------------|||
-
-(source_file (module (header_line) name: (identifier) (header_line)
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (times)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (times)) parameter: (identifier) (def_eq) definition: (nat_number))
-(double_line)))
-
-=============|||
 Infix Operator Definition
 =============|||
 
@@ -28,41 +12,23 @@ x \asymp y == 4
 x \bigcirc y == 5
 x ::= y == 6
 x \bullet y == 7
-x \intersect y == 8
-x \cap y == 9
-x \cdot y == 10
-x \o y == 11
 x \circ y == 12
 x @@ y == 13
 x \cong y == 14
-x \union y == 15
-x \cup y == 16
 x \div y == 17
 x $ y == 18
 x $$ y == 19
 x \doteq y == 20
 x .. y == 21
 x ... y == 22
-x = y == 23
-x \equiv y == 24
 x !! y == 25
 x >= y == 26
-x \geq y == 27
 x \gg y == 28
 x > y == 29
 x ## y == 30
-x => y == 32
-x \in y == 33
-x /\ y == 34
-x \land y == 35
 x =| y == 36
-x ~> y == 37
 x <= y == 38
-x =< y == 39
-x \leq y == 40
 x \ll y == 41
-x \/ y == 42
-x \lor y == 43
 x -| y == 44
 x < y == 45
 x <: y == 46
@@ -73,21 +39,12 @@ x % y == 50
 x %% y == 51
 x * y == 52
 x ** y == 53
-x /= y == 54
-x # y == 55
-x \notin y == 56
 x (.) y == 57
-x \odot y == 58
 x (-) y == 59
-x \ominus y == 60
 x (+) y == 61
-x \oplus y == 62
 x (/) y == 63
-x \oslash y == 64
 x (\X) y == 65
-x \otimes y == 66
 x + y == 67
-x -+-> y == 68
 x ++ y == 69
 x ^ y == 70
 x ^^ y == 71
@@ -97,7 +54,6 @@ x \propto y == 74
 x ?? y == 75
 x |= y == 76
 x |- y == 77
-x \ y == 78
 x \sim y == 79
 x \simeq y == 80
 x / y == 81
@@ -110,7 +66,6 @@ x \sqsupset y == 87
 x \sqsupseteq y == 88
 x \star y == 89
 x \subset y == 90
-x \subseteq y == 91
 x \succ y == 92
 x \succeq y == 93
 x \supset y == 94
@@ -133,41 +88,23 @@ x \wr y == 101
   (operator_definition parameter: (identifier) name: (infix_op_symbol (bigcirc)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (bnf_rule)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (bullet)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (cap)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (cap)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (cdot)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (circ)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (circ)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (compose)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (cong)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (cup)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (cup)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (div)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (dol)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (doldol)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (doteq)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (dots_2)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (dots_3)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (eq)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (equiv)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (excl)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (geq)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (geq)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (gg)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (gt)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (hashhash)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (implies)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (in)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (land)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (land)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (ld_ttile)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (leads_to)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (leq)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (leq)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (leq)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (ll)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (lor)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (lor)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (ls_ttile)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (lt)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (map_from)) parameter: (identifier) (def_eq) definition: (nat_number))
@@ -178,21 +115,12 @@ x \wr y == 101
   (operator_definition parameter: (identifier) name: (infix_op_symbol (modmod)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (mul)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (mulmul)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (neq)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (neq)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (notin)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (odot)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (odot)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (ominus)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (ominus)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (oplus)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (oplus)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (oslash)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (oslash)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (otimes)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (otimes)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (plus)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (plus_arrow)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (plusplus)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (pow)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (powpow)) parameter: (identifier) (def_eq) definition: (nat_number))
@@ -202,7 +130,6 @@ x \wr y == 101
   (operator_definition parameter: (identifier) name: (infix_op_symbol (qq)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (rd_ttile)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (rs_ttile)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (setminus)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (sim)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (simeq)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (slash)) parameter: (identifier) (def_eq) definition: (nat_number))
@@ -215,7 +142,6 @@ x \wr y == 101
   (operator_definition parameter: (identifier) name: (infix_op_symbol (sqsupseteq)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (star)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (subset)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (subseteq)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (succ)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (succeq)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (supset)) parameter: (identifier) (def_eq) definition: (nat_number))
@@ -224,23 +150,6 @@ x \wr y == 101
   (operator_definition parameter: (identifier) name: (infix_op_symbol (vert)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (vertvert)) parameter: (identifier) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (infix_op_symbol (wr)) parameter: (identifier) (def_eq) definition: (nat_number))
-(double_line)))
-
-=============|||
-Cartesian Product Declaration as Parameter
-=============|||
-
----- MODULE Test ----
-op(_ \X _, _ \times _) == TRUE
-====
-
--------------|||
-
-(source_file (module (header_line) name: (identifier) (header_line)
-  (operator_definition name: (identifier)
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (times)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (times)) (placeholder))
-  (def_eq) definition: (boolean))
 (double_line)))
 
 =============|||
@@ -258,41 +167,23 @@ op(
   _ \bigcirc _,
   _ ::= _,
   _ \bullet _,
-  _ \intersect _,
-  _ \cap _,
-  _ \cdot _,
   _ \o _,
-  _ \circ _,
   _ @@ _,
   _ \cong _,
-  _ \union _,
-  _ \cup _,
   _ \div _,
   _ $ _,
   _ $$ _,
   _ \doteq _,
   _ .. _,
   _ ... _,
-  _ = _,
-  _ \equiv _,
   _ !! _,
   _ >= _,
-  _ \geq _,
   _ \gg _,
   _ > _,
   _ ## _,
-  _ => _,
-  _ \in _,
-  _ /\ _,
-  _ \land _,
   _ =| _,
-  _ ~> _,
   _ <= _,
-  _ =< _,
-  _ \leq _,
   _ \ll _,
-  _ \/ _,
-  _ \lor _,
   _ -| _,
   _ < _,
   _ <: _,
@@ -303,21 +194,12 @@ op(
   _ %% _,
   _ * _,
   _ ** _,
-  _ /= _,
-  _ # _,
-  _ \notin _,
   _ (.) _,
-  _ \odot _,
   _ (-) _,
-  _ \ominus _,
   _ (+) _,
-  _ \oplus _,
   _ (/) _,
-  _ \oslash _,
   _ (\X) _,
-  _ \otimes _,
   _ + _,
-  _ -+-> _,
   _ ++ _,
   _ ^ _,
   _ ^^ _,
@@ -327,7 +209,6 @@ op(
   _ ?? _,
   _ |= _,
   _ |- _,
-  _ \ _,
   _ \sim _,
   _ \simeq _,
   _ / _,
@@ -340,7 +221,6 @@ op(
   _ \sqsupseteq _,
   _ \star _,
   _ \subset _,
-  _ \subseteq _,
   _ \succ _,
   _ \succeq _,
   _ \supset _,
@@ -365,41 +245,23 @@ op(
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (bigcirc)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (bnf_rule)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (bullet)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (cap)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (cap)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (cdot)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (circ)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (circ)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (compose)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (cong)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (cup)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (cup)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (div)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (dol)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (doldol)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (doteq)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (dots_2)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (dots_3)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (eq)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (equiv)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (excl)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (geq)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (geq)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (gg)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (gt)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (hashhash)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (implies)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (in)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (land)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (land)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (ld_ttile)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (leads_to)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (leq)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (leq)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (leq)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (ll)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (lor)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (lor)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (ls_ttile)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (lt)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (map_from)) (placeholder))
@@ -410,21 +272,12 @@ op(
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (modmod)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (mul)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (mulmul)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (neq)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (neq)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (notin)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (odot)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (odot)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (ominus)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (ominus)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (oplus)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (oplus)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (oslash)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (oslash)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (otimes)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (otimes)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (plus)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (plus_arrow)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (plusplus)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (pow)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (powpow)) (placeholder))
@@ -434,7 +287,6 @@ op(
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (qq)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (rd_ttile)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (rs_ttile)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (setminus)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (sim)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (simeq)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (slash)) (placeholder))
@@ -447,7 +299,6 @@ op(
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (sqsupseteq)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (star)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (subset)) (placeholder))
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (subseteq)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (succ)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (succeq)) (placeholder))
     parameter: (operator_declaration (placeholder) name: (infix_op_symbol (supset)) (placeholder))
@@ -466,7 +317,7 @@ Infix Operator Application
 =============|||
 
 ---- MODULE Test ----
-
+EXTENDS TestPrelude
 op == {
   x & y,
   x && y,
@@ -493,7 +344,6 @@ op == {
   x ... y,
   x = y,
   x \equiv y,
-  x !! y,
   x >= y,
   x \geq y,
   x \gg y,
@@ -504,7 +354,6 @@ op == {
   x /\ y,
   x \land y,
   x =| y,
-  x ~> y,
   x <= y,
   x =< y,
   x \leq y,
@@ -535,7 +384,6 @@ op == {
   x (\X) y,
   x \otimes y,
   x + y,
-  x -+-> y,
   x ++ y,
   x ^ y,
   x ^^ y,
@@ -570,12 +418,94 @@ op == {
   x || y,
   x \wr y
 }
+====
+---- MODULE TestPrelude ----
+VARIABLES x, y
+CONSTANTS
+  _ & _,
+  _ && _,
+  _ \approx _,
+  _ := _,
+  _ \asymp _,
+  _ \bigcirc _,
+  _ ::= _,
+  _ \bullet _,
+  _ \o _,
+  _ \circ _,
+  _ @@ _,
+  _ \cong _,
+  _ \div _,
+  _ $ _,
+  _ $$ _,
+  _ \doteq _,
+  _ .. _,
+  _ ... _,
+  _ !! _,
+  _ >= _,
+  _ \geq _,
+  _ \gg _,
+  _ > _,
+  _ ## _,
+  _ =| _,
+  _ <= _,
+  _ =< _,
+  _ \leq _,
+  _ \ll _,
+  _ -| _,
+  _ < _,
+  _ <: _,
+  _ :> _,
+  _ - _,
+  _ -- _,
+  _ * _,
+  _ ** _,
+  _ (.) _,
+  _ \odot _,
+  _ (-) _,
+  _ \ominus _,
+  _ (+) _,
+  _ \oplus _,
+  _ (/) _,
+  _ \oslash _,
+  _ (\X) _,
+  _ \otimes _,
+  _ + _,
+  _ ++ _,
+  _ ^ _,
+  _ ^^ _,
+  _ \prec _,
+  _ \preceq _,
+  _ \propto _,
+  _ ?? _,
+  _ |= _,
+  _ |- _,
+  _ \sim _,
+  _ \simeq _,
+  _ / _,
+  _ // _,
+  _ \sqcap _,
+  _ \sqcup _,
+  _ \sqsubset _,
+  _ \sqsubseteq _,
+  _ \sqsupset _,
+  _ \sqsupseteq _,
+  _ \star _,
+  _ \subset _,
+  _ \succ _,
+  _ \succeq _,
+  _ \supset _,
+  _ \supseteq _,
+  _ \uplus _,
+  _ | _,
+  _ || _,
+  _ \wr _
 
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition: (finite_set_literal
     (bound_infix_op lhs: (identifier_ref) symbol: (amp) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (ampamp) rhs: (identifier_ref))
@@ -602,7 +532,6 @@ op == {
     (bound_infix_op lhs: (identifier_ref) symbol: (dots_3) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (eq) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (equiv) rhs: (identifier_ref))
-    (bound_infix_op lhs: (identifier_ref) symbol: (excl) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (geq) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (geq) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (gg) rhs: (identifier_ref))
@@ -613,7 +542,6 @@ op == {
     (bound_infix_op lhs: (identifier_ref) symbol: (land) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (land) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (ld_ttile) rhs: (identifier_ref))
-    (bound_infix_op lhs: (identifier_ref) symbol: (leads_to) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (leq) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (leq) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (leq) rhs: (identifier_ref))
@@ -644,7 +572,6 @@ op == {
     (bound_infix_op lhs: (identifier_ref) symbol: (otimes) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (otimes) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (plus) rhs: (identifier_ref))
-    (bound_infix_op lhs: (identifier_ref) symbol: (plus_arrow) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (plusplus) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (pow) rhs: (identifier_ref))
     (bound_infix_op lhs: (identifier_ref) symbol: (powpow) rhs: (identifier_ref))
@@ -682,19 +609,25 @@ op == {
 (double_line)))
 
 =============|||
-Cartesian Product as Parameter
+Infix Operator as Parameter
 =============|||
 
 ---- MODULE Test ----
-op == f(\X, \times)
+EXTENDS TestPrelude
+op == f(##, \otimes)
+====
+---- MODULE TestPrelude----
+CONSTANTS _ ## _, _ \otimes _
+f(x(_, _), y(_, _)) == 0
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition: (bound_op name: (identifier_ref)
-    parameter: (infix_op_symbol (times))
-    parameter: (infix_op_symbol (times))
+    parameter: (infix_op_symbol (hashhash))
+    parameter: (infix_op_symbol (otimes))
   ))
 (double_line)))
 
@@ -703,14 +636,20 @@ Infix Minus as Parameter
 =============|||
 
 ---- MODULE Test ----
-op == f ( - )
+EXTENDS TestPrelude
+op == f ( -. )
+====
+---- MODULE TestPrelude ----
+f(x(_)) == 0
+-. x == 1
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition: (bound_op name: (identifier_ref)
-    parameter: (infix_op_symbol (minus))
+    parameter: (prefix_op_symbol (negative))
   ))
 (double_line)))
 
@@ -719,6 +658,7 @@ Infix Operators as Parameters
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == f(
   &,
   &&,
@@ -745,7 +685,6 @@ op == f(
   ...,
   =,
   \equiv,
-  !!,
   >=,
   \geq,
   \gg,
@@ -820,10 +759,91 @@ op == f(
   \wr
 )
 ====
+---- MODULE TestPrelude ----
+CONSTANTS
+  _ & _,
+  _ && _,
+  _ \approx _,
+  _ := _,
+  _ \asymp _,
+  _ \bigcirc _,
+  _ ::= _,
+  _ \bullet _,
+  _ \o _,
+  _ \circ _,
+  _ @@ _,
+  _ \cong _,
+  _ \div _,
+  _ $ _,
+  _ $$ _,
+  _ \doteq _,
+  _ .. _,
+  _ ... _,
+  _ >= _,
+  _ \geq _,
+  _ \gg _,
+  _ > _,
+  _ ## _,
+  _ =| _,
+  _ <= _,
+  _ =< _,
+  _ \leq _,
+  _ \ll _,
+  _ -| _,
+  _ < _,
+  _ <: _,
+  _ :> _,
+  _ -- _,
+  _ * _,
+  _ ** _,
+  _ (.) _,
+  _ \odot _,
+  _ (-) _,
+  _ \ominus _,
+  _ (+) _,
+  _ \oplus _,
+  _ (/) _,
+  _ \oslash _,
+  _ (\X) _,
+  _ \otimes _,
+  _ + _,
+  _ ++ _,
+  _ ^ _,
+  _ ^^ _,
+  _ \prec _,
+  _ \preceq _,
+  _ \propto _,
+  _ ?? _,
+  _ |= _,
+  _ |- _,
+  _ \sim _,
+  _ \simeq _,
+  _ / _,
+  _ // _,
+  _ \sqcap _,
+  _ \sqcup _,
+  _ \sqsubset _,
+  _ \sqsubseteq _,
+  _ \sqsupset _,
+  _ \sqsupseteq _,
+  _ \star _,
+  _ \subset _,
+  _ \succ _,
+  _ \succeq _,
+  _ \supset _,
+  _ \supseteq _,
+  _ \uplus _,
+  _ | _,
+  _ || _,
+  _ \wr _
+
+f(a1(_,_),a2(_,_),a3(_,_),a4(_,_),a5(_,_),a6(_,_),a7(_,_),a8(_,_),a9(_,_),a10(_,_),a11(_,_),a12(_,_),a13(_,_),a14(_,_),a15(_,_),a16(_,_),a17(_,_),a18(_,_),a19(_,_),a20(_,_),a21(_,_),a22(_,_),a23(_,_),a24(_,_),a25(_,_),a26(_,_),a27(_,_),a28(_,_),a29(_,_),a30(_,_),a31(_,_),a32(_,_),a33(_,_),a34(_,_),a35(_,_),a36(_,_),a37(_,_),a38(_,_),a39(_,_),a40(_,_),a41(_,_),a42(_,_),a43(_,_),a44(_,_),a45(_,_),a46(_,_),a47(_,_),a48(_,_),a49(_,_),a50(_,_),a51(_,_),a52(_,_),a53(_,_),a54(_,_),a55(_,_),a56(_,_),a57(_,_),a58(_,_),a59(_,_),a60(_,_),a61(_,_),a62(_,_),a63(_,_),a64(_,_),a65(_,_),a66(_,_),a67(_,_),a68(_,_),a69(_,_),a70(_,_),a71(_,_),a72(_,_),a73(_,_),a74(_,_),a75(_,_),a76(_,_),a77(_,_),a78(_,_),a79(_,_),a80(_,_),a81(_,_),a82(_,_),a83(_,_),a84(_,_),a85(_,_),a86(_,_),a87(_,_),a88(_,_),a89(_,_),a90(_,_),a91(_,_),a92(_,_),a93(_,_),a94(_,_),a95(_,_)) == 0
+====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition: (bound_op name: (identifier_ref)
     parameter: (infix_op_symbol (amp))
     parameter: (infix_op_symbol (ampamp))
@@ -850,7 +870,6 @@ op == f(
     parameter: (infix_op_symbol (dots_3))
     parameter: (infix_op_symbol (eq))
     parameter: (infix_op_symbol (equiv))
-    parameter: (infix_op_symbol (excl))
     parameter: (infix_op_symbol (geq))
     parameter: (infix_op_symbol (geq))
     parameter: (infix_op_symbol (gg))
@@ -931,6 +950,7 @@ Nonfix Infix Operators
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == {
   A!B!&(x, y),
   A!B!&&(x, y),
@@ -940,38 +960,26 @@ op == {
   A!B!\bigcirc(x, y),
   A!B!::=(x, y),
   A!B!\bullet(x, y),
-  A!B!\intersect(x, y),
-  A!B!\cap(x, y),
-  A!B!\cdot(x, y),
   A!B!\o(x, y),
   A!B!\circ(x, y),
   A!B!@@(x, y),
   A!B!\cong(x, y),
-  A!B!\union(x, y),
-  A!B!\cup(x, y),
   A!B!\div(x, y),
   A!B!$(x, y),
   A!B!$$(x, y),
   A!B!\doteq(x, y),
   A!B!..(x, y),
   A!B!...(x, y),
-  A!B!=(x, y),
-  A!B!\equiv(x, y),
   A!B!>=(x, y),
   A!B!\geq(x, y),
   A!B!\gg(x, y),
   A!B!>(x, y),
   A!B!##(x, y),
-  A!B!=>(x, y),
-  A!B!\in(x, y),
-  A!B!\land(x, y),
   A!B!=|(x, y),
-  A!B!~>(x, y),
   A!B!<=(x, y),
   A!B!=<(x, y),
   A!B!\leq(x, y),
   A!B!\ll(x, y),
-  A!B!\lor(x, y),
   A!B!-|(x, y),
   A!B!<(x, y),
   A!B!<:(x, y),
@@ -982,9 +990,6 @@ op == {
   A!B!%%(x, y),
   A!B!*(x, y),
   A!B!**(x, y),
-  A!B!/=(x, y),
-  A!B!#(x, y),
-  A!B!\notin(x, y),
   A!B!(.)(x, y),
   A!B!\odot(x, y),
   A!B!(-)(x, y),
@@ -996,7 +1001,6 @@ op == {
   A!B!(\X)(x, y),
   A!B!\otimes(x, y),
   A!B!+(x, y),
-  A!B!-+->(x, y),
   A!B!++(x, y),
   A!B!^(x, y),
   A!B!^^(x, y),
@@ -1006,7 +1010,6 @@ op == {
   A!B!??(x, y),
   A!B!|=(x, y),
   A!B!|-(x, y),
-  A!B!\(x, y),
   A!B!\sim(x, y),
   A!B!\simeq(x, y),
   A!B!/(x, y),
@@ -1019,23 +1022,99 @@ op == {
   A!B!\sqsupseteq(x, y),
   A!B!\star(x, y),
   A!B!\subset(x, y),
-  A!B!\subseteq(x, y),
   A!B!\succ(x, y),
   A!B!\succeq(x, y),
   A!B!\supset(x, y),
   A!B!\supseteq(x, y),
-  A!B!\X(x, y),
-  A!B!\times(x, y),
   A!B!\uplus(x, y),
   A!B!|(x, y),
   A!B!||(x, y),
   A!B!\wr(x, y)
 }
 ====
+---- MODULE TestPrelude ----
+VARIABLES x, y
+A == INSTANCE M1
+====
+---- MODULE M1 ----
+B == INSTANCE M2
+====
+---- MODULE M2 ----
+a & b == 0
+a && b == 0
+a \approx b == 0
+a := b == 0
+a \asymp b == 0
+a \bigcirc b == 0
+a ::= b == 0
+a \bullet b == 0
+a \circ b == 0
+a @@ b == 0
+a \cong b == 0
+a \div b == 0
+a $ b == 0
+a $$ b == 0
+a \doteq b == 0
+a .. b == 0
+a ... b == 0
+a >= b == 0
+a \gg b == 0
+a > b == 0
+a ## b == 0
+a =| b == 0
+a <= b == 0
+a \ll b == 0
+a -| b == 0
+a < b == 0
+a <: b == 0
+a :> b == 0
+a - b == 0
+a -- b == 0
+a % b == 0
+a %% b == 0
+a * b == 0
+a ** b == 0
+a (.) b == 0
+a (-) b == 0
+a (+) b == 0
+a (/) b == 0
+a (\X) b == 0
+a + b == 0
+a ++ b == 0
+a ^ b == 0
+a ^^ b == 0
+a \prec b == 0
+a \preceq b == 0
+a \propto b == 0
+a ?? b == 0
+a |= b == 0
+a |- b == 0
+a \sim b == 0
+a \simeq b == 0
+a / b == 0
+a // b == 0
+a \sqcap b == 0
+a \sqcup b == 0
+a \sqsubset b == 0
+a \sqsubseteq b == 0
+a \sqsupset b == 0
+a \sqsupseteq b == 0
+a \star b == 0
+a \subset b == 0
+a \succ b == 0
+a \succeq b == 0
+a \supset b == 0
+a \supseteq b == 0
+a \uplus b == 0
+a | b == 0
+a || b == 0
+a \wr b == 0
+====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition: (finite_set_literal
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (amp)) (identifier_ref) (identifier_ref)))
@@ -1054,12 +1133,6 @@ op == {
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (bullet)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (cap)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (cap)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (cdot)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (circ)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (circ)) (identifier_ref) (identifier_ref)))
@@ -1067,10 +1140,6 @@ op == {
       (bound_nonfix_op symbol: (infix_op_symbol (compose)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (cong)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (cup)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (cup)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (div)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
@@ -1084,10 +1153,6 @@ op == {
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (dots_3)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (eq)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (equiv)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (geq)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (geq)) (identifier_ref) (identifier_ref)))
@@ -1098,15 +1163,7 @@ op == {
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (hashhash)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (implies)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (in)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (land)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (ld_ttile)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (leads_to)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (leq)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
@@ -1115,8 +1172,6 @@ op == {
       (bound_nonfix_op symbol: (infix_op_symbol (leq)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (ll)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (lor)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (ls_ttile)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
@@ -1137,12 +1192,6 @@ op == {
       (bound_nonfix_op symbol: (infix_op_symbol (mul)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (mulmul)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (neq)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (neq)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (notin)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (odot)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
@@ -1166,8 +1215,6 @@ op == {
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (plus)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (plus_arrow)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (plusplus)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (pow)) (identifier_ref) (identifier_ref)))
@@ -1185,8 +1232,6 @@ op == {
       (bound_nonfix_op symbol: (infix_op_symbol (rd_ttile)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (rs_ttile)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (setminus)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (sim)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
@@ -1212,8 +1257,6 @@ op == {
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (subset)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (subseteq)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (succ)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (succeq)) (identifier_ref) (identifier_ref)))
@@ -1221,10 +1264,6 @@ op == {
       (bound_nonfix_op symbol: (infix_op_symbol (supset)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (supseteq)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (times)) (identifier_ref) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (times)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (infix_op_symbol (uplus)) (identifier_ref) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
@@ -1241,26 +1280,22 @@ IFF Disambiguation
 =============|||
 
 ---- MODULE Test ----
-x <=> y == 0
-op(_ <=> _) == 0
-op == x <=> y
-op == f(<=>)
-op == A!B!<=>(x, y)
+EXTENDS TestPrelude
+op1 == x <=> y
+op2 == f(<=>)
+====
+---- MODULE TestPrelude ----
+VARIABLES x, y
+f(a(_, _)) == 0
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
-  (operator_definition parameter: (identifier) name: (infix_op_symbol (iff)) parameter: (identifier) (def_eq) definition: (nat_number))
-  (operator_definition name: (identifier)
-    parameter: (operator_declaration (placeholder) name: (infix_op_symbol (iff)) (placeholder))
-    (def_eq) definition: (nat_number))
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
-    (bound_infix_op lhs: (identifier_ref) symbol: (iff) rhs: (identifier_ref)))
+    (bound_infix_op lhs: (identifier_ref) symbol: (equiv) rhs: (identifier_ref)))
   (operator_definition name: (identifier) (def_eq) definition: (bound_op name: (identifier_ref)
-    parameter: (infix_op_symbol (iff))))
-  (operator_definition name: (identifier) (def_eq) definition:
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (infix_op_symbol (iff)) (identifier_ref) (identifier_ref))))
+    parameter: (infix_op_symbol (equiv))))
 (double_line)))
 

@@ -3,13 +3,18 @@ Bounded Quantification
 ==============================|||
 
 ---- MODULE Test ----
-op == \A x, y \in Nat, z \in Int, a, b, c \in Real : FALSE
-op == \E x, y \in Nat, a, b \in Int : TRUE
+EXTENDS TestPrelude
+op1 == \A x, y \in Nat, z \in Int, a, b, c \in Real : FALSE
+op2 == \E x, y \in Nat, a, b \in Int : TRUE
+====
+---- MODULE TestPrelude ----
+CONSTANTS Nat, Real, Int
 ====
 
 ------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (bounded_quantification
       quantifier: (forall)
@@ -59,13 +64,18 @@ Verbose Bounded Quantification
 ==============================|||
 
 ---- MODULE Test ----
-op == \forall x, y \in Nat, z \in Int, a, b, c \in Real : FALSE
-op == \exists x, y \in Nat, a, b \in Int : TRUE
+EXTENDS TestPrelude
+op1 == \forall x, y \in Nat, z \in Int, a, b, c \in Real : FALSE
+op2 == \exists x, y \in Nat, a, b \in Int : TRUE
+====
+---- MODULE TestPrelude ----
+CONSTANTS Nat, Real, Int
 ====
 
 ------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (bounded_quantification
       quantifier: (forall)
@@ -115,13 +125,18 @@ Bounded Quantification With Tuples
 ==============================|||
 
 ---- MODULE Test ----
-op == \A <<x, y>> \in Nat, <<z>> \in Int, <<a, b, c>> \in Real : FALSE
-op == \E <<x, y>> \in Nat, <<a, b>> \in Int : TRUE
+EXTENDS TestPrelude
+op1 == \A <<x, y>> \in Nat, <<z>> \in Int, <<a, b, c>> \in Real : FALSE
+op2 == \E <<x, y>> \in Nat, <<a, b>> \in Int : TRUE
+====
+---- MODULE TestPrelude ----
+CONSTANTS Nat, Real, Int
 ====
 
 ------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (bounded_quantification
       quantifier: (forall)
@@ -181,13 +196,18 @@ Mixed Bounded Quantification With Tuples
 ==============================|||
 
 ---- MODULE Test ----
-op == \A x, y \in Nat, <<z>> \in Int, a, b, c \in Real : FALSE
-op == \E <<x, y>> \in Nat, a, b \in Int : TRUE
+EXTENDS TestPrelude
+op1 == \A x, y \in Nat, <<z>> \in Int, a, b, c \in Real : FALSE
+op2 == \E <<x, y>> \in Nat, a, b \in Int : TRUE
+====
+---- MODULE TestPrelude ----
+CONSTANTS Nat, Real, Int
 ====
 
 ------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (bounded_quantification
       quantifier: (forall)
@@ -252,10 +272,10 @@ Unbounded Quantification
 ==============================|||
 
 ---- MODULE Test ----
-op == \A x : TRUE
-op == \E x, y : FALSE
-op == \AA x, y, z : TRUE
-op == \EE x, y, z, w : FALSE
+op1 == \A x : TRUE
+op2 == \E x, y : FALSE
+op3 == \AA x, y, z : TRUE
+op4 == \EE x, y, z, w : FALSE
 ====
 
 ------------------------------|||
@@ -302,12 +322,17 @@ Bounded CHOOSE
 ==============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == CHOOSE x \in Nat : TRUE
+====
+---- MODULE TestPrelude ----
+CONSTANTS Nat
 ====
 
 ------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (choose
       intro: (identifier)
@@ -323,12 +348,17 @@ Bounded CHOOSE With Tuple
 ==============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == CHOOSE <<x, y, z>> \in S : FALSE
+====
+---- MODULE TestPrelude ----
+VARIABLE S
 ====
 
 ------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (choose
       intro: (tuple_of_identifiers (langle_bracket) (identifier) (identifier) (identifier) (rangle_bracket))
