@@ -614,6 +614,7 @@ let main fs =
     (* load the transitive closure over extends of all modules *)
     (* TODO: load also modules that occur in `INSTANCE` statements from extended modules. *)
     let mcx = Module.Save.complete_load ~clock:Clocks.parsing mcx in
+    let mcx = Util.Coll.Sm.map Intermediate.expand mcx in
     (* flatten the modules *)
     let (mcx, mods) = Module.Dep.schedule mcx in
       let f mcx m =
@@ -681,6 +682,7 @@ let modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~pre
         let mcx = Module.Standard.initctx in
         let mcx = Sm.add mule.core.name.core mule mcx in
         let mcx = Module.Save.complete_load ~clock:Clocks.parsing mcx in
+        let mcx = Util.Coll.Sm.map Intermediate.expand mcx in
         let (mcx, mods) = Module.Dep.schedule mcx in
         let mcx, mule = List.fold_left (fun (mcx, found) m ->
             let (mcx, m, _summ) = Module.Elab.normalize mcx Deque.empty m in
