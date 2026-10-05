@@ -111,7 +111,7 @@ let get_exec err e =
      ignore (Sys.command stat);
      let check = sprintf "%s type %s >/tmp/check-%d-%d.txt" path_prefix exec tod r in
        *)
-     let check = sprintf "%s type %s >/dev/null" path_prefix exec in
+     let check = sprintf "%s type %s >/dev/null" path_prefix (Filename.quote exec) in
      (* eprintf "probing command: %s\n" check; *)
      begin match Sys.command check with
      | 0 ->
@@ -149,6 +149,24 @@ let make_exec cmd args version = ref (Unchecked (cmd, args, version))
 
 let isabelle_success_string = "((TLAPS SUCCESS))"
 
+(* ML string literal for arbitrary bytes, as Poly/ML accepts only printable
+   ASCII in string literals. A port of Isabelle's ML_Syntax.print_string_bytes
+   (src/Pure/ML/ml_syntax.scala). *)
+let ml_string_bytes s =
+  let print_byte c =
+    match c with
+    | '"' -> "\\\""
+    | '\\' -> "\\\\"
+    | '\t' -> "\\t"
+    | '\n' -> "\\n"
+    | '\012' -> "\\f"
+    | '\r' -> "\\r"
+    | c when Char.code c < 32 -> sprintf "\\^%c" (Char.chr (Char.code c + 64))
+    | c when Char.code c < 127 -> String.make 1 c
+    | c -> sprintf "\\%d" (Char.code c)
+  in
+  "\"" ^ String.fold_right (fun c acc -> print_byte c ^ acc) s "" ^ "\""
+
 (* tlapm talks to Isabelle by loading a prebuilt heap directly into Poly/ML
    and evaluating ML, rather than going through the "isabelle process"
    wrapper which would need the JVM/Scala/rest of the Isabelle distribution.
@@ -165,7 +183,7 @@ let isabelle =
   let ml_home = path ["poly"] in
   let heaps =
     ["Pure"; "TLA+"; "Options"]
-    |> List.map (fun h -> sprintf "\"%s\"" (path ["heaps"; h]))
+    |> List.map (fun h -> ml_string_bytes (path ["heaps"; h]))
     |> String.concat ", "
   in
   let identifier_file = path ["etc"; "ISABELLE_IDENTIFIER"] in
@@ -173,13 +191,13 @@ let isabelle =
     Printf.sprintf
       "export ISABELLE_HOME='%s'; \
        export ML_HOME='%s'; \
-       echo 'PolyML.SaveState.loadHierarchy [%s]; \
-             (use_thy \"'\"$file\"'\"; writeln \"%s\");' | %s"
-      isabelle_base_path ml_home
-      heaps
-      isabelle_success_string poly
+       '%s' --eval %s \
+            --eval \"(use_thy $file_ml; writeln \\\"%s\\\")\" </dev/null"
+      isabelle_base_path ml_home poly
+      (Filename.quote (sprintf "PolyML.SaveState.loadHierarchy [%s]" heaps))
+      isabelle_success_string
   in
-  make_exec poly cmd (sprintf "cat %s" identifier_file)
+  make_exec poly cmd (sprintf "cat '%s'" identifier_file)
 
 
 let zenon =
@@ -476,10 +494,14 @@ let has_explicit_target () =
   !tb_sl > 0 || !tb_el < max_int
 
 let solve_cmd cmd file =
+  let vars =
+    sprintf "file=%s; file_ml=%s;"
+      (Filename.quote file) (Filename.quote (ml_string_bytes file))
+  in
   if Sys.os_type = "Cygwin" then
-    sprintf "file=%s; winfile=\"`cygpath -a -w \"%s\"`\"; %s" file file (get_exec Format.err_formatter cmd)
+    sprintf "%s winfile=\"`cygpath -a -w \"$file\"`\"; %s" vars (get_exec Format.err_formatter cmd)
   else
-    sprintf "file=%s; %s" file (get_exec Format.err_formatter cmd)
+    sprintf "%s %s" vars (get_exec Format.err_formatter cmd)
 
 
 let external_tool_config (err : Format.formatter) force (name, tool) =

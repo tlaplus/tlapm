@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+#
+# Check that a release tarball works after being unpacked to an unusual
+# location, with the build tree it was made from out of the way.
+#
+set -euo pipefail
+
+TARBALL=$(cd "$(dirname "$1")" && pwd)/$(basename "$1")
+BUILD_DIR=$(cd "${2:-_build}" && pwd)
+
+WORK_DIR=$(mktemp -d)
+DEST="$WORK_DIR/This is Puré (strange) & co"
+SPEC="$DEST/spec dir ąčę"
+CACHE="$DEST/cache dir ąčę"
+HIDDEN_SUFFIX=".hidden-by-check_relocated_release"
+HIDE=(
+    "$BUILD_DIR/default/deps/isabelle"
+    "$BUILD_DIR/install"
+    "$BUILD_DIR/tlapm"
+)
+
+restore() {
+    for d in "${HIDE[@]}"; do
+        if [ -e "$d$HIDDEN_SUFFIX" ]; then mv "$d$HIDDEN_SUFFIX" "$d"; fi
+    done
+    rm -rf "$WORK_DIR"
+}
+trap restore EXIT INT TERM
+
+for d in "${HIDE[@]}"; do
+    if [ -e "$d$HIDDEN_SUFFIX" ]; then
+        echo "Leftover $d$HIDDEN_SUFFIX, restore it first." >&2
+        exit 2
+    fi
+done
+
+mkdir -p "$DEST" "$SPEC"
+tar -xzf "$TARBALL" -C "$DEST"
+TLAPM=$(find "$DEST" -path '*/bin/tlapm' -type f | head -n 1)
+if [ -z "$TLAPM" ]; then
+    echo "No bin/tlapm in $TARBALL" >&2
+    exit 1
+fi
+echo "Checking relocated $TLAPM"
+
+for d in "${HIDE[@]}"; do
+    if [ -e "$d" ]; then mv "$d" "$d$HIDDEN_SUFFIX"; fi
+done
+
+cat > "$SPEC/RelocTrue.tla" <<'EOF'
+---- MODULE RelocTrue ----
+EXTENDS Naturals, TLAPS
+THEOREM \A x \in Nat : x + 0 = x
+  BY Isa
+====
+EOF
+
+cat > "$SPEC/RelocFalse.tla" <<'EOF'
+---- MODULE RelocFalse ----
+EXTENDS Naturals, TLAPS
+THEOREM 1 = 2
+  BY Isa
+====
+EOF
+
+FAILED=0
+cd "$SPEC"
+
+if "$TLAPM" --cleanfp --cache-dir "$CACHE" --toolbox 0 0 RelocTrue.tla > true.log 2>&1 \
+    && grep -q "@!!prover:isabelle" true.log \
+    && grep -q "All [0-9]* obligations proved" true.log; then
+    echo "OK: provable theorem proved by Isabelle."
+else
+    echo "FAIL: provable theorem was not proved:" >&2
+    cat true.log >&2
+    FAILED=1
+fi
+
+# With --toolbox, tlapm exits with 0 even if obligations fail.
+"$TLAPM" --cleanfp --cache-dir "$CACHE" --toolbox 0 0 RelocFalse.tla > false.log 2>&1 || true
+if grep -q "@!!prover:isabelle" false.log \
+    && grep -q "@!!status:failed" false.log \
+    && grep -q "obligations failed" false.log; then
+    echo "OK: false theorem rejected by Isabelle."
+else
+    echo "FAIL: false theorem was not rejected by Isabelle:" >&2
+    cat false.log >&2
+    FAILED=1
+fi
+
+exit $FAILED

@@ -193,7 +193,7 @@ let zenon_prove ob org_ob time res_cont =
   try
     let (inf, inc, outf, outc) = mk_temps cleanup ".znn" in
     let zcmd =
-      Printf.sprintf "%s >%s" (Params.solve_cmd Params.zenon inf) outf
+      Printf.sprintf "%s >%s" (Params.solve_cmd Params.zenon inf) (Filename.quote outf)
     in
     let in_text =
       ignore (Format.flush_str_formatter ());
@@ -238,7 +238,7 @@ let ls4_prove ob org_ob time res_cont =
   try
     let (inf, inc, outf, outc) = mk_temps cleanup ".ls4" in
     let cmd =
-      Printf.sprintf "%s >%s" (Params.solve_cmd Params.ls4 inf) outf
+      Printf.sprintf "%s >%s" (Params.solve_cmd Params.ls4 inf) (Filename.quote outf)
     in
     let in_text =
       ignore (Format.flush_str_formatter ());
@@ -280,7 +280,7 @@ let isabelle_prove ob org_ob tmo tac res_cont =
     Isabelle.thy_temp ob tac thy_mod_name inc;
     flush inc;
     let cmdline =
-      Printf.sprintf "%s >%s" (Params.solve_cmd Params.isabelle thy_path) outf
+      Printf.sprintf "%s >%s" (Params.solve_cmd Params.isabelle thy_path) (Filename.quote outf)
     in
     let warnings = Errors.get_warnings () in
     let finished time_used =
@@ -325,7 +325,7 @@ let zipper_prove ob org_ob time res_cont =
   try
     let (inf, inc, outf, outc) = mk_temps cleanup ".p" in
     let zcmd =
-      Printf.sprintf "%s >%s" (Params.solve_cmd Params.zipper inf) outf
+      Printf.sprintf "%s >%s" (Params.solve_cmd Params.zipper inf) (Filename.quote outf)
     in
     let in_text =
       ignore (Format.flush_str_formatter ());
@@ -433,7 +433,7 @@ let gen_smt_solve ?(rlimit=None) suffix exec desc fmt_expr meth ob org_ob f res_
   try
     let (inf, inc, outf, outc) = mk_temps cleanup suffix in
     let solver = Params.solve_cmd exec inf in
-    let cmdline = Printf.sprintf "%s >%s" solver outf in
+    let cmdline = Printf.sprintf "%s >%s" solver (Filename.quote outf) in
     let in_text =
       ignore (Format.flush_str_formatter ());
       fmt_expr Format.str_formatter ob;
