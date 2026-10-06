@@ -3,15 +3,22 @@ Basic Assume/Prove
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM thm ==
   ASSUME P, Q
   PROVE C
 OBVIOUS
 ====
+---- MODULE TestPrelude ----
+P == TRUE
+Q == TRUE
+C == TRUE
+====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem
     name: (identifier) (def_eq)
     statement: (assume_prove
@@ -28,6 +35,7 @@ Nested Assume/Prove
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM thm ==
   ASSUME
     ASSUME P
@@ -35,10 +43,16 @@ THEOREM thm ==
   PROVE C
 OMITTED
 ====
+---- MODULE TestPrelude ----
+P == TRUE
+Q == TRUE
+C == TRUE
+====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem
     name: (identifier) (def_eq)
     statement: (assume_prove
@@ -59,6 +73,7 @@ Nested Assume/Prove With Label
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM thm ==
   ASSUME asm ::
     ASSUME P
@@ -66,10 +81,16 @@ THEOREM thm ==
   PROVE C
 OMITTED
 ====
+---- MODULE TestPrelude ----
+P == TRUE
+Q == TRUE
+C == TRUE
+====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem
     name: (identifier) (def_eq)
     statement: (assume_prove
@@ -91,19 +112,25 @@ Assume/Prove With New Identifier of Unspecified Level
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM thm ==
   ASSUME NEW x \in S
   PROVE C
 OBVIOUS
 ====
+---- MODULE TestPrelude ----
+S == {0}
+C == TRUE
+====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem
     name: (identifier) (def_eq)
     statement: (assume_prove
-      assumption: (new (identifier) (set_in) (identifier_ref))
+      assumption: (new (statement_level) (identifier) (set_in) (identifier_ref))
       conclusion: (identifier_ref)
     )
     proof: (terminal_proof)
@@ -115,15 +142,21 @@ Assume/Prove With New Bound Constant
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM thm ==
   ASSUME NEW CONSTANT x \in S
   PROVE C
 OBVIOUS
 ====
+---- MODULE TestPrelude ----
+S == {0}
+C == TRUE
+====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem
     name: (identifier) (def_eq)
     statement: (assume_prove
@@ -139,15 +172,20 @@ Assume/Prove With New Bound Variable
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM thm ==
   ASSUME NEW VARIABLE x
   PROVE C
 OBVIOUS
 ====
+---- MODULE TestPrelude ----
+C == TRUE
+====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem
     name: (identifier) (def_eq)
     statement: (assume_prove
@@ -163,15 +201,20 @@ Assume/Prove With New Unbound Constant
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM thm ==
   ASSUME NEW CONSTANT x
   PROVE C
 OBVIOUS
 ====
+---- MODULE TestPrelude ----
+C == TRUE
+====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem
     name: (identifier) (def_eq)
     statement: (assume_prove
@@ -187,15 +230,21 @@ Assume/Prove With Multiple New Bound Constants
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM thm ==
   ASSUME CONSTANT x \in S, CONSTANT y \in S
   PROVE C
 OBVIOUS
 ====
+---- MODULE TestPrelude ----
+S == {0}
+C == TRUE
+====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem
     name: (identifier) (def_eq)
     statement: (assume_prove
@@ -212,15 +261,20 @@ Assume/Prove With New Operator
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM thm ==
   ASSUME NEW TEMPORAL f(_, _)
   PROVE C
 OMITTED
 ====
+---- MODULE TestPrelude ----
+C == TRUE
+====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem
     name: (identifier) (def_eq)
     statement: (assume_prove
@@ -239,9 +293,13 @@ Assume/Prove with Multiple New Identifiers
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM TRUE
   ASSUME NEW x, y \in S
   PROVE TRUE
+====
+---- MODULE TestPrelude ----
+S == {0}
 ====
 
 -------------------------------|||
@@ -252,9 +310,13 @@ Assume/Prove with Tupled New Identifiers
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM TRUE
   ASSUME NEW <<x, y>> \in S
   PROVE TRUE
+====
+---- MODULE TestPrelude ----
+S == {}
 ====
 
 -------------------------------|||
@@ -265,6 +327,7 @@ Assume/Prove in Suffices Step
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM TRUE
 <1>a. SUFFICES
   ASSUME CONSTANT x \in S
@@ -272,10 +335,14 @@ THEOREM TRUE
   PROVE TRUE
 <1>b. QED
 ====
+---- MODULE TestPrelude ----
+S == {}
+====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem statement: (boolean)
     proof: (non_terminal_proof
       (proof_step (proof_step_id (level) (name))
@@ -294,6 +361,7 @@ Assume/Prove with Mixed Assumptions
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 THEOREM thm ==
   ASSUME
     NEW CONSTANT f,
@@ -304,10 +372,17 @@ THEOREM thm ==
   PROVE C
 OMITTED
 ====
+---- MODULE TestPrelude ----
+x + y == 0
+P == TRUE
+Q == TRUE
+C == TRUE
+====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (theorem
     name: (identifier) (def_eq)
     statement: (assume_prove

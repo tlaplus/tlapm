@@ -57,7 +57,7 @@ String with comment start
 ==================|||
 
 ---- MODULE Test ----
-op == "\*"
+op == "\\*"
 ====
 
 ------------------|||
@@ -99,7 +99,7 @@ String with supported escape chars
 ==================|||
 
 ---- MODULE Test ----
-op == "\\ \n \r \f \t \""
+op == "\\ \n \r \t \""
 ====
 
 ------------------|||
@@ -107,7 +107,6 @@ op == "\\ \n \r \f \t \""
 (source_file (module (header_line) name: (identifier) (header_line)
   (operator_definition name: (identifier) (def_eq) definition:
     (string
-      (escape_char)
       (escape_char)
       (escape_char)
       (escape_char)

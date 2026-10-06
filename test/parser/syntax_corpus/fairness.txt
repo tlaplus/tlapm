@@ -3,12 +3,17 @@ Basic Weak Fairness
 =====================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == WF_(vars)(x)
+====
+---- MODULE TestPrelude ----
+VARIABLES vars, x
 ====
 
 ---------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (fairness (parentheses (identifier_ref)) (identifier_ref))
   )
@@ -19,12 +24,17 @@ Basic Strong Fairness
 =====================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == SF_(vars)(x)
+====
+---- MODULE TestPrelude ----
+VARIABLES vars, x
 ====
 
 ---------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (fairness (parentheses (identifier_ref)) (identifier_ref))
   )
@@ -35,12 +45,17 @@ Weak Fairness Ambiguity
 =====================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == WF_vars(x)
+====
+---- MODULE TestPrelude ----
+VARIABLES vars, x
 ====
 
 ---------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (fairness (identifier_ref) (identifier_ref))
   )
@@ -51,12 +66,17 @@ Strong Fairness Ambiguity
 =====================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == SF_vars(x)
+====
+---- MODULE TestPrelude ----
+VARIABLES vars, x
 ====
 
 ---------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (fairness (identifier_ref) (identifier_ref))
   )
@@ -67,13 +87,18 @@ Fairness with Tuple Literal
 ==============================|||
 
 ---- MODULE Test ----
-op == WF_<<x, y>>(f)
-op == SF_x(f)
+EXTENDS TestPrelude
+op1 == WF_<<x, y>>(f)
+op2 == SF_x(f)
+====
+---- MODULE TestPrelude ----
+VARIABLES f, x, y
 ====
 
 ------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (fairness
       (tuple_literal
