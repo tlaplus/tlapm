@@ -11,12 +11,14 @@ ifeq ($(OS_TYPE),Linux)
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_linux.tar.gz
 	ISABELLE_ARCHIVE_TYPE=tgz
 	ISABELLE_ARCHIVE_DIR=$(ISABELLE_VSN)
+	FIND_EXEC=-executable
 endif
 ifeq ($(OS_TYPE),Darwin)
 	ISABELLE_SHA256=ea5754c228857f5d9d3ae254ec9814797f2453ea290df20b2f6dcb2ef0e2e7f8
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_macos.tar.gz
 	ISABELLE_ARCHIVE_TYPE=tgz
 	ISABELLE_ARCHIVE_DIR=$(ISABELLE_VSN).app
+	FIND_EXEC=-perm +111
 endif
 ifeq ($(OS_TYPE),Cygwin)
 	# TODO: Fix this.
@@ -24,6 +26,7 @@ ifeq ($(OS_TYPE),Cygwin)
 	ISABELLE_ARCHIVE=$(ISABELLE_VSN)_bundle_x86-cygwin.tar.gz
 	ISABELLE_ARCHIVE_TYPE=tgz
 	ISABELLE_ARCHIVE_DIR=$(ISABELLE_VSN)
+	FIND_EXEC=-executable
 endif
 
 ISABELLE_URL=https://isabelle.in.tum.de/website-$(ISABELLE_VSN)/dist/$(ISABELLE_ARCHIVE)
@@ -35,7 +38,7 @@ PROJECT_ROOT=$(if $(DUNE_SOURCEROOT),$(DUNE_SOURCEROOT),../..)
 CACHE_DIR=$(PROJECT_ROOT)/_build_cache
 
 
-all: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+ $(ISABELLE_TEST) Isabelle-install
+all: $(ISABELLE_DIR) $(ISABELLE_DIR)/src/TLA+ $(ISABELLE_TEST) Isabelle.exec-files
 
 # Download the isabelle archive to the cache.
 $(CACHE_DIR)/$(ISABELLE_ARCHIVE):
@@ -79,6 +82,10 @@ $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 		&& rm -rf contrib/ProofGeneral* doc heaps/*/HOL contrib/vscodium* contrib/vscode* \
 		&& awk '/^((contrib\/(vscode_extension|vscodium))|(src\/Tools\/Demo))/{ print "#rm at TLA# " $$0; next } END { print "src/TLA+" } { print }' etc/components > etc/components.tmp \
 		&& rm etc/components && mv etc/components.tmp etc/components
+	cd $(ISABELLE_DIR) \
+		&& HEAPS_PATH=$(shell pwd)/$(ISABELLE_DIR)/heaps \
+		&& cp etc/settings etc/settings.target \
+		&& echo "ISABELLE_OUTPUT=$$HEAPS_PATH" >> etc/settings
 	mkdir -p $(ISABELLE_DIR)/src/TLA+ \
 		&& cp -a ../../isabelle/* $(ISABELLE_DIR)/src/TLA+/ \
 		&& chmod -R u+w $(ISABELLE_DIR)/src/TLA+/ \
@@ -87,32 +94,16 @@ $(ISABELLE_DIR)/src/TLA+: $(ISABELLE_DIR)
 		&& ./bin/isabelle build -o system_heaps -o document=false -b -v -d src/Pure Pure \
 		&& ./bin/isabelle build -o system_heaps -o document=false -b -c -v -d src/TLA+ TLA+ \
 		&& rm -rf ./heaps/polyml-*/log/*
-
-# Bake the options "isabelle process -l TLA+" would otherwise reload via the
-# JVM on every invocation into a small extra heap layer on top of TLA+, so
-# Params.isabelle (src/params.ml) can just load that layer instead.
-$(ISABELLE_DIR)/etc/ml_platform.txt: $(ISABELLE_DIR)/src/TLA+
 	cd $(ISABELLE_DIR) \
-		&& ./bin/isabelle env sh -c 'basename "$$ML_HOME"' > etc/ml_platform.txt
-	cd $(ISABELLE_DIR) \
-		&& PLATFORM=$$(cat etc/ml_platform.txt) \
-		&& ./bin/isabelle process \
-			-e 'ML_Heap.save_child "heaps/polyml-5.9.1_'"$$PLATFORM"'/Options";' \
-			-d src/TLA+ -l TLA+
+		&& rm etc/settings \
+		&& mv etc/settings.target etc/settings
 
-# Assemble the minimal subset of the built distribution that tlapm actually
-# needs at runtime.
-Isabelle-install: $(ISABELLE_DIR)/etc/ml_platform.txt
-	rm -rf $@
-	mkdir -p $@/poly $@/etc $@/heaps
-	cp -a $(ISABELLE_DIR)/etc/ISABELLE_IDENTIFIER $@/etc/ISABELLE_IDENTIFIER
-	PLATFORM=$$(cat $(ISABELLE_DIR)/etc/ml_platform.txt) \
-		&& cp -a $(ISABELLE_DIR)/contrib/polyml-5.9.1/$$PLATFORM/. $@/poly/ \
-		&& cp -a $(ISABELLE_DIR)/heaps/polyml-5.9.1_$$PLATFORM/Pure $@/heaps/Pure \
-		&& cp -a $(ISABELLE_DIR)/heaps/polyml-5.9.1_$$PLATFORM/TLA+ $@/heaps/TLA+ \
-		&& cp -a $(ISABELLE_DIR)/heaps/polyml-5.9.1_$$PLATFORM/Options $@/heaps/Options
+# TODO: This is a workaround, because the dune install removes all the executable
+# 		flags (or sets on all the files). Here we generate a script to restore the flags.
+Isabelle.exec-files: $(ISABELLE_DIR)
+	echo "$(shell find $(ISABELLE_DIR) -type f $(FIND_EXEC))" > $@
 
 clean:
-	rm -rf $(ISABELLE_ARCHIVE) $(ISABELLE_DIR) $(ISABELLE_TEST) Isabelle-install
+	rm -rf $(ISABELLE_ARCHIVE) $(ISABELLE_DIR) $(ISABELLE_TEST) Isabelle.exec-files
 
 .PHONY: all clean

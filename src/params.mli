@@ -27,6 +27,7 @@ val solve_cmd: exec -> string -> string
 val zenon: exec
 val isabelle_success_string: string
 val isabelle: exec
+val set_fast_isabelle: unit -> unit
 val smt: exec
 val cvc4: exec
 val yices: exec
