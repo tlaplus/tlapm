@@ -101,3 +101,8 @@ val get_qed_proof:
 (* `proof/p_simplify.ml` *)
 val step_number: stepno -> int
 val sub_step_number : stepno option -> int
+
+val pp_proof : pp_props:pp_wrapped_props -> Format.formatter -> proof -> unit
+val pp_qed_step : pp_props:pp_wrapped_props -> Format.formatter -> qed_step -> unit
+val pp_step : pp_props:pp_wrapped_props -> Format.formatter -> step -> unit
+val pp_obligation : pp_props:pp_wrapped_props -> Format.formatter -> obligation -> unit
