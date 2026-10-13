@@ -35,23 +35,47 @@ let vprintf fmt =
   else
     Printf.ifprintf stderr fmt
 
+(* Substitutions of [expand_defs], where [None] stands for the identity.
+   Unlike [shift 0], it keeps the hypotheses before the first expanded
+   definition unchanged: [app_expr] also normalizes applications. *)
+let app_sub f s x = match s with None -> x | Some s -> f s x
+let scons_sub e s = Some (scons e (Option.default (shift 0) s))
+
 let expand_defs ?(what = fun _ -> true) ob =
-  let rec visit sq =
-    match Deque.front sq.context with
-    | None -> sq
-    | Some (h, hs) -> begin
-        match h.core with
-          | Defn ({core = Operator (nm, e)}, wd, Visible, _) when what wd ->
-              visit (app_sequent (scons e (shift 0)) { sq with context = hs })
+  (* Inline the visible operator / pragma definitions of the obligation's
+     context into the rest of the sequent.
+
+     The previous formulation recursed front-to-back and, for *each* expanded
+     definition, applied `app_sequent (scons e (shift 0))` to the whole
+     remaining sequent -- rebuilding it once per expanded definition, i.e.
+     O(#expanded-defs * sequent-size).  On INSTANCE-heavy contexts that is
+     quadratic and dominated backend preparation.
+
+     This formulation makes a single front-to-back pass, accumulating one
+     substitution `s` (exactly the composition the iterated version applied
+     one definition at a time) and rebuilding the sequent only once.  It
+     mirrors the De Bruijn bookkeeping of `Expr.Subst.app_hyps`: `bump s`
+     under a kept hypothesis, `scons e s` to drop and inline a visible
+     definition.  The body `e` is read from the hypothesis *after* `app_hyp s`,
+     so prior inlinings are already substituted into it -- exactly as in the
+     iterated version.  The resulting obligation is identical. *)
+  let sq = ob.obl.core in
+  let rec fold s kept cx = match Deque.front cx with
+    | None -> (s, kept)
+    | Some (h, hs) ->
+        let h = app_sub app_hyp s h in
+        begin match h.core with
+          | Defn ({core = Operator (_, e)}, wd, Visible, _) when what wd ->
+              fold (scons_sub e s) kept hs
           | Defn ({core = Bpragma (_, e, _)}, wd, _, _) when what wd ->
-              visit (app_sequent (scons e (shift 0)) { sq with context = hs })
+              fold (scons_sub e s) kept hs
           | _ ->
-              let sq = visit { sq with context = hs } in
-                { sq with context = Deque.cons h sq.context }
-      end
+              fold (Option.map bump s) (Deque.snoc kept h) hs
+        end
   in
-  let obl = visit ob.obl.core in
-     { ob with obl = { ob.obl with core = obl } }
+  let (s, context) = fold None Deque.empty sq.context in
+  let active = app_sub app_expr s sq.active in
+  { ob with obl = { ob.obl with core = { context ; active } } }
 
 (*
 let expand_defs ?(what = fun _ -> true) ob =
@@ -269,10 +293,8 @@ let%test_module "expand_defs" = (module struct
     assert (result.kind = ob.kind);
     assert (result.obl.props == ob.obl.props)
 
-  (* n expanded operators and pragmas, then n hidden operators; goal TRUE.
-     Enable once expand_defs no longer repeatedly traverses the context. *)
-  let%test_unit "complexity: doubled context -> allocation < 3x"
-      [@tags "disabled"] =
+  (* n expanded operators and pragmas, then n hidden operators; goal TRUE. *)
+  let%test_unit "complexity: doubled context -> allocation < 3x" =
     let measure n =
       (* Model the pragmas and hidden operators accumulated by INSTANCEs.
          Closed, fixed-size bodies prevent actual expansion of expressions
