@@ -97,6 +97,10 @@ let print_new_res ob st warns time_used =
 
 
 (**** duplicates prep.ml *****)
+(* Unlike [Prep.expand_defs], this does not expand backend pragmas
+   ([Bpragma]).  Presumably deliberate: this copy only prepares obligations
+   for display, where inlining a pragma would replace a name such as [SMT]
+   by its dummy body [TRUE]. *)
 let expand_defs ?(what = fun _ -> true) ob =
   let rec visit sq =
     match Deque.front sq.context with
