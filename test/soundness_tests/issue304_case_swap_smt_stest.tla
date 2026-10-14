@@ -13,4 +13,3 @@ THEOREM (CASE TRUE -> "u" [] TRUE -> "v" [] OTHER -> "w")
 BY SMT
 
 =================================================================
-known: https://github.com/tlaplus/tlapm/issues/304
