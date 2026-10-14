@@ -485,3 +485,29 @@ let main ?(smt_set_extensionality=false) sq =
   else
     sq
 
+
+let%test_unit "nested CASE guards and results keep linear AST size" =
+  let t = Internal B.TRUE %% [] in
+  let f = Internal B.FALSE %% [] in
+  let rec nested as_guard depth =
+    if depth = 0 then t
+    else
+      let inner = nested as_guard (depth - 1) in
+      let arms = if as_guard then [ inner, t ; f, f ] else [ t, inner ; f, f ] in
+      assign (Case (arms, Some f) %% []) Props.tpars_prop [ TAtm TABol ]
+  in
+  let count = object
+    inherit [unit, int] Expr.Visit.fold as super
+    method expr scx n e = super#expr scx (n + 1) e
+  end in
+  List.iter begin fun as_guard ->
+    List.iter begin fun smt_set_extensionality ->
+      let size depth =
+        let sq = { context = Deque.empty ; active = nested as_guard depth } in
+        let sq = main ~smt_set_extensionality sq in
+        snd (count#sequent ((), Deque.empty) 0 sq)
+      in
+      assert (size 8 <= 3 * size 4)
+    end [ false ; true ]
+  end [ false ; true ]
+
