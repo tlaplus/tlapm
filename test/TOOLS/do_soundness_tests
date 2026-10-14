@@ -32,7 +32,7 @@ total=0
 content=""
 totaltime=0
 
-outf=/var/tmp/ju$$.txt
+outf=/tmp/ju$$.txt
 
   while read f; do
     FILE="`basename $f`"
