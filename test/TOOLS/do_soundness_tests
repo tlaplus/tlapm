@@ -106,4 +106,6 @@ cat <<EOF >$juDIR/junit_soundness_tests.xml
       </system-out>
 </testsuite>
 EOF
+
+[ $errors = 0 ]
 )
