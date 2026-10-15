@@ -3,12 +3,17 @@ Step Expression Or Stuttering
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == [A]_<<x, y, z>>
+====
+---- MODULE TestPrelude ----
+VARIABLES A, x, y, z
 ====
 
 --------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (step_expr_or_stutter
       (identifier_ref)
@@ -22,12 +27,17 @@ Step Expression No Stuttering
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == <<A>>_<<x, y, z>>
+====
+---- MODULE TestPrelude ----
+VARIABLES A, x, y, z
 ====
 
 --------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (step_expr_no_stutter
       (langle_bracket)
@@ -43,20 +53,28 @@ Step Expression With Parameterized Subscript
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == [A]_M(S)!vars
+====
+---- MODULE TestPrelude ----
+VARIABLE A, S
+M(y) == INSTANCE M1 WITH B <- y
+====
+---- MODULE M1 ----
+VARIABLE B
+vars == << B >>
 ====
 
 --------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
-  (operator_definition name: (identifier) (def_eq) definition:
+   (extends (identifier_ref))
+   (operator_definition name: (identifier) (def_eq) definition:
     (step_expr_or_stutter
       (identifier_ref)
       (prefixed_op
-        prefix: (subexpr_prefix (subexpr_component
-          (bound_op name: (identifier_ref) parameter: (identifier_ref))
-        ))
-        op: (identifier_ref)
+        prefix: (subexpr_prefix (subexpr_component (identifier_ref)))
+        op: (bound_op name: (identifier_ref) parameter: (identifier_ref))
       )
     )
   )
@@ -67,22 +85,28 @@ Step Expressions with Jlist
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 
-op == [
+op1 == [
   /\ 1
   /\ 2
     ]_x
 
-op == <<
+op2 == <<
   /\ 1
   /\ 2
     >>_x
 
 ====
 
+---- MODULE TestPrelude ----
+VARIABLE x
+====
+
 --------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (step_expr_or_stutter
       (conj_list (conj_item (bullet_conj) (nat_number)) (conj_item (bullet_conj) (nat_number)))
@@ -104,16 +128,21 @@ Various Valid Step Expressions
 =============|||
 
 ---- MODULE Test ----
-Prop == [][x = {1, 2}]_x
-Prop == [][1 \in {1, 2}]_x
-Prop == [][LET S == {1, 2} IN x \in S]_x
-Prop == [][LET S == {1, 2} IN x \in {1, 2}]_x
-Prop == [][TRUE /\ x \in {1, 2}]_x
+EXTENDS TestPrelude
+Prop1 == [][x = {1, 2}]_x
+Prop2 == [][1 \in {1, 2}]_x
+Prop3 == [][LET S == {1, 2} IN x \in S]_x
+Prop4 == [][LET S == {1, 2} IN x \in {1, 2}]_x
+Prop5 == [][TRUE /\ x \in {1, 2}]_x
+====
+---- MODULE TestPrelude ----
+VARIABLE x
 ====
 
 --------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (bound_prefix_op symbol: (always) rhs: (step_expr_or_stutter
       (bound_infix_op

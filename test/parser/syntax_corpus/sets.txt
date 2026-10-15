@@ -19,10 +19,13 @@ Mistaken Set Filter Test
 ======================|||
 
 ---- MODULE Test ----
-
-op == {x \in Nat}
-op == {x \in BOOLEAN, y \in STRING}
-
+EXTENDS TestPrelude
+op1 == {x \in Nat}
+op2 == {x \in BOOLEAN, y \in STRING}
+====
+---- MODULE TestPrelude ----
+CONSTANT Nat
+VARIABLES x, y
 ====
 
 ----------------------|||
@@ -46,9 +49,12 @@ Mistaken Set Filter Tuples Test
 ======================|||
 
 ---- MODULE Test ----
-
+EXTENDS TestPrelude
 op == {<<x, y>> \in Nat}
-
+====
+---- MODULE TestPrelude ----
+CONSTANT Nat
+VARIABLES x, y
 ====
 
 ----------------------|||
@@ -70,6 +76,7 @@ Set Literal
 ======================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == {
   TRUE,
   FALSE,
@@ -77,10 +84,14 @@ op == {
   {1,2,3}
 }
 ====
+---- MODULE TestPrelude ----
+CONSTANTS _ * _, _ + _
+====
 
 ----------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (finite_set_literal
       (boolean)
@@ -132,12 +143,17 @@ Set Map
 ======================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == {f(x) : x \in Nat}
+====
+---- MODULE TestPrelude ----
+CONSTANTS Nat, f(_)
 ====
 
 ----------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (set_map
       map: (bound_op name: (identifier_ref) parameter: (identifier_ref))
@@ -151,12 +167,17 @@ Set Map with Multiple Generators
 ======================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == {f(x, y, z) : x \in Int, y, z \in Real}
+====
+---- MODULE TestPrelude ----
+CONSTANTS Int, Real, f(_, _, _)
 ====
 
 ----------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (set_map
       map: (bound_op name: (identifier_ref) parameter: (identifier_ref) parameter: (identifier_ref) parameter: (identifier_ref))
@@ -172,12 +193,17 @@ Set Filter
 ======================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == {x \in Nat : P(x)}
+====
+---- MODULE TestPrelude ----
+CONSTANTS Nat, P(_)
 ====
 
 ----------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (set_filter
       generator: (quantifier_bound intro: (identifier) (set_in) set: (nat_number_set))
@@ -192,7 +218,11 @@ Set Filter With Too Many Quantifiers
 ======================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == {x \in Nat, y \in Int : P(x, y)}
+====
+---- MODULE TestPrelude ----
+CONSTANTS Nat, Int, P(_, _)
 ====
 
 ----------------------|||
@@ -202,12 +232,17 @@ Set Filter with Tuple
 ======================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == {<<x, y, z>> \in Nat \X Int \X Real : P(x, y, z)}
+====
+---- MODULE TestPrelude ----
+CONSTANTS Nat, Int, Real, P(_, _, _)
 ====
 
 ----------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (set_filter
       generator: (quantifier_bound
@@ -233,12 +268,18 @@ Set Filter with Single Element Tuple
 ======================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == {<<x>> \in Nat : P(x, y, z)}
+====
+---- MODULE TestPrelude ----
+CONSTANTS Nat, P(_, _, _)
+VARIABLES y, z
 ====
 
 ----------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (set_filter
       generator: (quantifier_bound
@@ -256,12 +297,17 @@ Set Filter Precedence
 =====================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == {x \in S : x \in T}
+====
+---- MODULE TestPrelude ----
+VARIABLES S, T
 ====
 
 ---------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (set_filter
       generator: (quantifier_bound
@@ -279,6 +325,7 @@ Set Filter with Jlist
 ======================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == {
   x \in
     /\ A
@@ -290,10 +337,14 @@ op == {
     /\ F
 }
 ====
+---- MODULE TestPrelude ----
+VARIABLES A, B, C, D, E, F
+====
 
 ----------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (set_filter
       generator: (quantifier_bound
