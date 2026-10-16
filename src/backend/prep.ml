@@ -35,28 +35,298 @@ let vprintf fmt =
   else
     Printf.ifprintf stderr fmt
 
+(* Substitutions of [expand_defs], where [None] stands for the identity.
+   Unlike [shift 0], it keeps the hypotheses before the first expanded
+   definition unchanged: [app_expr] also normalizes applications. *)
+let app_sub f s x = match s with None -> x | Some s -> f s x
+let scons_sub e s = Some (scons e (Option.default (shift 0) s))
+
 let expand_defs ?(what = fun _ -> true) ob =
-  let rec visit sq =
-    match Deque.front sq.context with
-    | None -> sq
-    | Some (h, hs) -> begin
-        match h.core with
-          | Defn ({core = Operator (nm, e)}, wd, Visible, _) when what wd ->
-              visit (app_sequent (scons e (shift 0)) { sq with context = hs })
+  (* Inline the visible operator / pragma definitions of the obligation's
+     context into the rest of the sequent.
+
+     The previous formulation recursed front-to-back and, for *each* expanded
+     definition, applied `app_sequent (scons e (shift 0))` to the whole
+     remaining sequent -- rebuilding it once per expanded definition, i.e.
+     O(#expanded-defs * sequent-size).  On INSTANCE-heavy contexts that is
+     quadratic and dominated backend preparation.
+
+     This formulation makes a single front-to-back pass, accumulating one
+     substitution `s` (exactly the composition the iterated version applied
+     one definition at a time) and rebuilding the sequent only once.  It
+     mirrors the De Bruijn bookkeeping of `Expr.Subst.app_hyps`: `bump s`
+     under a kept hypothesis, `scons e s` to drop and inline a visible
+     definition.  The body `e` is read from the hypothesis *after* `app_hyp s`,
+     so prior inlinings are already substituted into it -- exactly as in the
+     iterated version.  The resulting obligation is identical. *)
+  let sq = ob.obl.core in
+  let rec fold s kept cx = match Deque.front cx with
+    | None -> (s, kept)
+    | Some (h, hs) ->
+        let h = app_sub app_hyp s h in
+        begin match h.core with
+          | Defn ({core = Operator (_, e)}, wd, Visible, _) when what wd ->
+              fold (scons_sub e s) kept hs
           | Defn ({core = Bpragma (_, e, _)}, wd, _, _) when what wd ->
-              visit (app_sequent (scons e (shift 0)) { sq with context = hs })
+              fold (scons_sub e s) kept hs
           | _ ->
-              let sq = visit { sq with context = hs } in
-                { sq with context = Deque.cons h sq.context }
-      end
+              fold (Option.map bump s) (Deque.snoc kept h) hs
+        end
   in
-  let obl = visit ob.obl.core in
-     { ob with obl = { ob.obl with core = obl } }
+  let (s, context) = fold None Deque.empty sq.context in
+  let active = app_sub app_expr s sq.active in
+  { ob with obl = { ob.obl with core = { context ; active } } }
 
 (*
 let expand_defs ?(what = fun _ -> true) ob =
   debug_time "expand_defs" (fun () -> expand_defs ~what ob) ()
 *)
+
+let%test_module "expand_defs" = (module struct
+  (* [ix n] refers to the n-th closest hypothesis or binder, counting from 1.
+     Strings and tuples stand in for propositions in facts and goals, so
+     that substitution results are easy to inspect. *)
+  let ix n = noprops (Ix n)
+  let str s = noprops (String s)
+  let tuple es = noprops (Tuple es)
+  let lambda name body =
+    noprops (Lambda ([noprops name, Shape_expr], body))
+  let apply op args = noprops (Apply (op, args))
+  let fresh ?(dom = Unbounded) name =
+    noprops (Fresh (noprops name, Shape_expr, Constant, dom))
+  let fact e = noprops (Fact (e, Visible, Now))
+  let operator ?(where = User) ?(visibility = Visible) name body =
+    noprops (Defn (noprops (Operator (noprops name, body)),
+                  where, visibility, Local))
+  let pragma ?(where = User) ?(visibility = Visible) name body =
+    noprops (Defn (noprops (Bpragma (noprops name, body, [])),
+                  where, visibility, Local))
+  let obligation context active = {
+    id = Some 42;
+    obl = noprops { context = Deque.of_list context; active };
+    fingerprint = Some "expand_defs-test";
+    kind = Ob_support;
+  }
+
+  let check_sequent ob context active =
+    (* Compare the full AST, including hypothesis names and visibility.
+       Compare contexts as lists, independently of the deque's layout. *)
+    assert (Deque.to_list ob.obl.core.context = context);
+    assert (ob.obl.core.active = active)
+
+  (* Physical equality: [expand_defs] rebuilt no node. *)
+  let check_unchanged before after =
+    assert (List.for_all2 ( == )
+              (Deque.to_list before.obl.core.context)
+              (Deque.to_list after.obl.core.context));
+    assert (before.obl.core.active == after.obl.core.active)
+
+  (* A beta-redex: substituting into it, even with [shift 0], reduces it
+     to "value". *)
+  let unreduced = apply (lambda "u" (ix 1)) [str "value"]
+
+  let%test_unit "identity: empty context -> goal unchanged" =
+    let ob = obligation [] unreduced in
+    check_unchanged ob (expand_defs ob)
+
+  (* CONSTANT x; H == x (hidden); fact unreduced; goal unreduced. *)
+  let%test_unit "identity: no visible definition -> sequent unchanged" =
+    let ob = obligation [
+      fresh "x";
+      operator ~visibility:Hidden "H" (ix 1);
+      fact unreduced;
+    ] unreduced in
+    check_unchanged ob (expand_defs ob)
+
+  (* A == unreduced; pragma P == A; pragma Q == P (hidden);
+     goal unreduced. *)
+  let%test_unit "identity: what rejects all -> sequent unchanged" =
+    let ob = obligation [
+      operator "A" unreduced;
+      pragma "P" (ix 1);
+      pragma ~visibility:Hidden "Q" (ix 1);
+    ] unreduced in
+    check_unchanged ob (expand_defs ~what:(fun _ -> false) ob)
+
+  (* CONSTANT x; fact unreduced; A == "a"; fact A; goal A. *)
+  let%test_unit "identity: hypotheses before first expansion -> unchanged" =
+    let prefix = [fresh "x"; fact unreduced] in
+    let ob = obligation
+        (prefix @ [operator "A" (str "a"); fact (ix 1)]) (ix 2) in
+    let result = expand_defs ob in
+    check_sequent result (prefix @ [fact (str "a")]) (str "a");
+    assert (List.for_all2 ( == ) prefix
+              (Deque.to_list (Deque.first_n result.obl.core.context 2)))
+
+  (* A == unreduced; goal A. *)
+  let%test_unit "identity: first expanded body -> inlined unnormalized" =
+    let ob = obligation [operator "A" unreduced] (ix 1) in
+    check_sequent (expand_defs ob) [] unreduced
+
+  (* A tuple declaration of a and b (FreshTuply); goal TRUE.
+     The frontend desugars tuple declarations, so this does not reach
+     [expand_defs].  Defence in depth: substituting into it would fail,
+     because [Expr.Subst.app_hyp] does not support it. *)
+  let%test_unit "identity: FreshTuply, no definition -> sequent unchanged" =
+    let ob = obligation
+        [noprops (FreshTuply ([noprops "a"; noprops "b"], Unbounded))]
+        (noprops (Internal Builtin.TRUE)) in
+    check_unchanged ob (expand_defs ob)
+
+  (* A == "a"; B == <<A, "b">>; C == <<B, A>>; goal <<C, B, A>>. *)
+  let%test_unit "expansion: definition chain -> fully inlined" =
+    let a = str "a" in
+    let b = tuple [a; str "b"] in
+    let c = tuple [b; a] in
+    let ob = obligation [
+      operator "A" a;
+      operator "B" (tuple [ix 1; str "b"]);
+      operator "C" (tuple [ix 1; ix 2]);
+    ] (tuple [ix 1; ix 2; ix 3]) in
+    check_sequent (expand_defs ob) [] (tuple [c; b; a])
+
+  (* A == "a"; pragma P == <<A, "p">>; B == <<P, A>>; goal <<B, P, A>>. *)
+  let%test_unit "expansion: visible or hidden pragma -> expanded" =
+    List.iter (fun visibility ->
+      let p = tuple [str "a"; str "p"] in
+      let ob = obligation [
+        operator "A" (str "a");
+        pragma ~visibility "P" (tuple [ix 1; str "p"]);
+        operator "B" (tuple [ix 1; ix 2]);
+      ] (tuple [ix 1; ix 2; ix 3]) in
+      check_sequent (expand_defs ob) []
+        (tuple [tuple [p; str "a"]; p; str "a"])
+    ) [Visible; Hidden]
+
+  (* CONSTANT x; A == x; H == <<A, x>> (hidden); B == <<A, H, x>>;
+     goal <<B, H, A, x>>. *)
+  let%test_unit "expansion: hidden operator -> kept, body substituted" =
+    let x = fresh "x" in
+    let ob = obligation [
+      x;
+      operator "A" (ix 1);
+      operator ~visibility:Hidden "H" (tuple [ix 1; ix 2]);
+      operator "B" (tuple [ix 2; ix 1; ix 3]);
+    ] (tuple [ix 1; ix 2; ix 3; ix 4]) in
+    check_sequent (expand_defs ob) [
+      x;
+      operator ~visibility:Hidden "H" (tuple [ix 1; ix 1]);
+    ] (tuple [tuple [ix 2; ix 1; ix 2]; ix 1; ix 2; ix 2])
+
+  (* A == "a"; K == A (builtin or proof); B == <<K, A>>; goal B. *)
+  let%test_unit "what: rejected operator -> kept, body substituted" =
+    List.iter (fun where ->
+      let ob = obligation [
+        operator "A" (str "a");
+        operator ~where "K" (ix 1);
+        operator "B" (tuple [ix 1; ix 2]);
+      ] (ix 1) in
+      check_sequent (expand_defs ~what:(fun wd -> wd = User) ob)
+        [operator ~where "K" (str "a")]
+        (tuple [ix 1; str "a"])
+    ) [Builtin; Proof Always]
+
+  (* A == "a"; pragma P == A (builtin); B == <<P, A>>; goal B. *)
+  let%test_unit "what: rejected pragma -> kept, body substituted" =
+    List.iter (fun visibility ->
+      let ob = obligation [
+        operator "A" (str "a");
+        pragma ~where:Builtin ~visibility "P" (ix 1);
+        operator "B" (tuple [ix 1; ix 2]);
+      ] (ix 1) in
+      check_sequent (expand_defs ~what:(fun wd -> wd = User) ob)
+        [pragma ~where:Builtin ~visibility "P" (str "a")]
+        (tuple [ix 1; str "a"])
+    ) [Visible; Hidden]
+
+  (* CONSTANT x; A == x; NEW y \in A; fact <<A, y, x>>; VARIABLE z;
+     B == <<A, z, y, x>>; goal <<B, A, z, y, x>>. *)
+  let%test_unit "indices: kept hypotheses and facts -> substitution bumped" =
+    let x = fresh "x" in
+    let z = noprops (Flex (noprops "z")) in
+    let ob = obligation [
+      x;
+      operator "A" (ix 1);
+      fresh ~dom:(Bounded (ix 1, Visible)) "y";
+      fact (tuple [ix 2; ix 1; ix 3]);
+      z;
+      operator "B" (tuple [ix 4; ix 1; ix 3; ix 5]);
+    ] (tuple [ix 1; ix 5; ix 2; ix 4; ix 6]) in
+    let b = tuple [ix 4; ix 1; ix 3; ix 4] in
+    check_sequent (expand_defs ob) [
+      x;
+      fresh ~dom:(Bounded (ix 1, Visible)) "y";
+      fact (tuple [ix 2; ix 1; ix 2]);
+      z;
+    ] (tuple [b; ix 4; ix 1; ix 3; ix 4])
+
+  (* CONSTANT x; A == x; F(y) == <<A, y, x>>; goal \A z \in A: F(z),
+     which becomes \A z \in x: <<x, z, x>>. *)
+  let%test_unit "indices: LAMBDA and quantifier -> substitution bumped" =
+    let x = fresh "x" in
+    let forall domain body =
+      noprops (Quant (Forall, [noprops "z", Constant, Domain domain], body))
+    in
+    let ob = obligation [
+      x;
+      operator "A" (ix 1);
+      operator "F" (lambda "y" (tuple [ix 2; ix 1; ix 3]));
+    ] (forall (ix 2) (apply (ix 2) [ix 1])) in
+    check_sequent (expand_defs ob) [x]
+      (forall (ix 1) (tuple [ix 2; ix 1; ix 2]))
+
+  (* A == "a"; fact A; goal A, with properties on the sequent, fact,
+     and goal. *)
+  let%test_unit "metadata: obligation fields, node properties -> preserved" =
+    let marker : string Property.pfuncs = Property.make "expand_defs-test" in
+    let mark value node = assign node marker value in
+    let ob = obligation [
+      operator "A" (str "a");
+      mark "hypothesis" (fact (ix 1));
+    ] (mark "goal" (ix 2)) in
+    let ob = { ob with obl = mark "sequent" ob.obl } in
+    let result = expand_defs ob in
+    check_sequent result [mark "hypothesis" (fact (str "a"))]
+      (mark "goal" (str "a"));
+    assert (result.id = ob.id);
+    assert (result.fingerprint = ob.fingerprint);
+    assert (result.kind = ob.kind);
+    assert (result.obl.props == ob.obl.props)
+
+  (* n expanded operators and pragmas, then n hidden operators; goal TRUE. *)
+  let%test_unit "complexity: doubled context -> allocation < 3x" =
+    let measure n =
+      (* Model the pragmas and hidden operators accumulated by INSTANCEs.
+         Closed, fixed-size bodies prevent actual expansion of expressions
+         from increasing the output size beyond O(n). *)
+      let body = tuple (List.init 32 (fun i -> str (string_of_int i))) in
+      let expanded = List.init n (fun i ->
+        let name = "P" ^ string_of_int i in
+        if i mod 2 = 0 then operator name (str "value")
+        else pragma ~visibility:Hidden name (str "value")) in
+      let hidden = List.init n (fun i ->
+        operator ~visibility:Hidden ("H" ^ string_of_int i) body) in
+      let goal = noprops (Internal Builtin.TRUE) in
+      let ob = obligation (expanded @ hidden) goal in
+      (* Count only expansion allocations, excluding fixture construction
+         and result checks.  Allocation counts avoid timing noise in CI. *)
+      let before = Gc.allocated_bytes () in
+      let result = expand_defs ob in
+      let allocated = Gc.allocated_bytes () -. before in
+      check_sequent result hidden goal;
+      allocated
+    in
+    let small = measure 128 in
+    let large = measure 256 in
+    (* Doubling both the expanded and retained definitions should allocate
+       about twice as much.  The original repeated app_sequent traversal
+       allocates about four times as much; 3 leaves ample room for constant
+       overhead. *)
+    if small <= 0. || large >= 3. *. small then
+      failwith (Printf.sprintf
+        "expand_defs allocation growth: %.0f -> %.0f bytes (%.2fx; expected < 3x)"
+        small large (large /. small))
+end)
 
 (*****************************************************************************)
 
