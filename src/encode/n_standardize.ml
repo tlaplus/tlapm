@@ -48,6 +48,140 @@ let is_set e =
   | _ -> false
 
 
+(* Lower [CASE p1 -> e1 [] ... [] pn -> en [] OTHER -> oth] to IF/ite.
+ *
+ * Semantics (tlaplus/tlapm#304).  A CASE denotes
+ *     CHOOSE v : (p1 /\ v = e1) \/ ... \/ (pn /\ v = en)
+ *                \/ (~p1 /\ ... /\ ~pn /\ v = oth)
+ * (Specifying Systems, Sec. 16.1.4; isabelle/CaseExpressions.thy).  Arms are
+ * unordered: if several guards hold, the value is one of their results, but
+ * which one is unspecified.  Lowering to the ordered
+ *     IF p1 THEN e1 ELSE IF p2 THEN e2 ELSE ... oth
+ * is therefore unsound: it wrongly proves that the first enabled arm wins,
+ * e.g. [(CASE TRUE -> 1 [] TRUE -> 2) = 1], which TLA+ does not entail.
+ *
+ * Encoding.  Each arm but the last gets an oracle, an uninterpreted Boolean
+ * function [case_choice_n_i] (n arms, arm i).  Arm i is selected iff the
+ * IF-chain reaches it and
+ *     p_i /\ (oracle_i \/ ~(p_{i+1} \/ ... \/ p_n))
+ * i.e. its guard holds and either the oracle picks it or no later arm could
+ * be picked instead.  The last arm needs no oracle.  For three arms:
+ *     IF p1 /\ (o1 \/ ~(p2 \/ p3)) THEN e1
+ *     ELSE IF p2 /\ (o2 \/ ~p3) THEN e2
+ *     ELSE IF p3 THEN e3
+ *     ELSE oth
+ *
+ * The oracles act as an arbiter between overlapping arms.  oracle_i only
+ * matters when arm i and some later arm are both enabled: it decides
+ * whether arm i wins or defers to a later arm.  The winner is thus the
+ * first enabled arm whose oracle accepts, or else the last enabled arm.
+ * The oracles are uninterpreted, so a proof cannot rely on how they
+ * decide, i.e., on which overlapping arm wins.  Since they decide from
+ * the guards and results alone, the same CASE always gets the same
+ * decision.
+ *
+ * Example.  Every oracle takes all guards followed by all results; oracles
+ * of different arms differ only in their name.  With x \in Int,
+ *     CASE x > 0 -> 1 [] x > 5 -> 2 [] x < 10 -> 3
+ * has overlapping arms (all three hold at x = 7, the first and the third
+ * at x = 3) and becomes
+ *     IF x > 0 /\ (o1(A) \/ ~(x > 5 \/ x < 10)) THEN 1
+ *     ELSE IF x > 5 /\ (o2(A) \/ ~(x < 10)) THEN 2
+ *     ELSE IF x < 10 THEN 3
+ *     ELSE oth
+ * where A is the argument list (x > 0, x > 5, x < 10, 1, 2, 3).  Since A
+ * mentions x, the oracles may decide differently for different x: at x = 7
+ * they see (TRUE, TRUE, TRUE, 1, 2, 3), at x = 3 (TRUE, FALSE, TRUE, 1, 2, 3).
+ * The same CASE over y uses the same oracles applied to y's arguments, so
+ * given x = y the solver proves both CASEs equal.  With the arms permuted,
+ *     CASE x > 5 -> 2 [] x > 0 -> 1 [] x < 10 -> 3
+ * the oracles see (x > 5, x > 0, x < 10, 2, 1, 3) instead; as the arms
+ * overlap, the solver cannot relate this CASE to the original, although
+ * TLA+ considers them equal.
+ *
+ * What the solver can derive:
+ * - If exactly one guard holds, that arm is selected whatever the oracles,
+ *   as with the ordered IF; disjoint CASEs behave as before.
+ * - If no guard holds, the value is [oth].
+ * - Every branch requires its own guard, so the value is always the result
+ *   of an enabled arm, e.g. [(CASE TRUE -> 1 [] TRUE -> 2) \in {1, 2}].
+ * - Which overlapping arm is selected depends on the oracles, about which
+ *   nothing is known; neither the first nor the last arm can be proved.
+ *
+ * Why oracles.  Encoding a CASE as an opaque term would be sound but would
+ * lose disjoint and OTHER cases, the common use in specs.  Keeping the
+ * ordered IF only for disjoint guards is not an option either: whether the
+ * guards are disjoint usually depends on hypotheses, which only the solver
+ * sees.  With oracles, the solver proves everything it proved with the
+ * ordered IF, minus the false proofs.
+ *
+ * Soundness.  Whatever value v the CHOOSE picks, interpreting oracle_i as
+ * [e_i = v] makes the IF-chain select v: the first enabled arm whose result
+ * is v is selected, as every earlier enabled arm has a different result.
+ * The CHOOSE'n value depends only on the set of enabled results, hence on
+ * the guards and results, so this interpretation is a function of the
+ * oracle's arguments ([oth] only matters when no guard holds).  Oracles with 
+ * fewer arguments would be unsound, e.g. with
+ *     C(x) == CASE TRUE -> x [] TRUE -> 0
+ * and a constant oracle, the solver could prove
+ *     [(\A x : C(x) = x) \/ (\A x : C(x) = 0)]
+ * whereas the CHOOSE may pick x for some x and 0 for others.
+ *
+ * Completeness.  Repeated occurrences of one CASE, e.g. in a hypothesis and
+ * in the goal, must be provably equal.  Hence the oracle symbol depends
+ * only on the number of arms, the arm index, and the result type, and is
+ * shared by all CASEs of that shape.  Sharing is sound, because CASEs whose
+ * guards and results agree have the same set of enabled results, hence the
+ * same CHOOSE'n value.
+ *
+ * Sharing does not give full completeness.  CHOOSE picks the same value for
+ * equivalent predicates, so CASEs with the same set of enabled results are
+ * equal.  The encoding relates two CASEs only if they have the same number
+ * of arms and agree arm by arm: CASEs that differ in arm count use
+ * different oracles, and
+ * permuting arms reorders the oracles' arguments, as in the example.
+ * The solver can then prove such CASEs equal only if no arms overlap, e.g.
+ * neither
+ *     (CASE p -> "u" [] q -> "v") = (CASE p -> "u" [] q -> "v" [] p -> "u")
+ * nor
+ *     (CASE p -> x [] q -> y [] OTHER -> z)
+ *         = (CASE q -> y [] p -> x [] OTHER -> z)
+ * Zenon has the same limitation.  Isabelle, which reasons about the CHOOSE
+ * itself, proves the former automatically but not the latter. *)
+let lower_case ty0 ps oth =
+  let n = List.length ps in
+  let cs, es = List.split ps in
+  (* Oracle signature: n Booleans (the guards) and n values of the result
+   * type (the results), returning a Boolean. *)
+  let ty1s =
+    List.map (fun _ -> Ty1 ([], TAtm TABol)) cs
+    @ List.map (fun _ -> Ty1 ([], ty0)) es
+  in
+  (* Symbols are identified by name, so the name must determine the
+   * signature: the arity is fixed by [n], the argument and result types by
+   * [ty0]. *)
+  let oracle i =
+    let s =
+      "case_choice_" ^ string_of_int n ^ "_" ^ string_of_int i
+      ^ "_" ^ ty_to_string ty0
+    in
+    let smb = mk_smb (Anon (s, Ty2 (ty1s, TAtm TABol))) in
+    Apply (mk_opq smb, cs @ es) %% []
+  in
+  let mk_if c e f = assign (If (c, e, f) %% []) Props.tpars_prop [ ty0 ] in
+  (* [spin i ps] encodes arms [i..n], given as [ps]. *)
+  let rec spin i = function
+    | [] -> oth
+    | [ (c, e) ] -> mk_if c e oth
+    | (c, e) :: ps ->
+        let later = List (Or, List.map fst ps) %% [] in
+        let none_later = Apply (Internal B.Neg %% [], [ later ]) %% [] in
+        let c = List (And, [ c ; List (Or, [ oracle i ; none_later ]) %% [] ]) %% [] in
+        mk_if c e (spin (i + 1) ps)
+  in
+  spin 1 ps
+
+
 (* {3 Main} *)
 
 (* NOTE This module does not perform type inference, it only works
@@ -365,7 +499,7 @@ let visitor = object (self : 'self)
           let strlit_opq = mk_opq strlit in
           Apply (opq, [ e ; strlit_opq ]) %% []
 
-    | Case (ps, None) ->
+    | Case (ps, oth) ->
         let ps =
           List.map begin fun (p, e) ->
             (self#expr scx p, self#expr scx e)
@@ -376,11 +510,16 @@ let visitor = object (self : 'self)
           | [ ty0 ] -> ty0
           | _ -> error ~at:oe "Bad type annotation"
         in
-        incr err_count;
-        let err = "incomplete_case_error_" ^ string_of_int !err_count in
-        let smb = mk_smb (Anon (err, Ty2 ([], ty0))) in
-        let opq = mk_opq smb in
-        Case (ps, Some opq) @@ oe
+        let oth =
+          match oth with
+          | Some o -> self#expr scx o
+          | None ->
+              incr err_count;
+              let err = "incomplete_case_error_" ^ string_of_int !err_count in
+              let smb = mk_smb (Anon (err, Ty2 ([], ty0))) in
+              mk_opq smb
+        in
+        (lower_case ty0 ps oth).core @@ oe
 
     | _ -> super#expr scx oe
 
