@@ -34,15 +34,19 @@ and app_modunit (s: sub) (mu: modunit):  (sub * modunit) =
     | Theorem (nm, sq, naxs, prf, prf_orig,summ) ->
         let sq = app_sequent s sq in
         let s = bump s in
-        let prf =
-            let s = bumpn (Deque.size sq.context) s in
-            Proof.Subst.app_proof s prf
+        let s_prf = bumpn (Deque.size sq.context) s in
+        let prf = Proof.Subst.app_proof s_prf prf in
+        let mu = Theorem (nm, sq, naxs, prf, prf_orig, summ) @@ mu in
+        (* `indexed_prf_prop` is captured at the same context depth as `prf`. *)
+        let mu = match Property.query mu indexed_prf_prop with
+            | Some p -> Property.with_prop indexed_prf_prop (Proof.Subst.app_proof s_prf p) mu
+            | None -> mu
         in
         let s = if nm = None then
                 s
             else
                 bump s in
-            (s, Theorem (nm, sq, naxs, prf, prf_orig, summ) @@ mu)
+            (s, mu)
     | Submod m ->
         let m = app_mule s m in
         (s, Submod m @@ mu)

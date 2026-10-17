@@ -88,6 +88,13 @@ let salt_prop: unit pfuncs =
         "Module.salt_prop"
 
 
+(** A copy of a proof captured after de-Bruijn indexes resolved.
+    It preserves the proof's original shape while still being indexed. *)
+let indexed_prf_prop: proof pfuncs =
+    Property.make
+        "Module.indexed_prf_prop"
+
+
 let hyps_of_modunit
         (mu: modunit) =
     match mu.core with

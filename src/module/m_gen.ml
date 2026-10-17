@@ -30,7 +30,7 @@ let rec generate cx m =
                 | Some nm ->
                     Deque.snoc cx (Defn (Operator (nm, exprify_sequent sq @@ nm)
                     @@ mu, Proof Always , Visible, Export) @@ mu)
-                | _ ->
+                | None ->
                     cx
               in
               let prf, summ =

@@ -52,6 +52,7 @@ module T : sig
   val hyps_of_modunit: modunit -> Expr.T.hyp_ Property.wrapped list
   val hyp_size: modunit -> int
   val salt_prop: unit Property.pfuncs
+  val indexed_prf_prop: proof Property.pfuncs
 end
 
 module Fmt : sig
