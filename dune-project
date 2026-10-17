@@ -51,6 +51,7 @@
   ppx_inline_test
   ppx_assert
   ppx_deriving
+  xmlm
   (ounit2 :with-test)
   (alcotest :with-test)
   (ocolor :with-test)
