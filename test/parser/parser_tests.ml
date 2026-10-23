@@ -153,9 +153,9 @@ let run_test test _ =
          assert_bool msg b
       | Some tlapm_output ->
         skip_if (should_skip_tree_comparison test) "Skipping parse tree comparison";
-        let open Translate_syntax_tree in
+        let open Tlapm_lib__Sany in
         let open Sexplib in
-        let actual = tlapm_output |> translate_tla_source_file |> ts_node_to_sexpr in
+        let actual = module_to_sexp tlapm_output in
         let b = expect_tree_comparison_failure test in
         if Sexp.equal expected actual
         then assert_bool "Expected parse test to fail" (not b)
