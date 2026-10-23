@@ -7,7 +7,6 @@ Postfix Operator Definition
 x^+ == 1
 x^* == 2
 x^# == 3
-x' == 4
 
 ====
 
@@ -17,7 +16,6 @@ x' == 4
   (operator_definition parameter: (identifier) name: (postfix_op_symbol (sup_plus)) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (postfix_op_symbol (asterisk)) (def_eq) definition: (nat_number))
   (operator_definition parameter: (identifier) name: (postfix_op_symbol (sup_hash)) (def_eq) definition: (nat_number))
-  (operator_definition parameter: (identifier) name: (postfix_op_symbol (prime)) (def_eq) definition: (nat_number))
 (double_line)))
 
 =============|||
@@ -29,8 +27,7 @@ Postfix Operator Declaration as Parameter
 op(
   _ ^+,
   _ ^*,
-  _ ^#,
-  _ '
+  _ ^#
 ) == 4
 
 ====
@@ -42,7 +39,6 @@ op(
     parameter: (operator_declaration (placeholder) name: (postfix_op_symbol (sup_plus)))
     parameter: (operator_declaration (placeholder) name: (postfix_op_symbol (asterisk)))
     parameter: (operator_declaration (placeholder) name: (postfix_op_symbol (sup_hash)))
-    parameter: (operator_declaration (placeholder) name: (postfix_op_symbol (prime)))
     (def_eq)
     definition: (nat_number)
   )
@@ -53,6 +49,7 @@ Postfix Operator Application
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == {
   x^+,
   x^*,
@@ -60,10 +57,15 @@ op == {
   x'
 }
 ====
+---- MODULE TestPrelude ----
+VARIABLE x
+CONSTANTS _^+, _^*, _^#
+====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition: (finite_set_literal
     (bound_postfix_op lhs: (identifier_ref) symbol: (sup_plus))
     (bound_postfix_op lhs: (identifier_ref) symbol: (asterisk))
@@ -77,6 +79,7 @@ Postfix Operators as Parameters
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == f(
   ^+,
   ^*,
@@ -84,10 +87,15 @@ op == f(
   '
 )
 ====
+---- MODULE TestPrelude ----
+CONSTANTS _^+, _^*, _^#
+f(a(_), b(_), c(_), d(_)) == 0
+====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition: (bound_op name: (identifier_ref)
     parameter: (postfix_op_symbol (sup_plus))
     parameter: (postfix_op_symbol (asterisk))
@@ -101,17 +109,30 @@ Nonfix Postfix Operators
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == {
   A!B!^+(x),
   A!B!^*(x),
-  A!B!^#(x),
-  A!B!'(x)
+  A!B!^#(x)
 }
+====
+---- MODULE TestPrelude ----
+A == INSTANCE M1
+VARIABLE x
+====
+---- MODULE M1 ----
+B == INSTANCE M2
+====
+---- MODULE M2 ----
+x^+ == x
+x^* == x
+x^# == x
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition: (finite_set_literal
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (postfix_op_symbol (sup_plus)) (identifier_ref)))
@@ -119,8 +140,6 @@ op == {
       (bound_nonfix_op symbol: (postfix_op_symbol (asterisk)) (identifier_ref)))
     (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
       (bound_nonfix_op symbol: (postfix_op_symbol (sup_hash)) (identifier_ref)))
-    (prefixed_op prefix: (subexpr_prefix (subexpr_component (identifier_ref)) (subexpr_component (identifier_ref))) op:
-      (bound_nonfix_op symbol: (postfix_op_symbol (prime)) (identifier_ref)))
   ))
 (double_line)))
 

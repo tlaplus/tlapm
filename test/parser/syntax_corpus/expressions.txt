@@ -3,14 +3,19 @@ Nested Parentheses
 ==============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == ((((x))))
+====
+---- MODULE TestPrelude ----
+VARIABLES x
 ====
 
 ------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
-    definition: (parentheses (parentheses (parentheses (parentheses (identifier_ref)))))
+    definition: (identifier_ref)
   )
 (double_line)))
 
@@ -19,12 +24,17 @@ Tuple Literal
 ==============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == <<a, <<b, c>>>>
+====
+---- MODULE TestPrelude ----
+VARIABLES a, b, c
 ====
 
 ------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (tuple_literal
       (langle_bracket)
