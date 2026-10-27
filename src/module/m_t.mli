@@ -70,3 +70,6 @@ val hyps_of_modunit:
 (* module/m_elab.ml *)
 val hyp_size: modunit -> int
 val salt_prop: unit Property.pfuncs
+
+val indexed_prf_prop: proof Property.pfuncs
+(** See doc-comment at the definition site in `m_t.ml`. *)

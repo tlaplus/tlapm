@@ -11,6 +11,8 @@ open P_t
 
 val pp_print_obligation : Format.formatter -> obligation -> unit
 val pp_print_proof : Expr.Fmt.ctx -> Format.formatter -> proof -> unit
+val pp_print_steps_inits : Expr.Fmt.ctx -> Format.formatter -> step list -> Expr.Fmt.ctx
+val pp_print_steps_qed : Expr.Fmt.ctx -> Format.formatter -> qed_step -> unit
 val pp_print_step : Expr.Fmt.ctx -> Format.formatter -> step -> Expr.Fmt.ctx
 val pp_print_usable : Expr.Fmt.ctx -> Format.formatter -> usable -> unit
 

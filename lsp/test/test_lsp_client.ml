@@ -58,11 +58,10 @@ let run ?(decomposition_disj_cases = false) cmd : t =
   }
 
 let close (t : t) : unit =
-  In_channel.close t.stdout;
   Out_channel.close t.stdin;
   In_channel.close t.stdout;
   In_channel.close t.stderr;
-  Unix.kill t.pid Sys.sigint;
+  Unix.kill t.pid Sys.sigkill;
   ()
 
 let next_id (t : t) : Jsonrpc.Id.t =
