@@ -86,3 +86,20 @@ The shell variable ${TLAPM} is defined to be ".../tlapm -I .../src",
 which launches the local PM with access to the local TLAPS.tla.  Use
 this variable in your "command" clauses instead of invoking the
 installed version of the PM.
+
+
+
+3. Soundness tests.
+
+Every file whose name ends in "_stest.tla" (see soundness_tests/) states a false theorem. It is run with the following command:
+
+   ${TLAPM} --toolbox 0 0 --nofp ${FILE}
+
+and the test passes iff at least one obligation is not proved.  Keep to one false claim per file.
+
+After the last line of ==== a file may give
+
+- flags: <options>
+  Appends <options> to the command above, e.g.
+    flags: --debug oldsmt
+  Several of these may be specified; they are concatenated.
