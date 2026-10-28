@@ -383,3 +383,93 @@ let coalesce_modal cx e =
     let e = rename_with_loc cx e in
     let scx = ((), cx) in
     coalesce_modal_visitor#expr scx e
+
+
+(* Arguments of abstracted terms, https://github.com/tlaplus/tlapm/issues/309.
+An abstracted term must be a function of the constants and of the variables
+bound around it that it mentions, and instances of the same term must be
+applications of the same function.
+*)
+let%test_module _ = (module struct
+    module B = Builtin
+
+    let fresh nm = noprops (Fresh (noprops nm, Shape_expr, Constant, Unbounded))
+    let flex nm = noprops (Flex (noprops nm))
+
+    let ix n = noprops (Ix n)
+    let app b es = noprops (Apply (noprops (Internal b), es))
+    let dia e = app B.Diamond [e]
+    let quant q nm e =
+        noprops (Quant (q, [(noprops nm, Constant, No_domain)], e))
+
+    (* The goal of a sequent with hypotheses `hyps` and goal `e`, after
+    abstraction by the action frontend. *)
+    let coalesced hyps e =
+        let sq = noprops (Sequent {context = Deque.of_list hyps; active = e}) in
+        let sq = Expr.Levels.compute_level Deque.empty sq in
+        let sq = Expr.SubstOp.compute_subst Deque.empty sq in
+        match (coalesce_modal Deque.empty sq).core with
+        | Sequent {active} -> active
+        | _ -> failwith "expected a sequent"
+
+    let rec strip_quant e = match e.core with
+        | Quant (_, _, e) -> strip_quant e
+        | _ -> e
+
+    (* The name and the arguments of an abstracted term. *)
+    let abstraction e = match (strip_quant e).core with
+        | Opaque s -> (s, [])
+        | Apply ({core = Opaque s}, args) -> (s, args)
+        | _ -> failwith "expected an abstracted term"
+
+    let sides e = match e.core with
+        | Apply (_, [a; b]) -> (abstraction a, abstraction b)
+        | _ -> failwith "expected an implication"
+
+    let depends_on n e =
+        let (s, args) = abstraction e in
+        let is_ix a = match a.core with Ix m -> m = n | _ -> false in
+        if not (List.exists is_ix args) then
+            failwith (Printf.sprintf "%s takes %d arguments, none of them #%d"
+                s (List.length args) n)
+
+    let same_function ((a, _), (b, _)) =
+        if a <> b then failwith (Printf.sprintf "terms are named %s and %s" a b)
+
+    (* `\E t : <>(x = t)` *)
+    let%test_unit "<> under a binder depends on the bound variable" =
+        depends_on 1 (coalesced [flex "x"]
+            (quant Exists "t" (dia (app B.Eq [ix 2; ix 1]))))
+
+    (* `\E t : ENABLED (x = t /\ x' = t)` *)
+    let%test_unit "ENABLED under a binder depends on the bound variable" =
+        let x = ix 2 and t = ix 1 in
+        depends_on 1 (coalesced [flex "x"]
+            (quant Exists "t" (app B.ENABLED [app B.Conj [
+                app B.Eq [x; t];
+                app B.Eq [app B.Prime [x]; t]]])))
+
+    (* `<>(x = a)` for the constant `a` *)
+    let%test_unit "<> depends on the constants it mentions" =
+        depends_on 1 (coalesced [flex "x"; fresh "a"]
+            (dia (app B.Eq [ix 2; ix 1])))
+
+    (* `(\A t : <>(x = t)) => <>(x = c)` *)
+    let%test_unit "instance of a quantified term" =
+        same_function (sides (coalesced [flex "x"; fresh "c"]
+            (app B.Implies [
+                quant Forall "t" (dia (app B.Eq [ix 3; ix 1]));
+                dia (app B.Eq [ix 2; ix 1])])))
+
+    (* `<>(x = a) => <>(x = b)` *)
+    let%test_unit "instances for different constants" =
+        same_function (sides (coalesced [flex "x"; fresh "a"; fresh "b"]
+            (app B.Implies [
+                dia (app B.Eq [ix 3; ix 2]);
+                dia (app B.Eq [ix 3; ix 1])])))
+
+    (* `(\E t : <>(x = t)) => (\E t : <>(x = t))` *)
+    let%test_unit "same quantified term" =
+        let e = quant Exists "t" (dia (app B.Eq [ix 2; ix 1])) in
+        same_function (sides (coalesced [flex "x"] (app B.Implies [e; e])))
+end)
