@@ -101,7 +101,7 @@ After the last line of ==== a file may give
 
 - flags: <options>
   Appends <options> to the command above, e.g.
-    flags: --debug oldsmt
+    flags: --stretch 2
   Several of these may be specified; they are concatenated.
 
 - known: <URL>
