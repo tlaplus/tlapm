@@ -18,7 +18,7 @@ jobs:
               - ubuntu-latest
               - macos-latest
             ocaml-compiler:
-              - '4.14.1'
+              - '4.14.4'
               - '5.1.0'
         env:
           EXAMPLES_DIR: "tlaplus-examples"
