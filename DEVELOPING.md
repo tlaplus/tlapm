@@ -31,10 +31,10 @@ Install the following dependencies to your path:
 * [Make](https://www.gnu.org/software/make/)
 
 OCaml requires that you initialize an environment within your shell.
-For example, you can create & initialize an OCaml 5.1.0 environment with:
+For example, you can create & initialize an OCaml 5.5.2 environment with:
 ```sh
-opam switch create 5.1.0
-eval $(opam env --switch=5.1.0)
+opam switch create 5.5.2
+eval $(opam env --switch=5.5.2)
 ```
 You can put the `eval` statement in your shell init file (`~/.bashrc` or similar) to ensure your shell always has an active OCaml environment.
 
