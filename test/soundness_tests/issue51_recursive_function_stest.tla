@@ -5,9 +5,8 @@
 \* recursive definition only determines Silly as some CHOOSE value.
 \* Proving that Silly equals the defining function literal yields FALSE.
 \* The old SMT encoding proved BuggyTheorem by rewriting
-\* X = CHOOSE v : P(v) to (\E v : P(v)) => P(X); see
-\* issue51_choose_eq_oldsmt_stest.  The module is the reproducer from the
-\* issue.
+\* X = CHOOSE v : P(v) to (\E v : P(v)) => P(X).  The module is the
+\* reproducer from the issue.
 
 EXTENDS Naturals, TLAPS
 
