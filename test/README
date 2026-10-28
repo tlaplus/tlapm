@@ -103,3 +103,9 @@ After the last line of ==== a file may give
   Appends <options> to the command above, e.g.
     flags: --debug oldsmt
   Several of these may be specified; they are concatenated.
+
+- known: <URL>
+  Marks a soundness bug that is not fixed yet; <URL> links the GitHub
+  issue or comment that reports it.  The result is inverted: the test
+  passes iff every obligation is proved, and fails once the false
+  theorem no longer proves, so that the line gets removed.

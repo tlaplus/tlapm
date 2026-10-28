@@ -43,6 +43,11 @@ outf=/tmp/ju$$.txt
                 after && sub(/^flags: /, "") { f = f " " $0 }
                 END { print f }' "$f"`
 
+    # "known: <URL>" after the last ==== marks a bug that is not fixed yet
+    known=`awk '/^====/ { k = 0; after = 1; next }
+                after && /^known: / { k = 1 }
+                END { print k + 0 }' "$f"`
+
     cmd="cd $DIR; ${TLAPM} --toolbox 0 0 --nofp$flags $FILE"
     echo ""                         | tee -a $outf
     echo "+++ Running case: $FILE " | tee -a $outf
@@ -74,7 +79,10 @@ END {
     echo $? | tr -d "\n" >$failcode
     evFail=`cat $failcode`
     rm -f $failcode
-    echo "+++ fail code: $evFail"        | tee -a $outf
+    # a known test must still prove its false theorem; once it no longer
+    # does, fail so that the "known:" line gets removed
+    [ "$known" = 1 ] && evFail=`expr 1 - $evFail`
+    echo "+++ known: $known, fail code: $evFail" | tee -a $outf
     anyErr=`expr $evErr + $evFail`
 
     # set the appropriate error, based on the exit and fail code
