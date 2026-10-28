@@ -501,48 +501,38 @@ let gen_smt_solve ?(rlimit=None) suffix exec desc fmt_expr meth ob org_ob f res_
     Schedule.Immediate (res_cont w (Method.NotTried msg) None)
 
 
-(* FIXME Remove all the oldsmt code *)
-let get_encode_smtlib () =
-  if Params.debugging "oldsmt" then Smt.encode_smtlib
-  else Smtlib.pp_print_obligation
-
-(* FIXME *)
-let get_encode_fof () =
-  if Params.debugging "oldsmt" then Smt.encode_fof
-  else Smtlib.pp_print_obligation ~solver:"fof"
-
 let smt_solve ?(rlimit=None) ob org_ob f res_cont =
-  gen_smt_solve ~rlimit ".smt" Params.smt "default SMT solver" (get_encode_smtlib ())
+  gen_smt_solve ~rlimit ".smt" Params.smt "default SMT solver" Smtlib.pp_print_obligation
                 (Method.Smt3 (f, rlimit)) ob org_ob f res_cont ";;"
 
 
 let cvc3_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt" Params.cvc4 "CVC4" (get_encode_smtlib () ~solver:"CVC4")
+  gen_smt_solve ".smt" Params.cvc4 "CVC4" (Smtlib.pp_print_obligation ~solver:"CVC4")
                 (Method.Cvc33 f) ob org_ob f res_cont ";;"
 
 
 let yices_solve ob org_ob f res_cont =
-  gen_smt_solve ".ys" Params.yices "Yices" (get_encode_smtlib ())
+  gen_smt_solve ".ys" Params.yices "Yices" Smtlib.pp_print_obligation
                 (Method.Yices3 f) ob org_ob f res_cont ";;"
 
 
 let z3_solve ?(rlimit=None) ob org_ob f res_cont =
-  gen_smt_solve ~rlimit ".smt2" Params.z3 "Z3" ((get_encode_smtlib ()) ~solver:"Z3")
+  gen_smt_solve ~rlimit ".smt2" Params.z3 "Z3" (Smtlib.pp_print_obligation ~solver:"Z3")
                 (Method.Z33 (f, rlimit)) ob org_ob f res_cont ";;"
 
 
 let verit_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt2" Params.verit "veriT" (get_encode_smtlib () ~solver:"veriT")
+  gen_smt_solve ".smt2" Params.verit "veriT" (Smtlib.pp_print_obligation ~solver:"veriT")
                 (Method.Verit f) ob org_ob f res_cont ";;"
 
 
 let spass_solve ob org_ob f res_cont =
-  gen_smt_solve ".tptp" Params.spass_tptp "Spass" (get_encode_fof ())
+  gen_smt_solve ".tptp" Params.spass_tptp "Spass" (Smtlib.pp_print_obligation ~solver:"fof")
                 (Method.Spass f) ob org_ob f res_cont "%%"
 
 
 let tptp_solve ob org_ob f res_cont =
-  gen_smt_solve ".tptp" Params.eprover "Tptp" (get_encode_fof ())
+  gen_smt_solve ".tptp" Params.eprover "Tptp" (Smtlib.pp_print_obligation ~solver:"fof")
                 (Method.Tptp f) ob org_ob f res_cont "% "
 
 

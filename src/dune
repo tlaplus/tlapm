@@ -14,7 +14,7 @@
 (library
  (name tlapm_lib)
  (modules
-  (:standard \ tlapm test_schedule why3_interface abstractor))
+  (:standard \ tlapm test_schedule abstractor))
  (libraries
   unix
   threads
