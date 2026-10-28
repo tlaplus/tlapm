@@ -38,7 +38,12 @@ outf=/tmp/ju$$.txt
     FILE="`basename $f`"
     DIR="`dirname $f`"
 
-    cmd="cd $DIR; ${TLAPM} --toolbox 0 0 --nofp $FILE"
+    # extra tlapm options from "flags: <options>" lines after the last ====
+    flags=`awk '/^====/ { f = ""; after = 1; next }
+                after && sub(/^flags: /, "") { f = f " " $0 }
+                END { print f }' "$f"`
+
+    cmd="cd $DIR; ${TLAPM} --toolbox 0 0 --nofp$flags $FILE"
     echo ""                         | tee -a $outf
     echo "+++ Running case: $FILE " | tee -a $outf
     echo "+++ working dir: "`pwd`           | tee -a $outf
