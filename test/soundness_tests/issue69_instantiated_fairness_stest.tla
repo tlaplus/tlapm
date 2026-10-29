@@ -145,4 +145,3 @@ COROLLARY Absurd == Spec => \A n \in Nat : <>(z >= n /\ z <= -n)
 BY Wrong, XY!Live
 
 =============================================================================
-known: https://github.com/tlaplus/tlapm/issues/69
