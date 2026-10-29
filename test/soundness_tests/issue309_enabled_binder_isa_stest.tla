@@ -11,4 +11,3 @@ THEOREM (\E t : ENABLED (x = t /\ x' = t)) => (\A t : ENABLED (x = t /\ x' = t))
 BY Isa
 
 =====================================================================
-known: https://github.com/tlaplus/tlapm/issues/309
