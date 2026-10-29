@@ -17,4 +17,3 @@ THEOREM ASSUME NEW k PROVE [](Q(k)) => [](P(k, k))
 BY DEF P, Q
 
 ==========================================================================
-known: https://github.com/tlaplus/tlapm/issues/310

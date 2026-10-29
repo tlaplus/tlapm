@@ -307,6 +307,37 @@ let compute_vars cx e =
     vars_visitor#compute cx e
 
 
+let abstract_vars cx vars e =
+    (* Replace in expression `e` each of `vars`, the free constants and free
+    variables of `e` as computed by `compute_vars`, by a placeholder for its
+    position, so that instances of the same term hash alike.  For example,
+    with `VARIABLE x` and `CONSTANTS a, b`, the vars of `<>(x = a)` are a
+    and x, and those of `<>(x = b)` are b and x.  Since `compute_vars`
+    lists them by de Bruijn index, the constant, declared last, comes
+    first.  Both terms thus have the structure `<>($2 = $1)`, whose hash
+    names the opaque operator `h` that replaces them: `<>(x = a)` is
+    abstracted as `h(a, x)` and `<>(x = b)` as `h(b, x)`.  The hash is the
+    same, but the arguments differ, so a back-end can prove the two terms
+    equal only if it can prove `a = b`. *)
+    let pos = List.mapi (fun i v -> match v.core with
+        | Ix m -> (m, i + 1)
+        | _ -> assert false) vars in
+    let base = Deque.size cx in
+    let visitor = object
+        inherit [unit] Expr.Visit.map as super
+        method expr ((_, cx) as scx) e =
+            match e.core with
+            | Ix n ->
+                let depth = Deque.size cx - base in
+                begin match Stdlib.List.assoc_opt (n - depth) pos with
+                | Some i -> Opaque ("$" ^ string_of_int i) @@ e
+                | None -> e
+                end
+            | _ -> super#expr scx e
+    end in
+    visitor#expr ((), cx) e
+
+
 let coalesce_modal_visitor = object (self)
     inherit [unit] Expr.Visit.map_visible_hyp as super
 
@@ -329,7 +360,7 @@ let coalesce_modal_visitor = object (self)
                 | Builtin.UNCHANGED)}, args) ->
             begin
             let vars = compute_vars cx e in
-            let op = coalesce cx e in
+            let op = coalesce cx (abstract_vars cx vars e) in
             match vars with
             | [] -> op
             | _ -> Apply (op, vars) @@ e
