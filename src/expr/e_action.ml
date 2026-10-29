@@ -2300,6 +2300,18 @@ let lambdify cx e
         ~(lambdify_cdot:bool)
         ~(autouse:bool)
         ~(used_identifiers:string list) =
+    (* Instantiation does not distribute over `ENABLED`, and hence not over
+    `WF` and `SF` (Specifying Systems, Section 17.8). Expand `WF_v(A)` and
+    `SF_v(A)` to their definitions in terms of `ENABLED` by calling
+    `Expr.Tla_norm.expand_fairness`, so that the `ENABLED` is lambdified
+    below like any other occurrence. The rewriting is an equivalence and
+    leaves all other subexpressions unchanged.
+    *)
+    let e =
+        if lambdify_enabled then
+            E_tla_norm.expand_fairness ((), cx) e
+        else
+            e in
     let e = E_levels.rm_expr_level cx e in
     let e = E_levels.compute_level cx e in
     let e = expand_definitions cx e
