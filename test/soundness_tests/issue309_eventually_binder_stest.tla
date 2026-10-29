@@ -11,4 +11,3 @@ THEOREM (\E t : <>(x = t)) => (\A t : <>(x = t))
 OBVIOUS
 
 ====================================================================
-known: https://github.com/tlaplus/tlapm/issues/309
