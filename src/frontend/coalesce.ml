@@ -197,7 +197,12 @@ let vars_visitor = object (self: 'self)
     val mutable vars = ref IxSet.empty
 
     method compute cx e =
-        let vars = ref IxSet.empty in
+        (* Empty the instance variable `vars` of `vars_visitor`, declared
+        above, so that it collects only what the method `expr` adds to it
+        while traversing `e`.  The values it holds come from the previous
+        call of `compute`, which already returned them as a list, so they
+        can be discarded. *)
+        vars := IxSet.empty;
         let max_bound_idx = 0 in
         self#expr (max_bound_idx, cx) e;
         IxSet.elements !vars
