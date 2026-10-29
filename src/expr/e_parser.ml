@@ -648,8 +648,10 @@ and atomic_expr b = lazy begin
           Section 16.1.6 on pages 299--301 of the book "Specifying Systems",
           specifically page 301
           *)
-          attempt (use (func_boundeds b))
-            <*> (punct ":" >*> use (expr b))
+          (* The colon must be inside `attempt`: without it, `{e \in S}`
+          would not fall back to set enumeration. *)
+          attempt (use (func_boundeds b) <<< colon)
+            <**> use (expr b)
             <$> begin
                 fun (boundeds, predicate) ->
                     make_setst_from_boundeds
