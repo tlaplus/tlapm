@@ -422,9 +422,10 @@ let build_tla_ops (smap:t_map) std_set (* tuples record_ids *) =
             (int2u (app2_op top m n))))
       [app2 sop (int2u m) (int2u n)])
   in
-  let lift_arith_exp sop top =                                                (** exponentiation requires its first argument to be non-zero *)
+  (* \A m, n \in Int : m # 0 /\ 0 <= n => m ^ n equals SMT's m ^ n *)
+  let lift_arith_exp sop top =
     forall [m,SInt ; n,SInt] (pattern
-      (implies (neg (eq "0" m))
+      (implies (lAnd [neg (eq "0" m) ; leq "0" n])
         (eq (app2 sop (int2u m) (int2u n))
             (int2u (app2_op top m n))))
       [app2 sop (int2u m) (int2u n)])

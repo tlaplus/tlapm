@@ -13,4 +13,3 @@ BY Z3
 
 ===========================================================================
 flags: --debug oldsmt
-known: https://github.com/tlaplus/tlapm/issues/300

@@ -12,4 +12,3 @@ THEOREM ASSUME NEW n \in Int, n # 0
 BY Z3
 
 ====================================================================
-known: https://github.com/tlaplus/tlapm/issues/300

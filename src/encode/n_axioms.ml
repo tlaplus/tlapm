@@ -2435,6 +2435,9 @@ let inttimes_typing () =
     ] %% []
   ) %% []
 
+(* \A x, y : x \in Int /\ y \in Int /\ 0 <= y /\ (x # 0 \/ 1 <= y)
+ *            => x ^ y \in Int
+ *)
 let intexp_typing ~disable_arithmetic =
   quant Forall
   [ "x" ; "y" ] [ t_idv ; t_idv ]
@@ -2454,6 +2457,20 @@ let intexp_typing ~disable_arithmetic =
         [ Ix 1 %% []
         ; apps T.IntSet [] %% []
         ] %% []
+      ; begin
+        if disable_arithmetic then
+          apps T.IntLteq
+          [ apps (T.IntLit 0) [] %% []
+          ; Ix 1 %% []
+          ] %% []
+        else
+          apps T.IntLteq
+          [ apps (T.Cast t_int)
+            [ apps (T.TIntLit 0) [] %% []
+            ] %% []
+          ; Ix 1 %% []
+          ] %% []
+        end
       ; begin
         if disable_arithmetic then
           appb B.Disj
