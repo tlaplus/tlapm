@@ -11,4 +11,3 @@ THEOREM {e \in S, a \in S} = {}
 OBVIOUS
 
 =====================================================================
-known: https://github.com/tlaplus/tlapm/issues/235
