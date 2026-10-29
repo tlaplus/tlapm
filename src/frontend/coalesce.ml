@@ -383,3 +383,102 @@ let coalesce_modal cx e =
     let e = rename_with_loc cx e in
     let scx = ((), cx) in
     coalesce_modal_visitor#expr scx e
+
+
+(* Naming of abstracted terms, https://github.com/tlaplus/tlapm/issues/310.
+Two different terms must get different names, and the same term must get
+the same name.
+*)
+let%test_module _ = (module struct
+    module B = Builtin
+
+    let fresh nm = noprops (Fresh (noprops nm, Shape_expr, Constant, Unbounded))
+    let flex nm = noprops (Flex (noprops nm))
+    let hidden nm body =
+        noprops (Defn (noprops (Operator (noprops nm, body)),
+                       User, Hidden, Export))
+
+    let ix n = noprops (Ix n)
+    let app b es = noprops (Apply (noprops (Internal b), es))
+    let box e = app (B.Box true) [e]
+    let exists nm e =
+        noprops (Quant (Exists, [(noprops nm, Constant, No_domain)], e))
+    let tuple es = noprops (Tuple es)
+
+    let sequent hyps a b =
+        let sq = noprops (Sequent {
+            context = Deque.of_list hyps;
+            active = app B.Implies [a; b]}) in
+        let sq = Expr.Levels.compute_level Deque.empty sq in
+        Expr.SubstOp.compute_subst Deque.empty sq
+
+    let name e = match e.core with
+        | Opaque s
+        | Apply ({core = Opaque s}, _) -> s
+        | _ -> failwith "expected an abstracted term"
+
+    let goal_names e = match e.core with
+        | Sequent {active = {core = Apply (_, [a; b])}} -> (name a, name b)
+        | _ -> failwith "expected a sequent whose goal is an implication"
+
+    (* The names that the action frontend gives to `a` and `b`. *)
+    let modal_names hyps a b =
+        goal_names (coalesce_modal Deque.empty (sequent hyps a b))
+
+    (* The names that the PTL frontend gives to `a` and `b`. *)
+    let ptl_names hyps a b =
+        match (rename_with_loc Deque.empty (sequent hyps a b)).core with
+        | Sequent {context; active = {core = Apply (_, [a; b])}} ->
+            (name (coalesce context a), name (coalesce context b))
+        | _ -> failwith "expected a sequent whose goal is an implication"
+
+    let distinct (a, b) =
+        if a = b then failwith (Printf.sprintf "both terms are named %s" a)
+
+    let same (a, b) =
+        if a <> b then failwith (Printf.sprintf "terms are named %s and %s" a b)
+
+    (* `[]D33` and `[]E280` print as "[]STATE_D33_" and "[]STATE_E280_",
+    whose MD5 digests share their first five hex digits. *)
+    let%test_unit "colliding hash prefixes, action frontend" =
+        let hyps = [flex "x";
+                    hidden "D33" (ix 1);
+                    hidden "E280" (app B.Neg [ix 2])] in
+        distinct (modal_names hyps (box (ix 2)) (box (ix 1)))
+
+    (* `R63` and `R699` print as "STATE_R63_" and "STATE_R699_",
+    whose MD5 digests share their first five hex digits. *)
+    let%test_unit "colliding hash prefixes, PTL frontend" =
+        let hyps = [flex "y";
+                    hidden "R63" (ix 1);
+                    hidden "R699" (app B.Neg [ix 2])] in
+        distinct (ptl_names hyps (ix 2) (ix 1))
+
+    (* `[](\E k : w = k)` and `[](\E k : w = c)`, where the constant `c`
+    is named `k` as well. *)
+    let%test_unit "bound variable and constant of the same name" =
+        let hyps = [flex "w"; fresh "k"] in
+        distinct (modal_names hyps
+            (box (exists "k" (app B.Eq [ix 3; ix 1])))
+            (box (exists "k" (app B.Eq [ix 3; ix 2]))))
+
+    (* `[](\E k : w = <<k, c>>)` and `[](\E k : w = <<c, c>>)`, where the
+    constant `c` is named `k` as well.  Both terms mention `c`. *)
+    let%test_unit "bound variable and constant of the same name, both free" =
+        let hyps = [flex "w"; fresh "k"] in
+        distinct (modal_names hyps
+            (box (exists "k" (app B.Eq [ix 3; tuple [ix 1; ix 2]])))
+            (box (exists "k" (app B.Eq [ix 3; tuple [ix 2; ix 2]]))))
+
+    let%test_unit "same term" =
+        let hyps = [flex "w"; fresh "k"] in
+        let e = box (exists "j" (app B.Eq [ix 3; tuple [ix 1; ix 2]])) in
+        same (modal_names hyps e e)
+
+    (* `[](\E k : w = k)` and `[](\E j : w = j)`. *)
+    let%test_unit "terms equal up to renaming of bound variables" =
+        let hyps = [flex "w"] in
+        same (modal_names hyps
+            (box (exists "k" (app B.Eq [ix 2; ix 1])))
+            (box (exists "j" (app B.Eq [ix 2; ix 1]))))
+end)
