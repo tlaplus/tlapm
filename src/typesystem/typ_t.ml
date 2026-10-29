@@ -1272,7 +1272,6 @@ let rec get_type scx e: t option =
         | B.Ratio, _
         | B.Quotient, _
         | B.Remainder, _
-        | B.Exp, _
         | B.Uminus, _ ->
             if for_all (_is_int scx) es
                 then Some Int
@@ -1459,8 +1458,7 @@ let rec is_int scx e =
         match op with
         | B.Plus
         | B.Minus
-        | B.Times
-        | B.Exp ->
+        | B.Times ->
             is_int scx e1 &&
             is_int scx e2
         (** This works with the
