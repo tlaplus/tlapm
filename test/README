@@ -64,6 +64,12 @@ line of ==== are the commands for the test harness:
   to get the standard output and standard error output of the
   command(s) launched by the test harness.
 
+- known: <URL>
+  Marks a bug that is not fixed yet; <URL> links the GitHub issue or
+  comment that reports it.  The result is inverted: the test passes
+  iff one of its checks fails, and fails once all of them pass, so
+  that the line gets removed.
+
 - \*<anything>
   A line beginning with \* (possibly preceded by spaces) is ignored.
 
