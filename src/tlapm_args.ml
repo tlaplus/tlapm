@@ -15,6 +15,8 @@ let set_debug_flags flgs =
   let f flg =
     match flg.[0] with
     | '-' -> rm_debug_flag (String.sub flg 1 (String.length flg - 1))
+    | _ when flg = "oldsmt" ->
+        raise (Arg.Bad "--debug oldsmt: the old SMT encoding has been removed")
     | _ -> add_debug_flag flg
   in
   List.iter f flgs
