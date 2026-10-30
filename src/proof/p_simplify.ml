@@ -441,7 +441,8 @@ and simplify_step cx goal st time_flag =
             | _ -> assert false
           in
           let scx = hyps_of bs in
-          let scx = Deque.snoc scx (Fact (e, Visible, time_flag)  @@ e) in
+          let tm = Expr.Temporal_props.compute_time (Deque.append cx scx) e in
+          let scx = Deque.snoc scx (Fact (e, Visible, tm)  @@ e) in
           let ssq = { context = scx ;
                       active = app_expr (shift (Deque.size scx)) goal } in
           let sprf = Omitted (Elsewhere (Util.get_locus st)) @@ st in
