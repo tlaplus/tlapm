@@ -8,4 +8,3 @@ THEOREM ASSUME NEW STATE F(_) PROVE F(1) = F(2)
 OBVIOUS
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/new
