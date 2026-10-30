@@ -190,12 +190,13 @@ and simplify_step cx goal st time_flag =
         (cx, app_expr (shift (List.length dfs)) goal, [Define dfs @@ st],
         time_flag)
     | Have e ->
+        let have_time = Expr.Temporal_props.compute_time cx e in
         let (sq, qed, time_flag) =
           match expose_connective cx goal with
           | {core = Apply ({core = Internal Builtin.Implies}, [a ; b])} ->
               let sq = {
                 context = Deque.of_list [ Fact (e, Visible,
-                time_flag)  @@ st ] ;
+                have_time)  @@ st ] ;
                 active = app_expr (shift 1) b ;
               } in
               let qed = By ({ facts = [Ix 2 @@ st] ; defs = [] }, true) @@ st in
@@ -203,7 +204,7 @@ and simplify_step cx goal st time_flag =
           | gl ->
               let sq = {
                 context = Deque.of_list [ Fact (e, Visible,
-                time_flag)  @@ st ];
+                have_time)  @@ st ];
                 active = gl ;
               } in
               let msg =

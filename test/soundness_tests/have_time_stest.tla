@@ -17,4 +17,3 @@ THEOREM x = 0 => (x = 0)'
     BY <1>1, PTL
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/new
