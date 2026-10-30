@@ -363,7 +363,8 @@ let coalesce_modal_visitor = object (self)
                 | _ ->
                     let expr = noprops (Internal TRUE) in
                     let op_ = (Operator (coalesced_op, expr)) @@ index in
-                    coalesce_operator cx op_ args
+                    Apply (coalesce_operator cx op_ args,
+                        List.map (self#expr scx) args) @@ e
                 end
             | FreshTuply _
             | Fact _ ->
