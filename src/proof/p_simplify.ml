@@ -422,7 +422,7 @@ and simplify_step cx goal st time_flag =
         simplify_step cx oldgoal suff time_flag
     | Pcase (e, prf) ->
         let ass = Assert ({ context = Deque.of_list [ Fact (e, Visible,
-        time_flag)  @@ st ] ;
+        Expr.Temporal_props.compute_time cx e)  @@ st ] ;
                             active = app_expr (shift 1) goal }, prf) @@ st in
         let ass = assign ass Props.orig_step st in
         let ass = renumber_step (step_number stepno) ass in
