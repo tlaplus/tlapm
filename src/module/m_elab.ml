@@ -1219,6 +1219,12 @@ let rec normalize mcx cx m =
             end else begin
               let e = anon#mexpr mcx ([], cx) e in
               let e = const_visitor#expr ((), cx) e in
+              (* an assumption holds at all times, so it must be constant *)
+              if Expr.Levels.get_level (Expr.Levels.compute_level cx e) > 0
+              then begin
+                Errors.err ~at:e "Assumptions must be level 0 (Constant).";
+                failwith "Module.Elab.normalize"
+              end;
               let mu = Axiom (nm, e) @@ mu in
               continue mcx cx mu "Axiom"
             end
