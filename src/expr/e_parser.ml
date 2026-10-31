@@ -316,6 +316,10 @@ let distinct =
   in
     fun vs -> check S.empty vs
 
+let distinct_fields fs =
+  if distinct (List.map (fun (f, e) -> f @@ e) fs) then succeed fs
+  else fail "a field occurs more than once in a record"
+
 
 let rec expr b = lazy begin
   resolve (expr_or_op b);
@@ -703,13 +707,15 @@ and atomic_expr b = lazy begin
         choice [
           (* Record constructor:  [name1 |-> e1, ...] *)
           enabled (anyname <<< mapsto) >*>
-            (comma1 (anyname <<< mapsto <**> use (expr b)))
+            (comma1 (anyname <<< mapsto <**> use (expr b))
+             >>= distinct_fields)
           <<< punct "]"
           <$> (fun fs -> Record fs) ;
 
           (* Set of records:  [name1: Values1, ...] *)
           enabled (anyname <<< colon) >*>
-            (comma1 (anyname <<< colon <*> use (expr b)))
+            (comma1 (anyname <<< colon <*> use (expr b))
+             >>= distinct_fields)
           <<< punct "]"
           <$> (fun fs -> Rect fs) ;
 
