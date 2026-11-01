@@ -1,0 +1,8 @@
+---- MODULE 15_SufficesProofTest ----
+THEOREM TRUE
+PROOF
+<1> SUFFICES TRUE
+  OBVIOUS
+<1> QED
+  OBVIOUS
+====
