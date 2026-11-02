@@ -5,7 +5,7 @@
 (* NB: This specification was written before TLAPS had any support for     *)
 (* records and therefore uses tuples for representing messages.            *)
 (***************************************************************************)
-EXTENDS Integers, Sets
+EXTENDS Integers
 -----------------------------------------------------------------------------
 (***************************************************************************)
 (* The constant parameters and the set Ballots are the same as in Voting.  *)
