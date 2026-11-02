@@ -1,6 +1,6 @@
 ------------------------------- MODULE Voting -------------------------------
 
-EXTENDS Sets
+EXTENDS Integers, TLAPS
 
 CONSTANT Value, Acceptor, Quorum
 

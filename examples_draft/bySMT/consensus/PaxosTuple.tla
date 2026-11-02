@@ -3,7 +3,7 @@
 (* This is a specification of the Paxos algorithm without explicit leaders *)
 (* or learners.  It refines the spec in Voting                             *)
 (***************************************************************************)
-EXTENDS Integers, Sets
+EXTENDS Integers
 -----------------------------------------------------------------------------
 (***************************************************************************)
 (* The constant parameters and the set Ballots are the same as in Voting.  *)

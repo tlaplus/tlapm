@@ -1,5 +1,5 @@
 ----------------------------- MODULE Consensus ------------------------------
-EXTENDS Sets, TLAPS
+EXTENDS FiniteSetTheorems, TLAPS
 
 CONSTANT Value
 
@@ -20,9 +20,9 @@ Inv == /\ chosen \subseteq Value
 
 THEOREM Invariance == Spec => []Inv
 <1>1 Init => Inv
-  BY CardinalityZero DEFS Init, Inv
+  BY FS_EmptySet DEFS Init, Inv
 <1>2. Inv /\ [Next]_chosen => Inv'
-  BY CardinalityOne, Z3 DEFS Next, Inv
+  BY FS_Singleton, Z3 DEFS Next, Inv
 <1>3 QED
   PROOF BY <1>1,<1>2,PTL DEF Spec
 
