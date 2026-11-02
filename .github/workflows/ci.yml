@@ -88,6 +88,17 @@ jobs:
                 ! -path "./examples/ByzPaxos/VoteProof.tla"    \
                 -print0 | xargs --verbose --null --max-args=1  \
                 /usr/bin/time ./_build/tlapm/bin/tlapm --cleanfp --stretch 5
+            - name: Check draft consensus example proofs
+              run: |
+                # Voting.tla, PaxosProof.tla, and Sets.tla have obligations
+                # tlapm does not prove.
+                find ./examples_draft/consensus ./examples_draft/bySMT/consensus \
+                    -type f -name "*.tla" \
+                    ! -name "Voting.tla" \
+                    ! -name "PaxosProof.tla" \
+                    ! -name "Sets.tla" \
+                    -print0 | xargs --verbose --null --max-args=1 \
+                    /usr/bin/time ./_build/tlapm/bin/tlapm --cleanfp --stretch 5
             - name: Clone tlaplus/examples
               uses: actions/checkout@v6
               with:
