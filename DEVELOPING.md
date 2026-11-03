@@ -19,20 +19,32 @@ TLAPS development & use is only supported on Unix-like systems, such as:
 
 For building TLAPS, some Linux distros require additional packages beyond the base install; on Debian/Ubuntu:
 ```sh
-apt install zlib1g-dev gawk time
+apt install zlib1g-dev gawk time wget
 ```
 On Arch Linux:
 ```sh
 pacman -Sy wget time zlib patch diffutils fontconfig gnu-free-fonts
 ```
+On macOS, install the Xcode Command Line Tools, then opam and `wget` using Homebrew:
+```sh
+xcode-select --install
+brew install opam wget
+```
+On Apple Silicon, the bundled Intel Z3 binary also requires Rosetta:
+```sh
+softwareupdate --install-rosetta
+```
+
 Install the following dependencies to your path:
 * [OCaml](https://ocaml.org/install) 4.08.1 or later (usually installed using [opam](https://opam.ocaml.org/))
 * [Dune](https://dune.build/install)
 * [Make](https://www.gnu.org/software/make/)
+* [Wget](https://www.gnu.org/software/wget/) (used to download backend dependencies)
 
 OCaml requires that you initialize an environment within your shell.
 For example, you can create & initialize an OCaml 5.5.2 environment with:
 ```sh
+opam init
 opam switch create 5.5.2
 eval $(opam env --switch=5.5.2)
 ```
