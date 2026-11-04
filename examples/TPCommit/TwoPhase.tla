@@ -1,4 +1,5 @@
 ------------------------------- MODULE TwoPhase -----------------------------
+EXTENDS TLAPS
 (***************************************************************************)
 (* This specification describes the Two-Phase Commit protocol, in which a  *)
 (* transaction manager (TM) coordinates the resource managers (RMs) to     *)
@@ -24,6 +25,9 @@ VARIABLES
   tmPrepared,    \* The set of RMs from which the TM has received $"Prepared"$
                  \* messages.
   msgs
+
+vars == <<rmState, tmState, tmPrepared, msgs>> 
+
     (***********************************************************************)
     (* In the protocol, processes communicate with one another by sending  *)
     (* messages.  Since we are specifying only safety, a process is not    *)
@@ -140,37 +144,61 @@ TPNext ==
   \/ \E rm \in RM :
        TMRcvPrepared(rm) \/ RMPrepare(rm) \/ RMChooseToAbort(rm)
          \/ RMRcvCommitMsg(rm) \/ RMRcvAbortMsg(rm)
------------------------------------------------------------------------------
-TPSpec == TPInit /\ [][TPNext]_<<rmState, tmState, tmPrepared, msgs>>
+
+TPSpec == TPInit /\ [][TPNext]_vars
   (*************************************************************************)
   (* The complete spec of the Two-Phase Commit protocol.                   *)
   (*************************************************************************)
 
-THEOREM TPSpec => []TPTypeOK
-  (*************************************************************************)
-  (* This theorem asserts that the type-correctness predicate TPTypeOK is  *)
-  (* an invariant of the specification.                                    *)
-  (*************************************************************************)
 -----------------------------------------------------------------------------
 (***************************************************************************)
-(* We now assert that the Two-Phase Commit protocol implements the         *)
-(* Transaction Commit protocol of module $TCommit$.  The following         *)
-(* statement defines $TC!TCSpec$ to be formula $TSpec$ of module           *)
-(* $TCommit$.  (The TLA$^+$ \textsc{instance} statement is used to rename  *)
-(* the operators defined in module $TCommit$ avoids any name conflicts     *)
-(* that might exist with operators in the current module.)                 *)
+(* We now show that the Two-Phase Commit algorithm is a transaction commit *)
+(* algorithm by showing that it refines the specification of transaction   *)
+(* commit of module TCommit.  This means showing that formula Spec of      *)
+(* this module, our specification of two-phase commit, implies formula     *)
+(* Spec of module TCommit, our specification of transaction commit.        *)
 (***************************************************************************)
 TC == INSTANCE TCommit
 
-THEOREM TPSpec => TC!TCSpec
-  (*************************************************************************)
-  (* This theorem asserts that the specification TPSpec of the Two-Phase   *)
-  (* Commit protocol implements the specification TCSpec of the            *)
-  (* Transaction Commit protocol.                                          *)
-  (*************************************************************************)
 (***************************************************************************)
-(* The two theorems in this module have been checked with TLC for six      *)
-(* RMs, a configuration with 50816 reachable states, in a little over a    *)
-(* minute on a 1 GHz PC.                                                   *)
+(* TLC can in a few seconds check that Spec implies TC!Spec for a model    *)
+(* with 3 RMs, which is enough to inspire confidence in the correctness of *)
+(* the refinement.  However, it is not hard to prove that Spec implies     *)
+(* TC!Spec.  For proof, we need to define the appropriate inductive        *)
+(* invariant Inv of Spec, which we now do.                                 *)
 (***************************************************************************)
+
+TMInv == /\ (tmState = "committed") => (tmPrepared = RM)
+         /\ ([type |-> "Commit"] \in msgs) => (tmState = "committed")
+         /\ ([type |-> "Abort"] \in msgs) => (tmState = "aborted")
+
+RMInv(rm) ==
+  /\ (rm \in tmPrepared) => ([type |-> "Prepared", rm |-> rm] \in msgs)
+  /\ ([type |-> "Prepared", rm |-> rm] \in msgs) =>
+         /\ rmState[rm] # "working"
+         /\ (rmState[rm] = "aborted") => ([type |-> "Abort"] \in msgs)
+  /\ (rmState[rm]= "committed") => ([type |-> "Commit"] \in msgs)
+
+Inv == TPTypeOK /\ TMInv /\ (\A rm \in RM : RMInv(rm))
+
+THEOREM Invariant == TPSpec => []Inv
+<1>1. TPInit => Inv
+  BY DEF TPInit, Inv, TPTypeOK, TMInv, RMInv
+<1>2. Inv /\ [TPNext]_vars => Inv'
+  BY DEF Inv, TPTypeOK, TMInv, RMInv, 
+         TPNext, TMCommit, TMAbort, TMRcvPrepared, RMPrepare,
+         RMChooseToAbort, RMRcvCommitMsg, RMRcvAbortMsg, vars, Message
+<1>. QED  BY <1>1, <1>2, PTL DEF TPSpec
+
+
+THEOREM Refinement == TPSpec => TC!TCSpec
+<1>1. TPInit => TC!TCInit 
+  BY DEF TPInit, TC!TCInit
+<1>2. Inv /\ [TPNext]_vars => [TC!TCNext]_rmState
+  BY DEF Inv, TPTypeOK, TMInv, RMInv, 
+         TPNext, TMCommit, TMAbort, TMRcvPrepared, RMPrepare,
+         RMChooseToAbort, RMRcvCommitMsg, RMRcvAbortMsg, vars, Message,
+         TC!TCNext, TC!Prepare, TC!Decide, TC!canCommit, TC!notCommitted
+<1>. QED  BY <1>1, <1>2, Invariant, PTL DEF TPSpec, TC!TCSpec
+
 =============================================================================
