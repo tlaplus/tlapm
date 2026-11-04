@@ -77,19 +77,13 @@ TypeOK ==
 
 TC == INSTANCE TCommit
 
-THEOREM Spec <=> TC!TCSpec
+THEOREM TCEquiv == Spec <=> TC!TCSpec
   <1>1. Init <=> TC!TCInit
     BY DEF Init, TC!TCInit
-  <1>2. [Next]_rmState <=> [TC!TCNext]_rmState
-    BY DEF Next, ProcSet, RManager, canCommit, notCommitted,
+  <1>2. [Next]_vars <=> [TC!TCNext]_rmState
+    BY DEF Next, ProcSet, RManager, canCommit, notCommitted, vars,
            TC!TCNext, TC!Prepare, TC!Decide, TC!canCommit, TC!notCommitted
-  <1>3. QED
-    (***********************************************************************)
-    (* Follows from <1>1 and <1>2 by trivial temporal logic.               *)
-    (***********************************************************************)
-    PROOF OMITTED
+  <1>3. QED  BY <1>1, <1>2, PTL DEF Spec, TC!TCSpec
 
 =============================================================================
-\* Modification History
-\* Last modified Mon Oct 10 07:24:52 PDT 2011 by lamport
 \* Created Mon Oct 10 05:31:02 PDT 2011 by lamport

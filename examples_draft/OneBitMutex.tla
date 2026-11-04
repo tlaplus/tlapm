@@ -11,6 +11,7 @@
 EXTENDS Naturals, TLAPS
 
 CONSTANT N
+ASSUME NAssump == N \in Nat
 
 Procs == 1..N
 
@@ -127,14 +128,12 @@ Past(i, j) == \/ (pc[i] = "e2") /\ (j \notin unchecked[i])
               \/ pc[i] = "cs"
 
 
-Inv == /\ TypeOK
-       /\ \A i \in Procs :
-             /\ (pc[i] \in {"e2", "e5", "cs"}) => x[i]
-             /\ \A j \in Procs \ {i} :
-                   Past(i, j) => ~Past(j, i) /\ x[i]
+Inv == \A i \in Procs :
+          /\ (pc[i] \in {"e2", "e5", "cs"}) => x[i]
+          /\ \A j \in Procs \ {i} :
+                Past(i, j) => ~Past(j, i) /\ x[i]
 
-LiveInv == /\ Inv
-           /\ \A i \in Procs : (pc[i] = "e4") => ~x[i]
+LiveInv == \A i \in Procs : (pc[i] = "e4") => ~x[i]
 
 Trying(i) == pc[i] \in {"e1", "e2", "e3", "e4", "e5"}
 InCS(i) == pc[i] = "cs"
@@ -146,20 +145,68 @@ StarvationFree == \A i \in Procs : Trying(i) ~> InCS(i)
 
 -----------------------------------------------------------------------------
 
-ASSUME NAssump == N \in Nat
+THEOREM TypeCorrect == Spec => []TypeOK
+<1>. USE NAssump DEF Procs, ProcSet
+<1>1. Init => TypeOK 
+  BY DEF Init, TypeOK 
+<1>2. TypeOK /\ [Next]_vars => TypeOK'
+  <2>. SUFFICES ASSUME TypeOK, [Next]_vars PROVE TypeOK'
+    OBVIOUS 
+  <2>. USE DEF TypeOK
+  <2>1. ASSUME NEW self \in Procs, ncs(self) PROVE TypeOK'
+    BY <2>1 DEF ncs 
+  <2>2. ASSUME NEW self \in Procs, e1(self) PROVE TypeOK'
+    BY <2>2 DEF e1 
+  <2>3. ASSUME NEW self \in Procs, e2(self) PROVE TypeOK'
+    BY <2>3 DEF e2
+  <2>4. ASSUME NEW self \in Procs, e3(self) PROVE TypeOK'
+    BY <2>4 DEF e3 
+  <2>5. ASSUME NEW self \in Procs, e4(self) PROVE TypeOK'
+    BY <2>5 DEF e4 
+  <2>6. ASSUME NEW self \in Procs, e5(self) PROVE TypeOK'
+    BY <2>6 DEF e5 
+  <2>7. ASSUME NEW self \in Procs, cs(self) PROVE TypeOK'
+    BY <2>7 DEF cs
+  <2>8. ASSUME NEW self \in Procs, f(self) PROVE TypeOK'
+    BY <2>8 DEF f 
+  <2>9. CASE UNCHANGED vars 
+    BY <2>9 DEF vars 
+  <2>. QED  BY <2>1, <2>2, <2>3, <2>4, <2>5, <2>6, <2>7, <2>8, <2>9 DEF Next, p
+<1>. QED  BY <1>1, <1>2, PTL DEF Spec
 
-THEOREM Spec => []Inv
-<1>. USE NAssump DEFS Inv, TypeOK, ProcSet, Past
+THEOREM Invariant == Spec => []Inv
+<1>. USE NAssump DEFS Procs, ProcSet, Past
 <1>1. Init => Inv
-  BY SMT DEFS Init
-<1>2. Inv /\ [Next]_vars => Inv'
-  BY SMT DEFS Next, p, ncs, cs, e1, e2, e3, e4, e5, f, vars
-<1>3. QED
-  PROOF OMITTED     \* Temporal proof
+  BY DEF Init, Inv
+<1>2. Inv /\ TypeOK /\ [Next]_vars => Inv'
+  <2>. SUFFICES ASSUME Inv, TypeOK, [Next]_vars PROVE Inv'
+    OBVIOUS 
+  <2>. USE DEF TypeOK, Inv
+  <2>1. ASSUME NEW self \in Procs, ncs(self) PROVE Inv'
+    BY <2>1 DEF ncs
+  <2>2. ASSUME NEW self \in Procs, e1(self) PROVE Inv'
+    BY <2>2 DEF e1 
+  <2>3. ASSUME NEW self \in Procs, e2(self) PROVE Inv'
+    BY <2>3 DEF e2 
+  <2>4. ASSUME NEW self \in Procs, e3(self) PROVE Inv'
+    BY <2>4 DEF e3 
+  <2>5. ASSUME NEW self \in Procs, e4(self) PROVE Inv'
+    BY <2>5 DEF e4 
+  <2>6. ASSUME NEW self \in Procs, e5(self) PROVE Inv'
+    BY <2>6 DEF e5 
+  <2>7. ASSUME NEW self \in Procs, cs(self) PROVE Inv'
+    BY <2>7 DEF cs 
+  <2>8. ASSUME NEW self \in Procs, f(self) PROVE Inv'
+    BY <2>8 DEF f 
+  <2>9. CASE UNCHANGED vars 
+    BY <2>9 DEF vars 
+  <2>. QED  BY <2>1, <2>2, <2>3, <2>4, <2>5, <2>6, <2>7, <2>8, <2>9 DEF Next, p
+<1>3. QED  BY <1>1, <1>2, TypeCorrect, PTL DEF Spec 
+
+THEOREM MutualExclusion == Spec => []Mutex 
+<1>. TypeOK /\ Inv => Mutex 
+  BY DEF TypeOK, Inv, Past, Mutex, InCS 
+<1>. QED  BY TypeCorrect, Invariant, PTL 
 
 =============================================================================
-\* Modification History
-\* Last modified Fri Nov 02 22:15:55 CET 2012 by hernanv
-\* Last modified Wed May 09 18:25:40 CEST 2012 by hernanv
-\* Last modified Tue May 08 12:27:16 PDT 2012 by lamport
 \* Created Sat Mar 31 14:32:32 PDT 2012 by lamport

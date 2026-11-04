@@ -1,4 +1,6 @@
 ------------------------------- MODULE TCommit ------------------------------
+EXTENDS TLAPS 
+
 CONSTANT RM       \* The set of participating resource managers
 VARIABLE rmState  \* `rmState[rm]' is the state of resource manager rm.
 -----------------------------------------------------------------------------
@@ -60,6 +62,11 @@ TCConsistent ==
                          /\ rmState[rm2] = "committed"
 
 THEOREM TCSpec => [](TCTypeOK /\ TCConsistent)
+<1>1. TCInit => TCTypeOK /\ TCConsistent
+  BY DEF TCInit, TCTypeOK, TCConsistent
+<1>2. TCTypeOK /\ TCConsistent /\ [TCNext]_rmState => (TCTypeOK /\ TCConsistent)'
+  BY DEF TCTypeOK, TCConsistent, TCNext, Prepare, Decide, canCommit, notCommitted
+<1>. QED  BY <1>1, <1>2, PTL DEF TCSpec
   (*************************************************************************)
   (* Asserts that TCTypeOK and TCInvariant are invariants of the protocol. *)
   (*************************************************************************)
