@@ -239,9 +239,9 @@ let make_fcn_from_boundeds
 
 let fixities =
   let fixities = Hashtbl.create 109 in
-  let infix op prec assoc =
+  let infix name op prec assoc =
     Opr begin
-      prec, Infix begin
+      prec, name, Infix begin
         assoc, fun oploc a b ->
           let op = Util.locate op oploc in
           let loc = Loc.merge oploc (Loc.merge (Util.get_locus a) (Util.get_locus b)) in
@@ -250,7 +250,7 @@ let fixities =
     end in
   let bin_prod =
     Opr begin
-      (10, 13), Infix begin
+      (10, 13), "\\X", Infix begin
         Left, fun oploc a b ->
           let loc = Loc.merge oploc (Loc.merge (Util.get_locus a) (Util.get_locus b)) in
             Util.locate begin
@@ -260,18 +260,18 @@ let fixities =
             end loc
       end
     end in
-  let prefix op prec =
+  let prefix name op prec =
     Opr begin
-      prec, Prefix begin
+      prec, name, Prefix begin
         fun oploc a ->
           let op = Util.locate op oploc in
           let loc = Loc.merge oploc (Util.get_locus a) in
             Util.locate (Apply (op, [a])) loc
       end
     end in
-  let postfix op prec =
+  let postfix name op prec =
     Opr begin
-      prec, Postfix begin
+      prec, name, Postfix begin
         fun oploc a ->
          let op = Util.locate op oploc in
           let loc = Loc.merge oploc (Util.get_locus a) in
@@ -288,10 +288,10 @@ let fixities =
                   | Some bltin -> Internal bltin
                   | None -> Opaque top.Op.name
                 in match top.Op.fix with
-                  | Op.Prefix -> prefix defn top.Op.prec
-                  | Op.Postfix -> postfix defn top.Op.prec
+                  | Op.Prefix -> prefix top.Op.name defn top.Op.prec
+                  | Op.Postfix -> postfix top.Op.name defn top.Op.prec
                   | Op.Infix ass ->
-                      infix defn top.Op.prec begin
+                      infix top.Op.name defn top.Op.prec begin
                         match ass with
                           | Op.Left -> Left
                           | Op.Right -> Right
@@ -370,11 +370,11 @@ and expr_or_op b is_start =
         | [] -> fail ("unknown operator " ^ p)
         | ops ->
             let non_test = function
-              | Opr (_, Infix (_, ix)) ->
+              | Opr (_, _, Infix (_, ix)) ->
                   attempt (punct "(" >>> (use (expr b) <*> (comma_symbol >>> use (expr b))) <<< punct ")")
                   (* <<! [Printf.sprintf "args of nonfix_%s" p] *)
                   <$> (fun (e, f) -> [P.Atm (ix pts e f)])
-              | Opr (_, Postfix ix) ->
+              | Opr (_, _, Postfix ix) ->
                   attempt (punct "(" >>> use (expr b) <<< punct ")")
                   (* <<! [Printf.sprintf "args of nonfix_%s" p] *)
                   <$> (fun e -> [P.Atm (ix pts e)])
@@ -390,7 +390,7 @@ and expr_or_op b is_start =
       end <$> begin
         fun sw ->
           [ P.Opr begin
-              (17, 17),
+              (17, 17), ".",
               P.Postfix begin
                 fun _ r ->
                   let loc = Loc.merge (Util.get_locus r) (Util.get_locus sw) in
@@ -409,7 +409,7 @@ and expr_or_op b is_start =
       <$> begin
         fun esw ->
           [ P.Opr begin
-              (17, 17),
+              (17, 17), "[]",
               P.Postfix begin
                 fun oploc f ->
                   let loc = Loc.merge (Util.get_locus f) (Util.get_locus esw) in
