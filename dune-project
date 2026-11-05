@@ -57,5 +57,5 @@
   (ocolor :with-test)
   (patdiff :with-test))
  (depopts
-  lsp         ; https://github.com/ocaml/ocaml-lsp
+  (lsp (= 1.27.0)) ; https://github.com/ocaml/ocaml-lsp
   eio_main))  ; https://github.com/ocaml-multicore/eio, only available on OCaml version >= 5.
