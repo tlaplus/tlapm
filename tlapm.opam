@@ -45,7 +45,10 @@ depends: [
   "patdiff" {with-test}
   "odoc" {with-doc}
 ]
-depopts: ["lsp" "eio_main"]
+depopts: [
+  "lsp" {= "1.27.0"}
+  "eio_main"
+]
 build: [
   ["dune" "subst"] {dev}
   [

@@ -25,7 +25,7 @@ opam-deps:
 	opam install ./ --deps-only --with-test --yes --working-dir
 
 opam-deps-opt:
-	opam install --yes eio_main lsp
+	opam install --yes eio_main lsp.1.27.0
 
 opam-deps-dev:
 	opam install --yes ocamlformat ocaml-lsp-server earlybird
