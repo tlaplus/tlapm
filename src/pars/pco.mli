@@ -154,7 +154,9 @@ module type Make_sig = sig
 
   type 'a item =
     | Atm of 'a
-    | Opr of Prec.prec * 'a opr
+    | Opr of Prec.prec * string * 'a opr
+        (** Precedence, canonical operator name, and action. Aliases must
+            share a name so associativity applies across spellings. *)
 
   and 'a opr =
     | Prefix of (Loc.locus -> 'a -> 'a)
