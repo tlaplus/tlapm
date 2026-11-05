@@ -669,17 +669,21 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
                   end
                 end
         end
-      | Opr (oprec, _, Infix (oass, _)) -> begin
+      | Opr (oprec, name, Infix (oass, _)) -> begin
           let rec normalize stack = match stack with
-            | _ :: (Opr (pprec, _, _), _) :: _
+            | (Atm _, _) :: (Opr (pprec, _, _), _) :: _
                 when below oprec pprec ->
                 normalize (reduce_one stack)
-            | _ :: (Opr (pprec, _, Infix (Left, _)), _) :: _
-                when oass = Left && not (below pprec oprec) ->
-                reduce_one stack
-            | _ -> stack
+            | (Atm _, _) :: (Opr (pprec, pname, Infix (pass, _)), _) :: _
+                when oass <> Non && oass = pass && pname = name
+                  && conflict oprec pprec ->
+                succeed (if oass = Left then reduce_one stack else stack)
+            | (Atm _, _) :: (Opr (pprec, pname, _), _) :: _
+                when conflict oprec pprec ->
+                ambiguous pname name
+            | _ -> succeed stack
           in
-          let stack = normalize stack in
+          normalize stack >>= fun stack ->
             match stack with
               | (Atm _, _) :: _ ->
                   commit (next ((item, loc) :: stack) true)
@@ -688,13 +692,16 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
               | [] ->
                   fail "insufficient arguments"
         end
-      | Opr (oprec, _, Postfix _) -> begin
+      | Opr (oprec, name, Postfix _) -> begin
           let rec normalize stack = match stack with
-            | _ :: (Opr (pprec, _, _), _) :: _ when below oprec pprec ->
+            | (Atm _, _) :: (Opr (pprec, _, _), _) :: _ when below oprec pprec ->
                 normalize (reduce_one stack)
-            | _ -> stack
+            | (Atm _, _) :: (Opr (pprec, pname, _), _) :: _
+                when conflict oprec pprec ->
+                ambiguous pname name
+            | _ -> succeed stack
           in
-          let stack = normalize stack in
+          normalize stack >>= fun stack ->
             match stack with
               | (Atm _, _) :: _ ->
                   commit (next (reduce_one ((item, loc) :: stack)) false)
@@ -703,6 +710,10 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
               | [] ->
                   fail "insufficient arguments"
         end
+
+    and ambiguous pname name =
+      commit (fail ("ambiguous expression: operators " ^ pname ^ " and " ^ name
+        ^ " have conflicting precedence; use parentheses"))
 
     and reduce_one = function
       | (Opr (_, _, Postfix px), oloc)
