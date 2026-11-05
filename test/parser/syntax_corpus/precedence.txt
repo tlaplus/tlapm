@@ -1,0 +1,975 @@
+==============================|||
+Precedence / parentheses disambiguate: {} \in (SUBSET {}) \cap {}
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == {} \in (SUBSET {}) \cap {}
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: {} \in SUBSET ({} \cap {})
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == {} \in SUBSET ({} \cap {})
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (DOMAIN A) .. B
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (DOMAIN A) .. B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: DOMAIN (A .. B)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == DOMAIN (A .. B)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (A = B) = C
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (A = B) = C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: A = (B = C)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A = (B = C)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (A => B) => C
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (A => B) => C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: A => (B => C)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A => (B => C)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (A ^ B) ^ C
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (A ^ B) ^ C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: A ^ (B ^ C)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A ^ (B ^ C)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (A /\ B) \/ C
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (A /\ B) \/ C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: A /\ (B \/ C)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A /\ (B \/ C)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (A \cap B) \cup C
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (A \cap B) \cup C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: A \cap (B \cup C)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A \cap (B \cup C)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (A $ B) + C
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (A $ B) + C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: A $ (B + C)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A $ (B + C)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (A \cdot B) ^ C
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (A \cdot B) ^ C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: A \cdot (B ^ C)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A \cdot (B ^ C)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (A * B) $ C
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (A * B) $ C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: A * (B $ C)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A * (B $ C)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: ([] A) = B
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == ([] A) = B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: [] (A = B)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == [] (A = B)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (ENABLED A)'
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (ENABLED A)'
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: ENABLED (A')
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == ENABLED (A')
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (UNCHANGED A)'
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (UNCHANGED A)'
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: UNCHANGED (A')
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == UNCHANGED (A')
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: ([] A)'
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == ([] A)'
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: [] (A')
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == [] (A')
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (<> A)'
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (<> A)'
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: <> (A')
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == <> (A')
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (-A) $ B
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (-A) $ B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: -(A $ B)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == -(A $ B)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (SUBSET A) \cap B
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (SUBSET A) \cap B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: SUBSET (A \cap B)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == SUBSET (A \cap B)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (SUBSET A) \cup B
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (SUBSET A) \cup B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: SUBSET (A \cup B)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == SUBSET (A \cup B)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (SUBSET A) \ B
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (SUBSET A) \ B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: SUBSET (A \ B)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == SUBSET (A \ B)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (UNION A) \cap B
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (UNION A) \cap B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: UNION (A \cap B)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == UNION (A \cap B)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (UNION A) \cup B
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (UNION A) \cup B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: UNION (A \cup B)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == UNION (A \cup B)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: (UNION A) \ B
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (UNION A) \ B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: UNION (A \ B)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == UNION (A \ B)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: SUBSET UNION A
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == SUBSET UNION A
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: DOMAIN SUBSET A
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == DOMAIN SUBSET A
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: ~ ~ A
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == ~ ~ A
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: A''
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A''
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: A^+^*
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A^+^*
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: A = 0 /\ B = 42
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A = 0 /\ B = 42
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: A /\ [] B
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A /\ [] B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: A \cap SUBSET B
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A \cap SUBSET B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: SUBSET A \X B
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == SUBSET A \X B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: A \X B \times C
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A \X B \times C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: A + -B
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A + -B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: A - -B
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A - -B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: A - B - C
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A - B - C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: A + B * C
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A + B * C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: A * B + C
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A * B + C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: A / B + C
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A / B + C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: A = B /\ C = D
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A = B /\ C = D
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: A = ~B = C
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A = ~B = C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: ENABLED A /\ B
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == ENABLED A /\ B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: UNCHANGED <<A, B>>
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == UNCHANGED <<A, B>>
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: [] [A]_B
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == [] [A]_B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: SUBSET A[B]
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == SUBSET A[B]
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / unambiguous expressions: SUBSET A.field
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == SUBSET A.field
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / prefix precedence: -A * B
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == -A * B
+Reference == -(A * B)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / prefix precedence: DOMAIN A \cap B
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == DOMAIN A \cap B
+Reference == (DOMAIN A) \cap B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / prefix precedence: [] A /\ B
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == [] A /\ B
+Reference == ([] A) /\ B
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / associativity and aliases: A + B + C
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == A + B + C
+Reference == (A + B) + C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / associativity and aliases: A - B - C
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == A - B - C
+Reference == (A - B) - C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / associativity and aliases: A $ B $ C
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == A $ B $ C
+Reference == (A $ B) $ C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / associativity and aliases: A /\ B \land C
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == A /\ B \land C
+Reference == (A /\ B) /\ C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / associativity and aliases: A \/ B \lor C
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == A \/ B \lor C
+Reference == (A \/ B) \/ C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / associativity and aliases: A \cap B \intersect C
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == A \cap B \intersect C
+Reference == (A \cap B) \cap C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / associativity and aliases: A \cup B \union C
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == A \cup B \union C
+Reference == (A \cup B) \cup C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / associativity and aliases: A \o B \circ C
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == A \o B \circ C
+Reference == (A \o B) \o C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / associativity and aliases: A % B % C
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == A % B % C
+Reference == (A % B) % C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / associativity and aliases: A + B * C
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == A + B * C
+Reference == A + (B * C)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / associativity and aliases: A * B + C
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == A * B + C
+Reference == (A * B) + C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / associativity and aliases: A - -B
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == A - -B
+Reference == A - (-B)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / associativity and aliases: A = ~B = C
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == A = ~B = C
+Reference == A = ~(B = C)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / associativity and aliases: A \cap SUBSET B
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == A \cap SUBSET B
+Reference == A \cap (SUBSET B)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / postfix chains: A''
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == A''
+Reference == (A')'
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / postfix chains: A^+^*
+:equiv
+==============================|||
+
+---- MODULE Precedence ----
+Actual == A^+^*
+Reference == (A^+)^*
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / diagnostic specificity: A + B
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A + B
+====
+
+------------------------------|||

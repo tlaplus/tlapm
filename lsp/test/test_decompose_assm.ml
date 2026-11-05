@@ -72,7 +72,7 @@ let test_assm_implies_basic () =
     {|
     ---- MODULE test ----
     THEOREM Test ==
-        ASSUME NEW a, NEW b, NEW c, a => b => c PROVE c
+        ASSUME NEW a, NEW b, NEW c, a => (b => c) PROVE c
     PROOF
       <1> QED OBVIOUS
     ====
@@ -82,7 +82,7 @@ let test_assm_implies_basic () =
     {|
     ---- MODULE test ----
     THEOREM Test ==
-        ASSUME NEW a, NEW b, NEW c, a => b => c PROVE c
+        ASSUME NEW a, NEW b, NEW c, a => (b => c) PROVE c
     PROOF
       <1>1. c
             <2>1. a OBVIOUS

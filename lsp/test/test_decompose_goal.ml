@@ -481,7 +481,7 @@ let test_goal_equiv_circular () =
     {|
     ---- MODULE test ----
     THEOREM Test ==
-      ASSUME NEW a, NEW b, NEW c PROVE a <=> b <=> c
+      ASSUME NEW a, NEW b, NEW c PROVE a <=> (b <=> c)
     PROOF
       <1> QED OBVIOUS
     ====
@@ -491,7 +491,7 @@ let test_goal_equiv_circular () =
     {|
     ---- MODULE test ----
     THEOREM Test ==
-      ASSUME NEW a, NEW b, NEW c PROVE a <=> b <=> c
+      ASSUME NEW a, NEW b, NEW c PROVE a <=> (b <=> c)
     PROOF
       <1>1. a => b OBVIOUS
       <1>2. b => c OBVIOUS

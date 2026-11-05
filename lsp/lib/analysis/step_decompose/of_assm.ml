@@ -118,7 +118,7 @@ let cas_of_assm_disj (uri : LspT.DocumentUri.t) (ps : PS.t) (ps_parent : PS.t)
 
 (** Propose use of an assumption in the form of an implication. Thus, if we have
     assumption
-    {v A => B => ... => C v}
+    {v A => (B => C) v}
     with the current proof [pf] we will produce
     {v
       <1>a. C
