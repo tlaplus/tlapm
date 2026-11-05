@@ -154,7 +154,7 @@ module type Make_sig = sig
 
   type 'a item =
     | Atm of 'a
-    | Opr of Prec.prec * 'a opr
+    | Opr of Prec.prec * string * 'a opr
 
   and 'a opr =
     | Prefix of (Loc.locus -> 'a -> 'a)
@@ -639,7 +639,7 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
 
   type 'a item =
     | Atm of 'a
-    | Opr of prec * 'a opr
+    | Opr of prec * string * 'a opr
 
   and 'a opr =
     | Prefix of (Loc.locus -> 'a -> 'a)
@@ -656,7 +656,7 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
       | _ -> choice (List.map (fun item -> decide stack (item, loc)) items)
 
     and decide stack (item, loc) = match item with
-      | Atm _ | Opr (_, Prefix _) -> begin
+      | Atm _ | Opr (_, _, Prefix _) -> begin
           match stack with
             | (Atm _, _) :: _ ->
                 fail "missing operator"
@@ -669,12 +669,12 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
                   end
                 end
         end
-      | Opr (oprec, Infix (oass, _)) -> begin
+      | Opr (oprec, _, Infix (oass, _)) -> begin
           let rec normalize stack = match stack with
-            | _ :: (Opr (pprec, _), _) :: _
+            | _ :: (Opr (pprec, _, _), _) :: _
                 when below oprec pprec ->
                 normalize (reduce_one stack)
-            | _ :: (Opr (pprec, Infix (Left, _)), _) :: _
+            | _ :: (Opr (pprec, _, Infix (Left, _)), _) :: _
                 when oass = Left && not (below pprec oprec) ->
                 reduce_one stack
             | _ -> stack
@@ -688,9 +688,9 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
               | [] ->
                   fail "insufficient arguments"
         end
-      | Opr (oprec, Postfix _) -> begin
+      | Opr (oprec, _, Postfix _) -> begin
           let rec normalize stack = match stack with
-            | _ :: (Opr (pprec, _), _) :: _ when below oprec pprec ->
+            | _ :: (Opr (pprec, _, _), _) :: _ when below oprec pprec ->
                 normalize (reduce_one stack)
             | _ -> stack
           in
@@ -705,19 +705,19 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
         end
 
     and reduce_one = function
-      | (Opr (_, Postfix px), oloc)
+      | (Opr (_, _, Postfix px), oloc)
         :: (Atm a, aloc)
         :: stack ->
           (Atm (px oloc a), fuse aloc oloc)
           :: stack
       | (Atm b, bloc)
-        :: (Opr (_, Infix (_, ix)), oloc)
+        :: (Opr (_, _, Infix (_, ix)), oloc)
         :: (Atm a, aloc)
         :: stack ->
           (Atm (ix oloc a b), fuse aloc (fuse oloc bloc))
           :: stack
       | (Atm a, aloc)
-        :: (Opr (_, Prefix px), oloc)
+        :: (Opr (_, _, Prefix px), oloc)
         :: stack ->
           (Atm (px oloc a), fuse oloc aloc)
           :: stack
