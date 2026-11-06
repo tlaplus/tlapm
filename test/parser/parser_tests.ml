@@ -9,6 +9,8 @@ open Tlapm_lib;;
 
 open Syntax_corpus_file_parser;;
 
+module Errors = Tlapm_lib__Errors
+
 let last_parse_error = ref "<none>"
 
 (** Calls TLAPM's parser with the given input. Catches all exceptions and
@@ -139,7 +141,32 @@ open OUnit2;;
 let run_test test _ =
   skip_if test.skip "Test has skip attribute";
   match test.test with
-  | Error_test input -> (
+  | Accept_test input ->
+    assert_bool "Expected parse success" (Option.is_some (module_of_string input))
+  | Equiv_test input -> (
+    let open Property in
+    match module_of_string input with
+    | Some {core = {Module.T.body = [actual; reference]; _}; _} ->
+      let body name u = match u.core with
+        | Module.T.Definition ({core = Expr.T.Operator (n, e); _}, _, _, _)
+            when n.core = name -> e
+        | _ -> assert_failure ("Expected definition " ^ name)
+      in
+      assert_bool "Actual and Reference have different ASTs"
+        (Expr.Eq.expr (body "Actual" actual) (body "Reference" reference))
+    | _ -> assert_failure "Expected a module with Actual and Reference definitions"
+  )
+  | Error_test (input, Some expected) -> (
+    Errors.reset ();
+    assert_bool "Expected parse failure" (Option.is_none (module_of_string input));
+    let actual = Option.value ~default:"" !Errors.msg in
+    let matches =
+      try ignore (Str.search_forward (Str.regexp_string expected) actual 0); true
+      with Not_found -> false
+    in
+    assert_bool (Printf.sprintf "Expected diagnostic containing %S, got %S" expected actual) matches
+  )
+  | Error_test (input, None) -> (
     let b = expect_parse_failure test in
     match parse input with
     | None -> assert_bool "Expected error test to fail" (not b)

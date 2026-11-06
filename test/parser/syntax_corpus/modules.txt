@@ -127,7 +127,7 @@ Blank File Parse Error
 
 =============|||
 Missing Module Terminator
-:error
+:error Unexpected EOF
 =============|||
 ---- MODULE Test ----
 -------------|||
