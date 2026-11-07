@@ -12,4 +12,3 @@ THEOREM (\E t : (x = t) \cdot (x' = t)) => (\A t : (x = t) \cdot (x' = t))
 OBVIOUS
 
 ==============================================================
-known: https://github.com/tlaplus/tlapm/issues/309
