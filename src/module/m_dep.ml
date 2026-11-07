@@ -22,7 +22,7 @@ let external_deps m =
   let locals = ref Hs.empty in
   let submodules = ref Sm.empty in
   let mapper = object (self : 'self)
-    inherit [unit] Proof.Visit.iter as super
+    inherit [unit] Proof.Visit.iter_concrete as super
     method defn scx df = begin match df.core with
       | Recursive (_, _) -> ()
       | Operator (_, e) ->
