@@ -22,6 +22,7 @@ type test_attribute =
   | Skip
   | Accept (* Require successful parsing without comparing the tree. *)
   | Equiv (* Compare the Actual and Reference expression structures. *)
+  | Roundtrip (* Preserve expressions when printing and reparsing. *)
   | Error of string option
 [@@deriving show]
 
@@ -35,6 +36,7 @@ let str_to_test_attribute (attr : string) : test_attribute =
   | ":skip" -> Skip
   | ":accept" -> Accept
   | ":equiv" -> Equiv
+  | ":roundtrip" -> Roundtrip
   | ":error" -> Error None
   | _ when String.starts_with ~prefix:":error " attr ->
       let message = String.sub attr 7 (String.length attr - 7) |> trim in
@@ -52,6 +54,7 @@ type syntax_test_info = {
 type syntax_test_variant =
   | Accept_test of string
   | Equiv_test of string
+  | Roundtrip_test of string
   | Error_test of (string * string option)
   | Expected_test of (string * Sexp.t)
 [@@deriving show]
@@ -101,11 +104,13 @@ let rec parse_split_test_file (path : string) (input : string list) : syntax_tes
     let (name, test_attrs) = test_header |> trim |> split_on_char '\n' |> parse_test_header in
     let (test_input, test_output) = parse_test_body path name test_body in
     let errors = List.filter_map (function Error msg -> Some msg | _ -> None) test_attrs in
-    let test = match List.mem Accept test_attrs, List.mem Equiv test_attrs, errors with
-      | true, false, [] -> Accept_test test_input
-      | false, true, [] -> Equiv_test test_input
-      | false, false, [] -> Expected_test (test_input, Sexp.of_string test_output)
-      | false, false, [message] -> Error_test (test_input, message)
+    let test = match List.mem Accept test_attrs, List.mem Equiv test_attrs,
+                     List.mem Roundtrip test_attrs, errors with
+      | true, false, false, [] -> Accept_test test_input
+      | false, true, false, [] -> Equiv_test test_input
+      | false, false, true, [] -> Roundtrip_test test_input
+      | false, false, false, [] -> Expected_test (test_input, Sexp.of_string test_output)
+      | false, false, false, [message] -> Error_test (test_input, message)
       | _ -> Invalid_argument
           (sprintf "Conflicting test attributes for %s in %s" name path) |> raise
     in {
