@@ -84,7 +84,11 @@ module  Minimal (Prec : Pars.Intf.Prec) = struct
 
   and fmt = formatter -> unit
 
-  let below p = function
+  (* Prefix chains are printed without intervening parentheses, so enclosing
+     operators must bind below every prefix in the chain. *)
+  let rec below p = function
+    | Op (_, _, q, Prefix (Op (_, _, _, Prefix _) as b)) ->
+        Prec.below p q && below p b
     | Op (_, _, q, _) -> Prec.below p q
     | Big _ -> false
     | Atm _ -> true
@@ -124,7 +128,7 @@ module  Minimal (Prec : Pars.Intf.Prec) = struct
             | Prefix b ->
                 pp_open_hbox ff ();
                 af ff ;
-                if below ap b || is_prefix b then
+                if is_prefix b || below ap b then
                   pp_print_minimal ff b
                 else
                   pp_print_with_parens pp_print_minimal ff b;
