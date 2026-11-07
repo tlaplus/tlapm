@@ -1,5 +1,13 @@
 open Test_utils
 
+let test_fixture_parses () =
+  let text =
+    In_channel.with_open_bin "test_decompose.tla" In_channel.input_all
+  in
+  Alcotest.(check bool)
+    "test_decompose.tla parses" true
+    (Option.is_some (Tlapm_lib.module_of_string text))
+
 let test_to_sub_steps () =
   let lsp = lsp_init () in
   let text =
@@ -60,6 +68,7 @@ let test_cases =
   List.concat
     [
       [
+        test_case "Fixture parses" `Quick test_fixture_parses;
         test_case "To sub-steps" `Quick test_to_sub_steps;
         test_case "Expand DEF" `Quick test_expand_def;
       ];
