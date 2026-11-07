@@ -20,7 +20,10 @@ let separator_regex = regexp {|^---+||||}
 (** Test attributes for controlling test execution. *)
 type test_attribute =
   | Skip
-  | Error
+  | Accept (* Require successful parsing without comparing the tree. *)
+  | Equiv (* Compare the Actual and Reference expression structures. *)
+  | Roundtrip (* Preserve expressions when printing and reparsing. *)
+  | Error of string option
 [@@deriving show]
 
 (** Given a string attribute tag, resolve it to an enumerated type.
@@ -31,7 +34,14 @@ type test_attribute =
 let str_to_test_attribute (attr : string) : test_attribute =
   match attr with
   | ":skip" -> Skip
-  | ":error" -> Error
+  | ":accept" -> Accept
+  | ":equiv" -> Equiv
+  | ":roundtrip" -> Roundtrip
+  | ":error" -> Error None
+  | _ when String.starts_with ~prefix:":error " attr ->
+      let message = String.sub attr 7 (String.length attr - 7) |> trim in
+      if message = "" then invalid_arg "Empty :error diagnostic";
+      Error (Some message)
   | _ -> Invalid_argument (sprintf "Invalid attribute %s" attr) |> raise
 
 (** Metadata about a syntax test. *)
@@ -42,7 +52,10 @@ type syntax_test_info = {
 
 (** Enumeration of syntax test variants. *)
 type syntax_test_variant =
-  | Error_test of string
+  | Accept_test of string
+  | Equiv_test of string
+  | Roundtrip_test of string
+  | Error_test of (string * string option)
   | Expected_test of (string * Sexp.t)
 [@@deriving show]
 
@@ -90,10 +103,16 @@ let rec parse_split_test_file (path : string) (input : string list) : syntax_tes
   | test_header :: test_body :: ls ->
     let (name, test_attrs) = test_header |> trim |> split_on_char '\n' |> parse_test_header in
     let (test_input, test_output) = parse_test_body path name test_body in
-    let test =
-      if List.mem Error test_attrs
-      then Error_test test_input
-      else Expected_test (test_input, Sexp.of_string test_output)
+    let errors = List.filter_map (function Error msg -> Some msg | _ -> None) test_attrs in
+    let test = match List.mem Accept test_attrs, List.mem Equiv test_attrs,
+                     List.mem Roundtrip test_attrs, errors with
+      | true, false, false, [] -> Accept_test test_input
+      | false, true, false, [] -> Equiv_test test_input
+      | false, false, true, [] -> Roundtrip_test test_input
+      | false, false, false, [] -> Expected_test (test_input, Sexp.of_string test_output)
+      | false, false, false, [message] -> Error_test (test_input, message)
+      | _ -> Invalid_argument
+          (sprintf "Conflicting test attributes for %s in %s" name path) |> raise
     in {
       info = { path; name; };
       skip = List.mem Skip test_attrs; 

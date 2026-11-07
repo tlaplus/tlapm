@@ -1,0 +1,395 @@
+==============================|||
+Printer round trip: nested Cartesian product
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == A \X (B \X C)
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: compound action subscript
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == [A]_(B = C)
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: compound subscript followed by equality
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == [A]_(B = C) = D
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: label scope
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (L::A) = B
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: flat Cartesian product
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == A \X B \X C
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: left-nested Cartesian product
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (A \X B) \X C
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: compound diamond action subscript
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == <<A>>_(B = C)
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: diamond action subscript followed by equality
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == <<A>>_(B = C) = D
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: compound temporal box subscript
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == [][A]_(B = C)
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: temporal box subscript followed by equality
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == [][A]_(B = C) = D
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: compound temporal diamond subscript
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == <><<A>>_(B = C)
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: temporal diamond subscript followed by equality
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == <><<A>>_(B = C) = D
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: label with a quantified body
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (L::(\A x: x = B)) = C
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: parameterized label with an atomic body
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (L(A)::A) = B
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: parameterized label with a quantified body
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (L(A)::(\A x: x = B)) = C
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: parameterized label with an operator body
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (L(A)::(A + B)) = C
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: SUBSET prefix chain before a conflicting infix
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (DOMAIN (SUBSET A)) \cap B
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: deeper SUBSET prefix chain before a conflicting infix
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (DOMAIN (DOMAIN (SUBSET A))) \cap B
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: UNION prefix chain before a conflicting infix
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (DOMAIN (UNION A)) \cap B
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: deeper UNION prefix chain before a conflicting infix
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (DOMAIN (DOMAIN (UNION A))) \cap B
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: SUBSET prefix chain before union
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (DOMAIN (SUBSET A)) \cup B
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: UNION prefix chain before union
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (DOMAIN (UNION A)) \cup B
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: SUBSET prefix chain before set difference
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (DOMAIN (SUBSET A)) \ B
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: UNION prefix chain before set difference
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (DOMAIN (UNION A)) \ B
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: prefix chain with a weaker inner prefix
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (DOMAIN (~ A)) \cap B
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: unary minus hides a conflicting DOMAIN
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (- (DOMAIN A)) .. B
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: prefix chain with an overlapping precedence interval
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (- (ENABLED A)) + B
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: right operand prefix chain followed by an infix
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (A \cap (DOMAIN (SUBSET B))) \cap C
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: postfix around a prefix chain
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (DOMAIN (SUBSET A))'
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: parenthesized infix operand ends a prefix chain
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (DOMAIN (SUBSET (A \cap B))) \cap C
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: prefix chain before a lower-precedence infix
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == DOMAIN SUBSET A = B
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: prefix with an IF operand
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == DOMAIN (IF A THEN B ELSE C)
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: left-nested infix
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (A + B) + C
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: right-nested infix
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == A + (B + C)
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: left-nested non-associative infix
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == (A = B) = C
+====
+
+------------------------------|||
+
+==============================|||
+Printer round trip: right-nested non-associative infix
+:roundtrip
+==============================|||
+
+---- MODULE Roundtrip ----
+Result == A = (B = C)
+====
+
+------------------------------|||
