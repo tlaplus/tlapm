@@ -138,9 +138,52 @@ let expect_tree_comparison_failure (test : syntax_test) : bool =
 
 open OUnit2;;
 
+(** Check that printing produces parseable text, preserves expression structure
+    and label scope, and produces the same text when printed again.
+
+    1. Parse the input module and extract its expression.
+    2. Print the expression and reparse the text in a fresh module.
+    3. For comparison only, encode labels as ordinary calls: L::A becomes
+       <label:L>(A). Eq.expr otherwise discards labels and misses scope changes.
+    4. Compare the original and reparsed expressions using Eq.expr, which
+       ignores source annotations and syntactic parentheses.
+    5. Print the reparsed expression and check that the text matches step 2. *)
+let check_roundtrip input =
+  let open Property in
+  let open Expr.T in
+  let expression input =
+    match module_of_string input with
+    | Some {core = {Module.T.body = [u]; _}; _} -> (
+        match u.core with
+        | Module.T.Definition ({core = Operator (_, e); _}, _, _, _) -> e
+        | _ -> assert_failure "Expected an operator definition")
+    | _ -> assert_failure ("Could not parse round-trip input: " ^ input)
+  in
+  (* Make labels visible to Eq.expr, which otherwise ignores all Parens. *)
+  let labels = object (self)
+    inherit [unit] Expr.Visit.map as super
+    method! expr scx e = match e.core with
+      | Parens (body, {core = Nlabel (name, params); _}) ->
+          let params = List.map (fun h -> noprops (String h.core)) params in
+          noprops (Apply (noprops (Opaque ("<label:" ^ name ^ ">")),
+            params @ [self#expr scx body]))
+      | _ -> super#expr scx e
+  end in
+  let comparable = labels#expr ((), Util.Deque.empty) in
+  let print = Format.asprintf "%a"
+    (Expr.Fmt.pp_print_expr (Util.Deque.empty, Ctx.with_try_print_src Ctx.dot)) in
+  let original = expression input in
+  let printed = print original in
+  let reparsed = expression
+    (Printf.sprintf "---- MODULE Roundtrip ----\nResult == %s\n====\n" printed) in
+  assert_bool ("Printing changed the expression: " ^ printed)
+    (Expr.Eq.expr (comparable original) (comparable reparsed));
+  assert_equal ~printer:Fun.id printed (print reparsed)
+
 let run_test test _ =
   skip_if test.skip "Test has skip attribute";
   match test.test with
+  | Roundtrip_test input -> check_roundtrip input
   | Accept_test input ->
     assert_bool "Expected parse success" (Option.is_some (module_of_string input))
   | Equiv_test input -> (
