@@ -76,6 +76,17 @@ Result == A / B / C
 -------------|||
 
 =============|||
+Overlapping precedence: A % B % C
+:error ambiguous expression: operators % and % have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A % B % C
+====
+
+-------------|||
+
+=============|||
 Overlapping precedence: A * B / C
 :error ambiguous expression: operators * and / have conflicting precedence; use parentheses
 =============|||
