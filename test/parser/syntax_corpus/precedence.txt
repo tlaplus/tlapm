@@ -868,13 +868,35 @@ Reference == (A \o B) \o C
 ------------------------------|||
 
 ==============================|||
-Precedence / associativity and aliases: A % B % C
+Precedence / parentheses disambiguate: (A % B) % C
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == (A % B) % C
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / parentheses disambiguate: A % (B % C)
+:accept
+==============================|||
+
+---- MODULE Precedence ----
+Result == A % (B % C)
+====
+
+------------------------------|||
+
+==============================|||
+Precedence / associativity and aliases: A %% B %% C
 :equiv
 ==============================|||
 
 ---- MODULE Precedence ----
-Actual == A % B % C
-Reference == (A % B) % C
+Actual == A %% B %% C
+Reference == (A %% B) %% C
 ====
 
 ------------------------------|||
