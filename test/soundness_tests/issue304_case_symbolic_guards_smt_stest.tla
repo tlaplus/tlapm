@@ -13,4 +13,3 @@ THEOREM ASSUME NEW p, NEW q, p, q
 BY SMT
 
 ===========================================================================
-known: https://github.com/tlaplus/tlapm/issues/304

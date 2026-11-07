@@ -11,4 +11,3 @@ THEOREM (CASE TRUE -> "u" [] TRUE -> "v") = "u"
 BY SMT
 
 =====================================================================
-known: https://github.com/tlaplus/tlapm/issues/304
