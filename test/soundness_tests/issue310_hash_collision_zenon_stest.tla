@@ -1,8 +1,7 @@
 ------------- MODULE issue310_hash_collision_zenon_stest --------------
 
-\* https://github.com/tlaplus/tlapm/issues/310
-\* Zenon variant of issue310_hash_collision_smt_stest: the colliding name
-\* is produced by the shared front end, not by the SMT encoding.
+\* The theorem is false: x = TRUE forever satisfies []D33, while
+\* []E280 requires x to be FALSE forever.
 
 EXTENDS TLAPS
 

@@ -7,6 +7,7 @@
 \* constant k, P(k, k) expands to \E k : w = <<k, k>>, which prints like
 \* Q(k).  The theorem is false: with k = 2 and w = <<1, 2>> forever,
 \* [](Q(k)) holds and [](P(k, k)) does not.
+EXTENDS TLAPS
 
 VARIABLE w
 
@@ -14,7 +15,7 @@ P(z, u) == \E k : w = <<z, u>>
 Q(u)    == \E k : w = <<k, u>>
 
 THEOREM ASSUME NEW k PROVE [](Q(k)) => [](P(k, k))
-BY DEF P, Q
+BY SMT DEF P, Q
 
 ==========================================================================
 known: https://github.com/tlaplus/tlapm/issues/310
