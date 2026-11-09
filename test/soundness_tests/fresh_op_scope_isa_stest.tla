@@ -16,4 +16,3 @@ THEOREM FALSE
 BY Isa, EnabledP
 
 =====================================================================
-known: https://github.com/tlaplus/tlapm/issues/310
