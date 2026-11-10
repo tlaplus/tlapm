@@ -68,6 +68,23 @@ jobs:
                 TEST_RESULT=$?
                 cat _build/default/test/tests.log
                 exit $TEST_RESULT
+            - name: Soundness test report
+              if: ${{ !cancelled() && hashFiles('_build/default/test/test_reports/tmp/junit_soundness_tests.xml') != '' }}
+              uses: dorny/test-reporter@d1b5dff021aa968b288b02285a8bf47471c5928a # v3.2.0
+              with:
+                name: Soundness tests (${{ matrix.os }}, OCaml ${{ matrix.ocaml-compiler }})
+                path: _build/default/test/test_reports/tmp/junit_soundness_tests.xml
+                reporter: java-junit
+                use-actions-summary: true
+                # The "Run tests" step already fails the job. This step only renders the report.
+                fail-on-error: false
+            - name: Upload soundness test report
+              if: ${{ !cancelled() && hashFiles('_build/default/test/test_reports/tmp/junit_soundness_tests.xml') != '' }}
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+              with:
+                name: soundness-junit-${{ matrix.os }}-ocaml-${{ matrix.ocaml-compiler }}
+                path: _build/default/test/test_reports/tmp/junit_soundness_tests.xml
+                if-no-files-found: ignore
             - name: show logs for each test file
               if: failure()
               run: |
