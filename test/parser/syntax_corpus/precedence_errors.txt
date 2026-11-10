@@ -1,0 +1,439 @@
+=============|||
+Overlapping precedence: {} \in SUBSET {} \cap {}
+:error ambiguous expression: operators SUBSET and \cap have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == {} \in SUBSET {} \cap {}
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: DOMAIN A .. B
+:error ambiguous expression: operators DOMAIN and .. have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == DOMAIN A .. B
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A = B = C
+:error ambiguous expression: operators = and = have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A = B = C
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A = B # C
+:error ambiguous expression: operators = and # have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A = B # C
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A => B => C
+:error ambiguous expression: operators => and => have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A => B => C
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A <=> B \equiv C
+:error ambiguous expression: operators <=> and <=> have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A <=> B \equiv C
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A ^ B ^ C
+:error ambiguous expression: operators ^ and ^ have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A ^ B ^ C
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A / B / C
+:error ambiguous expression: operators / and / have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A / B / C
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A * B / C
+:error ambiguous expression: operators * and / have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A * B / C
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A / B * C
+:error ambiguous expression: operators / and * have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A / B * C
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A /\ B \/ C
+:error ambiguous expression: operators /\ and \/ have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A /\ B \/ C
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A \/ B /\ C
+:error ambiguous expression: operators \/ and /\ have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A \/ B /\ C
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A \cap B \cup C
+:error ambiguous expression: operators \cap and \cup have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A \cap B \cup C
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A \cup B \cap C
+:error ambiguous expression: operators \cup and \cap have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A \cup B \cap C
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A + B ++ C
+:error ambiguous expression: operators + and ++ have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A + B ++ C
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A $ B + C
+:error ambiguous expression: operators $ and + have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A $ B + C
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A + B $ C
+:error ambiguous expression: operators + and $ have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A + B $ C
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A $ B $$ C
+:error ambiguous expression: operators $ and $$ have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A $ B $$ C
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A $ B ^ C + D
+:error ambiguous expression: operators $ and + have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A $ B ^ C + D
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: A \cdot B = C
+:error ambiguous expression: operators \cdot and = have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A \cdot B = C
+====
+
+-------------|||
+
+=============|||
+Touching precedence ranges: A \cdot B ^ C
+:error ambiguous expression: operators \cdot and ^ have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A \cdot B ^ C
+====
+
+-------------|||
+
+=============|||
+Touching precedence ranges: A ^ B \cdot C
+:error ambiguous expression: operators ^ and \cdot have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A ^ B \cdot C
+====
+
+-------------|||
+
+=============|||
+Touching precedence ranges: A * B $ C
+:error ambiguous expression: operators * and $ have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A * B $ C
+====
+
+-------------|||
+
+=============|||
+Touching precedence ranges: A $ B * C
+:error ambiguous expression: operators $ and * have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == A $ B * C
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: [] A = B
+:error ambiguous expression: operators [] and = have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == [] A = B
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: <> A = B
+:error ambiguous expression: operators <> and = have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == <> A = B
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: ENABLED A = B
+:error ambiguous expression: operators ENABLED and = have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == ENABLED A = B
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: UNCHANGED A = B
+:error ambiguous expression: operators UNCHANGED and = have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == UNCHANGED A = B
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: ENABLED A'
+:error ambiguous expression: operators ENABLED and ' have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == ENABLED A'
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: UNCHANGED A'
+:error ambiguous expression: operators UNCHANGED and ' have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == UNCHANGED A'
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: [] A'
+:error ambiguous expression: operators [] and ' have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == [] A'
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: <> A'
+:error ambiguous expression: operators <> and ' have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == <> A'
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: -A $ B
+:error ambiguous expression: operators -. and $ have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == -A $ B
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: SUBSET A \cap B
+:error ambiguous expression: operators SUBSET and \cap have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == SUBSET A \cap B
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: SUBSET A \cup B
+:error ambiguous expression: operators SUBSET and \cup have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == SUBSET A \cup B
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: SUBSET A \ B
+:error ambiguous expression: operators SUBSET and \ have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == SUBSET A \ B
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: UNION A \cap B
+:error ambiguous expression: operators UNION and \cap have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == UNION A \cap B
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: UNION A \cup B
+:error ambiguous expression: operators UNION and \cup have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == UNION A \cup B
+====
+
+-------------|||
+
+=============|||
+Overlapping precedence: UNION A \ B
+:error ambiguous expression: operators UNION and \ have conflicting precedence; use parentheses
+=============|||
+
+---- MODULE Precedence ----
+Result == UNION A \ B
+====
+
+-------------|||
+
+=============|||
+Incomplete expression has a distinct diagnostic
+:error incomplete expression
+=============|||
+
+---- MODULE Precedence ----
+Result == A =
+====
+
+-------------|||
