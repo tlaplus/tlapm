@@ -22,6 +22,7 @@
   dune-site
   dune-build-info
   camlzip ; main deps.
+  base32
   xmlm
   sexplib)
  ; for inline tests only (ppx_assert).

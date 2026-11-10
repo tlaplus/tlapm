@@ -26,6 +26,12 @@ let shorter_string_to_hex s =
     String.sub (string_to_hex s) 0 5
 
 
+let string_to_base32 s =
+    (* Unpadded RFC 4648 base32 preserves all 128 MD5 bits in 26 characters.
+       With the "h" prefix, the name fits LS4's 31-character limit. *)
+    Base32.encode_string ~pad:false (Digest.string s)
+
+
 (* to fix it to use Ix instead of variable names *)
 let crypthash scx cx e =
     let s =
@@ -35,7 +41,7 @@ let crypthash scx cx e =
         Format.pp_print_flush fmt () ;
         Buffer.contents b
     in
-    "h" ^ shorter_string_to_hex s
+    "h" ^ string_to_base32 s
 
 (* for using it with PLTL it is enough to have a trivial coalescing returning a
  * unique constant depending on all symbols in it, TODO make a smarter (according
