@@ -154,7 +154,7 @@ module type Make_sig = sig
 
   type 'a item =
     | Atm of 'a
-    | Opr of Prec.prec * 'a opr
+    | Opr of Prec.prec * string * 'a opr
 
   and 'a opr =
     | Prefix of (Loc.locus -> 'a -> 'a)
@@ -639,7 +639,7 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
 
   type 'a item =
     | Atm of 'a
-    | Opr of prec * 'a opr
+    | Opr of prec * string * 'a opr
 
   and 'a opr =
     | Prefix of (Loc.locus -> 'a -> 'a)
@@ -656,7 +656,7 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
       | _ -> choice (List.map (fun item -> decide stack (item, loc)) items)
 
     and decide stack (item, loc) = match item with
-      | Atm _ | Opr (_, Prefix _) -> begin
+      | Atm _ | Opr (_, _, Prefix _) -> begin
           match stack with
             | (Atm _, _) :: _ ->
                 fail "missing operator"
@@ -669,17 +669,21 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
                   end
                 end
         end
-      | Opr (oprec, Infix (oass, _)) -> begin
+      | Opr (oprec, name, Infix (oass, _)) -> begin
           let rec normalize stack = match stack with
-            | _ :: (Opr (pprec, _), _) :: _
+            | (Atm _, _) :: (Opr (pprec, _, _), _) :: _
                 when below oprec pprec ->
                 normalize (reduce_one stack)
-            | _ :: (Opr (pprec, Infix (Left, _)), _) :: _
-                when oass = Left && not (below pprec oprec) ->
-                reduce_one stack
-            | _ -> stack
+            | (Atm _, _) :: (Opr (pprec, pname, Infix (pass, _)), _) :: _
+                when oass <> Non && oass = pass && pname = name
+                  && conflict oprec pprec ->
+                succeed (if oass = Left then reduce_one stack else stack)
+            | (Atm _, _) :: (Opr (pprec, pname, _), _) :: _
+                when conflict oprec pprec ->
+                ambiguous pname name
+            | _ -> succeed stack
           in
-          let stack = normalize stack in
+          normalize stack >>= fun stack ->
             match stack with
               | (Atm _, _) :: _ ->
                   commit (next ((item, loc) :: stack) true)
@@ -688,13 +692,16 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
               | [] ->
                   fail "insufficient arguments"
         end
-      | Opr (oprec, Postfix _) -> begin
+      | Opr (oprec, name, Postfix _) -> begin
           let rec normalize stack = match stack with
-            | _ :: (Opr (pprec, _), _) :: _ when below oprec pprec ->
+            | (Atm _, _) :: (Opr (pprec, _, _), _) :: _ when below oprec pprec ->
                 normalize (reduce_one stack)
-            | _ -> stack
+            | (Atm _, _) :: (Opr (pprec, pname, _), _) :: _
+                when conflict oprec pprec ->
+                ambiguous pname name
+            | _ -> succeed stack
           in
-          let stack = normalize stack in
+          normalize stack >>= fun stack ->
             match stack with
               | (Atm _, _) :: _ ->
                   commit (next (reduce_one ((item, loc) :: stack)) false)
@@ -704,20 +711,24 @@ module Make (Tok : Intf.Tok) (Prec : Intf.Prec) = struct
                   fail "insufficient arguments"
         end
 
+    and ambiguous pname name =
+      commit (fail ("ambiguous expression: operators " ^ pname ^ " and " ^ name
+        ^ " have conflicting precedence; use parentheses"))
+
     and reduce_one = function
-      | (Opr (_, Postfix px), oloc)
+      | (Opr (_, _, Postfix px), oloc)
         :: (Atm a, aloc)
         :: stack ->
           (Atm (px oloc a), fuse aloc oloc)
           :: stack
       | (Atm b, bloc)
-        :: (Opr (_, Infix (_, ix)), oloc)
+        :: (Opr (_, _, Infix (_, ix)), oloc)
         :: (Atm a, aloc)
         :: stack ->
           (Atm (ix oloc a b), fuse aloc (fuse oloc bloc))
           :: stack
       | (Atm a, aloc)
-        :: (Opr (_, Prefix px), oloc)
+        :: (Opr (_, _, Prefix px), oloc)
         :: stack ->
           (Atm (px oloc a), fuse oloc aloc)
           :: stack

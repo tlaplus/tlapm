@@ -119,7 +119,7 @@ module Pco : sig
     type assoc = Left | Right | Non
     type 'a item =
       | Atm of 'a
-      | Opr of Prec.prec * 'a opr
+      | Opr of Prec.prec * string * 'a opr
     and 'a opr =
       | Prefix of (Loc.locus -> 'a -> 'a)
       | Postfix of (Loc.locus -> 'a -> 'a)

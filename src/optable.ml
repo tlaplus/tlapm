@@ -86,7 +86,7 @@ let tlaops = [
     "$",             ( 9,13),   Infix Left,  [] ;
     "??",            ( 9,13),   Infix Left,  [] ;
     "%%",            (10,11),   Infix Left,  [] ;
-    "%",             (10,11),   Infix Left,  [ "\\mod" ] ;
+    "%",             (10,11),   Infix Non,   [ "\\mod" ] ;
     "##",            ( 9,13),   Infix Left,  [] ;
     "++",            (10,10),   Infix Left,  [] ;
     "--",            (11,11),   Infix Left,  [] ;

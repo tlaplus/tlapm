@@ -187,7 +187,7 @@ PROOF
 
 
 THEOREM TestGoalEquiv3 (* TODO: QED Fails to be proved. *) ==
-  \A a, b, c \in Some : a <=> b <=> c
+  \A a, b, c \in Some : a <=> (b <=> c)
 PROOF
   <1> TAKE a, b, c \in Some
   <1>1. a => b OBVIOUS
@@ -212,7 +212,7 @@ PROOF
 \********************** Assm =>
 
 THEOREM TestAssmImplies ==
-    ASSUME NEW a, NEW b, NEW c, NEW d, a => b => c => d
+    ASSUME NEW a, NEW b, NEW c, NEW d, a => (b => (c => d))
     PROVE d
 PROOF
     <1> QED OMITTED
