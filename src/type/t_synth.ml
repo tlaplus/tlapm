@@ -212,7 +212,11 @@ and expr_aux scx oe =
   let proj ty x = proj ~typelvl:(typelvl scx) ty x in
   match oe.core with
   | Ix n ->
-      let ty0 = lookup_ty0 scx n in
+      let ty0 =
+        try lookup_ty0 scx n
+        with Invalid_type_downcast ->
+          error ~at:oe "Operator-valued expression is not supported here"
+      in
       (Ix n @@ oe, ty0)
 
   | Opaque s ->
