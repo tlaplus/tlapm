@@ -17,4 +17,3 @@ THEOREM R63 => R699
 BY PTL
 
 =====================================================================
-known: https://github.com/tlaplus/tlapm/issues/310

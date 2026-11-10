@@ -47,6 +47,7 @@
   sexplib
   cmdliner
   camlzip
+  base32
   re2
   ppx_inline_test
   ppx_assert
