@@ -32,6 +32,7 @@ val make_before : t -> t
 val make_before_ln : t -> t
 val make_after : t -> t
 val with_end_line : t -> t
+val with_start_line : t -> t
 val join : t -> t -> t
 val join_opt : t option -> t -> t
 val join_opt2 : t option -> t option -> t option

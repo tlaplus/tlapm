@@ -114,30 +114,9 @@ let indent_size (ps : PS.t) ~nested =
   char - 1 + nested
 
 let fmt_cx cx =
-  let fcx = TL.Ctx.dot |> TL.Ctx.with_try_print_src in
-  let fcx =
-    (* Push all the names known in the context to have proper
-    suffixes _1, _2, ... for newly introduced identifiers. *)
-    TL.Util.Deque.fold_left
-      (fun fcx (hyp : TL.Expr.T.hyp) ->
-        match hyp.core with
-        | TL.Expr.T.Flex name | TL.Expr.T.Fresh (name, _, _, _) ->
-            TL.Ctx.push fcx (unwrap name)
-        | TL.Expr.T.FreshTuply (names, _) ->
-            List.fold_right
-              (fun name fcx -> TL.Ctx.push fcx (unwrap name))
-              names fcx
-        | TL.Expr.T.Defn (defn, _, _, _) -> (
-            match defn.core with
-            | TL.Expr.T.Recursive (name, _)
-            | TL.Expr.T.Operator (name, _)
-            | TL.Expr.T.Instance (name, _)
-            | TL.Expr.T.Bpragma (name, _, _) ->
-                TL.Ctx.push fcx (unwrap name))
-        | TL.Expr.T.Fact (_, _, _) -> TL.Ctx.bump fcx)
-      fcx cx
-  in
-  (cx, fcx)
+  (* TODO: ctx_of_expr_ctx should be not needed after we switch printing the indexed AST. *)
+  let ecx, fcx = TL.Expr.Fmt.ctx_of_expr_ctx cx in
+  (ecx, TL.Ctx.with_try_print_src fcx)
 
 let pp_proof cx fmt st = ignore (TL.Proof.Fmt.pp_print_proof (fmt_cx cx) fmt st)
 

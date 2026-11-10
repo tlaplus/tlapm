@@ -6,24 +6,45 @@ open Ext
 
 
 type ident = { rep : string ; salt : int }
+(** Identifier is a string name plus a number as a suffix, used to make
+    identifiers unique. *)
 
 let string_of_ident id = match id.salt with
   | 0 -> id.rep
   | _ -> id.rep ^ "_"^ string_of_int id.salt
 
-module EMap (Ord : Map.OrderedType) = struct
-  module Underlying = Map.Make (Ord)
-  include Underlying
-  let maybe_find x m =
-    try Some (find x m) with _ -> None
-end
+module M = Map.Make (String)
 
-module M = EMap (String)
-module IM = EMap (struct
-                    type t = ident
-                    let compare = Stdlib.compare
-                  end)
+(** Printing context. While printing, the hypothesis stack [Expr.ctx] is not
+    modified; instead this print context is maintained to keep the indexes
+    right?
 
+    The type argument ['a] is [int] in the case of [Expr.Fmt], and [bump] adds
+    it with [None]. [push] adds it equal to the current context length. TODO:
+    What is that int.
+
+    [linrep] -- "Linear representation"? Stands for ordering of elements in the
+    context. New elements are appended as a head of this list.
+
+    - The [idents] and [defns] are used as indexes?
+    - [idents] maps base name (string, not suffixed) to identifiers.
+    - [defns] maps identifier (string with suffix) to the position in [linrep].
+    - TODO: How is it used?
+
+    [idents] -- identifiers, a mapping {i from plain names i} to [ident], which
+    has a number to make the symbols unique (e.g. [x_1] if [x] already exist).
+    This map will only contain the mapping to the {b latest b} [ident] for a
+    particular plain name.
+
+    [defns] -- Maps string representation of an identifier (with the suffix
+    added if needed for uniqueness) to ['a option] and the position in the
+    [linrep] list. That's probably for faster lookup by [ident].
+
+    [length] -- length of [linrep].
+
+    [try_print_src] -- Don't impact the behavior of the [Ctx]. Only used to pass
+    the option to formatters. The formatter will try to print the AST closer to
+    the source representation, if this is set to true. *)
 type 'a ctx = {
   linrep : (ident * 'a option) list ;
   idents : ident M.t ;
@@ -70,7 +91,7 @@ let maybe_adj cx v a =
       find_id { cur with salt = cur.salt + 1 }
     else cur
   in
-  let id = match M.maybe_find v cx.idents with
+  let id = match M.find_opt v cx.idents with
     | None ->
         { salt = 0 ; rep = v }
     | Some id ->
@@ -87,7 +108,7 @@ let adj cx v a = maybe_adj cx v (Some a)
 
 let bump cx = maybe_adj cx "" None
 
-let find_dep cx v = match M.maybe_find v cx.idents with
+let find_dep cx v = match M.find_opt v cx.idents with
   | None -> None
   | Some id ->
       let (a, dep) = M.find (string_of_ident id) cx.defns in
@@ -107,8 +128,6 @@ let to_list cx =
     | (_, Some x) :: xs -> transfer (x :: l) xs
     | _ -> invalid_arg "to_list"
   in transfer [] cx.linrep
-
-open Format
 
 let index cx n = List.nth cx.linrep (n - 1)
 
@@ -131,12 +150,13 @@ let with_try_print_src cx = { cx with try_print_src = true }
 let try_print_src {try_print_src; _} = try_print_src
 
 let pp_print_ctx fmt ff cx =
+  let open Format in
   let rec pp ff = function
     | [] -> ()
-    | [u, None] ->
+    | [(u, None)] ->
         fprintf ff "%a"
           pp_print_ident u
-    | [u, Some a] ->
+    | [(u, Some a)] ->
         fprintf ff "%a::%a"
           pp_print_ident u fmt a
     | (u, None) :: cx ->
@@ -148,3 +168,6 @@ let pp_print_ctx fmt ff cx =
   in fprintf ff "@[<b0>%a@]" pp cx.linrep
 
 type 'a t = 'a ctx
+
+let pp = pp_print_ctx
+let show a_fmt (t : 'a t) = Format.asprintf "%a" (pp a_fmt) t

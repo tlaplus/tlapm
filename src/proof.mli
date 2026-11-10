@@ -67,6 +67,8 @@ module T : sig
   val get_qed_proof: qed_step_ Property.wrapped -> proof
   val step_number: stepno -> int
   val sub_step_number : stepno option -> int
+  val pp_proof : pp_props:pp_wrapped_props -> Format.formatter -> proof -> unit
+  val pp_obligation : pp_props:pp_wrapped_props -> Format.formatter -> obligation -> unit
 end
 
 module Fmt : sig
@@ -74,6 +76,8 @@ module Fmt : sig
   open T
   val pp_print_obligation : Format.formatter -> obligation -> unit
   val pp_print_proof : Expr.Fmt.ctx -> Format.formatter -> proof -> unit
+  val pp_print_steps_inits : Expr.Fmt.ctx -> Format.formatter -> step list -> Expr.Fmt.ctx
+  val pp_print_steps_qed : Expr.Fmt.ctx -> Format.formatter -> qed_step -> unit
   val pp_print_step : Expr.Fmt.ctx -> Format.formatter -> step -> Expr.Fmt.ctx
   val pp_print_usable : Expr.Fmt.ctx -> Format.formatter -> usable -> unit
   val string_of_step : Expr.T.hyp Deque.dq  -> step -> string

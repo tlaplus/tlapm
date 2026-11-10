@@ -421,6 +421,16 @@ module T: sig
   val enabledaxioms : bool pfuncs
   val has_enabledaxioms : 'a Property.wrapped -> bool
   val get_enabledaxioms : 'a Property.wrapped -> bool
+  val pp_expr : pp_props:pp_wrapped_props -> Format.formatter -> expr -> unit
+  val pp_defn : pp_props:pp_wrapped_props -> Format.formatter -> defn -> unit
+  val pp_hyp : pp_props:pp_wrapped_props -> Format.formatter -> hyp -> unit
+  val pp_ctx : pp_props:pp_wrapped_props -> Format.formatter -> ctx -> unit
+  val pp_sequent : pp_props:pp_wrapped_props -> Format.formatter -> sequent -> unit
+  val pp_sequent_wrapped : pp_props:pp_wrapped_props -> Format.formatter -> sequent wrapped -> unit
+  val pp_bound : pp_props:pp_wrapped_props -> Format.formatter -> bound -> unit
+  val pp_bounds : pp_props:pp_wrapped_props -> Format.formatter -> bounds -> unit
+  val pp_tuply_bound : pp_props:pp_wrapped_props -> Format.formatter -> tuply_bound -> unit
+  val pp_tuply_bounds : pp_props:pp_wrapped_props -> Format.formatter -> tuply_bounds -> unit
 end
 
 
@@ -428,6 +438,9 @@ module Fmt: sig
     open T
     open Ctx
     type ctx = hyp Deque.dq * int Ctx.ctx
+    val pp_ctx : Format.formatter -> ctx -> unit
+    val empty_ctx : ctx
+    val ctx_of_expr_ctx : T.ctx -> ctx
     val bump:
         ctx -> ctx
     val adj:
@@ -547,6 +560,13 @@ module Subst: sig
     val app_hyp:
         sub -> hyp ->
             hyp
+
+    val pp_print_sub:
+        Fmt.ctx ->
+        Format.formatter ->
+        sub ->
+            unit
+
 
     class map: object
         method expr:
