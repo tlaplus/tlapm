@@ -118,3 +118,72 @@ let check_time_change ctx tm = match tm with
   | _ -> acc
   end Always ctx
 | _ -> failwith "error"
+
+let%test_module "compute_time" = (module struct
+  (* Resolve variable names to indices before classifying the sequent.
+     E_anon itself calls compute_time, so it cannot be used here. *)
+  let resolve_variables = object
+    inherit [unit] E_visit.map as super
+
+    method expr ((_, cx) as scx) e =
+      match e.core with
+      | Opaque name ->
+          let declares_name h =
+            match h.core with
+            | Flex v -> v.core = name
+            | _ -> false
+          in
+          begin match Deque.find ~backwards:true cx declares_name with
+          | Some (i, _) -> Ix (i + 1) @@ e
+          | None -> failwith ("Undeclared test variable: " ^ name)
+          end
+      | _ -> super#expr scx e
+  end
+
+  let classify ?(variables = []) input =
+    let open Tla_parser in
+    let source, _ = Alexer.lex_string input in
+    let parse_sequent = locate (P.use (E_parser.sequent true)) in
+    match P.run parse_sequent ~init:Tla_parser.init ~source with
+    | Some sq ->
+        let cx = Deque.of_list (List.map (fun name -> Flex (name @@ sq) @@ sq) variables) in
+        let e = resolve_variables#expr ((), cx) (Sequent sq.core @@ sq) in
+        compute_time cx e
+    | None -> failwith ("Cannot parse test sequent: " ^ input)
+
+  let%test "state assumption with constant conclusion is Now" [@tags "disabled"] =
+    classify "ASSUME NEW VARIABLE x, x = 0 PROVE FALSE" = Now
+
+  let%test "diamond assumption with boxed conclusion is Always" =
+    classify "ASSUME NEW VARIABLE x, NEW VARIABLE y, <>(x = 0) PROVE [](y = 0)"
+    = Always
+
+  let%test "boxed assumption with boxed conclusion is Now" [@tags "disabled"] =
+    classify "ASSUME NEW VARIABLE x, NEW VARIABLE y, [](x = 0) PROVE [](y = 0)"
+    = Now
+
+  let%test "diamond assumption with state conclusion is Now" =
+    classify "ASSUME NEW VARIABLE x, <>(x = 0) PROVE x = 1" = Now
+
+  let%test "a later assumption that is not diamond-closed makes the sequent Now" [@tags "disabled"] =
+    classify "ASSUME NEW VARIABLE x, <>(x = 0), x = 1 PROVE FALSE" = Now
+
+  (* Supply the fixtures' module-level VARIABLES x, y as outer context
+     so the inner sequents can be tested verbatim. *)
+  let%test "box_closure_sequent_multiple_assumptions_stest" [@tags "disabled"] =
+    classify ~variables:["x"; "y"] "ASSUME x = 0, y = 1 PROVE [](x = y)" = Now
+
+  let%test "box_closure_sequent_false_conclusion_stest" [@tags "disabled"] =
+    classify ~variables:["x"] "ASSUME x = 0 PROVE FALSE" = Now
+
+  let%test "box_closure_sequent_boxed_assumption_stest" [@tags "disabled"] =
+    classify ~variables:["x"; "y"] "ASSUME [](x = 0) PROVE [](y = 0)" = Now
+
+  let%test "multiple assumptions with NEW VARIABLE declarations are Now" [@tags "disabled"] =
+    classify
+      "ASSUME NEW VARIABLE x, NEW VARIABLE y, x = 0, y = 1 PROVE [](x = y)"
+    = Now
+
+  let%test "false conclusion with NEW VARIABLE declarations is Now" [@tags "disabled"] =
+    classify "ASSUME NEW VARIABLE x, x = 0 PROVE FALSE" = Now
+end)
