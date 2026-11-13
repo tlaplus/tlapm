@@ -109,6 +109,10 @@ module Visit : sig
     method qed    : 's scx -> qed_step -> unit
     method usable : 's scx -> usable -> unit
   end
+  class virtual ['s] iter_concrete : object
+    inherit ['s] iter
+    inherit ['s] Expr.Visit.iter_concrete
+  end
 end
 
 module Simplify : sig
