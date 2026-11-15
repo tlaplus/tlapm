@@ -2530,7 +2530,7 @@ let intquotient_typing () =
         [ Ix 1 %% []
         ; apps T.NatSet [] %% []
         ] %% []
-      ; apps T.IntLt
+      ; appb B.Neq
         [ apps (T.IntLit 0) [] %% []
         ; Ix 1 %% []
         ] %% []
@@ -2564,7 +2564,7 @@ let intremainder_typing () =
         [ Ix 1 %% []
         ; apps T.NatSet [] %% []
         ] %% []
-      ; apps T.IntLt
+      ; appb B.Neq
         [ apps (T.IntLit 0) [] %% []
         ; Ix 1 %% []
         ] %% []

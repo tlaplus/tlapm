@@ -454,10 +454,10 @@ let untyped_deps ~solver ~disable_arithmetic ~smt_set_extensionality tla_smb s =
   | IntTimes when noarith ->
       ([ Mem ; IntSet ; NatSet ],             [ IntTimesTyping ; NatTimesTyping ])
   | IntQuotient when noarith ->
-      ([ Mem ; IntSet ; NatSet ; IntLt ; IntLit 0 ],
+      ([ Mem ; IntSet ; NatSet ; IntLit 0 ],
                                               [ IntQuotientTyping ])
   | IntRemainder when noarith ->
-      ([ Mem ; IntSet ; NatSet ; IntLt ; IntLit 0 ; IntLit 1 ;
+      ([ Mem ; IntSet ; NatSet ; IntLit 0 ; IntLit 1 ;
           IntRange ; IntMinus ],              [ IntRemainderTyping ])
   | IntExp when noarith ->
       ([ Mem ; IntSet ; IntLteq ; IntLit 0 ; IntLit 1 ],
