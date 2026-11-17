@@ -131,7 +131,7 @@ syntax (xsymbols)
   "@sbinds"   ::  "[idt,c, sbinds] \<Rightarrow> sbinds"  ("_ \<in> _,/ _" [100, 10, 100] 100)
 
 syntax
-  "@bChoice" ::  "[sbinds, c] \<Rightarrow> c"          ("(3CHOOSE _ :/ _)" 10)
+  "@bChoose" ::  "[sbinds, c] \<Rightarrow> c"          ("(3CHOOSE _ :/ _)" 10)
   "@bEx"     ::  "[sbinds, c] \<Rightarrow> c"          ("(3\\E _ :/ _)" [100, 10] 10)
   "@bAll"    ::  "[sbinds, c] \<Rightarrow> c"          ("(3\\A _ :/ _)" [100, 10] 10)
 syntax (xsymbols)
@@ -149,12 +149,12 @@ translations
 ***)
 
 syntax
-  "@bChoice" ::  "[idt, c, c] \<Rightarrow> c"       ("(3CHOOSE _ \<in> _ :/ _)" [100,0,0]10)
+  "@bChoose" ::  "[idt, c, c] \<Rightarrow> c"       ("(3CHOOSE _ \<in> _ :/ _)" [100,0,0]10)
   "@bEx"     ::  "[cidts, c, c] \<Rightarrow> c"     ("(3\<exists>_ \<in> _ :/ _)" [100,0,0] 10)
   "@bAll"    ::  "[cidts, c, c] \<Rightarrow> c"     ("(3\<forall>_ \<in> _ :/ _)" [100,0,0] 10)
 syntax (ASCII)
   (* Again, only single variable for bounded choice. *)
-  "@bChoice" ::  "[idt, c, c] \<Rightarrow> c"       ("(3CHOOSE _ in _ :/ _)" [100,0,0] 10)
+  "@bChoose" ::  "[idt, c, c] \<Rightarrow> c"       ("(3CHOOSE _ in _ :/ _)" [100,0,0] 10)
   "@bEx"     ::  "[cidts, c, c] \<Rightarrow> c"     ("(3\\E _ \\in _ :/ _)" [100,0,0] 10)
   "@bAll"    ::  "[cidts, c, c] \<Rightarrow> c"     ("(3\\A _ \\in _ :/ _)" [100,0,0] 10)
 translations
