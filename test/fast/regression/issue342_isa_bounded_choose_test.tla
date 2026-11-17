@@ -12,4 +12,12 @@ THEOREM ASSUME NEW P(_),
         PROVE P(CHOOSE x \in s : P(x))
     BY IsaM("(rule bChooseI)")
 
+\* A user identifier named bChoose must not collide with Isabelle's constant.
+THEOREM ASSUME NEW P(_),
+               NEW s,
+               NEW bChoose \in s,
+               P(bChoose)
+        PROVE P(CHOOSE x \in s : P(x))
+    BY IsaM("(rule bChooseI)")
+
 ====
