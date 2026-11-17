@@ -315,7 +315,7 @@ let isabelle_tlaplus_keys = [
     "Seq"; "String"; "Succ"; "Surjections"; "Surjective";
     (* "TRUE"; *) "TYPE"; "Trueprop"; (* "UNION"; *) "Zero"; "abs";
     "addElt"; "addnat"; "all"; "antisymmetric"; "any"; "aprop";
-    "arbitrary"; "args"; "arith_add"; "asms"; "bAll"; "bChoice";
+    "arbitrary"; "args"; "arith_add"; "asms"; "bAll"; "bChoose";
     "bEx"; "boolify"; "c"; "cap"; "cargs"; "case_arm"; "case_arms";
     "cases_conj"; "cases_equal"; "cases_forall"; "cases_implies";
     "char"; "cidts"; "classes"; "cond"; "conj"; "conjunction";

@@ -315,7 +315,7 @@ and fmt_expr sd cx e = match e.core with
       let (ecx, v) = adj cx v in
       Fu.Big begin fun ff ->
         fprintf ff
-          "bChoice(%a, %%%s. %a)"
+          "bChoose(%a, %%%s. %a)"
           (pp_print_expr sd cx) dom
           v (pp_print_expr sd ecx) e
       end

@@ -307,7 +307,7 @@ and fmt_expr sd cx e =
         let (ecx, v) = adj cx v in
         Fu.Big begin fun ff ->
           fprintf ff
-            "(TLA.bChoice %a ((%s) %a))"
+            "(TLA.bChoose %a ((%s) %a))"
             (pp_print_expr sd cx) ran
             v (pp_print_expr sd ecx) e
         end
