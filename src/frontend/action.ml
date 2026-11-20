@@ -152,8 +152,10 @@ let prime_commuter =
     val mutable base_depth = -1
     method expr scx e =
       let root = base_depth < 0 in
+      let saved = base_depth in
       if root then base_depth <- Deque.size (snd scx);
-      match e.core with
+      let recover () = base_depth <- saved in
+      let result = match e.core with
        | Ix n -> begin
            let bound_here = n <= Deque.size (snd scx) - base_depth in
            match (get_val_from_id (snd scx) n).core with
@@ -172,6 +174,9 @@ let prime_commuter =
        | Tquant _ | Sub _ | Tsub _ | Fair _ ->
           assert false
        | _ -> super#expr scx e
+      in
+      recover ();
+      result
   end
 
 (* Box commuter:
