@@ -16,4 +16,3 @@ THEOREM G(LAMBDA a, b : <<a, b, x>>)'
 BY Isa
 
 =============================================================================
-known: https://github.com/tlaplus/tlapm/issues/newCompletenessIssue

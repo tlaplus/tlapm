@@ -19,5 +19,3 @@ nostderr: status:failed
 nostd*: Unexpected error
 nostd*: Unexpected exception
 nostd*: ending abnormally
-\* Priming a LAMBDA currently raises an SMT backend exception.
-known: https://github.com/tlaplus/tlapm/issues/new

@@ -16,4 +16,3 @@ THEOREM N(LAMBDA a : N(LAMBDA b : <<a, b, y>>))'
 BY Isa
 
 =============================================================================
-known: https://github.com/tlaplus/tlapm/issues/newCompletenessIssue
