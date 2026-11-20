@@ -31,3 +31,5 @@ val module_of_string : string -> Module.T.mule option
 
 val stdlib_search_paths : string list
 (** A list of paths to look for stdlib modules. *)
+
+exception Sany_failure of string option * string
