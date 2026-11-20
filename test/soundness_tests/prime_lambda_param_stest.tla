@@ -14,4 +14,3 @@ THEOREM ASSUME \A c : H(LAMBDA a : c)
 BY Isa
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/new
