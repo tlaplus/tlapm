@@ -149,23 +149,34 @@ let prime_commuter =
       (* for the rest, we just commute the prime one step down the structure of
        * the expression *)
       | _ -> super#expr scx e*)
-    method expr scx e = match e.core with
-         | Ix n -> begin
-             match (get_val_from_id (snd scx) n).core with
-             | Fresh (_, _, Constant, _) -> e
-             | Defn ({core = Operator (_,op)}, _, _, _) when
-             ((Expr.Levels.get_level op) = 0) -> e
-             | _ -> prime e
-           end
-         | Apply ({core=Internal ENABLED; _}, _)
-         | Opaque _ | Sequent _ | Let _ ->
-            prime e
-         | Apply ({core=Internal
-                (UNCHANGED | Cdot |
-                 Leadsto | Actplus | Box _ | Diamond); _}, _)
-         | Tquant _ | Sub _ | Tsub _ | Fair _ ->
-            assert false
-         | _ -> super#expr scx e
+    val mutable base_depth = -1
+    method expr scx e =
+      let root = base_depth < 0 in
+      let saved = base_depth in
+      if root then base_depth <- Deque.size (snd scx);
+      let recover () = base_depth <- saved in
+      let result = match e.core with
+       | Ix n -> begin
+           let bound_here = n <= Deque.size (snd scx) - base_depth in
+           match (get_val_from_id (snd scx) n).core with
+           | Fresh (_, _, Constant, _) -> e
+           | Fresh (_, _, Unknown, _) when bound_here -> e
+           | Defn ({core = Operator (_,op)}, _, _, _) when
+           ((Expr.Levels.get_level op) = 0) -> e
+           | _ -> prime e
+         end
+       | Apply ({core=Internal ENABLED; _}, _)
+       | Opaque _ | Sequent _ | Let _ ->
+          prime e
+       | Apply ({core=Internal
+              (UNCHANGED | Cdot |
+               Leadsto | Actplus | Box _ | Diamond); _}, _)
+       | Tquant _ | Sub _ | Tsub _ | Fair _ ->
+          assert false
+       | _ -> super#expr scx e
+      in
+      recover ();
+      result
   end
 
 (* Box commuter:
