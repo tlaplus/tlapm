@@ -11,4 +11,3 @@ THEOREM ASSUME ASSUME x = 0 PROVE FALSE
 BY PTL
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/338

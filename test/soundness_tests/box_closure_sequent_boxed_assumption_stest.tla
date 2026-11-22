@@ -13,4 +13,3 @@ THEOREM ASSUME ASSUME [](x = 0) PROVE [](y = 0)
 BY PTL
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/338

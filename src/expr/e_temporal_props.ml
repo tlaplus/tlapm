@@ -59,14 +59,24 @@ let visitor = object (self : 'self)
     (* decomposing formulas for confirming all are constants *)
     | Apply _ ->
         super#expr scx oe
-    (* sequents should be converted to implications for computing is_box *)
+    (* A sequent is an implication: visible assumptions at the opposite
+       polarity, the conclusion at the current polarity. *)
     | Sequent sq ->
-        (* let closure1 = ref true in
-        let closure2 = ref true in
-        let _ = self#hyps ((closure1, not is_box), cx) sq.context in
-        let () = self#expr ((closure2, is_box), cx) sq.active in
-        closure := !closure1 && !closure2 *)
-        self#expr ((closure, is_box), cx) sq.active
+        let hyp_closed = ref !closure in
+        let scx =
+          Deque.fold_left begin
+            fun scx h ->
+              begin match h.core with
+              | Fact (e, Visible, _) ->
+                  self#expr ((hyp_closed, not is_box), snd scx) e
+              | _ -> ()
+              end ;
+              adj scx h
+          end ((hyp_closed, not is_box), cx) sq.context
+        in
+        let conc_closed = ref !closure in
+        self#expr ((conc_closed, is_box), snd scx) sq.active ;
+        closure := !hyp_closed && !conc_closed
     (* unexpended temporal operators *)
     | f ->
         closure := false
@@ -90,8 +100,11 @@ let diamond_closure cx e =
    * without regard to the sequent in the fact) then we do nothing
    * 2) if the fact is a formula, then we apply Leslie’s algorithm to
    * decide its level.
-   * 3) if the fact is a sequent, if all (visible) assumptions are
-   * box-level, then the fact is box-level.
+   * 3) if the fact is a sequent, visible assumptions are checked at
+   * the opposite polarity and the conclusion at the current polarity.
+   * This is sufficient: <>F is defined as ~[]~F, and box closure is
+   * preserved by disjunction (Lamport, Specifying Systems, Sections
+   * 8.1 and 8.2).
 *)
 
 let compute_time scx e =
@@ -151,39 +164,39 @@ let%test_module "compute_time" = (module struct
         compute_time cx e
     | None -> failwith ("Cannot parse test sequent: " ^ input)
 
-  let%test "state assumption with constant conclusion is Now" [@tags "disabled"] =
+  let%test "state assumption with constant conclusion is Now" =
     classify "ASSUME NEW VARIABLE x, x = 0 PROVE FALSE" = Now
 
   let%test "diamond assumption with boxed conclusion is Always" =
     classify "ASSUME NEW VARIABLE x, NEW VARIABLE y, <>(x = 0) PROVE [](y = 0)"
     = Always
 
-  let%test "boxed assumption with boxed conclusion is Now" [@tags "disabled"] =
+  let%test "boxed assumption with boxed conclusion is Now" =
     classify "ASSUME NEW VARIABLE x, NEW VARIABLE y, [](x = 0) PROVE [](y = 0)"
     = Now
 
   let%test "diamond assumption with state conclusion is Now" =
     classify "ASSUME NEW VARIABLE x, <>(x = 0) PROVE x = 1" = Now
 
-  let%test "a later assumption that is not diamond-closed makes the sequent Now" [@tags "disabled"] =
+  let%test "a later assumption that is not diamond-closed makes the sequent Now" =
     classify "ASSUME NEW VARIABLE x, <>(x = 0), x = 1 PROVE FALSE" = Now
 
   (* Supply the fixtures' module-level VARIABLES x, y as outer context
      so the inner sequents can be tested verbatim. *)
-  let%test "box_closure_sequent_multiple_assumptions_stest" [@tags "disabled"] =
+  let%test "box_closure_sequent_multiple_assumptions_stest" =
     classify ~variables:["x"; "y"] "ASSUME x = 0, y = 1 PROVE [](x = y)" = Now
 
-  let%test "box_closure_sequent_false_conclusion_stest" [@tags "disabled"] =
+  let%test "box_closure_sequent_false_conclusion_stest" =
     classify ~variables:["x"] "ASSUME x = 0 PROVE FALSE" = Now
 
-  let%test "box_closure_sequent_boxed_assumption_stest" [@tags "disabled"] =
+  let%test "box_closure_sequent_boxed_assumption_stest" =
     classify ~variables:["x"; "y"] "ASSUME [](x = 0) PROVE [](y = 0)" = Now
 
-  let%test "multiple assumptions with NEW VARIABLE declarations are Now" [@tags "disabled"] =
+  let%test "multiple assumptions with NEW VARIABLE declarations are Now" =
     classify
       "ASSUME NEW VARIABLE x, NEW VARIABLE y, x = 0, y = 1 PROVE [](x = y)"
     = Now
 
-  let%test "false conclusion with NEW VARIABLE declarations is Now" [@tags "disabled"] =
+  let%test "false conclusion with NEW VARIABLE declarations is Now" =
     classify "ASSUME NEW VARIABLE x, x = 0 PROVE FALSE" = Now
 end)

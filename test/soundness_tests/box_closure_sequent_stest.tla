@@ -16,4 +16,3 @@ THEOREM (x = 0 => [](y = 0)) => [](x = 0 => [](y = 0))
     BY PTL
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/new
