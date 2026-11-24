@@ -135,7 +135,7 @@ let coalesce_non_leibniz ob = ob
 let prime_commuter =
   let prime e = Apply (Internal Builtin.Prime @@ e, [e]) @@ e in
   object (self)
-    inherit [unit] Expr.Visit.map_visible_hyp as super
+    inherit [int] Expr.Visit.map_visible_hyp as super
 (*    method expr scx e =
       (* all constant expression cancel the modality *)
       if (Expr.Constness.is_const e) then e
@@ -149,16 +149,11 @@ let prime_commuter =
       (* for the rest, we just commute the prime one step down the structure of
        * the expression *)
       | _ -> super#expr scx e*)
-    val mutable base_depth = -1
-    method expr scx e =
-      let root = base_depth < 0 in
-      let saved = base_depth in
-      if root then base_depth <- Deque.size (snd scx);
-      let recover () = base_depth <- saved in
-      let result = match e.core with
+    method expr ((base_depth, cx) as scx) e =
+      match e.core with
        | Ix n -> begin
-           let bound_here = n <= Deque.size (snd scx) - base_depth in
-           match (get_val_from_id (snd scx) n).core with
+           let bound_here = n <= Deque.size cx - base_depth in
+           match (get_val_from_id cx n).core with
            | Fresh (_, _, Constant, _) -> e
            | Fresh (_, _, Unknown, _) when bound_here -> e
            | Defn ({core = Operator (_,op)}, _, _, _) when
@@ -174,9 +169,6 @@ let prime_commuter =
        | Tquant _ | Sub _ | Tsub _ | Fair _ ->
           assert false
        | _ -> super#expr scx e
-      in
-      recover ();
-      result
   end
 
 (* Box commuter:
@@ -186,7 +178,7 @@ let prime_commuter =
 let box_commuter =
   let box e = Apply (Internal (Builtin.Box true) @@ e, [e]) @@ e in
   object (self)
-    inherit [unit] Expr.Visit.map_visible_hyp as super
+    inherit [int] Expr.Visit.map_visible_hyp as super
     method expr scx e =
       (* all constant expression cancel the modality *)
       if ((Expr.Levels.get_level e) = 0) then e
@@ -207,7 +199,7 @@ let box_commuter =
 let dia_commuter =
   let dia e = Apply (Internal Builtin.Diamond @@ e, [e]) @@ e in
   object (self)
-    inherit [unit] Expr.Visit.map_visible_hyp as super
+    inherit [int] Expr.Visit.map_visible_hyp as super
     method expr scx e =
       (* all constant expression cancel the modality *)
       if ((Expr.Levels.get_level e) = 0) then e
