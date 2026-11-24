@@ -43,7 +43,10 @@ let symbol_commute sym_map =
     method expr scx e =
       try
         let (ivisitor,stripper) = SymbolMap.find e sym_map in
-        ivisitor#expr scx (stripper e)
+        (* Start a fresh scope for each dispatched symbol. Recursive visits
+           preserve this depth while extending the hypothesis context. *)
+        let cx = snd scx in
+        ivisitor#expr (Deque.size cx, cx) (stripper e)
       with
         | Not_found -> super#expr scx e
   end in
