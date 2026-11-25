@@ -20,7 +20,10 @@ let separator_regex = regexp {|^---+||||}
 (** Test attributes for controlling test execution. *)
 type test_attribute =
   | Skip
-  | Error
+  | Accept (* Require successful parsing without comparing the tree. *)
+  | Equiv (* Compare the Actual and Reference expression structures. *)
+  | Roundtrip (* Preserve expressions when printing and reparsing. *)
+  | Error of string option
 [@@deriving show]
 
 (** Given a string attribute tag, resolve it to an enumerated type.
@@ -31,7 +34,14 @@ type test_attribute =
 let str_to_test_attribute (attr : string) : test_attribute =
   match attr with
   | ":skip" -> Skip
-  | ":error" -> Error
+  | ":accept" -> Accept
+  | ":equiv" -> Equiv
+  | ":roundtrip" -> Roundtrip
+  | ":error" -> Error None
+  | _ when String.starts_with ~prefix:":error " attr ->
+      let message = String.sub attr 7 (String.length attr - 7) |> trim in
+      if message = "" then invalid_arg "Empty :error diagnostic";
+      Error (Some message)
   | _ -> Invalid_argument (sprintf "Invalid attribute %s" attr) |> raise
 
 (** Metadata about a syntax test. *)
@@ -42,7 +52,10 @@ type syntax_test_info = {
 
 (** Enumeration of syntax test variants. *)
 type syntax_test_variant =
-  | Error_test of string
+  | Accept_test of string
+  | Equiv_test of string
+  | Roundtrip_test of string
+  | Error_test of (string * string option)
   | Expected_test of (string * Sexp.t)
 [@@deriving show]
 
@@ -90,10 +103,16 @@ let rec parse_split_test_file (path : string) (input : string list) : syntax_tes
   | test_header :: test_body :: ls ->
     let (name, test_attrs) = test_header |> trim |> split_on_char '\n' |> parse_test_header in
     let (test_input, test_output) = parse_test_body path name test_body in
-    let test =
-      if List.mem Error test_attrs
-      then Error_test test_input
-      else Expected_test (test_input, Sexp.of_string test_output)
+    let errors = List.filter_map (function Error msg -> Some msg | _ -> None) test_attrs in
+    let test = match List.mem Accept test_attrs, List.mem Equiv test_attrs,
+                     List.mem Roundtrip test_attrs, errors with
+      | true, false, false, [] -> Accept_test test_input
+      | false, true, false, [] -> Equiv_test test_input
+      | false, false, true, [] -> Roundtrip_test test_input
+      | false, false, false, [] -> Expected_test (test_input, Sexp.of_string test_output)
+      | false, false, false, [message] -> Error_test (test_input, message)
+      | _ -> Invalid_argument
+          (sprintf "Conflicting test attributes for %s in %s" name path) |> raise
     in {
       info = { path; name; };
       skip = List.mem Skip test_attrs; 
@@ -115,24 +134,45 @@ let parse_test_file (path : string) : syntax_test list =
     close_in_noerr test_file;
     raise e
 
+module Shape = struct
+  type 'a t = { label : string; content : 'a content }
+  and 'a content =
+    | Atom of 'a
+    | List of 'a t list
+
+  let rec map f x = { x with content = map_content f x.content }
+  and map_content f = function
+    | Atom x -> f x
+    | List xs -> List (List.map (map f) xs)
+end
+
 (** Given the path to a directory, recursively find all files located within
     that directory.
     @param path The path to a directory to search under.
     @return A list of paths to files under the directory.
 *)
-let rec get_all_files_under (path : string) : string list =
+let rec get_all_files_under (path : string) : string Shape.content =
   if Sys.is_directory path then
     Sys.readdir path
     |> Array.to_list
-    |> List.map (Filename.concat path)
-    |> List.map get_all_files_under
-    |> List.flatten
-  else [path]
+    |> List.sort String.compare
+    |> List.map (fun label ->
+           let content = get_all_files_under (Filename.concat path label) in
+           Shape.{ label; content })
+    |> (fun x -> Shape.List x)
+  else Atom path
 
 (** Given the path to a directory, return a list of all syntax tests in all
     files under that directory.
     @param path The path to a directory to search under.
     @return A list of syntax tests from the files under the directory.
 *)
-let get_all_tests_under (path : string) : syntax_test list =
-  path |> get_all_files_under |> List.map parse_test_file |> List.flatten
+let get_all_tests_under (path : string) : syntax_test Shape.content =
+  path |> get_all_files_under
+  |> Shape.map_content
+       (fun path ->
+         parse_test_file path
+         |> List.map
+              (fun (t : syntax_test) ->
+                Shape.{ label = t.info.name; content = Atom t })
+         |> (fun x -> Shape.List x))

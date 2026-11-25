@@ -205,8 +205,9 @@ THEOREM Spec => [](pc = "Done" => IsSorted(A) /\ IsPermOf(A, A0))
   <2> SUFFICES ASSUME Inv, Lbl_1 \/ Lbl_2 \* Next
                PROVE  Inv'
     <3>1. Inv /\ UNCHANGED vars => Inv'
-      BY DEF vars, TypeOK, RealInv, IsSorted, IsSortedTo,
-                IsSortedFromTo, IsPermOf, Perms, **
+      BY Zenon
+         DEF vars, TypeOK, RealInv, IsSorted, IsSortedTo,
+             IsSortedFromTo, IsPermOf, Perms, **
     <3>2. QED
       BY <3>1 DEF Next
   <2>1. TypeOK'
@@ -228,9 +229,4 @@ THEOREM Spec => [](pc = "Done" => IsSorted(A) /\ IsPermOf(A, A0))
 (***************************************************************************)
 =============================================================================
 \* Modification History
-\* Last modified Wed Aug 28 14:03:35 CEST 2019 by merz
-\* Last modified Mon Mar 17 11:17:49 CET 2014 by doligez
-\* Last modified Fri Mar 07 15:24:43 CET 2014 by shaolin
-\* Last modified Tue Nov 27 13:33:10 CET 2012 by doligez
-\* Last modified Fri Nov 23 09:32:08 PST 2012 by lamport
 \* Created Wed Nov 21 11:50:58 PST 2012 by lamport

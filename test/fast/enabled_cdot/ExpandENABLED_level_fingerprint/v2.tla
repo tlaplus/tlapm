@@ -8,7 +8,7 @@ VARIABLE x
 A == x'
 
 
-THEOREM ENABLED (x' /\ A) = (\E u:  u /\ A)
+THEOREM (ENABLED (x' /\ A)) = (\E u:  u /\ A)
 BY ExpandENABLED
 
 ================================================================================

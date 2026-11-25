@@ -2,18 +2,20 @@ open Util
 open Prover
 
 module Role : sig
-  type t = Main | Aux | Unknown | Unexpected
+  type t = Main of bool | Aux | Unknown | Unexpected
 end
 
 type t
 
 val of_parsed_obligation : Tlapm_lib.Proof.T.obligation -> t
-val with_role : Role.t -> t -> t
 val with_prover_terminated : int -> t -> t
 val with_prover_obligation : int -> Toolbox.Obligation.t -> t option -> t
-val with_proof_state_from : t -> (string -> t option) -> t
+val with_proof_state_from : (string -> t option) -> t -> t
 val with_prover_names : int -> int -> string list -> t -> t
+val parsed : t -> Tlapm_lib.Proof.T.obligation option
+val parsed_main : t -> Tlapm_lib.Proof.T.obligation option
 val role : t -> Role.t
+val is_omitted : t -> bool
 val loc : t -> Range.t
 val fingerprint : t -> string option
 val status : t -> Proof_status.t

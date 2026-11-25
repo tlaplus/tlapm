@@ -1,8 +1,8 @@
 (*  Title:      TLA+/AtomicBakery.thy
     Author:     Hernan Vanzetto, LORIA
-    Copyright (C) 2009-2022  INRIA and Microsoft Corporation
+    Copyright (C) 2009-2025  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2024
+    Version:    Isabelle2025
 *)
 
 section \<open>Safety Proof of the Atomic Version of the Bakery Algorithm\<close>

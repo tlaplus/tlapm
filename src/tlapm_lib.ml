@@ -147,7 +147,11 @@ let print_unproved_obligations
         Util.eprintf
             "There were backend errors processing module `%S`."
             tla_module.core.name.core;
-        if not !Params.toolbox then
+        if !Params.strict then
+            (* Record the most severe condition and keep processing so that all
+               modules are reported before exiting (see [Params.exit_status]). *)
+            Params.note_strict_failure 10
+        else if not !Params.toolbox then
             failwith "backend errors: there are unproved obligations"
     end else begin
         Util.eprintf
@@ -400,6 +404,7 @@ let process_module
         in
         let obs = Array.mapi add_id fin.final_obs in  (* add obligation ids *)
         let obs = toolbox_clean obs in (* only consider specified obligations *)
+        let obs = List.filter (fun ob -> match ob.kind with Ob_omitted _ -> false | _ -> true) obs in
         let fin = {
                 fin with final_obs = Array.of_list obs ;
                 final_status = (Incomplete, summ) } in
@@ -441,6 +446,46 @@ let process_module
             | (Incomplete, miss) -> snd (miss.sum_absent)
             | _ -> []
         in
+
+        (* `--strict` checks that are independent of the backends. *)
+        if !Params.strict then begin
+            (* #271: missing or omitted proof steps leave the proof incomplete,
+               even though such steps generate no obligation and would otherwise
+               be reported as a successful run. *)
+            let (_, summ) = fin.final_status in
+            let (n_absent, absent) = summ.sum_absent in
+            let (n_omitted, omitted) = summ.sum_omitted in
+            (* `--summary` already lists each missing/omitted proof location, so
+               skip the per-locus lines to avoid duplicate output. *)
+            if not !Params.summary then begin
+                List.iter
+                    (fun loc -> Util.eprintf ~prefix:"[ERROR]: "
+                        "Missing proof at %s" (Loc.string_of_locus loc))
+                    absent;
+                List.iter
+                    (fun loc -> Util.eprintf ~prefix:"[ERROR]: "
+                        "Omitted proof at %s" (Loc.string_of_locus loc))
+                    omitted
+            end;
+            (* Emit one module-level summary line and raise the exit status to
+               11 (incomplete proof) whenever any step is missing or omitted. *)
+            if n_absent + n_omitted > 0 then begin
+                Util.eprintf ~at:t ~prefix:"[ERROR]: "
+                    "Proof incomplete in module %S: %d missing, %d omitted \
+                     proof step(s)."
+                    t.core.name.core n_absent n_omitted;
+                Params.note_strict_failure 11
+            end;
+            (* #276: an explicit target (e.g. `--line`) that selects no
+               obligation usually means an off-by-one line number rather than a
+               genuine proof. A whole-module run with zero obligations is fine. *)
+            if Params.has_explicit_target ()
+               && Array.length fin.final_obs = 0 then begin
+                Util.eprintf ~at:t ~prefix:"[ERROR]: "
+                    "No proof obligation found for the selected target.";
+                Params.note_strict_failure 12
+            end
+        end;
 
         begin
         if not !Params.suppress_all then
@@ -545,14 +590,33 @@ let setup_loader fs loader_paths =
   Loader.Global.setup loader_paths
 
 let main fs =
-  setup_loader fs !Params.rev_search_path;
-  Params.input_files := map_paths_to_filenames fs;
   let () =
     List.iter begin
       fun s ->
         ignore (Sys.signal s (Sys.Signal_handle handle_abort))
     end [Sys.sigint ; Sys.sigabrt ; Sys.sigterm] in
   let () = Format.pp_set_max_indent Format.std_formatter 2_000_000 in
+  match !Params.parser_backend, fs with
+  | Sany, [root_module_path] -> (
+    (* Parses root module & dependencies with SANY *)
+    setup_loader [root_module_path] !Params.rev_search_path;
+    match Sany.parse root_module_path with
+    | Ok (mcx, root_module) ->
+        Params.input_files := [Filename.basename root_module_path];
+        Params.set_search_path [Filename.dirname root_module_path];
+        (* Flatten but do not normalize the modules *)
+        let (mcx, mule_order) = Module.Dep.schedule mcx in
+        (* Normalize modules then check proofs in root module *)
+        List.fold_left (fun mcx m ->
+            let (mcx, m) = process_module mcx m in
+            Sm.add m.core.name.core m mcx
+        ) mcx mule_order |> ignore
+    | Error (_, msg) -> failwith ("Error parsing module using SANY backend: " ^ msg)
+  )
+  | Sany, _ -> failwith "When using SANY parser backend, exactly one input file must be provided."
+  | Tlapm, _ ->
+  setup_loader fs !Params.rev_search_path;
+  Params.input_files := map_paths_to_filenames fs;
   let mcx = Module.Standard.initctx in
   (* reads the new modules and return both the map:name->module with the new
    * module and a list of the new modules*)
@@ -578,17 +642,21 @@ let main fs =
       in
       ignore (List.fold_left f mcx mods)
   end ;
-  if !Params.stats then Clocks.report ()
-
+  if !Params.stats then Clocks.report () ;
+  (* Under `--strict`, exit with the most severe condition encountered. A clean
+     run leaves [exit_status] at 0 and falls through to the normal exit. The
+     `--strict` guard keeps non-strict runs unaffected even if [exit_status] is
+     ever set elsewhere or retained across in-process invocations. *)
+  if !Params.strict && !Params.exit_status <> 0 then exit !Params.exit_status
 
 let init () =
   Random.self_init();
   Printexc.record_backtrace true;
   Format.pp_set_max_indent Format.err_formatter 35;
   if Params.debugging "main" then
-    main (Tlapm_args.init ())
+    main (Tlapm_args.init Sys.executable_name Sys.argv)
   else
-    try main (Tlapm_args.init ()) with
+    try main (Tlapm_args.init Sys.executable_name Sys.argv) with
     | Errors.Fatal ->
        Util.eprintf "tlapm: Exiting because of the above error.";
        exit 0;
@@ -616,8 +684,7 @@ let init () =
        end;
        exit 3
 
-(* Access to this function has to be synchronized. *)
-let modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~prefer_stdlib : (modctx * Module.T.mule, string option * string) result =
+let tlapm_modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~prefer_stdlib : (modctx * Module.T.mule, string option * string) result =
     let parse_it () =
         Errors.reset ();
         Params.prefer_stdlib := prefer_stdlib;
@@ -652,9 +719,24 @@ let modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~pre
          | Some l, None -> Error (Some l, Printexc.to_string e)
          | None, None -> Error (None, Printexc.to_string e))
 
+(* Access to this function has to be synchronized. *)
+let modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~prefer_stdlib : (modctx * Module.T.mule, string option * string) result =
+    match !Params.parser_backend with
+    | Tlapm -> tlapm_modctx_of_string ~content ~filename ~loader_paths ~prefer_stdlib
+    | Sany ->
+      let transform (ctx, mule : modctx * Module.T.mule) : (modctx * Module.T.mule, string option * string) result =
+      Params.input_files := [Filename.basename filename];
+      Params.set_search_path [Filename.dirname filename];
+      let (mule, _) = let open Module.Flatten in flatten ctx mule Ss.empty
+      in let (ctx, m, _summ) = Module.Elab.normalize ctx Deque.empty mule in Ok (ctx, m)
+      in Result.bind (Sany.parse filename) transform
+
 let module_of_string module_str =
-    let hparse = Tla_parser.P.use M_parser.parse in
-    let (flex, _) = Alexer.lex_string module_str in
-    Tla_parser.P.run hparse ~init:Tla_parser.init ~source:flex
+    match !Params.parser_backend with
+    | Tlapm ->
+        let hparse = Tla_parser.P.use Module.Parser.parse in
+        let (flex, _) = Alexer.lex_string module_str in
+        Tla_parser.P.run hparse ~init:Tla_parser.init ~source:flex
+    | Sany -> failwith "SANY cannot parse modules from a string"
 
 let stdlib_search_paths = Params.stdlib_search_paths

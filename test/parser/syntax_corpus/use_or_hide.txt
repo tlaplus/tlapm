@@ -3,14 +3,20 @@ Simple Use or Hide
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 USE X, Y
 HIDE X
 HIDE Y
+====
+---- MODULE TestPrelude ----
+THEOREM X == TRUE
+THEOREM Y == TRUE
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (use_or_hide (use_body
     (use_body_expr
       (identifier_ref)
@@ -34,13 +40,21 @@ Hide Multiple Definitions
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 HIDE X, Y
-HIDE DEFS X, Y
+HIDE DEFS Z, T
+====
+---- MODULE TestPrelude ----
+THEOREM X == TRUE
+THEOREM Y == TRUE
+Z == 0
+T == 0
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (use_or_hide (use_body
     (use_body_expr
       (identifier_ref)
@@ -60,14 +74,24 @@ Complicated Use & Hide
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 USE x, 1 + 3
 HIDE DEFS -., *, ^+
 USE x DEF z, x
+====
+---- MODULE TestPrelude ----
+x == 0
+z == 0
+-. a == 1
+a ^+ == 1
+a + b == 2
+a * b == 2
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (use_or_hide (use_body
     (use_body_expr
       (identifier_ref)
@@ -97,9 +121,19 @@ Use & Hide Modules
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude, M
 USE x, MODULE M, 1 + 3
 HIDE DEFS MODULE M, -., *, ^+
 USE x, MODULE M DEF MODULE M, x
+====
+---- MODULE TestPrelude ----
+-. a == 0
+a + b == 1
+a * b == 2
+a ^+ == 3
+x == 4
+====
+---- MODULE M ----
 ====
 
 -------------|||

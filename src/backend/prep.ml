@@ -35,28 +35,292 @@ let vprintf fmt =
   else
     Printf.ifprintf stderr fmt
 
+(* Substitutions of [expand_defs], where [None] stands for the identity.
+   Unlike [shift 0], it keeps the hypotheses before the first expanded
+   definition unchanged: [app_expr] also normalizes applications. *)
+let app_sub f s x = match s with None -> x | Some s -> f s x
+let scons_sub e s = Some (scons e (Option.default (shift 0) s))
+
 let expand_defs ?(what = fun _ -> true) ob =
-  let rec visit sq =
-    match Deque.front sq.context with
-    | None -> sq
-    | Some (h, hs) -> begin
-        match h.core with
-          | Defn ({core = Operator (nm, e)}, wd, Visible, _) when what wd ->
-              visit (app_sequent (scons e (shift 0)) { sq with context = hs })
+  (* Inline the visible operator / pragma definitions of the obligation's
+     context into the rest of the sequent.
+
+     This formulation makes a single front-to-back pass, accumulating one
+     substitution `s` (exactly the composition the iterated version applied
+     one definition at a time) and rebuilding the sequent only once.  It
+     mirrors the De Bruijn bookkeeping of `Expr.Subst.app_hyps`: `bump s`
+     under a kept hypothesis, `scons e s` to drop and inline a visible
+     definition.  The body `e` is read from the hypothesis *after* `app_hyp s`,
+     so prior inlinings are already substituted into it -- exactly as in the
+     iterated version.  The resulting obligation is identical. *)
+  let sq = ob.obl.core in
+  let rec fold s kept cx = match Deque.front cx with
+    | None -> (s, kept)
+    | Some (h, hs) ->
+        let h = app_sub app_hyp s h in
+        begin match h.core with
+          | Defn ({core = Operator (_, e)}, wd, Visible, _) when what wd ->
+              fold (scons_sub e s) kept hs
           | Defn ({core = Bpragma (_, e, _)}, wd, _, _) when what wd ->
-              visit (app_sequent (scons e (shift 0)) { sq with context = hs })
+              fold (scons_sub e s) kept hs
           | _ ->
-              let sq = visit { sq with context = hs } in
-                { sq with context = Deque.cons h sq.context }
-      end
+              fold (Option.map bump s) (Deque.snoc kept h) hs
+        end
   in
-  let obl = visit ob.obl.core in
-     { ob with obl = { ob.obl with core = obl } }
+  let (s, context) = fold None Deque.empty sq.context in
+  let active = app_sub app_expr s sq.active in
+  { ob with obl = { ob.obl with core = { context ; active } } }
 
 (*
 let expand_defs ?(what = fun _ -> true) ob =
   debug_time "expand_defs" (fun () -> expand_defs ~what ob) ()
 *)
+
+let%test_module "expand_defs" = (module struct
+  (* [ix n] refers to the n-th closest hypothesis or binder, counting from 1.
+     Strings and tuples stand in for propositions in facts and goals, so
+     that substitution results are easy to inspect. *)
+  let ix n = noprops (Ix n)
+  let str s = noprops (String s)
+  let tuple es = noprops (Tuple es)
+  let lambda name body =
+    noprops (Lambda ([noprops name, Shape_expr], body))
+  let apply op args = noprops (Apply (op, args))
+  let fresh ?(dom = Unbounded) name =
+    noprops (Fresh (noprops name, Shape_expr, Constant, dom))
+  let fact e = noprops (Fact (e, Visible, Now))
+  let operator ?(where = User) ?(visibility = Visible) name body =
+    noprops (Defn (noprops (Operator (noprops name, body)),
+                  where, visibility, Local))
+  let pragma ?(where = User) ?(visibility = Visible) name body =
+    noprops (Defn (noprops (Bpragma (noprops name, body, [])),
+                  where, visibility, Local))
+  let obligation context active = {
+    id = Some 42;
+    obl = noprops { context = Deque.of_list context; active };
+    fingerprint = Some "expand_defs-test";
+    kind = Ob_support;
+  }
+
+  let check_sequent ob context active =
+    (* Compare the full AST, including hypothesis names and visibility.
+       Compare contexts as lists, independently of the deque's layout. *)
+    assert (Deque.to_list ob.obl.core.context = context);
+    assert (ob.obl.core.active = active)
+
+  (* Physical equality: [expand_defs] rebuilt no node. *)
+  let check_unchanged before after =
+    assert (List.for_all2 ( == )
+              (Deque.to_list before.obl.core.context)
+              (Deque.to_list after.obl.core.context));
+    assert (before.obl.core.active == after.obl.core.active)
+
+  (* A beta-redex: substituting into it, even with [shift 0], reduces it
+     to "value". *)
+  let unreduced = apply (lambda "u" (ix 1)) [str "value"]
+
+  let%test_unit "identity: empty context -> goal unchanged" =
+    let ob = obligation [] unreduced in
+    check_unchanged ob (expand_defs ob)
+
+  (* CONSTANT x; H == x (hidden); fact unreduced; goal unreduced. *)
+  let%test_unit "identity: no visible definition -> sequent unchanged" =
+    let ob = obligation [
+      fresh "x";
+      operator ~visibility:Hidden "H" (ix 1);
+      fact unreduced;
+    ] unreduced in
+    check_unchanged ob (expand_defs ob)
+
+  (* A == unreduced; pragma P == A; pragma Q == P (hidden);
+     goal unreduced. *)
+  let%test_unit "identity: what rejects all -> sequent unchanged" =
+    let ob = obligation [
+      operator "A" unreduced;
+      pragma "P" (ix 1);
+      pragma ~visibility:Hidden "Q" (ix 1);
+    ] unreduced in
+    check_unchanged ob (expand_defs ~what:(fun _ -> false) ob)
+
+  (* CONSTANT x; fact unreduced; A == "a"; fact A; goal A. *)
+  let%test_unit "identity: hypotheses before first expansion -> unchanged" =
+    let prefix = [fresh "x"; fact unreduced] in
+    let ob = obligation
+        (prefix @ [operator "A" (str "a"); fact (ix 1)]) (ix 2) in
+    let result = expand_defs ob in
+    check_sequent result (prefix @ [fact (str "a")]) (str "a");
+    assert (List.for_all2 ( == ) prefix
+              (Deque.to_list (Deque.first_n result.obl.core.context 2)))
+
+  (* A == unreduced; goal A. *)
+  let%test_unit "identity: first expanded body -> inlined unnormalized" =
+    let ob = obligation [operator "A" unreduced] (ix 1) in
+    check_sequent (expand_defs ob) [] unreduced
+
+  (* A tuple declaration of a and b (FreshTuply); goal TRUE.
+     The frontend desugars tuple declarations, so this does not reach
+     [expand_defs].  Defence in depth: substituting into it would fail,
+     because [Expr.Subst.app_hyp] does not support it. *)
+  let%test_unit "identity: FreshTuply, no definition -> sequent unchanged" =
+    let ob = obligation
+        [noprops (FreshTuply ([noprops "a"; noprops "b"], Unbounded))]
+        (noprops (Internal Builtin.TRUE)) in
+    check_unchanged ob (expand_defs ob)
+
+  (* A == "a"; B == <<A, "b">>; C == <<B, A>>; goal <<C, B, A>>. *)
+  let%test_unit "expansion: definition chain -> fully inlined" =
+    let a = str "a" in
+    let b = tuple [a; str "b"] in
+    let c = tuple [b; a] in
+    let ob = obligation [
+      operator "A" a;
+      operator "B" (tuple [ix 1; str "b"]);
+      operator "C" (tuple [ix 1; ix 2]);
+    ] (tuple [ix 1; ix 2; ix 3]) in
+    check_sequent (expand_defs ob) [] (tuple [c; b; a])
+
+  (* A == "a"; pragma P == <<A, "p">>; B == <<P, A>>; goal <<B, P, A>>. *)
+  let%test_unit "expansion: visible or hidden pragma -> expanded" =
+    List.iter (fun visibility ->
+      let p = tuple [str "a"; str "p"] in
+      let ob = obligation [
+        operator "A" (str "a");
+        pragma ~visibility "P" (tuple [ix 1; str "p"]);
+        operator "B" (tuple [ix 1; ix 2]);
+      ] (tuple [ix 1; ix 2; ix 3]) in
+      check_sequent (expand_defs ob) []
+        (tuple [tuple [p; str "a"]; p; str "a"])
+    ) [Visible; Hidden]
+
+  (* CONSTANT x; A == x; H == <<A, x>> (hidden); B == <<A, H, x>>;
+     goal <<B, H, A, x>>. *)
+  let%test_unit "expansion: hidden operator -> kept, body substituted" =
+    let x = fresh "x" in
+    let ob = obligation [
+      x;
+      operator "A" (ix 1);
+      operator ~visibility:Hidden "H" (tuple [ix 1; ix 2]);
+      operator "B" (tuple [ix 2; ix 1; ix 3]);
+    ] (tuple [ix 1; ix 2; ix 3; ix 4]) in
+    check_sequent (expand_defs ob) [
+      x;
+      operator ~visibility:Hidden "H" (tuple [ix 1; ix 1]);
+    ] (tuple [tuple [ix 2; ix 1; ix 2]; ix 1; ix 2; ix 2])
+
+  (* A == "a"; K == A (builtin or proof); B == <<K, A>>; goal B. *)
+  let%test_unit "what: rejected operator -> kept, body substituted" =
+    List.iter (fun where ->
+      let ob = obligation [
+        operator "A" (str "a");
+        operator ~where "K" (ix 1);
+        operator "B" (tuple [ix 1; ix 2]);
+      ] (ix 1) in
+      check_sequent (expand_defs ~what:(fun wd -> wd = User) ob)
+        [operator ~where "K" (str "a")]
+        (tuple [ix 1; str "a"])
+    ) [Builtin; Proof Always]
+
+  (* A == "a"; pragma P == A (builtin); B == <<P, A>>; goal B. *)
+  let%test_unit "what: rejected pragma -> kept, body substituted" =
+    List.iter (fun visibility ->
+      let ob = obligation [
+        operator "A" (str "a");
+        pragma ~where:Builtin ~visibility "P" (ix 1);
+        operator "B" (tuple [ix 1; ix 2]);
+      ] (ix 1) in
+      check_sequent (expand_defs ~what:(fun wd -> wd = User) ob)
+        [pragma ~where:Builtin ~visibility "P" (str "a")]
+        (tuple [ix 1; str "a"])
+    ) [Visible; Hidden]
+
+  (* CONSTANT x; A == x; NEW y \in A; fact <<A, y, x>>; VARIABLE z;
+     B == <<A, z, y, x>>; goal <<B, A, z, y, x>>. *)
+  let%test_unit "indices: kept hypotheses and facts -> substitution bumped" =
+    let x = fresh "x" in
+    let z = noprops (Flex (noprops "z")) in
+    let ob = obligation [
+      x;
+      operator "A" (ix 1);
+      fresh ~dom:(Bounded (ix 1, Visible)) "y";
+      fact (tuple [ix 2; ix 1; ix 3]);
+      z;
+      operator "B" (tuple [ix 4; ix 1; ix 3; ix 5]);
+    ] (tuple [ix 1; ix 5; ix 2; ix 4; ix 6]) in
+    let b = tuple [ix 4; ix 1; ix 3; ix 4] in
+    check_sequent (expand_defs ob) [
+      x;
+      fresh ~dom:(Bounded (ix 1, Visible)) "y";
+      fact (tuple [ix 2; ix 1; ix 2]);
+      z;
+    ] (tuple [b; ix 4; ix 1; ix 3; ix 4])
+
+  (* CONSTANT x; A == x; F(y) == <<A, y, x>>; goal \A z \in A: F(z),
+     which becomes \A z \in x: <<x, z, x>>. *)
+  let%test_unit "indices: LAMBDA and quantifier -> substitution bumped" =
+    let x = fresh "x" in
+    let forall domain body =
+      noprops (Quant (Forall, [noprops "z", Constant, Domain domain], body))
+    in
+    let ob = obligation [
+      x;
+      operator "A" (ix 1);
+      operator "F" (lambda "y" (tuple [ix 2; ix 1; ix 3]));
+    ] (forall (ix 2) (apply (ix 2) [ix 1])) in
+    check_sequent (expand_defs ob) [x]
+      (forall (ix 1) (tuple [ix 2; ix 1; ix 2]))
+
+  (* A == "a"; fact A; goal A, with properties on the sequent, fact,
+     and goal. *)
+  let%test_unit "metadata: obligation fields, node properties -> preserved" =
+    let marker : string Property.pfuncs = Property.make "expand_defs-test" in
+    let mark value node = assign node marker value in
+    let ob = obligation [
+      operator "A" (str "a");
+      mark "hypothesis" (fact (ix 1));
+    ] (mark "goal" (ix 2)) in
+    let ob = { ob with obl = mark "sequent" ob.obl } in
+    let result = expand_defs ob in
+    check_sequent result [mark "hypothesis" (fact (str "a"))]
+      (mark "goal" (str "a"));
+    assert (result.id = ob.id);
+    assert (result.fingerprint = ob.fingerprint);
+    assert (result.kind = ob.kind);
+    assert (result.obl.props == ob.obl.props)
+
+  (* n expanded operators and pragmas, then n hidden operators; goal TRUE. *)
+  let%test_unit "complexity: doubled context -> allocation < 3x" =
+    let measure n =
+      (* Model the pragmas and hidden operators accumulated by INSTANCEs.
+         Closed, fixed-size bodies prevent actual expansion of expressions
+         from increasing the output size beyond O(n). *)
+      let body = tuple (List.init 32 (fun i -> str (string_of_int i))) in
+      let expanded = List.init n (fun i ->
+        let name = "P" ^ string_of_int i in
+        if i mod 2 = 0 then operator name (str "value")
+        else pragma ~visibility:Hidden name (str "value")) in
+      let hidden = List.init n (fun i ->
+        operator ~visibility:Hidden ("H" ^ string_of_int i) body) in
+      let goal = noprops (Internal Builtin.TRUE) in
+      let ob = obligation (expanded @ hidden) goal in
+      (* Count only expansion allocations, excluding fixture construction
+         and result checks.  Allocation counts avoid timing noise in CI. *)
+      let before = Gc.allocated_bytes () in
+      let result = expand_defs ob in
+      let allocated = Gc.allocated_bytes () -. before in
+      check_sequent result hidden goal;
+      allocated
+    in
+    let small = measure 128 in
+    let large = measure 256 in
+    (* Doubling both the expanded and retained definitions should allocate
+       about twice as much.  The original repeated app_sequent traversal
+       allocates about four times as much; 3 leaves ample room for constant
+       overhead. *)
+    if small <= 0. || large >= 3. *. small then
+      failwith (Printf.sprintf
+        "expand_defs allocation growth: %.0f -> %.0f bytes (%.2fx; expected < 3x)"
+        small large (large /. small))
+end)
 
 (*****************************************************************************)
 
@@ -193,7 +457,7 @@ let zenon_prove ob org_ob time res_cont =
   try
     let (inf, inc, outf, outc) = mk_temps cleanup ".znn" in
     let zcmd =
-      Printf.sprintf "%s >%s" (Params.solve_cmd Params.zenon inf) outf
+      Printf.sprintf "%s >%s" (Params.solve_cmd Params.zenon inf) (Filename.quote outf)
     in
     let in_text =
       ignore (Format.flush_str_formatter ());
@@ -238,7 +502,7 @@ let ls4_prove ob org_ob time res_cont =
   try
     let (inf, inc, outf, outc) = mk_temps cleanup ".ls4" in
     let cmd =
-      Printf.sprintf "%s >%s" (Params.solve_cmd Params.ls4 inf) outf
+      Printf.sprintf "%s >%s" (Params.solve_cmd Params.ls4 inf) (Filename.quote outf)
     in
     let in_text =
       ignore (Format.flush_str_formatter ());
@@ -280,7 +544,7 @@ let isabelle_prove ob org_ob tmo tac res_cont =
     Isabelle.thy_temp ob tac thy_mod_name inc;
     flush inc;
     let cmdline =
-      Printf.sprintf "%s >%s" (Params.solve_cmd Params.isabelle thy_path) outf
+      Printf.sprintf "%s >%s" (Params.solve_cmd Params.isabelle thy_path) (Filename.quote outf)
     in
     let warnings = Errors.get_warnings () in
     let finished time_used =
@@ -325,7 +589,7 @@ let zipper_prove ob org_ob time res_cont =
   try
     let (inf, inc, outf, outc) = mk_temps cleanup ".p" in
     let zcmd =
-      Printf.sprintf "%s >%s" (Params.solve_cmd Params.zipper inf) outf
+      Printf.sprintf "%s >%s" (Params.solve_cmd Params.zipper inf) (Filename.quote outf)
     in
     let in_text =
       ignore (Format.flush_str_formatter ());
@@ -428,18 +692,25 @@ let spass_unsat_re = Str.regexp "SPASS beiseite: Proof found"
 let eprover_unsat_re = Str.regexp "SZS status Theorem"
 let generic_unsat_re = Str.regexp "^unsat"
 
-let gen_smt_solve suffix exec desc fmt_expr meth ob org_ob f res_cont comm =
+let gen_smt_solve ?(rlimit=None) suffix exec desc fmt_expr meth ob org_ob f res_cont comm =
   let cleanup = ref (fun () -> ()) in
   try
     let (inf, inc, outf, outc) = mk_temps cleanup suffix in
     let solver = Params.solve_cmd exec inf in
-    let cmdline = Printf.sprintf "%s >%s" solver outf in
+    let cmdline = Printf.sprintf "%s >%s" solver (Filename.quote outf) in
     let in_text =
       ignore (Format.flush_str_formatter ());
       fmt_expr Format.str_formatter ob;
       Format.flush_str_formatter ()
       in
     pp_print_ob ~comm:comm inc ob;
+    (* A deterministic Z3 `rlimit` budget makes the pass/fail outcome
+       independent of CPU speed and load, so it reproduces on any machine and
+       every rerun (see issue #281). It is a Z3 mechanism, hence only emitted
+       for the Z3-based backends. *)
+    (match rlimit with
+     | Some n -> Printf.fprintf inc "(set-option :rlimit %d)\n" n
+     | None -> ());
     output_string inc in_text;
     flush inc;
     let warnings = Errors.get_warnings () in
@@ -494,48 +765,38 @@ let gen_smt_solve suffix exec desc fmt_expr meth ob org_ob f res_cont comm =
     Schedule.Immediate (res_cont w (Method.NotTried msg) None)
 
 
-(* FIXME Remove all the oldsmt code *)
-let get_encode_smtlib () =
-  if Params.debugging "oldsmt" then Smt.encode_smtlib
-  else Smtlib.pp_print_obligation
-
-(* FIXME *)
-let get_encode_fof () =
-  if Params.debugging "oldsmt" then Smt.encode_fof
-  else Smtlib.pp_print_obligation ~solver:"fof"
-
-let smt_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt" Params.smt "default SMT solver" (get_encode_smtlib ())
-                (Method.Smt3 f) ob org_ob f res_cont ";;"
+let smt_solve ?(rlimit=None) ob org_ob f res_cont =
+  gen_smt_solve ~rlimit ".smt" Params.smt "default SMT solver" Smtlib.pp_print_obligation
+                (Method.Smt3 (f, rlimit)) ob org_ob f res_cont ";;"
 
 
 let cvc3_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt" Params.cvc4 "CVC4" (get_encode_smtlib () ~solver:"CVC4")
+  gen_smt_solve ".smt" Params.cvc4 "CVC4" (Smtlib.pp_print_obligation ~solver:"CVC4")
                 (Method.Cvc33 f) ob org_ob f res_cont ";;"
 
 
 let yices_solve ob org_ob f res_cont =
-  gen_smt_solve ".ys" Params.yices "Yices" (get_encode_smtlib ())
+  gen_smt_solve ".ys" Params.yices "Yices" Smtlib.pp_print_obligation
                 (Method.Yices3 f) ob org_ob f res_cont ";;"
 
 
-let z3_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt2" Params.z3 "Z3" ((get_encode_smtlib ()) ~solver:"Z3")
-                (Method.Z33 f) ob org_ob f res_cont ";;"
+let z3_solve ?(rlimit=None) ob org_ob f res_cont =
+  gen_smt_solve ~rlimit ".smt2" Params.z3 "Z3" (Smtlib.pp_print_obligation ~solver:"Z3")
+                (Method.Z33 (f, rlimit)) ob org_ob f res_cont ";;"
 
 
 let verit_solve ob org_ob f res_cont =
-  gen_smt_solve ".smt2" Params.verit "veriT" (get_encode_smtlib () ~solver:"veriT")
+  gen_smt_solve ".smt2" Params.verit "veriT" (Smtlib.pp_print_obligation ~solver:"veriT")
                 (Method.Verit f) ob org_ob f res_cont ";;"
 
 
 let spass_solve ob org_ob f res_cont =
-  gen_smt_solve ".tptp" Params.spass_tptp "Spass" (get_encode_fof ())
+  gen_smt_solve ".tptp" Params.spass_tptp "Spass" (Smtlib.pp_print_obligation ~solver:"fof")
                 (Method.Spass f) ob org_ob f res_cont "%%"
 
 
 let tptp_solve ob org_ob f res_cont =
-  gen_smt_solve ".tptp" Params.eprover "Tptp" (get_encode_fof ())
+  gen_smt_solve ".tptp" Params.eprover "Tptp" (Smtlib.pp_print_obligation ~solver:"fof")
                 (Method.Tptp f) ob org_ob f res_cont "% "
 
 
@@ -585,7 +846,7 @@ let trying_to_prove_true = function
 (* FIXME printing should probably be done in save_result *)
 let trivial ob =
   match ob.kind with
-  | Ob_main -> raise Nontrivial
+  | Ob_main | Ob_omitted _ -> raise Nontrivial
   | Ob_support ->
       let sq = ob.obl.core in
       let cx = if (trying_to_prove_true sq.active.core)
@@ -783,12 +1044,12 @@ let prove_with ob org_ob meth save =  (* FIXME add success fuction *)
   | Method.Smt2z3 f ->
      vprintf "(* ... using Z3(2) *)\n" ;
      z3_solve ob org_ob f res_cont
-  | Method.Smt3 f ->
+  | Method.Smt3 (f, rlimit) ->
      vprintf "(* ... using SMT(v3) *)\n" ;
-     smt_solve ob org_ob f res_cont
-  | Method.Z33 f ->
+     smt_solve ~rlimit ob org_ob f res_cont
+  | Method.Z33 (f, rlimit) ->
      vprintf "(* ... using Z3(v3) *)\n" ;
-     z3_solve ob org_ob f res_cont
+     z3_solve ~rlimit ob org_ob f res_cont
   | Method.Cvc33 f ->
      vprintf "(* ... using CVC4(v3) *)\n" ;
      cvc3_solve ob org_ob f res_cont
@@ -1141,7 +1402,37 @@ let compute_meth def args usept =
   let prover = ref None in
   let prover_loc = ref None in
   let timeout = ref None in
+  let rlimit = ref None in
   let tactic = ref None in
+  (* A string budget of the form "rN" (e.g. "r5") denotes a deterministic Z3
+     `rlimit` budget rather than a wall-clock timeout (see issue #281). N is a
+     multiple of a fixed base resource count, so a small readable budget like
+     "r5" is meaningful; unlike a timeout the outcome does not depend on the
+     machine's speed. *)
+  let parse_rlimit at s =
+    let bad () =
+      Errors.err ~at
+        "Invalid SMT budget %S: expected a number of seconds (wall-clock \
+         timeout), or a deterministic Z3 rlimit budget of the form \"rN\" \
+         (e.g. \"r5\")."
+        s;
+      raise Exit
+    in
+    let n = String.length s in
+    if n >= 2 && (s.[0] = 'r' || s.[0] = 'R') then
+      match float_of_string_opt (String.sub s 1 (n - 1)) with
+      | Some f when Float.is_finite f && f > 0. ->
+         let scaled =
+           Float.min (f *. float_of_int Method.rlimit_base)
+                     (float_of_int Method.max_rlimit)
+         in
+         (* Never let a positive budget truncate to 0: Z3 reads `rlimit 0` as
+            "no limit", which would be the opposite of a tiny budget. *)
+         let r = int_of_float scaled in
+         rlimit := Some (if r < 1 then 1 else r)
+      | _ -> bad ()
+    else bad ()
+  in
   let rec read def args =
     match def with
     | [] ->
@@ -1177,21 +1468,27 @@ let compute_meth def args usept =
        | Bfloat f ->
           timeout := Some f;
           read t args;
+       | Bstring s ->
+          parse_rlimit (() @@ defpt) s;
+          read t args;
        | Bdef ->
           begin match args with
           | {core = Num (s1, s2)} :: tt ->
              timeout := Some (float_of_string (Printf.sprintf "%s.%s" s1 s2));
              read t tt;
+          | {core = String s} as x :: tt ->
+             parse_rlimit x s;
+             read t tt;
           | x :: tt ->
-             Errors.err ~at:x "This argument should be a number (timeout)";
+             Errors.err ~at:x
+               "This argument should be a number of seconds (wall-clock \
+                timeout), or a deterministic Z3 rlimit budget of the form \
+                \"rN\" (e.g. \"r5\")";
              raise Exit;
           | [] ->
              Errors.err ~at:usept "Some arguments are missing";
              raise Exit;
           end
-       | _ ->
-          Errors.err ~at:defpt "Argument should be a number or @";
-          raise Exit;
        end
     | ({core = "tactic"} as defpt, a) :: t ->
        begin match a with
@@ -1222,7 +1519,14 @@ let compute_meth def args usept =
   begin try read def args;
   with Exit -> failwith "error in prover specification"
   end;
-  match !prover with  (* FIXME should factor with Params.mk_meth *)
+  (* When a Z3 `rlimit` budget is given, the wall-clock timeout is disabled
+     (set to infinity) so that the deterministic budget alone bounds Z3. *)
+  let smt_budget default =
+    match !rlimit with
+    | Some _ -> (infinity, !rlimit)
+    | None -> (Option.default default !timeout, None)
+  in
+  let meth = match !prover with  (* FIXME should factor with Params.mk_meth *)
   | Some "zenon" ->
      let tmo = Option.default Method.default_zenon_timeout !timeout in
      Method.Zenon tmo
@@ -1237,28 +1541,28 @@ let compute_meth def args usept =
      let tmo = Option.default Method.default_ls4_timeout !timeout in
      Method.LS4 tmo;
   | Some "z3" ->
-     let tmo = Option.default Method.default_z3_timeout !timeout in
-     Method.Z33 tmo;
+     let (tmo, r) = smt_budget Method.default_z3_timeout in
+     Method.Z33 (tmo, r);
   | Some "smt" ->
-     let tmo = Option.default Method.default_smt_timeout !timeout in
-     Method.Smt3 tmo;
+     let (tmo, r) = smt_budget Method.default_smt_timeout in
+     Method.Smt3 (tmo, r);
   | Some "cvc3" ->
      let tmo = Option.default Method.default_cvc3_timeout !timeout in
      Method.Cvc33 tmo;
   | Some "cooper" -> Method.Cooper
   | Some "fail" -> Method.Fail
   | Some "smt2lib" ->
-     let tmo = Option.default Method.default_smt2_timeout !timeout in
-     Method.Smt3 tmo
+     let (tmo, r) = smt_budget Method.default_smt2_timeout in
+     Method.Smt3 (tmo, r)
   | Some "smt2z3" ->
-     let tmo = Option.default Method.default_smt2_timeout !timeout in
-     Method.Z33 tmo
+     let (tmo, r) = smt_budget Method.default_smt2_timeout in
+     Method.Z33 (tmo, r)
   | Some "smt3" ->
-     let tmo = Option.default Method.default_smt2_timeout !timeout in
-     Method.Smt3 tmo
+     let (tmo, r) = smt_budget Method.default_smt2_timeout in
+     Method.Smt3 (tmo, r)
   | Some "z33" ->
-     let tmo = Option.default Method.default_smt2_timeout !timeout in
-     Method.Z33 tmo
+     let (tmo, r) = smt_budget Method.default_smt2_timeout in
+     Method.Z33 (tmo, r)
   | Some "cvc33" ->
      let tmo = Option.default Method.default_smt2_timeout !timeout in
      Method.Cvc33 tmo
@@ -1306,6 +1610,15 @@ let compute_meth def args usept =
      in
      Errors.err ~at:defpt "Missing prover name";
      failwith "error in prover specification"
+  in
+  (* A Z3 `rlimit` budget only makes sense for the Z3-based backends. *)
+  if !rlimit <> None && Method.smt_rlimit meth = None then begin
+    Errors.err ~at:usept
+      "A Z3 rlimit budget (\"rN\") is only supported by the SMT and Z3 \
+       backends.";
+    failwith "error in prover specification"
+  end;
+  meth
 
 
 let find_meth ob =
@@ -1659,7 +1972,18 @@ let ship ob fpout thyout record =
             (* let f () = Schedule.Immediate false *)
            in
            begin
-           match Util.run_with_timeout tmo f () with
+           (* When the method carries a deterministic Z3 `rlimit` budget, the
+              wall-clock "internal timeout" watchdog is disabled so that the
+              outcome depends only on the rlimit and stays reproducible under
+              CPU load (see issue #281). Bounding the (deterministic) front-end
+              processing by wall-clock time would otherwise reintroduce the very
+              load-dependent non-determinism that `rlimit` is meant to remove. *)
+           let outcome =
+             if Method.smt_rlimit meth <> None
+             then Some (f ())
+             else Util.run_with_timeout tmo f ()
+           in
+           match outcome with
            | Some result -> result
            | None ->
                  let msg =

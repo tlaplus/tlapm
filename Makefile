@@ -22,10 +22,10 @@ opam-update: # Update the package lists and install updates.
 	opam upgrade
 
 opam-deps:
-	opam install ./ --deps-only --yes --working-dir
+	opam install ./ --deps-only --with-test --yes --working-dir
 
 opam-deps-opt:
-	opam install --yes eio_main lsp
+	opam install --yes eio_main lsp.1.27.0
 
 opam-deps-dev:
 	opam install --yes ocamlformat ocaml-lsp-server earlybird
@@ -53,14 +53,12 @@ fmt:
 
 install:
 	dune install --prefix=$(PREFIX)
-	make -C $(PREFIX)/lib/tlapm/ -f Makefile.post-install
 
 TLAPM_RELEASE_DIR_NAME=tlapm
 TLAPM_RELEASE_DIR=$(DUNE_BUILD_DIR)/$(TLAPM_RELEASE_DIR_NAME)
 $(TLAPM_RELEASE_DIR): build
 #	rm -rf $(TLAPM_RELEASE_DIR)
 	dune install --relocatable --prefix $(TLAPM_RELEASE_DIR)
-	make -C $(TLAPM_RELEASE_DIR)/lib/tlapm -f Makefile.post-install
 	cd test && env \
 		USE_TLAPM=../$(TLAPM_RELEASE_DIR)/bin/tlapm \
 		USE_LIB=../$(TLAPM_RELEASE_DIR)/lib/tlapm/stdlib \
@@ -79,6 +77,8 @@ $(TLAPM_VERSION_FILE): $(TLAPM_RELEASE_DIR)
 	echo $${RELEASE_VERSION} > $(TLAPM_VERSION_FILE)
 
 release: $(TLAPM_RELEASE_DIR).tar.gz $(TLAPM_VERSION_FILE)
+	./test/TOOLS/check_relocated_release $(TLAPM_RELEASE_DIR).tar.gz $(DUNE_BUILD_DIR) \
+		|| (rm -f $(TLAPM_RELEASE_DIR).tar.gz; exit 1)
 	TLAPM_RELEASE_VERSION="$$(cat $(TLAPM_VERSION_FILE))"; \
 	TLAPM_RELEASE_NAME=tlapm-$${TLAPM_RELEASE_VERSION}-$(HOST_CPU)-$(HOST_OS); \
 	mv $(TLAPM_RELEASE_DIR).tar.gz $(DUNE_BUILD_DIR)/$${TLAPM_RELEASE_NAME}.tar.gz;

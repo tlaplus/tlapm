@@ -69,10 +69,12 @@ module TlapsProofStepMarker : sig
 end
 
 module InitializationOptions : sig
-  type t
-
-  val module_search_paths : t -> string list
-  (** Additional paths to use in TLAPS. *)
+  type t = private {
+    module_search_paths : string list;  (** Additional paths to use in TLAPS. *)
+    decomposition_disj_cases : bool;
+        (** Should we propose multiple cases to decompose disjunction (true), or
+            use the contradiction (false, default). *)
+  }
 
   val t_of_yojson : Yojson.Safe.t option -> t
 end

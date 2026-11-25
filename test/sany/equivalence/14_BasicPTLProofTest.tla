@@ -1,0 +1,6 @@
+---- MODULE 14_BasicPTLProofTest ----
+EXTENDS TLAPS
+VARIABLE P
+THEOREM []P => P
+PROOF BY PTL
+====

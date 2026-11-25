@@ -1532,7 +1532,7 @@ let built_in_defs =
        eex (evar "x", "",
             eand (eapp ("TLA.in", [evar "x"; evar "S"]),
                   eapp ("P", [evar "x"]))), None));
-    Def (DefReal ("bChoose_def", "TLA.bChoice", [evar "S"; evar "P"],
+    Def (DefReal ("bChoose_def", "TLA.bChoose", [evar "S"; evar "P"],
        etau (evar "x", "",
             eand (eapp ("TLA.in", [evar "x"; evar "S"]),
                   eapp ("P", [evar "x"]))), None));

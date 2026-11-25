@@ -267,7 +267,8 @@ let rec generate (sq : sequent) prf time_flag =
             | Elsewhere _ ->
                 ()
           end;
-          prf
+          let ob = obligate (sq @@ prf) (Ob_omitted h) in
+          assign prf Props.obs [ob]
       | Steps (inits, qed) ->
           let (sq, inits, time_flag) = List.fold_left gen_step (sq, [], time_flag) inits in
           let inits = List.rev inits in
@@ -296,14 +297,24 @@ and gen_step (sq, inits, time_flag) stp =
     | Use ({defs = []; facts = [f]}, _) ->
         let fob = obligate ({sq with active = f} @@ stp) Ob_support in
         (* since we might be in a Now scope but the fact from an earlier Always
-         * scope, we must search for it in the context and take the right scope
-         * *)
+         * scope, we must search for it in the context and take the right scope.
+         * The time_flag fallbacks are formulas proved in this scope, so they
+         * keep that level (necessitation) rather than compute_time.
+         * compute_time is sound but incomplete: it classifies x = x as Now,
+         * so PTL would not receive [](x = x) for
+         *
+         *   VARIABLE x
+         *   THEOREM TRUE
+         *   <1> USE x = x
+         *   <1>1. [](x = x)  BY PTL
+         *   <1> QED  BY <1>1
+         *)
         let tm = match f.core with
         | Ix n ->
             assert (n <= Deque.size sq.context && n > 0);
             begin match Deque.nth ~backwards:true sq.context (n - 1) with
             | Some {core = (Fact (_,_,tm) | Defn (_,Proof tm,_,_))} -> tm
-            | e -> Always (* all other options are with Always scope*) end
+            | e -> time_flag (* other names are proved in the current scope *) end
         | _ -> time_flag (* the rest are expressions which get the current scope *) in
         let stp = assign stp Props.obs [fob] in
         let sq = {context = Deque.snoc sq.context (Fact (f, Visible, tm) @@ f);
@@ -397,7 +408,8 @@ let collect prf =
     inherit [unit] P_visit.map as super
     method proof scx prf =
       let prf = match prf.core with
-        | Obvious | By _ | Error _ ->
+        | Obvious | By _ | Error _ | Omitted _ ->
+            (* The omitted obs will be removed later, they are useful in LSP. *)
             let () = match query prf Props.obs, query prf Props.supp with
               | Some obs, None ->
                   Stats.checked := List.length obs + !Stats.checked ;
@@ -408,8 +420,6 @@ let collect prf =
                                         :: !Stats.suppressed
                   end obs
               | _ -> () in
-            prf
-        | Omitted _ ->
             prf
         | Steps (sts, qed) ->
             let qed_prf = self#proof scx (get_qed_proof qed) in

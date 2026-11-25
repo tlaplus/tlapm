@@ -56,6 +56,11 @@ let prefer_stdlib = ref false
 (* If set to true, the TLAPM will prefer the modules from the STDLIB
    instead of modules with the same names in the search path. *)
 
+type parser = | Tlapm | Sany
+let parser_backend = ref Tlapm
+
+let module_jar_paths = ref []
+
 let noproving = ref false (* Don't send any obligation to the back-ends. *)
 
 let printallobs = ref false
@@ -66,7 +71,7 @@ let printallobs = ref false
    If the sites are not available, then we assume this file layout to locate
    the Isabelle installation.
     - bin/tlapm
-    - lib/tlapm/backends/Isabelle
+    - lib/tlapm/backends/Isabelle-install
   *)
 let isabelle_base_path =
   let rec find paths =
@@ -77,16 +82,13 @@ let isabelle_base_path =
       List.fold_left
         Filename.concat
         prefix
-        ["lib"; "tlapm"; "backends"; "Isabelle"]
+        ["lib"; "tlapm"; "backends"; "Isabelle-install"]
     | path :: other ->
-      let isabelle_base = Filename.concat path "Isabelle" in
+      let isabelle_base = Filename.concat path "Isabelle-install" in
       match Sys.file_exists isabelle_base with
       | true -> isabelle_base
       | false -> find other
   in find Setup_paths.Sites.backends
-
-let isabelle_tla_path =
-  List.fold_left Filename.concat isabelle_base_path ["src"; "TLA+"]
 
 
 type executable =
@@ -102,7 +104,7 @@ type exec = executable ref
 let path_prefix =
   sprintf "PATH='%s';" Paths.backend_path_string
 
-let get_exec e =
+let get_exec err e =
   match !e with
   | Unchecked (exec, cmd, vers) ->
     (*
@@ -114,7 +116,7 @@ let get_exec e =
      ignore (Sys.command stat);
      let check = sprintf "%s type %s >/tmp/check-%d-%d.txt" path_prefix exec tod r in
        *)
-     let check = sprintf "%s type %s >/dev/null" path_prefix exec in
+     let check = sprintf "%s type %s >/dev/null" path_prefix (Filename.quote exec) in
      (* eprintf "probing command: %s\n" check; *)
      begin match Sys.command check with
      | 0 ->
@@ -131,7 +133,7 @@ let get_exec e =
           else "."
         in
         let msg = msg1 ^ msg2 in
-        eprintf "%s" msg;
+        Format.fprintf err "%s" msg;
         e := NotFound msg;
         failwith msg;
      end;
@@ -152,45 +154,55 @@ let make_exec cmd args version = ref (Unchecked (cmd, args, version))
 
 let isabelle_success_string = "((TLAPS SUCCESS))"
 
-let isabelle =
-  let cmd =
-    Printf.sprintf "isabelle process -e \"(use_thy \\\"$file\\\"; \
-                        writeln \\\"%s\\\");\" -d %s -l TLA+"
-                   isabelle_success_string
-                   isabelle_tla_path
+(* ML string literal for arbitrary bytes, as Poly/ML accepts only printable
+   ASCII in string literals. A port of Isabelle's ML_Syntax.print_string_bytes
+   (src/Pure/ML/ml_syntax.scala). *)
+let ml_string_bytes s =
+  let print_byte c =
+    match c with
+    | '"' -> "\\\""
+    | '\\' -> "\\\\"
+    | '\t' -> "\\t"
+    | '\n' -> "\\n"
+    | '\012' -> "\\f"
+    | '\r' -> "\\r"
+    | c when Char.code c < 32 -> sprintf "\\^%c" (Char.chr (Char.code c + 64))
+    | c when Char.code c < 127 -> String.make 1 c
+    | c -> sprintf "\\%d" (Char.code c)
   in
-  make_exec "isabelle" cmd "isabelle version"
-;;
+  "\"" ^ String.fold_right (fun c acc -> print_byte c ^ acc) s "" ^ "\""
 
-let set_fast_isabelle () =
-  if Sys.os_type <> "Cygwin" then
-    eprintf "Warning: --fast-isabelle is not available on this architecture \
-             (ignored)\n%!"
-  else begin try
-    let echos =
-      "echo \"$ISABELLE_HOME\"; echo \"$ML_HOME\"; echo \"$ISABELLE_OUTPUT\""
-    in
-    let pr_cmd =
-      sprintf "%s isabelle env sh -c %s" path_prefix (Filename.quote echos)
-    in
-    let ic = Unix.open_process_in pr_cmd in
-    let isabelle_home = input_line ic in
-    let ml_home = input_line ic in
-    let isabelle_output = input_line ic in
-    close_in ic;
-    let poly = Filename.concat ml_home "poly" in
-    let cmd =
-      Printf.sprintf "export ISABELLE_HOME='%s'; \
-                      export ML_HOME='%s'; \
-                      (echo 'PolyML.SaveState.loadState \"%s/TLA+\"; \
-                             (use_thy \"'\"$file\"'\"; writeln \"%s\");') | \
-                      %s"
-                     isabelle_home ml_home
-                     isabelle_output isabelle_success_string poly
-    in
-    isabelle := Unchecked (poly, cmd, "isabelle version");
-  with _ -> eprintf "Warning: error trying to set up fast-isabelle\n%!";
-  end
+(* tlapm talks to Isabelle by loading a prebuilt heap directly into Poly/ML
+   and evaluating ML, rather than going through the "isabelle process"
+   wrapper which would need the JVM/Scala/rest of the Isabelle distribution.
+   `Options` is a small heap/layer on top of the TLA+ heap containing
+   the system options that "isabelle process" would otherwise reload via the
+   JVM on every invocation.
+   Each child heap records the absolute path of its parent as it was at
+   build time, so `loadState` on the top heap breaks once the installation
+   is moved. `loadHierarchy` takes the whole chain explicitly instead
+   (this is also what Isabelle itself does). *)
+let isabelle =
+  let path sub = List.fold_left Filename.concat isabelle_base_path sub in
+  let poly = path ["poly"; "poly"] in
+  let ml_home = path ["poly"] in
+  let heaps =
+    ["Pure"; "TLA+"; "Options"]
+    |> List.map (fun h -> ml_string_bytes (path ["heaps"; h]))
+    |> String.concat ", "
+  in
+  let identifier_file = path ["etc"; "ISABELLE_IDENTIFIER"] in
+  let cmd =
+    Printf.sprintf
+      "export ISABELLE_HOME='%s'; \
+       export ML_HOME='%s'; \
+       '%s' --eval %s \
+            --eval \"(use_thy $file_ml; writeln \\\"%s\\\")\" </dev/null"
+      isabelle_base_path ml_home poly
+      (Filename.quote (sprintf "PolyML.SaveState.loadHierarchy [%s]" heaps))
+      isabelle_success_string
+  in
+  make_exec poly cmd (sprintf "cat '%s'" identifier_file)
 
 
 let zenon =
@@ -310,7 +322,7 @@ let output_dir = ref "."
 
 let default_method =
   ref [
-    Method.Smt3 Method.default_smt2_timeout;
+    Method.Smt3 (Method.default_smt2_timeout, None);
     Method.Zenon Method.default_zenon_timeout;
     Method.Isabelle (Method.default_isabelle_timeout,
                      Method.default_isabelle_tactic);
@@ -327,10 +339,10 @@ let mk_meth name timeout =
      Method.Isabelle (timeout, name)
   | "smt" ->
      let timeout = Option.default Method.default_smt2_timeout timeout in
-     Method.Smt3 timeout
+     Method.Smt3 (timeout, None)
   | "z3" ->
      let timeout = Option.default Method.default_smt2_timeout timeout in
-     Method.Z33 timeout
+     Method.Z33 (timeout, None)
   | "cvc4" ->
      let timeout = Option.default Method.default_smt2_timeout timeout in
      Method.Cvc33 timeout
@@ -448,16 +460,58 @@ let check        = ref false
 let summary      = ref false
 let stats        = ref false
 
+(* `--strict`: treat conditions that otherwise look like a successful run as
+   errors (incomplete proofs, an explicit target that selects no obligation,
+   failed obligations) and exit with a non-zero, condition-specific code. *)
+let strict       = ref false
+
+(* Accumulated process exit status used under `--strict`. 0 means a clean,
+   complete verification. Several conditions may co-occur in a single run; the
+   exit code reflects the most severe one. Severity ordering (most severe
+   first):
+     3   internal error           (emitted by the top-level exception handler)
+     10  proof obligation failed  (proof-wrong)
+     11  incomplete proof         (missing/omitted steps; proof-gappy)
+     12  empty proof target       (explicit target selected no obligation)
+   The numeric values are stable identifiers; severity is defined by
+   [strict_severity], not by numeric magnitude (3 is the most severe but the
+   smallest non-zero code, kept for backwards compatibility). *)
+let exit_status  = ref 0
+
+let strict_severity = function
+  | 0  -> 0
+  | 12 -> 1
+  | 11 -> 2
+  | 10 -> 3
+  | 3  -> 4
+  | _  -> 5
+
+(* Raise [exit_status] to [code] if [code] is more severe than what was already
+   recorded. *)
+let note_strict_failure code =
+  if strict_severity code > strict_severity !exit_status then
+    exit_status := code
+
+(* True when the user restricted the run to an explicit proof target, e.g. via
+   `--line` or a `--toolbox` range. A whole-module run keeps the defaults
+   [tb_sl = 0] and [tb_el = max_int]. *)
+let has_explicit_target () =
+  !tb_sl > 0 || !tb_el < max_int
+
 let solve_cmd cmd file =
+  let vars =
+    sprintf "file=%s; file_ml=%s;"
+      (Filename.quote file) (Filename.quote (ml_string_bytes file))
+  in
   if Sys.os_type = "Cygwin" then
-    sprintf "file=%s; winfile=\"`cygpath -a -w \"%s\"`\"; %s" file file (get_exec cmd)
+    sprintf "%s winfile=\"`cygpath -a -w \"$file\"`\"; %s" vars (get_exec Format.err_formatter cmd)
   else
-    sprintf "file=%s; %s" file (get_exec cmd)
+    sprintf "%s %s" vars (get_exec Format.err_formatter cmd)
 
 
-let external_tool_config force (name, tool) =
+let external_tool_config (err : Format.formatter) force (name, tool) =
   if force then begin
-    try ignore (get_exec tool) with Failure _ -> ()
+    try ignore (get_exec err tool) with Failure _ -> ()
   end;
   match !tool with
   | Checked (cmd, []) ->
@@ -470,7 +524,7 @@ let external_tool_config force (name, tool) =
   | _ -> []
 
 
-let configuration toolbox force =
+let configuration err toolbox force =
   let library_path = (match stdlib_path with
   | Some path -> "\"" ^ (String.escaped path) ^ "\"";
   | None -> "N/A")
@@ -494,7 +548,7 @@ let configuration toolbox force =
           first_line :: mid_lines @ [last_line]
         end
       end
-    @ List.flatten (List.map (external_tool_config force)
+    @ List.flatten (List.map (external_tool_config err force)
                              [("Isabelle", isabelle);
                               ("zenon", zenon);
                               ("CVC4", cvc4);
@@ -517,17 +571,17 @@ let configuration toolbox force =
   header @ lines @ footer
 
 
-let printconfig force =
-  String.concat "\n" (configuration false force)
+let printconfig err force =
+  String.concat "\n" (configuration err false force)
 
 let print_config_toolbox force =
-  String.concat "\n" (configuration true force)
+  String.concat "\n" (configuration Format.err_formatter true force)
 
 
 let zenon_version = ref None
 
 let check_zenon_ver () =
-  let zen = get_exec zenon in
+  let zen = get_exec Format.err_formatter zenon in
   match get_version zenon with
   | [] -> ()
   | ret :: _ ->
@@ -543,7 +597,7 @@ let get_zenon_verfp () = if !zenon_version = None then check_zenon_ver ();
 let isabelle_version = ref None
 
 let check_isabelle_ver () =
-  (try ignore (get_exec isabelle) with Failure _ -> ());
+  (try ignore (get_exec Format.err_formatter isabelle) with Failure _ -> ());
   match get_version isabelle with
   | [] -> ()
   | ret :: _ ->

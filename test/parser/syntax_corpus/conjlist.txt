@@ -10,8 +10,8 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj) (nat_number))
       (conj_item (bullet_conj) (nat_number))
@@ -30,8 +30,8 @@ op == /\ 1
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj) (nat_number))
       (conj_item (bullet_conj) (nat_number))
@@ -51,8 +51,8 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj) (nat_number))
       (conj_item (bullet_conj) (nat_number))
@@ -72,12 +72,12 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (bound_infix_op
-      (conj_list (conj_item (bullet_conj) (nat_number)))
-      (land)
-      (nat_number)
+      lhs: (conj_list (conj_item (bullet_conj) (nat_number)))
+      symbol: (land)
+      rhs: (nat_number)
     )
   )
 (double_line)))
@@ -94,15 +94,15 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item
         (bullet_conj)
         (bound_infix_op
-          (nat_number)
-          (land)
-          (nat_number)
+          lhs: (nat_number)
+          symbol: (land)
+          rhs: (nat_number)
         )
       )
     )
@@ -122,8 +122,8 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj) (nat_number))
       (conj_item (bullet_conj) (nat_number))
@@ -145,8 +145,8 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj) (nat_number))
       (conj_item (bullet_conj) (nat_number))
@@ -167,8 +167,8 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item
         (bullet_conj)
@@ -195,8 +195,8 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj)
         (conj_list
@@ -214,23 +214,28 @@ Infix Op Conjlist
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
  /\ 1
   + 2 
  /\ 3
 ====
+---- MODULE TestPrelude ----
+CONSTANT _ + _
+====
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item
         (bullet_conj)
         (bound_infix_op
-          (nat_number)
-          (plus)
-          (nat_number)
+          lhs: (nat_number)
+          symbol: (plus)
+          rhs: (nat_number)
         )
       )
       (conj_item (bullet_conj) (nat_number))
@@ -243,23 +248,28 @@ Division Infix Op Conjlist
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
  /\ 1
   / 2 
  /\ 3
 ====
+---- MODULE TestPrelude ----
+CONSTANT _ / _
+====
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item
         (bullet_conj)
         (bound_infix_op
-          (nat_number)
-          (slash)
-          (nat_number)
+          lhs: (nat_number)
+          symbol: (slash)
+          rhs: (nat_number)
         )
       )
       (conj_item (bullet_conj) (nat_number))
@@ -272,24 +282,29 @@ Infix Op Terminated Conjlist
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
  /\ 1
  + 2 
  /\ 3
 ====
+---- MODULE TestPrelude ----
+CONSTANT _ + _
+====
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
+  (operator_definition name: (identifier) (def_eq) definition:
     (bound_infix_op
-      (bound_infix_op
-        (conj_list (conj_item (bullet_conj) (nat_number)))
-        (plus)
-        (nat_number)
+      lhs: (bound_infix_op
+        lhs: (conj_list (conj_item (bullet_conj) (nat_number)))
+        symbol: (plus)
+        rhs: (nat_number)
       )
-      (land)
-      (nat_number)
+      symbol: (land)
+      rhs: (nat_number)
     )
   )
 (double_line)))
@@ -299,24 +314,29 @@ Division Infix Op Terminated Conjlist
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
  /\ 1
  / 2 
  /\ 3
 ====
+---- MODULE TestPrelude ----
+CONSTANT _ / _
+====
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
+  (operator_definition name: (identifier) (def_eq) definition:
     (bound_infix_op
-      (bound_infix_op
-        (conj_list (conj_item (bullet_conj) (nat_number)))
-        (slash)
-        (nat_number)
+      lhs: (bound_infix_op
+        lhs: (conj_list (conj_item (bullet_conj) (nat_number)))
+        symbol: (slash)
+        rhs: (nat_number)
       )
-      (land)
-      (nat_number)
+      symbol: (land)
+      rhs: (nat_number)
     )
   )
 (double_line)))
@@ -331,12 +351,12 @@ op == 1 /\ 2
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (bound_infix_op
-      (nat_number)
-      (land)
-      (nat_number)
+      lhs: (nat_number)
+      symbol: (land)
+      rhs: (nat_number)
     )
   )
 (double_line)))
@@ -353,8 +373,8 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj) (parentheses (nat_number)))
       (conj_item (bullet_conj) (parentheses (nat_number)))
@@ -375,14 +395,14 @@ op == (
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (bound_infix_op
-      (parentheses
+      lhs: (parentheses
         (conj_list (conj_item (bullet_conj) (nat_number)))
       )
-      (land)
-      (nat_number)
+      symbol: (land)
+      rhs: (nat_number)
     )
   )
 (double_line)))
@@ -402,10 +422,10 @@ op == (
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (bound_infix_op
-      (parentheses
+      lhs: (parentheses
         (conj_list
           (conj_item (bullet_conj) (nat_number))
           (conj_item
@@ -417,8 +437,8 @@ op == (
           )
         )
       )
-      (land)
-      (nat_number)
+      symbol: (land)
+      rhs: (nat_number)
     )
   )
 (double_line)))
@@ -428,6 +448,7 @@ Double-Nested Conjlist Terminated by Parentheses
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
   /\ 1
   /\  /\ 2 + (
@@ -437,11 +458,15 @@ op ==
       /\ 5
   /\ 6
 ====
+---- MODULE TestPrelude ----
+CONSTANT _ + _
+====
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj) (nat_number))
       (conj_item
@@ -450,9 +475,9 @@ op ==
           (conj_item
             (bullet_conj)
             (bound_infix_op
-              (nat_number)
-              (plus)
-              (parentheses
+              lhs: (nat_number)
+              symbol: (plus)
+              rhs: (parentheses
                 (conj_list
                   (conj_item (bullet_conj) (nat_number))
                   (conj_item (bullet_conj) (nat_number))
@@ -479,8 +504,8 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj) (nat_number))
       (conj_item (bullet_conj) (nat_number))
@@ -493,10 +518,12 @@ Keyword-Unit-Terminated Conjlist
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
+
 op1 ==
   /\ 1
   /\ 2
-      ASSUME x
+      ASSUME A
 
 op2 ==
   /\ 3
@@ -519,45 +546,51 @@ op5 ==
   /\ 10
       VARIABLES x, y
 ====
+---- MODULE TestPrelude ----
+A == TRUE
+====
+---- MODULE ModuleName ----
+====
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj) (nat_number))
       (conj_item (bullet_conj) (nat_number))
     )
   )
   (assumption (identifier_ref))
-  (operator_definition (identifier) (def_eq)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj) (nat_number))
       (conj_item (bullet_conj) (nat_number))
     )
   )
   (local_definition (instance (identifier_ref)))
-  (operator_definition (identifier) (def_eq)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj) (nat_number))
       (conj_item (bullet_conj) (nat_number))
     )
   )
-  (single_line)
-  (operator_definition (identifier) (def_eq)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj) (nat_number))
       (conj_item (bullet_conj) (nat_number))
     )
   )
-  (module (header_line) (identifier) (header_line) (double_line))
-  (operator_definition (identifier) (def_eq)
+  (module (header_line) name: (identifier) (header_line) (double_line))
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj) (nat_number))
       (conj_item (bullet_conj) (nat_number))
     )
   )
-  (variable_declaration (identifier) (identifier))
+  (variable_declaration (identifier))
+  (variable_declaration (identifier))
 (double_line)))
 
 =============|||
@@ -572,8 +605,8 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj) (nat_number))
       (conj_item (bullet_conj) (tuple_literal (langle_bracket) (rangle_bracket)))
@@ -593,8 +626,8 @@ op ==
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (conj_list
       (conj_item (bullet_conj) (nat_number))
       (conj_item (bullet_conj) (finite_set_literal))

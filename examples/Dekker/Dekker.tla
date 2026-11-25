@@ -207,8 +207,23 @@ PROOF
         BY <2>1, <2>2, PTL DEF Sys
 <1>2. ASSUME IndInv
       PROVE Enabledness
-    BY <1>2, ExpandENABLED DEF IndInv, Enabledness,
-        Next, Next1, Next2, vars
+    <2>1. CASE pc1 # 5 \/ turn # 2
+      <3>1. Next1 /\ UNCHANGED <<pc2, c2>> => <<Next>>_vars
+        BY <2>1 DEF Next, Next1, Next2, vars
+      <3>2. (ENABLED (Next1 /\ UNCHANGED <<pc2, c2>>)) => (ENABLED <<Next>>_vars)
+        OMITTED \* BY <3>1, ENABLEDaxioms
+      <3>3. ENABLED (Next1 /\ UNCHANGED <<pc2, c2>>)
+        BY <1>2, ExpandENABLED DEF Next1, IndInv
+      <3>. QED  BY <3>2, <3>3 DEF Enabledness
+    <2>2. CASE pc2 # 5 \/ turn # 1
+      <3>1. Next2 /\ UNCHANGED <<pc1, c1>> => <<Next>>_vars
+        BY <2>2 DEF Next, Next1, Next2, vars
+      <3>2. (ENABLED (Next2 /\ UNCHANGED <<pc1, c1>>)) => (ENABLED <<Next>>_vars)
+        OMITTED \* BY <3>1, ENABLEDaxioms
+      <3>3. ENABLED (Next2 /\ UNCHANGED <<pc1, c1>>)
+        BY <1>2, ExpandENABLED DEF Next2, IndInv
+      <3>. QED  BY <3>2, <3>3 DEF Enabledness
+    <2>. QED  BY <2>1, <2>2
 <1> QED
     BY <1>1, <1>2, PTL
 

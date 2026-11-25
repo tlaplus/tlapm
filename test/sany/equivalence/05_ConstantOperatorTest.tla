@@ -1,0 +1,4 @@
+---- MODULE 05_ConstantOperatorTest ----
+CONSTANT F(_, _)
+op == F(1, 2)
+====

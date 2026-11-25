@@ -19,4 +19,6 @@ val prover_add_obl : t -> int -> Toolbox.Obligation.t -> t option
 val prover_add_notif : t -> int -> Toolbox.tlapm_notif -> t option
 val prover_terminated : t -> int -> t option
 val is_obl_final : t -> int -> int -> bool option
-val on_parsed_mule : t -> (Tlapm_lib.Module.T.mule -> 'a option) -> 'a option
+
+val on_parsed_mule :
+  t -> (Tlapm_lib.Module.T.mule -> Proof_step.t -> 'a option) -> 'a option

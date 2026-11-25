@@ -1,3 +1,5 @@
+(* This material is now obsolete but included because it may still become relevant. *)
+
 header {* Normalization rules used in the SMT backend  *}
 
 theory SMT

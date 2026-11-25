@@ -1,0 +1,10 @@
+---- MODULE 12_BasicCaseStepProofTest ----
+CONSTANT P
+THEOREM P \/ ~P 
+PROOF
+<1>1 CASE P
+  PROOF OBVIOUS
+<1> CASE ~P
+  PROOF OBVIOUS
+<1> QED
+====

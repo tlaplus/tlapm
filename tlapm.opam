@@ -30,19 +30,27 @@ depends: [
   "ocaml"
   "dune-site"
   "dune-build-info"
+  "sexp_diff"
   "sexplib"
   "cmdliner"
   "camlzip"
+  "base32"
   "re2"
   "ppx_inline_test"
   "ppx_assert"
   "ppx_deriving"
-  "ounit2"
+  "xmlm"
+  "ounit2" {with-test}
+  "alcotest" {with-test}
+  "ocolor" {with-test}
+  "patdiff" {with-test}
   "odoc" {with-doc}
 ]
-depopts: ["lsp" "eio_main"]
-dev-repo: "git+https://github.com/tlaplus/tlapm.git"
-build: [ # This is to override the build step, add the invocation of `Makefile.post-install`.
+depopts: [
+  "lsp" {= "1.27.0"}
+  "eio_main"
+]
+build: [
   ["dune" "subst"] {dev}
   [
     "dune"
@@ -57,5 +65,5 @@ build: [ # This is to override the build step, add the invocation of `Makefile.p
     "@doc" {with-doc}
   ]
   ["dune" "install" "-p" name "--create-install-files" name]
-  ["%{make}%" "-C" "%{lib}%/tlapm" "-f" "Makefile.post-install"]
 ]
+dev-repo: "git+https://github.com/tlaplus/tlapm.git"

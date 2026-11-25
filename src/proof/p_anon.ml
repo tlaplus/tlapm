@@ -221,7 +221,21 @@ class anon = object (self : 'self)
                 let opaque = Opaque v @@ dw in
                 let opaque = self#expr scx opaque in
                 match opaque.core with
-                | Ix n -> [Dx n @@ dw]
+                | Ix n ->
+                    (* The name is in scope, but a DEF clause may only cite a
+                     * definition. If it resolves to a declaration
+                     * (CONSTANT/VARIABLE/NEW), reject it here with a located
+                     * error instead of crashing later in `Proof.Gen.set_defn`
+                     * (see issue #280). *)
+                    begin match Deque.nth ~backwards:true (snd scx) (n - 1) with
+                    | Some {core = Defn _} -> [Dx n @@ dw]
+                    | _ ->
+                        Errors.err ~at:dw
+                            "%S is not a definition and cannot be used in a \
+                            DEF clause."
+                            v;
+                        []
+                    end
                 | _ ->
                     Errors.warn ~at:dw
                         "Ignored unexpandable \

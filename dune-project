@@ -37,20 +37,26 @@
   "Jean-Baptiste Tristan"
   "Hernan Vanzetto")
  (sites
-  (lib backends) ; will contain all the provers, approx lib/tlapm/backends/.
+  (libexec backends) ; will contain all the provers, approx lib/tlapm/backends/.
   (lib stdlib))  ; TLA files composing the StdLib.
  (depends
   ocaml
   dune-site
   dune-build-info
+  sexp_diff
   sexplib
   cmdliner
   camlzip
+  base32
   re2
   ppx_inline_test
   ppx_assert
   ppx_deriving
-  ounit2)
+  xmlm
+  (ounit2 :with-test)
+  (alcotest :with-test)
+  (ocolor :with-test)
+  (patdiff :with-test))
  (depopts
-  lsp         ; https://github.com/ocaml/ocaml-lsp
+  (lsp (= 1.27.0)) ; https://github.com/ocaml/ocaml-lsp
   eio_main))  ; https://github.com/ocaml-multicore/eio, only available on OCaml version >= 5.

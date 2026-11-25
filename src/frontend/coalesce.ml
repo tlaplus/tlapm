@@ -26,6 +26,12 @@ let shorter_string_to_hex s =
     String.sub (string_to_hex s) 0 5
 
 
+let string_to_base32 s =
+    (* Unpadded RFC 4648 base32 preserves all 128 MD5 bits in 26 characters.
+       With the "h" prefix, the name fits LS4's 31-character limit. *)
+    Base32.encode_string ~pad:false (Digest.string s)
+
+
 (* to fix it to use Ix instead of variable names *)
 let crypthash scx cx e =
     let s =
@@ -35,7 +41,7 @@ let crypthash scx cx e =
         Format.pp_print_flush fmt () ;
         Buffer.contents b
     in
-    "h" ^ shorter_string_to_hex s
+    "h" ^ string_to_base32 s
 
 (* for using it with PLTL it is enough to have a trivial coalescing returning a
  * unique constant depending on all symbols in it, TODO make a smarter (according
@@ -197,7 +203,12 @@ let vars_visitor = object (self: 'self)
     val mutable vars = ref IxSet.empty
 
     method compute cx e =
-        let vars = ref IxSet.empty in
+        (* Empty the instance variable `vars` of `vars_visitor`, declared
+        above, so that it collects only what the method `expr` adds to it
+        while traversing `e`.  The values it holds come from the previous
+        call of `compute`, which already returned them as a list, so they
+        can be discarded. *)
+        vars := IxSet.empty;
         let max_bound_idx = 0 in
         self#expr (max_bound_idx, cx) e;
         IxSet.elements !vars
@@ -363,7 +374,8 @@ let coalesce_modal_visitor = object (self)
                 | _ ->
                     let expr = noprops (Internal TRUE) in
                     let op_ = (Operator (coalesced_op, expr)) @@ index in
-                    coalesce_operator cx op_ args
+                    Apply (coalesce_operator cx op_ args,
+                        List.map (self#expr scx) args) @@ e
                 end
             | FreshTuply _
             | Fact _ ->

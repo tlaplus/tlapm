@@ -9,7 +9,7 @@ VARIABLES x, y, z
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
+(source_file (module (header_line) name: (identifier) (header_line)
   (variable_declaration (identifier) (identifier) (identifier))
   (variable_declaration (identifier) (identifier) (identifier))
 (double_line)))
@@ -25,13 +25,13 @@ CONSTANTS f(_, _), _+_, -._, _^+
 
 -------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
+(source_file (module (header_line) name: (identifier) (header_line)
   (constant_declaration (identifier) (identifier) (identifier))
   (constant_declaration
-    (operator_declaration (identifier) (placeholder) (placeholder))
-    (operator_declaration (placeholder) (infix_op_symbol (plus)) (placeholder))
-    (operator_declaration (prefix_op_symbol (negative)) (placeholder))
-    (operator_declaration (placeholder) (postfix_op_symbol (sup_plus)))
+    (operator_declaration name: (identifier) parameter: (placeholder) parameter: (placeholder))
+    (operator_declaration (placeholder) name: (infix_op_symbol (plus)) (placeholder))
+    (operator_declaration name: (prefix_op_symbol (negative)) (placeholder))
+    (operator_declaration (placeholder) name: (postfix_op_symbol (sup_plus)))
   )
 (double_line)))
 
@@ -40,12 +40,17 @@ Basic Operator Definition
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == f(10)
+====
+---- MODULE TestPrelude ----
+f(x) == 0
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (bound_op name: (identifier_ref) parameter: (nat_number))
   )
@@ -63,10 +68,13 @@ INSTANCE M WITH
           \/ 4,
   D <- \/ 5
 ====
+---- MODULE M ----
+VARIABLES A, B, C, D
+====
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
+(source_file (module (header_line) name: (identifier) (header_line)
   (instance (identifier_ref)
     (substitution (identifier_ref) (gets)
       (conj_list (conj_item (bullet_conj) (nat_number)))
@@ -93,21 +101,27 @@ INSTANCE With Operator Substitutions
 ===============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 INSTANCE M WITH
   A <- a,
-  SUBSET <- b,
-  * <- c,
-  ' <- d
+  * <- c
+====
+---- MODULE M ----
+VARIABLE A
+CONSTANT _ * _
+====
+---- MODULE TestPrelude ----
+a == 0
+c(x, y) == << x, y >>
 ====
 
 -------------------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (instance (identifier_ref)
     (substitution (identifier_ref) (gets) (identifier_ref))
-    (substitution (prefix_op_symbol (powerset)) (gets) (identifier_ref))
     (substitution (infix_op_symbol (mul)) (gets) (identifier_ref))
-    (substitution (postfix_op_symbol (prime)) (gets) (identifier_ref))
   )
 (double_line)))
 
@@ -116,15 +130,23 @@ LOCAL Declarations
 =============|||
 
 ---- MODULE Test ----
-LOCAL op == x
+EXTENDS TestPrelude
+LOCAL op == y
 LOCAL f[x \in Nat] == x
 LOCAL INSTANCE M
 LOCAL M == INSTANCE M
+====
+---- MODULE M ----
+====
+---- MODULE TestPrelude ----
+Nat == {}
+y == 0
 ====
 
 -------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (local_definition (operator_definition name: (identifier) (def_eq) definition: (identifier_ref)))
   (local_definition (function_definition name: (identifier) (quantifier_bound intro: (identifier) (set_in) set: (nat_number_set)) (def_eq) definition: (identifier_ref)))
   (local_definition (instance (identifier_ref)))

@@ -2435,6 +2435,9 @@ let inttimes_typing () =
     ] %% []
   ) %% []
 
+(* \A x, y : x \in Int /\ y \in Int /\ 0 <= y /\ (x # 0 \/ 1 <= y)
+ *            => x ^ y \in Int
+ *)
 let intexp_typing ~disable_arithmetic =
   quant Forall
   [ "x" ; "y" ] [ t_idv ; t_idv ]
@@ -2454,6 +2457,21 @@ let intexp_typing ~disable_arithmetic =
         [ Ix 1 %% []
         ; apps T.IntSet [] %% []
         ] %% []
+      ; begin
+        (* 0 <= y *)
+        if disable_arithmetic then
+          apps T.IntLteq
+          [ apps (T.IntLit 0) [] %% []
+          ; Ix 1 %% []
+          ] %% []
+        else
+          apps T.IntLteq
+          [ apps (T.Cast t_int)
+            [ apps (T.TIntLit 0) [] %% []
+            ] %% []
+          ; Ix 1 %% []
+          ] %% []
+        end
       ; begin
         if disable_arithmetic then
           appb B.Disj
@@ -2512,7 +2530,7 @@ let intquotient_typing () =
         [ Ix 1 %% []
         ; apps T.NatSet [] %% []
         ] %% []
-      ; apps T.IntLteq
+      ; appb B.Neq
         [ apps (T.IntLit 0) [] %% []
         ; Ix 1 %% []
         ] %% []
@@ -2522,7 +2540,7 @@ let intquotient_typing () =
         [ Ix 2 %% []
         ; Ix 1 %% []
         ] %% []
-      ; apps T.NatSet [] %% []
+      ; apps T.IntSet [] %% []
       ] %% []
     ] %% []
   ) %% []
@@ -2546,7 +2564,7 @@ let intremainder_typing () =
         [ Ix 1 %% []
         ; apps T.NatSet [] %% []
         ] %% []
-      ; apps T.IntLteq
+      ; appb B.Neq
         [ apps (T.IntLit 0) [] %% []
         ; Ix 1 %% []
         ] %% []
@@ -4295,15 +4313,9 @@ let seqsubseq_typing ~disable_arithmetic =
     ] %% []
   ] ]
   ( appb B.Implies
-    [ List (And,
-      [ apps T.Mem
-        [ Ix 3 %% []
-        ; apps T.SeqSeq
-          [ Ix 4 %% []
-          ] %% []
-        ] %% []
-      ] @
-      (if disable_arithmetic then
+    [ List (Or,
+      [ if disable_arithmetic then
+        List (And,
         [ apps T.Mem
           [ Ix 2 %% []
           ; apps T.IntSet [] %% []
@@ -4312,34 +4324,66 @@ let seqsubseq_typing ~disable_arithmetic =
           [ Ix 1 %% []
           ; apps T.IntSet [] %% []
           ] %% []
-        ]
-      else []) @
-      [ if disable_arithmetic then
-        apps T.IntLteq
-        [ apps (T.IntLit 1) [] %% []
-        ; Ix 2 %% []
-        ] %% []
-      else
-        apps T.TIntLteq
-        [ apps (T.TIntLit 1) [] %% []
-        ; Ix 2 %% []
-        ] %% []
-      ; if disable_arithmetic then
-        apps T.IntLteq
-        [ Ix 1 %% []
-        ; apps T.SeqLen
-          [ Ix 3 %% []
+        ; apps T.IntLteq
+          [ Ix 1 %% []
+          ; Ix 2 %% []
           ] %% []
-        ] %% []
+        ; appb ~tys:[ t_idv ] B.Neq
+          [ Ix 1 %% []
+          ; Ix 2 %% []
+          ] %% []
+        ]) %% []
       else
-        apps T.TIntLteq
+        apps T.TIntLt
         [ Ix 1 %% []
-        ; apps (T.Proj t_int)
-          [ apps T.SeqLen
+        ; Ix 2 %% []
+        ] %% []
+      ; List (And,
+        [ apps T.Mem
+          [ Ix 3 %% []
+          ; apps T.SeqSeq
+            [ Ix 4 %% []
+            ] %% []
+          ] %% []
+        ] @
+        (if disable_arithmetic then
+          [ apps T.Mem
+            [ Ix 2 %% []
+            ; apps T.IntSet [] %% []
+            ] %% []
+          ; apps T.Mem
+            [ Ix 1 %% []
+            ; apps T.IntSet [] %% []
+            ] %% []
+          ]
+        else []) @
+        [ if disable_arithmetic then
+          apps T.IntLteq
+          [ apps (T.IntLit 1) [] %% []
+          ; Ix 2 %% []
+          ] %% []
+        else
+          apps T.TIntLteq
+          [ apps (T.TIntLit 1) [] %% []
+          ; Ix 2 %% []
+          ] %% []
+        ; if disable_arithmetic then
+          apps T.IntLteq
+          [ Ix 1 %% []
+          ; apps T.SeqLen
             [ Ix 3 %% []
             ] %% []
           ] %% []
-        ] %% []
+        else
+          apps T.TIntLteq
+          [ Ix 1 %% []
+          ; apps (T.Proj t_int)
+            [ apps T.SeqLen
+              [ Ix 3 %% []
+              ] %% []
+            ] %% []
+          ] %% []
+        ]) %% []
       ]) %% []
     ; apps T.Mem
       [ apps T.SeqSubSeq

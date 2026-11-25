@@ -8,10 +8,6 @@
 (* subset of the positive integers.  An element e belongs to bag B iff e  *)
 (* is in the domain of B, in which case bag B contains B[e] copies of e.  *)
 (**************************************************************************)
-EXTENDS TLC, TLAPS,
-        FiniteSetTheorems,
-        SequenceTheorems
-
 LOCAL INSTANCE Naturals
 
 IsABag(B) ==

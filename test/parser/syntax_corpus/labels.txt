@@ -19,12 +19,17 @@ Label With Parameters
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == \A a, b \in Nat : lbl(a, b) :: P(a, b)
+====
+---- MODULE TestPrelude ----
+CONSTANTS Nat, P(_, _)
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (bounded_quantification
       quantifier: (forall)
@@ -43,12 +48,18 @@ Label not interfering with precedence
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == a + lab :: b * c
+====
+---- MODULE TestPrelude ----
+VARIABLES a, b, c
+CONSTANTS _ + _, _ * _
 ====
 
 -------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq) definition:
     (bound_infix_op lhs: (identifier_ref) symbol: (plus) rhs:
       (label name: (identifier) (label_as) expression:
@@ -64,7 +75,12 @@ Label interfering with precedence
 =============|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == a * lab :: b + c
+====
+---- MODULE TestPrelude ----
+VARIABLES a, b, c
+CONSTANTS _ + _, _ * _
 ====
 
 -------------|||

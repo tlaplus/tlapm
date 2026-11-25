@@ -112,10 +112,10 @@ THEOREM (ENABLED (c5 /\ c6 /\ c9)) = /\ ENABLED /\ y'
 BY ENABLEDrewrites DEF c5, c6, c9
 
 
-THEOREM (ENABLED (c9 /\ c10)) = /\ ENABLED x'
-                                /\ ENABLED y'
-                                /\ ENABLED z'
-                                /\ ENABLED w'
+THEOREM (ENABLED (c9 /\ c10)) = /\ ENABLED (x')
+                                /\ ENABLED (y')
+                                /\ ENABLED (z')
+                                /\ ENABLED (w')
 BY ENABLEDrewrites DEF c9, c10
 
 --------------------------------------------------------------------------------
@@ -138,7 +138,7 @@ BY ENABLEDrewrites
 
 --------------------------------------------------------------------------------
 
-THEOREM (ENABLED (ENABLED (B /\ C))') =
+THEOREM (ENABLED ((ENABLED (B /\ C))')) =
     ENABLED ((/\ ENABLED C
               /\ ENABLED B)')
 BY ENABLEDrewrites DEF B, C

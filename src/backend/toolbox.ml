@@ -27,6 +27,7 @@ let toolbox_print ob ?(temp=false) status prover meth timeout already print_ob
       match ob.kind with
       | Ob_error msg when print_ob ->
           Some (warnings ^ msg)
+      | Ob_omitted _ -> None
       | _ when print_ob ->
           let buf = Buffer.create 100 in
           let ff = Format.formatter_of_buffer buf in
@@ -96,24 +97,29 @@ let print_new_res ob st warns time_used =
 
 
 (**** duplicates prep.ml *****)
+let app_sub f s x = match s with None -> x | Some s -> f s x
+let scons_sub e s = Some (scons e (Option.default (shift 0) s))
+
+(* Unlike [Prep.expand_defs], this does not expand backend pragmas
+   ([Bpragma]).  Presumably deliberate: this copy only prepares obligations
+   for display, where inlining a pragma would replace a name such as [SMT]
+   by its dummy body [TRUE]. *)
 let expand_defs ?(what = fun _ -> true) ob =
-  let prefix = ref [] in
-  let emit mu = prefix := mu :: (!prefix) in
-  let rec visit sq =
-    match Deque.front sq.context with
-    | None -> sq
-    | Some (h, hs) -> begin
-        match h.core with
+  let sq = ob.obl.core in
+  let rec fold s kept cx = match Deque.front cx with
+    | None -> (s, kept)
+    | Some (h, hs) ->
+        let h = app_sub app_hyp s h in
+        begin match h.core with
           | Defn ({core = Operator (_, e)}, wd, Visible, _) when what wd ->
-              visit (app_sequent (scons e (shift 0)) { sq with context = hs })
+              fold (scons_sub e s) kept hs
           | _ ->
-              emit h ;
-              let sq = visit { sq with context = hs } in
-                { sq with context = Deque.cons h sq.context }
-      end
+              fold (Option.map bump s) (Deque.snoc kept h) hs
+        end
   in
-  let obl = visit ob.obl.core in
-     { ob with obl = { ob.obl with core = obl } }
+  let (s, context) = fold None Deque.empty sq.context in
+  let active = app_sub app_expr s sq.active in
+  { ob with obl = { ob.obl with core = { context ; active } } }
 
 
 

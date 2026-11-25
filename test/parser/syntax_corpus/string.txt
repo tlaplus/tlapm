@@ -8,8 +8,8 @@ op == "Hello, world!"
 
 ------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq) (string))
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition: (string))
 (double_line)))
 
 ==================|||
@@ -22,8 +22,8 @@ op == "The cow goes \"moo\", the chicken goes \"cluck cluck\""
 
 ------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (string
       (escape_char)
       (escape_char)
@@ -43,8 +43,8 @@ op == <<"/\\", "\\/">>
 
 ------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq)
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition:
     (tuple_literal (langle_bracket)
       (string (escape_char))
       (string (escape_char))
@@ -57,22 +57,14 @@ String with comment start
 ==================|||
 
 ---- MODULE Test ----
-op == "\*"
+op == "\\*"
 ====
 
 ------------------|||
 
-(source_file
-  (module
-    (header_line)
-    (identifier)
-    (header_line)
-    (operator_definition
-      (identifier)
-      (def_eq)
-      (string
-        (escape_char)))
-    (double_line)))
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition: (string (escape_char)))
+(double_line)))
 
 ==================|||
 String with block comment start
@@ -84,16 +76,9 @@ op == "(*"
 
 ------------------|||
 
-(source_file
-  (module
-    (header_line)
-    (identifier)
-    (header_line)
-    (operator_definition
-      (identifier)
-      (def_eq)
-      (string))
-    (double_line)))
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition: (string))
+(double_line)))
 
 ==================|||
 String Set
@@ -114,7 +99,7 @@ String with supported escape chars
 ==================|||
 
 ---- MODULE Test ----
-op == "\\ \n \r \f \t \""
+op == "\\ \n \r \t \""
 ====
 
 ------------------|||
@@ -122,7 +107,6 @@ op == "\\ \n \r \f \t \""
 (source_file (module (header_line) name: (identifier) (header_line)
   (operator_definition name: (identifier) (def_eq) definition:
     (string
-      (escape_char)
       (escape_char)
       (escape_char)
       (escape_char)
@@ -142,7 +126,7 @@ op == "foo ` bar"
 
 ------------------|||
 
-(source_file (module (header_line) (identifier) (header_line)
-  (operator_definition (identifier) (def_eq) (string))
+(source_file (module (header_line) name: (identifier) (header_line)
+  (operator_definition name: (identifier) (def_eq) definition: (string))
 (double_line)))
 

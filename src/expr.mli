@@ -16,7 +16,7 @@ module T: sig
 
   type quantifier = Forall | Exists
 
-  type modal_op = Box | Dia
+  type modal_op = Box | Dia [@@deriving show]
 
   type fairness_op  = Weak | Strong
 

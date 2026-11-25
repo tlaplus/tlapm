@@ -16,6 +16,7 @@ module type Callbacks = sig
   val prove_step : t -> LspT.DocumentUri.t -> int -> LspT.Range.t -> t
   val cancel : t -> LspT.ProgressToken.t -> t
   val use_paths : t -> string list -> t
+  val use_config : [ `decomposition_disj_cases of bool ] -> t -> t
 
   val suggest_proof_range :
     t -> LspT.DocumentUri.t -> LspT.Range.t -> t * (int * LspT.Range.t) option
@@ -29,6 +30,7 @@ module type Callbacks = sig
     t -> LspT.DocumentUri.t -> t * (int * LspT.Diagnostic.t list)
 
   val diagnostic_source : string
+  val config : t -> Config.t
 end
 
 module Make (CB : Callbacks) : sig

@@ -20,7 +20,7 @@ case as similar to [And].
 *)
 type bullet = And | Or | Refs
 type quantifier = Forall | Exists
-type modal_op = Box | Dia
+type modal_op = Box | Dia [@@deriving show]
 type fairness_op  = Weak | Strong
 
 (** Type representing arguments to

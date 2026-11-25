@@ -7,6 +7,9 @@ val toolbox: bool ref
 val toolbox_vsn: int ref
 val use_stdin: bool ref
 val prefer_stdlib: bool ref
+type parser = | Tlapm | Sany
+val parser_backend: parser ref
+val module_jar_paths : string list ref
 
 (* expr/fmt.ml *)
 val debugging: string -> bool
@@ -27,7 +30,6 @@ val solve_cmd: exec -> string -> string
 val zenon: exec
 val isabelle_success_string: string
 val isabelle: exec
-val set_fast_isabelle: unit -> unit
 val smt: exec
 val cvc4: exec
 val yices: exec
@@ -66,7 +68,7 @@ val safefp: bool ref
 val fp_deb: bool ref
 
 (* util/util.ml *)
-val configuration: bool -> bool -> string list
+val configuration: Format.formatter -> bool -> bool -> string list
 
 (* module/save.ml *)
 val stdlib_search_paths : string list
@@ -89,6 +91,10 @@ val stdlib_path: string option
 val cleanfp: bool ref
 val fpf_in: string option ref
 val summary: bool ref
+val strict: bool ref
+val exit_status: int ref
+val note_strict_failure: int -> unit
+val has_explicit_target: unit -> bool
 val stats: bool ref
 val add_search_dir: string -> unit
 val set_search_path: string list -> unit
@@ -97,7 +103,7 @@ val suppress_all: bool ref
 val set_smt_logic: string -> unit
 val set_smt_solver: string -> unit
 val set_tlapm_cache_dir: string -> unit
-val printconfig: bool -> string
+val printconfig: Format.formatter -> bool -> string
 val print_config_toolbox: bool -> string
 val check_zenon_ver: unit -> unit
 val fpf_out: string option ref

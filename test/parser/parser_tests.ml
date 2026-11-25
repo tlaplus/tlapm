@@ -1,93 +1,34 @@
-(** This test runs a battery of TLA+ syntax fragments against TLAPM's syntax
-    parser. In the future it will check the actual parse tree emitted by
-    TLAPM, but for now it just checks whether TLAPM parses without error all
-    the syntax it is expected to parse. Tests sourced from:
+(** This file runs a battery of TLA+ syntax fragments against TLAPM's syntax
+    parser. It then takes the resulting parse tree and translates it into a
+    normalized S-expression form to compare with the associated expected AST.
+    Tests are sourced from the standardized syntax test corpus at:
     https://github.com/tlaplus/rfcs/tree/2a772d9dd11acec5d7dedf30abfab91a49de48b8/language_standard/tests/tlaplus_syntax
 *)
 
+open Tlapm_lib;;
+
 open Syntax_corpus_file_parser;;
-open OUnit2;;
+
+module Errors = Tlapm_lib__Errors
+
+let last_parse_error = ref "<none>"
 
 (** Calls TLAPM's parser with the given input. Catches all exceptions and
     treats them as parse failures.
     @param input The TLA+ fragment to parse.
     @return None if parse failure, syntax tree root if successful.
 *)
-let parse (input : string) : Tlapm_lib__M_t.mule option =
-  try Tlapm_lib.module_of_string input
-  with _ -> None
-
-(** Datatype summarizing a run of all the syntax tests. *)
-type test_run_summary = {
-  total     : int;
-  succeeded : int;
-  failed    : int;
-  skipped   : int;
-  failures  : syntax_test_info list;
-} [@@deriving show]
-
-(** A blank test summary. *)
-let test_summary_init = {
-  total     = 0;
-  succeeded = 0;
-  failed    = 0;
-  skipped   = 0;
-  failures  = [];
-}
-
-(** Runs a given syntax test by determining its type then sending the input
-    into the TLAPM parser. 
-    @param expect_failure Whether this test should fail due to a TLAPM bug.
-    @param test Information about the test itself.
-    @return Whether the test succeeded.
-*)
-let run_test (test : syntax_test) : bool =
-  match test.test with
-  | Error_test input -> parse input |> Option.is_none
-  | Expected_test (input, _) -> parse input |> Option.is_some
-
-(** Controls run of a given syntax test. Checks whether test should be
-    skipped and whether it is expected to fail, then runs test and returns
-    summary.
-    @param expect_failure Whether this test should fail due to a TLAPM bug.
-    @param acc Accumulation variable for test summarization.
-    @param test Information about the test itself.
-    @return Test run summary.
-*)
-let control_test_run
-  (expect_failure : syntax_test -> bool)
-  (acc : test_run_summary)
-  (test : syntax_test)
-    : test_run_summary =
-  let acc = {acc with total = acc.total + 1} in
-  if test.skip then {acc with skipped = acc.skipped + 1} else
-  if run_test test = expect_failure test
-  then {acc with failed = acc.failed + 1; failures = test.info :: acc.failures}
-  else {acc with succeeded = acc.succeeded + 1}
-
-(** Given a path to a directory containing a corpus of syntax tests, get all
-    the tests encoded in those files, filter them as appropriate, then run
-    them all and collect the results.
-    @param path Path to the directory containing the corpus of syntax tests.
-    @param expect_failure Whether a test should fail due to a TLAPM bug.
-    @param filter_predicate Whether to actually execute a test.
-    @return Accumulated summary of all test executions.
-*)
-let run_test_corpus
-  (path : string)
-  (expect_failure : syntax_test -> bool)
-  (filter_pred : syntax_test -> bool)
-    : test_run_summary =
-  path
-  |> get_all_tests_under
-  |> List.filter filter_pred
-  |> List.fold_left (control_test_run expect_failure) test_summary_init
+let parse (input : string) : Module.T.mule option =
+  try module_of_string input
+  with e ->
+    last_parse_error := Printexc.to_string e;
+    None
 
 (** Names of tests that are known to fail due to TLAPM parser bugs.
     @param test Information about the test.
     @return Whether the test is expected to fail.
 *)
-let expect_failure (test : syntax_test) : bool =
+let expect_parse_failure (test : syntax_test) : bool =
   List.mem test.info.name [
 
     (* https://github.com/tlaplus/tlapm/issues/54#issuecomment-2435515180 *)
@@ -142,24 +83,177 @@ let expect_failure (test : syntax_test) : bool =
     "Nonfix Double Exclamation Operator (GH TSTLA #GH97, GH tlaplus/tlaplus #884)";
   ]
 
-(** Filter predicate to control which tests to run.
-    @param name Optional; a test name to filter on.
-    @return Predicate matching all tests or tests with given name.
+(** Names of tests that are unable to match the expected output tree, but not
+    because of a bug; instead, the TLAPM syntax tree doesn't contain the
+    (usually extraneous) necessary information to fully populate the output
+    tree with the expected children.
+    @param test Information about the test.
+    @return Whether the test should skip the tree comparison phase.
 *)
-let should_run ?name test =
-  match name with
-  | Some name -> String.equal test.info.name name
-  | None -> true
+let should_skip_tree_comparison (test : syntax_test) : bool =
+  List.mem test.info.name [
+    (* In TLAPM's ASSUME/PROVE parsing, NEW identifiers with unspecified 
+       level are by default Constant instead of Unknown *)
+    "Assume/Prove With New Identifier of Unspecified Level";
+    
+    (* Jlist terminated by single line comment omitted in TLAPM AST *)
+    "Keyword-Unit-Terminated Conjlist";
+    "Keyword-Unit-Terminated Disjlist";
 
-(** The top-level test; runs all syntax tests, prints summary, then fails
-    with an assertion if any tests failed.
+    (* Unnecessary parentheses omitted in TLAPM AST *)
+    "Nested Parentheses";
+
+    (* TLAPM AST does not distinguish between nonfix and infix ops *)
+    "Lexically-Conflicting Nonfix Operators";
+    "Minus and Negative";
+    "Nonfix Minus (GH tlaplus/tlaplus #GH884)";
+    "Nonfix Prefix Operators";
+    "Nonfix Infix Operators";
+    "Nonfix Postfix Operators";
+
+    (* TLAPM uses function literals for function definitions *)
+    (* See: https://github.com/tlaplus/tlapm/issues/237 *)
+    "Function Literal";
+
+    (* TLAPM makes multi-parameter EXCEPT update statements into tuples *)
+    "Record Update with Multiple Parameters";
+    "Record Update with Tuple and Non-Tuple Parameters";
+    
+    (* TLAPM does not distinguish between <=> and \equiv *)
+    "IFF Disambiguation"
+  ]
+
+(** Names of tests that are expected to fail the tree comparison phase due to
+    bugs in TLAPM's syntax parser.
+    @param test Information about the test.
+    @return Whether the test is expected to fail the tree comparison phase.
 *)
-let () =
-  let test_results =
-    run_test_corpus
-      "syntax_corpus"
-      expect_failure
-      (should_run (*~name:"Proof Containing Jlist"*))
+let expect_tree_comparison_failure (test : syntax_test) : bool =
+  List.mem test.info.name [
+    (* TLAPM appears to simply return an empty set here? *)
+    (* https://github.com/tlaplus/tlapm/issues/235 *)
+    "Mistaken Set Filter Test";
+    "Mistaken Set Filter Tuples Test";
+  ]
+
+open OUnit2;;
+
+(** Check that printing produces parseable text, preserves expression structure
+    and label scope, and produces the same text when printed again.
+
+    1. Parse the input module and extract its expression.
+    2. Print the expression and reparse the text in a fresh module.
+    3. For comparison only, encode labels as ordinary calls: L::A becomes
+       <label:L>(A). Eq.expr otherwise discards labels and misses scope changes.
+    4. Compare the original and reparsed expressions using Eq.expr, which
+       ignores source annotations and syntactic parentheses.
+    5. Print the reparsed expression and check that the text matches step 2. *)
+let check_roundtrip input =
+  let open Property in
+  let open Expr.T in
+  let expression input =
+    match module_of_string input with
+    | Some {core = {Module.T.body = [u]; _}; _} -> (
+        match u.core with
+        | Module.T.Definition ({core = Operator (_, e); _}, _, _, _) -> e
+        | _ -> assert_failure "Expected an operator definition")
+    | _ -> assert_failure ("Could not parse round-trip input: " ^ input)
   in
-  print_endline (show_test_run_summary test_results);
-  assert_equal 0 test_results.failed;
+  (* Make labels visible to Eq.expr, which otherwise ignores all Parens. *)
+  let labels = object (self)
+    inherit [unit] Expr.Visit.map as super
+    method! expr scx e = match e.core with
+      | Parens (body, {core = Nlabel (name, params); _}) ->
+          let params = List.map (fun h -> noprops (String h.core)) params in
+          noprops (Apply (noprops (Opaque ("<label:" ^ name ^ ">")),
+            params @ [self#expr scx body]))
+      | _ -> super#expr scx e
+  end in
+  let comparable = labels#expr ((), Util.Deque.empty) in
+  let print = Format.asprintf "%a"
+    (Expr.Fmt.pp_print_expr (Util.Deque.empty, Ctx.with_try_print_src Ctx.dot)) in
+  let original = expression input in
+  let printed = print original in
+  let reparsed = expression
+    (Printf.sprintf "---- MODULE Roundtrip ----\nResult == %s\n====\n" printed) in
+  assert_bool ("Printing changed the expression: " ^ printed)
+    (Expr.Eq.expr (comparable original) (comparable reparsed));
+  assert_equal ~printer:Fun.id printed (print reparsed)
+
+let run_test test _ =
+  skip_if test.skip "Test has skip attribute";
+  match test.test with
+  | Roundtrip_test input -> check_roundtrip input
+  | Accept_test input ->
+    assert_bool "Expected parse success" (Option.is_some (module_of_string input))
+  | Equiv_test input -> (
+    let open Property in
+    match module_of_string input with
+    | Some {core = {Module.T.body = [actual; reference]; _}; _} ->
+      let body name u = match u.core with
+        | Module.T.Definition ({core = Expr.T.Operator (n, e); _}, _, _, _)
+            when n.core = name -> e
+        | _ -> assert_failure ("Expected definition " ^ name)
+      in
+      assert_bool "Actual and Reference have different ASTs"
+        (Expr.Eq.expr (body "Actual" actual) (body "Reference" reference))
+    | _ -> assert_failure "Expected a module with Actual and Reference definitions"
+  )
+  | Error_test (input, Some expected) -> (
+    Errors.reset ();
+    assert_bool "Expected parse failure" (Option.is_none (module_of_string input));
+    let actual = Option.value ~default:"" !Errors.msg in
+    let matches =
+      try ignore (Str.search_forward (Str.regexp_string expected) actual 0); true
+      with Not_found -> false
+    in
+    assert_bool (Printf.sprintf "Expected diagnostic containing %S, got %S" expected actual) matches
+  )
+  | Error_test (input, None) -> (
+    let b = expect_parse_failure test in
+    match parse input with
+    | None -> assert_bool "Expected error test to fail" (not b)
+    | Some _ -> assert_bool "Expected parse failure" b
+  )
+  | Expected_test (input, expected) -> (
+      match parse input with
+      | None ->
+         let b = expect_parse_failure test in
+         let msg = Printf.sprintf "Expected parse success, got: %S" !last_parse_error in
+         assert_bool msg b
+      | Some tlapm_output ->
+        skip_if (should_skip_tree_comparison test) "Skipping parse tree comparison";
+        let open Tlapm_lib__Sany in
+        let open Sexplib in
+        let actual = module_to_sexp tlapm_output in
+        let b = expect_tree_comparison_failure test in
+        if Sexp.equal expected actual
+        then assert_bool "Expected parse test to fail" (not b)
+        else
+          let open Sexp_diff in
+          let diff = Algo.diff ~original:expected ~updated:actual () in
+          let options = Display.Display_options.(create Layout.Single_column) in
+          let text = Display.display_with_ansi_colors options diff in
+          assert_bool text b
+  )
+
+let rec ounit_of_shape (x : _ Shape.t) =
+  ounit_of_shape_content x.label x.content
+
+and ounit_of_shape_content label : _ Shape.content -> _ = function
+  | Atom t -> label >:: run_test t
+  | List xs -> label >::: List.map ounit_of_shape xs
+
+(** Gathers all syntax test files, parses them, then runs the cases they
+    contain as tests against TLAPM's syntax parser, skipping or expecting
+    failure as appropriate.
+*)
+let tests =
+  Shape.{
+      label = "Standardized syntax test corpus";
+      content = get_all_tests_under "syntax_corpus";
+  }
+  |> ounit_of_shape
+
+(** The OUnit2 test entrypoint. *)
+let () = run_test_tt_main tests

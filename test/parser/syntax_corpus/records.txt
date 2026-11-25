@@ -91,16 +91,21 @@ Set of Records
 ==============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == [
   foo : Nat,
   bar : Int,
   baz : Real
 ]
 ====
+---- MODULE TestPrelude ----
+CONSTANTS Nat, Int, Real
+====
 
 ------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (set_of_records
       (identifier) (nat_number_set)
@@ -115,6 +120,7 @@ Nested Set of Records
 ==============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == [
   foo : [
     foo : Nat,
@@ -125,10 +131,14 @@ op == [
   baz : Real
 ]
 ====
+---- MODULE TestPrelude ----
+CONSTANTS Nat, Int, Real
+====
 
 ------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (set_of_records
       (identifier) (set_of_records
@@ -180,12 +190,17 @@ Record Value
 ==============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op == foo.bar
+====
+---- MODULE TestPrelude ----
+foo == [ bar : 0 ]
 ====
 
 ------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (record_value (identifier_ref) (identifier_ref))
   )
@@ -196,15 +211,20 @@ Record Value Inside Jlist
 ==============================|||
 
 ---- MODULE Test ----
+EXTENDS TestPrelude
 op ==
   /\ 1
   /\ foo.bar 
 
 ====
+---- MODULE TestPrelude ----
+foo == [ bar : 0 ]
+====
 
 ------------------------------|||
 
 (source_file (module (header_line) name: (identifier) (header_line)
+  (extends (identifier_ref))
   (operator_definition name: (identifier) (def_eq)
     definition: (conj_list
       (conj_item (bullet_conj) (nat_number))

@@ -18,16 +18,13 @@ jobs:
               - ubuntu-latest
               - macos-latest
             ocaml-compiler:
-              - '4.14.1'
-              - '5.1.0'
+              - '5.5.2'
         env:
           EXAMPLES_DIR: "tlaplus-examples"
-          SCRIPT_DIR: "tlaplus-examples/.github/scripts"
           DEPS_DIR: "tlaplus-examples/deps"
-          DIST_DIR: "tlatools/org.lamport.tlatools/dist"
         steps:
             - name: Clone repo
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
             - name: Install deps (ubuntu)
               if: matrix.os == 'ubuntu-latest'
               run: |
@@ -36,6 +33,7 @@ jobs:
             - uses: ocaml/setup-ocaml@v3
               with:
                 ocaml-compiler: ${{ matrix.ocaml-compiler }}
+                opam-disable-sandboxing: true
             - uses: actions/cache@v4
               id: cache
               with:
@@ -61,20 +59,6 @@ jobs:
                   fi
                 done
                 exit 1
-            - name: Check library proofs
-              run: |
-                find ./library -type f -iname "*_proofs.tla"            \
-                  \(                                                    \
-                         -not -name "BagsTheorems_proofs.tla"           \
-                    -and -not -name "FiniteSetTheorems_proofs.tla"      \
-                    -and -not -name "FunctionTheorems_proofs.tla"       \
-                    -and -not -name "NaturalsInduction_proofs.tla"      \
-                    -and -not -name "SequenceTheorems_proofs.tla"       \
-                    -and -not -name "SequencesExtTheorems_proofs.tla"   \
-                    -and -not -name "WellFoundedInduction_proofs.tla"   \
-                  \)                                                    \
-                  -print0 | xargs --null --max-args=1 --no-run-if-empty \
-                    ./_build/tlapm/bin/tlapm --cleanfp
             - name: Run tests
               run: |
                 eval $(opam env)
@@ -83,6 +67,23 @@ jobs:
                 TEST_RESULT=$?
                 cat _build/default/test/tests.log
                 exit $TEST_RESULT
+            - name: Soundness test report
+              if: ${{ !cancelled() && hashFiles('_build/default/test/test_reports/tmp/junit_soundness_tests.xml') != '' }}
+              uses: dorny/test-reporter@d1b5dff021aa968b288b02285a8bf47471c5928a # v3.2.0
+              with:
+                name: Soundness tests (${{ matrix.os }}, OCaml ${{ matrix.ocaml-compiler }})
+                path: _build/default/test/test_reports/tmp/junit_soundness_tests.xml
+                reporter: java-junit
+                use-actions-summary: true
+                # The "Run tests" step already fails the job. This step only renders the report.
+                fail-on-error: false
+            - name: Upload soundness test report
+              if: ${{ !cancelled() && hashFiles('_build/default/test/test_reports/tmp/junit_soundness_tests.xml') != '' }}
+              uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+              with:
+                name: soundness-junit-${{ matrix.os }}-ocaml-${{ matrix.ocaml-compiler }}
+                path: _build/default/test/test_reports/tmp/junit_soundness_tests.xml
+                if-no-files-found: ignore
             - name: show logs for each test file
               if: failure()
               run: |
@@ -90,15 +91,24 @@ jobs:
                     -name '*.err' -o \
                     -name '*.out' \
                     -exec cat '{}' \;
+            - name: Check library proofs
+              run: |
+                find ./library -type f -iname "*_proofs.tla"  \
+                -print0 | xargs --null --max-args=1           \
+                ./_build/tlapm/bin/tlapm --cleanfp --stretch 5
+            - name: Check local example proofs
+              run: |
+                # Skip the longest-running examples so PR CI stays under five minutes.
+                find ./examples -type f -name "*.tla"          \
+                ! -path "./examples/ByzPaxos/BPConProof.tla"   \
+                ! -path "./examples/ByzPaxos/VoteProof.tla"    \
+                -print0 | xargs --verbose --null --max-args=1  \
+                /usr/bin/time ./_build/tlapm/bin/tlapm --cleanfp --stretch 5
             - name: Clone tlaplus/examples
-              uses: actions/checkout@v4
+              uses: actions/checkout@v6
               with:
                 repository: tlaplus/examples
                 path: ${{ env.EXAMPLES_DIR }}
-            - name: Set up Python
-              uses: actions/setup-python@v5
-              with:
-                python-version: '3.12'
             - name: Check proofs in TLA+ examples
               run: |
                 mkdir -p "$DEPS_DIR"
@@ -106,26 +116,38 @@ jobs:
                 tar -xzf "$DEPS_DIR/tlapm.tar.gz" -C "$DEPS_DIR"
                 rm "$DEPS_DIR/tlapm.tar.gz"
                 mv $DEPS_DIR/tlapm* "$DEPS_DIR/tlapm-install"
-                SKIP=(
-                  # General proof failure
-                  "specifications/Bakery-Boulangerie/Bakery.tla"
-                  "specifications/Bakery-Boulangerie/Boulanger.tla"
-                  "specifications/bcastByz/bcastByz.tla"
-                  "specifications/byzpaxos/Consensus.tla"
-                  "specifications/byzpaxos/VoteProof.tla"
-                  "specifications/ewd998/AsyncTerminationDetection_proof.tla"
-                  "specifications/ewd998/EWD998_proof.tla"
-                  "specifications/LearnProofs/FindHighest.tla"
-                  "specifications/LoopInvariance/BinarySearch.tla"
-                  "specifications/LoopInvariance/Quicksort.tla"
-                  "specifications/LoopInvariance/SumSequence.tla"
-                  "specifications/lamport_mutex/LamportMutex_proofs.tla"
-                  "specifications/TeachingConcurrency/SimpleRegular.tla"
-                  # Failing and long-running
-                  "specifications/byzpaxos/BPConProof.tla" # Takes about 30 minutes
-                )
-                python "$SCRIPT_DIR/check_proofs.py"            \
-                  --tlapm_path "$DEPS_DIR/tlapm-install"        \
-                  --manifest_path "$EXAMPLES_DIR/manifest.json" \
-                  --skip "${SKIP[@]}"
+                mkdir -p "$DEPS_DIR/community"
+                wget -nv https://github.com/tlaplus/CommunityModules/releases/latest/download/CommunityModules-deps.jar -O "$DEPS_DIR/community/modules.jar"
+                unzip "$DEPS_DIR/community/modules.jar" -d "$DEPS_DIR/community"
+                find "$EXAMPLES_DIR/specifications" -iname "manifest.json" -print0 \
+                | xargs --null --no-run-if-empty \
+                jq --join-output '
+                  .modules
+                  | map(select(has("proof")))
+                  # Failing on Linux
+                  | map(select(.path != "specifications/LoopInvariance/SumSequence.tla"))
+                  # Skip checking long-running proofs
+                  | map(select(.proof.maxRuntimeMinutes <= 1))
+                  | map(.path + "\u0000")
+                  | join("")' \
+                | xargs --verbose --null --no-run-if-empty -I {TLA_FILE} \
+                time "$DEPS_DIR/tlapm-install/bin/tlapm" --cleanfp "$EXAMPLES_DIR/{TLA_FILE}" -I "$DEPS_DIR/community" --stretch 5
+            - name: SANY backend examples test
+              run: |
+                find "$EXAMPLES_DIR/specifications" -iname "manifest.json" -print0 \
+                | xargs --null --no-run-if-empty \
+                jq --join-output '
+                  .modules
+                  | map(select(has("proof")))
+                  # Failing on Linux
+                  | map(select(.path != "specifications/LoopInvariance/SumSequence.tla"))
+                  # Failing in SANY due to subexpression usage
+                  | map(select(.path != "specifications/ewd840/EWD840_proof.tla"))
+                  | map(select(.path != "specifications/byzpaxos/PConProof.tla"))
+                  # Skip checking long-running proofs
+                  | map(select(.proof.maxRuntimeMinutes <= 1))
+                  | map(.path + "\u0000")
+                  | join("")' \
+                | xargs --verbose --null --no-run-if-empty -I {TLA_FILE} \
+                time "$DEPS_DIR/tlapm-install/bin/tlapm" --cleanfp --parser SANY "$EXAMPLES_DIR/{TLA_FILE}" -I "$DEPS_DIR/community" --stretch 5
 

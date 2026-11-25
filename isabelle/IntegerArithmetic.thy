@@ -1,8 +1,8 @@
 (*  Title:      TLA+/IntegerArithmetic.thy
     Author:     Stephan Merz, Inria Nancy
-    Copyright (C) 2009-2024  INRIA and Microsoft Corporation
+    Copyright (C) 2009-2025  INRIA and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2024
+    Version:    Isabelle2025
 *)
 
 section \<open> Arithmetic (except division) for the integers \<close>
@@ -829,23 +829,8 @@ text \<open>
   From now on, we reduce the set @{text "Nat"} to the set of
   non-negative integers.
 \<close>
-lemma nat_iff_int_geq0' (*[simp]*) : "n \<in> Nat = (n \<in> Int \<and> 0 \<le> n)"
-  by (auto simp: int_leq_def)
-
-text \<open>
-We will use \<open>nat_is_int_geq0\<close> for simplification instead
-of \<open>nat_iff_int_geq0'\<close> for rewriting \<open>Nat\<close> to \<open>Int\<close> to
-handle also the cases where no \<open>Nat\<close> is used without
-the \<open>\<in>\<close> operator, e.g. in function sets.
-\<close>
 lemma nat_is_int_geq0 [simp] : "Nat = {x \<in> Int : 0 \<le> x}"
-proof
-  show "\<And>x. x \<in> Nat \<Longrightarrow> x \<in> {x \<in> Int : 0 \<le> x}"
-    using nat_iff_int_geq0' by auto
-next
-  show "\<And>x. x \<in> {x \<in> Int : 0 \<le> x} \<Longrightarrow> x \<in> Nat"
-    using nat_iff_int_geq0' by auto
-qed
+  by (auto simp: int_leq_def)
 
 
 declare natIsInt [simp del]
@@ -1717,13 +1702,26 @@ lemma trans_leq_diff_nat2 [simp]:
 
 lemma int_leq_iff_add:
   assumes "i \<in> Int" and "j \<in> Int"
-  shows "(i \<le> j) = (\<exists>k \<in> Nat: j = i + k)" (is "?lhs = ?rhs")
-  using assms by (auto intro: int_leq_imp_add simp del: nat_is_int_geq0 simp add: nat_iff_int_geq0')
+  shows "(i \<le> j) = (\<exists>k \<in> Nat: j = i + k)"
+  using assms by (auto intro: int_leq_imp_add simp: nat_zero_leq simp del: nat_is_int_geq0)
 
 lemma int_less_iff_succ_add:
   assumes "i \<in> Int" and "j \<in> Int"
   shows "(i < j) = (\<exists>k \<in> Nat: j = succ[i + k])" (is "?lhs = ?rhs")
-  using assms by (auto intro: int_less_imp_succ_add simp del: nat_is_int_geq0 simp add: nat_iff_int_geq0')
+proof -
+  {
+    assume ?lhs then have ?rhs
+      using assms by (blast dest: int_less_imp_succ_add)
+  }
+  moreover
+  {
+    assume ?rhs
+    then obtain k where k: "k \<in> Int" "0 \<le> k" "j = succ[i+k]" by auto
+    with assms have ?lhs by auto
+  }
+  ultimately 
+  show ?thesis by blast
+qed
 
 lemma leq_add_self1 [simp]:
   assumes "i \<in> Int" and "j \<in> Int"

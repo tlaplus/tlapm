@@ -1,8 +1,8 @@
 (*  Title:      TLA+/Tuples.thy
     Author:     Stephan Merz, Inria Nancy
-    Copyright (C) 2008-2024 Inria and Microsoft Corporation
+    Copyright (C) 2008-2025 Inria and Microsoft Corporation
     License:    BSD
-    Version:    Isabelle2024
+    Version:    Isabelle2025
 *)
 
 section \<open> Tuples and Relations in \tlaplus{} \<close>
@@ -193,7 +193,7 @@ lemmas emptySeqIsAFcn [iff] = emptySeqIsASeq[THEN SeqIsAFcn]
 lemma lenEmptySeq [iff]: "Len(\<langle>\<rangle>) = 0"
 by (auto simp: emptySeq_def)
 
-lemma emptySeqInSeq (*[simp,intro!]*): "\<langle>\<rangle> \<in> Seq(S)"
+lemma emptySeqInSeq [simp,intro!]: "\<langle>\<rangle> \<in> Seq(S)"
 by auto
 
 lemma SeqNotEmpty [simp]:

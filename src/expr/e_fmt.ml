@@ -18,7 +18,7 @@ open Property
 open E_t
 open Format
 open Fmtutil
-open Tla_parser
+module Fu = Tla_parser.Fu
 
 
 type ctx = hyp Deque.dq * int Ctx.ctx
@@ -222,15 +222,11 @@ let rec fmt_expr ?(temp=false) cx ew = match ew.core with
   | Product [e] ->
       fmt_expr ~temp:temp cx e
   | Product (e :: es) ->
-      (* FIXME this should be a Fu.Big because \X is neither right nor
-         left-associative. *)
-      Fu.Op (
-        "\\X",
-        (fun ff -> fprintf ff "@ \\X "),
-        (10, 13),
-        Fu.Infix (Fu.Right, fmt_expr ~temp:temp cx e,
-                  fmt_expr ~temp:temp cx (Product es @@ ew))
-      )
+      (* A nested product must remain a separate factor. *)
+      Fu.Big (fun ff ->
+                fprintf ff "@[<b0>%a@]"
+                  (pp_print_delimited ~sep:(fun ff () -> fprintf ff "@ \\X ")
+                     (pp_print_with_parens (pp_print_expr ~temp:temp cx))) (e :: es))
   | Product _ -> Errors.bug ~at:ew "Expr.Fmt.fmt_expr: PRODUCT []"
   | Tuple es ->
       Fu.Atm begin
@@ -273,14 +269,14 @@ let rec fmt_expr ?(temp=false) cx ew = match ew.core with
                        Fu.Atm (fun ff -> pp_print_string ff f)))
   | Sub (q, e, f) ->
       Fu.Atm (fun ff ->
-                fprintf ff "@[<h>%s@[<b2>%a@]%s%a@]"
+                fprintf ff "@[<h>%s@[<b2>%a@]%s(%a)@]"
                   (match q with Box -> "[" | _ -> "<<")
                   (pp_print_expr ~temp:temp cx) e
                   (match q with Box -> "]_" | _ -> ">>_")
                   (pp_print_expr ~temp:temp cx) f)
   | Tsub (q, e, f) ->
       Fu.Atm (fun ff ->
-                fprintf ff "@[<h>%s@[<b2>%a@]%s%a@]"
+                fprintf ff "@[<h>%s@[<b2>%a@]%s(%a)@]"
                   (match q with Box -> "[][" | _ -> "<><<")
                   (pp_print_expr ~temp:temp cx) e
                   (match q with Box -> "]_" | _ -> ">>_")
@@ -320,9 +316,9 @@ let rec fmt_expr ?(temp=false) cx ew = match ew.core with
       let f = fmt_expr ~temp:temp cx e in
       match f with
         | Fu.Atm _ | Fu.Big _ ->
-            Fu.Atm (fun ff -> fprintf ff "%s::%a" l Fu.pp_print_minimal f)
+            Fu.Big (fun ff -> fprintf ff "%s::%a" l Fu.pp_print_minimal f)
         | _ ->
-            Fu.Atm (fun ff -> fprintf ff "%s::(%a)" l Fu.pp_print_minimal f)
+            Fu.Big (fun ff -> fprintf ff "%s::(%a)" l Fu.pp_print_minimal f)
     end
   | Parens (e, {core = Nlabel (l, xs)}) -> begin
       let fe = fmt_expr ~temp:temp cx e in
@@ -334,7 +330,7 @@ let rec fmt_expr ?(temp=false) cx ew = match ew.core with
         | _ ->
             format_of_string "(%s(%a):: %a)"
       in
-      Fu.Atm begin fun ff ->
+      Fu.Big begin fun ff ->
         fprintf ff fmt
           l (pp_print_delimited pp_print_var) xs
           Fu.pp_print_minimal fe
@@ -463,7 +459,9 @@ and fmt_apply (hx, vx as cx) op args = match op.core, args with
             let top = Optable.lookup s in
             (* coalescing leads to this case, prepending "?" to the newly
             introduced identifiers. *)
-            { top with Optable.name = "?" ^ top.Optable.name }
+            if Ctx.try_print_src (snd cx)
+              then top
+              else { top with Optable.name = "?" ^ top.Optable.name }
         | Internal b ->
             Optable.standard_form b
         | _ ->

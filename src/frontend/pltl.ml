@@ -87,7 +87,7 @@ let expand_domains =
           let s = bumpn 1 s in
           let e2 = Apply ((Internal B.Mem) @@ nm, [Ix 1 @@ nm ; sr]) @@ r in
           let tm = match lc with
-            | Constant -> Expr.Temporal_props.compute_time cx r
+            | Constant -> Expr.Temporal_props.compute_time cx sr
             | _ -> Now in
           let h2 = Fact (e2, rvis, tm) @@ e2 in
           let cx = Deque.snoc cx h2 in
