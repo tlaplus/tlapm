@@ -11,4 +11,3 @@ THEOREM (CASE FALSE -> 1 [] TRUE -> 3) = 2
     BY <1>1, LevelComparison
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/new

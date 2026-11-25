@@ -13,4 +13,3 @@ THEOREM ASSUME B PROVE ENABLED (x' = 1) <=> ENABLED FALSE
 BY ENABLEDaxioms DEF B
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/new

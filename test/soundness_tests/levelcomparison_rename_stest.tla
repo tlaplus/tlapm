@@ -8,4 +8,3 @@ THEOREM ASSUME NEW c, NEW d, c = 1 PROVE d = 1
 BY LevelComparison
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/new
