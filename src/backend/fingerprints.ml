@@ -584,9 +584,9 @@ let fp_sequent sq ignore_levels =
 let fingerprint ?(ignore_levels=false) ob =
     let enabledrules = if Expr.T.has_enabledaxioms ob.obl then
         begin if Expr.T.get_enabledaxioms ob.obl then
-            "Level<=1"
+            ";Level<=1"
         else
-            "Level>1"
+            ";Level>1"
         end
     else "" in
     let buf = fp_sequent ob.Proof.T.obl.core ignore_levels in
