@@ -21,4 +21,3 @@ THEOREM ENABLED (A /\ B)
     BY <1>1, <1>2, <1>3, ENABLEDaxioms
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/new

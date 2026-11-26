@@ -19,6 +19,23 @@ open Expr.Subst
 
 module B = Builtin
 
+(* PTL hashes the printed form of each opaque atom. Fresh names introduced
+   by lambdification must not distinguish alpha-equivalent expressions. *)
+let canonicalize_lambda_names =
+  let visitor = object
+    inherit [int] Expr.Visit.map_concrete as super
+
+    method expr ((depth, cx) as scx) e =
+      match e.core with
+      | Lambda (params, body) ->
+          (* The NUL prefix keeps these names distinct from source identifiers. *)
+          let params = List.mapi (fun i (name, shape) ->
+            (Printf.sprintf "\000lambda%d" (depth + i) @@ name, shape)) params in
+          super#expr (depth + List.length params, cx) (Lambda (params, body) @@ e)
+      | _ -> super#expr scx e
+  end in
+  fun cx e -> visitor#expr (0, cx) e
+
 
 let coalesce_fol =
   let visitor = object (self : 'self)
@@ -51,7 +68,7 @@ let coalesce_fol =
         | B.Prime
         | B.Neg
       ) -> super#expr scx e
-      | _ -> Coalesce.coalesce (snd scx) e
+      | _ -> Coalesce.coalesce cx (canonicalize_lambda_names cx e)
       end
   end in
   fun scx e ->

@@ -12,4 +12,3 @@ THEOREM ASSUME NEW c PROVE \A d : c = d
 BY L, LevelComparison
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/new

@@ -221,7 +221,10 @@ PROOF
       <3>2. (ENABLED (Next2 /\ UNCHANGED <<pc1, c1>>)) => (ENABLED <<Next>>_vars)
         OMITTED \* BY <3>1, ENABLEDaxioms
       <3>3. ENABLED (Next2 /\ UNCHANGED <<pc1, c1>>)
-        BY <1>2, ExpandENABLED DEF Next2, IndInv
+        <4>1. pc2 \in 1..9
+            BY <1>2 DEF IndInv
+        <4>. QED
+            BY <4>1, ExpandENABLED DEF Next2
       <3>. QED  BY <3>2, <3>3 DEF Enabledness
     <2>. QED  BY <2>1, <2>2
 <1> QED

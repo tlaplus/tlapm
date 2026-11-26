@@ -92,7 +92,7 @@ MutualExclusion == ~(pc[0] = "cs"  /\ pc[1] = "cs")
 
 NeverCS == pc[0] # "cs"
 
-Wait(i) == (pc[0] = "a3a") \/ (pc[0] = "a3b")
+Wait(i) == (pc[i] = "a3a") \/ (pc[i] = "a3b")
 CS(i) == pc[i] = "cs"
 Fairness == WF_vars(proc(0)) /\ WF_vars(proc(1))
 FairSpec == Spec /\ Fairness

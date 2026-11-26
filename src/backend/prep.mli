@@ -28,3 +28,5 @@ val normalize:
     auto_expand_defs: bool ->
         obligation
 *)
+
+val prepare_obligation: obligation -> obligation

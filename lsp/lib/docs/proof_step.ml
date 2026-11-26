@@ -562,7 +562,12 @@ end = struct
             if_in_file_opt file o.obl @@ fun o_range ->
             let o =
               (match o.fingerprint with
-                | None -> Tlapm_lib.Backend.Fingerprints.write_fingerprint o
+                | None ->
+                    let fingerprint =
+                      Tlapm_lib.Backend.Fingerprints.fingerprint
+                        ~ignore_levels:true o
+                    in
+                    { o with fingerprint = Some fingerprint }
                 | Some _ -> o)
               |> Obl.of_parsed_obligation
               |> Obl.with_proof_state_from (Hashtbl.find_opt prev_obs)

@@ -13,4 +13,3 @@ THEOREM ASSUME (x' = 1) <=> FALSE PROVE ENABLED (x' = 1) <=> ENABLED FALSE
 BY MyAxioms
 
 ============================================================
-known: https://github.com/tlaplus/tlapm/issues/new
