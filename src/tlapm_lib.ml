@@ -731,12 +731,39 @@ let modctx_of_string ~(content : string) ~(filename : string) ~loader_paths ~pre
       in let (ctx, m, _summ) = Module.Elab.normalize ctx Deque.empty mule in Ok (ctx, m)
       in Result.bind (Sany.parse filename) transform
 
+exception Sany_failure of string option * string
+
+let module_regexp = Str.regexp "^-----* MODULE \\(.*\\) -----*$"
+
 let module_of_string module_str =
     match !Params.parser_backend with
     | Tlapm ->
         let hparse = Tla_parser.P.use Module.Parser.parse in
         let (flex, _) = Alexer.lex_string module_str in
         Tla_parser.P.run hparse ~init:Tla_parser.init ~source:flex
-    | Sany -> failwith "SANY cannot parse modules from a string"
+    | Sany -> (
+        let module_name =
+          let open Str in
+          if string_match module_regexp module_str 0 then
+            matched_group 1 module_str
+          else
+            raise (Sany_failure (None, "did not find a module header"))
+        in
+        let dir = Filename.temp_dir "tlapm-sany-" "" in
+        let fname = Filename.concat dir (Printf.sprintf "%s.tla" module_name) in
+        let () =
+          let open Out_channel in
+          with_open_text fname (fun oc -> output_string oc module_str)
+        in
+        let result =
+          Fun.protect
+            (fun () -> Sany.parse fname)
+            ~finally:(fun () ->
+              Sys.remove fname;
+              Sys.rmdir dir)
+        in
+        match result with
+        | Ok (_, x) -> Some x
+        | Error (loc, msg) -> raise (Sany_failure (loc, msg)))
 
 let stdlib_search_paths = Params.stdlib_search_paths
