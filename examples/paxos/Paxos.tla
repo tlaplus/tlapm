@@ -359,7 +359,11 @@ THEOREM Invariant == Spec => []Inv
         BY DEF TypeOK, AccInv
       <4>4. \A c \in (mm.maxVBal+1) .. (mm.bal-1) :
                 ~ \E v \in Values : VotedForIn(mm.acc, v, c)
-        BY DEF AccInv, TypeOK, Messages
+        <5>1. \A c \in (mm.maxVBal+1) .. (mm.bal-1) :
+                  c \in Ballots /\ c > maxVBal[a]
+          BY SMT DEF TypeOK
+        <5>2. QED
+          BY <5>1, SMT DEF AccInv
       <4>. QED
         BY <4>1, <4>2, <4>3, <4>4, SafeAtStable DEF MsgInv, TypeOK, Messages, Send
     <3>3. ASSUME NEW b \in Ballots, Phase2a(b)
@@ -436,7 +440,28 @@ THEOREM Invariant == Spec => []Inv
           <6>3. CASE d \in (c+1) .. (b-1)
             \* By the last conjunct of MsgInv for type "1b" messages, no acceptor in Q
             \* voted at any of these ballots.
-            BY <6>3, <5>0, <5>2 DEF MsgInv, TypeOK, Messages, WontVoteIn
+            <7>1. ASSUME NEW q \in Q
+                  PROVE WontVoteIn(q,d)
+              <8>1. PICK mq \in S : mq.acc = q
+                BY <5>0
+              <8>2. /\ mq.type = "1b"
+                    /\ mq.bal = b
+                    /\ mq.acc = q
+                    /\ mq.maxVBal \in Ballots \cup {-1}
+                    /\ maxBal[q] \in Ballots \cup {-1}
+                BY <8>1, <5>0 DEF TypeOK, Messages
+              <8>3. /\ mq.maxVBal =< c
+                    /\ maxBal[q] >= b
+                    /\ \A k \in (mq.maxVBal+1) .. (b-1) :
+                          ~ \E w \in Values : VotedForIn(q,w,k)
+                BY <8>1, <8>2, <5>2 DEF MsgInv
+              <8>4. /\ d \in (mq.maxVBal+1) .. (b-1)
+                    /\ maxBal[q] > d
+                BY <6>3, <8>2, <8>3, SMT
+              <8>5. QED
+                BY <8>3, <8>4 DEF WontVoteIn
+            <7>2. QED
+              BY <5>0, <7>1
           <6>. QED  BY <6>1, <6>2, <6>3
         <5>. QED  BY <5>0, <5>1, <5>2
       <4>11. SafeAt(mm.val,mm.bal)'
@@ -513,7 +538,12 @@ THEOREM Refinement == Spec => C!Spec
     OBVIOUS
   <2>1. CASE Next
     <3>1. chosenBar \subseteq chosenBar'
-      BY <2>1 DEF Send, chosenBar, Chosen, ChosenIn, VotedForIn, Next, Phase1a, Phase1b, Phase2a, Phase2b
+      <4>1. msgs \subseteq msgs'
+        BY <2>1, Zenon DEF Send, Next, Phase1a, Phase1b, Phase2a, Phase2b
+      <4>2. \A a, v, b : VotedForIn(a,v,b) => VotedForIn(a,v,b)'
+        BY <4>1, Zenon DEF VotedForIn
+      <4>3. QED
+        BY <4>2, Zenon DEF chosenBar, Chosen, ChosenIn
     <3>2. \A v, w \in chosenBar': v = w
       BY DEF Consistency, chosenBar, ChosenIn, TypeOK
     <3>. QED

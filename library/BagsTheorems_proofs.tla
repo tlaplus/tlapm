@@ -64,7 +64,12 @@ THEOREM Bags_SqsubseteqPO_AntiSymmetry ==
   ASSUME NEW A, NEW B, IsABag(A), IsABag(B),
          A \sqsubseteq B, B \sqsubseteq A
   PROVE A = B
-BY DEF IsABag, \sqsubseteq
+<1>1. DOMAIN A = DOMAIN B
+  BY DEF \sqsubseteq
+<1>2. \A e \in DOMAIN A : A[e] = B[e]
+  BY SMT DEF IsABag, \sqsubseteq
+<1>3. QED
+  BY <1>1, <1>2, SMT DEF IsABag
 
 (*Transitivity*)
 THEOREM Bags_SqsubseteqPO_Transitivity ==
@@ -201,7 +206,7 @@ THEOREM Bags_UnionCommutative ==
       /\ B2 (+) B1 = [e \in D2 \union D1 |-> C2(e) + C1(e)]
   BY DEF (+)
 <1>. HIDE DEF D1, D2, C1, C2
-<1>. QED  BY <1>1, <1>2
+<1>. QED  BY <1>1, <1>2, SMT
 
 (***************************************************************************)
 (* Unon is associative.                                                    *)

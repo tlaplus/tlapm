@@ -533,7 +533,12 @@ THEOREM NatLessThanWellFounded == IsWellFoundedOn(OpToRel(<,Nat), Nat)
     OBVIOUS
   <2> DEFINE g[i \in Nat] == f[i+1]
   <2>1. g \in [Nat -> Nat]
-    OBVIOUS
+    <3>1. f \in [Nat -> Nat]
+      OBVIOUS
+    <3>2. \A i \in Nat : i+1 \in Nat
+      BY SMT
+    <3>3. QED
+      BY <3>1, <3>2, SMT DEF g
   <2>2. \A i \in Nat : <<g[i+1], g[i]>> \in R
     BY Isa
   <2>3. g[0] \in 0..(n-1)

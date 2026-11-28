@@ -516,7 +516,10 @@ PROOF
               \/ (pc1 = 3) ~> ~ (pc1 = 3)
             <4>1. ASSUME IndInv2 /\ (pc1 = 3)
                   PROVE ENABLED <<pc1 # 9 /\ Next1>>_vars1
-                BY <4>1, ExpandENABLED DEF IndInv2, IndInv, Next1, vars1
+                <5>1. pc1 = 3
+                    BY <4>1
+                <5>2. QED
+                    BY <5>1, ExpandENABLED DEF Next1, vars1
             <4>2. ASSUME /\ pc1 = 3
                          /\ <<pc1 # 9 /\ Next1>>_vars1
                   PROVE \/ (pc1 = 2)'
@@ -631,7 +634,10 @@ PROOF
               \/ (pc2 = 2) ~> ~ (pc2 = 2)
             <4>1. ASSUME IndInv2 /\ (pc2 = 2)
                   PROVE ENABLED <<pc2 # 9 /\ Next2>>_vars2
-                BY <4>1, ExpandENABLED DEF IndInv2, IndInv, Next2, vars2
+                <5>1. pc2 = 2
+                    BY <4>1
+                <5>2. QED
+                    BY <5>1, ExpandENABLED DEF Next2, vars2
             <4>2. ASSUME /\ pc2 = 2
                          /\ <<pc2 # 9 /\ Next2>>_vars2
                   PROVE \/ (pc2 = 3)'
