@@ -704,7 +704,16 @@ THEOREM Invariance == Spec => []Inv
       <4>1. ASSUME NEW q \in Proc
             PROVE  Inv1!1!(q)'
         <5>1. Inv1!1!(q)!1'
-          BY Z3T(10) DEF Inv1, TypeOK, b, PUnion
+          <6>1. /\ known[q] \subseteq PUnion(myVals)
+                /\ known[p] \subseteq PUnion(myVals)
+            BY DEF Inv1
+          <6>2. \A r \in Proc : myVals[r] \subseteq myVals'[r]
+            BY SMT DEF TypeOK, b
+          <6>3. /\ PUnion(myVals) \subseteq PUnion(myVals')
+                /\ myVals'[p] \subseteq PUnion(myVals')
+            BY <6>2, SMT DEF PUnion
+          <6>4. QED
+            BY <6>1, <6>3, SMT DEF TypeOK, b
         <5>2. Inv1!1!(q)!2'
           BY SMT DEF Inv1, TypeOK, b
         <5>3. Inv1!1!(q)!3'
@@ -751,7 +760,12 @@ THEOREM Invariance == Spec => []Inv
           BY <5>1, <5>2, <5>3, <5>4, <5>5, <5>6, <5>7, <5>8, <5>9, <5>10,
             SMT DEF Inv1
       <4>2. NUnion(A3') \subseteq PUnion(myVals')
-        BY SMT DEF TypeOK, Inv1, b, PUnion
+        <5>1. \A r \in Proc : myVals[r] \subseteq myVals'[r]
+          BY SMT DEF TypeOK, b
+        <5>2. PUnion(myVals) \subseteq PUnion(myVals')
+          BY <5>1, SMT DEF PUnion
+        <5>3. QED
+          BY <5>2, SMT DEF Inv1, b
       <4>3. Inv1!3'
         BY SMT DEF Inv1, TypeOK, b
       <4>4. QED
