@@ -1,14 +1,19 @@
 OS_TYPE=$(patsubst CYGWIN%,Cygwin,$(shell uname))
+HOST_CPU=$(shell uname -m)
 
-Z3_VERS=4.8.9
+Z3_VERS=4.8.16
 Z3_URL_PREFIX=https://github.com/Z3Prover/z3/releases/download/z3-$(Z3_VERS)
 
 ifeq ($(OS_TYPE),Linux)
-    Z3_BASE_NAME=z3-${Z3_VERS}-x64-ubuntu-16.04
+    Z3_BASE_NAME=z3-${Z3_VERS}-x64-glibc-2.31
 	Z3_EXEC=z3
 endif
 ifeq ($(OS_TYPE),Darwin)
-    Z3_BASE_NAME=z3-${Z3_VERS}-x64-osx-10.14.6
+ifeq ($(HOST_CPU),arm64)
+    Z3_BASE_NAME=z3-${Z3_VERS}-arm64-osx-10.16
+else
+    Z3_BASE_NAME=z3-${Z3_VERS}-x64-osx-10.16
+endif
 	Z3_EXEC=z3
 endif
 ifeq ($(OS_TYPE),Cygwin)
