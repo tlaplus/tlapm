@@ -197,7 +197,39 @@ THEOREM Typing == Spec => []TypeOK
 <1>1. Init => TypeOK 
   BY DEF Init
 <1>2. TypeOK /\ [Next]_vars => TypeOK'
-  BY DEF Next, vars, p, p1, p2, p3, p4, p5, p6, p7, cs
+  <2>. SUFFICES ASSUME TypeOK, Next
+                PROVE TypeOK'
+    BY DEF vars
+  <2>1. ASSUME NEW self \in P, p1(self) PROVE TypeOK'
+    BY <2>1 DEF p1
+  <2>2. ASSUME NEW self \in P, p2(self) PROVE TypeOK'
+    BY <2>2 DEF p2
+  <2>3. ASSUME NEW self \in P, p3(self) PROVE TypeOK'
+    BY <2>3 DEF p3
+  <2>4. ASSUME NEW self \in P, p4(self) PROVE TypeOK'
+    BY <2>4 DEF p4
+  <2>5. ASSUME NEW self \in P, p5(self) PROVE TypeOK'
+    <3>1. CASE unread[self] = {}
+      BY <2>5, <3>1 DEF p5
+    <3>2. CASE unread[self] # {}
+      <4>1. PICK i \in unread[self] :
+                  /\ nxt' = [nxt EXCEPT ![self] = i]
+                  /\ flag[nxt'[self]] = FALSE
+                  /\ pc' = [pc EXCEPT ![self] = "p6"]
+        BY <2>5, <3>2, Zenon DEF p5
+      <4>2. i \in P \ {self}
+        BY <2>5, <4>1, SMT DEF p5
+      <4>3. QED
+        BY <2>5, <4>1, <4>2, SMT DEF p5
+    <3>3. QED BY <3>1, <3>2
+  <2>6. ASSUME NEW self \in P, p6(self) PROVE TypeOK'
+    BY <2>6 DEF p6
+  <2>7. ASSUME NEW self \in P, cs(self) PROVE TypeOK'
+    BY <2>7 DEF cs
+  <2>8. ASSUME NEW self \in P, p7(self) PROVE TypeOK'
+    BY <2>8 DEF p7
+  <2>. QED BY <2>1, <2>2, <2>3, <2>4, <2>5, <2>6, <2>7, <2>8
+             DEF Next, p
 <1>. QED  BY <1>1, <1>2, PTL DEF Spec 
 
 (***************************************************************************)
@@ -259,7 +291,20 @@ THEOREM Spec => []MutualExclusion
   <2>2. ASSUME NEW self \in P, p2(self) PROVE Inv'
     BY <2>2 DEF p2
   <2>3. ASSUME NEW self \in P, p3(self) PROVE Inv'
-    BY <2>3 DEF p3
+    <3>1. TypeOK
+      OBVIOUS
+    <3>2. \A i, j \in P : i # self /\ After(j,i) => After(j,i)'
+      BY <3>1, <2>3, SMT DEF TypeOK, p3, After, LL
+    <3>. HIDE DEF After, LL
+    <3>3. ASSUME NEW i \in P PROVE IInv(i)'
+      <4>1. IInv(i)
+        BY DEF Inv
+      <4>2. CASE i = self
+        BY <3>1, <4>1, <2>3, <4>2, SMT DEF TypeOK, IInv, p3
+      <4>3. CASE i # self
+        BY <3>1, <3>2, <4>1, <2>3, <4>3, SMT DEF TypeOK, IInv, p3
+      <4>4. QED BY <4>2, <4>3
+    <3>4. QED BY <3>3 DEF Inv
   <2>4. ASSUME NEW self \in P, p4(self) PROVE Inv'
     BY <2>4 DEF p4
   <2>5. ASSUME NEW self \in P, p5(self) PROVE Inv'
